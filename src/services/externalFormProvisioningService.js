@@ -29,6 +29,23 @@ import { generateUrl } from '@nextcloud/router'
 const PUBLIC_GROUP = 'public'
 
 /**
+ * The sign-in levels portaliq enforces on a `portalPage` entry (its
+ * `minTrust` string enum). There is no "anonymous" level: an entry without a
+ * level and with `anonymous: true` is the anonymous one (portaliq#725).
+ */
+export const SIGN_IN_LEVELS = ['low', 'substantial', 'high']
+
+/**
+ * Whether a value is one of portaliq's sign-in levels.
+ *
+ * @param {string|null|undefined} value - the value.
+ * @return {boolean}
+ */
+function isSignInLevel(value) {
+	return SIGN_IN_LEVELS.includes(value)
+}
+
+/**
  * URL of a schema by slug (OR resolves `{id}` by slug or uuid).
  *
  * @param {string} schemaSlug - the schema slug.
@@ -167,38 +184,53 @@ function isPortalPageSchemaMissing(error) {
 }
 
 /**
- * Build the `type: "create"` action entry bound to `(register, schema)`
- * that makes a `portalPage` accept the toggle's anonymous submissions
- * (REQ-EFP-004). `minTrust: 0` is the anonymous-eligible floor.
+ * Apply a sign-in level to one `portalPage` entry (an action or a
+ * collection), returning a NEW entry.
  *
- * @param {string} register - the OR register slug.
- * @param {string} schema - the OR schema slug.
+ * - A level (`low`, `substantial`, `high`) sets `minTrust` and drops
+ *   `anonymous`: portaliq treats the two as mutually exclusive.
+ * - `null` is the maker explicitly choosing no sign-in: `anonymous: true`
+ *   and no `minTrust`.
+ * - `undefined` means the caller did not say. A level already stored on the
+ *   entry (set in buildiq earlier, or by hand in portaliq) is KEPT, so a
+ *   repeat save never lowers it to anonymous (buildiq#935). Without a stored
+ *   level the entry is anonymous. A stored non-level `minTrust` (the invalid
+ *   `0` older saves wrote, buildiq#921) is dropped.
+ *
+ * @param {object} entry - the entry, with its identifying keys set.
+ * @param {?string|undefined} minTrust - the level, null, or undefined.
  * @return {object}
  */
-function buildAnonymousCreateAction(register, schema) {
-	return {
-		type: 'create',
-		register,
-		schema,
-		anonymous: true,
-		minTrust: 0,
+function applySignInLevel(entry, minTrust) {
+	const next = { ...entry }
+	if (isSignInLevel(minTrust)) {
+		delete next.anonymous
+		next.minTrust = minTrust
+		return next
 	}
+	if (minTrust === undefined && isSignInLevel(next.minTrust)) {
+		delete next.anonymous
+		return next
+	}
+	delete next.minTrust
+	next.anonymous = true
+	return next
 }
 
 /**
- * Merge (or insert) the anonymous create action for `(register, schema)`
- * into an existing `actions[]` array without disturbing any other action
- * entry — matched by `{type, register, schema}` so a repeat save updates
- * the SAME entry rather than appending a duplicate.
+ * Merge (or insert) the create action for `(register, schema)` into an
+ * existing `actions[]` array without disturbing any other action entry,
+ * matched by `{type, register, schema}` so a repeat save updates the SAME
+ * entry rather than appending a duplicate (REQ-EFP-004).
  *
  * @param {Array<object>|undefined} actions - the portalPage's current actions.
- * @param {string} register - the OR register slug.
- * @param {string} schema - the OR schema slug.
+ * @param {{register: string, schema: string, minTrust: (?string|undefined)}} target - the OR
+ *   register and schema slugs, and the sign-in level (see applySignInLevel).
  * @return {Array<object>}
  */
-function mergeAnonymousCreateAction(actions, register, schema) {
+function mergeCreateAction(actions, target) {
+	const { register, schema, minTrust } = target
 	const next = Array.isArray(actions) ? actions.slice() : []
-	const entry = buildAnonymousCreateAction(register, schema)
 	const idx = next.findIndex(
 		(a) =>
 			a
@@ -206,8 +238,10 @@ function mergeAnonymousCreateAction(actions, register, schema) {
 			&& a.register === register
 			&& a.schema === schema,
 	)
+	const base = { ...(idx >= 0 ? next[idx] : {}), type: 'create', register, schema }
+	const entry = applySignInLevel(base, minTrust)
 	if (idx >= 0) {
-		next[idx] = { ...next[idx], ...entry }
+		next[idx] = entry
 	} else {
 		next.push(entry)
 	}
@@ -215,22 +249,25 @@ function mergeAnonymousCreateAction(actions, register, schema) {
 }
 
 /**
- * Merge (or insert) the anonymous collection entry for `(register, schema)`
- * into an existing `collections[]` array, matched by `{register, schema}`.
+ * Merge (or insert) the collection entry for `(register, schema)` into an
+ * existing `collections[]` array, matched by `{register, schema}`, with the
+ * same sign-in level as its create action.
  *
  * @param {Array<object>|undefined} collections - the portalPage's current collections.
- * @param {string} register - the OR register slug.
- * @param {string} schema - the OR schema slug.
+ * @param {{register: string, schema: string, minTrust: (?string|undefined)}} target - the OR
+ *   register and schema slugs, and the sign-in level (see applySignInLevel).
  * @return {Array<object>}
  */
-function mergeAnonymousCollection(collections, register, schema) {
+function mergeCollection(collections, target) {
+	const { register, schema, minTrust } = target
 	const next = Array.isArray(collections) ? collections.slice() : []
 	const idx = next.findIndex(
 		(c) => c && c.register === register && c.schema === schema,
 	)
-	const entry = { register, schema, anonymous: true }
+	const base = { ...(idx >= 0 ? next[idx] : {}), register, schema }
+	const entry = applySignInLevel(base, minTrust)
 	if (idx >= 0) {
-		next[idx] = { ...next[idx], ...entry }
+		next[idx] = entry
 	} else {
 		next.push(entry)
 	}
@@ -253,6 +290,75 @@ function resolveObjectId(data) {
 }
 
 /**
+ * Merge the collection and create action for a target into a stored
+ * `portalPage`, activate it, and drop a page-level `minTrust` that is not
+ * one of portaliq's levels.
+ *
+ * @param {?object} current - the stored portalPage object.
+ * @param {{register: string, schema: string, minTrust: (?string|undefined)}} target - the toggle's target.
+ * @return {object} the payload to PUT.
+ */
+function mergedPortalPage(current, target) {
+	const payload = {
+		...current,
+		status: 'active',
+		collections: mergeCollection(current && current.collections, target),
+		actions: mergeCreateAction(current && current.actions, target),
+	}
+	// An older save wrote the page-level number 0, which is not one of
+	// portaliq's levels (buildiq#921). A real stored level stays.
+	if ('minTrust' in payload && !isSignInLevel(payload.minTrust)) {
+		delete payload.minTrust
+	}
+	return payload
+}
+
+/**
+ * Repeat save: GET-merge-PUT the stored `portalPage` object.
+ *
+ * @param {string} objectId - the stored portalPage uuid.
+ * @param {{target: object, client: object}} context - the toggle's target and the axios-like client.
+ * @return {Promise<{objectId: string, portalPath: string, unavailable: boolean}>}
+ */
+async function updatePortalPage(objectId, context) {
+	const { target, client } = context
+	const { data: current } = await client.get(portalPageUrl(objectId))
+	const { data } = await client.put(
+		portalPageUrl(objectId),
+		mergedPortalPage(current, target),
+	)
+	return {
+		objectId: resolveObjectId(data) || objectId,
+		portalPath: '/portal',
+		unavailable: false,
+	}
+}
+
+/**
+ * First save: POST a new public `portalPage` object for the target.
+ *
+ * @param {{register: string, schema: string, minTrust: (?string|undefined)}} target - the toggle's target.
+ * @param {object} client - axios-like client.
+ * @return {Promise<{objectId: string, portalPath: string, unavailable: boolean}>}
+ */
+async function createPortalPage(target, client) {
+	const payload = {
+		label: `${target.schema} — external intake`,
+		status: 'active',
+		audience: 'public',
+		collections: mergeCollection([], target),
+		actions: mergeCreateAction([], target),
+		pages: [],
+	}
+	const { data } = await client.post(portalPageUrl(), payload)
+	return {
+		objectId: resolveObjectId(data),
+		portalPath: '/portal',
+		unavailable: false,
+	}
+}
+
+/**
  * REQ-EFP-004: create or update the Portaliq `portalPage` object bound to
  * `(register, schema)`. First save (`objectId` falsy) POSTs a new object;
  * subsequent saves (matched by the stored `objectId`) GET-merge-PUT so any
@@ -270,53 +376,23 @@ function resolveObjectId(data) {
  * @param {string} opts.register - the OR register slug the toggle targets.
  * @param {string} opts.schema - the OR schema slug the toggle targets.
  * @param {?string} [opts.objectId] - the previously-stored portalPage uuid, if any.
+ * @param {?string} [opts.minTrust] - the sign-in level the form requires:
+ *   `low`, `substantial` or `high`; `null` for none (anonymous); left out
+ *   to keep whatever level the portal page already stores.
  * @param {object} [client] - axios-like client (test injection).
  * @return {Promise<{objectId: ?string, portalPath: ?string, unavailable: boolean}>}
  * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-004
  */
 export async function provisionPortalPage(
-	{ register, schema, objectId },
+	{ register, schema, objectId, minTrust },
 	client = defaultAxios,
 ) {
+	const target = { register, schema, minTrust }
 	try {
 		if (objectId) {
-			const { data: current } = await client.get(portalPageUrl(objectId))
-			const payload = {
-				...current,
-				status: 'active',
-				collections: mergeAnonymousCollection(
-					current && current.collections,
-					register,
-					schema,
-				),
-				actions: mergeAnonymousCreateAction(
-					current && current.actions,
-					register,
-					schema,
-				),
-			}
-			const { data } = await client.put(portalPageUrl(objectId), payload)
-			return {
-				objectId: resolveObjectId(data) || objectId,
-				portalPath: '/portal',
-				unavailable: false,
-			}
+			return await updatePortalPage(objectId, { target, client })
 		}
-		const payload = {
-			label: `${schema} — external intake`,
-			status: 'active',
-			audience: 'public',
-			minTrust: 0,
-			collections: [{ register, schema, anonymous: true }],
-			actions: [buildAnonymousCreateAction(register, schema)],
-			pages: [],
-		}
-		const { data } = await client.post(portalPageUrl(), payload)
-		return {
-			objectId: resolveObjectId(data),
-			portalPath: '/portal',
-			unavailable: false,
-		}
+		return await createPortalPage(target, client)
 	} catch (error) {
 		if (isPortalPageSchemaMissing(error)) {
 			return { objectId: null, portalPath: null, unavailable: true }

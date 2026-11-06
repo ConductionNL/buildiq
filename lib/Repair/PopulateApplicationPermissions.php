@@ -42,6 +42,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Repair;
 
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -145,6 +146,7 @@ class PopulateApplicationPermissions implements IRepairStep {
 	 * @return integer|null Number of Applications patched, or null when none were found
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-30
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function patchApplicationsMissingPermissions(IOutput $output): ?int {
 		$applications = $this->objectService->findAll(
@@ -162,8 +164,9 @@ class PopulateApplicationPermissions implements IRepairStep {
 		}
 
 		$patched = 0;
+		$refused = [];
 		foreach ($applications as $applicationEntry) {
-			$applicationArray = $this->normaliseObject(object: $applicationEntry);
+			$applicationArray = ObjectRecord::toArray(object: $applicationEntry);
 			if ($this->needsMigration(application: $applicationArray) === false) {
 				continue;
 			}
@@ -180,21 +183,68 @@ class PopulateApplicationPermissions implements IRepairStep {
 				'viewers' => [],
 			];
 
+			if ($this->save(application: $applicationArray, uuid: $uuid) === false) {
+				$refused[] = $uuid;
+				continue;
+			}
+
+			$patched++;
+		}//end foreach
+
+		$this->reportRefused(refused: $refused, output: $output);
+
+		return $patched;
+	}//end patchApplicationsMissingPermissions()
+
+	/**
+	 * Name the Applications whose save was refused, when there are any.
+	 *
+	 * @param array<int,string> $refused Uuids of the refused Applications.
+	 * @param IOutput $output Repair output channel.
+	 *
+	 * @return void
+	 */
+	private function reportRefused(array $refused, IOutput $output): void {
+		if ($refused === []) {
+			return;
+		}
+
+		$output->warning(
+			count($refused) . ' Application(s) were refused on save and still have no permissions: '
+			. implode(', ', $refused)
+		);
+	}//end reportRefused()
+
+	/**
+	 * Save one patched Application; a refused save is noted and the run goes on.
+	 *
+	 * @param array<string,mixed> $application The patched Application.
+	 * @param string $uuid Its uuid.
+	 *
+	 * @return bool Whether the save went through.
+	 */
+	private function save(array $application, string $uuid): bool {
+		try {
 			// Defence in depth alongside the runAsSystem() elevation: the
 			// Application schema's update:[admin] guard would otherwise deny
 			// the Anonymous repair-step caller.
 			$this->objectService->saveObject(
-				object: $applicationArray,
+				object: $application,
 				register: 'buildiq',
 				schema: 'built-app',
 				_rbac: false,
 				_multitenancy: false
 			);
-			$patched++;
-		}//end foreach
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				'Buildiq: PopulateApplicationPermissions could not save ' . $uuid,
+				['exception' => $e->getMessage()]
+			);
+			return false;
+		}
 
-		return $patched;
-	}//end patchApplicationsMissingPermissions()
+		return true;
+	}//end save()
 
 	/**
 	 * Decide whether an Application needs the permissions migration.
@@ -248,33 +298,4 @@ class PopulateApplicationPermissions implements IRepairStep {
 
 		return null;
 	}//end extractUuid()
-
-	/**
-	 * Coerce an OR result entry (ObjectEntity or array) to an associative array.
-	 *
-	 * @param mixed $object The OR object/result entry
-	 *
-	 * @return array<string, mixed>
-	 */
-	private function normaliseObject(mixed $object): array {
-		if (is_array($object) === true) {
-			return $object;
-		}
-
-		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-			$serialised = $object->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		if (is_object($object) === true && method_exists($object, 'getObject') === true) {
-			$inner = $object->getObject();
-			if (is_array($inner) === true) {
-				return $inner;
-			}
-		}
-
-		return [];
-	}//end normaliseObject()
 }//end class

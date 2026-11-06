@@ -43,6 +43,7 @@ namespace OCA\Buildiq\Repair;
 use Closure;
 use OCA\Buildiq\AppInfo\Application;
 use OCA\Buildiq\Service\ApplicationVersionService;
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -280,6 +281,7 @@ class MigrateToVersionedModel implements IRepairStep {
 	 * @return array<int,array<string,mixed>>
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-26
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function enumerateApplications(): array {
 		try {
@@ -309,7 +311,7 @@ class MigrateToVersionedModel implements IRepairStep {
 
 		$normalised = [];
 		foreach ($rows as $row) {
-			$normalised[] = $this->normaliseObjectArray(object: $row);
+			$normalised[] = ObjectRecord::toArray(object: $row);
 		}
 
 		return $normalised;
@@ -445,33 +447,4 @@ class MigrateToVersionedModel implements IRepairStep {
 		$this->objectService->runAsSystem($work);
 
 	}//end runElevated()
-
-	/**
-	 * Coerce an OR result entry to a plain associative array.
-	 *
-	 * @param mixed $object The OR object/result entry
-	 *
-	 * @return array<string,mixed>
-	 */
-	private function normaliseObjectArray(mixed $object): array {
-		if (is_array($object) === true) {
-			return $object;
-		}
-
-		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-			$serialised = $object->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		if (is_object($object) === true && method_exists($object, 'getObject') === true) {
-			$inner = $object->getObject();
-			if (is_array($inner) === true) {
-				return $inner;
-			}
-		}
-
-		return [];
-	}//end normaliseObjectArray()
 }//end class

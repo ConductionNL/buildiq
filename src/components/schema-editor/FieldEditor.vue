@@ -708,33 +708,43 @@ export function schemaToFields(schema) {
 }
 
 /**
+ * The validation keys each field type copies between a property and a row.
+ * A `truthy` key is copied when its value is truthy, a `present` key whenever
+ * it is not null or undefined.
+ */
+const VALIDATION_KEYS = {
+	string: { truthy: ['format', 'pattern'], present: ['minLength', 'maxLength'] },
+	number: { truthy: [], present: ['minimum', 'maximum', 'multipleOf'] },
+	integer: { truthy: [], present: ['minimum', 'maximum', 'multipleOf'] },
+	array: { truthy: [], present: ['minItems', 'maxItems'] },
+}
+
+/** The relation keys a relation row reads from `x-openregister-relation`. */
+const RELATION_KEYS = { truthy: ['target', 'cardinality', 'inverseOf'], present: [] }
+
+/** No validation keys, for a field type that has none. */
+const NO_KEYS = { truthy: [], present: [] }
+
+/** The JSON Schema `type` each field type is saved as; any other type saves as a string. */
+const PROPERTY_TYPES = {
+	string: 'string',
+	number: 'number',
+	integer: 'integer',
+	boolean: 'boolean',
+	array: 'array',
+	object: 'object',
+	relation: 'string',
+}
+
+/**
  *
  * @param name
  * @param prop
  * @param isRequired
  */
 function fieldFromProperty(name, prop, isRequired) {
-	const type = prop['x-openregister-relation'] ? 'relation' : prop.type || 'string'
-	const validation = {}
-	if (type === 'string') {
-		if (prop.format) validation.format = prop.format
-		if (prop.pattern) validation.pattern = prop.pattern
-		if (prop.minLength != null) validation.minLength = prop.minLength
-		if (prop.maxLength != null) validation.maxLength = prop.maxLength
-	} else if (type === 'number' || type === 'integer') {
-		if (prop.minimum != null) validation.minimum = prop.minimum
-		if (prop.maximum != null) validation.maximum = prop.maximum
-		if (prop.multipleOf != null) validation.multipleOf = prop.multipleOf
-	} else if (type === 'array') {
-		if (prop.items && prop.items.type) validation.itemsType = prop.items.type
-		if (prop.minItems != null) validation.minItems = prop.minItems
-		if (prop.maxItems != null) validation.maxItems = prop.maxItems
-	} else if (type === 'relation') {
-		const rel = prop['x-openregister-relation'] || {}
-		if (rel.target) validation.target = rel.target
-		if (rel.cardinality) validation.cardinality = rel.cardinality
-		if (rel.inverseOf) validation.inverseOf = rel.inverseOf
-	}
+	prop = prop || {}
+	const type = fieldTypeOf(prop)
 	return {
 		_key: nextKey(),
 		name,
@@ -742,8 +752,118 @@ function fieldFromProperty(name, prop, isRequired) {
 		required: isRequired,
 		default: prop.default != null ? prop.default : null,
 		description: prop.description || '',
-		validation,
+		validation: validationFromProperty(prop, type),
+		// REQ-BQFT-004: the property as it was loaded, so a save writes back
+		// every key this editor does not own (enum, title, x- keys, ...).
+		_raw: JSON.parse(JSON.stringify(prop)),
 	}
+}
+
+/**
+ * The field type of a loaded property: `relation` when it carries an
+ * `x-openregister-relation` block, else its JSON Schema type (string when absent).
+ *
+ * @param {object} prop The loaded property.
+ * @return {string} The field type.
+ */
+function fieldTypeOf(prop) {
+	return prop['x-openregister-relation'] ? 'relation' : prop.type || 'string'
+}
+
+/**
+ * The validation values of a row, read from a loaded property: an array's
+ * item type, then the type's own keys (a relation reads them from its
+ * `x-openregister-relation` block).
+ *
+ * @param {object} prop The loaded property.
+ * @param {string} type The row's field type.
+ * @return {object} The validation values.
+ */
+function validationFromProperty(prop, type) {
+	const validation = {}
+	if (type === 'array' && prop.items?.type) {
+		validation.itemsType = prop.items.type
+	}
+	if (type === 'relation') {
+		copyKeys(validation, prop['x-openregister-relation'] || {}, RELATION_KEYS)
+		return validation
+	}
+	copyKeys(validation, prop, keysFor(type))
+	return validation
+}
+
+/**
+ * The validation keys a field type owns. A type without an own entry, also
+ * one named like an Object prototype member (`constructor`), owns none.
+ *
+ * @param {string} type The field type.
+ * @return {{truthy: Array<string>, present: Array<string>}} The keys.
+ */
+function keysFor(type) {
+	return Object.hasOwn(VALIDATION_KEYS, type) ? VALIDATION_KEYS[type] : NO_KEYS
+}
+
+/**
+ * Copy the keys a field type owns from one object onto another, in order:
+ * the `truthy` keys first, then the `present` keys.
+ *
+ * @param {object} target The object to write.
+ * @param {object} source The object to read.
+ * @param {{truthy: Array<string>, present: Array<string>}} keys The keys.
+ * @return {void}
+ */
+function copyKeys(target, source, keys) {
+	for (const key of keys.truthy) {
+		if (source[key]) target[key] = source[key]
+	}
+	for (const key of keys.present) {
+		if (source[key] != null) target[key] = source[key]
+	}
+}
+
+/**
+ * The property keys this editor reads into a field row and writes back.
+ * Every other key of a loaded property is carried through a save untouched.
+ *
+ * @spec openspec/changes/data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-save-keeps-the-keys-the-designer-does-not-edit-req-bqft-004
+ */
+const EDITOR_OWNED_KEYS = new Set([
+	'type',
+	'description',
+	'default',
+	'format',
+	'pattern',
+	'minLength',
+	'maxLength',
+	'minimum',
+	'maximum',
+	'multipleOf',
+	'items',
+	'minItems',
+	'maxItems',
+	'x-openregister-relation',
+])
+
+/**
+ * Copy an object without the given keys.
+ *
+ * @param {object} source The object to copy (anything else yields `{}`).
+ * @param {Array<string>|Set<string>} keys The keys to leave out.
+ * @return {object} The copy.
+ * @spec openspec/changes/data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-save-keeps-the-keys-the-designer-does-not-edit-req-bqft-004
+ */
+function withoutKeys(source, keys) {
+	const skip = keys instanceof Set ? keys : new Set(keys)
+	const copy = {}
+	if (!source || typeof source !== 'object' || Array.isArray(source)) {
+		return copy
+	}
+	for (const key of Object.keys(source)) {
+		if (!skip.has(key)) {
+			copy[key] = source[key]
+		}
+	}
+	return copy
 }
 
 /**
@@ -772,62 +892,98 @@ export function fieldsToSchema(fields) {
 }
 
 /**
+ * Build one JSON Schema property from an editor row. Starts from the property
+ * as it was loaded (`_raw`) minus the keys this editor owns, so a save keeps
+ * `enum`, `title`, `x-` keys and anything else set outside the designer, while
+ * the editor's own keys (and a cleared one) still win (REQ-BQFT-004).
  *
- * @param field
+ * @param {object} field Editor field row.
+ * @return {object} The JSON Schema property.
+ * @spec openspec/changes/data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-save-keeps-the-keys-the-designer-does-not-edit-req-bqft-004
  */
 function propertyFromField(field) {
-	const prop = {}
+	const raw = loadedProperty(field)
+	const prop = baseProperty(field, raw)
+	const v = field.validation || {}
+	prop.type = propertyTypeOf(field.type)
+	if (field.type === 'array') {
+		prop.items = {
+			...withoutKeys(raw.items, ['type']),
+			type: v.itemsType || 'string',
+		}
+	}
+	if (field.type === 'relation') {
+		prop['x-openregister-relation'] = relationFromField(raw, v)
+	}
+	copyKeys(prop, v, keysFor(field.type))
+	return prop
+}
+
+/**
+ * The property a row was loaded from, or {} for a row made in the editor.
+ *
+ * @param {object} field Editor field row.
+ * @return {object} The loaded property.
+ */
+function loadedProperty(field) {
+	return field._raw && typeof field._raw === 'object' ? field._raw : {}
+}
+
+/**
+ * The JSON Schema `type` a field type is saved as.
+ *
+ * @param {string} type The field type.
+ * @return {string} The saved type.
+ */
+function propertyTypeOf(type) {
+	return Object.hasOwn(PROPERTY_TYPES, type) ? PROPERTY_TYPES[type] : 'string'
+}
+
+/**
+ * The loaded property minus the keys this editor owns, with the row's
+ * description and default (when set) on top.
+ *
+ * @param {object} field Editor field row.
+ * @param {object} raw The property as it was loaded.
+ * @return {object} The start of the saved property.
+ */
+function baseProperty(field, raw) {
+	const prop = withoutKeys(raw, EDITOR_OWNED_KEYS)
 	if (field.description) {
 		prop.description = field.description
 	}
 	if (field.default != null && field.default !== '') {
 		prop.default = field.default
 	}
-	const v = field.validation || {}
-	switch (field.type) {
-		case 'string':
-			prop.type = 'string'
-			if (v.format) prop.format = v.format
-			if (v.pattern) prop.pattern = v.pattern
-			if (v.minLength != null) prop.minLength = v.minLength
-			if (v.maxLength != null) prop.maxLength = v.maxLength
-			break
-		case 'number':
-		case 'integer':
-			prop.type = field.type
-			if (v.minimum != null) prop.minimum = v.minimum
-			if (v.maximum != null) prop.maximum = v.maximum
-			if (v.multipleOf != null) prop.multipleOf = v.multipleOf
-			break
-		case 'boolean':
-			prop.type = 'boolean'
-			break
-		case 'array':
-			prop.type = 'array'
-			prop.items = { type: v.itemsType || 'string' }
-			if (v.minItems != null) prop.minItems = v.minItems
-			if (v.maxItems != null) prop.maxItems = v.maxItems
-			break
-		case 'object':
-			prop.type = 'object'
-			break
-		case 'relation':
-			prop.type = 'string'
-			prop['x-openregister-relation'] = {
-				target: v.target || '',
-				cardinality: v.cardinality || 'one',
-				...(v.inverseOf ? { inverseOf: v.inverseOf } : {}),
-			}
-			break
-		default:
-			prop.type = 'string'
-			break
-	}
 	return prop
+}
+
+/**
+ * The `x-openregister-relation` block of a relation row: the loaded block
+ * minus the keys the row owns, then the row's target, cardinality and
+ * (when set) inverse.
+ *
+ * @param {object} raw The property as it was loaded.
+ * @param {object} v The row's validation values.
+ * @return {object} The relation block.
+ */
+function relationFromField(raw, v) {
+	return {
+		...withoutKeys(raw['x-openregister-relation'], [
+			'target',
+			'cardinality',
+			'inverseOf',
+		]),
+		target: v.target || '',
+		cardinality: v.cardinality || 'one',
+		...(v.inverseOf ? { inverseOf: v.inverseOf } : {}),
+	}
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../assets/editor-controls.scss' as c;
+
 .buildiq-field-editor {
 	display: flex;
 	flex-direction: column;
@@ -852,12 +1008,7 @@ function propertyFromField(field) {
 }
 
 .buildiq-field-editor__rows {
-	list-style: none;
-	margin: 0;
-	padding: 0;
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
+	@include c.plain-list(8px);
 }
 
 .buildiq-field-editor__row {

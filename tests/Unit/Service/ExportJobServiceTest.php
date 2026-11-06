@@ -366,6 +366,46 @@ final class ExportJobServiceTest extends TestCase {
 	}//end testQueueDefaultsDataRegistersToEmptyArrayWhenOmitted()
 
 	/**
+	 * Only the own-server target carries the server bundle, on unless the
+	 * caller switches it off (REQ-BQSD-001).
+	 *
+	 * @return void
+	 */
+	public function testQueueSetsTheServerBundleOnlyForTheServerTarget(): void {
+		$container = $this->createMock(ContainerInterface::class);
+		$objectService = $this->createMock(ObjectServiceInterface::class);
+		$container->method('has')->willReturn(true);
+		$container->method('get')->willReturn($objectService);
+
+		$captured = [];
+		$objectService
+			->method('saveObject')
+			->willReturnCallback(function ($job) use (&$captured): ObjectEntity {
+				$captured[] = $job;
+				return new ObjectEntity();
+			});
+
+		$service = new ExportJobService(
+			$container,
+			$this->jobList,
+			new NullLogger(),
+			$this->jobOwnerImpersonator
+		);
+
+		$payloads = [
+			['target' => 'server', 'applicationVersion' => '1.0.0'],
+			['target' => 'server', 'applicationVersion' => '1.0.0', 'includeServerBundle' => false],
+			['target' => 'zip', 'applicationVersion' => '1.0.0', 'includeServerBundle' => true],
+		];
+		foreach ($payloads as $payload) {
+			$service->queue(applicationSlug: 'hello-world', payload: $payload, requestedBy: null);
+		}
+
+		self::assertSame([true, false, false], array_column($captured, 'includeServerBundle'));
+		self::assertSame('server', $captured[0]['target']);
+	}//end testQueueSetsTheServerBundleOnlyForTheServerTarget()
+
+	/**
 	 * uuid4() emits a canonical RFC 4122 v4 UUID for every call — regression
 	 * guard for #104's malformed 5x4-char grouping bug (vsprintf silently
 	 * dropping 3 of 8 hex groups). Runs several iterations since the value
@@ -638,4 +678,36 @@ final class ExportJobServiceTest extends TestCase {
 
 		self::assertFalse($result, 'transitionJob() must return false when the impersonated work throws');
 	}//end testTransitionJobReturnsFalseWhenTheImpersonatedWorkThrows()
+
+	/**
+	 * runNow() starts a job that is still in the job list, which removes it
+	 * from the list so cron cannot run it again.
+	 *
+	 * @return void
+	 */
+	public function testRunNowStartsAJobThatIsStillQueued(): void {
+		$argument = ['jobUuid' => 'job-1'];
+		$this->jobList->method('has')->with(\OCA\Buildiq\BackgroundJob\RunExportJob::class, $argument)->willReturn(true);
+
+		$this->jobList->expects(self::once())->method('remove')->with(\OCA\Buildiq\BackgroundJob\RunExportJob::class, $argument);
+
+		$job = $this->createMock(\OCA\Buildiq\BackgroundJob\RunExportJob::class);
+		$job->expects(self::once())->method('runFor')->with('job-1');
+		$this->container->method('get')->with(\OCA\Buildiq\BackgroundJob\RunExportJob::class)->willReturn($job);
+
+		self::assertTrue($this->service->runNow(jobUuid: 'job-1'));
+	}//end testRunNowStartsAJobThatIsStillQueued()
+
+	/**
+	 * runNow() leaves a job alone once it has left the job list.
+	 *
+	 * @return void
+	 */
+	public function testRunNowSkipsAJobThatWasAlreadyPickedUp(): void {
+		$this->jobList->method('has')->willReturn(false);
+		$this->jobList->expects(self::never())->method('remove');
+		$this->container->expects(self::never())->method('get');
+
+		self::assertFalse($this->service->runNow(jobUuid: 'job-2'));
+	}//end testRunNowSkipsAJobThatWasAlreadyPickedUp()
 }//end class

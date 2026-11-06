@@ -17,7 +17,11 @@
 			<h3 class="ob-schemas-widget__title">
 				{{ t('buildiq', 'Schemas') }}
 			</h3>
-			<NcButton variant="tertiary" @click="addSchema">
+			<!-- data-walkthrough-id: spotlighted by the tour's `open-schemas` step. -->
+			<NcButton
+				variant="tertiary"
+				data-walkthrough-id="app-add-schema"
+				@click="addSchema">
 				{{ t('buildiq', '+ Add schema') }}
 			</NcButton>
 		</header>

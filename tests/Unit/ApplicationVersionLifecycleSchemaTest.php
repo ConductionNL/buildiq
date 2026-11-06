@@ -128,6 +128,21 @@ class ApplicationVersionLifecycleSchemaTest extends TestCase {
 	}//end testInitialStateIsDraft()
 
 	/**
+	 * A version may be created already published.
+	 *
+	 * AppOverrideService::createHybridApp(), the MigrateAppOverridesToHybrid
+	 * repair and the SeedHelloWorldFixture command create a version in
+	 * `published`. OpenRegister refuses a create in a state that is neither
+	 * `initial` nor listed in `createStates`.
+	 *
+	 * @return void
+	 */
+	public function testAVersionMayBeCreatedPublished(): void {
+		$lifecycle = $this->lifecycle();
+		self::assertSame(['published'], $lifecycle['createStates'] ?? null);
+	}//end testAVersionMayBeCreatedPublished()
+
+	/**
 	 * REQ-OBV-LC-2 — three named states exist: draft, published, archived.
 	 *
 	 * @return void

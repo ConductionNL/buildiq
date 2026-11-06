@@ -11,9 +11,8 @@
  * fail-closed guards.
  *
  * There is deliberately no happy-path test here. `push()` resolves the broker through
- * `Server::get()`, which needs the Nextcloud container; with OpenRegister absent from
- * the unit-test autoloader `isBrokerAvailable()` is false and the service fails closed —
- * which is exactly the behaviour asserted below. The wire surface is covered where it is
+ * the injected container; the container mock below resolves nothing, so the service
+ * fails closed — which is exactly the behaviour asserted below. The wire surface is covered where it is
  * actually exercisable: against the live broker on the dev instance.
  *
  * @category Test
@@ -35,8 +34,12 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Tests\Unit\Service;
 
+use OCA\Buildiq\Service\GitHub\BrokerAccess;
+use OCA\Buildiq\Service\GitHub\PushTarget;
+use OCA\Buildiq\Service\GitHub\TokenScrubber;
 use OCA\Buildiq\Service\GitHubPushService;
 use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
 use RuntimeException;
 
@@ -75,6 +78,15 @@ final class GitHubPushServiceTest extends TestCase {
 	}//end removeTree()
 
 	/**
+	 * Build the service around a container that resolves nothing.
+	 *
+	 * @return GitHubPushService
+	 */
+	private function makeService(): GitHubPushService {
+		return new GitHubPushService(new NullLogger(), $this->createMock(ContainerInterface::class));
+	}//end makeService()
+
+	/**
 	 * The core regression: NO method on this service may take a PAT.
 	 *
 	 * A `$pat` parameter reappearing anywhere means the app has taken custody of the
@@ -110,13 +122,16 @@ final class GitHubPushServiceTest extends TestCase {
 	 */
 	public function testPushTakesACredentialIdAndAnActingUser(): void {
 		$reflection = new \ReflectionMethod(GitHubPushService::class, 'push');
-		$names = array_map(static fn ($p) => $p->getName(), $reflection->getParameters());
+		$types = array_map(static fn ($p) => (string)$p->getType(), $reflection->getParameters());
+		self::assertContains(BrokerAccess::class, $types, 'push() must take the broker access, not a secret');
 
-		self::assertContains('credentialId', $names, 'push() must take a broker credential UUID');
-		self::assertContains(
-			'actingUserId',
-			$names,
-			'push() must take the credential owner — the background job has no session for the broker to read'
+		$access = new \ReflectionClass(BrokerAccess::class);
+		$names = array_map(static fn ($p) => $p->getName(), $access->getConstructor()->getParameters());
+		self::assertSame(['credentialId', 'actingUserId'], $names, 'the access must name a broker credential UUID');
+		self::assertSame(
+			['credentialId', 'actingUserId'],
+			array_map(static fn ($p) => $p->getName(), $access->getProperties()),
+			'the access must carry the credential owner — the background job has no session for the broker to read'
 		);
 	}//end testPushTakesACredentialIdAndAnActingUser()
 
@@ -143,8 +158,8 @@ final class GitHubPushServiceTest extends TestCase {
 	 * Fail closed when the broker cannot serve the call: no fallback, no push.
 	 *
 	 * OpenRegister IS on the unit-test autoloader, so `isBrokerAvailable()` is true
-	 * here and `push()` gets as far as the first broker call — which cannot resolve a
-	 * real `Server::get()` container in a unit test. It must throw rather than degrade
+	 * here and `push()` gets as far as the first broker call — which the injected
+	 * container mock cannot resolve. It must throw rather than degrade
 	 * to any token-bearing path. Whether the broker is missing, denies the call, or is
 	 * simply unreachable, the outcome has to be the same: no repository is created.
 	 *
@@ -152,22 +167,20 @@ final class GitHubPushServiceTest extends TestCase {
 	 */
 	public function testPushFailsClosedWhenTheBrokerCannotServeTheCall(): void {
 		$treeDir = $this->makeTree();
-		$service = new GitHubPushService(new NullLogger());
+		$service = $this->makeService();
 
 		try {
 			$service->push(
 				jobUuid: 'job-123',
 				treeDir: $treeDir,
-				credentialId: 'cred-uuid',
-				org: 'acme',
-				repo: 'app',
-				visibility: 'public'
+				access: new BrokerAccess(credentialId: 'cred-uuid'),
+				target: new PushTarget(org: 'acme', repo: 'app', visibility: 'public')
 			);
 			self::fail('push() must throw when the broker cannot serve the call.');
 		} catch (RuntimeException $e) {
-			// Regression for the swallowed-error-detail bug: without a real
-			// Nextcloud container, `Server::get(self::BROKER_CLASS)` cannot
-			// resolve a live broker, so `brokerCall()` never reaches a genuine
+			// Regression for the swallowed-error-detail bug: the injected
+			// container mock resolves no live broker, so `brokerCall()` never
+			// reaches a genuine
 			// 2xx/non-2xx response and falls through to its `HTTP 0` failure
 			// shape (verified against the real CI PHPUnit environment, not
 			// assumed) — either way, the thrown message must now carry that
@@ -197,7 +210,7 @@ final class GitHubPushServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testBrokerAvailabilityIsCheckedAgainstOpenRegister(): void {
-		$service = new GitHubPushService(new NullLogger());
+		$service = $this->makeService();
 
 		self::assertTrue(
 			$service->isBrokerAvailable(),
@@ -213,7 +226,7 @@ final class GitHubPushServiceTest extends TestCase {
 	 */
 	public function testPushRefusesAnEmptyCredential(): void {
 		$treeDir = $this->makeTree();
-		$service = new GitHubPushService(new NullLogger());
+		$service = $this->makeService();
 
 		$this->expectException(RuntimeException::class);
 
@@ -221,9 +234,8 @@ final class GitHubPushServiceTest extends TestCase {
 			$service->push(
 				jobUuid: 'job-123',
 				treeDir: $treeDir,
-				credentialId: '',
-				org: 'acme',
-				repo: 'app'
+				access: new BrokerAccess(credentialId: ''),
+				target: new PushTarget(org: 'acme', repo: 'app')
 			);
 		} finally {
 			$this->removeTree($treeDir);
@@ -236,12 +248,12 @@ final class GitHubPushServiceTest extends TestCase {
 	 * flows into `postJson()`/`createRepo()`'s thrown message — not discarded.
 	 *
 	 * Exercised directly against the pulled-out assembly method, decoupled from
-	 * `Server::get()`, which cannot resolve a real container in a unit test.
+	 * the container lookup.
 	 *
 	 * @return void
 	 */
 	public function testFailureDetailFromStatusIncludesStatusAndBody(): void {
-		$service = new GitHubPushService(new NullLogger());
+		$service = $this->makeService();
 		$method = new \ReflectionMethod(GitHubPushService::class, 'failureDetailFromStatus');
 		$method->setAccessible(true);
 
@@ -257,7 +269,7 @@ final class GitHubPushServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testFailureDetailFromStatusOmitsBodySuffixWhenBodyIsEmpty(): void {
-		$service = new GitHubPushService(new NullLogger());
+		$service = $this->makeService();
 		$method = new \ReflectionMethod(GitHubPushService::class, 'failureDetailFromStatus');
 		$method->setAccessible(true);
 
@@ -273,7 +285,7 @@ final class GitHubPushServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testFailureDetailFromStatusTruncatesAnOversizedBody(): void {
-		$service = new GitHubPushService(new NullLogger());
+		$service = $this->makeService();
 		$method = new \ReflectionMethod(GitHubPushService::class, 'failureDetailFromStatus');
 		$method->setAccessible(true);
 
@@ -284,22 +296,21 @@ final class GitHubPushServiceTest extends TestCase {
 	}//end testFailureDetailFromStatusTruncatesAnOversizedBody()
 
 	/**
-	 * `scrub()` is the redaction the whole fix leans on: verify it actually
-	 * strips a GitHub PAT-shaped token out of a failure-detail string before
-	 * that string could reach `errorMessage` or a log line.
+	 * The redaction the failure detail leans on strips every token shape, classic
+	 * and fine-grained, before the text could reach `errorMessage` or a log line.
 	 *
 	 * @return void
 	 */
 	public function testScrubRedactsAGitHubPatShapedToken(): void {
-		$service = new GitHubPushService(new NullLogger());
-		$method = new \ReflectionMethod(GitHubPushService::class, 'scrub');
-		$method->setAccessible(true);
+		$tokens = ['gh' . 'p_' . str_repeat('a', 36), 'gh' . 's_' . str_repeat('b', 36), 'github' . '_pat_' . str_repeat('c1_', 27)];
+		foreach ($tokens as $token) {
+			self::assertSame(
+				'upstream rejected [redacted-token] here',
+				TokenScrubber::scrub(message: 'upstream rejected ' . $token . ' here')
+			);
+		}
 
-		$leaky = 'upstream rejected credential ghp_' . str_repeat('a', 36);
-		$scrubbed = $method->invoke($service, $leaky);
-
-		self::assertStringNotContainsString('ghp_', $scrubbed, 'A PAT-shaped token must never survive scrub()');
-		self::assertStringContainsString('[redacted-token]', $scrubbed);
+		self::assertSame('ghp_short and github_pat_short', TokenScrubber::scrub(message: 'ghp_short and github_pat_short'));
 	}//end testScrubRedactsAGitHubPatShapedToken()
 
 	/**
@@ -310,7 +321,7 @@ final class GitHubPushServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testFailureSuffixFormatsTheCapturedDetail(): void {
-		$service = new GitHubPushService(new NullLogger());
+		$service = $this->makeService();
 
 		$detailProperty = new \ReflectionProperty(GitHubPushService::class, 'lastFailureDetail');
 		$detailProperty->setAccessible(true);
@@ -326,4 +337,56 @@ final class GitHubPushServiceTest extends TestCase {
 			$suffixMethod->invoke($service)
 		);
 	}//end testFailureSuffixFormatsTheCapturedDetail()
+
+	/**
+	 * The bootstrap pull request carries the fixed branch, title and body.
+	 *
+	 * Recorded on the former eight-parameter openPullRequest(); the credential and
+	 * the acting user reach the broker unchanged.
+	 *
+	 * @return void
+	 */
+	public function testTheBootstrapPullRequestIsPostedAsRecorded(): void {
+		$calls = [];
+		$broker = $this->createMock(\OCA\OpenRegister\Service\Credential\CredentialBrokerService::class);
+		$broker->method('request')->willReturnCallback(
+			static function (...$args) use (&$calls): array {
+				$calls[] = $args;
+				return ['status' => 201, 'body' => '{"html_url":"https://github.com/acme/app/pull/1"}'];
+			}
+		);
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturn($broker);
+		$service = new GitHubPushService(new NullLogger(), $container);
+
+		$url = $service->openPullRequest(
+			target: new PushTarget(org: 'acme', repo: 'app'),
+			toBranch: 'trunk',
+			access: new BrokerAccess(credentialId: 'cred-1', actingUserId: 'alice')
+		);
+
+		$this->assertSame('https://github.com/acme/app/pull/1', $url);
+		$this->assertSame(
+			[
+				[
+					'cred-1',
+					'buildiq',
+					'POST',
+					'/repos/acme/app/pulls',
+					['Accept' => 'application/vnd.github+json', 'Content-Type' => 'application/json'],
+					json_encode(
+						[
+							'title' => 'chore: bootstrap from Buildiq',
+							'head' => 'bootstrap',
+							'base' => 'trunk',
+							'body' => 'This repository was bootstrapped from an Buildiq application export. '
+								. 'Review the tree, then run `composer install` and `npm install` locally before merging.',
+						]
+					),
+					'alice',
+				],
+			],
+			$calls
+		);
+	}//end testTheBootstrapPullRequestIsPostedAsRecorded()
 }//end class

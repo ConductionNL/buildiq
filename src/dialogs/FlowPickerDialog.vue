@@ -2,14 +2,12 @@
 <!--
   - FlowPickerDialog — choose which of the application's flows to open.
   -
-  - "Edit flows…" used to hard-code the literal id "new", which made the modal
-  - a creator that could never edit: every press started a blank canvas, and a
-  - flow saved a minute earlier was unreachable from this surface. The picker
-  - closes that gap — pick an existing flow to edit it, or start a new one.
+  - Pick an existing flow to edit it, or start a new one; either opens on the
+  - flow page.
   -
   - The list is fetched directly rather than through useFlowStore: the store
   - is a singleton the flow editor itself is about to load into, and warming
-  - it up here would race the modal's own `open('new')`.
+  - it up here would race the flow page's own `open('new')`.
   -->
 <template>
 	<NcDialog :name="t('buildiq', 'Flows')" size="normal" @closing="$emit('close')">

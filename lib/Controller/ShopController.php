@@ -43,13 +43,14 @@ use OCA\Buildiq\AppInfo\Application;
 use OCA\Buildiq\Exception\AppRepoParseException;
 use OCA\Buildiq\Service\AppRepoParser;
 use OCA\Buildiq\Service\GitHubCatalogService;
+use OCA\Buildiq\Service\GitHubShopSearch;
+use OCA\Buildiq\Service\RepoSource;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
 use OCP\IUserSession;
-use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
@@ -77,21 +78,23 @@ class ShopController extends Controller {
 	 * Constructor.
 	 *
 	 * @param IRequest $request The current HTTP request.
-	 * @param LoggerInterface $logger PSR logger.
 	 * @param IUserSession $userSession Current NC user session.
 	 * @param GitHubCatalogService $catalogService Fixed-host GitHub source.
 	 * @param AppRepoParser $repoParser Strict repo-file-map parser (change 1).
 	 * @param ApplicationsController $appsController Shared clone/install seam.
+	 * @param GitHubShopSearch $shopSearch Shapes the GitHub search's answer and reports its outcome.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md#requirement-req-biq-conn-003-buildiq-reports-what-its-connection-calls-met
 	 */
 	public function __construct(
 		IRequest $request,
-		private readonly LoggerInterface $logger,
 		private readonly IUserSession $userSession,
 		private readonly GitHubCatalogService $catalogService,
 		private readonly AppRepoParser $repoParser,
 		private readonly ApplicationsController $appsController,
+		private readonly GitHubShopSearch $shopSearch,
 	) {
 		parent::__construct(appName: Application::APP_ID, request: $request);
 	}//end __construct()
@@ -103,9 +106,14 @@ class ShopController extends Controller {
 	 * `brokerCredentialAvailable` / `rateLimited` hint; never exposes the raw
 	 * GitHub body or any token.
 	 *
+	 * The outcome is also reported to integriq's connection registry, at most
+	 * once an hour while it stays the same (adopt-connection-registry). The
+	 * report never changes the response.
+	 *
 	 * @return JSONResponse 200 with `{outcome, cards, brokerCredentialAvailable, rateLimited}`; 401 anonymous.
 	 *
 	 * @spec openspec/changes/github-shop-catalogue/specs/github-shop-catalogue/spec.md
+	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md#requirement-req-biq-conn-003-buildiq-reports-what-its-connection-calls-met
 	 */
 	#[NoAdminRequired]
 	public function githubSearch(): JSONResponse {
@@ -128,28 +136,10 @@ class ShopController extends Controller {
 				credentialId: $credentialId
 			);
 		} catch (Throwable $e) {
-			$this->logger->error('Buildiq shop: GitHub search failed: ' . $e->getMessage());
-			return new JSONResponse(
-				data: [
-					'outcome' => GitHubCatalogService::OUTCOME_UNREACHABLE,
-					'cards' => [],
-					'brokerCredentialAvailable' => $this->catalogService->isBrokerAvailable(),
-					'rateLimited' => false,
-				],
-				statusCode: Http::STATUS_OK
-			);
+			return new JSONResponse(data: $this->shopSearch->failed(error: $e), statusCode: Http::STATUS_OK);
 		}
 
-		return new JSONResponse(
-			data: [
-				'outcome' => $result['outcome'],
-				'cards' => $result['cards'],
-				'brokerCredentialAvailable' => $this->catalogService->isBrokerAvailable(),
-				'brokerUsed' => $result['brokerUsed'],
-				'rateLimited' => $result['rateLimited'],
-			],
-			statusCode: Http::STATUS_OK
-		);
+		return new JSONResponse(data: $this->shopSearch->answered(result: $result), statusCode: Http::STATUS_OK);
 	}//end githubSearch()
 
 	/**
@@ -206,11 +196,8 @@ class ShopController extends Controller {
 		}
 
 		$files = $this->catalogService->fetchRepoFiles(
-			owner: $owner,
-			repo: $repo,
-			ref: $ref,
-			actingUserId: $user->getUID(),
-			credentialId: $this->credentialParam()
+			source: new RepoSource(owner: $owner, repo: $repo, ref: $ref, credentialId: $this->credentialParam()),
+			actingUserId: $user->getUID()
 		);
 		if ($files === []) {
 			return $this->error(code: GitHubCatalogService::OUTCOME_UNREACHABLE, status: Http::STATUS_NOT_FOUND);
@@ -227,9 +214,7 @@ class ShopController extends Controller {
 			name: $name,
 			newSlug: $newSlug,
 			ownerUid: $user->getUID(),
-			sourceOwner: $owner,
-			sourceRepo: $repo,
-			credentialId: $this->credentialParam()
+			source: new RepoSource(owner: $owner, repo: $repo, ref: null, credentialId: $this->credentialParam())
 		);
 
 		return new JSONResponse(data: $result['data'], statusCode: $result['status']);

@@ -137,24 +137,16 @@
 			@close="testPanelOpen = false" />
 
 		<!--
-		  flow-engine-unification task 6.4: the shared node/edge canvas, scoped
-		  to this built application (`app`), not the fixed "buildiq" — each
-		  application under construction gets its own flows, mirroring how
-		  automations are already scoped by `applicationSlug` above. CnFlowDetail
-		  treats the literal id "new" as "start blank", so this always opens
-		  usably even before the app has a first flow.
+		  flow-engine-unification task 6.4: flows are scoped to this built
+		  application (`app`), not the fixed "buildiq" — each application under
+		  construction gets its own flows, mirroring how automations are already
+		  scoped by `applicationSlug` above.
 		-->
 		<FlowPickerDialog
 			v-if="flowPickerOpen"
 			:app="selectedApp ? selectedApp.slug : null"
 			@pick="onFlowPicked"
 			@close="flowPickerOpen = false" />
-
-		<CnFlowEditModal
-			v-if="flowModalOpen"
-			:flowId="editingFlowId"
-			:app="selectedApp ? selectedApp.slug : null"
-			@close="flowModalOpen = false" />
 
 		<ConfirmActionDialog
 			v-model:open="confirmDeleteOpen"
@@ -173,7 +165,6 @@
 </template>
 
 <script>
-import { CnFlowEditModal } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import {
@@ -201,7 +192,6 @@ export default {
 		AutomationEditDialog,
 		AutomationTestPanelModal,
 		ConfirmActionDialog,
-		CnFlowEditModal,
 		FlowPickerDialog,
 	},
 
@@ -219,8 +209,6 @@ export default {
 			errorMessage: '',
 			editDialogOpen: false,
 			flowPickerOpen: false,
-			flowModalOpen: false,
-			editingFlowId: 'new',
 			editingAutomation: null,
 			testPanelOpen: false,
 			testingAutomation: null,
@@ -238,10 +226,76 @@ export default {
 	},
 
 	mounted() {
-		this.fetchApplications()
+		this.openFromQuery()
 	},
 
 	methods: {
+		/**
+		 * Select the app and version the URL names, so a link to this page
+		 * lands on one app's automations and a reload keeps them.
+		 *
+		 * The page is reached from an app, never from the main menu, so
+		 * arriving with no app selected means picking the same app again on
+		 * every visit.
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/specs/automation-designer/spec.md#req-autd-001
+		 */
+		async openFromQuery() {
+			await this.fetchApplications()
+			const query = (this.$route && this.$route.query) || {}
+			const appSlug = String(query.app || '')
+			if (!appSlug) {
+				return
+			}
+			const app = this.applications.find((a) => a.slug === appSlug)
+			if (!app) {
+				return
+			}
+			this.selectedApp = app
+			this.selectedVersion = null
+			this.versions = []
+			this.automations = []
+			await this.fetchVersions()
+			const wanted = String(query.version || '')
+			const version =
+				this.versions.find((v) => v.slug === wanted || v.id === wanted)
+				|| this.versions[0]
+				|| null
+			if (!version) {
+				return
+			}
+			this.selectedVersion = version
+			await this.fetchAutomations()
+		},
+
+		/**
+		 * Write the current app and version into the URL, so the page can be
+		 * linked to and survives a reload.
+		 *
+		 * @return {void}
+		 * @spec openspec/specs/automation-designer/spec.md#req-autd-001
+		 */
+		syncQuery() {
+			if (!this.$router) {
+				return
+			}
+			const query = {}
+			if (this.selectedApp) {
+				query.app = this.selectedApp.slug
+			}
+			if (this.selectedVersion) {
+				query.version = this.selectedVersion.slug || this.selectedVersion.id
+			}
+			const current = (this.$route && this.$route.query) || {}
+			if (current.app === query.app && current.version === query.version) {
+				return
+			}
+			this.$router.replace({ query }).catch(() => {
+				// A duplicated navigation is not an error worth surfacing.
+			})
+		},
+
 		/**
 		 * Load the caller's Applications for the picker.
 		 *
@@ -263,14 +317,17 @@ export default {
 		},
 
 		/**
-		 * Handle an application selection: reset the version + list, fetch versions.
+		 * Handle an application selection: reset the version + list, fetch
+		 * versions, and put the app in the URL.
 		 *
 		 * @return {void}
+		 * @spec openspec/specs/automation-designer/spec.md#req-autd-001
 		 */
 		onAppChange() {
 			this.selectedVersion = null
 			this.versions = []
 			this.automations = []
+			this.syncQuery()
 			if (this.selectedApp) {
 				this.fetchVersions()
 			}
@@ -301,20 +358,29 @@ export default {
 		},
 
 		/**
-		 * Handle a version selection: fetch its automations.
+		 * Handle a version selection: fetch its automations, and put the
+		 * version in the URL.
 		 *
 		 * @return {void}
+		 * @spec openspec/specs/automation-designer/spec.md#req-autd-001
 		 */
 		onVersionChange() {
 			this.automations = []
+			this.syncQuery()
 			if (this.selectedVersion) {
 				this.fetchAutomations()
 			}
 		},
 
 		/**
-		 * Load every `automation` object and filter to the selected
-		 * Application + ApplicationVersion, then fetch drift status for each.
+		 * Load the selected Application + ApplicationVersion's automations,
+		 * then fetch drift status for each.
+		 *
+		 * The register is asked for this app's automations, not for every
+		 * automation on the instance: an unfiltered list is one default page
+		 * long, so on a busy instance an app's own automations fell off the
+		 * end and the page said the app had none. The objects endpoint filters
+		 * on bare property names and pages with `_limit`.
 		 *
 		 * @return {Promise<void>}
 		 * @spec openspec/specs/automation-designer/spec.md#req-autd-001
@@ -326,7 +392,13 @@ export default {
 				const url = generateUrl(
 					'/apps/openregister/api/objects/buildiq/automation',
 				)
-				const { data } = await axios.get(url)
+				const { data } = await axios.get(url, {
+					params: {
+						_limit: 200,
+						applicationSlug: this.selectedApp.slug,
+						versionUuid: this.selectedVersionId,
+					},
+				})
 				const all = this.extractResults(data)
 				this.automations = all.filter(
 					(a) =>
@@ -473,9 +545,7 @@ export default {
 		 * Offer the selected application's flows: pick one to edit, or start a
 		 * new one.
 		 *
-		 * `flow-engine-unification` task 6.4. This used to hard-code `new`,
-		 * which made the modal a creator that could never edit — a flow saved a
-		 * minute earlier was unreachable from this surface.
+		 * `flow-engine-unification` task 6.4.
 		 *
 		 * @return {void}
 		 * @spec openspec/specs/automation-designer/spec.md#req-autd-001
@@ -485,16 +555,22 @@ export default {
 		},
 
 		/**
-		 * Open the flow the picker chose on the shared canvas.
+		 * Open the flow the picker chose on the flow page, in list mode.
+		 *
+		 * The page takes the application from the URL, so a new flow is stamped
+		 * with this application rather than with buildiq.
 		 *
 		 * @param {string} id The flow id, or the literal `new`.
 		 * @return {void}
 		 * @spec openspec/specs/automation-designer/spec.md#req-autd-001
 		 */
 		onFlowPicked(id) {
-			this.editingFlowId = id
 			this.flowPickerOpen = false
-			this.flowModalOpen = true
+			this.$router.push({
+				name: 'ApplicationFlow',
+				params: { app: this.selectedApp.slug, id },
+				query: { view: 'list' },
+			})
 		},
 
 		/**

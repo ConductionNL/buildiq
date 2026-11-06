@@ -134,75 +134,70 @@
 				@update:modelValue="updateSidebarPropsTabs($event)" />
 			<InlineFieldMark :error="markFor('sidebarProps')" />
 		</fieldset>
+
+		<AppliesToPanel
+			:modelValue="config.pageLayout || {}"
+			:register="config.register || ''"
+			:schema="config.schema || ''"
+			:targetApp="appSlug"
+			@update:modelValue="update('pageLayout', $event)"
+			@saved="$refs.overrideList && $refs.overrideList.reload()" />
+
+		<ScreenOverrideList
+			ref="overrideList"
+			:register="config.register || ''"
+			:schema="config.schema || ''" />
+
+		<RegistrationFormList
+			:register="config.register || ''"
+			:schema="config.schema || ''"
+			:typeProperty="(config.pageLayout || {}).typeProperty || ''"
+			:typeValue="(config.pageLayout || {}).typeValue || ''"
+			:targetApp="appSlug" />
 	</div>
 </template>
 
 <script>
+import AppliesToPanel from './fields/AppliesToPanel.vue'
 import InlineFieldMark from './fields/InlineFieldMark.vue'
+import RegistrationFormList from './fields/RegistrationFormList.vue'
+import ScreenOverrideList from './fields/ScreenOverrideList.vue'
 import SidebarTabBuilder from './fields/SidebarTabBuilder.vue'
-import { useRegisterPicker } from '../../composables/useRegisterPicker.js'
+import { useEditorRegisterPicker } from '../../composables/useEditorRegisterPicker.js'
+import {
+	pageEditorBaseMixin,
+	pageEditorPickerMixin,
+	pageEditorRegisterPropsMixin,
+	pageEditorRegisterWatchMixin,
+} from '../../mixins/pageEditorBase.js'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 
 export default {
 	name: 'DetailPageEditor',
-	components: { SidebarTabBuilder, InlineFieldMark },
-	mixins: [pageEditorValidationMixin],
+	components: {
+		AppliesToPanel,
+		InlineFieldMark,
+		RegistrationFormList,
+		ScreenOverrideList,
+		SidebarTabBuilder,
+	},
+
+	mixins: [
+		pageEditorBaseMixin,
+		pageEditorRegisterPropsMixin,
+		pageEditorValidationMixin,
+		pageEditorPickerMixin,
+		pageEditorRegisterWatchMixin,
+	],
+
 	props: {
-		config: {
-			type: Object,
-			default: () => ({}),
-		},
-
-		parentRoute: {
-			type: String,
-			default: '',
-		},
-
-		// Current Application slug. Drives the hybrid register model so the
-		// register picker hoists `buildiq-{slug}` to the top of the list.
-		appSlug: {
-			type: String,
-			default: '',
-		},
-
-		// The Application's declared `dataRegisters` bindings, forwarded into
-		// useRegisterPicker so the register picker labels/hoists them.
-		dataRegisters: {
-			type: Array,
-			default: () => [],
-		},
-
 		pageType: {
 			type: String,
 			default: 'detail',
 		},
 	},
 
-	emits: ['update:config'],
-	/**
-	 * Build the register/schema picker for this editor. Options-API `data`
-	 * cannot see props at construction time, so the picker is created here
-	 * from the resolved props and exposed as `this.picker`.
-	 *
-	 * @param {{appSlug: string, dataRegisters: Array<{register: string, label?: string}>, config: object, pageType: string, parentRoute: string}} props - the resolved component props; only `appSlug` (hoists `buildiq-{slug}` in the register list) and `dataRegisters` (labels/hoists the Application's declared bindings) are read.
-	 * @return {{picker: object}} - bindings merged into the instance; `picker` exposes fetchRegisters/fetchSchemas.
-	 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
-	 * @spec openspec/changes/data-registers-runtime/tasks.md#task-2.1
-	 */
-	setup(props) {
-		const picker = useRegisterPicker({
-			appSlug: props.appSlug,
-			dataRegisters: props.dataRegisters,
-		})
-		return { picker }
-	},
-
-	data() {
-		return {
-			registers: [],
-			schemas: [],
-		}
-	},
+	setup: useEditorRegisterPicker,
 
 	computed: {
 		/**
@@ -249,30 +244,6 @@ export default {
 			}
 			return 'object'
 		},
-	},
-
-	watch: {
-		'config.register': {
-			immediate: true,
-			/**
-			 * Reload the schema dropdown whenever the bound register changes
-			 * (also fires immediately on mount for an already-bound page).
-			 *
-			 * @param {string} val - the newly selected register slug; empty when the binding was cleared, which empties the schema list instead of fetching.
-			 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
-			 */
-			handler(val) {
-				if (val) {
-					this.fetchSchemas(val)
-				} else {
-					this.schemas = []
-				}
-			},
-		},
-	},
-
-	async mounted() {
-		await this.fetchRegisters()
 	},
 
 	methods: {
@@ -360,31 +331,13 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
-
-		/**
-		 * Observed behaviour of `fetchRegisters` (retrofit annotation).
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
-		 */
-		async fetchRegisters() {
-			this.registers = await this.picker.fetchRegisters()
-		},
-
-		/**
-		 * Load the schemas of one register into the schema dropdown.
-		 *
-		 * @param {string} register - slug of the register to list schemas for, i.e. `config.register`.
-		 * @return {Promise<void>} - resolves once `this.schemas` holds the result (`[]` when the request fails).
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
-		 */
-		async fetchSchemas(register) {
-			this.schemas = await this.picker.fetchSchemas(register)
-		},
 	},
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../assets/editor-controls.scss' as c;
+
 .detail-page-editor {
 	display: flex;
 	flex-direction: column;
@@ -412,11 +365,7 @@ export default {
 }
 
 .detail-page-editor__group select {
-	padding: 4px 6px;
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-	background: var(--color-main-background);
-	color: var(--color-main-text);
+	@include c.control;
 }
 
 .detail-page-editor__fieldset {

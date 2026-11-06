@@ -15,7 +15,7 @@
 				{{
 					t(
 						'buildiq',
-						'Declare states and transitions. Every action is a typed declarative record per ADR-031 — no free-text code.',
+						'Declare states and transitions. You pick each action from a fixed list, so no code is needed.',
 					)
 				}}
 			</p>
@@ -624,7 +624,9 @@ export function editorToLifecycle(states, transitions) {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../assets/editor-controls.scss' as c;
+
 .buildiq-lifecycle-editor {
 	display: flex;
 	flex-direction: column;
@@ -665,12 +667,7 @@ export function editorToLifecycle(states, transitions) {
 }
 
 .buildiq-lifecycle-editor__list {
-	list-style: none;
-	margin: 0;
-	padding: 0;
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
+	@include c.plain-list(8px);
 }
 
 .buildiq-lifecycle-editor__state-row,

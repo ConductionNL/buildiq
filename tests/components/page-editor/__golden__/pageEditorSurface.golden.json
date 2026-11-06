@@ -1,0 +1,1904 @@
+{
+	"ChatPageEditor.vue": {
+		"props": {
+			"appSlug": "my-app",
+			"config": {
+				"keep": "me",
+				"register": "reg-a",
+				"schema": "sch-a",
+				"sidebarSchema": "side-a",
+				"x": "old"
+			},
+			"pageType": "chat",
+			"parentRoute": ""
+		},
+		"emits": [
+			"update:config"
+		],
+		"picker": [],
+		"handlers": {
+			"update": [
+				{
+					"args": [
+						"x",
+						"new"
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a",
+								"x": "new"
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"x",
+						""
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a"
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"x",
+						null
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a"
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"x",
+						[]
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a",
+								"x": []
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"y",
+						0
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a",
+								"x": "old",
+								"y": 0
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"y",
+						false
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a",
+								"x": "old",
+								"y": false
+							}
+						]
+					]
+				}
+			]
+		}
+	},
+	"CustomPageEditor.vue": {
+		"props": {
+			"appSlug": "my-app",
+			"config": {
+				"keep": "me",
+				"register": "reg-a",
+				"schema": "sch-a",
+				"sidebarSchema": "side-a",
+				"x": "old"
+			},
+			"pageType": "custom",
+			"parentRoute": ""
+		},
+		"emits": [
+			"update:config"
+		],
+		"picker": [],
+		"handlers": {
+			"update": [
+				{
+					"args": [
+						"x",
+						"new"
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a",
+								"x": "new"
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"x",
+						""
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a"
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"x",
+						null
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a"
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"x",
+						[]
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a",
+								"x": []
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"y",
+						0
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a",
+								"x": "old",
+								"y": 0
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"y",
+						false
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a",
+								"x": "old",
+								"y": false
+							}
+						]
+					]
+				}
+			]
+		}
+	},
+	"DashboardPageEditor.vue": {
+		"props": {
+			"appSlug": "my-app",
+			"config": {
+				"keep": "me",
+				"register": "reg-a",
+				"schema": "sch-a",
+				"sidebarSchema": "side-a",
+				"x": "old"
+			},
+			"pageType": "dashboard",
+			"parentRoute": ""
+		},
+		"emits": [
+			"update:config"
+		],
+		"picker": [],
+		"handlers": {
+			"update": [
+				{
+					"args": [
+						"x",
+						"new"
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a",
+								"x": "new"
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"x",
+						""
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a"
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"x",
+						null
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a"
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"x",
+						[]
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a"
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"y",
+						0
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a",
+								"x": "old"
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"y",
+						false
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a",
+								"x": "old"
+							}
+						]
+					]
+				}
+			]
+		}
+	},
+	"DetailPageEditor.vue": {
+		"props": {
+			"appRegister": "own",
+			"appSlug": "my-app",
+			"config": {
+				"keep": "me",
+				"register": "reg-a",
+				"schema": "sch-a",
+				"sidebarSchema": "side-a",
+				"x": "old"
+			},
+			"dataRegisters": [
+				{
+					"slug": "data"
+				}
+			],
+			"pageType": "detail",
+			"parentRoute": ""
+		},
+		"emits": [
+			"update:config"
+		],
+		"picker": [
+			[
+				"useRegisterPicker",
+				"my-app",
+				"own",
+				[
+					{
+						"slug": "data"
+					}
+				]
+			],
+			[
+				"fetchSchemas",
+				"reg-a"
+			],
+			[
+				"fetchRegisters"
+			]
+		],
+		"handlers": {
+			"update": [
+				{
+					"args": [
+						"x",
+						"new"
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a",
+								"x": "new"
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"x",
+						""
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a"
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"x",
+						null
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a"
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"x",
+						[]
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a",
+								"x": []
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"y",
+						0
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a",
+								"x": "old",
+								"y": 0
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"y",
+						false
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a",
+								"x": "old",
+								"y": false
+							}
+						]
+					]
+				}
+			]
+		}
+	},
+	"FilesPageEditor.vue": {
+		"props": {
+			"appSlug": "my-app",
+			"config": {
+				"keep": "me",
+				"register": "reg-a",
+				"schema": "sch-a",
+				"sidebarSchema": "side-a",
+				"x": "old"
+			},
+			"pageType": "files",
+			"parentRoute": ""
+		},
+		"emits": [
+			"update:config"
+		],
+		"picker": [],
+		"handlers": {
+			"update": [
+				{
+					"args": [
+						"x",
+						"new"
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a",
+								"x": "new"
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"x",
+						""
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a"
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"x",
+						null
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a"
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"x",
+						[]
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a"
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"y",
+						0
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a",
+								"x": "old",
+								"y": 0
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"y",
+						false
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a",
+								"x": "old",
+								"y": false
+							}
+						]
+					]
+				}
+			]
+		}
+	},
+	"FormPageEditor.vue": {
+		"props": {
+			"appSlug": "my-app",
+			"config": {
+				"keep": "me",
+				"register": "reg-a",
+				"schema": "sch-a",
+				"sidebarSchema": "side-a",
+				"x": "old"
+			},
+			"dataRegisters": [
+				{
+					"slug": "data"
+				}
+			],
+			"destinationFindings": [],
+			"pageId": "",
+			"pageType": "form",
+			"parentRoute": "",
+			"runtimeExternalForms": []
+		},
+		"emits": [
+			"update:config",
+			"update:runtimeExternalForms"
+		],
+		"picker": [
+			[
+				"useRegisterPicker",
+				"my-app",
+				null,
+				[
+					{
+						"slug": "data"
+					}
+				]
+			],
+			[
+				"fetchRegisters"
+			]
+		],
+		"handlers": {
+			"update": [
+				{
+					"args": [
+						"x",
+						"new"
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a",
+								"x": "new"
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"x",
+						""
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a"
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"x",
+						null
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a"
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"x",
+						[]
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a",
+								"x": []
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"y",
+						0
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a",
+								"x": "old",
+								"y": 0
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"y",
+						false
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a",
+								"x": "old",
+								"y": false
+							}
+						]
+					]
+				}
+			]
+		}
+	},
+	"IndexPageEditor.vue": {
+		"props": {
+			"appRegister": "own",
+			"appSlug": "my-app",
+			"config": {
+				"keep": "me",
+				"register": "reg-a",
+				"schema": "sch-a",
+				"sidebarSchema": "side-a",
+				"x": "old"
+			},
+			"dataRegisters": [
+				{
+					"slug": "data"
+				}
+			],
+			"pageType": "index",
+			"parentRoute": ""
+		},
+		"emits": [
+			"update:config"
+		],
+		"picker": [
+			[
+				"useRegisterPicker",
+				"my-app",
+				"own",
+				[
+					{
+						"slug": "data"
+					}
+				]
+			],
+			[
+				"fetchSchemas",
+				"reg-a"
+			],
+			[
+				"fetchSchemaProperties",
+				"reg-a",
+				"sch-a"
+			],
+			[
+				"fetchRegisters"
+			]
+		],
+		"handlers": {
+			"update": [
+				{
+					"args": [
+						"x",
+						"new"
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a",
+								"x": "new"
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"x",
+						""
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a"
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"x",
+						null
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a"
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"x",
+						[]
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a"
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"y",
+						0
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a",
+								"x": "old",
+								"y": 0
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"y",
+						false
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a",
+								"x": "old",
+								"y": false
+							}
+						]
+					]
+				}
+			]
+		}
+	},
+	"LogsPageEditor.vue": {
+		"props": {
+			"appRegister": "own",
+			"appSlug": "my-app",
+			"config": {
+				"keep": "me",
+				"register": "reg-a",
+				"schema": "sch-a",
+				"sidebarSchema": "side-a",
+				"x": "old"
+			},
+			"dataRegisters": [
+				{
+					"slug": "data"
+				}
+			],
+			"pageType": "logs",
+			"parentRoute": ""
+		},
+		"emits": [
+			"update:config"
+		],
+		"picker": [
+			[
+				"useRegisterPicker",
+				"my-app",
+				"own",
+				[
+					{
+						"slug": "data"
+					}
+				]
+			],
+			[
+				"fetchSchemas",
+				"reg-a"
+			],
+			[
+				"fetchSchemaProperties",
+				"reg-a",
+				"sch-a"
+			],
+			[
+				"fetchRegisters"
+			]
+		],
+		"handlers": {
+			"update": [
+				{
+					"args": [
+						"x",
+						"new"
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a",
+								"x": "new"
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"x",
+						""
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a"
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"x",
+						null
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a"
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"x",
+						[]
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a"
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"y",
+						0
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a",
+								"x": "old",
+								"y": 0
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"y",
+						false
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a",
+								"x": "old",
+								"y": false
+							}
+						]
+					]
+				}
+			]
+		}
+	},
+	"MapPageEditor.vue": {
+		"props": {
+			"appRegister": "own",
+			"appSlug": "my-app",
+			"config": {
+				"keep": "me",
+				"register": "reg-a",
+				"schema": "sch-a",
+				"sidebarSchema": "side-a",
+				"x": "old"
+			},
+			"dataRegisters": [
+				{
+					"slug": "data"
+				}
+			],
+			"pageType": "map",
+			"parentRoute": ""
+		},
+		"emits": [
+			"update:config"
+		],
+		"picker": [
+			[
+				"useRegisterPicker",
+				"my-app",
+				"own",
+				[
+					{
+						"slug": "data"
+					}
+				]
+			],
+			[
+				"fetchRegisters"
+			]
+		],
+		"handlers": {
+			"update": [
+				{
+					"args": [
+						"x",
+						"new"
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a",
+								"x": "new"
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"x",
+						""
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a"
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"x",
+						null
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a"
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"x",
+						[]
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a"
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"y",
+						0
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a",
+								"x": "old",
+								"y": 0
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"y",
+						false
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a",
+								"x": "old",
+								"y": false
+							}
+						]
+					]
+				}
+			]
+		}
+	},
+	"RoadmapPageEditor.vue": {
+		"props": {
+			"appSlug": "my-app",
+			"config": {
+				"keep": "me",
+				"register": "reg-a",
+				"schema": "sch-a",
+				"sidebarSchema": "side-a",
+				"x": "old"
+			},
+			"dataRegisters": [
+				{
+					"slug": "data"
+				}
+			],
+			"pageType": "roadmap",
+			"parentRoute": ""
+		},
+		"emits": [
+			"update:config"
+		],
+		"picker": [],
+		"handlers": {
+			"update": [
+				{
+					"args": [
+						"x",
+						"new"
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a",
+								"x": "new"
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"x",
+						""
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a"
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"x",
+						null
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a"
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"x",
+						[]
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a"
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"y",
+						0
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a",
+								"x": "old",
+								"y": 0
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"y",
+						false
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a",
+								"x": "old",
+								"y": false
+							}
+						]
+					]
+				}
+			]
+		}
+	},
+	"SearchPageEditor.vue": {
+		"props": {
+			"appRegister": "own",
+			"appSlug": "my-app",
+			"config": {
+				"keep": "me",
+				"register": "reg-a",
+				"schema": "sch-a",
+				"sidebarSchema": "side-a",
+				"x": "old"
+			},
+			"dataRegisters": [
+				{
+					"slug": "data"
+				}
+			],
+			"pageType": "search",
+			"parentRoute": ""
+		},
+		"emits": [
+			"update:config"
+		],
+		"picker": [
+			[
+				"useRegisterPicker",
+				"my-app",
+				"own",
+				[
+					{
+						"slug": "data"
+					}
+				]
+			],
+			[
+				"fetchSchemas",
+				"reg-a"
+			],
+			[
+				"fetchRegisters"
+			]
+		],
+		"handlers": {
+			"update": [
+				{
+					"args": [
+						"x",
+						"new"
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a",
+								"x": "new"
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"x",
+						""
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a"
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"x",
+						null
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a"
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"x",
+						[]
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a"
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"y",
+						0
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a",
+								"x": "old",
+								"y": 0
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"y",
+						false
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a",
+								"x": "old",
+								"y": false
+							}
+						]
+					]
+				}
+			],
+			"updateRegister": [
+				{
+					"args": [
+						"reg-b"
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-b",
+								"sidebarSchema": "side-a",
+								"x": "old"
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						""
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"sidebarSchema": "side-a",
+								"x": "old"
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						null
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"sidebarSchema": "side-a",
+								"x": "old"
+							}
+						]
+					]
+				}
+			]
+		}
+	},
+	"SettingsPageEditor.vue": {
+		"props": {
+			"appSlug": "my-app",
+			"config": {
+				"keep": "me",
+				"register": "reg-a",
+				"schema": "sch-a",
+				"sidebarSchema": "side-a",
+				"x": "old"
+			},
+			"pageType": "settings",
+			"parentRoute": ""
+		},
+		"emits": [
+			"update:config"
+		],
+		"picker": [],
+		"handlers": {
+			"update": [
+				{
+					"args": [
+						"x",
+						"new"
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a",
+								"x": "new"
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"x",
+						""
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a"
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"x",
+						null
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a"
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"x",
+						[]
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a",
+								"x": []
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"y",
+						0
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a",
+								"x": "old",
+								"y": 0
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"y",
+						false
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a",
+								"x": "old",
+								"y": false
+							}
+						]
+					]
+				}
+			]
+		}
+	},
+	"StubPageEditor.vue": {
+		"props": {
+			"config": {
+				"keep": "me",
+				"register": "reg-a",
+				"schema": "sch-a",
+				"sidebarSchema": "side-a",
+				"x": "old"
+			},
+			"message": "(undefined)",
+			"title": "(undefined)"
+		},
+		"emits": [
+			"update:config"
+		],
+		"picker": [],
+		"handlers": {}
+	},
+	"WikiPageEditor.vue": {
+		"props": {
+			"appRegister": "own",
+			"appSlug": "my-app",
+			"config": {
+				"keep": "me",
+				"register": "reg-a",
+				"schema": "sch-a",
+				"sidebarSchema": "side-a",
+				"x": "old"
+			},
+			"dataRegisters": [
+				{
+					"slug": "data"
+				}
+			],
+			"pageType": "wiki",
+			"parentRoute": ""
+		},
+		"emits": [
+			"update:config"
+		],
+		"picker": [
+			[
+				"useRegisterPicker",
+				"my-app",
+				"own",
+				[
+					{
+						"slug": "data"
+					}
+				]
+			],
+			[
+				"fetchSchemas",
+				"reg-a"
+			],
+			[
+				"fetchSchemaProperties",
+				"reg-a",
+				"sch-a"
+			],
+			[
+				"fetchSchemas",
+				"reg-a"
+			],
+			[
+				"fetchSchemaProperties",
+				"reg-a",
+				"side-a"
+			],
+			[
+				"fetchRegisters"
+			]
+		],
+		"handlers": {
+			"update": [
+				{
+					"args": [
+						"x",
+						"new"
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a",
+								"x": "new"
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"x",
+						""
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a"
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"x",
+						null
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a"
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"x",
+						[]
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a"
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"y",
+						0
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a",
+								"x": "old",
+								"y": 0
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"y",
+						false
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a",
+								"x": "old",
+								"y": false
+							}
+						]
+					]
+				}
+			],
+			"updateRegister": [
+				{
+					"args": [
+						"reg-b"
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-b",
+								"sidebarSchema": "side-a",
+								"x": "old"
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						""
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"sidebarSchema": "side-a",
+								"x": "old"
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						null
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"sidebarSchema": "side-a",
+								"x": "old"
+							}
+						]
+					]
+				}
+			]
+		}
+	}
+}

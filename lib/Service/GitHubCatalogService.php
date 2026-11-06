@@ -15,8 +15,8 @@
  * supplies an allowed broker `github` credential the call is transparently
  * upgraded through OpenRegister's CredentialBrokerService so the token stays
  * broker-side and NEVER enters Buildiq. The broker is resolved lazily
- * (`class_exists` + `Server::get`, mirroring RemoteTemplateStoreService) so a
- * missing/older OpenRegister falls back to anonymous cleanly. Results + descriptors
+ * (`class_exists` + the injected container, mirroring RemoteTemplateStoreService)
+ * so a missing/older OpenRegister falls back to anonymous cleanly. Results + descriptors
  * are cached short-TTL against the tight anonymous rate limit; the raw GitHub body
  * and any token are never returned or logged.
  *
@@ -44,7 +44,7 @@ namespace OCA\Buildiq\Service;
 use OCP\Http\Client\IClientService;
 use OCP\ICache;
 use OCP\ICacheFactory;
-use OCP\Server;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -127,6 +127,26 @@ class GitHubCatalogService {
 	private const MAX_CHANNEL_FILES = 2048;
 
 	/**
+	 * The tree prefixes the channel fetch downloads, one per channel the parser reads.
+	 *
+	 * App-repo-format-flow-agent-export: AppRepoParser::parseChannels() read the flows
+	 * and agents channels before this allowlist named them, the exact "parser can read
+	 * it, fetch never downloaded it" defect fetchChannelFiles() warns about. Confirmed
+	 * live: a repo publishing flows/<uuid>.json and agents/<uuid>.json pulled back with
+	 * both channels declared 0 until these two entries were added.
+	 *
+	 * @var array<int,string>
+	 */
+	private const CHANNEL_PREFIXES = [
+		AppRepoParser::DATA_REGISTERS_PREFIX,
+		AppRepoParser::CONNECTORS_PREFIX,
+		AppRepoParser::AUTOMATIONS_PREFIX,
+		AppRepoParser::SKILLS_PREFIX,
+		AppRepoParser::FLOWS_PREFIX,
+		AppRepoParser::AGENTS_PREFIX,
+	];
+
+	/**
 	 * Safe owner/repo pattern (GitHub allows alnum, `-`, `_`, `.`).
 	 */
 	private const OWNER_REPO_PATTERN = '/^[A-Za-z0-9._-]{1,100}$/';
@@ -164,6 +184,8 @@ class GitHubCatalogService {
 	 * @param IClientService $clientService NC HTTP client factory (anonymous calls).
 	 * @param ICacheFactory $cacheFactory NC cache factory (short-TTL server cache).
 	 * @param LoggerInterface $logger PSR logger (secret-free diagnostics only).
+	 * @param ContainerInterface $container DI container, resolves the OpenRegister
+	 *                                      broker at call time (never the global server).
 	 *
 	 * @return void
 	 */
@@ -171,6 +193,7 @@ class GitHubCatalogService {
 		private readonly IClientService $clientService,
 		ICacheFactory $cacheFactory,
 		private readonly LoggerInterface $logger,
+		private readonly ContainerInterface $container,
 	) {
 		$cache = null;
 		if ($cacheFactory->isAvailable() === true) {
@@ -327,8 +350,10 @@ class GitHubCatalogService {
 	 * @param string|null $credentialId The advisory github credential, if any.
 	 *
 	 * @return array{ok: bool, items: array<int, array>, brokerUsed: bool, rateLimited: bool}
+	 *
+	 * @spec openspec/changes/github-shop-catalogue/specs/github-shop-catalogue/spec.md
 	 */
-	private function fetchTopic(
+	public function fetchTopic(
 		string $topic,
 		string $term,
 		?string $actingUserId,
@@ -413,41 +438,25 @@ class GitHubCatalogService {
 	/**
 	 * Fetch + decode a repo's root `openbuild-app.json` descriptor.
 	 *
-	 * @param string $owner Repo owner (pattern-validated).
-	 * @param string $repo Repo name (pattern-validated).
-	 * @param string|null $ref Optional git ref (pattern-validated).
+	 * @param RepoSource $source Owner, repo and ref (pattern-validated), and the optional allowed `github` credential.
 	 * @param string|null $actingUserId The session UID (broker identity), or null.
-	 * @param string|null $credentialId Optional allowed `github` credential.
 	 *
 	 * @return array<string,mixed>|null The parsed descriptor, or null when missing/unparseable.
 	 *
 	 * @spec openspec/changes/github-shop-catalogue/specs/github-shop-catalogue/spec.md
 	 */
-	public function fetchDescriptor(
-		string $owner,
-		string $repo,
-		?string $ref,
-		?string $actingUserId,
-		?string $credentialId = null,
-	): ?array {
-		if ($this->validRepo(owner: $owner, repo: $repo, ref: $ref) === false) {
+	public function fetchDescriptor(RepoSource $source, ?string $actingUserId): ?array {
+		if ($this->validRepo(owner: $source->owner, repo: $source->repo, ref: $source->ref) === false) {
 			return null;
 		}
 
-		$cacheKey = 'descriptor:' . $owner . '/' . $repo . '@' . ((string)$ref) . '|' . ((string)$credentialId);
+		$cacheKey = 'descriptor:' . $source->owner . '/' . $source->repo . '@' . ((string)$source->ref) . '|' . ((string)$source->credentialId);
 		$cached = $this->cacheGet(key: $cacheKey);
 		if (is_array($cached) === true) {
 			return $cached;
 		}
 
-		$contents = $this->fetchFileContents(
-			owner: $owner,
-			repo: $repo,
-			path: AppRepoParser::DESCRIPTOR_FILE,
-			ref: $ref,
-			actingUserId: $actingUserId,
-			credentialId: $credentialId
-		);
+		$contents = $this->fetchFileContents(source: $source, path: AppRepoParser::DESCRIPTOR_FILE, actingUserId: $actingUserId);
 		if ($contents === null) {
 			return null;
 		}
@@ -465,29 +474,21 @@ class GitHubCatalogService {
 	/**
 	 * Resolve the exact commit SHA a ref points at (for pull provenance).
 	 *
-	 * @param string $owner Repo owner (pattern-validated).
-	 * @param string $repo Repo name (pattern-validated).
-	 * @param string $ref The git ref (branch/tag/sha, pattern-validated).
+	 * @param RepoSource $source Owner, repo and ref (branch/tag/sha, pattern-validated), and the optional allowed `github` credential.
 	 * @param string|null $actingUserId The session UID (broker identity), or null.
-	 * @param string|null $credentialId Optional allowed `github` credential.
 	 *
 	 * @return string|null The resolved commit SHA, or null when unresolvable.
 	 *
 	 * @spec openspec/changes/github-app-sync/specs/github-app-sync/spec.md
 	 */
-	public function resolveCommitSha(
-		string $owner,
-		string $repo,
-		string $ref,
-		?string $actingUserId,
-		?string $credentialId = null,
-	): ?string {
-		if ($this->validRepo(owner: $owner, repo: $repo, ref: $ref) === false || $ref === '') {
+	public function resolveCommitSha(RepoSource $source, ?string $actingUserId): ?string {
+		$ref = (string)$source->ref;
+		if ($this->validRepo(owner: $source->owner, repo: $source->repo, ref: $ref) === false || $ref === '') {
 			return null;
 		}
 
-		$path = '/repos/' . rawurlencode($owner) . '/' . rawurlencode($repo) . '/commits/' . rawurlencode($ref);
-		$result = $this->get(path: $path, actingUserId: $actingUserId, credentialId: $credentialId);
+		$path = '/repos/' . rawurlencode($source->owner) . '/' . rawurlencode($source->repo) . '/commits/' . rawurlencode($ref);
+		$result = $this->get(path: $path, actingUserId: $actingUserId, credentialId: $source->credentialId);
 		if ($result['ok'] === false) {
 			return null;
 		}
@@ -509,58 +510,28 @@ class GitHubCatalogService {
 	 * Fetch the repo file map (`path => contents`) AppRepoParser::parse expects:
 	 * `openbuild-app.json`, `manifest.json`, and every `schemas/*.json`.
 	 *
-	 * @param string $owner Repo owner (pattern-validated).
-	 * @param string $repo Repo name (pattern-validated).
-	 * @param string|null $ref Optional git ref (pattern-validated).
+	 * @param RepoSource $source Owner, repo and ref (pattern-validated), and the optional allowed `github` credential.
 	 * @param string|null $actingUserId The session UID (broker identity), or null.
-	 * @param string|null $credentialId Optional allowed `github` credential.
 	 *
 	 * @return array<string,string> The file map (may be empty when the repo is unreachable).
 	 *
 	 * @spec openspec/changes/github-shop-catalogue/specs/github-shop-catalogue/spec.md
 	 */
-	public function fetchRepoFiles(
-		string $owner,
-		string $repo,
-		?string $ref,
-		?string $actingUserId,
-		?string $credentialId = null,
-	): array {
-		if ($this->validRepo(owner: $owner, repo: $repo, ref: $ref) === false) {
+	public function fetchRepoFiles(RepoSource $source, ?string $actingUserId): array {
+		if ($this->validRepo(owner: $source->owner, repo: $source->repo, ref: $source->ref) === false) {
 			return [];
 		}
 
 		$files = [];
 		foreach ([AppRepoParser::DESCRIPTOR_FILE, AppRepoParser::MANIFEST_FILE] as $rootFile) {
-			$contents = $this->fetchFileContents(
-				owner: $owner,
-				repo: $repo,
-				path: $rootFile,
-				ref: $ref,
-				actingUserId: $actingUserId,
-				credentialId: $credentialId
-			);
+			$contents = $this->fetchFileContents(source: $source, path: $rootFile, actingUserId: $actingUserId);
 			if ($contents !== null) {
 				$files[$rootFile] = $contents;
 			}
 		}
 
-		$schemaPaths = $this->listSchemaFiles(
-			owner: $owner,
-			repo: $repo,
-			ref: $ref,
-			actingUserId: $actingUserId,
-			credentialId: $credentialId
-		);
-		foreach ($schemaPaths as $schemaPath) {
-			$contents = $this->fetchFileContents(
-				owner: $owner,
-				repo: $repo,
-				path: $schemaPath,
-				ref: $ref,
-				actingUserId: $actingUserId,
-				credentialId: $credentialId
-			);
+		foreach ($this->listSchemaFiles(source: $source, actingUserId: $actingUserId) as $schemaPath) {
+			$contents = $this->fetchFileContents(source: $source, path: $schemaPath, actingUserId: $actingUserId);
 			if ($contents !== null) {
 				$files[$schemaPath] = $contents;
 			}
@@ -572,16 +543,7 @@ class GitHubCatalogService {
 		// Verified against the real published artefacts: buildiq-spectr fetched
 		// 2 files and parsed with 0 data-registers and 0 connectors, despite the
 		// repository holding 46 blobs.
-		return array_merge(
-			$files,
-			$this->fetchChannelFiles(
-				owner: $owner,
-				repo: $repo,
-				ref: $ref,
-				actingUserId: $actingUserId,
-				credentialId: $credentialId
-			)
-		);
+		return array_merge($files, $this->fetchChannelFiles(source: $source, actingUserId: $actingUserId));
 	}//end fetchRepoFiles()
 
 	/**
@@ -595,33 +557,63 @@ class GitHubCatalogService {
 	 * Bounded, and truncation is logged rather than silent — an install that
 	 * quietly drops half an app is the failure this format exists to prevent.
 	 *
-	 * @param string $owner Repo owner.
-	 * @param string $repo Repo name.
-	 * @param string|null $ref Optional git ref.
+	 * @param RepoSource $source Owner, repo, ref and credential.
 	 * @param string|null $actingUserId The session UID, or null.
-	 * @param string|null $credentialId Optional allowed `github` credential.
 	 *
 	 * @return array<string,string> The `path => contents` map for the v2 channels.
 	 *
 	 * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-app-s-whole-configuration
 	 */
-	private function fetchChannelFiles(
-		string $owner,
-		string $repo,
-		?string $ref,
-		?string $actingUserId,
-		?string $credentialId,
-	): array {
-		$treeRef = ($ref ?? '');
+	private function fetchChannelFiles(RepoSource $source, ?string $actingUserId): array {
+		$files = [];
+		$truncated = false;
+
+		foreach ($this->fetchTreeEntries(source: $source, actingUserId: $actingUserId) as $entry) {
+			if ($this->isChannelBlob(entry: $entry) === false) {
+				continue;
+			}
+
+			if (count($files) >= self::MAX_CHANNEL_FILES) {
+				$truncated = true;
+				continue;
+			}
+
+			$path = (string)$entry['path'];
+			$contents = $this->fetchFileContents(source: $source, path: $path, actingUserId: $actingUserId);
+			if ($contents !== null) {
+				$files[$path] = $contents;
+			}
+		}//end foreach
+
+		if ($truncated === true) {
+			$this->logger->warning(
+				'Buildiq: v2 channel fetch truncated — the installed app will be INCOMPLETE.',
+				['owner' => $source->owner, 'repo' => $source->repo, 'limit' => self::MAX_CHANNEL_FILES]
+			);
+		}
+
+		return $files;
+	}//end fetchChannelFiles()
+
+	/**
+	 * The entries of the repo's recursive tree.
+	 *
+	 * @param RepoSource $source Owner, repo, ref and credential.
+	 * @param string|null $actingUserId The session UID, or null.
+	 *
+	 * @return array<mixed> The tree entries; empty when the tree cannot be read.
+	 */
+	private function fetchTreeEntries(RepoSource $source, ?string $actingUserId): array {
+		$treeRef = ($source->ref ?? '');
 		if ($treeRef === '') {
 			$treeRef = 'HEAD';
 		}
 
 		$result = $this->get(
-			path: '/repos/' . rawurlencode($owner) . '/' . rawurlencode($repo)
+			path: '/repos/' . rawurlencode($source->owner) . '/' . rawurlencode($source->repo)
 				. '/git/trees/' . rawurlencode($treeRef) . '?recursive=1',
 			actingUserId: $actingUserId,
-			credentialId: $credentialId
+			credentialId: $source->credentialId
 		);
 		if ($result['ok'] === false) {
 			return [];
@@ -632,76 +624,34 @@ class GitHubCatalogService {
 			return [];
 		}
 
-		$prefixes = [
-			AppRepoParser::DATA_REGISTERS_PREFIX,
-			AppRepoParser::CONNECTORS_PREFIX,
-			AppRepoParser::AUTOMATIONS_PREFIX,
-			AppRepoParser::SKILLS_PREFIX,
-			// App-repo-format-flow-agent-export: AppRepoParser::parseChannels()
-			// has read these two since that change landed, but this fetch-side
-			// allowlist was never extended to match — the exact "parser can read
-			// it, fetch never downloaded it" defect this method's own docblock
-			// warns about (verified live: buildiq-spectr fetched 2 files and
-			// parsed 0 data-registers before that fix). Confirmed live again
-			// here: a repo publishing flows/<uuid>.json and agents/<uuid>.json
-			// pulled back with both channels declared 0 until these two lines
-			// were added.
-			AppRepoParser::FLOWS_PREFIX,
-			AppRepoParser::AGENTS_PREFIX,
-		];
+		return $decoded['tree'];
+	}//end fetchTreeEntries()
 
-		$files = [];
-		$truncated = false;
-
-		foreach ($decoded['tree'] as $entry) {
-			if (is_array($entry) === false || (string)($entry['type'] ?? '') !== 'blob') {
-				continue;
-			}
-
-			$path = (string)($entry['path'] ?? '');
-			if ($path === '' || str_contains($path, '..') === true) {
-				continue;
-			}
-
-			$wanted = false;
-			foreach ($prefixes as $prefix) {
-				if (str_starts_with($path, $prefix) === true) {
-					$wanted = true;
-					break;
-				}
-			}
-
-			if ($wanted === false) {
-				continue;
-			}
-
-			if (count($files) >= self::MAX_CHANNEL_FILES) {
-				$truncated = true;
-				continue;
-			}
-
-			$contents = $this->fetchFileContents(
-				owner: $owner,
-				repo: $repo,
-				path: $path,
-				ref: $ref,
-				actingUserId: $actingUserId,
-				credentialId: $credentialId
-			);
-			if ($contents !== null) {
-				$files[$path] = $contents;
-			}
-		}//end foreach
-
-		if ($truncated === true) {
-			$this->logger->warning(
-				'Buildiq: v2 channel fetch truncated — the installed app will be INCOMPLETE.',
-				['owner' => $owner, 'repo' => $repo, 'limit' => self::MAX_CHANNEL_FILES]
-			);
+	/**
+	 * Whether a tree entry is a blob under one of the channel prefixes.
+	 *
+	 * @param mixed $entry The tree entry.
+	 *
+	 * @return bool
+	 */
+	private function isChannelBlob(mixed $entry): bool {
+		if (is_array($entry) === false || (string)($entry['type'] ?? '') !== 'blob') {
+			return false;
 		}
 
-		return $files;
-	}//end fetchChannelFiles()
+		$path = (string)($entry['path'] ?? '');
+		if ($path === '' || str_contains($path, '..') === true) {
+			return false;
+		}
+
+		foreach (self::CHANNEL_PREFIXES as $prefix) {
+			if (str_starts_with($path, $prefix) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end isChannelBlob()
 
 	/**
 	 * Build a card from a search hit's descriptor (non-installable when the
@@ -732,11 +682,8 @@ class GitHubCatalogService {
 
 		$stars = (int)($item['stargazers_count'] ?? 0);
 		$descriptor = $this->fetchDescriptor(
-			owner: $owner,
-			repo: $repo,
-			ref: null,
-			actingUserId: $actingUserId,
-			credentialId: $credentialId
+			source: new RepoSource(owner: $owner, repo: $repo, ref: null, credentialId: $credentialId),
+			actingUserId: $actingUserId
 		);
 
 		if ($descriptor === null) {
@@ -773,27 +720,18 @@ class GitHubCatalogService {
 	/**
 	 * List `schemas/*.json` paths via the contents API directory listing.
 	 *
-	 * @param string $owner Repo owner.
-	 * @param string $repo Repo name.
-	 * @param string|null $ref Optional git ref.
+	 * @param RepoSource $source Owner, repo, ref and credential.
 	 * @param string|null $actingUserId The session UID (broker identity), or null.
-	 * @param string|null $credentialId Optional allowed `github` credential.
 	 *
 	 * @return array<int,string> Repo-relative `schemas/<slug>.json` paths.
 	 */
-	private function listSchemaFiles(
-		string $owner,
-		string $repo,
-		?string $ref,
-		?string $actingUserId,
-		?string $credentialId,
-	): array {
-		$path = '/repos/' . rawurlencode($owner) . '/' . rawurlencode($repo) . '/contents/schemas';
-		if ($ref !== null && $ref !== '') {
-			$path .= '?ref=' . rawurlencode($ref);
+	private function listSchemaFiles(RepoSource $source, ?string $actingUserId): array {
+		$path = '/repos/' . rawurlencode($source->owner) . '/' . rawurlencode($source->repo) . '/contents/schemas';
+		if ($source->ref !== null && $source->ref !== '') {
+			$path .= '?ref=' . rawurlencode($source->ref);
 		}
 
-		$result = $this->get(path: $path, actingUserId: $actingUserId, credentialId: $credentialId);
+		$result = $this->get(path: $path, actingUserId: $actingUserId, credentialId: $source->credentialId);
 		if ($result['ok'] === false) {
 			return [];
 		}
@@ -821,30 +759,22 @@ class GitHubCatalogService {
 	/**
 	 * Fetch a single file's decoded contents via the GitHub contents API.
 	 *
-	 * @param string $owner Repo owner.
-	 * @param string $repo Repo name.
+	 * @param RepoSource $source Owner, repo, ref and credential.
 	 * @param string $path Repo-relative file path.
-	 * @param string|null $ref Optional git ref.
 	 * @param string|null $actingUserId The session UID (broker identity), or null.
-	 * @param string|null $credentialId Optional allowed `github` credential.
 	 *
 	 * @return string|null The decoded file contents, or null when absent/unreadable.
+	 *
+	 * @spec openspec/changes/github-shop-catalogue/specs/github-shop-catalogue/spec.md
 	 */
-	private function fetchFileContents(
-		string $owner,
-		string $repo,
-		string $path,
-		?string $ref,
-		?string $actingUserId,
-		?string $credentialId,
-	): ?string {
-		$apiPath = '/repos/' . rawurlencode($owner) . '/' . rawurlencode($repo) . '/contents/'
+	public function fetchFileContents(RepoSource $source, string $path, ?string $actingUserId): ?string {
+		$apiPath = '/repos/' . rawurlencode($source->owner) . '/' . rawurlencode($source->repo) . '/contents/'
 			. implode('/', array_map('rawurlencode', explode('/', $path)));
-		if ($ref !== null && $ref !== '') {
-			$apiPath .= '?ref=' . rawurlencode($ref);
+		if ($source->ref !== null && $source->ref !== '') {
+			$apiPath .= '?ref=' . rawurlencode($source->ref);
 		}
 
-		$result = $this->get(path: $apiPath, actingUserId: $actingUserId, credentialId: $credentialId);
+		$result = $this->get(path: $apiPath, actingUserId: $actingUserId, credentialId: $source->credentialId);
 		if ($result['ok'] === false) {
 			return null;
 		}
@@ -907,7 +837,7 @@ class GitHubCatalogService {
 	 */
 	private function brokerGet(string $path, string $credentialId, ?string $actingUserId): ?array {
 		try {
-			$broker = Server::get(self::BROKER_CLASS);
+			$broker = $this->container->get(self::BROKER_CLASS);
 			$response = $broker->request(
 				$credentialId,
 				self::APP_ID,
@@ -978,8 +908,10 @@ class GitHubCatalogService {
 	 * @param string|null $ref Optional git ref.
 	 *
 	 * @return bool
+	 *
+	 * @spec openspec/changes/github-shop-catalogue/specs/github-shop-catalogue/spec.md
 	 */
-	private function validRepo(string $owner, string $repo, ?string $ref): bool {
+	public function validRepo(string $owner, string $repo, ?string $ref): bool {
 		if (preg_match(self::OWNER_REPO_PATTERN, $owner) !== 1 || preg_match(self::OWNER_REPO_PATTERN, $repo) !== 1) {
 			return false;
 		}

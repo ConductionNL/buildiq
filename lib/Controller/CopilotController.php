@@ -108,7 +108,7 @@ class CopilotController extends Controller {
 	/**
 	 * POST /api/copilot/plan — turn a brief into a validated, reviewable plan.
 	 *
-	 * Body: `{ brief: string, appSlug?: string, agentId?: string }`. Performs
+	 * Body: `{ brief: string, appSlug?: string, agentId?: string, versionSlug?: string }`. Performs
 	 * zero builder writes (an agent-scoped rejected plan still writes one
 	 * `AgentRun` audit record — see `CopilotService::plan()`).
 	 *
@@ -128,9 +128,16 @@ class CopilotController extends Controller {
 		$brief = (string)$this->request->getParam('brief', '');
 		$appSlug = $this->resolveOptionalString(raw: $this->request->getParam('appSlug', null));
 		$agentId = $this->resolveOptionalString(raw: $this->request->getParam('agentId', null));
+		$versionSlug = $this->resolveOptionalString(raw: $this->request->getParam('versionSlug', null));
 
 		try {
-			$result = $this->copilotService->plan(brief: $brief, appSlug: $appSlug, userId: $user->getUID(), agentId: $agentId);
+			$result = $this->copilotService->plan(
+				brief: $brief,
+				appSlug: $appSlug,
+				userId: $user->getUID(),
+				agentId: $agentId,
+				versionSlug: $versionSlug
+			);
 			return new JSONResponse(data: $result, statusCode: Http::STATUS_OK);
 		} catch (CopilotException $e) {
 			return $this->mapExceptionToResponse(error: $e);

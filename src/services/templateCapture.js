@@ -106,18 +106,38 @@ export function rewriteSchemaRefs(node, map) {
 		return node
 	}
 	const out = {}
-	for (const [key, value] of Object.entries(node)) {
-		if (
-			(key === 'schema' || key === 'relatedSchema')
-			&& typeof value === 'string'
-			&& Object.hasOwn(map, value)
-		) {
-			out[key] = map[value]
-			continue
-		}
-		out[key] = rewriteSchemaRefs(value, map)
+	for (const entry of Object.entries(node)) {
+		out[entry[0]] = rewriteEntry(entry, map)
 	}
 	return out
+}
+
+/**
+ * Whether a key/value pair is a schema reference: a string under `schema` or
+ * `relatedSchema`.
+ *
+ * @param {string} key - the property key.
+ * @param {unknown} value - the property value.
+ * @return {boolean} true for a schema reference.
+ * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+ */
+export function isSchemaRefEntry(key, value) {
+	return (key === 'schema' || key === 'relatedSchema') && typeof value === 'string'
+}
+
+/**
+ * The rewritten value of one property: the mapped slug for a mapped schema
+ * reference, else the value rewritten recursively.
+ *
+ * @param {[string, unknown]} entry - the key and value.
+ * @param {{[key: string]: string}} map - source-slug → de-namespaced-slug.
+ * @return {unknown} the rewritten value.
+ */
+function rewriteEntry(entry, map) {
+	const [key, value] = entry
+	return isSchemaRefEntry(key, value) && Object.hasOwn(map, value)
+		? map[value]
+		: rewriteSchemaRefs(value, map)
 }
 
 /**
@@ -140,6 +160,91 @@ export class SlugCollisionError extends Error {
 		this.canonicalSlug = canonicalSlug
 		this.sourceSlugs = sourceSlugs
 	}
+}
+
+/**
+ * The source-slug to canonical-slug rewrite map of an app's schemas, and one
+ * summary entry per schema.
+ *
+ * @param {Array<object>} sourceSchemas - the app's companion schema definitions.
+ * @param {string} appSlug - the source Application's slug.
+ * @return {{rewriteMap: Object<string, string>, summaryEntries: Array<{sourceSlug: string, slug: string, shared: boolean}>}}
+ * @throws {SlugCollisionError} when two schemas de-namespace to the same slug.
+ */
+function slugRewrites(sourceSchemas, appSlug) {
+	const sourceSlugs = sourceSchemas
+		.map((schema) => String((schema && schema.slug) || ''))
+		.filter((slug) => slug !== '')
+	return slugRewritesOf(sourceSlugs, appSlug)
+}
+
+/**
+ * The source-slug to canonical-slug rewrite map of a list of schema slugs,
+ * and one summary entry per slug.
+ *
+ * @param {Array<string>} sourceSlugs - the source schema slugs, in order.
+ * @param {string} appSlug - the source Application's slug.
+ * @return {{rewriteMap: Object<string, string>, summaryEntries: Array<{sourceSlug: string, slug: string, shared: boolean}>}}
+ * @throws {SlugCollisionError} when two slugs de-namespace to the same slug.
+ * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+ */
+export function slugRewritesOf(sourceSlugs, appSlug) {
+	const rewrites = { rewriteMap: {}, summaryEntries: [] }
+	const canonicalToSource = {}
+	for (const sourceSlug of sourceSlugs) {
+		const { slug: canonical, shared } = deNamespaceSlug(sourceSlug, appSlug)
+		claimCanonical(canonicalToSource, { canonical, sourceSlug })
+		rewrites.rewriteMap[sourceSlug] = canonical
+		rewrites.summaryEntries.push({ sourceSlug, slug: canonical, shared })
+	}
+	return rewrites
+}
+
+/**
+ * Record which source slug a canonical slug came from.
+ *
+ * @param {Object<string, string>} canonicalToSource - canonical slug → source slug so far.
+ * @param {{canonical: string, sourceSlug: string}} claim - the pair to record.
+ * @return {void}
+ * @throws {SlugCollisionError} when another source slug already claimed it.
+ */
+function claimCanonical(canonicalToSource, claim) {
+	const { canonical, sourceSlug } = claim
+	if (
+		Object.hasOwn(canonicalToSource, canonical)
+		&& canonicalToSource[canonical] !== sourceSlug
+	) {
+		throw new SlugCollisionError(canonical, [
+			canonicalToSource[canonical],
+			sourceSlug,
+		])
+	}
+	canonicalToSource[canonical] = sourceSlug
+}
+
+/**
+ * The `ApplicationTemplate` record of a capture (`isSeeded: false`).
+ *
+ * @param {object} metadata - { title, slug, description, useCase, category, sourceUrl }.
+ * @param {{manifest: object, companionSchemas: Array<object>, version: string}} captured - the rewritten manifest, the companion schemas and the source version.
+ * @return {object} the record.
+ */
+function templateRecord(metadata, captured) {
+	const record = {
+		slug: metadata.slug,
+		title: metadata.title,
+		description: metadata.description || '',
+		useCase: metadata.useCase || '',
+		category: metadata.category,
+		manifest: captured.manifest,
+		companionSchemas: captured.companionSchemas,
+		isSeeded: false,
+		version: captured.version,
+	}
+	if (metadata.sourceUrl) {
+		record.sourceUrl = metadata.sourceUrl
+	}
+	return record
 }
 
 /**
@@ -168,28 +273,7 @@ export function captureTemplate(application, schemas, manifest, metadata) {
 	const sourceSchemas = Array.isArray(schemas) ? schemas : []
 
 	// 1. Build the source-slug → canonical-slug rewrite map, detecting collisions.
-	const rewriteMap = {}
-	const canonicalToSource = {}
-	const summaryEntries = []
-	for (const schema of sourceSchemas) {
-		const sourceSlug = String((schema && schema.slug) || '')
-		if (!sourceSlug) {
-			continue
-		}
-		const { slug: canonical, shared } = deNamespaceSlug(sourceSlug, appSlug)
-		if (
-			Object.hasOwn(canonicalToSource, canonical)
-			&& canonicalToSource[canonical] !== sourceSlug
-		) {
-			throw new SlugCollisionError(canonical, [
-				canonicalToSource[canonical],
-				sourceSlug,
-			])
-		}
-		canonicalToSource[canonical] = sourceSlug
-		rewriteMap[sourceSlug] = canonical
-		summaryEntries.push({ sourceSlug, slug: canonical, shared })
-	}
+	const { rewriteMap, summaryEntries } = slugRewrites(sourceSchemas, appSlug)
 
 	// 2. Deep-copy + de-namespace the companion schemas (definition only — no rows).
 	const companionSchemas = sourceSchemas
@@ -203,23 +287,12 @@ export function captureTemplate(application, schemas, manifest, metadata) {
 	// 3. Deep-copy the manifest and rewrite every schema reference site.
 	const capturedManifest = rewriteSchemaRefs(deepClone(manifest || {}), rewriteMap)
 
-	const record = {
-		slug: metadata.slug,
-		title: metadata.title,
-		description: metadata.description || '',
-		useCase: metadata.useCase || '',
-		category: metadata.category,
-		manifest: capturedManifest,
-		companionSchemas,
-		isSeeded: false,
-		version: (application && application.version) || '0.1.0',
-	}
-	if (metadata.sourceUrl) {
-		record.sourceUrl = metadata.sourceUrl
-	}
-
 	return {
-		record,
+		record: templateRecord(metadata, {
+			manifest: capturedManifest,
+			companionSchemas,
+			version: (application && application.version) || '0.1.0',
+		}),
 		summary: { companionSchemas: summaryEntries },
 	}
 }

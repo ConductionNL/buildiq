@@ -67,46 +67,21 @@ function validateSteps(config, pathBase, declaredKeys) {
 		return errors
 	}
 
-	const seenIds = new Set()
-	const assignmentCount = new Map()
-
+	const seen = {
+		declaredKeys,
+		seenIds: new Set(),
+		assignmentCount: new Map(),
+	}
 	config.steps.forEach((step, sIndex) => {
-		const stepPath = `${pathBase}/steps/${sIndex}`
-		if (!isPlainObject(step)) {
-			errors.push(`${stepPath}: buildiq.formLogic.error.step-invalid-shape`)
-			return
-		}
-		if (typeof step.title !== 'string' || step.title.trim() === '') {
-			errors.push(
-				`${stepPath}/title: buildiq.formLogic.error.step-title-required`,
-			)
-		}
-		if (!Array.isArray(step.fields)) {
-			errors.push(
-				`${stepPath}/fields: buildiq.formLogic.error.step-fields-not-array`,
-			)
-			return
-		}
-		if (typeof step.id === 'string' && step.id !== '') {
-			if (seenIds.has(step.id)) {
-				errors.push(
-					`${stepPath}/id: buildiq.formLogic.error.duplicate-step-id`,
-				)
-			}
-			seenIds.add(step.id)
-		}
-		step.fields.forEach((key, fIndex) => {
-			if (typeof key !== 'string' || !declaredKeys.has(key)) {
-				errors.push(
-					`${stepPath}/fields/${fIndex}: buildiq.formLogic.error.dangling-step-field`,
-				)
-				return
-			}
-			assignmentCount.set(key, (assignmentCount.get(key) || 0) + 1)
-		})
+		errors.push(
+			...stepErrors(step, {
+				...seen,
+				stepPath: `${pathBase}/steps/${sIndex}`,
+			}),
+		)
 	})
 
-	assignmentCount.forEach((count, key) => {
+	seen.assignmentCount.forEach((count, key) => {
 		if (count > 1) {
 			errors.push(
 				`${pathBase}/steps: buildiq.formLogic.error.duplicate-field-assignment(${key})`,
@@ -118,108 +93,326 @@ function validateSteps(config, pathBase, declaredKeys) {
 }
 
 /**
+ * Errors of one step, in report order. Records the step's id and field
+ * assignments in the shared sets of `ctx`.
+ *
+ * @param {unknown} step - the step entry.
+ * @param {{stepPath: string, declaredKeys: Set<string>, seenIds: Set<string>, assignmentCount: Map<string, number>}} ctx
+ *   - the step pointer prefix, the declared field keys and the ids and
+ *   assignments seen so far.
+ * @return {string[]}
+ */
+function stepErrors(step, ctx) {
+	if (!isPlainObject(step)) {
+		return [`${ctx.stepPath}: buildiq.formLogic.error.step-invalid-shape`]
+	}
+	const errors = stepTitleErrors(step, ctx.stepPath)
+	if (!Array.isArray(step.fields)) {
+		errors.push(
+			`${ctx.stepPath}/fields: buildiq.formLogic.error.step-fields-not-array`,
+		)
+		return errors
+	}
+	errors.push(...stepIdErrors(step, ctx))
+	step.fields.forEach((key, fIndex) => {
+		if (typeof key !== 'string' || !ctx.declaredKeys.has(key)) {
+			errors.push(
+				`${ctx.stepPath}/fields/${fIndex}: buildiq.formLogic.error.dangling-step-field`,
+			)
+			return
+		}
+		ctx.assignmentCount.set(key, (ctx.assignmentCount.get(key) || 0) + 1)
+	})
+	return errors
+}
+
+/**
+ * A missing or blank step title.
+ *
+ * @param {object} step - the step entry.
+ * @param {string} stepPath - the step pointer prefix.
+ * @return {string[]}
+ */
+function stepTitleErrors(step, stepPath) {
+	if (typeof step.title !== 'string' || step.title.trim() === '') {
+		return [`${stepPath}/title: buildiq.formLogic.error.step-title-required`]
+	}
+	return []
+}
+
+/**
+ * A step id used by an earlier step. Records the id.
+ *
+ * @param {object} step - the step entry.
+ * @param {{stepPath: string, seenIds: Set<string>}} ctx - the step pointer
+ *   prefix and the ids seen so far.
+ * @return {string[]}
+ */
+function stepIdErrors(step, ctx) {
+	if (typeof step.id !== 'string' || step.id === '') {
+		return []
+	}
+	const errors = ctx.seenIds.has(step.id)
+		? [`${ctx.stepPath}/id: buildiq.formLogic.error.duplicate-step-id`]
+		: []
+	ctx.seenIds.add(step.id)
+	return errors
+}
+
+/**
+ * Errors of a LOCAL-mode `visibleWhen` (no `endpoint` / `source`).
+ *
+ * @param {object} visibleWhen - the condition object.
+ * @param {{fieldPath: string, declaredKeys: Set<string>}} ctx - the field
+ *   pointer prefix and the declared field keys.
+ * @return {string[]}
+ */
+function visibleWhenErrors(visibleWhen, ctx) {
+	const path = `${ctx.fieldPath}/visibleWhen`
+	const errors = conditionFieldErrors(visibleWhen, {
+		path,
+		declaredKeys: ctx.declaredKeys,
+	})
+	if (visibleWhen.op !== undefined && !VISIBLE_WHEN_OPS.includes(visibleWhen.op)) {
+		errors.push(`${path}/op: buildiq.formLogic.error.condition-op-not-allowed`)
+	}
+	return errors
+}
+
+/**
+ * A missing, blank or undeclared condition field.
+ *
+ * @param {object} visibleWhen - the condition object.
+ * @param {{path: string, declaredKeys: Set<string>}} ctx - the condition
+ *   pointer prefix and the declared field keys.
+ * @return {string[]}
+ */
+function conditionFieldErrors(visibleWhen, ctx) {
+	if (typeof visibleWhen.field !== 'string' || visibleWhen.field.trim() === '') {
+		return [
+			`${ctx.path}/field: buildiq.formLogic.error.condition-field-required`,
+		]
+	}
+	if (!ctx.declaredKeys.has(visibleWhen.field)) {
+		return [
+			`${ctx.path}/field: buildiq.formLogic.error.dangling-condition-field`,
+		]
+	}
+	return []
+}
+
+/** The type each optional `validation` key must have, and its error code. */
+const VALIDATION_TYPES = Object.freeze({
+	required: {
+		type: 'boolean',
+		code: 'buildiq.formLogic.error.validation-required-not-boolean',
+	},
+	min: {
+		type: 'number',
+		code: 'buildiq.formLogic.error.validation-min-not-number',
+	},
+	max: {
+		type: 'number',
+		code: 'buildiq.formLogic.error.validation-max-not-number',
+	},
+	message: {
+		type: 'string',
+		code: 'buildiq.formLogic.error.validation-message-not-string',
+	},
+})
+
+/**
+ * Type errors for the given `validation` keys that are present.
+ *
+ * @param {object} validation - the field's validation object.
+ * @param {{fieldPath: string, keys: string[]}} scope - the field pointer
+ *   prefix and the keys to check, in report order.
+ * @return {string[]}
+ */
+function validationTypeErrors(validation, scope) {
+	return scope.keys
+		.filter(
+			(key) =>
+				validation[key] !== undefined
+				&& typeof validation[key] !== VALIDATION_TYPES[key].type,
+		)
+		.map(
+			(key) =>
+				`${scope.fieldPath}/validation/${key}: ${VALIDATION_TYPES[key].code}`,
+		)
+}
+
+/**
+ * A numeric `min` above a numeric `max`.
+ *
+ * @param {object} validation - the field's validation object.
+ * @param {string} fieldPath - the field pointer prefix.
+ * @return {string[]}
+ */
+function validationRangeErrors(validation, fieldPath) {
+	if (
+		typeof validation.min === 'number'
+		&& typeof validation.max === 'number'
+		&& validation.min > validation.max
+	) {
+		return [
+			`${fieldPath}/validation: buildiq.formLogic.error.validation-min-greater-than-max`,
+		]
+	}
+	return []
+}
+
+/**
+ * A string `pattern` that does not compile as a RegExp.
+ *
+ * @param {object} validation - the field's validation object.
+ * @param {string} fieldPath - the field pointer prefix.
+ * @return {string[]}
+ */
+function validationPatternErrors(validation, fieldPath) {
+	if (typeof validation.pattern !== 'string') {
+		return []
+	}
+	try {
+		new RegExp(validation.pattern)
+	} catch {
+		return [
+			`${fieldPath}/validation/pattern: buildiq.formLogic.error.validation-pattern-does-not-compile`,
+		]
+	}
+	return []
+}
+
+/**
+ * Errors of a field's structured `validation` object, in report order.
+ *
+ * @param {object} validation - the field's validation object.
+ * @param {string} fieldPath - the field pointer prefix.
+ * @return {string[]}
+ */
+function validationErrors(validation, fieldPath) {
+	return [
+		...validationTypeErrors(validation, {
+			fieldPath,
+			keys: ['required', 'min', 'max'],
+		}),
+		...validationRangeErrors(validation, fieldPath),
+		...validationPatternErrors(validation, fieldPath),
+		...validationTypeErrors(validation, { fieldPath, keys: ['message'] }),
+	]
+}
+
+/**
  * Validate one field's `visibleWhen` (LOCAL mode only — `endpoint` /
  * `source` shapes are canonical-schema territory, not re-validated here
  * beyond being objects) and `validation` object.
  *
  * @param {object} field - the field entry.
- * @param {string} fieldPath - `/pages/<n>/config/fields/<i>` pointer prefix.
- * @param {Set<string>} declaredKeys - `config.fields[].key` values.
+ * @param {{fieldPath: string, declaredKeys: Set<string>}} ctx - the
+ *   `/pages/<n>/config/fields/<i>` pointer prefix and the
+ *   `config.fields[].key` values.
  * @return {string[]} - `<pointer>: <code>` error/warning strings.
  */
-function validateFieldLogic(field, fieldPath, declaredKeys) {
-	const errors = []
+function validateFieldLogic(field, ctx) {
 	if (!isPlainObject(field)) {
-		return errors
+		return []
 	}
+	return [
+		...localVisibleWhenErrors(field.visibleWhen, ctx),
+		...fieldValidationErrors(field, ctx.fieldPath),
+	]
+}
 
-	const visibleWhen = isPlainObject(field.visibleWhen) ? field.visibleWhen : null
-	if (visibleWhen && !visibleWhen.endpoint && !visibleWhen.source) {
-		// LOCAL mode.
-		if (
-			typeof visibleWhen.field !== 'string'
-			|| visibleWhen.field.trim() === ''
-		) {
-			errors.push(
-				`${fieldPath}/visibleWhen/field: buildiq.formLogic.error.condition-field-required`,
-			)
-		} else if (!declaredKeys.has(visibleWhen.field)) {
-			errors.push(
-				`${fieldPath}/visibleWhen/field: buildiq.formLogic.error.dangling-condition-field`,
-			)
-		}
-		if (
-			visibleWhen.op !== undefined
-			&& !VISIBLE_WHEN_OPS.includes(visibleWhen.op)
-		) {
-			errors.push(
-				`${fieldPath}/visibleWhen/op: buildiq.formLogic.error.condition-op-not-allowed`,
-			)
-		}
+/**
+ * Errors of a field's `visibleWhen` when it is a LOCAL-mode condition.
+ *
+ * @param {unknown} visibleWhen - the field condition.
+ * @param {{fieldPath: string, declaredKeys: Set<string>}} ctx - the field
+ *   pointer prefix and the declared field keys.
+ * @return {string[]}
+ */
+function localVisibleWhenErrors(visibleWhen, ctx) {
+	return isPlainObject(visibleWhen) && !visibleWhen.endpoint && !visibleWhen.source
+		? visibleWhenErrors(visibleWhen, ctx)
+		: []
+}
+
+/**
+ * Errors of a field's structured `validation` object.
+ *
+ * @param {object} field - the field entry.
+ * @param {string} fieldPath - the field pointer prefix.
+ * @return {string[]}
+ */
+function fieldValidationErrors(field, fieldPath) {
+	if (!isPlainObject(field.validation)) {
+		return []
 	}
-
-	const validation = isPlainObject(field.validation) ? field.validation : null
-	if (validation) {
-		if (
-			validation.required !== undefined
-			&& typeof validation.required !== 'boolean'
-		) {
-			errors.push(
-				`${fieldPath}/validation/required: buildiq.formLogic.error.validation-required-not-boolean`,
-			)
-		}
-		const hasMin = validation.min !== undefined
-		const hasMax = validation.max !== undefined
-		if (hasMin && typeof validation.min !== 'number') {
-			errors.push(
-				`${fieldPath}/validation/min: buildiq.formLogic.error.validation-min-not-number`,
-			)
-		}
-		if (hasMax && typeof validation.max !== 'number') {
-			errors.push(
-				`${fieldPath}/validation/max: buildiq.formLogic.error.validation-max-not-number`,
-			)
-		}
-		if (
-			hasMin
-			&& hasMax
-			&& typeof validation.min === 'number'
-			&& typeof validation.max === 'number'
-			&& validation.min > validation.max
-		) {
-			errors.push(
-				`${fieldPath}/validation: buildiq.formLogic.error.validation-min-greater-than-max`,
-			)
-		}
-		if (typeof validation.pattern === 'string') {
-			try {
-				new RegExp(validation.pattern)
-			} catch {
-				errors.push(
-					`${fieldPath}/validation/pattern: buildiq.formLogic.error.validation-pattern-does-not-compile`,
-				)
-			}
-		}
-		if (
-			validation.message !== undefined
-			&& typeof validation.message !== 'string'
-		) {
-			errors.push(
-				`${fieldPath}/validation/message: buildiq.formLogic.error.validation-message-not-string`,
-			)
-		}
-		// Warning-level: an un-migrated field carries both the structured
-		// object AND a legacy flat key (Decision 4 — migration is opt-in
-		// per field, so this can legitimately persist until the developer
-		// edits that field's Validation section).
-		if (field.required !== undefined || field.pattern !== undefined) {
-			errors.push(
-				`${fieldPath}: buildiq.formLogic.warning.flat-and-structured-validation`,
-			)
-		}
+	const errors = validationErrors(field.validation, fieldPath)
+	// Warning-level: an un-migrated field carries both the structured
+	// object AND a legacy flat key (Decision 4 — migration is opt-in
+	// per field, so this can legitimately persist until the developer
+	// edits that field's Validation section).
+	if (field.required !== undefined || field.pattern !== undefined) {
+		errors.push(
+			`${fieldPath}: buildiq.formLogic.warning.flat-and-structured-validation`,
+		)
 	}
-
 	return errors
+}
+
+/**
+ * The config of a `type: "form"` page, or null.
+ *
+ * @param {unknown} page - the page entry.
+ * @return {object|null}
+ */
+function formConfig(page) {
+	if (!page || page.type !== 'form') {
+		return null
+	}
+	return isPlainObject(page.config) ? page.config : null
+}
+
+/**
+ * The string `key` values of a field list.
+ *
+ * @param {Array} fieldList - `config.fields`.
+ * @return {string[]}
+ */
+function fieldKeys(fieldList) {
+	return fieldList.filter((f) => f && typeof f.key === 'string').map((f) => f.key)
+}
+
+/**
+ * The fields of a form config, or [] when it has none.
+ *
+ * @param {object} config - the form page config.
+ * @return {Array}
+ */
+function fieldListOf(config) {
+	return Array.isArray(config.fields) ? config.fields : []
+}
+
+/**
+ * The steps and fields errors of one form page config.
+ *
+ * @param {object} config - the form page config.
+ * @param {string} pathBase - the `/pages/<n>/config` pointer prefix.
+ * @return {string[]}
+ */
+function formPageErrors(config, pathBase) {
+	const fieldList = fieldListOf(config)
+	const declaredKeys = new Set(fieldKeys(fieldList))
+	return [
+		...validateSteps(config, pathBase, declaredKeys),
+		...fieldList.flatMap((field, fIndex) =>
+			validateFieldLogic(field, {
+				fieldPath: `${pathBase}/fields/${fIndex}`,
+				declaredKeys,
+			}),
+		),
+	]
 }
 
 /**
@@ -236,32 +429,10 @@ export function validateFormLogic(manifest) {
 	const pages = manifest && Array.isArray(manifest.pages) ? manifest.pages : []
 
 	pages.forEach((page, pIndex) => {
-		if (!page || page.type !== 'form') {
-			return
+		const config = formConfig(page)
+		if (config) {
+			errors.push(...formPageErrors(config, `/pages/${pIndex}/config`))
 		}
-		const config = isPlainObject(page.config) ? page.config : null
-		if (!config) {
-			return
-		}
-		const pathBase = `/pages/${pIndex}/config`
-		const fieldList = Array.isArray(config.fields) ? config.fields : []
-		const declaredKeys = new Set(
-			fieldList
-				.filter((f) => f && typeof f.key === 'string')
-				.map((f) => f.key),
-		)
-
-		errors.push(...validateSteps(config, pathBase, declaredKeys))
-
-		fieldList.forEach((field, fIndex) => {
-			errors.push(
-				...validateFieldLogic(
-					field,
-					`${pathBase}/fields/${fIndex}`,
-					declaredKeys,
-				),
-			)
-		})
 	})
 
 	return errors
@@ -290,39 +461,64 @@ export function assignUnassignedFieldsToFinalStep(manifest) {
 	}
 	let changed = false
 	const pages = manifest.pages.map((page) => {
-		if (!page || page.type !== 'form') {
-			return page
-		}
-		const config = isPlainObject(page.config) ? page.config : null
-		if (!config || !Array.isArray(config.steps) || config.steps.length === 0) {
-			return page
-		}
-		const fieldList = Array.isArray(config.fields) ? config.fields : []
-		const declaredKeys = fieldList
-			.filter((f) => f && typeof f.key === 'string')
-			.map((f) => f.key)
-		const assigned = new Set()
-		config.steps.forEach((step) => {
-			;(Array.isArray(step && step.fields) ? step.fields : []).forEach((k) =>
-				assigned.add(k),
-			)
-		})
-		const unassigned = declaredKeys.filter((k) => !assigned.has(k))
+		const config = formStepsConfig(page)
+		const unassigned = config ? unassignedFields(config) : []
 		if (unassigned.length === 0) {
 			return page
 		}
 		changed = true
-		const steps = config.steps.slice()
-		const lastIndex = steps.length - 1
-		const lastStep = steps[lastIndex] || {}
-		steps[lastIndex] = {
-			...lastStep,
-			fields: [
-				...(Array.isArray(lastStep.fields) ? lastStep.fields : []),
-				...unassigned,
-			],
-		}
-		return { ...page, config: { ...config, steps } }
+		return withFinalStepFields(page, { config, unassigned })
 	})
 	return changed ? { ...manifest, pages } : manifest
+}
+
+/**
+ * The config of a form page with a non-empty `steps[]`, or null.
+ *
+ * @param {unknown} page - the page entry.
+ * @return {object|null}
+ */
+function formStepsConfig(page) {
+	const config = formConfig(page)
+	return config && Array.isArray(config.steps) && config.steps.length > 0
+		? config
+		: null
+}
+
+/**
+ * The declared field keys no step references, in field order.
+ *
+ * @param {object} config - the form page config.
+ * @return {string[]}
+ */
+function unassignedFields(config) {
+	const assigned = new Set()
+	config.steps.forEach((step) => {
+		;(Array.isArray(step && step.fields) ? step.fields : []).forEach((k) =>
+			assigned.add(k),
+		)
+	})
+	return fieldKeys(fieldListOf(config)).filter((k) => !assigned.has(k))
+}
+
+/**
+ * The page with the unassigned fields appended to its last step.
+ *
+ * @param {object} page - the form page.
+ * @param {{config: object, unassigned: string[]}} change - the page's config
+ *   and the keys to append.
+ * @return {object}
+ */
+function withFinalStepFields(page, change) {
+	const steps = change.config.steps.slice()
+	const lastIndex = steps.length - 1
+	const lastStep = steps[lastIndex] || {}
+	steps[lastIndex] = {
+		...lastStep,
+		fields: [
+			...(Array.isArray(lastStep.fields) ? lastStep.fields : []),
+			...change.unassigned,
+		],
+	}
+	return { ...page, config: { ...change.config, steps } }
 }

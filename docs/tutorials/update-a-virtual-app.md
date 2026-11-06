@@ -1,80 +1,92 @@
 # Tutorial: Update a virtual app
 
-> **Audience**: Buildiq admins who have already created an app via the wizard and want to evolve it — design schemas, edit pages, switch between versions, and promote changes through the chain.
-> **Prereqs**: A virtual app already exists in Buildiq (see [Create a virtual app](./create-a-virtual-app.md)). The example here continues with `Permit Tracker` using the `development → production` preset.
-> **Status**: Several parts of the update flow work today; some have known issues filed as follow-up bugs and noted inline.
+> **Audience**: Buildiq admins who created an app with the wizard and now want to evolve it: design schemas, edit pages, switch versions, promote changes.
+> **Prereqs**: A virtual app already exists in Buildiq, see [Create a virtual app](./create-a-virtual-app.md). The example below uses `Permit Tracker` on the `development → production` preset.
+> **Status**: The whole flow works. The schema editor, which an earlier version of this page reported as broken, is fixed.
 
 ## 1. Open the app detail page
 
-Navigate to **Virtual apps** in the sidebar, then click your app's card. The detail page renders the maintainer dashboard:
+Open **Apps** in the left navigation, then click your app's card.
 
 ![Permit Tracker detail page](./img/app-detail-after-create.png)
 
-You see:
-- **Hero**: app name, status badge (`draft`), role badge (`owner`).
-- **Version pill tabs**: each ApplicationVersion in the chain. The production version is always present.
-- **Window toggle** (7d / 30d / 90d): scopes the activity-graph + active-users KPI.
-- **KPI cards** — 4 metrics scoped to the currently-selected version's register: Active users, Object count, Files, Audit events.
-- **Activity graph** placeholder (empties out before any events accumulate).
-- **Structural widgets** — Register, Schemas, Groups & users, Pages, Menu — each linking out to the corresponding designer.
+The detail page gives you:
 
-> **Known issue**: the development pill doesn't yet render alongside Production in some scenarios — see the [issue tracker](https://github.com/ConductionNL/buildiq/issues) for the latest.
+- **Hero**: app name, description, type badge, status badge, your role badge and the current version.
+- **Version pills**: one per version in the chain. A star marks the production version. A **›** button appears on any version that has somewhere to promote to.
+- **Header actions**: **Open app**, **Open a version**, **Settings**, **Edit** and an **Actions** menu.
+- **Window toggle** (7d / 30d / 90d), scoping the activity graph and the four numbers below it.
+- **Four metrics** for the selected version's register: Active users, Object count, Storage and Audit events. Each deep-links into OpenRegister.
+- **Widgets**: Manifest layers, Register, Groups & users, Pages, Menu, Schemas and Flows.
+
+The metrics load a few seconds after the page, so **Loading…** on first paint is normal.
 
 ## 2. Open the schema designer for a version
 
-From the detail page, the **Schemas** widget shows the schemas installed in the currently-selected version's register, with a deep-link to the schema designer. Alternatively, type the URL directly:
+The **Schemas** widget lists what is installed in the selected version and links straight into the designer. You can also type the URL:
 
-- Production: `/apps/buildiq/builder/{appSlug}/schemas?_version=production`
-- Development: `/apps/buildiq/builder/{appSlug}/schemas?_version=development`
+- `/apps/buildiq/builder/{appSlug}/schemas`
+- With a version: `/apps/buildiq/builder/{appSlug}/schemas?_version=development`
 
-The `_version` query parameter uses the underscore-prefix convention (see ADR-002 and the routing spec) so it can't collide with user-defined `?version=` params that virtual apps might surface.
+The `_version` parameter carries a leading underscore on purpose. A virtual app may surface its own `?version=`, and the two must not collide.
 
 ![Schema list for Permit Tracker production](./img/update-01-schemas-list.png)
 
-Each list row shows the schema's display name, slug, version, property count, and lifecycle. Note the schema slug is **namespaced** with `{appSlug}-{versionSlug}-` — every wizard-provisioned seed schema is prefixed this way to satisfy OR's organization-wide schema-slug uniqueness constraint. So `hello-message` becomes `permit-tracker-production-hello-message`.
+Each row shows the schema's title, slug, version, property count, lifecycle and access scope. Seed schemas the wizard provisioned are namespaced `{appSlug}-{versionSlug}-`, because schema slugs are unique across the organisation. So `hello-message` becomes `permit-tracker-production-hello-message`.
 
 ## 3. Edit a schema
 
-> **Known issue**: clicking a schema row to open its detail page currently returns "Schema not found":
+Click a row. The schema editor opens at `/apps/buildiq/builder/{appSlug}/schemas/{schemaSlug}` with **Undo**, **Redo**, **Discard staged edits** and **Save** in the toolbar, and these sections:
+
+- **Schema slug**, **Title**, **Description**, **Version (semver)**.
+- **Fields**. Name, type, required, description, format, pattern, minimum and maximum length.
+- **Lifecycle**. States and transitions, each action picked from a fixed list. No code.
+- **Relations**. Links to other schemas.
+- **Access**. Who may read, create, update and delete records of this schema. OpenRegister enforces this on every request, not only in the menu.
+- **Widgets**, **Aggregations**, **Calculations** and **Notifications**. The last three are read-only for now: they list what the schema already declares.
+
+Hiding a menu entry is not security. Scoping a schema under **Access** is.
+
+> An earlier version of this page recorded a "Schema not found" failure on this step:
 >
 > ![Schema not found error](./img/update-02-schema-detail-404.png)
 >
-> The list view correctly fetches schemas scoped by register, but the detail view's lookup pathway doesn't yet account for the namespaced slug. Filed as a follow-up bug — once it's resolved, the editor flow continues from this step.
-
-Until the detail view is fixed, schema edits need to go via the OR API directly, or via the OpenRegister admin UI at `/apps/openregister/schemas`.
+> That lookup no longer fails. The editor opens on the namespaced slug. The screenshot is kept only as a record of the old behaviour.
 
 ## 4. Switch versions
 
-The version pill tabs at the top of the detail page (and on builder pages) flip the `?_version=` URL parameter. Bookmark a specific tier (e.g. `/apps/buildiq/applications/{uuid}?_version=development`) and your browser session pins to that tier until you switch.
+Click a version pill to switch. The builder pages carry the choice in `?_version=`, so a bookmarked URL such as `/apps/buildiq/builder/permit-tracker/pages?_version=development` pins you to that tier.
 
-Non-admins only see the production tier. Editor + owner roles also see all non-production tiers (development, staging, etc.). Per ADR-002, NC admins are NOT auto-granted access — they must be in the Application's `permissions.{owners,editors}` arrays.
+**Open a version** in the header lists every version with an **Edit** entry, for owners and editors.
 
-## 5. Promote from development → production
+Viewers see the production tier. Editors and owners see every tier. Members of the Nextcloud *admin* group pass the read and write gates through an audited bypass, but that bypass is deliberately switched off for promotion and for GitHub sync. There, an explicit role is the only way in.
 
-When development changes look ready, navigate to the development version's detail page or the version pill's actions menu and click **Promote**. A dialog opens asking how to handle the target's existing data:
+## 5. Promote from development to production
 
-- **Start target with source data** — copy development's rows into production's register, applying development's schema set. Useful when "the test data IS the new shape of prod data."
-- **Migrate target's existing data** — keep production's rows, apply development's schema set + any declared migration rules. Useful for genuine app upgrades where prod data must survive.
-- **Empty start** — drop production's rows, install development's schema set. Most destructive — requires typing the app slug to confirm.
+Click the **›** button on the development pill. The **Promote version** dialog opens, names the source and target registers, and asks what to do with the target's data:
 
-The default per ADR-002 is **migrate-existing** when promoting to the production version (preserve prod data), **start-with-source** for promotions between non-production tiers. The dialog UI is implemented in `src/dialogs/PromoteVersionDialog.vue`; the backend endpoint is `POST /api/applications/{appUuid}/versions/{versionUuid}/promote`.
+- **Start target with source data**. Copy development's rows into production, using development's schemas. Use this when the test data is the new shape of the real data.
+- **Migrate target's existing data**. Keep production's rows, apply development's schemas and any declared migration rules. Use this for a genuine upgrade where production data must survive.
+- **Empty start (destructive)**. Drop production's rows, install development's schemas. You must type the app slug to confirm.
 
-> **End-to-end promotion testing is still gated** by the schema-detail bug above — until schemas can be edited, the development version's content has nothing new to promote. File or watch follow-up issues to confirm when the promote flow is testable end-to-end.
+Buildiq preselects **Migrate target's existing data** when the target is the production version, and **Start target with source data** for every other target. The dialog lives in `src/dialogs/PromoteVersionDialog.vue`; the endpoint is `POST /api/applications/{appUuid}/versions/{versionUuid}/promote`.
 
-## 6. What works today vs. what doesn't
+Promote once into a throwaway app before you promote into a real one. The empty start does exactly what it says.
+
+## 6. What works today
 
 | Step | Status |
 |------|--------|
-| Open detail page | ✅ Works — hero, KPIs, structural widgets all render |
-| List schemas for a version | ✅ Works — `/builder/{slug}/schemas?_version=...` shows namespaced slugs |
-| Edit a schema | ❌ Detail view 404s on namespaced slug — see follow-up |
-| Switch between versions via URL | ✅ Works via `?_version=` |
-| See development pill alongside Production | ⚠ Only Production currently renders — follow-up |
-| Promote via dialog | ⏸ Untested end-to-end (blocked by schema edit) |
+| Open the detail page | Works. Hero, metrics and widgets all render. |
+| List schemas for a version | Works, at `/builder/{slug}/schemas`. |
+| Edit a schema | Works. Fields, lifecycle, relations and access scopes. |
+| Design pages and menu | Works, at `/builder/{slug}/pages`, with a live preview. |
+| Switch between versions | Works, through the version pills and `?_version=`. |
+| Promote through the chain | Works, through the **›** button on a version pill. |
 
 ## Troubleshooting
 
-- **Hero shows "Untitled application"** — the header was binding to a slot prop that CnDetailPage doesn't forward. The fix in `feature/buildiq-wizard-and-data-fetch` (commit `82dc21c`) makes the header fetch the Application record via OR's API on mount.
-- **Schema detail shows "Schema not found"** — the schema-namespacing fix from the wizard creates slugs like `{appSlug}-{versionSlug}-{slug}`. The schema-designer detail view's lookup doesn't honor this prefix yet. Workaround: edit via OR's admin UI.
-- **Register slug truncated to `buildiq-{slug}-`** — display-only formatting issue in the Register widget; underlying register is correctly named `buildiq-{appSlug}-{versionSlug}`.
-- **Description field shows a number** — the header's `applicationDescription` computed reads the wrong field on the resolved Application object. Cosmetic.
+- **Manage permissions in the Groups & users widget does nothing**. Known issue. Use **Actions → Manage permissions** in the app header.
+- **The status badge and the Data panel disagree**. The hero can read `published` while the record's publication status still reads `draft`. Trust the record.
+- **The four metrics stay on "Loading…"**. Give them a few seconds. They are fetched per version, after the page itself.
+- **Register slug looks truncated**. The widget shortens it for display. The register is named `openbuild-{appSlug}-{versionSlug}`, and that prefix is pinned by the schema. Never rewrite it to `buildiq-`.

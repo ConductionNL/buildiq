@@ -43,6 +43,246 @@ const ALLOWED_PORTAL_PAGE_KEYS = Object.freeze(['objectId', 'portalPath'])
 const ALLOWED_TRACK_LINK_KEYS = Object.freeze(['enabled'])
 
 /**
+ * Whether a value is a non-null, non-array object.
+ *
+ * @param {unknown} value - the value to test.
+ * @return {boolean}
+ */
+function isPlainObject(value) {
+	return value !== null && typeof value === 'object' && !Array.isArray(value)
+}
+
+/**
+ * Whether a value is a string with more than whitespace in it.
+ *
+ * @param {unknown} value - the value to test.
+ * @return {boolean}
+ */
+function isFilledString(value) {
+	return typeof value === 'string' && value.trim() !== ''
+}
+
+/**
+ * One `<entry pointer>: <code>` error string.
+ *
+ * @param {{pointer: string}} ctx - the entry context.
+ * @param {string} code - the i18n error code.
+ * @return {string}
+ */
+function entryError(ctx, code) {
+	return `${ctx.pointer}: ${code}`
+}
+
+/**
+ * Unknown-key errors for every key of `object` outside `scope.allowed`.
+ *
+ * @param {object} object - the object whose keys are checked.
+ * @param {{allowed: string[], pointer: string}} scope - the allowed keys and
+ *   the pointer the key is appended to.
+ * @return {string[]}
+ */
+function unknownKeyErrors(object, scope) {
+	return Object.keys(object)
+		.filter((key) => !scope.allowed.includes(key))
+		.map(
+			(key) =>
+				`${scope.pointer}/${key}: buildiq.externalForm.error.unknown-key`,
+		)
+}
+
+/**
+ * Unknown keys on the entry.
+ *
+ * @param {object} entry - the externalForms entry.
+ * @param {{pointer: string}} ctx - the entry context.
+ * @return {string[]}
+ */
+function entryKeyErrors(entry, ctx) {
+	return unknownKeyErrors(entry, { allowed: ALLOWED_KEYS, pointer: ctx.pointer })
+}
+
+/**
+ * id: required, at most one entry per id. Records the id as seen.
+ *
+ * @param {object} entry - the externalForms entry.
+ * @param {{pointer: string, idx: number, seenIds: Map}} ctx - the entry context.
+ * @return {string[]}
+ */
+function idErrors(entry, ctx) {
+	if (!isFilledString(entry.id)) {
+		return [entryError(ctx, 'buildiq.externalForm.error.id-required')]
+	}
+	const duplicate = ctx.seenIds.has(entry.id)
+	ctx.seenIds.set(entry.id, ctx.idx)
+	return duplicate
+		? [entryError(ctx, 'buildiq.externalForm.error.duplicate-id')]
+		: []
+}
+
+/** Required string keys with the error each reports when missing, in order. */
+const REQUIRED_STRINGS = Object.freeze([
+	['pageId', 'buildiq.externalForm.error.page-id-required'],
+	['register', 'buildiq.externalForm.error.register-required'],
+	['schema', 'buildiq.externalForm.error.schema-required'],
+])
+
+/**
+ * pageId, register and schema: required strings.
+ *
+ * @param {object} entry - the externalForms entry.
+ * @param {{pointer: string}} ctx - the entry context.
+ * @return {string[]}
+ */
+function requiredStringErrors(entry, ctx) {
+	return REQUIRED_STRINGS.filter(([key]) => !isFilledString(entry[key])).map(
+		([, code]) => entryError(ctx, code),
+	)
+}
+
+/**
+ * status, publicRead and organisationScope: a closed enum, a boolean, and a
+ * string id or null (absent tolerated for the last two).
+ *
+ * @param {object} entry - the externalForms entry.
+ * @param {{pointer: string}} ctx - the entry context.
+ * @return {string[]}
+ */
+function scalarErrors(entry, ctx) {
+	const errors = []
+	if (!EXTERNAL_FORM_STATUSES.includes(entry.status)) {
+		errors.push(entryError(ctx, 'buildiq.externalForm.error.status-invalid'))
+	}
+	if (entry.publicRead !== undefined && typeof entry.publicRead !== 'boolean') {
+		errors.push(
+			entryError(ctx, 'buildiq.externalForm.error.public-read-not-boolean'),
+		)
+	}
+	errors.push(...organisationScopeErrors(entry.organisationScope, ctx))
+	return errors
+}
+
+/**
+ * organisationScope: a string id or null (absent tolerated).
+ *
+ * @param {unknown} scope - the entry's organisationScope.
+ * @param {{pointer: string}} ctx - the entry context.
+ * @return {string[]}
+ */
+function organisationScopeErrors(scope, ctx) {
+	if (scope !== undefined && scope !== null && typeof scope !== 'string') {
+		return [
+			entryError(ctx, 'buildiq.externalForm.error.organisation-scope-invalid'),
+		]
+	}
+	return []
+}
+
+/**
+ * portalPage: `{objectId, portalPath}` or null (absent tolerated as null).
+ *
+ * @param {object} entry - the externalForms entry.
+ * @param {{pointer: string}} ctx - the entry context.
+ * @return {string[]}
+ */
+function portalPageErrors(entry, ctx) {
+	const pp = entry.portalPage
+	if (pp === undefined || pp === null) {
+		return []
+	}
+	if (!isPlainObject(pp)) {
+		return [entryError(ctx, 'buildiq.externalForm.error.portal-page-invalid')]
+	}
+	return [
+		...unknownKeyErrors(pp, {
+			allowed: ALLOWED_PORTAL_PAGE_KEYS,
+			pointer: `${ctx.pointer}/portalPage`,
+		}),
+		...portalPageFieldErrors(pp, ctx),
+	]
+}
+
+/**
+ * portalPage fields: a filled `objectId`, and a string `portalPath` when present.
+ *
+ * @param {object} pp - the portalPage object.
+ * @param {{pointer: string}} ctx - the entry context.
+ * @return {string[]}
+ */
+function portalPageFieldErrors(pp, ctx) {
+	const errors = []
+	if (!isFilledString(pp.objectId)) {
+		errors.push(
+			entryError(
+				ctx,
+				'buildiq.externalForm.error.portal-page-object-id-required',
+			),
+		)
+	}
+	if (pp.portalPath !== undefined && typeof pp.portalPath !== 'string') {
+		errors.push(
+			entryError(ctx, 'buildiq.externalForm.error.portal-page-path-invalid'),
+		)
+	}
+	return errors
+}
+
+/**
+ * trackLinkAction: `{enabled: boolean}` (absent tolerated as disabled).
+ *
+ * @param {object} entry - the externalForms entry.
+ * @param {{pointer: string}} ctx - the entry context.
+ * @return {string[]}
+ */
+function trackLinkActionErrors(entry, ctx) {
+	const tla = entry.trackLinkAction
+	if (tla === undefined) {
+		return []
+	}
+	if (!isPlainObject(tla)) {
+		return [
+			entryError(ctx, 'buildiq.externalForm.error.track-link-action-invalid'),
+		]
+	}
+	const errors = unknownKeyErrors(tla, {
+		allowed: ALLOWED_TRACK_LINK_KEYS,
+		pointer: `${ctx.pointer}/trackLinkAction`,
+	})
+	if (typeof tla.enabled !== 'boolean') {
+		errors.push(
+			entryError(
+				ctx,
+				'buildiq.externalForm.error.track-link-action-enabled-not-boolean',
+			),
+		)
+	}
+	return errors
+}
+
+/** The per-entry checks, in the order their errors are reported. */
+const ENTRY_CHECKS = Object.freeze([
+	entryKeyErrors,
+	idErrors,
+	requiredStringErrors,
+	scalarErrors,
+	portalPageErrors,
+	trackLinkActionErrors,
+])
+
+/**
+ * Every error of one externalForms entry.
+ *
+ * @param {unknown} entry - the externalForms entry.
+ * @param {{pointer: string, idx: number, seenIds: Map}} ctx - the entry context.
+ * @return {string[]}
+ */
+function entryErrors(entry, ctx) {
+	if (!isPlainObject(entry)) {
+		return [entryError(ctx, 'buildiq.externalForm.error.invalid-shape')]
+	}
+	return ENTRY_CHECKS.flatMap((check) => check(entry, ctx))
+}
+
+/**
  * Validate the `runtime.externalForms[]` array of a manifest.
  *
  * @param {object} manifest - the in-flight manifest.
@@ -50,127 +290,20 @@ const ALLOWED_TRACK_LINK_KEYS = Object.freeze(['enabled'])
  * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-001
  */
 export function validateExternalForms(manifest) {
-	const errors = []
 	const externalForms =
 		manifest && manifest.runtime && manifest.runtime.externalForms
 	if (externalForms === undefined) {
-		return errors
+		return []
 	}
 	if (!Array.isArray(externalForms)) {
-		errors.push('/runtime/externalForms: buildiq.externalForm.error.not-array')
-		return errors
+		return ['/runtime/externalForms: buildiq.externalForm.error.not-array']
 	}
-
 	const seenIds = new Map()
-
-	externalForms.forEach((entry, idx) => {
-		const at = (code) => `/runtime/externalForms/${idx}: ${code}`
-		if (!entry || typeof entry !== 'object' || Array.isArray(entry)) {
-			errors.push(at('buildiq.externalForm.error.invalid-shape'))
-			return
-		}
-		for (const key of Object.keys(entry)) {
-			if (!ALLOWED_KEYS.includes(key)) {
-				errors.push(
-					`/runtime/externalForms/${idx}/${key}: buildiq.externalForm.error.unknown-key`,
-				)
-			}
-		}
-		// id — required, at most one entry per id.
-		if (typeof entry.id !== 'string' || entry.id.trim() === '') {
-			errors.push(at('buildiq.externalForm.error.id-required'))
-		} else {
-			if (seenIds.has(entry.id)) {
-				errors.push(at('buildiq.externalForm.error.duplicate-id'))
-			}
-			seenIds.set(entry.id, idx)
-		}
-		// pageId — required.
-		if (typeof entry.pageId !== 'string' || entry.pageId.trim() === '') {
-			errors.push(at('buildiq.externalForm.error.page-id-required'))
-		}
-		// register — required.
-		if (typeof entry.register !== 'string' || entry.register.trim() === '') {
-			errors.push(at('buildiq.externalForm.error.register-required'))
-		}
-		// schema — required.
-		if (typeof entry.schema !== 'string' || entry.schema.trim() === '') {
-			errors.push(at('buildiq.externalForm.error.schema-required'))
-		}
-		// status — closed enum.
-		if (!EXTERNAL_FORM_STATUSES.includes(entry.status)) {
-			errors.push(at('buildiq.externalForm.error.status-invalid'))
-		}
-		// publicRead — boolean (default false when absent).
-		if (
-			entry.publicRead !== undefined
-			&& typeof entry.publicRead !== 'boolean'
-		) {
-			errors.push(at('buildiq.externalForm.error.public-read-not-boolean'))
-		}
-		// organisationScope — string id or null (absent tolerated as null).
-		if (
-			entry.organisationScope !== undefined
-			&& entry.organisationScope !== null
-			&& typeof entry.organisationScope !== 'string'
-		) {
-			errors.push(at('buildiq.externalForm.error.organisation-scope-invalid'))
-		}
-		// portalPage — `{objectId, portalPath}` or null (absent tolerated as null).
-		if (entry.portalPage !== undefined && entry.portalPage !== null) {
-			const pp = entry.portalPage
-			if (typeof pp !== 'object' || Array.isArray(pp)) {
-				errors.push(at('buildiq.externalForm.error.portal-page-invalid'))
-			} else {
-				for (const key of Object.keys(pp)) {
-					if (!ALLOWED_PORTAL_PAGE_KEYS.includes(key)) {
-						errors.push(
-							`/runtime/externalForms/${idx}/portalPage/${key}: buildiq.externalForm.error.unknown-key`,
-						)
-					}
-				}
-				if (typeof pp.objectId !== 'string' || pp.objectId.trim() === '') {
-					errors.push(
-						at(
-							'buildiq.externalForm.error.portal-page-object-id-required',
-						),
-					)
-				}
-				if (
-					pp.portalPath !== undefined
-					&& typeof pp.portalPath !== 'string'
-				) {
-					errors.push(
-						at('buildiq.externalForm.error.portal-page-path-invalid'),
-					)
-				}
-			}
-		}
-		// trackLinkAction — `{enabled: boolean}` (absent tolerated as disabled).
-		if (entry.trackLinkAction !== undefined) {
-			const tla = entry.trackLinkAction
-			if (!tla || typeof tla !== 'object' || Array.isArray(tla)) {
-				errors.push(
-					at('buildiq.externalForm.error.track-link-action-invalid'),
-				)
-			} else {
-				for (const key of Object.keys(tla)) {
-					if (!ALLOWED_TRACK_LINK_KEYS.includes(key)) {
-						errors.push(
-							`/runtime/externalForms/${idx}/trackLinkAction/${key}: buildiq.externalForm.error.unknown-key`,
-						)
-					}
-				}
-				if (typeof tla.enabled !== 'boolean') {
-					errors.push(
-						at(
-							'buildiq.externalForm.error.track-link-action-enabled-not-boolean',
-						),
-					)
-				}
-			}
-		}
-	})
-
-	return errors
+	return externalForms.flatMap((entry, idx) =>
+		entryErrors(entry, {
+			pointer: `/runtime/externalForms/${idx}`,
+			idx,
+			seenIds,
+		}),
+	)
 }

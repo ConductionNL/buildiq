@@ -34,9 +34,12 @@ namespace OCA\Buildiq\Controller;
 use OCA\Buildiq\AppInfo\Application;
 use OCA\Buildiq\Exception\InsufficientPermissionException;
 use OCA\Buildiq\Service\ApplicationDeletionService;
+use OCA\Buildiq\Service\ManifestFormDestinations;
+use OCA\Buildiq\Service\ManifestResolverService;
 use OCA\Buildiq\Service\Credential\VirtualAppCredentialRegistrar;
 use OCA\Buildiq\Service\PermissionResolver;
 use OCA\Buildiq\Service\VersionPromotionService;
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -80,6 +83,8 @@ class ApplicationPublishController extends Controller {
 	 * @param PermissionResolver $permissionResolver Shared permission-grammar resolver
 	 * @param ApplicationDeletionService $deletionService Full-teardown service for delete
 	 * @param VirtualAppCredentialRegistrar $credentialRegistrar Onboards a published credentials[]-declaring app to the broker
+	 * @param ManifestResolverService|null $manifests Resolves the manifest a publish makes live
+	 * @param ManifestFormDestinations|null $formDestinations Checks its form pages against their destinations
 	 *
 	 * @return void
 	 */
@@ -91,6 +96,8 @@ class ApplicationPublishController extends Controller {
 		private readonly PermissionResolver $permissionResolver,
 		private readonly ApplicationDeletionService $deletionService,
 		private readonly VirtualAppCredentialRegistrar $credentialRegistrar,
+		private readonly ?ManifestResolverService $manifests = null,
+		private readonly ?ManifestFormDestinations $formDestinations = null,
 	) {
 		parent::__construct(appName: Application::APP_ID, request: $request);
 	}//end __construct()
@@ -137,6 +144,14 @@ class ApplicationPublishController extends Controller {
 	 * resolved safe-by-default via {@see wantsDataPurge()}: only an explicit
 	 * affirmative purges. This deliberately does NOT rely on PHP/Nextcloud
 	 * stringy-bool coercion for an irreversible action.
+	 *
+	 * `orphanedResources` is a FAILURE list, not an inventory of what the
+	 * delete left standing: it names the resources this call tried to remove
+	 * and could not. The normal answer is an empty array, including the
+	 * ordinary `deleteData: false` case, where the registers and their objects
+	 * are kept on purpose and so were never attempted. Read as an inventory it
+	 * says the opposite of what it means, which is how it was read during the
+	 * demo review of 2026-09-19.
 	 *
 	 * @param string $appUuid Parent Application UUID (path param)
 	 *
@@ -217,12 +232,45 @@ class ApplicationPublishController extends Controller {
 	}//end wantsDataPurge()
 
 	/**
+	 * The destination findings on the form pages of the manifest a publish makes live.
+	 *
+	 * @param array<string, mixed> $application The Application.
+	 * @param IUser $user The publishing user.
+	 *
+	 * @return array<int, array<string, mixed>> The findings; empty when every form is accepted.
+	 *
+	 * @spec openspec/changes/forms-are-valid-against-their-destination/specs/form-destination-authoring/spec.md#requirement-every-buildiq-form-must-be-valid-against-its-destination-before-it-is-published
+	 */
+	private function formFindings(array $application, IUser $user): array {
+		if ($this->manifests === null || $this->formDestinations === null) {
+			return [];
+		}
+
+		$slug = (string)($application['slug'] ?? '');
+		$manifest = null;
+		if ($slug !== '') {
+			$manifest = $this->manifests->resolve(appSlug: $slug, versionSlug: null, caller: $user);
+		}
+
+		if (is_array($manifest) === false) {
+			$manifest = ($application['manifest'] ?? null);
+		}
+
+		if (is_array($manifest) === false) {
+			return [];
+		}
+
+		return $this->formDestinations->findings(manifest: $manifest);
+	}//end formFindings()
+
+	/**
 	 * Flip an Application's status after an owner-only RBAC check.
 	 *
 	 * @param string $appUuid The Application UUID.
 	 * @param string $status Target status (`published` or `draft`).
 	 *
 	 * @return JSONResponse
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function setStatus(string $appUuid, string $status): JSONResponse {
 		$user = $this->userSession->getUser();
@@ -243,6 +291,25 @@ class ApplicationPublishController extends Controller {
 			}
 
 			$this->assertOwner(application: $application, user: $user);
+
+			// Decision 179/189: the pages saved as a draft may carry destination
+			// findings; publishing makes them live, so it needs zero.
+			if ($status === self::STATUS_PUBLISHED) {
+				$findings = $this->formFindings(application: $application, user: $user);
+				if ($findings !== []) {
+					return new JSONResponse(
+						data: [
+							'error' => 'destination_findings',
+							'message' => sprintf(
+								'This app cannot be published: its forms have %d point(s) their destination refuses. Each one is marked on its field in the page designer.',
+								count($findings)
+							),
+							'findings' => $findings,
+						],
+						statusCode: Http::STATUS_UNPROCESSABLE_ENTITY
+					);
+				}
+			}
 
 			// Strip the OR-managed metadata envelope before writing back — the
 			// save path expects the bare object data + the uuid (mirrors how
@@ -270,7 +337,7 @@ class ApplicationPublishController extends Controller {
 			return new JSONResponse(
 				data: [
 					'status' => $status,
-					'application' => $this->normaliseObject(object: $saved),
+					'application' => ObjectRecord::toArray(object: $saved),
 				],
 				statusCode: Http::STATUS_OK
 			);
@@ -312,6 +379,7 @@ class ApplicationPublishController extends Controller {
 	 * @param string $applicationUuid The Application UUID the route should point at.
 	 *
 	 * @return void
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function ensureBuiltAppRoute(string $slug, string $applicationUuid): void {
 		try {
@@ -320,7 +388,7 @@ class ApplicationPublishController extends Controller {
 				register: VersionPromotionService::REGISTER_SLUG,
 				schema: 'built-app-route'
 			);
-			$existingData = $this->normaliseObject(object: $existing);
+			$existingData = ObjectRecord::toArray(object: $existing);
 			$existingTarget = (string)($existingData['applicationUuid'] ?? '');
 			if ($existingTarget === $applicationUuid) {
 				return;
@@ -362,6 +430,7 @@ class ApplicationPublishController extends Controller {
 	 * @param string $uuid Application UUID.
 	 *
 	 * @return array<string,mixed>|null Normalised application array, or null when absent.
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function loadApplication(string $uuid): ?array {
 		try {
@@ -382,7 +451,7 @@ class ApplicationPublishController extends Controller {
 			return null;
 		}
 
-		return $this->normaliseObject(object: $entity);
+		return ObjectRecord::toArray(object: $entity);
 	}//end loadApplication()
 
 	/**
@@ -419,33 +488,4 @@ class ApplicationPublishController extends Controller {
 				. (string)($application['slug'] ?? ($application['id'] ?? '?'))
 		);
 	}//end assertOwner()
-
-	/**
-	 * Coerce an OR result entry (ObjectEntity or array) to an associative array.
-	 *
-	 * @param mixed $object The OR object/result entry.
-	 *
-	 * @return array<string,mixed>
-	 */
-	private function normaliseObject(mixed $object): array {
-		if (is_array($object) === true) {
-			return $object;
-		}
-
-		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-			$serialised = $object->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		if (is_object($object) === true && method_exists($object, 'getObject') === true) {
-			$inner = $object->getObject();
-			if (is_array($inner) === true) {
-				return $inner;
-			}
-		}
-
-		return [];
-	}//end normaliseObject()
 }//end class

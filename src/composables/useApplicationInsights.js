@@ -23,6 +23,58 @@ import { generateUrl } from '@nextcloud/router'
 import { ref, watch } from 'vue'
 
 /**
+ * Whether a value is a Vue ref (or any object holding a `value`).
+ *
+ * @param {unknown} maybeRef A Vue ref or a plain value.
+ * @return {boolean}
+ */
+function isRefLike(maybeRef) {
+	return Boolean(maybeRef) && typeof maybeRef === 'object' && 'value' in maybeRef
+}
+
+/**
+ * The KPI block with every count at zero.
+ *
+ * @return {{activeUsers: number, objectCount: number, filesCount: number, auditEventCount: number}}
+ */
+function emptyKpis() {
+	return {
+		activeUsers: 0,
+		objectCount: 0,
+		filesCount: 0,
+		auditEventCount: 0,
+	}
+}
+
+/**
+ * The KPI block of an insights payload, zero-filled for the counts it leaves
+ * out.
+ *
+ * @param {unknown} data The response body.
+ * @return {object} The KPIs.
+ */
+function kpisOf(data) {
+	return data
+		&& typeof data === 'object'
+		&& data.kpis
+		&& typeof data.kpis === 'object'
+		? { ...emptyKpis(), ...data.kpis }
+		: emptyKpis()
+}
+
+/**
+ * The activity series of an insights payload, or an empty list.
+ *
+ * @param {unknown} data The response body.
+ * @return {Array<object>} The activity.
+ */
+function activityOf(data) {
+	return data && typeof data === 'object' && Array.isArray(data.activity)
+		? data.activity
+		: []
+}
+
+/**
  * Composable that exposes the live insights payload for an Application + Version.
  *
  * `appUuidRef`, `versionUuidRef`, and `windowRef` may be plain strings OR
@@ -42,12 +94,7 @@ import { ref, watch } from 'vue'
  * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-1
  */
 export function useApplicationInsights(appUuidRef, versionUuidRef, windowRef) {
-	const kpis = ref({
-		activeUsers: 0,
-		objectCount: 0,
-		filesCount: 0,
-		auditEventCount: 0,
-	})
+	const kpis = ref(emptyKpis())
 	const activity = ref([])
 	const loading = ref(false)
 	const error = ref(null)
@@ -62,9 +109,7 @@ export function useApplicationInsights(appUuidRef, versionUuidRef, windowRef) {
 	 * @return {*} The unwrapped value.
 	 */
 	function unwrap(maybeRef) {
-		return maybeRef && typeof maybeRef === 'object' && 'value' in maybeRef
-			? maybeRef.value
-			: maybeRef
+		return isRefLike(maybeRef) ? maybeRef.value : maybeRef
 	}
 
 	/**
@@ -90,53 +135,17 @@ export function useApplicationInsights(appUuidRef, versionUuidRef, windowRef) {
 				`/apps/buildiq/api/applications/${encodeURIComponent(appUuid)}/versions/${encodeURIComponent(versionUuid)}/insights`,
 			)
 			const { data } = await axios.get(url, { params: { window: win } })
-			if (data && typeof data === 'object') {
-				kpis.value =
-					data.kpis && typeof data.kpis === 'object'
-						? {
-								activeUsers: 0,
-								objectCount: 0,
-								filesCount: 0,
-								auditEventCount: 0,
-								...data.kpis,
-							}
-						: {
-								activeUsers: 0,
-								objectCount: 0,
-								filesCount: 0,
-								auditEventCount: 0,
-							}
-				activity.value = Array.isArray(data.activity) ? data.activity : []
-			} else {
-				kpis.value = {
-					activeUsers: 0,
-					objectCount: 0,
-					filesCount: 0,
-					auditEventCount: 0,
-				}
-				activity.value = []
-			}
+			kpis.value = kpisOf(data)
+			activity.value = activityOf(data)
 		} catch (e) {
 			const status = (e && e.response && e.response.status) || 0
 			if (status === 404) {
 				versionNoLongerAccessible.value = true
-				kpis.value = {
-					activeUsers: 0,
-					objectCount: 0,
-					filesCount: 0,
-					auditEventCount: 0,
-				}
-				activity.value = []
 			} else {
 				error.value = e instanceof Error ? e : new Error(String(e))
-				kpis.value = {
-					activeUsers: 0,
-					objectCount: 0,
-					filesCount: 0,
-					auditEventCount: 0,
-				}
-				activity.value = []
 			}
+			kpis.value = emptyKpis()
+			activity.value = []
 		} finally {
 			loading.value = false
 		}
@@ -159,20 +168,7 @@ export function useApplicationInsights(appUuidRef, versionUuidRef, windowRef) {
 	}
 
 	// Only attach watchers when the inputs are reactive refs.
-	const sources = []
-	if (appUuidRef && typeof appUuidRef === 'object' && 'value' in appUuidRef) {
-		sources.push(appUuidRef)
-	}
-	if (
-		versionUuidRef
-		&& typeof versionUuidRef === 'object'
-		&& 'value' in versionUuidRef
-	) {
-		sources.push(versionUuidRef)
-	}
-	if (windowRef && typeof windowRef === 'object' && 'value' in windowRef) {
-		sources.push(windowRef)
-	}
+	const sources = [appUuidRef, versionUuidRef, windowRef].filter(isRefLike)
 	if (sources.length > 0) {
 		watch(sources, () => {
 			debouncedRefresh()

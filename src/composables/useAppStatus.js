@@ -23,15 +23,62 @@ import { generateUrl } from '@nextcloud/router'
  * @spec openspec/changes/openconnector-api-sources/tasks.md#task-2.2
  */
 import { ref } from 'vue'
+import { fleetAppCandidates, resolveFleetAppId } from '../services/fleetAppId.js'
 
 /** @type {Map<string, boolean>} */
 const statusCache = new Map()
 
 /**
+ * What the server-injected app webroots map says about an app: true when it
+ * lists any id the app answers to, false when it is populated but lists none,
+ * null when there is no usable map.
+ *
+ * Every id counts: an instance still on the pre-rename release registers only
+ * the old one, and reading just the new name there reports a perfectly healthy
+ * app as absent. A populated map that lists none of the ids is a definitive
+ * "absent", not a reason to probe: probing anyway sent a request to a route
+ * that cannot exist (`/apps/thematiq/api` with the theme app disabled), and
+ * that 404 landed in the console of every page designer load.
+ *
+ * @param {string} appId The canonical app id.
+ * @return {boolean|null} The verdict, or null to fall through to the probe.
+ */
+function webrootsVerdict(appId) {
+	try {
+		const roots = (typeof OC !== 'undefined' && OC.appswebroots) || {}
+		if (fleetAppCandidates(appId).some((id) => roots[id] !== undefined)) {
+			return true
+		}
+		if (typeof roots === 'object' && Object.keys(roots).length > 0) {
+			return false
+		}
+	} catch {
+		// fall through to probe
+	}
+	return null
+}
+
+/**
+ * Whether a failed probe still means the app answered. 404 / 501, or no
+ * response at all, means the route does not exist (app absent or disabled);
+ * any other status (including 400/401/403) means the app answered.
+ *
+ * @param {unknown} e The probe's error.
+ * @return {boolean} True when the app answered.
+ */
+function probeAnswered(e) {
+	const status = e && e.response && e.response.status
+	return !(status === 404 || status === 501 || status === undefined)
+}
+
+/**
  * Probe whether an app is available. Returns reactive `{ available, checked }`
  * refs that flip once the async probe resolves.
  *
- * @param {string} appId - the app id, e.g. `procest` or `openconnector`.
+ * @param {string} appId - the CANONICAL app id, e.g. `dossiq` or
+ *   `integriq`. Renamed fleet apps are resolved across every id they answer
+ *   to (see `services/fleetAppId.js`), so a caller never has to know which
+ *   spelling this instance is on.
  * @param {object} [opts] - options.
  * @param {string} [opts.probePath] - app route to probe when the webroots map
  *   is silent (default `/apps/{appId}/api`).
@@ -56,37 +103,32 @@ export function useAppStatus(appId, opts = {}) {
 			checked.value = true
 			return available.value
 		}
-		// 1. Synchronous positive signal from the server-injected app webroots
-		// map (present when the app is installed + enabled).
-		try {
-			const roots = (typeof OC !== 'undefined' && OC.appswebroots) || {}
-			if (roots[appId] !== undefined) {
-				available.value = true
-				checked.value = true
-				statusCache.set(appId, true)
-				return true
-			}
-		} catch {
-			// fall through to probe
+		const listed = webrootsVerdict(appId)
+		if (listed !== null) {
+			return settle(listed)
 		}
-		// 2. Cheap authenticated probe.
-		const path = opts.probePath || `/apps/${appId}/api`
+		// 2. No usable webroots map (unit tests, early boot): a cheap
+		// authenticated probe.
+		const path = opts.probePath || `/apps/${resolveFleetAppId(appId)}/api`
 		try {
 			await client.get(generateUrl(path))
-			available.value = true
+			return settle(true)
 		} catch (e) {
-			const status = e && e.response && e.response.status
-			// 404 / 501 → route does not exist → app absent/disabled.
-			// Any other status (incl. 400/401/403) means the app answered.
-			available.value = !(
-				status === 404
-				|| status === 501
-				|| status === undefined
-			)
+			return settle(probeAnswered(e))
 		}
+	}
+
+	/**
+	 * Record a verdict: expose it, mark the check done and cache it.
+	 *
+	 * @param {boolean} value Whether the app is available.
+	 * @return {boolean} The same verdict.
+	 */
+	function settle(value) {
+		available.value = value
 		checked.value = true
-		statusCache.set(appId, available.value)
-		return available.value
+		statusCache.set(appId, value)
+		return value
 	}
 
 	return { available, checked, check }

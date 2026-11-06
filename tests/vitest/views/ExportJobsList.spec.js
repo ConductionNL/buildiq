@@ -45,7 +45,9 @@ describe('ExportJobsList — #104 schema-slug fix', () => {
 
 	it('polls OR REST at the export-job slug, not the exportJob JSON key', async () => {
 		const wrapper = mount(ExportJobsList, {
-			propsData: { applicationSlug: 'spectr' },
+			// An app uuid is required: without one the list fetches nothing,
+			// rather than every app's export jobs.
+			propsData: { applicationSlug: 'spectr', applicationUuid: 'app-uuid-1' },
 		})
 		await flushFetch(wrapper)
 
@@ -106,7 +108,9 @@ describe('ExportJobsList — #104 schema-slug fix', () => {
 		})
 
 		const wrapper = mount(ExportJobsList, {
-			propsData: { applicationSlug: 'spectr' },
+			// An app uuid is required: without one the list fetches nothing,
+			// rather than every app's export jobs.
+			propsData: { applicationSlug: 'spectr', applicationUuid: 'app-uuid-1' },
 		})
 		await flushFetch(wrapper)
 

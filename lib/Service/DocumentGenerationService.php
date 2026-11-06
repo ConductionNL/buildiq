@@ -83,6 +83,9 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Service\Connection\ConnectionReporter;
+use OCA\Buildiq\Support\FleetAppId;
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -114,11 +117,12 @@ class DocumentGenerationService {
 	private const APPLICATION_SCHEMA = 'built-app';
 
 	/**
-	 * NC route name for Docudesk's pinned generate route
+	 * Route name of the generate route, without its app id
 	 * (`OCA\Filinq\Controller\CorrespondenceController::generate()`,
-	 * `appinfo/routes.php` entry `correspondence#generate`).
+	 * `appinfo/routes.php` entry `correspondence#generate`). The app id in
+	 * front is resolved per instance, see {@see self::generateRoute()}.
 	 */
-	private const GENERATE_ROUTE = 'docudesk.correspondence.generate';
+	private const GENERATE_ROUTE_SUFFIX = 'correspondence.generate';
 
 	/**
 	 * Field the `attach` output mode writes `{ "ref": "<fileId>" }" to on
@@ -185,8 +189,11 @@ class DocumentGenerationService {
 	 *                                      optional NC-core token provider (see {@see
 	 *                                      self::TOKEN_PROVIDER_CLASS}).
 	 * @param LoggerInterface $logger PSR logger.
+	 * @param ConnectionReporter|null $connectionReporter Tells integriq what the Filinq call met, or nothing when absent.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md#requirement-req-biq-conn-003-buildiq-reports-what-its-connection-calls-met
 	 */
 	public function __construct(
 		private readonly ObjectServiceInterface $objectService,
@@ -201,6 +208,7 @@ class DocumentGenerationService {
 		private readonly IAppDataFactory $appDataFactory,
 		private readonly ContainerInterface $container,
 		private readonly LoggerInterface $logger,
+		private readonly ?ConnectionReporter $connectionReporter = null,
 	) {
 
 	}//end __construct()
@@ -356,6 +364,7 @@ class DocumentGenerationService {
 	 * @param string $slug The Application slug.
 	 *
 	 * @return string|null
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function resolveApplicationUuid(string $slug): ?string {
 		if ($slug === '') {
@@ -381,7 +390,7 @@ class DocumentGenerationService {
 			return null;
 		}
 
-		$application = $this->normalise(object: $results[0]);
+		$application = ObjectRecord::toArray(object: $results[0]);
 		$uuid = (string)($application['id'] ?? $application['uuid'] ?? '');
 
 		if ($uuid === '') {
@@ -392,9 +401,44 @@ class DocumentGenerationService {
 	}//end resolveApplicationUuid()
 
 	/**
+	 * Resolve the generate route on this instance.
+	 *
+	 * The document app was renamed from docudesk to filinq, and its routes
+	 * are registered under whichever id the instance runs. Each candidate id
+	 * is tried newest first. Nextcloud's router answers '' for a route no
+	 * enabled app registers, and linkToRouteAbsolute() turns that into the
+	 * bare instance URL, so both mean "not this one".
+	 *
+	 * @return array{0: string, 1: string|null} The route name, and its URL or
+	 *                                          null when no candidate answers
+	 *                                          (the name is then the newest
+	 *                                          candidate, for the report).
+	 *
+	 * @spec openspec/changes/automation-document-action/tasks.md#2.1
+	 */
+	private function generateRoute(): array {
+		$candidates = FleetAppId::CANDIDATES['filinq'];
+		$root       = $this->urlGenerator->getAbsoluteURL('');
+		foreach ($candidates as $appId) {
+			$route = $appId . '.' . self::GENERATE_ROUTE_SUFFIX;
+			$url   = $this->urlGenerator->linkToRouteAbsolute($route);
+			if ($url !== '' && $url !== $root) {
+				return [$route, $url];
+			}
+		}
+
+		return [$candidates[0] . '.' . self::GENERATE_ROUTE_SUFFIX, null];
+
+	}//end generateRoute()
+
+	/**
 	 * The one internal HTTP call to Docudesk's pinned generate route, HTTP
 	 * Basic-authenticated with a single-use token minted for the currently
 	 * impersonated user (see class docblock "Transport detail").
+	 *
+	 * What the call met is reported to integriq's connection registry, at most
+	 * once an hour while it stays the same (adopt-connection-registry). The
+	 * report never changes the result.
 	 *
 	 * @param string $templateId Docudesk template UUID.
 	 * @param array<int,array<string,string>> $dataRefs Exactly one `{register,schema,id}` entry
@@ -403,6 +447,8 @@ class DocumentGenerationService {
 	 * @param string $filename Requested download filename.
 	 *
 	 * @return array{status:int,body:string,contentType:?string}|null Null on any failure.
+	 *
+	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md#requirement-req-biq-conn-003-buildiq-reports-what-its-connection-calls-met
 	 */
 	private function callGenerate(string $templateId, array $dataRefs, string $filename): ?array {
 		$user = $this->userSession->getUser();
@@ -421,7 +467,16 @@ class DocumentGenerationService {
 		}
 
 		[$token, $provider] = $minted;
-		$url = $this->urlGenerator->linkToRouteAbsolute(self::GENERATE_ROUTE);
+		[$route, $url] = $this->generateRoute();
+		if ($url === null) {
+			$this->invalidateToken(provider: $provider, token: $token);
+			$this->logger->error(
+				'Buildiq: DocumentGenerationService found no route "' . $route . '", so the document call is skipped. '
+				. 'Tried these app ids in order: ' . implode(', ', FleetAppId::CANDIDATES['filinq']) . '.'
+			);
+			$this->connectionReporter?->reportDocumentRouteMissing(route: $route);
+			return null;
+		}
 
 		try {
 			try {
@@ -441,6 +496,7 @@ class DocumentGenerationService {
 				);
 			} catch (Throwable $e) {
 				$this->logger->error('Buildiq: DocumentGenerationService Docudesk call failed: ' . $e->getMessage(), ['exception' => $e]);
+				$this->connectionReporter?->reportDocumentCall(httpStatus: $this->connectionReporter->httpStatusOf(exception: $e));
 				return null;
 			}
 		} finally {
@@ -453,6 +509,7 @@ class DocumentGenerationService {
 		}//end try
 
 		$status = $response->getStatusCode();
+		$this->connectionReporter?->reportDocumentCall(httpStatus: $status);
 		if ($status < 200 || $status >= 300) {
 			$this->logger->warning('Buildiq: DocumentGenerationService Docudesk call returned status ' . $status . '.');
 			return null;
@@ -732,33 +789,4 @@ class DocumentGenerationService {
 		);
 
 	}//end dispatchNotification()
-
-	/**
-	 * Coerce an OR result entry to a plain associative array.
-	 *
-	 * @param mixed $object The OR object/result entry.
-	 *
-	 * @return array<string,mixed>
-	 */
-	private function normalise(mixed $object): array {
-		if (is_array($object) === true) {
-			return $object;
-		}
-
-		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-			$serialised = $object->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		if (is_object($object) === true && method_exists($object, 'getObject') === true) {
-			$inner = $object->getObject();
-			if (is_array($inner) === true) {
-				return $inner;
-			}
-		}
-
-		return [];
-	}//end normalise()
 }//end class

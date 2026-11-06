@@ -253,4 +253,77 @@ describe('PageListEditor', () => {
 		expect(wrapper.find('.page-list-editor__add-row').exists()).toBe(false)
 		expect(wrapper.emitted('update:pages')).toBeUndefined()
 	})
+
+	describe('adding a page with a title and a slug', () => {
+		it('stores the typed title and slug, and routes the page on its slug', async () => {
+			const wrapper = mountEditor([
+				{ id: 'Dashboard', route: '/', type: 'dashboard', config: {} },
+			])
+			wrapper.vm.startAdd()
+			await wrapper.vm.$nextTick()
+			wrapper.vm.addingType = 'index'
+			await wrapper.find('.page-list-editor__add-title').setValue('Concepts')
+			await wrapper.find('.page-list-editor__add-id').setValue('Concept list')
+			wrapper.vm.confirmAdd()
+			const added = wrapper.emitted('update:pages')[0][0][1]
+			expect(added).toMatchObject({
+				id: 'concept-list',
+				route: '/concept-list',
+				title: 'Concepts',
+			})
+		})
+
+		it('never stores a translation key as the title', () => {
+			// Regression: a new page got `title: "index.title"`, which the
+			// running app printed as its heading.
+			const wrapper = mountEditor([])
+			wrapper.vm.startAdd()
+			wrapper.vm.addingType = 'form'
+			wrapper.vm.confirmAdd()
+			const added = wrapper.emitted('update:pages')[0][0][0]
+			expect(added.title).toBe('Form')
+		})
+
+		it('does not put a second index page on "/"', () => {
+			// Regression: every new index page got route "/", the Dashboard's.
+			const wrapper = mountEditor([
+				{ id: 'Dashboard', route: '/', type: 'dashboard', config: {} },
+			])
+			wrapper.vm.startAdd()
+			wrapper.vm.addingType = 'index'
+			wrapper.vm.confirmAdd()
+			const added = wrapper.emitted('update:pages')[0][0][1]
+			expect(added.route).toBe('/index')
+		})
+
+		it('keeps ids and routes unique', () => {
+			const wrapper = mountEditor([
+				{ id: 'form-page-2', route: '/form', type: 'form', config: {} },
+			])
+			wrapper.vm.startAdd()
+			wrapper.vm.addingType = 'form'
+			wrapper.vm.confirmAdd()
+			const added = wrapper.emitted('update:pages')[0][0][1]
+			expect(added.id).toBe('form-page-2-2')
+			expect(added.route).toBe('/form-2')
+		})
+
+		it('warns when two pages share a route', () => {
+			const wrapper = mountEditor([
+				{ id: 'Dashboard', route: '/', type: 'dashboard' },
+				{ id: 'list', route: '/', type: 'index' },
+			])
+			expect(wrapper.vm.duplicateRoutes).toEqual(['/'])
+			expect(wrapper.text()).toContain('More than one page uses the route:')
+			expect(wrapper.findAll('.page-list-editor__row--error').length).toBe(2)
+		})
+
+		it('edits the title of an existing page', async () => {
+			const wrapper = mountEditor([
+				{ id: 'list', route: '/list', type: 'index', title: 'index.title' },
+			])
+			await wrapper.find('.page-list-editor__title').setValue('Concepts')
+			expect(wrapper.emitted('update:pages')[0][0][0].title).toBe('Concepts')
+		})
+	})
 })

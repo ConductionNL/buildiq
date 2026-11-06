@@ -26,6 +26,9 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Mcp\Handler;
 
+use OCA\Buildiq\Support\ManifestPageShape;
+use OCA\Buildiq\Support\ManifestRoute;
+
 /**
  * Handles the buildiq.upsertPage tool invocation.
  */
@@ -39,6 +42,9 @@ class UpsertPageHandler extends AbstractToolHandler {
 	 * @param array<string, mixed> $args Tool arguments (appSlug, versionSlug, pageId, title, type, route, config).
 	 *
 	 * @return array<string, mixed>
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ManifestPageShape is a pure shape
+	 * builder with no collaborators and no state.
 	 */
 	public function handle(array $args): array {
 		$validation = $this->validateArgs(args: $args);
@@ -69,13 +75,16 @@ class UpsertPageHandler extends AbstractToolHandler {
 			$manifest = (array)($version['manifest'] ?? []);
 			$pages = (array)($manifest['pages'] ?? []);
 
-			$newPage = [
+			// Shared with CopilotService::applyUpsertPage() so the page reviewed
+			// and the page stored are the same one. See ManifestPageShape for
+			// the per-type fields the canonical validator insists on.
+			$newPage = ManifestPageShape::normalise(page: [
 				'id' => $pageId,
 				'route' => $validation['route'],
 				'type' => $validation['type'],
 				'title' => $validation['title'],
 				'config' => $validation['config'],
-			];
+			]);
 
 			[$pages, $replaced] = $this->upsertPageInList(pages: $pages, pageId: $pageId, newPage: $newPage);
 
@@ -123,6 +132,9 @@ class UpsertPageHandler extends AbstractToolHandler {
 	 * @param array<string, mixed> $args Raw tool arguments.
 	 *
 	 * @return array<string, mixed>
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ManifestRoute is a pure rule with
+	 * no collaborators and no state.
 	 */
 	private function validateArgs(array $args): array {
 		$appSlug = (string)($args['appSlug'] ?? '');
@@ -130,7 +142,9 @@ class UpsertPageHandler extends AbstractToolHandler {
 		$pageId = (string)($args['pageId'] ?? '');
 		$title = (string)($args['title'] ?? '');
 		$type = (string)($args['type'] ?? '');
-		$route = (string)($args['route'] ?? '');
+		// A route written as a bare page id is rooted rather than refused;
+		// see ManifestRoute for the shapes that stay refused.
+		$route = ManifestRoute::normalise(route: (string)($args['route'] ?? ''));
 		$config = $args['config'] ?? [];
 
 		if ($appSlug === '' || $this->isValidSlug(candidate: $appSlug) === false) {
@@ -155,7 +169,7 @@ class UpsertPageHandler extends AbstractToolHandler {
 
 		// Validate route to a safe path pattern: must start with '/' and contain
 		// only path-safe characters (issue #167 — route injection guard).
-		if ($this->isValidRoute(route: $route) === false) {
+		if (ManifestRoute::isValid(route: $route) === false) {
 			return [
 				'error' => "Invalid route '{$route}'. "
 				. "Routes must start with '/' and contain only safe path characters.",
@@ -177,28 +191,6 @@ class UpsertPageHandler extends AbstractToolHandler {
 		];
 
 	}//end validateArgs()
-
-	/**
-	 * Validate a route value against a safe path pattern.
-	 *
-	 * Accepts paths that start with '/' and consist only of alphanumeric
-	 * characters, hyphens, underscores, dots, forward slashes, and route
-	 * parameter placeholders (:param or {param}). Rejects javascript: URIs,
-	 * protocol-relative paths, and other injection vectors (issue #167).
-	 *
-	 * @param string $route The candidate route string.
-	 *
-	 * @return bool
-	 */
-	private function isValidRoute(string $route): bool {
-		if (strlen($route) > 256) {
-			return false;
-		}
-
-		// Require the character after the leading '/' to be non-slash so that
-		// protocol-relative URLs (//host/path) are rejected.
-		return (bool)preg_match('#^/([a-zA-Z0-9_\-\.:\{][a-zA-Z0-9/_\-\.:\{\}]*)?$#', $route);
-	}//end isValidRoute()
 
 	/**
 	 * Upsert a page into the pages list using case-insensitive id matching.

@@ -28,8 +28,13 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\BackgroundJob;
 
 use OCA\Buildiq\BackgroundJob\RunExportJob;
+use OCA\Buildiq\Service\ExportAppContentBundler;
+use OCA\Buildiq\Service\ExportContents;
 use OCA\Buildiq\Service\ExportJobService;
 use OCA\Buildiq\Service\ExportService;
+use OCA\Buildiq\Service\ExportTarget;
+use OCA\Buildiq\Service\GitHub\BrokerAccess;
+use OCA\Buildiq\Service\GitHub\PushTarget;
 use OCA\Buildiq\Service\GitHubPushService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -105,13 +110,17 @@ final class RunExportJobTest extends TestCase {
 	 *
 	 * @return RunExportJob
 	 */
-	private function buildJob(?\Psr\Log\LoggerInterface $logger = null): RunExportJob {
+	private function buildJob(
+		?\Psr\Log\LoggerInterface $logger = null,
+		?ExportAppContentBundler $contentBundler = null,
+	): RunExportJob {
 		return new RunExportJob(
 			$this->time,
 			$this->exportService,
 			$this->exportJobService,
 			$this->githubPushService,
-			$logger ?? new NullLogger()
+			$logger ?? new NullLogger(),
+			$contentBundler
 		);
 	}//end buildJob()
 
@@ -173,6 +182,126 @@ final class RunExportJobTest extends TestCase {
 
 		$this->invokeRun($this->buildJob(), ['jobUuid' => $jobUuid]);
 	}//end testRunTransitionsThroughRunningToSucceeded()
+
+	/**
+	 * The job hands the application, its chosen version and the seed-data
+	 * choice to the exporter, names the app after the application, and
+	 * records what went into the archive.
+	 *
+	 * @return void
+	 */
+	public function testRunExportsTheApplicationTheJobNames(): void {
+		$job = $this->jobFixture();
+		$job['applicationVersionSlug'] = 'development';
+		$job['includeSeedData'] = true;
+		$this->exportJobService->method('loadJob')->willReturn($job);
+
+		$source = [
+			'application' => ['slug' => 'test-app', 'name' => 'Test things', 'description' => 'Tracks things.'],
+			'version' => ['slug' => 'development'],
+		];
+		$bundler = $this->createMock(ExportAppContentBundler::class);
+		$bundler->expects(self::once())
+			->method('resolveSource')
+			->with('app-uuid-test', '1.0.0', 'development')
+			->willReturn($source);
+
+		$this->exportService->expects(self::once())
+			->method('generateAppZip')
+			->willReturnCallback(
+				function (...$args) use ($source): string {
+					// Positional: target, contents, includeServerBundle.
+					self::assertSame('Test things', $args[1]->context['appName']);
+					self::assertSame('Tracks things.', $args[1]->context['appDescription']);
+					self::assertSame($source + ['includeSeedData' => true], $args[1]->source);
+					return '/tmp/x.zip';
+				}
+			);
+		$this->exportService->method('lastContent')->willReturn(['pages' => 3, 'menu' => 2, 'schemas' => 1, 'records' => 4]);
+
+		$succeeded = [];
+		$this->exportJobService->method('transitionJob')->willReturnCallback(
+			function (string $uuid, string $action, array $extra = []) use (&$succeeded): bool {
+				if ($action === 'succeed') {
+					$succeeded = $extra;
+				}
+
+				return true;
+			}
+		);
+
+		$this->invokeRun($this->buildJob(contentBundler: $bundler), ['jobUuid' => 'job-content']);
+
+		self::assertSame(['Exported 3 pages, 2 menu items, 1 schemas and 4 records.'], $succeeded['log'] ?? null);
+	}//end testRunExportsTheApplicationTheJobNames()
+
+	/**
+	 * Every field of the job reaches the exporter in the right place: the
+	 * target names the application, version, job and agent slug; the contents
+	 * carry the context, the data registers, the flows and the source; the
+	 * server bundle flag is set only by a literal true.
+	 *
+	 * @return void
+	 */
+	public function testHandsEveryJobFieldToTheExporter(): void {
+		$cases = [
+			'bundle on' => [['includeServerBundle' => true, 'flows' => [['flow' => 'f1']], 'dataRegisters' => [['register' => 'r']]], true, [['flow' => 'f1']], [['register' => 'r']]],
+			'bundle truthy' => [['includeServerBundle' => 1, 'flows' => 'not-a-list', 'dataRegisters' => 'x'], false, [], []],
+			'bundle absent' => [[], false, [], []],
+		];
+		foreach ($cases as $name => [$extra, $bundle, $flows, $registers]) {
+			$this->setUp();
+			$this->exportJobService->method('loadJob')->willReturn($extra + $this->jobFixture('app-uuid-fields'));
+			$this->exportJobService->method('transitionJob')->willReturn(true);
+			$captured = [];
+			$this->exportService->expects(self::once())->method('generateAppZip')->willReturnCallback(
+				function (ExportTarget $target, ExportContents $contents, bool $includeServerBundle) use (&$captured): string {
+					$captured = [$target, $contents, $includeServerBundle];
+					return '/tmp/x.zip';
+				}
+			);
+
+			$this->invokeRun($this->buildJob(), ['jobUuid' => 'job-fields']);
+
+			[$target, $contents, $includeServerBundle] = $captured;
+			self::assertSame(['app-uuid-fields', '1.0.0', 'job-fields', 'test-app'], [$target->applicationUuid, $target->versionSlug, $target->jobUuid, $target->applicationSlug], $name);
+			self::assertSame('test-app', $contents->context['appId'], $name);
+			self::assertSame('1.0.0', $contents->context['appVersion'], $name);
+			self::assertSame($registers, $contents->dataRegisters, $name);
+			self::assertSame($flows, $contents->flows, $name);
+			self::assertNull($contents->source, $name);
+			self::assertSame($bundle, $includeServerBundle, $name);
+		}
+	}//end testHandsEveryJobFieldToTheExporter()
+
+	/**
+	 * An application that cannot be read fails the job instead of exporting
+	 * the empty template as a success.
+	 *
+	 * @return void
+	 */
+	public function testRunFailsWhenTheApplicationCannotBeRead(): void {
+		$this->exportJobService->method('loadJob')->willReturn($this->jobFixture());
+		$bundler = $this->createMock(ExportAppContentBundler::class);
+		$bundler->method('resolveSource')->willReturn(null);
+
+		$this->exportService->expects(self::never())->method('generateAppZip');
+
+		$failure = null;
+		$this->exportJobService->method('transitionJob')->willReturnCallback(
+			function (string $uuid, string $action, array $extra = []) use (&$failure): bool {
+				if ($action === 'fail') {
+					$failure = $extra['errorMessage'] ?? '';
+				}
+
+				return true;
+			}
+		);
+
+		$this->invokeRun($this->buildJob(contentBundler: $bundler), ['jobUuid' => 'job-missing-app']);
+
+		self::assertSame('The application to export could not be read.', $failure);
+	}//end testRunFailsWhenTheApplicationCannotBeRead()
 
 	/**
 	 * Failure path: when ExportService::generateAppZip throws, the job
@@ -280,11 +409,8 @@ final class RunExportJobTest extends TestCase {
 			->with(
 				self::anything(),
 				self::anything(),
-				self::equalTo('cred-uuid-1234'),
-				self::equalTo('acme-co'),
-				self::equalTo('hello-world'),
-				self::anything(),
-				self::equalTo('alice')
+				self::equalTo(new BrokerAccess(credentialId: 'cred-uuid-1234', actingUserId: 'alice')),
+				self::equalTo(new PushTarget(org: 'acme-co', repo: 'hello-world', visibility: 'private'))
 			)
 			->willReturn(
 				[
@@ -295,6 +421,47 @@ final class RunExportJobTest extends TestCase {
 
 		$this->invokeRun($this->buildJob(), ['jobUuid' => $jobUuid]);
 	}//end testGithubExportPassesCredentialAndActingUserToPush()
+
+	/**
+	 * The acting user is the job's requestedBy; the owner only stands in when
+	 * requestedBy is absent or empty, and with neither the broker gets no user.
+	 *
+	 * @return void
+	 */
+	public function testTheActingUserIsRequestedByBeforeOwner(): void {
+		$cases = [
+			'both set' => [['requestedBy' => 'alice', 'owner' => 'mallory'], 'alice'],
+			'only requestedBy' => [['requestedBy' => 'alice'], 'alice'],
+			'empty requestedBy' => [['requestedBy' => '', 'owner' => 'bob'], 'bob'],
+			'only owner' => [['owner' => 'bob'], 'bob'],
+			'neither' => [[], null],
+		];
+		foreach ($cases as $name => [$identity, $expected]) {
+			$this->setUp();
+			$job = $this->jobFixture() + $identity;
+			$job['target'] = 'github';
+			$job['githubOrg'] = 'acme-co';
+			$job['githubRepo'] = 'hello-world';
+			$job['githubCredentialId'] = 'cred-uuid-1234';
+
+			$this->exportJobService->method('loadJob')->willReturn($job);
+			$this->exportJobService->method('transitionJob')->willReturn(true);
+			$this->exportService->method('generateAppZip')->willReturn('/tmp/x.zip');
+			$this->exportService->method('scratchTreeDir')->willReturn('/tmp/tree');
+
+			$seen = [];
+			$this->githubPushService->method('push')->willReturnCallback(
+				static function (string $jobUuid, string $treeDir, BrokerAccess $access) use (&$seen): array {
+					$seen[] = $access->actingUserId;
+					return ['repoUrl' => 'https://github.com/acme-co/hello-world', 'pullRequestUrl' => ''];
+				}
+			);
+
+			$this->invokeRun($this->buildJob(), ['jobUuid' => 'acting-user']);
+
+			self::assertSame([$expected], $seen, $name);
+		}//end foreach
+	}//end testTheActingUserIsRequestedByBeforeOwner()
 
 	/**
 	 * Re-running a job with the same UUID must invoke the pipeline with
@@ -316,16 +483,14 @@ final class RunExportJobTest extends TestCase {
 			->expects(self::exactly(2))
 			->method('generateAppZip')
 			->willReturnCallback(function (
-				string $applicationUuid,
-				string $versionSlug,
-				array $context,
-				string $jobUuidArg,
+				ExportTarget $target,
+				ExportContents $contents,
 			) use (&$captured): string {
 				$captured[] = [
-					'applicationUuid' => $applicationUuid,
-					'versionSlug' => $versionSlug,
-					'context' => $context,
-					'jobUuid' => $jobUuidArg,
+					'applicationUuid' => $target->applicationUuid,
+					'versionSlug' => $target->versionSlug,
+					'context' => $contents->context,
+					'jobUuid' => $target->jobUuid,
 				];
 
 				return '/tmp/out.zip';
@@ -370,7 +535,7 @@ final class RunExportJobTest extends TestCase {
 
 		$this->invokeRun($this->buildJob(), ['jobUuid' => $jobUuid]);
 
-		self::assertSame($dataRegisters, $captured[4] ?? null, 'dataRegisters must be forwarded as the 5th argument');
+		self::assertSame($dataRegisters, $captured[1]->dataRegisters ?? null, 'dataRegisters must be forwarded in the export contents');
 	}//end testForwardsDataRegistersFromLoadedJobIntoGenerateAppZip()
 
 	/**
@@ -396,7 +561,7 @@ final class RunExportJobTest extends TestCase {
 
 		$this->invokeRun($this->buildJob(), ['jobUuid' => $jobUuid]);
 
-		self::assertSame([], $captured[4] ?? null);
+		self::assertSame([], $captured[1]->dataRegisters ?? null);
 	}//end testForwardsEmptyDataRegistersWhenJobRecordPredatesTheProperty()
 
 	/**
@@ -449,10 +614,40 @@ final class RunExportJobTest extends TestCase {
 
 		foreach ($captured as $line) {
 			self::assertDoesNotMatchRegularExpression(
-				'/gh[pousr]_[A-Za-z0-9]{10,}/',
+				'/gh[pousr]_[A-Za-z0-9]{10,}|github_pat_[A-Za-z0-9_]{10,}/',
 				$line,
 				'No GitHub token may ever appear in a log line — found in: ' . $line
 			);
 		}
 	}//end testNoTokenShapedStringIsEverLogged()
+
+	/**
+	 * A job that already left the queued state is not run a second time:
+	 * the dialog starts it right away and cron may try it again later.
+	 *
+	 * @return void
+	 */
+	public function testRunSkipsAJobThatIsNoLongerQueued(): void {
+		$job = $this->jobFixture();
+		$job['status'] = 'running';
+		$this->exportJobService->method('loadJob')->willReturn($job);
+
+		$this->exportJobService->expects(self::never())->method('transitionJob');
+		$this->exportService->expects(self::never())->method('generateAppZip');
+
+		$this->invokeRun($this->buildJob(), ['jobUuid' => 'job-running']);
+	}//end testRunSkipsAJobThatIsNoLongerQueued()
+
+	/**
+	 * runFor() runs the same pipeline cron would, for the named job.
+	 *
+	 * @return void
+	 */
+	public function testRunForRunsTheExportOutsideCron(): void {
+		$this->exportJobService->method('loadJob')->willReturn($this->jobFixture());
+		$this->exportJobService->method('transitionJob')->willReturn(true);
+		$this->exportService->expects(self::once())->method('generateAppZip')->willReturn('/tmp/x.zip');
+
+		$this->buildJob()->runFor(jobUuid: 'job-now');
+	}//end testRunForRunsTheExportOutsideCron()
 }//end class

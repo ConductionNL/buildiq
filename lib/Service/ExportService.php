@@ -36,8 +36,6 @@ namespace OCA\Buildiq\Service;
 use OCP\Files\IAppData;
 use OCP\Files\NotFoundException;
 use Psr\Log\LoggerInterface;
-use RuntimeException;
-use ZipArchive;
 
 /**
  * Generates a real Nextcloud-app tree from an Buildiq Application + ZIPs it.
@@ -100,6 +98,13 @@ class ExportService {
 	private array $lastSkipped = [];
 
 	/**
+	 * What the last export wrote of the application itself.
+	 *
+	 * @var array{pages: int, menu: int, schemas: int, records: int}|null
+	 */
+	private ?array $lastContent = null;
+
+	/**
 	 * Deterministic ZIP entry timestamp (REQ-OBEX-008).
 	 *
 	 * @var integer
@@ -112,20 +117,13 @@ class ExportService {
 	 * @param IAppData $appData The app-data area for scratch + exports.
 	 * @param PlaceholderResolver $placeholderResolver Pure resolver for {{tokens}}.
 	 * @param LoggerInterface $logger Logger.
-	 * @param DataRegisterExportBundler $dataRegisterBundler Bundles bound data registers into the exported
-	 *                                                       tree (data-registers-runtime) — a dedicated
-	 *                                                       collaborator so this class's own coupling/
-	 *                                                       complexity stays within PHPMD's thresholds.
-	 * @param FlowAndAgentExportBundler $flowAndAgentBundler Bundles the application's flows and the
-	 *                                                       agents that point at it into the exported
-	 *                                                       tree, for the same reason.
+	 * @param ExportBundlers $bundlers The writers that bundle registers, flows/agents, content and the server bundle.
 	 */
 	public function __construct(
 		private IAppData $appData,
 		private PlaceholderResolver $placeholderResolver,
 		private LoggerInterface $logger,
-		private DataRegisterExportBundler $dataRegisterBundler,
-		private FlowAndAgentExportBundler $flowAndAgentBundler,
+		private readonly ExportBundlers $bundlers,
 	) {
 		// Constructed rather than injected: it is stateless, has no
 		// dependencies of its own, and is deterministic — so injecting it buys
@@ -142,63 +140,99 @@ class ExportService {
 	/**
 	 * Build the ZIP archive for an Application + version into app-data.
 	 *
-	 * @param string $applicationUuid Source Application UUID.
-	 * @param string $versionSlug Semver of the Application version.
-	 * @param array<string,mixed> $context Placeholder context: appId, appNamespace, etc.
-	 * @param string $jobUuid ExportJob UUID — used as the ZIP
-	 *                        filename.
-	 * @param array<int,mixed> $dataRegisters Source Application's `dataRegisters` bindings + the
-	 *                                        per-export includeData choice for each
-	 *                                        (data-registers-runtime design.md Decision 5).
-	 *                                        Default `[]`. Untrusted shape — see
-	 *                                        bundleDataRegisterSchemas().
-	 * @param array<int,mixed> $flows `Application.flows` bindings, passed straight to
-	 *                                {@see FlowAndAgentExportBundler::bundle()}. Default `[]`.
-	 * @param string $applicationSlug Slug of the application whose agents to collect.
-	 *                                Default `''`.
+	 * A missing template snapshot or a ZIP that cannot be written surfaces as
+	 * the RuntimeException ExportTreeFiles throws.
+	 *
+	 * @param ExportTarget $target The application, version and job the archive is built for.
+	 * @param ExportContents $contents The placeholder context, data register bindings, flows and
+	 *                                 application source the tree is filled from.
+	 * @param bool $includeServerBundle Add `deploy/`, the files that run the app on its own server.
 	 *
 	 * @return string Absolute (local) path to the produced ZIP.
 	 *
-	 * @throws RuntimeException When packaging fails.
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flag mirrors the export job's includeServerBundle field.
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-40
 	 * @spec openspec/changes/data-registers-runtime/tasks.md#task-4.2
 	 */
 	public function generateAppZip(
-		string $applicationUuid,
-		string $versionSlug,
-		array $context,
-		string $jobUuid,
-		array $dataRegisters = [],
-		array $flows = [],
-		string $applicationSlug = '',
+		ExportTarget $target,
+		ExportContents $contents,
+		bool $includeServerBundle = false,
 	): string {
-		$scratchDir = $this->prepareScratchDir(jobUuid: $jobUuid);
+		$scratchDir = $this->prepareScratchDir(jobUuid: $target->jobUuid);
 		$this->copyTemplate(source: $this->templateRoot, dest: $scratchDir);
-		$this->resolvePlaceholders(rootDir: $scratchDir, context: $context);
-		$this->bundleDataRegisterSchemas(rootDir: $scratchDir, dataRegisters: $dataRegisters);
+		$serverBundle = null;
+		if ($includeServerBundle === true) {
+			$serverBundle = $this->bundlers->serverBundleWriter;
+		}
+
+		$serverBundle?->write(rootDir: $scratchDir);
+		$this->resolvePlaceholders(rootDir: $scratchDir, context: $contents->context);
+		$this->bundleDataRegisterSchemas(rootDir: $scratchDir, dataRegisters: $contents->dataRegisters);
+
+		// The application itself: without this the archive is the empty template.
+		$this->lastContent = null;
+		if ($contents->source !== null && $this->bundlers->contentBundler !== null) {
+			$this->lastContent = $this->bundlers->contentBundler->bundle(
+				rootDir: $scratchDir,
+				source: $contents->source,
+				appId: $this->placeholderResolver->slug(value: (string)($contents->context['appId'] ?? '')),
+				semver: $target->versionSlug
+			);
+		}
+
+		$serverBundle?->pointReadme(rootDir: $scratchDir);
 
 		// The flows the app is composed of, and the agents that point at it.
 		// Skips are RETURNED so the job result can name them — an operator
 		// reads the finished job, not the log.
-		$this->lastSkipped = $this->flowAndAgentBundler->bundle(
+		$this->lastSkipped = $this->bundlers->flowAndAgentBundler->bundle(
 			rootDir: $scratchDir,
-			flows: $flows,
-			applicationSlug: $applicationSlug
+			flows: $contents->flows,
+			applicationSlug: $target->applicationSlug
 		);
 
 		// Audit-trail entry names only the source — never the PAT, never secret values.
 		$this->logger->info(
 			'Buildiq export: built tree',
 			[
-				'applicationUuid' => $applicationUuid,
-				'applicationVersion' => $versionSlug,
-				'jobUuid' => $jobUuid,
+				'applicationUuid' => $target->applicationUuid,
+				'applicationVersion' => $target->versionSlug,
+				'jobUuid' => $target->jobUuid,
 			]
 		);
 
-		return $this->packageZip(sourceDir: $scratchDir, jobUuid: $jobUuid);
+		$this->pinTreeTimestamps(rootDir: $scratchDir);
+
+		return $this->packageZip(sourceDir: $scratchDir, jobUuid: $target->jobUuid);
 	}//end generateAppZip()
+
+	/**
+	 * What the last export wrote of the application itself.
+	 *
+	 * @return array{pages: int, menu: int, schemas: int, records: int}|null Null when no application was bundled.
+	 *
+	 * @spec openspec/specs/openbuild-exporter/spec.md#requirement-export-is-asynchronous-via-nextcloud-s-ijob
+	 */
+	public function lastContent(): ?array {
+		return $this->lastContent;
+	}//end lastContent()
+
+	/**
+	 * Stamp the fixed timestamp on every file, including the ones written after the copy.
+	 *
+	 * @param string $rootDir The tree root.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/openbuild-exporter/spec.md#requirement-re-exports-are-idempotent
+	 */
+	private function pinTreeTimestamps(string $rootDir): void {
+		foreach ($this->treeFiles->filePaths(dir: $rootDir) as $path) {
+			touch($path, $this->zipTimestamp);
+		}
+	}//end pinTreeTimestamps()
 
 	/**
 	 * What the last export could not resolve.
@@ -252,7 +286,7 @@ class ExportService {
 			}
 
 			if ($flows !== [] || $applicationSlug !== '') {
-				$this->lastSkipped = $this->flowAndAgentBundler->bundle(
+				$this->lastSkipped = $this->bundlers->flowAndAgentBundler->bundle(
 					rootDir: $scratch,
 					flows: $flows,
 					applicationSlug: $applicationSlug
@@ -296,7 +330,7 @@ class ExportService {
 	 * @spec openspec/changes/data-registers-runtime/tasks.md#task-4.2
 	 */
 	private function bundleDataRegisterSchemas(string $rootDir, array $dataRegisters): void {
-		$this->dataRegisterBundler->bundle(rootDir: $rootDir, dataRegisters: $dataRegisters);
+		$this->bundlers->dataRegisterBundler->bundle(rootDir: $rootDir, dataRegisters: $dataRegisters);
 		$this->pinDataRegisterFileTimestamps(rootDir: $rootDir);
 	}//end bundleDataRegisterSchemas()
 
@@ -336,12 +370,12 @@ class ExportService {
 	/**
 	 * Package a directory tree into a deterministic ZIP archive.
 	 *
+	 * ExportTreeFiles::zipTree() throws a RuntimeException when the ZIP cannot be written.
+	 *
 	 * @param string $sourceDir Directory to package.
 	 * @param string $jobUuid ExportJob UUID — filename base.
 	 *
 	 * @return string Local path to the ZIP file.
-	 *
-	 * @throws RuntimeException When ZIP creation fails.
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
 	 */
@@ -357,25 +391,22 @@ class ExportService {
 			unlink($zipPath);
 		}
 
-		$zip = new ZipArchive();
-		if ($zip->open($zipPath, ZipArchive::CREATE | ZipArchive::OVERWRITE) !== true) {
-			throw new RuntimeException('Unable to open ZIP archive: ' . $zipPath);
-		}
+		$this->treeFiles->zipTree(sourceDir: $sourceDir, zipPath: $zipPath);
 
-		$entries = $this->treeFiles->listFilesSorted(baseDir: $sourceDir);
-		foreach ($entries as $relativePath) {
-			$absolute = $sourceDir . '/' . $relativePath;
-			$zip->addFile($absolute, $relativePath);
-			// Fixed timestamp for byte-determinism.
-			$zip->setExternalAttributesName($relativePath, ZipArchive::OPSYS_UNIX, (0o100644 << 16));
-		}
-
-		if ($zip->close() === false) {
-			throw new RuntimeException('Failed to finalise ZIP archive: ' . $zipPath);
-		}
-
-		// Pin mtime on the file itself for reproducibility.
-		touch($zipPath, $this->zipTimestamp);
+		// The archive's ENTRIES carry the deterministic timestamp, which is what
+		// makes two exports of the same tree byte-identical. The .zip file's own
+		// mtime is filesystem metadata outside the archive bytes, so pinning it
+		// buys no reproducibility, and it used to cost the download entirely:
+		// CleanupExpiredExports purges by `time() - filemtime($zip) > 86400`, and
+		// a file stamped 2026-01-01 is already ~22 million seconds old the moment
+		// it is written. Every archive was therefore deleted by the next cleanup
+		// pass while its ExportJob still read "Succeeded" and still offered a
+		// Download ZIP button.
+		//
+		// Leaving the mtime at creation time is what makes that 24 hour window
+		// mean 24 hours. The job's own docblock describes expiring by the
+		// ExportJob's `downloadExpiresAt` instead, which is the better contract,
+		// but nothing writes that field yet.
 
 		return $zipPath;
 	}//end packageZip()
@@ -416,6 +447,9 @@ class ExportService {
 				touch($path, $this->zipTimestamp);
 			}
 		}//end foreach
+
+		// File names carry the template's names too; the resolved code reads the renamed ones.
+		$this->treeFiles->renamePaths(dir: $rootDir, map: $map, timestamp: $this->zipTimestamp);
 	}//end resolvePlaceholders()
 
 	/**
@@ -437,7 +471,8 @@ class ExportService {
 	 * Copy the embedded template snapshot into the scratch directory.
 	 *
 	 * Skips the snapshot-meta + path-manifest helper files; they are
-	 * artefacts of Buildiq, not of the produced app.
+	 * artefacts of Buildiq, not of the produced app. A missing snapshot
+	 * surfaces as the RuntimeException ExportTreeFiles::requireDirectory() throws.
 	 *
 	 * @param string $source Snapshot dir.
 	 * @param string $dest Scratch dir.
@@ -447,9 +482,7 @@ class ExportService {
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-40
 	 */
 	private function copyTemplate(string $source, string $dest): void {
-		if (is_dir($source) === false) {
-			throw new RuntimeException('Template snapshot is missing: ' . $source);
-		}
+		$this->treeFiles->requireDirectory(dir: $source, label: 'Template snapshot');
 
 		if (is_dir($dest) === false) {
 			mkdir($dest, 0o755, true);

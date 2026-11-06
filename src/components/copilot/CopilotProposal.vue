@@ -36,14 +36,24 @@
 			:fromLabelText="t('buildiq', 'Current')"
 			:toLabelText="t('buildiq', 'Predicted')" />
 
-		<p v-if="!canApprove" class="copilot-proposal__error" role="alert">
-			{{
-				t(
-					'buildiq',
-					'This proposal did not pass validation and cannot be applied.',
-				)
-			}}
-		</p>
+		<div v-if="!canApprove" class="copilot-proposal__error" role="alert">
+			<p>
+				{{
+					t(
+						'buildiq',
+						'This proposal did not pass validation and cannot be applied.',
+					)
+				}}
+			</p>
+			<ul
+				v-if="validationErrors.length"
+				class="copilot-proposal__error-list"
+				data-testid="copilot-proposal-validation-errors">
+				<li v-for="(line, idx) in validationErrors" :key="'ve-' + idx">
+					{{ line }}
+				</li>
+			</ul>
+		</div>
 
 		<div class="copilot-proposal__actions">
 			<NcButton
@@ -89,6 +99,16 @@ export default {
 		busy: {
 			type: Boolean,
 			default: false,
+		},
+
+		/**
+		 * Canonical-validator messages for this proposal, listed under the
+		 * refusal so the reader can see which field failed instead of only
+		 * that something did.
+		 */
+		validationErrors: {
+			type: Array,
+			default: () => [],
 		},
 	},
 
@@ -145,6 +165,13 @@ export default {
 .copilot-proposal__error {
 	color: var(--color-error);
 	margin: 0;
+}
+
+.copilot-proposal__error-list {
+	margin: 0.5em 0 0;
+	padding-inline-start: 1.5em;
+	font-size: 0.9em;
+	overflow-wrap: anywhere;
 }
 
 .copilot-proposal__actions {

@@ -148,17 +148,21 @@ describe('ImportDataWizard', () => {
 		expect(ids).toEqual(['permit', 'person'])
 	})
 
+	// The template is a download LINK (`<a href download>`), not a click that
+	// assigns window.location — so the browser fetches it without navigating
+	// the wizard away, and it is null until there is something to download.
 	it('download-template delegates to the import client template URL', async () => {
 		const client = makeClient()
 		const wrapper = mountWizard({}, client)
+		expect(wrapper.vm.templateUrl).toBeNull()
+
 		await wrapper.setData({ selectedSchema: { id: 'permit', label: 'Permit' } })
 
-		wrapper.vm.downloadTemplate('csv')
-
+		expect(wrapper.vm.templateUrl).toBeTruthy()
 		expect(client.templateUrl).toHaveBeenCalledWith({
 			registerId: 'openbuild-app-staging',
 			schema: 'permit',
-			format: 'csv',
+			format: 'xlsx',
 		})
 	})
 

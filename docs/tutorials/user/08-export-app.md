@@ -1,57 +1,63 @@
 ---
 sidebar_position: 8
 title: Export your app
-description: Download a virtual app as a ZIP bundle — manifest + schemas + sample data — that can be imported into another Buildiq instance.
+description: Download an app as a ZIP holding its manifest, schemas, flows and optional records, or push the same bundle to GitHub.
 ---
 
 # Export your app
 
-When the virtual app works the way you want, export it. Buildiq produces a ZIP containing the manifest (schemas, pages, menu, data sources) and an optional set of sample records. Another Buildiq instance imports the ZIP to recreate the app.
+When the app works the way you want, export it. Buildiq writes a ZIP with the manifest, the schemas, the flows, the agents and, if you ask for them, the records. The same bundle can go straight to a GitHub repository instead of your downloads folder.
 
 ## Goal
 
-By the end you will have requested an export of your app, watched the job complete, and downloaded the resulting ZIP.
+By the end you will have started an export of one version of your app, watched the job reach **Succeeded**, and downloaded the ZIP.
 
 ## Prerequisites
 
-- A virtual app you want to ship somewhere else.
-- Sample data you want to include, if any. The export dialog lets you tick which schemas to dump records from.
+- An app you want to ship somewhere else.
+- A view on which version you are exporting. The dialog defaults to the development version when the app has one.
+- For the GitHub target: a GitHub credential in your vault. [Publish to GitHub](./09-publish-to-github.md) covers that route in full.
 
 ## Steps
 
-1. Open **Exports** in the left navigation. The page lists previous export jobs with their status (*Queued*, *Running*, *Completed*, *Failed*) and the downloadable artefact.
+1. Go to **Apps** and open your app. Choose **Actions → Export**. The same dialog opens from the **Exports** tab in the sidebar, where **Start export** sits above the list of jobs this app has run.
 
-   ![Exports list](/screenshots/tutorials/user/08-export-app-01.png)
+   ![The exports list for an app](/screenshots/tutorials/user/08-export-app-01.png)
 
-2. Click **Export application**, or open your app's detail page and click **Actions → Export**. Pick which **Application** to export (the dialog pre-fills if you came from a detail page), pick the **Snapshot** to export from (defaults to the live draft), and tick the schemas whose records you want to include as sample data.
+2. The **Export application** dialog asks four things. **Version** picks which version to export. **Target** is **ZIP download** or **Push to GitHub**. **License** is EUPL-1.2, AGPL-3.0 or MIT. **Include seed data** decides whether the app's own records travel with it, and it starts off.
 
-   ![Export application dialog](/screenshots/tutorials/user/08-export-app-02.png)
+   ![The export application dialog](/screenshots/tutorials/user/08-export-app-02.png)
 
-3. Click **Start export**. The job moves to **Exports** with status *Queued* → *Running*. Small apps export in seconds; apps with thousands of records can take a minute or two.
+3. Two more blocks appear when they apply. **Data registers** lists every shared register the app is bound to but does not own: their schema definitions always travel, their rows only when you switch one on. **Flows** lists the flows the app is made of, switched on by default, because an exported app without them installs and does nothing. They arrive switched off on the other instance, so nothing runs there until somebody enables it.
 
-   ![Export running](/screenshots/tutorials/user/08-export-app-03.png)
+4. Click **Start export**. The job appears in the list as **Queued**, then **Running**. Buildiq starts it in the same request rather than waiting for cron, so a small app is usually done in seconds.
 
-4. When the row reaches *Completed*, click the **Download ZIP** action. The bundle contains `manifest.json`, one `schemas/<slug>.json` per schema, one `data/<schema>.jsonl` per included data set, and a `README.md` summarising the export.
+   ![An export running](/screenshots/tutorials/user/08-export-app-03.png)
 
-   ![Export completed](/screenshots/tutorials/user/08-export-app-04.png)
+5. When the row reads **Succeeded**, click **Download ZIP**. Do it the same day: a daily cleanup job purges the archives from the server, and the row keeps its status after the file is gone. A GitHub export shows **View pull request** instead.
 
-5. To re-import, copy the ZIP to the target instance, open **Virtual apps → Import application** there, pick the ZIP, and Buildiq recreates the app with its schemas, pages, and sample data.
+   ![A finished export](/screenshots/tutorials/user/08-export-app-04.png)
 
-   ![Re-import dialog](/screenshots/tutorials/user/08-export-app-05.png)
+6. The ZIP serves two readers at once. At the root sit `openbuild-app.json`, `manifest.json`, `schemas/{slug}.json`, `data/{slug}.jsonl` and a `README.md` that says what the archive holds. That is the layout Buildiq itself reads when it installs an app from a repository. Around it sits a complete standalone Nextcloud app, with the pages in `src/manifest.json` and the schemas in `lib/Settings/{app_id}_register.json`.
+
+   ![The bundle contents](/screenshots/tutorials/user/08-export-app-05.png)
 
 ## Verification
 
-The export is good when: the export job shows status *Completed* with a non-zero ZIP size and `manifest.json` validates inside the ZIP. Re-importing it onto another instance is the strongest possible test.
+The export is good when the job reads **Succeeded**, the ZIP downloads at a non-zero size, and `manifest.json` inside it holds your pages. Buildiq namespaces a version's register and schema slugs while you build. Check the bundle: they should be back to the app's own plain names.
 
 ## Common issues
 
 | Symptom | Fix |
 |---|---|
-| Job sits on *Queued* | The Nextcloud background jobs are not running — check `php occ background-job:list` on the host. |
-| Job ends in *Failed* | Open the job row to see the error in the *Logs* tab. The two most common causes: the manifest is invalid (fix in the page designer), or a connector source is unreachable (sample-data dump retries it). |
-| ZIP is tiny / empty | No schemas were ticked in step 2 — re-run with at least the schemas you care about ticked. |
+| The job sits on **Queued** | The immediate start did not fire and Nextcloud's background jobs are not running. Ask an admin to check the cron setup. |
+| The job ends in **Failed** | The row carries the reason. The two usual ones are a manifest that does not validate and a source the bundler could not reach. |
+| **Download ZIP** does nothing | The archive was purged by the daily cleanup. Run the export again and download it straight away. |
+| The ZIP holds no records | **Include seed data** was off, and row data for a shared register is off per register. Switch on what you need and export again. |
+| A GitHub export refuses to start | The target needs a credential. "Pick a GitHub credential to push with." means the picker is still empty. |
 
 ## Reference
 
-- [Snapshot and roll back a version](./07-version-snapshots.md) — pick which snapshot to export.
-- [Template catalogue](../admin/02-template-catalogue.md) — promote an exported app into the catalogue.
+- [Compare and roll back a version](./07-version-snapshots.md), pick which version to export.
+- [Publish to GitHub and install from the store](./09-publish-to-github.md), the route that puts the app in a repository other instances can install.
+- [Template catalogue](../admin/02-template-catalogue.md), promote an app into the catalogue instead.

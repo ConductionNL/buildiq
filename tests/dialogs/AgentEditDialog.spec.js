@@ -175,6 +175,12 @@ describe('AgentEditDialog', () => {
 		expect(axios.put.mock.calls[0][0]).toBe(
 			'/apps/openregister/api/objects/buildiq/buildAgent/agent-1',
 		)
+		expect(axios.put.mock.calls[0][1]).toMatchObject({
+			name: 'Existing agent',
+			enabledTools: ['buildiq.listApps'],
+			maxActionsPerRun: 10,
+			applicationSlug: 'tool-library',
+		})
 	})
 
 	it('an enabled-tools multi-select change updates the local list', async () => {

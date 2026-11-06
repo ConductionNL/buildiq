@@ -56,7 +56,6 @@ namespace OCA\Buildiq\Service;
 
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Exception\ObjectExistsException;
-use OCP\App\IAppManager;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -69,14 +68,6 @@ use Throwable;
  * @spec openspec/changes/app-repo-format-flow-agent-export/specs/app-channel-application/spec.md
  */
 class AppChannelApplier {
-
-	/**
-	 * The OpenRegister register that holds OpenConnector objects. OpenConnector is
-	 * re-platformed onto OpenRegister — there are no `openconnector_*` tables.
-	 *
-	 * @var string
-	 */
-	private const CONNECTOR_REGISTER = 'openconnector';
 
 	/**
 	 * Connector schemas, matching AppRepoSerializer::CONNECTOR_KINDS.
@@ -114,13 +105,6 @@ class AppChannelApplier {
 	private const MAX_AUTOMATIONS = 512;
 
 	/**
-	 * Reason recorded when OpenConnector is not available.
-	 *
-	 * @var string
-	 */
-	private const REASON_NO_OPENCONNECTOR = 'openconnector-unavailable';
-
-	/**
 	 * Reason recorded when the skills channel is skipped because the supplied
 	 * credential's own `allowedApps` does not include hermiq — hermiq fetches
 	 * the skill bundle itself, under ITS OWN app identity, so a credential
@@ -139,27 +123,56 @@ class AppChannelApplier {
 	private const HERMIQ_APP_ID = 'hermiq';
 
 	/**
+	 * The data-registers channel.
+	 *
+	 * @var DataRegisterProvisioner
+	 */
+	private readonly DataRegisterProvisioner $registerProvisioner;
+
+	/**
+	 * The skills channel (delegated to hermiq).
+	 *
+	 * @var SkillChannelDelegate
+	 */
+	private readonly SkillChannelDelegate $skillDelegate;
+
+	/**
+	 * The flows channel (app-repo-format-flow-agent-export).
+	 *
+	 * @var FlowChannelProvisioner
+	 */
+	private readonly FlowChannelProvisioner $flowProvisioner;
+
+	/**
+	 * The agents channel (app-repo-format-flow-agent-export).
+	 *
+	 * @var AgentChannelProvisioner
+	 */
+	private readonly AgentChannelProvisioner $agentProvisioner;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ObjectServiceInterface $objectService OpenRegister object read/write.
-	 * @param DataRegisterProvisioner $registerProvisioner The data-registers channel.
-	 * @param SkillChannelDelegate $skillDelegate The skills channel (delegated to hermiq).
-	 * @param FlowChannelProvisioner $flowProvisioner The flows channel (app-repo-format-flow-agent-export).
-	 * @param AgentChannelProvisioner $agentProvisioner The agents channel (app-repo-format-flow-agent-export).
-	 * @param IAppManager $appManager Optional-dependency detection.
+	 * @param ConnectorRegisterAvailability $connectorRegister Whether Integriq's register can be written to
+	 *                                                         here, and with which slug. Not nullable: the
+	 *                                                         only fallback a null would leave is the
+	 *                                                         literal it replaces.
+	 * @param ChannelProvisioners $provisioners The per-channel provisioners a published repository is applied through.
 	 * @param LoggerInterface $logger PSR logger (secret-free diagnostics).
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly ObjectServiceInterface $objectService,
-		private readonly DataRegisterProvisioner $registerProvisioner,
-		private readonly SkillChannelDelegate $skillDelegate,
-		private readonly FlowChannelProvisioner $flowProvisioner,
-		private readonly AgentChannelProvisioner $agentProvisioner,
-		private readonly IAppManager $appManager,
+		private readonly ConnectorRegisterAvailability $connectorRegister,
+		ChannelProvisioners $provisioners,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->registerProvisioner = $provisioners->registerProvisioner;
+		$this->skillDelegate = $provisioners->skillDelegate;
+		$this->flowProvisioner = $provisioners->flowProvisioner;
+		$this->agentProvisioner = $provisioners->agentProvisioner;
 	}//end __construct()
 
 	/**
@@ -174,18 +187,13 @@ class AppChannelApplier {
 	 * through is a path that eventually gets added without them.
 	 *
 	 * @param array<string,mixed> $template The parsed repo template.
-	 * @param string|null $owner Repo owner (for the skills delegation).
-	 * @param string|null $repo Repo name (for the skills delegation).
-	 * @param string|null $ref Optional git ref.
+	 * @param RepoSource|null $source Repo coordinates, ref and broker credential for the skills delegation.
+	 *                                An empty owner or repo falls back to the template's origin.
 	 * @param string|null $actingUserId The session UID.
-	 * @param string|null $credentialId Optional broker credential UUID.
-	 * @param string|null $applicationUuid The LOCAL Application's own uuid — needed by the flows channel to
-	 *                                     rebind newly created flows. Null on a caller with no local
-	 *                                     Application context yet, in which case the flows channel degrades
-	 *                                     with a stated reason like any other missing context.
-	 * @param string|null $applicationSlug The LOCAL Application's own slug — needed by the agents channel
-	 *                                     to tag newly created agents with THIS instance's slug, never the
-	 *                                     source instance's.
+	 * @param LocalApplicationRef|null $local The LOCAL Application: its uuid lets the flows channel rebind newly
+	 *                                        created flows, its slug lets the agents channel tag newly created
+	 *                                        agents with THIS instance's slug, never the source instance's. A
+	 *                                        missing uuid degrades the flows channel with a stated reason.
 	 *
 	 * @return array<string,mixed> The channel report.
 	 *
@@ -194,17 +202,13 @@ class AppChannelApplier {
 	 */
 	public function apply(
 		array $template,
-		?string $owner = null,
-		?string $repo = null,
-		?string $ref = null,
+		?RepoSource $source = null,
 		?string $actingUserId = null,
-		?string $credentialId = null,
-		?string $applicationUuid = null,
-		?string $applicationSlug = null,
+		?LocalApplicationRef $local = null,
 	): array {
 		$report = new ChannelApplyReport();
 
-		[$owner, $repo] = $this->coordinatesFor(template: $template, owner: $owner, repo: $repo);
+		[$owner, $repo] = $this->coordinatesFor(template: $template, owner: $source?->owner, repo: $source?->repo);
 
 		$this->registerProvisioner->apply(
 			registers: $this->channelOf(template: $template, name: 'dataRegisters'),
@@ -223,23 +227,20 @@ class AppChannelApplier {
 
 		$this->flowProvisioner->apply(
 			flows: $this->channelOf(template: $template, name: 'flows'),
-			applicationUuid: $applicationUuid,
+			applicationUuid: $local?->uuid,
 			report: $report
 		);
 
 		$this->agentProvisioner->apply(
 			agents: $this->channelOf(template: $template, name: 'agents'),
-			applicationSlug: $applicationSlug,
+			applicationSlug: $local?->slug,
 			report: $report
 		);
 
 		$this->applySkillsChannel(
 			skills: $this->channelOf(template: $template, name: 'skills'),
-			owner: $owner,
-			repo: $repo,
-			ref: $ref,
+			source: new RepoSource(owner: $owner, repo: $repo, ref: $source?->ref, credentialId: $source?->credentialId),
 			actingUserId: $actingUserId,
-			credentialId: $credentialId,
 			report: $report
 		);
 
@@ -261,11 +262,8 @@ class AppChannelApplier {
 	 * of the generic `hermiq-install-failed` a caught Throwable produces.
 	 *
 	 * @param array<string,mixed> $skills The declared skills channel.
-	 * @param string $owner Repo owner (for the delegation).
-	 * @param string $repo Repo name (for the delegation).
-	 * @param string|null $ref Optional git ref.
+	 * @param RepoSource $source The repo coordinates, ref and credential (for the delegation).
 	 * @param string|null $actingUserId The session UID.
-	 * @param string|null $credentialId Optional broker credential UUID.
 	 * @param ChannelApplyReport $report The report to write into.
 	 *
 	 * @return void
@@ -274,13 +272,11 @@ class AppChannelApplier {
 	 */
 	private function applySkillsChannel(
 		array $skills,
-		string $owner,
-		string $repo,
-		?string $ref,
+		RepoSource $source,
 		?string $actingUserId,
-		?string $credentialId,
 		ChannelApplyReport $report,
 	): void {
+		$credentialId = $source->credentialId;
 		if ($skills !== [] && in_array($credentialId, [null, ''], true) === false
 			&& $this->credentialAllowsApp(credentialId: $credentialId, appId: self::HERMIQ_APP_ID) === false
 		) {
@@ -303,11 +299,8 @@ class AppChannelApplier {
 
 		$this->skillDelegate->apply(
 			skills: $skills,
-			owner: $owner,
-			repo: $repo,
-			ref: $ref,
+			source: $source,
 			actingUserId: $actingUserId,
-			credentialId: $credentialId,
 			report: $report
 		);
 
@@ -445,11 +438,17 @@ class AppChannelApplier {
 			return;
 		}
 
-		if ($this->appManager->isEnabledForUser('openconnector') === false) {
-			$this->logger->info(
-				'Buildiq channel apply: openconnector is not enabled — skipping ' . $declared . ' declared connectors.'
-			);
-			$report->skipChannel(channel: 'connectors', reason: self::REASON_NO_OPENCONNECTOR);
+		// One question, asked once: is the connector register usable here, and
+		// with which slug. It used to be two — an app-id check here and a
+		// hardcoded register slug at the write — and only the first was ever
+		// answered. `ConnectorRegisterAvailability` records the skip itself, so
+		// a null cannot be carried past this line.
+		$registerSlug = $this->connectorRegister->slugOrSkip(
+			channel: 'connectors',
+			declared: $declared,
+			report: $report
+		);
+		if ($registerSlug === null) {
 			return;
 		}
 
@@ -469,7 +468,13 @@ class AppChannelApplier {
 				}
 
 				$applied++;
-				$this->applyOneConnector(kind: $kind, item: $item, blob: (array)$blob, report: $report);
+				$this->applyOneConnector(
+					kind: $kind,
+					item: $item,
+					blob: (array)$blob,
+					report: $report,
+					registerSlug: $registerSlug
+				);
 			}
 		}//end foreach
 
@@ -482,10 +487,21 @@ class AppChannelApplier {
 	 * @param string $item The report item identity.
 	 * @param array<string,mixed> $blob The published connector body.
 	 * @param ChannelApplyReport $report The report to write into.
+	 * @param string $registerSlug The slug the connector register answers to on this
+	 *                             instance, already resolved by the calling channel.
+	 *                             Passed in rather than resolved here so one absent
+	 *                             register skips a channel once instead of failing
+	 *                             every item in it separately.
 	 *
 	 * @return void
 	 */
-	private function applyOneConnector(string $kind, string $item, array $blob, ChannelApplyReport $report): void {
+	private function applyOneConnector(
+		string $kind,
+		string $item,
+		array $blob,
+		ChannelApplyReport $report,
+		string $registerSlug,
+	): void {
 		// The published body carries its identity in `id` — verified across all 42
 		// connectors of a real published artefact. `uuid` is present but null,
 		// because the serializer emits ObjectEntity::getObject(), the body only.
@@ -500,7 +516,7 @@ class AppChannelApplier {
 			// check-then-write would both race and drift.
 			$this->objectService->saveObject(
 				object: $blob,
-				register: self::CONNECTOR_REGISTER,
+				register: $registerSlug,
 				schema: $kind,
 				uuid: $uuid,
 				_rbac: false,
@@ -639,8 +655,14 @@ class AppChannelApplier {
 			return;
 		}
 
-		if ($this->appManager->isEnabledForUser('openconnector') === false) {
-			$report->skipChannel(channel: 'automations', reason: self::REASON_NO_OPENCONNECTOR);
+		// Same question, same answer: automations are written into the same
+		// register, so the same absence has to stop them too.
+		$registerSlug = $this->connectorRegister->slugOrSkip(
+			channel: 'automations',
+			declared: count($automations),
+			report: $report
+		);
+		if ($registerSlug === null) {
 			return;
 		}
 
@@ -658,7 +680,13 @@ class AppChannelApplier {
 			}
 
 			$applied++;
-			$this->applyOneConnector(kind: 'job', item: 'automations/' . $slug, blob: (array)$blob, report: $report);
+			$this->applyOneConnector(
+				kind: 'job',
+				item: 'automations/' . $slug,
+				blob: (array)$blob,
+				report: $report,
+				registerSlug: $registerSlug
+			);
 		}
 
 	}//end applyAutomations()

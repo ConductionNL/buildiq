@@ -174,7 +174,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../assets/editor-controls.scss' as c;
+
 .widget-selection-panel {
 	border: 1px solid var(--color-border);
 	border-radius: var(--border-radius);
@@ -192,12 +194,7 @@ export default {
 }
 
 .widget-selection-panel__list {
-	list-style: none;
-	margin: 0;
-	padding: 0;
-	display: flex;
-	flex-direction: column;
-	gap: 4px;
+	@include c.plain-list(4px);
 }
 
 .widget-selection-panel__row label {

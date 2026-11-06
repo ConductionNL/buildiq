@@ -10,7 +10,7 @@
  *     over the canonicalised manifest; ADR-031 §Exceptions(2) — stateful
  *     diff outside OR's calc vocabulary).
  *   - `promotesTo` cross-row cycle detection (ADR-031 §Exceptions(1) —
- *     traversal that OR's per-row x-openregister-validation cannot
+ *     traversal that OR's per-row x-openregister-validations cannot
  *     perform).
  *   - `Application.productionVersion` back-reference integrity guard
  *     (ADR-031 §Exceptions(1) — cross-row).
@@ -45,6 +45,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -61,6 +62,8 @@ use Throwable;
  * declarative-vs-imperative table classifies as imperative. Lifecycle
  * transitions, route upserts on publish, and the same-row promotesTo
  * self-loop check are declared in `lib/Settings/openbuild_register.json`.
+ *
+ * @spec openspec/specs/application-versions/spec.md#requirement-cycle-prevention-on-the-promotesto-chain
  */
 class ApplicationVersionService {
 	/**
@@ -360,6 +363,7 @@ class ApplicationVersionService {
 	 * @throws RuntimeException When the back-reference does not point at the parent
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-31
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	public function guardProductionVersionOwnership(string $applicationUuid, string $proposedVersionUuid): void {
 		$version = $this->objectService->find(
@@ -378,7 +382,7 @@ class ApplicationVersionService {
 			);
 		}
 
-		$data = $this->normaliseObjectArray(object: $version);
+		$data = ObjectRecord::toArray(object: $version);
 		$backReference = (string)($data['application'] ?? '');
 
 		if ($backReference !== $applicationUuid) {
@@ -424,6 +428,7 @@ class ApplicationVersionService {
 	 * @throws RuntimeException On back-reference mismatch or a missing object
 	 *
 	 * @spec openspec/changes/version-lifecycle-and-switcher/specs/application-versions/spec.md
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	public function releaseVersion(string $applicationUuid, string $versionUuid): array {
 		// 1. Back-reference integrity (REQ-OBV-105) — surfaced as 422 by the caller.
@@ -441,7 +446,7 @@ class ApplicationVersionService {
 			throw new RuntimeException(message: sprintf('Application %s does not exist.', $applicationUuid));
 		}
 
-		$applicationData = $this->normaliseObjectArray(object: $application);
+		$applicationData = ObjectRecord::toArray(object: $application);
 		$previousProduction = (string)($applicationData['productionVersion'] ?? '');
 
 		// 2. Publish the chosen version (draft → published) — fires the lifecycle.
@@ -454,7 +459,7 @@ class ApplicationVersionService {
 			throw new RuntimeException(message: sprintf('ApplicationVersion %s does not exist.', $versionUuid));
 		}
 
-		$versionData = $this->normaliseObjectArray(object: $version);
+		$versionData = ObjectRecord::toArray(object: $version);
 		unset($versionData['@self']);
 		$versionData['status'] = 'published';
 		$this->objectService->saveObject(
@@ -488,7 +493,7 @@ class ApplicationVersionService {
 				schema: self::APPLICATION_VERSION_SCHEMA
 			);
 			if ($previous !== null) {
-				$previousData = $this->normaliseObjectArray(object: $previous);
+				$previousData = ObjectRecord::toArray(object: $previous);
 				if ((string)($previousData['status'] ?? '') === 'published') {
 					unset($previousData['@self']);
 					$previousData['status'] = 'archived';
@@ -557,6 +562,7 @@ class ApplicationVersionService {
 	 *                          production-version refusal
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-25
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	public function deleteVersion(string $versionUuid, string $strategy): void {
 		$this->assertValidStrategy(strategy: $strategy);
@@ -573,7 +579,7 @@ class ApplicationVersionService {
 			);
 		}
 
-		$versionData = $this->normaliseObjectArray(object: $version);
+		$versionData = ObjectRecord::toArray(object: $version);
 		$this->assertNotProductionVersion(versionData: $versionData, versionUuid: $versionUuid);
 
 		$registerSlug = (string)($versionData['register'] ?? '');
@@ -653,6 +659,7 @@ class ApplicationVersionService {
 	 * @throws RuntimeException When the row is the parent's productionVersion
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-25
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function assertNotProductionVersion(array $versionData, string $versionUuid): void {
 		$applicationUuid = (string)($versionData['application'] ?? '');
@@ -670,7 +677,7 @@ class ApplicationVersionService {
 			return;
 		}
 
-		$applicationData = $this->normaliseObjectArray(object: $application);
+		$applicationData = ObjectRecord::toArray(object: $application);
 		$productionVersion = (string)($applicationData['productionVersion'] ?? '');
 		if ($productionVersion === '' || $productionVersion !== $versionUuid) {
 			return;
@@ -697,6 +704,7 @@ class ApplicationVersionService {
 	 * @param string $registerSlug The version's register slug
 	 *
 	 * @return bool True when the register is shared with production
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function registerSharedWithProduction(array $versionData, string $registerSlug): bool {
 		if ($registerSlug === '') {
@@ -717,7 +725,7 @@ class ApplicationVersionService {
 			return false;
 		}
 
-		$applicationData = $this->normaliseObjectArray(object: $application);
+		$applicationData = ObjectRecord::toArray(object: $application);
 		$productionVersion = ($applicationData['productionVersion'] ?? null);
 
 		$productionRegister = '';
@@ -734,7 +742,7 @@ class ApplicationVersionService {
 					schema: self::APPLICATION_VERSION_SCHEMA
 				);
 				if ($prod !== null) {
-					$productionRegister = (string)($this->normaliseObjectArray(object: $prod)['register'] ?? '');
+					$productionRegister = (string)(ObjectRecord::toArray(object: $prod)['register'] ?? '');
 				}
 			}
 		}
@@ -869,6 +877,7 @@ class ApplicationVersionService {
 	 * @param string $versionUuid UUID of the version row to inspect
 	 *
 	 * @return string|null Next UUID in the chain, or null on terminal/missing
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function resolveNextPromotesTo(string $versionUuid): ?string {
 		try {
@@ -888,7 +897,7 @@ class ApplicationVersionService {
 			return null;
 		}
 
-		$data = $this->normaliseObjectArray(object: $entity);
+		$data = ObjectRecord::toArray(object: $entity);
 		$next = $data['promotesTo'] ?? null;
 		if (is_string($next) === true && $next !== '') {
 			return $next;
@@ -896,35 +905,6 @@ class ApplicationVersionService {
 
 		return null;
 	}//end resolveNextPromotesTo()
-
-	/**
-	 * Coerce an OR result entry (ObjectEntity or array) to a plain associative array.
-	 *
-	 * @param mixed $object The OR object/result entry
-	 *
-	 * @return array<string,mixed>
-	 */
-	private function normaliseObjectArray(mixed $object): array {
-		if (is_array($object) === true) {
-			return $object;
-		}
-
-		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-			$serialised = $object->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		if (is_object($object) === true && method_exists($object, 'getObject') === true) {
-			$inner = $object->getObject();
-			if (is_array($inner) === true) {
-				return $inner;
-			}
-		}
-
-		return [];
-	}//end normaliseObjectArray()
 
 	/**
 	 * Recursively canonicalise a value for stable JSON serialisation.
@@ -1004,6 +984,7 @@ class ApplicationVersionService {
 	 * @param string $versionUuid The ApplicationVersion uuid to filter on.
 	 *
 	 * @return array<int,array<string,mixed>>
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function findAutomationsForVersion(string $applicationSlug, string $versionUuid): array {
 		try {
@@ -1024,7 +1005,7 @@ class ApplicationVersionService {
 
 		$normalised = [];
 		foreach ($results as $row) {
-			$normalised[] = $this->normaliseObjectArray(object: $row);
+			$normalised[] = ObjectRecord::toArray(object: $row);
 		}
 
 		return $normalised;
@@ -1037,6 +1018,7 @@ class ApplicationVersionService {
 	 * @param string $newVersionUuid The target ApplicationVersion uuid.
 	 *
 	 * @return void
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function cloneOneAutomation(array $source, string $newVersionUuid): void {
 		$payload = $source;
@@ -1044,7 +1026,7 @@ class ApplicationVersionService {
 		$payload['versionUuid'] = $newVersionUuid;
 
 		$created = $this->objectService->saveObject(object: $payload, register: self::REGISTER_SLUG, schema: 'automation');
-		$createdArray = $this->normaliseObjectArray(object: $created);
+		$createdArray = ObjectRecord::toArray(object: $created);
 
 		// Prefer the entity's own uuid (NC Entity's magic getUuid() — not
 		// detectable via method_exists(), same reasoning as

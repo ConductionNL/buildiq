@@ -42,6 +42,206 @@ const ALLOWED_KEYS = Object.freeze([
 const DOT_PATH = /^[A-Za-z0-9_$]+(\.[A-Za-z0-9_$]+)*$/
 
 /**
+ * Whether a value is a non-null, non-array object.
+ *
+ * @param {unknown} value - the value to test.
+ * @return {boolean}
+ */
+function isPlainObject(value) {
+	return value !== null && typeof value === 'object' && !Array.isArray(value)
+}
+
+/**
+ * One `<pointer>/connector: <code>` error string.
+ *
+ * @param {string} pointer - JSON-Pointer to the dataSource.
+ * @param {string} code - the i18n error code.
+ * @return {string}
+ */
+function connectorError(pointer, code) {
+	return `${pointer}/connector: ${code}`
+}
+
+/**
+ * Unknown and credential-carrying keys on the connector block.
+ *
+ * @param {object} connector - the connector block.
+ * @param {string} pointer - JSON-Pointer to the dataSource.
+ * @return {string[]}
+ */
+function keyErrors(connector, pointer) {
+	const errors = []
+	for (const key of Object.keys(connector)) {
+		if (CREDENTIAL_KEYS.includes(key)) {
+			errors.push(
+				connectorError(
+					pointer,
+					'buildiq.connector.error.credentials-forbidden',
+				),
+			)
+		} else if (!ALLOWED_KEYS.includes(key)) {
+			errors.push(
+				`${pointer}/connector/${key}: buildiq.connector.error.unknown-key`,
+			)
+		}
+	}
+	return errors
+}
+
+/**
+ * endpointPath: required, scheme/host-free, not an /apps/ path.
+ *
+ * @param {object} connector - the connector block.
+ * @param {string} pointer - JSON-Pointer to the dataSource.
+ * @return {string[]}
+ */
+function endpointErrors(connector, pointer) {
+	const ep = connector.endpointPath
+	if (typeof ep !== 'string' || ep.trim() === '') {
+		return [connectorError(pointer, 'buildiq.connector.error.endpoint-required')]
+	}
+	if (ep.includes('://')) {
+		return [
+			connectorError(pointer, 'buildiq.connector.error.endpoint-no-scheme'),
+		]
+	}
+	if (ep.startsWith('/apps/')) {
+		return [
+			connectorError(
+				pointer,
+				'buildiq.connector.error.endpoint-no-apps-prefix',
+			),
+		]
+	}
+	return []
+}
+
+/**
+ * method: optional, closed enum GET.
+ *
+ * @param {object} connector - the connector block.
+ * @param {string} pointer - JSON-Pointer to the dataSource.
+ * @return {string[]}
+ */
+function methodErrors(connector, pointer) {
+	if (
+		connector.method !== undefined
+		&& !CONNECTOR_METHODS.includes(connector.method)
+	) {
+		return [
+			connectorError(pointer, 'buildiq.connector.error.method-unsupported'),
+		]
+	}
+	return []
+}
+
+/**
+ * query: optional, scalar-valued map.
+ *
+ * @param {object} connector - the connector block.
+ * @param {string} pointer - JSON-Pointer to the dataSource.
+ * @return {string[]}
+ */
+function queryErrors(connector, pointer) {
+	const q = connector.query
+	if (q === undefined) {
+		return []
+	}
+	if (!isPlainObject(q)) {
+		return [connectorError(pointer, 'buildiq.connector.error.query-not-object')]
+	}
+	if (Object.values(q).some((v) => v !== null && typeof v === 'object')) {
+		return [connectorError(pointer, 'buildiq.connector.error.query-not-scalar')]
+	}
+	return []
+}
+
+/**
+ * itemsPath: optional dot-path.
+ *
+ * @param {object} connector - the connector block.
+ * @param {string} pointer - JSON-Pointer to the dataSource.
+ * @return {string[]}
+ */
+function itemsPathErrors(connector, pointer) {
+	const path = connector.itemsPath
+	if (path === undefined || path === '') {
+		return []
+	}
+	if (typeof path !== 'string' || !DOT_PATH.test(path)) {
+		return [connectorError(pointer, 'buildiq.connector.error.itemspath-invalid')]
+	}
+	return []
+}
+
+/**
+ * fields: required, min 1 entry, dot-path string values.
+ *
+ * @param {object} connector - the connector block.
+ * @param {string} pointer - JSON-Pointer to the dataSource.
+ * @return {string[]}
+ */
+function fieldErrors(connector, pointer) {
+	const fields = connector.fields
+	if (!isPlainObject(fields) || Object.keys(fields).length === 0) {
+		return [connectorError(pointer, 'buildiq.connector.error.fields-required')]
+	}
+	return Object.entries(fields)
+		.filter(([, sel]) => typeof sel !== 'string' || !DOT_PATH.test(sel))
+		.map(
+			([name]) =>
+				`${pointer}/connector/fields/${name}: buildiq.connector.error.field-selector-invalid`,
+		)
+}
+
+/**
+ * cacheTtl: optional int 0–3600.
+ *
+ * @param {object} connector - the connector block.
+ * @param {string} pointer - JSON-Pointer to the dataSource.
+ * @return {string[]}
+ */
+function cacheTtlErrors(connector, pointer) {
+	const ttl = connector.cacheTtl
+	if (ttl === undefined) {
+		return []
+	}
+	if (!Number.isInteger(ttl) || ttl < 0 || ttl > 3600) {
+		return [connectorError(pointer, 'buildiq.connector.error.cachettl-range')]
+	}
+	return []
+}
+
+/** The per-key checks, in the order their errors are reported. */
+const CONNECTOR_CHECKS = Object.freeze([
+	keyErrors,
+	endpointErrors,
+	methodErrors,
+	queryErrors,
+	itemsPathErrors,
+	fieldErrors,
+	cacheTtlErrors,
+])
+
+/**
+ * Exclusivity: a connector cannot coexist with register/schema or graphql.
+ *
+ * @param {object} dataSource - the `dataSource` object.
+ * @param {string} pointer - JSON-Pointer to this dataSource.
+ * @return {string[]}
+ */
+function mixedFormErrors(dataSource, pointer) {
+	if (
+		dataSource.register !== undefined
+		|| dataSource.schema !== undefined
+		|| dataSource.graphql !== undefined
+	) {
+		return [`${pointer}: buildiq.connector.error.mixed-form`]
+	}
+	return []
+}
+
+/**
  * Validate a single `dataSource` object that may carry a `connector` branch.
  * Returns a list of `<pointer>: <code>` error strings (empty when valid or
  * when no `connector` branch is present).
@@ -53,114 +253,18 @@ const DOT_PATH = /^[A-Za-z0-9_$]+(\.[A-Za-z0-9_$]+)*$/
  * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-001
  */
 export function validateConnectorDataSource(dataSource, pointer) {
-	const errors = []
-	if (!dataSource || typeof dataSource !== 'object' || Array.isArray(dataSource)) {
-		return errors
+	if (!isPlainObject(dataSource) || dataSource.connector === undefined) {
+		return []
 	}
 	const connector = dataSource.connector
-	if (connector === undefined) {
-		return errors
-	}
-	const at = (code) => `${pointer}/connector: ${code}`
-
-	if (
-		connector === null
-		|| typeof connector !== 'object'
-		|| Array.isArray(connector)
-	) {
-		errors.push(at('buildiq.connector.error.invalid-shape'))
-		return errors
+	if (!isPlainObject(connector)) {
+		return [connectorError(pointer, 'buildiq.connector.error.invalid-shape')]
 	}
 
-	// Exclusivity: connector cannot coexist with register/schema or graphql.
-	const hasRegisterForm =
-		dataSource.register !== undefined || dataSource.schema !== undefined
-	const hasGraphqlForm = dataSource.graphql !== undefined
-	if (hasRegisterForm || hasGraphqlForm) {
-		errors.push(`${pointer}: buildiq.connector.error.mixed-form`)
+	const errors = mixedFormErrors(dataSource, pointer)
+	for (const check of CONNECTOR_CHECKS) {
+		errors.push(...check(connector, pointer))
 	}
-
-	// Unknown / credential keys.
-	for (const key of Object.keys(connector)) {
-		if (CREDENTIAL_KEYS.includes(key)) {
-			errors.push(at('buildiq.connector.error.credentials-forbidden'))
-		} else if (!ALLOWED_KEYS.includes(key)) {
-			errors.push(
-				`${pointer}/connector/${key}: buildiq.connector.error.unknown-key`,
-			)
-		}
-	}
-
-	// endpointPath — required, scheme/host-free, not an /apps/ path.
-	const ep = connector.endpointPath
-	if (typeof ep !== 'string' || ep.trim() === '') {
-		errors.push(at('buildiq.connector.error.endpoint-required'))
-	} else if (ep.includes('://')) {
-		errors.push(at('buildiq.connector.error.endpoint-no-scheme'))
-	} else if (ep.startsWith('/apps/')) {
-		errors.push(at('buildiq.connector.error.endpoint-no-apps-prefix'))
-	}
-
-	// method — optional, closed enum GET.
-	if (
-		connector.method !== undefined
-		&& !CONNECTOR_METHODS.includes(connector.method)
-	) {
-		errors.push(at('buildiq.connector.error.method-unsupported'))
-	}
-
-	// query — optional, scalar-valued map.
-	if (connector.query !== undefined) {
-		const q = connector.query
-		if (q === null || typeof q !== 'object' || Array.isArray(q)) {
-			errors.push(at('buildiq.connector.error.query-not-object'))
-		} else {
-			for (const v of Object.values(q)) {
-				if (v !== null && typeof v === 'object') {
-					errors.push(at('buildiq.connector.error.query-not-scalar'))
-					break
-				}
-			}
-		}
-	}
-
-	// itemsPath — optional dot-path.
-	if (connector.itemsPath !== undefined && connector.itemsPath !== '') {
-		if (
-			typeof connector.itemsPath !== 'string'
-			|| !DOT_PATH.test(connector.itemsPath)
-		) {
-			errors.push(at('buildiq.connector.error.itemspath-invalid'))
-		}
-	}
-
-	// fields — required, min 1 entry, dot-path string values.
-	const fields = connector.fields
-	if (
-		fields === null
-		|| typeof fields !== 'object'
-		|| Array.isArray(fields)
-		|| Object.keys(fields).length === 0
-	) {
-		errors.push(at('buildiq.connector.error.fields-required'))
-	} else {
-		for (const [name, sel] of Object.entries(fields)) {
-			if (typeof sel !== 'string' || !DOT_PATH.test(sel)) {
-				errors.push(
-					`${pointer}/connector/fields/${name}: buildiq.connector.error.field-selector-invalid`,
-				)
-			}
-		}
-	}
-
-	// cacheTtl — optional int 0–3600.
-	if (connector.cacheTtl !== undefined) {
-		const ttl = connector.cacheTtl
-		if (!Number.isInteger(ttl) || ttl < 0 || ttl > 3600) {
-			errors.push(at('buildiq.connector.error.cachettl-range'))
-		}
-	}
-
 	return errors
 }
 

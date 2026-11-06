@@ -142,4 +142,28 @@ class CopilotException extends RuntimeException {
 	public function getContext(): array {
 		return $this->context;
 	}//end getContext()
+
+	/**
+	 * A copy of this exception carrying extra context.
+	 *
+	 * The rollback report is only known after the failure it describes, so it
+	 * cannot be passed to the constructor of the exception that caused it.
+	 * Returning a copy rather than mutating keeps the exception a value.
+	 *
+	 * @param array<string, mixed> $extra Context to merge in; existing keys win.
+	 *
+	 * @return self
+	 *
+	 * @spec openspec/specs/ai-copilot/spec.md#requirement-an-approved-plan-executes-atomically-through-the-mcp-handler-layer
+	 */
+	public function withContext(array $extra): self {
+		return new self(
+			errorCode: $this->errorCode,
+			message: $this->getMessage(),
+			httpStatus: $this->httpStatus,
+			stepIndex: $this->stepIndex,
+			context: ($this->context + $extra),
+			previous: $this->getPrevious(),
+		);
+	}//end withContext()
 }//end class

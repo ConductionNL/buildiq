@@ -31,6 +31,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\BackgroundJob;
 
 use OCA\Buildiq\Service\RuleEngineService;
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
@@ -81,6 +82,7 @@ class RuleExecutionLogCleanup extends TimedJob {
 	 * @spec openspec/specs/business-rules-engine/spec.md#requirement-req-bre-013-cleanup-job-for-aged-execution-logs
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	protected function run($argument): void {
 		unset($argument);
@@ -106,7 +108,7 @@ class RuleExecutionLogCleanup extends TimedJob {
 
 		$purged = 0;
 		foreach ($results as $row) {
-			$data = $this->normalise(object: $row);
+			$data = ObjectRecord::serialised(object: $row);
 			$timestamp = (string)($data['timestamp'] ?? '');
 			if ($timestamp === '' || $timestamp >= $cutoff) {
 				continue;
@@ -133,26 +135,4 @@ class RuleExecutionLogCleanup extends TimedJob {
 		}
 
 	}//end run()
-
-	/**
-	 * Coerce an OR result entry to a plain array.
-	 *
-	 * @param mixed $object The OR object/result entry.
-	 *
-	 * @return array<string,mixed>
-	 */
-	private function normalise(mixed $object): array {
-		if (is_array($object) === true) {
-			return $object;
-		}
-
-		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-			$serialised = $object->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		return [];
-	}//end normalise()
 }//end class

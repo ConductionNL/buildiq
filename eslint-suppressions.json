@@ -17,11 +17,6 @@
       "count": 2
     }
   },
-  "src/components/WorkflowAttachmentsSection.vue": {
-    "vue/custom-event-name-casing": {
-      "count": 1
-    }
-  },
   "src/components/agents/AgentRunHistory.vue": {
     "@typescript-eslint/no-unused-vars": {
       "count": 2
@@ -33,11 +28,6 @@
     },
     "vue/custom-event-name-casing": {
       "count": 1
-    }
-  },
-  "src/components/applicationDetail/ApplicationDetailHeader.vue": {
-    "no-console": {
-      "count": 2
     }
   },
   "src/components/applicationDetail/widgets/GroupsWidget.vue": {
@@ -107,10 +97,10 @@
   },
   "src/components/schema-editor/FieldEditor.vue": {
     "eqeqeq": {
-      "count": 19
+      "count": 6
     },
     "jsdoc/require-param-type": {
-      "count": 4
+      "count": 3
     }
   },
   "src/components/schema-editor/WidgetEditor.vue": {
@@ -129,11 +119,6 @@
   "src/components/walkthrough-editor/WalkthroughRecorder.vue": {
     "@typescript-eslint/no-unused-vars": {
       "count": 2
-    }
-  },
-  "src/composables/useApplicationVersion.js": {
-    "no-unused-vars": {
-      "count": 1
     }
   },
   "src/composables/useOrAccessCapabilities.js": {
@@ -194,11 +179,6 @@
       "count": 1
     }
   },
-  "src/dialogs/WorkflowAttachmentDialog.vue": {
-    "vue/custom-event-name-casing": {
-      "count": 1
-    }
-  },
   "src/modals/AppSettingsModal.vue": {
     "vue/custom-event-name-casing": {
       "count": 3
@@ -234,11 +214,6 @@
   },
   "src/modals/UserDeltaEditModal.vue": {
     "@typescript-eslint/no-unused-vars": {
-      "count": 1
-    }
-  },
-  "src/services/blockExport.js": {
-    "no-unused-vars": {
       "count": 1
     }
   },

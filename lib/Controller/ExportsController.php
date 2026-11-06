@@ -34,6 +34,9 @@ namespace OCA\Buildiq\Controller;
 
 use OCA\Buildiq\AppInfo\Application;
 use OCA\Buildiq\Service\ExportJobService;
+use OCA\Buildiq\Service\ServerBundleWriter;
+use OCA\Buildiq\Support\ObjectRecord;
+use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -46,6 +49,7 @@ use OCP\IRequest;
 use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use Throwable;
 
 /**
  * Controller for the Buildiq export pipeline.
@@ -54,6 +58,19 @@ use Psr\Log\LoggerInterface;
  * @spec openspec/changes/openbuild-exporter/tasks.md#task-5.2
  */
 class ExportsController extends Controller {
+
+	/**
+	 * The canonical slug of Buildiq's own register, which is not what a read uses.
+	 *
+	 * This app's repair step renames the register from `openbuild` per instance,
+	 * so both names are live across the estate on any given day. This is the name
+	 * asked ABOUT; the name to read with comes back from
+	 * {@see \OCA\OpenRegister\Contract\RegisterSlugResolverInterface}.
+	 *
+	 * @var string
+	 */
+	private const CANONICAL_REGISTER = 'buildiq';
+
 	/**
 	 * Constructor.
 	 *
@@ -76,6 +93,50 @@ class ExportsController extends Controller {
 	}//end __construct()
 
 	/**
+	 * Which slug Buildiq's own register answers to on THIS instance.
+	 *
+	 * Both reads below used to name `buildiq` as the FIRST POSITIONAL argument
+	 * to `searchObjectsBySlug()`, which is register position with no
+	 * `register:` label anywhere on the line, so
+	 * {@see \OCA\Buildiq\Tests\Unit\Support\RegisterSlugPinTest} could not see
+	 * them. The guard's patterns are widened in the same change that fixes them.
+	 *
+	 * Resolved through the container rather than the constructor for the same
+	 * reason `ObjectService` is: OpenRegister is an optional dependency, and a
+	 * constructor argument would make this controller unconstructable on an
+	 * instance without it.
+	 *
+	 * @return string|null The slug to read with, or null when this app's register
+	 *                     is not on this instance under any slug it has answered to.
+	 */
+	private function ownRegisterSlug(): ?string {
+		try {
+			if (interface_exists('\OCA\OpenRegister\Contract\RegisterSlugResolverInterface') === false) {
+				return null;
+			}
+
+			$resolver = $this->container->get(RegisterSlugResolverInterface::class);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				'Buildiq ExportsController: could not obtain the register-slug resolver, so this app\'s own '
+				. 'register cannot be named here: ' . $e->getMessage()
+			);
+			return null;
+		}
+
+		$resolution = $resolver->resolve(canonical: self::CANONICAL_REGISTER);
+		if ($resolution->isResolved() === false) {
+			$this->logger->warning(
+				'Buildiq ExportsController: this app\'s own register is not on this instance under any of its '
+				. 'known slugs (' . implode(', ', $resolution->candidates) . ').'
+			);
+			return null;
+		}
+
+		return $resolution->slug;
+	}//end ownRegisterSlug()
+
+	/**
 	 * Authorize the caller for an action on a given source Application slug.
 	 *
 	 * IDOR / ADR-005 Rule 3 guard: `#[NoAdminRequired]` makes the route
@@ -95,6 +156,7 @@ class ExportsController extends Controller {
 	 * @return bool True when the caller is allowed.
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-47
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function isAuthorisedForApplication(string $applicationSlug): bool {
 		$user = $this->userSession->getUser();
@@ -132,7 +194,13 @@ class ExportsController extends Controller {
 				return false;
 			}
 
-			$apps = $service->searchObjectsBySlug('buildiq', 'built-app', ['slug' => $applicationSlug]);
+			// Fails closed: this is the IDOR guard, so an unresolvable register denies.
+			$registerSlug = $this->ownRegisterSlug();
+			if ($registerSlug === null) {
+				return false;
+			}
+
+			$apps = $service->searchObjectsBySlug($registerSlug, 'built-app', ['slug' => $applicationSlug]);
 			if (is_array($apps) === false || $apps === []) {
 				return false;
 			}
@@ -141,7 +209,7 @@ class ExportsController extends Controller {
 			// permissions only `if (is_array($app))` — which is never true — so every
 			// non-admin fell through to an empty bucket list and was denied. The admin
 			// bypass above masked it.
-			$app = $this->toArray(object: $apps[0]);
+			$app = ObjectRecord::serialised(object: $apps[0]);
 			$permissions = ($app['permissions'] ?? []);
 
 			if (is_array($permissions) === false) {
@@ -274,6 +342,7 @@ class ExportsController extends Controller {
 	 * @return string The UUID, or '' when the slug does not resolve.
 	 *
 	 * @spec openspec/changes/export-github-broker/tasks.md#task-9-fix-the-unpersistable-export-job
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function resolveApplicationUuid(string $applicationSlug): string {
 		try {
@@ -286,12 +355,22 @@ class ExportsController extends Controller {
 				return '';
 			}
 
-			$apps = $service->searchObjectsBySlug('buildiq', 'built-app', ['slug' => $applicationSlug]);
+			// Returns '' — "the slug does not resolve" — which is this method's
+			// existing not-found answer, and the caller already refuses to queue
+			// an export on it. `ownRegisterSlug()` logs the reason at warning, so
+			// the two ways of arriving at '' are distinguishable in the log even
+			// though they are not in the return value.
+			$registerSlug = $this->ownRegisterSlug();
+			if ($registerSlug === null) {
+				return '';
+			}
+
+			$apps = $service->searchObjectsBySlug($registerSlug, 'built-app', ['slug' => $applicationSlug]);
 			if (is_array($apps) === false || $apps === []) {
 				return '';
 			}
 
-			$app = $this->toArray(object: $apps[0]);
+			$app = ObjectRecord::serialised(object: $apps[0]);
 
 			// OR serialises the object id both at the top level and under `@self`.
 			$uuid = ($app['id'] ?? ($app['@self']['id'] ?? ''));
@@ -307,34 +386,6 @@ class ExportsController extends Controller {
 	}//end resolveApplicationUuid()
 
 	/**
-	 * Normalise an OpenRegister search hit to a plain array.
-	 *
-	 * `searchObjectsBySlug()` returns ObjectEntity OBJECTS, not arrays. Both call sites
-	 * here used to guard with `is_array($app)` and fall through on failure — which meant
-	 * they never actually read the object. In `isAuthorisedForApplication()` that
-	 * silently produced an empty permissions set, so every non-admin was denied; only
-	 * the admin bypass above it kept the endpoint working at all.
-	 *
-	 * @param mixed $object An ObjectEntity, or an already-plain array.
-	 *
-	 * @return array<string,mixed> The serialised object, or [] when it is neither.
-	 */
-	private function toArray(mixed $object): array {
-		if (is_array($object) === true) {
-			return $object;
-		}
-
-		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-			$serialised = $object->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		return [];
-	}//end toArray()
-
-	/**
 	 * Validate the submit() request body.
 	 *
 	 * @param array<string,mixed> $body Decoded body params.
@@ -345,9 +396,9 @@ class ExportsController extends Controller {
 	 */
 	private function validateSubmitBody(array $body): ?JSONResponse {
 		$target = $this->readStringField(body: $body, field: 'target', default: 'zip');
-		if (in_array($target, ['zip', 'github'], true) === false) {
+		if (in_array($target, ['zip', 'server', 'github'], true) === false) {
 			return new JSONResponse(
-				['error' => 'Invalid target: must be zip or github.'],
+				['error' => 'Invalid target: must be zip, server or github.'],
 				Http::STATUS_UNPROCESSABLE_ENTITY
 			);
 		}
@@ -537,6 +588,63 @@ class ExportsController extends Controller {
 			Http::STATUS_ACCEPTED
 		);
 	}//end submit()
+
+	/**
+	 * What a server needs to run an exported app on its own.
+	 *
+	 * Read-only and not tied to an application: the versions come from the app
+	 * template and the installed OpenRegister.
+	 *
+	 * @return JSONResponse `{nextcloud, openregister, php, database}` minimum versions.
+	 *
+	 * @spec openspec/changes/apps-standalone-deploy/specs/standalone-server-bundle/spec.md#requirement-the-export-offers-its-own-server-as-a-target-req-bqsd-001
+	 */
+	#[NoAdminRequired]
+	public function serverRequirements(): JSONResponse {
+		$writer = $this->container->get(ServerBundleWriter::class);
+
+		return new JSONResponse($writer->requirements());
+	}//end serverRequirements()
+
+	/**
+	 * Run a queued export now instead of waiting for the next cron run.
+	 *
+	 * The export dialog calls this right after submit() and does not wait for
+	 * the answer; it follows the job's status as before. The request itself
+	 * runs the export, so it keeps going when the browser moves on.
+	 *
+	 * @param string $uuid ExportJob UUID.
+	 *
+	 * @return JSONResponse 200 `{started: true}` when this call ran it, 409 when it
+	 *                      had already been picked up, 404 for an unknown or foreign job.
+	 *
+	 * State-changing POST, so CSRF stays on (the SPA sends the request token).
+	 *
+	 * @spec openspec/specs/openbuild-exporter/spec.md#requirement-export-is-asynchronous-via-nextcloud-s-ijob
+	 */
+	#[NoAdminRequired]
+	public function run(string $uuid): JSONResponse {
+		if ($this->isAuthorisedForJob(jobUuid: $uuid) === false) {
+			return new JSONResponse(['error' => 'Unknown export job.'], Http::STATUS_NOT_FOUND);
+		}
+
+		// A long export must not stop because the dialog closed or the tab moved on.
+		ignore_user_abort(true);
+		set_time_limit(0);
+
+		try {
+			$started = $this->exportJobService->runNow(jobUuid: $uuid);
+		} catch (Throwable $e) {
+			$this->logger->error('Buildiq export run failed: ' . $e->getMessage());
+			return new JSONResponse(['error' => 'The export could not be started.'], Http::STATUS_INTERNAL_SERVER_ERROR);
+		}
+
+		if ($started === false) {
+			return new JSONResponse(['started' => false], Http::STATUS_CONFLICT);
+		}
+
+		return new JSONResponse(['started' => true]);
+	}//end run()
 
 	/**
 	 * Stream the ZIP for a completed ExportJob.

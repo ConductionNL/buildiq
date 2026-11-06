@@ -2,6 +2,7 @@
 // SPDX-FileCopyrightText: 2026 Conduction B.V.
 
 import { defineConfig, devices } from '@playwright/test'
+import { E2E_BASE_URL } from './tests/e2e/support/baseUrl.ts'
 
 // Roughly 26 specs self-skip behind `process.env.BUILDIQ_E2E_LIVE === '1'`
 // with reasons like "Requires live dev environment". But EVERY spec in this
@@ -50,7 +51,13 @@ export default defineConfig({
 	globalSetup: './tests/e2e/global-setup.ts',
 	reporter: process.env.CI ? [['github'], ['html', { open: 'never' }]] : 'list',
 	use: {
-		baseURL: process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:8080',
+		// Resolved in one place for the whole suite. This line used to read
+		// `process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:8080'`, which made
+		// this config a second entrance next to tests/e2e/support/baseUrl.ts and
+		// the one a plain `npx playwright test` from the repo root uses, so a
+		// guard wired into the resolver covered nothing here. See
+		// tests/e2e/shared-instance.ts.
+		baseURL: E2E_BASE_URL,
 		// Authenticated browser context populated by globalSetup. Empty
 		// when login fails — specs then surface the actual login page in
 		// their failure snapshots.

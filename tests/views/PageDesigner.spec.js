@@ -21,6 +21,8 @@
  */
 
 import { mount } from '@vue/test-utils'
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { computed, ref } from 'vue'
 
@@ -76,6 +78,7 @@ async function stub(name) {
 				'config',
 				'pageType',
 				'appSlug',
+				'appRegister',
 				'dataRegisters',
 				'parentRoute',
 				'pageId',
@@ -600,6 +603,229 @@ describe('PageDesigner', () => {
 			await new Promise((r) => setTimeout(r, 0))
 			await wrapper.vm.$nextTick()
 			expect(wrapper.vm.applicationDataRegisters).toEqual([])
+		})
+	})
+
+	it('gives a supported editor no "Unsupported page type" label', async () => {
+		// Regression: the fallback editor's title was bound on every editor
+		// and fell through as an HTML title, so screen readers announced
+		// "Unsupported page type: index" for a supported page.
+		const wrapper = mountDesigner({
+			pages: [{ id: 'home', type: 'index', config: {} }],
+			menu: [],
+		})
+		wrapper.vm.selectPage(0)
+		await wrapper.vm.$nextTick()
+		const editor = wrapper.findComponent({ name: 'IndexPageEditor' })
+		expect(editor.attributes('title')).toBeUndefined()
+		expect(wrapper.html()).not.toContain('Unsupported page type')
+	})
+
+	it('lays the panes out by the width the designer gets, not the window', () => {
+		// At 1280x720 with the app navigation open the designer is about
+		// 920px wide; a window media query kept three columns there and the
+		// validation column covered the editor's "Remove column" buttons.
+		const source = readFileSync(
+			resolve(__dirname, '../../src/views/PageDesigner.vue'),
+			'utf8',
+		)
+		expect(source).toMatch(/container-type:\s*inline-size/)
+		expect(source).toMatch(/@container \(max-width: 1100px\)/)
+		expect(source).not.toMatch(/@media \(max-width: 1100px\)/)
+	})
+
+	describe("the app's register comes from its version", () => {
+		it('asks for schemas in the version register, never in openbuild-{slug}', async () => {
+			// Regression: the designer requested
+			// /registers/openbuild-hello-world/schemas, a register that does
+			// not exist for wizard-made apps (theirs carry the version suffix).
+			const fetchSpy = vi.fn(async () => ({
+				ok: true,
+				json: async () => ({ results: [{ slug: 'message' }] }),
+			}))
+			const originalFetch = global.fetch
+			global.fetch = fetchSpy
+			axiosGetMock.mockImplementation((url, config) => {
+				if (typeof url === 'string' && url.endsWith('/versions')) {
+					return Promise.resolve({
+						data: [
+							{
+								slug: 'development',
+								register: 'openbuild-hello-world-development',
+								'@self': { id: 'v-dev' },
+							},
+						],
+					})
+				}
+				const slug =
+					(config && config.params && config.params.slug) || 'hello-world'
+				return Promise.resolve({ data: { results: [{ slug }] } })
+			})
+			try {
+				const wrapper = mountDesigner({
+					pages: [{ id: 'home', type: 'index', config: {} }],
+					menu: [],
+				})
+				await new Promise((resolve) => setTimeout(resolve, 20))
+				await wrapper.vm.$nextTick()
+				const urls = fetchSpy.mock.calls.map((call) => String(call[0]))
+				expect(urls).toContain(
+					'/apps/openregister/api/registers/openbuild-hello-world-development/schemas',
+				)
+				expect(
+					urls.some((url) =>
+						url.includes('/registers/openbuild-hello-world/'),
+					),
+				).toBe(false)
+				expect(wrapper.vm.targetSchemaSlugs).toEqual(['message'])
+
+				wrapper.vm.selectPage(0)
+				await wrapper.vm.$nextTick()
+				expect(
+					wrapper
+						.findComponent({ name: 'IndexPageEditor' })
+						.props('appRegister'),
+				).toBe('openbuild-hello-world-development')
+			} finally {
+				global.fetch = originalFetch
+			}
+		})
+	})
+
+	// v2-widget-placement-editor task 3.1. The write path the placement panel
+	// persists through, asserted on the EMITTED manifest, which is the thing
+	// the host saves.
+	describe('onWidgetsUpdate', () => {
+		const placement = (id, overrides = {}) => ({
+			id,
+			widgetKey: 'object-table',
+			slot: 'body',
+			gridX: 0,
+			gridY: 0,
+			gridWidth: 6,
+			gridHeight: 3,
+			...overrides,
+		})
+
+		it("replaces the selected page's widgets[] and leaves the others alone", async () => {
+			const wrapper = mountDesigner({
+				pages: [
+					{
+						id: 'a',
+						type: 'dashboard',
+						config: {},
+						widgets: [placement('a1')],
+					},
+					{
+						id: 'b',
+						type: 'dashboard',
+						config: {},
+						widgets: [placement('b1')],
+					},
+				],
+				menu: [],
+			})
+			wrapper.vm.selectPage(1)
+			await wrapper.vm.$nextTick()
+
+			wrapper.vm.onWidgetsUpdate([
+				placement('b1', { gridX: 6 }),
+				placement('b2'),
+			])
+			await wrapper.vm.$nextTick()
+
+			const emitted = wrapper.emitted('update:manifest')
+			expect(emitted).toBeTruthy()
+			const next = emitted[emitted.length - 1][0]
+			expect(next.pages[1].widgets.map((w) => w.id)).toEqual(['b1', 'b2'])
+			expect(next.pages[1].widgets[0].gridX).toBe(6)
+			// The other page and the rest of the edited page are untouched.
+			expect(next.pages[0].widgets.map((w) => w.id)).toEqual(['a1'])
+			expect(next.pages[1].id).toBe('b')
+			expect(next.pages[1].type).toBe('dashboard')
+		})
+
+		it('expresses a DELETION, which the keyed delta merge cannot', async () => {
+			// This is the reason onWidgetsUpdate is a whole-array replace and
+			// not the mergeManifestDelta path onInsertWidgets uses: a delta
+			// keyed by id has no way to say "this entry is gone".
+			const wrapper = mountDesigner({
+				pages: [
+					{
+						id: 'a',
+						type: 'dashboard',
+						config: {},
+						widgets: [
+							placement('keep'),
+							placement('drop', { gridX: 6 }),
+						],
+					},
+				],
+				menu: [],
+			})
+			wrapper.vm.selectPage(0)
+			await wrapper.vm.$nextTick()
+
+			wrapper.vm.onWidgetsUpdate([placement('keep')])
+			await wrapper.vm.$nextTick()
+
+			const emitted = wrapper.emitted('update:manifest')
+			const next = emitted[emitted.length - 1][0]
+			expect(next.pages[0].widgets.map((w) => w.id)).toEqual(['keep'])
+		})
+
+		it('keeps every other manifest key, including ones nothing here reads', async () => {
+			const wrapper = mountDesigner({
+				version: '2.0.0',
+				menu: [{ id: 'm', label: 'Home', route: 'a', order: 10 }],
+				runtime: { externalForms: [{ id: 'f' }] },
+				pages: [{ id: 'a', type: 'dashboard', config: {}, widgets: [] }],
+			})
+			wrapper.vm.selectPage(0)
+			await wrapper.vm.$nextTick()
+
+			wrapper.vm.onWidgetsUpdate([placement('new')])
+			await wrapper.vm.$nextTick()
+
+			const emitted = wrapper.emitted('update:manifest')
+			const next = emitted[emitted.length - 1][0]
+			expect(next.version).toBe('2.0.0')
+			expect(next.menu).toEqual([
+				{ id: 'm', label: 'Home', route: 'a', order: 10 },
+			])
+			expect(next.runtime).toEqual({ externalForms: [{ id: 'f' }] })
+		})
+
+		it('does nothing while no page is selected', async () => {
+			const wrapper = mountDesigner({
+				pages: [{ id: 'a', type: 'dashboard', config: {}, widgets: [] }],
+				menu: [],
+			})
+			wrapper.vm.onWidgetsUpdate([placement('x')])
+			await wrapper.vm.$nextTick()
+			expect(wrapper.emitted('update:manifest')).toBeFalsy()
+		})
+
+		it('is wired to the placement panel the centre pane mounts', async () => {
+			const wrapper = mountDesigner({
+				pages: [{ id: 'a', type: 'dashboard', config: {}, widgets: [] }],
+				menu: [],
+			})
+			wrapper.vm.selectPage(0)
+			await wrapper.vm.$nextTick()
+
+			const panel = wrapper.findComponent({ name: 'WidgetPlacementPanel' })
+			expect(panel.exists()).toBe(true)
+			expect(panel.props('page').id).toBe('a')
+
+			panel.vm.$emit('update:widgets', [placement('from-the-panel')])
+			await wrapper.vm.$nextTick()
+
+			const emitted = wrapper.emitted('update:manifest')
+			expect(emitted).toBeTruthy()
+			expect(emitted[emitted.length - 1][0].pages[0].widgets[0].id).toBe(
+				'from-the-panel',
+			)
 		})
 	})
 })

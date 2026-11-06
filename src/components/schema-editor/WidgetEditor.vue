@@ -23,7 +23,7 @@
 			{{
 				t(
 					'buildiq',
-					'No widget catalogue registered yet — widget IDs are free-text. The page editor (chain spec #5) will narrow this to a picker once it ships.',
+					'There is no list of widgets yet, so type the widget ID yourself.',
 				)
 			}}
 		</NcNoteCard>
@@ -213,7 +213,9 @@ export function editorToWidgets(widgets) {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../assets/editor-controls.scss' as c;
+
 .buildiq-widget-editor {
 	display: flex;
 	flex-direction: column;
@@ -238,12 +240,7 @@ export function editorToWidgets(widgets) {
 }
 
 .buildiq-widget-editor__rows {
-	list-style: none;
-	margin: 0;
-	padding: 0;
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
+	@include c.plain-list(8px);
 }
 
 .buildiq-widget-editor__row {

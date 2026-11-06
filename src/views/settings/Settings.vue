@@ -13,7 +13,9 @@
 					:placeholder="t('buildiq', 'OpenRegister register ID')" />
 			</div>
 
-			<h3 class="settings-subheading">
+			<!-- `section-store` is the anchor lib/Settings/connections.json links the
+				Template store row to (adopt-connection-registry). Keep the id stable. -->
+			<h3 id="section-store" class="settings-subheading">
 				{{ t('buildiq', 'Template registry') }}
 			</h3>
 			<p class="settings-help">

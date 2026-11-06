@@ -418,7 +418,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../assets/editor-controls.scss' as c;
+
 .block-library-panel {
 	display: flex;
 	flex-direction: column;
@@ -452,12 +454,7 @@ export default {
 }
 
 .block-library-panel__list {
-	list-style: none;
-	margin: 0;
-	padding: 0;
-	display: flex;
-	flex-direction: column;
-	gap: 10px;
+	@include c.plain-list(10px);
 }
 
 .block-card {

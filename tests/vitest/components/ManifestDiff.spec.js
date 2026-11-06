@@ -146,5 +146,6 @@ describe('ManifestDiff — design.md Decision 5 (client-side jsdiff)', () => {
 		expect(wrapper.find('.manifest-diff__empty').text()).toContain(
 			'Nothing to diff',
 		)
+		expect(wrapper.text()).not.toContain('publish the app first')
 	})
 })

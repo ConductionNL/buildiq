@@ -40,7 +40,7 @@
 				<router-link
 					class="page-designer-host__link"
 					:to="{ name: 'VirtualApps' }">
-					{{ t('buildiq', 'Back to Apps') }}
+					{{ t('buildiq', 'Back to apps') }}
 				</router-link>
 				<a
 					v-if="builderUrl"
@@ -103,8 +103,9 @@
 			:manifest="manifest"
 			:slug="routeSlug"
 			:sessionKey="sessionKey"
+			:destinationFindings="destinationFindings"
 			@update:manifest="onManifestUpdate"
-			@saveAndPreview="save" />
+			@saveAndPreview="saveAndPreview" />
 
 		<!-- REQ-PWA-002: Workflows section — attach Procest case types to the
 		     app's schemas. Soft-checks Procest availability for graceful absence. -->
@@ -113,8 +114,7 @@
 			:manifest="manifest"
 			:schemas="appSchemas"
 			:procestAvailable="procestAvailable"
-			@update:manifest="onManifestUpdate"
-			@createLinkProperty="onCreateLinkProperty" />
+			@update:manifest="onManifestUpdate" />
 
 		<!-- REQ-NTS-002: Theme section — pick an NL Design token set for this
 		     app. Soft-checks nldesign availability for graceful absence.
@@ -152,7 +152,12 @@
 		<aside
 			v-if="copilotToggleVisible && showCopilotPanel"
 			class="page-designer-host__copilot">
-			<CopilotPanel :appSlug="routeSlug" @executed="load" />
+			<CopilotPanel
+				:appSlug="routeSlug"
+				:versionSlug="versionSlug || ''"
+				closable
+				@close="showCopilotPanel = false"
+				@executed="load" />
 		</aside>
 	</div>
 </template>
@@ -171,6 +176,7 @@ import { useApplicationVersion } from '../composables/useApplicationVersion.js'
 import { useAppStatus } from '../composables/useAppStatus.js'
 import { useCopilot } from '../composables/useCopilot.js'
 import { useLivePreview } from '../composables/useLivePreview.js'
+import { checkFormDestinations } from '../services/formDestinationCheck.js'
 import {
 	reconcileConnectorDependency,
 	reconcileDocumentDependency,
@@ -178,6 +184,7 @@ import {
 	stripDependencyMarker,
 } from '../services/manifestDependencies.js'
 import { assignUnassignedFieldsToFinalStep } from '../services/manifestValidation/formLogic.js'
+import { navigateTo } from '../utils/navigate.js'
 
 const EMPTY_MANIFEST = { version: '1.0.0', menu: [], pages: [] }
 
@@ -235,6 +242,10 @@ export default {
 			docudeskAvailable: true,
 			// spec ai-copilot REQ-OBAIC-007: builder copilot panel toggle.
 			showCopilotPanel: false,
+			// Decision 179/189: destination findings on the form pages from
+			// the last save. The pages save as a draft with them; each is
+			// marked on its field, and publishing waits until none remain.
+			destinationFindings: [],
 			// REQ-BUR-004: incremented after each successful save; feeds
 			// `sessionKey` so a save re-baselines the designer's undo/redo
 			// history (design.md D3). A failed save does NOT increment this.
@@ -434,13 +445,13 @@ export default {
 		await this.load()
 		// REQ-PWA-006: soft-check Procest so the Workflows section degrades
 		// gracefully when it is absent.
-		const status = useAppStatus('procest')
+		const status = useAppStatus('dossiq')
 		status.check().then(() => {
 			this.procestAvailable = status.available.value
 		})
 		// REQ-NTS-005: soft-check nldesign so the Theme section degrades
 		// gracefully when it is absent.
-		const nldesignStatus = useAppStatus('nldesign')
+		const nldesignStatus = useAppStatus('thematiq')
 		nldesignStatus.check().then(() => {
 			this.nldesignAvailable = nldesignStatus.available.value
 		})
@@ -525,30 +536,6 @@ export default {
 				next.runtime = runtime
 			}
 			return next
-		},
-
-		/**
-		 * Delegate one-click link-property creation to the schema designer.
-		 * Emitted up from the Workflows dialog; opens the schema designer for
-		 * the chosen schema so the builder adds the `zaakUrl` string property
-		 * with the designer's own field validation (REQ-PWA-002).
-		 *
-		 * @param {string} schemaSlug - the schema to add the property to.
-		 * @return {void}
-		 * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002
-		 */
-		onCreateLinkProperty(schemaSlug) {
-			if (!schemaSlug) {
-				return
-			}
-			// Navigate to the app's schema designer (manifest-driven route at
-			// /builder/:slug/schemas) with the target schema + the property to
-			// add pre-seeded; the designer adds the string property with its own
-			// field validation.
-			const base = generateUrl(
-				`/apps/buildiq/builder/${this.routeSlug}/schemas`,
-			)
-			window.location.href = `${base}?schema=${encodeURIComponent(schemaSlug)}&addProperty=zaakUrl`
 		},
 
 		/**
@@ -656,14 +643,93 @@ export default {
 		},
 
 		/**
-		 * Persist the edited manifest onto the Application object.
+		 * The running app's URL for the version being edited. Carries
+		 * `?_version=` so the preview shows the version on screen, not
+		 * whichever version the plain URL resolves to. Unlike `builderUrl`
+		 * this does not wait for a publish: previewing is how you check a
+		 * version before publishing it.
+		 *
+		 * @return {string} URL, or '' when there is no app.
+		 * @spec openspec/specs/page-designer-ui/spec.md#requirement-route-hosts-resolve-slug-plus-version-and-persist-the-manifest
+		 */
+		previewUrl() {
+			if (!this.application || !this.application.slug) {
+				return ''
+			}
+			const base = generateUrl(
+				`/apps/buildiq/builder/${this.application.slug}`,
+			)
+			const version = this.applicationVersion
+			const versionSlug =
+				(version
+					&& ((version['@self'] && version['@self'].slug) || version.slug))
+				|| this.versionSlug
+				|| ''
+			return versionSlug
+				? `${base}?_version=${encodeURIComponent(versionSlug)}`
+				: base
+		},
+
+		/**
+		 * "Save & open preview": save, then open the running app on the
+		 * version that was just saved. A failed save stays on the designer so
+		 * the error is visible and nothing unsaved is lost.
 		 *
 		 * @return {Promise<void>}
+		 * @spec openspec/specs/page-designer-ui/spec.md#requirement-route-hosts-resolve-slug-plus-version-and-persist-the-manifest
+		 */
+		async saveAndPreview() {
+			const saved = await this.save()
+			if (!saved) {
+				return
+			}
+			const url = this.previewUrl()
+			if (url) {
+				navigateTo(url)
+			}
+		},
+
+		/**
+		 * Ask which form pages of the saved manifest their destination refuses.
+		 * The save already happened: the pages are a draft (decision 189). A
+		 * check that cannot run says so, because silence would read as a pass.
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/forms-are-valid-against-their-destination/specs/form-destination-authoring/spec.md#requirement-a-draft-form-saves-with-its-findings
+		 */
+		async refreshDestinationFindings() {
+			try {
+				const { findings } = await checkFormDestinations(
+					this.manifest,
+					this.routeSlug,
+				)
+				this.destinationFindings = findings
+				if (findings.length) {
+					this.toast = n(
+						'buildiq',
+						'Pages saved as a draft. A form has %n point its destination refuses; it is marked on its field, and the app can be published once it is fixed.',
+						'Pages saved as a draft. Forms have %n points their destination refuses; each is marked on its field, and the app can be published once they are fixed.',
+						findings.length,
+					)
+				}
+			} catch {
+				this.destinationFindings = []
+				this.error = t(
+					'buildiq',
+					'Pages saved, but the forms could not be checked against where they save to. Save again to retry.',
+				)
+			}
+		},
+
+		/**
+		 * Persist the edited manifest onto the Application object.
+		 *
+		 * @return {Promise<boolean>} true when the manifest was saved.
 		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 */
 		async save() {
 			if (!this.application || !this.applicationUuid || this.saving) {
-				return
+				return false
 			}
 			this.saving = true
 			this.error = ''
@@ -718,8 +784,9 @@ export default {
 					// REQ-BUR-004: a successful save is a session boundary — bump
 					// the counter so `sessionKey` changes and the designer resets
 					// its undo/redo history to the just-saved manifest.
+					await this.refreshDestinationFindings()
 					this.saveCounter += 1
-					return
+					return true
 				}
 				const url = generateUrl(
 					`/apps/openregister/api/objects/buildiq/built-app/${this.applicationUuid}`,
@@ -733,11 +800,14 @@ export default {
 				}
 				this.toast = t('buildiq', 'Pages saved.')
 				// REQ-BUR-004: see the PATCH branch above — same session-boundary bump.
+				await this.refreshDestinationFindings()
 				this.saveCounter += 1
+				return true
 			} catch (e) {
 				this.error = t('buildiq', 'Failed to save: {error}', {
 					error: (e && e.message) || String(e),
 				})
+				return false
 			} finally {
 				this.saving = false
 			}
@@ -801,14 +871,20 @@ export default {
 
 .page-designer-host__copilot {
 	position: fixed;
-	top: 0;
+	top: var(--header-height, 50px);
 	right: 0;
 	bottom: 0;
 	width: 360px;
 	max-width: 100%;
 	background: var(--color-main-background);
 	border-left: 1px solid var(--color-border);
-	padding: 12px;
+	/*
+	 * The bottom padding keeps the send row clear of the AI chat companion's
+	 * hex, which is position:fixed in this same corner. Without it the hex sits
+	 * on top of the Send button, and the one thing the panel needs is the one
+	 * thing you cannot click.
+	 */
+	padding: 12px 12px 72px;
 	z-index: 50;
 	box-sizing: border-box;
 }

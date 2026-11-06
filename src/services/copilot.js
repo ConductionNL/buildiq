@@ -9,10 +9,14 @@ import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 
 /**
- * Normalise an axios rejection into `{status, error, message}`.
+ * Normalise an axios rejection into `{status, error, message, providerMessage}`.
+ *
+ * `providerMessage` carries what the AI provider itself said (e.g. "Chat
+ * provider is not configured"), so the panel can show the cause under the
+ * message instead of leaving the user guessing at their own wording.
  *
  * @param {Error} err - the axios error.
- * @return {{status: number, error: string, message: string}}
+ * @return {{status: number, error: string, message: string, providerMessage: string}}
  * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
  */
 function normaliseError(err) {
@@ -22,6 +26,7 @@ function normaliseError(err) {
 		status: response ? response.status : 0,
 		error: data.error || 'network_error',
 		message: data.message || err.message || 'Request failed.',
+		providerMessage: data.providerMessage || '',
 	}
 }
 
@@ -56,15 +61,22 @@ export async function fetchCopilotHealth() {
  * @param {string} [params.agentId] - optional Agent id narrowing the effective
  *   tool allow-list and prefixing its instructions onto the system prompt
  *   (spec `agent-workspace`).
+ * @param {string} [params.versionSlug] - the version the caller is editing; every
+ *   step that omits `versionSlug` is settled on it server-side.
  * @return {Promise<{summary: string, steps: Array, manifests: object}>}
  * @throws {{status: number, error: string, message: string}} Normalised error envelope.
  * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
  * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
  */
-export async function requestPlan({ brief, appSlug, agentId } = {}) {
+export async function requestPlan({ brief, appSlug, agentId, versionSlug } = {}) {
 	try {
 		const url = generateUrl('/apps/buildiq/api/copilot/plan')
-		const { data } = await axios.post(url, { brief, appSlug, agentId })
+		const { data } = await axios.post(url, {
+			brief,
+			appSlug,
+			agentId,
+			versionSlug,
+		})
 		return data
 	} catch (err) {
 		throw normaliseError(err)

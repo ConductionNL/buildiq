@@ -24,6 +24,7 @@ import { chromium, request as playwrightRequest } from '@playwright/test'
 import { execSync } from 'child_process'
 import { existsSync, mkdirSync } from 'fs'
 import { dirname } from 'path'
+import { E2E_BASE_URL } from './support/baseUrl.ts'
 
 /**
  * Docudesk template fixtures the document-attachment specs attach to.
@@ -635,10 +636,11 @@ async function seedRoleUsersAndSessions(
 }
 
 export default async function globalSetup(config: FullConfig): Promise<void> {
-	const baseURL =
-		(config.projects[0].use.baseURL as string)
-		|| process.env.PLAYWRIGHT_BASE_URL
-		|| 'http://localhost:8080'
+	// `E2E_BASE_URL` rather than a third private chain ending in a literal:
+	// that literal is the shared development instance, and it is the value a
+	// run picks up precisely when nothing was configured. See
+	// tests/e2e/shared-instance.ts.
+	const baseURL = (config.projects[0].use.baseURL as string) || E2E_BASE_URL
 	const adminUser = process.env.NC_ADMIN_USER || 'admin'
 	const adminPassword =
 		process.env.NC_ADMIN_PASSWORD || process.env.NC_ADMIN_PASS || 'admin'

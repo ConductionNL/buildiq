@@ -41,6 +41,8 @@ namespace OCA\Buildiq\Controller;
 
 use OCA\Buildiq\AppInfo\Application;
 use OCA\Buildiq\Exception\AppRepoParseException;
+use OCA\Buildiq\Service\Connection\ConnectionReporter;
+use OCA\Buildiq\Service\GitHub\SyncRequestParams;
 use OCA\Buildiq\Service\GitHubAppSyncService;
 use OCA\Buildiq\Service\PermissionResolver;
 use OCP\AppFramework\Controller;
@@ -56,11 +58,6 @@ use OCP\IUserSession;
  * @spec openspec/changes/github-app-sync/specs/github-app-sync/spec.md
  */
 class GitHubSyncController extends Controller {
-	/**
-	 * Safe GitHub owner/repo/org pattern.
-	 */
-	private const OWNER_REPO_PATTERN = '/^[A-Za-z0-9._-]{1,100}$/';
-
 	/**
 	 * Safe git-ref pattern.
 	 */
@@ -78,14 +75,18 @@ class GitHubSyncController extends Controller {
 	 * @param IUserSession $userSession Current NC user session.
 	 * @param GitHubAppSyncService $syncService The link/push/pull service.
 	 * @param PermissionResolver $permissionResolver Shared RBAC grammar resolver.
+	 * @param ConnectionReporter|null $connectionReporter Tells integriq what a push or pull met, or nothing when absent.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md#requirement-req-biq-conn-003-buildiq-reports-what-its-connection-calls-met
 	 */
 	public function __construct(
 		IRequest $request,
 		private readonly IUserSession $userSession,
 		private readonly GitHubAppSyncService $syncService,
 		private readonly PermissionResolver $permissionResolver,
+		private readonly ?ConnectionReporter $connectionReporter = null,
 	) {
 		parent::__construct(appName: Application::APP_ID, request: $request);
 	}//end __construct()
@@ -109,20 +110,17 @@ class GitHubSyncController extends Controller {
 		$owner = (string)($this->request->getParam('owner') ?? '');
 		$name = (string)($this->request->getParam('name') ?? '');
 		$org = (string)($this->request->getParam('org') ?? '');
-		if (preg_match(self::OWNER_REPO_PATTERN, $owner) !== 1 || preg_match(self::OWNER_REPO_PATTERN, $name) !== 1) {
+		if (preg_match(SyncRequestParams::OWNER_REPO_PATTERN, $owner) !== 1 || preg_match(SyncRequestParams::OWNER_REPO_PATTERN, $name) !== 1) {
 			return $this->error(code: 'invalid_repo', status: Http::STATUS_BAD_REQUEST);
 		}
 
-		if ($org !== '' && preg_match(self::OWNER_REPO_PATTERN, $org) !== 1) {
+		if ($org !== '' && preg_match(SyncRequestParams::OWNER_REPO_PATTERN, $org) !== 1) {
 			return $this->error(code: 'invalid_org', status: Http::STATUS_BAD_REQUEST);
 		}
 
 		$linkage = $this->syncService->link(
 			application: $gate,
-			owner: $owner,
-			name: $name,
-			credentialId: $this->credentialParam(),
-			actingUserId: $this->uid()
+			repo: $this->params()->linkRepo(actingUserId: $this->uid())
 		);
 
 		return new JSONResponse(data: $linkage, statusCode: Http::STATUS_OK);
@@ -136,6 +134,7 @@ class GitHubSyncController extends Controller {
 	 * @return JSONResponse 200 with the commit sha; 401/403/404/422 or a generic outcome on failure.
 	 *
 	 * @spec openspec/changes/github-app-sync/specs/github-app-sync/spec.md
+	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md#requirement-req-biq-conn-003-buildiq-reports-what-its-connection-calls-met
 	 */
 	#[NoAdminRequired]
 	public function push(string $slug): JSONResponse {
@@ -144,27 +143,17 @@ class GitHubSyncController extends Controller {
 			return $gate;
 		}
 
-		$credentialId = $this->credentialParam();
+		$credentialId = $this->params()->credential();
 		if ($credentialId === null || preg_match(self::CREDENTIAL_PATTERN, $credentialId) !== 1) {
 			return $this->error(code: 'invalid_credential', status: Http::STATUS_BAD_REQUEST);
 		}
 
-		$versionSlugRaw = $this->request->getParam('versionSlug');
-		$versionSlug = null;
-		if (is_string($versionSlugRaw) === true && $versionSlugRaw !== '') {
-			$versionSlug = $versionSlugRaw;
-		}
-
-		$repoOverride = $this->repoOverrideParam();
-
 		$result = $this->syncService->push(
 			application: $gate,
-			versionSlug: $versionSlug,
-			credentialId: $credentialId,
-			repoOverride: $repoOverride,
-			actingUserId: $this->uid(),
-			visibility: $this->visibilityParam()
+			request: $this->params()->pushRequest(credentialId: $credentialId, actingUserId: $this->uid())
 		);
+
+		$this->connectionReporter?->reportGitHubSync(outcome: (string)($result['outcome'] ?? GitHubAppSyncService::OUTCOME_UNREACHABLE));
 
 		return $this->outcomeResponse(result: $result, okStatus: Http::STATUS_OK);
 	}//end push()
@@ -177,6 +166,7 @@ class GitHubSyncController extends Controller {
 	 * @return JSONResponse 200 with the draft version; 401/403/404/422 or a generic outcome on failure.
 	 *
 	 * @spec openspec/changes/github-app-sync/specs/github-app-sync/spec.md
+	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md#requirement-req-biq-conn-003-buildiq-reports-what-its-connection-calls-met
 	 */
 	#[NoAdminRequired]
 	public function pull(string $slug): JSONResponse {
@@ -190,7 +180,7 @@ class GitHubSyncController extends Controller {
 			return $this->error(code: 'invalid_ref', status: Http::STATUS_BAD_REQUEST);
 		}
 
-		$credentialId = $this->credentialParam();
+		$credentialId = $this->params()->credential();
 		if ($credentialId !== null && preg_match(self::CREDENTIAL_PATTERN, $credentialId) !== 1) {
 			return $this->error(code: 'invalid_credential', status: Http::STATUS_BAD_REQUEST);
 		}
@@ -205,6 +195,8 @@ class GitHubSyncController extends Controller {
 		} catch (AppRepoParseException $e) {
 			return new JSONResponse(data: $e->toArray(), statusCode: Http::STATUS_UNPROCESSABLE_ENTITY);
 		}
+
+		$this->connectionReporter?->reportGitHubSync(outcome: (string)($result['outcome'] ?? GitHubAppSyncService::OUTCOME_UNREACHABLE));
 
 		return $this->outcomeResponse(result: $result, okStatus: Http::STATUS_OK);
 	}//end pull()
@@ -319,63 +311,13 @@ class GitHubSyncController extends Controller {
 	}//end outcomeResponse()
 
 	/**
-	 * Optional `{ repo: { owner, name, org? } }` push override, pattern-validated.
+	 * This request's GitHub sync parameters.
 	 *
-	 * @return array{owner:string,name:string,org:string}|null
+	 * @return SyncRequestParams
 	 */
-	private function repoOverrideParam(): ?array {
-		$repo = $this->request->getParam('repo');
-		if (is_array($repo) === false) {
-			return null;
-		}
-
-		$owner = (string)($repo['owner'] ?? '');
-		$name = (string)($repo['name'] ?? '');
-		$org = (string)($repo['org'] ?? '');
-		if (preg_match(self::OWNER_REPO_PATTERN, $name) !== 1) {
-			return null;
-		}
-
-		if ($owner !== '' && preg_match(self::OWNER_REPO_PATTERN, $owner) !== 1) {
-			return null;
-		}
-
-		if ($org !== '' && preg_match(self::OWNER_REPO_PATTERN, $org) !== 1) {
-			return null;
-		}
-
-		return ['owner' => $owner, 'name' => $name, 'org' => $org];
-	}//end repoOverrideParam()
-
-	/**
-	 * Read the optional `visibility` request param for a freshly created repo.
-	 * Defaults to 'public' (shop discoverability); only an explicit 'private'
-	 * flips it — any other/absent value falls back to 'public'.
-	 *
-	 * @return string 'public' or 'private'.
-	 */
-	private function visibilityParam(): string {
-		$visibility = $this->request->getParam('visibility');
-		if (is_string($visibility) === true && strtolower($visibility) === 'private') {
-			return 'private';
-		}
-
-		return 'public';
-	}//end visibilityParam()
-
-	/**
-	 * Read the optional `credentialId` request param.
-	 *
-	 * @return string|null
-	 */
-	private function credentialParam(): ?string {
-		$credentialId = $this->request->getParam('credentialId');
-		if (is_string($credentialId) === true && $credentialId !== '') {
-			return $credentialId;
-		}
-
-		return null;
-	}//end credentialParam()
+	private function params(): SyncRequestParams {
+		return new SyncRequestParams(request: $this->request);
+	}//end params()
 
 	/**
 	 * The acting session UID, or null.

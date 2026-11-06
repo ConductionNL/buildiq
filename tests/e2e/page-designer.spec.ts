@@ -105,8 +105,8 @@ test.describe('buildiq page designer', () => {
 		const initialPageCount = await rows.count()
 
 		// REQ-OBPD-002 — adding a page prompts for the `type` from the canonical
-		// closed enum before any other field is shown: the add row exposes only
-		// the type picker, and Confirm stays disabled until a type is chosen.
+		// closed enum: the add row offers the type picker (plus optional title
+		// and slug), and Confirm stays disabled until a type is chosen.
 		await page.locator('.page-list-editor__add').click()
 		const confirm = page.getByRole('button', { name: /^confirm$/i })
 		await expect(
@@ -160,5 +160,77 @@ test.describe('buildiq page designer', () => {
 				.first(),
 			'the saved route must render inside the builder host',
 		).toBeVisible({ timeout: 45_000 })
+	})
+
+	/*
+	 * The add row is a five-control flex row inside a ~284px pane. It had no
+	 * `flex-wrap`, so the controls overflowed to the RIGHT, out of the pane and
+	 * under the centre panel, which paints over them. Cancel was the last child
+	 * and took the worst of it: measured at 1280x900 it sat at x=684 while the
+	 * row ended at x=639, so a click on it hit `.page-designer__empty` instead.
+	 * Escape does not close the row either, which left reloading the designer as
+	 * the only way out of an accidental "Add page".
+	 *
+	 * This asserts the geometry rather than a screenshot, because the failure is
+	 * geometric: a control whose box leaves its own row cannot be clicked, and
+	 * that is true at any theme, font or zoom.
+	 */
+	test('the add-page row keeps every control inside the pane, and Cancel closes it', async ({
+		page,
+	}) => {
+		await page.goto(
+			`${BASE_URL}/apps/buildiq/builder/${APP_SLUG}/pages?_version=production`,
+			{ waitUntil: 'domcontentloaded' },
+		)
+		await page.waitForSelector('.page-designer__left', { timeout: 60_000 })
+		await dismissOverlays(page)
+
+		await page.locator('.page-list-editor__add').click()
+		const row = page.locator('.page-list-editor__add-row')
+		await expect(row).toBeVisible()
+
+		// Every control must land inside its own row's box. `escaped` names the
+		// offenders so a regression says WHICH control left the pane.
+		const escaped = await row.evaluate((el) => {
+			const rowBox = el.getBoundingClientRect()
+			return [...el.children]
+				.map((child) => {
+					const box = child.getBoundingClientRect()
+					return {
+						control:
+							(child.textContent || '').trim()
+							|| child.getAttribute('aria-label')
+							|| child.tagName,
+						right: Math.round(box.right),
+						rowRight: Math.round(rowBox.right),
+					}
+				})
+				.filter((c) => c.right > c.rowRight + 1)
+		})
+		expect(
+			escaped,
+			'no add-row control may overflow the pane it lives in',
+		).toEqual([])
+
+		// The hit test is the point: a button can be visible and still be
+		// unclickable because a sibling panel is painted over it.
+		const cancel = row.getByRole('button', { name: /^cancel$/i })
+		const blockedBy = await cancel.evaluate((el) => {
+			const box = el.getBoundingClientRect()
+			const top = document.elementFromPoint(
+				Math.round(box.left + box.width / 2),
+				Math.round(box.top + box.height / 2),
+			)
+			return top === el || el.contains(top)
+				? null
+				: `${top?.tagName}.${(top?.className || '').toString().split(' ')[0]}`
+		})
+		expect(
+			blockedBy,
+			'Cancel must be the topmost element at its own centre',
+		).toBeNull()
+
+		await cancel.click()
+		await expect(row, 'Cancel closes the add row').toBeHidden()
 	})
 })

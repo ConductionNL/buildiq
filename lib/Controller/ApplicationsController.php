@@ -52,11 +52,20 @@ namespace OCA\Buildiq\Controller;
 
 use DateTimeImmutable;
 use DateTimeInterface;
+use InvalidArgumentException;
 use OCA\Buildiq\AppInfo\Application;
 use OCA\Buildiq\Service\AppChannelApplier;
 use OCA\Buildiq\Service\ApplicationVersionService;
+use OCA\Buildiq\Service\AppTemplateCapture;
+use OCA\Buildiq\Service\CallerContext;
+use OCA\Buildiq\Service\CompanionSchemaCollector;
+use OCA\Buildiq\Service\LocalApplicationRef;
 use OCA\Buildiq\Service\ManifestResolverService;
 use OCA\Buildiq\Service\PermissionResolver;
+use OCA\Buildiq\Service\RegisterStore;
+use OCA\Buildiq\Service\RepoSource;
+use OCA\Buildiq\Service\TemplateInstall;
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -93,35 +102,81 @@ class ApplicationsController extends Controller {
 	private const EVENT_ADMIN_BYPASS = 'rbac.admin_bypass';
 
 	/**
+	 * OpenRegister object service (hard dep via info.xml)
+	 *
+	 * @var ObjectServiceInterface
+	 */
+	private readonly ObjectServiceInterface $objectService;
+
+	/**
+	 * Resolves slugs/UUIDs to numeric register IDs
+	 *
+	 * @var RegisterMapper
+	 */
+	private readonly RegisterMapper $registerMapper;
+
+	/**
+	 * Resolves slugs/UUIDs to numeric schema IDs
+	 *
+	 * @var SchemaMapper
+	 */
+	private readonly SchemaMapper $schemaMapper;
+
+	/**
+	 * Optional OR audit-trail writer (null until OR loaded)
+	 *
+	 * @var AuditTrailMapper|null
+	 */
+	private readonly ?AuditTrailMapper $auditTrailMapper;
+
+	/**
+	 * Current Nextcloud user session
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Group membership resolver
+	 *
+	 * @var IGroupManager
+	 */
+	private readonly IGroupManager $groupManager;
+
+	/**
+	 * Shared permission-grammar resolver (H1/H2 fix)
+	 *
+	 * @var PermissionResolver
+	 */
+	private readonly PermissionResolver $permissionResolver;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IRequest $request The current HTTP request
 	 * @param LoggerInterface $logger PSR logger for diagnostics
-	 * @param ObjectServiceInterface $objectService OpenRegister object service (hard dep via info.xml)
-	 * @param RegisterMapper $registerMapper Resolves slugs/UUIDs to numeric register IDs
-	 * @param SchemaMapper $schemaMapper Resolves slugs/UUIDs to numeric schema IDs
-	 * @param IUserSession $userSession Current Nextcloud user session
-	 * @param IGroupManager $groupManager Group membership resolver
+	 * @param RegisterStore $store OpenRegister's object service, register and schema mappers and audit trail.
+	 * @param CallerContext $caller The caller's session, group memberships and the shared permission matcher.
 	 * @param ManifestResolverService $manifestResolver Version-aware manifest resolver (REQ-OBVR-002)
-	 * @param PermissionResolver $permissionResolver Shared permission-grammar resolver (H1/H2 fix)
 	 * @param AppChannelApplier $channelApplier Applies the v2 repo channels (apply-v2-channels)
-	 * @param AuditTrailMapper|null $auditTrailMapper Optional OR audit-trail writer (null until OR loaded)
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		IRequest $request,
 		private readonly LoggerInterface $logger,
-		private readonly ObjectServiceInterface $objectService,
-		private readonly RegisterMapper $registerMapper,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
+		RegisterStore $store,
+		CallerContext $caller,
 		private readonly ManifestResolverService $manifestResolver,
-		private readonly PermissionResolver $permissionResolver,
 		private readonly AppChannelApplier $channelApplier,
-		private readonly ?AuditTrailMapper $auditTrailMapper = null,
 	) {
+		$this->objectService = $store->objectService;
+		$this->registerMapper = $store->registerMapper;
+		$this->schemaMapper = $store->schemaMapper;
+		$this->auditTrailMapper = $store->auditTrailMapper;
+		$this->userSession = $caller->userSession;
+		$this->groupManager = $caller->groupManager;
+		$this->permissionResolver = $caller->permissionResolver;
 		parent::__construct(appName: Application::APP_ID, request: $request);
 	}//end __construct()
 
@@ -332,6 +387,7 @@ class ApplicationsController extends Controller {
 	 * @return JSONResponse 200 on save, 400 on bad body, 403 without write role.
 	 *
 	 * @spec openspec/specs/openbuild-rbac/spec.md
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	#[NoAdminRequired]
 	public function saveManifest(string $slug): JSONResponse {
@@ -431,7 +487,7 @@ class ApplicationsController extends Controller {
 					schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
 				);
 				if ($versionEntity !== null) {
-					$versionArray = $this->normaliseObject(object: $versionEntity);
+					$versionArray = ObjectRecord::toArray(object: $versionEntity);
 					$versionArray['manifest'] = $manifest;
 					$this->objectService->saveObject(
 						object: $versionArray,
@@ -545,6 +601,13 @@ class ApplicationsController extends Controller {
 		$resolved = $this->resolveApplicationBySlug(slug: $slug);
 		if (is_array($resolved) === true) {
 			[, $applicationArray] = $resolved;
+			// Same name projection as the production path: without it a
+			// `?_version=` preview titled its browser tab with the raw slug.
+			$authoritativeName = (string)($applicationArray['name'] ?? '');
+			if ($authoritativeName !== '') {
+				$manifest['name'] = $authoritativeName;
+			}
+
 			$manifest = $this->manifestResolver->filterManifestForCaller(
 				manifest: $manifest,
 				application: $applicationArray,
@@ -593,50 +656,15 @@ class ApplicationsController extends Controller {
 		}
 
 		try {
-			$registerId = $this->registerMapper->find(ApplicationVersionService::REGISTER_SLUG, _multitenancy: false)->getId();
-			$routeSchema = $this->schemaMapper->find('built-app-route', _multitenancy: false)->getId();
-
-			$routeResults = $this->objectService->searchObjects(
-				query: [
-					'@self' => [
-						'register' => $registerId,
-						'schema' => $routeSchema,
-					],
-					'slug' => $slug,
-				]
-			);
-
-			if (empty($routeResults) === true) {
-				return new JSONResponse(
-					data: ['error' => 'not_found', 'message' => 'No published virtual app found for slug ' . $slug],
-					statusCode: Http::STATUS_NOT_FOUND
-				);
+			// Same lookup as getManifest(), including the fallback for apps
+			// without a route index entry. This used to repeat the route-only
+			// lookup, so the Diff tab 404'd for every app without one.
+			$resolved = $this->resolveApplicationBySlug(slug: $slug);
+			if ($resolved instanceof JSONResponse) {
+				return $resolved;
 			}
 
-			$route = $this->normaliseObject(object: $routeResults[0]);
-			$applicationUuid = ($route['applicationUuid'] ?? null);
-
-			if ($applicationUuid === null) {
-				return new JSONResponse(
-					data: ['error' => 'inconsistent_state', 'message' => 'Route exists but has no applicationUuid'],
-					statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
-				);
-			}
-
-			$application = $this->objectService->find(
-				id: $applicationUuid,
-				register: 'buildiq',
-				schema: 'built-app'
-			);
-
-			if ($application === null) {
-				return new JSONResponse(
-					data: ['error' => 'not_found', 'message' => 'Application not found'],
-					statusCode: Http::STATUS_NOT_FOUND
-				);
-			}
-
-			$applicationArray = $this->normaliseObject(object: $application);
+			[$application, $applicationArray, $applicationUuid] = $resolved;
 
 			// RBAC enforcement (C5 / REQ-OBRBAC-002): deny-by-default before
 			// returning any manifest data. Mirrors the identical gate in getManifest().
@@ -700,14 +728,11 @@ class ApplicationsController extends Controller {
 	 * @return array<string, mixed>|null Blob or null if the version is missing.
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-58
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function resolveVersionBlob(string $token, array $application, string $applicationUuid): ?array {
 		if ($token === 'draft') {
-			return [
-				'manifest' => ($application['manifest'] ?? null),
-				'version' => ($application['version'] ?? null),
-				'publishedAt' => null,
-			];
+			return $this->draftBlob(application: $application, applicationUuid: $applicationUuid);
 		}
 
 		// AN EMPTY TOKEN IS A MISS, NOT A LOOKUP.
@@ -739,11 +764,7 @@ class ApplicationsController extends Controller {
 		// Translated at the lookup, with the cause logged, so the null the
 		// signature has always promised is actually reachable.
 		try {
-			$version = $this->objectService->find(
-				id: $token,
-				register: 'buildiq',
-				schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
-			);
+			$version = $this->lookupVersionForDiff(token: $token, applicationUuid: $applicationUuid);
 		} catch (\Throwable $e) {
 			$this->logger->debug(
 				'Buildiq: diff token {token} did not resolve to an ApplicationVersion: {message}',
@@ -756,19 +777,136 @@ class ApplicationsController extends Controller {
 			return null;
 		}
 
-		$versionArray = $this->normaliseObject(object: $version);
+		$versionArray = ObjectRecord::toArray(object: $version);
 
-		// Organisation-scope enforcement: a snapshot from another Application is a miss.
-		if (($versionArray['applicationUuid'] ?? null) !== $applicationUuid) {
+		// Scope enforcement: a version of another Application is a miss. The
+		// old check read `applicationUuid`, a field no ApplicationVersion has,
+		// so every real version was a miss.
+		if ($this->versionParentUuid(version: $versionArray) !== $applicationUuid) {
 			return null;
 		}
 
+		$semver = ($versionArray['semver'] ?? ($versionArray['version'] ?? null));
 		return [
 			'manifest' => ($versionArray['manifest'] ?? null),
-			'version' => ($versionArray['version'] ?? null),
+			'version' => $semver,
+			'semver' => $semver,
+			'name' => ($versionArray['name'] ?? ($versionArray['slug'] ?? null)),
 			'publishedAt' => ($versionArray['publishedAt'] ?? null),
 		];
 	}//end resolveVersionBlob()
+
+	/**
+	 * The `draft` diff side: the legacy application-level manifest, or else
+	 * the production version's manifest (the manifest lives on the version).
+	 *
+	 * @param array<string, mixed> $application Normalised Application data.
+	 * @param string $applicationUuid Parent Application UUID for scoping.
+	 *
+	 * @return array<string, mixed> The blob.
+	 *
+	 * @spec openspec/specs/openbuild-version-snapshots/spec.md
+	 */
+	private function draftBlob(array $application, string $applicationUuid): array {
+		$manifest = ($application['manifest'] ?? null);
+		$productionUuid = ($application['productionVersion'] ?? '');
+		if ($manifest === null && is_string($productionUuid) === true && $productionUuid !== '' && $productionUuid !== 'draft') {
+			$production = $this->resolveVersionBlob(token: $productionUuid, application: $application, applicationUuid: $applicationUuid);
+			$manifest = ($production['manifest'] ?? null);
+		}
+
+		return [
+			'manifest' => $manifest,
+			'version' => ($application['version'] ?? null),
+			'publishedAt' => null,
+		];
+	}//end draftBlob()
+
+	/**
+	 * Look a diff ref up: by object id first, then as a version slug.
+	 *
+	 * @param string $token The ref.
+	 * @param string $applicationUuid Parent Application UUID.
+	 *
+	 * @return mixed The version object, or null.
+	 *
+	 * @throws \OCP\DB\Exception When the slug search itself fails.
+	 *
+	 * @spec openspec/specs/openbuild-version-snapshots/spec.md
+	 */
+	private function lookupVersionForDiff(string $token, string $applicationUuid): mixed {
+		try {
+			$version = $this->objectService->find(
+				id: $token,
+				register: 'buildiq',
+				schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
+			);
+		} catch (Throwable $e) {
+			$version = null;
+		}
+
+		if ($version !== null) {
+			return $version;
+		}
+
+		// The spec's canonical ref is the version slug (`development`).
+		return $this->findVersionBySlugForDiff(slug: $token, applicationUuid: $applicationUuid);
+	}//end lookupVersionForDiff()
+
+	/**
+	 * The parent Application UUID of a version (its `application` relation).
+	 *
+	 * @param array<string, mixed> $version Normalised version data.
+	 *
+	 * @return mixed The UUID, or null.
+	 *
+	 * @spec openspec/specs/openbuild-version-snapshots/spec.md
+	 */
+	private function versionParentUuid(array $version): mixed {
+		$parent = ($version['application'] ?? ($version['applicationUuid'] ?? null));
+		if (is_array($parent) === true) {
+			return ($parent['id'] ?? ($parent['uuid'] ?? null));
+		}
+
+		return $parent;
+	}//end versionParentUuid()
+
+	/**
+	 * Find one of this Application's versions by its slug.
+	 *
+	 * @param string $slug The version slug (for example `development`)
+	 * @param string $applicationUuid The parent Application UUID
+	 *
+	 * @return mixed The version object, or null when the app has no such version
+	 *
+	 * @throws \OCP\DB\Exception When the register, schema or object search fails.
+	 *
+	 * @spec openspec/specs/openbuild-version-snapshots/spec.md
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
+	 */
+	private function findVersionBySlugForDiff(string $slug, string $applicationUuid): mixed {
+		$registerId = $this->registerMapper->find(ApplicationVersionService::REGISTER_SLUG, _multitenancy: false)->getId();
+		$schemaId = $this->schemaMapper->find(ApplicationVersionService::APPLICATION_VERSION_SCHEMA, _multitenancy: false)->getId();
+
+		$results = $this->objectService->searchObjects(
+			query: [
+				'@self' => [
+					'register' => $registerId,
+					'schema' => $schemaId,
+				],
+				'application' => $applicationUuid,
+				'slug' => $slug,
+			]
+		);
+
+		foreach ((array)$results as $result) {
+			if ((ObjectRecord::toArray(object: $result)['slug'] ?? null) === $slug) {
+				return $result;
+			}
+		}
+
+		return null;
+	}//end findVersionBySlugForDiff()
 
 	/**
 	 * Resolve a virtual-app slug to the Application object + array form + uuid.
@@ -787,6 +925,7 @@ class ApplicationsController extends Controller {
 	 * @return JSONResponse|array{0: ObjectEntityInterface|array<string, mixed>, 1: array<string, mixed>, 2: string}
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-50
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function resolveApplicationBySlug(string $slug): JSONResponse|array {
 		// Resolve register + schema slugs to numeric IDs. OR's searchObjects
@@ -819,27 +958,13 @@ class ApplicationsController extends Controller {
 			);
 		}//end try
 
-		// Step 1 — resolve slug → applicationUuid via the BuiltAppRoute index.
-		$routeResults = $this->objectService->searchObjects(
-			query: [
-				'@self' => [
-					'register' => $registerId,
-					'schema' => $routeSchema,
-				],
-				'slug' => $slug,
-			]
-		);
-
-		if (empty($routeResults) === true) {
-			$this->logger->debug('Buildiq: no BuiltAppRoute found for slug=' . $slug);
-			return new JSONResponse(
-				data: ['error' => 'not_found', 'message' => 'No published virtual app found for slug ' . $slug],
-				statusCode: Http::STATUS_NOT_FOUND
-			);
+		// Step 1 — resolve slug → applicationUuid via the BuiltAppRoute index,
+		// or the Application itself when the app has no index entry.
+		$route = $this->findRouteForSlug(slug: $slug, registerId: $registerId, routeSchema: $routeSchema);
+		if ($route instanceof JSONResponse) {
+			return $route;
 		}
 
-		// FindAll renders entities; result entries may be ObjectEntity or arrays.
-		$route = $this->normaliseObject(object: $routeResults[0]);
 		$applicationUuid = ($route['applicationUuid'] ?? null);
 
 		if ($applicationUuid === null) {
@@ -865,8 +990,96 @@ class ApplicationsController extends Controller {
 			);
 		}
 
-		return [$application, $this->normaliseObject(object: $application), (string)$applicationUuid];
+		return [$application, ObjectRecord::toArray(object: $application), (string)$applicationUuid];
 	}//end resolveApplicationBySlug()
+
+	/**
+	 * The BuiltAppRoute entry for a slug, or a stand-in built from the Application.
+	 *
+	 * Apps installed by the seed, a template or GitHub do not always get a
+	 * route index entry, and the Manifest and Diff tabs 404'd for every such
+	 * app (Hello World included). The Application itself carries the slug, so
+	 * it is looked up there. RBAC still applies in the callers.
+	 *
+	 * @param string $slug The virtual-app slug
+	 * @param mixed $registerId The buildiq register id
+	 * @param mixed $routeSchema The built-app-route schema id
+	 *
+	 * @return array<string, mixed>|JSONResponse The route data, or a 404
+	 *
+	 * @spec openspec/specs/openbuild-runtime/spec.md
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
+	 */
+	private function findRouteForSlug(string $slug, mixed $registerId, mixed $routeSchema): array|JSONResponse {
+		$routeResults = $this->objectService->searchObjects(
+			query: [
+				'@self' => [
+					'register' => $registerId,
+					'schema' => $routeSchema,
+				],
+				'slug' => $slug,
+			]
+		);
+
+		if (empty($routeResults) === false) {
+			// FindAll renders entities; result entries may be ObjectEntity or arrays.
+			return ObjectRecord::toArray(object: $routeResults[0]);
+		}
+
+		$applicationUuid = $this->findApplicationUuidBySlug(slug: $slug, registerId: $registerId);
+		if ($applicationUuid === null) {
+			$this->logger->debug('Buildiq: no BuiltAppRoute or Application found for slug=' . $slug);
+			return new JSONResponse(
+				data: ['error' => 'not_found', 'message' => 'No virtual app found for slug ' . $slug],
+				statusCode: Http::STATUS_NOT_FOUND
+			);
+		}
+
+		return ['applicationUuid' => $applicationUuid];
+	}//end findRouteForSlug()
+
+	/**
+	 * Find an Application's UUID by its slug, without the route index.
+	 *
+	 * @param string $slug The virtual-app slug
+	 * @param mixed $registerId The buildiq register id
+	 *
+	 * @return string|null The Application UUID, or null when no Application has this slug
+	 *
+	 * @spec openspec/specs/openbuild-runtime/spec.md
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
+	 */
+	private function findApplicationUuidBySlug(string $slug, mixed $registerId): ?string {
+		try {
+			$appSchema = $this->schemaMapper->find(ApplicationVersionService::APPLICATION_SCHEMA, _multitenancy: false)->getId();
+		} catch (Throwable $e) {
+			return null;
+		}
+
+		$results = $this->objectService->searchObjects(
+			query: [
+				'@self' => [
+					'register' => $registerId,
+					'schema' => $appSchema,
+				],
+				'slug' => $slug,
+			]
+		);
+
+		foreach ((array)$results as $result) {
+			$application = ObjectRecord::toArray(object: $result);
+			if (($application['slug'] ?? null) !== $slug) {
+				continue;
+			}
+
+			$uuid = ($application['id'] ?? $application['uuid'] ?? $application['@self']['id'] ?? null);
+			if (is_string($uuid) === true && $uuid !== '') {
+				return $uuid;
+			}
+		}
+
+		return null;
+	}//end findApplicationUuidBySlug()
 
 	/**
 	 * Return the list of Applications the caller has any role on.
@@ -972,6 +1185,7 @@ class ApplicationsController extends Controller {
 	 * @return array{0: array<array<string,mixed>>, 1: bool} [filtered list, adminBypassUsed].
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-48
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function filterApplicationsByRole(
 		array $results,
@@ -987,7 +1201,7 @@ class ApplicationsController extends Controller {
 		}
 
 		foreach ($results as $entry) {
-			$app = $this->normaliseObject(object: $entry);
+			$app = ObjectRecord::toArray(object: $entry);
 			if ($app === []) {
 				continue;
 			}
@@ -1071,6 +1285,7 @@ class ApplicationsController extends Controller {
 	 *                                    production version resolves.
 	 *
 	 * @spec openspec/specs/openbuild-runtime/spec.md#req-obr-007b
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function attachProductionVersionDetail(array $applications): array {
 		// Nothing to resolve — skip the query entirely.
@@ -1123,7 +1338,7 @@ class ApplicationsController extends Controller {
 
 		$byUuid = [];
 		foreach ($rows as $row) {
-			$version = $this->normaliseObject(object: $row);
+			$version = ObjectRecord::toArray(object: $row);
 			if ($version === []) {
 				continue;
 			}
@@ -1407,6 +1622,7 @@ class ApplicationsController extends Controller {
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-55
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-56
+	 * @spec openspec/changes/store-shows-built-in-templates/specs/template-catalogue-ui/spec.md
 	 */
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 10, period: 3600)]
@@ -1465,6 +1681,14 @@ class ApplicationsController extends Controller {
 			);
 		}
 
+		// An optional description typed in the Use this template dialog
+		// replaces the template's own; left empty, the new app keeps the
+		// template's description (see persistApplication()).
+		$description = trim((string)($this->request->getParams()['description'] ?? ''));
+		if ($description !== '') {
+			$template['description'] = $description;
+		}
+
 		$result = $this->installFromTemplateArray(
 			template: $template,
 			name: $name,
@@ -1474,6 +1698,129 @@ class ApplicationsController extends Controller {
 
 		return new JSONResponse(data: $result['data'], statusCode: $result['status']);
 	}//end createFromTemplate()
+
+	/**
+	 * Copy an app into a new one, owned by the caller (REQ-BQCP-001).
+	 *
+	 * The copy goes through the template seam without touching the template
+	 * catalogue: the source's companion schemas and current manifest are
+	 * captured in memory, de-namespaced exactly as "Save as template" does
+	 * ({@see AppTemplateCapture}), and installed by installFromTemplateArray().
+	 * So the copy gets its own register, its own namespaced schemas and
+	 * rewritten references, and no records.
+	 *
+	 * Gates (REQ-BQCP-002), the same as cloning a template: a signed-in
+	 * Nextcloud administrator (copying provisions a register), the
+	 * from-template rate limit, and on top an owner or editor of the source
+	 * app; a viewer is refused even when they are an administrator. A taken
+	 * slug is the seam's 409.
+	 *
+	 * @param string $slug The source app's slug
+	 *
+	 * @return JSONResponse 201 with the new app; 400, 401, 403, 404 or 409 otherwise
+	 *
+	 * @spec openspec/changes/apps-copy-app-and-page/specs/copy-app-page-and-form/spec.md#requirement-a-maker-copies-an-app-req-bqcp-001
+	 * @spec openspec/changes/apps-copy-app-and-page/specs/copy-app-page-and-form/spec.md#requirement-copying-an-app-has-the-gates-of-cloning-a-template-req-bqcp-002
+	 */
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 10, period: 3600)]
+	public function copy(string $slug): JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return $this->errorResponse(code: 'unauthenticated', status: Http::STATUS_UNAUTHORIZED);
+		}
+
+		if ($this->groupManager->isInGroup($user->getUID(), self::ADMIN_GROUP) === false) {
+			return $this->errorResponse(
+				code: 'forbidden',
+				detail: 'Copying an app requires Nextcloud admin privileges.',
+				status: Http::STATUS_FORBIDDEN
+			);
+		}
+
+		$validation = $this->validateCloneRequest(body: $this->request->getParams());
+		if (isset($validation['error']) === true) {
+			return new JSONResponse(data: $validation['error'], statusCode: $validation['status']);
+		}
+
+		[$name, $newSlug] = $validation;
+
+		$resolved = $this->resolveApplicationBySlug(slug: $slug);
+		if ($resolved instanceof JSONResponse) {
+			return $resolved;
+		}
+
+		$application = $resolved[1];
+		$canEdit = $this->permissionResolver->matchesCaller(
+			permissions: ($application['permissions'] ?? []),
+			caller: $user,
+			userGroups: $this->permissionResolver->resolveUserGroups($user),
+			allowAdminBypass: false,
+			roles: ['owners', 'editors']
+		);
+		if ($canEdit === false) {
+			return new JSONResponse(
+				data: ['error' => 'forbidden', 'code' => 'buildiq.rbac.no_role'],
+				statusCode: Http::STATUS_FORBIDDEN
+			);
+		}
+
+		try {
+			$template = $this->captureForCopy(application: $application);
+		} catch (InvalidArgumentException $e) {
+			return $this->errorResponse(code: 'copy_ambiguous_schemas', detail: $e->getMessage(), status: Http::STATUS_CONFLICT);
+		}
+
+		$result = $this->installFromTemplateArray(
+			template: $template,
+			name: $name,
+			newSlug: $newSlug,
+			ownerUid: $user->getUID()
+		);
+
+		return new JSONResponse(data: $result['data'], statusCode: $result['status']);
+	}//end copy()
+
+	/**
+	 * Capture an app's current version as a template array, in memory.
+	 *
+	 * @param array<string,mixed> $application The source Application
+	 *
+	 * @return array<string,mixed> The template array for installFromTemplateArray()
+	 *
+	 * @throws InvalidArgumentException When two schemas de-namespace to one slug.
+	 *
+	 * @spec openspec/changes/apps-copy-app-and-page/specs/copy-app-page-and-form/spec.md#requirement-a-maker-copies-an-app-req-bqcp-001
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
+	 */
+	private function captureForCopy(array $application): array {
+		$version = [];
+		$versionId = ($application['productionVersion'] ?? null);
+		if (is_string($versionId) === true && $versionId !== '' && $versionId !== 'draft') {
+			$version = ObjectRecord::toArray(
+				object: $this->objectService->find(
+					id: $versionId,
+					register: 'buildiq',
+					schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
+				)
+			);
+		}
+
+		$manifest = ($version['manifest'] ?? ($application['manifest'] ?? []));
+		$appSlug = (string)($application['slug'] ?? '');
+		$collector = new CompanionSchemaCollector(
+			registerMapper: $this->registerMapper,
+			schemaMapper: $this->schemaMapper,
+			logger: $this->logger
+		);
+		$schemas = $collector->collect(slug: $appSlug, versionRegister: trim((string)($version['register'] ?? '')));
+
+		return (new AppTemplateCapture())->capture(
+			application: $application,
+			schemas: array_values($schemas),
+			manifest: (array)$manifest
+		);
+	}//end captureForCopy()
 
 	/**
 	 * Clone a template ARRAY into a new local Application (shared install seam).
@@ -1496,11 +1843,9 @@ class ApplicationsController extends Controller {
 	 * @param string $name Human-readable name for the new app.
 	 * @param string $newSlug The new (kebab-case, pre-validated) app slug.
 	 * @param string $ownerUid The owner UID (becomes the app owner).
-	 * @param string|null $sourceOwner GitHub owner the template was fetched from, when
-	 *                                 applicable — forwarded to the skills channel so a
-	 *                                 private-repo Hermiq bundle fetch can authenticate.
-	 * @param string|null $sourceRepo GitHub repo the template was fetched from, when applicable.
-	 * @param string|null $credentialId Broker credential UUID used for the original fetch, when applicable.
+	 * @param RepoSource|null $source GitHub repo the template was fetched from and the broker credential
+	 *                                used for that fetch, when applicable: forwarded to the skills channel
+	 *                                so a private-repo Hermiq bundle fetch can authenticate.
 	 *
 	 * @return array{status:int,data:array<string,mixed>} 201 + app on success; 409/500/503 on failure.
 	 *
@@ -1511,9 +1856,7 @@ class ApplicationsController extends Controller {
 		string $name,
 		string $newSlug,
 		string $ownerUid,
-		?string $sourceOwner = null,
-		?string $sourceRepo = null,
-		?string $credentialId = null,
+		?RepoSource $source = null,
 	): array {
 		$ctx = $this->resolveSharedContext();
 		if ($ctx === null) {
@@ -1540,9 +1883,7 @@ class ApplicationsController extends Controller {
 		// companion-schema namespacing, per-app register provisioning, the
 		// owner-tagged Application record, and its production ApplicationVersion.
 		$built = $this->materialiseApplication(
-			template: $template,
-			name: $name,
-			newSlug: $newSlug,
+			install: new TemplateInstall(template: $template, name: $name, newSlug: $newSlug),
 			ownerUid: $ownerUid,
 			ctx: $ctx
 		);
@@ -1563,12 +1904,9 @@ class ApplicationsController extends Controller {
 		// being reported as a clean `skipped` rather than a credential gap.
 		$channels = $this->channelApplier->apply(
 			template: $template,
-			owner: $sourceOwner,
-			repo: $sourceRepo,
+			source: new RepoSource(owner: (string)$source?->owner, repo: (string)$source?->repo, ref: null, credentialId: $source?->credentialId),
 			actingUserId: $ownerUid,
-			credentialId: $credentialId,
-			applicationUuid: (string)($built['uuid'] ?? ''),
-			applicationSlug: $newSlug
+			local: new LocalApplicationRef(uuid: (string)($built['uuid'] ?? ''), slug: $newSlug)
 		);
 
 		return [
@@ -1598,21 +1936,15 @@ class ApplicationsController extends Controller {
 	 * caller keeps the parts that are about the REQUEST — validating it,
 	 * applying the app-repo channels, and shaping the response.
 	 *
-	 * @param array<string,mixed> $template The template record (local or remote payload).
-	 * @param string $name Human-readable name for the new app.
-	 * @param string $newSlug The new (kebab-case, pre-validated) app slug.
+	 * @param TemplateInstall $install The template, and the new app's name and slug.
 	 * @param string $ownerUid The owner UID (becomes the app owner).
 	 * @param array{register:int,templateSchema:int,applicationSchema:int} $ctx Shared context.
 	 *
 	 * @return array{uuid:string|null,registerSlug:string,schemaIds:array<int,int>}|array{error:array<string,mixed>,status:int}
 	 */
-	private function materialiseApplication(
-		array $template,
-		string $name,
-		string $newSlug,
-		string $ownerUid,
-		array $ctx,
-	): array {
+	private function materialiseApplication(TemplateInstall $install, string $ownerUid, array $ctx): array {
+		$template = $install->template;
+		$newSlug = $install->newSlug;
 		// Prepare manifest + companion-schema clone map.
 		$companionInput = $this->extractCompanionSchemas(template: $template);
 		$rewriteMap = $this->buildRewriteMap(companions: $companionInput, newSlug: $newSlug);
@@ -1631,12 +1963,9 @@ class ApplicationsController extends Controller {
 
 		// Persist the Application record (shared register), tagged with owner.
 		$persistResult = $this->persistApplication(
-			name: $name,
-			newSlug: $newSlug,
+			install: $install,
 			ownerUid: $ownerUid,
 			manifest: $manifest,
-			template: $template,
-			templateSlug: (string)($template['slug'] ?? $newSlug),
 			ctx: $ctx
 		);
 		if (isset($persistResult['error']) === true) {
@@ -1778,12 +2107,9 @@ class ApplicationsController extends Controller {
 	/**
 	 * Persist the cloned Application record.
 	 *
-	 * @param string $name Human-readable name
-	 * @param string $newSlug The new application slug
+	 * @param TemplateInstall $install The source template record, and the new app's name and slug
 	 * @param string $ownerUid The owner UID (multi-user isolation)
 	 * @param array<string,mixed> $manifest The cloned manifest
-	 * @param array<string,mixed> $template The source template record
-	 * @param string $templateSlug The source template slug
 	 * @param array{register:int,templateSchema:int,applicationSchema:int} $ctx Shared context
 	 *
 	 * @return array{uuid:string|null,application:array<string,mixed>}|array{error:array<string,mixed>,status:int}
@@ -1794,33 +2120,36 @@ class ApplicationsController extends Controller {
 	 * of them are translated into the `clone_failed` envelope rather than leaking
 	 * out of the controller.
 	 *
-	 * @throws Throwable From normaliseObject() AFTER a successful save. Deliberately
+	 * @throws Throwable From ObjectRecord::toArray() AFTER a successful save. Deliberately
 	 *                   NOT folded into the envelope: by then the Application record
 	 *                   already exists, so returning `clone_failed` would tell the
 	 *                   caller nothing was created when something was.
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-55
+	 * @spec openspec/changes/store-shows-built-in-templates/specs/template-catalogue-ui/spec.md
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function persistApplication(
-		string $name,
-		string $newSlug,
+		TemplateInstall $install,
 		string $ownerUid,
 		array $manifest,
-		array $template,
-		string $templateSlug,
 		array $ctx,
 	): array {
+		$template = $install->template;
 		try {
 			$created = $this->objectService->saveObject(
 				object: [
-					'name' => $name,
-					'slug' => $newSlug,
+					'name' => $install->name,
+					'slug' => $install->newSlug,
+					// The template's description, or the one the user typed
+					// (createFromTemplate() puts that on the template array).
+					'description' => (string)($template['description'] ?? ''),
 					'status' => 'draft',
 					'version' => '0.1.0',
 					'owner' => $ownerUid,
 					'manifest' => $manifest,
 					'templateOrigin' => [
-						'slug' => (string)($template['slug'] ?? $templateSlug),
+						'slug' => (string)($template['slug'] ?? $install->newSlug),
 						'version' => (string)($template['version'] ?? ''),
 					],
 					// Grant the creating user full ownership so PermissionResolver
@@ -1844,7 +2173,7 @@ class ApplicationsController extends Controller {
 			];
 		}//end try
 
-		$createdArray = $this->normaliseObject(object: $created);
+		$createdArray = ObjectRecord::toArray(object: $created);
 		return [
 			'uuid' => ($createdArray['uuid'] ?? $createdArray['id'] ?? null),
 			// The STORED payload, handed back so a follow-up write can patch one
@@ -1869,6 +2198,7 @@ class ApplicationsController extends Controller {
 	 * @param string $registerSlug The per-app register slug already provisioned for this install.
 	 *
 	 * @return void
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function linkProductionVersion(
 		array $application,
@@ -1884,7 +2214,15 @@ class ApplicationsController extends Controller {
 				'manifest' => $manifest,
 				'register' => $registerSlug,
 				'semver' => '1.0.0',
-				'status' => 'published',
+				// A draft, like every other new version. Installing a template or
+				// a repository copies someone else's work into your instance for
+				// you to change: nothing has been published yet, and the store
+				// says so in as many words ("an editable draft app"). Arriving as
+				// `published` also skipped the draft → published transition that
+				// VersionPromotionService owns, so the detail page reported a
+				// state no one had reached and the Application record beside it
+				// still read `draft`.
+				'status' => 'draft',
 				'application' => $appUuid,
 			];
 
@@ -1893,7 +2231,7 @@ class ApplicationsController extends Controller {
 				register: ApplicationVersionService::REGISTER_SLUG,
 				schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
 			);
-			$versionData = $this->normaliseObject(object: $createdVersion);
+			$versionData = ObjectRecord::toArray(object: $createdVersion);
 			$versionUuid = (string)($versionData['uuid'] ?? $versionData['id'] ?? '');
 			if ($versionUuid === '') {
 				return;
@@ -2022,7 +2360,9 @@ class ApplicationsController extends Controller {
 		// legacy un-namespaced slug AS LONG AS the existing register
 		// belongs to the caller; otherwise fall back to the
 		// owner-namespaced form.
-		$legacyRegisterSlug = 'openbuild-' . $newSlug;
+		// Prefix from the constant, never typed: see
+		// ApplicationVersionService::VERSION_REGISTER_PREFIX.
+		$legacyRegisterSlug = ApplicationVersionService::VERSION_REGISTER_PREFIX . $newSlug;
 
 		try {
 			$existing = $this->registerMapper->find($legacyRegisterSlug, _multitenancy: false);
@@ -2034,7 +2374,7 @@ class ApplicationsController extends Controller {
 
 			// Different user owns the org-wide slug — namespace ours.
 			return $this->findOrCreateRegister(
-				slug: 'openbuild-' . $ownerUid . '-' . $newSlug,
+				slug: ApplicationVersionService::VERSION_REGISTER_PREFIX . $ownerUid . '-' . $newSlug,
 				appSlug: $newSlug,
 				ownerUid: $ownerUid,
 			);
@@ -2199,6 +2539,7 @@ class ApplicationsController extends Controller {
 	 * @param string|null $owner Optional owner UID (multi-user isolation scope)
 	 *
 	 * @return array<string,mixed>|null
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function lookupOne(
 		int|string $registerId,
@@ -2231,43 +2572,10 @@ class ApplicationsController extends Controller {
 				return null;
 			}
 
-			return $this->normaliseObject(object: $results[0]);
+			return ObjectRecord::toArray(object: $results[0]);
 		} catch (Throwable $e) {
 			$this->logger->warning('Buildiq: lookup failed', ['exception' => $e->getMessage()]);
 			return null;
 		}//end try
 	}//end lookupOne()
-
-	/**
-	 * Coerce an OR result entry (ObjectEntity or array) to a plain associative array.
-	 *
-	 * FindAll() and find() may return ObjectEntity instances; we normalise to an
-	 * array so the caller can use array access uniformly. Uses jsonSerialize()
-	 * when present (the canonical ObjectEntity surface).
-	 *
-	 * @param mixed $object The OR object/result entry.
-	 *
-	 * @return array<string, mixed>
-	 */
-	private function normaliseObject(mixed $object): array {
-		if (is_array($object) === true) {
-			return $object;
-		}
-
-		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-			$serialised = $object->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		if (is_object($object) === true && method_exists($object, 'getObject') === true) {
-			$inner = $object->getObject();
-			if (is_array($inner) === true) {
-				return $inner;
-			}
-		}
-
-		return [];
-	}//end normaliseObject()
 }//end class

@@ -32,9 +32,12 @@ namespace OCA\Buildiq\Tests\Unit\Controller;
 
 use OCA\Buildiq\Controller\ApplicationsController;
 use OCA\Buildiq\Service\AppChannelApplier;
+use OCA\Buildiq\Service\ApplicationVersionService;
+use OCA\Buildiq\Service\CallerContext;
 use OCA\Buildiq\Service\ManifestResolverService;
 use OCA\Buildiq\Service\PermissionResolver;
-use OCA\Buildiq\Service\ApplicationVersionService;
+use OCA\Buildiq\Service\RegisterStore;
+use OCA\Buildiq\Service\RepoSource;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -228,15 +231,19 @@ class CreateFromTemplateTest extends TestCase {
 		$this->controller = new ApplicationsController(
 			request: $this->request,
 			logger: $this->logger,
-			objectService: $this->objectService,
-			registerMapper: $this->registerMapper,
-			schemaMapper: $this->schemaMapper,
-			userSession: $this->userSession,
-			groupManager: $this->groupManager,
+			store: new RegisterStore(
+				objectService: $this->objectService,
+				registerMapper: $this->registerMapper,
+				schemaMapper: $this->schemaMapper,
+				auditTrailMapper: null
+			),
+			caller: new CallerContext(
+				userSession: $this->userSession,
+				groupManager: $this->groupManager,
+				permissionResolver: $permissionResolver
+			),
 			manifestResolver: $this->manifestResolver,
-			permissionResolver: $permissionResolver,
 			channelApplier: $this->channelApplier,
-			auditTrailMapper: null,
 		);
 	}//end setUp()
 
@@ -515,6 +522,105 @@ class CreateFromTemplateTest extends TestCase {
 	}//end testSuccessCreatesApplicationAndPerAppArtifacts()
 
 	/**
+	 * The stored Application carries the requested name and slug, the owner,
+	 * owner-only permissions and the template origin; a template without a
+	 * slug of its own records the new slug as its origin.
+	 *
+	 * @return void
+	 */
+	public function testTheStoredApplicationRecordsNameOwnerAndOrigin(): void {
+		$withSlug = $this->templateRecord(self::TEMPLATE_SLUG);
+		$withoutSlug = $withSlug;
+		unset($withoutSlug['slug'], $withoutSlug['version']);
+		foreach (['with slug' => [$withSlug, self::TEMPLATE_SLUG, '1.0.0'], 'without slug' => [$withoutSlug, 'my-permits', '']] as $name => [$record, $originSlug, $originVersion]) {
+			$this->setUp();
+			$this->authenticateAs('alice');
+			$this->withRequestParams(['name' => 'My permits', 'slug' => 'my-permits']);
+			$this->objectService->method('searchObjects')->willReturnOnConsecutiveCalls([$record], []);
+			$this->schemaMapper->method('createFromArray')->willReturn($this->schemaWithId(7777));
+			$calls = [];
+			$this->recordSaves($calls);
+
+			$this->controller->createFromTemplate(templateSlug: self::TEMPLATE_SLUG);
+
+			$application = $calls[0]['object'];
+			unset($application['manifest']);
+			self::assertSame(
+				[
+					'name' => 'My permits',
+					'slug' => 'my-permits',
+					'description' => '',
+					'status' => 'draft',
+					'version' => '0.1.0',
+					'owner' => 'alice',
+					'templateOrigin' => ['slug' => $originSlug, 'version' => $originVersion],
+					'permissions' => ['owners' => ['user:alice'], 'editors' => [], 'viewers' => []],
+				],
+				$application,
+				$name
+			);
+		}
+	}//end testTheStoredApplicationRecordsNameOwnerAndOrigin()
+
+	/**
+	 * The install hands the channel applier the template, the acting user
+	 * and the new application; a local template has no repo or credential.
+	 *
+	 * @return void
+	 */
+	public function testInstallHandsTheNewApplicationToTheChannelApplier(): void {
+		$this->authenticateAs('alice');
+		$this->withRequestParams(['name' => 'My permits', 'slug' => 'my-permits']);
+		$this->objectService->method('searchObjects')->willReturnOnConsecutiveCalls(
+			[$this->templateRecord(self::TEMPLATE_SLUG)],
+			[]
+		);
+		$this->schemaMapper->method('createFromArray')->willReturn($this->schemaWithId(7777));
+		$calls = [];
+		$this->recordSaves($calls, self::exactly(3));
+
+		$captured = null;
+		$this->channelApplier->expects(self::once())->method('apply')->willReturnCallback(
+			static function (...$args) use (&$captured): array {
+				$captured = $args;
+				return ['warnings' => ['w']];
+			}
+		);
+
+		$result = $this->controller->createFromTemplate(templateSlug: self::TEMPLATE_SLUG);
+
+		self::assertSame(Http::STATUS_CREATED, $result->getStatus());
+		self::assertSame(['w'], $result->getData()['warnings']);
+		self::assertSame(self::TEMPLATE_SLUG, $captured[0]['slug'] ?? null);
+		self::assertSame(
+			['owner' => null, 'repo' => null, 'ref' => null, 'actingUserId' => 'alice', 'credentialId' => null, 'applicationUuid' => 'new-uuid-1', 'applicationSlug' => 'my-permits'],
+			self::applyArguments(args: $captured)
+		);
+	}//end testInstallHandsTheNewApplicationToTheChannelApplier()
+
+	/**
+	 * The channel applier's arguments after the template, by name.
+	 *
+	 * @param array<int,mixed> $args The arguments as passed.
+	 *
+	 * @return array<string,mixed> The arguments by name.
+	 */
+	private static function applyArguments(array $args): array {
+		[$template, $source, $actingUserId, $local] = array_pad($args, 4, null);
+
+		// apply() reads an empty owner or repo exactly like a missing one.
+		return [
+			'owner' => in_array($source?->owner, [null, ''], true) ? null : $source->owner,
+			'repo' => in_array($source?->repo, [null, ''], true) ? null : $source->repo,
+			'ref' => $source?->ref,
+			'actingUserId' => $actingUserId,
+			'credentialId' => $source?->credentialId,
+			'applicationUuid' => $local?->uuid,
+			'applicationSlug' => $local?->slug,
+		];
+	}//end applyArguments()
+
+	/**
 	 * Regression: the productionVersion re-save must PRESERVE the Application.
 	 *
 	 * OpenRegister's `saveObject()` is PUT, not PATCH — on the update path it
@@ -558,6 +664,45 @@ class CreateFromTemplateTest extends TestCase {
 	}//end testProductionVersionLinkPreservesTheStoredApplication()
 
 	/**
+	 * The production version an install creates is a draft.
+	 *
+	 * The store promises "an editable draft app" and the Application record is
+	 * written with `status: draft`, but the version its manifest lives on was
+	 * created `published`. The detail page reads the version, so a freshly
+	 * installed app reported a state nobody had reached, next to a list card
+	 * reading draft. Only VersionPromotionService moves a version to published.
+	 *
+	 * Watched failing: with `'status' => 'published'` restored, this reports
+	 * "Failed asserting that two strings are identical. -'draft' +'published'".
+	 *
+	 * @return void
+	 */
+	public function testTheInstalledProductionVersionIsADraft(): void {
+		$this->authenticateAs('alice');
+		$this->withRequestParams(['name' => 'My permits', 'slug' => 'my-permits']);
+
+		$this->objectService->method('searchObjects')->willReturnOnConsecutiveCalls(
+			[$this->templateRecord(self::TEMPLATE_SLUG)],
+			[]
+		);
+		$this->schemaMapper->method('createFromArray')->willReturn($this->schemaWithId(7777));
+
+		$calls = [];
+		$this->recordSaves($calls);
+
+		$result = $this->controller->createFromTemplate(templateSlug: self::TEMPLATE_SLUG);
+		self::assertSame(Http::STATUS_CREATED, $result->getStatus());
+
+		$version = $calls[1]['object'];
+		self::assertSame('production', $version['slug'], 'expected the second write to be the version');
+		self::assertSame(
+			'draft',
+			$version['status'],
+			'an installed app has published nothing yet, so its version is a draft'
+		);
+	}//end testTheInstalledProductionVersionIsADraft()
+
+	/**
 	 * Test 4 — Manifest schema-refs are rewritten with the new-slug prefix.
 	 *
 	 * @return void
@@ -595,6 +740,57 @@ class CreateFromTemplateTest extends TestCase {
 			);
 		}
 	}//end testManifestSchemaRefsRewrittenWithNewSlugPrefix()
+
+	/**
+	 * The description typed in the Use this template dialog lands on the new
+	 * Application, trimmed (store-shows-built-in-templates).
+	 *
+	 * @return void
+	 */
+	public function testTheGivenDescriptionLandsOnTheApplication(): void {
+		$this->authenticateAs('bob');
+		$this->withRequestParams(['name' => 'Bob app', 'slug' => 'bob-app', 'description' => '  Permits for the north  ']);
+
+		$template = $this->templateRecord(self::TEMPLATE_SLUG);
+		$template['description'] = 'Template text';
+		$this->objectService->method('searchObjects')->willReturnOnConsecutiveCalls([$template], []);
+		$this->schemaMapper->method('createFromArray')->willReturn($this->schemaWithId(8888));
+
+		$calls = [];
+		$this->recordSaves($calls);
+
+		$result = $this->controller->createFromTemplate(templateSlug: self::TEMPLATE_SLUG);
+		self::assertSame(Http::STATUS_CREATED, $result->getStatus());
+
+		self::assertSame('Permits for the north', $calls[0]['object']['description'] ?? null);
+		self::assertSame('draft', $calls[0]['object']['status'] ?? null);
+		// The production-pointer re-save is a full replace: it must keep it.
+		self::assertSame('Permits for the north', $calls[count($calls) - 1]['object']['description'] ?? null);
+	}//end testTheGivenDescriptionLandsOnTheApplication()
+
+	/**
+	 * Without a description, the new Application takes the template's, so a
+	 * clone never starts with an empty card.
+	 *
+	 * @return void
+	 */
+	public function testWithoutADescriptionTheTemplateDescriptionIsUsed(): void {
+		$this->authenticateAs('bob');
+		$this->withRequestParams(['name' => 'Bob app', 'slug' => 'bob-app', 'description' => '   ']);
+
+		$template = $this->templateRecord(self::TEMPLATE_SLUG);
+		$template['description'] = 'Municipal building-permit workflow.';
+		$this->objectService->method('searchObjects')->willReturnOnConsecutiveCalls([$template], []);
+		$this->schemaMapper->method('createFromArray')->willReturn($this->schemaWithId(8888));
+
+		$calls = [];
+		$this->recordSaves($calls);
+
+		$result = $this->controller->createFromTemplate(templateSlug: self::TEMPLATE_SLUG);
+		self::assertSame(Http::STATUS_CREATED, $result->getStatus());
+
+		self::assertSame('Municipal building-permit workflow.', $calls[0]['object']['description'] ?? null);
+	}//end testWithoutADescriptionTheTemplateDescriptionIsUsed()
 
 	/**
 	 * Test 5 — Owner field on the persisted Application matches the authenticated UID.
@@ -774,4 +970,60 @@ class CreateFromTemplateTest extends TestCase {
 		$attributes = $method->getAttributes(UserRateLimit::class);
 		self::assertCount(1, $attributes);
 	}//end testCreateFromTemplateHasRateLimit()
+
+	/**
+	 * A template fetched from a repo hands the channel applier that repo and
+	 * the broker credential; a source without a credential passes none.
+	 *
+	 * @return void
+	 */
+	public function testInstallFromARepoHandsItsSourceToTheChannelApplier(): void {
+		$cases = [
+			'with credential' => ['ConductionNL', 'example-app', 'cred-1'],
+			'without credential' => ['ConductionNL', 'example-app', null],
+		];
+		foreach ($cases as $name => [$owner, $repo, $credentialId]) {
+			$this->setUp();
+			$this->objectService->method('searchObjects')->willReturn([]);
+			$this->schemaMapper->method('createFromArray')->willReturn($this->schemaWithId(7777));
+			$calls = [];
+			$this->recordSaves($calls);
+			$captured = null;
+			$this->channelApplier->expects(self::once())->method('apply')->willReturnCallback(
+				static function (...$args) use (&$captured): array {
+					$captured = $args;
+					return [];
+				}
+			);
+
+			$result = $this->installFromRepo(owner: $owner, repo: $repo, credentialId: $credentialId);
+
+			self::assertSame(Http::STATUS_CREATED, $result['status'], $name);
+			self::assertSame(['uuid', 'slug', 'register', 'companionSchemas', 'channels', 'warnings'], array_keys($result['data']), $name . ': the response carries no source or credential');
+			self::assertSame(
+				['owner' => $owner, 'repo' => $repo, 'ref' => null, 'actingUserId' => 'dora', 'credentialId' => $credentialId, 'applicationUuid' => 'new-uuid-1', 'applicationSlug' => 'repo-app'],
+				self::applyArguments(args: $captured),
+				$name
+			);
+		}
+	}//end testInstallFromARepoHandsItsSourceToTheChannelApplier()
+
+	/**
+	 * Install the fixture template as `repo-app` for `dora`, fetched from the given repo.
+	 *
+	 * @param string $owner Repo owner.
+	 * @param string $repo Repo name.
+	 * @param string|null $credentialId Broker credential UUID.
+	 *
+	 * @return array{status:int,data:array<string,mixed>} The install result.
+	 */
+	private function installFromRepo(string $owner, string $repo, ?string $credentialId): array {
+		return $this->controller->installFromTemplateArray(
+			template: $this->templateRecord(self::TEMPLATE_SLUG),
+			name: 'Repo app',
+			newSlug: 'repo-app',
+			ownerUid: 'dora',
+			source: new RepoSource(owner: $owner, repo: $repo, ref: null, credentialId: $credentialId)
+		);
+	}//end installFromRepo()
 }//end class

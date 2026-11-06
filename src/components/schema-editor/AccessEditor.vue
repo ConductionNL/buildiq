@@ -29,7 +29,7 @@
 				{{
 					t(
 						'buildiq',
-						'Scope who can read, create, update, or delete records of this schema. This is enforced by OpenRegister — it is the actual security boundary, not just navigation hiding.',
+						'Choose who can read, create, update or delete records of this schema. OpenRegister enforces this on every request, not only in the menu.',
 					)
 				}}
 			</p>
@@ -125,7 +125,7 @@
 						{{
 							t(
 								'buildiq',
-								'Managed outside the designer — this entry is preserved as-is on save.',
+								'Set outside the designer. Saving keeps this entry as it is.',
 							)
 						}}
 					</p>
@@ -659,7 +659,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../assets/editor-controls.scss' as c;
+
 .buildiq-access-editor {
 	display: flex;
 	flex-direction: column;
@@ -679,12 +681,7 @@ export default {
 }
 
 .buildiq-access-editor__rows {
-	list-style: none;
-	margin: 0;
-	padding: 0;
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
+	@include c.plain-list(12px);
 }
 
 .buildiq-access-editor__row {

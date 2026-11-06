@@ -176,7 +176,7 @@ test.describe('agent-workspace — Agents page', () => {
 			hasText: 'E2E page builder assistant',
 		})
 		await expect(row).toBeVisible()
-		await expect(row).toContainText('2 tool(s) enabled')
+		await expect(row).toContainText('2 tools enabled')
 	})
 
 	// @e2e agent-workspace::agent-chat-plans-and-executes-scoped-to-that-agent
