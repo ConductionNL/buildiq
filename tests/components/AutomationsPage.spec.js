@@ -113,6 +113,22 @@ describe('AutomationsPage', () => {
 		})
 	})
 
+	it.each(['new', 'flow-1'])('REQ-AUTD-001: opens flow %s on the flow page of the selected application, in list mode', async (id) => {
+		const push = vi.fn()
+		const wrapper = mount(AutomationsPage, { global: { stubs, mocks: { $router: { push } } } })
+		await flush()
+		wrapper.vm.selectedApp = application
+		wrapper.vm.openFlows()
+		wrapper.vm.onFlowPicked(id)
+
+		expect(wrapper.vm.flowPickerOpen).toBe(false)
+		expect(push).toHaveBeenCalledWith({
+			name: 'ApplicationFlow',
+			params: { app: 'permit-tracker', id },
+			query: { view: 'list' },
+		})
+	})
+
 	it('REQ-AUTD-001: renders each automation with name/trigger/action summary for the selected version', async () => {
 		const wrapper = mount(AutomationsPage, { stubs })
 		await flush()

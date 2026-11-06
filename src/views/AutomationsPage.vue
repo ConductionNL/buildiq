@@ -137,24 +137,16 @@
 			@close="testPanelOpen = false" />
 
 		<!--
-		  flow-engine-unification task 6.4: the shared node/edge canvas, scoped
-		  to this built application (`app`), not the fixed "buildiq" — each
-		  application under construction gets its own flows, mirroring how
-		  automations are already scoped by `applicationSlug` above. CnFlowDetail
-		  treats the literal id "new" as "start blank", so this always opens
-		  usably even before the app has a first flow.
+		  flow-engine-unification task 6.4: flows are scoped to this built
+		  application (`app`), not the fixed "buildiq" — each application under
+		  construction gets its own flows, mirroring how automations are already
+		  scoped by `applicationSlug` above.
 		-->
 		<FlowPickerDialog
 			v-if="flowPickerOpen"
 			:app="selectedApp ? selectedApp.slug : null"
 			@pick="onFlowPicked"
 			@close="flowPickerOpen = false" />
-
-		<CnFlowEditModal
-			v-if="flowModalOpen"
-			:flowId="editingFlowId"
-			:app="selectedApp ? selectedApp.slug : null"
-			@close="flowModalOpen = false" />
 
 		<ConfirmActionDialog
 			v-model:open="confirmDeleteOpen"
@@ -173,7 +165,6 @@
 </template>
 
 <script>
-import { CnFlowEditModal } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import {
@@ -201,7 +192,6 @@ export default {
 		AutomationEditDialog,
 		AutomationTestPanelModal,
 		ConfirmActionDialog,
-		CnFlowEditModal,
 		FlowPickerDialog,
 	},
 
@@ -219,8 +209,6 @@ export default {
 			errorMessage: '',
 			editDialogOpen: false,
 			flowPickerOpen: false,
-			flowModalOpen: false,
-			editingFlowId: 'new',
 			editingAutomation: null,
 			testPanelOpen: false,
 			testingAutomation: null,
@@ -557,9 +545,7 @@ export default {
 		 * Offer the selected application's flows: pick one to edit, or start a
 		 * new one.
 		 *
-		 * `flow-engine-unification` task 6.4. This used to hard-code `new`,
-		 * which made the modal a creator that could never edit — a flow saved a
-		 * minute earlier was unreachable from this surface.
+		 * `flow-engine-unification` task 6.4.
 		 *
 		 * @return {void}
 		 * @spec openspec/specs/automation-designer/spec.md#req-autd-001
@@ -569,16 +555,22 @@ export default {
 		},
 
 		/**
-		 * Open the flow the picker chose on the shared canvas.
+		 * Open the flow the picker chose on the flow page, in list mode.
+		 *
+		 * The page takes the application from the URL, so a new flow is stamped
+		 * with this application rather than with buildiq.
 		 *
 		 * @param {string} id The flow id, or the literal `new`.
 		 * @return {void}
 		 * @spec openspec/specs/automation-designer/spec.md#req-autd-001
 		 */
 		onFlowPicked(id) {
-			this.editingFlowId = id
 			this.flowPickerOpen = false
-			this.flowModalOpen = true
+			this.$router.push({
+				name: 'ApplicationFlow',
+				params: { app: this.selectedApp.slug, id },
+				query: { view: 'list' },
+			})
 		},
 
 		/**
