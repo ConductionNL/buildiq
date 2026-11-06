@@ -40,4 +40,21 @@ describe('flow pages', () => {
 		expect(router.resolve('/flows/new').name).toBe('FlowDetail')
 		expect(router.resolve('/flows/abc').name).toBe('FlowDetail')
 	})
+
+	it('a flow of a built application takes its app from the address', () => {
+		const { type, config } = byId.get('ApplicationFlow')
+		const resolved = router.resolve('/applications/permit-tracker/flows/new')
+		expect(type).toBe('flow')
+		expect(config.app).toBeUndefined()
+		expect(resolved.name).toBe('ApplicationFlow')
+		expect(resolved.params).toEqual({ app: 'permit-tracker', id: 'new' })
+	})
+
+	it('every flow page offers the list view', () => {
+		expect(pages.filter((page) => page.type === 'flow').every((page) => page.config.listMode === true)).toBe(true)
+	})
+
+	it('the first list mode page is one the edit button can open without an app', () => {
+		expect(pages.find((page) => page.config?.listMode === true).id).toBe('FlowDetail')
+	})
 })
