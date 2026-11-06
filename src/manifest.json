@@ -1151,8 +1151,8 @@
 			"route": "/flows",
 			"type": "index",
 			"title": "Flows",
-			"config": { "entitySource": "flows", "app": "buildiq" },
-			"_note": "A flow is app-specific - a buildiq flow operates on buildiq's objects - so the authoring surface lives here rather than behind a deep link to OpenRegister's list. An ordinary index over the named `flows` source: a flow lives in the shared native flow store, not a register/schema pair, so the object-backed index had nothing to address until config.entitySource named the collection. Same store OpenRegister, integriq and hermiq use, so list and status semantics stay identical fleet-wide."
+			"config": { "entitySource": "flows", "app": "buildiq", "rowRoute": "FlowDetail" },
+			"_note": "A flow is app-specific - a buildiq flow operates on buildiq's objects - so the authoring surface lives here rather than behind a deep link to OpenRegister's list. An ordinary index over the named `flows` source: a flow lives in the shared native flow store, not a register/schema pair, so the object-backed index had nothing to address until config.entitySource named the collection. Same store OpenRegister, integriq and hermiq use, so list and status semantics stay identical fleet-wide. rowRoute names the FlowDetail page (a route name, not a path): a named-source page has no register and schema, so without it a row click opens nothing and Edit falls back to the source's own /flows path."
 		},
 		{
 			"id": "FlowDetail",
