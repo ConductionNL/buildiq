@@ -69,6 +69,7 @@ use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -1571,10 +1572,8 @@ class ApplicationsController extends Controller {
 
 		if ($this->auditTrailMapper !== null && $application !== null) {
 			try {
-				$this->auditTrailMapper->createAuditTrailEntry(
-					object: $application,
-					action: self::EVENT_ADMIN_BYPASS,
-					context: $context
+				$this->auditTrailMapper->recordObjectEvent(
+					event: new ObjectAuditEvent(object: $application, action: self::EVENT_ADMIN_BYPASS, context: $context)
 				);
 				// Mirror to the PSR logger at info level so the bypass is
 				// discoverable in operator-facing log streams as well — the
