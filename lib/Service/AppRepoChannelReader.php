@@ -31,6 +31,8 @@ namespace OCA\Buildiq\Service;
 /**
  * Lenient channel reader: an unsafe path, an unknown key or an unreadable
  * entry is skipped, never rewritten and never fatal.
+ *
+ * @spec openspec/specs/github-app-repo-format/spec.md#requirement-apprepoparser-maps-a-repo-file-set-onto-the-clone-seam
  */
 final class AppRepoChannelReader {
 
@@ -95,6 +97,8 @@ final class AppRepoChannelReader {
 	 * Read every channel entry, in sorted path order.
 	 *
 	 * @return array<string,mixed> The parsed channels.
+	 *
+	 * @spec openspec/specs/github-app-repo-format/spec.md#requirement-apprepoparser-maps-a-repo-file-set-onto-the-clone-seam
 	 */
 	public function read(): array {
 		$paths = array_keys($this->files);

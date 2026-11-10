@@ -29,6 +29,8 @@ use OCA\Buildiq\Exception\AppRepoParseException;
 
 /**
  * Slug-to-path claims for one parse.
+ *
+ * @spec openspec/specs/github-app-repo-format/spec.md#requirement-apprepoparser-maps-a-repo-file-set-onto-the-clone-seam
  */
 final class SchemaSlugClaims {
 
@@ -48,6 +50,8 @@ final class SchemaSlugClaims {
 	 * @return void
 	 *
 	 * @throws AppRepoParseException schema_slug_duplicate when the slug was already claimed.
+	 *
+	 * @spec openspec/specs/github-app-repo-format/spec.md#requirement-apprepoparser-maps-a-repo-file-set-onto-the-clone-seam
 	 */
 	public function claim(string $slug, string $path): void {
 		if (isset($this->paths[$slug]) === true) {
