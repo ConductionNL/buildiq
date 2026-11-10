@@ -1864,6 +1864,13 @@ namespace OCA\OpenRegister\Db {
 			protected ?string $state = null;
 
 			/**
+			 * Stub outcome column.
+			 *
+			 * @var string|null
+			 */
+			protected ?string $outcome = null;
+
+			/**
 			 * Whether the task will never move again.
 			 *
 			 * @return bool True for the terminal states of the real lifecycle.
@@ -2629,6 +2636,46 @@ namespace OCA\OpenRegister\Service\Task {
 		}//end class
 	}//end if
 
+	if (class_exists(ResolvedChain::class, autoload: false) === false) {
+		/**
+		 * Stub ResolvedChain: a compiled approval template and its resolved amount tier.
+		 */
+		final class ResolvedChain {
+
+			/**
+			 * @param array<string, mixed>                  $template      The compiled template.
+			 * @param array<int, array<string, mixed>>|null $tierPositions The resolved amount tier.
+			 */
+			public function __construct(
+				public readonly array $template,
+				public readonly ?array $tierPositions=null,
+			) {
+			}//end __construct()
+		}//end class
+	}//end if
+
+	if (class_exists(SequenceAnchor::class, autoload: false) === false) {
+		/**
+		 * Stub SequenceAnchor: the object an approval is about, who asked and its register.
+		 */
+		final class SequenceAnchor {
+
+			/**
+			 * @param string      $objectUuid  The object the approval is about.
+			 * @param string|null $requesterId Who asked.
+			 * @param int|null    $registerId  The anchor's register.
+			 * @param object|null $provenance  Optional flow provenance.
+			 */
+			public function __construct(
+				public readonly string $objectUuid,
+				public readonly ?string $requesterId=null,
+				public readonly ?int $registerId=null,
+				public readonly ?object $provenance=null,
+			) {
+			}//end __construct()
+		}//end class
+	}//end if
+
 	if (class_exists(TaskSequenceService::class, autoload: false) === false) {
 		/**
 		 * Stub TaskSequenceService — opens an ordered task sequence from a
@@ -2640,21 +2687,12 @@ namespace OCA\OpenRegister\Service\Task {
 			/**
 			 * Stub: provision a sequence from a compiled template.
 			 *
-			 * @param array<string, mixed>                  $template         The compiled template.
-			 * @param string                                $anchorObjectUuid The object the approval is about.
-			 * @param string|null                           $requesterId      Who attempted the transition.
-			 * @param array<int, array<string, mixed>>|null $tierPositions    The resolved amount tier.
-			 * @param int|null                              $registerId       The anchor's register.
+			 * @param ResolvedChain  $chain  The compiled template and the resolved amount tier.
+			 * @param SequenceAnchor $anchor The object the approval is about and who asked.
 			 *
 			 * @return object The provisioned sequence.
 			 */
-			public function provision(
-				array $template,
-				string $anchorObjectUuid,
-				?string $requesterId,
-				?array $tierPositions=null,
-				?int $registerId=null,
-			): object {
+			public function provision(ResolvedChain $chain, SequenceAnchor $anchor): object {
 				return new \stdClass();
 			}//end provision()
 		}//end class
@@ -3044,11 +3082,46 @@ namespace OCA\OpenRegister\Event {
 			/**
 			 * Constructor.
 			 *
-			 * @param \OCA\OpenRegister\Db\TaskSequence $sequence The completed sequence.
+			 * @param \OCA\OpenRegister\Db\TaskSequence $sequence        The completed sequence.
+			 * @param \OCA\OpenRegister\Db\Task         $finalTask       The task whose decision closed it.
+			 * @param string|null                       $decider         Who decided.
+			 * @param string                            $statusOnApprove The status the anchor moves to.
 			 */
-			public function __construct(private readonly \OCA\OpenRegister\Db\TaskSequence $sequence) {
+			public function __construct(
+				private readonly \OCA\OpenRegister\Db\TaskSequence $sequence,
+				private readonly \OCA\OpenRegister\Db\Task $finalTask,
+				private readonly ?string $decider,
+				private readonly string $statusOnApprove,
+			) {
 				parent::__construct();
 			}//end __construct()
+
+			/**
+			 * The task whose decision closed the sequence.
+			 *
+			 * @return \OCA\OpenRegister\Db\Task The task.
+			 */
+			public function getFinalTask(): \OCA\OpenRegister\Db\Task {
+				return $this->finalTask;
+			}//end getFinalTask()
+
+			/**
+			 * Who decided.
+			 *
+			 * @return string|null The decider.
+			 */
+			public function getDecider(): ?string {
+				return $this->decider;
+			}//end getDecider()
+
+			/**
+			 * The status the anchor moves to.
+			 *
+			 * @return string The status.
+			 */
+			public function getStatusOnApprove(): string {
+				return $this->statusOnApprove;
+			}//end getStatusOnApprove()
 
 			/**
 			 * The completed sequence.
@@ -3070,15 +3143,24 @@ namespace OCA\OpenRegister\Event {
 			/**
 			 * Constructor.
 			 *
-			 * @param \OCA\OpenRegister\Db\Task $task    The terminal task.
-			 * @param string|null                  $outcome The resolved outcome.
+			 * @param \OCA\OpenRegister\Db\Task $task      The terminal task.
+			 * @param bool                      $committed Whether the terminal write has committed.
 			 */
 			public function __construct(
 				private readonly \OCA\OpenRegister\Db\Task $task,
-				private readonly ?string $outcome=null,
+				private readonly bool $committed=true,
 			) {
 				parent::__construct();
 			}//end __construct()
+
+			/**
+			 * Whether the terminal write has committed.
+			 *
+			 * @return bool True after commit.
+			 */
+			public function isCommitted(): bool {
+				return $this->committed;
+			}//end isCommitted()
 
 			/**
 			 * The terminal task.
@@ -3090,12 +3172,12 @@ namespace OCA\OpenRegister\Event {
 			}//end getTask()
 
 			/**
-			 * The resolved outcome.
+			 * The terminal task's outcome.
 			 *
 			 * @return string|null The outcome.
 			 */
 			public function getOutcome(): ?string {
-				return $this->outcome;
+				return $this->task->getOutcome();
 			}//end getOutcome()
 		}//end class
 	}//end if

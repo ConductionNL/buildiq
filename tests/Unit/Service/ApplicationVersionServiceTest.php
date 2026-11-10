@@ -389,6 +389,40 @@ class ApplicationVersionServiceTest extends TestCase {
 	}//end testDeleteVersionKeepRegisterDoesNotDropRegister()
 
 	/**
+	 * orphan-grace stamps `orphanedAt` into the register's configuration and keeps the register.
+	 *
+	 * @return void
+	 */
+	public function testDeleteVersionOrphanGraceStampsRegisterConfiguration(): void {
+		$version = $this->mockVersion(application: 'uuid-app', register: 'openbuild-foo-staging', uuid: 'uuid-v');
+		$application = $this->mockApplication(productionVersion: 'uuid-prod');
+
+		$this->objectService->method('find')
+			->willReturnCallback(static function (string|int $id) use ($version, $application): ?ObjectEntity {
+				return match ($id) {
+					'uuid-v' => $version,
+					'uuid-app' => $application,
+					default => null,
+				};
+			});
+
+		$register = new Register();
+		$register->setConfiguration(['schemas' => ['7' => ['magicMapping' => true]]]);
+		$this->registerMapper->method('find')->with('openbuild-foo-staging')->willReturn($register);
+		$this->registerMapper->expects(self::once())->method('update')->with($register);
+		$this->registerService->expects(self::never())->method('delete');
+
+		$this->service->deleteVersion(
+			versionUuid: 'uuid-v',
+			strategy: ApplicationVersionService::STRATEGY_ORPHAN_GRACE
+		);
+
+		$configuration = $register->getConfiguration();
+		self::assertSame(expected: ['7' => ['magicMapping' => true]], actual: $configuration['schemas']);
+		self::assertMatchesRegularExpression(pattern: '/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/', string: (string)($configuration['orphanedAt'] ?? ''));
+	}//end testDeleteVersionOrphanGraceStampsRegisterConfiguration()
+
+	/**
 	 * release() publishes the chosen version, moves the production pointer, and
 	 * archives the previous production (REQ-OBV-110): three saves, correct result.
 	 *

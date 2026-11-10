@@ -40,6 +40,7 @@ use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Event\FormDestinationDependentsEvent;
 use OCA\OpenRegister\Service\Form\FormDependent;
+use OCA\OpenRegister\Service\Form\PublishedForm;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\IAppConfig;
@@ -114,15 +115,17 @@ final class FormDestinationDependentsListener implements IEventListener {
 
 			$event->addForm(
 				new FormDependent(
-					id: (string)($form['id'] ?? ''),
-					app: 'buildiq',
-					title: (string)($form['name'] ?? ''),
+					form: new PublishedForm(
+						id: (string)($form['id'] ?? ''),
+						app: 'buildiq',
+						title: (string)($form['name'] ?? ''),
+						audience: $audience,
+					),
 					author: $this->authorOf(form: $form),
 					mapping: $this->forms->mappingOf(form: $form),
 					unpublish: function () use ($form): void {
 						$this->unpublish(form: $form);
 					},
-					audience: $audience,
 				)
 			);
 		}

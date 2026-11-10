@@ -429,6 +429,29 @@ class ApplicationInsightsServiceTest extends TestCase {
 	}//end testVersionRegisterSchemasCountEvenWithoutAPage()
 
 	/**
+	 * The audit-event KPI sums the action chart of each schema in the set.
+	 *
+	 * @return void
+	 */
+	public function testAuditEventCountSumsActionChartPerSchema(): void {
+		$this->wireVersion(manifest: ['pages' => []], register: 'openbuild-shop-production');
+		$register = new Register();
+		$register->setSchemas([21]);
+		$this->registerMapper->method('find')->willReturn($register);
+		$this->schemaMapper->method('find')->willReturnCallback(
+			static fn (string|int $ref): Schema => self::schema(id: (int)$ref, slug: 'shop-production-order')
+		);
+		$this->countPerRegister(counts: ['openbuild-shop-production#21' => 2]);
+		$this->auditTrailMapper->method('getActionChartData')->willReturn(
+			['labels' => ['2026-11-09', '2026-11-10'], 'series' => [['name' => 'create', 'data' => [3, 4]]]]
+		);
+
+		$result = $this->service->computeInsights(appUuid: 'app-uuid', versionUuid: 'prod-uuid', window: '7d', caller: $this->mockUser(uid: 'alice'));
+
+		self::assertSame(expected: 7, actual: $result['kpis']['auditEventCount']);
+	}//end testAuditEventCountSumsActionChartPerSchema()
+
+	/**
 	 * Wire an app (alice is a viewer) and its production version.
 	 *
 	 * @param array<string, mixed> $manifest The version manifest.

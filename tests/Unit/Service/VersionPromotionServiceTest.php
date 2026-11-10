@@ -230,6 +230,41 @@ class VersionPromotionServiceTest extends TestCase {
 	}//end testPromoteRaises409WhenLockHeld()
 
 	/**
+	 * REQ-OBVP-006: the 409 carries the holder and expiry from the target's `@self.locked`.
+	 *
+	 * @return void
+	 */
+	public function testPromoteLockedExceptionCarriesHolderFromStoredLock(): void {
+		$source = [
+			'id' => 'u-src',
+			'register' => 'openbuild-app-staging',
+			'manifest' => ['version' => '1.0.0'],
+			'semver' => '1.0.0',
+			'promotesTo' => 'u-tgt',
+		];
+
+		$targetEntity = $this->buildObjectEntity(
+			uuid: 'u-tgt',
+			payload: [
+				'id' => 'u-tgt',
+				'register' => 'openbuild-app-production',
+				'@self' => ['locked' => ['user' => 'alice', 'expiration' => '2026-11-10T12:00:00+00:00']],
+			]
+		);
+
+		$this->objectService->method('find')->willReturn($targetEntity);
+		$this->objectService->method('lockObject')->willThrowException(new RuntimeException('locked'));
+
+		try {
+			$this->service->promote(source: $source, strategy: VersionPromotionService::STRATEGY_MIGRATE_EXISTING_DATA);
+			self::fail(message: 'Expected VersionLockedException');
+		} catch (VersionLockedException $e) {
+			self::assertSame(expected: 'alice', actual: $e->getLockedBy());
+			self::assertSame(expected: '2026-11-10T12:00:00+00:00', actual: $e->getExpiresAt());
+		}
+	}//end testPromoteLockedExceptionCarriesHolderFromStoredLock()
+
+	/**
 	 * REQ-OBVP-003 + REQ-OBVP-008: migrate-existing-data writes source manifest+semver and unlocks.
 	 *
 	 * @return void

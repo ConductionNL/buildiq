@@ -29,6 +29,8 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\Listener;
 
 use OCA\Buildiq\Listener\AutomationApprovalTriggerListener;
+use OCA\OpenRegister\Service\Task\ResolvedChain;
+use OCA\OpenRegister\Service\Task\SequenceAnchor;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\TaskSequenceMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -196,7 +198,10 @@ final class AutomationApprovalTriggerListenerTest extends TestCase {
 
 		$this->sequenceService->expects($this->once())
 			->method('provision')
-			->with($template, 'object-uuid-1', null);
+			->with(
+				self::callback(callback: static fn (ResolvedChain $chain): bool => $chain->template === $template && $chain->tierPositions === null),
+				self::callback(callback: static fn (SequenceAnchor $anchor): bool => $anchor->objectUuid === 'object-uuid-1' && $anchor->requesterId === null)
+			);
 
 		$event = new ObjectCreatedEvent($this->objectEntity('permit-application', 'object-uuid-1'));
 		$this->listener->handle($event);
