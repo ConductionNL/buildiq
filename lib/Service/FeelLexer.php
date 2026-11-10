@@ -34,6 +34,8 @@ use InvalidArgumentException;
  *
  * Token shape: ['kind' => string, 'value' => mixed, 'pos' => int], where kind
  * is one of string, number, range, op, punct, ident, keyword or eof.
+ *
+ * @spec openspec/specs/business-rules-engine/spec.md#requirement-req-bre-011-feel-subset-expression-parsing-and-validation
  */
 final class FeelLexer {
 
@@ -94,6 +96,8 @@ final class FeelLexer {
 	 * @return array<int,array{kind:string,value:mixed,pos:int}>
 	 *
 	 * @throws InvalidArgumentException On an unknown character or operator.
+	 *
+	 * @spec openspec/specs/business-rules-engine/spec.md#requirement-req-bre-011-feel-subset-expression-parsing-and-validation
 	 */
 	public function tokenize(): array {
 		$tokens = [];
