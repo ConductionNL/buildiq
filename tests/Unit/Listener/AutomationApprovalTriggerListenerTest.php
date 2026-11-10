@@ -29,6 +29,8 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\Listener;
 
 use OCA\Buildiq\Listener\AutomationApprovalTriggerListener;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Service\Lifecycle\TransitionMove;
 use OCA\OpenRegister\Service\Task\ResolvedChain;
 use OCA\OpenRegister\Service\Task\SequenceAnchor;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
@@ -305,12 +307,8 @@ final class AutomationApprovalTriggerListenerTest extends TestCase {
 		$entity = $this->objectEntity('permit', 'object-uuid-9');
 		$event = new \OCA\OpenRegister\Event\ObjectTransitionedEvent(
 			object: $entity,
-			action: 'activate',
-			from: 'draft',
-			to: 'active',
-			userId: null,
-			register: 'buildiq',
-			schema: 'permit'
+			move: new TransitionMove(action: 'activate', from: 'draft', to: 'active'),
+			scope: new RegisterSchemaRef(register: 'buildiq', schema: 'permit'),
 		);
 		$this->listener->handle($event);
 
