@@ -62,6 +62,9 @@ namespace OCA\Buildiq\Listener;
 
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Task\ResolvedChain;
+use OCA\OpenRegister\Service\Task\SequenceAnchor;
+use OCA\OpenRegister\Service\Task\TaskSequenceService;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\IUserSession;
@@ -221,12 +224,15 @@ class AutomationApprovalTriggerListener implements IEventListener {
 	/**
 	 * Resolve OpenRegister's task-sequence service, lazily.
 	 *
-	 * @return object The TaskSequenceService.
+	 * @return TaskSequenceService The TaskSequenceService.
 	 *
 	 * @throws RuntimeException When OpenRegister is absent or predates the task engine.
 	 */
-	private function sequenceService(): object {
-		return $this->openRegisterService(fqcn: 'OCA\OpenRegister\Service\Task\TaskSequenceService');
+	private function sequenceService(): TaskSequenceService {
+		$service = $this->openRegisterService(fqcn: TaskSequenceService::class);
+		assert($service instanceof TaskSequenceService);
+
+		return $service;
 	}//end sequenceService()
 
 	/**
@@ -373,9 +379,8 @@ class AutomationApprovalTriggerListener implements IEventListener {
 
 		try {
 			$this->sequenceService()->provision(
-				template: $template,
-				anchorObjectUuid: $objectUuid,
-				requesterId: $requesterId
+				chain: new ResolvedChain(template: $template),
+				anchor: new SequenceAnchor(objectUuid: $objectUuid, requesterId: $requesterId)
 			);
 		} catch (Throwable $e) {
 			$message = 'Buildiq: AutomationApprovalTriggerListener failed to open a task sequence for chain "' . $chainName . '"'

@@ -517,8 +517,7 @@ class VersionPromotionService {
 	 * Acquire OR's object lock on the target ApplicationVersion row (spec REQ-OBVP-006).
 	 *
 	 * On contention we surface a 409-mapped {@see VersionLockedException}
-	 * with `lockedBy` + `expiresAt` read from OR's lock metadata via
-	 * `getLockInfo()` when available.
+	 * with `lockedBy` + `expiresAt` read from the target row's `@self.locked`.
 	 *
 	 * @param string $targetUuid UUID of the target row
 	 *
@@ -540,16 +539,9 @@ class VersionPromotionService {
 			// failure. We translate both into VersionLockedException with
 			// best-effort metadata; if OR didn't supply the lock context,
 			// the controller still returns 409 + `code: "version_locked"`.
-			$lockedBy = null;
-			$expiresAt = null;
-
-			if (method_exists($this->objectService, 'getLockInfo') === true) {
-				$info = $this->callGetLockInfo(targetUuid: $targetUuid);
-				if (is_array($info) === true) {
-					$lockedBy = $this->stringOrNull(value: ($info['locked_by'] ?? $info['lockedBy'] ?? null));
-					$expiresAt = $this->stringOrNull(value: ($info['expires_at'] ?? $info['expiresAt'] ?? null));
-				}
-			}
+			$lock = $this->readLock(targetUuid: $targetUuid);
+			$lockedBy = $this->stringOrNull(value: ($lock['user'] ?? null));
+			$expiresAt = $this->stringOrNull(value: ($lock['expiration'] ?? null));
 
 			throw new VersionLockedException(
 				lockedBy: $lockedBy,
@@ -583,31 +575,34 @@ class VersionPromotionService {
 	}//end releaseLock()
 
 	/**
-	 * Helper — call `getLockInfo` defensively on the OR object service.
+	 * Read the lock payload stored on the target row (`@self.locked`).
 	 *
-	 * Wrapped because the method is optional in the stub used by unit tests.
+	 * Best effort: a failed lookup yields an empty array so the 409 still
+	 * goes out, only without the holder and expiry.
 	 *
-	 * @param string $targetUuid UUID to look up
+	 * @param string $targetUuid UUID of the locked row
 	 *
-	 * @return array<string,mixed>|null
+	 * @return array<string,mixed>
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-64
 	 */
-	private function callGetLockInfo(string $targetUuid): ?array {
+	private function readLock(string $targetUuid): array {
 		try {
-			// @phpstan-ignore-next-line method.notFound
-			$info = $this->objectService->getLockInfo($targetUuid);
-			if (is_array($info) === true) {
-				return $info;
-			}
+			$target = $this->loadVersion(uuid: $targetUuid);
 		} catch (Throwable $e) {
 			$this->logger->debug(
-				'Buildiq: getLockInfo lookup for ' . $targetUuid . ' failed: ' . $e->getMessage()
+				'Buildiq: lock lookup for ' . $targetUuid . ' failed: ' . $e->getMessage()
 			);
+			return [];
 		}
 
-		return null;
-	}//end callGetLockInfo()
+		$lock = ($target['@self']['locked'] ?? null);
+		if (is_array($lock) === false) {
+			return [];
+		}
+
+		return $lock;
+	}//end readLock()
 
 	/**
 	 * Load an ApplicationVersion row by UUID via OR's object service.

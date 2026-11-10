@@ -989,9 +989,7 @@ class ApplicationInsightsService {
 	 * Audit-events KPI: total audit-trail rows scoped to the schema-set
 	 * within the window (REQ-OBAI-004).
 	 *
-	 * Uses `getActionChartData` summed across actions when a dedicated
-	 * `countByRegisterAndWindow` is unavailable on the OR floor (today
-	 * it is unavailable; this method becomes a one-liner when it lands).
+	 * Sums `getActionChartData` across actions, per schema.
 	 *
 	 * @param array<int, int> $schemaIds Integer schema IDs.
 	 * @param int $hours Window hours.
@@ -1005,19 +1003,6 @@ class ApplicationInsightsService {
 			return 0;
 		}
 
-		if (method_exists($this->auditTrailMapper, 'countByRegisterAndWindow') === true) {
-			try {
-				return (int)$this->auditTrailMapper->countByRegisterAndWindow($schemaIds, $hours);
-			} catch (Throwable $e) {
-				$this->logger->debug(
-					'Buildiq: countByRegisterAndWindow failed: {message}',
-					['message' => $e->getMessage()]
-				);
-				return 0;
-			}
-		}
-
-		// Fallback: sum chart rows.
 		try {
 			$from = new DateTime(sprintf('-%d hours', $hours));
 			$till = new DateTime();
@@ -1036,7 +1021,7 @@ class ApplicationInsightsService {
 			return $total;
 		} catch (Throwable $e) {
 			$this->logger->debug(
-				'Buildiq: audit-event fallback failed: {message}',
+				'Buildiq: audit-event count failed: {message}',
 				['message' => $e->getMessage()]
 			);
 			return 0;

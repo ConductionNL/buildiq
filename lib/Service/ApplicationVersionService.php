@@ -544,7 +544,7 @@ class ApplicationVersionService {
 	 *     it) via {@see RegisterService::delete()}, then delete the
 	 *     ApplicationVersion row.
 	 *   - `orphan-grace`: mark the per-version register orphaned by writing
-	 *     a timestamped flag into its `metadata` array, then delete the
+	 *     a timestamped flag into its `configuration` array, then delete the
 	 *     ApplicationVersion row. A background job (out of scope here)
 	 *     prunes registers orphaned for more than 30 days.
 	 *   - `keep-register`: leave the register untouched; delete only the
@@ -799,7 +799,7 @@ class ApplicationVersionService {
 	 * Mark a per-version register as orphaned (orphan-grace strategy).
 	 *
 	 * Writes an `orphanedAt` ISO 8601 timestamp into the Register's
-	 * `metadata` JSON column via RegisterMapper::update(). A background
+	 * `configuration` JSON column via RegisterMapper::update(). A background
 	 * job (out of scope for this spec) prunes registers orphaned for
 	 * more than 30 days.
 	 *
@@ -835,35 +835,16 @@ class ApplicationVersionService {
 			return;
 		}
 
-		$metadata = [];
-		if (method_exists($register, 'getMetadata') === true) {
-			$current = $register->getMetadata();
-			if (is_array($current) === true) {
-				$metadata = $current;
-			}
-		}
-
-		$metadata['orphanedAt'] = gmdate(format: 'Y-m-d\TH:i:s\Z');
-
-		if (method_exists($register, 'setMetadata') === true) {
-			$register->setMetadata($metadata);
-			$this->registerMapper->update($register);
-			$this->logger->info(
-				sprintf(
-					'Buildiq: orphan-flagged register %s for ApplicationVersion %s at %s.',
-					$registerSlug,
-					$versionUuid,
-					$metadata['orphanedAt']
-				)
-			);
-			return;
-		}
-
-		$this->logger->warning(
+		$configuration = $register->getConfiguration();
+		$configuration['orphanedAt'] = gmdate(format: 'Y-m-d\TH:i:s\Z');
+		$register->setConfiguration($configuration);
+		$this->registerMapper->update($register);
+		$this->logger->info(
 			sprintf(
-				'Buildiq: Register entity for %s has no setMetadata; falling back to PSR-logged orphan event for %s.',
+				'Buildiq: orphan-flagged register %s for ApplicationVersion %s at %s.',
 				$registerSlug,
-				$versionUuid
+				$versionUuid,
+				$configuration['orphanedAt']
 			)
 		);
 	}//end flagRegisterOrphaned()
