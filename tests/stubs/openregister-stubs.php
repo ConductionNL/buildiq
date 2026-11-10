@@ -2292,11 +2292,19 @@ namespace OCA\OpenRegister\Service {
 			}//end searchObjectsBySlug()
 
 			/**
-			 * @param array<int, string>|null $_extend
+			 * @param int|string                                                  $id            Object id or uuid.
+			 * @param \OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions|null $options       Where and how to read.
+			 * @param bool                                                        $_rbac         Apply RBAC.
+			 * @param bool                                                        $_multitenancy Apply multitenancy.
 			 *
 			 * @return \OCA\OpenRegister\Db\ObjectEntity|null
 			 */
-			public function find(int|string $id, ?array $_extend = [], bool $files = false, \OCA\OpenRegister\Db\Register|string|int|null $register = null, \OCA\OpenRegister\Db\Schema|string|int|null $schema = null, bool $_rbac = true, bool $_multitenancy = true): ?\OCA\OpenRegister\Db\ObjectEntity {
+			public function find(
+				int|string $id,
+				?\OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions $options = null,
+				bool $_rbac = true,
+				bool $_multitenancy = true
+			): ?\OCA\OpenRegister\Db\ObjectEntity {
 				return null;
 			}//end find()
 
@@ -3774,4 +3782,33 @@ namespace OCA\OpenRegister\Service\Dmn {
 			}
 		}
 	}
+}
+
+namespace OCA\OpenRegister\Kernel\Contracts\Value {
+
+	if (class_exists(ObjectFindOptions::class, autoload: false) === false) {
+		/**
+		 * Stub ObjectFindOptions: where to look for an object and how to render it.
+		 */
+		final class ObjectFindOptions {
+
+			/**
+			 * @param mixed                   $register Register entity, slug or id.
+			 * @param mixed                   $schema   Schema entity, slug or id.
+			 * @param array<int, string>|null $extend   Relations to extend.
+			 * @param bool                    $files    Include files.
+			 * @param bool                    $render   Render the object.
+			 * @param bool                    $audit    Record a read audit.
+			 */
+			public function __construct(
+				public readonly mixed $register=null,
+				public readonly mixed $schema=null,
+				public readonly ?array $extend=[],
+				public readonly bool $files=false,
+				public readonly bool $render=true,
+				public readonly bool $audit=true,
+			) {
+			}//end __construct()
+		}//end class
+	}//end if
 }

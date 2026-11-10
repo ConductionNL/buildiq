@@ -44,6 +44,7 @@ use DateTimeImmutable;
 use DateTimeInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCP\App\IAppManager;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -634,8 +635,7 @@ class AppOverrideService {
 		try {
 			$entity = $this->objectService->find(
 				id: $versionUuid,
-				register: self::REGISTER_SLUG,
-				schema: self::APPLICATION_VERSION_SCHEMA
+				options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: self::APPLICATION_VERSION_SCHEMA)
 			);
 		} catch (Throwable $e) {
 			$this->logger->error(

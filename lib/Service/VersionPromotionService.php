@@ -60,6 +60,7 @@ use OCA\Buildiq\Exception\PromotionFailedException;
 use OCA\Buildiq\Exception\VersionLockedException;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -619,8 +620,7 @@ class VersionPromotionService {
 	private function loadVersion(string $uuid): array {
 		$entity = $this->objectService->find(
 			id: $uuid,
-			register: self::REGISTER_SLUG,
-			schema: self::APPLICATION_VERSION_SCHEMA
+			options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: self::APPLICATION_VERSION_SCHEMA)
 		);
 
 		if ($entity === null) {

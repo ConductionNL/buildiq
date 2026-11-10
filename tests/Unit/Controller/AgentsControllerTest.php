@@ -42,6 +42,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\AppFramework\Http;
 use OCP\IGroupManager;
@@ -162,14 +163,11 @@ class AgentsControllerTest extends TestCase {
 		$agentEntity = $this->objectEntity($agent);
 		$applicationEntity = $this->objectEntity($application);
 
-		// ObjectService::find()'s real positional signature is
-		// (id, extend, files, register, schema, rbac, multitenancy) —
-		// AgentsController calls it with named arguments, but PHP resolves
-		// those to the full positional list before the mock ever sees them,
-		// so the callback must destructure by POSITION, not by whatever
-		// parameter names it declares.
+		// ObjectService::find() takes (id, options, rbac, multitenancy); the
+		// register and schema travel in the ObjectFindOptions.
 		$this->objectService->method('find')->willReturnCallback(
-			function (string|int $id, mixed $extend, mixed $files, mixed $register, mixed $schema, mixed ...$rest) use ($agent, $application, $agentEntity, $applicationEntity) {
+			function (string|int $id, ?ObjectFindOptions $options = null, mixed ...$rest) use ($agent, $application, $agentEntity, $applicationEntity) {
+				$schema = $options?->schema;
 				// `buildAgent`: #686 namespaced this app's agent slug so it stops
 				// colliding with hermiq's. AgentsController::AGENT_SCHEMA moved
 				// with it; this fake still answered to the old name, so every

@@ -50,6 +50,7 @@ use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Service\RegisterService;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -368,8 +369,7 @@ class ApplicationVersionService {
 	public function guardProductionVersionOwnership(string $applicationUuid, string $proposedVersionUuid): void {
 		$version = $this->objectService->find(
 			id: $proposedVersionUuid,
-			register: self::REGISTER_SLUG,
-			schema: self::APPLICATION_VERSION_SCHEMA
+			options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: self::APPLICATION_VERSION_SCHEMA)
 		);
 
 		if ($version === null) {
@@ -439,8 +439,7 @@ class ApplicationVersionService {
 
 		$application = $this->objectService->find(
 			id: $applicationUuid,
-			register: self::REGISTER_SLUG,
-			schema: self::APPLICATION_SCHEMA
+			options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: self::APPLICATION_SCHEMA)
 		);
 		if ($application === null) {
 			throw new RuntimeException(message: sprintf('Application %s does not exist.', $applicationUuid));
@@ -452,8 +451,7 @@ class ApplicationVersionService {
 		// 2. Publish the chosen version (draft → published) — fires the lifecycle.
 		$version = $this->objectService->find(
 			id: $versionUuid,
-			register: self::REGISTER_SLUG,
-			schema: self::APPLICATION_VERSION_SCHEMA
+			options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: self::APPLICATION_VERSION_SCHEMA)
 		);
 		if ($version === null) {
 			throw new RuntimeException(message: sprintf('ApplicationVersion %s does not exist.', $versionUuid));
@@ -489,8 +487,7 @@ class ApplicationVersionService {
 		if ($previousProduction !== '' && $previousProduction !== $versionUuid) {
 			$previous = $this->objectService->find(
 				id: $previousProduction,
-				register: self::REGISTER_SLUG,
-				schema: self::APPLICATION_VERSION_SCHEMA
+				options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: self::APPLICATION_VERSION_SCHEMA)
 			);
 			if ($previous !== null) {
 				$previousData = ObjectRecord::toArray(object: $previous);
@@ -569,8 +566,7 @@ class ApplicationVersionService {
 
 		$version = $this->objectService->find(
 			id: $versionUuid,
-			register: self::REGISTER_SLUG,
-			schema: self::APPLICATION_VERSION_SCHEMA
+			options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: self::APPLICATION_VERSION_SCHEMA)
 		);
 
 		if ($version === null) {
@@ -669,8 +665,7 @@ class ApplicationVersionService {
 
 		$application = $this->objectService->find(
 			id: $applicationUuid,
-			register: self::REGISTER_SLUG,
-			schema: self::APPLICATION_SCHEMA
+			options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: self::APPLICATION_SCHEMA)
 		);
 
 		if ($application === null) {
@@ -718,8 +713,7 @@ class ApplicationVersionService {
 
 		$application = $this->objectService->find(
 			id: $applicationUuid,
-			register: self::REGISTER_SLUG,
-			schema: self::APPLICATION_SCHEMA
+			options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: self::APPLICATION_SCHEMA)
 		);
 		if ($application === null) {
 			return false;
@@ -738,8 +732,7 @@ class ApplicationVersionService {
 			if ($productionUuid !== '') {
 				$prod = $this->objectService->find(
 					id: $productionUuid,
-					register: self::REGISTER_SLUG,
-					schema: self::APPLICATION_VERSION_SCHEMA
+					options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: self::APPLICATION_VERSION_SCHEMA)
 				);
 				if ($prod !== null) {
 					$productionRegister = (string)(ObjectRecord::toArray(object: $prod)['register'] ?? '');
@@ -883,8 +876,7 @@ class ApplicationVersionService {
 		try {
 			$entity = $this->objectService->find(
 				id: $versionUuid,
-				register: self::REGISTER_SLUG,
-				schema: self::APPLICATION_VERSION_SCHEMA
+				options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: self::APPLICATION_VERSION_SCHEMA)
 			);
 		} catch (Throwable $e) {
 			$this->logger->debug(
