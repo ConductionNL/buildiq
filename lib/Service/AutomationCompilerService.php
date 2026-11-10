@@ -119,6 +119,8 @@ use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use Psr\Container\ContainerInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\ObjectDeletion;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 use OCP\App\IAppManager;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -1645,7 +1647,9 @@ class AutomationCompilerService {
 	 */
 	private function deleteObjectQuietly(string $uuid, string $schema): void {
 		try {
-			$this->objectService->deleteObject(uuid: $uuid, register: self::REGISTER_SLUG, schema: $schema);
+			$this->objectService->deleteObject(
+				deletion: new ObjectDeletion(uuid: $uuid, target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: $schema))
+			);
 		} catch (Throwable $e) {
 			$this->logger->warning('Buildiq: AutomationCompilerService failed to delete ' . $schema . ' "' . $uuid . '": ' . $e->getMessage());
 		}

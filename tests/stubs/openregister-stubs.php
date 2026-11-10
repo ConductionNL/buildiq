@@ -2321,9 +2321,19 @@ namespace OCA\OpenRegister\Service {
 			}//end saveObject()
 
 			/**
+			 * @param \OCA\OpenRegister\Service\Object\ObjectDeletion $deletion       Which object, where, by whom.
+			 * @param bool                                             $_rbac           Apply RBAC.
+			 * @param bool                                             $_multitenancy   Apply multitenancy.
+			 * @param bool                                             $_retentionSweep Called by the retention sweep.
+			 *
 			 * @return bool
 			 */
-			public function deleteObject(string $uuid, \OCA\OpenRegister\Db\Register|string|int|null $register = null, \OCA\OpenRegister\Db\Schema|string|int|null $schema = null, bool $_rbac = true, bool $_multitenancy = true, bool $_retentionSweep = false): bool {
+			public function deleteObject(
+				\OCA\OpenRegister\Service\Object\ObjectDeletion $deletion,
+				bool $_rbac = true,
+				bool $_multitenancy = true,
+				bool $_retentionSweep = false
+			): bool {
 				return true;
 			}//end deleteObject()
 
@@ -3774,4 +3784,47 @@ namespace OCA\OpenRegister\Service\Dmn {
 			}
 		}
 	}
+}
+
+namespace OCA\OpenRegister\Service\Object {
+
+	if (class_exists(ObjectFindTarget::class, autoload: false) === false) {
+		/**
+		 * Stub ObjectFindTarget: the register and schema an object lives in.
+		 */
+		final class ObjectFindTarget {
+
+			/**
+			 * @param \OCA\OpenRegister\Db\Register|string|int|null $register Register.
+			 * @param \OCA\OpenRegister\Db\Schema|string|int|null   $schema   Schema.
+			 */
+			public function __construct(
+				public readonly \OCA\OpenRegister\Db\Register|string|int|null $register=null,
+				public readonly \OCA\OpenRegister\Db\Schema|string|int|null $schema=null,
+			) {
+			}//end __construct()
+		}//end class
+	}//end if
+
+	if (class_exists(ObjectDeletion::class, autoload: false) === false) {
+		/**
+		 * Stub ObjectDeletion: which object to delete, where and by whom.
+		 */
+		final class ObjectDeletion {
+
+			/**
+			 * @param string                 $uuid        The object uuid.
+			 * @param ObjectFindTarget       $target      Its register and schema.
+			 * @param \OCP\IUser|null        $currentUser The acting user.
+			 * @param bool                   $permanent   Delete without the trash.
+			 */
+			public function __construct(
+				public readonly string $uuid,
+				public readonly ObjectFindTarget $target=new ObjectFindTarget(),
+				public readonly ?\OCP\IUser $currentUser=null,
+				public readonly bool $permanent=false,
+			) {
+			}//end __construct()
+		}//end class
+	}//end if
 }

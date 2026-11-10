@@ -1850,12 +1850,36 @@
             },
             {
                 "objectService.deleteObject#1": {
-                    "uuid": "uuid-2"
+                    "deletion": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\ObjectDeletion": {
+                            "uuid": "uuid-2",
+                            "target": {
+                                "object:OCA\\OpenRegister\\Service\\Object\\ObjectFindTarget": {
+                                    "register": null,
+                                    "schema": null
+                                }
+                            },
+                            "currentUser": null,
+                            "permanent": false
+                        }
+                    }
                 }
             },
             {
                 "objectService.deleteObject#2": {
-                    "uuid": "uuid-1"
+                    "deletion": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\ObjectDeletion": {
+                            "uuid": "uuid-1",
+                            "target": {
+                                "object:OCA\\OpenRegister\\Service\\Object\\ObjectFindTarget": {
+                                    "register": null,
+                                    "schema": null
+                                }
+                            },
+                            "currentUser": null,
+                            "permanent": false
+                        }
+                    }
                 }
             },
             {
@@ -1980,12 +2004,36 @@
             },
             {
                 "objectService.deleteObject#1": {
-                    "uuid": "uuid-2"
+                    "deletion": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\ObjectDeletion": {
+                            "uuid": "uuid-2",
+                            "target": {
+                                "object:OCA\\OpenRegister\\Service\\Object\\ObjectFindTarget": {
+                                    "register": null,
+                                    "schema": null
+                                }
+                            },
+                            "currentUser": null,
+                            "permanent": false
+                        }
+                    }
                 }
             },
             {
                 "objectService.deleteObject#2": {
-                    "uuid": "uuid-1"
+                    "deletion": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\ObjectDeletion": {
+                            "uuid": "uuid-1",
+                            "target": {
+                                "object:OCA\\OpenRegister\\Service\\Object\\ObjectFindTarget": {
+                                    "register": null,
+                                    "schema": null
+                                }
+                            },
+                            "currentUser": null,
+                            "permanent": false
+                        }
+                    }
                 }
             },
             {
@@ -2180,17 +2228,53 @@
             },
             {
                 "objectService.deleteObject#1": {
-                    "uuid": "uuid-3"
+                    "deletion": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\ObjectDeletion": {
+                            "uuid": "uuid-3",
+                            "target": {
+                                "object:OCA\\OpenRegister\\Service\\Object\\ObjectFindTarget": {
+                                    "register": null,
+                                    "schema": null
+                                }
+                            },
+                            "currentUser": null,
+                            "permanent": false
+                        }
+                    }
                 }
             },
             {
                 "objectService.deleteObject#2": {
-                    "uuid": "uuid-2"
+                    "deletion": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\ObjectDeletion": {
+                            "uuid": "uuid-2",
+                            "target": {
+                                "object:OCA\\OpenRegister\\Service\\Object\\ObjectFindTarget": {
+                                    "register": null,
+                                    "schema": null
+                                }
+                            },
+                            "currentUser": null,
+                            "permanent": false
+                        }
+                    }
                 }
             },
             {
                 "objectService.deleteObject#3": {
-                    "uuid": "uuid-1"
+                    "deletion": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\ObjectDeletion": {
+                            "uuid": "uuid-1",
+                            "target": {
+                                "object:OCA\\OpenRegister\\Service\\Object\\ObjectFindTarget": {
+                                    "register": null,
+                                    "schema": null
+                                }
+                            },
+                            "currentUser": null,
+                            "permanent": false
+                        }
+                    }
                 }
             },
             {
@@ -2505,22 +2589,70 @@
             },
             {
                 "objectService.deleteObject#1": {
-                    "uuid": "uuid-4"
+                    "deletion": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\ObjectDeletion": {
+                            "uuid": "uuid-4",
+                            "target": {
+                                "object:OCA\\OpenRegister\\Service\\Object\\ObjectFindTarget": {
+                                    "register": null,
+                                    "schema": null
+                                }
+                            },
+                            "currentUser": null,
+                            "permanent": false
+                        }
+                    }
                 }
             },
             {
                 "objectService.deleteObject#2": {
-                    "uuid": "uuid-3"
+                    "deletion": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\ObjectDeletion": {
+                            "uuid": "uuid-3",
+                            "target": {
+                                "object:OCA\\OpenRegister\\Service\\Object\\ObjectFindTarget": {
+                                    "register": null,
+                                    "schema": null
+                                }
+                            },
+                            "currentUser": null,
+                            "permanent": false
+                        }
+                    }
                 }
             },
             {
                 "objectService.deleteObject#3": {
-                    "uuid": "uuid-2"
+                    "deletion": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\ObjectDeletion": {
+                            "uuid": "uuid-2",
+                            "target": {
+                                "object:OCA\\OpenRegister\\Service\\Object\\ObjectFindTarget": {
+                                    "register": null,
+                                    "schema": null
+                                }
+                            },
+                            "currentUser": null,
+                            "permanent": false
+                        }
+                    }
                 }
             },
             {
                 "objectService.deleteObject#4": {
-                    "uuid": "uuid-1"
+                    "deletion": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\ObjectDeletion": {
+                            "uuid": "uuid-1",
+                            "target": {
+                                "object:OCA\\OpenRegister\\Service\\Object\\ObjectFindTarget": {
+                                    "register": null,
+                                    "schema": null
+                                }
+                            },
+                            "currentUser": null,
+                            "permanent": false
+                        }
+                    }
                 }
             },
             {
@@ -2852,22 +2984,70 @@
             },
             {
                 "objectService.deleteObject#1": {
-                    "uuid": "uuid-4"
+                    "deletion": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\ObjectDeletion": {
+                            "uuid": "uuid-4",
+                            "target": {
+                                "object:OCA\\OpenRegister\\Service\\Object\\ObjectFindTarget": {
+                                    "register": null,
+                                    "schema": null
+                                }
+                            },
+                            "currentUser": null,
+                            "permanent": false
+                        }
+                    }
                 }
             },
             {
                 "objectService.deleteObject#2": {
-                    "uuid": "uuid-3"
+                    "deletion": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\ObjectDeletion": {
+                            "uuid": "uuid-3",
+                            "target": {
+                                "object:OCA\\OpenRegister\\Service\\Object\\ObjectFindTarget": {
+                                    "register": null,
+                                    "schema": null
+                                }
+                            },
+                            "currentUser": null,
+                            "permanent": false
+                        }
+                    }
                 }
             },
             {
                 "objectService.deleteObject#3": {
-                    "uuid": "uuid-2"
+                    "deletion": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\ObjectDeletion": {
+                            "uuid": "uuid-2",
+                            "target": {
+                                "object:OCA\\OpenRegister\\Service\\Object\\ObjectFindTarget": {
+                                    "register": null,
+                                    "schema": null
+                                }
+                            },
+                            "currentUser": null,
+                            "permanent": false
+                        }
+                    }
                 }
             },
             {
                 "objectService.deleteObject#4": {
-                    "uuid": "uuid-1"
+                    "deletion": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\ObjectDeletion": {
+                            "uuid": "uuid-1",
+                            "target": {
+                                "object:OCA\\OpenRegister\\Service\\Object\\ObjectFindTarget": {
+                                    "register": null,
+                                    "schema": null
+                                }
+                            },
+                            "currentUser": null,
+                            "permanent": false
+                        }
+                    }
                 }
             },
             {
@@ -3132,17 +3312,53 @@
             },
             {
                 "objectService.deleteObject#1": {
-                    "uuid": "uuid-3"
+                    "deletion": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\ObjectDeletion": {
+                            "uuid": "uuid-3",
+                            "target": {
+                                "object:OCA\\OpenRegister\\Service\\Object\\ObjectFindTarget": {
+                                    "register": null,
+                                    "schema": null
+                                }
+                            },
+                            "currentUser": null,
+                            "permanent": false
+                        }
+                    }
                 }
             },
             {
                 "objectService.deleteObject#2": {
-                    "uuid": "uuid-2"
+                    "deletion": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\ObjectDeletion": {
+                            "uuid": "uuid-2",
+                            "target": {
+                                "object:OCA\\OpenRegister\\Service\\Object\\ObjectFindTarget": {
+                                    "register": null,
+                                    "schema": null
+                                }
+                            },
+                            "currentUser": null,
+                            "permanent": false
+                        }
+                    }
                 }
             },
             {
                 "objectService.deleteObject#3": {
-                    "uuid": "uuid-1"
+                    "deletion": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\ObjectDeletion": {
+                            "uuid": "uuid-1",
+                            "target": {
+                                "object:OCA\\OpenRegister\\Service\\Object\\ObjectFindTarget": {
+                                    "register": null,
+                                    "schema": null
+                                }
+                            },
+                            "currentUser": null,
+                            "permanent": false
+                        }
+                    }
                 }
             },
             {
@@ -3417,17 +3633,53 @@
             },
             {
                 "objectService.deleteObject#1": {
-                    "uuid": "uuid-3"
+                    "deletion": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\ObjectDeletion": {
+                            "uuid": "uuid-3",
+                            "target": {
+                                "object:OCA\\OpenRegister\\Service\\Object\\ObjectFindTarget": {
+                                    "register": null,
+                                    "schema": null
+                                }
+                            },
+                            "currentUser": null,
+                            "permanent": false
+                        }
+                    }
                 }
             },
             {
                 "objectService.deleteObject#2": {
-                    "uuid": "uuid-2"
+                    "deletion": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\ObjectDeletion": {
+                            "uuid": "uuid-2",
+                            "target": {
+                                "object:OCA\\OpenRegister\\Service\\Object\\ObjectFindTarget": {
+                                    "register": null,
+                                    "schema": null
+                                }
+                            },
+                            "currentUser": null,
+                            "permanent": false
+                        }
+                    }
                 }
             },
             {
                 "objectService.deleteObject#3": {
-                    "uuid": "uuid-1"
+                    "deletion": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\ObjectDeletion": {
+                            "uuid": "uuid-1",
+                            "target": {
+                                "object:OCA\\OpenRegister\\Service\\Object\\ObjectFindTarget": {
+                                    "register": null,
+                                    "schema": null
+                                }
+                            },
+                            "currentUser": null,
+                            "permanent": false
+                        }
+                    }
                 }
             },
             {
@@ -3872,7 +4124,19 @@
             },
             {
                 "objectService.deleteObject#1": {
-                    "uuid": "uuid-3"
+                    "deletion": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\ObjectDeletion": {
+                            "uuid": "uuid-3",
+                            "target": {
+                                "object:OCA\\OpenRegister\\Service\\Object\\ObjectFindTarget": {
+                                    "register": null,
+                                    "schema": null
+                                }
+                            },
+                            "currentUser": null,
+                            "permanent": false
+                        }
+                    }
                 }
             },
             {
@@ -3888,12 +4152,36 @@
             },
             {
                 "objectService.deleteObject#2": {
-                    "uuid": "uuid-2"
+                    "deletion": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\ObjectDeletion": {
+                            "uuid": "uuid-2",
+                            "target": {
+                                "object:OCA\\OpenRegister\\Service\\Object\\ObjectFindTarget": {
+                                    "register": null,
+                                    "schema": null
+                                }
+                            },
+                            "currentUser": null,
+                            "permanent": false
+                        }
+                    }
                 }
             },
             {
                 "objectService.deleteObject#3": {
-                    "uuid": "uuid-1"
+                    "deletion": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\ObjectDeletion": {
+                            "uuid": "uuid-1",
+                            "target": {
+                                "object:OCA\\OpenRegister\\Service\\Object\\ObjectFindTarget": {
+                                    "register": null,
+                                    "schema": null
+                                }
+                            },
+                            "currentUser": null,
+                            "permanent": false
+                        }
+                    }
                 }
             },
             {

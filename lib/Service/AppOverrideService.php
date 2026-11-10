@@ -44,6 +44,7 @@ use DateTimeImmutable;
 use DateTimeInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Service\Object\ObjectDeletion;
 use OCP\App\IAppManager;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -824,7 +825,7 @@ class AppOverrideService {
 	 */
 	private function deleteObjectSafely(string $uuid, string $context): void {
 		try {
-			$this->objectService->deleteObject(uuid: $uuid);
+			$this->objectService->deleteObject(deletion: new ObjectDeletion(uuid: $uuid));
 		} catch (Throwable $e) {
 			$this->logger->error(
 				'Buildiq: failed to delete ' . $context . ': ' . $e->getMessage(),

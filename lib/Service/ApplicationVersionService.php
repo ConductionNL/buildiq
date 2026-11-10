@@ -50,6 +50,7 @@ use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Service\Object\ObjectDeletion;
 use OCA\OpenRegister\Service\RegisterService;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -622,7 +623,7 @@ class ApplicationVersionService {
 				break;
 		}//end switch
 
-		$this->objectService->deleteObject(uuid: $versionUuid);
+		$this->objectService->deleteObject(deletion: new ObjectDeletion(uuid: $versionUuid));
 	}//end deleteVersion()
 
 	/**

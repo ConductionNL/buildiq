@@ -34,6 +34,7 @@ use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\ObjectDeletion;
 use OCA\OpenRegister\Service\RegisterService;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -447,7 +448,7 @@ class ApplicationDeletionService {
 				}
 
 				try {
-					$this->objectService->deleteObject(uuid: $uuid);
+					$this->objectService->deleteObject(deletion: new ObjectDeletion(uuid: $uuid));
 					$progressed = true;
 				} catch (Throwable $e) {
 					$this->logger->error(
@@ -511,7 +512,7 @@ class ApplicationDeletionService {
 	 */
 	private function deleteObject(string $uuid, string $label, array &$orphaned): void {
 		try {
-			$this->objectService->deleteObject(uuid: $uuid);
+			$this->objectService->deleteObject(deletion: new ObjectDeletion(uuid: $uuid));
 		} catch (Throwable $e) {
 			$this->logger->error(
 				'Buildiq: deleteApplication failed to delete {label} {uuid}: {message}',

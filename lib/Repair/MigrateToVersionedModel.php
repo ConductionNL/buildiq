@@ -47,6 +47,7 @@ use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\ObjectDeletion;
 use OCA\OpenRegister\Service\RegisterService;
 use OCP\IAppConfig;
 use OCP\Migration\IOutput;
@@ -403,7 +404,7 @@ class MigrateToVersionedModel implements IRepairStep {
 		try {
 			$this->runElevated(
 				work: function () use ($applicationUuid): void {
-					$this->objectService->deleteObject(uuid: $applicationUuid);
+					$this->objectService->deleteObject(deletion: new ObjectDeletion(uuid: $applicationUuid));
 				}
 			);
 		} catch (Throwable $e) {
