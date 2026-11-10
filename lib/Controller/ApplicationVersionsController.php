@@ -50,6 +50,7 @@ use OCA\Buildiq\Service\ApplicationVersionService;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -884,10 +885,8 @@ class ApplicationVersionsController extends Controller {
 				}
 
 				if ($appEntity instanceof ObjectEntity) {
-					$this->auditTrailMapper->createAuditTrailEntry(
-						object: $appEntity,
-						action: self::EVENT_ADMIN_BYPASS,
-						context: $context
+					$this->auditTrailMapper->recordObjectEvent(
+						event: new ObjectAuditEvent(object: $appEntity, action: self::EVENT_ADMIN_BYPASS, context: $context)
 					);
 					$this->logger->info('Buildiq: rbac.admin_bypass exercised', $context);
 					return;

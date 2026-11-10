@@ -49,6 +49,7 @@ use OCA\Buildiq\Support\ObjectRecord;
 use OCA\Buildiq\Support\WidgetSpec;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -1295,7 +1296,9 @@ class CopilotService {
 
 			if ($this->auditTrailMapper !== null && $entity instanceof ObjectEntity) {
 				try {
-					$this->auditTrailMapper->createAuditTrailEntry(object: $entity, action: 'rbac.admin_bypass', context: $context);
+					$this->auditTrailMapper->recordObjectEvent(
+						event: new ObjectAuditEvent(object: $entity, action: 'rbac.admin_bypass', context: $context)
+					);
 					$this->logger->info('Buildiq Copilot: rbac.admin_bypass', $context);
 					return;
 				} catch (\Throwable $e) {

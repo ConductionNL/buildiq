@@ -34,6 +34,7 @@ use OCA\Buildiq\Service\CopilotService;
 use OCA\Buildiq\Service\PermissionResolver;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IGroupManager;
@@ -192,15 +193,19 @@ class CopilotServiceTest extends TestCase {
 		// Genuine bypass: admin is NOT an owner/editor → audit MUST fire once.
 		$genuineMapper = $this->createMock(AuditTrailMapper::class);
 		$genuineMapper->expects($this->once())
-			->method('createAuditTrailEntry')
-			->with($entity, 'rbac.admin_bypass', $this->anything());
+			->method('recordObjectEvent')
+			->with(
+				$this->callback(
+					callback: static fn (ObjectAuditEvent $event): bool => $event->object === $entity && $event->action === 'rbac.admin_bypass'
+				)
+			);
 
 		$appBypass = ['slug' => 'my-app', 'uuid' => 'app-uuid-1', 'permissions' => ['owners' => ['user:someone-else'], 'editors' => [], 'viewers' => []]];
 		$this->invokeAssertWriteRole($this->makeServiceWith($groupManager, $genuineMapper), $appBypass, 'admin-user');
 
 		// Legitimate admin-owner: NOT a bypass → audit MUST NOT fire.
 		$ownerMapper = $this->createMock(AuditTrailMapper::class);
-		$ownerMapper->expects($this->never())->method('createAuditTrailEntry');
+		$ownerMapper->expects($this->never())->method('recordObjectEvent');
 
 		$appOwner = ['slug' => 'my-app', 'uuid' => 'app-uuid-1', 'permissions' => ['owners' => ['user:admin-user'], 'editors' => [], 'viewers' => []]];
 		$this->invokeAssertWriteRole($this->makeServiceWith($groupManager, $ownerMapper), $appOwner, 'admin-user');

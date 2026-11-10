@@ -29,6 +29,7 @@ use OCA\Buildiq\Service\PermissionResolver;
 use OCA\Buildiq\Service\RegisterStore;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -558,13 +559,13 @@ class ApplicationsControllerTest extends TestCase {
 		$this->objectService->method('find')->willReturn($entity);
 
 		$this->auditTrailMapper->expects(self::once())
-			->method('createAuditTrailEntry')
+			->method('recordObjectEvent')
 			->with(
-				self::identicalTo($entity),
-				self::equalTo('rbac.admin_bypass'),
-				self::callback(static function (array $ctx): bool {
-					return ($ctx['actor'] ?? null) === 'sysadmin'
-						&& ($ctx['slug'] ?? null) === 'hello-world';
+				self::callback(callback: static function (ObjectAuditEvent $event) use ($entity): bool {
+					return $event->object === $entity
+						&& $event->action === 'rbac.admin_bypass'
+						&& ($event->context['actor'] ?? null) === 'sysadmin'
+						&& ($event->context['slug'] ?? null) === 'hello-world';
 				})
 			);
 

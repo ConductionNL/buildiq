@@ -1656,13 +1656,15 @@ namespace OCA\OpenRegister\Db {
 		 */
 		class AuditTrailMapper {
 			/**
-			 * @param array<string, mixed> $context
+			 * Record a non-CRUD action on one object.
+			 *
+			 * @param \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent $event The object, action and context.
 			 *
 			 * @return AuditTrail
 			 */
-			public function createAuditTrailEntry(ObjectEntity $object, string $action, array $context = []): AuditTrail {
+			public function recordObjectEvent(\OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent $event): AuditTrail {
 				return new AuditTrail();
-			}//end createAuditTrailEntry()
+			}//end recordObjectEvent()
 
 			/**
 			 * @param array<int> $schemaIds Schema IDs to aggregate over.
@@ -3774,4 +3776,65 @@ namespace OCA\OpenRegister\Service\Dmn {
 			}
 		}
 	}
+}
+
+namespace OCA\OpenRegister\Db\AuditTrail {
+
+	if (class_exists(NamedActor::class, autoload: false) === false) {
+		/**
+		 * Stub NamedActor: an explicit actor for an audit row.
+		 */
+		final class NamedActor {
+
+			/**
+			 * @param string|null $id   Actor id; null uses the session user.
+			 * @param string|null $name Actor display name.
+			 */
+			public function __construct(
+				public readonly ?string $id=null,
+				public readonly ?string $name=null,
+			) {
+			}//end __construct()
+		}//end class
+	}//end if
+
+	if (class_exists(ObjectAuditEventOptions::class, autoload: false) === false) {
+		/**
+		 * Stub ObjectAuditEventOptions: the explicit actor and address of an audit row.
+		 */
+		final class ObjectAuditEventOptions {
+
+			/**
+			 * @param NamedActor  $actor     The actor.
+			 * @param string|null $ipAddress The calling address.
+			 */
+			public function __construct(
+				public readonly NamedActor $actor=new NamedActor(),
+				public readonly ?string $ipAddress=null,
+			) {
+			}//end __construct()
+		}//end class
+	}//end if
+
+	if (class_exists(ObjectAuditEvent::class, autoload: false) === false) {
+		/**
+		 * Stub ObjectAuditEvent: one non-CRUD action on one object.
+		 */
+		final class ObjectAuditEvent {
+
+			/**
+			 * @param \OCA\OpenRegister\Db\ObjectEntity $object  The object.
+			 * @param string                            $action  The action.
+			 * @param array<string, mixed>              $context Additional context.
+			 * @param ObjectAuditEventOptions           $options Actor and address.
+			 */
+			public function __construct(
+				public readonly \OCA\OpenRegister\Db\ObjectEntity $object,
+				public readonly string $action,
+				public readonly array $context=[],
+				public readonly ObjectAuditEventOptions $options=new ObjectAuditEventOptions(),
+			) {
+			}//end __construct()
+		}//end class
+	}//end if
 }
