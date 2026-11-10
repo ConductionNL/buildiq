@@ -3490,6 +3490,60 @@ namespace OCA\OpenRegister\AppHost {
 
 namespace OCA\OpenRegister\AppHost\Service {
 
+	if (class_exists(StoreListing::class, autoload: false) === false) {
+		/**
+		 * Stub of OpenRegister's StoreListing: where a store reads from and how a card is built.
+		 */
+		final class StoreListing {
+			/**
+			 * Constructor.
+			 *
+			 * @param string                $appId           App whose IAppConfig holds the registry connection.
+			 * @param string                $schema          Remote schema slug.
+			 * @param string                $defaultRegister Remote register used when `registry_register` is empty.
+			 * @param array<string, string> $cardFields      Card field => remote property.
+			 *
+			 * @return void
+			 */
+			public function __construct(
+				public readonly string $appId,
+				public readonly string $schema,
+				public readonly string $defaultRegister,
+				public readonly array $cardFields = [
+					'slug' => 'slug',
+					'title' => 'title',
+					'description' => 'description',
+					'category' => 'category',
+					'version' => 'version',
+				],
+			) {
+			}//end __construct()
+		}//end class
+	}
+
+	if (class_exists(StoreSharing::class, autoload: false) === false) {
+		/**
+		 * Stub of OpenRegister's StoreSharing: shareable types and the publish opt-in.
+		 */
+		final class StoreSharing {
+			/**
+			 * Constructor.
+			 *
+			 * @param array<int, string> $types         Shareable configuration type ids.
+			 * @param array<int, string> $publishFields Remote properties a publish may send next to the slug.
+			 * @param array<int, string> $publishGroups Nextcloud groups whose members may publish.
+			 *
+			 * @return void
+			 */
+			public function __construct(
+				public readonly array $types = [],
+				public readonly array $publishFields = [],
+				public readonly array $publishGroups = [],
+			) {
+			}//end __construct()
+		}//end class
+	}
+
 	if (class_exists(StoreDescriptor::class, autoload: false) === false) {
 		/**
 		 * Stub StoreDescriptor — the ADR-080 per-app store parameters.
@@ -3498,22 +3552,49 @@ namespace OCA\OpenRegister\AppHost\Service {
 		 * on the autoload path.
 		 */
 		final class StoreDescriptor {
+			/** @var string */
+			public readonly string $appId;
+
+			/** @var string */
+			public readonly string $schema;
+
+			/** @var string */
+			public readonly string $defaultRegister;
+
+			/** @var array<string, string> */
+			public readonly array $cardFields;
+
+			/** @var array<int, string> */
+			public readonly array $types;
+
+			/** @var array<int, string> */
+			public readonly array $publishFields;
+
+			/** @var array<int, string> */
+			public readonly array $publishGroups;
+
 			/**
 			 * Constructor.
 			 *
-			 * @param string $appId Owning app id.
-			 * @param string $schema Remote schema slug.
-			 * @param string $defaultRegister Remote register segment.
-			 * @param array<string, string> $cardFields Card field => remote property.
+			 * Mirrors OpenRegister: built from a listing part and a sharing part, read
+			 * through the same flat readonly properties as before.
+			 *
+			 * @param StoreListing $listing Registry connection app, remote schema and register, card field map.
+			 * @param StoreSharing $sharing Shareable types and the publish opt-in.
 			 *
 			 * @return void
 			 */
 			public function __construct(
-				public readonly string $appId,
-				public readonly string $schema,
-				public readonly string $defaultRegister,
-				public readonly array $cardFields = [],
+				public readonly StoreListing $listing,
+				public readonly StoreSharing $sharing = new StoreSharing(),
 			) {
+				$this->appId           = $listing->appId;
+				$this->schema          = $listing->schema;
+				$this->defaultRegister = $listing->defaultRegister;
+				$this->cardFields      = $listing->cardFields;
+				$this->types           = $sharing->types;
+				$this->publishFields   = $sharing->publishFields;
+				$this->publishGroups   = $sharing->publishGroups;
 			}//end __construct()
 		}
 	}
