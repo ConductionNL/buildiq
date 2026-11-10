@@ -3456,14 +3456,31 @@ namespace OCA\OpenRegister\AppHost {
 			/**
 			 * No-op stub of the one-call registrar.
 			 *
-			 * @param mixed $context Registration context.
-			 * @param string $appId Leaf app id.
-			 * @param array<string, mixed> $options Options.
+			 * @param mixed        $context  Registration context.
+			 * @param LeafAdoption $adoption Leaf app id and its overrides.
 			 *
 			 * @return void
 			 */
-			public static function register($context, string $appId, array $options = []): void {
+			public static function register($context, LeafAdoption $adoption): void {
 			}
+		}
+	}
+
+	if (class_exists(LeafAdoption::class, autoload: false) === false) {
+		/**
+		 * Stub LeafAdoption: one leaf app's adoption request.
+		 */
+		final class LeafAdoption {
+
+			/**
+			 * @param string               $appId   Leaf app id.
+			 * @param array<string, mixed> $options Namespaces and feature switches.
+			 */
+			public function __construct(
+				public readonly string $appId,
+				private readonly array $options=[],
+			) {
+			}//end __construct()
 		}
 	}
 
