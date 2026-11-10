@@ -31,6 +31,8 @@ use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Object\LockRequest;
+use OCA\OpenRegister\Service\Object\UnlockRequest;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -617,9 +619,7 @@ abstract class AbstractToolHandler {
 		// the finally must release it.
 		try {
 			$objectService->lockObject(
-				identifier: $versionUuid,
-				process: 'buildiq.mcp-manifest-edit',
-				duration: 30
+				request: new LockRequest(identifier: $versionUuid, process: 'buildiq.mcp-manifest-edit', duration: 30)
 			);
 		} catch (\Throwable $lockError) {
 			$this->logger->warning(
@@ -651,7 +651,7 @@ abstract class AbstractToolHandler {
 			return $this->toArray(item: $saved);
 		} finally {
 			try {
-				$objectService->unlockObject(identifier: $versionUuid);
+				$objectService->unlockObject(request: new UnlockRequest(identifier: $versionUuid));
 			} catch (\Throwable $unlockError) {
 				$this->logger->warning(
 					'Buildiq MCP: failed to release manifest lock on ' . $versionUuid,

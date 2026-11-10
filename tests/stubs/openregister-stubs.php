@@ -2328,16 +2328,21 @@ namespace OCA\OpenRegister\Service {
 			}//end deleteObject()
 
 			/**
+			 * @param \OCA\OpenRegister\Service\Object\LockRequest $request  What to lock, by whom and how long.
+			 * @param bool                                          $advisory Take an advisory lock.
+			 *
 			 * @return array<string, mixed>
 			 */
-			public function lockObject(string $identifier, ?string $process = null, ?int $duration = null, bool $advisory = false): array {
+			public function lockObject(\OCA\OpenRegister\Service\Object\LockRequest $request, bool $advisory = false): array {
 				return [];
 			}//end lockObject()
 
 			/**
+			 * @param \OCA\OpenRegister\Service\Object\UnlockRequest $request What to unlock.
+			 *
 			 * @return bool
 			 */
-			public function unlockObject(string|int $identifier): bool {
+			public function unlockObject(\OCA\OpenRegister\Service\Object\UnlockRequest $request): bool {
 				return true;
 			}//end unlockObject()
 
@@ -3774,4 +3779,65 @@ namespace OCA\OpenRegister\Service\Dmn {
 			}
 		}
 	}
+}
+
+namespace OCA\OpenRegister\Service\Object {
+
+	if (class_exists(LockRequest::class, autoload: false) === false) {
+		/**
+		 * Stub LockRequest: what to lock, by which process and for how long.
+		 */
+		final class LockRequest {
+
+			/**
+			 * The flow run that takes the lock, if any.
+			 *
+			 * @var string|null
+			 */
+			public readonly ?string $runUuid;
+
+			/**
+			 * The flow node that takes the lock, if any.
+			 *
+			 * @var string|null
+			 */
+			public readonly ?string $nodeId;
+
+			/**
+			 * @param string      $identifier Object id, uuid or advisory key.
+			 * @param string|null $process    The locking process.
+			 * @param int|null    $duration   Lock duration in seconds.
+			 */
+			public function __construct(
+				public readonly string $identifier,
+				public readonly ?string $process=null,
+				public readonly ?int $duration=null,
+			) {
+				$this->runUuid = null;
+				$this->nodeId  = null;
+			}//end __construct()
+		}//end class
+	}//end if
+
+	if (class_exists(UnlockRequest::class, autoload: false) === false) {
+		/**
+		 * Stub UnlockRequest: what to unlock.
+		 */
+		final class UnlockRequest {
+
+			/**
+			 * @param string      $identifier Object id, uuid or advisory key.
+			 * @param bool        $advisory   Release an advisory lock.
+			 * @param string|null $runUuid    The flow run that holds it.
+			 * @param bool        $break      Break another holder's lock.
+			 */
+			public function __construct(
+				public readonly string $identifier,
+				public readonly bool $advisory=false,
+				public readonly ?string $runUuid=null,
+				public readonly bool $break=false,
+			) {
+			}//end __construct()
+		}//end class
+	}//end if
 }

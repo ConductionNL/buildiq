@@ -52,6 +52,8 @@ namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Exception\WizardCreationException;
 use OCA\Buildiq\Support\ObjectRecord;
+use OCA\OpenRegister\Service\Object\LockRequest;
+use OCA\OpenRegister\Service\Object\UnlockRequest;
 use OCA\OpenRegister\Service\RegisterService;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -154,7 +156,7 @@ class ApplicationCreationService {
 			// M2: Release the per-slug advisory lock regardless of outcome.
 			if ($locked === true) {
 				try {
-					$this->store->objectService->unlockObject(identifier: $lockKey, advisory: true);
+					$this->store->objectService->unlockObject(request: new UnlockRequest(identifier: $lockKey, advisory: true));
 				} catch (Throwable $unlockError) {
 					$this->logger->warning(
 						'Buildiq: failed to release slug lock ' . $lockKey,
@@ -183,9 +185,7 @@ class ApplicationCreationService {
 
 		try {
 			$this->store->objectService->lockObject(
-				identifier: $lockKey,
-				process: 'buildiq.createApplication',
-				duration: 10,
+				request: new LockRequest(identifier: $lockKey, process: 'buildiq.createApplication', duration: 10),
 				advisory: true
 			);
 		} catch (Throwable $lockError) {
