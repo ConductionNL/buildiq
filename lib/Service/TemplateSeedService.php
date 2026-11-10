@@ -39,6 +39,8 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
@@ -175,9 +177,10 @@ class TemplateSeedService {
 				// (uuid null) creates a new row.
 				$this->objectService->saveObject(
 					object: $data,
-					register: 'buildiq',
-					schema: 'application-template',
-					uuid: $existingUuid,
+					options: new ObjectSaveOptions(
+						target: new ObjectFindTarget(register: 'buildiq', schema: 'application-template'),
+						uuid: $existingUuid
+					),
 					_rbac: false,
 					_multitenancy: false
 				);

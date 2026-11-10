@@ -30,6 +30,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\Service;
 
 use OCA\Buildiq\Service\AppOverrideService;
+use OCA\Buildiq\Tests\Unit\Support\SaveCallShape;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\App\IAppManager;
@@ -178,7 +179,7 @@ class AppOverrideServiceTest extends TestCase {
 		// (object, extend, register, schema, uuid, …); match it there.
 		$this->objectService->expects(self::once())
 			->method('saveObject')
-			->with(self::anything(), self::anything(), self::anything(), self::anything(), 'ver-1')
+			->with(self::anything(), SaveCallShape::where(expected: ['uuid' => 'ver-1']))
 			->willReturn($existingVersion);
 
 		$result = $this->service->upsert(

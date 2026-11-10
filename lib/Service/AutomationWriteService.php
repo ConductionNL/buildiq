@@ -62,6 +62,8 @@ namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -315,9 +317,7 @@ class AutomationWriteService {
 		// `?string $uuid = null`) — on create, OR mints the uuid itself.
 		return $this->objectService->saveObject(
 			object: $automation,
-			register: self::REGISTER_SLUG,
-			schema: self::AUTOMATION_SCHEMA,
-			uuid: $uuid,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::AUTOMATION_SCHEMA), uuid: $uuid),
 			_rbac: false
 		);
 

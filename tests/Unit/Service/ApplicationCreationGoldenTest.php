@@ -24,12 +24,14 @@ use OCA\Buildiq\Exception\WizardCreationException;
 use OCA\Buildiq\Service\ApplicationCreationService;
 use OCA\Buildiq\Service\RegisterStore;
 use OCA\Buildiq\Service\SlugValidator;
+use OCA\Buildiq\Tests\Unit\Support\SaveCallShape;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\RegisterService;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -405,6 +407,10 @@ class ApplicationCreationGoldenTest extends TestCase {
 				return $class . '#' . $value->getId();
 			}
 
+			if ($value instanceof ObjectSaveOptions) {
+				return $this->describe(value: $this->describeSaveOptions(options: $value));
+			}
+
 			return 'object:' . $class;
 		}
 
@@ -423,6 +429,36 @@ class ApplicationCreationGoldenTest extends TestCase {
 
 		return $out;
 	}//end describe()
+
+	/**
+	 * The save options that differ from the defaults, keyed by the old saveObject() parameter names.
+	 *
+	 * @param ObjectSaveOptions $options The options.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function describeSaveOptions(ObjectSaveOptions $options): array {
+		$defaults = [
+			'extend' => [],
+			'register' => null,
+			'schema' => null,
+			'uuid' => null,
+			'silent' => false,
+			'_validation' => true,
+			'uploadedFiles' => null,
+			'currentUser' => null,
+			'failIfExists' => false,
+		];
+
+		$out = [];
+		foreach (SaveCallShape::named(args: [null, $options]) as $name => $value) {
+			if (array_key_exists($name, $defaults) === true && $value !== $defaults[$name]) {
+				$out[$name] = $value;
+			}
+		}
+
+		return $out;
+	}//end describeSaveOptions()
 
 	/**
 	 * Class and message of a throwable, or null.

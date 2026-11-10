@@ -50,6 +50,8 @@ use OCA\Buildiq\Support\WidgetSpec;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -2027,9 +2029,10 @@ class CopilotService {
 
 				$this->objectService->saveObject(
 					object: $payload,
-					register: self::REGISTER_SLUG,
-					schema: self::APPLICATION_VERSION_SCHEMA,
-					uuid: $versionUuid,
+					options: new ObjectSaveOptions(
+						target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::APPLICATION_VERSION_SCHEMA),
+						uuid: $versionUuid
+					)
 				);
 			} catch (Throwable $e) {
 				$target = $snapshot['appSlug'] . '@' . $snapshot['versionSlug'];

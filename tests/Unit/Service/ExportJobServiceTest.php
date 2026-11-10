@@ -33,6 +33,7 @@ namespace OCA\Buildiq\Tests\Unit\Service;
 use OCA\Buildiq\AppInfo\Application;
 use OCA\Buildiq\Service\ExportJobService;
 use OCA\Buildiq\Service\JobOwnerImpersonator;
+use OCA\Buildiq\Tests\Unit\Support\SaveCallShape;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\BackgroundJob\IJobList;
@@ -451,7 +452,8 @@ final class ExportJobServiceTest extends TestCase {
 		$objectService
 			->expects(self::once())
 			->method('saveObject')
-			->willReturnCallback(function ($job, $extend = [], $register = null, $schema = null, $uuid = null) use (&$capturedArgs): ObjectEntity {
+			->willReturnCallback(function (mixed ...$call) use (&$capturedArgs): ObjectEntity {
+				[$job, $extend, $register, $schema, $uuid] = SaveCallShape::flatten(args: $call);
 				$capturedArgs = ['job' => $job, 'register' => $register, 'schema' => $schema, 'uuid' => $uuid];
 				return new ObjectEntity();
 			});
@@ -509,7 +511,8 @@ final class ExportJobServiceTest extends TestCase {
 		$objectService
 			->expects(self::once())
 			->method('saveObject')
-			->willReturnCallback(function ($job, $extend = [], $register = null, $schema = null, $uuid = null) use (&$capturedArgs): ObjectEntity {
+			->willReturnCallback(function (mixed ...$call) use (&$capturedArgs): ObjectEntity {
+				[$job, $extend, $register, $schema, $uuid] = SaveCallShape::flatten(args: $call);
 				$capturedArgs = ['job' => $job, 'register' => $register, 'schema' => $schema, 'uuid' => $uuid];
 				return new ObjectEntity();
 			});

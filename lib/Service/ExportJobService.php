@@ -37,6 +37,8 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCP\BackgroundJob\IJobList;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -243,10 +245,11 @@ class ExportJobService {
 				}
 
 				$service->saveObject(
-					$job,
-					register: self::REGISTER_SLUG,
-					schema: self::EXPORT_JOB_SCHEMA,
-					uuid: $explicitUuid
+					object: $job,
+					options: new ObjectSaveOptions(
+						target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::EXPORT_JOB_SCHEMA),
+						uuid: $explicitUuid
+					)
 				);
 			}
 		} catch (\Throwable $e) {
@@ -411,10 +414,11 @@ class ExportJobService {
 				// outright drops) the write instead of updating this SAME
 				// existing record.
 				$service->saveObject(
-					$merged,
-					register: self::REGISTER_SLUG,
-					schema: self::EXPORT_JOB_SCHEMA,
-					uuid: $jobUuid
+					object: $merged,
+					options: new ObjectSaveOptions(
+						target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::EXPORT_JOB_SCHEMA),
+						uuid: $jobUuid
+					)
 				);
 			}
 		} catch (\Throwable $e) {

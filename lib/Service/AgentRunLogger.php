@@ -36,6 +36,8 @@ namespace OCA\Buildiq\Service;
 use DateTimeImmutable;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -102,8 +104,7 @@ class AgentRunLogger {
 		try {
 			$created = $this->objectService->saveObject(
 				object: $payload,
-				register: self::REGISTER_SLUG,
-				schema: self::AGENT_RUN_SCHEMA,
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::AGENT_RUN_SCHEMA))
 			);
 
 			return ObjectRecord::castArray(object: $created);

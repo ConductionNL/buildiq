@@ -37,6 +37,7 @@ use OCA\Buildiq\Service\Credential\VirtualAppCredentialRegistrar;
 use OCA\Buildiq\Service\ManifestFormDestinations;
 use OCA\Buildiq\Service\ManifestResolverService;
 use OCA\Buildiq\Service\PermissionResolver;
+use OCA\Buildiq\Tests\Unit\Support\SaveCallShape;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\AppFramework\Http;
@@ -189,13 +190,8 @@ class ApplicationPublishControllerTest extends TestCase {
 		$calls = [];
 		$this->objectService->expects($this->exactly(2))
 			->method('saveObject')
-			->willReturnCallback(function (
-				array $object,
-				?array $extend = [],
-				string|int|null $register = null,
-				string|int|null $schema = null,
-				?string $uuid = null,
-			) use (&$calls): ObjectEntity {
+			->willReturnCallback(function (mixed ...$call) use (&$calls): ObjectEntity {
+				[$object, $extend, $register, $schema, $uuid] = SaveCallShape::flatten(args: $call);
 				$calls[] = ['object' => $object, 'schema' => $schema, 'uuid' => $uuid];
 				return $this->buildEntity(payload: $object);
 			});

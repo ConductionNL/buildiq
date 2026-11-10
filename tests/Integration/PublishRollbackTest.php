@@ -37,9 +37,12 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Integration;
 
 use OCA\Buildiq\Listener\ApplicationVersionSnapshotListener;
+use OCA\Buildiq\Tests\Unit\Support\SaveCallShape;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\ObjectService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -112,6 +115,7 @@ class PublishRollbackTest extends TestCase {
 		// the SUT calls it with named args (object/register/schema) — captured here as positional [object, [], register, schema].
 		$this->fakeObjectService->method('saveObject')->willReturnCallback(
 			function (...$args): ObjectEntity {
+				$args = SaveCallShape::flatten(args: $args);
 				$object = ($args['object'] ?? ($args[0] ?? []));
 				$schema = (string)($args['schema'] ?? ($args[3] ?? ''));
 				return $this->recordSave($object, $schema);
@@ -224,8 +228,9 @@ class PublishRollbackTest extends TestCase {
 				'manifest' => $manifestV1,
 				'currentVersion' => 'snap-bootstrap',
 			],
-			register: 'buildiq',
-			schema: 'built-app'
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'buildiq', schema: 'built-app')
+			)
 		);
 		$appUuid = $appEntity->jsonSerialize()['@self']['id'];
 
@@ -234,8 +239,9 @@ class PublishRollbackTest extends TestCase {
 				'slug' => 'hello-world',
 				'applicationUuid' => $appUuid,
 			],
-			register: 'buildiq',
-			schema: 'built-app-route'
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'buildiq', schema: 'built-app-route')
+			)
 		);
 
 		$this->fakeObjectService->saveObject(
@@ -247,8 +253,9 @@ class PublishRollbackTest extends TestCase {
 				'publishedAt' => '2026-05-01T10:00:00Z',
 				'publishedBy' => 'system',
 			],
-			register: 'buildiq',
-			schema: 'application-version'
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'buildiq', schema: 'application-version')
+			)
 		);
 
 		// Phase 1 — publish v1.1.0 (manifest edit).

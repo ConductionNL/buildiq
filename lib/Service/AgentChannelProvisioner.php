@@ -51,6 +51,10 @@ namespace OCA\Buildiq\Service;
 
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Exception\ObjectExistsException;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\SaveActor;
+use OCA\OpenRegister\Service\Object\SavePolicy;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -164,16 +168,15 @@ class AgentChannelProvisioner {
 		try {
 			$this->objectService->saveObject(
 				object: $blob,
-				register: self::AGENT_REGISTER,
-				schema: self::AGENT_SCHEMA,
-				uuid: $uuid,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: self::AGENT_REGISTER, schema: self::AGENT_SCHEMA),
+					uuid: $uuid,
+					uploadedFiles: null,
+					policy: new SavePolicy(silent: false, validation: true, failIfExists: true),
+					actor: new SaveActor(currentUser: null)
+				),
 				_rbac: false,
-				_multitenancy: false,
-				silent: false,
-				_validation: true,
-				uploadedFiles: null,
-				currentUser: null,
-				failIfExists: true
+				_multitenancy: false
 			);
 
 			$report->recordCreated(channel: self::CHANNEL, item: $item);

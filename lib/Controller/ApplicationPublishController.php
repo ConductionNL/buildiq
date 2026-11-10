@@ -41,6 +41,8 @@ use OCA\Buildiq\Service\PermissionResolver;
 use OCA\Buildiq\Service\VersionPromotionService;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -318,9 +320,10 @@ class ApplicationPublishController extends Controller {
 			$application['status'] = $status;
 			$saved = $this->objectService->saveObject(
 				object: $application,
-				register: VersionPromotionService::REGISTER_SLUG,
-				schema: VersionPromotionService::APPLICATION_SCHEMA,
-				uuid: $appUuid
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: VersionPromotionService::REGISTER_SLUG, schema: VersionPromotionService::APPLICATION_SCHEMA),
+					uuid: $appUuid
+				)
 			);
 
 			// On go-live, onboard the app to the credential broker when its
@@ -400,8 +403,9 @@ class ApplicationPublishController extends Controller {
 		try {
 			$this->objectService->saveObject(
 				object: ['slug' => $slug, 'applicationUuid' => $applicationUuid],
-				register: VersionPromotionService::REGISTER_SLUG,
-				schema: 'built-app-route'
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: VersionPromotionService::REGISTER_SLUG, schema: 'built-app-route')
+				)
 			);
 		} catch (Throwable $e) {
 			$this->logger->error(

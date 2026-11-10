@@ -46,6 +46,8 @@ namespace OCA\Buildiq\Service;
 use InvalidArgumentException;
 use OCA\Buildiq\Integration\PageLayoutLeafProvider;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCP\IAppConfig;
 use RuntimeException;
 
@@ -414,8 +416,7 @@ class PageLayoutAuthoringService {
 	private function store(array $layout): array {
 		$this->objectService->saveObject(
 			object: $layout,
-			register: $this->registerSlug(),
-			schema: self::SCHEMA,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->registerSlug(), schema: self::SCHEMA))
 		);
 
 		return $layout;

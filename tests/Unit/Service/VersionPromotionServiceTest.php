@@ -36,6 +36,7 @@ use OCA\Buildiq\Exception\VersionLockedException;
 use OCA\Buildiq\Service\RegisterRowReader;
 use OCA\Buildiq\Service\VersionPromotionService;
 use OCA\Buildiq\Service\VersionSchemaCarrier;
+use OCA\Buildiq\Tests\Unit\Support\SaveCallShape;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -447,6 +448,7 @@ class VersionPromotionServiceTest extends TestCase {
 			->method('saveObject')
 			->willReturnCallback(
 				static function (...$args) use (&$callCount, &$savedPayloads, $savedArchived): ObjectEntity {
+					$args = SaveCallShape::flatten(args: $args);
 					$callCount++;
 					$savedPayloads[] = $args[0];
 					if ($callCount === 1) {
@@ -1298,7 +1300,8 @@ class VersionPromotionServiceTest extends TestCase {
 		$rowSchemas = [];
 		$savedManifest = null;
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (array $object, mixed $extend = [], mixed $register = null, mixed $schema = null) use (&$rowSchemas, &$savedManifest): ObjectEntity {
+			function (mixed ...$call) use (&$rowSchemas, &$savedManifest): ObjectEntity {
+				[$object, $extend, $register, $schema] = SaveCallShape::flatten(args: $call);
 				if ($register === 'openbuild-shop-production') {
 					$rowSchemas[] = $schema;
 				} else {

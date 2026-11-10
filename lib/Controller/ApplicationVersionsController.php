@@ -53,6 +53,8 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -306,8 +308,9 @@ class ApplicationVersionsController extends Controller {
 
 			$created = $this->objectService->saveObject(
 				object: $payload,
-				register: ApplicationVersionService::REGISTER_SLUG,
-				schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: ApplicationVersionService::REGISTER_SLUG, schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA)
+				)
 			);
 
 			return new JSONResponse(
@@ -407,9 +410,10 @@ class ApplicationVersionsController extends Controller {
 			try {
 				$updated = $this->objectService->saveObject(
 					object: $payload,
-					register: ApplicationVersionService::REGISTER_SLUG,
-					schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA,
-					uuid: $currentUuid
+					options: new ObjectSaveOptions(
+						target: new ObjectFindTarget(register: ApplicationVersionService::REGISTER_SLUG, schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA),
+						uuid: $currentUuid
+					)
 				);
 			} finally {
 				if ($locked === true) {

@@ -38,6 +38,7 @@ namespace OCA\Buildiq\Tests\Unit\Service;
 use OCA\Buildiq\Service\AutomationCompilerService;
 use OCA\Buildiq\Service\AutomationWriteService;
 use OCA\Buildiq\Service\PermissionResolver;
+use OCA\Buildiq\Tests\Unit\Support\SaveCallShape;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
@@ -267,6 +268,7 @@ final class AutomationWriteServiceTest extends TestCase {
 		$this->objectService->expects($this->once())
 			->method('saveObject')
 			->willReturnCallback(function (...$arguments) use (&$captured): ObjectEntity {
+				$arguments = SaveCallShape::named(args: $arguments);
 				$captured = $arguments;
 				return $this->buildEntity(['id' => 'a-new', 'slug' => 'nag']);
 			});
@@ -281,11 +283,11 @@ final class AutomationWriteServiceTest extends TestCase {
 
 		$this->assertIsArray($captured);
 		$this->assertFalse(
-			$captured[$this->argumentIndex(method: 'saveObject', name: '_rbac')],
+			$captured['_rbac'],
 			'create() must save with _rbac:false — the per-Application check above IS the authorization decision'
 		);
 		// No uuid on create: OpenRegister mints it.
-		$this->assertNull($captured[$this->argumentIndex(method: 'saveObject', name: 'uuid')]);
+		$this->assertNull(actual: $captured['uuid']);
 
 	}//end testCreateReturns201AndSavesWithRbacDisabled()
 
@@ -302,6 +304,7 @@ final class AutomationWriteServiceTest extends TestCase {
 		$this->objectService->expects($this->once())
 			->method('saveObject')
 			->willReturnCallback(function (...$arguments) use (&$captured): ObjectEntity {
+				$arguments = SaveCallShape::named(args: $arguments);
 				$captured = $arguments;
 				return $this->buildEntity(['id' => 'a-1']);
 			});
@@ -324,13 +327,13 @@ final class AutomationWriteServiceTest extends TestCase {
 		$this->assertSame(Http::STATUS_OK, $response->getStatus());
 
 		$this->assertIsArray($captured);
-		$written = $captured[$this->argumentIndex(method: 'saveObject', name: 'object')];
+		$written = $captured['object'];
 		$this->assertSame('permit-tracker', $written['applicationSlug']);
 		$this->assertSame('draft-version', $written['versionUuid']);
 		// The rest of the definition IS the caller's to rewrite.
 		$this->assertSame('renamed', $written['slug']);
-		$this->assertSame('a-1', $captured[$this->argumentIndex(method: 'saveObject', name: 'uuid')]);
-		$this->assertFalse($captured[$this->argumentIndex(method: 'saveObject', name: '_rbac')]);
+		$this->assertSame(expected: 'a-1', actual: $captured['uuid']);
+		$this->assertFalse(condition: $captured['_rbac']);
 
 	}//end testUpdatePinsApplicationScopeToStoredValues()
 

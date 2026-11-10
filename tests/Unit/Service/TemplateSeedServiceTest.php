@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\Service;
 
 use OCA\Buildiq\Service\TemplateSeedService;
+use OCA\Buildiq\Tests\Unit\Support\SaveCallShape;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
@@ -466,6 +467,7 @@ class TemplateSeedServiceTest extends TestCase {
 		$captured = [];
 		$this->objectService->method('saveObject')->willReturnCallback(
 			function (...$args) use (&$captured, $entity): ObjectEntity {
+				$args = SaveCallShape::flatten(args: $args);
 				$captured[] = $args;
 				return $entity;
 			}

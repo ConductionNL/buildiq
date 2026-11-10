@@ -28,6 +28,7 @@ namespace OCA\Buildiq\Tests\Unit\Service;
 
 use OCA\Buildiq\Service\ApplicationVersionService;
 use OCA\Buildiq\Service\AutomationCompilerService;
+use OCA\Buildiq\Tests\Unit\Support\SaveCallShape;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -109,7 +110,8 @@ final class ApplicationVersionServiceAutomationCloneTest extends TestCase {
 
 		$savedPayloads = [];
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (array $object, $extend = [], $register = null, $schema = null, $uuid = null) use (&$savedPayloads) {
+			function (mixed ...$call) use (&$savedPayloads) {
+				[$object, $extend, $register, $schema, $uuid] = SaveCallShape::flatten(args: $call);
 				$savedPayloads[] = ['object' => $object, 'uuid' => $uuid];
 
 				$entity = new ObjectEntity();

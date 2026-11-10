@@ -37,6 +37,7 @@ use OCA\Buildiq\Service\RuleObjectReader;
 use OCA\Buildiq\Service\RuleSetVersioningService;
 use OCA\Buildiq\Service\RuleStorage;
 use OCA\Buildiq\Service\StoredDecisionTables;
+use OCA\Buildiq\Tests\Unit\Support\SaveCallShape;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -543,7 +544,8 @@ final class RulesControllerTest extends TestCase {
 
 		$written = null;
 		$this->objectService->expects($this->once())->method('saveObject')->willReturnCallback(
-			function (array $object, ?array $extend = [], string|int|null $register = null, string|int|null $schema = null, ?string $uuid = null, bool $_rbac = true, bool $_multitenancy = true) use (&$written) {
+			function (mixed ...$call) use (&$written) {
+				[$object, $extend, $register, $schema, $uuid, $_rbac, $_multitenancy] = SaveCallShape::flatten(args: $call);
 				$this->assertSame('decision-tables', $register);
 				$this->assertSame('decision-table', $schema);
 				$this->assertNull($uuid);

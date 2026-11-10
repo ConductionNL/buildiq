@@ -31,6 +31,7 @@ use OCA\Buildiq\Service\DataRegisterProvisioner;
 use OCA\Buildiq\Service\FlowChannelProvisioner;
 use OCA\Buildiq\Service\SkillChannelDelegate;
 use OCA\Buildiq\Tests\Unit\Support\FakeSlugResolver;
+use OCA\Buildiq\Tests\Unit\Support\SaveCallShape;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -190,6 +191,7 @@ class ConnectorRegisterResolutionTest extends TestCase {
 		$objectService = $this->createMock(ObjectServiceInterface::class);
 		$objectService->method('saveObject')->willReturnCallback(
 			function (...$args) {
+				$args = SaveCallShape::flatten(args: $args);
 				$this->writeCount++;
 				// Positional: named arguments reach a mock callback in
 				// declaration order, and `register` is the third parameter of

@@ -44,6 +44,8 @@ use DateTimeImmutable;
 use DateTimeInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCP\App\IAppManager;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -295,9 +297,10 @@ class AppOverrideService {
 
 			$saved = $this->objectService->saveObject(
 				object: $existing,
-				register: self::REGISTER_SLUG,
-				schema: self::APPLICATION_VERSION_SCHEMA,
-				uuid: $versionUuid,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::APPLICATION_VERSION_SCHEMA),
+					uuid: $versionUuid
+				),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -318,8 +321,7 @@ class AppOverrideService {
 					'status' => 'draft',
 					'application' => $appUuid,
 				],
-				register: self::REGISTER_SLUG,
-				schema: self::APPLICATION_VERSION_SCHEMA,
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::APPLICATION_VERSION_SCHEMA)),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -674,8 +676,7 @@ class AppOverrideService {
 				'appType' => 'hybrid',
 				'baseRef' => $baseRefObject,
 			],
-			register: self::REGISTER_SLUG,
-			schema: self::APPLICATION_SCHEMA,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::APPLICATION_SCHEMA)),
 			_rbac: $rbac,
 			_multitenancy: $rbac
 		);
@@ -696,8 +697,7 @@ class AppOverrideService {
 				'status' => 'published',
 				'application' => $applicationUuid,
 			],
-			register: self::REGISTER_SLUG,
-			schema: self::APPLICATION_VERSION_SCHEMA,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::APPLICATION_VERSION_SCHEMA)),
 			_rbac: $rbac,
 			_multitenancy: $rbac
 		);
@@ -714,9 +714,10 @@ class AppOverrideService {
 			$applicationData['productionVersion'] = $versionUuid;
 			$this->objectService->saveObject(
 				object: $applicationData,
-				register: self::REGISTER_SLUG,
-				schema: self::APPLICATION_SCHEMA,
-				uuid: $applicationUuid,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::APPLICATION_SCHEMA),
+					uuid: $applicationUuid
+				),
 				_rbac: $rbac,
 				_multitenancy: $rbac
 			);
@@ -762,9 +763,10 @@ class AppOverrideService {
 
 			$this->objectService->saveObject(
 				object: $version,
-				register: self::REGISTER_SLUG,
-				schema: self::APPLICATION_VERSION_SCHEMA,
-				uuid: $versionUuid,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::APPLICATION_VERSION_SCHEMA),
+					uuid: $versionUuid
+				),
 				_rbac: $rbac,
 				_multitenancy: $rbac
 			);
