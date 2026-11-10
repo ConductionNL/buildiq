@@ -33,6 +33,8 @@ use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Service\Lifecycle\TransitionMove;
 use OCP\EventDispatcher\Event;
 use OCP\IUserSession;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -179,10 +181,10 @@ class FiredAutomationTriggerTest extends TestCase {
 			'created' => new ObjectCreatedEvent(self::entity(schema: 's1', uuid: 'u1')),
 			'updated' => new ObjectUpdatedEvent(self::entity(schema: 's1', uuid: 'u1'), self::entity(schema: 's1', uuid: 'u1')),
 			'deleted' => new ObjectDeletedEvent(self::entity(schema: 's1', uuid: 'u1')),
-			'transitionApprove' => new ObjectTransitionedEvent(self::entity(schema: null, uuid: 'u1'), 'approve', 'a', 'b', null, 'r', 's1'),
-			'transitionEmpty' => new ObjectTransitionedEvent(self::entity(schema: null, uuid: 'u1'), '', 'a', 'b', null, 'r', 's1'),
-			'transitionReject' => new ObjectTransitionedEvent(self::entity(schema: 's9', uuid: 'u1'), 'reject', 'a', 'b', null, 'r', 's1'),
-			'transitionNoUuid' => new ObjectTransitionedEvent(self::entity(schema: 's1', uuid: null), 'approve', 'a', 'b', null, 'r', 's1'),
+			'transitionApprove' => new ObjectTransitionedEvent(object: self::entity(schema: null, uuid: 'u1'), move: new TransitionMove(action: 'approve', from: 'a', to: 'b'), scope: new RegisterSchemaRef(register: 'r', schema: 's1')),
+			'transitionEmpty' => new ObjectTransitionedEvent(object: self::entity(schema: null, uuid: 'u1'), move: new TransitionMove(action: '', from: 'a', to: 'b'), scope: new RegisterSchemaRef(register: 'r', schema: 's1')),
+			'transitionReject' => new ObjectTransitionedEvent(object: self::entity(schema: 's9', uuid: 'u1'), move: new TransitionMove(action: 'reject', from: 'a', to: 'b'), scope: new RegisterSchemaRef(register: 'r', schema: 's1')),
+			'transitionNoUuid' => new ObjectTransitionedEvent(object: self::entity(schema: 's1', uuid: null), move: new TransitionMove(action: 'approve', from: 'a', to: 'b'), scope: new RegisterSchemaRef(register: 'r', schema: 's1')),
 			'createdNoSchema' => new ObjectCreatedEvent(self::entity(schema: null, uuid: 'u1')),
 			'createdNoUuid' => new ObjectCreatedEvent(self::entity(schema: 's1', uuid: null)),
 			'createdOtherSchema' => new ObjectCreatedEvent(self::entity(schema: 's2', uuid: 'u2')),
