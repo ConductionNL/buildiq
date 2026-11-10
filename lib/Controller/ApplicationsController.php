@@ -72,6 +72,7 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -483,8 +484,7 @@ class ApplicationsController extends Controller {
 			if (is_string($productionVersion) === true && $productionVersion !== '' && $productionVersion !== 'draft') {
 				$versionEntity = $this->objectService->find(
 					id: $productionVersion,
-					register: 'buildiq',
-					schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
+					options: new ObjectFindOptions(register: 'buildiq', schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA)
 				);
 				if ($versionEntity !== null) {
 					$versionArray = ObjectRecord::toArray(object: $versionEntity);
@@ -838,8 +838,7 @@ class ApplicationsController extends Controller {
 		try {
 			$version = $this->objectService->find(
 				id: $token,
-				register: 'buildiq',
-				schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
+				options: new ObjectFindOptions(register: 'buildiq', schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA)
 			);
 		} catch (Throwable $e) {
 			$version = null;
@@ -978,8 +977,7 @@ class ApplicationsController extends Controller {
 		// Step 2 — load the Application object.
 		$application = $this->objectService->find(
 			id: $applicationUuid,
-			register: 'buildiq',
-			schema: 'built-app'
+			options: new ObjectFindOptions(register: 'buildiq', schema: 'built-app')
 		);
 
 		if ($application === null) {
@@ -1800,8 +1798,7 @@ class ApplicationsController extends Controller {
 			$version = ObjectRecord::toArray(
 				object: $this->objectService->find(
 					id: $versionId,
-					register: 'buildiq',
-					schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
+					options: new ObjectFindOptions(register: 'buildiq', schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA)
 				)
 			);
 		}

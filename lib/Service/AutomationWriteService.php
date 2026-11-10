@@ -62,6 +62,7 @@ namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -411,7 +412,7 @@ class AutomationWriteService {
 	 */
 	public function loadAutomation(string $uuid): ?array {
 		try {
-			$entity = $this->objectService->find(id: $uuid, register: self::REGISTER_SLUG, schema: self::AUTOMATION_SCHEMA);
+			$entity = $this->objectService->find(id: $uuid, options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: self::AUTOMATION_SCHEMA));
 		} catch (Throwable $e) {
 			return null;
 		}
@@ -439,7 +440,7 @@ class AutomationWriteService {
 		}
 
 		try {
-			$entity = $this->objectService->find(id: $slug, register: self::REGISTER_SLUG, schema: self::APPLICATION_SCHEMA);
+			$entity = $this->objectService->find(id: $slug, options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: self::APPLICATION_SCHEMA));
 		} catch (Throwable $e) {
 			return null;
 		}

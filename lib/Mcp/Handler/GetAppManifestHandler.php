@@ -25,6 +25,8 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Mcp\Handler;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+
 /**
  * Handles the buildiq.getAppManifest tool invocation.
  *
@@ -122,7 +124,10 @@ class GetAppManifestHandler extends AbstractToolHandler {
 			return ['error' => 'inconsistent_state', 'message' => 'Route exists but has no applicationUuid.'];
 		}
 
-		$application = $objectService->find(id: (string)$applicationUuid, register: self::REGISTER_SLUG, schema: 'built-app');
+		$application = $objectService->find(
+			id: (string)$applicationUuid,
+			options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: 'built-app')
+		);
 		if ($application === null) {
 			return ['error' => 'inconsistent_state', 'message' => 'Route points to an Application that does not exist.'];
 		}

@@ -53,6 +53,7 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -595,8 +596,7 @@ class ApplicationVersionsController extends Controller {
 		try {
 			$version = $this->objectService->find(
 				id: $versionUuid,
-				register: ApplicationVersionService::REGISTER_SLUG,
-				schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
+				options: new ObjectFindOptions(register: ApplicationVersionService::REGISTER_SLUG, schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA)
 			);
 		} catch (Throwable $e) {
 			return null;

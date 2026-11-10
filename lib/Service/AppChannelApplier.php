@@ -56,6 +56,7 @@ namespace OCA\Buildiq\Service;
 
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Exception\ObjectExistsException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -333,8 +334,7 @@ class AppChannelApplier {
 		try {
 			$credential = $this->objectService->find(
 				id: $credentialId,
-				register: self::CREDENTIAL_REGISTER,
-				schema: self::CREDENTIAL_SCHEMA,
+				options: new ObjectFindOptions(register: self::CREDENTIAL_REGISTER, schema: self::CREDENTIAL_SCHEMA),
 				_rbac: false,
 				_multitenancy: false
 			);
