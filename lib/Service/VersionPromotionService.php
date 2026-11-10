@@ -60,6 +60,8 @@ use OCA\Buildiq\Exception\PromotionFailedException;
 use OCA\Buildiq\Exception\VersionLockedException;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Service\Object\LockRequest;
+use OCA\OpenRegister\Service\Object\UnlockRequest;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -531,9 +533,7 @@ class VersionPromotionService {
 	private function acquireLock(string $targetUuid): void {
 		try {
 			$this->objectService->lockObject(
-				identifier: $targetUuid,
-				process: 'buildiq.version-promotion',
-				duration: self::LOCK_DURATION_SECONDS
+				request: new LockRequest(identifier: $targetUuid, process: 'buildiq.version-promotion', duration: self::LOCK_DURATION_SECONDS)
 			);
 		} catch (Throwable $e) {
 			// ObjectService surfaces OR's LockedException + any other lock
@@ -574,7 +574,7 @@ class VersionPromotionService {
 	 */
 	private function releaseLock(string $targetUuid): void {
 		try {
-			$this->objectService->unlockObject(identifier: $targetUuid);
+			$this->objectService->unlockObject(request: new UnlockRequest(identifier: $targetUuid));
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				'Buildiq: failed to release lock on target ' . $targetUuid . ': ' . $e->getMessage()

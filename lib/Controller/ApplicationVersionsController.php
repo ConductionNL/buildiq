@@ -53,6 +53,8 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\LockRequest;
+use OCA\OpenRegister\Service\Object\UnlockRequest;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -390,9 +392,7 @@ class ApplicationVersionsController extends Controller {
 			if ($currentUuid !== '') {
 				try {
 					$this->objectService->lockObject(
-						identifier: $currentUuid,
-						process: 'buildiq.controller-update',
-						duration: 15
+						request: new LockRequest(identifier: $currentUuid, process: 'buildiq.controller-update', duration: 15)
 					);
 					$locked = true;
 				} catch (Throwable $lockError) {
@@ -414,7 +414,7 @@ class ApplicationVersionsController extends Controller {
 			} finally {
 				if ($locked === true) {
 					try {
-						$this->objectService->unlockObject(identifier: $currentUuid);
+						$this->objectService->unlockObject(request: new UnlockRequest(identifier: $currentUuid));
 					} catch (Throwable $unlockErr) {
 						$this->logger->warning(
 							'Buildiq: failed to release update lock on ' . $currentUuid . ': ' . $unlockErr->getMessage()

@@ -42,6 +42,8 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\LockRequest;
+use OCA\OpenRegister\Service\Object\UnlockRequest;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -263,7 +265,7 @@ class VersionPromotionServiceTest extends TestCase {
 		$this->objectService
 			->expects(self::once())
 			->method('lockObject')
-			->with('u-tgt', 'buildiq.version-promotion', 60);
+			->with(self::equalTo(value: new LockRequest(identifier: 'u-tgt', process: 'buildiq.version-promotion', duration: 60)));
 
 		// RegisterMapper::update should be invoked for the schema-set forwarding.
 		$this->registerMapper
@@ -302,7 +304,7 @@ class VersionPromotionServiceTest extends TestCase {
 		$this->objectService
 			->expects(self::once())
 			->method('unlockObject')
-			->with('u-tgt');
+			->with(self::equalTo(value: new UnlockRequest(identifier: 'u-tgt')));
 
 		$result = $this->service->promote(
 			source: $source,
@@ -375,7 +377,7 @@ class VersionPromotionServiceTest extends TestCase {
 		$this->objectService
 			->expects(self::once())
 			->method('unlockObject')
-			->with('u-tgt');
+			->with(self::equalTo(value: new UnlockRequest(identifier: 'u-tgt')));
 
 		$this->expectException(PromotionFailedException::class);
 
@@ -1041,8 +1043,8 @@ class VersionPromotionServiceTest extends TestCase {
 				}
 			);
 
-		$this->objectService->method('unlockObject')->willReturnCallback(function ($uuid) {
-			self::assertNotSame('spectr', $uuid);
+		$this->objectService->method('unlockObject')->willReturnCallback(function (UnlockRequest $request) {
+			self::assertNotSame(expected: 'spectr', actual: $request->identifier);
 			return true;
 		});
 

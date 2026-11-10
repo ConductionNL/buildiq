@@ -4,9 +4,15 @@
         "calls": [
             {
                 "objectService.lockObject#1": {
-                    "identifier": "createApp:permit-tracker",
-                    "process": "buildiq.createApplication",
-                    "duration": 10,
+                    "request": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\LockRequest": {
+                            "runUuid": null,
+                            "nodeId": null,
+                            "identifier": "createApp:permit-tracker",
+                            "process": "buildiq.createApplication",
+                            "duration": 10
+                        }
+                    },
                     "advisory": true
                 }
             },
@@ -149,8 +155,14 @@
             },
             {
                 "objectService.unlockObject#1": {
-                    "identifier": "createApp:permit-tracker",
-                    "advisory": true
+                    "request": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\UnlockRequest": {
+                            "identifier": "createApp:permit-tracker",
+                            "advisory": true,
+                            "runUuid": null,
+                            "break": false
+                        }
+                    }
                 }
             }
         ]
@@ -160,9 +172,15 @@
         "calls": [
             {
                 "objectService.lockObject#1": {
-                    "identifier": "createApp:permit-tracker",
-                    "process": "buildiq.createApplication",
-                    "duration": 10,
+                    "request": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\LockRequest": {
+                            "runUuid": null,
+                            "nodeId": null,
+                            "identifier": "createApp:permit-tracker",
+                            "process": "buildiq.createApplication",
+                            "duration": 10
+                        }
+                    },
                     "advisory": true
                 }
             },
@@ -381,8 +399,14 @@
             },
             {
                 "objectService.unlockObject#1": {
-                    "identifier": "createApp:permit-tracker",
-                    "advisory": true
+                    "request": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\UnlockRequest": {
+                            "identifier": "createApp:permit-tracker",
+                            "advisory": true,
+                            "runUuid": null,
+                            "break": false
+                        }
+                    }
                 }
             }
         ]
@@ -392,9 +416,15 @@
         "calls": [
             {
                 "objectService.lockObject#1": {
-                    "identifier": "createApp:permit-tracker",
-                    "process": "buildiq.createApplication",
-                    "duration": 10,
+                    "request": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\LockRequest": {
+                            "runUuid": null,
+                            "nodeId": null,
+                            "identifier": "createApp:permit-tracker",
+                            "process": "buildiq.createApplication",
+                            "duration": 10
+                        }
+                    },
                     "advisory": true
                 }
             },
@@ -689,8 +719,14 @@
             },
             {
                 "objectService.unlockObject#1": {
-                    "identifier": "createApp:permit-tracker",
-                    "advisory": true
+                    "request": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\UnlockRequest": {
+                            "identifier": "createApp:permit-tracker",
+                            "advisory": true,
+                            "runUuid": null,
+                            "break": false
+                        }
+                    }
                 }
             }
         ]
@@ -700,9 +736,15 @@
         "calls": [
             {
                 "objectService.lockObject#1": {
-                    "identifier": "createApp:custom-app",
-                    "process": "buildiq.createApplication",
-                    "duration": 10,
+                    "request": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\LockRequest": {
+                            "runUuid": null,
+                            "nodeId": null,
+                            "identifier": "createApp:custom-app",
+                            "process": "buildiq.createApplication",
+                            "duration": 10
+                        }
+                    },
                     "advisory": true
                 }
             },
@@ -921,8 +963,14 @@
             },
             {
                 "objectService.unlockObject#1": {
-                    "identifier": "createApp:custom-app",
-                    "advisory": true
+                    "request": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\UnlockRequest": {
+                            "identifier": "createApp:custom-app",
+                            "advisory": true,
+                            "runUuid": null,
+                            "break": false
+                        }
+                    }
                 }
             }
         ]
@@ -932,9 +980,15 @@
         "calls": [
             {
                 "objectService.lockObject#1": {
-                    "identifier": "createApp:permit-tracker",
-                    "process": "buildiq.createApplication",
-                    "duration": 10,
+                    "request": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\LockRequest": {
+                            "runUuid": null,
+                            "nodeId": null,
+                            "identifier": "createApp:permit-tracker",
+                            "process": "buildiq.createApplication",
+                            "duration": 10
+                        }
+                    },
                     "advisory": true
                 }
             },
@@ -1077,8 +1131,14 @@
             },
             {
                 "objectService.unlockObject#1": {
-                    "identifier": "createApp:permit-tracker",
-                    "advisory": true
+                    "request": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\UnlockRequest": {
+                            "identifier": "createApp:permit-tracker",
+                            "advisory": true,
+                            "runUuid": null,
+                            "break": false
+                        }
+                    }
                 }
             }
         ]
@@ -1098,9 +1158,15 @@
         "calls": [
             {
                 "objectService.lockObject#1": {
-                    "identifier": "createApp:permit-tracker",
-                    "process": "buildiq.createApplication",
-                    "duration": 10,
+                    "request": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\LockRequest": {
+                            "runUuid": null,
+                            "nodeId": null,
+                            "identifier": "createApp:permit-tracker",
+                            "process": "buildiq.createApplication",
+                            "duration": 10
+                        }
+                    },
                     "advisory": true
                 }
             }
@@ -1118,16 +1184,28 @@
         "calls": [
             {
                 "objectService.lockObject#1": {
-                    "identifier": "createApp:Not A Slug",
-                    "process": "buildiq.createApplication",
-                    "duration": 10,
+                    "request": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\LockRequest": {
+                            "runUuid": null,
+                            "nodeId": null,
+                            "identifier": "createApp:Not A Slug",
+                            "process": "buildiq.createApplication",
+                            "duration": 10
+                        }
+                    },
                     "advisory": true
                 }
             },
             {
                 "objectService.unlockObject#1": {
-                    "identifier": "createApp:Not A Slug",
-                    "advisory": true
+                    "request": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\UnlockRequest": {
+                            "identifier": "createApp:Not A Slug",
+                            "advisory": true,
+                            "runUuid": null,
+                            "break": false
+                        }
+                    }
                 }
             }
         ]
@@ -1155,9 +1233,15 @@
         "calls": [
             {
                 "objectService.lockObject#1": {
-                    "identifier": "createApp:permit-tracker",
-                    "process": "buildiq.createApplication",
-                    "duration": 10,
+                    "request": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\LockRequest": {
+                            "runUuid": null,
+                            "nodeId": null,
+                            "identifier": "createApp:permit-tracker",
+                            "process": "buildiq.createApplication",
+                            "duration": 10
+                        }
+                    },
                     "advisory": true
                 }
             },
@@ -1188,8 +1272,14 @@
             },
             {
                 "objectService.unlockObject#1": {
-                    "identifier": "createApp:permit-tracker",
-                    "advisory": true
+                    "request": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\UnlockRequest": {
+                            "identifier": "createApp:permit-tracker",
+                            "advisory": true,
+                            "runUuid": null,
+                            "break": false
+                        }
+                    }
                 }
             }
         ]
@@ -1209,9 +1299,15 @@
         "calls": [
             {
                 "objectService.lockObject#1": {
-                    "identifier": "createApp:permit-tracker",
-                    "process": "buildiq.createApplication",
-                    "duration": 10,
+                    "request": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\LockRequest": {
+                            "runUuid": null,
+                            "nodeId": null,
+                            "identifier": "createApp:permit-tracker",
+                            "process": "buildiq.createApplication",
+                            "duration": 10
+                        }
+                    },
                     "advisory": true
                 }
             },
@@ -1242,8 +1338,14 @@
             },
             {
                 "objectService.unlockObject#1": {
-                    "identifier": "createApp:permit-tracker",
-                    "advisory": true
+                    "request": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\UnlockRequest": {
+                            "identifier": "createApp:permit-tracker",
+                            "advisory": true,
+                            "runUuid": null,
+                            "break": false
+                        }
+                    }
                 }
             }
         ]
@@ -1263,9 +1365,15 @@
         "calls": [
             {
                 "objectService.lockObject#1": {
-                    "identifier": "createApp:permit-tracker",
-                    "process": "buildiq.createApplication",
-                    "duration": 10,
+                    "request": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\LockRequest": {
+                            "runUuid": null,
+                            "nodeId": null,
+                            "identifier": "createApp:permit-tracker",
+                            "process": "buildiq.createApplication",
+                            "duration": 10
+                        }
+                    },
                     "advisory": true
                 }
             },
@@ -1314,8 +1422,14 @@
             },
             {
                 "objectService.unlockObject#1": {
-                    "identifier": "createApp:permit-tracker",
-                    "advisory": true
+                    "request": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\UnlockRequest": {
+                            "identifier": "createApp:permit-tracker",
+                            "advisory": true,
+                            "runUuid": null,
+                            "break": false
+                        }
+                    }
                 }
             }
         ]
@@ -1335,9 +1449,15 @@
         "calls": [
             {
                 "objectService.lockObject#1": {
-                    "identifier": "createApp:permit-tracker",
-                    "process": "buildiq.createApplication",
-                    "duration": 10,
+                    "request": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\LockRequest": {
+                            "runUuid": null,
+                            "nodeId": null,
+                            "identifier": "createApp:permit-tracker",
+                            "process": "buildiq.createApplication",
+                            "duration": 10
+                        }
+                    },
                     "advisory": true
                 }
             },
@@ -1386,8 +1506,14 @@
             },
             {
                 "objectService.unlockObject#1": {
-                    "identifier": "createApp:permit-tracker",
-                    "advisory": true
+                    "request": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\UnlockRequest": {
+                            "identifier": "createApp:permit-tracker",
+                            "advisory": true,
+                            "runUuid": null,
+                            "break": false
+                        }
+                    }
                 }
             }
         ]
@@ -1407,9 +1533,15 @@
         "calls": [
             {
                 "objectService.lockObject#1": {
-                    "identifier": "createApp:permit-tracker",
-                    "process": "buildiq.createApplication",
-                    "duration": 10,
+                    "request": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\LockRequest": {
+                            "runUuid": null,
+                            "nodeId": null,
+                            "identifier": "createApp:permit-tracker",
+                            "process": "buildiq.createApplication",
+                            "duration": 10
+                        }
+                    },
                     "advisory": true
                 }
             },
@@ -1458,8 +1590,14 @@
             },
             {
                 "objectService.unlockObject#1": {
-                    "identifier": "createApp:permit-tracker",
-                    "advisory": true
+                    "request": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\UnlockRequest": {
+                            "identifier": "createApp:permit-tracker",
+                            "advisory": true,
+                            "runUuid": null,
+                            "break": false
+                        }
+                    }
                 }
             }
         ]
@@ -1479,9 +1617,15 @@
         "calls": [
             {
                 "objectService.lockObject#1": {
-                    "identifier": "createApp:permit-tracker",
-                    "process": "buildiq.createApplication",
-                    "duration": 10,
+                    "request": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\LockRequest": {
+                            "runUuid": null,
+                            "nodeId": null,
+                            "identifier": "createApp:permit-tracker",
+                            "process": "buildiq.createApplication",
+                            "duration": 10
+                        }
+                    },
                     "advisory": true
                 }
             },
@@ -1530,8 +1674,14 @@
             },
             {
                 "objectService.unlockObject#1": {
-                    "identifier": "createApp:permit-tracker",
-                    "advisory": true
+                    "request": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\UnlockRequest": {
+                            "identifier": "createApp:permit-tracker",
+                            "advisory": true,
+                            "runUuid": null,
+                            "break": false
+                        }
+                    }
                 }
             }
         ]
@@ -1551,9 +1701,15 @@
         "calls": [
             {
                 "objectService.lockObject#1": {
-                    "identifier": "createApp:permit-tracker",
-                    "process": "buildiq.createApplication",
-                    "duration": 10,
+                    "request": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\LockRequest": {
+                            "runUuid": null,
+                            "nodeId": null,
+                            "identifier": "createApp:permit-tracker",
+                            "process": "buildiq.createApplication",
+                            "duration": 10
+                        }
+                    },
                     "advisory": true
                 }
             },
@@ -1613,8 +1769,14 @@
             },
             {
                 "objectService.unlockObject#1": {
-                    "identifier": "createApp:permit-tracker",
-                    "advisory": true
+                    "request": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\UnlockRequest": {
+                            "identifier": "createApp:permit-tracker",
+                            "advisory": true,
+                            "runUuid": null,
+                            "break": false
+                        }
+                    }
                 }
             }
         ]
@@ -1631,9 +1793,15 @@
         "calls": [
             {
                 "objectService.lockObject#1": {
-                    "identifier": "createApp:permit-tracker",
-                    "process": "buildiq.createApplication",
-                    "duration": 10,
+                    "request": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\LockRequest": {
+                            "runUuid": null,
+                            "nodeId": null,
+                            "identifier": "createApp:permit-tracker",
+                            "process": "buildiq.createApplication",
+                            "duration": 10
+                        }
+                    },
                     "advisory": true
                 }
             },
@@ -1682,8 +1850,14 @@
             },
             {
                 "objectService.unlockObject#1": {
-                    "identifier": "createApp:permit-tracker",
-                    "advisory": true
+                    "request": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\UnlockRequest": {
+                            "identifier": "createApp:permit-tracker",
+                            "advisory": true,
+                            "runUuid": null,
+                            "break": false
+                        }
+                    }
                 }
             }
         ]
@@ -1703,9 +1877,15 @@
         "calls": [
             {
                 "objectService.lockObject#1": {
-                    "identifier": "createApp:permit-tracker",
-                    "process": "buildiq.createApplication",
-                    "duration": 10,
+                    "request": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\LockRequest": {
+                            "runUuid": null,
+                            "nodeId": null,
+                            "identifier": "createApp:permit-tracker",
+                            "process": "buildiq.createApplication",
+                            "duration": 10
+                        }
+                    },
                     "advisory": true
                 }
             },
@@ -1860,8 +2040,14 @@
             },
             {
                 "objectService.unlockObject#1": {
-                    "identifier": "createApp:permit-tracker",
-                    "advisory": true
+                    "request": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\UnlockRequest": {
+                            "identifier": "createApp:permit-tracker",
+                            "advisory": true,
+                            "runUuid": null,
+                            "break": false
+                        }
+                    }
                 }
             }
         ]
@@ -1881,9 +2067,15 @@
         "calls": [
             {
                 "objectService.lockObject#1": {
-                    "identifier": "createApp:permit-tracker",
-                    "process": "buildiq.createApplication",
-                    "duration": 10,
+                    "request": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\LockRequest": {
+                            "runUuid": null,
+                            "nodeId": null,
+                            "identifier": "createApp:permit-tracker",
+                            "process": "buildiq.createApplication",
+                            "duration": 10
+                        }
+                    },
                     "advisory": true
                 }
             },
@@ -1990,8 +2182,14 @@
             },
             {
                 "objectService.unlockObject#1": {
-                    "identifier": "createApp:permit-tracker",
-                    "advisory": true
+                    "request": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\UnlockRequest": {
+                            "identifier": "createApp:permit-tracker",
+                            "advisory": true,
+                            "runUuid": null,
+                            "break": false
+                        }
+                    }
                 }
             }
         ]
@@ -2011,9 +2209,15 @@
         "calls": [
             {
                 "objectService.lockObject#1": {
-                    "identifier": "createApp:permit-tracker",
-                    "process": "buildiq.createApplication",
-                    "duration": 10,
+                    "request": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\LockRequest": {
+                            "runUuid": null,
+                            "nodeId": null,
+                            "identifier": "createApp:permit-tracker",
+                            "process": "buildiq.createApplication",
+                            "duration": 10
+                        }
+                    },
                     "advisory": true
                 }
             },
@@ -2195,8 +2399,14 @@
             },
             {
                 "objectService.unlockObject#1": {
-                    "identifier": "createApp:permit-tracker",
-                    "advisory": true
+                    "request": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\UnlockRequest": {
+                            "identifier": "createApp:permit-tracker",
+                            "advisory": true,
+                            "runUuid": null,
+                            "break": false
+                        }
+                    }
                 }
             }
         ]
@@ -2216,9 +2426,15 @@
         "calls": [
             {
                 "objectService.lockObject#1": {
-                    "identifier": "createApp:permit-tracker",
-                    "process": "buildiq.createApplication",
-                    "duration": 10,
+                    "request": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\LockRequest": {
+                            "runUuid": null,
+                            "nodeId": null,
+                            "identifier": "createApp:permit-tracker",
+                            "process": "buildiq.createApplication",
+                            "duration": 10
+                        }
+                    },
                     "advisory": true
                 }
             },
@@ -2525,8 +2741,14 @@
             },
             {
                 "objectService.unlockObject#1": {
-                    "identifier": "createApp:permit-tracker",
-                    "advisory": true
+                    "request": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\UnlockRequest": {
+                            "identifier": "createApp:permit-tracker",
+                            "advisory": true,
+                            "runUuid": null,
+                            "break": false
+                        }
+                    }
                 }
             }
         ]
@@ -2546,9 +2768,15 @@
         "calls": [
             {
                 "objectService.lockObject#1": {
-                    "identifier": "createApp:permit-tracker",
-                    "process": "buildiq.createApplication",
-                    "duration": 10,
+                    "request": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\LockRequest": {
+                            "runUuid": null,
+                            "nodeId": null,
+                            "identifier": "createApp:permit-tracker",
+                            "process": "buildiq.createApplication",
+                            "duration": 10
+                        }
+                    },
                     "advisory": true
                 }
             },
@@ -2872,8 +3100,14 @@
             },
             {
                 "objectService.unlockObject#1": {
-                    "identifier": "createApp:permit-tracker",
-                    "advisory": true
+                    "request": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\UnlockRequest": {
+                            "identifier": "createApp:permit-tracker",
+                            "advisory": true,
+                            "runUuid": null,
+                            "break": false
+                        }
+                    }
                 }
             }
         ]
@@ -2893,9 +3127,15 @@
         "calls": [
             {
                 "objectService.lockObject#1": {
-                    "identifier": "createApp:permit-tracker",
-                    "process": "buildiq.createApplication",
-                    "duration": 10,
+                    "request": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\LockRequest": {
+                            "runUuid": null,
+                            "nodeId": null,
+                            "identifier": "createApp:permit-tracker",
+                            "process": "buildiq.createApplication",
+                            "duration": 10
+                        }
+                    },
                     "advisory": true
                 }
             },
@@ -3147,8 +3387,14 @@
             },
             {
                 "objectService.unlockObject#1": {
-                    "identifier": "createApp:permit-tracker",
-                    "advisory": true
+                    "request": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\UnlockRequest": {
+                            "identifier": "createApp:permit-tracker",
+                            "advisory": true,
+                            "runUuid": null,
+                            "break": false
+                        }
+                    }
                 }
             }
         ]
@@ -3168,9 +3414,15 @@
         "calls": [
             {
                 "objectService.lockObject#1": {
-                    "identifier": "createApp:permit-tracker",
-                    "process": "buildiq.createApplication",
-                    "duration": 10,
+                    "request": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\LockRequest": {
+                            "runUuid": null,
+                            "nodeId": null,
+                            "identifier": "createApp:permit-tracker",
+                            "process": "buildiq.createApplication",
+                            "duration": 10
+                        }
+                    },
                     "advisory": true
                 }
             },
@@ -3432,8 +3684,14 @@
             },
             {
                 "objectService.unlockObject#1": {
-                    "identifier": "createApp:permit-tracker",
-                    "advisory": true
+                    "request": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\UnlockRequest": {
+                            "identifier": "createApp:permit-tracker",
+                            "advisory": true,
+                            "runUuid": null,
+                            "break": false
+                        }
+                    }
                 }
             }
         ]
@@ -3443,9 +3701,15 @@
         "calls": [
             {
                 "objectService.lockObject#1": {
-                    "identifier": "createApp:permit-tracker",
-                    "process": "buildiq.createApplication",
-                    "duration": 10,
+                    "request": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\LockRequest": {
+                            "runUuid": null,
+                            "nodeId": null,
+                            "identifier": "createApp:permit-tracker",
+                            "process": "buildiq.createApplication",
+                            "duration": 10
+                        }
+                    },
                     "advisory": true
                 }
             },
@@ -3588,8 +3852,14 @@
             },
             {
                 "objectService.unlockObject#1": {
-                    "identifier": "createApp:permit-tracker",
-                    "advisory": true
+                    "request": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\UnlockRequest": {
+                            "identifier": "createApp:permit-tracker",
+                            "advisory": true,
+                            "runUuid": null,
+                            "break": false
+                        }
+                    }
                 }
             }
         ]
@@ -3612,9 +3882,15 @@
         "calls": [
             {
                 "objectService.lockObject#1": {
-                    "identifier": "createApp:permit-tracker",
-                    "process": "buildiq.createApplication",
-                    "duration": 10,
+                    "request": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\LockRequest": {
+                            "runUuid": null,
+                            "nodeId": null,
+                            "identifier": "createApp:permit-tracker",
+                            "process": "buildiq.createApplication",
+                            "duration": 10
+                        }
+                    },
                     "advisory": true
                 }
             },
@@ -3898,8 +4174,14 @@
             },
             {
                 "objectService.unlockObject#1": {
-                    "identifier": "createApp:permit-tracker",
-                    "advisory": true
+                    "request": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\UnlockRequest": {
+                            "identifier": "createApp:permit-tracker",
+                            "advisory": true,
+                            "runUuid": null,
+                            "break": false
+                        }
+                    }
                 }
             }
         ]
@@ -3909,9 +4191,15 @@
         "calls": [
             {
                 "objectService.lockObject#1": {
-                    "identifier": "createApp:permit-tracker",
-                    "process": "buildiq.createApplication",
-                    "duration": 10,
+                    "request": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\LockRequest": {
+                            "runUuid": null,
+                            "nodeId": null,
+                            "identifier": "createApp:permit-tracker",
+                            "process": "buildiq.createApplication",
+                            "duration": 10
+                        }
+                    },
                     "advisory": true
                 }
             },
@@ -4054,8 +4342,14 @@
             },
             {
                 "objectService.unlockObject#1": {
-                    "identifier": "createApp:permit-tracker",
-                    "advisory": true
+                    "request": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\UnlockRequest": {
+                            "identifier": "createApp:permit-tracker",
+                            "advisory": true,
+                            "runUuid": null,
+                            "break": false
+                        }
+                    }
                 }
             },
             {
@@ -4083,9 +4377,15 @@
         "calls": [
             {
                 "objectService.lockObject#1": {
-                    "identifier": "createApp:permit-tracker",
-                    "process": "buildiq.createApplication",
-                    "duration": 10,
+                    "request": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\LockRequest": {
+                            "runUuid": null,
+                            "nodeId": null,
+                            "identifier": "createApp:permit-tracker",
+                            "process": "buildiq.createApplication",
+                            "duration": 10
+                        }
+                    },
                     "advisory": true
                 }
             },
@@ -4145,8 +4445,14 @@
             },
             {
                 "objectService.unlockObject#1": {
-                    "identifier": "createApp:permit-tracker",
-                    "advisory": true
+                    "request": {
+                        "object:OCA\\OpenRegister\\Service\\Object\\UnlockRequest": {
+                            "identifier": "createApp:permit-tracker",
+                            "advisory": true,
+                            "runUuid": null,
+                            "break": false
+                        }
+                    }
                 }
             },
             {

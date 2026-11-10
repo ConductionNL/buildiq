@@ -30,6 +30,8 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\LockRequest;
+use OCA\OpenRegister\Service\Object\UnlockRequest;
 use OCA\OpenRegister\Service\RegisterService;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -403,6 +405,10 @@ class ApplicationCreationGoldenTest extends TestCase {
 
 			if (method_exists($value, 'getId') === true) {
 				return $class . '#' . $value->getId();
+			}
+
+			if ($value instanceof LockRequest || $value instanceof UnlockRequest) {
+				return ['object:' . $class => $this->describe(value: get_object_vars($value))];
 			}
 
 			return 'object:' . $class;
