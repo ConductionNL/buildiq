@@ -39,24 +39,29 @@ use OCP\Settings\ISettings;
  * The real class lives in the openregister sibling app (ADR-040).
  */
 class GenericSettingsSection implements IIconSection {
+	protected string $sectionId;
+	protected string $name;
+	protected string $appId;
+	protected string $iconFile;
+	protected int $priority;
+
 	/**
-	 * Construct a settings section.
+	 * Construct the settings section.
 	 *
-	 * @param string $sectionId The section id.
-	 * @param string $name The display name.
-	 * @param string $appId The app id.
-	 * @param string $iconFile The icon file name.
-	 * @param int $priority The display priority.
-	 * @param IURLGenerator $urlGenerator The URL generator.
+	 * @param SettingsPlacement $placement    App id, section id and priority.
+	 * @param SectionAppearance $appearance   Display name and icon file.
+	 * @param IURLGenerator     $urlGenerator The URL generator.
 	 */
 	public function __construct(
-		protected string $sectionId,
-		protected string $name,
-		protected string $appId,
-		protected string $iconFile,
-		protected int $priority,
+		SettingsPlacement $placement,
+		SectionAppearance $appearance,
 		protected IURLGenerator $urlGenerator,
 	) {
+		$this->sectionId = $placement->sectionId;
+		$this->appId     = $placement->appId;
+		$this->priority  = $placement->priority;
+		$this->name      = $appearance->name;
+		$this->iconFile  = $appearance->iconFile;
 	}//end __construct()
 
 	/**
@@ -110,24 +115,26 @@ class GenericSettingsSection implements IIconSection {
  * `OCA\OpenRegister\AppHost\Settings\GenericAdminSettings`.
  */
 class GenericAdminSettings implements IDelegatedSettings {
+	protected string $appId;
+	protected string $sectionId;
+	protected int $priority;
+	protected IAppManager $appManager;
+	protected IInitialState $initialState;
+	protected ?IAppConfig $appConfig;
+
 	/**
-	 * Construct an admin settings panel.
+	 * Construct the admin settings panel.
 	 *
-	 * @param string $appId The app id.
-	 * @param string $sectionId The section id.
-	 * @param int $priority The display priority.
-	 * @param IAppManager $appManager The app manager.
-	 * @param IInitialState $initialState The initial state service.
-	 * @param IAppConfig $appConfig The app config service.
+	 * @param SettingsPlacement $placement App id, section id and priority.
+	 * @param AdminFormServices $services  App manager, initial state and app config.
 	 */
-	public function __construct(
-		protected string $appId,
-		protected string $sectionId,
-		protected int $priority,
-		protected IAppManager $appManager,
-		protected IInitialState $initialState,
-		protected IAppConfig $appConfig,
-	) {
+	public function __construct(SettingsPlacement $placement, AdminFormServices $services) {
+		$this->appId        = $placement->appId;
+		$this->sectionId    = $placement->sectionId;
+		$this->priority     = $placement->priority;
+		$this->appManager   = $services->appManager;
+		$this->initialState = $services->initialState;
+		$this->appConfig    = $services->appConfig;
 	}//end __construct()
 
 	/**
@@ -174,6 +181,55 @@ class GenericAdminSettings implements IDelegatedSettings {
 	public function getAuthorizedAppConfig(): array {
 		return [];
 	}//end getAuthorizedAppConfig()
+}//end class
+
+/**
+ * Stub: where a leaf app's settings surface sits.
+ */
+final class SettingsPlacement {
+	/**
+	 * @param string $appId     The app id.
+	 * @param string $sectionId The settings section id.
+	 * @param int    $priority  The display priority.
+	 */
+	public function __construct(
+		public readonly string $appId,
+		public readonly string $sectionId,
+		public readonly int $priority,
+	) {
+	}//end __construct()
+}//end class
+
+/**
+ * Stub: how a leaf app's settings section is shown.
+ */
+final class SectionAppearance {
+	/**
+	 * @param string $name     The display name.
+	 * @param string $iconFile The icon file name.
+	 */
+	public function __construct(
+		public readonly string $name,
+		public readonly string $iconFile,
+	) {
+	}//end __construct()
+}//end class
+
+/**
+ * Stub: the services the admin settings form renders through.
+ */
+final class AdminFormServices {
+	/**
+	 * @param IAppManager     $appManager   The app manager.
+	 * @param IInitialState   $initialState The initial state service.
+	 * @param IAppConfig|null $appConfig    The app config service.
+	 */
+	public function __construct(
+		public readonly IAppManager $appManager,
+		public readonly IInitialState $initialState,
+		public readonly ?IAppConfig $appConfig = null,
+	) {
+	}//end __construct()
 }//end class
 
 namespace OCA\OpenRegister\AppHost\Service;

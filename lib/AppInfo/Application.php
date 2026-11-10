@@ -54,6 +54,9 @@ use OCA\Buildiq\Service\PublishedApps;
 use OCA\Buildiq\Service\SettingsService;
 use OCA\Buildiq\Settings\AdminSettings;
 use OCA\OpenRegister\AppHost\Bootstrap;
+use OCA\OpenRegister\AppHost\Settings\AdminFormServices;
+use OCA\OpenRegister\AppHost\Settings\SectionAppearance;
+use OCA\OpenRegister\AppHost\Settings\SettingsPlacement;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
@@ -484,7 +487,7 @@ class Application extends App implements IBootstrap {
 		// 4. SettingsSection + AdminSettings — the admin settings section and
 		// panel referenced by info.xml `<settings>`. Both are one-line leaf
 		// subclasses of OpenRegister's GenericSettingsSection / GenericAdminSettings,
-		// whose constructors take scalar params (sectionId, name, icon, priority)
+		// whose constructors take settings value objects (placement, appearance)
 		// that are NOT autowireable — they MUST be bound by a service factory.
 		// Bootstrap::register() normally binds them, but when Bootstrap is not
 		// autoloadable at register() time (it lives in OCA\OpenRegister and that
@@ -499,23 +502,20 @@ class Application extends App implements IBootstrap {
 		$context->registerService(
 			SettingsSection::class,
 			static fn ($c): SettingsSection => new SettingsSection(
-				sectionId: self::APP_ID,
-				name: 'Buildiq',
-				appId: self::APP_ID,
-				iconFile: 'app-dark.svg',
-				priority: 75,
+				placement: new SettingsPlacement(appId: self::APP_ID, sectionId: self::APP_ID, priority: 75),
+				appearance: new SectionAppearance(name: 'Buildiq', iconFile: 'app-dark.svg'),
 				urlGenerator: $c->get(IURLGenerator::class)
 			)
 		);
 		$context->registerService(
 			AdminSettings::class,
 			static fn ($c): AdminSettings => new AdminSettings(
-				appId: self::APP_ID,
-				sectionId: self::APP_ID,
-				priority: 10,
-				appManager: $c->get(IAppManager::class),
-				initialState: $c->get(IInitialState::class),
-				appConfig: $c->get(IAppConfig::class)
+				placement: new SettingsPlacement(appId: self::APP_ID, sectionId: self::APP_ID, priority: 10),
+				services: new AdminFormServices(
+					appManager: $c->get(IAppManager::class),
+					initialState: $c->get(IInitialState::class),
+					appConfig: $c->get(IAppConfig::class)
+				)
 			)
 		);
 	}//end registerAdminSettings()
