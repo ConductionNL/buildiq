@@ -41,6 +41,7 @@ use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Service\Dmn\DecisionTableEvaluator as SharedEvaluator;
 use OCA\OpenRegister\Service\Dmn\DecisionTableStore;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -897,12 +898,12 @@ final class RuleEngineServiceTest extends TestCase {
 	 */
 	private function modelOrganisationB(): void {
 		$this->objectService->method('searchObjectsBySlug')->willReturnCallback(
-			function (string $registerSlug, string $schema, array $filters = [], bool $_rbac = true, bool $_multitenancy = true): array {
+			function (RegisterSchemaRef $target, array $filters = [], bool $_rbac = true, bool $_multitenancy = true): array {
 				if ($_multitenancy === true) {
-					throw new DoesNotExistException('searchObjectsBySlug: register slug not found in caller organisation: ' . $registerSlug);
+					throw new DoesNotExistException('searchObjectsBySlug: register slug not found in caller organisation: ' . $target->register);
 				}
 
-				return $this->loanFindAllResults($schema);
+				return $this->loanFindAllResults(schema: (string)$target->schema);
 			}
 		);
 		$this->objectService->method('searchObjects')->willReturnCallback(

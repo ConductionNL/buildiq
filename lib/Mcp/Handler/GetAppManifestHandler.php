@@ -25,6 +25,8 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Mcp\Handler;
 
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+
 /**
  * Handles the buildiq.getAppManifest tool invocation.
  *
@@ -106,9 +108,8 @@ class GetAppManifestHandler extends AbstractToolHandler {
 	 */
 	private function resolveApplicationBySlug(object $objectService, string $slug): array {
 		$routeResults = $objectService->searchObjectsBySlug(
-			self::REGISTER_SLUG,
-			'built-app-route',
-			['slug' => $slug],
+			target: new RegisterSchemaRef(register: self::REGISTER_SLUG, schema: 'built-app-route'),
+			filters: ['slug' => $slug],
 			_rbac: true,
 			_multitenancy: false
 		);

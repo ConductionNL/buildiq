@@ -31,6 +31,7 @@ use OCA\Buildiq\Controller\ExportsController;
 use OCA\Buildiq\Service\ExportJobService;
 use OCA\Buildiq\Tests\Unit\Support\FakeSlugResolver;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
@@ -136,19 +137,20 @@ final class ExportsControllerTest extends TestCase {
 	private function stubAuthorisedFallback(): void {
 		$objectService = new class() {
 			/**
-			 * @param string $register Register slug.
-			 * @param string $schema Schema slug.
-			 * @param array<string,mixed> $query Search parameters.
+			 * @param RegisterSchemaRef   $target        Register and schema slug.
+			 * @param array<string,mixed> $filters       Search parameters.
+			 * @param bool                $_rbac         Apply RBAC.
+			 * @param bool                $_multitenancy Apply multitenancy.
 			 *
 			 * @return array<int, array<string, mixed>>
 			 */
-			public function searchObjectsBySlug(string $register, string $schema, array $query): array {
+			public function searchObjectsBySlug(RegisterSchemaRef $target, array $filters = [], bool $_rbac = true, bool $_multitenancy = true): array {
 				// OpenRegister returns ObjectEntity OBJECTS here, not arrays, and keys the
 				// id as `id` (not `uuid`). This stub used to return a plain array keyed by
 				// `uuid`, which is why the controller's `is_array($app)` guard looked
 				// correct in tests while never once being true in production.
 				return [
-					new class($query['slug'] ?? 'hello-world') implements \JsonSerializable {
+					new class($filters['slug'] ?? 'hello-world') implements \JsonSerializable {
 
 						public function __construct(
 							private string $slug,
@@ -456,13 +458,14 @@ final class ExportsControllerTest extends TestCase {
 		// @self.owner is the caller (alice) — the owner fallback must authorise.
 		$objectService = new class() {
 			/**
-			 * @param string $register Register slug.
-			 * @param string $schema Schema slug.
-			 * @param array<string,mixed> $query Search parameters.
+			 * @param RegisterSchemaRef   $target        Register and schema slug.
+			 * @param array<string,mixed> $filters       Search parameters.
+			 * @param bool                $_rbac         Apply RBAC.
+			 * @param bool                $_multitenancy Apply multitenancy.
 			 *
 			 * @return array<int, object>
 			 */
-			public function searchObjectsBySlug(string $register, string $schema, array $query): array {
+			public function searchObjectsBySlug(RegisterSchemaRef $target, array $filters = [], bool $_rbac = true, bool $_multitenancy = true): array {
 				return [
 					new class implements \JsonSerializable {
 						/**

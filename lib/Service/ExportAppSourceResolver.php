@@ -29,6 +29,7 @@ namespace OCA\Buildiq\Service;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -143,9 +144,8 @@ class ExportAppSourceResolver {
 
 		try {
 			$results = $this->objectService->searchObjectsBySlug(
-				(string)$resolution->slug,
-				'applicationVersion',
-				['_limit' => 1000],
+				target: new RegisterSchemaRef(register: (string)$resolution->slug, schema: 'applicationVersion'),
+				filters: ['_limit' => 1000],
 				_rbac: false,
 				_multitenancy: false
 			);

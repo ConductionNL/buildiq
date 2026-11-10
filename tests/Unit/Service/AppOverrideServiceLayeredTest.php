@@ -31,6 +31,7 @@ namespace OCA\Buildiq\Tests\Unit\Service;
 use OCA\Buildiq\Service\AppOverrideService;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCP\App\IAppManager;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -82,7 +83,7 @@ class AppOverrideServiceLayeredTest extends TestCase {
 	 */
 	private function arrange(bool $allowUserOverrides, ?array $userDelta): void {
 		$this->objectService->method('searchObjectsBySlug')->willReturnCallback(
-			static function (string $registerSlug, string $schemaSlug, array $filters) use ($allowUserOverrides, $userDelta) {
+			static function (RegisterSchemaRef $target, array $filters) use ($allowUserOverrides, $userDelta) {
 				if (($filters['appType'] ?? null) === 'hybrid') {
 					return [
 						[
