@@ -37,6 +37,7 @@ use OCA\Buildiq\Service\RuleEvaluators;
 use OCA\Buildiq\Service\RuleObjectReader;
 use OCA\Buildiq\Service\RuleSetCacheManager;
 use OCA\Buildiq\Service\StoredDecisionTables;
+use OCA\Buildiq\Tests\Unit\Support\SaveCallShape;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -475,7 +476,9 @@ final class RuleEngineServiceTest extends TestCase {
 		$objectService = $this->createMock(ObjectServiceInterface::class);
 		$saved = [];
 		$objectService->method('saveObject')->willReturnCallback(
-			function (array $object, ...$rest) use (&$saved, $case): \OCA\OpenRegister\Db\ObjectEntity {
+			function (mixed ...$call) use (&$saved, $case): \OCA\OpenRegister\Db\ObjectEntity {
+				$object = ($call[0] ?? null);
+				$rest = array_slice(SaveCallShape::flatten(args: $call), 1);
 				$object['timestamp'] = '<timestamp>';
 				$object['(register buildiq)'] = in_array('buildiq', $rest, true);
 				$object['(schema rule-execution-log)'] = in_array('rule-execution-log', $rest, true);

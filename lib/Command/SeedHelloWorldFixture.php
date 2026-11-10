@@ -30,6 +30,8 @@ use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCP\AppFramework\Db\DoesNotExistException;
 use stdClass;
 use Symfony\Component\Console\Command\Command;
@@ -499,10 +501,8 @@ class SeedHelloWorldFixture extends Command {
 	 */
 	private function create(string $register, string $schema, array $data, ?string $uuid = null): ObjectEntityInterface {
 		return $this->objectService->saveObject(
-			$data,
-			register: $register,
-			schema: $schema,
-			uuid: $uuid,
+			object: $data,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: $uuid),
 			_rbac: false,
 			_multitenancy: false
 		);

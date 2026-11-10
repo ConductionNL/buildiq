@@ -56,6 +56,9 @@ namespace OCA\Buildiq\Service;
 
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Exception\ObjectExistsException;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
+use OCA\OpenRegister\Service\Object\SavePolicy;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -516,12 +519,13 @@ class AppChannelApplier {
 			// check-then-write would both race and drift.
 			$this->objectService->saveObject(
 				object: $blob,
-				register: $registerSlug,
-				schema: $kind,
-				uuid: $uuid,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: $registerSlug, schema: $kind),
+					uuid: $uuid,
+					policy: new SavePolicy(failIfExists: true)
+				),
 				_rbac: false,
-				_multitenancy: false,
-				failIfExists: true
+				_multitenancy: false
 			);
 
 			$report->recordCreated(channel: 'connectors', item: $item);

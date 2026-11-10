@@ -46,6 +46,7 @@ use OCA\Buildiq\Service\LocalApplicationRef;
 use OCA\Buildiq\Service\RepoSource;
 use OCA\Buildiq\Service\SkillChannelDelegate;
 use OCA\Buildiq\Tests\Unit\Support\FakeSlugResolver;
+use OCA\Buildiq\Tests\Unit\Support\SaveCallShape;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Flow;
@@ -305,33 +306,29 @@ class AppChannelApplierTest extends TestCase {
 
 		$this->objectService->expects(self::once())
 			->method('saveObject')
-			// Positional, because that is how the mock reports a named-argument
-			// call. The list must name EVERY parameter of
-			// ObjectServiceInterface::saveObject — the contract carries a
-			// `$_validation` parameter between `$silent` and `$uploadedFiles`
-			// that the pre-contract signature did not, and a list one short
-			// silently shifts `failIfExists` onto `$currentUser`, so the
-			// expectation never matches and the never-overwrite guarantee below
-			// stops being asserted.
 			->with(
-				self::anything(), // object
-				self::anything(), // extend
+				self::anything(),
 				// The RESOLVED slug, not a literal. This assertion used to read
 				// 'openconnector' and passed for as long as the code pinned the
 				// same word, which is what an assertion that copies the
 				// implementation buys you. The applier is now built with a
 				// migrated instance, so this is the one that reddens if the
 				// resolution is dropped.
-				'integriq',       // register
-				'source',         // schema
-				self::NIL_UUID,   // uuid
-				false,            // _rbac
-				false,            // _multitenancy
-				false,            // silent
-				true,             // _validation (contract default)
-				null,             // uploadedFiles
-				null,             // currentUser
-				true              // failIfExists — the never-overwrite guarantee
+				SaveCallShape::where(
+					expected: [
+						'register' => 'integriq',
+						'schema' => 'source',
+						'uuid' => self::NIL_UUID,
+						'silent' => false,
+						'_validation' => true,
+						'uploadedFiles' => null,
+						'currentUser' => null,
+						// The never-overwrite guarantee.
+						'failIfExists' => true,
+					]
+				),
+				false,
+				false
 			);
 
 		$report = $this->applier()->apply(
@@ -857,16 +854,19 @@ class AppChannelApplierTest extends TestCase {
 							&& $bindings[0]['sourceUuid'] === $sourceUuid;
 					}
 				),
-				self::anything(),
-				'buildiq',
-				'built-app',
-				$applicationUuid,
+				SaveCallShape::where(
+					expected: [
+						'register' => 'buildiq',
+						'schema' => 'built-app',
+						'uuid' => $applicationUuid,
+						'silent' => false,
+						'_validation' => true,
+						'uploadedFiles' => null,
+						'currentUser' => null,
+						'failIfExists' => false,
+					]
+				),
 				false,
-				false,
-				false,
-				true,
-				null,
-				null,
 				false
 			);
 
@@ -930,17 +930,20 @@ class AppChannelApplierTest extends TestCase {
 		$this->objectService->expects(self::once())->method('saveObject')
 			->with(
 				self::callback(static fn (array $object): bool => ($object['applicationSlug'] ?? null) === 'local-app'),
-				self::anything(),
-				'buildiq',
-				'buildAgent',
-				$uuid,
+				SaveCallShape::where(
+					expected: [
+						'register' => 'buildiq',
+						'schema' => 'buildAgent',
+						'uuid' => $uuid,
+						'silent' => false,
+						'_validation' => true,
+						'uploadedFiles' => null,
+						'currentUser' => null,
+						'failIfExists' => true,
+					]
+				),
 				false,
-				false,
-				false,
-				true,
-				null,
-				null,
-				true
+				false
 			);
 
 		$report = $this->applier()->apply(

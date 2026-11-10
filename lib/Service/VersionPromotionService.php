@@ -60,6 +60,8 @@ use OCA\Buildiq\Exception\PromotionFailedException;
 use OCA\Buildiq\Exception\VersionLockedException;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -399,8 +401,7 @@ class VersionPromotionService {
 
 			$this->objectService->saveObject(
 				object: $payload,
-				register: $targetRegisterSlug,
-				schema: $schemaIdHint,
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $targetRegisterSlug, schema: $schemaIdHint)),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -442,9 +443,10 @@ class VersionPromotionService {
 
 		$saved = $this->objectService->saveObject(
 			object: $target,
-			register: self::REGISTER_SLUG,
-			schema: self::APPLICATION_VERSION_SCHEMA,
-			uuid: $targetUuid,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::APPLICATION_VERSION_SCHEMA),
+				uuid: $targetUuid
+			),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -490,9 +492,10 @@ class VersionPromotionService {
 
 			$this->objectService->saveObject(
 				object: $current,
-				register: self::REGISTER_SLUG,
-				schema: self::APPLICATION_VERSION_SCHEMA,
-				uuid: $targetUuid,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::APPLICATION_VERSION_SCHEMA),
+					uuid: $targetUuid
+				),
 				_rbac: false,
 				_multitenancy: false
 			);

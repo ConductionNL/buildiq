@@ -31,6 +31,8 @@ use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -643,9 +645,10 @@ abstract class AbstractToolHandler {
 
 			$saved = $objectService->saveObject(
 				object: $payload,
-				register: self::REGISTER_SLUG,
-				schema: 'applicationVersion',
-				uuid: $versionUuid,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: 'applicationVersion'),
+					uuid: $versionUuid
+				)
 			);
 
 			return $this->toArray(item: $saved);

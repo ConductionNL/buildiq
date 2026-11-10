@@ -72,6 +72,8 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -491,8 +493,9 @@ class ApplicationsController extends Controller {
 					$versionArray['manifest'] = $manifest;
 					$this->objectService->saveObject(
 						object: $versionArray,
-						register: 'buildiq',
-						schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
+						options: new ObjectSaveOptions(
+							target: new ObjectFindTarget(register: 'buildiq', schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA)
+						)
 					);
 					return new JSONResponse(data: ['status' => 'ok', 'target' => 'version'], statusCode: Http::STATUS_OK);
 				}
@@ -504,8 +507,7 @@ class ApplicationsController extends Controller {
 				$applicationArray['productionVersion']['manifest'] = $manifest;
 				$this->objectService->saveObject(
 					object: $applicationArray,
-					register: 'buildiq',
-					schema: 'built-app'
+					options: new ObjectSaveOptions(target: new ObjectFindTarget(register: 'buildiq', schema: 'built-app'))
 				);
 				return new JSONResponse(data: ['status' => 'ok', 'target' => 'embedded'], statusCode: Http::STATUS_OK);
 			}
@@ -514,8 +516,7 @@ class ApplicationsController extends Controller {
 			$applicationArray['manifest'] = $manifest;
 			$this->objectService->saveObject(
 				object: $applicationArray,
-				register: 'buildiq',
-				schema: 'built-app'
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: 'buildiq', schema: 'built-app'))
 			);
 			return new JSONResponse(data: ['status' => 'ok', 'target' => 'application'], statusCode: Http::STATUS_OK);
 		} catch (Throwable $e) {
@@ -2162,8 +2163,7 @@ class ApplicationsController extends Controller {
 						'viewers' => [],
 					],
 				],
-				register: $ctx['register'],
-				schema: $ctx['applicationSchema']
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $ctx['register'], schema: $ctx['applicationSchema']))
 			);
 		} catch (Throwable $e) {
 			$this->logger->error('Buildiq: application save failed', ['exception' => $e->getMessage()]);
@@ -2228,8 +2228,9 @@ class ApplicationsController extends Controller {
 
 			$createdVersion = $this->objectService->saveObject(
 				object: $versionPayload,
-				register: ApplicationVersionService::REGISTER_SLUG,
-				schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: ApplicationVersionService::REGISTER_SLUG, schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA)
+				)
 			);
 			$versionData = ObjectRecord::toArray(object: $createdVersion);
 			$versionUuid = (string)($versionData['uuid'] ?? $versionData['id'] ?? '');
@@ -2253,9 +2254,10 @@ class ApplicationsController extends Controller {
 
 			$this->objectService->saveObject(
 				object: $application,
-				register: ApplicationVersionService::REGISTER_SLUG,
-				schema: ApplicationVersionService::APPLICATION_SCHEMA,
-				uuid: $appUuid
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: ApplicationVersionService::REGISTER_SLUG, schema: ApplicationVersionService::APPLICATION_SCHEMA),
+					uuid: $appUuid
+				)
 			);
 		} catch (Throwable $e) {
 			$this->logger->error(

@@ -31,6 +31,7 @@ use OCA\Buildiq\Service\DecisionTableEvaluator;
 use OCA\Buildiq\Service\DecisionTableShape;
 use OCA\Buildiq\Service\ExpressionEvaluator;
 use OCA\Buildiq\Service\StoredDecisionTables;
+use OCA\Buildiq\Tests\Unit\Support\SaveCallShape;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\Dmn\DecisionTableEvaluator as SharedEvaluator;
@@ -253,10 +254,7 @@ final class StoredDecisionTablesTest extends TestCase {
 
 		$this->objects->expects($this->once())->method('saveObject')->with(
 			$this->callback(static fn (array $row): bool => $row['key'] === 'buildiq.org-a.loan-eligibility' && $row['name'] === 'Loan eligibility'),
-			$this->anything(),
-			'decision-tables',
-			'decision-table',
-			'uuid-mine',
+			SaveCallShape::where(expected: ['register' => 'decision-tables', 'schema' => 'decision-table', 'uuid' => 'uuid-mine']),
 			false,
 			false
 		);

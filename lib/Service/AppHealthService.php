@@ -28,6 +28,8 @@ use DateTimeImmutable;
 use DateTimeZone;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -92,9 +94,8 @@ class AppHealthService {
 		foreach ($this->samples->sanitise(pages: $pages) as $sample) {
 			try {
 				$this->objectService->saveObject(
-					['applicationUuid' => $applicationUuid, 'versionUuid' => $versionUuid, 'windowStart' => $windowStart] + $sample,
-					register: self::REGISTER_SLUG,
-					schema: self::SCHEMA_SLUG,
+					object: ['applicationUuid' => $applicationUuid, 'versionUuid' => $versionUuid, 'windowStart' => $windowStart] + $sample,
+					options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::SCHEMA_SLUG)),
 					_rbac: false,
 					_multitenancy: false
 				);

@@ -53,6 +53,8 @@ use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -472,8 +474,7 @@ class GitHubAppSyncService {
 
 		$created = $this->objectService->saveObject(
 			object: $payload,
-			register: self::REGISTER_SLUG,
-			schema: self::VERSION_SCHEMA
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::VERSION_SCHEMA))
 		);
 		$versionData = ObjectRecord::serialised(object: $created);
 		$versionUuid = $this->uuidOf(object: $versionData);
@@ -1114,8 +1115,7 @@ class GitHubAppSyncService {
 		try {
 			$this->objectService->saveObject(
 				object: $version,
-				register: self::REGISTER_SLUG,
-				schema: self::VERSION_SCHEMA
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::VERSION_SCHEMA))
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning('Buildiq GitHub sync: could not stamp commitSha: ' . $e->getMessage());
@@ -1133,8 +1133,7 @@ class GitHubAppSyncService {
 		try {
 			$this->objectService->saveObject(
 				object: $application,
-				register: self::REGISTER_SLUG,
-				schema: self::APPLICATION_SCHEMA
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::APPLICATION_SCHEMA))
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning('Buildiq GitHub sync: could not persist linkage: ' . $e->getMessage());

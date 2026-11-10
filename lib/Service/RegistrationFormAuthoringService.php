@@ -48,6 +48,8 @@ namespace OCA\Buildiq\Service;
 use InvalidArgumentException;
 use OCA\Buildiq\Exception\FormDestinationRefusedException;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCP\IAppConfig;
 
 /**
@@ -135,8 +137,7 @@ class RegistrationFormAuthoringService {
 
 		$this->objectService->saveObject(
 			object: $form,
-			register: $this->registerSlug(),
-			schema: self::SCHEMA,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->registerSlug(), schema: self::SCHEMA))
 		);
 
 		return ['form' => $form, 'warnings' => [], 'findings' => $findings];

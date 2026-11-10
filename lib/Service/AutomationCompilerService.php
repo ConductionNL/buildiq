@@ -119,6 +119,8 @@ use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use Psr\Container\ContainerInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCP\App\IAppManager;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -1363,7 +1365,13 @@ class AutomationCompilerService {
 		$version['manifest'] = $manifest;
 
 		try {
-			$this->objectService->saveObject(object: $version, register: self::REGISTER_SLUG, schema: 'applicationVersion', uuid: $versionUuid);
+			$this->objectService->saveObject(
+				object: $version,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: 'applicationVersion'),
+					uuid: $versionUuid
+				)
+			);
 		} catch (Throwable $e) {
 			$this->logger->error(
 				'Buildiq: AutomationCompilerService failed to save schedules onto ApplicationVersion "' . $versionUuid . '": ' . $e->getMessage()
@@ -1399,12 +1407,18 @@ class AutomationCompilerService {
 				$id = (string)($existingRuleSet['id'] ?? $existingRuleSet['uuid'] ?? '');
 				$this->objectService->saveObject(
 					object: $ruleSet,
-					register: self::REGISTER_SLUG,
-					schema: RuleEngineService::RULE_SET_SCHEMA,
-					uuid: $id
+					options: new ObjectSaveOptions(
+						target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: RuleEngineService::RULE_SET_SCHEMA),
+						uuid: $id
+					)
 				);
 			} else {
-				$this->objectService->saveObject(object: $ruleSet, register: self::REGISTER_SLUG, schema: RuleEngineService::RULE_SET_SCHEMA);
+				$this->objectService->saveObject(
+					object: $ruleSet,
+					options: new ObjectSaveOptions(
+						target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: RuleEngineService::RULE_SET_SCHEMA)
+					)
+				);
 			}
 		} catch (Throwable $e) {
 			$this->logger->error('Buildiq: AutomationCompilerService failed to save RuleSet "' . $ruleSet['slug'] . '": ' . $e->getMessage());
@@ -1416,15 +1430,17 @@ class AutomationCompilerService {
 				$id = (string)($existingRule['id'] ?? $existingRule['uuid'] ?? '');
 				$this->objectService->saveObject(
 					object: $conditionActionRule,
-					register: self::REGISTER_SLUG,
-					schema: RuleEngineService::CONDITION_RULE_SCHEMA,
-					uuid: $id
+					options: new ObjectSaveOptions(
+						target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: RuleEngineService::CONDITION_RULE_SCHEMA),
+						uuid: $id
+					)
 				);
 			} else {
 				$this->objectService->saveObject(
 					object: $conditionActionRule,
-					register: self::REGISTER_SLUG,
-					schema: RuleEngineService::CONDITION_RULE_SCHEMA
+					options: new ObjectSaveOptions(
+						target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: RuleEngineService::CONDITION_RULE_SCHEMA)
+					)
 				);
 			}
 		} catch (Throwable $e) {

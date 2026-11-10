@@ -67,6 +67,8 @@ namespace OCA\Buildiq\Service;
 
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\Flow\FlowService;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -335,9 +337,10 @@ class FlowChannelProvisioner {
 		try {
 			$this->objectService->saveObject(
 				object: $application,
-				register: self::REGISTER_SLUG,
-				schema: self::APPLICATION_SCHEMA,
-				uuid: $applicationUuid,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::APPLICATION_SCHEMA),
+					uuid: $applicationUuid
+				),
 				_rbac: false,
 				_multitenancy: false
 			);

@@ -7,6 +7,7 @@ namespace OCA\Buildiq\Tests\Unit\Service;
 use DateTimeImmutable;
 use OCA\Buildiq\Service\AppHealthSamples;
 use OCA\Buildiq\Service\AppHealthService;
+use OCA\Buildiq\Tests\Unit\Support\SaveCallShape;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -18,7 +19,9 @@ final class AppHealthServiceTest extends TestCase {
 	public function testRecordStoresOneSamplePerPageWithTheServersIds(): void {
 		$saved = [];
 		$objects = $this->createMock(ObjectServiceInterface::class);
-		$objects->method('saveObject')->willReturnCallback(function (array $object, ...$args) use (&$saved) {
+		$objects->method('saveObject')->willReturnCallback(function (mixed ...$call) use (&$saved) {
+			$object = ($call[0] ?? null);
+			$args = array_slice(SaveCallShape::flatten(args: $call), 1);
 			$saved[] = ['object' => $object, 'args' => $args];
 			return $this->createMock(\OCA\OpenRegister\Contract\ObjectEntityInterface::class);
 		});

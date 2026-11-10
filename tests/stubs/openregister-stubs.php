@@ -2310,13 +2310,19 @@ namespace OCA\OpenRegister\Service {
 			}//end findAll()
 
 			/**
-			 * @param array<string, mixed>|\OCA\OpenRegister\Db\ObjectEntity $object
-			 * @param array<int, string>|null $extend
-			 * @param array<string, mixed>|null $uploadedFiles
+			 * @param array<string, mixed>|\OCA\OpenRegister\Db\ObjectEntity $object        The object payload.
+			 * @param \OCA\OpenRegister\Service\Object\ObjectSaveOptions    $options       Where, as what and by whom.
+			 * @param bool                                                     $_rbac         Apply RBAC.
+			 * @param bool                                                     $_multitenancy Apply multitenancy.
 			 *
 			 * @return \OCA\OpenRegister\Db\ObjectEntity
 			 */
-			public function saveObject(array|\OCA\OpenRegister\Db\ObjectEntity $object, ?array $extend = [], \OCA\OpenRegister\Db\Register|string|int|null $register = null, \OCA\OpenRegister\Db\Schema|string|int|null $schema = null, ?string $uuid = null, bool $_rbac = true, bool $_multitenancy = true, bool $silent = false, ?array $uploadedFiles = null, ?\OCP\IUser $currentUser = null, bool $failIfExists = false): \OCA\OpenRegister\Db\ObjectEntity {
+			public function saveObject(
+				array|\OCA\OpenRegister\Db\ObjectEntity $object,
+				\OCA\OpenRegister\Service\Object\ObjectSaveOptions $options = new \OCA\OpenRegister\Service\Object\ObjectSaveOptions(),
+				bool $_rbac = true,
+				bool $_multitenancy = true
+			): \OCA\OpenRegister\Db\ObjectEntity {
 				return new \OCA\OpenRegister\Db\ObjectEntity();
 			}//end saveObject()
 
@@ -3774,4 +3780,93 @@ namespace OCA\OpenRegister\Service\Dmn {
 			}
 		}
 	}
+}
+
+namespace OCA\OpenRegister\Service\Object {
+
+	if (class_exists(ObjectFindTarget::class, autoload: false) === false) {
+		/**
+		 * Stub ObjectFindTarget: the register and schema an object lives in.
+		 */
+		final class ObjectFindTarget {
+
+			/**
+			 * @param \OCA\OpenRegister\Db\Register|string|int|null $register Register.
+			 * @param \OCA\OpenRegister\Db\Schema|string|int|null   $schema   Schema.
+			 */
+			public function __construct(
+				public readonly \OCA\OpenRegister\Db\Register|string|int|null $register=null,
+				public readonly \OCA\OpenRegister\Db\Schema|string|int|null $schema=null,
+			) {
+			}//end __construct()
+		}//end class
+	}//end if
+
+	if (class_exists(SavePolicy::class, autoload: false) === false) {
+		/**
+		 * Stub SavePolicy: how a save behaves.
+		 */
+		final class SavePolicy {
+
+			/**
+			 * @param bool $silent        Skip events.
+			 * @param bool $validation    Validate against the schema.
+			 * @param bool $failIfExists  Refuse to overwrite an existing uuid.
+			 * @param bool $dedupOverride Bypass deduplication.
+			 */
+			public function __construct(
+				public readonly bool $silent=false,
+				public readonly bool $validation=true,
+				public readonly bool $failIfExists=false,
+				public readonly bool $dedupOverride=false,
+			) {
+			}//end __construct()
+		}//end class
+	}//end if
+
+	if (class_exists(SaveActor::class, autoload: false) === false) {
+		/**
+		 * Stub SaveActor: who a save is made by and for.
+		 */
+		final class SaveActor {
+
+			/**
+			 * @param \OCP\IUser|null $currentUser The acting user.
+			 * @param string|null     $owner       The owner to stamp.
+			 * @param bool            $unowned     Save without an owner.
+			 */
+			public function __construct(
+				public readonly ?\OCP\IUser $currentUser=null,
+				public readonly ?string $owner=null,
+				public readonly bool $unowned=false,
+			) {
+			}//end __construct()
+		}//end class
+	}//end if
+
+	if (class_exists(ObjectSaveOptions::class, autoload: false) === false) {
+		/**
+		 * Stub ObjectSaveOptions: where an object is saved, as what and by whom.
+		 */
+		final class ObjectSaveOptions {
+
+			/**
+			 * @param ObjectFindTarget          $target        Register and schema.
+			 * @param string|null               $uuid          The uuid to save under.
+			 * @param array<int, string>|null   $extend        Relations to extend.
+			 * @param array<string, mixed>|null $uploadedFiles Uploaded files.
+			 * @param SavePolicy                $policy        Save behaviour.
+			 * @param SaveActor                 $actor         Acting user and owner.
+			 */
+			public function __construct(
+				public readonly ObjectFindTarget $target=new ObjectFindTarget(),
+				public readonly ?string $uuid=null,
+				public readonly ?array $extend=[],
+				public readonly ?array $uploadedFiles=null,
+				public readonly SavePolicy $policy=new SavePolicy(),
+				public readonly SaveActor $actor=new SaveActor(),
+			) {
+			}//end __construct()
+		}//end class
+	}//end if
 }

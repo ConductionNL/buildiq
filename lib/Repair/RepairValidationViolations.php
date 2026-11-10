@@ -42,6 +42,8 @@ namespace OCA\Buildiq\Repair;
 use OCA\Buildiq\Service\AppOverrideService;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
 use Psr\Log\LoggerInterface;
@@ -218,9 +220,10 @@ class RepairValidationViolations implements IRepairStep {
 		try {
 			$this->objectService->saveObject(
 				object: $row,
-				register: AppOverrideService::REGISTER_SLUG,
-				schema: self::SCHEMA_OF[$counter],
-				uuid: $uuid,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: AppOverrideService::REGISTER_SLUG, schema: self::SCHEMA_OF[$counter]),
+					uuid: $uuid
+				),
 				_rbac: false,
 				_multitenancy: false
 			);

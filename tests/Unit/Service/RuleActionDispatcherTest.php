@@ -29,6 +29,7 @@ namespace OCA\Buildiq\Tests\Unit\Service;
 
 use OCA\Buildiq\Service\JobOwnerImpersonator;
 use OCA\Buildiq\Service\RuleActionDispatcher;
+use OCA\Buildiq\Tests\Unit\Support\SaveCallShape;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\Http\Client\IClient;
@@ -150,6 +151,7 @@ final class RuleActionDispatcherTest extends TestCase {
 			->method('saveObject')
 			->willReturnCallback(
 				function (...$args) use (&$captured) {
+					$args = SaveCallShape::flatten(args: $args);
 					$captured = $args;
 					$entity = new \OCA\OpenRegister\Db\ObjectEntity();
 					$entity->setUuid('new-1');

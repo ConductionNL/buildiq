@@ -50,6 +50,8 @@ use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\RegisterService;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -464,9 +466,10 @@ class ApplicationVersionService {
 		$versionData['status'] = 'published';
 		$this->objectService->saveObject(
 			object: $versionData,
-			register: self::REGISTER_SLUG,
-			schema: self::APPLICATION_VERSION_SCHEMA,
-			uuid: $versionUuid
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::APPLICATION_VERSION_SCHEMA),
+				uuid: $versionUuid
+			)
 		);
 
 		// 3. Move the single production pointer (single-production invariant).
@@ -474,9 +477,10 @@ class ApplicationVersionService {
 		$applicationData['productionVersion'] = $versionUuid;
 		$this->objectService->saveObject(
 			object: $applicationData,
-			register: self::REGISTER_SLUG,
-			schema: self::APPLICATION_SCHEMA,
-			uuid: $applicationUuid
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::APPLICATION_SCHEMA),
+				uuid: $applicationUuid
+			)
 		);
 
 		// 4. Demote the previous production. The single-production invariant is
@@ -499,9 +503,10 @@ class ApplicationVersionService {
 					$previousData['status'] = 'archived';
 					$this->objectService->saveObject(
 						object: $previousData,
-						register: self::REGISTER_SLUG,
-						schema: self::APPLICATION_VERSION_SCHEMA,
-						uuid: $previousProduction
+						options: new ObjectSaveOptions(
+							target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::APPLICATION_VERSION_SCHEMA),
+							uuid: $previousProduction
+						)
 					);
 					$archived = $previousProduction;
 				}
@@ -1025,7 +1030,10 @@ class ApplicationVersionService {
 		unset($payload['id'], $payload['uuid'], $payload['@self'], $payload['provenance']);
 		$payload['versionUuid'] = $newVersionUuid;
 
-		$created = $this->objectService->saveObject(object: $payload, register: self::REGISTER_SLUG, schema: 'automation');
+		$created = $this->objectService->saveObject(
+			object: $payload,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: 'automation'))
+		);
 		$createdArray = ObjectRecord::toArray(object: $created);
 
 		// Prefer the entity's own uuid (NC Entity's magic getUuid() — not
@@ -1059,7 +1067,10 @@ class ApplicationVersionService {
 		$provenance = $this->automationCompiler->apply(automation: $createdArray, plan: $plan, priorProvenance: []);
 
 		$createdArray['provenance'] = $provenance;
-		$this->objectService->saveObject(object: $createdArray, register: self::REGISTER_SLUG, schema: 'automation', uuid: $newUuid);
+		$this->objectService->saveObject(
+			object: $createdArray,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: 'automation'), uuid: $newUuid)
+		);
 	}//end cloneOneAutomation()
 
 	/**

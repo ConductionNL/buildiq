@@ -54,6 +54,8 @@ use OCA\Buildiq\Service\PageLayoutParts;
 use OCA\Buildiq\Service\PageLayoutPresenter;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\Integration\IntegrationProvider;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -407,8 +409,7 @@ final class PageLayoutLeafProvider implements IntegrationProvider {
 		try {
 			$this->objectService->saveObject(
 				object: $layer,
-				register: $this->registerSlug(),
-				schema: self::SCHEMA,
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->registerSlug(), schema: self::SCHEMA))
 			);
 		} catch (\Throwable $e) {
 			$this->logger->warning(

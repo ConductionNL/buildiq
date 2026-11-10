@@ -44,6 +44,8 @@ namespace OCA\Buildiq\Repair;
 
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
 use Psr\Log\LoggerInterface;
@@ -230,8 +232,7 @@ class PopulateApplicationPermissions implements IRepairStep {
 			// the Anonymous repair-step caller.
 			$this->objectService->saveObject(
 				object: $application,
-				register: 'buildiq',
-				schema: 'built-app',
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: 'buildiq', schema: 'built-app')),
 				_rbac: false,
 				_multitenancy: false
 			);

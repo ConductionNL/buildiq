@@ -33,6 +33,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\Repair;
 
 use OCA\Buildiq\Repair\RepairValidationViolations;
+use OCA\Buildiq\Tests\Unit\Support\SaveCallShape;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\Migration\IOutput;
@@ -120,7 +121,8 @@ class RepairValidationViolationsTest extends TestCase {
 			}
 		);
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (array $object, ?array $extend = [], mixed $register = null, mixed $schema = null, mixed $uuid = null, bool $rbac = true, bool $multitenancy = true): ObjectEntityInterface {
+			function (mixed ...$call): ObjectEntityInterface {
+				[$object, $extend, $register, $schema, $uuid, $rbac, $multitenancy] = SaveCallShape::flatten(args: $call);
 				$this->assertSame([false, false], [$rbac, $multitenancy], 'saveObject runs without RBAC and multitenancy');
 				$this->saves[] = [$schema, $uuid, $object, $register];
 				$this->store[(string)$schema][(string)$uuid] = $object;
@@ -303,10 +305,7 @@ class RepairValidationViolationsTest extends TestCase {
 		$objectService->method('findAll')->willReturnCallback(static fn (array $config): array => ($config['filters']['schema'] === 'built-app' ? [$entity] : []));
 		$objectService->expects($this->once())->method('saveObject')->with(
 			['slug' => 'talk', 'appType' => 'hybrid', 'baseRef' => ['kind' => 'fleet-app', 'id' => 'talk']],
-			$this->anything(),
-			'buildiq',
-			'built-app',
-			'a-entity'
+			SaveCallShape::where(expected: ['register' => 'buildiq', 'schema' => 'built-app', 'uuid' => 'a-entity'])
 		)->willReturn($entity);
 
 		$this->runStep(objectService: $objectService);

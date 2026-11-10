@@ -36,6 +36,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\Command;
 
 use OCA\Buildiq\Command\SeedHelloWorldFixture;
+use OCA\Buildiq\Tests\Unit\Support\SaveCallShape;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -194,13 +195,8 @@ class SeedHelloWorldFixtureTest extends TestCase {
 		);
 
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (
-				array|ObjectEntity $object,
-				?array $extend = [],
-				Register|string|int|null $register = null,
-				Schema|string|int|null $schema = null,
-				?string $uuid = null,
-			): ObjectEntity {
+			function (mixed ...$call): ObjectEntity {
+				[$object, $extend, $register, $schema, $uuid] = SaveCallShape::flatten(args: $call);
 				// The identifier the store hands back: the caller-supplied one
 				// when the caller minted it, otherwise a deterministic stand-in
 				// so a test can name it.

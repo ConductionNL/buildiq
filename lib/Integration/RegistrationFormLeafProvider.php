@@ -43,6 +43,8 @@ namespace OCA\Buildiq\Integration;
 use OCA\Buildiq\Service\RegistrationFormPresenter;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\Integration\IntegrationProvider;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCP\IAppConfig;
 use OCP\IUserSession;
 use RuntimeException;
@@ -320,8 +322,7 @@ final class RegistrationFormLeafProvider implements IntegrationProvider {
 
 		$saved = $this->objectService->saveObject(
 			object: $draft,
-			register: $this->registerSlug(),
-			schema: self::SCHEMA_DRAFT,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->registerSlug(), schema: self::SCHEMA_DRAFT))
 		);
 
 		$created = $saved->getObject();

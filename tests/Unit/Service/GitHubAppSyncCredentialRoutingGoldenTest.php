@@ -30,6 +30,7 @@ use OCA\Buildiq\Service\GitHub\PushTarget;
 use OCA\Buildiq\Service\GitHubAppSyncService;
 use OCA\Buildiq\Service\GitHubCatalogService;
 use OCA\Buildiq\Service\RegisterStore;
+use OCA\Buildiq\Tests\Unit\Support\SaveCallShape;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Register;
@@ -215,6 +216,7 @@ class GitHubAppSyncCredentialRoutingGoldenTest extends TestCase {
 		);
 		$objects->method('saveObject')->willReturnCallback(
 			function (...$args) use (&$trace): ObjectEntityInterface {
+				$args = SaveCallShape::flatten(args: $args);
 				$trace['saved'][] = ['object' => $args[0], 'target' => array_values(array_filter(array_slice($args, 1), 'is_string'))];
 				return $this->createMock(ObjectEntityInterface::class);
 			}

@@ -29,6 +29,7 @@ namespace OCA\Buildiq\Tests\Unit\Service;
 use OCA\Buildiq\Service\DocumentGenerationService;
 use OCA\Buildiq\Service\JobOwnerImpersonator;
 use OCA\Buildiq\Service\RuleActionDispatcher;
+use OCA\Buildiq\Tests\Unit\Support\SaveCallShape;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -296,10 +297,7 @@ final class DocumentGenerationServiceTest extends TestCase {
 			->method('saveObject')
 			->with(
 				$this->equalTo([DocumentGenerationService::ATTACHMENT_FIELD => ['ref' => '42']]),
-				$this->equalTo([]),
-				$this->equalTo('buildiq'),
-				$this->equalTo('permit'),
-				$this->equalTo('obj-uuid-9')
+				SaveCallShape::where(expected: ['extend' => [], 'register' => 'buildiq', 'schema' => 'permit', 'uuid' => 'obj-uuid-9'])
 			);
 
 		$result = $this->service->generate(self::AUTOMATION, ['templateId' => 'tpl-1', 'output' => ['attach']], 'permit', 'obj-uuid-9');

@@ -38,6 +38,7 @@ use OCA\Buildiq\Service\ManifestResolverService;
 use OCA\Buildiq\Service\PermissionResolver;
 use OCA\Buildiq\Service\RegisterStore;
 use OCA\Buildiq\Service\RepoSource;
+use OCA\Buildiq\Tests\Unit\Support\SaveCallShape;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -314,13 +315,8 @@ class CreateFromTemplateTest extends TestCase {
 			: $this->objectService->expects($matcher)->method('saveObject');
 
 		$stub->willReturnCallback(
-			function (
-				array $object,
-				?array $extend = [],
-				string|int|null $register = null,
-				string|int|null $schema = null,
-				?string $uuid = null,
-			) use (&$calls): ObjectEntity {
+			function (mixed ...$call) use (&$calls): ObjectEntity {
+				[$object, $extend, $register, $schema, $uuid] = SaveCallShape::flatten(args: $call);
 				$calls[] = [
 					'object' => $object,
 					'register' => $register,
@@ -846,13 +842,8 @@ class CreateFromTemplateTest extends TestCase {
 
 		$seen = 0;
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (
-				array $object,
-				?array $extend = [],
-				string|int|null $register = null,
-				string|int|null $schema = null,
-				?string $uuid = null,
-			) use (&$seen): ObjectEntity {
+			function (mixed ...$call) use (&$seen): ObjectEntity {
+				[$object, $extend, $register, $schema, $uuid] = SaveCallShape::flatten(args: $call);
 				$seen++;
 				if ($schema === 'applicationVersion') {
 					throw new \RuntimeException('OR unavailable');
@@ -891,13 +882,8 @@ class CreateFromTemplateTest extends TestCase {
 
 		$calls = [];
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (
-				array $object,
-				?array $extend = [],
-				string|int|null $register = null,
-				string|int|null $schema = null,
-				?string $uuid = null,
-			) use (&$calls): ObjectEntity {
+			function (mixed ...$call) use (&$calls): ObjectEntity {
+				[$object, $extend, $register, $schema, $uuid] = SaveCallShape::flatten(args: $call);
 				$calls[] = $schema;
 				if ($schema === 'applicationVersion') {
 					// An entity carrying neither `uuid` nor `id`.

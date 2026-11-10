@@ -52,6 +52,8 @@ namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Exception\WizardCreationException;
 use OCA\Buildiq\Support\ObjectRecord;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use OCA\OpenRegister\Service\RegisterService;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -286,8 +288,9 @@ class ApplicationCreationService {
 		try {
 			$created = $this->store->objectService->saveObject(
 				object: $applicationPayload,
-				register: ApplicationVersionService::REGISTER_SLUG,
-				schema: ApplicationVersionService::APPLICATION_SCHEMA
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: ApplicationVersionService::REGISTER_SLUG, schema: ApplicationVersionService::APPLICATION_SCHEMA)
+				)
 			);
 			$appData = ObjectRecord::toArray(object: $created);
 			return (string)($appData['id'] ?? $appData['uuid'] ?? '');
@@ -391,8 +394,9 @@ class ApplicationCreationService {
 		try {
 			$createdVersion = $this->store->objectService->saveObject(
 				object: $versionPayload,
-				register: ApplicationVersionService::REGISTER_SLUG,
-				schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: ApplicationVersionService::REGISTER_SLUG, schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA)
+				)
 			);
 			$versionData = ObjectRecord::toArray(object: $createdVersion);
 			$versionUuid = (string)($versionData['id'] ?? $versionData['uuid'] ?? '');
@@ -490,9 +494,10 @@ class ApplicationCreationService {
 
 			$this->store->objectService->saveObject(
 				object: $fullPayload,
-				register: ApplicationVersionService::REGISTER_SLUG,
-				schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA,
-				uuid: $currentUuid
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: ApplicationVersionService::REGISTER_SLUG, schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA),
+					uuid: $currentUuid
+				)
 			);
 		} catch (Throwable $e) {
 			$this->logger->error(
@@ -536,9 +541,10 @@ class ApplicationCreationService {
 
 			$this->store->objectService->saveObject(
 				object: $fullPayload,
-				register: ApplicationVersionService::REGISTER_SLUG,
-				schema: ApplicationVersionService::APPLICATION_SCHEMA,
-				uuid: $state['applicationUuid']
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: ApplicationVersionService::REGISTER_SLUG, schema: ApplicationVersionService::APPLICATION_SCHEMA),
+					uuid: $state['applicationUuid']
+				)
 			);
 		} catch (Throwable $e) {
 			$this->logger->error(
@@ -571,8 +577,9 @@ class ApplicationCreationService {
 		try {
 			$createdRoute = $this->store->objectService->saveObject(
 				object: ['slug' => $plan['slug'], 'applicationUuid' => $state['applicationUuid']],
-				register: ApplicationVersionService::REGISTER_SLUG,
-				schema: self::BUILT_APP_ROUTE_SCHEMA
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: ApplicationVersionService::REGISTER_SLUG, schema: self::BUILT_APP_ROUTE_SCHEMA)
+				)
 			);
 			$routeData = ObjectRecord::toArray(object: $createdRoute);
 			$routeUuid = (string)($routeData['id'] ?? $routeData['uuid'] ?? '');

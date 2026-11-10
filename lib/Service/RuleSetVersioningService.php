@@ -35,6 +35,8 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
+use OCA\OpenRegister\Service\Object\ObjectSaveOptions;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
@@ -127,8 +129,9 @@ class RuleSetVersioningService {
 		try {
 			$this->objectService->saveObject(
 				object: $ruleSet,
-				register: RuleEngineService::REGISTER_SLUG,
-				schema: RuleEngineService::RULE_SET_SCHEMA
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: RuleEngineService::REGISTER_SLUG, schema: RuleEngineService::RULE_SET_SCHEMA)
+				)
 			);
 		} catch (Throwable $e) {
 			$this->logger->error(

@@ -32,6 +32,7 @@ use OCA\Buildiq\Service\AutomationWriteService;
 use OCA\Buildiq\Service\CallerContext;
 use OCA\Buildiq\Service\ConditionActionExecutor;
 use OCA\Buildiq\Service\PermissionResolver;
+use OCA\Buildiq\Tests\Unit\Support\SaveCallShape;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
@@ -660,6 +661,7 @@ final class AutomationsControllerTest extends TestCase {
 		$this->objectService->expects($this->once())
 			->method('saveObject')
 			->willReturnCallback(function (...$arguments) use (&$written): ObjectEntity {
+				$arguments = SaveCallShape::flatten(args: $arguments);
 				$written = $arguments[0];
 				return $this->buildEntity(['id' => 'a-1']);
 			});
