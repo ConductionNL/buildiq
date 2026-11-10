@@ -3618,6 +3618,47 @@ namespace OCA\OpenRegister\AppHost\Store {
 
 namespace OCA\OpenRegister\AppHost\Settings {
 
+	if (class_exists(SettingsPlacement::class, autoload: false) === false) {
+		/**
+		 * Stub SettingsPlacement — where a leaf settings surface sits.
+		 */
+		final class SettingsPlacement {
+			public function __construct(
+				public readonly string $appId,
+				public readonly string $sectionId,
+				public readonly int $priority,
+			) {
+			}
+		}
+	}
+
+	if (class_exists(SectionAppearance::class, autoload: false) === false) {
+		/**
+		 * Stub SectionAppearance — how a leaf settings section is shown.
+		 */
+		final class SectionAppearance {
+			public function __construct(
+				public readonly string $name,
+				public readonly string $iconFile,
+			) {
+			}
+		}
+	}
+
+	if (class_exists(AdminFormServices::class, autoload: false) === false) {
+		/**
+		 * Stub AdminFormServices — the services the admin form renders through.
+		 */
+		final class AdminFormServices {
+			public function __construct(
+				public readonly mixed $appManager = null,
+				public readonly mixed $initialState = null,
+				public readonly mixed $appConfig = null,
+			) {
+			}
+		}
+	}
+
 	if (class_exists(GenericAdminSettings::class, autoload: false) === false) {
 		/**
 		 * Stub GenericAdminSettings — Buildiq's AdminSettings extends this.
@@ -3626,22 +3667,26 @@ namespace OCA\OpenRegister\AppHost\Settings {
 		 */
 		class GenericAdminSettings implements \OCP\Settings\IDelegatedSettings {
 
+			protected readonly string $appId;
+			protected readonly string $sectionId;
+			protected readonly int $priority;
+			protected readonly mixed $appManager;
+			protected readonly mixed $initialState;
+			protected readonly mixed $appConfig;
+
 			/**
 			 * Constructor mirroring the real engine signature.
 			 *
-			 * @param string $appId Leaf app id.
-			 * @param string $sectionId Section id.
-			 * @param int $priority Priority.
-			 * @param mixed $appManager App manager.
-			 * @param mixed $initialState Initial state service.
+			 * @param SettingsPlacement|null $placement App id, section id and priority.
+			 * @param AdminFormServices|null $services  App manager, initial state and app config.
 			 */
-			public function __construct(
-				protected readonly string $appId = '',
-				protected readonly string $sectionId = '',
-				protected readonly int $priority = 10,
-				protected readonly mixed $appManager = null,
-				protected readonly mixed $initialState = null,
-			) {
+			public function __construct(?SettingsPlacement $placement = null, ?AdminFormServices $services = null) {
+				$this->appId        = $placement?->appId ?? '';
+				$this->sectionId    = $placement?->sectionId ?? '';
+				$this->priority     = $placement?->priority ?? 10;
+				$this->appManager   = $services?->appManager;
+				$this->initialState = $services?->initialState;
+				$this->appConfig    = $services?->appConfig;
 			}
 
 			/**
@@ -3687,24 +3732,29 @@ namespace OCA\OpenRegister\AppHost\Settings {
 		 */
 		class GenericSettingsSection implements \OCP\Settings\IIconSection {
 
+			protected readonly string $sectionId;
+			protected readonly string $name;
+			protected readonly string $appId;
+			protected readonly string $iconFile;
+			protected readonly int $priority;
+
 			/**
 			 * Constructor mirroring the real engine signature.
 			 *
-			 * @param string $sectionId Section id.
-			 * @param string $name Display name.
-			 * @param string $appId Owning app id.
-			 * @param string $iconFile Icon file.
-			 * @param int $priority Priority.
-			 * @param mixed $urlGenerator URL generator.
+			 * @param SettingsPlacement|null $placement    App id, section id and priority.
+			 * @param SectionAppearance|null $appearance   Display name and icon file.
+			 * @param mixed                  $urlGenerator URL generator.
 			 */
 			public function __construct(
-				protected readonly string $sectionId = '',
-				protected readonly string $name = '',
-				protected readonly string $appId = '',
-				protected readonly string $iconFile = '',
-				protected readonly int $priority = 75,
+				?SettingsPlacement $placement = null,
+				?SectionAppearance $appearance = null,
 				protected readonly mixed $urlGenerator = null,
 			) {
+				$this->sectionId = $placement?->sectionId ?? '';
+				$this->appId     = $placement?->appId ?? '';
+				$this->priority  = $placement?->priority ?? 75;
+				$this->name      = $appearance?->name ?? '';
+				$this->iconFile  = $appearance?->iconFile ?? '';
 			}
 
 			/**
