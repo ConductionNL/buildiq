@@ -54,6 +54,7 @@ use OCA\Buildiq\Service\PublishedApps;
 use OCA\Buildiq\Service\SettingsService;
 use OCA\Buildiq\Settings\AdminSettings;
 use OCA\OpenRegister\AppHost\Bootstrap;
+use OCA\OpenRegister\AppHost\LeafAdoption;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
@@ -248,13 +249,15 @@ class Application extends App implements IBootstrap {
 
 		if (class_exists(Bootstrap::class) === true) {
 			Bootstrap::register(
-				$context,
-				self::APP_ID,
-				[
-					'namespace' => 'OCA\\Buildiq',
-					'sectionName' => 'Buildiq',
-					'observability' => true,
-				]
+				context: $context,
+				adoption: new LeafAdoption(
+					appId: self::APP_ID,
+					options: [
+						'namespace' => 'OCA\\Buildiq',
+						'sectionName' => 'Buildiq',
+						'observability' => true,
+					]
+				)
 			);
 		}
 
