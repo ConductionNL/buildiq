@@ -52,6 +52,7 @@ namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Exception\WizardCreationException;
 use OCA\Buildiq\Support\ObjectRecord;
+use OCA\OpenRegister\Service\Object\ObjectDeletion;
 use OCA\OpenRegister\Service\RegisterService;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -999,7 +1000,7 @@ class ApplicationCreationService {
 			}
 
 			try {
-				$this->store->objectService->deleteObject(uuid: $uuid);
+				$this->store->objectService->deleteObject(deletion: new ObjectDeletion(uuid: $uuid));
 			} catch (Throwable $e) {
 				$this->logger->error(
 					'Buildiq: wizard rollback failed to delete ' . $label . ' ' . $uuid . ': ' . $e->getMessage(),

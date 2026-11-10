@@ -60,6 +60,7 @@ use OCA\Buildiq\Exception\PromotionFailedException;
 use OCA\Buildiq\Exception\VersionLockedException;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Service\Object\ObjectDeletion;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -345,7 +346,7 @@ class VersionPromotionService {
 				continue;
 			}
 
-			$this->objectService->deleteObject(uuid: $uuid, _rbac: false, _multitenancy: false);
+			$this->objectService->deleteObject(deletion: new ObjectDeletion(uuid: $uuid), _rbac: false, _multitenancy: false);
 		}
 	}//end wipeTargetRegister()
 

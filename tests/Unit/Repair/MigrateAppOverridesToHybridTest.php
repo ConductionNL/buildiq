@@ -34,6 +34,7 @@ use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\ObjectDeletion;
 use OCP\Migration\IOutput;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -148,7 +149,7 @@ class MigrateAppOverridesToHybridTest extends TestCase {
 
 		$this->objectService->expects(self::once())
 			->method('deleteObject')
-			->with('row-1');
+			->with(self::equalTo(value: new ObjectDeletion(uuid: 'row-1')));
 
 		$this->schemaMapper->expects(self::once())->method('delete');
 

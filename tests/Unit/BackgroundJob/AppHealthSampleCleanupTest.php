@@ -8,6 +8,7 @@ use OCA\Buildiq\BackgroundJob\AppHealthSampleCleanup;
 use OCA\Buildiq\Service\AppHealthSamples;
 use OCA\Buildiq\Service\AppHealthService;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Service\Object\ObjectDeletion;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
@@ -24,7 +25,8 @@ final class AppHealthSampleCleanupTest extends TestCase {
 			['id' => 'old', 'windowStart' => '2026-09-21T10:00:00+00:00'],
 			['id' => 'new', 'windowStart' => '2026-10-22T10:00:00+00:00'],
 		]);
-		$objects->method('deleteObject')->willReturnCallback(static function (string $uuid) use (&$deleted): bool {
+		$objects->method('deleteObject')->willReturnCallback(static function (ObjectDeletion $deletion) use (&$deleted): bool {
+			$uuid = $deletion->uuid;
 			$deleted[] = $uuid;
 			return true;
 		});

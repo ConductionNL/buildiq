@@ -62,6 +62,8 @@ namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Service\Object\ObjectDeletion;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -236,9 +238,7 @@ class AutomationWriteService {
 		// `_rbac: false` — see saveAuthorised() for the full rationale; the
 		// delete is the same decision as the save.
 		$this->objectService->deleteObject(
-			uuid: $uuid,
-			register: self::REGISTER_SLUG,
-			schema: self::AUTOMATION_SCHEMA,
+			deletion: new ObjectDeletion(uuid: $uuid, target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::AUTOMATION_SCHEMA)),
 			_rbac: false
 		);
 

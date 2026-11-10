@@ -26,6 +26,8 @@ namespace OCA\Buildiq\BackgroundJob;
 use OCA\Buildiq\AppInfo\Application;
 use OCA\Buildiq\Service\AppHealthService;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Service\Object\ObjectDeletion;
+use OCA\OpenRegister\Service\Object\ObjectFindTarget;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use OCP\IAppConfig;
@@ -129,9 +131,10 @@ class AppHealthSampleCleanup extends TimedJob {
 
 			try {
 				$this->objectService->deleteObject(
-					uuid: $uuid,
-					register: AppHealthService::REGISTER_SLUG,
-					schema: AppHealthService::SCHEMA_SLUG,
+					deletion: new ObjectDeletion(
+						uuid: $uuid,
+						target: new ObjectFindTarget(register: AppHealthService::REGISTER_SLUG, schema: AppHealthService::SCHEMA_SLUG)
+					),
 					_rbac: false,
 					_multitenancy: false
 				);

@@ -45,6 +45,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Object\ObjectDeletion;
 use OCA\OpenRegister\Service\RegisterService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -200,8 +201,8 @@ class ApplicationDeletionServiceTest extends TestCase {
 		$this->registerService->expects($this->never())->method('delete');
 
 		$deleted = [];
-		$this->objectService->method('deleteObject')->willReturnCallback(
-			function (string $uuid) use (&$deleted): bool {
+		$this->objectService->method('deleteObject')->willReturnCallback(function (ObjectDeletion $deletion) use (&$deleted): bool {
+				$uuid = $deletion->uuid;
 				$deleted[] = $uuid;
 				return true;
 			}
@@ -231,8 +232,8 @@ class ApplicationDeletionServiceTest extends TestCase {
 		);
 
 		$order = [];
-		$this->objectService->method('deleteObject')->willReturnCallback(
-			function (string $uuid) use (&$order): bool {
+		$this->objectService->method('deleteObject')->willReturnCallback(function (ObjectDeletion $deletion) use (&$order): bool {
+				$uuid = $deletion->uuid;
 				$order[] = 'obj:' . $uuid;
 				return true;
 			}
@@ -522,8 +523,8 @@ class ApplicationDeletionServiceTest extends TestCase {
 		);
 
 		// The register object can never be deleted; version + app succeed.
-		$this->objectService->method('deleteObject')->willReturnCallback(
-			function (string $uuid): bool {
+		$this->objectService->method('deleteObject')->willReturnCallback(function (ObjectDeletion $deletion): bool {
+				$uuid = $deletion->uuid;
 				if ($uuid === 'stuck-1') {
 					throw new RuntimeException('object is locked');
 				}

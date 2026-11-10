@@ -44,6 +44,7 @@ use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\ObjectDeletion;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
 use Psr\Log\LoggerInterface;
@@ -260,7 +261,7 @@ class MigrateAppOverridesToHybrid implements IRepairStep {
 			try {
 				// System-context delete — Anonymous cannot satisfy the
 				// app-override delete:[admin] guard during a repair run.
-				$this->objectService->deleteObject(uuid: $uuid, _rbac: false, _multitenancy: false);
+				$this->objectService->deleteObject(deletion: new ObjectDeletion(uuid: $uuid), _rbac: false, _multitenancy: false);
 			} catch (Throwable $e) {
 				$this->logger->error(
 					'Buildiq: MigrateAppOverridesToHybrid: migrated but failed to delete source row',

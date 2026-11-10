@@ -32,6 +32,7 @@ use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Service\Object\ObjectDeletion;
 use OCA\OpenRegister\Service\RegisterService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -353,7 +354,7 @@ class ApplicationVersionServiceTest extends TestCase {
 		$this->registerMapper->method('find')->with('openbuild-foo-staging')->willReturn($register);
 
 		$this->registerService->expects(self::once())->method('delete')->with($register);
-		$this->objectService->expects(self::once())->method('deleteObject')->with('uuid-v');
+		$this->objectService->expects(self::once())->method('deleteObject')->with(self::equalTo(value: new ObjectDeletion(uuid: 'uuid-v')));
 
 		$this->service->deleteVersion(
 			versionUuid: 'uuid-v',
@@ -380,7 +381,7 @@ class ApplicationVersionServiceTest extends TestCase {
 			});
 
 		$this->registerService->expects(self::never())->method('delete');
-		$this->objectService->expects(self::once())->method('deleteObject')->with('uuid-v');
+		$this->objectService->expects(self::once())->method('deleteObject')->with(self::equalTo(value: new ObjectDeletion(uuid: 'uuid-v')));
 
 		$this->service->deleteVersion(
 			versionUuid: 'uuid-v',
@@ -465,7 +466,7 @@ class ApplicationVersionServiceTest extends TestCase {
 
 		// Shared register → delete-now downgraded → register is NOT dropped.
 		$this->registerService->expects(self::never())->method('delete');
-		$this->objectService->expects(self::once())->method('deleteObject')->with('uuid-v');
+		$this->objectService->expects(self::once())->method('deleteObject')->with(self::equalTo(value: new ObjectDeletion(uuid: 'uuid-v')));
 
 		$this->service->deleteVersion(
 			versionUuid: 'uuid-v',

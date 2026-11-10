@@ -42,6 +42,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Object\ObjectDeletion;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -535,7 +536,7 @@ class VersionPromotionServiceTest extends TestCase {
 		$this->objectService
 			->expects(self::once())
 			->method('deleteObject')
-			->with('r-tgt-1');
+			->with(self::equalTo(value: new ObjectDeletion(uuid: 'r-tgt-1')));
 
 		// saveObject is called once per source row (2 copies) + once for the manifest write.
 		$savedTarget = $this->buildObjectEntity(
@@ -688,8 +689,8 @@ class VersionPromotionServiceTest extends TestCase {
 		);
 
 		$deleted = [];
-		$this->objectService->method('deleteObject')->willReturnCallback(
-			static function (string $uuid) use (&$deleted): bool {
+		$this->objectService->method('deleteObject')->willReturnCallback(static function (ObjectDeletion $deletion) use (&$deleted): bool {
+				$uuid = $deletion->uuid;
 				$deleted[] = $uuid;
 				return true;
 			}
@@ -784,7 +785,8 @@ class VersionPromotionServiceTest extends TestCase {
 
 		$this->objectService
 			->method('deleteObject')
-			->willReturnCallback(function (string $uuid): bool {
+			->willReturnCallback(function (ObjectDeletion $deletion): bool {
+				$uuid = $deletion->uuid;
 				self::assertNotSame('spectr', $uuid);
 				return true;
 			});
@@ -939,7 +941,8 @@ class VersionPromotionServiceTest extends TestCase {
 
 		$this->objectService
 			->method('deleteObject')
-			->willReturnCallback(function (string $uuid): bool {
+			->willReturnCallback(function (ObjectDeletion $deletion): bool {
+				$uuid = $deletion->uuid;
 				self::assertNotSame('spectr', $uuid);
 				return true;
 			});

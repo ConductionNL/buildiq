@@ -34,6 +34,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\ObjectService;
+use OCA\OpenRegister\Service\Object\ObjectDeletion;
 use OCA\OpenRegister\Service\RegisterService;
 use OCP\IAppConfig;
 use OCP\Migration\IOutput;
@@ -302,8 +303,8 @@ class MigrateToVersionedModelTest extends TestCase {
 		);
 
 		$deletedUuids = [];
-		$this->objectService->method('deleteObject')->willReturnCallback(
-			static function (string $uuid) use (&$deletedUuids): bool {
+		$this->objectService->method('deleteObject')->willReturnCallback(static function (ObjectDeletion $deletion) use (&$deletedUuids): bool {
+				$uuid = $deletion->uuid;
 				$deletedUuids[] = $uuid;
 				return true;
 			}
