@@ -30,6 +30,7 @@ use OCA\Buildiq\Service\PermissionResolver;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -239,10 +240,8 @@ abstract class AbstractToolHandler {
 
 		if ($this->auditTrailMapper !== null && $appEntity instanceof ObjectEntity) {
 			try {
-				$this->auditTrailMapper->createAuditTrailEntry(
-					object: $appEntity,
-					action: 'rbac.admin_bypass',
-					context: $context
+				$this->auditTrailMapper->recordObjectEvent(
+					event: new ObjectAuditEvent(object: $appEntity, action: 'rbac.admin_bypass', context: $context)
 				);
 				// Mirror to PSR at info so the bypass is also visible in log streams.
 				$this->logger->info('Buildiq MCP: rbac.admin_bypass', $context);
