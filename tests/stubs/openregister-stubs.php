@@ -2272,22 +2272,34 @@ namespace OCA\OpenRegister\Service {
 		 */
 		class ObjectService {
 			/**
-			 * @param array<string, mixed> $query
-			 * @param array<int, int>|null $ids
-			 * @param array<int, string>|null $views
+			 * @param array<string, mixed>                              $query   Search query.
+			 * @param bool                                              $_rbac   Apply RBAC.
+			 * @param bool                                              $_multitenancy Apply multitenancy.
+			 * @param \OCA\OpenRegister\Kernel\Contracts\SearchOptions $options Selection and views.
 			 *
 			 * @return array<int, mixed>|int
 			 */
-			public function searchObjects(array $query = [], bool $_rbac = true, bool $_multitenancy = true, ?array $ids = null, ?string $uses = null, ?array $views = null): array|int {
+			public function searchObjects(
+				array $query = [],
+				bool $_rbac = true,
+				bool $_multitenancy = true,
+				\OCA\OpenRegister\Kernel\Contracts\SearchOptions $options = new \OCA\OpenRegister\Kernel\Contracts\SearchOptions()
+			): array|int {
 				return [];
 			}//end searchObjects()
 
 			/**
-			 * @param array<string, mixed> $filters
+			 * @param \OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef $target  Register and schema.
+			 * @param array<string, mixed>                                  $filters Search filters.
 			 *
 			 * @return array<int, mixed>|int
 			 */
-			public function searchObjectsBySlug(string $registerSlug, string $schemaSlug, array $filters = [], bool $_rbac = true, bool $_multitenancy = true): array|int {
+			public function searchObjectsBySlug(
+				\OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef $target,
+				array $filters = [],
+				bool $_rbac = true,
+				bool $_multitenancy = true
+			): array|int {
 				return [];
 			}//end searchObjectsBySlug()
 
@@ -3774,4 +3786,65 @@ namespace OCA\OpenRegister\Service\Dmn {
 			}
 		}
 	}
+}
+
+namespace OCA\OpenRegister\Kernel\Contracts {
+
+	if (class_exists(RegisterSchemaRef::class, autoload: false) === false) {
+		/**
+		 * Stub RegisterSchemaRef: a register and schema, by slug or id.
+		 */
+		final class RegisterSchemaRef {
+
+			/**
+			 * @param string|int $register Register slug or id.
+			 * @param string|int $schema   Schema slug or id.
+			 */
+			public function __construct(
+				public readonly string|int $register,
+				public readonly string|int $schema,
+			) {
+			}//end __construct()
+		}//end class
+	}//end if
+
+	if (class_exists(ObjectSelection::class, autoload: false) === false) {
+		/**
+		 * Stub ObjectSelection: which objects a search may return.
+		 */
+		final class ObjectSelection {
+
+			/**
+			 * @param array<int, int|string>|null $ids  Object ids to restrict to.
+			 * @param string|null                 $uses An object the results must use.
+			 */
+			public function __construct(
+				public readonly ?array $ids=null,
+				public readonly ?string $uses=null,
+			) {
+			}//end __construct()
+		}//end class
+	}//end if
+
+	if (class_exists(SearchOptions::class, autoload: false) === false) {
+		/**
+		 * Stub SearchOptions: the optional parts of an object search.
+		 */
+		final class SearchOptions {
+
+			/**
+			 * @param ObjectSelection         $selection         The object selection.
+			 * @param array<int, string>|null $views             Views that scope the search.
+			 * @param bool                    $viewScopeRequired Whether a view scope is required.
+			 * @param bool                    $deleted           Search deleted objects.
+			 */
+			public function __construct(
+				public readonly ObjectSelection $selection=new ObjectSelection(),
+				public readonly ?array $views=null,
+				public readonly bool $viewScopeRequired=false,
+				public readonly bool $deleted=false,
+			) {
+			}//end __construct()
+		}//end class
+	}//end if
 }

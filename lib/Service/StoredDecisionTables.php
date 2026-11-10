@@ -39,6 +39,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Service\Dmn\DecisionTableStore;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -242,8 +243,7 @@ class StoredDecisionTables {
 	private function existingUuid(string $key): ?string {
 		try {
 			$rows = $this->objects->searchObjectsBySlug(
-				registerSlug: DecisionTableStore::REGISTER,
-				schemaSlug: DecisionTableStore::SCHEMA,
+				target: new RegisterSchemaRef(register: DecisionTableStore::REGISTER, schema: DecisionTableStore::SCHEMA),
 				filters: [],
 				_rbac: false,
 				_multitenancy: false

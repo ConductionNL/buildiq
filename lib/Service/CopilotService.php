@@ -50,6 +50,7 @@ use OCA\Buildiq\Support\WidgetSpec;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -1132,9 +1133,8 @@ class CopilotService {
 	 */
 	private function resolveApplicationBySlug(string $appSlug): ?array {
 		$apps = $this->objectService->searchObjectsBySlug(
-			self::REGISTER_SLUG,
-			self::APPLICATION_SCHEMA,
-			['slug' => $appSlug],
+			target: new RegisterSchemaRef(register: self::REGISTER_SLUG, schema: self::APPLICATION_SCHEMA),
+			filters: ['slug' => $appSlug],
 			_rbac: true,
 			_multitenancy: false
 		);
@@ -1679,9 +1679,8 @@ class CopilotService {
 
 		$appUuid = $this->extractUuid(item: $app);
 		$versions = $this->objectService->searchObjectsBySlug(
-			self::REGISTER_SLUG,
-			self::APPLICATION_VERSION_SCHEMA,
-			['application' => $appUuid, 'slug' => $versionSlug],
+			target: new RegisterSchemaRef(register: self::REGISTER_SLUG, schema: self::APPLICATION_VERSION_SCHEMA),
+			filters: ['application' => $appUuid, 'slug' => $versionSlug],
 			_rbac: true,
 			_multitenancy: false
 		);

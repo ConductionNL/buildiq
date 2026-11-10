@@ -196,7 +196,7 @@ class PublishTemplatesGoldenTest extends TestCase {
 		$objectService = $this->createMock(ObjectServiceInterface::class);
 		$objectService->method('searchObjectsBySlug')->willReturnCallback(
 			static function (...$args) use ($case, $trace, $entity): mixed {
-				$trace->lookups[] = [$args[0], $args[1], $args[2]];
+				$trace->lookups[] = [$args[0]->register, $args[0]->schema, $args[1]];
 				return match ($case['lookup']) {
 					'none' => [],
 					'throws' => throw new RuntimeException('lookup down'),

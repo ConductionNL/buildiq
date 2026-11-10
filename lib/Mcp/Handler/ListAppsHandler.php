@@ -25,6 +25,8 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Mcp\Handler;
 
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+
 /**
  * Handles the buildiq.listApps tool invocation.
  */
@@ -61,7 +63,12 @@ class ListAppsHandler extends AbstractToolHandler {
 				$filters['status'] = $validation['statusFilter'];
 			}
 
-			$rawApps = $objectService->searchObjectsBySlug(self::REGISTER_SLUG, 'built-app', $filters, _rbac: true, _multitenancy: false);
+			$rawApps = $objectService->searchObjectsBySlug(
+				target: new RegisterSchemaRef(register: self::REGISTER_SLUG, schema: 'built-app'),
+				filters: $filters,
+				_rbac: true,
+				_multitenancy: false
+			);
 			if (is_array(value: $rawApps) === false) {
 				$rawApps = [];
 			}

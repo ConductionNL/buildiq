@@ -34,6 +34,7 @@ namespace OCA\Buildiq\Command;
 use OCA\Buildiq\Service\GitHubAppSyncService;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -241,9 +242,8 @@ class PublishTemplates extends Command {
 			// System context (occ command): seeded templates are Conduction-
 			// curated store content, not per-user data.
 			$results = $this->objectService->searchObjectsBySlug(
-				self::REGISTER_SLUG,
-				self::TEMPLATE_SCHEMA,
-				$filters,
+				target: new RegisterSchemaRef(register: self::REGISTER_SLUG, schema: self::TEMPLATE_SCHEMA),
+				filters: $filters,
 				_rbac: false,
 				_multitenancy: false
 			);

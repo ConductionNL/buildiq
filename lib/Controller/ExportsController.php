@@ -37,6 +37,7 @@ use OCA\Buildiq\Service\ExportJobService;
 use OCA\Buildiq\Service\ServerBundleWriter;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -200,7 +201,10 @@ class ExportsController extends Controller {
 				return false;
 			}
 
-			$apps = $service->searchObjectsBySlug($registerSlug, 'built-app', ['slug' => $applicationSlug]);
+			$apps = $service->searchObjectsBySlug(
+				target: new RegisterSchemaRef(register: $registerSlug, schema: 'built-app'),
+				filters: ['slug' => $applicationSlug]
+			);
 			if (is_array($apps) === false || $apps === []) {
 				return false;
 			}
@@ -365,7 +369,10 @@ class ExportsController extends Controller {
 				return '';
 			}
 
-			$apps = $service->searchObjectsBySlug($registerSlug, 'built-app', ['slug' => $applicationSlug]);
+			$apps = $service->searchObjectsBySlug(
+				target: new RegisterSchemaRef(register: $registerSlug, schema: 'built-app'),
+				filters: ['slug' => $applicationSlug]
+			);
 			if (is_array($apps) === false || $apps === []) {
 				return '';
 			}

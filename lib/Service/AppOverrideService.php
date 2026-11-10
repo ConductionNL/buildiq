@@ -44,6 +44,7 @@ use DateTimeImmutable;
 use DateTimeInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCP\App\IAppManager;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -401,8 +402,7 @@ class AppOverrideService {
 
 		try {
 			$results = $this->objectService->searchObjectsBySlug(
-				registerSlug: self::REGISTER_SLUG,
-				schemaSlug: self::APPLICATION_VERSION_SCHEMA,
+				target: new RegisterSchemaRef(register: self::REGISTER_SLUG, schema: self::APPLICATION_VERSION_SCHEMA),
 				filters: ['scope' => 'user']
 			);
 		} catch (Throwable $e) {
@@ -586,8 +586,7 @@ class AppOverrideService {
 	public function findHybridApplication(string $appId): ?array {
 		try {
 			$results = $this->objectService->searchObjectsBySlug(
-				registerSlug: self::REGISTER_SLUG,
-				schemaSlug: self::APPLICATION_SCHEMA,
+				target: new RegisterSchemaRef(register: self::REGISTER_SLUG, schema: self::APPLICATION_SCHEMA),
 				filters: [
 					'slug' => $appId,
 					'appType' => 'hybrid',
@@ -860,8 +859,7 @@ class AppOverrideService {
 
 		try {
 			$results = $this->objectService->searchObjectsBySlug(
-				registerSlug: self::REGISTER_SLUG,
-				schemaSlug: self::APPLICATION_VERSION_SCHEMA,
+				target: new RegisterSchemaRef(register: self::REGISTER_SLUG, schema: self::APPLICATION_VERSION_SCHEMA),
 				filters: [
 					'scope' => 'user',
 					'owner' => $uid,

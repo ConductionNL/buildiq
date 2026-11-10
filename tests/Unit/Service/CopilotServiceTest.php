@@ -35,6 +35,7 @@ use OCA\Buildiq\Service\PermissionResolver;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -1309,8 +1310,8 @@ class CopilotServiceTest extends TestCase {
 		}
 
 		$this->objectService->method('searchObjectsBySlug')->willReturnCallback(
-			function (string $register, string $schema, array $filters) use ($existingPages): array {
-				if ($schema === 'built-app') {
+			function (RegisterSchemaRef $target, array $filters) use ($existingPages): array {
+				if ($target->schema === 'built-app') {
 					return [['id' => 'app-1', 'slug' => 'tool-library', 'permissions' => []]];
 				}
 
@@ -1734,8 +1735,8 @@ class CopilotServiceTest extends TestCase {
 	public function testAPageOnABoundDataRegisterKeepsItsRegisterAndSchema(): void {
 		$this->wireCaller(uid: 'alice');
 		$this->objectService->method('searchObjectsBySlug')->willReturnCallback(
-			static function (string $register, string $schema, array $filters): array {
-				if ($schema === 'built-app') {
+			static function (RegisterSchemaRef $target, array $filters): array {
+				if ($target->schema === 'built-app') {
 					return [
 						[
 							'id' => 'app-1',

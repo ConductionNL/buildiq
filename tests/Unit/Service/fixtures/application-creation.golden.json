@@ -32,7 +32,8 @@
                         "slug": "permit-tracker"
                     },
                     "_rbac": false,
-                    "_multitenancy": false
+                    "_multitenancy": false,
+                    "options": "object:OCA\\OpenRegister\\Kernel\\Contracts\\SearchOptions"
                 }
             },
             {
@@ -188,7 +189,8 @@
                         "slug": "permit-tracker"
                     },
                     "_rbac": false,
-                    "_multitenancy": false
+                    "_multitenancy": false,
+                    "options": "object:OCA\\OpenRegister\\Kernel\\Contracts\\SearchOptions"
                 }
             },
             {
@@ -420,7 +422,8 @@
                         "slug": "permit-tracker"
                     },
                     "_rbac": false,
-                    "_multitenancy": false
+                    "_multitenancy": false,
+                    "options": "object:OCA\\OpenRegister\\Kernel\\Contracts\\SearchOptions"
                 }
             },
             {
@@ -728,7 +731,8 @@
                         "slug": "custom-app"
                     },
                     "_rbac": false,
-                    "_multitenancy": false
+                    "_multitenancy": false,
+                    "options": "object:OCA\\OpenRegister\\Kernel\\Contracts\\SearchOptions"
                 }
             },
             {
@@ -960,7 +964,8 @@
                         "slug": "permit-tracker"
                     },
                     "_rbac": false,
-                    "_multitenancy": false
+                    "_multitenancy": false,
+                    "options": "object:OCA\\OpenRegister\\Kernel\\Contracts\\SearchOptions"
                 }
             },
             {
@@ -1183,7 +1188,8 @@
                         "slug": "permit-tracker"
                     },
                     "_rbac": false,
-                    "_multitenancy": false
+                    "_multitenancy": false,
+                    "options": "object:OCA\\OpenRegister\\Kernel\\Contracts\\SearchOptions"
                 }
             },
             {
@@ -1237,7 +1243,8 @@
                         "slug": "permit-tracker"
                     },
                     "_rbac": false,
-                    "_multitenancy": false
+                    "_multitenancy": false,
+                    "options": "object:OCA\\OpenRegister\\Kernel\\Contracts\\SearchOptions"
                 }
             },
             {
@@ -1291,7 +1298,8 @@
                         "slug": "permit-tracker"
                     },
                     "_rbac": false,
-                    "_multitenancy": false
+                    "_multitenancy": false,
+                    "options": "object:OCA\\OpenRegister\\Kernel\\Contracts\\SearchOptions"
                 }
             },
             {
@@ -1363,7 +1371,8 @@
                         "slug": "permit-tracker"
                     },
                     "_rbac": false,
-                    "_multitenancy": false
+                    "_multitenancy": false,
+                    "options": "object:OCA\\OpenRegister\\Kernel\\Contracts\\SearchOptions"
                 }
             },
             {
@@ -1435,7 +1444,8 @@
                         "slug": "permit-tracker"
                     },
                     "_rbac": false,
-                    "_multitenancy": false
+                    "_multitenancy": false,
+                    "options": "object:OCA\\OpenRegister\\Kernel\\Contracts\\SearchOptions"
                 }
             },
             {
@@ -1507,7 +1517,8 @@
                         "slug": "permit-tracker"
                     },
                     "_rbac": false,
-                    "_multitenancy": false
+                    "_multitenancy": false,
+                    "options": "object:OCA\\OpenRegister\\Kernel\\Contracts\\SearchOptions"
                 }
             },
             {
@@ -1579,7 +1590,8 @@
                         "slug": "permit-tracker"
                     },
                     "_rbac": false,
-                    "_multitenancy": false
+                    "_multitenancy": false,
+                    "options": "object:OCA\\OpenRegister\\Kernel\\Contracts\\SearchOptions"
                 }
             },
             {
@@ -1659,7 +1671,8 @@
                         "slug": "permit-tracker"
                     },
                     "_rbac": false,
-                    "_multitenancy": false
+                    "_multitenancy": false,
+                    "options": "object:OCA\\OpenRegister\\Kernel\\Contracts\\SearchOptions"
                 }
             },
             {
@@ -1731,7 +1744,8 @@
                         "slug": "permit-tracker"
                     },
                     "_rbac": false,
-                    "_multitenancy": false
+                    "_multitenancy": false,
+                    "options": "object:OCA\\OpenRegister\\Kernel\\Contracts\\SearchOptions"
                 }
             },
             {
@@ -1909,7 +1923,8 @@
                         "slug": "permit-tracker"
                     },
                     "_rbac": false,
-                    "_multitenancy": false
+                    "_multitenancy": false,
+                    "options": "object:OCA\\OpenRegister\\Kernel\\Contracts\\SearchOptions"
                 }
             },
             {
@@ -2039,7 +2054,8 @@
                         "slug": "permit-tracker"
                     },
                     "_rbac": false,
-                    "_multitenancy": false
+                    "_multitenancy": false,
+                    "options": "object:OCA\\OpenRegister\\Kernel\\Contracts\\SearchOptions"
                 }
             },
             {
@@ -2244,7 +2260,8 @@
                         "slug": "permit-tracker"
                     },
                     "_rbac": false,
-                    "_multitenancy": false
+                    "_multitenancy": false,
+                    "options": "object:OCA\\OpenRegister\\Kernel\\Contracts\\SearchOptions"
                 }
             },
             {
@@ -2574,7 +2591,8 @@
                         "slug": "permit-tracker"
                     },
                     "_rbac": false,
-                    "_multitenancy": false
+                    "_multitenancy": false,
+                    "options": "object:OCA\\OpenRegister\\Kernel\\Contracts\\SearchOptions"
                 }
             },
             {
@@ -2921,7 +2939,8 @@
                         "slug": "permit-tracker"
                     },
                     "_rbac": false,
-                    "_multitenancy": false
+                    "_multitenancy": false,
+                    "options": "object:OCA\\OpenRegister\\Kernel\\Contracts\\SearchOptions"
                 }
             },
             {
@@ -3196,7 +3215,8 @@
                         "slug": "permit-tracker"
                     },
                     "_rbac": false,
-                    "_multitenancy": false
+                    "_multitenancy": false,
+                    "options": "object:OCA\\OpenRegister\\Kernel\\Contracts\\SearchOptions"
                 }
             },
             {
@@ -3471,7 +3491,8 @@
                         "slug": "permit-tracker"
                     },
                     "_rbac": false,
-                    "_multitenancy": false
+                    "_multitenancy": false,
+                    "options": "object:OCA\\OpenRegister\\Kernel\\Contracts\\SearchOptions"
                 }
             },
             {
@@ -3640,7 +3661,8 @@
                         "slug": "permit-tracker"
                     },
                     "_rbac": false,
-                    "_multitenancy": false
+                    "_multitenancy": false,
+                    "options": "object:OCA\\OpenRegister\\Kernel\\Contracts\\SearchOptions"
                 }
             },
             {
@@ -3937,7 +3959,8 @@
                         "slug": "permit-tracker"
                     },
                     "_rbac": false,
-                    "_multitenancy": false
+                    "_multitenancy": false,
+                    "options": "object:OCA\\OpenRegister\\Kernel\\Contracts\\SearchOptions"
                 }
             },
             {
@@ -4111,7 +4134,8 @@
                         "slug": "permit-tracker"
                     },
                     "_rbac": false,
-                    "_multitenancy": false
+                    "_multitenancy": false,
+                    "options": "object:OCA\\OpenRegister\\Kernel\\Contracts\\SearchOptions"
                 }
             },
             {

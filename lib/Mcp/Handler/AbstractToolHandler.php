@@ -31,6 +31,7 @@ use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -168,9 +169,8 @@ abstract class AbstractToolHandler {
 		// Openbuild is a system-wide register (not org-scoped); bypass the
 		// organisation filter so MCP callers in any org can resolve apps.
 		$apps = $this->objectService->searchObjectsBySlug(
-			self::REGISTER_SLUG,
-			'built-app',
-			['slug' => $appSlug],
+			target: new RegisterSchemaRef(register: self::REGISTER_SLUG, schema: 'built-app'),
+			filters: ['slug' => $appSlug],
 			_rbac: true,
 			_multitenancy: false
 		);
@@ -556,7 +556,12 @@ abstract class AbstractToolHandler {
 	 * @return array{version?: array, appUuid?: string, appName?: string, error?: string, message?: string}
 	 */
 	protected function loadVersion(object $objectService, string $appSlug, string $versionSlug): array {
-		$apps = $objectService->searchObjectsBySlug(self::REGISTER_SLUG, 'built-app', ['slug' => $appSlug], _rbac: true, _multitenancy: false);
+		$apps = $objectService->searchObjectsBySlug(
+			target: new RegisterSchemaRef(register: self::REGISTER_SLUG, schema: 'built-app'),
+			filters: ['slug' => $appSlug],
+			_rbac: true,
+			_multitenancy: false
+		);
 		if (is_array($apps) === false || $apps === []) {
 			return ['error' => 'not_found', 'message' => "No virtual app found for slug '{$appSlug}'."];
 		}
@@ -565,9 +570,8 @@ abstract class AbstractToolHandler {
 		$appUuid = $this->extractUuid(item: $app);
 
 		$versions = $objectService->searchObjectsBySlug(
-			self::REGISTER_SLUG,
-			'applicationVersion',
-			['application' => $appUuid, 'slug' => $versionSlug],
+			target: new RegisterSchemaRef(register: self::REGISTER_SLUG, schema: 'applicationVersion'),
+			filters: ['application' => $appUuid, 'slug' => $versionSlug],
 			_rbac: true,
 			_multitenancy: false
 		);

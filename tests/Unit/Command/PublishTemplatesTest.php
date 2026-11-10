@@ -33,6 +33,7 @@ namespace OCA\Buildiq\Tests\Unit\Command;
 use OCA\Buildiq\Command\PublishTemplates;
 use OCA\Buildiq\Service\GitHubAppSyncService;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -130,8 +131,7 @@ class PublishTemplatesTest extends TestCase {
 		$this->objectService->expects($this->once())
 			->method('searchObjectsBySlug')
 			->with(
-				'buildiq',
-				'application-template',
+				self::equalTo(value: new RegisterSchemaRef(register: 'buildiq', schema: 'application-template')),
 				['slug' => 'incident-reporter'],
 				false,
 				false

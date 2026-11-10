@@ -40,6 +40,7 @@ use OCA\Buildiq\Mcp\Handler\AbstractToolHandler;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -753,8 +754,8 @@ class WriteHandlerValidationTest extends TestCase {
 	private function buildOwnerObjectService(string $uid, string $appSlug): ObjectServiceInterface {
 		$objectService = $this->objectService;
 		$objectService->method('searchObjectsBySlug')
-			->willReturnCallback(function (string $register, string $schema, array $filters) use ($uid, $appSlug) {
-				if ($schema === 'built-app' && ($filters['slug'] ?? '') === $appSlug) {
+			->willReturnCallback(function (RegisterSchemaRef $target, array $filters) use ($uid, $appSlug) {
+				if ($target->schema === 'built-app' && ($filters['slug'] ?? '') === $appSlug) {
 					return [['uuid' => 'app-uuid-1', 'slug' => $appSlug, 'permissions' => ['owners' => ['user:' . $uid]]]];
 				}
 
