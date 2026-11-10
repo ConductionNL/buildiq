@@ -17,7 +17,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Tests\Unit\Service;
 
-use OCA\Buildiq\Service\SettingsService;
+use OCA\Buildiq\Service\RegisterConfigAssembler;
 use PHPUnit\Framework\TestCase;
 use ReflectionMethod;
 
@@ -27,7 +27,7 @@ use ReflectionMethod;
  */
 final class RegisterFragmentMergeTest extends TestCase {
 	/**
-	 * Invoke the private static SettingsService::deepMergeConfig().
+	 * Invoke the private static RegisterConfigAssembler::deepMergeConfig().
 	 *
 	 * @param array<mixed> $base Base config.
 	 * @param array<mixed> $overlay Fragment.
@@ -35,7 +35,7 @@ final class RegisterFragmentMergeTest extends TestCase {
 	 * @return array<mixed> Merged config.
 	 */
 	private function merge(array $base, array $overlay): array {
-		$m = new ReflectionMethod(SettingsService::class, 'deepMergeConfig');
+		$m = new ReflectionMethod(RegisterConfigAssembler::class, 'deepMergeConfig');
 		$m->setAccessible(true);
 		return $m->invoke(null, $base, $overlay);
 	}//end merge()
