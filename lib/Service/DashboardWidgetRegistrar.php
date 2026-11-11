@@ -193,53 +193,94 @@ class DashboardWidgetRegistrar {
 	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-manifest-declares-which-widgets-reach-the-nextcloud-dashboard
 	 */
 	private function descriptorsForApplication(array $application): array {
-		$uuid = (string)($application['uuid'] ?? $application['id'] ?? '');
-		$slug = (string)($application['slug'] ?? '');
-		if ($uuid === '' || $slug === '') {
+		$owner = $this->widgetApplication(application: $application);
+		if ($owner === null) {
 			return [];
 		}
 
-		$manifest = $this->productionManifest(application: $application);
-		$pages = ($manifest['pages'] ?? []);
+		$pages = ($this->productionManifest(application: $application)['pages'] ?? []);
 		if (is_array($pages) === false) {
 			return [];
 		}
 
+		$source = new WidgetSource(application: $owner, principals: $this->appPrincipals(application: $application));
+		return $this->descriptorsForPages(pages: $pages, source: $source);
+	}//end descriptorsForApplication()
+
+	/**
+	 * The uuid, slug and name a widget of this Application is keyed on and shows.
+	 *
+	 * @param array<string,mixed> $application One published Application record.
+	 *
+	 * @return WidgetApplication|null Null when the Application has no uuid or no slug.
+	 */
+	private function widgetApplication(array $application): ?WidgetApplication {
+		$uuid = $this->applicationUuid(application: $application);
+		$slug = (string)($application['slug'] ?? '');
+		if ($uuid === '' || $slug === '') {
+			return null;
+		}
+
+		return new WidgetApplication(uuid: $uuid, slug: $slug, name: (string)($application['name'] ?? $slug));
+	}//end widgetApplication()
+
+	/**
+	 * The Application's uuid, or its id when the record carries no uuid.
+	 *
+	 * @param array<string,mixed> $application One published Application record.
+	 *
+	 * @return string '' when it carries neither.
+	 */
+	private function applicationUuid(array $application): string {
+		return (string)($application['uuid'] ?? $application['id'] ?? '');
+	}//end applicationUuid()
+
+	/**
+	 * The Application's flattened permissions; a malformed block names nobody.
+	 *
+	 * @param array<string,mixed> $application One published Application record.
+	 *
+	 * @return array<int,mixed>
+	 */
+	private function appPrincipals(array $application): array {
 		$permissions = ($application['permissions'] ?? []);
 		if (is_array($permissions) === false) {
 			$permissions = [];
 		}
 
-		$appPrincipals = $this->visibility->flattenPermissions(permissions: $permissions);
-		$name = (string)($application['name'] ?? $slug);
+		return $this->visibility->flattenPermissions(permissions: $permissions);
+	}//end appPrincipals()
 
+	/**
+	 * Collect the promoted placements of every page of one Application.
+	 *
+	 * @param array<array-key,mixed> $pages  The manifest pages.
+	 * @param WidgetSource           $source The owning Application.
+	 *
+	 * @return array<int,WidgetDescriptor>
+	 */
+	private function descriptorsForPages(array $pages, WidgetSource $source): array {
 		$descriptors = [];
 		foreach ($pages as $page) {
-			$found = $this->descriptorsForPage(
-				page: $page,
-				application: ['uuid' => $uuid, 'slug' => $slug, 'name' => $name],
-				appPrincipals: $appPrincipals
-			);
-			foreach ($found as $descriptor) {
+			foreach ($this->descriptorsForPage(page: $page, source: $source) as $descriptor) {
 				$descriptors[] = $descriptor;
 			}
 		}
 
 		return $descriptors;
-	}//end descriptorsForApplication()
+	}//end descriptorsForPages()
 
 	/**
 	 * Collect the promoted placements of one page.
 	 *
-	 * @param mixed $page One manifest page.
-	 * @param array{uuid:string,slug:string,name:string} $application The owning Application.
-	 * @param array<int,mixed> $appPrincipals The Application's flattened permissions.
+	 * @param mixed        $page   One manifest page.
+	 * @param WidgetSource $source The owning Application.
 	 *
 	 * @return array<int,WidgetDescriptor> The page's promoted placements.
 	 *
 	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-manifest-declares-which-widgets-reach-the-nextcloud-dashboard
 	 */
-	private function descriptorsForPage(mixed $page, array $application, array $appPrincipals): array {
+	private function descriptorsForPage(mixed $page, WidgetSource $source): array {
 		if (is_array($page) === false) {
 			return [];
 		}
@@ -249,87 +290,144 @@ class DashboardWidgetRegistrar {
 			return [];
 		}
 
+		return $this->descriptorsOnPage(widgets: $widgets, host: new WidgetHostPage(source: $source, route: (string)($page['route'] ?? '/')));
+	}//end descriptorsForPage()
+
+	/**
+	 * Collect the promoted placements among a page's widgets.
+	 *
+	 * @param array<array-key,mixed> $widgets The page's `widgets[]`.
+	 * @param WidgetHostPage         $host    The page they sit on.
+	 *
+	 * @return array<int,WidgetDescriptor>
+	 */
+	private function descriptorsOnPage(array $widgets, WidgetHostPage $host): array {
 		$descriptors = [];
 		foreach ($widgets as $entry) {
-			$descriptor = $this->descriptorForEntry(
-				entry: $entry,
-				page: $page,
-				application: $application,
-				appPrincipals: $appPrincipals
-			);
+			if (is_array($entry) === false) {
+				continue;
+			}
+
+			$descriptor = $this->descriptorForEntry(entry: $entry, host: $host);
 			if ($descriptor !== null) {
 				$descriptors[] = $descriptor;
 			}
 		}
 
 		return $descriptors;
-	}//end descriptorsForPage()
+	}//end descriptorsOnPage()
 
 	/**
 	 * Build one descriptor from a widget placement, or null when unpromoted.
 	 *
-	 * @param mixed $entry The `widgets[]` entry.
-	 * @param array<string,mixed> $page The page the entry sits on.
-	 * @param array{uuid:string,slug:string,name:string} $application The owning Application.
-	 * @param array<int,mixed> $appPrincipals The Application's flattened permissions.
+	 * @param array<string,mixed> $entry The `widgets[]` entry.
+	 * @param WidgetHostPage      $host  The page the entry sits on.
 	 *
 	 * @return WidgetDescriptor|null The descriptor, or null when the entry is not promoted.
 	 *
 	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-manifest-declares-which-widgets-reach-the-nextcloud-dashboard
 	 */
-	private function descriptorForEntry(
-		mixed $entry,
-		array $page,
-		array $application,
-		array $appPrincipals,
-	): ?WidgetDescriptor {
-		if (is_array($entry) === false) {
+	private function descriptorForEntry(array $entry, WidgetHostPage $host): ?WidgetDescriptor {
+		if (is_array($entry[self::PROMOTION_KEY] ?? null) === false) {
 			return null;
 		}
 
-		$panel = ($entry[self::PROMOTION_KEY] ?? null);
-		if (is_array($panel) === false) {
+		$entryId = $this->placementId(entry: $entry, host: $host);
+		if ($entryId === '') {
 			return null;
 		}
 
+		$roles = $this->placementRoles(entry: $entry, host: $host);
+		if ($roles === null) {
+			return null;
+		}
+
+		return $this->describe(placement: new PromotedPlacement(entry: $entry, entryId: $entryId, roles: $roles), host: $host);
+	}//end descriptorForEntry()
+
+	/**
+	 * A promoted placement's stable id; '' (with a warning) when it carries none.
+	 *
+	 * The schema requires a non-empty id alongside ncDashboard, because
+	 * position in widgets[] is not stable across edits and an id derived from
+	 * position would move a user's panel onto a different widget when the page
+	 * is reordered. A manifest stored before that rule existed is skipped rather
+	 * than given an unstable identity.
+	 *
+	 * @param array<string,mixed> $entry The `widgets[]` entry.
+	 * @param WidgetHostPage      $host  The page the entry sits on.
+	 *
+	 * @return string
+	 */
+	private function placementId(array $entry, WidgetHostPage $host): string {
 		$entryId = (string)($entry['id'] ?? '');
 		if ($entryId === '') {
-			// The schema requires a non-empty id alongside ncDashboard,
-			// because position in widgets[] is not stable across edits and an
-			// id derived from position would move a user's panel onto a
-			// different widget when the page is reordered. A manifest stored
-			// before that rule existed is skipped rather than given an
-			// unstable identity.
 			$this->logger->warning(
 				'DashboardWidgetRegistrar: skipped a promoted widget on app "'
-				. $application['slug'] . '" because its placement carries no id.'
+				. $host->source->application->slug . '" because its placement carries no id.'
 			);
-			return null;
 		}
 
+		return $entryId;
+	}//end placementId()
+
+	/**
+	 * A placement's own roles; null (with a warning) when they are malformed.
+	 *
+	 * @param array<string,mixed> $entry The `widgets[]` entry, which carries an id.
+	 * @param WidgetHostPage      $host  The page the entry sits on.
+	 *
+	 * @return array<int,string>|null
+	 */
+	private function placementRoles(array $entry, WidgetHostPage $host): ?array {
 		$roles = $this->visibility->normaliseRoles(roles: ($entry['roles'] ?? null));
 		if ($roles === null) {
 			$this->logger->warning(
-				'DashboardWidgetRegistrar: skipped promoted widget "' . $entryId . '" on app "'
-				. $application['slug'] . '" because its roles are neither a string nor a list.'
+				'DashboardWidgetRegistrar: skipped promoted widget "' . (string)($entry['id'] ?? '') . '" on app "'
+				. $host->source->application->slug . '" because its roles are neither a string nor a list.'
 			);
-			return null;
 		}
 
+		return $roles;
+	}//end placementRoles()
+
+	/**
+	 * The descriptor of an accepted placement.
+	 *
+	 * @param PromotedPlacement $placement The accepted placement.
+	 * @param WidgetHostPage    $host      The page it sits on.
+	 *
+	 * @return WidgetDescriptor
+	 */
+	private function describe(PromotedPlacement $placement, WidgetHostPage $host): WidgetDescriptor {
+		$entry = $placement->entry;
 		return new WidgetDescriptor(
-			application: new WidgetApplication(uuid: $application['uuid'], slug: $application['slug'], name: $application['name']),
-			principals: $appPrincipals,
-			entryId: $entryId,
+			application: $host->source->application,
+			principals: $host->source->principals,
+			entryId: $placement->entryId,
 			widgetKey: (string)($entry['widgetKey'] ?? ''),
-			panel: $this->panelFrom(panel: $panel, entryId: $entryId),
-			placement: [
-				'pageRoute' => (string)($page['route'] ?? '/'),
-				'props' => (array)($entry['props'] ?? []),
-				'dataSource' => (array)($entry['dataSource'] ?? []),
-				'roles' => $roles,
-			]
+			panel: $this->panelFrom(panel: $entry[self::PROMOTION_KEY], entryId: $placement->entryId),
+			placement: $this->placementFields(placement: $placement, host: $host)
 		);
-	}//end descriptorForEntry()
+	}//end describe()
+
+	/**
+	 * Where an accepted placement sits and what it shows: page route, props,
+	 * data source and its own roles.
+	 *
+	 * @param PromotedPlacement $placement The accepted placement.
+	 * @param WidgetHostPage    $host      The page it sits on.
+	 *
+	 * @return array{pageRoute:string,props:array<mixed>,dataSource:array<mixed>,roles:array<int,string>}
+	 */
+	private function placementFields(PromotedPlacement $placement, WidgetHostPage $host): array {
+		return [
+			'pageRoute' => $host->route,
+			'props' => (array)($placement->entry['props'] ?? []),
+			'dataSource' => (array)($placement->entry['dataSource'] ?? []),
+			'roles' => $placement->roles,
+		];
+	}//end placementFields()
 
 	/**
 	 * Keep only the four keys `ncDashboard` may carry.
