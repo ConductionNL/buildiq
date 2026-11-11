@@ -72,8 +72,7 @@ describe('AutomationActionListEditor toEditorShape', () => {
 			url: 'https://example.test/hook',
 			payloadTemplateText: '{\n  "b": 1\n}',
 		})
-		expect(vm.toEditorShape({}).
-			_key).not.toBe(shape._key)
+		expect(vm.toEditorShape({})._key).not.toBe(shape._key)
 	})
 })
 
