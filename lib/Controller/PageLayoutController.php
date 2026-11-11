@@ -62,6 +62,11 @@ use Throwable;
  */
 class PageLayoutController extends Controller {
 	/**
+	 * The sentence a signed-in non-admin is refused with.
+	 */
+	private const FORBIDDEN_DETAIL = 'Authoring a page layout changes what everyone using that case type sees, so it takes an administrator.';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IRequest $request The current request.
@@ -83,19 +88,22 @@ class PageLayoutController extends Controller {
 	}//end __construct()
 
 	/**
-	 * The admin gate for this controller, refusing a signed-in non-admin with
-	 * the sentence that says why authoring a page layout takes an administrator.
+	 * The admin gate for this controller.
 	 *
 	 * @return AdminAuthoringGuard The guard.
 	 */
 	private function guard(): AdminAuthoringGuard {
-		return new AdminAuthoringGuard(
-			userSession: $this->userSession,
-			groupManager: $this->groupManager,
-			logger: $this->logger,
-			forbiddenDetail: 'Authoring a page layout changes what everyone using that case type sees, so it takes an administrator.'
-		);
+		return new AdminAuthoringGuard(userSession: $this->userSession, groupManager: $this->groupManager);
 	}//end guard()
+
+	/**
+	 * The answer to a failure that is not a refusal.
+	 *
+	 * @return UnexpectedFailureAnswer The failure answer.
+	 */
+	private function failure(): UnexpectedFailureAnswer {
+		return new UnexpectedFailureAnswer(logger: $this->logger);
+	}//end failure()
 
 	/**
 	 * The stored layouts for one schema, with their drift state.
@@ -106,7 +114,7 @@ class PageLayoutController extends Controller {
 	 */
 	#[AuthorizedAdminSetting(AdminSettings::class)]
 	public function index(): JSONResponse {
-		$scope = $this->guard()->adminScope($this->request);
+		$scope = $this->guard()->adminScope(request: $this->request, forbiddenDetail: self::FORBIDDEN_DETAIL);
 		if ($scope instanceof JSONResponse) {
 			return $scope;
 		}
@@ -114,7 +122,7 @@ class PageLayoutController extends Controller {
 		try {
 			$items = $this->authoring->listFor($scope->register, $scope->schema);
 		} catch (Throwable $e) {
-			return $this->guard()->unexpected(what: 'listing page layouts', e: $e);
+			return $this->failure()->answer(what: 'listing page layouts', e: $e);
 		}
 
 		return new JSONResponse(['items' => $items, 'total' => count($items)], Http::STATUS_OK);
@@ -130,7 +138,7 @@ class PageLayoutController extends Controller {
 	 */
 	#[AuthorizedAdminSetting(AdminSettings::class)]
 	public function save(): JSONResponse {
-		$refusal = $this->guard()->refuseNonAdmin();
+		$refusal = $this->guard()->refuseNonAdmin(forbiddenDetail: self::FORBIDDEN_DETAIL);
 		if ($refusal !== null) {
 			return $refusal;
 		}
@@ -147,7 +155,7 @@ class PageLayoutController extends Controller {
 			// the sentence the rule wrote rather than a generic 422.
 			return $this->error(code: 'refused', status: Http::STATUS_UNPROCESSABLE_ENTITY, detail: $e->getMessage());
 		} catch (Throwable $e) {
-			return $this->guard()->unexpected(what: 'saving a page layout', e: $e);
+			return $this->failure()->answer(what: 'saving a page layout', e: $e);
 		}
 
 		return new JSONResponse($result, Http::STATUS_OK);
@@ -164,7 +172,7 @@ class PageLayoutController extends Controller {
 	 */
 	#[AuthorizedAdminSetting(AdminSettings::class)]
 	public function recut(string $layoutId): JSONResponse {
-		$refusal = $this->guard()->refuseNonAdmin();
+		$refusal = $this->guard()->refuseNonAdmin(forbiddenDetail: self::FORBIDDEN_DETAIL);
 		if ($refusal !== null) {
 			return $refusal;
 		}
@@ -176,7 +184,7 @@ class PageLayoutController extends Controller {
 		} catch (InvalidArgumentException $e) {
 			return $this->error(code: 'refused', status: Http::STATUS_UNPROCESSABLE_ENTITY, detail: $e->getMessage());
 		} catch (Throwable $e) {
-			return $this->guard()->unexpected(what: 're-cutting a screen override', e: $e);
+			return $this->failure()->answer(what: 're-cutting a screen override', e: $e);
 		}
 
 		return new JSONResponse($result, Http::STATUS_OK);

@@ -55,6 +55,11 @@ use Throwable;
  */
 class RegistrationFormController extends Controller {
 	/**
+	 * The sentence a signed-in non-admin is refused with.
+	 */
+	private const FORBIDDEN_DETAIL = 'A registration form is what a citizen fills in, so authoring one takes an administrator.';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IRequest $request The current request.
@@ -76,19 +81,22 @@ class RegistrationFormController extends Controller {
 	}//end __construct()
 
 	/**
-	 * The admin gate for this controller, refusing a signed-in non-admin with
-	 * the sentence that says why authoring a registration form takes an administrator.
+	 * The admin gate for this controller.
 	 *
 	 * @return AdminAuthoringGuard The guard.
 	 */
 	private function guard(): AdminAuthoringGuard {
-		return new AdminAuthoringGuard(
-			userSession: $this->userSession,
-			groupManager: $this->groupManager,
-			logger: $this->logger,
-			forbiddenDetail: 'A registration form is what a citizen fills in, so authoring one takes an administrator.'
-		);
+		return new AdminAuthoringGuard(userSession: $this->userSession, groupManager: $this->groupManager);
 	}//end guard()
+
+	/**
+	 * The answer to a failure that is not a refusal.
+	 *
+	 * @return UnexpectedFailureAnswer The failure answer.
+	 */
+	private function failure(): UnexpectedFailureAnswer {
+		return new UnexpectedFailureAnswer(logger: $this->logger);
+	}//end failure()
 
 	/**
 	 * The stored forms for one schema.
@@ -99,7 +107,7 @@ class RegistrationFormController extends Controller {
 	 */
 	#[AuthorizedAdminSetting(AdminSettings::class)]
 	public function index(): JSONResponse {
-		$scope = $this->guard()->adminScope($this->request);
+		$scope = $this->guard()->adminScope(request: $this->request, forbiddenDetail: self::FORBIDDEN_DETAIL);
 		if ($scope instanceof JSONResponse) {
 			return $scope;
 		}
@@ -107,7 +115,7 @@ class RegistrationFormController extends Controller {
 		try {
 			$items = $this->authoring->listFor($scope->register, $scope->schema);
 		} catch (Throwable $e) {
-			return $this->guard()->unexpected(what: 'listing registration forms', e: $e);
+			return $this->failure()->answer(what: 'listing registration forms', e: $e);
 		}
 
 		return new JSONResponse(['items' => $items, 'total' => count($items)], Http::STATUS_OK);
@@ -123,7 +131,7 @@ class RegistrationFormController extends Controller {
 	 */
 	#[AuthorizedAdminSetting(AdminSettings::class)]
 	public function target(): JSONResponse {
-		$scope = $this->guard()->adminScope($this->request);
+		$scope = $this->guard()->adminScope(request: $this->request, forbiddenDetail: self::FORBIDDEN_DETAIL);
 		if ($scope instanceof JSONResponse) {
 			return $scope;
 		}
@@ -135,7 +143,7 @@ class RegistrationFormController extends Controller {
 				(string)$this->request->getParam('channelProperty', '')
 			);
 		} catch (Throwable $e) {
-			return $this->guard()->unexpected(what: 'reading the target schema', e: $e);
+			return $this->failure()->answer(what: 'reading the target schema', e: $e);
 		}
 
 		return new JSONResponse($target, Http::STATUS_OK);
@@ -151,7 +159,7 @@ class RegistrationFormController extends Controller {
 	 */
 	#[AuthorizedAdminSetting(AdminSettings::class)]
 	public function save(): JSONResponse {
-		$refusal = $this->guard()->refuseNonAdmin();
+		$refusal = $this->guard()->refuseNonAdmin(forbiddenDetail: self::FORBIDDEN_DETAIL);
 		if ($refusal !== null) {
 			return $refusal;
 		}
@@ -172,7 +180,7 @@ class RegistrationFormController extends Controller {
 		} catch (InvalidArgumentException $e) {
 			return $this->error(code: 'refused', status: Http::STATUS_UNPROCESSABLE_ENTITY, detail: $e->getMessage());
 		} catch (Throwable $e) {
-			return $this->guard()->unexpected(what: 'saving a registration form', e: $e);
+			return $this->failure()->answer(what: 'saving a registration form', e: $e);
 		}
 
 		return new JSONResponse($result, Http::STATUS_OK);
