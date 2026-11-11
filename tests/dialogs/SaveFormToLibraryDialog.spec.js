@@ -150,4 +150,72 @@ describe('SaveFormToLibraryDialog', () => {
 		).toBeDefined()
 		expect(axios.post).not.toHaveBeenCalled()
 	})
+	describe('canSave and save branches', () => {
+		const form = { name: 'Aanvraag', fields: [{ name: 'naam' }] }
+
+		it.each([
+			['aanvraag', true],
+			['a1-b2', true],
+			['a', false],
+			['-aanvraag', false],
+			['aanvraag-', false],
+			['Aanvraag', false],
+			['a'.repeat(64), true],
+			['a'.repeat(65), false],
+		])('slug %j can be saved: %s', async (slug, expected) => {
+			const wrapper = await mountWith(form)
+			wrapper.vm.category = 'field-work'
+			wrapper.vm.onSlugInput(slug)
+			expect(wrapper.vm.canSave).toBe(expected)
+		})
+
+		it('cannot save without a name, a category, or while saving', async () => {
+			const wrapper = await mountWith(form)
+			wrapper.vm.category = 'field-work'
+			expect(wrapper.vm.canSave).toBe(true)
+			wrapper.vm.name = '   '
+			expect(wrapper.vm.canSave).toBe(false)
+			wrapper.vm.name = 'Aanvraag'
+			wrapper.vm.category = ''
+			expect(wrapper.vm.canSave).toBe(false)
+			wrapper.vm.category = 'field-work'
+			wrapper.vm.saving = true
+			expect(wrapper.vm.canSave).toBe(false)
+		})
+
+		it('does not post when it cannot save', async () => {
+			const wrapper = await mountWith(form)
+			await wrapper.vm.save()
+			expect(axios.post).not.toHaveBeenCalled()
+		})
+
+		it('emits the record itself when the store returns nothing, then closes', async () => {
+			axios.post.mockResolvedValueOnce({ data: null })
+			const wrapper = await mountWith(form)
+			wrapper.vm.category = 'field-work'
+			const record = wrapper.vm.record
+			await wrapper.vm.save()
+			expect(wrapper.emitted('saved')[0][0]).toEqual(record)
+			expect(wrapper.emitted('update:open')[0]).toEqual([false])
+			expect(wrapper.vm.saving).toBe(false)
+			expect(wrapper.vm.saveError).toBe('')
+		})
+
+		it.each([
+			[{ response: { data: { detail: 'D', message: 'M', error: 'E' } } }, 'D'],
+			[{ response: { data: { message: 'M', error: 'E' } } }, 'M'],
+			[{ response: { data: { error: 'E' } } }, 'E'],
+			[{ response: { data: {} } }, 'Saving the form to the library failed.'],
+			[{ response: {} }, 'Saving the form to the library failed.'],
+			[null, 'Saving the form to the library failed.'],
+		])('reports the failure %j as %s', async (err, message) => {
+			axios.post.mockRejectedValueOnce(err)
+			const wrapper = await mountWith(form)
+			wrapper.vm.category = 'field-work'
+			await wrapper.vm.save()
+			expect(wrapper.vm.saveError).toBe(message)
+			expect(wrapper.vm.saving).toBe(false)
+			expect(wrapper.emitted('saved')).toBeUndefined()
+		})
+	})
 })
