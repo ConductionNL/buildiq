@@ -277,3 +277,22 @@ describe('ExpressionNodeEditor helpers', () => {
 		expect(parseLiteral('')).toBe('')
 	})
 })
+
+describe('parseLiteral', () => {
+	it.each([
+		['false', false],
+		['True', 'True'],
+		['0', 0],
+		['-3', -3],
+		[' 4 ', 4],
+		['   ', '   '],
+		['4a', '4a'],
+		['NaN', 'NaN'],
+		[null, ''],
+		[undefined, ''],
+		[7, 7],
+		[true, true],
+	])('reads %j as %j', (text, literal) => {
+		expect(parseLiteral(text)).toBe(literal)
+	})
+})
