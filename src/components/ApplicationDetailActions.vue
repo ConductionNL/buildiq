@@ -150,6 +150,104 @@ function shownEntries(rows) {
 	return rows.filter(([shown]) => shown).flatMap(([, build]) => build())
 }
 
+/**
+ * The first truthy value of a list, or `''` when none is.
+ *
+ * @param {Array} values Candidate values, in order of preference.
+ * @return {string}
+ */
+function firstTruthy(values) {
+	return values.find(Boolean) || ''
+}
+
+/**
+ * The server's detail of a failed request, else the error message, else the
+ * error itself.
+ *
+ * @param {Error} e The rejected request.
+ * @return {string|Error}
+ */
+function failureDetail(e) {
+	return (
+		(e.response && e.response.data && e.response.data.detail)
+		|| e.message
+		|| e
+	)
+}
+
+/**
+ * The version rows of a versions response (a bare array or `{ results }`).
+ *
+ * @param {Array|object|null} data The response body.
+ * @return {Array<object>}
+ */
+function versionList(data) {
+	if (Array.isArray(data)) {
+		return data
+	}
+	return data && data.results ? data.results : []
+}
+
+/**
+ * The flows of a flows response (`results`, `items` or a bare list).
+ *
+ * @param {Array|object} data The response body.
+ * @return {Array<object>}
+ */
+function flowList(data) {
+	return data.results || data.items || data || []
+}
+
+/**
+ * A flow as a picker option. Label by NAME, value by UUID: the binding is a
+ * UUID because the Flow entity has no slug, and a UUID in a picker is
+ * unreadable.
+ *
+ * @param {object} flow The flow record.
+ * @return {{label: string, value: string}}
+ */
+function toFlowOption(flow) {
+	return {
+		label: flow.name || flow.uuid,
+		value: flow.uuid || (flow['@self'] && flow['@self'].id),
+	}
+}
+
+/**
+ * The toast shown after a publish or unpublish.
+ *
+ * @param {boolean} shouldPublish Whether the app was published.
+ * @return {string}
+ */
+function publishToast(shouldPublish) {
+	return shouldPublish
+		? t('buildiq', 'App published — it now appears in the app menu.')
+		: t('buildiq', 'App unpublished — removed from the app menu.')
+}
+
+/**
+ * The error shown after a failed publish or unpublish.
+ *
+ * @param {boolean} shouldPublish Whether a publish was attempted.
+ * @param {string|Error} detail The failure detail.
+ * @return {string}
+ */
+function publishFailure(shouldPublish, detail) {
+	return shouldPublish
+		? `${t('buildiq', 'Publish failed')}: ${detail}`
+		: `${t('buildiq', 'Unpublish failed')}: ${detail}`
+}
+
+/**
+ * The manifest an Application record carries itself, else `{}`.
+ *
+ * @param {object} app The Application record.
+ * @return {object}
+ */
+function recordManifest(app) {
+	return app.manifest || (app.currentVersion && app.currentVersion.manifest) || {}
+}
+
 export default {
 	name: 'ApplicationDetailActions',
 	components: {
@@ -454,7 +552,7 @@ export default {
 			if (!pv) {
 				return ''
 			}
-			return typeof pv === 'string' ? pv : pv.uuid || pv.id || ''
+			return typeof pv === 'string' ? pv : firstTruthy([pv.uuid, pv.id])
 		},
 
 		/**
@@ -625,19 +723,24 @@ export default {
 				return
 			}
 			try {
-				const url = generateUrl(
-					'/apps/buildiq/api/applications/{slug}/versions',
-					{ slug: this.obApp.slug },
-				)
-				const { data } = await axios.get(url)
-				this.versions = Array.isArray(data)
-					? data
-					: data && data.results
-						? data.results
-						: []
+				this.versions = await this.fetchVersions()
 			} catch (e) {
 				this.versions = []
 			}
+		},
+
+		/**
+		 * Fetch the app's ApplicationVersion rows.
+		 *
+		 * @return {Promise<Array<object>>}
+		 */
+		async fetchVersions() {
+			const url = generateUrl(
+				'/apps/buildiq/api/applications/{slug}/versions',
+				{ slug: this.obApp.slug },
+			)
+			const { data } = await axios.get(url)
+			return versionList(data)
 		},
 
 		/**
@@ -647,8 +750,11 @@ export default {
 		 * @return {string}
 		 */
 		versionRowUuid(v) {
-			const self = (v && v['@self']) || {}
-			return (v && v.id) || self.id || self.uuid || (v && v.uuid) || ''
+			if (!v) {
+				return ''
+			}
+			const self = v['@self'] || {}
+			return firstTruthy([v.id, self.id, self.uuid, v.uuid])
 		},
 
 		/**
@@ -758,31 +864,34 @@ export default {
 			this.toast = ''
 			this.error = ''
 			try {
-				const action = shouldPublish ? 'publish' : 'unpublish'
-				await axios.post(
-					generateUrl(
-						`/apps/buildiq/api/applications/${this.obAppUuid}/${action}`,
-					),
-					{},
-				)
-				// Force a refetch — the `object` prop snapshot still carries the
-				// pre-publish status, so the default load path would keep the
-				// toggle/badge stale until a full page reload.
-				await this.obLoadApp(true)
-				this.toast = shouldPublish
-					? t('buildiq', 'App published — it now appears in the app menu.')
-					: t('buildiq', 'App unpublished — removed from the app menu.')
+				await this.publishAndRefresh(shouldPublish)
 			} catch (e) {
-				const detail =
-					(e.response && e.response.data && e.response.data.detail)
-					|| e.message
-					|| e
-				this.error = shouldPublish
-					? `${t('buildiq', 'Publish failed')}: ${detail}`
-					: `${t('buildiq', 'Unpublish failed')}: ${detail}`
+				this.error = publishFailure(shouldPublish, failureDetail(e))
 			} finally {
 				this.publishing = false
 			}
+		},
+
+		/**
+		 * POST the publish or unpublish action, refetch the app and show the
+		 * outcome toast.
+		 *
+		 * @param {boolean} shouldPublish True to publish, false to unpublish.
+		 * @return {Promise<void>}
+		 */
+		async publishAndRefresh(shouldPublish) {
+			const action = shouldPublish ? 'publish' : 'unpublish'
+			await axios.post(
+				generateUrl(
+					`/apps/buildiq/api/applications/${this.obAppUuid}/${action}`,
+				),
+				{},
+			)
+			// Force a refetch — the `object` prop snapshot still carries the
+			// pre-publish status, so the default load path would keep the
+			// toggle/badge stale until a full page reload.
+			await this.obLoadApp(true)
+			this.toast = publishToast(shouldPublish)
 		},
 
 		/**
@@ -922,13 +1031,24 @@ export default {
 				return
 			}
 
+			const query = this.automationsQuery(slug)
+			this.$router.push({ name: 'Automations', query }).catch(() => {})
+		},
+
+		/**
+		 * The automations route query: the app, plus the version the header
+		 * pills have selected.
+		 *
+		 * @param {string} slug The app slug.
+		 * @return {object}
+		 */
+		automationsQuery(slug) {
 			const query = { app: slug }
 			const selected = this.selectedVersion
 			if (selected) {
 				query.version = selected.slug || selected.id
 			}
-
-			this.$router.push({ name: 'Automations', query }).catch(() => {})
+			return query
 		},
 
 		/**
@@ -953,24 +1073,26 @@ export default {
 
 			this.loadingFlows = true
 			try {
-				const { data } = await axios.get(
-					generateUrl('/apps/openregister/api/flows'),
-				)
-				const list = data.results || data.items || data || []
-				// Label by NAME, value by UUID: the binding is a UUID because
-				// the Flow entity has no slug, and a UUID in a picker is
-				// unreadable.
-				this.availableFlows = list
-					.map((flow) => ({
-						label: flow.name || flow.uuid,
-						value: flow.uuid || (flow['@self'] && flow['@self'].id),
-					}))
-					.filter((option) => !!option.value)
+				this.availableFlows = await this.fetchFlowOptions()
 			} catch (e) {
 				this.error = `${t('buildiq', 'Failed to load flows')}: ${e.message || e}`
 			} finally {
 				this.loadingFlows = false
 			}
+		},
+
+		/**
+		 * Fetch the flows as picker options, dropping flows without a UUID.
+		 *
+		 * @return {Promise<Array<{label: string, value: string}>>}
+		 */
+		async fetchFlowOptions() {
+			const { data } = await axios.get(
+				generateUrl('/apps/openregister/api/flows'),
+			)
+			return flowList(data)
+				.map(toFlowOption)
+				.filter((option) => !!option.value)
 		},
 
 		/**
@@ -1030,26 +1152,42 @@ export default {
 			this.deleting = true
 			this.error = ''
 			try {
-				await axios.delete(
-					generateUrl(`/apps/buildiq/api/applications/${this.obAppUuid}`),
-					{
-						params: { deleteData: deleteData ? 1 : 0 },
-					},
-				)
-				this.deleteOpen = false
-				if (this.$router) {
-					this.$router.push({ name: 'VirtualApps' }).catch(() => {})
-				} else {
-					window.location.href = generateUrl('/apps/buildiq/applications')
-				}
+				await this.deleteAndLeave(deleteData)
 			} catch (e) {
-				const detail =
-					(e.response && e.response.data && e.response.data.detail)
-					|| e.message
-					|| e
-				this.error = `${t('buildiq', 'Delete failed')}: ${detail}`
+				this.error = `${t('buildiq', 'Delete failed')}: ${failureDetail(e)}`
 			} finally {
 				this.deleting = false
+			}
+		},
+
+		/**
+		 * DELETE the app, keeping or wiping its data, then close the dialog
+		 * and leave the deleted app.
+		 *
+		 * @param {boolean} deleteData Whether to also delete all app data.
+		 * @return {Promise<void>}
+		 */
+		async deleteAndLeave(deleteData) {
+			await axios.delete(
+				generateUrl(`/apps/buildiq/api/applications/${this.obAppUuid}`),
+				{
+					params: { deleteData: deleteData ? 1 : 0 },
+				},
+			)
+			this.deleteOpen = false
+			this.leaveDeletedApp()
+		},
+
+		/**
+		 * Navigate back to the apps list after the app was deleted.
+		 *
+		 * @return {void}
+		 */
+		leaveDeletedApp() {
+			if (this.$router) {
+				this.$router.push({ name: 'VirtualApps' }).catch(() => {})
+			} else {
+				window.location.href = generateUrl('/apps/buildiq/applications')
 			}
 		},
 
@@ -1105,51 +1243,73 @@ export default {
 			this.saveTemplateLoading = true
 			this.error = ''
 			try {
-				// Resolve the manifest from the app's ACTIVE VERSION, through the
-				// endpoint that owns that resolution.
-				//
-				// This used to read `obApp.manifest`, falling back to
-				// `obApp.currentVersion.manifest`. An Application record carries
-				// NEITHER: the manifest lives on the ApplicationVersion, and
-				// `GET /api/applications` returns no `manifest` and no
-				// `currentVersion` for any app — the seeded hello-world included.
-				// So the capture always fell through to `{}`, the dialog validated
-				// an empty object and opened with "The captured manifest is invalid
-				// and cannot be published: /version must be a string /menu must be
-				// an array /pages must be an array", with Save permanently
-				// disabled. Saving an app as a template was impossible for EVERY
-				// application.
-				const manifestUrl = generateUrl(
-					`/apps/buildiq/api/applications/${encodeURIComponent(this.obApp.slug)}/manifest`,
-				)
-				const { data: resolvedManifest } = await axios.get(manifestUrl)
-				this.saveTemplateManifest =
-					resolvedManifest
-					|| this.obApp.manifest
-					|| (this.obApp.currentVersion
-						&& this.obApp.currentVersion.manifest)
-					|| {}
-				// The manifest above is the production version's, so its
-				// companion schemas live in the production version's register.
-				const register = await fetchProductionRegister(
-					this.obApp.slug,
-					this.obApp.productionVersion,
-				)
-				const picker = useRegisterPicker({
-					appSlug: this.obApp.slug,
-					appRegister: register,
-					dataRegisters: this.obApp.dataRegisters || [],
-				})
-				this.saveTemplateSchemas = register
-					? await picker.fetchSchemas(register)
-					: []
-				this.existingTemplates = await this.loadExistingTemplates()
-				this.saveTemplateOpen = true
+				await this.captureTemplate()
 			} catch (e) {
 				this.error = `${t('buildiq', 'Could not prepare template capture')}: ${e.message || e}`
 			} finally {
 				this.saveTemplateLoading = false
 			}
+		},
+
+		/**
+		 * Capture the manifest, companion schemas and visible templates, then
+		 * open the dialog.
+		 *
+		 * @return {Promise<void>}
+		 */
+		async captureTemplate() {
+			this.saveTemplateManifest = await this.resolveTemplateManifest()
+			this.saveTemplateSchemas = await this.loadTemplateSchemas()
+			this.existingTemplates = await this.loadExistingTemplates()
+			this.saveTemplateOpen = true
+		},
+
+		/**
+		 * The manifest to capture: the app's ACTIVE VERSION manifest from the
+		 * endpoint that owns that resolution, else what the record carries.
+		 *
+		 * @return {Promise<object>}
+		 */
+		async resolveTemplateManifest() {
+			// Resolve the manifest from the app's ACTIVE VERSION, through the
+			// endpoint that owns that resolution.
+			//
+			// This used to read `obApp.manifest`, falling back to
+			// `obApp.currentVersion.manifest`. An Application record carries
+			// NEITHER: the manifest lives on the ApplicationVersion, and
+			// `GET /api/applications` returns no `manifest` and no
+			// `currentVersion` for any app — the seeded hello-world included.
+			// So the capture always fell through to `{}`, the dialog validated
+			// an empty object and opened with "The captured manifest is invalid
+			// and cannot be published: /version must be a string /menu must be
+			// an array /pages must be an array", with Save permanently
+			// disabled. Saving an app as a template was impossible for EVERY
+			// application.
+			const manifestUrl = generateUrl(
+				`/apps/buildiq/api/applications/${encodeURIComponent(this.obApp.slug)}/manifest`,
+			)
+			const { data: resolvedManifest } = await axios.get(manifestUrl)
+			return resolvedManifest || recordManifest(this.obApp)
+		},
+
+		/**
+		 * The companion schemas of the template. The manifest is the
+		 * production version's, so its companion schemas live in the
+		 * production version's register.
+		 *
+		 * @return {Promise<Array<object>>}
+		 */
+		async loadTemplateSchemas() {
+			const register = await fetchProductionRegister(
+				this.obApp.slug,
+				this.obApp.productionVersion,
+			)
+			const picker = useRegisterPicker({
+				appSlug: this.obApp.slug,
+				appRegister: register,
+				dataRegisters: this.obApp.dataRegisters || [],
+			})
+			return register ? await picker.fetchSchemas(register) : []
 		},
 
 		/**
