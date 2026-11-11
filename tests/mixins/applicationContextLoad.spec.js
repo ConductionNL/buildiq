@@ -83,5 +83,4 @@ describe('applicationContext obLoadApp', () => {
 		expect(ctx.obAppLoading).toBe(false)
 		expect(fetchMock).not.toHaveBeenCalled()
 	})
-
 })
