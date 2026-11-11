@@ -120,8 +120,9 @@ function run(args, cwd = REPO_ROOT) {
 	const code = result.status
 	const stdout = result.stdout.toString()
 	const stderr = result.stderr.toString()
+	// The relative form contains the absolute one, so it is masked first.
 	const mask = (s) =>
-		s.split(DIR).join('<tmp>').split(relative(REPO_ROOT, DIR)).join('<rel>')
+		s.split(relative(REPO_ROOT, DIR)).join('<rel>').split(DIR).join('<tmp>')
 	return `code=${code}\n--stdout--\n${mask(stdout)}--stderr--\n${mask(stderr)}`
 }
 
