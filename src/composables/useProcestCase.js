@@ -159,11 +159,21 @@ async function fetchStatusHistory(client, uuid) {
 		const { data } = await client.get(generateUrl(`${zrc()}/statussen`), {
 			params: { zaak: uuid },
 		})
-		const list = (data && (data.results || data)) || []
-		return Array.isArray(list) ? list : []
+		return statusList(data)
 	} catch {
 		return []
 	}
+}
+
+/**
+ * The statuses of a statussen answer: its `results`, or the bare list.
+ *
+ * @param {unknown} data - the response body.
+ * @return {Array<object>} the statuses, or [] for any other shape.
+ */
+function statusList(data) {
+	const list = (data && (data.results || data)) || []
+	return Array.isArray(list) ? list : []
 }
 
 /**
