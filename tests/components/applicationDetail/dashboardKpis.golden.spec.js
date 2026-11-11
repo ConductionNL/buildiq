@@ -6,7 +6,8 @@
  * title, aria-label, clickable class, arrow icon) and the props each stats
  * block gets, while loading and once loaded, with and without a register,
  * and with an error. Scoped-style `data-v-*` attributes and template
- * comments (dropped from production builds) are left out; `v-if`
+ * comments (dropped from production builds) are left out, and so is the
+ * whitespace between tags (the row is a grid, which ignores it); `v-if`
  * placeholders are kept.
  */
 
@@ -40,6 +41,7 @@ async function kpiRow(application, state) {
 	return wrapper.find('.ob-detail-dashboard__kpis').html()
 		.replace(/ data-v-[0-9a-f]+=""/g, '')
 		.replace(/<!--(?!v-if-->)[\s\S]*?-->/g, '')
+		.replace(/>\s+</g, '><')
 }
 
 const PLAIN = { uuid: 'app-uuid', slug: 'hello-world', name: 'Hello World' }
