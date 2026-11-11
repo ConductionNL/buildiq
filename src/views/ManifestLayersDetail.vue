@@ -188,6 +188,11 @@ import ArrowLeft from 'vue-material-design-icons/ArrowLeft.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import UserDeltaEditModal from '../modals/UserDeltaEditModal.vue'
 import VersionHistory from './VersionHistory.vue'
+import {
+	userDeltaState,
+	userOverridesUrl,
+	userOverrideUrl,
+} from '../services/userOverrides.js'
 
 export default {
 	name: 'ManifestLayersDetail',
@@ -374,11 +379,7 @@ export default {
 		async loadUserOverrides() {
 			if (!this.appSlug) return
 			try {
-				const url = generateUrl(
-					'/apps/buildiq/api/app-overrides/{appId}/user-deltas',
-					{ appId: this.appSlug },
-				)
-				const { data } = await axios.get(url)
+				const { data } = await axios.get(userOverridesUrl(this.appSlug))
 				this.userOverrides =
 					data && Array.isArray(data.overrides) ? data.overrides : []
 				this.canViewUserOverrides = true
@@ -448,24 +449,13 @@ export default {
 		async loadUserDelta() {
 			if (!this.appSlug) return
 			try {
-				const url = generateUrl(
-					'/apps/buildiq/api/app-overrides/{appId}/user',
-					{ appId: this.appSlug },
-				)
-				const { data } = await axios.get(url)
+				const { data } = await axios.get(userOverrideUrl(this.appSlug))
 				this.userDelta = {
-					allowed: !!(data && data.allowed),
-					exists: !!(data && data.exists),
-					versionUuid: (data && data.versionUuid) || null,
+					...userDeltaState(data),
 					manifestDelta: (data && data.manifestDelta) || {},
 				}
 			} catch (e) {
-				this.userDelta = {
-					allowed: false,
-					exists: false,
-					versionUuid: null,
-					manifestDelta: {},
-				}
+				this.userDelta = { ...userDeltaState(null), manifestDelta: {} }
 			}
 		},
 
@@ -481,11 +471,7 @@ export default {
 			this.creating = true
 			this.error = ''
 			try {
-				const url = generateUrl(
-					'/apps/buildiq/api/app-overrides/{appId}/user',
-					{ appId: this.appSlug },
-				)
-				await axios.put(url, {})
+				await axios.put(userOverrideUrl(this.appSlug), {})
 				await this.loadUserDelta()
 			} catch (e) {
 				this.error = t('buildiq', 'Could not create your override.')
@@ -505,11 +491,7 @@ export default {
 			if (!this.appSlug) return
 			this.error = ''
 			try {
-				const url = generateUrl(
-					'/apps/buildiq/api/app-overrides/{appId}/user',
-					{ appId: this.appSlug },
-				)
-				await axios.delete(url)
+				await axios.delete(userOverrideUrl(this.appSlug))
 				await this.loadUserDelta()
 			} catch (e) {
 				this.error = t('buildiq', 'Could not reset your override.')
