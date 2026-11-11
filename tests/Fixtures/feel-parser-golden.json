@@ -1,0 +1,484 @@
+{
+    "ok": {
+        "  age   >=  18 ": {
+            "type": "binary",
+            "op": ">=",
+            "left": {
+                "type": "path",
+                "segments": [
+                    "age"
+                ]
+            },
+            "right": {
+                "type": "literal",
+                "value": 18
+            }
+        },
+        "name == 'Jan de Vries'": {
+            "type": "binary",
+            "op": "==",
+            "left": {
+                "type": "path",
+                "segments": [
+                    "name"
+                ]
+            },
+            "right": {
+                "type": "literal",
+                "value": "Jan de Vries"
+            }
+        },
+        "x == ''": {
+            "type": "binary",
+            "op": "==",
+            "left": {
+                "type": "path",
+                "segments": [
+                    "x"
+                ]
+            },
+            "right": {
+                "type": "literal",
+                "value": ""
+            }
+        },
+        "3.14 < y": {
+            "type": "binary",
+            "op": "<",
+            "left": {
+                "type": "literal",
+                "value": 3.14
+            },
+            "right": {
+                "type": "path",
+                "segments": [
+                    "y"
+                ]
+            }
+        },
+        "1..10": {
+            "type": "range",
+            "low": {
+                "type": "literal",
+                "value": 1
+            },
+            "high": {
+                "type": "literal",
+                "value": 10
+            }
+        },
+        "a.b..c": {
+            "type": "range",
+            "low": {
+                "type": "path",
+                "segments": [
+                    "a",
+                    "b"
+                ]
+            },
+            "high": {
+                "type": "path",
+                "segments": [
+                    "c"
+                ]
+            }
+        },
+        "count != 007": {
+            "type": "binary",
+            "op": "!=",
+            "left": {
+                "type": "path",
+                "segments": [
+                    "count"
+                ]
+            },
+            "right": {
+                "type": "literal",
+                "value": 7
+            }
+        },
+        "1.5.3": {
+            "type": "literal",
+            "value": 1.5
+        },
+        "a <= b and c > d or not e": {
+            "type": "logical",
+            "op": "or",
+            "left": {
+                "type": "logical",
+                "op": "and",
+                "left": {
+                    "type": "binary",
+                    "op": "<=",
+                    "left": {
+                        "type": "path",
+                        "segments": [
+                            "a"
+                        ]
+                    },
+                    "right": {
+                        "type": "path",
+                        "segments": [
+                            "b"
+                        ]
+                    }
+                },
+                "right": {
+                    "type": "binary",
+                    "op": ">",
+                    "left": {
+                        "type": "path",
+                        "segments": [
+                            "c"
+                        ]
+                    },
+                    "right": {
+                        "type": "path",
+                        "segments": [
+                            "d"
+                        ]
+                    }
+                }
+            },
+            "right": {
+                "type": "not",
+                "operand": {
+                    "type": "path",
+                    "segments": [
+                        "e"
+                    ]
+                }
+            }
+        },
+        "a < b": {
+            "type": "binary",
+            "op": "<",
+            "left": {
+                "type": "path",
+                "segments": [
+                    "a"
+                ]
+            },
+            "right": {
+                "type": "path",
+                "segments": [
+                    "b"
+                ]
+            }
+        },
+        "x + y - z * w / v": {
+            "type": "binary",
+            "op": "-",
+            "left": {
+                "type": "binary",
+                "op": "+",
+                "left": {
+                    "type": "path",
+                    "segments": [
+                        "x"
+                    ]
+                },
+                "right": {
+                    "type": "path",
+                    "segments": [
+                        "y"
+                    ]
+                }
+            },
+            "right": {
+                "type": "binary",
+                "op": "/",
+                "left": {
+                    "type": "binary",
+                    "op": "*",
+                    "left": {
+                        "type": "path",
+                        "segments": [
+                            "z"
+                        ]
+                    },
+                    "right": {
+                        "type": "path",
+                        "segments": [
+                            "w"
+                        ]
+                    }
+                },
+                "right": {
+                    "type": "path",
+                    "segments": [
+                        "v"
+                    ]
+                }
+            }
+        },
+        "x in (1, 'two', true)": {
+            "type": "in",
+            "operand": {
+                "type": "path",
+                "segments": [
+                    "x"
+                ]
+            },
+            "list": [
+                {
+                    "type": "literal",
+                    "value": 1
+                },
+                {
+                    "type": "literal",
+                    "value": "two"
+                },
+                {
+                    "type": "literal",
+                    "value": true
+                }
+            ]
+        },
+        "x in ()": {
+            "type": "in",
+            "operand": {
+                "type": "path",
+                "segments": [
+                    "x"
+                ]
+            },
+            "list": []
+        },
+        "v is null": {
+            "type": "is-null",
+            "operand": {
+                "type": "path",
+                "segments": [
+                    "v"
+                ]
+            },
+            "negated": false
+        },
+        "v is not null": {
+            "type": "is-null",
+            "operand": {
+                "type": "path",
+                "segments": [
+                    "v"
+                ]
+            },
+            "negated": true
+        },
+        "IS_flag == TRUE": {
+            "type": "binary",
+            "op": "==",
+            "left": {
+                "type": "path",
+                "segments": [
+                    "IS_flag"
+                ]
+            },
+            "right": {
+                "type": "literal",
+                "value": true
+            }
+        },
+        "Not x": {
+            "type": "not",
+            "operand": {
+                "type": "path",
+                "segments": [
+                    "x"
+                ]
+            }
+        },
+        "_priv.field_1 == FALSE": {
+            "type": "binary",
+            "op": "==",
+            "left": {
+                "type": "path",
+                "segments": [
+                    "_priv",
+                    "field_1"
+                ]
+            },
+            "right": {
+                "type": "literal",
+                "value": false
+            }
+        },
+        "NULL": {
+            "type": "literal",
+            "value": null
+        },
+        "- 5": {
+            "type": "binary",
+            "op": "-",
+            "left": {
+                "type": "literal",
+                "value": 0
+            },
+            "right": {
+                "type": "literal",
+                "value": 5
+            }
+        },
+        "-x": {
+            "type": "binary",
+            "op": "-",
+            "left": {
+                "type": "literal",
+                "value": 0
+            },
+            "right": {
+                "type": "path",
+                "segments": [
+                    "x"
+                ]
+            }
+        },
+        "not not x": {
+            "type": "not",
+            "operand": {
+                "type": "not",
+                "operand": {
+                    "type": "path",
+                    "segments": [
+                        "x"
+                    ]
+                }
+            }
+        },
+        "a.b.c == 1": {
+            "type": "binary",
+            "op": "==",
+            "left": {
+                "type": "path",
+                "segments": [
+                    "a",
+                    "b",
+                    "c"
+                ]
+            },
+            "right": {
+                "type": "literal",
+                "value": 1
+            }
+        },
+        "1. == 1": {
+            "type": "binary",
+            "op": "==",
+            "left": {
+                "type": "literal",
+                "value": 1.0
+            },
+            "right": {
+                "type": "literal",
+                "value": 1
+            }
+        },
+        "a+b": {
+            "type": "binary",
+            "op": "+",
+            "left": {
+                "type": "path",
+                "segments": [
+                    "a"
+                ]
+            },
+            "right": {
+                "type": "path",
+                "segments": [
+                    "b"
+                ]
+            }
+        },
+        "a>b": {
+            "type": "binary",
+            "op": ">",
+            "left": {
+                "type": "path",
+                "segments": [
+                    "a"
+                ]
+            },
+            "right": {
+                "type": "path",
+                "segments": [
+                    "b"
+                ]
+            }
+        },
+        "a<b": {
+            "type": "binary",
+            "op": "<",
+            "left": {
+                "type": "path",
+                "segments": [
+                    "a"
+                ]
+            },
+            "right": {
+                "type": "path",
+                "segments": [
+                    "b"
+                ]
+            }
+        },
+        "a!=b": {
+            "type": "binary",
+            "op": "!=",
+            "left": {
+                "type": "path",
+                "segments": [
+                    "a"
+                ]
+            },
+            "right": {
+                "type": "path",
+                "segments": [
+                    "b"
+                ]
+            }
+        },
+        "a>=b": {
+            "type": "binary",
+            "op": ">=",
+            "left": {
+                "type": "path",
+                "segments": [
+                    "a"
+                ]
+            },
+            "right": {
+                "type": "path",
+                "segments": [
+                    "b"
+                ]
+            }
+        },
+        "a.": {
+            "type": "path",
+            "segments": [
+                "a",
+                ""
+            ]
+        }
+    },
+    "bad": {
+        "x 5..10": "Syntax error at position 2: unexpected token \"5\".",
+        "(a, b)": "Syntax error at position 2: expected \")\".",
+        "12..": "Syntax error at position 4: unexpected token \"\".",
+        "x == 1.": "Syntax error at position 6: unexpected character \".\".",
+        "'open": "Syntax error at position 0: unterminated string literal.",
+        "a = b": "Syntax error at position 2: unknown operator \"=\" (use \"==\" for equality).",
+        "a # b": "Syntax error at position 2: unexpected character \"#\".",
+        "a .. ": "Syntax error at position 5: unexpected token \"\".",
+        "x is 5": "Syntax error at position 5: expected \"null\" after \"is\".",
+        "x in (1": "Syntax error at position 7: expected \")\".",
+        "(a": "Syntax error at position 2: expected \")\".",
+        ")": "Syntax error at position 0: unexpected token \")\".",
+        "1 2": "Syntax error at position 2: unexpected token \"2\".",
+        "": "Syntax error at position 0: unexpected token \"\".",
+        "  ": "Syntax error at position 2: unexpected token \"\".",
+        "a ! b": "Syntax error at position 2: unexpected character \"!\".",
+        "@": "Syntax error at position 0: unexpected character \"@\".",
+        "x in 1": "Syntax error at position 5: expected \"(\"."
+    }
+}

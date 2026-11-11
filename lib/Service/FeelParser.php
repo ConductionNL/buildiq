@@ -84,6 +84,16 @@ class FeelParser {
 	private const MAX_DEPTH = 128;
 
 	/**
+	 * Operators that build a comparison node.
+	 */
+	private const COMPARISON_OPERATORS = ['==', '!=', '<', '>', '<=', '>='];
+
+	/**
+	 * Keywords that parse as a literal, mapped to their value.
+	 */
+	private const KEYWORD_LITERALS = ['true' => true, 'false' => false, 'null' => null];
+
+	/**
 	 * The tokens produced by the lexer for the expression under parse.
 	 *
 	 * @var array<int,array{kind:string,value:mixed,pos:int}>
@@ -117,31 +127,68 @@ class FeelParser {
 	 * @throws InvalidArgumentException On any syntax error, with the offending position.
 	 */
 	public function parse(string $expression): array {
-		// DoS guard: reject an over-length source before tokenising it.
+		$this->assertSourceLength(expression: $expression);
+
+		$this->tokens = $this->tokenize(src: $expression);
+		$this->cursor = 0;
+		$this->depth = 0;
+
+		$this->assertTokenCount();
+
+		$node = $this->parseOr();
+		$this->assertFullyConsumed();
+
+		return $node;
+	}//end parse()
+
+	/**
+	 * DoS guard: reject an over-length source before tokenising it.
+	 *
+	 * @param string $expression The FEEL expression source.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the source is too long.
+	 */
+	private function assertSourceLength(string $expression): void {
 		if (strlen($expression) > self::MAX_SOURCE_LENGTH) {
 			throw new InvalidArgumentException(
 				'Syntax error: expression exceeds the maximum length of ' . self::MAX_SOURCE_LENGTH . ' characters.'
 			);
 		}
 
-		$this->tokens = $this->tokenize(src: $expression);
-		$this->cursor = 0;
-		$this->depth = 0;
+	}//end assertSourceLength()
 
+	/**
+	 * Reject an empty token stream and, as a DoS guard, one with too many
+	 * tokens (the `eof` token is always present, so allow MAX_TOKENS + 1).
+	 * This transitively bounds the AST node count.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException On an empty or over-long token stream.
+	 */
+	private function assertTokenCount(): void {
 		if ($this->tokens === []) {
 			throw new InvalidArgumentException('Syntax error: empty expression.');
 		}
 
-		// DoS guard: cap the token count (the `eof` token is always present, so
-		// allow MAX_TOKENS + 1). This transitively bounds the AST node count.
 		if (count($this->tokens) > (self::MAX_TOKENS + 1)) {
 			throw new InvalidArgumentException(
 				'Syntax error: expression has too many tokens (max ' . self::MAX_TOKENS . ').'
 			);
 		}
 
-		$node = $this->parseOr();
+	}//end assertTokenCount()
 
+	/**
+	 * Reject trailing tokens after a complete expression.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When a token other than `eof` remains.
+	 */
+	private function assertFullyConsumed(): void {
 		if ($this->peek()['kind'] !== 'eof') {
 			$tok = $this->peek();
 			throw new InvalidArgumentException(
@@ -149,8 +196,7 @@ class FeelParser {
 			);
 		}
 
-		return $node;
-	}//end parse()
+	}//end assertFullyConsumed()
 
 	/**
 	 * Lexer — convert the source string into a token stream.
@@ -162,132 +208,8 @@ class FeelParser {
 	 * @throws InvalidArgumentException On an unknown character or operator.
 	 */
 	private function tokenize(string $src): array {
-		$tokens = [];
-		$len = strlen($src);
-		$cursor = 0;
+		return (new FeelLexer(src: $src))->tokenize();
 
-		while ($cursor < $len) {
-			$ch = $src[$cursor];
-
-			if (ctype_space($ch) === true) {
-				++$cursor;
-				continue;
-			}
-
-			// Single-quoted string literal.
-			if ($ch === "'") {
-				$start = $cursor;
-				++$cursor;
-				$buf = '';
-				while ($cursor < $len && $src[$cursor] !== "'") {
-					$buf .= $src[$cursor];
-					++$cursor;
-				}
-
-				if ($cursor >= $len) {
-					throw new InvalidArgumentException(
-						'Syntax error at position ' . $start . ': unterminated string literal.'
-					);
-				}
-
-				++$cursor;
-				$tokens[] = ['kind' => 'string', 'value' => $buf, 'pos' => $start];
-				continue;
-			}
-
-			// Number literal (integer or decimal). A double-dot range separator
-			// must not be swallowed as a decimal point.
-			if (ctype_digit($ch) === true) {
-				$start = $cursor;
-				$buf = '';
-				while ($cursor < $len
-					&& (ctype_digit($src[$cursor]) === true
-					|| ($src[$cursor] === '.' && ($cursor + 1) < $len && $src[($cursor + 1)] !== '.'))
-				) {
-					$buf .= $src[$cursor];
-					++$cursor;
-				}
-
-				$value = (int)$buf;
-				if (str_contains($buf, '.') === true) {
-					$value = (float)$buf;
-				}
-
-				$tokens[] = ['kind' => 'number', 'value' => $value, 'pos' => $start];
-				continue;
-			}
-
-			// Range separator `..`.
-			if ($ch === '.' && ($cursor + 1) < $len && $src[($cursor + 1)] === '.') {
-				$tokens[] = ['kind' => 'range', 'value' => '..', 'pos' => $cursor];
-				$cursor += 2;
-				continue;
-			}
-
-			// Multi-character operators.
-			$two = '';
-			if (($cursor + 1) < $len) {
-				$two = substr($src, $cursor, 2);
-			}
-
-			if (in_array($two, ['==', '!=', '<=', '>='], true) === true) {
-				$tokens[] = ['kind' => 'op', 'value' => $two, 'pos' => $cursor];
-				$cursor += 2;
-				continue;
-			}
-
-			// Single-character operators / punctuation.
-			if (in_array($ch, ['<', '>', '+', '-', '*', '/', '(', ')', ','], true) === true) {
-				$tokenKind = 'op';
-				if (in_array($ch, ['(', ')', ','], true) === true) {
-					$tokenKind = 'punct';
-				}
-
-				$tokens[] = ['kind' => $tokenKind, 'value' => $ch, 'pos' => $cursor];
-				++$cursor;
-				continue;
-			}
-
-			// A lone `=` is a common mistake (assignment vs equality).
-			if ($ch === '=') {
-				throw new InvalidArgumentException(
-					'Syntax error at position ' . $cursor . ': unknown operator "=" (use "==" for equality).'
-				);
-			}
-
-			// Identifiers, keywords and dotted field paths.
-			if (ctype_alpha($ch) === true || $ch === '_') {
-				$start = $cursor;
-				$buf = '';
-				while ($cursor < $len
-					&& (ctype_alnum($src[$cursor]) === true || $src[$cursor] === '_' || $src[$cursor] === '.')
-				) {
-					// Stop a path on a `..` range separator.
-					if ($src[$cursor] === '.' && ($cursor + 1) < $len && $src[($cursor + 1)] === '.') {
-						break;
-					}
-
-					$buf .= $src[$cursor];
-					++$cursor;
-				}
-
-				$lower = strtolower($buf);
-				$token = ['kind' => 'ident', 'value' => $buf, 'pos' => $start];
-				if (in_array($lower, ['and', 'or', 'not', 'in', 'is', 'null', 'true', 'false'], true) === true) {
-					$token = ['kind' => 'keyword', 'value' => $lower, 'pos' => $start];
-				}
-
-				$tokens[] = $token;
-				continue;
-			}//end if
-
-			throw new InvalidArgumentException(
-				'Syntax error at position ' . $cursor . ': unexpected character "' . $ch . '".'
-			);
-		}//end while
-
-		$tokens[] = ['kind' => 'eof', 'value' => '', 'pos' => $len];
-		return $tokens;
 	}//end tokenize()
 
 	/**
@@ -398,55 +320,115 @@ class FeelParser {
 
 		$tok = $this->peek();
 
-		// `is null` / `is not null`.
-		if ($tok['kind'] === 'keyword' && $tok['value'] === 'is') {
-			$this->next();
-			$negated = false;
-			if ($this->peek()['kind'] === 'keyword' && $this->peek()['value'] === 'not') {
-				$this->next();
-				$negated = true;
-			}
-
-			$nullTok = $this->next();
-			if ($nullTok['kind'] !== 'keyword' || $nullTok['value'] !== 'null') {
-				throw new InvalidArgumentException(
-					'Syntax error at position ' . $nullTok['pos'] . ': expected "null" after "is".'
-				);
-			}
-
-			return ['type' => 'is-null', 'operand' => $left, 'negated' => $negated];
+		if ($this->isKeyword(token: $tok, value: 'is') === true) {
+			return $this->parseNullCheck(operand: $left);
 		}
 
-		// `in (a, b, c)`.
-		if ($tok['kind'] === 'keyword' && $tok['value'] === 'in') {
-			$this->next();
-			$this->expectPunct(value: '(');
-			$list = [];
-			if ($this->peek()['value'] !== ')') {
-				$list[] = $this->parseAddition();
-				while ($this->peek()['kind'] === 'punct' && $this->peek()['value'] === ',') {
-					$this->next();
-					$list[] = $this->parseAddition();
-				}
-			}
-
-			$this->expectPunct(value: ')');
-			return ['type' => 'in', 'operand' => $left, 'list' => $list];
+		if ($this->isKeyword(token: $tok, value: 'in') === true) {
+			return $this->parseListMembership(operand: $left);
 		}
 
-		// Comparison operators.
-		if ($tok['kind'] === 'op' && in_array($tok['value'], ['==', '!=', '<', '>', '<=', '>='], true) === true) {
-			$this->next();
-			$right = $this->parseAddition();
-
-			// Range on the right-hand side: `age in 5..10` is written `age 5..10`
-			// only inside list/range contexts; a bare `a..b` becomes a range node
-			// handled in parsePrimary. Here we just build the comparison.
-			return ['type' => 'binary', 'op' => $tok['value'], 'left' => $left, 'right' => $right];
+		// Comparison operators. A bare `a..b` becomes a range node in
+		// parseRange; here we just build the comparison.
+		if ($tok['kind'] === 'op' && in_array($tok['value'], self::COMPARISON_OPERATORS, true) === true) {
+			return $this->parseComparisonRight(left: $left);
 		}
 
 		return $left;
 	}//end parseComparison()
+
+	/**
+	 * Consume a comparison operator and parse its right-hand side.
+	 *
+	 * @param array<string,mixed> $left The already-parsed left-hand side.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function parseComparisonRight(array $left): array {
+		$op = $this->next()['value'];
+		$right = $this->parseAddition();
+		return ['type' => 'binary', 'op' => $op, 'left' => $left, 'right' => $right];
+
+	}//end parseComparisonRight()
+
+	/**
+	 * Parse `is null` / `is not null` after its operand.
+	 *
+	 * @param array<string,mixed> $operand The already-parsed left-hand side.
+	 *
+	 * @return array<string,mixed>
+	 *
+	 * @throws InvalidArgumentException When `null` does not follow.
+	 */
+	private function parseNullCheck(array $operand): array {
+		$this->next();
+		$negated = false;
+		if ($this->isKeyword(token: $this->peek(), value: 'not') === true) {
+			$this->next();
+			$negated = true;
+		}
+
+		$nullTok = $this->next();
+		if ($this->isKeyword(token: $nullTok, value: 'null') === false) {
+			throw new InvalidArgumentException(
+				'Syntax error at position ' . $nullTok['pos'] . ': expected "null" after "is".'
+			);
+		}
+
+		return ['type' => 'is-null', 'operand' => $operand, 'negated' => $negated];
+
+	}//end parseNullCheck()
+
+	/**
+	 * Parse `in (a, b, c)` after its operand.
+	 *
+	 * @param array<string,mixed> $operand The already-parsed left-hand side.
+	 *
+	 * @return array<string,mixed>
+	 *
+	 * @throws InvalidArgumentException When a parenthesis is missing.
+	 */
+	private function parseListMembership(array $operand): array {
+		$this->next();
+		$this->expectPunct(value: '(');
+		$list = $this->parseListItems();
+		$this->expectPunct(value: ')');
+		return ['type' => 'in', 'operand' => $operand, 'list' => $list];
+
+	}//end parseListMembership()
+
+	/**
+	 * Parse the comma-separated items of a list, stopping before `)`.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function parseListItems(): array {
+		if ($this->peek()['value'] === ')') {
+			return [];
+		}
+
+		$list = [$this->parseAddition()];
+		while ($this->peek()['kind'] === 'punct' && $this->peek()['value'] === ',') {
+			$this->next();
+			$list[] = $this->parseAddition();
+		}
+
+		return $list;
+
+	}//end parseListItems()
+
+	/**
+	 * Whether a token is a given keyword.
+	 *
+	 * @param array{kind:string,value:mixed,pos:int} $token The token.
+	 * @param string                                 $value The keyword.
+	 *
+	 * @return boolean
+	 */
+	private function isKeyword(array $token, string $value): bool {
+		return $token['kind'] === 'keyword' && $token['value'] === $value;
+
+	}//end isKeyword()
 
 	/**
 	 * Parse `+` / `-` arithmetic.
@@ -523,53 +505,91 @@ class FeelParser {
 	private function parsePrimaryInner(): array {
 		$tok = $this->next();
 
-		switch ($tok['kind']) {
-			case 'number':
-				return ['type' => 'literal', 'value' => $tok['value']];
-			case 'string':
-				return ['type' => 'literal', 'value' => (string)$tok['value']];
-			case 'ident':
-				return ['type' => 'path', 'segments' => explode('.', (string)$tok['value'])];
-			case 'keyword':
-				if ($tok['value'] === 'true') {
-					return ['type' => 'literal', 'value' => true];
-				}
+		$node = $this->primaryNode(token: $tok);
+		if ($node === null) {
+			throw new InvalidArgumentException(
+				'Syntax error at position ' . $tok['pos'] . ': unexpected token "' . (string)$tok['value'] . '".'
+			);
+		}
 
-				if ($tok['value'] === 'false') {
-					return ['type' => 'literal', 'value' => false];
-				}
-
-				if ($tok['value'] === 'null') {
-					return ['type' => 'literal', 'value' => null];
-				}
-
-				if ($tok['value'] === 'not') {
-					return ['type' => 'not', 'operand' => $this->parsePrimary()];
-				}
-				break;
-			case 'punct':
-				if ($tok['value'] === '(') {
-					$node = $this->parseOr();
-					$this->expectPunct(value: ')');
-					return $node;
-				}
-				break;
-			case 'op':
-				// Unary minus.
-				if ($tok['value'] === '-') {
-					$operand = $this->parsePrimary();
-					return ['type' => 'binary', 'op' => '-', 'left' => ['type' => 'literal', 'value' => 0], 'right' => $operand];
-				}
-				break;
-			default:
-				break;
-		}//end switch
-
-		throw new InvalidArgumentException(
-			'Syntax error at position ' . $tok['pos'] . ': unexpected token "' . (string)$tok['value'] . '".'
-		);
+		return $node;
 
 	}//end parsePrimaryInner()
+
+	/**
+	 * Build the primary node a consumed token starts.
+	 *
+	 * @param array{kind:string,value:mixed,pos:int} $token The consumed token.
+	 *
+	 * @return array<string,mixed>|null Null when the token cannot start a primary.
+	 */
+	private function primaryNode(array $token): ?array {
+		return match ($token['kind']) {
+			'number' => ['type' => 'literal', 'value' => $token['value']],
+			'string' => ['type' => 'literal', 'value' => (string)$token['value']],
+			'ident' => ['type' => 'path', 'segments' => explode('.', (string)$token['value'])],
+			'keyword' => $this->keywordPrimary(keyword: (string)$token['value']),
+			'punct' => $this->groupPrimary(punct: (string)$token['value']),
+			'op' => $this->unaryMinusPrimary(op: (string)$token['value']),
+			default => null,
+		};
+
+	}//end primaryNode()
+
+	/**
+	 * Build a `true` / `false` / `null` literal or a `not` node.
+	 *
+	 * @param string $keyword The consumed keyword.
+	 *
+	 * @return array<string,mixed>|null Null for any other keyword.
+	 */
+	private function keywordPrimary(string $keyword): ?array {
+		if (array_key_exists($keyword, self::KEYWORD_LITERALS) === true) {
+			return ['type' => 'literal', 'value' => self::KEYWORD_LITERALS[$keyword]];
+		}
+
+		if ($keyword === 'not') {
+			return ['type' => 'not', 'operand' => $this->parsePrimary()];
+		}
+
+		return null;
+
+	}//end keywordPrimary()
+
+	/**
+	 * Parse a parenthesised expression after its `(`.
+	 *
+	 * @param string $punct The consumed punctuation.
+	 *
+	 * @return array<string,mixed>|null Null for any punctuation other than `(`.
+	 */
+	private function groupPrimary(string $punct): ?array {
+		if ($punct !== '(') {
+			return null;
+		}
+
+		$node = $this->parseOr();
+		$this->expectPunct(value: ')');
+		return $node;
+
+	}//end groupPrimary()
+
+	/**
+	 * Parse a unary minus as `0 - operand`.
+	 *
+	 * @param string $op The consumed operator.
+	 *
+	 * @return array<string,mixed>|null Null for any operator other than `-`.
+	 */
+	private function unaryMinusPrimary(string $op): ?array {
+		if ($op !== '-') {
+			return null;
+		}
+
+		$operand = $this->parsePrimary();
+		return ['type' => 'binary', 'op' => '-', 'left' => ['type' => 'literal', 'value' => 0], 'right' => $operand];
+
+	}//end unaryMinusPrimary()
 
 	/**
 	 * Consume an expected punctuation token or fail.
