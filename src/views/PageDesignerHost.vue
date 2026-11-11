@@ -185,6 +185,7 @@ import {
 	stripDependencyMarker,
 } from '../services/manifestDependencies.js'
 import { assignUnassignedFieldsToFinalStep } from '../services/manifestValidation/formLogic.js'
+import { mirrorVersionLoad } from '../utils/mirrorVersionLoad.js'
 import { navigateTo } from '../utils/navigate.js'
 
 const EMPTY_MANIFEST = { version: '1.0.0', menu: [], pages: [] }
@@ -552,23 +553,7 @@ export default {
 				useApplicationVersion(this.routeSlug, this.versionSlug)
 			this.applicationVersion = applicationVersion.value
 			this.versionLoading = loading.value
-			const unwatch = this.$watch(
-				() => applicationVersion.value,
-				(v) => {
-					this.applicationVersion = v
-				},
-			)
-			const unwatchLoading = this.$watch(
-				() => loading.value,
-				(v) => {
-					this.versionLoading = v
-					if (!v) {
-						unwatch()
-						unwatchLoading()
-						this.versionError = error.value
-					}
-				},
-			)
+			mirrorVersionLoad(this, { applicationVersion, loading, error })
 			// AWAIT the in-flight fetch (#174). Every caller pairs this with load(),
 			// which seeds the editor manifest FROM `applicationVersion` exactly once
 			// — so returning before it settles left the designer showing "No pages
