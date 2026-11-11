@@ -110,6 +110,105 @@ function trimPath(path) {
 	return String(path || '').replace(/^\/+/, '')
 }
 
+/**
+ * The list a list response carries: its `results`, or the body itself.
+ *
+ * @param {object} response - an axios response.
+ * @return {Array|object|string} the list, before it is checked.
+ */
+function responseList(response) {
+	const data = response && response.data
+	return (data && (data.results || data)) || []
+}
+
+/**
+ * The rows of a list response, or none when it holds no array.
+ *
+ * @param {object} response - an axios response.
+ * @return {Array<object>} the rows.
+ */
+function responseRows(response) {
+	const list = responseList(response)
+	return Array.isArray(list) ? list : []
+}
+
+/**
+ * A source row as a picker source: name and id only. A source row also
+ * carries credentials, and none of that may reach the page (REQ-OCAS-004).
+ *
+ * @param {object} row - an OpenConnector source object.
+ * @return {{id: string, name: string}} the source.
+ */
+function toSource(row) {
+	return {
+		id: objectKey(row),
+		name: row.name || row.slug || objectKey(row),
+	}
+}
+
+/**
+ * The path an endpoint row is called on: its endpoint, path or slug.
+ *
+ * @param {object} row - an OpenConnector endpoint object.
+ * @return {string} the path without leading slashes.
+ */
+function endpointPathOf(row) {
+	return trimPath(row.endpoint || row.path || row.slug || '')
+}
+
+/**
+ * An endpoint row as a picker endpoint, named after its source.
+ *
+ * @param {object} row - an OpenConnector endpoint object.
+ * @param {Map<string, string>} nameById - source names by source id.
+ * @return {{path: string, sourceId: string, sourceName: string}} the endpoint.
+ */
+function toEndpoint(row, nameById) {
+	const sourceId = String(row.targetId || '')
+	return {
+		path: endpointPathOf(row),
+		sourceId,
+		sourceName: nameById.get(sourceId) || '',
+	}
+}
+
+/**
+ * The sources of a source response; rows without an id are dropped.
+ *
+ * @param {object} response - the source list response.
+ * @return {Array<{id: string, name: string}>} the sources.
+ */
+function sourceList(response) {
+	return responseRows(response)
+		.map(toSource)
+		.filter((source) => source.id)
+}
+
+/**
+ * The endpoints of an endpoint response, named after their sources; rows
+ * without a path are dropped.
+ *
+ * @param {object} response - the endpoint list response.
+ * @param {Array<{id: string, name: string}>} sources - the known sources.
+ * @return {Array<object>} the endpoints.
+ */
+function endpointList(response, sources) {
+	const nameById = new Map(sources.map((source) => [source.id, source.name]))
+	return responseRows(response)
+		.map((row) => toEndpoint(row, nameById))
+		.filter((e) => e.path)
+}
+
+/**
+ * The id of a picked option, or '' when the selection was cleared.
+ *
+ * @param {?object} option - the selected option.
+ * @return {string} the id.
+ */
+function optionId(option) {
+	return option && option.id ? option.id : ''
+}
+
 export default {
 	name: 'ConnectorSourcePicker',
 	components: { NcSelect },
@@ -251,44 +350,7 @@ export default {
 			this.loading = true
 			this.error = false
 			try {
-				// The connector app keeps its sources and endpoints as
-				// OpenRegister objects in its own register; its old
-				// `/api/endpoints` route no longer exists.
-				const register = resolveFleetAppId('integriq')
-				const base = `/apps/openregister/api/objects/${register}`
-				const params = { params: { _limit: 500 } }
-				const [sourcesResponse, endpointsResponse] = await Promise.all([
-					axios.get(generateUrl(`${base}/source`), params),
-					axios.get(generateUrl(`${base}/endpoint`), params),
-				])
-				const rows = (response) => {
-					const data = response && response.data
-					const list = (data && (data.results || data)) || []
-					return Array.isArray(list) ? list : []
-				}
-				// Name and id only: a source row also carries credentials, and
-				// none of that may reach the page (REQ-OCAS-004).
-				this.sources = rows(sourcesResponse)
-					.map((row) => ({
-						id: objectKey(row),
-						name: row.name || row.slug || objectKey(row),
-					}))
-					.filter((source) => source.id)
-				const nameById = new Map(
-					this.sources.map((source) => [source.id, source.name]),
-				)
-				this.endpoints = rows(endpointsResponse)
-					.map((row) => {
-						const sourceId = String(row.targetId || '')
-						return {
-							path: trimPath(
-								row.endpoint || row.path || row.slug || '',
-							),
-							sourceId,
-							sourceName: nameById.get(sourceId) || '',
-						}
-					})
-					.filter((e) => e.path)
+				this.applyConnectorObjects(await this.fetchConnectorObjects())
 			} catch {
 				this.error = true
 				this.endpoints = []
@@ -299,6 +361,44 @@ export default {
 		},
 
 		/**
+		 * Fetch the connector's sources and endpoints. The connector app keeps
+		 * them as OpenRegister objects in its own register; its old
+		 * `/api/endpoints` route no longer exists.
+		 *
+		 * @return {Promise<Array<object>>} the source and endpoint responses.
+		 */
+		fetchConnectorObjects() {
+			const register = resolveFleetAppId('integriq')
+			const base = `/apps/openregister/api/objects/${register}`
+			const params = { params: { _limit: 500 } }
+			return Promise.all([
+				axios.get(generateUrl(`${base}/source`), params),
+				axios.get(generateUrl(`${base}/endpoint`), params),
+			])
+		},
+
+		/**
+		 * Keep the credential-free sources and endpoints of the responses.
+		 *
+		 * @param {Array<object>} responses - the source and endpoint responses.
+		 * @return {void}
+		 */
+		applyConnectorObjects([sourcesResponse, endpointsResponse]) {
+			this.sources = sourceList(sourcesResponse)
+			this.endpoints = endpointList(endpointsResponse, this.sources)
+		},
+
+		/**
+		 * The endpoint the binding currently points at, if it is listed.
+		 *
+		 * @return {object|undefined} the bound endpoint.
+		 */
+		boundEndpoint() {
+			const current = trimPath(this.binding && this.binding.endpointPath)
+			return this.endpoints.find((e) => current && e.path === current)
+		},
+
+		/**
 		 * Pick the source whose endpoints are offered. An endpoint from another
 		 * source is unbound, since it no longer matches the choice.
 		 *
@@ -306,10 +406,9 @@ export default {
 		 * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-002
 		 */
 		onSelectSource(option) {
-			const id = option && option.id ? option.id : ''
+			const id = optionId(option)
 			this.pickedSourceId = id
-			const current = trimPath(this.binding && this.binding.endpointPath)
-			const bound = this.endpoints.find((e) => current && e.path === current)
+			const bound = this.boundEndpoint()
 			if (bound && id && bound.sourceId !== id) {
 				this.$emit('update:endpointPath', '')
 			}
