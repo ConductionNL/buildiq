@@ -566,23 +566,17 @@ class AutomationCompilerService {
 	 * @return array<string, mixed>|null The declared chain, or null.
 	 */
 	private function resolveApprovalChainForState(string $schemaSlug, string $chainName): ?array {
-		$schema = $this->loadSchema(slug: $schemaSlug);
-		if ($schema === null) {
+		$declared = $this->declaredApprovalChains(schemaSlug: $schemaSlug);
+		if ($declared === null) {
 			return null;
 		}
 
-		$schemaId = $schema->getId();
-		if ($schemaId === null) {
-			return null;
-		}
-
-		$config = ($schema->getConfiguration() ?? []);
-		$chains = ($config[self::APPROVAL_CHAINS_KEY] ?? []);
+		[$schemaId, $chains] = $declared;
 		if (is_array($chains) === false || is_array(($chains[$chainName] ?? null)) === false) {
 			return null;
 		}
 
-		return ['name' => $chainName, 'schemaId' => (int)$schemaId];
+		return ['name' => $chainName, 'schemaId' => $schemaId];
 
 	}//end resolveApprovalChainForState()
 
@@ -1185,16 +1179,12 @@ class AutomationCompilerService {
 		$schemas = array_unique(array_merge(array_keys($bySchema), array_keys($priorBySchema)));
 
 		foreach ($schemas as $schemaSlug) {
-			if ($schemaSlug === '') {
+			$target = $this->configuredSchema(slug: $schemaSlug);
+			if ($target === null) {
 				continue;
 			}
 
-			$schema = $this->loadSchema(slug: $schemaSlug);
-			if ($schema === null) {
-				continue;
-			}
-
-			$config = ($schema->getConfiguration() ?? []);
+			[$schema, $config] = $target;
 			$map = $this->orArray(value: $config['x-openregister-notifications'] ?? null);
 
 			$keepKeys = array_map(static fn (array $entry): string => (string)$entry['key'], ($bySchema[$schemaSlug] ?? []));
@@ -1245,16 +1235,12 @@ class AutomationCompilerService {
 
 		$result = [];
 		foreach ($schemas as $schemaSlug) {
-			if ($schemaSlug === '') {
+			$target = $this->configuredSchema(slug: $schemaSlug);
+			if ($target === null) {
 				continue;
 			}
 
-			$schema = $this->loadSchema(slug: $schemaSlug);
-			if ($schema === null) {
-				continue;
-			}
-
-			$config = ($schema->getConfiguration() ?? []);
+			[$schema, $config] = $target;
 			$lifecycle = $this->orNullArray(value: $config['x-openregister-lifecycle'] ?? null);
 			if ($lifecycle === null) {
 				continue;
@@ -1664,16 +1650,16 @@ class AutomationCompilerService {
 		foreach ($keys as $k) {
 			$schemaSlug = (string)($k['schema'] ?? '');
 			$key = (string)($k['key'] ?? '');
-			if ($schemaSlug === '' || $key === '') {
+			if ($key === '') {
 				continue;
 			}
 
-			$schema = $this->loadSchema(slug: $schemaSlug);
-			if ($schema === null) {
+			$target = $this->configuredSchema(slug: $schemaSlug);
+			if ($target === null) {
 				continue;
 			}
 
-			$config = ($schema->getConfiguration() ?? []);
+			$config = $target[1];
 			$map = $this->orArray(value: $config['x-openregister-notifications'] ?? null);
 
 			$result[] = ['schema' => $schemaSlug, 'key' => $key, 'entry' => ($map[$key] ?? null)];
@@ -1696,16 +1682,16 @@ class AutomationCompilerService {
 		foreach ($marked as $m) {
 			$schemaSlug = (string)($m['schema'] ?? '');
 			$tName = (string)($m['transition'] ?? '');
-			if ($schemaSlug === '' || $tName === '') {
+			if ($tName === '') {
 				continue;
 			}
 
-			$schema = $this->loadSchema(slug: $schemaSlug);
-			if ($schema === null) {
+			$target = $this->configuredSchema(slug: $schemaSlug);
+			if ($target === null) {
 				continue;
 			}
 
-			$config = ($schema->getConfiguration() ?? []);
+			$config = $target[1];
 			$lifecycle = $this->orArray(value: $config['x-openregister-lifecycle'] ?? null);
 			$transitions = $this->orArray(value: $lifecycle['transitions'] ?? null);
 			$actions = $this->orArray(value: $transitions[$tName]['actions'] ?? null);
@@ -1824,18 +1810,12 @@ class AutomationCompilerService {
 			return null;
 		}
 
-		$schema = $this->loadSchema(slug: $schemaSlug);
-		if ($schema === null) {
+		$declared = $this->declaredApprovalChains(schemaSlug: $schemaSlug);
+		if ($declared === null) {
 			return null;
 		}
 
-		$schemaId = $schema->getId();
-		if ($schemaId === null) {
-			return null;
-		}
-
-		$config = ($schema->getConfiguration() ?? []);
-		$chains = ($config[self::APPROVAL_CHAINS_KEY] ?? []);
+		$chains = $declared[1];
 		$spec = null;
 		if (is_array($chains) === true) {
 			$spec = ($chains[$name] ?? null);
@@ -1981,6 +1961,51 @@ class AutomationCompilerService {
 		}
 
 	}//end loadSchema()
+
+	/**
+	 * A target schema and its configuration, by slug.
+	 *
+	 * An empty slug names no schema and is never looked up; a schema that
+	 * cannot be loaded is reported by {@see loadSchema()} and skipped.
+	 *
+	 * @param string $slug The schema slug.
+	 *
+	 * @return array{0: Schema, 1: array<string, mixed>}|null The schema and its configuration, or null.
+	 */
+	private function configuredSchema(string $slug): ?array {
+		if ($slug === '') {
+			return null;
+		}
+
+		$schema = $this->loadSchema(slug: $slug);
+		if ($schema === null) {
+			return null;
+		}
+
+		return [$schema, ($schema->getConfiguration() ?? [])];
+	}//end configuredSchema()
+
+	/**
+	 * The approval chains a schema declares, with the schema's id.
+	 *
+	 * @param string $schemaSlug The schema slug.
+	 *
+	 * @return array{0: int, 1: mixed}|null The schema id and its declared chains, or null when the schema or its id is missing.
+	 */
+	private function declaredApprovalChains(string $schemaSlug): ?array {
+		$schema = $this->loadSchema(slug: $schemaSlug);
+		if ($schema === null) {
+			return null;
+		}
+
+		$schemaId = $schema->getId();
+		if ($schemaId === null) {
+			return null;
+		}
+
+		$config = ($schema->getConfiguration() ?? []);
+		return [(int)$schemaId, ($config[self::APPROVAL_CHAINS_KEY] ?? [])];
+	}//end declaredApprovalChains()
 
 	/**
 	 * Load an ApplicationVersion by uuid.
