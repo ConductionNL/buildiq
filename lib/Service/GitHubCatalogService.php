@@ -41,8 +41,8 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Service\GitHub\ShortLivedCache;
 use OCP\Http\Client\IClientService;
-use OCP\ICache;
 use OCP\ICacheFactory;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -172,11 +172,18 @@ class GitHubCatalogService {
 	public const OUTCOME_UNREACHABLE = 'github_unreachable';
 
 	/**
-	 * The distributed cache, or null when no cache backend is available.
+	 * Search results, kept for {@see SEARCH_TTL} seconds.
 	 *
-	 * @var ICache|null
+	 * @var ShortLivedCache
 	 */
-	private readonly ?ICache $cache;
+	private readonly ShortLivedCache $searchCache;
+
+	/**
+	 * Repository descriptors, kept for {@see DESCRIPTOR_TTL} seconds.
+	 *
+	 * @var ShortLivedCache
+	 */
+	private readonly ShortLivedCache $descriptorCache;
 
 	/**
 	 * Constructor.
@@ -200,7 +207,8 @@ class GitHubCatalogService {
 			$cache = $cacheFactory->createDistributed(self::CACHE_NS);
 		}
 
-		$this->cache = $cache;
+		$this->searchCache = new ShortLivedCache(cache: $cache, ttl: self::SEARCH_TTL);
+		$this->descriptorCache = new ShortLivedCache(cache: $cache, ttl: self::DESCRIPTOR_TTL);
 	}//end __construct()
 
 	/**
@@ -230,7 +238,7 @@ class GitHubCatalogService {
 		$normalise = strtolower($term);
 		$cacheKey = 'search:' . md5($normalise . '|' . ((string)$credentialId));
 
-		$cached = $this->cacheGet(key: $cacheKey);
+		$cached = $this->searchCache->get(key: $cacheKey);
 		if (is_array($cached) === true) {
 			return $cached;
 		}
@@ -272,7 +280,7 @@ class GitHubCatalogService {
 			// more honest than reporting a clean result.
 			'rateLimited' => $hits['rateLimited'],
 		];
-		$this->cacheSet(key: $cacheKey, value: $payload, ttl: self::SEARCH_TTL);
+		$this->searchCache->set(key: $cacheKey, value: $payload);
 
 		return $payload;
 	}//end search()
@@ -451,7 +459,7 @@ class GitHubCatalogService {
 		}
 
 		$cacheKey = 'descriptor:' . $source->owner . '/' . $source->repo . '@' . ((string)$source->ref) . '|' . ((string)$source->credentialId);
-		$cached = $this->cacheGet(key: $cacheKey);
+		$cached = $this->descriptorCache->get(key: $cacheKey);
 		if (is_array($cached) === true) {
 			return $cached;
 		}
@@ -466,7 +474,7 @@ class GitHubCatalogService {
 			return null;
 		}
 
-		$this->cacheSet(key: $cacheKey, value: $decoded, ttl: self::DESCRIPTOR_TTL);
+		$this->descriptorCache->set(key: $cacheKey, value: $decoded);
 
 		return $decoded;
 	}//end fetchDescriptor()
@@ -922,36 +930,4 @@ class GitHubCatalogService {
 
 		return true;
 	}//end validRepo()
-
-	/**
-	 * Read a value from the short-TTL cache (no-op when no cache backend).
-	 *
-	 * @param string $key The cache key.
-	 *
-	 * @return mixed The cached value, or null on a miss / no cache.
-	 */
-	private function cacheGet(string $key): mixed {
-		if ($this->cache === null) {
-			return null;
-		}
-
-		return $this->cache->get($key);
-	}//end cacheGet()
-
-	/**
-	 * Write a value to the short-TTL cache (no-op when no cache backend).
-	 *
-	 * @param string $key The cache key.
-	 * @param mixed $value The value to cache.
-	 * @param int $ttl The TTL in seconds.
-	 *
-	 * @return void
-	 */
-	private function cacheSet(string $key, mixed $value, int $ttl): void {
-		if ($this->cache === null) {
-			return;
-		}
-
-		$this->cache->set($key, $value, $ttl);
-	}//end cacheSet()
 }//end class
