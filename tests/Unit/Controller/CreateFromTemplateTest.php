@@ -54,6 +54,7 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\MockObject\Rule\InvocationOrder;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
@@ -959,6 +960,98 @@ class CreateFromTemplateTest extends TestCase {
 		$result = $this->controller->createFromTemplate(templateSlug: self::TEMPLATE_SLUG);
 		self::assertSame(Http::STATUS_FORBIDDEN, $result->getStatus());
 	}//end testNonAdminIsForbidden()
+
+	/**
+	 * The two clone endpoints and the admin-only refusal detail each answers with.
+	 *
+	 * @return array<string, array{0: string, 1: string}>
+	 */
+	public static function cloneEndpoints(): array {
+		return [
+			'from template' => ['createFromTemplate', 'Cloning an app from a template requires Nextcloud admin privileges.'],
+			'copy'          => ['copy', 'Copying an app requires Nextcloud admin privileges.'],
+		];
+	}//end cloneEndpoints()
+
+	/**
+	 * Call a clone endpoint.
+	 *
+	 * @param string $endpoint The controller method.
+	 *
+	 * @return array{0: int, 1: mixed} Status and body.
+	 */
+	private function callClone(string $endpoint): array {
+		$response = $this->controller->$endpoint(self::TEMPLATE_SLUG);
+		return [$response->getStatus(), $response->getData()];
+	}//end callClone()
+
+	/**
+	 * An anonymous caller is refused with 401 before anything else is read.
+	 *
+	 * @param string $endpoint The controller method.
+	 *
+	 * @return void
+	 */
+	#[DataProvider('cloneEndpoints')]
+	public function testCloneRefusesAnAnonymousCaller(string $endpoint): void {
+		$this->userSession->method('getUser')->willReturn(null);
+		$this->groupManager->expects(self::never())->method('isInGroup');
+		$this->request->expects(self::never())->method('getParams');
+
+		self::assertSame([401, ['error' => 'unauthenticated']], $this->callClone(endpoint: $endpoint));
+	}//end testCloneRefusesAnAnonymousCaller()
+
+	/**
+	 * A caller outside the admin group is refused with 403 before the body is read.
+	 *
+	 * @param string $endpoint The controller method.
+	 * @param string $detail   The refusal detail.
+	 *
+	 * @return void
+	 */
+	#[DataProvider('cloneEndpoints')]
+	public function testCloneRefusesANonAdmin(string $endpoint, string $detail): void {
+		$this->authenticateAs(uid: 'bob', admin: false);
+		$this->request->expects(self::never())->method('getParams');
+
+		self::assertSame([403, ['error' => 'forbidden', 'detail' => $detail]], $this->callClone(endpoint: $endpoint));
+	}//end testCloneRefusesANonAdmin()
+
+	/**
+	 * Request bodies the clone endpoints refuse, and the answer.
+	 *
+	 * @return array<string, array{0: string, 1: array<string, mixed>, 2: array<string, string>}>
+	 */
+	public static function invalidCloneBodies(): array {
+		$invalid = ['error' => 'invalid_request', 'detail' => 'name and kebab-case slug required'];
+		$long = ['error' => 'slug_too_long', 'detail' => 'slug must be <= 32 chars'];
+		$cases = [];
+		foreach (['createFromTemplate', 'copy'] as $endpoint) {
+			$cases[$endpoint . ' no name'] = [$endpoint, ['slug' => 'my-app'], $invalid];
+			$cases[$endpoint . ' bad slug'] = [$endpoint, ['name' => 'X', 'slug' => 'My App'], $invalid];
+			$cases[$endpoint . ' long slug'] = [$endpoint, ['name' => 'X', 'slug' => str_repeat('a', 33)], $long];
+		}
+
+		return $cases;
+	}//end invalidCloneBodies()
+
+	/**
+	 * An admin with an invalid body is refused with 400 and the validation envelope.
+	 *
+	 * @param string               $endpoint The controller method.
+	 * @param array<string, mixed> $body     The request body.
+	 * @param array<string, string> $answer  The expected envelope.
+	 *
+	 * @return void
+	 */
+	#[DataProvider('invalidCloneBodies')]
+	public function testCloneRefusesAnInvalidBody(string $endpoint, array $body, array $answer): void {
+		$this->authenticateAs(uid: 'admin-user', admin: true);
+		$this->withRequestParams($body);
+		$this->objectService->expects(self::never())->method('saveObject');
+
+		self::assertSame([400, $answer], $this->callClone(endpoint: $endpoint));
+	}//end testCloneRefusesAnInvalidBody()
 
 	/**
 	 * The endpoint carries a UserRateLimit attribute (amplification guard).
