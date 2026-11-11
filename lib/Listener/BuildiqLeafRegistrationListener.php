@@ -33,7 +33,9 @@ namespace OCA\Buildiq\Listener;
 use OCA\Buildiq\Integration\PageLayoutLeafProvider;
 use OCA\Buildiq\Integration\RegistrationFormLeafProvider;
 use OCA\OpenRegister\Event\RegisterLeafProvidersEvent;
+use OCA\OpenRegister\Service\Integration\LeafAvailability;
 use OCA\OpenRegister\Service\Integration\LeafDescriptor;
+use OCA\OpenRegister\Service\Integration\LeafIdentity;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 
@@ -87,12 +89,14 @@ final class BuildiqLeafRegistrationListener implements IEventListener {
 
 		$event->registerLeaf(
 			new LeafDescriptor(
-				id: RegistrationFormLeafProvider::LEAF_ID,
-				label: 'Registration forms',
-				icon: 'FormSelect',
+				identity: new LeafIdentity(
+					id: RegistrationFormLeafProvider::LEAF_ID,
+					label: 'Registration forms',
+					icon: 'FormSelect',
+					group: 'Forms',
+				),
 				kinds: [LeafDescriptor::KIND_DATA_PROVIDER],
-				requiredApp: 'buildiq',
-				group: 'Forms',
+				availability: new LeafAvailability(requiredApp: 'buildiq'),
 			),
 			$this->forms,
 		);
@@ -125,12 +129,14 @@ final class BuildiqLeafRegistrationListener implements IEventListener {
 		// buildiq serves the layout, the owning app draws it.
 		$event->registerLeaf(
 			new LeafDescriptor(
-				id: PageLayoutLeafProvider::LEAF_ID,
-				label: 'Page layout',
-				icon: 'ViewDashboardOutline',
+				identity: new LeafIdentity(
+					id: PageLayoutLeafProvider::LEAF_ID,
+					label: 'Page layout',
+					icon: 'ViewDashboardOutline',
+					group: 'Design',
+				),
 				kinds: [LeafDescriptor::KIND_DATA_PROVIDER],
-				requiredApp: 'buildiq',
-				group: 'Design',
+				availability: new LeafAvailability(requiredApp: 'buildiq'),
 			),
 			$this->layouts,
 		);
