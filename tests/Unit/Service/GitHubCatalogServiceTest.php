@@ -475,4 +475,111 @@ final class GitHubCatalogServiceTest extends TestCase {
 		$this->assertSame($cached, $this->formService(catalog: $service, cacheFactory: $cacheFactory)->searchForms(query: 'x', actingUserId: 'alice', credentialId: null));
 		$this->assertStringStartsWith('forms:', $keys[0]);
 	}//end testFormSearchIsServedFromTheCache()
+	/**
+	 * A cache factory over a recording cache that always misses.
+	 *
+	 * @param array<int, array<int, mixed>> $calls Receives each cache call as `[method, ...args]`.
+	 * @param array<int, string>            $namespaces Receives each namespace asked for.
+	 *
+	 * @return ICacheFactory&MockObject
+	 */
+	private function recordingCacheFactory(array &$calls, array &$namespaces): ICacheFactory&MockObject {
+		$cache = $this->createMock(ICache::class);
+		$cache->method('get')->willReturnCallback(static function (string $key) use (&$calls) {
+			$calls[] = ['get', $key];
+			return null;
+		});
+		$cache->method('set')->willReturnCallback(static function (string $key, mixed $value, int $ttl) use (&$calls): bool {
+			$calls[] = ['set', $key, $value, $ttl];
+			return true;
+		});
+		$factory = $this->createMock(ICacheFactory::class);
+		$factory->method('isAvailable')->willReturn(true);
+		$factory->method('createDistributed')->willReturnCallback(static function (string $ns) use (&$namespaces, $cache): ICache {
+			$namespaces[] = $ns;
+			return $cache;
+		});
+
+		return $factory;
+	}//end recordingCacheFactory()
+
+	/**
+	 * A catalogue service over the given cache factory and an empty GitHub.
+	 *
+	 * @param ICacheFactory $cacheFactory The cache factory.
+	 *
+	 * @return GitHubCatalogService
+	 */
+	private function serviceOverCache(ICacheFactory $cacheFactory): GitHubCatalogService {
+		$this->clientService = $this->createMock(IClientService::class);
+		$client = $this->createMock(IClient::class);
+		$client->method('get')->willReturnCallback(fn (string $url) => str_contains($url, '/contents/')
+			? $this->jsonResponse($this->contentsBody('{"name":"Demo"}'))
+			: $this->jsonResponse(['items' => []]));
+		$this->clientService->method('newClient')->willReturn($client);
+
+		return new GitHubCatalogService(
+			clientService: $this->clientService,
+			cacheFactory: $cacheFactory,
+			logger: new NullLogger(),
+			container: $this->createMock(ContainerInterface::class)
+		);
+	}//end serviceOverCache()
+
+	/**
+	 * App searches are cached for 60 seconds and descriptors for 300, in one namespace.
+	 *
+	 * @return void
+	 */
+	public function testSearchAndDescriptorAreCachedWithTheirOwnTtl(): void {
+		$calls = [];
+		$namespaces = [];
+		$service = $this->serviceOverCache(cacheFactory: $this->recordingCacheFactory(calls: $calls, namespaces: $namespaces));
+
+		$result = $service->search(query: ' Demo ', actingUserId: 'alice', credentialId: null);
+		$descriptor = $service->fetchDescriptor(source: new RepoSource(owner: 'acme', repo: 'demo', ref: 'main', credentialId: 'c-1'), actingUserId: null);
+
+		$searchKey = 'search:' . md5('demo|');
+		$descriptorKey = 'descriptor:acme/demo@main|c-1';
+		self::assertSame(['buildiq_github_catalog'], $namespaces);
+		self::assertSame([['get', $searchKey], ['set', $searchKey, $result, 60], ['get', $descriptorKey], ['set', $descriptorKey, $descriptor, 300]], $calls);
+		self::assertSame(['name' => 'Demo'], $descriptor);
+	}//end testSearchAndDescriptorAreCachedWithTheirOwnTtl()
+
+	/**
+	 * Form searches are cached for 60 seconds in their own namespace.
+	 *
+	 * @return void
+	 */
+	public function testFormSearchIsCachedForSixtySeconds(): void {
+		$calls = [];
+		$namespaces = [];
+		$factory = $this->recordingCacheFactory(calls: $calls, namespaces: $namespaces);
+		$forms = $this->formService(catalog: $this->serviceOverCache(cacheFactory: $factory), cacheFactory: $factory);
+		$calls = [];
+
+		$result = $forms->searchForms(query: 'Intake', actingUserId: 'alice', credentialId: 'c-2');
+
+		$key = 'forms:' . md5('intake|c-2');
+		$appCalls = array_values(array_filter($calls, static fn (array $c): bool => str_starts_with((string)$c[1], 'forms:')));
+		self::assertSame([['get', $key], ['set', $key, $result, 60]], $appCalls);
+		self::assertSame(['buildiq_github_catalog', 'buildiq_github_forms'], $namespaces);
+	}//end testFormSearchIsCachedForSixtySeconds()
+
+	/**
+	 * Without a cache backend nothing is created, read or written, and the search still answers.
+	 *
+	 * @return void
+	 */
+	public function testNoCacheBackendLeavesTheCacheAlone(): void {
+		$factory = $this->createMock(ICacheFactory::class);
+		$factory->method('isAvailable')->willReturn(false);
+		$factory->expects(self::never())->method('createDistributed');
+		$service = $this->serviceOverCache(cacheFactory: $factory);
+
+		$result = $service->search(query: 'x', actingUserId: 'alice', credentialId: null);
+		$forms = $this->formService(catalog: $service, cacheFactory: $factory)->searchForms(query: 'x', actingUserId: 'alice', credentialId: null);
+
+		self::assertSame([GitHubCatalogService::OUTCOME_OK, GitHubCatalogService::OUTCOME_OK], [$result['outcome'], $forms['outcome']]);
+	}//end testNoCacheBackendLeavesTheCacheAlone()
 }//end class
