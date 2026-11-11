@@ -113,6 +113,26 @@ import {
 	NcTextField,
 } from '@nextcloud/vue'
 
+/**
+ * The stored id of an agent record (`id`, else `uuid`), or null for a new one.
+ *
+ * @param {object} agent - the agent record, `{}` for a new agent.
+ * @return {string|null}
+ */
+function agentIdOf(agent) {
+	return agent.id || agent.uuid || null
+}
+
+/**
+ * The agent's max actions per run, or 10 when it is not a finite number.
+ *
+ * @param {object} agent - the agent record, `{}` for a new agent.
+ * @return {number}
+ */
+function actionLimitOf(agent) {
+	return Number.isFinite(agent.maxActionsPerRun) ? agent.maxActionsPerRun : 10
+}
+
 export default {
 	name: 'AgentEditDialog',
 
@@ -265,19 +285,28 @@ export default {
 			this.showValidation = false
 			this.errorMessage = ''
 			const a = this.agent || {}
-			this.id = a.id || a.uuid || null
+			this.id = agentIdOf(a)
 			this.name = a.name || ''
 			this.instructions = a.instructions || ''
-			const taskType = a.modelTaskType || 'TextToText'
-			this.modelTaskTypeOption =
-				this.modelTaskTypeOptions.find((o) => o.value === taskType)
-				|| this.modelTaskTypeOptions[0]
+			this.modelTaskTypeOption = this.taskTypeOption(a.modelTaskType)
 			this.enabledTools = Array.isArray(a.enabledTools)
 				? [...a.enabledTools]
 				: []
-			this.maxActionsPerRun = Number.isFinite(a.maxActionsPerRun)
-				? a.maxActionsPerRun
-				: 10
+			this.maxActionsPerRun = actionLimitOf(a)
+		},
+
+		/**
+		 * The task-type option for a stored task type, else the first option.
+		 *
+		 * @param {string|undefined} storedType - the agent's `modelTaskType`.
+		 * @return {object}
+		 */
+		taskTypeOption(storedType) {
+			const taskType = storedType || 'TextToText'
+			return (
+				this.modelTaskTypeOptions.find((o) => o.value === taskType)
+				|| this.modelTaskTypeOptions[0]
+			)
 		},
 
 		/**
@@ -340,20 +369,30 @@ export default {
 			this.saving = true
 			this.errorMessage = ''
 			try {
-				const base = generateUrl(
-					'/apps/openregister/api/objects/buildiq/buildAgent',
-				)
-				if (this.editing && this.id) {
-					await axios.put(`${base}/${this.id}`, this.agentPayload())
-				} else {
-					await axios.post(base, this.agentPayload())
-				}
-				this.$emit('saved')
+				await this.persistAgent()
 			} catch (error) {
 				this.errorMessage = t('buildiq', 'Could not save the agent.')
 			} finally {
 				this.saving = false
 			}
+		},
+
+		/**
+		 * PUT an existing agent to its uuid, or POST a new one, then emit
+		 * `saved`.
+		 *
+		 * @return {Promise<void>}
+		 */
+		async persistAgent() {
+			const base = generateUrl(
+				'/apps/openregister/api/objects/buildiq/buildAgent',
+			)
+			if (this.editing && this.id) {
+				await axios.put(`${base}/${this.id}`, this.agentPayload())
+			} else {
+				await axios.post(base, this.agentPayload())
+			}
+			this.$emit('saved')
 		},
 
 		/**
