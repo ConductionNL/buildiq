@@ -210,4 +210,72 @@ describe('AgentEditDialog', () => {
 		wrapper.vm.onMaxActionsInput('7')
 		expect(wrapper.vm.maxActionsPerRun).toBe(7)
 	})
+	describe('hydrate and save branches', () => {
+		it('takes the uuid when there is no id and copies the tool list', async () => {
+			const tools = ['buildiq.listApps']
+			const wrapper = factory({ uuid: 'agent-uuid', enabledTools: tools })
+			await openDialog(wrapper)
+			expect(wrapper.vm.id).toBe('agent-uuid')
+			expect(wrapper.vm.enabledTools).toEqual(tools)
+			expect(wrapper.vm.enabledTools).not.toBe(tools)
+			expect(wrapper.vm.instructions).toBe('')
+		})
+
+		it('falls back to the first task type and the default limit', async () => {
+			const wrapper = factory({
+				id: 'a',
+				modelTaskType: 'Unknown',
+				enabledTools: 'buildiq.listApps',
+				maxActionsPerRun: '5',
+			})
+			await openDialog(wrapper)
+			expect(wrapper.vm.modelTaskTypeOption.value).toBe('TextToText')
+			expect(wrapper.vm.enabledTools).toEqual([])
+			expect(wrapper.vm.maxActionsPerRun).toBe(10)
+		})
+
+		it('keeps a zero limit as a finite number', async () => {
+			const wrapper = factory({ id: 'a', maxActionsPerRun: 0 })
+			await openDialog(wrapper)
+			expect(wrapper.vm.maxActionsPerRun).toBe(0)
+		})
+
+		it('resets the validation state and a previous agent on reopen', async () => {
+			const wrapper = factory({ id: 'a', name: 'First' })
+			await openDialog(wrapper)
+			wrapper.vm.showValidation = true
+			wrapper.vm.errorMessage = 'old'
+			await wrapper.setProps({ open: false, agent: null })
+			await openDialog(wrapper)
+			expect(wrapper.vm.showValidation).toBe(false)
+			expect(wrapper.vm.errorMessage).toBe('')
+			expect(wrapper.vm.id).toBeNull()
+			expect(wrapper.vm.name).toBe('')
+			expect(wrapper.vm.editing).toBe(false)
+		})
+
+		it('reports a failed save and emits nothing', async () => {
+			axios.post.mockRejectedValueOnce(new Error('down'))
+			const wrapper = factory(null)
+			await openDialog(wrapper)
+			wrapper.vm.name = 'Agent'
+			wrapper.vm.enabledTools = ['buildiq.listApps']
+			await wrapper.vm.onSave()
+			expect(wrapper.vm.errorMessage).toBe('Could not save the agent.')
+			expect(wrapper.vm.saving).toBe(false)
+			expect(wrapper.emitted('saved')).toBeUndefined()
+		})
+
+		it('posts a new agent and emits saved', async () => {
+			const wrapper = factory(null)
+			await openDialog(wrapper)
+			wrapper.vm.name = 'Agent'
+			wrapper.vm.enabledTools = ['buildiq.listApps']
+			await wrapper.vm.onSave()
+			expect(axios.post).toHaveBeenCalledTimes(1)
+			expect(axios.put).not.toHaveBeenCalled()
+			expect(wrapper.emitted('saved')).toHaveLength(1)
+			expect(wrapper.vm.saving).toBe(false)
+		})
+	})
 })
