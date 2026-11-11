@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Mcp\Handler;
 
+use OCA\Buildiq\Support\ManifestEntryList;
 use OCA\Buildiq\Support\ManifestPageShape;
 use OCA\Buildiq\Support\ManifestRoute;
 
@@ -86,7 +87,7 @@ class UpsertPageHandler extends AbstractToolHandler {
 				'config' => $validation['config'],
 			]);
 
-			[$pages, $replaced] = $this->upsertPageInList(pages: $pages, pageId: $pageId, newPage: $newPage);
+			[$pages, $replaced] = $this->upsertPageInList(pages: $pages, newPage: $newPage);
 
 			$manifest['pages'] = array_values($pages);
 
@@ -193,33 +194,20 @@ class UpsertPageHandler extends AbstractToolHandler {
 	}//end validateArgs()
 
 	/**
-	 * Upsert a page into the pages list using case-insensitive id matching.
+	 * Upsert a page into the pages list using case-insensitive id matching ({@see ManifestEntryList}).
 	 *
 	 * Returns the updated pages array and a boolean indicating whether an existing
 	 * page was replaced (true) or a new page was appended (false).
 	 *
 	 * @param array<int, mixed> $pages Existing pages list from the manifest.
-	 * @param string $pageId The page id to look up (case-insensitive).
 	 * @param array<string, mixed> $newPage The page definition to insert or replace with.
 	 *
 	 * @return array{0: array, 1: bool}
 	 */
-	private function upsertPageInList(array $pages, string $pageId, array $newPage): array {
-		$replaced = false;
-		$pageIdLc = strtolower($pageId);
+	private function upsertPageInList(array $pages, array $newPage): array {
+		$list = new ManifestEntryList(entries: $pages);
+		$replaced = $list->upsert(entry: $newPage);
 
-		foreach ($pages as $i => $existing) {
-			if (is_array($existing) === true && strtolower((string)($existing['id'] ?? '')) === $pageIdLc) {
-				$pages[$i] = $newPage;
-				$replaced = true;
-				break;
-			}
-		}
-
-		if ($replaced === false) {
-			$pages[] = $newPage;
-		}
-
-		return [$pages, $replaced];
+		return [$list->entries(), $replaced];
 	}//end upsertPageInList()
 }//end class
