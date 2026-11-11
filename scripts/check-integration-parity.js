@@ -1176,13 +1176,35 @@ function readJson(file) {
  */
 function addSchemaProperties(schemas, declared) {
 	for (const [key, schema] of Object.entries(declared)) {
-		const slug = schema && typeof schema.slug === 'string' ? schema.slug : key
-		const props =
-			schema && schema.properties && typeof schema.properties === 'object'
-				? Object.keys(schema.properties)
-				: []
+		const slug = schemaSlugOf(schema, key)
+		const props = propertyNamesOf(schema)
 		schemas[slug] = (schemas[slug] || []).concat(props)
 	}
+}
+
+/**
+ * The slug a declared schema is known by: its own `slug`, or its key.
+ *
+ * @param {object} schema One declared schema.
+ * @param {string} key Its key in `components.schemas`.
+ *
+ * @return {string} The slug.
+ */
+function schemaSlugOf(schema, key) {
+	return schema && typeof schema.slug === 'string' ? schema.slug : key
+}
+
+/**
+ * The property names a declared schema lists.
+ *
+ * @param {object} schema One declared schema.
+ *
+ * @return {string[]} The names, or none when it lists no properties object.
+ */
+function propertyNamesOf(schema) {
+	return schema && schema.properties && typeof schema.properties === 'object'
+		? Object.keys(schema.properties)
+		: []
 }
 
 /**
