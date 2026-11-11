@@ -98,4 +98,19 @@ describe('check-integration-parity file walk golden output', () => {
 			),
 		).toMatchSnapshot()
 	})
+
+	it('reads property names only off a properties object, under the slug or the key', () => {
+		expect(
+			run(
+				fixture({
+					'lib/Ok/OkProvider.php': provider('ok'),
+					'src/ok.js': `registerIntegration({ id: 'ok', tab: T, widget: W, offlineConfig: { plannedSchema: 'p', titleField: '0' } })
+registerIntegration({ id: 'keyed', tab: T, widget: W, offlineConfig: { plannedSchema: 'k', titleField: 'a' } })
+`,
+					'lib/Settings/str.json':
+						'{"components":{"schemas":{"p":{"properties":"ab"},"k":{"slug":7,"properties":{"a":{}}},"n":null}}}',
+				}),
+			),
+		).toMatchSnapshot()
+	})
 })
