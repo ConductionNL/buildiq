@@ -697,12 +697,7 @@ export default {
 			this.prepareManifestForSave()
 			try {
 				await this.persistManifest()
-				this.toast = t('buildiq', 'Pages saved.')
-				// REQ-BUR-004: a successful save is a session boundary — bump
-				// the counter so `sessionKey` changes and the designer resets
-				// its undo/redo history to the just-saved manifest.
-				await this.refreshDestinationFindings()
-				this.saveCounter += 1
+				await this.closeSaveSession()
 				return true
 			} catch (e) {
 				this.error = t('buildiq', 'Failed to save: {error}', {
@@ -712,6 +707,20 @@ export default {
 			} finally {
 				this.saving = false
 			}
+		},
+
+		/**
+		 * Say the pages were saved, re-check the forms against where they save
+		 * to, and close the editing session. REQ-BUR-004: a successful save is a
+		 * session boundary — bump the counter so `sessionKey` changes and the
+		 * designer resets its undo/redo history to the just-saved manifest.
+		 *
+		 * @return {Promise<void>}
+		 */
+		async closeSaveSession() {
+			this.toast = t('buildiq', 'Pages saved.')
+			await this.refreshDestinationFindings()
+			this.saveCounter += 1
 		},
 
 		/**

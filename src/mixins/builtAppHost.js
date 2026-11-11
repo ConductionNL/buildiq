@@ -80,12 +80,7 @@ export default {
 			this.error = ''
 			this.toast = ''
 			try {
-				const { data } = await axios.get(generateUrl(BUILT_APPS), {
-					params: { _limit: 100 },
-				})
-				this.application =
-					builtAppsIn(data).find((a) => a && a.slug === this.routeSlug)
-					|| null
+				this.application = await this.fetchRouteApplication()
 				this.seedManifest()
 			} catch (e) {
 				this.application = null
@@ -95,6 +90,20 @@ export default {
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * The Application object whose slug the route names.
+		 *
+		 * @return {Promise<object|null>} The Application, or null when no app has that slug.
+		 */
+		async fetchRouteApplication() {
+			const { data } = await axios.get(generateUrl(BUILT_APPS), {
+				params: { _limit: 100 },
+			})
+			return (
+				builtAppsIn(data).find((a) => a && a.slug === this.routeSlug) || null
+			)
 		},
 
 		/**
