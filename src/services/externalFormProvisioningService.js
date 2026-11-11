@@ -218,6 +218,22 @@ function applySignInLevel(entry, minTrust) {
 }
 
 /**
+ * Whether an action is the create action for the target's register and schema.
+ *
+ * @param {?object} action - an entry of the portalPage's actions.
+ * @param {{register: string, schema: string}} target - the OR register and schema slugs.
+ * @return {boolean}
+ */
+function isCreateActionFor(action, target) {
+	return (
+		Boolean(action)
+		&& action.type === 'create'
+		&& action.register === target.register
+		&& action.schema === target.schema
+	)
+}
+
+/**
  * Merge (or insert) the create action for `(register, schema)` into an
  * existing `actions[]` array without disturbing any other action entry,
  * matched by `{type, register, schema}` so a repeat save updates the SAME
@@ -231,13 +247,7 @@ function applySignInLevel(entry, minTrust) {
 function mergeCreateAction(actions, target) {
 	const { register, schema, minTrust } = target
 	const next = Array.isArray(actions) ? actions.slice() : []
-	const idx = next.findIndex(
-		(a) =>
-			a
-			&& a.type === 'create'
-			&& a.register === register
-			&& a.schema === schema,
-	)
+	const idx = next.findIndex((a) => isCreateActionFor(a, target))
 	const base = { ...(idx >= 0 ? next[idx] : {}), type: 'create', register, schema }
 	const entry = applySignInLevel(base, minTrust)
 	if (idx >= 0) {

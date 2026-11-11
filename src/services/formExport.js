@@ -112,13 +112,31 @@ function readFormExport(input) {
  */
 function hasValidIdentity(form) {
 	return (
-		typeof form.slug === 'string'
-		&& /^[a-z0-9][a-z0-9-]*[a-z0-9]$/.test(form.slug)
-		&& typeof form.name === 'string'
-		&& form.name !== ''
+		hasValidSlug(form)
+		&& hasValidName(form)
 		&& FORM_KINDS.includes(form.kind)
 		&& CATEGORIES.includes(form.category)
 	)
+}
+
+/**
+ * Whether a form carries a lower-case, hyphenated slug.
+ *
+ * @param {object} form The form-template record.
+ * @return {boolean}
+ */
+function hasValidSlug(form) {
+	return typeof form.slug === 'string' && /^[a-z0-9][a-z0-9-]*[a-z0-9]$/.test(form.slug)
+}
+
+/**
+ * Whether a form carries a non-empty name.
+ *
+ * @param {object} form The form-template record.
+ * @return {boolean}
+ */
+function hasValidName(form) {
+	return typeof form.name === 'string' && form.name !== ''
 }
 
 /**
@@ -128,14 +146,27 @@ function hasValidIdentity(form) {
  * @return {boolean}
  */
 function hasValidBody(form) {
-	return Boolean(
-		form.form
-		&& typeof form.form === 'object'
-		&& Array.isArray(form.form.fields)
-		&& form.schemaFragment
-		&& typeof form.schemaFragment === 'object'
-		&& !Array.isArray(form.schemaFragment),
-	)
+	return hasFieldList(form.form) && isPlainObject(form.schemaFragment)
+}
+
+/**
+ * Whether a form configuration is an object with a fields list.
+ *
+ * @param {unknown} config The form configuration.
+ * @return {boolean}
+ */
+function hasFieldList(config) {
+	return Boolean(config && typeof config === 'object' && Array.isArray(config.fields))
+}
+
+/**
+ * Whether a value is a non-null object that is not an array.
+ *
+ * @param {unknown} value Any value.
+ * @return {boolean}
+ */
+function isPlainObject(value) {
+	return Boolean(value && typeof value === 'object' && !Array.isArray(value))
 }
 
 /**

@@ -59,17 +59,39 @@ export function findingsForPage(findings, pageId, pageIndex) {
 export function findingsByField(findings) {
 	const byField = {}
 	for (const finding of findings || []) {
-		if (!finding) {
-			continue
+		if (finding) {
+			addFinding(byField, finding)
 		}
-		const key =
-			finding.field
-			|| (finding.code === 'required-unmapped' ? '' : finding.property)
-			|| ''
-		if (!byField[key]) {
-			byField[key] = []
-		}
-		byField[key].push(finding)
 	}
 	return byField
+}
+
+/**
+ * Add a finding to the list of the field it sits on.
+ *
+ * @param {{[key: string]: Array<object>}} byField - findings per field key (mutated).
+ * @param {object} finding - the finding.
+ * @return {void}
+ */
+function addFinding(byField, finding) {
+	const key = findingKey(finding)
+	if (!byField[key]) {
+		byField[key] = []
+	}
+	byField[key].push(finding)
+}
+
+/**
+ * The field key a finding sits on: its field, else (unless it is a required
+ * property nothing fills) its property, else no field.
+ *
+ * @param {object} finding - the finding.
+ * @return {string}
+ */
+function findingKey(finding) {
+	return (
+		finding.field
+		|| (finding.code === 'required-unmapped' ? '' : finding.property)
+		|| ''
+	)
 }
