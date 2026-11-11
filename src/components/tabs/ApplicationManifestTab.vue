@@ -55,6 +55,48 @@ import { generateUrl } from '@nextcloud/router'
 import { NcButton } from '@nextcloud/vue'
 import applicationContext from '../../mixins/applicationContext.js'
 
+/**
+ * A manifest as the editor's pretty-printed text; `{}` when there is none.
+ *
+ * @param {?object} manifest - the manifest.
+ * @return {string}
+ */
+function manifestJson(manifest) {
+	return JSON.stringify(manifest || {}, null, 2)
+}
+
+/**
+ * Read the active version's manifest of an app.
+ *
+ * @param {string} slug - the app slug.
+ * @return {Promise<?object>} the manifest, bare as the endpoint returns it.
+ */
+async function readActiveManifest(slug) {
+	const { data } = await axios.get(
+		generateUrl(
+			`/apps/buildiq/api/applications/${encodeURIComponent(slug)}/manifest`,
+		),
+	)
+	return data
+}
+
+/**
+ * The validator's complaint about a parsed manifest, or null when it passes
+ * (or when no validator is available).
+ *
+ * @param {object} parsed - the parsed manifest.
+ * @return {?string} the errors joined with "; ", or null.
+ */
+function validationErrorOf(parsed) {
+	const result = validateManifest
+		? validateManifest(parsed)
+		: { valid: true, errors: [] }
+	if (result && result.valid === false) {
+		return (result.errors || ['unknown']).join('; ')
+	}
+	return null
+}
+
 export default {
 	name: 'ApplicationManifestTab',
 	components: { NcButton },
@@ -115,20 +157,15 @@ export default {
 		async loadManifest(app) {
 			const slug = app && app.slug
 			if (!slug) {
-				this.manifestText = JSON.stringify(app?.manifest || {}, null, 2)
+				this.manifestText = manifestJson(app?.manifest)
 				return
 			}
 			try {
-				const { data } = await axios.get(
-					generateUrl(
-						`/apps/buildiq/api/applications/${encodeURIComponent(slug)}/manifest`,
-					),
-				)
-				this.manifestText = JSON.stringify(data || {}, null, 2)
+				this.manifestText = manifestJson(await readActiveManifest(slug))
 			} catch (e) {
 				// Fall back to whatever the record carries rather than blanking the
 				// editor; the error surface below reports the failure.
-				this.manifestText = JSON.stringify(app.manifest || {}, null, 2)
+				this.manifestText = manifestJson(app.manifest)
 				this.error = `${t('buildiq', 'Could not load the manifest')}: ${e.message || e}`
 			}
 		},
@@ -139,22 +176,32 @@ export default {
 		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-4
 		 */
 		parseAndValidate() {
-			let parsed
-			try {
-				parsed = JSON.parse(this.manifestText)
-			} catch (e) {
-				this.error = `${t('buildiq', 'JSON parse error')}: ${e.message}`
+			const parsed = this.parseManifestText()
+			if (parsed === undefined) {
 				return null
 			}
-			const result = validateManifest
-				? validateManifest(parsed)
-				: { valid: true, errors: [] }
-			if (result && result.valid === false) {
-				this.error = (result.errors || ['unknown']).join('; ')
+			const invalid = validationErrorOf(parsed)
+			if (invalid !== null) {
+				this.error = invalid
 				return null
 			}
 			this.error = ''
 			return parsed
+		},
+
+		/**
+		 * Parse the editor buffer, reporting a JSON error.
+		 *
+		 * @return {object|Array|string|number|boolean|null|undefined} the parsed
+		 *   value, or undefined when it is not JSON.
+		 */
+		parseManifestText() {
+			try {
+				return JSON.parse(this.manifestText)
+			} catch (e) {
+				this.error = `${t('buildiq', 'JSON parse error')}: ${e.message}`
+				return undefined
+			}
 		},
 
 		/**
