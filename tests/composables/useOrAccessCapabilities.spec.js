@@ -72,3 +72,38 @@ describe('useOrAccessCapabilities', () => {
 		expect(useOrAccessCapabilities().scopes).toEqual(['group'])
 	})
 })
+
+describe('useOrAccessCapabilities golden', () => {
+	it('pins the offered scope kinds for every capabilities shape', () => {
+		const shapes = {
+			undefined,
+			'openregister without authorization': { openregister: {} },
+			'authorization null': { openregister: { authorization: null } },
+			'scopes undefined': { openregister: { authorization: {} } },
+			'scopes string': { openregister: { authorization: { scopes: 'group' } } },
+			'scopes creator only': { openregister: { authorization: { scopes: ['creator'] } } },
+			'scopes with group': { openregister: { authorization: { scopes: ['group', 'condition'] } } },
+		}
+		const lines = Object.entries(shapes).map(([label, capabilities]) => {
+			capabilitiesMocks.getCapabilities.mockReturnValue(capabilities)
+			return `${label}: ${useOrAccessCapabilities().scopes.join(',')}`
+		})
+		expect(lines).toEqual([
+			'undefined: group',
+			'openregister without authorization: group',
+			'authorization null: group',
+			'scopes undefined: group',
+			'scopes string: group',
+			'scopes creator only: creator',
+			'scopes with group: group,condition',
+		])
+	})
+
+	it('returns a fresh baseline copy, never the frozen constant', () => {
+		capabilitiesMocks.getCapabilities.mockReturnValue({})
+		const first = useOrAccessCapabilities().scopes
+		expect(first).not.toBe(BASELINE_SCOPES)
+		first.push('x')
+		expect(useOrAccessCapabilities().scopes).toEqual(['group'])
+	})
+})
