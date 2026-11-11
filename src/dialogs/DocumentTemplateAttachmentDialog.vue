@@ -167,33 +167,19 @@ import {
 	fetchDocudeskTemplates,
 	templateToOption,
 } from '../composables/useDocudeskTemplates.js'
+import { attachmentDialogMixin } from '../mixins/attachmentDialog.js'
 import { DOCUMENT_FORMATS } from '../services/manifestValidation/documentAttachments.js'
 
 export default {
 	name: 'DocumentTemplateAttachmentDialog',
 	components: { NcDialog, NcButton, NcSelect, NcTextField },
+	mixins: [attachmentDialogMixin],
+
 	props: {
-		open: {
-			type: Boolean,
-			default: false,
-		},
-
-		// The app's schemas as `[{ slug, title, properties }]`.
-		schemas: {
-			type: Array,
-			default: () => [],
-		},
-
 		// Existing attachments (for the (schema,label) uniqueness check).
 		attachments: {
 			type: Array,
 			default: () => [],
-		},
-
-		// Existing attachment when editing (null when adding).
-		attachment: {
-			type: Object,
-			default: null,
 		},
 
 		// Soft capability flag for Docudesk.
@@ -222,11 +208,6 @@ export default {
 	},
 
 	computed: {
-		/** @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002 */
-		editing() {
-			return !!this.attachment
-		},
-
 		/**
 		 * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002
 		 * @spec openspec/changes/automation-document-action/specs/automation-document-action/spec.md
@@ -445,9 +426,7 @@ export default {
 			if (!this.canSave) {
 				return
 			}
-			const id =
-				(this.attachment && this.attachment.id)
-				|| `doc-${this.schemaOption.slug}-${Date.now()}`
+			const id = this.entryId('doc')
 			const entry = {
 				id,
 				schema: this.schemaOption.slug,
@@ -463,11 +442,6 @@ export default {
 				entry.filenameTemplate = this.filenameTemplate.trim()
 			}
 			this.$emit('save', { entry, addActionsTab: this.addActionsTab })
-			this.$emit('update:open', false)
-		},
-
-		/** @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002 */
-		onClose() {
 			this.$emit('update:open', false)
 		},
 	},
