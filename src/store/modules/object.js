@@ -3,6 +3,64 @@ import { getRequestToken } from '@nextcloud/auth'
 import { defineStore } from 'pinia'
 
 /**
+ * The objects request URL for a registered type: its register and schema, then
+ * the extra query parameters.
+ *
+ * @param {object} store The object store.
+ * @param {{type: string, params: object}} request The type key and the extra query parameters.
+ * @return {string}
+ */
+function objectsUrl(store, request) {
+	const { schema, register } = store.objectTypes[request.type]
+	const url = new URL(store.baseUrl, window.location.origin)
+	url.searchParams.set('register', register)
+	url.searchParams.set('schema', schema)
+	Object.entries(request.params).forEach(([k, v]) => url.searchParams.set(k, v))
+	return url.toString()
+}
+
+/**
+ * Fetch the objects of a type and cache them; [] on a non-ok answer or a
+ * failure (logged), leaving the cache as it was. Clears the loading flag.
+ *
+ * @param {object} store The object store.
+ * @param {{type: string, params: object}} request The type key and the extra query parameters.
+ * @return {Promise<object[]>}
+ */
+async function loadObjects(store, request) {
+	try {
+		const results = await fetchResults(objectsUrl(store, request))
+		if (results !== null) {
+			store.objects[request.type] = results
+			return store.objects[request.type]
+		}
+		return []
+	} catch (error) {
+		console.error(`Failed to fetch ${request.type} objects:`, error)
+		return []
+	} finally {
+		store.loading[request.type] = false
+	}
+}
+
+/**
+ * GET an objects URL and unwrap the OpenRegister envelope.
+ *
+ * @param {string} url The objects request URL.
+ * @return {Promise<?(object[])>} The results, or null on a non-ok answer.
+ */
+async function fetchResults(url) {
+	const response = await fetch(url, {
+		headers: { requesttoken: getRequestToken() },
+	})
+	if (!response.ok) {
+		return null
+	}
+	const data = await response.json()
+	return data.results || data
+}
+
+/**
  * Generic OpenRegister object store.
  * Configure it with baseUrl and schemaBaseUrl, then register object types.
  */
@@ -90,30 +148,7 @@ export const useObjectStore = defineStore('object', {
 			}
 
 			this.loading[type] = true
-			const { schema, register } = this.objectTypes[type]
-
-			try {
-				const url = new URL(this.baseUrl, window.location.origin)
-				url.searchParams.set('register', register)
-				url.searchParams.set('schema', schema)
-				Object.entries(params).forEach(([k, v]) =>
-					url.searchParams.set(k, v),
-				)
-
-				const response = await fetch(url.toString(), {
-					headers: { requesttoken: getRequestToken() },
-				})
-				if (response.ok) {
-					const data = await response.json()
-					this.objects[type] = data.results || data
-					return this.objects[type]
-				}
-			} catch (error) {
-				console.error(`Failed to fetch ${type} objects:`, error)
-			} finally {
-				this.loading[type] = false
-			}
-			return []
+			return loadObjects(this, { type, params })
 		},
 	},
 })
