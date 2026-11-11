@@ -502,6 +502,25 @@ final class ExportServiceTest extends TestCase {
 	}//end testBuildScaffoldMapProducesAnInstallableStandaloneApp()
 
 	/**
+	 * buildScaffoldMap() bundles the bound data registers' schemas into the
+	 * map, and adds nothing else to the plain scaffold for them.
+	 */
+	public function testBuildScaffoldMapBundlesBoundDataRegisters(): void {
+		$registerMapper = $this->createMock(RegisterMapper::class);
+		$registerMapper->method('find')->willReturn($this->buildRegisterMock(schemaIds: [1]));
+		$schemaMapper = $this->createMock(SchemaMapper::class);
+		$schemaMapper->method('find')->with(1)->willReturn($this->buildSchemaMock(slug: 'ok-schema', title: 'Ok', required: [], properties: []));
+		$service = $this->buildService(registerMapper: $registerMapper, schemaMapper: $schemaMapper);
+
+		$plain = $service->buildScaffoldMap(context: $this->context());
+		$bound = $service->buildScaffoldMap(context: $this->context(), dataRegisters: [['register' => 'spectr']], applicationSlug: 'demo-app');
+
+		self::assertSame(['lib/Settings/data-registers/spectr.schema.json'], array_values(array_diff(array_keys($bound), array_keys($plain))));
+		self::assertSame([], array_diff(array_keys($plain), array_keys($bound)));
+		self::assertStringContainsString('ok-schema', $bound['lib/Settings/data-registers/spectr.schema.json']);
+	}//end testBuildScaffoldMapBundlesBoundDataRegisters()
+
+	/**
 	 * buildScaffoldMap() stages on disk but hands back only the map — it must
 	 * leave no scratch tree behind, on the success path or on the throw path.
 	 */
