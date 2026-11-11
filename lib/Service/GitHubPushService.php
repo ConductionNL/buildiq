@@ -42,6 +42,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Service\GitHub\BrokerAccess;
+use OCA\Buildiq\Service\GitHub\CredentialBrokerClient;
 use OCA\Buildiq\Service\GitHub\PushTarget;
 use OCA\Buildiq\Service\GitHub\TokenScrubber;
 use FilesystemIterator;
@@ -77,13 +78,6 @@ class GitHubPushService {
 	private const BROKER_CLASS = 'OCA\\OpenRegister\\Service\\Credential\\CredentialBrokerService';
 
 	/**
-	 * The broker `appId` Buildiq identifies itself with.
-	 *
-	 * @var string
-	 */
-	private const APP_ID = 'buildiq';
-
-	/**
 	 * The branch the generated tree is pushed to, before the PR is opened against the
 	 * repo's default branch.
 	 *
@@ -117,6 +111,13 @@ class GitHubPushService {
 	private ?string $lastFailureDetail = null;
 
 	/**
+	 * Sends the JSON calls through OpenRegister's credential broker.
+	 *
+	 * @var CredentialBrokerClient
+	 */
+	private readonly CredentialBrokerClient $broker;
+
+	/**
 	 * Constructor.
 	 *
 	 * No HTTP client: this service no longer makes outbound calls of its own.
@@ -127,8 +128,9 @@ class GitHubPushService {
 	 */
 	public function __construct(
 		private LoggerInterface $logger,
-		private readonly ContainerInterface $container,
+		ContainerInterface $container,
 	) {
+		$this->broker = new CredentialBrokerClient(container: $container);
 	}//end __construct()
 
 	/**
@@ -413,24 +415,9 @@ class GitHubPushService {
 		$this->lastFailureDetail = null;
 		$method = (string)$request['method'];
 		$path = (string)$request['path'];
-		$body = $request['body'];
-
-		$encoded = null;
-		if ($body !== null) {
-			$encoded = (string)json_encode($body);
-		}
 
 		try {
-			$broker = $this->container->get(self::BROKER_CLASS);
-			$response = $broker->request(
-				$access->credentialId,
-				self::APP_ID,
-				$method,
-				$path,
-				['Accept' => 'application/vnd.github+json', 'Content-Type' => 'application/json'],
-				$encoded,
-				$access->actingUserId
-			);
+			$response = $this->broker->sendJson(request: $request, access: $access);
 		} catch (\Throwable $e) {
 			// The broker never puts the secret in its exception messages, but this
 			// path is also reached for transport errors, so scrub anyway.
