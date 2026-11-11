@@ -151,6 +151,12 @@ npm run stylelint       # CSS linting
 
 > **Note:** The `js/` build output is not committed. Build the frontend before enabling the app or the UI will be blank.
 
+### Test coverage
+
+<!-- coverage:start -->
+Measured test coverage: 75.5% of statements (PHP 77.7% of 19,553 statements, JavaScript 72.2% of 13,448 statements), at commit `b94f9a9f7` on 2026-11-11. The figures come from [`coverage-summary.json`](coverage-summary.json); refresh them with `composer coverage:publish`.
+<!-- coverage:end -->
+
 ## Tech Stack
 
 | Layer | Technology |
