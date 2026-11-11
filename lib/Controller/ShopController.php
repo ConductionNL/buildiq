@@ -123,12 +123,9 @@ class ShopController extends Controller {
 			return $this->error(code: 'unauthenticated', status: Http::STATUS_UNAUTHORIZED);
 		}
 
-		$query = $this->request->getParam('q');
-		if (is_string($query) === false) {
-			$query = null;
-		}
+		$query = GitHubRequestParams::searchQuery(request: $this->request);
 
-		$credentialId = $this->credentialParam();
+		$credentialId = GitHubRequestParams::credentialId(request: $this->request);
 
 		try {
 			$result = $this->catalogService->search(
@@ -195,7 +192,7 @@ class ShopController extends Controller {
 			owner: (string)($this->request->getParam('owner') ?? ''),
 			repo: (string)($this->request->getParam('repo') ?? ''),
 			ref: $ref,
-			credentialId: $this->credentialParam()
+			credentialId: GitHubRequestParams::credentialId(request: $this->request)
 		);
 	}//end requestedSource()
 
@@ -295,20 +292,6 @@ class ShopController extends Controller {
 			return new JSONResponse(data: $e->toArray(), statusCode: Http::STATUS_UNPROCESSABLE_ENTITY);
 		}
 	}//end fetchTemplate()
-
-	/**
-	 * Read the optional `credentialId` request param (broker upgrade).
-	 *
-	 * @return string|null The credential UUID, or null when absent.
-	 */
-	private function credentialParam(): ?string {
-		$credentialId = $this->request->getParam('credentialId');
-		if (is_string($credentialId) === true && $credentialId !== '') {
-			return $credentialId;
-		}
-
-		return null;
-	}//end credentialParam()
 
 	/**
 	 * Build a uniform error JSONResponse.
