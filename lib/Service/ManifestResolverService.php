@@ -593,24 +593,7 @@ class ManifestResolverService {
 			return false;
 		}
 
-		$permissions = ($application['permissions'] ?? []);
-		if (is_array($permissions) === false) {
-			return false;
-		}
-
-		// Use PermissionResolver for consistent grammar (H1/H2 fix).
-		// Group membership is resolved here via IGroupManager so ManifestResolverService
-		// now honours group: entries for non-production version access, matching the
-		// behaviour of the HTTP endpoint (bucketContainsUid previously only matched user: entries).
-		$userGroups = $this->permissionResolver->resolveUserGroups($caller);
-
-		return $this->permissionResolver->matchesCaller(
-			permissions: $permissions,
-			caller: $caller,
-			userGroups: $userGroups,
-			allowAdminBypass: false,
-			roles: ['owners', 'editors']
-		);
+		return $this->hasWriteRole(application: $application, caller: $caller);
 	}//end isCallerAuthorised()
 
 	/**
@@ -751,6 +734,9 @@ class ManifestResolverService {
 			return false;
 		}
 
+		// Use PermissionResolver for consistent grammar (H1/H2 fix). Group
+		// membership is resolved via IGroupManager, so `group:` entries count for
+		// non-production version access too, matching the HTTP endpoint.
 		$userGroups = $this->permissionResolver->resolveUserGroups($caller);
 
 		return $this->permissionResolver->matchesCaller(
