@@ -211,6 +211,16 @@ function slugify(value) {
 }
 
 /**
+ * A page's route, if the page is there.
+ *
+ * @param {?object} page - a page record.
+ * @return {string|undefined|null}
+ */
+function routeOf(page) {
+	return page && page.route
+}
+
+/**
  * `value`, or `value-2`, `value-3`… when `value` is already taken.
  *
  * @param {string} value - the preferred value.
@@ -367,33 +377,61 @@ export default {
 			if (!this.addingType) {
 				return
 			}
-			const type = this.addingType
 			const next = this.pages.slice()
-			const takenIds = new Set(next.map((p) => p && p.id))
-			const takenRoutes = new Set(next.map((p) => p && p.route))
-			const id = uniqueValue(
-				slugify(this.addingId) || `${type}-page-${next.length + 1}`,
-				takenIds,
-			)
-			// The first page on "/" is the home page; any later page gets its
-			// own route, so it does not hide behind the one already there.
-			const typedSlug = slugify(this.addingId)
-			let route = uniqueValue(`/${typedSlug || type}`, takenRoutes)
-			if (type === 'index' && !typedSlug && !takenRoutes.has('/')) {
-				route = '/'
-			}
-			const title = this.addingTitle.trim() || defaultTitle(type)
-			const placeholder = {
-				id,
-				route,
-				type,
-				title,
-				config: JSON.parse(JSON.stringify(DEFAULT_CONFIGS[type] || {})),
-			}
-			next.push(placeholder)
+			next.push(this.newPage(next))
 			this.$emit('update:pages', next)
 			this.$emit('select', next.length - 1)
 			this.cancelAdd()
+		},
+
+		/**
+		 * The page the add form describes: a unique id and route, the typed or
+		 * default title, and a copy of the type's default config.
+		 *
+		 * @param {Array<object>} pages - the pages it joins.
+		 * @return {{id: string, route: string, type: string, title: string, config: object}}
+		 */
+		newPage(pages) {
+			const type = this.addingType
+			return {
+				id: this.newPageId(pages),
+				route: this.newPageRoute(pages),
+				type,
+				title: this.addingTitle.trim() || defaultTitle(type),
+				config: JSON.parse(JSON.stringify(DEFAULT_CONFIGS[type] || {})),
+			}
+		},
+
+		/**
+		 * The new page's id: the typed slug, else `<type>-page-<n>`, made unique.
+		 *
+		 * @param {Array<object>} pages - the pages it joins.
+		 * @return {string}
+		 */
+		newPageId(pages) {
+			const takenIds = new Set(pages.map((p) => p && p.id))
+			return uniqueValue(
+				slugify(this.addingId) || `${this.addingType}-page-${pages.length + 1}`,
+				takenIds,
+			)
+		},
+
+		/**
+		 * The new page's route. The first page on "/" is the home page; any
+		 * later page gets its own route, so it does not hide behind the one
+		 * already there.
+		 *
+		 * @param {Array<object>} pages - the pages it joins.
+		 * @return {string}
+		 */
+		newPageRoute(pages) {
+			const type = this.addingType
+			const takenRoutes = new Set(pages.map((p) => p && p.route))
+			const typedSlug = slugify(this.addingId)
+			if (type === 'index' && !typedSlug && !takenRoutes.has('/')) {
+				return '/'
+			}
+			return uniqueValue(`/${typedSlug || type}`, takenRoutes)
 		},
 
 		/**
@@ -481,13 +519,22 @@ export default {
 			if (this.duplicateIds.includes(page && page.id)) {
 				return true
 			}
-			if (page && page.route && this.duplicateRoutes.includes(page.route)) {
-				return true
-			}
-			if (page && page.route && !ROUTE_PATTERN.test(page.route)) {
+			const route = routeOf(page)
+			if (route && this.routeIsInvalid(route)) {
 				return true
 			}
 			return index === -1
+		},
+
+		/**
+		 * Whether a route is shared with another page or fails the
+		 * route-pattern grammar.
+		 *
+		 * @param {string} route - a page's route.
+		 * @return {boolean}
+		 */
+		routeIsInvalid(route) {
+			return this.duplicateRoutes.includes(route) || !ROUTE_PATTERN.test(route)
 		},
 	},
 }
