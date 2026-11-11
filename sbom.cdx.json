@@ -2,10 +2,8 @@
   "$schema": "http://cyclonedx.org/schema/bom-1.5.schema.json",
   "bomFormat": "CycloneDX",
   "specVersion": "1.5",
-  "serialNumber": "urn:uuid:ec1e28c6-c332-4b0d-ae07-0e1986df22e6",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-11-11T17:22:54Z",
     "tools": [
       {
         "name": "composer",
@@ -82,10 +80,10 @@
       }
     ],
     "component": {
-      "bom-ref": "conductionnl/buildiq-dev-development",
+      "bom-ref": "conductionnl/buildiq-0.2.0.0",
       "type": "application",
       "name": "buildiq",
-      "version": "dev-development",
+      "version": "0.2.0",
       "group": "conductionnl",
       "description": "Citizen-developer app builder for Nextcloud — compose apps from registers, connectors, workflows, and documents without code.",
       "author": "Conduction b.v.",
@@ -96,16 +94,8 @@
           }
         }
       ],
-      "purl": "pkg:composer/conductionnl/buildiq@dev-development",
+      "purl": "pkg:composer/conductionnl/buildiq@0.2.0",
       "properties": [
-        {
-          "name": "cdx:composer:package:distReference",
-          "value": "c3314109bc166f8dd1c4545db6d35abaf38c1196"
-        },
-        {
-          "name": "cdx:composer:package:sourceReference",
-          "value": "c3314109bc166f8dd1c4545db6d35abaf38c1196"
-        },
         {
           "name": "cdx:composer:package:type",
           "value": "library"
@@ -27485,7 +27475,7 @@
   ],
   "dependencies": [
     {
-      "ref": "conductionnl/buildiq-dev-development"
+      "ref": "conductionnl/buildiq-0.2.0.0"
     }
   ]
 }
