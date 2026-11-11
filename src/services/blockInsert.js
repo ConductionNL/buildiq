@@ -143,16 +143,33 @@ function markObject(node, unresolvedSlugs) {
  * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
  */
 export function markUnresolvedRefs(node, unresolvedSlugs) {
-	if (!Array.isArray(unresolvedSlugs) || unresolvedSlugs.length === 0) {
+	if (!hasSlugs(unresolvedSlugs)) {
 		return node
 	}
 	if (Array.isArray(node)) {
 		return node.map((item) => markUnresolvedRefs(item, unresolvedSlugs))
 	}
-	if (node === null || typeof node !== 'object') {
-		return node
-	}
-	return markObject(node, unresolvedSlugs)
+	return isObjectNode(node) ? markObject(node, unresolvedSlugs) : node
+}
+
+/**
+ * Whether a slug list names at least one unresolved slug.
+ *
+ * @param {unknown} slugs - the unresolved dependency slugs.
+ * @return {boolean}
+ */
+function hasSlugs(slugs) {
+	return Array.isArray(slugs) && slugs.length > 0
+}
+
+/**
+ * Whether a node is a non-null object (arrays are handled before).
+ *
+ * @param {unknown} node - the node to mark.
+ * @return {boolean}
+ */
+function isObjectNode(node) {
+	return node !== null && typeof node === 'object'
 }
 
 /**

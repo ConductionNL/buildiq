@@ -47,8 +47,18 @@ export async function fetchDocudeskTemplates(opts = {}) {
  */
 export function templateToOption(tpl) {
 	return {
-		label: tpl.name || tpl.title || tpl.id,
+		label: templateTitle(tpl) || tpl.id,
 		uuid: tpl.id || tpl.uuid,
-		name: tpl.name || tpl.title || '',
+		name: templateTitle(tpl) || '',
 	}
+}
+
+/**
+ * A template record's display name: its name, else its title.
+ *
+ * @param {object} tpl - the raw template record.
+ * @return {string|undefined}
+ */
+function templateTitle(tpl) {
+	return tpl.name || tpl.title
 }

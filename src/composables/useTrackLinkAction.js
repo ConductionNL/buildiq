@@ -29,15 +29,33 @@ import { generateUrl } from '@nextcloud/router'
  * @return {string}
  */
 function resolvePublicUrl(data) {
-	if (data && typeof data.url === 'string' && data.url) {
+	if (hasExplicitUrl(data)) {
 		return data.url
 	}
 	const token = data && data.token
-	return token
-		? generateUrl(
-				`/apps/openregister/api/public/case-tokens/${encodeURIComponent(token)}`,
-			)
-		: ''
+	return token ? caseTokenUrl(token) : ''
+}
+
+/**
+ * Whether a mint response carries a non-empty `url` string.
+ *
+ * @param {?object} data - the mint response.
+ * @return {boolean}
+ */
+function hasExplicitUrl(data) {
+	return Boolean(data && typeof data.url === 'string' && data.url)
+}
+
+/**
+ * The public case-token resolve endpoint for a token.
+ *
+ * @param {string} token - the minted token.
+ * @return {string}
+ */
+function caseTokenUrl(token) {
+	return generateUrl(
+		`/apps/openregister/api/public/case-tokens/${encodeURIComponent(token)}`,
+	)
 }
 
 /**
