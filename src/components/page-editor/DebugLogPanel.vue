@@ -115,6 +115,9 @@
 <script>
 import { NcButton } from '@nextcloud/vue'
 
+/** Binding problems where a source of the binding itself does not exist. */
+const MISSING_SOURCES = ['missing-schema', 'missing-register']
+
 export default {
 	name: 'DebugLogPanel',
 
@@ -217,29 +220,22 @@ export default {
 		 */
 		describe(entry) {
 			if (entry.kind === 'request') {
-				return entry.status === 0
-					? this.t('buildiq', 'The request did not complete')
-					: this.t('buildiq', 'The server answered {status}', {
-							status: entry.status,
-						})
+				return this.describeRequest(entry)
 			}
 			if (entry.kind === 'binding') {
-				if (entry.problem === 'missing-schema') {
-					return this.t('buildiq', 'Schema {schema} does not exist', {
-						schema: entry.schema,
-					})
-				}
-				if (entry.problem === 'missing-register') {
-					return this.t('buildiq', 'Register {register} does not exist', {
-						register: entry.register,
-					})
-				}
-				return this.t(
-					'buildiq',
-					'{property} is not a field of schema {schema}',
-					{ property: entry.property, schema: entry.schema },
-				)
+				return this.describeBinding(entry)
 			}
+			return this.describeComponent(entry)
+		},
+
+		/**
+		 * What went wrong with a component: it is unknown, or it failed to
+		 * draw.
+		 *
+		 * @param {object} entry An `unknown-component` or render-error entry.
+		 * @return {string} The sentence.
+		 */
+		describeComponent(entry) {
 			if (entry.kind === 'unknown-component') {
 				return this.t('buildiq', 'Unknown component {name}', {
 					name: entry.component,
@@ -248,6 +244,56 @@ export default {
 			return this.t('buildiq', '{component} failed to draw: {message}', {
 				component: entry.component,
 				message: entry.what,
+			})
+		},
+
+		/**
+		 * What went wrong with a request: it did not complete, or the status
+		 * the server answered.
+		 *
+		 * @param {object} entry A `request` log entry.
+		 * @return {string} The sentence.
+		 */
+		describeRequest(entry) {
+			return entry.status === 0
+				? this.t('buildiq', 'The request did not complete')
+				: this.t('buildiq', 'The server answered {status}', {
+						status: entry.status,
+					})
+		},
+
+		/**
+		 * What is wrong with a binding: a missing schema, a missing register,
+		 * or a property the schema does not have.
+		 *
+		 * @param {object} entry A `binding` log entry.
+		 * @return {string} The sentence.
+		 */
+		describeBinding(entry) {
+			if (MISSING_SOURCES.includes(entry.problem)) {
+				return this.describeMissingSource(entry)
+			}
+			return this.t('buildiq', '{property} is not a field of schema {schema}', {
+				property: entry.property,
+				schema: entry.schema,
+			})
+		},
+
+		/**
+		 * Which source of a binding does not exist: its schema or its
+		 * register.
+		 *
+		 * @param {object} entry A `missing-schema` or `missing-register` entry.
+		 * @return {string} The sentence.
+		 */
+		describeMissingSource(entry) {
+			if (entry.problem === 'missing-schema') {
+				return this.t('buildiq', 'Schema {schema} does not exist', {
+					schema: entry.schema,
+				})
+			}
+			return this.t('buildiq', 'Register {register} does not exist', {
+				register: entry.register,
 			})
 		},
 
