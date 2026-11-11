@@ -423,6 +423,19 @@ class AppRepoSerializer {
 			return;
 		}
 
+		$this->exportDeclaredReference(run: $run, reference: $reference);
+
+	}//end exportDeclaredConnector()
+
+	/**
+	 * Export the connector a safe declared binding names, then its direct references.
+	 *
+	 * @param ConnectorExportRun $run       The export in progress.
+	 * @param ConnectorReference $reference The declared binding's reference.
+	 *
+	 * @return void
+	 */
+	private function exportDeclaredReference(ConnectorExportRun $run, ConnectorReference $reference): void {
 		$located = $this->locateConnector(reference: $reference);
 		if ($located === null) {
 			$run->missing++;
@@ -441,7 +454,7 @@ class AppRepoSerializer {
 			$run->resolved += $this->collectDirectReferences(run: $run, located: $located);
 		}
 
-	}//end exportDeclaredConnector()
+	}//end exportDeclaredReference()
 
 	/**
 	 * Whether a declared binding names an exportable kind and a well-formed UUID.

@@ -185,7 +185,16 @@ class AppRepoConnectorExportTest extends TestCase {
 	 */
 	private function entity(string $id): ?ObjectEntityInterface {
 		$objects = [
-			self::SYNC_UUID => [self::SYNC_UUID, ['slug' => 'ted-sync', 'sourceId' => 'tenderned', 'sourceTargetMapping' => self::MAPPING_UUID, 'sourceHashMapping' => '../escape', 'password' => 'hunter2']],
+			self::SYNC_UUID => [
+				self::SYNC_UUID,
+				[
+					'slug' => 'ted-sync',
+					'sourceId' => 'tenderned',
+					'sourceTargetMapping' => self::MAPPING_UUID,
+					'sourceHashMapping' => '../escape',
+					'password' => 'hunter2',
+				],
+			],
 			'tenderned' => [self::SOURCE_UUID, ['slug' => 'Tender Ned', 'apiKey' => 'secret']],
 			self::SOURCE_ALIAS => [self::SOURCE_UUID, ['slug' => 'Tender Ned', 'apiKey' => 'secret']],
 			self::OTHER_SOURCE => [self::OTHER_SOURCE, ['slug' => 'other-source']],
