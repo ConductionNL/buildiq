@@ -28,21 +28,38 @@
  * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006
  */
 export function resolveSelector(value, selector) {
-	if (selector === undefined || selector === null || selector === '') {
+	if (isBlankPath(selector)) {
 		return value
 	}
 	const segments = String(selector).split('.')
 	let cursor = value
 	for (const segment of segments) {
-		if (cursor === null || cursor === undefined) {
-			return undefined
-		}
-		if (typeof cursor !== 'object') {
+		if (!isTraversable(cursor)) {
 			return undefined
 		}
 		cursor = cursor[segment]
 	}
 	return cursor
+}
+
+/**
+ * Whether a selector or items path is absent: undefined, null or ''.
+ *
+ * @param {unknown} path - the selector.
+ * @return {boolean}
+ */
+function isBlankPath(path) {
+	return path === undefined || path === null || path === ''
+}
+
+/**
+ * Whether a path can step into a value: a non-null object or array.
+ *
+ * @param {unknown} cursor - the value reached so far.
+ * @return {boolean}
+ */
+function isTraversable(cursor) {
+	return cursor !== null && typeof cursor === 'object'
 }
 
 /**
@@ -88,11 +105,21 @@ export function projectFields(item, fields, onMissing) {
  * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006
  */
 export function extractItems(response, itemsPath) {
-	if (itemsPath === undefined || itemsPath === null || itemsPath === '') {
-		return response === undefined || response === null ? [] : [response]
+	if (isBlankPath(itemsPath)) {
+		return isAbsent(response) ? [] : [response]
 	}
 	const resolved = resolveSelector(response, itemsPath)
 	return Array.isArray(resolved) ? resolved : []
+}
+
+/**
+ * Whether a response is undefined or null.
+ *
+ * @param {unknown} response - the raw response payload.
+ * @return {boolean}
+ */
+function isAbsent(response) {
+	return response === undefined || response === null
 }
 
 /**
