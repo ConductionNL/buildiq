@@ -117,7 +117,7 @@ to wizard completion (`onWizardCreated`).
 `ManifestDiff` SHALL fetch both manifests (`fetch`, `from`, `to`, `slug`),
 compute a deterministic diff (`diffParts`, `partClass`, `sortReplacer`,
 `prettyManifest`), label each side (`fromLabel`, `toLabel`), and load on
-`mounted`. `App.vue` SHALL expose the app shell context: icon, store URL, admin
+`mounted`. `App.vue` SHALL expose the app shell context: icon, marketplace URL, admin
 flag, permissions, and the per-app translation helper (`appIcon`,
 `appStoreUrl`, `isAdmin`, `permissions`, `translateForApp`, `created`).
 

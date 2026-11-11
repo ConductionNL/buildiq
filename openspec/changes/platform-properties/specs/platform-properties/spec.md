@@ -87,7 +87,7 @@ Built apps SHALL use the keyboard-operable controls of nextcloud-vue and Nextclo
 
 ### Requirement: The builder runs on the customer's own Nextcloud (REQ-PLAT-007)
 
-buildiq SHALL install and run as an ordinary Nextcloud app on a server the customer operates, with OpenRegister as its only required app dependency. It SHALL NOT need a service operated by Conduction or another vendor to start, store apps or serve built apps. Optional integrations (GitHub export, the remote template store, AI providers) SHALL be configured by the customer and SHALL fail with a message when not configured.
+buildiq SHALL install and run as an ordinary Nextcloud app on a server the customer operates, with OpenRegister as its only required app dependency. It SHALL NOT need a service operated by Conduction or another vendor to start, store apps or serve built apps. Optional integrations (GitHub export, the remote template marketplace, AI providers) SHALL be configured by the customer and SHALL fail with a message when not configured.
 
 #### Scenario: An installation without access to vendor services
 - GIVEN a Nextcloud server with OpenRegister and no route to any Conduction service

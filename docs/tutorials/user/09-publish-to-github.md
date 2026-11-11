@@ -32,7 +32,7 @@ Read the steps below as the code's account of itself. Publishing has not been ru
 
 3. Click **Publish**. For an app with no repository yet, the dialog asks for a **Repository name** and, optionally, an organisation to create it under. Pick the **Version to publish**, then confirm. Buildiq creates the repository, tags it with the `openbuild-app` topic, and commits `openbuild-app.json`, `manifest.json` and `schemas/` in one clean commit. Publishing only ever adds a commit. It never overwrites history.
 
-4. Go to **Store**. Below the built-in templates sits **Apps on GitHub**, with a search box. The store searches GitHub for the discovery topic and builds one installable card per repository from its `openbuild-app.json`. Anonymous search sees public repositories; your credential raises the rate limit and reveals your private ones.
+4. Go to **Marketplace**. Below the built-in templates sits **Apps on GitHub**, with a search box. The marketplace searches GitHub for the discovery topic and builds one installable card per repository from its `openbuild-app.json`. Anonymous search sees public repositories; your credential raises the rate limit and reveals your private ones.
 
    ![The store with its GitHub search box and an installable card](/screenshots/tutorials/user/09-publish-to-github-02.png)
 
@@ -44,7 +44,7 @@ Read the steps below as the code's account of itself. Publishing has not been ru
 
 ## Verification
 
-The round trip is good when the repository exists on GitHub with `openbuild-app.json`, `manifest.json` and `schemas/`, and carries the `openbuild-app` topic. The strongest test is the full circle: delete the app locally, search the store, and install it again. You get the same app back, because it now lives in the repository.
+The round trip is good when the repository exists on GitHub with `openbuild-app.json`, `manifest.json` and `schemas/`, and carries the `openbuild-app` topic. The strongest test is the full circle: delete the app locally, search the marketplace, and install it again. You get the same app back, because it now lives in the repository.
 
 ## Common issues
 
@@ -59,6 +59,6 @@ The round trip is good when the repository exists on GitHub with `openbuild-app.
 
 ## Reference
 
-- [GitHub store](../../github-store.md), the repository format, the endpoints and the credential broker model.
+- [GitHub marketplace](../../github-store.md), the repository format, the endpoints and the credential broker model.
 - [Export your app](./08-export-app.md), the ZIP route, for moving an app without GitHub.
 - [Compare and roll back a version](./07-version-snapshots.md), a pull lands as a draft you promote.
