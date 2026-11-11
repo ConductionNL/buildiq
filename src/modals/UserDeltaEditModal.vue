@@ -63,6 +63,54 @@ import { generateUrl } from '@nextcloud/router'
 import NcButton from '@nextcloud/vue/components/NcButton'
 import NcModal from '@nextcloud/vue/components/NcModal'
 
+/**
+ * Parse a raw delta draft; a blank draft is an empty delta.
+ *
+ * @param {string} draft The editor text.
+ * @return {object|Array|string|number|boolean|null} The parsed JSON value.
+ */
+function parseDelta(draft) {
+	return draft.trim() === '' ? {} : JSON.parse(draft)
+}
+
+/**
+ * Whether a parsed JSON value is an object (not null, not an array).
+ *
+ * @param {object|Array|string|number|boolean|null} value The parsed JSON value.
+ * @return {boolean}
+ */
+function isJsonObject(value) {
+	return value !== null && typeof value === 'object' && !Array.isArray(value)
+}
+
+/**
+ * The server's detail or error message of a failed save, if any.
+ *
+ * @param {Error} e The rejected request.
+ * @return {string|undefined}
+ */
+function saveFailureDetail(e) {
+	return (
+		e
+		&& e.response
+		&& e.response.data
+		&& (e.response.data.detail || e.response.data.error)
+	)
+}
+
+/**
+ * The message shown when saving the delta fails.
+ *
+ * @param {Error} e The rejected request.
+ * @return {string}
+ */
+function describeSaveFailure(e) {
+	const detail = saveFailureDetail(e)
+	return detail
+		? `${t('buildiq', 'Could not save your override')}: ${detail}`
+		: t('buildiq', 'Could not save your override')
+}
+
 export default {
 	name: 'UserDeltaEditModal',
 	components: { NcModal, NcButton, CnJsonViewer },
@@ -112,44 +160,62 @@ export default {
 		 */
 		async save() {
 			if (!this.appSlug) return
-			let parsed
-			try {
-				parsed = this.draft.trim() === '' ? {} : JSON.parse(this.draft)
-			} catch (e) {
-				this.error = t('buildiq', 'The delta is not valid JSON.')
-				return
-			}
-			if (
-				parsed === null
-				|| typeof parsed !== 'object'
-				|| Array.isArray(parsed)
-			) {
-				this.error = t('buildiq', 'The delta must be a JSON object.')
-				return
-			}
+			const parsed = this.parseDraft()
+			if (parsed === undefined) return
 
 			this.saving = true
 			this.error = ''
 			try {
-				const url = generateUrl(
-					'/apps/buildiq/api/app-overrides/{appId}/user',
-					{ appId: this.appSlug },
-				)
-				await axios.put(url, parsed)
-				this.$emit('saved')
-				this.onClose()
+				await this.putDelta(parsed)
 			} catch (e) {
-				const detail =
-					e
-					&& e.response
-					&& e.response.data
-					&& (e.response.data.detail || e.response.data.error)
-				this.error = detail
-					? `${t('buildiq', 'Could not save your override')}: ${detail}`
-					: t('buildiq', 'Could not save your override')
+				this.error = describeSaveFailure(e)
 			} finally {
 				this.saving = false
 			}
+		},
+
+		/**
+		 * Parse the draft into a delta object, or set the error and return
+		 * `undefined` when it is not valid JSON or not a JSON object.
+		 *
+		 * @return {object|undefined}
+		 */
+		parseDraft() {
+			let parsed
+			try {
+				parsed = parseDelta(this.draft)
+			} catch (e) {
+				this.error = t('buildiq', 'The delta is not valid JSON.')
+				return undefined
+			}
+			if (!isJsonObject(parsed)) {
+				this.error = t('buildiq', 'The delta must be a JSON object.')
+				return undefined
+			}
+			return parsed
+		},
+
+		/**
+		 * PUT the delta, then emit `saved` and close.
+		 *
+		 * @param {object} delta The parsed user delta.
+		 * @return {Promise<void>}
+		 */
+		async putDelta(delta) {
+			await axios.put(this.userDeltaUrl(), delta)
+			this.$emit('saved')
+			this.onClose()
+		},
+
+		/**
+		 * The owner-scoped user-delta endpoint of this app.
+		 *
+		 * @return {string}
+		 */
+		userDeltaUrl() {
+			return generateUrl('/apps/buildiq/api/app-overrides/{appId}/user', {
+				appId: this.appSlug,
+			})
 		},
 	},
 }
