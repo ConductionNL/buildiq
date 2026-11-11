@@ -265,48 +265,69 @@ class ExportService {
 	 * NOT because a test needs to reach it. See the follow-up issue.
 	 *
 	 * @param array<string,mixed> $context Placeholder context: appId, appNamespace, appName, appVersion, authorName, authorEmail, license.
-	 * @param array<int,mixed> $dataRegisters Optional bound data-register schemas to bundle.
-	 * @param array<int,mixed> $flows `Application.flows` bindings, bundled only when non-empty.
-	 *                                Default `[]`.
-	 * @param string $applicationSlug Slug of the application whose agents to collect. Default `''`.
+	 * @param ScaffoldOptions $options The bound data registers, flows and agent-owner slug to bundle; none by default.
 	 *
 	 * @return array<string,string> Ordered `path => contents` map of the resolved scaffold.
 	 *
 	 * @spec openspec/changes/github-app-sync/specs/github-app-sync/spec.md
 	 */
-	public function buildScaffoldMap(array $context, array $dataRegisters = [], array $flows = [], string $applicationSlug = ''): array {
+	public function buildScaffoldMap(array $context, ScaffoldOptions $options = new ScaffoldOptions()): array {
 		$jobUuid = 'scaffold-' . ((string)($context['appId'] ?? 'app')) . '-' . uniqid();
 		$scratch = $this->prepareScratchDir(jobUuid: $jobUuid);
 
 		try {
 			$this->copyTemplate(source: $this->templateRoot, dest: $scratch);
 			$this->resolvePlaceholders(rootDir: $scratch, context: $context);
-			if ($dataRegisters !== []) {
-				$this->bundleDataRegisterSchemas(rootDir: $scratch, dataRegisters: $dataRegisters);
-			}
+			$this->bundleScaffoldChannels(rootDir: $scratch, options: $options);
 
-			if ($flows !== [] || $applicationSlug !== '') {
-				$this->lastSkipped = $this->bundlers->flowAndAgentBundler->bundle(
-					rootDir: $scratch,
-					flows: $flows,
-					applicationSlug: $applicationSlug
-				);
-			}
-
-			$map = [];
-			foreach ($this->treeFiles->listFilesSorted(baseDir: $scratch) as $relative) {
-				$contents = file_get_contents($scratch . '/' . $relative);
-				if ($contents !== false) {
-					$map[$relative] = $contents;
-				}
-			}
-
-			return $map;
+			return $this->scaffoldFiles(rootDir: $scratch);
 		} finally {
 			$this->treeFiles->removeTree(dir: $scratch);
 		}//end try
 
 	}//end buildScaffoldMap()
+
+	/**
+	 * Bundle the scaffold's optional channels: the bound data registers, and the
+	 * flows and agents when there are flows or an agent owner.
+	 *
+	 * @param string          $rootDir Scratch directory (scaffold tree root).
+	 * @param ScaffoldOptions $options What to bundle.
+	 *
+	 * @return void
+	 */
+	private function bundleScaffoldChannels(string $rootDir, ScaffoldOptions $options): void {
+		if ($options->dataRegisters !== []) {
+			$this->bundleDataRegisterSchemas(rootDir: $rootDir, dataRegisters: $options->dataRegisters);
+		}
+
+		if ($options->flows !== [] || $options->applicationSlug !== '') {
+			$this->lastSkipped = $this->bundlers->flowAndAgentBundler->bundle(
+				rootDir: $rootDir,
+				flows: $options->flows,
+				applicationSlug: $options->applicationSlug
+			);
+		}
+	}//end bundleScaffoldChannels()
+
+	/**
+	 * Every file of a scaffold tree, keyed by its relative path, in sorted order.
+	 *
+	 * @param string $rootDir Scratch directory (scaffold tree root).
+	 *
+	 * @return array<string,string> Ordered `path => contents` map.
+	 */
+	private function scaffoldFiles(string $rootDir): array {
+		$map = [];
+		foreach ($this->treeFiles->listFilesSorted(baseDir: $rootDir) as $relative) {
+			$contents = file_get_contents($rootDir . '/' . $relative);
+			if ($contents !== false) {
+				$map[$relative] = $contents;
+			}
+		}
+
+		return $map;
+	}//end scaffoldFiles()
 
 	/**
 	 * Bundle every `dataRegisters` binding's schema definitions (always) and
