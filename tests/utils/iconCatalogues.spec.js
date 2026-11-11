@@ -42,3 +42,25 @@ describe('resolveAppIcon — author SVG sanitization', () => {
 		expect(resolveAppIcon(null)).toBeNull()
 	})
 })
+
+describe('resolveAppIcon — catalogue glyphs', () => {
+	it('builds a white glyph by default and an unfilled one for dark', async () => {
+		const { mdiAccount } = await import('@mdi/js')
+		const white = resolveAppIcon('  mdiAccount ')
+		expect(white).toBe(
+			`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="${mdiAccount}" fill="#ffffff"/></svg>`,
+		)
+		expect(resolveAppIcon('mdiAccount', { dark: true })).toBe(
+			`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="${mdiAccount}"/></svg>`,
+		)
+		expect(resolveAppIcon('mdiAccount', {})).toBe(white)
+	})
+
+	it('answers null for an unknown name and sanitizes trimmed raw SVG', () => {
+		expect(resolveAppIcon('no-such-icon')).toBeNull()
+		expect(resolveAppIcon(42)).toBeNull()
+		const out = resolveAppIcon('  <svg xmlns="http://www.w3.org/2000/svg"><path d="M0 0"/></svg>  ')
+		expect(out.startsWith('<svg')).toBe(true)
+		expect(out.endsWith('</svg>')).toBe(true)
+	})
+})
