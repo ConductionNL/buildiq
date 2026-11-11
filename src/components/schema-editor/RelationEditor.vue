@@ -77,8 +77,7 @@
 import { NcButton, NcSelect, NcTextField } from '@nextcloud/vue'
 import DeleteIcon from 'vue-material-design-icons/Delete.vue'
 import PlusIcon from 'vue-material-design-icons/Plus.vue'
-
-const CARDINALITIES = ['one', 'many']
+import { relationPickerMixin } from '../../mixins/relationPicker.js'
 
 let keyCounter = 0
 /**
@@ -92,66 +91,14 @@ function nextKey() {
 export default {
 	name: 'RelationEditor',
 	components: { DeleteIcon, NcButton, NcSelect, NcTextField, PlusIcon },
+	mixins: [relationPickerMixin],
+
 	props: {
 		relations: { type: Array, default: () => [] },
-		schemaSlugs: { type: Array, default: () => [] },
 	},
 
 	emits: ['update:relations'],
-	computed: {
-		/**
-		 * Build target-schema picker options from the available slugs.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
-		 * @return {Array} Option objects.
-		 */
-		schemaOptions() {
-			return this.schemaSlugs.map((slug) => ({ value: slug, label: slug }))
-		},
-
-		/**
-		 * Build cardinality picker options (one/many) with translated labels.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
-		 * @return {Array} Option objects.
-		 */
-		cardinalityOptions() {
-			return CARDINALITIES.map((value) => ({
-				value,
-				label:
-					value === 'one'
-						? this.t('buildiq', 'One')
-						: this.t('buildiq', 'Many'),
-			}))
-		},
-	},
-
 	methods: {
-		/**
-		 * Resolve the selected target-schema option for a value.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
-		 * @param {string} value Schema slug.
-		 * @return {object|null} The matching option.
-		 */
-		schemaOption(value) {
-			return this.schemaOptions.find((o) => o.value === value) || null
-		},
-
-		/**
-		 * Resolve the selected cardinality option for a value.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
-		 * @param {string} value Cardinality.
-		 * @return {object} The matching option (defaults to first).
-		 */
-		cardinalityOption(value) {
-			return (
-				this.cardinalityOptions.find((o) => o.value === value)
-				|| this.cardinalityOptions[0]
-			)
-		},
-
 		/**
 		 * Emit the updated relations array to the parent.
 		 *
