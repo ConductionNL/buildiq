@@ -576,4 +576,139 @@ class ApplicationDeletionServiceTest extends TestCase {
 		);
 		self::assertCount(1, $capWarnings, 'the cap-exhaustion warning must fire exactly once');
 	}//end testPurgeCapExhaustionLogsWarningOnce()
+
+	/**
+	 * The whole teardown, call by call, with and without deleteData: every
+	 * lookup, purge query, delete and log line in order, and the orphan list,
+	 * compared with the recorded fixture. Set GOLDEN_RECORD=1 to write a
+	 * missing fixture.
+	 *
+	 * @return void
+	 */
+	public function testTeardownTraceGolden(): void {
+		$fixture = __DIR__ . '/fixtures/application-deletion-trace.golden.json';
+		$cases = [];
+		foreach ([true, false] as $deleteData) {
+			$cases[] = $this->teardownTrace(deleteData: $deleteData);
+		}
+
+		$actual = json_encode($cases, (JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)) . "\n";
+		if (file_exists($fixture) === false && getenv('GOLDEN_RECORD') === '1') {
+			file_put_contents($fixture, $actual);
+		}
+
+		self::assertFileExists($fixture);
+		self::assertSame(file_get_contents($fixture), $actual);
+	}//end testTeardownTraceGolden()
+
+	/**
+	 * Run one teardown over five versions and two routes and record every call.
+	 *
+	 * Versions: one whose register drains and deletes, one whose register is
+	 * gone, one whose register refuses to delete, one keyed only by `@self.id`
+	 * and one with no id. One route refuses to delete; one schema refuses to
+	 * load.
+	 *
+	 * @param bool $deleteData Whether the data goes too.
+	 *
+	 * @return array<string,mixed> The trace and the orphan list.
+	 */
+	private function teardownTrace(bool $deleteData): array {
+		$this->setUp();
+		$trace = [];
+		$record = static function (string $call, array $args = []) use (&$trace): void {
+			$trace[] = $call . ' ' . json_encode($args, JSON_UNESCAPED_SLASHES);
+		};
+		foreach (['info', 'error', 'warning'] as $level) {
+			$this->logger->method($level)->willReturnCallback(
+				static function (string $message, array $context = []) use ($record, $level): void {
+					$record($level, [$message, $context]);
+				}
+			);
+		}
+
+		$versions = [
+			['id' => 'v1', 'slug' => 'development', 'register' => 'reg-a'],
+			['id' => 'v2', 'register' => 'reg-b'],
+			['id' => 'v3', 'register' => 'reg-c'],
+			['@self' => ['id' => 'v4']],
+			['slug' => 'no-id'],
+		];
+		$this->objectService->method('findAll')->willReturnCallback(
+			static function (array $config) use ($record, $versions): array {
+				$record('findAll', $config);
+				$schema = ($config['filters']['schema'] ?? null);
+				if ($schema === ApplicationVersionService::APPLICATION_VERSION_SCHEMA) {
+					return $versions;
+				}
+
+				if ($schema === 'built-app-route') {
+					return [['id' => 'r1'], ['@self' => ['id' => 'r2']]];
+				}
+
+				return [];
+			}
+		);
+		$this->objectService->method('deleteObject')->willReturnCallback(
+			static function (...$args) use ($record): bool {
+				$uuid = '?';
+				if (is_string($args[0] ?? null) === true) {
+					$uuid = $args[0];
+				}
+
+				$record('deleteObject', [$uuid]);
+				if ($uuid === 'r1') {
+					throw new RuntimeException('route locked');
+				}
+
+				return true;
+			}
+		);
+		$registers = ['reg-a' => [10, 11], 'reg-c' => [12]];
+		$this->registerMapper->method('find')->willReturnCallback(
+			function (...$args) use ($record, $registers): Register {
+				$record('findRegister', [$args[0]]);
+				if (isset($registers[$args[0]]) === false) {
+					throw new RuntimeException('no register ' . $args[0]);
+				}
+
+				$register = $this->registerWithSchemas($registers[$args[0]]);
+				$register->setSlug($args[0]);
+				return $register;
+			}
+		);
+		$this->registerMapper->method('findAll')->willReturn([]);
+		$this->registerService->method('delete')->willReturnCallback(
+			static function (Register $register) use ($record): Register {
+				$record('deleteRegister', [$register->getSlug()]);
+				if ($register->getSlug() === 'reg-c') {
+					throw new RuntimeException('register busy');
+				}
+
+				return $register;
+			}
+		);
+		$this->schemaMapper->method('find')->willReturnCallback(
+			static function (string|int $id) use ($record): Schema {
+				$record('findSchema', [$id]);
+				if ($id === 11) {
+					throw new RuntimeException('schema unreadable');
+				}
+
+				$schema = new Schema();
+				$schema->setId($id);
+				return $schema;
+			}
+		);
+		$this->schemaMapper->method('delete')->willReturnCallback(
+			static function (Schema $schema) use ($record): Schema {
+				$record('deleteSchema', [$schema->getId()]);
+				return $schema;
+			}
+		);
+
+		$orphaned = $this->service->deleteApplication(appUuid: 'u-app', appSlug: 'demo', deleteData: $deleteData);
+
+		return ['deleteData' => $deleteData, 'trace' => $trace, 'orphaned' => $orphaned];
+	}//end teardownTrace()
 }//end class
