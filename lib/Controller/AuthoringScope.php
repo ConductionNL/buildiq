@@ -3,7 +3,7 @@
 /**
  * Buildiq AuthoringScope
  *
- * The register and schema an authoring read is about, taken from the request.
+ * The register and schema an authoring read is about.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -22,8 +22,6 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Controller;
 
-use OCP\IRequest;
-
 /**
  * One register and one schema, both named.
  */
@@ -41,21 +39,4 @@ final class AuthoringScope {
 		public readonly string $schema,
 	) {
 	}//end __construct()
-
-	/**
-	 * The scope the request names.
-	 *
-	 * @param IRequest $request The current request.
-	 *
-	 * @return self|null The scope, or null when the register or the schema is missing.
-	 */
-	public static function fromRequest(IRequest $request): ?self {
-		$register = (string)$request->getParam('register', '');
-		$schema = (string)$request->getParam('schema', '');
-		if ($register === '' || $schema === '') {
-			return null;
-		}
-
-		return new self(register: $register, schema: $schema);
-	}//end fromRequest()
 }//end class

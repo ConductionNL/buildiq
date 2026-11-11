@@ -56,6 +56,9 @@ final class AdminAuthoringGuard {
 	 * @param string $forbiddenDetail The sentence a signed-in non-admin is refused with.
 	 *
 	 * @return JSONResponse|null Null on allow, a refusal otherwise.
+	 *
+	 * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-002, REQ-OBSO-003)
+	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004, REQ-OBRF-005)
 	 */
 	public function refuseNonAdmin(string $forbiddenDetail): ?JSONResponse {
 		$user = $this->userSession->getUser();
@@ -78,6 +81,9 @@ final class AdminAuthoringGuard {
 	 *
 	 * @return AuthoringScope|JSONResponse The scope, or the refusal when the caller is not an
 	 *                                     administrator or the request names no full scope.
+	 *
+	 * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-002, REQ-OBSO-003)
+	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004, REQ-OBRF-005)
 	 */
 	public function adminScope(IRequest $request, string $forbiddenDetail): AuthoringScope|JSONResponse {
 		$refusal = $this->refuseNonAdmin(forbiddenDetail: $forbiddenDetail);
@@ -85,7 +91,7 @@ final class AdminAuthoringGuard {
 			return $refusal;
 		}
 
-		$scope = AuthoringScope::fromRequest($request);
+		$scope = $this->scopeOf(request: $request);
 		if ($scope === null) {
 			return new JSONResponse(
 				['error' => 'missing_scope', 'message' => 'Name the register and the schema.'],
@@ -95,4 +101,21 @@ final class AdminAuthoringGuard {
 
 		return $scope;
 	}//end adminScope()
+
+	/**
+	 * The scope the request names.
+	 *
+	 * @param IRequest $request The current request.
+	 *
+	 * @return AuthoringScope|null The scope, or null when the register or the schema is missing.
+	 */
+	private function scopeOf(IRequest $request): ?AuthoringScope {
+		$register = (string)$request->getParam('register', '');
+		$schema = (string)$request->getParam('schema', '');
+		if ($register === '' || $schema === '') {
+			return null;
+		}
+
+		return new AuthoringScope(register: $register, schema: $schema);
+	}//end scopeOf()
 }//end class
