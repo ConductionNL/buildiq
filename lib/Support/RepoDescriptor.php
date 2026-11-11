@@ -24,6 +24,8 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Support;
 
+use OCA\Buildiq\Service\GitHub\TokenScrubber;
+
 /**
  * Derives repo descriptor fields from a stored record and its manifest.
  *
@@ -36,6 +38,31 @@ final class RepoDescriptor {
 	 * @var array<string,true>
 	 */
 	private const DECLARATION_KEYS = ['provider' => true, 'reason' => true, 'scopes' => true];
+
+	/**
+	 * Key names that hold a secret anywhere in a manifest, lower case without `-` and `_`.
+	 *
+	 * @var array<string,true>
+	 */
+	private const SECRET_KEYS = [
+		'password' => true,
+		'passwd' => true,
+		'secret' => true,
+		'clientsecret' => true,
+		'sharedsecret' => true,
+		'webhooksecret' => true,
+		'signingsecret' => true,
+		'apikey' => true,
+		'apitoken' => true,
+		'token' => true,
+		'authtoken' => true,
+		'accesstoken' => true,
+		'refreshtoken' => true,
+		'bearertoken' => true,
+		'githubtoken' => true,
+		'privatekey' => true,
+		'authorization' => true,
+	];
 
 	/**
 	 * The descriptor category: the record's, else the manifest's, else `general`.
@@ -151,8 +178,9 @@ final class RepoDescriptor {
 	 * app-manifest schema allows, each only in its schema type (provider and
 	 * reason as strings, scopes as a list of strings), and entries that are
 	 * not objects are dropped, so a secret written next to a declaration
-	 * never leaves the instance. A manifest without `credentials` is returned
-	 * as is.
+	 * never leaves the instance. Anywhere in the manifest, keys named like a
+	 * secret (`password`, `token`, `apiKey`, ...) are dropped and token-shaped
+	 * strings and private keys are redacted.
 	 *
 	 * @param array<string,mixed> $manifest The manifest blob.
 	 *
@@ -161,15 +189,57 @@ final class RepoDescriptor {
 	 * @spec exclude shared descriptor field derivation for the repo serialisers, no behaviour of its own
 	 */
 	public static function publishableManifest(array $manifest): array {
-		if (array_key_exists('credentials', $manifest) === false) {
-			return $manifest;
+		if (array_key_exists('credentials', $manifest) === true) {
+			$entries = array_filter((array)$manifest['credentials'], static fn (mixed $entry): bool => is_array($entry) === true);
+			$manifest['credentials'] = array_values(
+				array_map(static fn (array $entry): array => self::declaration(entry: $entry), $entries)
+			);
 		}
 
-		$entries = array_filter((array)$manifest['credentials'], static fn (mixed $entry): bool => is_array($entry) === true);
-		$manifest['credentials'] = array_values(
-			array_map(static fn (array $entry): array => self::declaration(entry: $entry), $entries)
-		);
-
-		return $manifest;
+		return self::withoutSecrets(node: $manifest);
 	}//end publishableManifest()
+
+	/**
+	 * A manifest node without secret-named keys, with token-shaped strings and private keys redacted.
+	 *
+	 * @param array<int|string,mixed> $node A manifest object or list.
+	 *
+	 * @return array<int|string,mixed>
+	 */
+	private static function withoutSecrets(array $node): array {
+		$clean = [];
+		foreach ($node as $key => $value) {
+			$name = strtolower(str_replace(['-', '_'], '', (string)$key));
+			if (is_string($key) === true && isset(self::SECRET_KEYS[$name]) === true) {
+				continue;
+			}
+
+			$clean[$key] = self::publishableValue(value: $value);
+		}
+
+		return $clean;
+	}//end withoutSecrets()
+
+	/**
+	 * One manifest value as it is published.
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return mixed
+	 */
+	private static function publishableValue(mixed $value): mixed {
+		if (is_array($value) === true) {
+			return self::withoutSecrets(node: $value);
+		}
+
+		if (is_string($value) === false) {
+			return $value;
+		}
+
+		if (str_contains($value, 'PRIVATE KEY-----') === true) {
+			return '[redacted]';
+		}
+
+		return TokenScrubber::scrub(message: $value);
+	}//end publishableValue()
 }//end class
