@@ -69,6 +69,304 @@ function PICKER_HEADERS() {
 }
 
 /**
+ * GET a picker list endpoint: its `results`, or the bare body.
+ *
+ * @param {string} url - the endpoint URL.
+ * @return {Promise<unknown>} - the list, or null when the response is not ok.
+ */
+async function fetchList(url) {
+	const response = await fetch(url, { headers: PICKER_HEADERS() })
+	if (!response.ok) {
+		return null
+	}
+	const data = await response.json()
+	return (data && (data.results || data)) || []
+}
+
+/**
+ * Fetch the schemas in a given register.
+ *
+ * @param {string} register - register slug or id.
+ * @return {Promise<Array>} - schemas list.
+ */
+async function fetchSchemas(register) {
+	if (!register) {
+		return []
+	}
+	try {
+		const list = await fetchList(
+			generateUrl(`/apps/openregister/api/registers/${register}/schemas`),
+		)
+		return Array.isArray(list) ? list : []
+	} catch {
+		return []
+	}
+}
+
+/**
+ * Fetch the JSON-schema `properties` map for a register / schema pair.
+ *
+ * Resolved from the register's schema LIST, not from a per-schema request.
+ *
+ * This used to GET `/api/registers/{register}/schemas/{schema}`, which does
+ * not exist: OpenRegister routes `/api/registers/{id}/schemas` (list) and
+ * `/api/schemas/{id}` (flat), and the only nested per-schema route is
+ * `.../import-template`. Verified against the running instance — that URL
+ * 404s for slugs AND for numeric ids. Because the failure was swallowed by
+ * `if (!response.ok) return {}`, every field-mapping dropdown backed by this
+ * function (WikiPageEditor content/title/sidebar fields, IndexPageEditor,
+ * LogsPageEditor, MapPageEditor lat/lng) silently rendered with nothing but
+ * its placeholder option. The Vitest suites all stub this composable, so
+ * none of them could see it.
+ *
+ * The list endpoint already returns each schema's `properties` inline (see
+ * OpenRegister `Schema::jsonSerialize`, and the same assumption
+ * `buildDataSources` below already relies on), so resolving there is both
+ * correct and one request instead of two. Matching within the register also
+ * disambiguates schema slugs, which are NOT globally unique — this instance
+ * carries several registers holding a `hello-world-production-hello-message`.
+ *
+ * @param {string} register - register slug or id.
+ * @param {string} schema - schema slug or id.
+ * @return {Promise<object>} - properties map (empty object on failure).
+ */
+async function fetchSchemaProperties(register, schema) {
+	if (!register || !schema) {
+		return {}
+	}
+	const schemas = await fetchSchemas(register)
+	const match = schemas.find((entry) => isSchemaNamed(entry, schema))
+	return (match && match.properties) || {}
+}
+
+/**
+ * Whether a schema entry is the schema named by slug or id.
+ *
+ * @param {?object} entry - a schema from the register's list.
+ * @param {string} schema - schema slug or id.
+ * @return {boolean}
+ */
+function isSchemaNamed(entry, schema) {
+	return (
+		Boolean(entry)
+		&& (String(entry.slug) === String(schema) || String(entry.id) === String(schema))
+	)
+}
+
+/**
+ * The key a register entry is known by: its slug, else its id.
+ *
+ * @param {?object} entry - a register entry.
+ * @return {(string|number|undefined)}
+ */
+function registerKey(entry) {
+	return entry && (entry.slug || entry.id)
+}
+
+/**
+ * Order the register list for the picker. Without bindings only the per-app
+ * register is hoisted (byte-identical to the pre-existing behaviour); with
+ * bindings the list is tiered and the bound entries labelled.
+ *
+ * @param {Array<object>} list - the registers, in OR's order.
+ * @param {{perApp: string, bindings: Array<object>}} hoist - the per-app register and the dataRegisters bindings.
+ * @return {Array<object>}
+ */
+function orderRegisters(list, hoist) {
+	if (hoist.bindings.length === 0) {
+		return hoist.perApp ? perAppFirst(list, hoist.perApp) : list
+	}
+	return tieredRegisters(list, hoist)
+}
+
+/**
+ * The list with the per-app register moved to the front.
+ *
+ * @param {Array<object>} list - the registers.
+ * @param {string} perApp - the per-app register.
+ * @return {Array<object>} - a sorted copy.
+ */
+function perAppFirst(list, perApp) {
+	return [...list].sort((a, b) => {
+		if ((a.slug || a.id) === perApp) return -1
+		if ((b.slug || b.id) === perApp) return 1
+		return 0
+	})
+}
+
+/**
+ * Tier 0: per-app register. Tier 1: dataRegisters bindings, in declaration
+ * order, labelled with `binding.label ?? binding.register`. Tier 2: everything
+ * else, in OR's order.
+ *
+ * @param {Array<object>} list - the registers.
+ * @param {{perApp: string, bindings: Array<object>}} hoist - the per-app register and the dataRegisters bindings.
+ * @return {Array<object>}
+ */
+function tieredRegisters(list, hoist) {
+	const labels = bindingLabels(hoist.bindings)
+	const tiers = { perApp: hoist.perApp, declarationOrder: bindingOrder(hoist.bindings) }
+	const indexed = list.map((entry, originalIndex) => ({
+		entry: labelledEntry(entry, labels),
+		originalIndex,
+	}))
+	indexed.sort(tieredComparator(tiers))
+	return indexed.map((i) => i.entry)
+}
+
+/**
+ * Map<registerSlug, label> — label ?? register per design.md.
+ *
+ * @param {Array<object>} bindings - the dataRegisters bindings.
+ * @return {Map<string, string>}
+ */
+function bindingLabels(bindings) {
+	const labelByRegister = new Map()
+	bindings.forEach((binding) => {
+		if (binding && binding.register) {
+			labelByRegister.set(binding.register, binding.label ?? binding.register)
+		}
+	})
+	return labelByRegister
+}
+
+/**
+ * Declaration order of each binding, for the "matching entries, in the order
+ * the Application declared them" tier.
+ *
+ * @param {Array<object>} bindings - the dataRegisters bindings.
+ * @return {Map<string, number>}
+ */
+function bindingOrder(bindings) {
+	const declarationOrder = new Map()
+	bindings.forEach((binding, index) => {
+		if (binding && binding.register && !declarationOrder.has(binding.register)) {
+			declarationOrder.set(binding.register, index)
+		}
+	})
+	return declarationOrder
+}
+
+/**
+ * The entry with its binding label, when a binding names it.
+ *
+ * @param {object} entry - a register entry.
+ * @param {Map<string, string>} labels - the binding labels.
+ * @return {object}
+ */
+function labelledEntry(entry, labels) {
+	const key = registerKey(entry)
+	if (key && labels.has(key)) {
+		return { ...entry, label: labels.get(key) }
+	}
+	return entry
+}
+
+/**
+ * The tier of a register entry: 0 per-app, 1 bound, 2 other.
+ *
+ * @param {object} entry - a register entry.
+ * @param {{perApp: string, declarationOrder: Map<string, number>}} tiers - the tier inputs.
+ * @return {number}
+ */
+function registerTier(entry, tiers) {
+	const key = registerKey(entry)
+	if (tiers.perApp && key === tiers.perApp) {
+		return 0
+	}
+	if (key && tiers.declarationOrder.has(key)) {
+		return 1
+	}
+	return 2
+}
+
+/**
+ * Compare indexed entries by tier; bound entries by declaration order, the
+ * others keep their original relative order.
+ *
+ * @param {{perApp: string, declarationOrder: Map<string, number>}} tiers - the tier inputs.
+ * @return {function({entry: object, originalIndex: number}, {entry: object, originalIndex: number}): number}
+ */
+function tieredComparator(tiers) {
+	return (a, b) => {
+		const tierA = registerTier(a.entry, tiers)
+		const tierB = registerTier(b.entry, tiers)
+		if (tierA !== tierB) {
+			return tierA - tierB
+		}
+		if (tierA === 1) {
+			return declarationIndex(a.entry, tiers) - declarationIndex(b.entry, tiers)
+		}
+		// Tiers 0 (singleton) and 2 keep the original relative order.
+		return a.originalIndex - b.originalIndex
+	}
+}
+
+/**
+ * The declaration index of a bound register entry.
+ *
+ * @param {object} entry - a bound register entry.
+ * @param {{declarationOrder: Map<string, number>}} tiers - the tier inputs.
+ * @return {number}
+ */
+function declarationIndex(entry, tiers) {
+	return tiers.declarationOrder.get(entry.slug || entry.id)
+}
+
+/**
+ * The register slugs to fan schema requests out over: the non-empty scope
+ * entries, or every register when no scope is given.
+ *
+ * @param {Array<object>} registers - the registers.
+ * @param {?string[]} scope - register slugs, from registerScope().
+ * @return {Array<object>}
+ */
+function registersInScope(registers, scope) {
+	const wanted = Array.isArray(scope) && scope.length ? scope.filter(Boolean) : null
+	return wanted ? registers.filter((r) => wanted.includes(r.slug || r.id)) : registers
+}
+
+/**
+ * One register as a data source: its schemas as options with their columns.
+ *
+ * @param {object} register - a register entry.
+ * @return {Promise<{value: string, label: string, schemas: Array<object>}>}
+ */
+async function dataSourceOf(register) {
+	const registerSlug = register.slug || register.id
+	const schemas = await fetchSchemas(registerSlug)
+	return {
+		value: registerSlug,
+		label: register.title || registerSlug,
+		schemas: (Array.isArray(schemas) ? schemas : []).map(schemaOption),
+	}
+}
+
+/**
+ * A schema as a data-source option.
+ *
+ * @param {object} s - a schema from the register's list.
+ * @return {{value: string, label: string, columns: string[]}}
+ */
+function schemaOption(s) {
+	return {
+		value: s.slug || s.id,
+		label: s.title || s.slug || s.id,
+		columns: schemaColumns(s),
+	}
+}
+
+/**
+ * The property names of a schema, as column names.
+ *
+ * @param {?object} s - a schema.
+ * @return {string[]}
+ */
+function schemaColumns(s) {
+	return Object.keys((s && s.properties) || {})
+}
+
+/**
  * Fetch helpers for the register / schema pickers used by IndexPageEditor
  * and DetailPageEditor. The composable returns four async functions; the
  * caller stores the results in component data (Options API) so this stays
@@ -121,173 +419,17 @@ export function useRegisterPicker(opts = {}) {
 	 */
 	async function fetchRegisters() {
 		try {
-			const url = generateUrl('/apps/openregister/api/registers')
-			const response = await fetch(url, { headers: PICKER_HEADERS() })
-			if (!response.ok) {
-				return []
-			}
-			const data = await response.json()
-			const list = (data && (data.results || data)) || []
+			const list = await fetchList(generateUrl('/apps/openregister/api/registers'))
 			if (!Array.isArray(list)) {
 				return []
 			}
-
-			// Hoist the per-app register so it is the obvious default.
-			const perApp = resolveAppRegister()
-
-			// No dataRegisters bindings declared — regression-safe default:
-			// byte-identical to the pre-existing (perApp-only) behaviour.
-			if (dataRegisters.length === 0) {
-				if (!perApp) {
-					return list
-				}
-				const sorted = [...list].sort((a, b) => {
-					if ((a.slug || a.id) === perApp) return -1
-					if ((b.slug || b.id) === perApp) return 1
-					return 0
-				})
-				return sorted
-			}
-
-			// Map<registerSlug, label> — label ?? register per design.md.
-			const labelByRegister = new Map()
-			dataRegisters.forEach((binding) => {
-				if (binding && binding.register) {
-					labelByRegister.set(
-						binding.register,
-						binding.label ?? binding.register,
-					)
-				}
+			return orderRegisters(list, {
+				perApp: resolveAppRegister(),
+				bindings: dataRegisters,
 			})
-
-			// Declaration order of each binding, for the "matching entries,
-			// in the order the Application declared them" tier.
-			const declarationOrder = new Map()
-			dataRegisters.forEach((binding, index) => {
-				if (
-					binding
-					&& binding.register
-					&& !declarationOrder.has(binding.register)
-				) {
-					declarationOrder.set(binding.register, index)
-				}
-			})
-
-			const labelled = list.map((entry) => {
-				const key = entry && (entry.slug || entry.id)
-				if (key && labelByRegister.has(key)) {
-					return { ...entry, label: labelByRegister.get(key) }
-				}
-				return entry
-			})
-
-			// Tier 0: per-app register. Tier 1: dataRegisters bindings (in
-			// declaration order). Tier 2: everything else (OR's order).
-			/**
-			 *
-			 * @param entry
-			 */
-			function tierFor(entry) {
-				const key = entry && (entry.slug || entry.id)
-				if (perApp && key === perApp) {
-					return 0
-				}
-				if (key && declarationOrder.has(key)) {
-					return 1
-				}
-				return 2
-			}
-
-			const indexed = labelled.map((entry, originalIndex) => ({
-				entry,
-				originalIndex,
-			}))
-			indexed.sort((a, b) => {
-				const tierA = tierFor(a.entry)
-				const tierB = tierFor(b.entry)
-				if (tierA !== tierB) {
-					return tierA - tierB
-				}
-				if (tierA === 1) {
-					const keyA = a.entry.slug || a.entry.id
-					const keyB = b.entry.slug || b.entry.id
-					return declarationOrder.get(keyA) - declarationOrder.get(keyB)
-				}
-				// Tiers 0 (singleton) and 2 keep the original relative order.
-				return a.originalIndex - b.originalIndex
-			})
-
-			return indexed.map((i) => i.entry)
 		} catch {
 			return []
 		}
-	}
-
-	/**
-	 * Fetch the schemas in a given register.
-	 *
-	 * @param {string} register - register slug or id.
-	 * @return {Promise<Array>} - schemas list.
-	 */
-	async function fetchSchemas(register) {
-		if (!register) {
-			return []
-		}
-		try {
-			const url = generateUrl(
-				`/apps/openregister/api/registers/${register}/schemas`,
-			)
-			const response = await fetch(url, { headers: PICKER_HEADERS() })
-			if (!response.ok) {
-				return []
-			}
-			const data = await response.json()
-			const list = (data && (data.results || data)) || []
-			return Array.isArray(list) ? list : []
-		} catch {
-			return []
-		}
-	}
-
-	/**
-	 * Fetch the JSON-schema `properties` map for a register / schema pair.
-	 *
-	 * Resolved from the register's schema LIST, not from a per-schema request.
-	 *
-	 * This used to GET `/api/registers/{register}/schemas/{schema}`, which does
-	 * not exist: OpenRegister routes `/api/registers/{id}/schemas` (list) and
-	 * `/api/schemas/{id}` (flat), and the only nested per-schema route is
-	 * `.../import-template`. Verified against the running instance — that URL
-	 * 404s for slugs AND for numeric ids. Because the failure was swallowed by
-	 * `if (!response.ok) return {}`, every field-mapping dropdown backed by this
-	 * function (WikiPageEditor content/title/sidebar fields, IndexPageEditor,
-	 * LogsPageEditor, MapPageEditor lat/lng) silently rendered with nothing but
-	 * its placeholder option. The Vitest suites all stub this composable, so
-	 * none of them could see it.
-	 *
-	 * The list endpoint already returns each schema's `properties` inline (see
-	 * OpenRegister `Schema::jsonSerialize`, and the same assumption
-	 * `buildDataSources` below already relies on), so resolving there is both
-	 * correct and one request instead of two. Matching within the register also
-	 * disambiguates schema slugs, which are NOT globally unique — this instance
-	 * carries several registers holding a `hello-world-production-hello-message`.
-	 *
-	 * @param {string} register - register slug or id.
-	 * @param {string} schema - schema slug or id.
-	 * @return {Promise<object>} - properties map (empty object on failure).
-	 */
-	async function fetchSchemaProperties(register, schema) {
-		if (!register || !schema) {
-			return {}
-		}
-		const schemas = await fetchSchemas(register)
-		const match = schemas.find(
-			(entry) =>
-				entry
-				&& (String(entry.slug) === String(schema)
-					|| String(entry.id) === String(schema)),
-		)
-		return (match && match.properties) || {}
 	}
 
 	/**
@@ -313,25 +455,8 @@ export function useRegisterPicker(opts = {}) {
 		if (!Array.isArray(registers) || registers.length === 0) {
 			return { registers: [] }
 		}
-		const wanted =
-			Array.isArray(scope) && scope.length ? scope.filter(Boolean) : null
-		const inScope = wanted
-			? registers.filter((r) => wanted.includes(r.slug || r.id))
-			: registers
 		const mapped = await Promise.all(
-			inScope.map(async (r) => {
-				const registerSlug = r.slug || r.id
-				const schemas = await fetchSchemas(registerSlug)
-				return {
-					value: registerSlug,
-					label: r.title || registerSlug,
-					schemas: (Array.isArray(schemas) ? schemas : []).map((s) => ({
-						value: s.slug || s.id,
-						label: s.title || s.slug || s.id,
-						columns: Object.keys((s && s.properties) || {}),
-					})),
-				}
-			}),
+			registersInScope(registers, scope).map((register) => dataSourceOf(register)),
 		)
 		return { registers: mapped }
 	}
