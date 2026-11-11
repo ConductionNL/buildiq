@@ -77,3 +77,14 @@ describe('templateToOption', () => {
 		})
 	})
 })
+
+describe('templateToOption fallbacks', () => {
+	it('prefers id over uuid and leaves the name empty without a name or title', () => {
+		expect(templateToOption({ id: 'i', uuid: 'u', name: '', title: 'T' })).toEqual({
+			label: 'T',
+			uuid: 'i',
+			name: 'T',
+		})
+		expect(templateToOption({ uuid: 'u' })).toEqual({ label: undefined, uuid: 'u', name: '' })
+	})
+})

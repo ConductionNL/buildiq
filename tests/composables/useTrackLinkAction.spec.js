@@ -70,3 +70,27 @@ describe('useTrackLinkAction', () => {
 		)
 	})
 })
+
+describe('useTrackLinkAction public URL', () => {
+	it('uses a non-empty url string, else the encoded token, else nothing', async () => {
+		const answers = [
+			{ token: 't 1', url: '' },
+			{ token: 't2', url: 7 },
+			{ url: 'https://x/track' },
+			{},
+			null,
+		]
+		const results = []
+		for (const data of answers) {
+			const client = { post: vi.fn().mockResolvedValue({ data }) }
+			results.push(await useTrackLinkAction(client).mintTrackLink('r', 's', 'o'))
+		}
+		expect(results).toEqual([
+			{ token: 't 1', url: '/apps/openregister/api/public/case-tokens/t%201' },
+			{ token: 't2', url: '/apps/openregister/api/public/case-tokens/t2' },
+			{ token: '', url: 'https://x/track' },
+			{ token: '', url: '' },
+			{ token: '', url: '' },
+		])
+	})
+})
