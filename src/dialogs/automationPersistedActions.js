@@ -22,12 +22,20 @@
 function parseNonEmptyObject(text) {
 	try {
 		const parsed = JSON.parse(text || 'null')
-		return parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0
-			? parsed
-			: null
+		return isNonEmptyObject(parsed) ? parsed : null
 	} catch {
 		return null
 	}
+}
+
+/**
+ * Whether a parsed JSON value is an object (or array) with at least one key.
+ *
+ * @param {unknown} value The parsed value.
+ * @return {boolean} True when it carries keys.
+ */
+function isNonEmptyObject(value) {
+	return Boolean(value) && typeof value === 'object' && Object.keys(value).length > 0
 }
 
 /**
