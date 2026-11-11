@@ -42,44 +42,106 @@ export function brandTopBar(appName, appSlug) {
 	}
 	const icon = generateUrl(`/apps/buildiq/icons/${appSlug}.svg`)
 	if (topBarBrand) {
-		// Refine an existing brand (e.g. slug-name → real manifest name).
-		if (appName) {
-			topBarBrand.name = appName
-		}
-		topBarBrand.icon = icon
-		topBarBrand.apply()
+		refineBrand(appName, icon)
 		return
 	}
 	const state = { name: appName || appSlug, icon }
-	state.apply = () => {
-		const nameEl = document.querySelector('.app-menu__current-app-name')
-		if (nameEl && state.name && nameEl.textContent !== state.name) {
-			nameEl.textContent = state.name
-		}
-		const iconEl = document.querySelector('.app-menu__current-app-icon')
-		if (iconEl && iconEl.getAttribute('src') !== state.icon) {
-			iconEl.setAttribute('src', state.icon)
-			iconEl.setAttribute('alt', state.name || '')
-			// The header background is coloured; force any icon to white.
-			iconEl.style.filter = 'brightness(0) invert(1)'
-		}
-		const trigger = document.querySelector(
-			'[aria-label^="Open apps menu, currently in"]',
-		)
-		if (trigger && state.name) {
-			const label = t('buildiq', 'Open apps menu, currently in {app}', {
-				app: state.name,
-			})
-			if (trigger.getAttribute('aria-label') !== label) {
-				trigger.setAttribute('aria-label', label)
-			}
-		}
-	}
+	state.apply = () => applyBrand(state)
 	topBarBrand = state
 	state.apply()
+	observeHeader(state.apply)
+}
+
+/**
+ * Refine the existing brand (e.g. slug-name → real manifest name) and
+ * re-apply it. An empty name keeps the current one.
+ *
+ * @param {string} appName The virtual app's display name.
+ * @param {string} icon The app icon URL.
+ * @return {void}
+ */
+function refineBrand(appName, icon) {
+	if (appName) {
+		topBarBrand.name = appName
+	}
+	topBarBrand.icon = icon
+	topBarBrand.apply()
+}
+
+/**
+ * Write the brand into the top-bar: name, icon, then the apps-menu label.
+ * Each step only writes when the value differs.
+ *
+ * @param {{name: string, icon: string}} state The brand state.
+ * @return {void}
+ */
+function applyBrand(state) {
+	applyName(state)
+	applyIcon(state)
+	applyTriggerLabel(state)
+}
+
+/**
+ * Show the app name as the current app in the top-bar.
+ *
+ * @param {{name: string}} state The brand state.
+ * @return {void}
+ */
+function applyName(state) {
+	const nameEl = document.querySelector('.app-menu__current-app-name')
+	if (nameEl && state.name && nameEl.textContent !== state.name) {
+		nameEl.textContent = state.name
+	}
+}
+
+/**
+ * Show the app icon, forced white, as the current app icon.
+ *
+ * @param {{name: string, icon: string}} state The brand state.
+ * @return {void}
+ */
+function applyIcon(state) {
+	const iconEl = document.querySelector('.app-menu__current-app-icon')
+	if (!iconEl || iconEl.getAttribute('src') === state.icon) {
+		return
+	}
+	iconEl.setAttribute('src', state.icon)
+	iconEl.setAttribute('alt', state.name || '')
+	// The header background is coloured; force any icon to white.
+	iconEl.style.filter = 'brightness(0) invert(1)'
+}
+
+/**
+ * Name the app in the apps-menu trigger's accessible label.
+ *
+ * @param {{name: string}} state The brand state.
+ * @return {void}
+ */
+function applyTriggerLabel(state) {
+	const trigger = document.querySelector(
+		'[aria-label^="Open apps menu, currently in"]',
+	)
+	if (!trigger || !state.name) {
+		return
+	}
+	const label = t('buildiq', 'Open apps menu, currently in {app}', {
+		app: state.name,
+	})
+	if (trigger.getAttribute('aria-label') !== label) {
+		trigger.setAttribute('aria-label', label)
+	}
+}
+
+/**
+ * Re-apply the brand whenever the header re-renders.
+ *
+ * @param {MutationCallback} apply The brand's apply callback.
+ * @return {void}
+ */
+function observeHeader(apply) {
 	const header = document.querySelector('header#header') || document.body
 	if (header) {
-		new MutationObserver(state.apply).observe(header, {
+		new MutationObserver(apply).observe(header, {
 			childList: true,
 			subtree: true,
 			characterData: true,

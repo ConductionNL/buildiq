@@ -24,19 +24,44 @@
 export function normalizeManifestPages(manifest) {
 	const pages = Array.isArray(manifest.pages) ? manifest.pages : []
 	for (const page of pages) {
-		if (!page || typeof page !== 'object') continue
-		if (
-			!page.config
-			|| typeof page.config !== 'object'
-			|| Array.isArray(page.config)
-		) {
-			page.config = {}
-		}
-		if (
-			(page.type === 'index' || page.type === 'detail')
-			&& page.config.showTitle === undefined
-		) {
-			page.config.showTitle = true
+		if (page && typeof page === 'object') {
+			normalizePage(page)
 		}
 	}
+}
+
+/**
+ * Give one page a plain-object `config` and, on a data page, a visible title
+ * unless it sets `showTitle` itself.
+ *
+ * @param {object} page A manifest page (mutated in place).
+ * @return {void}
+ */
+function normalizePage(page) {
+	if (!isPlainObject(page.config)) {
+		page.config = {}
+	}
+	if (isDataPage(page) && page.config.showTitle === undefined) {
+		page.config.showTitle = true
+	}
+}
+
+/**
+ * Whether a value is a non-null object that is not an array.
+ *
+ * @param {unknown} value Any value.
+ * @return {boolean}
+ */
+function isPlainObject(value) {
+	return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+}
+
+/**
+ * Whether a page shows register data (`index` or `detail`).
+ *
+ * @param {object} page A manifest page.
+ * @return {boolean}
+ */
+function isDataPage(page) {
+	return page.type === 'index' || page.type === 'detail'
 }
