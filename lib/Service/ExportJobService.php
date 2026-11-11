@@ -480,18 +480,19 @@ class ExportJobService {
 				return null;
 			}
 
-			if (method_exists($object, 'getObject') === true) {
+			// Some OR versions return the array directly. Checked first:
+			// method_exists() throws a TypeError on an array.
+			if (is_array($object) === true) {
+				return $object;
+			}
+
+			if (is_object($object) === true && method_exists($object, 'getObject') === true) {
 				$data = $object->getObject() ?? [];
 				if (is_array($data) === true) {
 					return $data;
 				}
 
 				return null;
-			}
-
-			// Some OR versions return the array directly.
-			if (is_array($object) === true) {
-				return $object;
 			}
 
 			return null;
