@@ -57,96 +57,30 @@
 				     built-in spinner (loading + !showZeroCount) instead of a stale 0;
 				     once loaded, showZeroCount renders a real 0 where applicable.
 				     The wrapper makes the whole card a clickable OpenRegister link. -->
-				<a
-					class="ob-detail-dashboard__kpi-link"
-					:class="{
-						'ob-detail-dashboard__kpi-link--clickable': !!registerSlug,
-					}"
-					:href="registerUrl('audit')"
-					:title="
-						registerSlug ? t('buildiq', 'Open in OpenRegister') : null
-					"
-					:aria-label="
-						registerSlug
-							? t('buildiq', 'Open Active users in OpenRegister')
-							: null
-					">
-					<ArrowTopRight
-						v-if="registerSlug"
-						class="ob-detail-dashboard__kpi-go"
-						:size="16"
-						aria-hidden="true" />
-					<CnStatsBlock
-						class="ob-detail-dashboard__kpi"
-						horizontal
-						:icon="iconUsers"
-						:title="t('buildiq', 'Active users')"
-						:count="kpis.activeUsers"
-						:countLabel="t('buildiq', 'users')"
-						variant="primary"
-						:loading="!loaded"
-						:error="error"
-						:loadingLabel="t('buildiq', 'Loading…')"
-						:showZeroCount="loaded" />
-				</a>
-				<a
-					class="ob-detail-dashboard__kpi-link"
-					:class="{
-						'ob-detail-dashboard__kpi-link--clickable': !!registerSlug,
-					}"
-					:href="registerUrl('objects')"
-					:title="
-						registerSlug ? t('buildiq', 'Open in OpenRegister') : null
-					"
-					:aria-label="
-						registerSlug
-							? t('buildiq', 'Open Object count in OpenRegister')
-							: null
-					">
-					<ArrowTopRight
-						v-if="registerSlug"
-						class="ob-detail-dashboard__kpi-go"
-						:size="16"
-						aria-hidden="true" />
-					<CnStatsBlock
-						class="ob-detail-dashboard__kpi"
-						horizontal
-						:icon="iconObjects"
-						:title="t('buildiq', 'Object count')"
-						:count="kpis.objectCount"
-						:countLabel="t('buildiq', 'objects')"
-						variant="primary"
-						:loading="!loaded"
-						:error="error"
-						:loadingLabel="t('buildiq', 'Loading…')"
-						:showZeroCount="loaded" />
-				</a>
 				<!-- Storage: the KPI value is the SUM of attached-file sizes (bytes)
 				     from the audit trail, NOT a file count — so we label it Storage and
 				     format it human-readable. Two variants: the loaded one uses the
 				     #value slot (which would otherwise bypass the spinner), the loading
 				     one keeps CnStatsBlock's built-in spinner. -->
 				<a
+					v-for="card in kpiCards"
+					:key="card.id"
 					class="ob-detail-dashboard__kpi-link"
 					:class="{
 						'ob-detail-dashboard__kpi-link--clickable': !!registerSlug,
 					}"
-					:href="registerUrl('files')"
+					:href="registerUrl(card.tab)"
 					:title="
 						registerSlug ? t('buildiq', 'Open in OpenRegister') : null
 					"
-					:aria-label="
-						registerSlug
-							? t('buildiq', 'Open Storage in OpenRegister')
-							: null
-					">
+					:aria-label="registerSlug ? card.linkLabel : null">
 					<ArrowTopRight
 						v-if="registerSlug"
 						class="ob-detail-dashboard__kpi-go"
 						:size="16"
 						aria-hidden="true" />
 					<CnStatsBlock
-						v-if="loaded"
+						v-if="card.id === 'storage' && loaded"
 						class="ob-detail-dashboard__kpi"
 						horizontal
 						:icon="iconStorage"
@@ -160,7 +94,7 @@
 						</template>
 					</CnStatsBlock>
 					<CnStatsBlock
-						v-else
+						v-else-if="card.id === 'storage'"
 						class="ob-detail-dashboard__kpi"
 						horizontal
 						:icon="iconStorage"
@@ -169,34 +103,15 @@
 						variant="success"
 						loading
 						:loadingLabel="t('buildiq', 'Loading…')" />
-				</a>
-				<a
-					class="ob-detail-dashboard__kpi-link"
-					:class="{
-						'ob-detail-dashboard__kpi-link--clickable': !!registerSlug,
-					}"
-					:href="registerUrl('audit')"
-					:title="
-						registerSlug ? t('buildiq', 'Open in OpenRegister') : null
-					"
-					:aria-label="
-						registerSlug
-							? t('buildiq', 'Open Audit events in OpenRegister')
-							: null
-					">
-					<ArrowTopRight
-						v-if="registerSlug"
-						class="ob-detail-dashboard__kpi-go"
-						:size="16"
-						aria-hidden="true" />
 					<CnStatsBlock
+						v-else
 						class="ob-detail-dashboard__kpi"
 						horizontal
-						:icon="iconAudit"
-						:title="t('buildiq', 'Audit events')"
-						:count="kpis.auditEventCount"
-						:countLabel="t('buildiq', 'events')"
-						variant="warning"
+						:icon="card.icon"
+						:title="card.title"
+						:count="kpis[card.kpi]"
+						:countLabel="card.countLabel"
+						:variant="card.variant"
 						:loading="!loaded"
 						:error="error"
 						:loadingLabel="t('buildiq', 'Loading…')"
@@ -344,6 +259,18 @@ import { useRole } from '../../composables/useRole.js'
 import { applicationVersionsMixin } from '../../mixins/applicationVersions.js'
 import { buildVersionedRoute } from '../../router/helpers.js'
 
+/**
+ * The KPI link cards, in display order: the OpenRegister tab each opens, the
+ * `kpis` field it counts and its stats-block variant. Labels and icons come
+ * from the component (`kpiCards`).
+ */
+const KPI_CARDS = Object.freeze([
+	{ id: 'users', tab: 'audit', kpi: 'activeUsers', variant: 'primary' },
+	{ id: 'objects', tab: 'objects', kpi: 'objectCount', variant: 'primary' },
+	{ id: 'storage', tab: 'files', kpi: 'filesCount', variant: 'success' },
+	{ id: 'audit', tab: 'audit', kpi: 'auditEventCount', variant: 'warning' },
+])
+
 export default {
 	name: 'ApplicationDetailDashboard',
 	components: {
@@ -426,6 +353,60 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * The KPI link cards with their icon and translated labels.
+		 *
+		 * @return {Array<object>}
+		 */
+		kpiCards() {
+			return KPI_CARDS.map((card) => ({
+				...card,
+				icon: this.kpiIcons[card.id],
+				title: this.kpiTitles[card.id],
+				countLabel: this.kpiCountLabels[card.id],
+				linkLabel: this.kpiLinkLabels[card.id],
+			}))
+		},
+
+		/** @return {object} the stats-block icon per KPI card. */
+		kpiIcons() {
+			return {
+				users: this.iconUsers,
+				objects: this.iconObjects,
+				storage: this.iconStorage,
+				audit: this.iconAudit,
+			}
+		},
+
+		/** @return {object} the stats-block title per KPI card. */
+		kpiTitles() {
+			return {
+				users: t('buildiq', 'Active users'),
+				objects: t('buildiq', 'Object count'),
+				storage: t('buildiq', 'Storage'),
+				audit: t('buildiq', 'Audit events'),
+			}
+		},
+
+		/** @return {object} the count label per KPI card. */
+		kpiCountLabels() {
+			return {
+				users: t('buildiq', 'users'),
+				objects: t('buildiq', 'objects'),
+				audit: t('buildiq', 'events'),
+			}
+		},
+
+		/** @return {object} the link's accessible name per KPI card. */
+		kpiLinkLabels() {
+			return {
+				users: t('buildiq', 'Open Active users in OpenRegister'),
+				objects: t('buildiq', 'Open Object count in OpenRegister'),
+				storage: t('buildiq', 'Open Storage in OpenRegister'),
+				audit: t('buildiq', 'Open Audit events in OpenRegister'),
+			}
+		},
+
 		/**
 		 * Active version UUID.
 		 *
