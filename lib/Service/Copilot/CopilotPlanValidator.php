@@ -53,8 +53,6 @@ class CopilotPlanValidator {
 	 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
 	 */
 	public function validate(array $plan, array $toolDescriptors): array {
-		$violations = [];
-
 		$steps = ($plan['steps'] ?? null);
 		if (is_array($steps) === false) {
 			return [['stepIndex' => -1, 'message' => 'Plan is missing a "steps" array.']];
@@ -64,6 +62,35 @@ class CopilotPlanValidator {
 			return [['stepIndex' => -1, 'message' => 'Plan has no steps.']];
 		}
 
+		return $this->stepViolations(steps: $steps, descriptorsById: $this->descriptorsById(toolDescriptors: $toolDescriptors));
+	}//end validate()
+
+	/**
+	 * The violations of every step, in step order.
+	 *
+	 * @param array<array-key, mixed> $steps The plan's steps.
+	 * @param array<string, array<string, mixed>> $descriptorsById Tool descriptors keyed by id.
+	 *
+	 * @return array<int, array{stepIndex: int, message: string}>
+	 */
+	private function stepViolations(array $steps, array $descriptorsById): array {
+		$violations = [];
+		foreach (array_values($steps) as $index => $step) {
+			$stepViolations = $this->validateStep(step: $step, index: $index, descriptorsById: $descriptorsById);
+			$violations = array_merge($violations, $stepViolations);
+		}
+
+		return $violations;
+	}//end stepViolations()
+
+	/**
+	 * The tool descriptors keyed by id; a descriptor without an id is dropped.
+	 *
+	 * @param array<int, array<string, mixed>> $toolDescriptors Tool catalogue.
+	 *
+	 * @return array<string, array<string, mixed>>
+	 */
+	private function descriptorsById(array $toolDescriptors): array {
 		$descriptorsById = [];
 		foreach ($toolDescriptors as $descriptor) {
 			$id = (string)($descriptor['id'] ?? '');
@@ -72,13 +99,8 @@ class CopilotPlanValidator {
 			}
 		}
 
-		foreach (array_values($steps) as $index => $step) {
-			$stepViolations = $this->validateStep(step: $step, index: $index, descriptorsById: $descriptorsById);
-			$violations = array_merge($violations, $stepViolations);
-		}
-
-		return $violations;
-	}//end validate()
+		return $descriptorsById;
+	}//end descriptorsById()
 
 	/**
 	 * Validate a single plan step.
@@ -94,47 +116,47 @@ class CopilotPlanValidator {
 			return [['stepIndex' => $index, 'message' => 'Step is not an object.']];
 		}
 
+		return array_map(
+			static fn (string $message): array => ['stepIndex' => $index, 'message' => "Step {$index}: {$message}"],
+			$this->stepMessages(step: $step, descriptorsById: $descriptorsById)
+		);
+	}//end validateStep()
+
+	/**
+	 * What is wrong with a step object: an unknown tool, non-object arguments,
+	 * or arguments that break the tool's inputSchema.
+	 *
+	 * @param array<array-key, mixed> $step The step object.
+	 * @param array<string, array<string, mixed>> $descriptorsById Tool descriptors keyed by id.
+	 *
+	 * @return array<int, string> Violation messages, without the step prefix.
+	 */
+	private function stepMessages(array $step, array $descriptorsById): array {
 		$tool = (string)($step['tool'] ?? '');
 		if ($tool === '' || isset($descriptorsById[$tool]) === false) {
 			$allowed = implode(', ', array_keys($descriptorsById));
-			return [
-				[
-					'stepIndex' => $index,
-					'message' => "Step {$index}: unknown tool '{$tool}'. Allowed tools: {$allowed}.",
-				],
-			];
+			return ["unknown tool '{$tool}'. Allowed tools: {$allowed}."];
 		}
 
 		$arguments = ($step['arguments'] ?? []);
 		if (is_array($arguments) === false) {
-			return [['stepIndex' => $index, 'message' => "Step {$index}: 'arguments' must be an object."]];
+			return ["'arguments' must be an object."];
 		}
 
 		$inputSchema = (array)($descriptorsById[$tool]['inputSchema'] ?? []);
-		return $this->validateArguments(arguments: $arguments, schema: $inputSchema, index: $index);
-	}//end validateStep()
+		return $this->argumentMessages(arguments: $arguments, schema: $inputSchema);
+	}//end stepMessages()
 
 	/**
 	 * Validate a step's arguments against its tool's inputSchema.
 	 *
 	 * @param array<string, mixed> $arguments Step arguments.
 	 * @param array<string, mixed> $schema The tool's inputSchema (`{type, properties, required}`).
-	 * @param int $index Step index (for the violation report).
 	 *
-	 * @return array<int, array{stepIndex: int, message: string}>
+	 * @return array<int, string> Violation messages, without the step prefix.
 	 */
-	private function validateArguments(array $arguments, array $schema, int $index): array {
-		$violations = [];
-
-		$required = (array)($schema['required'] ?? []);
-		foreach ($required as $key) {
-			if (array_key_exists((string)$key, $arguments) === false) {
-				$violations[] = [
-					'stepIndex' => $index,
-					'message' => "Step {$index}: missing required argument '{$key}'.",
-				];
-			}
-		}
+	private function argumentMessages(array $arguments, array $schema): array {
+		$messages = $this->missingRequired(arguments: $arguments, schema: $schema);
 
 		$properties = (array)($schema['properties'] ?? []);
 		foreach ($properties as $key => $propertySchema) {
@@ -142,14 +164,33 @@ class CopilotPlanValidator {
 				continue;
 			}
 
-			$message = $this->validateValue(value: $arguments[$key], propertySchema: $propertySchema, key: (string)$key);
+			$message = $this->validateValue(argument: new PlanArgument(key: (string)$key, value: $arguments[$key], schema: $propertySchema));
 			if ($message !== null) {
-				$violations[] = ['stepIndex' => $index, 'message' => "Step {$index}: {$message}"];
+				$messages[] = $message;
 			}
 		}
 
-		return $violations;
-	}//end validateArguments()
+		return $messages;
+	}//end argumentMessages()
+
+	/**
+	 * One message per required argument the step leaves out.
+	 *
+	 * @param array<string, mixed> $arguments Step arguments.
+	 * @param array<string, mixed> $schema The tool's inputSchema.
+	 *
+	 * @return array<int, string>
+	 */
+	private function missingRequired(array $arguments, array $schema): array {
+		$messages = [];
+		foreach ((array)($schema['required'] ?? []) as $key) {
+			if (array_key_exists((string)$key, $arguments) === false) {
+				$messages[] = "missing required argument '{$key}'.";
+			}
+		}
+
+		return $messages;
+	}//end missingRequired()
 
 	/**
 	 * Validate a single argument value against its property schema.
@@ -157,51 +198,55 @@ class CopilotPlanValidator {
 	 * Supports the six constraint kinds the descriptors actually use:
 	 * `type`, `enum`, `pattern`, `minLength`/`maxLength`, `minimum`/`maximum`.
 	 *
-	 * @param mixed $value The argument value.
-	 * @param array<string, mixed> $propertySchema The property's JSON-Schema fragment.
-	 * @param string $key Argument name (for the violation message).
+	 * @param PlanArgument $argument The argument and its property schema.
 	 *
 	 * @return string|null Violation message, or null when valid.
 	 */
-	private function validateValue(mixed $value, array $propertySchema, string $key): ?string {
-		$type = ($propertySchema['type'] ?? null);
-		if ($type !== null) {
-			$typeError = $this->validateType(value: $value, type: (string)$type, key: $key);
-			if ($typeError !== null) {
-				return $typeError;
-			}
+	private function validateValue(PlanArgument $argument): ?string {
+		$typeError = $this->validateType(argument: $argument);
+		if ($typeError !== null) {
+			return $typeError;
 		}
 
-		$enum = ($propertySchema['enum'] ?? null);
-		if (is_array($enum) === true && in_array(needle: $value, haystack: $enum, strict: true) === false) {
-			return "argument '{$key}' must be one of: " . implode(', ', array_map('strval', $enum)) . '.';
+		$enumError = $this->validateEnum(argument: $argument);
+		if ($enumError !== null) {
+			return $enumError;
 		}
 
-		if (is_string($value) === true) {
-			$stringError = $this->validateStringConstraints(value: $value, propertySchema: $propertySchema, key: $key);
-			if ($stringError !== null) {
-				return $stringError;
-			}
-		}
-
-		if (is_int($value) === true || is_float($value) === true) {
-			return $this->validateNumericConstraints(value: $value, propertySchema: $propertySchema, key: $key);
-		}
-
-		return null;
+		return $this->validateKindConstraints(argument: $argument);
 	}//end validateValue()
 
 	/**
-	 * Validate the JSON-Schema `type` constraint.
+	 * Validate the JSON-Schema `type` constraint, when the property declares one.
 	 *
-	 * @param mixed $value The argument value.
-	 * @param string $type Declared JSON-Schema type.
-	 * @param string $key Argument name (for the violation message).
+	 * @param PlanArgument $argument The argument and its property schema.
 	 *
 	 * @return string|null Violation message, or null when valid.
 	 */
-	private function validateType(mixed $value, string $type, string $key): ?string {
-		$matches = match ($type) {
+	private function validateType(PlanArgument $argument): ?string {
+		$type = ($argument->schema['type'] ?? null);
+		if ($type === null) {
+			return null;
+		}
+
+		$type = (string)$type;
+		if ($this->matchesType(value: $argument->value, type: $type) === true) {
+			return null;
+		}
+
+		return "argument '{$argument->key}' must be of type {$type}.";
+	}//end validateType()
+
+	/**
+	 * Whether a value is of a declared JSON-Schema type; an unknown type matches anything.
+	 *
+	 * @param mixed $value The argument value.
+	 * @param string $type Declared JSON-Schema type.
+	 *
+	 * @return bool
+	 */
+	private function matchesType(mixed $value, string $type): bool {
+		return match ($type) {
 			'string' => is_string($value),
 			'integer' => is_int($value),
 			'number' => is_int($value) || is_float($value),
@@ -210,62 +255,160 @@ class CopilotPlanValidator {
 			'object' => is_array($value),
 			default => true,
 		};
+	}//end matchesType()
 
-		if ($matches === true) {
-			return null;
+	/**
+	 * Validate the JSON-Schema `enum` constraint.
+	 *
+	 * @param PlanArgument $argument The argument and its property schema.
+	 *
+	 * @return string|null Violation message, or null when valid.
+	 */
+	private function validateEnum(PlanArgument $argument): ?string {
+		$enum = ($argument->schema['enum'] ?? null);
+		if (is_array($enum) === true && in_array(needle: $argument->value, haystack: $enum, strict: true) === false) {
+			return "argument '{$argument->key}' must be one of: " . implode(', ', array_map('strval', $enum)) . '.';
 		}
 
-		return "argument '{$key}' must be of type {$type}.";
-	}//end validateType()
+		return null;
+	}//end validateEnum()
+
+	/**
+	 * Validate the constraints of the value's own kind: string or number.
+	 *
+	 * @param PlanArgument $argument The argument and its property schema.
+	 *
+	 * @return string|null Violation message, or null when valid.
+	 */
+	private function validateKindConstraints(PlanArgument $argument): ?string {
+		$value = $argument->value;
+		if (is_string($value) === true) {
+			return $this->validateStringConstraints(argument: $argument, value: $value);
+		}
+
+		if (is_int($value) === true || is_float($value) === true) {
+			return $this->validateNumericConstraints(argument: $argument, value: $value);
+		}
+
+		return null;
+	}//end validateKindConstraints()
 
 	/**
 	 * Validate `pattern`/`minLength`/`maxLength` for a string argument.
 	 *
+	 * @param PlanArgument $argument The argument and its property schema.
 	 * @param string $value The argument value.
-	 * @param array<string, mixed> $propertySchema The property's JSON-Schema fragment.
-	 * @param string $key Argument name (for the violation message).
 	 *
 	 * @return string|null Violation message, or null when valid.
 	 */
-	private function validateStringConstraints(string $value, array $propertySchema, string $key): ?string {
-		$pattern = ($propertySchema['pattern'] ?? null);
+	private function validateStringConstraints(PlanArgument $argument, string $value): ?string {
+		$pattern = ($argument->schema['pattern'] ?? null);
 		if (is_string($pattern) === true && $pattern !== '' && preg_match('#' . $pattern . '#', $value) !== 1) {
-			return "argument '{$key}' does not match the required pattern.";
+			return "argument '{$argument->key}' does not match the required pattern.";
 		}
 
-		$minLength = ($propertySchema['minLength'] ?? null);
-		if (is_int($minLength) === true && strlen($value) < $minLength) {
-			return "argument '{$key}' must be at least {$minLength} characters.";
+		return $this->validateLength(argument: $argument, length: strlen($value));
+	}//end validateStringConstraints()
+
+	/**
+	 * Validate `minLength`/`maxLength` for a string argument.
+	 *
+	 * @param PlanArgument $argument The argument and its property schema.
+	 * @param int $length The string's length in bytes.
+	 *
+	 * @return string|null Violation message, or null when valid.
+	 */
+	private function validateLength(PlanArgument $argument, int $length): ?string {
+		$tooShort = $this->validateMinLength(argument: $argument, length: $length);
+		if ($tooShort !== null) {
+			return $tooShort;
 		}
 
-		$maxLength = ($propertySchema['maxLength'] ?? null);
-		if (is_int($maxLength) === true && strlen($value) > $maxLength) {
-			return "argument '{$key}' must be at most {$maxLength} characters.";
+		return $this->validateMaxLength(argument: $argument, length: $length);
+	}//end validateLength()
+
+	/**
+	 * Validate `minLength` for a string argument.
+	 *
+	 * @param PlanArgument $argument The argument and its property schema.
+	 * @param int $length The string's length in bytes.
+	 *
+	 * @return string|null Violation message, or null when valid.
+	 */
+	private function validateMinLength(PlanArgument $argument, int $length): ?string {
+		$minLength = ($argument->schema['minLength'] ?? null);
+		if (is_int($minLength) === true && $length < $minLength) {
+			return "argument '{$argument->key}' must be at least {$minLength} characters.";
 		}
 
 		return null;
-	}//end validateStringConstraints()
+	}//end validateMinLength()
+
+	/**
+	 * Validate `maxLength` for a string argument.
+	 *
+	 * @param PlanArgument $argument The argument and its property schema.
+	 * @param int $length The string's length in bytes.
+	 *
+	 * @return string|null Violation message, or null when valid.
+	 */
+	private function validateMaxLength(PlanArgument $argument, int $length): ?string {
+		$maxLength = ($argument->schema['maxLength'] ?? null);
+		if (is_int($maxLength) === true && $length > $maxLength) {
+			return "argument '{$argument->key}' must be at most {$maxLength} characters.";
+		}
+
+		return null;
+	}//end validateMaxLength()
 
 	/**
 	 * Validate `minimum`/`maximum` for a numeric argument.
 	 *
+	 * @param PlanArgument $argument The argument and its property schema.
 	 * @param int|float $value The argument value.
-	 * @param array<string, mixed> $propertySchema The property's JSON-Schema fragment.
-	 * @param string $key Argument name (for the violation message).
 	 *
 	 * @return string|null Violation message, or null when valid.
 	 */
-	private function validateNumericConstraints(int|float $value, array $propertySchema, string $key): ?string {
-		$minimum = ($propertySchema['minimum'] ?? null);
-		if (is_numeric($minimum) === true && $value < $minimum) {
-			return "argument '{$key}' must be >= {$minimum}.";
+	private function validateNumericConstraints(PlanArgument $argument, int|float $value): ?string {
+		$tooSmall = $this->validateMinimum(argument: $argument, value: $value);
+		if ($tooSmall !== null) {
+			return $tooSmall;
 		}
 
-		$maximum = ($propertySchema['maximum'] ?? null);
-		if (is_numeric($maximum) === true && $value > $maximum) {
-			return "argument '{$key}' must be <= {$maximum}.";
+		return $this->validateMaximum(argument: $argument, value: $value);
+	}//end validateNumericConstraints()
+
+	/**
+	 * Validate `minimum` for a numeric argument.
+	 *
+	 * @param PlanArgument $argument The argument and its property schema.
+	 * @param int|float $value The argument value.
+	 *
+	 * @return string|null Violation message, or null when valid.
+	 */
+	private function validateMinimum(PlanArgument $argument, int|float $value): ?string {
+		$minimum = ($argument->schema['minimum'] ?? null);
+		if (is_numeric($minimum) === true && $value < $minimum) {
+			return "argument '{$argument->key}' must be >= {$minimum}.";
 		}
 
 		return null;
-	}//end validateNumericConstraints()
+	}//end validateMinimum()
+
+	/**
+	 * Validate `maximum` for a numeric argument.
+	 *
+	 * @param PlanArgument $argument The argument and its property schema.
+	 * @param int|float $value The argument value.
+	 *
+	 * @return string|null Violation message, or null when valid.
+	 */
+	private function validateMaximum(PlanArgument $argument, int|float $value): ?string {
+		$maximum = ($argument->schema['maximum'] ?? null);
+		if (is_numeric($maximum) === true && $value > $maximum) {
+			return "argument '{$argument->key}' must be <= {$maximum}.";
+		}
+
+		return null;
+	}//end validateMaximum()
 }//end class
