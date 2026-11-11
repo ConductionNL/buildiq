@@ -127,22 +127,12 @@ class ManifestResolverService {
 			return $this->resolveProductionManifest(application: $application, appSlug: $appSlug);
 		}
 
-		// Step 2b — named versionSlug: look up the ApplicationVersion.
-		$version = $this->findVersionBySlug(application: $application, versionSlug: $versionSlug);
+		// Step 2b — named versionSlug: look up the ApplicationVersion, then
+		// Step 3 — the RBAC gate for non-production access. No existence leak:
+		// a miss and a refusal are both null (caller maps to 404).
+		$request = new VersionAccessRequest(appSlug: $appSlug, versionSlug: $versionSlug, caller: $caller);
+		$version = $this->findPermittedVersion(application: $application, request: $request);
 		if ($version === null) {
-			// No existence leak — return null (caller maps to 404).
-			return null;
-		}
-
-		// Step 3 — RBAC gate for non-production access (delegates to checkNonProductionAccess).
-		$denied = $this->checkNonProductionAccess(
-			application: $application,
-			version: $version,
-			caller: $caller,
-			appSlug: $appSlug,
-			versionSlug: $versionSlug
-		);
-		if ($denied === true) {
 			return null;
 		}
 
@@ -218,6 +208,39 @@ class ManifestResolverService {
 	}//end checkNonProductionAccess()
 
 	/**
+	 * The named ApplicationVersion, when it exists and the caller may open it.
+	 *
+	 * Looks the version up first and runs the non-production RBAC gate second,
+	 * so an unknown version is never logged as an access refusal.
+	 *
+	 * @param array<string, mixed> $application The normalised Application data.
+	 * @param VersionAccessRequest $request The slugs and caller of the lookup.
+	 *
+	 * @return array<string, mixed>|null The version, or null for a miss or a refusal.
+	 *
+	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-71
+	 */
+	private function findPermittedVersion(array $application, VersionAccessRequest $request): ?array {
+		$version = $this->findVersionBySlug(application: $application, versionSlug: $request->versionSlug);
+		if ($version === null) {
+			return null;
+		}
+
+		$denied = $this->checkNonProductionAccess(
+			application: $application,
+			version: $version,
+			caller: $request->caller,
+			appSlug: $request->appSlug,
+			versionSlug: $request->versionSlug
+		);
+		if ($denied === true) {
+			return null;
+		}
+
+		return $version;
+	}//end findPermittedVersion()
+
+	/**
 	 * The Application with this slug, or null.
 	 *
 	 * @param string $appSlug The virtual-app slug.
@@ -265,19 +288,9 @@ class ManifestResolverService {
 			return ['applicationUuid' => $applicationUuid, 'versionUuid' => $versionUuid];
 		}
 
-		$version = $this->findVersionBySlug(application: $application, versionSlug: $versionSlug);
+		$request = new VersionAccessRequest(appSlug: $appSlug, versionSlug: $versionSlug, caller: $caller);
+		$version = $this->findPermittedVersion(application: $application, request: $request);
 		if ($version === null) {
-			return null;
-		}
-
-		$denied = $this->checkNonProductionAccess(
-			application: $application,
-			version: $version,
-			caller: $caller,
-			appSlug: $appSlug,
-			versionSlug: $versionSlug
-		);
-		if ($denied === true) {
 			return null;
 		}
 
