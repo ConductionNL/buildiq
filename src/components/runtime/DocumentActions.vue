@@ -50,6 +50,18 @@ import { useAppStatus } from '../../composables/useAppStatus.js'
 import { useDocudeskDocument } from '../../composables/useDocudeskDocument.js'
 import { matchesKey, objectSchemaKeys } from '../../utils/objectSchemaKeys.js'
 
+/**
+ * The document attachments a built app's manifest declares
+ * (`runtime.documents[]`), or none.
+ *
+ * @param {?object} manifest - the injected app manifest.
+ * @return {Array<object>}
+ */
+function manifestDocuments(manifest) {
+	const list = manifest && manifest.runtime && manifest.runtime.documents
+	return Array.isArray(list) ? list : []
+}
+
 export default {
 	name: 'DocumentActions',
 	components: { NcButton },
@@ -143,9 +155,7 @@ export default {
 			if (Array.isArray(this.attachments) && this.attachments.length) {
 				return this.attachments
 			}
-			const manifest = this.cnManifest
-			const list = manifest && manifest.runtime && manifest.runtime.documents
-			return Array.isArray(list) ? list : []
+			return manifestDocuments(this.cnManifest)
 		},
 
 		/**
