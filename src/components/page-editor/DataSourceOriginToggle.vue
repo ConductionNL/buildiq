@@ -68,6 +68,32 @@ import ConnectorFieldMapper from './ConnectorFieldMapper.vue'
 import ConnectorSourcePicker from './ConnectorSourcePicker.vue'
 import { fleetAppPath } from '../../services/fleetAppId.js'
 
+/**
+ * Whether a connector block holds a mapping that switching away would lose:
+ * an endpoint, or at least one mapped field.
+ *
+ * @param {object} connector - the connector block.
+ * @return {boolean}
+ */
+function hasMapping(connector) {
+	return Boolean(
+		connector
+		&& (connector.endpointPath
+			|| (connector.fields && Object.keys(connector.fields).length)),
+	)
+}
+
+/**
+ * The sample payload of an endpoint response: its `data` member when it has
+ * one, else the whole body.
+ *
+ * @param {object|Array|string|null} data - the response body.
+ * @return {object|Array|string|null}
+ */
+function unwrapSample(data) {
+	return data && data.data !== undefined ? data.data : data
+}
+
 export default {
 	name: 'DataSourceOriginToggle',
 	components: { ConnectorSourcePicker, ConnectorFieldMapper, ConfirmActionDialog },
@@ -126,12 +152,7 @@ export default {
 				return
 			}
 			// next === openregister
-			const hasMapping =
-				this.connector
-				&& (this.connector.endpointPath
-					|| (this.connector.fields
-						&& Object.keys(this.connector.fields).length))
-			if (hasMapping) {
+			if (hasMapping(this.connector)) {
 				// There IS a mapping to lose — ask first. dropConnector() runs
 				// only from the dialog's confirm, so cancelling keeps it.
 				this.confirmSwitchOpen = true
@@ -221,19 +242,27 @@ export default {
 			}
 			this.sampleLoading = true
 			try {
-				const path = String(endpointPath).replace(/^\/+/, '')
-				const url = generateUrl(
-					fleetAppPath('integriq', `api/endpoint/${path}`),
-				)
-				const { data } = await axios.get(url, {
-					params: this.connector.query || {},
-				})
-				this.sample = data && data.data !== undefined ? data.data : data
+				this.sample = await this.fetchSample(endpointPath)
 			} catch {
 				this.sample = null
 			} finally {
 				this.sampleLoading = false
 			}
+		},
+
+		/**
+		 * GET an endpoint through integriq with the connector's query.
+		 *
+		 * @param {string} endpointPath - endpoint to sample.
+		 * @return {Promise<object|Array|string|null>} The sample payload.
+		 */
+		async fetchSample(endpointPath) {
+			const path = String(endpointPath).replace(/^\/+/, '')
+			const url = generateUrl(fleetAppPath('integriq', `api/endpoint/${path}`))
+			const { data } = await axios.get(url, {
+				params: this.connector.query || {},
+			})
+			return unwrapSample(data)
 		},
 
 		/** @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-003 */
