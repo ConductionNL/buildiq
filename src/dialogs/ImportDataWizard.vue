@@ -342,6 +342,52 @@ import { useDataImport } from '../composables/useDataImport.js'
 const MAX_SAMPLE_ROWS = 5
 const LARGE_FILE_BYTES = 5 * 1024 * 1024
 
+/**
+ * The slug a schema carries in its `@self` envelope, if any.
+ *
+ * @param {object} schema The schema record.
+ * @return {string|undefined}
+ */
+function selfSlug(schema) {
+	return schema['@self'] && schema['@self'].slug
+}
+
+/**
+ * The option id of a schema: its slug (own or `@self`), id or uuid.
+ *
+ * @param {object} schema The schema record.
+ * @return {string}
+ */
+function schemaOptionId(schema) {
+	return String(
+		schema.slug || selfSlug(schema) || schema.id || schema.uuid || '',
+	)
+}
+
+/**
+ * The option label of a schema: its title, name, slug or id.
+ *
+ * @param {object} schema The schema record.
+ * @return {string}
+ */
+function schemaOptionLabel(schema) {
+	return String(schema.title || schema.name || schema.slug || schema.id || '')
+}
+
+/**
+ * A schema as a target option.
+ *
+ * @param {object} schema The schema record.
+ * @return {{id: string, label: string, type: object}}
+ */
+function toSchemaOption(schema) {
+	return {
+		id: schemaOptionId(schema),
+		label: schemaOptionLabel(schema),
+		type: schema,
+	}
+}
+
 export default {
 	name: 'ImportDataWizard',
 	components: {
@@ -475,17 +521,7 @@ export default {
 		 */
 		schemaOptions() {
 			return (this.schemas || [])
-				.map((s) => ({
-					id: String(
-						s.slug
-							|| (s['@self'] && s['@self'].slug)
-							|| s.id
-							|| s.uuid
-							|| '',
-					),
-					label: String(s.title || s.name || s.slug || s.id || ''),
-					type: s,
-				}))
+				.map(toSchemaOption)
 				.filter((o) => o.id)
 		},
 
