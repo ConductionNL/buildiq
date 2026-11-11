@@ -104,6 +104,64 @@ import RollbackConfirmModal from '../modals/RollbackConfirmModal.vue'
 import { openPromoteDialog, promoteDialog } from '../composables/usePromoteDialog.js'
 import { buildVersionedRoute } from '../router/helpers.js'
 
+/**
+ * The rows of a versions answer: a bare list or a `results` envelope.
+ *
+ * @param {Array<object>|object|null} data The response body.
+ * @return {Array<object>}
+ */
+function versionRowsOf(data) {
+	if (Array.isArray(data)) {
+		return data
+	}
+	return data && data.results ? data.results : []
+}
+
+/**
+ * A row's publishedAt, '' when it has none.
+ *
+ * @param {object} row A version row.
+ * @return {string}
+ */
+function publishedAtOf(row) {
+	return (row && row.publishedAt) || ''
+}
+
+/**
+ * Newest first by publishedAt; equal dates keep their order.
+ *
+ * @param {object} a A version row.
+ * @param {object} b Another version row.
+ * @return {number}
+ */
+function compareNewestFirst(a, b) {
+	const aDate = publishedAtOf(a)
+	const bDate = publishedAtOf(b)
+	return bDate > aDate ? 1 : bDate < aDate ? -1 : 0
+}
+
+/**
+ * The server's `detail` for a failed request, if it gave one.
+ *
+ * @param {Error|null} e The failure.
+ * @return {string|undefined}
+ */
+function responseDetailOf(e) {
+	return e && e.response && e.response.data && e.response.data.detail
+}
+
+/**
+ * What to show when a release failed: "Release failed", with the server's
+ * detail or the request's message when there is one.
+ *
+ * @param {Error|null} e The failure.
+ * @return {string}
+ */
+function releaseFailureMessage(e) {
+	const detail = responseDetailOf(e) || (e && e.message) || ''
+	return t('buildiq', 'Release failed') + (detail ? ': ' + detail : '')
+}
+
 export default {
 	name: 'VersionHistory',
 	components: {
@@ -208,45 +266,74 @@ export default {
 			}
 			this.loading = true
 			try {
-				const url = generateUrl(
-					'/apps/buildiq/api/applications/{slug}/versions',
-					{ slug: this.appSlug },
-				)
-				const { data } = await axios.get(url)
-				const raw = Array.isArray(data)
-					? data
-					: data && data.results
-						? data.results
-						: []
-				// The endpoint is already scoped to the app. A row that names
-				// another parent through its `application` relation is still
-				// dropped, as defence in depth.
-				const filtered = this.applicationUuid
-					? raw.filter(
-							(r) =>
-								r
-								&& (!r.application
-									|| r.application === this.applicationUuid),
-						)
-					: raw
-				this.versions = filtered
-					.filter((r) => this.rowStatus(r) !== 'archived')
-					.sort((a, b) => {
-						const bProd = this.isProduction(b) ? 1 : 0
-						const aProd = this.isProduction(a) ? 1 : 0
-						if (bProd !== aProd) {
-							return bProd - aProd
-						}
-						// Newest first by publishedAt.
-						const aDate = (a && a.publishedAt) || ''
-						const bDate = (b && b.publishedAt) || ''
-						return bDate > aDate ? 1 : bDate < aDate ? -1 : 0
-					})
+				this.versions = this.visibleVersions(await this.readVersionRows())
 			} catch (e) {
 				this.versions = []
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Read the app's version rows from the slug endpoint.
+		 *
+		 * @return {Promise<Array<object>>}
+		 */
+		async readVersionRows() {
+			const url = generateUrl(
+				'/apps/buildiq/api/applications/{slug}/versions',
+				{ slug: this.appSlug },
+			)
+			const { data } = await axios.get(url)
+			return versionRowsOf(data)
+		},
+
+		/**
+		 * The rows to list: this app's own, archived ones hidden, production
+		 * first and then newest first.
+		 *
+		 * @param {Array<object>} raw The rows the endpoint returned.
+		 * @return {Array<object>}
+		 */
+		visibleVersions(raw) {
+			return this.ownRows(raw)
+				.filter((r) => this.rowStatus(r) !== 'archived')
+				.sort(this.compareRows)
+		},
+
+		/**
+		 * The endpoint is already scoped to the app. A row that names another
+		 * parent through its `application` relation is still dropped, as
+		 * defence in depth.
+		 *
+		 * @param {Array<object>} raw The rows the endpoint returned.
+		 * @return {Array<object>}
+		 */
+		ownRows(raw) {
+			if (!this.applicationUuid) {
+				return raw
+			}
+			return raw.filter(
+				(r) =>
+					r && (!r.application || r.application === this.applicationUuid),
+			)
+		},
+
+		/**
+		 * Sort order of the list: the production version first, then the
+		 * newest by publishedAt.
+		 *
+		 * @param {object} a A version row.
+		 * @param {object} b Another version row.
+		 * @return {number}
+		 */
+		compareRows(a, b) {
+			const bProd = this.isProduction(b) ? 1 : 0
+			const aProd = this.isProduction(a) ? 1 : 0
+			if (bProd !== aProd) {
+				return bProd - aProd
+			}
+			return compareNewestFirst(a, b)
 		},
 
 		/**
@@ -266,8 +353,11 @@ export default {
 		 * @return {string}
 		 */
 		rowUuid(row) {
-			const self = (row && row['@self']) || {}
-			return (row && row.id) || self.id || self.uuid || (row && row.uuid) || ''
+			if (!row) {
+				return ''
+			}
+			const self = row['@self'] || {}
+			return [row.id, self.id, self.uuid, row.uuid].find(Boolean) || ''
 		},
 
 		/**
@@ -413,29 +503,34 @@ export default {
 			}
 			this.releasing = this.rowUuid(row)
 			try {
-				const url = generateUrl(
-					'/apps/buildiq/api/applications/{slug}/versions/{versionSlug}/release',
-					{ slug: this.appSlug, versionSlug },
-				)
-				await axios.post(url, {})
-				showSuccess(
-					t('buildiq', '“{name}” is now the production version.', {
-						name: this.rowName(row),
-					}),
-				)
-				this.$emit('released')
-				await this.refresh()
+				await this.postRelease(row, versionSlug)
 			} catch (e) {
-				const detail =
-					(e && e.response && e.response.data && e.response.data.detail)
-					|| (e && e.message)
-					|| ''
-				showError(
-					t('buildiq', 'Release failed') + (detail ? ': ' + detail : ''),
-				)
+				showError(releaseFailureMessage(e))
 			} finally {
 				this.releasing = ''
 			}
+		},
+
+		/**
+		 * POST the release, tell the maker, and reload the list.
+		 *
+		 * @param {object} row The version row.
+		 * @param {string} versionSlug The row's slug.
+		 * @return {Promise<void>}
+		 */
+		async postRelease(row, versionSlug) {
+			const url = generateUrl(
+				'/apps/buildiq/api/applications/{slug}/versions/{versionSlug}/release',
+				{ slug: this.appSlug, versionSlug },
+			)
+			await axios.post(url, {})
+			showSuccess(
+				t('buildiq', '“{name}” is now the production version.', {
+					name: this.rowName(row),
+				}),
+			)
+			this.$emit('released')
+			await this.refresh()
 		},
 
 		/**
