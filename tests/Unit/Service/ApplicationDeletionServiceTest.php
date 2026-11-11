@@ -651,9 +651,12 @@ class ApplicationDeletionServiceTest extends TestCase {
 		);
 		$this->objectService->method('deleteObject')->willReturnCallback(
 			static function (...$args) use ($record): bool {
+				// A uuid string, or a deletion value object carrying one.
 				$uuid = '?';
 				if (is_string($args[0] ?? null) === true) {
 					$uuid = $args[0];
+				} else if (is_object($args[0] ?? null) === true && isset($args[0]->uuid) === true) {
+					$uuid = (string)$args[0]->uuid;
 				}
 
 				$record('deleteObject', [$uuid]);
