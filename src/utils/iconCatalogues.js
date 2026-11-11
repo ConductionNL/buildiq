@@ -101,19 +101,48 @@ function escapePath(d) {
  * @return {string|null} the SVG markup, or null.
  */
 export function resolveAppIcon(value, { dark = false } = {}) {
-	if (typeof value !== 'string' || value.trim() === '') {
+	if (!isFilledString(value)) {
 		return null
 	}
 	const trimmed = value.trim()
-	if (trimmed.startsWith('<svg')) {
-		// Raw SVG (custom editor / uploaded file) — sanitize before use so an
-		// author-supplied <script>/event-handler cannot execute in a preview or
-		// once persisted and served (harden-xss-dos-csrf).
-		return DOMPurify.sanitize(trimmed, {
-			USE_PROFILES: { svg: true, svgFilters: true },
-		})
-	}
-	const glyph = lookupGlyph(trimmed)
+	return trimmed.startsWith('<svg')
+		? sanitizedSvg(trimmed)
+		: catalogueSvg(trimmed, dark)
+}
+
+/**
+ * Whether a value is a string with more than whitespace.
+ *
+ * @param {unknown} value the picker value.
+ * @return {boolean}
+ */
+function isFilledString(value) {
+	return typeof value === 'string' && value.trim() !== ''
+}
+
+/**
+ * Raw SVG (custom editor / uploaded file), sanitized before use so an
+ * author-supplied <script>/event-handler cannot execute in a preview or once
+ * persisted and served (harden-xss-dos-csrf).
+ *
+ * @param {string} svg the trimmed author SVG.
+ * @return {string} the sanitized markup.
+ */
+function sanitizedSvg(svg) {
+	return DOMPurify.sanitize(svg, {
+		USE_PROFILES: { svg: true, svgFilters: true },
+	})
+}
+
+/**
+ * A catalogue pick synthesized into a single-path monochrome glyph.
+ *
+ * @param {string} name the mdi export name or OG key.
+ * @param {boolean} dark when true, omit the fill (app-dark.svg convention).
+ * @return {string|null} the SVG markup, or null for an unknown name.
+ */
+function catalogueSvg(name, dark) {
+	const glyph = lookupGlyph(name)
 	if (!glyph) {
 		return null
 	}

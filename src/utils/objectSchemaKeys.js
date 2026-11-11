@@ -62,15 +62,34 @@ function unref(maybeRef) {
 function keySet(candidates) {
 	const out = []
 	for (const value of candidates) {
-		if (value === undefined || value === null || value === '') {
-			continue
-		}
-		const key = String(value)
-		if (out.includes(key) === false) {
-			out.push(key)
+		if (!isBlankKey(value)) {
+			addKey(out, String(value))
 		}
 	}
 	return out
+}
+
+/**
+ * Whether a candidate value names nothing: undefined, null or ''.
+ *
+ * @param {unknown} value A candidate value.
+ * @return {boolean}
+ */
+function isBlankKey(value) {
+	return value === undefined || value === null || value === ''
+}
+
+/**
+ * Add a key once.
+ *
+ * @param {Array<string>} keys The keys so far (mutated).
+ * @param {string} key The key.
+ * @return {void}
+ */
+function addKey(keys, key) {
+	if (keys.includes(key) === false) {
+		keys.push(key)
+	}
 }
 
 /**
