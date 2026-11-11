@@ -104,6 +104,7 @@ class RepairValidationViolationsTest extends TestCase {
 				'v-onward' => ['promotesTo' => self::OTHER],
 				'v-nowhere' => ['promotesTo' => null],
 				'v-braced' => ['promotesTo' => '{V-BRACED}'],
+				'5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a8b' => ['promotesTo' => '5E6F7A8B9C0D4E1F8A2B3C4D5E6F7A8B'],
 				'v-ownerless' => ['scope' => 'user', 'owner' => ' '],
 				'v-owned' => ['scope' => 'user', 'owner' => 'alice'],
 				'v-admin' => ['scope' => 'admin'],
@@ -153,6 +154,7 @@ class RepairValidationViolationsTest extends TestCase {
 				'applicationVersion/' . self::SELF => ['promotesTo' => null, 'scope' => 'admin'],
 				'applicationVersion/' . self::OTHER => ['promotesTo' => null],
 				'applicationVersion/v-braced' => ['promotesTo' => null],
+				'applicationVersion/5e6f7a8b-9c0d-4e1f-8a2b-3c4d5e6f7a8b' => ['promotesTo' => null],
 			],
 			$saved
 		);
@@ -171,7 +173,7 @@ class RepairValidationViolationsTest extends TestCase {
 			[
 				'info' => [
 					'Repair-validation-violations: hybrid apps without baseRef.id 4 (backfilled 3), '
-					. 'versions promoting to themselves 3 (cleared 3), user-scoped versions without owner 1 (left unchanged), failed 1.',
+					. 'versions promoting to themselves 4 (cleared 4), user-scoped versions without owner 1 (left unchanged), failed 1.',
 				],
 				'warning' => [
 					'Repair-validation-violations: user-scoped versions without an owner are refused on their next save; '
@@ -241,11 +243,11 @@ class RepairValidationViolationsTest extends TestCase {
 		$objectService = $this->createMock(ObjectServiceInterface::class);
 		$objectService->method('runAsSystem')->willReturnCallback(static fn (callable $operation): mixed => $operation());
 		$objectService->method('findAll')->willReturnCallback(fn (array $config): array => $this->find(config: $config));
-		$objectService->expects($this->exactly(6))->method('saveObject')->willThrowException(new RuntimeException('refused'));
+		$objectService->expects($this->exactly(7))->method('saveObject')->willThrowException(new RuntimeException('refused'));
 
 		$output = $this->runStep(objectService: $objectService);
 
-		$this->assertStringEndsWith('(backfilled 0), versions promoting to themselves 3 (cleared 0), user-scoped versions without owner 1 (left unchanged), failed 7.', $output['info'][0]);
+		$this->assertStringEndsWith('(backfilled 0), versions promoting to themselves 4 (cleared 0), user-scoped versions without owner 1 (left unchanged), failed 8.', $output['info'][0]);
 
 	}//end testFailedSaveIsCountedAndTheRunGoesOn()
 

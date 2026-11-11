@@ -375,6 +375,7 @@ import {
 	isConditionAllowed,
 } from '../services/automationMatrix.js'
 import { fetchConnectorSynchronizations } from '../services/connectorSynchronizations.js'
+import { toPersistedAction } from './automationPersistedActions.js'
 
 const INTERVAL_PRESETS = Object.freeze([
 	{ id: 'hourly', interval: 3600 },
@@ -1264,86 +1265,7 @@ export default {
 		 * @spec openspec/changes/automation-approval-steps/tasks.md#3.1
 		 */
 		buildActions() {
-			return this.actions.map((action) => {
-				if (action.type === 'send-notification') {
-					return {
-						type: 'send-notification',
-						channels: action.channels,
-						recipients: action.recipients,
-						subject: { en: action.subjectEn, nl: action.subjectNl },
-					}
-				}
-				if (action.type === 'run-synchronization') {
-					return {
-						type: 'run-synchronization',
-						synchronizationId: action.synchronizationId,
-					}
-				}
-				if (action.type === 'object-op') {
-					// OpenRegister rejects BOTH an empty object ({}) and null for this
-					// nested (array-item) object property, so an object-op with no
-					// field mapping must OMIT the key entirely rather than send {}/null.
-					let fieldMapping = null
-					try {
-						const parsed = JSON.parse(action.fieldMappingText || 'null')
-						fieldMapping =
-							parsed
-							&& typeof parsed === 'object'
-							&& Object.keys(parsed).length > 0
-								? parsed
-								: null
-					} catch (e) {
-						fieldMapping = null
-					}
-					const objectOp = {
-						type: 'object-op',
-						operation: action.operation,
-						schema: action.schema,
-					}
-					if (fieldMapping !== null) {
-						objectOp.fieldMapping = fieldMapping
-					}
-					return objectOp
-				}
-				if (action.type === 'approval') {
-					return {
-						type: 'approval',
-						assigneeGroup: action.assigneeGroup,
-						onApprove: Array.isArray(action.onApprove)
-							? action.onApprove
-							: [],
-						onReject: Array.isArray(action.onReject)
-							? action.onReject
-							: [],
-					}
-				}
-				if (action.type === 'generateDocument') {
-					return {
-						type: 'generateDocument',
-						templateId: action.templateId,
-						output: Array.isArray(action.output) ? action.output : [],
-					}
-				}
-				// Same OpenRegister nested-object rule as object-op above: an empty
-				// payload template must OMIT the key rather than send {}/null.
-				let payloadTemplate = null
-				try {
-					const parsed = JSON.parse(action.payloadTemplateText || 'null')
-					payloadTemplate =
-						parsed
-						&& typeof parsed === 'object'
-						&& Object.keys(parsed).length > 0
-							? parsed
-							: null
-				} catch (e) {
-					payloadTemplate = null
-				}
-				const webhook = { type: 'webhook', url: action.url }
-				if (payloadTemplate !== null) {
-					webhook.payloadTemplate = payloadTemplate
-				}
-				return webhook
-			})
+			return this.actions.map(toPersistedAction)
 		},
 
 		/**

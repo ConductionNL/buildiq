@@ -54,6 +54,54 @@ class CopilotPromptBuilder {
 	}//end __construct()
 
 	/**
+	 * The fixed part of the shared header: role framing, output contract and
+	 * the rules the tool schemas cannot express. The tool catalogue follows it.
+	 *
+	 * @var string
+	 */
+	private const PLAN_CONTRACT = <<<'PROMPT'
+        You are the Buildiq copilot. You turn a short natural-language brief
+        describing a citizen-developer app into a plan of builder operations.
+
+        You MUST respond with exactly one JSON object and nothing else — no
+        prose, no markdown code fences, no explanation before or after it. The
+        object has this shape:
+
+        {
+          "summary": "one-sentence description of what will be built",
+          "steps": [
+            { "tool": "<tool id>", "arguments": { ... } }
+          ]
+        }
+
+        Every step's "tool" MUST be one of the ids in the tool catalogue below,
+        and "arguments" MUST satisfy that tool's inputSchema exactly (required
+        keys present, enums/patterns/lengths respected). Do not invent tools or
+        arguments. Prefer a small number of steps: at most one createApp (first,
+        only when no target app was given), a handful of upsertSchema/upsertPage/
+        addWidget/upsertMenuItem steps, and never a promoteVersion step unless the
+        brief explicitly asks to publish/release.
+
+        Three rules the tool schemas cannot express, and a plan that breaks
+        any of them is refused or comes out empty:
+
+        1. A PAGE's "route" is a path and starts with "/" — "/tools",
+           "/tools/:id". A MENU ITEM's "route" is not a path: it is the pageId
+           of the page that item opens, e.g. "tools". Never give a menu item a
+           route no page has.
+        2. A page's config.schema, and the same key inside a widget's config,
+           names the data the page shows. Give the SHORT slug you passed to
+           upsertSchema (e.g. "loan") — Buildiq points it at this version's own
+           register and namespaced schema for you, and fills config.register in
+           itself. Never invent a register slug of your own.
+        3. A FORM page says where it posts with config.schema, the same short
+           slug. submitHandler is for a handler somebody registered in code, so
+           putting a schema name in it gives a form that posts nowhere.
+
+
+        PROMPT;
+
+	/**
 	 * Build the initial system prompt for a brief.
 	 *
 	 * @param string $brief The user's natural-language brief.
@@ -145,65 +193,42 @@ class CopilotPromptBuilder {
 	 */
 	private function header(?array $toolDescriptors = null): string {
 		$descriptors = $toolDescriptors ?? $this->toolProvider->getToolDescriptors();
-		$catalogue = json_encode(
-			array_map(
-				static fn (array $descriptor): array => [
-					'id' => $descriptor['id'] ?? '',
-					'description' => $descriptor['description'] ?? '',
-					'inputSchema' => $descriptor['inputSchema'] ?? new stdClass(),
-				],
-				$descriptors
-			),
-			JSON_PRETTY_PRINT
-		);
+
+		return self::PLAN_CONTRACT . "Tool catalogue:\n" . $this->catalogueJson(descriptors: $descriptors) . "\n";
+	}//end header()
+
+	/**
+	 * Encode the tool catalogue the model may plan with: id, description and
+	 * inputSchema per tool, `[]` when it cannot be encoded.
+	 *
+	 * @param array<int, array<string, mixed>> $descriptors The tool descriptors.
+	 *
+	 * @return string
+	 */
+	private function catalogueJson(array $descriptors): string {
+		$catalogue = json_encode(array_map([self::class, 'catalogueEntry'], $descriptors), JSON_PRETTY_PRINT);
 		if ($catalogue === false) {
-			$catalogue = '[]';
+			return '[]';
 		}
 
-		return <<<PROMPT
-        You are the Buildiq copilot. You turn a short natural-language brief
-        describing a citizen-developer app into a plan of builder operations.
+		return $catalogue;
+	}//end catalogueJson()
 
-        You MUST respond with exactly one JSON object and nothing else — no
-        prose, no markdown code fences, no explanation before or after it. The
-        object has this shape:
-
-        {
-          "summary": "one-sentence description of what will be built",
-          "steps": [
-            { "tool": "<tool id>", "arguments": { ... } }
-          ]
-        }
-
-        Every step's "tool" MUST be one of the ids in the tool catalogue below,
-        and "arguments" MUST satisfy that tool's inputSchema exactly (required
-        keys present, enums/patterns/lengths respected). Do not invent tools or
-        arguments. Prefer a small number of steps: at most one createApp (first,
-        only when no target app was given), a handful of upsertSchema/upsertPage/
-        addWidget/upsertMenuItem steps, and never a promoteVersion step unless the
-        brief explicitly asks to publish/release.
-
-        Three rules the tool schemas cannot express, and a plan that breaks
-        any of them is refused or comes out empty:
-
-        1. A PAGE's "route" is a path and starts with "/" — "/tools",
-           "/tools/:id". A MENU ITEM's "route" is not a path: it is the pageId
-           of the page that item opens, e.g. "tools". Never give a menu item a
-           route no page has.
-        2. A page's config.schema, and the same key inside a widget's config,
-           names the data the page shows. Give the SHORT slug you passed to
-           upsertSchema (e.g. "loan") — Buildiq points it at this version's own
-           register and namespaced schema for you, and fills config.register in
-           itself. Never invent a register slug of your own.
-        3. A FORM page says where it posts with config.schema, the same short
-           slug. submitHandler is for a handler somebody registered in code, so
-           putting a schema name in it gives a form that posts nowhere.
-
-        Tool catalogue:
-        {$catalogue}
-
-        PROMPT;
-	}//end header()
+	/**
+	 * One catalogue entry: the descriptor's id, description and inputSchema,
+	 * defaulted when absent.
+	 *
+	 * @param array<string, mixed> $descriptor A tool descriptor.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function catalogueEntry(array $descriptor): array {
+		return [
+			'id' => $descriptor['id'] ?? '',
+			'description' => $descriptor['description'] ?? '',
+			'inputSchema' => $descriptor['inputSchema'] ?? new stdClass(),
+		];
+	}//end catalogueEntry()
 
 	/**
 	 * Build the optional target-app context section.
@@ -218,19 +243,43 @@ class CopilotPromptBuilder {
 		}
 
 		$appSlug = (string)($targetContext['appSlug'] ?? '');
-		$summary = json_encode($targetContext['manifestSummary'] ?? [], JSON_PRETTY_PRINT);
-		if ($summary === false) {
-			$summary = '{}';
-		}
-
-		$versionLine = '';
-		$versionSlug = (string)($targetContext['versionSlug'] ?? '');
-		if ($versionSlug !== '') {
-			$versionLine = "\nThe user is editing the '{$versionSlug}' version. Set versionSlug to '{$versionSlug}' in every step.";
-		}
+		$summary = $this->manifestSummaryJson(targetContext: $targetContext);
+		$versionLine = $this->versionLine(targetContext: $targetContext);
 
 		return "This plan targets the EXISTING app '{$appSlug}'. Do not include a createApp step."
 			. $versionLine
 			. "\nCurrent manifest summary:\n{$summary}\n";
 	}//end targetSection()
+
+	/**
+	 * Encode the target app's manifest summary, `{}` when it cannot be encoded.
+	 *
+	 * @param array<string, mixed> $targetContext The target-app context.
+	 *
+	 * @return string
+	 */
+	private function manifestSummaryJson(array $targetContext): string {
+		$summary = json_encode($targetContext['manifestSummary'] ?? [], JSON_PRETTY_PRINT);
+		if ($summary === false) {
+			return '{}';
+		}
+
+		return $summary;
+	}//end manifestSummaryJson()
+
+	/**
+	 * The line pinning every step to the edited version, or '' without one.
+	 *
+	 * @param array<string, mixed> $targetContext The target-app context.
+	 *
+	 * @return string
+	 */
+	private function versionLine(array $targetContext): string {
+		$versionSlug = (string)($targetContext['versionSlug'] ?? '');
+		if ($versionSlug === '') {
+			return '';
+		}
+
+		return "\nThe user is editing the '{$versionSlug}' version. Set versionSlug to '{$versionSlug}' in every step.";
+	}//end versionLine()
 }//end class

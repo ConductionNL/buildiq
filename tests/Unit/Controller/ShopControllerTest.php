@@ -24,6 +24,7 @@ namespace OCA\Buildiq\Tests\Unit\Controller;
 
 use OCA\Buildiq\Controller\ApplicationsController;
 use OCA\Buildiq\Controller\ShopController;
+use OCA\Buildiq\Exception\AppRepoParseException;
 use OCA\Buildiq\Service\AppRepoParser;
 use OCA\Buildiq\Service\GitHubCatalogService;
 use OCA\Buildiq\Service\RepoSource;
@@ -239,6 +240,130 @@ class ShopControllerTest extends TestCase {
 		self::assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
 
 	}//end testGithubInstallRequiresNameAndSlug()
+
+	/**
+	 * githubInstall: a ref that fails the pattern is a 400 and nothing is fetched.
+	 *
+	 * @return void
+	 */
+	public function testGithubInstallRejectsMalformedRef(): void {
+		$this->authenticate();
+		$this->request->method('getParam')->willReturnMap(
+			[
+				['owner', null, 'ConductionNL'],
+				['repo', null, 'buildiq'],
+				['ref', null, 'v1 ; rm'],
+				['name', null, 'Demo'],
+				['slug', null, 'demo-app'],
+			]
+		);
+		$this->catalogService->expects(self::never())->method('fetchRepoFiles');
+
+		$response = $this->controller()->githubInstall();
+
+		self::assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+		self::assertSame(['error' => 'invalid_ref'], $response->getData());
+
+	}//end testGithubInstallRejectsMalformedRef()
+
+	/**
+	 * githubInstall: a bad repo wins over a bad ref and a missing name, and a
+	 * missing name/slug answers the detail that explains it.
+	 *
+	 * @return void
+	 */
+	public function testGithubInstallValidationOrderAndDetail(): void {
+		$cases = [
+			[['bad owner!', 'buildiq', 'bad ref!', '', 'X'], ['error' => 'invalid_repo']],
+			[['ConductionNL', 'bad repo!', null, 'Demo', 'demo'], ['error' => 'invalid_repo']],
+			[['ConductionNL', 'buildiq', 'bad ref!', '', 'X'], ['error' => 'invalid_ref']],
+			[['ConductionNL', 'buildiq', '', 'Demo', 'Not-Kebab'], ['error' => 'invalid_request', 'detail' => 'name and kebab-case slug required']],
+			[['ConductionNL', 'buildiq', null, '', 'demo'], ['error' => 'invalid_request', 'detail' => 'name and kebab-case slug required']],
+		];
+		foreach ($cases as [$params, $expected]) {
+			$this->setUp();
+			$this->authenticate();
+			$this->request->method('getParam')->willReturnMap(
+				[
+					['owner', null, $params[0]],
+					['repo', null, $params[1]],
+					['ref', null, $params[2]],
+					['name', null, $params[3]],
+					['slug', null, $params[4]],
+				]
+			);
+			$this->catalogService->expects(self::never())->method('fetchRepoFiles');
+
+			$response = $this->controller()->githubInstall();
+
+			self::assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+			self::assertSame($expected, $response->getData());
+		}
+
+	}//end testGithubInstallValidationOrderAndDetail()
+
+	/**
+	 * githubInstall: an empty ref fetches the default branch, and an
+	 * unreachable repo is a 404 that never reaches the parser.
+	 *
+	 * @return void
+	 */
+	public function testGithubInstallUnreachableRepoIsNotFound(): void {
+		$this->authenticate('dave');
+		$this->request->method('getParam')->willReturnMap(
+			[
+				['owner', null, 'ConductionNL'],
+				['repo', null, 'buildiq'],
+				['ref', null, ''],
+				['name', null, 'Demo'],
+				['slug', null, 'demo-app'],
+				['credentialId', null, null],
+			]
+		);
+		$this->catalogService->expects(self::once())->method('fetchRepoFiles')
+			->with(new RepoSource(owner: 'ConductionNL', repo: 'buildiq', ref: null, credentialId: null), 'dave')
+			->willReturn([]);
+		$this->repoParser->expects(self::never())->method('parse');
+
+		$response = $this->controller()->githubInstall();
+
+		self::assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+		self::assertSame(['error' => GitHubCatalogService::OUTCOME_UNREACHABLE], $response->getData());
+
+	}//end testGithubInstallUnreachableRepoIsNotFound()
+
+	/**
+	 * githubInstall: a repo the strict parser refuses is a 422 carrying the
+	 * parse error, and nothing is installed.
+	 *
+	 * @return void
+	 */
+	public function testGithubInstallParseFailureIsUnprocessable(): void {
+		$this->authenticate();
+		$this->request->method('getParam')->willReturnMap(
+			[
+				['owner', null, 'ConductionNL'],
+				['repo', null, 'buildiq'],
+				['ref', null, 'main'],
+				['name', null, 'Demo'],
+				['slug', null, 'demo-app'],
+			]
+		);
+		$this->catalogService->method('fetchRepoFiles')->willReturn(['manifest.json' => '{']);
+		$this->repoParser->expects(self::once())->method('parse')
+			->with(['manifest.json' => '{'], ['owner' => 'ConductionNL', 'name' => 'buildiq'])
+			->willThrowException(new AppRepoParseException('manifest_invalid', 'Manifest is not JSON', 'manifest.json'));
+		$this->appsController->expects(self::never())->method('installFromTemplateArray');
+
+		$response = $this->controller()->githubInstall();
+
+		self::assertSame(Http::STATUS_UNPROCESSABLE_ENTITY, $response->getStatus());
+		self::assertSame(
+			['error' => 'repo_parse_failed', 'code' => 'manifest_invalid', 'file' => 'manifest.json', 'detail' => 'Manifest is not JSON'],
+			$response->getData()
+		);
+
+	}//end testGithubInstallParseFailureIsUnprocessable()
 
 	/**
 	 * githubInstall hands the install seam the parsed template, the requested

@@ -206,6 +206,37 @@ class ApplicationVersionServiceTest extends TestCase {
 	}//end testGuardNoCycleRejectsSelfLoop()
 
 	/**
+	 * Cycle guard rejects a self-loop written in another case or form of the same uuid.
+	 *
+	 * @return void
+	 */
+	public function testGuardNoCycleRejectsASelfLoopInAnotherForm(): void {
+		$uuid = '0b7d1f2e-4a5c-4e8f-9a1b-2c3d4e5f6a7b';
+		foreach (['0B7D1F2E-4A5C-4E8F-9A1B-2C3D4E5F6A7B', '0b7d1f2e4a5c4e8f9a1b2c3d4e5f6a7b', 'urn:uuid:' . $uuid, '{' . $uuid . '}'] as $variant) {
+			try {
+				$this->service->guardNoCycle(currentUuid: $uuid, proposedTargetUuid: $variant);
+				self::fail($variant . ' must be refused as a self-loop');
+			} catch (RuntimeException $e) {
+				self::assertStringContainsString('cannot promote to itself', $e->getMessage());
+			}
+		}
+	}//end testGuardNoCycleRejectsASelfLoopInAnotherForm()
+
+	/**
+	 * Cycle guard catches an indirect cycle that comes back in another case.
+	 *
+	 * @return void
+	 */
+	public function testGuardNoCycleDetectsAnIndirectCycleInAnotherCase(): void {
+		$aEntity = $this->mockVersion(promotesTo: 'UUID-C');
+		$this->objectService->method('find')
+			->willReturnCallback(static fn (string|int $id): ?ObjectEntity => $id === 'uuid-a' ? $aEntity : null);
+
+		$this->expectException(RuntimeException::class);
+		$this->service->guardNoCycle(currentUuid: 'uuid-c', proposedTargetUuid: 'uuid-a');
+	}//end testGuardNoCycleDetectsAnIndirectCycleInAnotherCase()
+
+	/**
 	 * Cycle guard accepts a null target (terminal version).
 	 *
 	 * @return void
