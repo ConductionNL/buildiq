@@ -50,6 +50,7 @@ use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCP\IUser;
 use OCP\IUserSession;
 use Throwable;
 
@@ -122,12 +123,9 @@ class ShopController extends Controller {
 			return $this->error(code: 'unauthenticated', status: Http::STATUS_UNAUTHORIZED);
 		}
 
-		$query = $this->request->getParam('q');
-		if (is_string($query) === false) {
-			$query = null;
-		}
+		$query = GitHubRequestParams::searchQuery(request: $this->request);
 
-		$credentialId = $this->credentialParam();
+		$credentialId = GitHubRequestParams::credentialId(request: $this->request);
 
 		try {
 			$result = $this->catalogService->search(
@@ -168,25 +166,75 @@ class ShopController extends Controller {
 			return $this->error(code: 'unauthenticated', status: Http::STATUS_UNAUTHORIZED);
 		}
 
-		$owner = (string)($this->request->getParam('owner') ?? '');
-		$repo = (string)($this->request->getParam('repo') ?? '');
+		$source = $this->requestedSource();
+		$refusal = ($this->repoRefusal(source: $source) ?? $this->refRefusal(source: $source) ?? $this->namingRefusal());
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		return $this->installFromRepo(source: $source, user: $user);
+	}//end githubInstall()
+
+	/**
+	 * The repository the install request names: owner, repo, an optional ref
+	 * (an empty ref means the default branch) and the optional credential.
+	 *
+	 * @return RepoSource The requested repository, not yet validated.
+	 */
+	private function requestedSource(): RepoSource {
 		$refRaw = $this->request->getParam('ref');
 		$ref = null;
 		if (is_string($refRaw) === true && $refRaw !== '') {
 			$ref = $refRaw;
 		}
 
-		$name = (string)($this->request->getParam('name') ?? '');
-		$newSlug = (string)($this->request->getParam('slug') ?? '');
+		return new RepoSource(
+			owner: (string)($this->request->getParam('owner') ?? ''),
+			repo: (string)($this->request->getParam('repo') ?? ''),
+			ref: $ref,
+			credentialId: GitHubRequestParams::credentialId(request: $this->request)
+		);
+	}//end requestedSource()
 
-		if (preg_match(self::OWNER_REPO_PATTERN, $owner) !== 1 || preg_match(self::OWNER_REPO_PATTERN, $repo) !== 1) {
+	/**
+	 * Refuse an owner or repo that fails its safe pattern, so no caller-supplied
+	 * string reaches the outbound GitHub URL.
+	 *
+	 * @param RepoSource $source The requested repository.
+	 *
+	 * @return JSONResponse|null The 400 refusal, or null when owner and repo are safe.
+	 */
+	private function repoRefusal(RepoSource $source): ?JSONResponse {
+		if (preg_match(self::OWNER_REPO_PATTERN, $source->owner) !== 1 || preg_match(self::OWNER_REPO_PATTERN, $source->repo) !== 1) {
 			return $this->error(code: 'invalid_repo', status: Http::STATUS_BAD_REQUEST);
 		}
 
-		if ($ref !== null && preg_match(self::REF_PATTERN, $ref) !== 1) {
+		return null;
+	}//end repoRefusal()
+
+	/**
+	 * Refuse a ref that fails its safe pattern; no ref means the default branch.
+	 *
+	 * @param RepoSource $source The requested repository.
+	 *
+	 * @return JSONResponse|null The 400 refusal, or null when the ref is absent or safe.
+	 */
+	private function refRefusal(RepoSource $source): ?JSONResponse {
+		if ($source->ref !== null && preg_match(self::REF_PATTERN, $source->ref) !== 1) {
 			return $this->error(code: 'invalid_ref', status: Http::STATUS_BAD_REQUEST);
 		}
 
+		return null;
+	}//end refRefusal()
+
+	/**
+	 * Refuse a request without a name or with a slug that is not kebab-case.
+	 *
+	 * @return JSONResponse|null The 400 refusal, or null when name and slug are usable.
+	 */
+	private function namingRefusal(): ?JSONResponse {
+		$name = (string)($this->request->getParam('name') ?? '');
+		$newSlug = (string)($this->request->getParam('slug') ?? '');
 		if ($name === '' || preg_match(self::SLUG_PATTERN, $newSlug) !== 1) {
 			return $this->error(
 				code: 'invalid_request',
@@ -195,44 +243,55 @@ class ShopController extends Controller {
 			);
 		}
 
-		$files = $this->catalogService->fetchRepoFiles(
-			source: new RepoSource(owner: $owner, repo: $repo, ref: $ref, credentialId: $this->credentialParam()),
-			actingUserId: $user->getUID()
+		return null;
+	}//end namingRefusal()
+
+	/**
+	 * Fetch and parse the repository, then clone it through the shared install
+	 * seam with the caller as owner.
+	 *
+	 * @param RepoSource $source The validated repository.
+	 * @param IUser $user The calling user, who becomes the app owner.
+	 *
+	 * @return JSONResponse The install seam's answer, or the 404/422 refusal.
+	 */
+	private function installFromRepo(RepoSource $source, IUser $user): JSONResponse {
+		$template = $this->fetchTemplate(source: $source, actingUserId: $user->getUID());
+		if ($template instanceof JSONResponse) {
+			return $template;
+		}
+
+		$result = $this->appsController->installFromTemplateArray(
+			template: $template,
+			name: (string)($this->request->getParam('name') ?? ''),
+			newSlug: (string)($this->request->getParam('slug') ?? ''),
+			ownerUid: $user->getUID(),
+			source: new RepoSource(owner: $source->owner, repo: $source->repo, ref: null, credentialId: $source->credentialId)
 		);
+
+		return new JSONResponse(data: $result['data'], statusCode: $result['status']);
+	}//end installFromRepo()
+
+	/**
+	 * Fetch the repository's file map and parse it strictly (all-or-nothing).
+	 *
+	 * @param RepoSource $source The validated repository.
+	 * @param string $actingUserId The user the fetch acts for.
+	 *
+	 * @return array<string,mixed>|JSONResponse The parsed template, or a 404 (unreachable) / 422 (parse failure).
+	 */
+	private function fetchTemplate(RepoSource $source, string $actingUserId): array|JSONResponse {
+		$files = $this->catalogService->fetchRepoFiles(source: $source, actingUserId: $actingUserId);
 		if ($files === []) {
 			return $this->error(code: GitHubCatalogService::OUTCOME_UNREACHABLE, status: Http::STATUS_NOT_FOUND);
 		}
 
 		try {
-			$template = $this->repoParser->parse(files: $files, repo: ['owner' => $owner, 'name' => $repo]);
+			return $this->repoParser->parse(files: $files, repo: ['owner' => $source->owner, 'name' => $source->repo]);
 		} catch (AppRepoParseException $e) {
 			return new JSONResponse(data: $e->toArray(), statusCode: Http::STATUS_UNPROCESSABLE_ENTITY);
 		}
-
-		$result = $this->appsController->installFromTemplateArray(
-			template: $template,
-			name: $name,
-			newSlug: $newSlug,
-			ownerUid: $user->getUID(),
-			source: new RepoSource(owner: $owner, repo: $repo, ref: null, credentialId: $this->credentialParam())
-		);
-
-		return new JSONResponse(data: $result['data'], statusCode: $result['status']);
-	}//end githubInstall()
-
-	/**
-	 * Read the optional `credentialId` request param (broker upgrade).
-	 *
-	 * @return string|null The credential UUID, or null when absent.
-	 */
-	private function credentialParam(): ?string {
-		$credentialId = $this->request->getParam('credentialId');
-		if (is_string($credentialId) === true && $credentialId !== '') {
-			return $credentialId;
-		}
-
-		return null;
-	}//end credentialParam()
+	}//end fetchTemplate()
 
 	/**
 	 * Build a uniform error JSONResponse.

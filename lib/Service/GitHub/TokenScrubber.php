@@ -27,17 +27,37 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service\GitHub;
 
 /**
- * Redacts classic (`ghp_`, `gho_`, `ghu_`, `ghs_`, `ghr_`) and fine-grained (`github_pat_`) tokens.
+ * Redacts GitHub tokens and other credentials from text bound for a log or an answer.
+ *
+ * Covers classic (`ghp_`, `gho_`, `ghu_`, `ghs_`, `ghr_`) and fine-grained (`github_pat_`)
+ * tokens in any case, `v1.` installation tokens, JWTs, credentials after an
+ * `Authorization`/`token`/`Bearer`/`Basic` keyword or an `access_token=` parameter,
+ * and the password part of a URL.
  *
  * @spec openspec/changes/openbuild-exporter/tasks.md#task-6.2
  */
 final class TokenScrubber {
 	/**
-	 * The shapes of a GitHub token.
+	 * The shapes of a token that stand on their own.
 	 *
 	 * @var string
 	 */
-	private const TOKEN_PATTERN = '/gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}/';
+	private const TOKEN_PATTERN = '/gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|v1\\.[0-9a-f]{40}'
+		. '|eyJ[A-Za-z0-9_-]{8,}\\.[A-Za-z0-9_-]{8,}\\.[A-Za-z0-9_-]+/i';
+
+	/**
+	 * A credential after a keyword that names it; the keyword is kept.
+	 *
+	 * @var string
+	 */
+	private const LABELLED_PATTERN = '/(\\b(?:authorization:\\s*)?(?:token|bearer|basic)\\s+|access_token=)[A-Za-z0-9._~+\\/=-]{16,}/i';
+
+	/**
+	 * The password part of a URL; scheme and user are kept.
+	 *
+	 * @var string
+	 */
+	private const URL_PASSWORD_PATTERN = '#(://[^/\\s:@]+:)[^@\\s/]+@#';
 
 	/**
 	 * The text with every token-shaped string replaced.
@@ -49,6 +69,8 @@ final class TokenScrubber {
 	 * @spec openspec/changes/openbuild-exporter/tasks.md#task-6.2
 	 */
 	public static function scrub(string $message): string {
-		return (string)preg_replace(self::TOKEN_PATTERN, '[redacted-token]', $message);
+		$scrubbed = (string)preg_replace(self::TOKEN_PATTERN, '[redacted-token]', $message);
+		$scrubbed = (string)preg_replace(self::LABELLED_PATTERN, '$1[redacted-token]', $scrubbed);
+		return (string)preg_replace(self::URL_PASSWORD_PATTERN, '$1[redacted-token]@', $scrubbed);
 	}//end scrub()
 }//end class
