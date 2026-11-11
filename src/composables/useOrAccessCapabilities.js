@@ -38,12 +38,7 @@ export const BASELINE_SCOPES = Object.freeze(['group'])
  */
 export function useOrAccessCapabilities() {
 	try {
-		const capabilities = getCapabilities()
-		const scopes =
-			capabilities
-			&& capabilities.openregister
-			&& capabilities.openregister.authorization
-			&& capabilities.openregister.authorization.scopes
+		const scopes = advertisedScopes(getCapabilities())
 		if (Array.isArray(scopes) && scopes.length > 0) {
 			return { scopes }
 		}
@@ -51,4 +46,17 @@ export function useOrAccessCapabilities() {
 		// Defensive: never throw from a pure capability read.
 	}
 	return { scopes: [...BASELINE_SCOPES] }
+}
+
+/**
+ * The `openregister.authorization.scopes` value of a capabilities document.
+ *
+ * @param {?object} capabilities The Nextcloud capabilities document.
+ * @return {unknown} The advertised value, or a falsy value when absent.
+ * @spec openspec/specs/data-scopes-authoring/spec.md#req-obdsa-003
+ */
+function advertisedScopes(capabilities) {
+	const openregister = capabilities && capabilities.openregister
+	const authorization = openregister && openregister.authorization
+	return authorization && authorization.scopes
 }
