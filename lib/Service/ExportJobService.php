@@ -37,6 +37,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Support\UuidV4;
 use OCP\BackgroundJob\IJobList;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -73,6 +74,13 @@ class ExportJobService {
 	private ExportRequestSanitiser $sanitiser;
 
 	/**
+	 * Mints the UUIDs objects are created with.
+	 *
+	 * @var UuidV4
+	 */
+	private readonly UuidV4 $uuids;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ContainerInterface $container Container — used to lazily fetch OR
@@ -90,6 +98,7 @@ class ExportJobService {
 		private JobOwnerImpersonator $jobOwnerImpersonator,
 	) {
 		$this->sanitiser = new ExportRequestSanitiser();
+		$this->uuids = new UuidV4();
 	}//end __construct()
 
 	/**
@@ -506,31 +515,13 @@ class ExportJobService {
 	/**
 	 * Generate a UUIDv4.
 	 *
-	 * Fixes #104: the previous implementation split the 32 hex digits into
-	 * eight 4-char groups (`str_split($hex, 4)`) but `vsprintf()` only
-	 * consumes the first FIVE of a format string's `%s` placeholders,
-	 * silently discarding the remaining three groups — the returned string
-	 * was five 4-char groups (20 hex digits) instead of the canonical
-	 * 8-4-4-4-12 (32 hex digits). The version/variant nibble-setting above
-	 * was already correct; only the grouping was malformed.
+	 * Delegates to {@see UuidV4}, which carries the #104 history.
 	 *
 	 * @return string UUIDv4 in canonical 8-4-4-4-12 form.
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-37
 	 */
 	public function uuid4(): string {
-		$data = random_bytes(16);
-		$data[6] = chr((ord($data[6]) & 0x0F) | 0x40);
-		$data[8] = chr((ord($data[8]) & 0x3F) | 0x80);
-		$hex = bin2hex($data);
-
-		return sprintf(
-			'%s-%s-%s-%s-%s',
-			substr($hex, 0, 8),
-			substr($hex, 8, 4),
-			substr($hex, 12, 4),
-			substr($hex, 16, 4),
-			substr($hex, 20, 12)
-		);
+		return $this->uuids->generate();
 	}//end uuid4()
 }//end class
