@@ -40,6 +40,20 @@ use InvalidArgumentException;
 class ExpressionEvaluator {
 
 	/**
+	 * Binary operators that compare their operands.
+	 *
+	 * @var array<int,string>
+	 */
+	private const COMPARISON_OPERATORS = ['==', '!=', '<', '>', '<=', '>='];
+
+	/**
+	 * Binary operators that calculate on their numeric operands.
+	 *
+	 * @var array<int,string>
+	 */
+	private const ARITHMETIC_OPERATORS = ['+', '-', '*', '/'];
+
+	/**
 	 * Maximum AST recursion depth during evaluation (DoS hardening,
 	 * harden-xss-dos-csrf). The parser's token cap already bounds the AST size,
 	 * so this is a defence-in-depth backstop that trips only on a
@@ -130,41 +144,72 @@ class ExpressionEvaluator {
 	 * @throws InvalidArgumentException On an unknown node type.
 	 */
 	private function evaluateNode(array $node, array $context): mixed {
-		switch (($node['type'] ?? '')) {
-			case 'literal':
-				return $node['value'];
-			case 'path':
-				return $this->resolvePath(segments: $node['segments'], context: $context);
-			case 'logical':
-				return $this->evaluateLogical(node: $node, context: $context);
-			case 'not':
-				$operandValue = $this->evaluate(node: $node['operand'], context: $context);
-				return ($this->truthy(value: $operandValue) === false);
-			case 'binary':
-				return $this->evaluateBinary(node: $node, context: $context);
-			case 'range':
-				// A bare range used as a boolean is meaningless; the engine
-				// only consumes ranges via the column-condition matcher. When
-				// evaluated standalone, return the [low, high] pair.
-				return [
-					'low' => $this->evaluate(node: $node['low'], context: $context),
-					'high' => $this->evaluate(node: $node['high'], context: $context),
-				];
-
-			case 'in':
-				return $this->evaluateIn(node: $node, context: $context);
-			case 'is-null':
-				$value = $this->evaluate(node: $node['operand'], context: $context);
-				$isNull = ($value === null);
-				if ($node['negated'] === true) {
-					return ($isNull === false);
-				}
-				return $isNull;
-			default:
-				throw new InvalidArgumentException('Unknown AST node type: ' . (string)($node['type'] ?? 'null'));
-		}//end switch
+		return match (($node['type'] ?? '')) {
+			'literal' => $node['value'],
+			'path' => $this->resolvePath(segments: $node['segments'], context: $context),
+			'logical' => $this->evaluateLogical(node: $node, context: $context),
+			'not' => $this->evaluateNot(node: $node, context: $context),
+			'binary' => $this->evaluateBinary(node: $node, context: $context),
+			'range' => $this->evaluateRange(node: $node, context: $context),
+			'in' => $this->evaluateIn(node: $node, context: $context),
+			'is-null' => $this->evaluateIsNull(node: $node, context: $context),
+			default => throw new InvalidArgumentException('Unknown AST node type: ' . (string)($node['type'] ?? 'null')),
+		};
 
 	}//end evaluateNode()
+
+	/**
+	 * Evaluate a `not` node: the negated truthiness of its operand.
+	 *
+	 * @param array<string,mixed> $node    The `not` node.
+	 * @param array<string,mixed> $context The data payload.
+	 *
+	 * @return bool
+	 */
+	private function evaluateNot(array $node, array $context): bool {
+		$operandValue = $this->evaluate(node: $node['operand'], context: $context);
+		return ($this->truthy(value: $operandValue) === false);
+
+	}//end evaluateNot()
+
+	/**
+	 * Evaluate a standalone range node.
+	 *
+	 * A bare range used as a boolean is meaningless; the engine only consumes
+	 * ranges via the column-condition matcher. When evaluated standalone,
+	 * return the [low, high] pair.
+	 *
+	 * @param array<string,mixed> $node    The range node.
+	 * @param array<string,mixed> $context The data payload.
+	 *
+	 * @return array{low:mixed,high:mixed}
+	 */
+	private function evaluateRange(array $node, array $context): array {
+		return [
+			'low' => $this->evaluate(node: $node['low'], context: $context),
+			'high' => $this->evaluate(node: $node['high'], context: $context),
+		];
+
+	}//end evaluateRange()
+
+	/**
+	 * Evaluate an `is null` / `is not null` node.
+	 *
+	 * @param array<string,mixed> $node    The is-null node.
+	 * @param array<string,mixed> $context The data payload.
+	 *
+	 * @return bool
+	 */
+	private function evaluateIsNull(array $node, array $context): bool {
+		$value = $this->evaluate(node: $node['operand'], context: $context);
+		$isNull = ($value === null);
+		if ($node['negated'] === true) {
+			return ($isNull === false);
+		}
+
+		return $isNull;
+
+	}//end evaluateIsNull()
 
 	/**
 	 * Resolve a dot-notation field path against the context.
@@ -238,36 +283,67 @@ class ExpressionEvaluator {
 		$right = $this->evaluate(node: $node['right'], context: $context);
 		$op = $node['op'];
 
-		switch ($op) {
-			case '==':
-				return $this->looseEquals(left: $left, right: $right);
-			case '!=':
-				return ($this->looseEquals(left: $left, right: $right) === false);
-			case '<':
-				return ($left < $right);
-			case '>':
-				return ($left > $right);
-			case '<=':
-				return ($left <= $right);
-			case '>=':
-				return ($left >= $right);
-			case '+':
-				return ($this->num(value: $left) + $this->num(value: $right));
-			case '-':
-				return ($this->num(value: $left) - $this->num(value: $right));
-			case '*':
-				return ($this->num(value: $left) * $this->num(value: $right));
-			case '/':
-				$divisor = $this->num(value: $right);
-				if ($divisor === 0 || $divisor === 0.0) {
-					throw new InvalidArgumentException('Division by zero in expression.');
-				}
-				return ($this->num(value: $left) / $divisor);
-			default:
-				throw new InvalidArgumentException('Unknown binary operator: ' . (string)$op);
-		}//end switch
+		if (in_array($op, self::COMPARISON_OPERATORS, true) === true) {
+			return $this->compare(op: $op, operands: [$left, $right]);
+		}
+
+		if (in_array($op, self::ARITHMETIC_OPERATORS, true) === true) {
+			return $this->calculate(op: $op, operands: [$this->num(value: $left), $this->num(value: $right)]);
+		}
+
+		throw new InvalidArgumentException('Unknown binary operator: ' . (string)$op);
 
 	}//end evaluateBinary()
+
+	/**
+	 * Apply a comparison operator to a left/right operand pair.
+	 *
+	 * @param string                 $op       One of COMPARISON_OPERATORS.
+	 * @param array{0:mixed,1:mixed} $operands The evaluated left and right operands.
+	 *
+	 * @return bool
+	 */
+	private function compare(string $op, array $operands): bool {
+		[$left, $right] = $operands;
+
+		return match ($op) {
+			'==' => $this->looseEquals(left: $left, right: $right),
+			'!=' => ($this->looseEquals(left: $left, right: $right) === false),
+			'<' => ($left < $right),
+			'>' => ($left > $right),
+			'<=' => ($left <= $right),
+			'>=' => ($left >= $right),
+			default => throw new InvalidArgumentException('Unknown binary operator: ' . $op),
+		};
+
+	}//end compare()
+
+	/**
+	 * Apply an arithmetic operator to a numeric left/right operand pair.
+	 *
+	 * @param string                         $op       One of ARITHMETIC_OPERATORS.
+	 * @param array{0:int|float,1:int|float} $operands The numeric left and right operands.
+	 *
+	 * @return int|float
+	 *
+	 * @throws InvalidArgumentException On division by zero.
+	 */
+	private function calculate(string $op, array $operands): int|float {
+		[$left, $right] = $operands;
+		if ($op === '/' && ($right === 0 || $right === 0.0)) {
+			throw new InvalidArgumentException('Division by zero in expression.');
+		}
+
+		return match ($op) {
+			'+' => ($left + $right),
+			'-' => ($left - $right),
+			'*' => ($left * $right),
+			'/' => ($left / $right),
+			default => throw new InvalidArgumentException('Unknown binary operator: ' . $op),
+		};
+
+	}//end calculate()
+
 
 	/**
 	 * Evaluate an `in (...)` list/range membership node.
