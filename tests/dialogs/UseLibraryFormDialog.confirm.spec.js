@@ -161,3 +161,32 @@ describe('UseLibraryFormDialog confirm', () => {
 		expect(wrapper.emitted('used')).toBeUndefined()
 	})
 })
+
+describe('UseLibraryFormDialog previewFields', () => {
+	it('lists each field by its first truthy label, title, name or key', async () => {
+		const wrapper = ready()
+		await wrapper.setProps({
+			template: {
+				...template,
+				form: {
+					fields: [
+						{ label: 'L', title: 'T', name: 'n', key: 'k' },
+						{ label: '', title: 'T2', name: 'n2' },
+						{ name: 'n3', key: 'k3' },
+						{ key: 'k4' },
+						{ label: 0, key: '' },
+						null,
+						{},
+					],
+				},
+			},
+		})
+		expect(wrapper.vm.previewFields).toEqual(['L', 'T2', 'n3', 'k4'])
+	})
+
+	it('is empty without form fields', async () => {
+		const wrapper = ready()
+		await wrapper.setProps({ template: { ...template, form: null } })
+		expect(wrapper.vm.previewFields).toEqual([])
+	})
+})
