@@ -190,10 +190,10 @@ final class RepoDescriptor {
 	 */
 	public static function publishableManifest(array $manifest): array {
 		if (array_key_exists('credentials', $manifest) === true) {
+			// An entry that keeps no declaration key is dropped rather than published as `{}`.
 			$entries = array_filter((array)$manifest['credentials'], static fn (mixed $entry): bool => is_array($entry) === true);
-			$manifest['credentials'] = array_values(
-				array_map(static fn (array $entry): array => self::declaration(entry: $entry), $entries)
-			);
+			$declarations = array_map(static fn (array $entry): array => self::declaration(entry: $entry), $entries);
+			$manifest['credentials'] = array_values(array_filter($declarations, static fn (array $declaration): bool => $declaration !== []));
 		}
 
 		return self::withoutSecrets(node: $manifest);
