@@ -57,6 +57,20 @@ import { createConnectionHandlers } from './services/connectionRegistry.js'
 import { useSettingsStore } from './store/modules/settings.js'
 import { initializeStores } from './store/store.js'
 
+/**
+ * The component a v2 registry entry stands for: the `component` of a
+ * kind-tagged `{ kind, component }` entry, or the entry itself.
+ *
+ * @param {?(object|string)} entry - a registry entry (a component object, a
+ * component name, or a kind-tagged entry).
+ * @return {?(object|string)} the component.
+ */
+function registryComponent(entry) {
+	return entry && typeof entry === 'object' && 'component' in entry
+		? entry.component
+		: entry
+}
+
 export default {
 	name: 'App',
 
@@ -137,10 +151,7 @@ export default {
 		flatRegistry() {
 			const out = {}
 			for (const [name, entry] of Object.entries(this.registry || {})) {
-				const component =
-					entry && typeof entry === 'object' && 'component' in entry
-						? entry.component
-						: entry
+				const component = registryComponent(entry)
 				if (component) {
 					out[name] = component
 				}
