@@ -132,6 +132,31 @@ import SettingsSectionBuilder from './fields/SettingsSectionBuilder.vue'
 import { pageEditorBaseMixin } from '../../mixins/pageEditorBase.js'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 
+/**
+ * Whether a config value is blank: `''`, `null` or `undefined`.
+ *
+ * @param {string|Array<object>|null|undefined} value - the new value.
+ * @return {boolean}
+ */
+function isBlank(value) {
+	return value === '' || value === null || value === undefined
+}
+
+/**
+ * Whether a write deletes its config key: a blank value, or an empty list
+ * for `saveEndpoint`. An empty `sections` list is kept on purpose.
+ *
+ * @param {string} key - the config key being written.
+ * @param {string|Array<object>|null|undefined} value - the new value.
+ * @return {boolean}
+ */
+function deletesKey(key, value) {
+	return (
+		isBlank(value)
+		|| (Array.isArray(value) && value.length === 0 && key === 'saveEndpoint')
+	)
+}
+
 export default {
 	name: 'SettingsPageEditor',
 	components: { SettingsSectionBuilder, InlineFieldMark },
@@ -194,14 +219,7 @@ export default {
 		 */
 		update(key, value) {
 			const next = { ...this.config }
-			if (
-				value === ''
-				|| value === null
-				|| value === undefined
-				|| (Array.isArray(value)
-					&& value.length === 0
-					&& key === 'saveEndpoint')
-			) {
+			if (deletesKey(key, value)) {
 				delete next[key]
 			} else {
 				next[key] = value
