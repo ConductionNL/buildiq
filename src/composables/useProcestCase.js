@@ -55,6 +55,129 @@ export function renderDescription(template, object) {
 }
 
 /**
+ * The object's UUID used as the case kenmerk so a retry can find an
+ * already-created case instead of duplicating it.
+ *
+ * @param {object} object - the OR object.
+ * @return {string}
+ */
+function objectUuid(object) {
+	return selfField(object, 'id') || topLevelId(object) || ''
+}
+
+/**
+ * A field of the object's `@self` envelope, if any.
+ *
+ * @param {?object} object - an OR object or a zaak.
+ * @param {string} key - the field.
+ * @return {unknown} the value, or a falsy value without one.
+ */
+function selfField(object, key) {
+	return object && object['@self'] && object['@self'][key]
+}
+
+/**
+ * The object's top-level uuid, else its id.
+ *
+ * @param {?object} object - the OR object.
+ * @return {unknown} the value, or a falsy value without one.
+ */
+function topLevelId(object) {
+	return (object && object.uuid) || (object && object.id)
+}
+
+/**
+ * The reference a zaak is linked by: its url, else its uuid, else its `@self` id.
+ *
+ * @param {?object} zaak - the Procest zaak.
+ * @return {string} the reference, or ''.
+ */
+function caseLinkValue(zaak) {
+	return (zaak && caseReference(zaak)) || ''
+}
+
+/**
+ * The url, uuid or `@self` id of a zaak.
+ *
+ * @param {object} zaak - the Procest zaak.
+ * @return {unknown} the value, or a falsy value without one.
+ */
+function caseReference(zaak) {
+	return zaak.url || zaak.uuid || selfField(zaak, 'id')
+}
+
+/**
+ * The OpenRegister objects-API URL of an object, or '' when its register,
+ * schema or id is unknown.
+ *
+ * @param {object} object - the OR object.
+ * @param {string} fallbackSchema - the schema to use when the object names none.
+ * @return {string}
+ */
+function objectUrl(object, fallbackSchema) {
+	const register = selfField(object, 'register') || object.register
+	const schema = objectSchema(object, fallbackSchema)
+	const id = objectUuid(object)
+	if (!register || !schema || !id) {
+		return ''
+	}
+	return generateUrl(`/apps/openregister/api/objects/${register}/${schema}/${id}`)
+}
+
+/**
+ * The schema an object names, from `@self` first, else the fallback.
+ *
+ * @param {object} object - the OR object.
+ * @param {string} fallbackSchema - the schema to use when the object names none.
+ * @return {unknown} the schema, or a falsy value without one.
+ */
+function objectSchema(object, fallbackSchema) {
+	return selfField(object, 'schema') || object.schema || fallbackSchema
+}
+
+/**
+ * Fetch a zaak by uuid.
+ *
+ * @param {object} client - axios-like client.
+ * @param {string} uuid - the zaak uuid.
+ * @return {Promise<object>} the zaak.
+ */
+async function fetchCase(client, uuid) {
+	const { data: zaak } = await client.get(generateUrl(`${zrc()}/zaken/${uuid}`))
+	return zaak
+}
+
+/**
+ * Fetch the status history of a zaak; empty when it cannot be read.
+ *
+ * @param {object} client - axios-like client.
+ * @param {string} uuid - the zaak uuid.
+ * @return {Promise<Array<object>>} the statuses.
+ */
+async function fetchStatusHistory(client, uuid) {
+	try {
+		const { data } = await client.get(generateUrl(`${zrc()}/statussen`), {
+			params: { zaak: uuid },
+		})
+		const list = (data && (data.results || data)) || []
+		return Array.isArray(list) ? list : []
+	} catch {
+		return []
+	}
+}
+
+/**
+ * Whether a rejection is an HTTP 403.
+ *
+ * @param {unknown} e - the rejection.
+ * @return {boolean}
+ */
+function isForbidden(e) {
+	const status = e && e.response && e.response.status
+	return status === 403
+}
+
+/**
  * Procest case integration for one workflow attachment.
  *
  * @param {object} opts - options.
@@ -74,22 +197,6 @@ export function useProcestCase(opts = {}) {
 	const loadingDetail = ref(false)
 	const detailError = ref(null)
 	const noAccess = ref(false)
-
-	/**
-	 * The object's UUID used as the case kenmerk so a retry can find an
-	 * already-created case instead of duplicating it.
-	 *
-	 * @param {object} object - the OR object.
-	 * @return {string}
-	 */
-	function objectUuid(object) {
-		return (
-			(object && object['@self'] && object['@self'].id)
-			|| (object && object.uuid)
-			|| (object && object.id)
-			|| ''
-		)
-	}
 
 	/**
 	 * Search Procest for an existing case carrying this object's UUID kenmerk
@@ -159,26 +266,14 @@ export function useProcestCase(opts = {}) {
 	 * @return {Promise<void>}
 	 */
 	async function writeBack(object, zaak) {
-		const linkValue =
-			(zaak && (zaak.url || zaak.uuid || (zaak['@self'] && zaak['@self'].id)))
-			|| ''
+		const linkValue = caseLinkValue(zaak)
 		if (!attachment.linkProperty || !linkValue) {
 			return
 		}
-		const register =
-			(object && object['@self'] && object['@self'].register)
-			|| object.register
-		const schema =
-			(object && object['@self'] && object['@self'].schema)
-			|| object.schema
-			|| attachment.schema
-		const id = objectUuid(object)
-		if (!register || !schema || !id) {
+		const url = objectUrl(object, attachment.schema)
+		if (!url) {
 			return
 		}
-		const url = generateUrl(
-			`/apps/openregister/api/objects/${register}/${schema}/${id}`,
-		)
 		await client.put(url, { ...object, [attachment.linkProperty]: linkValue })
 	}
 
@@ -220,36 +315,40 @@ export function useProcestCase(opts = {}) {
 		if (!uuid) {
 			return
 		}
+		beginDetailLoad()
+		try {
+			caseDetail.value = await fetchCase(client, uuid)
+			statusHistory.value = await fetchStatusHistory(client, uuid)
+		} catch (e) {
+			recordDetailFailure(e)
+		} finally {
+			loadingDetail.value = false
+		}
+	}
+
+	/**
+	 * Mark the detail as loading and clear the previous outcome.
+	 *
+	 * @return {void}
+	 */
+	function beginDetailLoad() {
 		loadingDetail.value = true
 		detailError.value = null
 		noAccess.value = false
-		try {
-			const { data: zaak } = await client.get(
-				generateUrl(`${zrc()}/zaken/${uuid}`),
-			)
-			caseDetail.value = zaak
-			try {
-				const { data } = await client.get(
-					generateUrl(`${zrc()}/statussen`),
-					{
-						params: { zaak: uuid },
-					},
-				)
-				const list = (data && (data.results || data)) || []
-				statusHistory.value = Array.isArray(list) ? list : []
-			} catch {
-				statusHistory.value = []
-			}
-		} catch (e) {
-			const status = e && e.response && e.response.status
-			if (status === 403) {
-				// No access is a distinct, non-error state (REQ-PWA-004).
-				noAccess.value = true
-			} else {
-				detailError.value = e instanceof Error ? e : new Error(String(e))
-			}
-		} finally {
-			loadingDetail.value = false
+	}
+
+	/**
+	 * Record why the case could not be loaded.
+	 *
+	 * @param {unknown} e - the rejection.
+	 * @return {void}
+	 */
+	function recordDetailFailure(e) {
+		if (isForbidden(e)) {
+			// No access is a distinct, non-error state (REQ-PWA-004).
+			noAccess.value = true
+		} else {
+			detailError.value = e instanceof Error ? e : new Error(String(e))
 		}
 	}
 
