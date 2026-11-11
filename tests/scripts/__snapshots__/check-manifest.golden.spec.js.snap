@@ -200,7 +200,7 @@ FAIL <tmp>/pages-not-array.json (v1)
 exports[`check-manifest CLI golden > pins relative path 1`] = `
 "code=0
 --stdout--
-PASS ../../../../..<tmp>/valid.json (v1)
+PASS <rel>/valid.json (v1)
 --stderr--
 unknown format "uri" ignored in schema at path "#/properties/%24schema"
 unknown format "uri" ignored in schema at path "#/properties/%24schema"

@@ -56,6 +56,9 @@ require_once __DIR__ . '/stubs/openregister-stubs.php';
 // Form destination contract (openregister#4563). Same guards.
 require_once __DIR__ . '/stubs/openregister-form.stub.php';
 
+// Leaf-provider contract (ADR-066). Same guards.
+require_once __DIR__ . '/stubs/openregister-leaf.stub.php';
+
 // OCP\Files\IRootFolder extends OC\Hooks\Emitter (NC server core, not part
 // of the nextcloud/ocp stub package) — see the stub's own docblock for why
 // this is needed to mock IRootFolder in this out-of-container run.
@@ -85,6 +88,16 @@ require_once __DIR__ . '/stubs/DoctrineStubs.php';
 // loadable in unit-test isolation — load the stub so `implements
 // IMcpToolProvider` doesn't blow up at class-load time.
 require_once __DIR__ . '/Stubs/Mcp/IMcpToolProvider.php';
+
+// Integriq's connection-registry events, which ConnectionReporter sends by
+// class name behind class_exists (ADR-041). Loaded only when integriq is absent.
+foreach (['ConnectionStatusReportedEvent', 'ConnectionRefreshRequestedEvent'] as $integriqStubEvent) {
+	if (class_exists('\\OCA\\Integriq\\Event\\' . $integriqStubEvent) === false) {
+		require_once __DIR__ . '/Stubs/Integriq/Event/' . $integriqStubEvent . '.php';
+	}
+}
+
+unset($integriqStubEvent);
 
 /**
  * Tell whether a Nextcloud root is an INSTALLED instance, not just a source tree.
