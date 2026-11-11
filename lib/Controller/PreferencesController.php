@@ -64,18 +64,15 @@ class PreferencesController extends Controller {
 	 * @spec            openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-5
 	 */
 	public function getPreference(string $key): JSONResponse {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return new JSONResponse(data: ['message' => 'Not logged in'], statusCode: Http::STATUS_UNAUTHORIZED);
+		$admitted = $this->admit(key: $key);
+		if ($admitted instanceof JSONResponse) {
+			return $admitted;
 		}
 
-		$safeKey = $this->sanitizeKey(key: $key);
-		if ($safeKey === '') {
-			return new JSONResponse(data: ['message' => 'Invalid key'], statusCode: Http::STATUS_BAD_REQUEST);
-		}
+		[$uid, $safeKey] = $admitted;
 
 		$value = $this->config->getUserValue(
-			userId: $user->getUID(),
+			userId: $uid,
 			appName: Application::APP_ID,
 			key: 'pref_' . $safeKey,
 			default: ''
@@ -101,6 +98,40 @@ class PreferencesController extends Controller {
 	 * @spec            openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-5
 	 */
 	public function setPreference(string $key, string $value = ''): JSONResponse {
+		$admitted = $this->admit(key: $key);
+		if ($admitted instanceof JSONResponse) {
+			return $admitted;
+		}
+
+		[$uid, $safeKey] = $admitted;
+
+		if ($value === '') {
+			$this->config->deleteUserValue(
+				userId: $uid,
+				appName: Application::APP_ID,
+				key: 'pref_' . $safeKey
+			);
+			return new JSONResponse(data: ['value' => null]);
+		}
+
+		$this->config->setUserValue(
+			userId: $uid,
+			appName: Application::APP_ID,
+			key: 'pref_' . $safeKey,
+			value: $value
+		);
+
+		return new JSONResponse(data: ['value' => $value]);
+	}//end setPreference()
+
+	/**
+	 * Admit a preference call: a signed-in caller and a key with something safe in it.
+	 *
+	 * @param string $key The raw preference key.
+	 *
+	 * @return JSONResponse|array{0: string, 1: string} The 401/400 refusal, or the caller's UID and the safe key.
+	 */
+	private function admit(string $key): JSONResponse|array {
 		$user = $this->userSession->getUser();
 		if ($user === null) {
 			return new JSONResponse(data: ['message' => 'Not logged in'], statusCode: Http::STATUS_UNAUTHORIZED);
@@ -111,24 +142,8 @@ class PreferencesController extends Controller {
 			return new JSONResponse(data: ['message' => 'Invalid key'], statusCode: Http::STATUS_BAD_REQUEST);
 		}
 
-		if ($value === '') {
-			$this->config->deleteUserValue(
-				userId: $user->getUID(),
-				appName: Application::APP_ID,
-				key: 'pref_' . $safeKey
-			);
-			return new JSONResponse(data: ['value' => null]);
-		}
-
-		$this->config->setUserValue(
-			userId: $user->getUID(),
-			appName: Application::APP_ID,
-			key: 'pref_' . $safeKey,
-			value: $value
-		);
-
-		return new JSONResponse(data: ['value' => $value]);
-	}//end setPreference()
+		return [$user->getUID(), $safeKey];
+	}//end admit()
 
 	/**
 	 * Restrict keys to a safe charset so callers cannot reach arbitrary
