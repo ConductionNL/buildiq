@@ -42,6 +42,11 @@
         ]
     },
     {
+        "shape": "refused-with-cache",
+        "payload": null,
+        "trace": []
+    },
+    {
         "shape": "hybrid",
         "payload": {
             "kpis": {

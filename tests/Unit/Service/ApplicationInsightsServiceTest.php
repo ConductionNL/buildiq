@@ -658,7 +658,8 @@ class ApplicationInsightsServiceTest extends TestCase {
 
 	/**
 	 * The whole payload and every cache call, for a computed version, a
-	 * cached one, a hybrid app, a failing read and a failing cache, compared with the recorded
+	 * cached one, a refused caller while the cache is warm, a hybrid app, a
+	 * failing read and a failing cache, compared with the recorded
 	 * fixture. Set GOLDEN_RECORD=1 to write a missing fixture.
 	 *
 	 * @return void
@@ -666,7 +667,7 @@ class ApplicationInsightsServiceTest extends TestCase {
 	public function testInsightsPayloadGolden(): void {
 		$fixture = __DIR__ . '/fixtures/application-insights-payload.golden.json';
 		$cases = [];
-		foreach (['computed', 'cached', 'hybrid', 'failing', 'cache-down'] as $shape) {
+		foreach (['computed', 'cached', 'refused-with-cache', 'hybrid', 'failing', 'cache-down'] as $shape) {
 			$cases[] = $this->insightsCase(shape: $shape);
 		}
 
@@ -682,7 +683,7 @@ class ApplicationInsightsServiceTest extends TestCase {
 	/**
 	 * Compute one golden case and record the payload and the cache traffic.
 	 *
-	 * @param string $shape Which case: computed, cached, hybrid, failing or cache-down.
+	 * @param string $shape Which case: computed, cached, refused-with-cache, hybrid, failing or cache-down.
 	 *
 	 * @return array<string,mixed>
 	 */
@@ -693,7 +694,7 @@ class ApplicationInsightsServiceTest extends TestCase {
 		$cache->method('get')->willReturnCallback(
 			static function (string $key) use (&$trace, $shape) {
 				$trace[] = 'get ' . $key;
-				if ($shape === 'cached') {
+				if ($shape === 'cached' || $shape === 'refused-with-cache') {
 					return ['kpis' => ['from' => 'cache']];
 				}
 
@@ -747,7 +748,12 @@ class ApplicationInsightsServiceTest extends TestCase {
 			['labels' => ['2026-11-10', '2026-11-09', ''], 'series' => [['name' => 'create', 'data' => [3, 4, 9]], 'junk', ['data' => [1]]]]
 		);
 
-		$payload = $service->computeInsights(appUuid: 'app-uuid', versionUuid: 'prod-uuid', window: '30d', caller: $this->mockUser(uid: 'alice'));
+		$uid = 'alice';
+		if ($shape === 'refused-with-cache') {
+			$uid = 'mallory';
+		}
+
+		$payload = $service->computeInsights(appUuid: 'app-uuid', versionUuid: 'prod-uuid', window: '30d', caller: $this->mockUser(uid: $uid));
 
 		return ['shape' => $shape, 'payload' => $payload, 'trace' => $trace];
 	}//end insightsCase()
