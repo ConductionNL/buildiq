@@ -264,3 +264,125 @@ describe('useLibraryForm', () => {
 		expect(body.manifest.pages[0].type).toBe('form')
 	})
 })
+
+describe('filterLibraryForms edges', () => {
+	it('answers empty for a missing or non-array list and skips empty entries', () => {
+		expect(filterLibraryForms(null)).toEqual([])
+		expect(filterLibraryForms({ a: template })).toEqual([])
+		expect(filterLibraryForms([null, template, undefined])).toEqual([template])
+	})
+
+	it('matches case-insensitively on a trimmed query, also in the description', () => {
+		expect(
+			filterLibraryForms(forms, { query: '  MELD een  ' }).map((f) => f.slug),
+		).toEqual(['melding-openbare-ruimte'])
+		expect(
+			filterLibraryForms(forms, { query: null, category: 'internal-operations' }).map(
+				(f) => f.slug,
+			),
+		).toEqual(['verlofaanvraag'])
+	})
+
+	it('ignores fields that are not strings', () => {
+		const odd = { name: 7, description: null, publisher: ['subsidie'] }
+		expect(filterLibraryForms([odd], { query: '7' })).toEqual([])
+		expect(filterLibraryForms([odd], {})).toEqual([odd])
+	})
+})
+
+describe('form mapping onto the target schema', () => {
+	const linked = {
+		...template,
+		form: { fields: [{ name: 'x', schema: 'aanvraag' }], steps: null },
+	}
+
+	it('rewrites the source schema to the mapped one', () => {
+		const pages = withLibraryFormPage([], linked, { register: 'r', schema: 'doel' })
+		expect(pages[0].config.fields).toEqual([{ name: 'x', schema: 'doel' }])
+		expect(linked.form.fields[0].schema).toBe('aanvraag')
+	})
+
+	it('keeps the form when the schema is the same, unnamed or the template has no source', () => {
+		const same = withLibraryFormPage([], linked, { register: 'r', schema: 'aanvraag' })
+		expect(same[0].config.fields[0].schema).toBe('aanvraag')
+		const unnamed = registrationFormFromLibrary(linked, { schema: '' })
+		expect(unnamed.fields[0].schema).toBe('aanvraag')
+		expect(Object.hasOwn(unnamed, 'steps')).toBe(false)
+		const noSource = registrationFormFromLibrary(
+			{ ...linked, sourceSchema: '' },
+			{ schema: 'doel' },
+		)
+		expect(noSource.fields[0].schema).toBe('aanvraag')
+	})
+
+	it('treats a template without a form as an empty form', () => {
+		const pages = withLibraryFormPage(null, { slug: 'x' }, { register: 'r', schema: 's' })
+		expect(pages).toEqual([
+			{
+				id: 'x',
+				route: '/x',
+				type: 'form',
+				title: 'x',
+				config: { submitEndpoint: '/apps/openregister/api/objects/r/s' },
+			},
+		])
+	})
+})
+
+describe('useLibraryForm edges', () => {
+	const schema = { id: 9, slug: 'aanvraag', properties: { naam: {}, verbruikKwh: {} } }
+
+	it('refuses an unknown target before anything else', async () => {
+		const client = fakeClient()
+		await expect(
+			useLibraryForm({ template, target: 'page', schema: null }, client),
+		).rejects.toThrow('Unknown target: page')
+		expect(client.calls).toEqual([])
+	})
+
+	it('patches a version known by uuid, by id, or by nothing', async () => {
+		for (const [version, key] of [
+			[{ uuid: 'u 1', manifest: { pages: [{ id: 'aanvraag-energiesubsidie', route: '/x' }] } }, 'u%201'],
+			[{ id: 5 }, '5'],
+			[undefined, ''],
+		]) {
+			const client = fakeClient()
+			const result = await useLibraryForm(
+				{ template, target: 'form-page', schema, register: 'r', version },
+				client,
+			)
+			expect(client.calls[0][1]).toBe(
+				`/apps/openregister/api/objects/buildiq/applicationVersion/${key}`,
+			)
+			expect(result.page.id).toBe(
+				version && version.manifest ? 'aanvraag-energiesubsidie-2' : 'aanvraag-energiesubsidie',
+			)
+			expect(Object.keys(result)).toEqual(['added', 'page'])
+		}
+	})
+
+	it('answers the saved form, or the body when the save returns none', async () => {
+		const saved = { id: 'f' }
+		const withForm = await useLibraryForm({
+			template,
+			target: 'registration-form',
+			schema,
+			register: 'r',
+			saveRegistrationForm: async () => ({ form: saved }),
+		})
+		expect(withForm).toEqual({ added: [], form: saved })
+		const withoutForm = await useLibraryForm({
+			template,
+			target: 'registration-form',
+			schema,
+			register: 'r',
+			saveRegistrationForm: async () => null,
+		})
+		expect(withoutForm.form).toMatchObject({
+			register: 'r',
+			schema: 'aanvraag',
+			status: 'draft',
+			typeProperty: undefined,
+		})
+	})
+})
