@@ -355,6 +355,52 @@ class DashboardWidgetRegistrarTest extends TestCase {
 	}//end registrar()
 
 	/**
+	 * Every descriptor field, and every warning, for applications, pages and
+	 * placements of every shape, compared with the recorded fixture. Set
+	 * GOLDEN_RECORD=1 to write a missing fixture.
+	 *
+	 * @return void
+	 */
+	public function testCollectedDescriptorsGolden(): void {
+		$fixture = __DIR__ . '/fixtures/dashboard-widget-descriptors.golden.json';
+		$warnings = [];
+		$this->logger->method('warning')->willReturnCallback(
+			static function (string $message) use (&$warnings): void {
+				$warnings[] = $message;
+			}
+		);
+
+		$placements = [
+			'not-an-entry',
+			['id' => 'plain', 'widgetKey' => 'stat'],
+			['widgetKey' => 'stat', 'ncDashboard' => ['title' => 'Nameless']],
+			['id' => 'bad-roles', 'roles' => 7, 'ncDashboard' => []],
+			['id' => 'full', 'widgetKey' => 'object-table', 'roles' => ['group:staff'], 'props' => ['limit' => 5], 'dataSource' => ['register' => 'r'], 'ncDashboard' => ['title' => 'Full', 'icon' => 'icon-x', 'order' => 3, 'link' => '/x', 'extra' => 'dropped']],
+			['id' => 'bare', 'roles' => 'group:admins', 'ncDashboard' => []],
+		];
+		$pages = ['not-a-page', ['route' => '/a', 'widgets' => 'nope'], ['route' => '/b', 'widgets' => $placements], ['widgets' => [['id' => 'no-route', 'ncDashboard' => []]]]];
+		$applications = [
+			['slug' => 'no-uuid', 'manifest' => ['pages' => $pages]],
+			['uuid' => 'u-1', 'manifest' => ['pages' => $pages]],
+			['uuid' => 'u-2', 'slug' => 'pages-not-a-list', 'manifest' => ['pages' => 'x']],
+			['id' => 'u-3', 'slug' => 'by-id', 'permissions' => 'nope', 'manifest' => ['pages' => $pages]],
+			['uuid' => 'u-4', 'slug' => 'named', 'name' => 'Named', 'permissions' => ['owners' => ['user:alice'], 'viewers' => ['group:staff']], 'productionVersion' => ['manifest' => ['pages' => $pages]]],
+		];
+
+		$descriptors = array_map(
+			static fn (WidgetDescriptor $descriptor): array => get_object_vars($descriptor),
+			$this->registrar()->collectDescriptors(applications: $applications)
+		);
+		$actual = json_encode(['descriptors' => $descriptors, 'warnings' => $warnings], (JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)) . "\n";
+		if (file_exists($fixture) === false && getenv('GOLDEN_RECORD') === '1') {
+			file_put_contents($fixture, $actual);
+		}
+
+		$this->assertFileExists($fixture);
+		$this->assertSame(file_get_contents($fixture), $actual);
+	}//end testCollectedDescriptorsGolden()
+
+	/**
 	 * A widget context wired from mocks.
 	 *
 	 * @return VirtualAppWidgetContext The context.
