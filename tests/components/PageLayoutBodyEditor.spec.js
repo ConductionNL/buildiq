@@ -223,3 +223,28 @@ describe('PageLayoutBodyEditor', () => {
 		expect(wrapper.vm.blocked).toBe(true)
 	})
 })
+
+describe('addTab per kind', () => {
+	it.each([
+		['widgets', { widgets: [] }],
+		['fieldGroup', { fields: [] }],
+		['leaf', { ref: '' }],
+		['relatedList', { relatedRegister: '', relatedSchema: '' }],
+		['detail', {}],
+		['toString', {}],
+	])('adds a %s tab with its empty reference', (kind, reference) => {
+		const tabs = addTab(null, kind)
+		expect(tabs).toHaveLength(1)
+		expect(tabs[0]).toEqual({ id: tabs[0].id, kind, label: '', order: 0, ...reference })
+		expect(Object.keys(tabs[0])).toEqual(['id', 'kind', 'label', 'order', ...Object.keys(reference)])
+	})
+
+	it('never shares an empty reference between tabs, and appends in order', () => {
+		const first = addTab([], 'widgets')
+		const both = addTab(first, 'widgets')
+		expect(both[0]).toBe(first[0])
+		expect(both[1].order).toBe(1)
+		expect(both[1].widgets).not.toBe(both[0].widgets)
+		expect(both[1].id).not.toBe(both[0].id)
+	})
+})
