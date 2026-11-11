@@ -194,6 +194,52 @@ describe('AutomationEditDialog', () => {
 		})
 	})
 
+	it('buildActions: persists every action type in the shape OpenRegister accepts (golden)', async () => {
+		const wrapper = factory()
+		await openDialog(wrapper)
+
+		wrapper.vm.actions = [
+			{ type: 'send-notification', channels: ['email'], recipients: ['admins'], subjectEn: 'Hi', subjectNl: 'Hoi', extra: 1 },
+			{ type: 'run-synchronization', synchronizationId: 'sync-1', extra: 1 },
+			{ type: 'object-op', operation: 'update', schema: 'case', fieldMappingText: '{"a":1}' },
+			{ type: 'object-op', operation: 'create', schema: 'case', fieldMappingText: '{}' },
+			{ type: 'object-op', operation: 'create', schema: 'case', fieldMappingText: 'not json' },
+			{ type: 'object-op', operation: 'delete', schema: 'case', fieldMappingText: '' },
+			{ type: 'object-op', operation: 'create', schema: 'case', fieldMappingText: '42' },
+			{ type: 'object-op', operation: 'create', schema: 'case', fieldMappingText: '[1]' },
+			{ type: 'approval', assigneeGroup: 'managers', onApprove: [{ type: 'webhook' }], onReject: 'nope' },
+			{ type: 'approval', assigneeGroup: 'managers', onApprove: null, onReject: [] },
+			{ type: 'generateDocument', templateId: 'tpl-1', output: ['attach'] },
+			{ type: 'generateDocument', templateId: 'tpl-2', output: 'attach' },
+			{ type: 'webhook', url: 'https://hooks.test/a', payloadTemplateText: '{"b":2}' },
+			{ type: 'webhook', url: 'https://hooks.test/b', payloadTemplateText: '{}' },
+			{ type: 'webhook', url: 'https://hooks.test/c', payloadTemplateText: '{oops' },
+			{ type: 'something-else', url: 'https://hooks.test/d' },
+		]
+
+		expect(wrapper.vm.buildActions()).toEqual([
+			{ type: 'send-notification', channels: ['email'], recipients: ['admins'], subject: { en: 'Hi', nl: 'Hoi' } },
+			{ type: 'run-synchronization', synchronizationId: 'sync-1' },
+			{ type: 'object-op', operation: 'update', schema: 'case', fieldMapping: { a: 1 } },
+			{ type: 'object-op', operation: 'create', schema: 'case' },
+			{ type: 'object-op', operation: 'create', schema: 'case' },
+			{ type: 'object-op', operation: 'delete', schema: 'case' },
+			{ type: 'object-op', operation: 'create', schema: 'case' },
+			{ type: 'object-op', operation: 'create', schema: 'case', fieldMapping: [1] },
+			{ type: 'approval', assigneeGroup: 'managers', onApprove: [{ type: 'webhook' }], onReject: [] },
+			{ type: 'approval', assigneeGroup: 'managers', onApprove: [], onReject: [] },
+			{ type: 'generateDocument', templateId: 'tpl-1', output: ['attach'] },
+			{ type: 'generateDocument', templateId: 'tpl-2', output: [] },
+			{ type: 'webhook', url: 'https://hooks.test/a', payloadTemplate: { b: 2 } },
+			{ type: 'webhook', url: 'https://hooks.test/b' },
+			{ type: 'webhook', url: 'https://hooks.test/c' },
+			{ type: 'webhook', url: 'https://hooks.test/d' },
+		])
+		const keys = wrapper.vm.buildActions().map((a) => Object.keys(a))
+		expect(keys[3]).toEqual(['type', 'operation', 'schema'])
+		expect(keys[13]).toEqual(['type', 'url'])
+	})
+
 	it('REQ-AUTD-002 scenario 3: composes a manual automation with a condition + object-op', async () => {
 		const wrapper = factory()
 		await openDialog(wrapper)

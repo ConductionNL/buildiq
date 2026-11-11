@@ -100,6 +100,11 @@ final class RulesControllerTest extends TestCase {
 	private IGroupManager&MockObject $groupManager;
 
 	/**
+	 * @var LoggerInterface&MockObject
+	 */
+	private LoggerInterface&MockObject $logger;
+
+	/**
 	 * Build mocks before each test.
 	 *
 	 * @return void
@@ -112,6 +117,7 @@ final class RulesControllerTest extends TestCase {
 		$this->userSession = $this->createMock(IUserSession::class);
 		$this->store = $this->createMock(DecisionTableStore::class);
 		$this->groupManager = $this->createMock(IGroupManager::class);
+		$this->logger = $this->createMock(LoggerInterface::class);
 
 	}//end setUp()
 
@@ -141,7 +147,7 @@ final class RulesControllerTest extends TestCase {
 
 		return new RulesController(
 			request: $this->request,
-			logger: $this->createMock(LoggerInterface::class),
+			logger: $this->logger,
 			ruleEngine: $this->ruleEngine,
 			storage: new RuleStorage(
 				reader: new RuleObjectReader($this->objectService, $registerMapper, $schemaMapper, $this->createMock(LoggerInterface::class)),
@@ -307,6 +313,123 @@ final class RulesControllerTest extends TestCase {
 		$this->assertSame(Http::STATUS_REQUEST_ENTITY_TOO_LARGE, $response->getStatus());
 
 	}//end testEvaluateRejectsOversizedPayload()
+
+	/**
+	 * A payload that is not an object is refused with 422 before the engine runs.
+	 *
+	 * @return void
+	 */
+	public function testEvaluateRejectsANonObjectPayload(): void {
+		$this->authenticate();
+		$this->request->method('getParams')->willReturn(['payload' => 'not-an-object']);
+		$this->ruleEngine->expects($this->never())->method('evaluate');
+
+		$response = $this->controller()->evaluate('fee');
+		$this->assertSame(Http::STATUS_UNPROCESSABLE_ENTITY, $response->getStatus());
+		$this->assertSame(['error' => 'invalid_payload', 'detail' => 'payload must be an object'], $response->getData());
+
+	}//end testEvaluateRejectsANonObjectPayload()
+
+	/**
+	 * The oversized-payload refusal names the limit in its detail.
+	 *
+	 * @return void
+	 */
+	public function testEvaluateOversizedPayloadDetailNamesTheLimit(): void {
+		$this->authenticate();
+		$this->request->method('getParams')->willReturn(['payload' => ['blob' => str_repeat('a', 70000)]]);
+
+		$response = $this->controller()->evaluate('fee');
+		$this->assertSame(
+			['error' => 'payload_too_large', 'detail' => 'payload exceeds the maximum size of 65536 bytes'],
+			$response->getData()
+		);
+
+	}//end testEvaluateOversizedPayloadDetailNamesTheLimit()
+
+	/**
+	 * The dry-run flag and a pinned version reach the engine, PII masked.
+	 *
+	 * @return void
+	 */
+	public function testEvaluateForwardsDryRunAndVersion(): void {
+		$this->authenticate();
+		$this->request->method('getParams')->willReturn(['payload' => ['x' => 1], 'dryRun' => 1, 'version' => 3]);
+		$this->ruleEngine->expects($this->once())
+			->method('evaluate')
+			->with('fee', ['x' => 1], '3', true, true, false)
+			->willReturn(['result' => [], 'triggeredRules' => [], 'executionTime' => 1, 'errors' => ['a rule did not match']]);
+
+		$response = $this->controller()->evaluate('fee');
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+
+	}//end testEvaluateForwardsDryRunAndVersion()
+
+	/**
+	 * A missing payload evaluates as an empty object.
+	 *
+	 * @return void
+	 */
+	public function testEvaluateWithoutPayloadSendsAnEmptyObject(): void {
+		$this->authenticate();
+		$this->request->method('getParams')->willReturn([]);
+		$this->ruleEngine->expects($this->once())
+			->method('evaluate')
+			->with('fee', [], null, false, true, false)
+			->willReturn(['result' => [], 'triggeredRules' => [], 'executionTime' => 1, 'errors' => []]);
+
+		$this->controller()->evaluate('fee');
+
+	}//end testEvaluateWithoutPayloadSendsAnEmptyObject()
+
+	/**
+	 * Any other engine failure is logged and answered with a uniform 422.
+	 *
+	 * @return void
+	 */
+	public function testEvaluateFailureIsLoggedAndUnprocessable(): void {
+		$this->authenticate();
+		$this->request->method('getParams')->willReturn(['payload' => []]);
+		$this->ruleEngine->method('evaluate')->willThrowException(new RuntimeException('boom', 500));
+		$this->logger->expects($this->once())
+			->method('error')
+			->with('Buildiq: rule evaluation failed for fee', ['exception' => 'boom']);
+
+		$response = $this->controller()->evaluate('fee');
+		$this->assertSame(Http::STATUS_UNPROCESSABLE_ENTITY, $response->getStatus());
+		$this->assertSame(['error' => 'evaluation_failed', 'detail' => 'Rule evaluation failed'], $response->getData());
+
+	}//end testEvaluateFailureIsLoggedAndUnprocessable()
+
+	/**
+	 * The not-found answer names the rule set and does not log.
+	 *
+	 * @return void
+	 */
+	public function testEvaluateNotFoundBodyNamesTheRuleSet(): void {
+		$this->authenticate();
+		$this->request->method('getParams')->willReturn(['payload' => []]);
+		$this->ruleEngine->method('evaluate')->willThrowException(new RuntimeException('missing', 404));
+		$this->logger->expects($this->never())->method('error');
+
+		$response = $this->controller()->evaluate('ghost');
+		$this->assertSame(['error' => 'not_found', 'detail' => 'RuleSet ghost not found'], $response->getData());
+
+	}//end testEvaluateNotFoundBodyNamesTheRuleSet()
+
+	/**
+	 * An unauthenticated caller gets the bare envelope and never reaches the engine.
+	 *
+	 * @return void
+	 */
+	public function testEvaluateUnauthenticatedNeverReachesTheEngine(): void {
+		$this->request->method('getParams')->willReturn(['payload' => []]);
+		$this->ruleEngine->expects($this->never())->method('evaluate');
+
+		$response = $this->controller()->evaluate('fee');
+		$this->assertSame(['error' => 'unauthenticated'], $response->getData());
+
+	}//end testEvaluateUnauthenticatedNeverReachesTheEngine()
 
 	/**
 	 * testAll: anonymous callers are rejected before any test gate runs.

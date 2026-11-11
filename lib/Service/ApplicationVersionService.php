@@ -314,7 +314,8 @@ class ApplicationVersionService {
 			return;
 		}
 
-		if ($proposedTargetUuid === $currentUuid) {
+		$current = self::canonicalUuid(uuid: $currentUuid);
+		if (self::canonicalUuid(uuid: $proposedTargetUuid) === $current) {
 			throw new RuntimeException(
 				message: sprintf('promotesTo cycle: ApplicationVersion %s cannot promote to itself.', $currentUuid)
 			);
@@ -333,7 +334,7 @@ class ApplicationVersionService {
 				);
 			}
 
-			if ($cursor === $currentUuid) {
+			if (self::canonicalUuid(uuid: $cursor) === $current) {
 				throw new RuntimeException(
 					message: sprintf(
 						'promotesTo cycle: setting promotesTo on %s would loop back through %s.',
@@ -347,6 +348,22 @@ class ApplicationVersionService {
 			$cursor = $this->resolveNextPromotesTo(versionUuid: $cursor);
 		}//end while
 	}//end guardNoCycle()
+
+	/**
+	 * A uuid in one form for comparison: lower case, without hyphens, braces or a `urn:uuid:` prefix.
+	 *
+	 * @param string $uuid The uuid as stored or sent.
+	 *
+	 * @return string
+	 */
+	private static function canonicalUuid(string $uuid): string {
+		$uuid = strtolower(trim($uuid));
+		if (str_starts_with($uuid, 'urn:uuid:') === true) {
+			$uuid = substr($uuid, 9);
+		}
+
+		return str_replace(['-', '{', '}'], '', $uuid);
+	}//end canonicalUuid()
 
 	/**
 	 * Verify that `Application.productionVersion`'s back-reference is sound (REQ-OBV-105).

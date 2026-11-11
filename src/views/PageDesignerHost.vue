@@ -176,6 +176,7 @@ import { useApplicationVersion } from '../composables/useApplicationVersion.js'
 import { useAppStatus } from '../composables/useAppStatus.js'
 import { useCopilot } from '../composables/useCopilot.js'
 import { useLivePreview } from '../composables/useLivePreview.js'
+import builtAppHost, { failureText } from '../mixins/builtAppHost.js'
 import { checkFormDestinations } from '../services/formDestinationCheck.js'
 import {
 	reconcileConnectorDependency,
@@ -187,6 +188,19 @@ import { assignUnassignedFieldsToFinalStep } from '../services/manifestValidatio
 import { navigateTo } from '../utils/navigate.js'
 
 const EMPTY_MANIFEST = { version: '1.0.0', menu: [], pages: [] }
+
+/**
+ * The uuid of an ApplicationVersion: its `@self` id, else its uuid, else its id.
+ *
+ * @param {object|null} version The version.
+ * @return {string|undefined|null} The uuid, or a falsy value without one.
+ */
+function versionUuidOf(version) {
+	return (
+		version
+		&& ((version['@self'] && version['@self'].id) || version.uuid || version.id)
+	)
+}
 
 export default {
 	name: 'PageDesignerHost',
@@ -202,6 +216,8 @@ export default {
 		SchedulesSection,
 		CopilotPanel,
 	},
+
+	mixins: [builtAppHost],
 
 	/**
 	 * REQ-NTS-002 (design.md OQ-1 / Decision 3): `livePreview` exposes the
@@ -330,21 +346,6 @@ export default {
 				!this.versionLoading
 				&& this.versionError !== null
 				&& this.applicationVersion === null
-			)
-		},
-
-		/**
-		 * The Application's canonical UUID (OR puts it at @self.id).
-		 *
-		 * @return {string}
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
-		 */
-		applicationUuid() {
-			const self = this.application && this.application['@self']
-			return (
-				(self && self.id)
-				|| (this.application && this.application.uuid)
-				|| ''
 			)
 		},
 
@@ -581,54 +582,13 @@ export default {
 		},
 
 		/**
-		 * Fetch the Application for the current slug and seed the editor manifest.
+		 * A fresh empty manifest, seeded when neither the version nor the
+		 * Application carries one.
 		 *
-		 * @return {Promise<void>}
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
+		 * @return {object}
 		 */
-		async load() {
-			this.loading = true
-			this.error = ''
-			this.toast = ''
-			try {
-				const url = generateUrl(
-					'/apps/openregister/api/objects/buildiq/built-app',
-				)
-				const { data } = await axios.get(url, { params: { _limit: 100 } })
-				const apps =
-					data && data.results
-						? data.results
-						: Array.isArray(data)
-							? data
-							: []
-				const app = apps.find((a) => a && a.slug === this.routeSlug) || null
-				this.application = app
-				// ADR-002 / REQ-OBPD-009: the manifest now lives on the active
-				// ApplicationVersion. Seed from the resolved version's manifest when
-				// available, falling back to the Application's manifest for apps that
-				// have not yet been migrated to the versioned model.
-				const versionManifest =
-					this.applicationVersion
-					&& this.applicationVersion.manifest
-					&& typeof this.applicationVersion.manifest === 'object'
-						? this.applicationVersion.manifest
-						: null
-				const seed =
-					versionManifest
-					|| (app && app.manifest && typeof app.manifest === 'object'
-						? app.manifest
-						: null)
-				this.manifest = seed
-					? JSON.parse(JSON.stringify(seed))
-					: { ...EMPTY_MANIFEST }
-			} catch (e) {
-				this.application = null
-				this.error = t('buildiq', 'Failed to load the app: {error}', {
-					error: (e && e.message) || String(e),
-				})
-			} finally {
-				this.loading = false
-			}
+		emptyManifest() {
+			return { ...EMPTY_MANIFEST }
 		},
 
 		/**
@@ -734,12 +694,54 @@ export default {
 			this.saving = true
 			this.error = ''
 			this.toast = ''
-			// REQ-PWA-006 / REQ-OCAS-005 / REQ-DDT-005: auto-manage the `procest`
-			// dependency against the manifest's workflow attachments, the
-			// `openconnector` dependency against its connector bindings, and the
-			// `docudesk` dependency against its document attachments, then strip
-			// the internal auto-dep marker so it never lands in the persisted
-			// manifest.
+			this.prepareManifestForSave()
+			try {
+				await this.persistManifest()
+				await this.closeSaveSession()
+				return true
+			} catch (e) {
+				this.error = t('buildiq', 'Failed to save: {error}', {
+					error: failureText(e),
+				})
+				return false
+			} finally {
+				this.saving = false
+			}
+		},
+
+		/**
+		 * Say the pages were saved, re-check the forms against where they save
+		 * to, and close the editing session. REQ-BUR-004: a successful save is a
+		 * session boundary — bump the counter so `sessionKey` changes and the
+		 * designer resets its undo/redo history to the just-saved manifest.
+		 *
+		 * @return {Promise<void>}
+		 */
+		async closeSaveSession() {
+			this.toast = t('buildiq', 'Pages saved.')
+			await this.refreshDestinationFindings()
+			this.saveCounter += 1
+		},
+
+		/**
+		 * Bring the manifest into the shape it is persisted in.
+		 *
+		 * REQ-PWA-006 / REQ-OCAS-005 / REQ-DDT-005: auto-manage the `procest`
+		 * dependency against the manifest's workflow attachments, the
+		 * `openconnector` dependency against its connector bindings, and the
+		 * `docudesk` dependency against its document attachments, then strip
+		 * the internal auto-dep marker so it never lands in the persisted
+		 * manifest.
+		 *
+		 * REQ-OBFEL-001: the unassigned-fields pool is transient editor
+		 * state — any form-page field key still unassigned to a step at
+		 * save time is appended to that page's FINAL step so the written
+		 * manifest always satisfies the leaf validator's complete-partition
+		 * rule (no renderer fail-safe exists for an incomplete partition).
+		 *
+		 * @return {void}
+		 */
+		prepareManifestForSave() {
 			this.manifest = stripDependencyMarker(
 				reconcileDocumentDependency(
 					reconcileConnectorDependency(
@@ -747,69 +749,48 @@ export default {
 					),
 				),
 			)
-			// REQ-OBFEL-001: the unassigned-fields pool is transient editor
-			// state — any form-page field key still unassigned to a step at
-			// save time is appended to that page's FINAL step so the written
-			// manifest always satisfies the leaf validator's complete-partition
-			// rule (no renderer fail-safe exists for an incomplete partition).
 			this.manifest = assignUnassignedFieldsToFinalStep(this.manifest)
-			try {
-				// ADR-002 / REQ-OBPD-009 (design.md Decision 6): persist the manifest
-				// onto the active ApplicationVersion when one is resolved. Use a
-				// PATCH of just the `manifest` field — a full-object PUT re-validates
-				// the whole ApplicationVersion, and its `register` property (the
-				// per-version data-register slug, e.g. `buildiq-…`) collides with
-				// OpenRegister's reserved `register` routing metadata, so a
-				// `{ ...version, manifest }` PUT is rejected ("required property
-				// (register) is missing"). PATCH merges the new manifest into the
-				// stored object server-side, leaving every untouched field intact —
-				// losslessly and without tripping the collision.
-				const version = this.applicationVersion
-				const versionUuid =
-					version
-					&& ((version['@self'] && version['@self'].id)
-						|| version.uuid
-						|| version.id)
-				if (version && versionUuid) {
-					const url = generateUrl(
-						`/apps/openregister/api/objects/buildiq/applicationVersion/${versionUuid}`,
-					)
-					const { data } = await axios.patch(url, {
-						manifest: this.manifest,
-					})
-					if (data && typeof data === 'object') {
-						this.applicationVersion = data
-					}
-					this.toast = t('buildiq', 'Pages saved.')
-					// REQ-BUR-004: a successful save is a session boundary — bump
-					// the counter so `sessionKey` changes and the designer resets
-					// its undo/redo history to the just-saved manifest.
-					await this.refreshDestinationFindings()
-					this.saveCounter += 1
-					return true
-				}
-				const url = generateUrl(
-					`/apps/openregister/api/objects/buildiq/built-app/${this.applicationUuid}`,
-				)
-				const { data } = await axios.put(url, {
-					...this.application,
-					manifest: this.manifest,
-				})
-				if (data && typeof data === 'object') {
-					this.application = data
-				}
-				this.toast = t('buildiq', 'Pages saved.')
-				// REQ-BUR-004: see the PATCH branch above — same session-boundary bump.
-				await this.refreshDestinationFindings()
-				this.saveCounter += 1
-				return true
-			} catch (e) {
-				this.error = t('buildiq', 'Failed to save: {error}', {
-					error: (e && e.message) || String(e),
-				})
-				return false
-			} finally {
-				this.saving = false
+		},
+
+		/**
+		 * Persist onto the active ApplicationVersion when one is resolved,
+		 * else onto the Application object.
+		 *
+		 * @return {Promise<void>}
+		 */
+		async persistManifest() {
+			const versionUuid = versionUuidOf(this.applicationVersion)
+			if (versionUuid) {
+				await this.saveOntoVersion(versionUuid)
+				return
+			}
+			await this.saveOntoApplication()
+		},
+
+		/**
+		 * ADR-002 / REQ-OBPD-009 (design.md Decision 6): persist the manifest
+		 * onto the active ApplicationVersion. Use a PATCH of just the
+		 * `manifest` field — a full-object PUT re-validates the whole
+		 * ApplicationVersion, and its `register` property (the per-version
+		 * data-register slug, e.g. `buildiq-…`) collides with OpenRegister's
+		 * reserved `register` routing metadata, so a `{ ...version, manifest }`
+		 * PUT is rejected ("required property (register) is missing"). PATCH
+		 * merges the new manifest into the stored object server-side, leaving
+		 * every untouched field intact — losslessly and without tripping the
+		 * collision.
+		 *
+		 * @param {string} versionUuid The active version's uuid.
+		 * @return {Promise<void>}
+		 */
+		async saveOntoVersion(versionUuid) {
+			const url = generateUrl(
+				`/apps/openregister/api/objects/buildiq/applicationVersion/${versionUuid}`,
+			)
+			const { data } = await axios.patch(url, {
+				manifest: this.manifest,
+			})
+			if (data && typeof data === 'object') {
+				this.applicationVersion = data
 			}
 		},
 	},
