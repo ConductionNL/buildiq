@@ -1,0 +1,213 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`BuilderHost version mirror > follows the version until loading ends, then stops 1`] = `
+{
+  "calls": [
+    [
+      "app",
+      "staging",
+    ],
+  ],
+  "seen": [
+    [
+      "first",
+      {
+        "id": "v0",
+      },
+      true,
+      null,
+    ],
+    [
+      "followed",
+      {
+        "id": "v1",
+      },
+      true,
+      null,
+    ],
+    [
+      "ended",
+      {
+        "id": "v1",
+      },
+      false,
+      "gone",
+    ],
+    [
+      "after",
+      {
+        "id": "v1",
+      },
+      false,
+      "gone",
+    ],
+    [
+      "settled",
+      {
+        "id": "v1",
+      },
+      false,
+      "gone",
+    ],
+  ],
+}
+`;
+
+exports[`PageDesigner version mirror > follows the version until loading ends, then stops 1`] = `
+{
+  "calls": [
+    [
+      "app",
+      "staging",
+    ],
+  ],
+  "seen": [
+    [
+      "first",
+      {
+        "id": "v0",
+      },
+      true,
+      "unset",
+    ],
+    [
+      "followed",
+      {
+        "id": "v1",
+      },
+      true,
+      "unset",
+    ],
+    [
+      "ended",
+      {
+        "id": "v1",
+      },
+      false,
+      "gone",
+    ],
+    [
+      "after",
+      {
+        "id": "v1",
+      },
+      false,
+      "gone",
+    ],
+    [
+      "settled",
+      {
+        "id": "v1",
+      },
+      false,
+      "gone",
+    ],
+  ],
+}
+`;
+
+exports[`PageDesignerHost version mirror > follows the version until loading ends, then stops 1`] = `
+{
+  "calls": [
+    [
+      "app",
+      "staging",
+    ],
+  ],
+  "seen": [
+    [
+      "first",
+      {
+        "id": "v0",
+      },
+      true,
+      null,
+    ],
+    [
+      "followed",
+      {
+        "id": "v1",
+      },
+      true,
+      null,
+    ],
+    [
+      "ended",
+      {
+        "id": "v1",
+      },
+      false,
+      "gone",
+    ],
+    [
+      "after",
+      {
+        "id": "v1",
+      },
+      false,
+      "gone",
+    ],
+    [
+      "settled",
+      {
+        "id": "v2",
+      },
+      false,
+      "gone",
+    ],
+  ],
+}
+`;
+
+exports[`SchemaDesigner version mirror > follows the version until loading ends, then stops 1`] = `
+{
+  "calls": [
+    [
+      "app",
+      "staging",
+    ],
+  ],
+  "seen": [
+    [
+      "first",
+      {
+        "id": "v0",
+      },
+      true,
+      null,
+    ],
+    [
+      "followed",
+      {
+        "id": "v1",
+      },
+      true,
+      null,
+    ],
+    [
+      "ended",
+      {
+        "id": "v1",
+      },
+      false,
+      "gone",
+    ],
+    [
+      "after",
+      {
+        "id": "v1",
+      },
+      false,
+      "gone",
+    ],
+    [
+      "settled",
+      {
+        "id": "v1",
+      },
+      false,
+      "gone",
+    ],
+  ],
+}
+`;
