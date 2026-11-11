@@ -65,8 +65,11 @@ import applicationContext from '../../mixins/applicationContext.js'
  * @return {string}
  */
 function rowUuid(row) {
-	const self = (row && row['@self']) || {}
-	return (row && (row.id || row.uuid)) || self.id || self.uuid || ''
+	if (!row) {
+		return ''
+	}
+	const self = row['@self'] || {}
+	return [row.id, row.uuid, self.id, self.uuid].find(Boolean) || ''
 }
 
 export default {
@@ -95,7 +98,7 @@ export default {
 			if (!pv) {
 				return ''
 			}
-			return typeof pv === 'string' ? pv : pv.uuid || pv.id || ''
+			return typeof pv === 'string' ? pv : [pv.uuid, pv.id].find(Boolean) || ''
 		},
 
 		/**
@@ -178,20 +181,40 @@ export default {
 			const production =
 				options.find((o) => o.id === this.productionUuid)
 				|| options[options.length - 1]
-			const selectedSlug =
-				(this.$route && this.$route.query && this.$route.query._version)
-				|| ''
+			this.fromOption = this.fromOptionAgainst(options, production)
+			this.toOption = production
+		},
+
+		/**
+		 * The version to compare with production: the one the route selects,
+		 * else the one promoting to production, else the first other one.
+		 *
+		 * @param {Array<object>} options The version options.
+		 * @param {object} production The production option.
+		 * @return {object|undefined}
+		 */
+		fromOptionAgainst(options, production) {
+			const selectedSlug = this.routeVersionSlug()
 			const upstream = this.versions.find(
 				(v) => v.promotesTo && v.promotesTo === production.id,
 			)
-			const from =
-				options.find(
-					(o) => o.slug === selectedSlug && o.id !== production.id,
-				)
+			return (
+				options.find((o) => o.slug === selectedSlug && o.id !== production.id)
 				|| (upstream && options.find((o) => o.id === rowUuid(upstream)))
 				|| options.find((o) => o.id !== production.id)
-			this.fromOption = from
-			this.toOption = production
+			)
+		},
+
+		/**
+		 * The version slug the route selects (`?_version=`), or `''`.
+		 *
+		 * @return {string}
+		 */
+		routeVersionSlug() {
+			return (
+				(this.$route && this.$route.query && this.$route.query._version)
+				|| ''
+			)
 		},
 	},
 }
