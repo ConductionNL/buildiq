@@ -187,15 +187,8 @@ class RuleEngineService {
 		bool $maskPii = true,
 		bool $preview = false,
 	): array {
-		$options = new RuleEvaluationOptions(
-			version: $version,
-			dryRun: ($dryRun === true || $preview === true),
-			maskPii: $maskPii,
-			preview: $preview
-		);
-		return $this->evaluateGuarded(
-			evaluation: new RuleSetEvaluation(ruleSetSlug: $ruleSetSlug, payload: $payload, options: $options)
-		);
+		$options = new RuleEvaluationOptions(version: $version, dryRun: ($dryRun === true || $preview === true), maskPii: $maskPii, preview: $preview);
+		return $this->evaluateGuarded(evaluation: new RuleSetEvaluation(ruleSetSlug: $ruleSetSlug, payload: $payload, options: $options));
 
 	}//end evaluate()
 
