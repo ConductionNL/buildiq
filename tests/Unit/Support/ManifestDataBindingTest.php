@@ -188,6 +188,7 @@ class ManifestDataBindingTest extends TestCase {
 			ManifestDataBinding::bindBlock(config: $config, appSlug: 'tool-library', versionSlug: 'development')
 		);
 	}//end testABlockWithNoBindingIsUntouched()
+
 	/**
 	 * Every kind of value at every depth, bound once with a data register and
 	 * once without the version, pinned value by value.
