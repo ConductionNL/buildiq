@@ -87,3 +87,15 @@ describe('findingsByField', () => {
 		])
 	})
 })
+
+describe('findingsByField edges', () => {
+	it('skips empty findings, accepts no list and keeps the order within a field', () => {
+		expect(findingsByField(null)).toEqual({})
+		expect(findingsByField(undefined)).toEqual({})
+		const a = { field: 'x', code: 'a' }
+		const b = { field: '', property: 'x', code: 'b' }
+		const c = { code: 'c' }
+		const d = { field: 'y', property: 'x', code: 'required-unmapped' }
+		expect(findingsByField([null, a, undefined, b, c, d])).toEqual({ x: [a, b], '': [c], y: [d] })
+	})
+})
