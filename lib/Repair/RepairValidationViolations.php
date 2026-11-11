@@ -319,7 +319,8 @@ class RepairValidationViolations implements IRepairStep {
 	}//end backfilledBaseRef()
 
 	/**
-	 * Whether a version's `promotesTo` contains its own uuid, in any case (so also its urn or braced form).
+	 * Whether a version's `promotesTo` contains its own uuid, in any case and with or
+	 * without hyphens (so also its urn or braced form).
 	 *
 	 * @param array<string,mixed> $row The stored ApplicationVersion.
 	 *
@@ -332,7 +333,7 @@ class RepairValidationViolations implements IRepairStep {
 			return false;
 		}
 
-		return str_contains(strtolower($target), strtolower($uuid));
+		return str_contains(str_replace('-', '', strtolower($target)), str_replace('-', '', strtolower($uuid)));
 	}//end promotesToItself()
 
 	/**
