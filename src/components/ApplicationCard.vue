@@ -70,6 +70,21 @@ import {
 	productionVersions,
 } from '../store/productionVersions.js'
 
+/**
+ * A production version UUID resolved through the page-wide version index
+ * (src/store/productionVersions.js); null for anything else or an unknown id.
+ *
+ * @param {string|null|undefined} uuid - the Application's `productionVersion`
+ *   value when it is not an inline object.
+ * @return {?object} the version.
+ */
+function indexedVersion(uuid) {
+	if (typeof uuid === 'string' && uuid !== '') {
+		return productionVersions[uuid] || null
+	}
+	return null
+}
+
 export default {
 	name: 'ApplicationCard',
 	props: {
@@ -126,10 +141,7 @@ export default {
 			}
 			// 2. A UUID string — what this data path actually delivers. Resolve it
 			//    through the page-wide version index (src/store/productionVersions.js).
-			if (typeof pv === 'string' && pv !== '') {
-				return productionVersions[pv] || null
-			}
-			return null
+			return indexedVersion(pv)
 		},
 
 		/**
