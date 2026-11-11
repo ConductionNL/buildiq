@@ -375,14 +375,14 @@ import {
 	isConditionAllowed,
 } from '../services/automationMatrix.js'
 import { fetchConnectorSynchronizations } from '../services/connectorSynchronizations.js'
+import { slugify } from '../utils/slugify.js'
 import { toPersistedAction } from './automationPersistedActions.js'
-
-const INTERVAL_PRESETS = Object.freeze([
-	{ id: 'hourly', interval: 3600 },
-	{ id: 'daily', interval: 86400 },
-	{ id: 'weekly', interval: 604800 },
-	{ id: 'monthly', interval: 2592000 },
-])
+import {
+	cadenceById,
+	cadenceOptions,
+	presetById,
+	presetForInterval,
+} from './scheduleCadence.js'
 
 let keyCounter = 0
 /**
@@ -391,20 +391,6 @@ let keyCounter = 0
 function nextKey() {
 	keyCounter += 1
 	return `aut-action-${keyCounter}`
-}
-
-/**
- * Derive a kebab-case slug from a human label.
- *
- * @param {string} label - the human label.
- * @return {string}
- */
-function slugify(label) {
-	return String(label || '')
-		.toLowerCase()
-		.trim()
-		.replace(/[^a-z0-9]+/g, '-')
-		.replace(/^-+|-+$/g, '')
 }
 
 export default {
@@ -530,17 +516,7 @@ export default {
 		 * @spec openspec/specs/automation-designer/spec.md
 		 */
 		cadenceOptions() {
-			return [
-				{ id: 'hourly', label: t('buildiq', 'Hourly') },
-				{ id: 'daily', label: t('buildiq', 'Daily') },
-				{ id: 'weekly', label: t('buildiq', 'Weekly') },
-				{ id: 'monthly', label: t('buildiq', 'Monthly') },
-				{ id: 'custom-cron', label: t('buildiq', 'Custom (cron)') },
-				{
-					id: 'custom-interval',
-					label: t('buildiq', 'Custom interval (seconds)'),
-				},
-			]
+			return cadenceOptions()
 		},
 
 		isCustomCron() {
@@ -768,20 +744,15 @@ export default {
 			this.triggerTransition = trigger.transition || ''
 			this.triggerCron = trigger.cron || ''
 			this.triggerInterval = trigger.interval || 86400
-			const preset = INTERVAL_PRESETS.find(
-				(p) => p.interval === trigger.interval,
-			)
+			const preset = presetForInterval(trigger.interval)
 			if (trigger.cron) {
-				this.cadenceOption = this.cadenceOptions.find(
-					(o) => o.id === 'custom-cron',
-				)
+				this.cadenceOption = cadenceById(this.cadenceOptions, 'custom-cron')
 			} else if (preset) {
-				this.cadenceOption = this.cadenceOptions.find(
-					(o) => o.id === preset.id,
-				)
+				this.cadenceOption = cadenceById(this.cadenceOptions, preset.id)
 			} else {
-				this.cadenceOption = this.cadenceOptions.find(
-					(o) => o.id === 'custom-interval',
+				this.cadenceOption = cadenceById(
+					this.cadenceOptions,
+					'custom-interval',
 				)
 			}
 
@@ -1248,9 +1219,8 @@ export default {
 				} else if (this.isCustomInterval) {
 					trigger.interval = this.triggerInterval
 				} else {
-					const preset = INTERVAL_PRESETS.find(
-						(p) =>
-							p.id === (this.cadenceOption && this.cadenceOption.id),
+					const preset = presetById(
+						this.cadenceOption && this.cadenceOption.id,
 					)
 					trigger.interval = preset ? preset.interval : 86400
 				}
