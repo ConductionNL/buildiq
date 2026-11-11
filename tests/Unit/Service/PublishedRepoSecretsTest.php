@@ -150,6 +150,19 @@ class PublishedRepoSecretsTest extends TestCase {
 	}//end testSecretsElsewhereInTheManifestAreNotPublished()
 
 	/**
+	 * A credential entry that keeps no declaration key is not published as an empty object.
+	 *
+	 * @return void
+	 */
+	public function testAnEntryWithNothingToDeclareIsDropped(): void {
+		$manifest = ['version' => '1.0.0', 'credentials' => [['note' => 'x'], ['provider' => 'github', 'reason' => 'Push']]];
+
+		$published = json_decode($this->templateSerializer()->serialize(template: ['slug' => 'demo', 'manifest' => $manifest])['manifest.json'], true);
+
+		$this->assertSame([['provider' => 'github', 'reason' => 'Push']], $published['credentials']);
+	}//end testAnEntryWithNothingToDeclareIsDropped()
+
+	/**
 	 * No file of the repository contains a secret value.
 	 *
 	 * @param array<string,string> $files The serialised `path => contents` map.
