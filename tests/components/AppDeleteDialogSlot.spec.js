@@ -173,4 +173,80 @@ describe('AppDeleteDialogSlot — destroy-endpoint wiring', () => {
 		await flush()
 		expect(close).toHaveBeenCalledOnce()
 	})
+	describe('guard, id and failure branches', () => {
+		it('does not start a second delete while one is in flight', async () => {
+			const wrapper = mountSlot()
+			wrapper.vm.busy = true
+			await wrapper.vm.onConfirm(false)
+			expect(axiosDeleteMock).not.toHaveBeenCalled()
+		})
+
+		it.each([
+			[{ id: 'a', '@self': { id: 'b' }, uuid: 'c' }, 'a'],
+			[{ '@self': { id: 'b' }, uuid: 'c' }, 'b'],
+			[{ '@self': {}, uuid: 'c' }, 'c'],
+			[{ id: 7 }, '7'],
+			[{}, ''],
+		])('resolves the id of %j as %j', (item, uuid) => {
+			expect(mountSlot({ item }).vm.appUuid).toBe(uuid)
+		})
+
+		it('has no id without an item', () => {
+			expect(mountSlot({ item: null }).vm.appUuid).toBe('')
+		})
+
+		it('deletes without a close callback', async () => {
+			const wrapper = mountSlot({ close: null })
+			await wrapper.vm.onConfirm(true)
+			expect(axiosDeleteMock).toHaveBeenCalledWith(
+				'/apps/buildiq/api/applications/u-app',
+				{ params: { deleteData: 1 } },
+			)
+			expect(store.collections[APP_TYPE]).toEqual([{ id: 'other' }])
+		})
+
+		it.each([
+			[{ response: { data: { detail: 'D' } }, message: 'M' }, 'D'],
+			[{ response: {}, message: 'M' }, 'M'],
+			['raw', 'raw'],
+		])('reports the failure %j with %j', async (err, detail) => {
+			axiosDeleteMock.mockRejectedValueOnce(err)
+			const wrapper = mount(AppDeleteDialogSlot, {
+				propsData: { item: { id: 'u-app' }, close: vi.fn() },
+				stubs: { DeleteAppDialog: DeleteAppDialogStub },
+				mocks: {
+					t: (app, key, vars) => key.replace('{error}', String(vars.error)),
+				},
+			})
+			await wrapper.vm.onConfirm(false)
+			expect(showErrorMock).toHaveBeenCalledWith(`Delete failed: ${detail}`)
+		})
+
+		it('evicts only from the caches that hold the type', () => {
+			store = { collections: {}, objects: null }
+			const wrapper = mountSlot()
+			wrapper.vm.evictFromList('u-app')
+			expect(store).toEqual({ collections: {}, objects: null })
+		})
+
+		it('evicts from the objects map when there is no collection', () => {
+			store = { objects: { [APP_TYPE]: { 'u-app': {}, other: {} } } }
+			const wrapper = mountSlot()
+			wrapper.vm.evictFromList('u-app')
+			expect(store.objects[APP_TYPE]).toEqual({ other: {} })
+			expect(store.collections).toBeUndefined()
+		})
+
+		it('warns instead of failing when the store is unavailable', () => {
+			store = null
+			const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+			const wrapper = mountSlot()
+			expect(() => wrapper.vm.evictFromList('u-app')).not.toThrow()
+			expect(warn).toHaveBeenCalledWith(
+				'[buildiq] could not evict deleted app from list cache',
+				expect.any(TypeError),
+			)
+			warn.mockRestore()
+		})
+	})
 })
