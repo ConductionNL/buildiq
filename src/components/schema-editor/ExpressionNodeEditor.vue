@@ -169,6 +169,9 @@ export function removeOperand(node, index) {
 	return { [op]: node[op].filter((_, i) => i !== index) }
 }
 
+/** The typed words that read as booleans. */
+const BOOLEAN_WORDS = ['true', 'false']
+
 /**
  * Read a typed literal out of what a maker typed.
  *
@@ -178,13 +181,20 @@ export function removeOperand(node, index) {
  */
 export function parseLiteral(text) {
 	const value = String(text ?? '')
-	if (value === 'true' || value === 'false') {
+	if (BOOLEAN_WORDS.includes(value)) {
 		return value === 'true'
 	}
-	if (value.trim() !== '' && !Number.isNaN(Number(value))) {
-		return Number(value)
-	}
-	return value
+	return isNumberText(value) ? Number(value) : value
+}
+
+/**
+ * Whether typed text is a number: not blank, and not NaN.
+ *
+ * @param {string} value The typed text.
+ * @return {boolean}
+ */
+function isNumberText(value) {
+	return value.trim() !== '' && !Number.isNaN(Number(value))
 }
 
 export default {
