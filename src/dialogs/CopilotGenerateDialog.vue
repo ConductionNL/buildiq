@@ -182,7 +182,7 @@
 
 <script>
 import { NcButton, NcModal, NcTextArea } from '@nextcloud/vue'
-import { useCopilot } from '../composables/useCopilot.js'
+import { uniqueValidatorMessages, useCopilot } from '../composables/useCopilot.js'
 
 /**
  * How many validator messages the review screen lists before it stops and
@@ -308,15 +308,7 @@ export default {
 		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
 		 */
 		allValidationErrors() {
-			const seen = new Set()
-			for (const errors of this.copilot.manifestErrors.value.values()) {
-				for (const line of errors || []) {
-					if (typeof line === 'string' && line.length > 0) {
-						seen.add(line)
-					}
-				}
-			}
-			return [...seen]
+			return uniqueValidatorMessages(this.copilot.manifestErrors.value)
 		},
 
 		/**
