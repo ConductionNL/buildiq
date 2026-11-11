@@ -44,43 +44,12 @@
 			</div>
 
 			<div v-if="sourceShape === 'register'" class="logs-page-editor__group">
-				<label>
-					{{ t('buildiq', 'Register') }}
-					<select
-						:value="config.register || ''"
-						:aria-invalid="isInvalid('register')"
-						@change="update('register', $event.target.value)">
-						<option value="">
-							{{ t('buildiq', '— select register —') }}
-						</option>
-						<option
-							v-for="r in registers"
-							:key="r.slug || r.id"
-							:value="r.slug">
-							{{ r.title || r.slug }}
-						</option>
-					</select>
-					<InlineFieldMark :error="markFor('register')" />
-				</label>
-				<label>
-					{{ t('buildiq', 'Schema') }}
-					<select
-						:value="config.schema || ''"
-						:disabled="!config.register"
-						:aria-invalid="isInvalid('schema')"
-						@change="update('schema', $event.target.value)">
-						<option value="">
-							{{ t('buildiq', '— select schema —') }}
-						</option>
-						<option
-							v-for="s in schemas"
-							:key="s.slug || s.id"
-							:value="s.slug">
-							{{ s.title || s.slug }}
-						</option>
-					</select>
-					<InlineFieldMark :error="markFor('schema')" />
-				</label>
+				<RegisterSchemaFields
+					:config="config"
+					:registers="registers"
+					:schemas="schemas"
+					@register="update('register', $event)"
+					@schema="update('schema', $event)" />
 			</div>
 			<div v-else class="logs-page-editor__group">
 				<label>
@@ -123,6 +92,7 @@
 <script>
 import ColumnBuilder from './fields/ColumnBuilder.vue'
 import InlineFieldMark from './fields/InlineFieldMark.vue'
+import RegisterSchemaFields from './fields/RegisterSchemaFields.vue'
 import { useEditorRegisterPicker } from '../../composables/useEditorRegisterPicker.js'
 import {
 	pageEditorBaseMixin,
@@ -132,7 +102,7 @@ import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 
 export default {
 	name: 'LogsPageEditor',
-	components: { ColumnBuilder, InlineFieldMark },
+	components: { ColumnBuilder, InlineFieldMark, RegisterSchemaFields },
 	mixins: [
 		pageEditorBaseMixin,
 		pageEditorValidationMixin,
