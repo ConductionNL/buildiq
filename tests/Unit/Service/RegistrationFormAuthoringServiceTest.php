@@ -39,6 +39,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\IAppConfig;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -440,4 +441,96 @@ final class RegistrationFormAuthoringServiceTest extends TestCase {
 			logger: $this->createMock(LoggerInterface::class),
 		);
 	}//end readerOverNothing()
+	/**
+	 * listFor reads buildiq's register and keeps the target's rows, in stored order.
+	 *
+	 * @param string $setting  The stored register setting.
+	 * @param string $register The register read from.
+	 *
+	 * @return void
+	 */
+	#[DataProvider('registerSettings')]
+	public function testListForReadsTheTargetRows(string $setting, string $register): void {
+		$calls = [];
+		$service = new RegistrationFormAuthoringService(
+			objectService: $this->recordingObjectService(rows: $this->mixedRows(), calls: $calls),
+			appConfig: $this->appConfigReading(setting: $setting),
+			validator: new RegistrationFormValidator(),
+			targetSchema: $this->readerOver(['caseType' => ['type' => 'string']]),
+			destination: $this->destinationAnswering(findings: []),
+		);
+
+		$forms = $service->listFor(register: 'dossiq', schema: 'Zaak');
+
+		self::assertSame(['mine-1', 'mine-2'], array_column($forms, 'id'));
+		$read = [['setRegister', $register], ['setSchema', 'registrationForm'], ['findAll', ['filters' => ['register' => 'dossiq'], 'limit' => 500]]];
+		self::assertSame($read, $calls);
+	}//end testListForReadsTheTargetRows()
+
+	/**
+	 * An object service that records what it was asked and answers these rows.
+	 *
+	 * @param array<int, mixed> $rows The rows findAll() answers.
+	 * @param array<int, mixed> $calls Receives each call as `[method, argument]`.
+	 *
+	 * @return ObjectServiceInterface The double.
+	 */
+	private function recordingObjectService(array $rows, array &$calls): ObjectServiceInterface {
+		$objectService = $this->getMockBuilder(ObjectServiceInterface::class)
+			->disableOriginalConstructor()
+			->onlyMethods(['setRegister', 'setSchema', 'findAll', 'saveObject'])
+			->getMockForAbstractClass();
+		$objectService->method('setRegister')->willReturnCallback(function (string $slug) use (&$calls, $objectService) {
+			$calls[] = ['setRegister', $slug];
+			return $objectService;
+		});
+		$objectService->method('setSchema')->willReturnCallback(function (string $slug) use (&$calls, $objectService) {
+			$calls[] = ['setSchema', $slug];
+			return $objectService;
+		});
+		$objectService->method('findAll')->willReturnCallback(function (array $config) use (&$calls, $rows): array {
+			$calls[] = ['findAll', $config];
+			return $rows;
+		});
+
+		return $objectService;
+	}//end recordingObjectService()
+
+	/**
+	 * An app config whose register setting reads as given.
+	 *
+	 * @param string $setting The stored register setting.
+	 *
+	 * @return IAppConfig The double.
+	 */
+	private function appConfigReading(string $setting): IAppConfig {
+		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig->method('getValueString')->with('buildiq', 'register', 'buildiq')->willReturn($setting);
+
+		return $appConfig;
+	}//end appConfigReading()
+
+	/**
+	 * Stored register settings and the register they read from.
+	 *
+	 * @return array<string, array{0: string, 1: string}>
+	 */
+	public static function registerSettings(): array {
+		return ['default' => ['buildiq', 'buildiq'], 'configured' => ['eigen-register', 'eigen-register'], 'emptied by hand' => ['', 'buildiq']];
+	}//end registerSettings()
+
+	/**
+	 * The rows findAll() answers: junk, two strays and two that belong.
+	 *
+	 * @return array<int, mixed>
+	 */
+	private function mixedRows(): array {
+		return [
+			'not a row',
+			['id' => 'other-register', 'register' => 'elders', 'schema' => 'Zaak'],
+			['id' => 'other-schema', 'register' => 'dossiq', 'schema' => 'Besluit'],
+			['id' => 'mine-1', 'register' => 'dossiq', 'schema' => 'Zaak'],
+			['id' => 'mine-2', 'register' => 'dossiq', 'schema' => 'Zaak'],
+		];
+	}//end mixedRows()
 }//end class
