@@ -114,6 +114,42 @@ class PublishedRepoSecretsTest extends TestCase {
 	}//end testManifestWithoutCredentialsIsPublishedAsIs()
 
 	/**
+	 * Secrets outside `credentials` are not published either, while settings
+	 * fields and keys that only resemble a secret name stay.
+	 *
+	 * @return void
+	 */
+	public function testSecretsElsewhereInTheManifestAreNotPublished(): void {
+		$token = 'gh' . 'p_' . str_repeat('Zq7', 12);
+		$manifest = [
+			'version' => '1.0.0',
+			'theme' => ['tokenSet' => 'default'],
+			'settings' => ['registry_token' => ['type' => 'string', 'format' => 'password']],
+			'sources' => [
+				['name' => 'crm', 'url' => 'https://svc:page-password@crm.example.org', 'auth' => ['password' => 'source-password', 'api_key' => 'source-api-key']],
+			],
+			'pages' => [
+				['id' => 'home', 'config' => ['headers' => ['Authorization' => 'Bearer header-secret-value'], 'note' => 'call with ' . $token]],
+			],
+			'signing' => ['privateKey' => 'x', 'pem' => "-----BEGIN RSA PRIVATE KEY-----\nabc\n-----END RSA PRIVATE KEY-----"],
+		];
+
+		$app = $this->appSerializer()->serialize(application: ['slug' => 'demo-app', 'appType' => 'virtual'], version: ['manifest' => $manifest]);
+		$template = $this->templateSerializer()->serialize(template: ['slug' => 'demo', 'manifest' => $manifest]);
+
+		foreach ([$app, $template] as $files) {
+			foreach (['page-password', 'source-password', 'source-api-key', 'header-secret-value', $token, 'PRIVATE KEY'] as $secret) {
+				$this->assertStringNotContainsString($secret, $files['manifest.json']);
+			}
+
+			$published = json_decode($files['manifest.json'], true);
+			$this->assertSame('default', $published['theme']['tokenSet']);
+			$this->assertEquals($manifest['settings'], $published['settings']);
+			$this->assertSame('crm', $published['sources'][0]['name']);
+		}
+	}//end testSecretsElsewhereInTheManifestAreNotPublished()
+
+	/**
 	 * No file of the repository contains a secret value.
 	 *
 	 * @param array<string,string> $files The serialised `path => contents` map.
