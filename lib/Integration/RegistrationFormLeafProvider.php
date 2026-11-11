@@ -42,7 +42,6 @@ namespace OCA\Buildiq\Integration;
 
 use OCA\Buildiq\Service\RegistrationFormPresenter;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
-use OCA\OpenRegister\Service\Integration\IntegrationProvider;
 use OCP\IAppConfig;
 use OCP\IUserSession;
 use RuntimeException;
@@ -52,7 +51,7 @@ use RuntimeException;
  *
  * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-006)
  */
-final class RegistrationFormLeafProvider implements IntegrationProvider {
+final class RegistrationFormLeafProvider extends AppLocalLeafProvider {
 	/**
 	 * The leaf id, equal on both halves so gate-24 can pair them.
 	 *
@@ -127,60 +126,6 @@ final class RegistrationFormLeafProvider implements IntegrationProvider {
 	public function getGroup(): string {
 		return 'Forms';
 	}//end getGroup()
-
-	/**
-	 * The app that must be installed for this leaf to answer.
-	 *
-	 * @return string The app id.
-	 */
-	public function getRequiredApp(): string {
-		return 'buildiq';
-	}//end getRequiredApp()
-
-	/**
-	 * Forms live in buildiq's own register.
-	 *
-	 * @return string The storage strategy.
-	 */
-	public function getStorageStrategy(): string {
-		return 'app-local';
-	}//end getStorageStrategy()
-
-	/**
-	 * No OpenConnector source.
-	 *
-	 * @return string|null The source.
-	 */
-	public function getOpenConnectorSource(): ?string {
-		return null;
-	}//end getOpenConnectorSource()
-
-	/**
-	 * The leaf answers whenever buildiq is installed.
-	 *
-	 * @return bool True.
-	 */
-	public function isEnabled(): bool {
-		return true;
-	}//end isEnabled()
-
-	/**
-	 * Reading a form needs no right of its own; a draft is scoped to its owner.
-	 *
-	 * @return string|null Null.
-	 */
-	public function requiresPermission(): ?string {
-		return null;
-	}//end requiresPermission()
-
-	/**
-	 * The leaf needs no credentials of its own.
-	 *
-	 * @return array<string, mixed> The requirements.
-	 */
-	public function authRequirements(): array {
-		return [];
-	}//end authRequirements()
 
 	/**
 	 * The published forms bound to this type object, defaults first, with the
