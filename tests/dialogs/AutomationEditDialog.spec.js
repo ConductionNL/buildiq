@@ -475,4 +475,56 @@ describe('AutomationEditDialog', () => {
 		expect(wrapper.vm.actionBlockedReason('generateDocument')).not.toBe('')
 		expect(wrapper.vm.valid).toBe(false)
 	})
+
+	describe('schedule cadence', () => {
+		it('offers the six cadences with their labels', async () => {
+			const wrapper = factory()
+			await openDialog(wrapper)
+
+			expect(wrapper.vm.cadenceOptions).toEqual([
+				{ id: 'hourly', label: 'Hourly' },
+				{ id: 'daily', label: 'Daily' },
+				{ id: 'weekly', label: 'Weekly' },
+				{ id: 'monthly', label: 'Monthly' },
+				{ id: 'custom-cron', label: 'Custom (cron)' },
+				{ id: 'custom-interval', label: 'Custom interval (seconds)' },
+			])
+		})
+
+		it.each([
+			[{ type: 'schedule', cron: '0 3 * * 1', interval: 3600 }, 'custom-cron'],
+			[{ type: 'schedule', cron: '', interval: 604800 }, 'weekly'],
+			[{ type: 'schedule', interval: 2592000 }, 'monthly'],
+			[{ type: 'schedule', interval: 43200 }, 'custom-interval'],
+			[{ type: 'manual' }, 'custom-interval'],
+		])('maps the stored trigger %j to the %s cadence', async (trigger, id) => {
+			const wrapper = factory({ ...baseAutomation(), slug: 'a', trigger })
+			await openDialog(wrapper)
+
+			expect(wrapper.vm.cadenceOption).toEqual(
+				wrapper.vm.cadenceOptions.find((o) => o.id === id),
+			)
+		})
+
+		it.each([
+			['hourly', { type: 'schedule', interval: 3600 }],
+			['monthly', { type: 'schedule', interval: 2592000 }],
+			[null, { type: 'schedule', interval: 86400 }],
+		])('writes the %s preset as its interval', async (id, expected) => {
+			const wrapper = factory()
+			await openDialog(wrapper)
+			wrapper.vm.triggerType = 'schedule'
+			wrapper.vm.cadenceOption = wrapper.vm.cadenceOptions.find((o) => o.id === id) || null
+
+			expect(wrapper.vm.buildTrigger()).toEqual(expected)
+		})
+
+		it('derives the slug from the name', async () => {
+			const wrapper = factory()
+			await openDialog(wrapper)
+			wrapper.vm.name = '  Nightly  Sync -- Run! '
+
+			expect(wrapper.vm.derivedSlug).toBe('nightly-sync-run')
+		})
+	})
 })
