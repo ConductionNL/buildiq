@@ -63,6 +63,18 @@ const SELF_VIRTUAL_KEYS = [
 	'@self.locked',
 ]
 
+/**
+ * A typed column without its label, collapsed back to the string shorthand
+ * when only a (non-empty) key is left.
+ *
+ * @param {{key?: string, label?: string}} column - the typed column.
+ * @return {string|object} the key, or the column without `label`.
+ */
+function withoutLabel(column) {
+	const { label, ...rest } = column
+	return Object.keys(rest).length === 1 && rest.key ? rest.key : rest
+}
+
 export default {
 	name: 'ColumnBuilder',
 	props: {
@@ -176,9 +188,7 @@ export default {
 			if (value) {
 				next[index] = { key, label: value }
 			} else if (typeof existing === 'object' && existing) {
-				const { label, ...rest } = existing
-				next[index] =
-					Object.keys(rest).length === 1 && rest.key ? rest.key : rest
+				next[index] = withoutLabel(existing)
 			}
 			this.$emit('update:modelValue', next)
 		},
