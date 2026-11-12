@@ -157,45 +157,13 @@
 								v-for="(step, si) in activeTour.steps || []"
 								:key="step.id || si"
 								class="wt-designer__step">
-								<div class="wt-designer__step-head">
-									<span class="wt-designer__step-num">{{
-										si + 1
-									}}</span>
-									<NcTextField
-										:label="t('buildiq', 'Step id')"
-										:modelValue="step.id || ''"
-										@update:modelValue="
-											(v) => setStep(si, 'id', v)
-										" />
-									<NcButton
-										variant="tertiary"
-										:disabled="si === 0"
-										:aria-label="t('buildiq', 'Move up')"
-										@click="moveStep(si, -1)">
-										<template #icon>
-											<ArrowUp :size="20" />
-										</template>
-									</NcButton>
-									<NcButton
-										variant="tertiary"
-										:disabled="
-											si === activeTour.steps.length - 1
-										"
-										:aria-label="t('buildiq', 'Move down')"
-										@click="moveStep(si, 1)">
-										<template #icon>
-											<ArrowDown :size="20" />
-										</template>
-									</NcButton>
-									<NcButton
-										variant="tertiary"
-										:aria-label="t('buildiq', 'Delete step')"
-										@click="deleteStep(si)">
-										<template #icon>
-											<Delete :size="20" />
-										</template>
-									</NcButton>
-								</div>
+								<StepHeadRow
+									:index="si"
+									:stepId="step.id || ''"
+									:last="si === activeTour.steps.length - 1"
+									@update:stepId="(v) => setStep(si, 'id', v)"
+									@move="(delta) => moveStep(si, delta)"
+									@delete="deleteStep(si)" />
 								<div class="wt-designer__step-grid">
 									<NcTextField
 										:label="t('buildiq', 'Title')"
@@ -357,43 +325,13 @@
 							v-for="(step, si) in setupSteps"
 							:key="step.id || si"
 							class="wt-designer__step">
-							<div class="wt-designer__step-head">
-								<span class="wt-designer__step-num">{{
-									si + 1
-								}}</span>
-								<NcTextField
-									:label="t('buildiq', 'Step id')"
-									:modelValue="step.id || ''"
-									@update:modelValue="
-										(v) => setSetupStep(si, 'id', v)
-									" />
-								<NcButton
-									variant="tertiary"
-									:disabled="si === 0"
-									:aria-label="t('buildiq', 'Move up')"
-									@click="moveSetupStep(si, -1)">
-									<template #icon>
-										<ArrowUp :size="20" />
-									</template>
-								</NcButton>
-								<NcButton
-									variant="tertiary"
-									:disabled="si === setupSteps.length - 1"
-									:aria-label="t('buildiq', 'Move down')"
-									@click="moveSetupStep(si, 1)">
-									<template #icon>
-										<ArrowDown :size="20" />
-									</template>
-								</NcButton>
-								<NcButton
-									variant="tertiary"
-									:aria-label="t('buildiq', 'Delete step')"
-									@click="deleteSetupStep(si)">
-									<template #icon>
-										<Delete :size="20" />
-									</template>
-								</NcButton>
-							</div>
+							<StepHeadRow
+								:index="si"
+								:stepId="step.id || ''"
+								:last="si === setupSteps.length - 1"
+								@update:stepId="(v) => setSetupStep(si, 'id', v)"
+								@move="(delta) => moveSetupStep(si, delta)"
+								@delete="deleteSetupStep(si)" />
 							<div class="wt-designer__step-grid">
 								<NcSelect
 									:inputLabel="t('buildiq', 'Type')"
@@ -534,11 +472,10 @@ import {
 	NcSelect,
 	NcTextField,
 } from '@nextcloud/vue'
-import ArrowDown from 'vue-material-design-icons/ArrowDown.vue'
-import ArrowUp from 'vue-material-design-icons/ArrowUp.vue'
 import Delete from 'vue-material-design-icons/Delete.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import RecordCircleOutline from 'vue-material-design-icons/RecordCircleOutline.vue'
+import StepHeadRow from './StepHeadRow.vue'
 import WalkthroughRecorder from './WalkthroughRecorder.vue'
 
 const TRIGGERS = ['first-visit', 'version-bump', 'empty-index', 'manual']
@@ -582,9 +519,8 @@ export default {
 		NcNoteCard,
 		Plus,
 		Delete,
-		ArrowUp,
-		ArrowDown,
 		RecordCircleOutline,
+		StepHeadRow,
 		WalkthroughRecorder,
 	},
 
@@ -993,18 +929,6 @@ export default {
 	display: flex;
 	align-items: center;
 	gap: 8px;
-}
-
-.wt-designer__step-num {
-	flex: 0 0 24px;
-	height: 24px;
-	border-radius: 50%;
-	background: var(--color-primary-element);
-	color: var(--color-primary-element-text);
-	display: inline-flex;
-	align-items: center;
-	justify-content: center;
-	font-size: 0.8rem;
 }
 
 .wt-designer__step-grid {
