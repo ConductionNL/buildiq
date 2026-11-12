@@ -11,10 +11,7 @@
   },
   "src/components/AutomationActionListEditor.vue": {
     "@typescript-eslint/no-unused-vars": {
-      "count": 2
-    },
-    "no-useless-assignment": {
-      "count": 2
+      "count": 1
     }
   },
   "src/components/agents/AgentRunHistory.vue": {
@@ -138,10 +135,7 @@
   },
   "src/dialogs/AutomationEditDialog.vue": {
     "@typescript-eslint/no-unused-vars": {
-      "count": 7
-    },
-    "no-useless-assignment": {
-      "count": 2
+      "count": 5
     }
   },
   "src/dialogs/ConditionActionRuleEditor.vue": {

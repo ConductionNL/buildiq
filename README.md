@@ -126,6 +126,29 @@ npm install && npm run build
 php occ app:enable buildiq
 ```
 
+### Try it with Docker
+
+The repository builds an evaluation image: the official Nextcloud image with buildiq and OpenRegister installed and enabled. It is meant for trying the app out and for test environments. For production, install the app from the Nextcloud App Store.
+
+```bash
+docker compose -f docker-compose.yml up -d --build
+```
+
+Open http://localhost:8080/apps/buildiq/ and sign in as `admin` with password `admin`. The first start takes a minute or two. Set `NEXTCLOUD_ADMIN_PASSWORD` and `APP_PORT` to change the password and the port; `docker-compose.yml` lists every setting. `docker compose -f docker-compose.yml down -v` removes the stack and its data.
+
+Released versions are published as `ghcr.io/conductionnl/buildiq`, so leaving out `--build` uses the published image.
+
+### Run it on Kubernetes
+
+`charts/buildiq` wraps the official [Nextcloud Helm chart](https://github.com/nextcloud/helm) and runs the same image with PostgreSQL:
+
+```bash
+helm dependency build charts/buildiq
+helm install buildiq charts/buildiq --set nextcloud.nextcloud.host=buildiq.example.org
+```
+
+Change the passwords in `charts/buildiq/values.yaml` before you install it anywhere that matters.
+
 ## Development
 
 ### Frontend development
@@ -150,6 +173,12 @@ npm run stylelint       # CSS linting
 ```
 
 > **Note:** The `js/` build output is not committed. Build the frontend before enabling the app or the UI will be blank.
+
+### Test coverage
+
+<!-- coverage:start -->
+Measured test coverage: 77.2% of statements (PHP 80.6% of 19,553 statements, JavaScript 72.2% of 13,448 statements), at commit `66a04cd7f` on 2026-11-11. The figures come from [`coverage-summary.json`](coverage-summary.json); refresh them with `composer coverage:publish`.
+<!-- coverage:end -->
 
 ## Tech Stack
 

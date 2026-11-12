@@ -122,12 +122,35 @@ class RulesController extends Controller {
 		}
 
 		$params = $this->request->getParams();
-		$payload = ($params['payload'] ?? []);
+		$refusal = $this->payloadRefusal(payload: ($params['payload'] ?? []));
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		try {
+			$outcome = $this->engineOutcome(ruleSetSlug: $ruleSetSlug, params: $params);
+		} catch (Throwable $e) {
+			return $this->evaluationFailure(ruleSetSlug: $ruleSetSlug, error: $e);
+		}
+
+		return new JSONResponse(data: $outcome, statusCode: $this->outcomeStatus(outcome: $outcome));
+	}//end evaluate()
+
+	/**
+	 * Refuse a payload that is not an object or exceeds the maximum size.
+	 *
+	 * The size check is the DoS guard: an oversized payload is rejected before
+	 * evaluation or logging.
+	 *
+	 * @param mixed $payload The request's `payload` parameter.
+	 *
+	 * @return JSONResponse|null The 422/413 refusal, or null when the payload is acceptable.
+	 */
+	private function payloadRefusal(mixed $payload): ?JSONResponse {
 		if (is_array($payload) === false) {
 			return $this->error(code: 'invalid_payload', detail: 'payload must be an object', status: Http::STATUS_UNPROCESSABLE_ENTITY);
 		}
 
-		// DoS guard: reject an oversized payload before evaluation or logging.
 		$encoded = json_encode($payload);
 		if ($encoded === false || strlen($encoded) > self::MAX_PAYLOAD_BYTES) {
 			return $this->error(
@@ -137,48 +160,73 @@ class RulesController extends Controller {
 			);
 		}
 
+		return null;
+	}//end payloadRefusal()
+
+	/**
+	 * Run the engine for an accepted request: dry-run flag, pinned version and
+	 * preview mode come from the request, PII is always masked.
+	 *
+	 * @param string $ruleSetSlug The RuleSet slug.
+	 * @param array<string,mixed> $params The request parameters, payload already accepted.
+	 *
+	 * @return array<string,mixed> The engine outcome.
+	 *
+	 * @throws Throwable When the engine fails; a 404 code means the RuleSet is missing.
+	 */
+	private function engineOutcome(string $ruleSetSlug, array $params): array {
 		$dryRun = (bool)($params['dryRun'] ?? false);
 		$version = null;
 		if (isset($params['version']) === true) {
 			$version = (string)$params['version'];
 		}
 
-		try {
-			$outcome = $this->ruleEngine->evaluate(
-				ruleSetSlug: $ruleSetSlug,
-				payload: $payload,
-				version: $version,
-				dryRun: $dryRun,
-				maskPii: true,
-				preview: (($params['mode'] ?? null) === 'preview')
-			);
-		} catch (Throwable $e) {
-			if ($e->getCode() === 404) {
-				return $this->error(code: 'not_found', detail: 'RuleSet ' . $ruleSetSlug . ' not found', status: Http::STATUS_NOT_FOUND);
-			}
+		return $this->ruleEngine->evaluate(
+			ruleSetSlug: $ruleSetSlug,
+			payload: (array)($params['payload'] ?? []),
+			version: $version,
+			dryRun: $dryRun,
+			maskPii: true,
+			preview: (($params['mode'] ?? null) === 'preview')
+		);
+	}//end engineOutcome()
 
-			$this->logger->error(
-				'Buildiq: rule evaluation failed for ' . $ruleSetSlug,
-				['exception' => $e->getMessage()]
-			);
-			return $this->error(code: 'evaluation_failed', detail: 'Rule evaluation failed', status: Http::STATUS_UNPROCESSABLE_ENTITY);
-		}//end try
+	/**
+	 * Answer an engine failure: 404 for a missing RuleSet, otherwise log and 422.
+	 *
+	 * @param string $ruleSetSlug The RuleSet slug.
+	 * @param Throwable $error The engine failure.
+	 *
+	 * @return JSONResponse The uniform error envelope.
+	 */
+	private function evaluationFailure(string $ruleSetSlug, Throwable $error): JSONResponse {
+		if ($error->getCode() === 404) {
+			return $this->error(code: 'not_found', detail: 'RuleSet ' . $ruleSetSlug . ' not found', status: Http::STATUS_NOT_FOUND);
+		}
 
-		$hasTimeout = false;
+		$this->logger->error(
+			'Buildiq: rule evaluation failed for ' . $ruleSetSlug,
+			['exception' => $error->getMessage()]
+		);
+		return $this->error(code: 'evaluation_failed', detail: 'Rule evaluation failed', status: Http::STATUS_UNPROCESSABLE_ENTITY);
+	}//end evaluationFailure()
+
+	/**
+	 * The HTTP status for an engine outcome: 408 when any error reports a timeout.
+	 *
+	 * @param array<string,mixed> $outcome The engine outcome.
+	 *
+	 * @return int 200 or 408.
+	 */
+	private function outcomeStatus(array $outcome): int {
 		foreach ($outcome['errors'] as $fout) {
 			if (str_contains($fout, 'timeout') === true) {
-				$hasTimeout = true;
-				break;
+				return Http::STATUS_REQUEST_TIMEOUT;
 			}
 		}
 
-		$status = Http::STATUS_OK;
-		if ($hasTimeout === true) {
-			$status = Http::STATUS_REQUEST_TIMEOUT;
-		}
-
-		return new JSONResponse(data: $outcome, statusCode: $status);
-	}//end evaluate()
+		return Http::STATUS_OK;
+	}//end outcomeStatus()
 
 	/**
 	 * Return a RuleSet's metadata + active version for UI binding.

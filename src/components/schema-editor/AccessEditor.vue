@@ -160,18 +160,57 @@ import { useOrAccessCapabilities } from '../../composables/useOrAccessCapabiliti
 const OPS = ['read', 'create', 'update', 'delete']
 
 /**
- * True when a condition entry has the shape design.md Decision 1 requires:
- * `{ field: <non-empty string>, operator: 'equals', value: <string> }`.
+ * The value itself when it is an object, else an empty object.
  *
- * @param {*} entry Raw `authorization.conditions.<op>` value.
- * @return {boolean} True when the shape is well-formed.
+ * @param {object|Array|string|number|boolean|null|undefined} value A raw `authorization` block.
+ * @return {object} The block, or `{}`.
  */
-function isValidCondition(entry) {
+function asObject(value) {
+	return value && typeof value === 'object' ? value : {}
+}
+
+/**
+ * The top-level keys of an `authorization` block that are neither an
+ * operation nor `conditions` (e.g. hand-authored `_note`), in key order.
+ *
+ * @param {object} auth The `authorization` block.
+ * @return {object} The unrelated keys with their values.
+ */
+function extraKeysOf(auth) {
+	const extraKeys = {}
+	Object.keys(auth).forEach((key) => {
+		if (!OPS.includes(key) && key !== 'conditions') {
+			extraKeys[key] = auth[key]
+		}
+	})
+	return extraKeys
+}
+
+/**
+ * True when a condition entry is an object naming a non-empty field.
+ *
+ * @param {object|Array|string|number|boolean|null|undefined} entry Raw `authorization.conditions.<op>` value.
+ * @return {boolean} True when the entry names a field.
+ */
+function namesField(entry) {
 	return (
 		!!entry
 		&& typeof entry === 'object'
 		&& typeof entry.field === 'string'
 		&& entry.field !== ''
+	)
+}
+
+/**
+ * True when a condition entry has the shape design.md Decision 1 requires:
+ * `{ field: <non-empty string>, operator: 'equals', value: <string> }`.
+ *
+ * @param {object|Array|string|number|boolean|null|undefined} entry Raw `authorization.conditions.<op>` value.
+ * @return {boolean} True when the shape is well-formed.
+ */
+function isValidCondition(entry) {
+	return (
+		namesField(entry)
 		&& entry.operator === 'equals'
 		&& typeof entry.value === 'string'
 	)
@@ -182,7 +221,7 @@ function isValidCondition(entry) {
  * string, none of which is the `@creator` sentinel or otherwise
  * `@`-prefixed (reserved for future sentinels).
  *
- * @param {*} list Raw `authorization.<op>` value.
+ * @param {object|Array|string|number|boolean|null|undefined} list Raw `authorization.<op>` value.
  * @return {boolean} True when the array is a representable group list.
  */
 function isGroupList(list) {
@@ -196,6 +235,65 @@ function isGroupList(list) {
 }
 
 /**
+ * True when an operation list is exactly the own-records sentinel.
+ *
+ * @param {object|Array|string|number|boolean|null|undefined} list Raw `authorization.<op>` value.
+ * @return {boolean} True for `['@creator']`.
+ */
+function isOwnList(list) {
+	return Array.isArray(list) && list.length === 1 && list[0] === '@creator'
+}
+
+/**
+ * The editor's copy of a well-formed condition entry.
+ *
+ * @param {{field: string, value: string}} entry A valid condition entry.
+ * @return {{field: string, operator: string, value: string}} The condition.
+ */
+function pickCondition(entry) {
+	return { field: entry.field, operator: 'equals', value: entry.value }
+}
+
+/**
+ * Parse an operation that has a condition entry into an editor row.
+ *
+ * @param {string} op One of `read`/`create`/`update`/`delete`.
+ * @param {object} auth The raw persisted `authorization` object (never null).
+ * @return {object} A `condition` row, or an `unrepresentable` one.
+ */
+function parseConditionRow(op, auth) {
+	const conditionEntry = auth.conditions && auth.conditions[op]
+	if (isValidCondition(conditionEntry)) {
+		return { op, kind: 'condition', condition: pickCondition(conditionEntry) }
+	}
+	return {
+		op,
+		kind: 'unrepresentable',
+		raw: { [op]: auth[op], conditions: conditionEntry },
+	}
+}
+
+/**
+ * Parse an operation's group list into an editor row.
+ *
+ * @param {string} op One of `read`/`create`/`update`/`delete`.
+ * @param {object|Array|string|number|boolean|null|undefined} list Raw `authorization.<op>` value.
+ * @return {object} The editor row for this operation.
+ */
+function parseListRow(op, list) {
+	if (list === undefined) {
+		return { op, kind: 'everyone' }
+	}
+	if (isOwnList(list)) {
+		return { op, kind: 'own' }
+	}
+	if (isGroupList(list)) {
+		return { op, kind: 'group', groups: [...list] }
+	}
+	return { op, kind: 'unrepresentable', raw: list }
+}
+
+/**
  * Parse a single operation's persisted state into an editor row.
  *
  * @param {string} op One of `read`/`create`/`update`/`delete`.
@@ -205,34 +303,9 @@ function isGroupList(list) {
 function parseOpRow(op, auth) {
 	const conditionEntry = auth.conditions && auth.conditions[op]
 	if (conditionEntry !== undefined) {
-		if (isValidCondition(conditionEntry)) {
-			return {
-				op,
-				kind: 'condition',
-				condition: {
-					field: conditionEntry.field,
-					operator: 'equals',
-					value: conditionEntry.value,
-				},
-			}
-		}
-		return {
-			op,
-			kind: 'unrepresentable',
-			raw: { [op]: auth[op], conditions: conditionEntry },
-		}
+		return parseConditionRow(op, auth)
 	}
-	const list = auth[op]
-	if (list === undefined) {
-		return { op, kind: 'everyone' }
-	}
-	if (Array.isArray(list) && list.length === 1 && list[0] === '@creator') {
-		return { op, kind: 'own' }
-	}
-	if (isGroupList(list)) {
-		return { op, kind: 'group', groups: [...list] }
-	}
-	return { op, kind: 'unrepresentable', raw: list }
+	return parseListRow(op, auth[op])
 }
 
 /**
@@ -248,17 +321,81 @@ function parseOpRow(op, auth) {
  * @spec openspec/specs/data-scopes-authoring/spec.md#req-obdsa-002
  */
 export function accessToEditor(authorization) {
-	const auth =
-		authorization && typeof authorization === 'object' ? authorization : {}
+	const auth = asObject(authorization)
 	const rows = OPS.map((op) => parseOpRow(op, auth))
-	const extraKeys = {}
-	Object.keys(auth).forEach((key) => {
-		if (!OPS.includes(key) && key !== 'conditions') {
-			extraKeys[key] = auth[key]
-		}
-	})
-	return { rows, extraKeys }
+	return { rows, extraKeys: extraKeysOf(auth) }
 }
+
+/**
+ * Restore an unrepresentable row exactly as it was persisted.
+ *
+ * @param {object} row The editor row.
+ * @param {{raw: object, result: object, conditions: object}} compiled The block being compiled.
+ * @return {void}
+ */
+function compileUnrepresentable(row, compiled) {
+	const { op } = row
+	const { raw } = compiled
+	if (Object.hasOwn(raw, op)) {
+		compiled.result[op] = raw[op]
+	}
+	if (raw.conditions && Object.hasOwn(raw.conditions, op)) {
+		compiled.conditions[op] = raw.conditions[op]
+	}
+}
+
+/**
+ * Compile a group row; an empty group list leaves the operation open.
+ *
+ * @param {object} row The editor row.
+ * @param {{raw: object, result: object, conditions: object}} compiled The block being compiled.
+ * @return {void}
+ */
+function compileGroup(row, compiled) {
+	const groups = Array.isArray(row.groups) ? row.groups.filter((g) => !!g) : []
+	if (groups.length > 0) {
+		compiled.result[row.op] = groups
+	}
+}
+
+/**
+ * Compile an own-records row.
+ *
+ * @param {object} row The editor row.
+ * @param {{raw: object, result: object, conditions: object}} compiled The block being compiled.
+ * @return {void}
+ */
+function compileOwn(row, compiled) {
+	compiled.result[row.op] = ['@creator']
+}
+
+/**
+ * Compile a condition row: an empty list plus the condition entry.
+ *
+ * @param {object} row The editor row.
+ * @param {{raw: object, result: object, conditions: object}} compiled The block being compiled.
+ * @return {void}
+ */
+function compileCondition(row, compiled) {
+	const condition = row.condition || {}
+	compiled.result[row.op] = []
+	compiled.conditions[row.op] = {
+		field: condition.field || '',
+		operator: 'equals',
+		value: condition.value || '',
+	}
+}
+
+/**
+ * Row compilers by row kind. `everyone` has none: its key is omitted, as
+ * OR's default is "everyone with app access".
+ */
+const ROW_COMPILERS = new Map([
+	['unrepresentable', compileUnrepresentable],
+	['group', compileGroup],
+	['own', compileOwn],
+	['condition', compileCondition],
+])
 
 /**
  * Compile the editor model back into an `authorization` block, merging
@@ -273,61 +410,15 @@ export function accessToEditor(authorization) {
  * @spec openspec/specs/data-scopes-authoring/spec.md#req-obdsa-002
  */
 export function editorToAccess(access, rawAuthorization) {
-	const raw =
-		rawAuthorization && typeof rawAuthorization === 'object'
-			? rawAuthorization
-			: {}
-	const result = {}
+	const raw = asObject(rawAuthorization)
 	// Preserve unrelated top-level keys verbatim (e.g. hand-authored `_note`).
-	Object.keys(raw).forEach((key) => {
-		if (!OPS.includes(key) && key !== 'conditions') {
-			result[key] = raw[key]
-		}
-	})
-	const conditions = {}
+	const compiled = { raw, result: extraKeysOf(raw), conditions: {} }
 	const rows = access && Array.isArray(access.rows) ? access.rows : []
-	rows.forEach((row) => {
-		const { op } = row
-		if (row.kind === 'unrepresentable') {
-			// Preserve exactly what was persisted for this operation.
-			if (Object.hasOwn(raw, op)) {
-				result[op] = raw[op]
-			}
-			if (raw.conditions && Object.hasOwn(raw.conditions, op)) {
-				conditions[op] = raw.conditions[op]
-			}
-			return
-		}
-		if (row.kind === 'everyone') {
-			// Omit the key entirely — OR's default is "everyone with app access".
-			return
-		}
-		if (row.kind === 'group') {
-			const groups = Array.isArray(row.groups)
-				? row.groups.filter((g) => !!g)
-				: []
-			if (groups.length > 0) {
-				result[op] = groups
-			}
-			return
-		}
-		if (row.kind === 'own') {
-			result[op] = ['@creator']
-			return
-		}
-		if (row.kind === 'condition') {
-			result[op] = []
-			conditions[op] = {
-				field: (row.condition && row.condition.field) || '',
-				operator: 'equals',
-				value: (row.condition && row.condition.value) || '',
-			}
-		}
-	})
-	if (Object.keys(conditions).length > 0) {
-		result.conditions = conditions
+	rows.forEach((row) => ROW_COMPILERS.get(row.kind)?.(row, compiled))
+	if (Object.keys(compiled.conditions).length > 0) {
+		compiled.result.conditions = compiled.conditions
 	}
-	return Object.keys(result).length > 0 ? result : null
+	return Object.keys(compiled.result).length > 0 ? compiled.result : null
 }
 
 export default {

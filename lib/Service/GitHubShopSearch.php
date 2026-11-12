@@ -29,6 +29,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Service\Connection\ConnectionReporter;
+use OCA\Buildiq\Service\GitHub\TokenScrubber;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -67,7 +68,7 @@ class GitHubShopSearch {
 	 * @spec openspec/changes/github-shop-catalogue/specs/github-shop-catalogue/spec.md
 	 */
 	public function failed(Throwable $error): array {
-		$this->logger->error('Buildiq shop: GitHub search failed: ' . $error->getMessage());
+		$this->logger->error('Buildiq shop: GitHub search failed: ' . TokenScrubber::scrub(message: $error->getMessage()));
 		$this->connectionReporter?->reportGitHubSearch(
 			outcome: GitHubCatalogService::OUTCOME_UNREACHABLE,
 			brokerAvailable: $this->catalogService->isBrokerAvailable()

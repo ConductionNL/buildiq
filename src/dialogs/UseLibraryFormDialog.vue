@@ -173,6 +173,75 @@ function resultsOf(data) {
 	return Array.isArray(data && data.results) ? data.results : []
 }
 
+/** The keys a form field may carry its display name under, in order. */
+const FIELD_NAME_KEYS = ['label', 'title', 'name', 'key']
+
+/**
+ * A form field's display name: its first truthy label, title, name or key,
+ * or '' when it has none.
+ *
+ * @param {object|null} field A form field.
+ * @return {string}
+ */
+function fieldDisplayName(field) {
+	if (!field) {
+		return ''
+	}
+	return FIELD_NAME_KEYS.map((key) => field[key]).find(Boolean) || ''
+}
+
+/**
+ * The message of an error raised in the browser (no response), unless it is
+ * the "missing properties" signal; '' otherwise.
+ *
+ * @param {Error|null} error The failure.
+ * @return {string}
+ */
+function localErrorMessage(error) {
+	return error
+		&& error.message
+		&& !error.response
+		&& error.message !== 'missing-properties'
+		? error.message
+		: ''
+}
+
+/**
+ * The body of the server's answer to a failed request, if there was one.
+ *
+ * @param {Error|null} error The failure.
+ * @return {object|undefined}
+ */
+function responseDataOf(error) {
+	return error && error.response && error.response.data
+}
+
+/**
+ * The message the server gave for a failed request, if any.
+ *
+ * @param {Error|null} error The failure.
+ * @return {string|undefined}
+ */
+function responseErrorMessage(error) {
+	const data = responseDataOf(error)
+	return data && (data.detail || data.message || data.error)
+}
+
+/**
+ * What to tell the maker when adding the form failed: a local message, the
+ * server's message, or a generic line.
+ *
+ * @param {Error|null} error The failure.
+ * @return {string}
+ */
+function libraryFormErrorMessage(error) {
+	return (
+		localErrorMessage(error)
+		|| responseErrorMessage(error)
+		|| t('buildiq', 'Adding the form to the app failed.')
+	)
+}
+
 export default {
 	name: 'UseLibraryFormDialog',
 
@@ -216,15 +285,7 @@ export default {
 				(this.template && this.template.form && this.template.form.fields)
 				|| []
 			return fields
-				.map(
-					(field) =>
-						(field
-							&& (field.label
-								|| field.title
-								|| field.name
-								|| field.key))
-						|| '',
-				)
+				.map(fieldDisplayName)
 				.filter((label) => label !== '')
 		},
 
@@ -369,16 +430,35 @@ export default {
 		 * @spec openspec/changes/reuse-gallery-categories-and-form-library/specs/form-library/spec.md#requirement-a-library-form-can-be-added-to-an-app-req-bqgl-004
 		 */
 		canConfirm() {
-			if (this.working || !this.template || !this.version || !this.schema) {
+			if (!this.choiceComplete) {
 				return false
 			}
-			if (
-				this.target === 'registration-form'
-				&& (this.typeProperty.trim() === '' || this.typeValue.trim() === '')
-			) {
+			if (this.registrationKeyMissing) {
 				return false
 			}
 			return this.missingNames.length === 0 || this.addProperties
+		},
+
+		/**
+		 * Whether a template, a version and a schema are chosen and nothing is
+		 * being added right now.
+		 *
+		 * @return {boolean}
+		 */
+		choiceComplete() {
+			return !this.working && !!this.template && !!this.version && !!this.schema
+		},
+
+		/**
+		 * Whether a registration form still lacks its type property or value.
+		 *
+		 * @return {boolean}
+		 */
+		registrationKeyMissing() {
+			return (
+				this.target === 'registration-form'
+				&& (this.typeProperty.trim() === '' || this.typeValue.trim() === '')
+			)
 		},
 	},
 
@@ -542,40 +622,71 @@ export default {
 			this.working = true
 			this.error = ''
 			try {
-				const result = await useLibraryForm({
-					template: this.template,
-					target: this.target,
-					schema: this.schema,
-					register: this.register,
-					addProperties: this.addProperties,
-					version: this.version,
-					registration: {
-						typeProperty: this.typeProperty.trim(),
-						typeValue: this.typeValue.trim(),
-						targetApp: this.appSlug,
-					},
-					saveRegistrationForm,
-				})
-				this.$emit('used', {
-					...result,
-					appSlug: this.appSlug,
-					bound: boundProperties(this.template.form, this.template.kind),
-				})
-				this.$emit('update:open', false)
+				await this.addFormToApp()
 			} catch (error) {
-				const data = error && error.response && error.response.data
-				this.error =
-					(error
-					&& error.message
-					&& !error.response
-					&& error.message !== 'missing-properties'
-						? error.message
-						: '')
-					|| (data && (data.detail || data.message || data.error))
-					|| t('buildiq', 'Adding the form to the app failed.')
+				this.error = libraryFormErrorMessage(error)
 			} finally {
 				this.working = false
 			}
+		},
+
+		/**
+		 * Add the form, then report it and close.
+		 *
+		 * @return {Promise<void>}
+		 */
+		async addFormToApp() {
+			const result = await useLibraryForm(this.libraryFormUse())
+			this.emitUsed(result)
+			this.$emit('update:open', false)
+		},
+
+		/**
+		 * What `useLibraryForm` needs: the template, the chosen target, schema,
+		 * register and version, and the registration choice.
+		 *
+		 * @return {object}
+		 */
+		libraryFormUse() {
+			return {
+				template: this.template,
+				target: this.target,
+				schema: this.schema,
+				register: this.register,
+				addProperties: this.addProperties,
+				version: this.version,
+				registration: this.registrationChoice(),
+				saveRegistrationForm,
+			}
+		},
+
+		/**
+		 * The registration form's type property and value, trimmed, and the app
+		 * it is for.
+		 *
+		 * @return {{typeProperty: string, typeValue: string, targetApp: string}}
+		 */
+		registrationChoice() {
+			return {
+				typeProperty: this.typeProperty.trim(),
+				typeValue: this.typeValue.trim(),
+				targetApp: this.appSlug,
+			}
+		},
+
+		/**
+		 * Tell the parent the form was added, with the app and the properties
+		 * the form binds.
+		 *
+		 * @param {object} result What `useLibraryForm` returned.
+		 * @return {void}
+		 */
+		emitUsed(result) {
+			this.$emit('used', {
+				...result,
+				appSlug: this.appSlug,
+				bound: boundProperties(this.template.form, this.template.kind),
+			})
 		},
 	},
 }

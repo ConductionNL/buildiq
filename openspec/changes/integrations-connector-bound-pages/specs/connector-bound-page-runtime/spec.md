@@ -65,3 +65,14 @@ preview renders in the published app.
 - **GIVEN** a maker previews an app with a connector-bound index page in the builder
 - **WHEN** they publish it and open the published app
 - **THEN** the page renders the same rows in both, and a unit guard fails if either host skips the normaliser
+
+### Requirement: An endpoint from a ready-made connector binds like any other endpoint (REQ-BQCB-005)
+
+The connector source picker SHALL list the endpoints that integriq's ready-made connectors provide (such as a spreadsheet, CRM or chat service) next to hand-made endpoints, with the connector's name. A maker SHALL bind such an endpoint to an index page or a dashboard widget the same way as any other endpoint, and the built page SHALL render its records.
+
+#### Scenario: A maker shows rows from a connected spreadsheet
+
+- **GIVEN** an administrator set up integriq's ready-made spreadsheet connector with an endpoint `budget-rows`
+- **WHEN** a maker edits an index page, switches the source to integriq and opens the endpoint picker
+- **THEN** `budget-rows` is listed with the connector's name
+- **AND** after the maker binds it and maps two fields, the published page lists the spreadsheet rows

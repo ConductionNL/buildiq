@@ -122,38 +122,19 @@ class AppRepoParser {
 	public const AGENTS_PREFIX = 'agents/';
 
 	/**
-	 * The UUID pattern flow and agent entries are filed under — mirrors
-	 * `AppRepoSerializer::isSafeUuid()`. Flows and agents have no slug
-	 * (`FlowAndAgentExportBundler`'s own docblock: "the Flow entity has no
-	 * slug"), so, unlike every other channel, these are UUID-keyed rather than
-	 * SLUG_PATTERN-keyed.
-	 *
-	 * @var string
-	 */
-	private const UUID_PATTERN = '/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/';
-
-	/**
-	 * The connector kinds a v2 repository may carry, mirroring the serializer's
-	 * enum so an unknown directory is ignored rather than trusted.
-	 *
-	 * @var array<int,string>
-	 */
-	private const CONNECTOR_KINDS = ['source', 'mapping', 'synchronization', 'job'];
-
-	/**
 	 * Hard cap on a single file's byte size before decode (hostile-input guard).
 	 */
-	private const MAX_FILE_BYTES = 1048576;
+	public const MAX_FILE_BYTES = 1048576;
 
 	/**
 	 * Maximum JSON nesting depth accepted on decode (hostile-input guard).
 	 */
-	private const MAX_JSON_DEPTH = 64;
+	public const MAX_JSON_DEPTH = 64;
 
 	/**
 	 * The kebab-case slug pattern shared with the Application + schema slugs.
 	 */
-	private const SLUG_PATTERN = '/^[a-z0-9][a-z0-9-]*[a-z0-9]$/';
+	public const SLUG_PATTERN = '/^[a-z0-9][a-z0-9-]*[a-z0-9]$/';
 
 	/**
 	 * The app-type values the format recognises.
@@ -179,28 +160,10 @@ class AppRepoParser {
 		$manifest = $this->parseManifest(files: $files);
 		$companions = $this->parseCompanionSchemas(files: $files);
 
-		$slug = (string)($descriptor['slug'] ?? '');
-		$name = (string)($descriptor['name'] ?? $slug);
-		$description = (string)($descriptor['description'] ?? '');
-		$useCase = (string)($descriptor['useCase'] ?? $description);
-		$category = (string)($descriptor['category'] ?? '');
-		$version = (string)($descriptor['version'] ?? '');
-
-		$payload = [
-			'slug' => $slug,
-			'title' => $name,
-			'description' => $description,
-			'useCase' => $useCase,
-			'category' => $category,
-			'version' => $version,
-			'manifest' => $manifest,
-			'companionSchemas' => $companions,
-			'templateOrigin' => [
-				'source' => 'github',
-				'repo' => $this->formatRepo(repo: $repo),
-				'version' => $version,
-			],
-		];
+		$payload = $this->descriptorFields(descriptor: $descriptor);
+		$payload['manifest'] = $manifest;
+		$payload['companionSchemas'] = $companions;
+		$payload['templateOrigin'] = $this->templateOrigin(repo: $repo, version: $payload['version']);
 
 		// App-repo-format-v2 channels, added only for a v2 repo so a v1 parse
 		// result stays byte-identical to what it was before this change.
@@ -210,6 +173,43 @@ class AppRepoParser {
 
 		return $payload;
 	}//end parse()
+
+	/**
+	 * The `templateOrigin` block naming where the template came from.
+	 *
+	 * @param array{owner:string,name:string}|null $repo    Optional repo identity.
+	 * @param string                               $version The descriptor version.
+	 *
+	 * @return array{source:string,repo:string|null,version:string}
+	 */
+	private function templateOrigin(?array $repo, string $version): array {
+		return [
+			'source' => 'github',
+			'repo' => $this->formatRepo(repo: $repo),
+			'version' => $version,
+		];
+	}//end templateOrigin()
+
+	/**
+	 * The descriptor's identity fields, with their fallbacks, in payload order.
+	 *
+	 * @param array<string,mixed> $descriptor The decoded descriptor.
+	 *
+	 * @return array<string,string>
+	 */
+	private function descriptorFields(array $descriptor): array {
+		$slug = (string)($descriptor['slug'] ?? '');
+		$description = (string)($descriptor['description'] ?? '');
+
+		return [
+			'slug' => $slug,
+			'title' => (string)($descriptor['name'] ?? $slug),
+			'description' => $description,
+			'useCase' => (string)($descriptor['useCase'] ?? $description),
+			'category' => (string)($descriptor['category'] ?? ''),
+			'version' => (string)($descriptor['version'] ?? ''),
+		];
+	}//end descriptorFields()
 
 	/**
 	 * Decode + validate the root descriptor (identity, formatVersion, appType).
@@ -222,6 +222,25 @@ class AppRepoParser {
 	 *                               format_version_unsupported | app_type_unknown.
 	 */
 	private function parseDescriptor(array $files): array {
+		$descriptor = $this->decodeDescriptor(files: $files);
+
+		$this->assertFormatVersionSupported(descriptor: $descriptor);
+		$this->assertAppTypeKnown(descriptor: $descriptor);
+		$this->assertDescriptorSlug(descriptor: $descriptor);
+
+		return $descriptor;
+	}//end parseDescriptor()
+
+	/**
+	 * Require and decode the root descriptor.
+	 *
+	 * @param array<string,string> $files The repo file map.
+	 *
+	 * @return array<string,mixed> The decoded descriptor.
+	 *
+	 * @throws AppRepoParseException descriptor_missing | descriptor_unparseable.
+	 */
+	private function decodeDescriptor(array $files): array {
 		if (array_key_exists(self::DESCRIPTOR_FILE, $files) === false) {
 			throw new AppRepoParseException(
 				errorCode: 'descriptor_missing',
@@ -230,12 +249,23 @@ class AppRepoParser {
 			);
 		}
 
-		$descriptor = $this->decodeObject(
+		return $this->decodeObject(
 			path: self::DESCRIPTOR_FILE,
 			contents: $files[self::DESCRIPTOR_FILE],
 			unparseableCode: 'descriptor_unparseable'
 		);
+	}//end decodeDescriptor()
 
+	/**
+	 * Refuse a descriptor whose formatVersion major this Buildiq cannot read.
+	 *
+	 * @param array<string,mixed> $descriptor The decoded descriptor.
+	 *
+	 * @return void
+	 *
+	 * @throws AppRepoParseException format_version_unsupported.
+	 */
+	private function assertFormatVersionSupported(array $descriptor): void {
 		$formatVersion = (string)($descriptor['formatVersion'] ?? '');
 		$major = $this->majorOf(formatVersion: $formatVersion);
 		if (in_array($major, [self::SUPPORTED_FORMAT_MAJOR, self::SUPPORTED_FORMAT_MAJOR_V2], true) === false) {
@@ -245,7 +275,18 @@ class AppRepoParser {
 				filePath: self::DESCRIPTOR_FILE
 			);
 		}
+	}//end assertFormatVersionSupported()
 
+	/**
+	 * Refuse a descriptor whose appType is not one of virtual|hybrid.
+	 *
+	 * @param array<string,mixed> $descriptor The decoded descriptor.
+	 *
+	 * @return void
+	 *
+	 * @throws AppRepoParseException app_type_unknown.
+	 */
+	private function assertAppTypeKnown(array $descriptor): void {
 		$appType = (string)($descriptor['appType'] ?? '');
 		if (in_array($appType, self::APP_TYPES, true) === false) {
 			throw new AppRepoParseException(
@@ -254,7 +295,18 @@ class AppRepoParser {
 				filePath: self::DESCRIPTOR_FILE
 			);
 		}
+	}//end assertAppTypeKnown()
 
+	/**
+	 * Refuse a descriptor whose slug is not kebab-case.
+	 *
+	 * @param array<string,mixed> $descriptor The decoded descriptor.
+	 *
+	 * @return void
+	 *
+	 * @throws AppRepoParseException app_type_unknown (the code the format has always used here).
+	 */
+	private function assertDescriptorSlug(array $descriptor): void {
 		$slug = (string)($descriptor['slug'] ?? '');
 		if (preg_match(self::SLUG_PATTERN, $slug) !== 1) {
 			throw new AppRepoParseException(
@@ -263,9 +315,7 @@ class AppRepoParser {
 				filePath: self::DESCRIPTOR_FILE
 			);
 		}
-
-		return $descriptor;
-	}//end parseDescriptor()
+	}//end assertDescriptorSlug()
 
 	/**
 	 * Decode + structurally validate the manifest blob.
@@ -277,13 +327,7 @@ class AppRepoParser {
 	 * @throws AppRepoParseException manifest_missing | manifest_unparseable | manifest_invalid.
 	 */
 	private function parseManifest(array $files): array {
-		if (array_key_exists(self::MANIFEST_FILE, $files) === false) {
-			throw new AppRepoParseException(
-				errorCode: 'manifest_missing',
-				message: 'manifest.json is required.',
-				filePath: self::MANIFEST_FILE
-			);
-		}
+		$this->assertManifestPresent(files: $files);
 
 		$manifest = $this->decodeObject(
 			path: self::MANIFEST_FILE,
@@ -295,6 +339,25 @@ class AppRepoParser {
 
 		return $manifest;
 	}//end parseManifest()
+
+	/**
+	 * Refuse a file map without a root manifest.
+	 *
+	 * @param array<string,string> $files The repo file map.
+	 *
+	 * @return void
+	 *
+	 * @throws AppRepoParseException manifest_missing.
+	 */
+	private function assertManifestPresent(array $files): void {
+		if (array_key_exists(self::MANIFEST_FILE, $files) === false) {
+			throw new AppRepoParseException(
+				errorCode: 'manifest_missing',
+				message: 'manifest.json is required.',
+				filePath: self::MANIFEST_FILE
+			);
+		}
+	}//end assertManifestPresent()
 
 	/**
 	 * Structural manifest validation — the same guard the clone path relies on
@@ -309,30 +372,38 @@ class AppRepoParser {
 	 * @throws AppRepoParseException manifest_invalid naming the failing property path.
 	 */
 	private function validateManifest(array $manifest): void {
-		if ($manifest === []) {
+		$problem = $this->manifestProblem(manifest: $manifest);
+		if ($problem !== null) {
 			throw new AppRepoParseException(
 				errorCode: 'manifest_invalid',
-				message: 'manifest.json is an empty object; a virtual app manifest must declare version + pages.',
-				filePath: self::MANIFEST_FILE
-			);
-		}
-
-		if (is_string($manifest['version'] ?? null) === false) {
-			throw new AppRepoParseException(
-				errorCode: 'manifest_invalid',
-				message: 'manifest.json is missing a string `version` property.',
-				filePath: self::MANIFEST_FILE
-			);
-		}
-
-		if (is_array($manifest['pages'] ?? null) === false) {
-			throw new AppRepoParseException(
-				errorCode: 'manifest_invalid',
-				message: 'manifest.json is missing a `pages` array.',
+				message: $problem,
 				filePath: self::MANIFEST_FILE
 			);
 		}
 	}//end validateManifest()
+
+	/**
+	 * The first structural problem of a decoded manifest, if any.
+	 *
+	 * @param array<string,mixed> $manifest The decoded manifest.
+	 *
+	 * @return string|null The refusal message, or null for a valid manifest.
+	 */
+	private function manifestProblem(array $manifest): ?string {
+		if ($manifest === []) {
+			return 'manifest.json is an empty object; a virtual app manifest must declare version + pages.';
+		}
+
+		if (is_string($manifest['version'] ?? null) === false) {
+			return 'manifest.json is missing a string `version` property.';
+		}
+
+		if (is_array($manifest['pages'] ?? null) === false) {
+			return 'manifest.json is missing a `pages` array.';
+		}
+
+		return null;
+	}//end manifestProblem()
 
 	/**
 	 * Collect + validate `schemas/*.json` into the companionSchemas array.
@@ -363,121 +434,8 @@ class AppRepoParser {
 	 * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-every-channel-path-is-validated-before-use
 	 */
 	private function parseChannels(array $files): array {
-		$channels = [
-			'dataRegisters' => [],
-			'connectors' => [],
-			'automations' => [],
-			'skills' => [],
-			'flows' => [],
-			'agents' => [],
-		];
-
-		$paths = array_keys($files);
-		sort($paths);
-
-		foreach ($paths as $path) {
-			if (str_contains($path, '..') === true || str_starts_with($path, '/') === true) {
-				// Never rewrite to a safe form — drop it.
-				continue;
-			}
-
-			if (str_starts_with($path, self::DATA_REGISTERS_PREFIX) === true && str_ends_with($path, '.json') === true) {
-				$slug = substr($path, strlen(self::DATA_REGISTERS_PREFIX), -strlen('.json'));
-				if (preg_match(self::SLUG_PATTERN, $slug) === 1) {
-					$blob = $this->decodeChannelEntry(contents: $files[$path]);
-					if ($blob !== null) {
-						$channels['dataRegisters'][$slug] = $blob;
-					}
-				}
-
-				continue;
-			}
-
-			if (str_starts_with($path, self::CONNECTORS_PREFIX) === true && str_ends_with($path, '.json') === true) {
-				$rest = substr($path, strlen(self::CONNECTORS_PREFIX), -strlen('.json'));
-				$parts = explode('/', $rest);
-				if (count($parts) === 2
-					&& in_array($parts[0], self::CONNECTOR_KINDS, true) === true
-					&& preg_match(self::SLUG_PATTERN, $parts[1]) === 1
-				) {
-					$blob = $this->decodeChannelEntry(contents: $files[$path]);
-					if ($blob !== null) {
-						$channels['connectors'][$parts[0]][$parts[1]] = $blob;
-					}
-				}
-
-				continue;
-			}
-
-			if (str_starts_with($path, self::AUTOMATIONS_PREFIX) === true && str_ends_with($path, '.json') === true) {
-				$slug = substr($path, strlen(self::AUTOMATIONS_PREFIX), -strlen('.json'));
-				if (preg_match(self::SLUG_PATTERN, $slug) === 1) {
-					$blob = $this->decodeChannelEntry(contents: $files[$path]);
-					if ($blob !== null) {
-						$channels['automations'][$slug] = $blob;
-					}
-				}
-
-				continue;
-			}
-
-			if (str_starts_with($path, self::FLOWS_PREFIX) === true && str_ends_with($path, '.json') === true) {
-				$uuid = substr($path, strlen(self::FLOWS_PREFIX), -strlen('.json'));
-				if (preg_match(self::UUID_PATTERN, $uuid) === 1) {
-					$blob = $this->decodeChannelEntry(contents: $files[$path]);
-					if ($blob !== null) {
-						$channels['flows'][$uuid] = $blob;
-					}
-				}
-
-				continue;
-			}
-
-			if (str_starts_with($path, self::AGENTS_PREFIX) === true && str_ends_with($path, '.json') === true) {
-				$uuid = substr($path, strlen(self::AGENTS_PREFIX), -strlen('.json'));
-				if (preg_match(self::UUID_PATTERN, $uuid) === 1) {
-					$blob = $this->decodeChannelEntry(contents: $files[$path]);
-					if ($blob !== null) {
-						$channels['agents'][$uuid] = $blob;
-					}
-				}
-
-				continue;
-			}
-
-			if (str_starts_with($path, self::SKILLS_PREFIX) === true) {
-				$rest = substr($path, strlen(self::SKILLS_PREFIX));
-				$parts = explode('/', $rest, 2);
-				if (count($parts) === 2 && preg_match(self::SLUG_PATTERN, $parts[0]) === 1 && $parts[1] !== '') {
-					// Skills are carried verbatim (hermiq's SkillBundleSerializer
-					// layout) — SKILL.md is markdown, not JSON, so no decode here.
-					$channels['skills'][$parts[0]][$parts[1]] = (string)$files[$path];
-				}
-			}
-		}//end foreach
-
-		return $channels;
+		return (new AppRepoChannelReader(files: $files))->read();
 	}//end parseChannels()
-
-	/**
-	 * Decode one channel entry, returning null rather than throwing.
-	 *
-	 * @param string $contents The raw contents.
-	 *
-	 * @return array<string,mixed>|null The decoded object, or null when unreadable.
-	 */
-	private function decodeChannelEntry(string $contents): ?array {
-		if (strlen($contents) > self::MAX_FILE_BYTES) {
-			return null;
-		}
-
-		$decoded = json_decode($contents, true, self::MAX_JSON_DEPTH);
-		if (is_array($decoded) === false) {
-			return null;
-		}
-
-		return $decoded;
-	}//end decodeChannelEntry()
 
 	/**
 	 * Collect the companion JSON-schema files shipped alongside an app-repo-format-v2 descriptor.
@@ -494,64 +452,126 @@ class AppRepoParser {
 	 */
 	private function parseCompanionSchemas(array $files): array {
 		$companions = [];
-		$seenSlugs = [];
+		$slugClaims = new SchemaSlugClaims();
 
-		// Deterministic iteration so a duplicate names a stable pair.
-		$paths = array_keys($files);
-		sort($paths);
-
-		foreach ($paths as $path) {
-			if (str_starts_with($path, self::SCHEMAS_PREFIX) === false || str_ends_with($path, '.json') === false) {
-				continue;
-			}
-
-			$base = substr($path, strlen(self::SCHEMAS_PREFIX), -strlen('.json'));
-			if (str_contains($base, '/') === true || preg_match(self::SLUG_PATTERN, $base) !== 1) {
-				throw new AppRepoParseException(
-					errorCode: 'schema_invalid',
-					message: 'schema file base name "' . $base . '" is not a valid kebab-case slug.',
-					filePath: $path
-				);
-			}
-
-			$schema = $this->decodeObject(
-				path: $path,
-				contents: $files[$path],
-				unparseableCode: 'schema_unparseable'
-			);
-
-			if (is_array($schema['properties'] ?? null) === false) {
-				throw new AppRepoParseException(
-					errorCode: 'schema_invalid',
-					message: 'schema file "' . $path . '" is not a JSON-schema object (missing `properties`).',
-					filePath: $path
-				);
-			}
-
-			$slug = (string)($schema['slug'] ?? $base);
-			if (preg_match(self::SLUG_PATTERN, $slug) !== 1) {
-				throw new AppRepoParseException(
-					errorCode: 'schema_invalid',
-					message: 'schema file "' . $path . '" declares an invalid slug "' . $slug . '".',
-					filePath: $path
-				);
-			}
-
-			if (isset($seenSlugs[$slug]) === true) {
-				throw new AppRepoParseException(
-					errorCode: 'schema_slug_duplicate',
-					message: 'schema slug "' . $slug . '" is declared by both ' . $seenSlugs[$slug] . ' and ' . $path . '.',
-					filePath: $path
-				);
-			}
-
-			$schema['slug'] = $slug;
-			$seenSlugs[$slug] = $path;
+		foreach ($this->companionSchemaPaths(files: $files) as $path) {
+			$schema = $this->readCompanionSchema(path: $path, contents: $files[$path]);
+			$slugClaims->claim(slug: $schema['slug'], path: $path);
 			$companions[] = $schema;
-		}//end foreach
+		}
 
 		return $companions;
 	}//end parseCompanionSchemas()
+
+	/**
+	 * The `schemas/*.json` paths of a file map, in sorted order so a
+	 * duplicate always names a stable pair.
+	 *
+	 * @param array<string,string> $files The repo file map.
+	 *
+	 * @return array<int,string>
+	 */
+	private function companionSchemaPaths(array $files): array {
+		$paths = array_keys($files);
+		sort($paths);
+
+		return array_values(
+			array_filter(
+				$paths,
+				static fn (string $path): bool => str_starts_with($path, self::SCHEMAS_PREFIX) === true && str_ends_with($path, '.json') === true
+			)
+		);
+	}//end companionSchemaPaths()
+
+	/**
+	 * Validate one companion schema file and stamp its resolved slug.
+	 *
+	 * @param string $path     The repo-relative schema path.
+	 * @param string $contents The raw file contents.
+	 *
+	 * @return array<string,mixed> The decoded schema with `slug` set.
+	 *
+	 * @throws AppRepoParseException schema_invalid | schema_unparseable.
+	 */
+	private function readCompanionSchema(string $path, string $contents): array {
+		$base = $this->companionBaseName(path: $path);
+
+		$schema = $this->decodeObject(
+			path: $path,
+			contents: $contents,
+			unparseableCode: 'schema_unparseable'
+		);
+
+		$this->assertJsonSchemaObject(path: $path, schema: $schema);
+
+		$slug = (string)($schema['slug'] ?? $base);
+		$this->assertCompanionSlug(path: $path, slug: $slug);
+
+		$schema['slug'] = $slug;
+		return $schema;
+	}//end readCompanionSchema()
+
+	/**
+	 * The kebab-case base name of a companion schema path.
+	 *
+	 * @param string $path The repo-relative schema path.
+	 *
+	 * @return string
+	 *
+	 * @throws AppRepoParseException schema_invalid when nested or not kebab-case.
+	 */
+	private function companionBaseName(string $path): string {
+		$base = substr($path, strlen(self::SCHEMAS_PREFIX), -strlen('.json'));
+		if (str_contains($base, '/') === true || preg_match(self::SLUG_PATTERN, $base) !== 1) {
+			throw new AppRepoParseException(
+				errorCode: 'schema_invalid',
+				message: 'schema file base name "' . $base . '" is not a valid kebab-case slug.',
+				filePath: $path
+			);
+		}
+
+		return $base;
+	}//end companionBaseName()
+
+	/**
+	 * Refuse a companion schema without a `properties` object.
+	 *
+	 * @param string              $path   The repo-relative schema path.
+	 * @param array<string,mixed> $schema The decoded schema.
+	 *
+	 * @return void
+	 *
+	 * @throws AppRepoParseException schema_invalid.
+	 */
+	private function assertJsonSchemaObject(string $path, array $schema): void {
+		if (is_array($schema['properties'] ?? null) === false) {
+			throw new AppRepoParseException(
+				errorCode: 'schema_invalid',
+				message: 'schema file "' . $path . '" is not a JSON-schema object (missing `properties`).',
+				filePath: $path
+			);
+		}
+	}//end assertJsonSchemaObject()
+
+	/**
+	 * Refuse a companion schema whose resolved slug is not kebab-case.
+	 *
+	 * @param string $path The repo-relative schema path.
+	 * @param string $slug The declared (or base-name) slug.
+	 *
+	 * @return void
+	 *
+	 * @throws AppRepoParseException schema_invalid.
+	 */
+	private function assertCompanionSlug(string $path, string $slug): void {
+		if (preg_match(self::SLUG_PATTERN, $slug) !== 1) {
+			throw new AppRepoParseException(
+				errorCode: 'schema_invalid',
+				message: 'schema file "' . $path . '" declares an invalid slug "' . $slug . '".',
+				filePath: $path
+			);
+		}
+	}//end assertCompanionSlug()
 
 	/**
 	 * Size-bound, depth-bound, and JSON-decode a file into an object array.
@@ -622,12 +642,22 @@ class AppRepoParser {
 			return null;
 		}
 
-		$owner = (string)$repo['owner'];
-		$name = (string)$repo['name'];
+		return $this->ownerSlashName(owner: (string)$repo['owner'], name: (string)$repo['name']);
+	}//end formatRepo()
+
+	/**
+	 * Join a repo owner and name as `owner/name`, or null when either is empty.
+	 *
+	 * @param string $owner The repo owner.
+	 * @param string $name  The repo name.
+	 *
+	 * @return string|null
+	 */
+	private function ownerSlashName(string $owner, string $name): ?string {
 		if ($owner === '' || $name === '') {
 			return null;
 		}
 
 		return $owner . '/' . $name;
-	}//end formatRepo()
+	}//end ownerSlashName()
 }//end class

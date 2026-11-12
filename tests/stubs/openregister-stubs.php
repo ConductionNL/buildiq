@@ -2772,6 +2772,52 @@ namespace OCA\OpenRegister\Service\Credential {
 	}//end if
 }
 
+namespace OCA\OpenRegister\Service\Lifecycle {
+
+	if (class_exists(TransitionMove::class, autoload: false) === false) {
+		/**
+		 * Stub TransitionMove: the action and the states a transition moved between.
+		 */
+		final class TransitionMove {
+			public function __construct(
+				public readonly string $action,
+				public readonly string $from,
+				public readonly string $to,
+			) {
+			}//end __construct()
+		}//end class
+	}//end if
+
+	if (class_exists(TransitionActor::class, autoload: false) === false) {
+		/**
+		 * Stub TransitionActor: who made a transition.
+		 */
+		final class TransitionActor {
+			public function __construct(
+				public readonly ?string $userId = null,
+				public readonly bool $automatic = false,
+			) {
+			}//end __construct()
+		}//end class
+	}//end if
+}
+
+namespace OCA\OpenRegister\Kernel\Contracts {
+
+	if (class_exists(RegisterSchemaRef::class, autoload: false) === false) {
+		/**
+		 * Stub RegisterSchemaRef: a register and schema reference.
+		 */
+		final class RegisterSchemaRef {
+			public function __construct(
+				public readonly string|int $register,
+				public readonly string|int $schema,
+			) {
+			}//end __construct()
+		}//end class
+	}//end if
+}
+
 namespace OCA\OpenRegister\Event {
 
 	if (class_exists(ObjectTransitionedEvent::class, autoload: false) === false) {
@@ -2779,6 +2825,18 @@ namespace OCA\OpenRegister\Event {
 		 * Stub ObjectTransitionedEvent — accessors the listener calls.
 		 */
 		class ObjectTransitionedEvent extends \OCP\EventDispatcher\Event {
+			private string $action;
+
+			private string $from;
+
+			private string $to;
+
+			private ?string $userId;
+
+			private string $register;
+
+			private string $schema;
+
 			/**
 			 * Constructor mirrors the real event so `disableOriginalConstructor()`
 			 * is unnecessary but harmless when a test builds a mock against it.
@@ -2787,14 +2845,18 @@ namespace OCA\OpenRegister\Event {
 			 */
 			public function __construct(
 				private readonly \OCA\OpenRegister\Db\ObjectEntity $object,
-				private readonly string $action = '',
-				private readonly string $from = '',
-				private readonly string $to = '',
-				private readonly ?string $userId = null,
-				private readonly string $register = '',
-				private readonly string $schema = '',
+				\OCA\OpenRegister\Service\Lifecycle\TransitionMove $move,
+				\OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef $scope,
+				?\OCA\OpenRegister\Service\Lifecycle\TransitionActor $actor = null,
 			) {
 				parent::__construct();
+				$actor = $actor ?? new \OCA\OpenRegister\Service\Lifecycle\TransitionActor();
+				$this->action = $move->action;
+				$this->from = $move->from;
+				$this->to = $move->to;
+				$this->userId = $actor->userId;
+				$this->register = (string) $scope->register;
+				$this->schema = (string) $scope->schema;
 			}//end __construct()
 
 			/**
@@ -3456,14 +3518,31 @@ namespace OCA\OpenRegister\AppHost {
 			/**
 			 * No-op stub of the one-call registrar.
 			 *
-			 * @param mixed $context Registration context.
-			 * @param string $appId Leaf app id.
-			 * @param array<string, mixed> $options Options.
+			 * @param mixed        $context  Registration context.
+			 * @param LeafAdoption $adoption Leaf app id and its overrides.
 			 *
 			 * @return void
 			 */
-			public static function register($context, string $appId, array $options = []): void {
+			public static function register($context, LeafAdoption $adoption): void {
 			}
+		}
+	}
+
+	if (class_exists(LeafAdoption::class, autoload: false) === false) {
+		/**
+		 * Stub LeafAdoption: one leaf app's adoption request.
+		 */
+		final class LeafAdoption {
+
+			/**
+			 * @param string               $appId   Leaf app id.
+			 * @param array<string, mixed> $options Namespaces and feature switches.
+			 */
+			public function __construct(
+				public readonly string $appId,
+				private readonly array $options=[],
+			) {
+			}//end __construct()
 		}
 	}
 

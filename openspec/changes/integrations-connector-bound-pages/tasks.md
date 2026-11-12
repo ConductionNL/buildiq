@@ -7,3 +7,4 @@
 - [ ] **T05**: Add `tests/e2e/connector-bound-pages.spec.ts`: publish a fixture app with a connector-bound index page against a fixture integriq endpoint, open `/apps/buildiq/builder/{slug}`, assert the mapped rows render and no `Unknown widgetKey` warning is logged; a second case for the dashboard widget (REQ-BQCB-001, REQ-BQCB-002, REQ-BQCB-003).
 - [ ] **T06**: English and Dutch strings for the list page (search label, empty state), and a section in `docs/` on binding a page to an external API.
 - [ ] **T07**: Run `openspec validate integrations-connector-bound-pages --strict`.
+- [ ] Check that row `int-saas-connectors` meets "An endpoint from a ready-made connector binds like any other endpoint (REQ-BQCB-005)", and add a test that asserts its scenarios.

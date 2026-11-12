@@ -980,7 +980,8 @@
 				"evidence": "src/dialogs/CreateApplicationWizard.vue:1-60 (custom preset, no template) POSTs to /apps/buildiq/api/applications/wizard (appinfo/routes.php:25 applicationCreation#wizard) -> lib/Controller/ApplicationCreationController.php:110 wizard() -> lib/Service/ApplicationCreationService.php (Step 3, per-version register provisioning, lines 262-330)",
 				"reachedOn": "VirtualApps /applications, header action opens CreateApplicationWizard, Step2Preset 'custom' choice",
 				"owner": "ConductionNL/buildiq",
-				"change": "openbuild-app-creation-wizard"
+				"change": "openbuild-app-creation-wizard",
+				"requirement": "openspec/specs/application-creation-wizard :: Four-step wizard shape; openspec/specs/application-creation-wizard :: Initial manifest, semver, status per version"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -1019,7 +1020,8 @@
 				"evidence": "src/dialogs/CreateApplicationWizard.vue:20-56 four steps (Basics, Preset, Custom, Review) -> POST /apps/buildiq/api/applications/wizard (routes.php:25) -> ApplicationCreationController.php:110 -> ApplicationCreationService.php creates Application + N ApplicationVersions + N per-version OR registers atomically (lines 262-330, rollback on failure at :325)",
 				"reachedOn": "VirtualApps /applications, 'Create app' wizard",
 				"owner": "ConductionNL/buildiq",
-				"change": "openbuild-app-creation-wizard"
+				"change": "openbuild-app-creation-wizard",
+				"requirement": "openspec/specs/application-creation-wizard :: Four-step wizard shape; openspec/specs/application-creation-wizard :: Per-version registers + seed schema set; openspec/specs/application-creation-wizard :: Initial manifest, semver, status per version"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -1059,7 +1061,8 @@
 				"evidence": "src/views/TemplateGallery.vue:512 POST /apps/buildiq/api/applications/from-template/{templateSlug} (routes.php:50 applications#createFromTemplate) -> lib/Controller/ApplicationsController.php:1566 createFromTemplate() -> installFromTemplateArray():1670",
 				"reachedOn": "TemplateGallery /templates, clicking a template card",
 				"owner": "ConductionNL/buildiq",
-				"change": "openbuild-templates-marketplace"
+				"change": "openbuild-templates-marketplace",
+				"requirement": "openspec/specs/openbuild-template-catalogue :: \"Use this template\" clones into a new Application"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -1097,7 +1100,8 @@
 				"evidence": "src/dialogs/ImportDataWizard.vue:1-20 uploads xlsx/xls/csv/json and either adds rows to an EXISTING schema or 'create a new schema from the file' (OR infers fields from header row). Only reachable from src/views/SchemaDesigner.vue:190 and src/components/applicationDetail/ApplicationDetailDashboard.vue:305, both of which require an app/version to already exist. Delegates parsing to OpenRegister's register-import via useDataImport.js.",
 				"owner": "ConductionNL/buildiq",
 				"note": "Open Register's half shipped in ConductionNL/openregister openspec/changes/archive/2026-07-23-register-import-auto-create; the missing half is buildiq's own work, so the owner moved to ConductionNL/buildiq (openregister lane, OpenSpec pass 2026-09-27; owner was ConductionNL/openregister).",
-				"change": "openbuild-data-import-wizard"
+				"change": "openbuild-data-import-wizard",
+				"requirement": "openspec/changes/capability-requirements-backfill/specs/data-import-wizard :: A maker creates a new app from an uploaded spreadsheet (REQ-BQCV-001)"
 			},
 			"reachedOn": "SchemaDesigner (opened on an existing app version)",
 			"provider": "openregister",
@@ -1136,7 +1140,8 @@
 				"evidence": "grep -rniF 'postgres|mysql|jdbc|odbc|database connection|sql server|db connection' src lib (excl. tests): no hits. No controller or service resolves an external database connection to auto-generate a schema/app.",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/data-external-database-sources (OpenSpec pass 2026-09-27).",
-				"change": "data-external-database-sources"
+				"change": "data-external-database-sources",
+				"requirement": "openspec/changes/data-external-database-sources :: Generate an app from a connected database (REQ-BQDB-003)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -1170,7 +1175,8 @@
 				"evidence": "GET /apps/buildiq/api/applications (routes.php:43 applications#listMine) -> lib/Controller/ApplicationsController.php:1049 listMine() (server-side RBAC filter, per-app permissions) -> src/components/ApplicationCard.vue:103 renders name/status/version/role per card",
 				"reachedOn": "VirtualApps /applications (manifest.json route /applications)",
 				"owner": "ConductionNL/buildiq",
-				"change": "openbuild-rbac"
+				"change": "openbuild-rbac",
+				"requirement": "openspec/specs/openbuild-rbac :: Application list filters out unauthorised entries; openspec/specs/openbuild-runtime :: Draft-vs-published indicator surfaces lifecycle state (REQ-OBR-007b)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -1208,7 +1214,8 @@
 				"evidence": "src/manifest.json:443-518 VirtualAppDetail page at /applications/:objectId, headerComponent ApplicationDetailHeader, before-body ApplicationDetailDashboard (KPI grid + activity + manifest/register/groups widgets), sidebarTabs: Manifest, Version history, Diff, Icons, Exports, History(audit)",
 				"reachedOn": "VirtualApps -> click an app row -> /applications/:objectId",
 				"owner": "ConductionNL/buildiq",
-				"change": "openbuild-app-detail-overview"
+				"change": "openbuild-app-detail-overview",
+				"requirement": "openspec/specs/application-detail-overview :: Application detail main area renders six stacked rows"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -1247,7 +1254,8 @@
 				"reachedOn": "VirtualAppDetail /applications/:objectId, header action menu 'Edit'",
 				"owner": "ConductionNL/nextcloud-vue",
 				"spec": "openspec/specs/application-rename-and-delete",
-				"readOn": "2026-10-07"
+				"readOn": "2026-10-07",
+				"requirement": "openspec/specs/application-rename-and-delete :: An owner edits an app's name, description and slug"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -1284,7 +1292,8 @@
 				"reachedOn": "VirtualApps /applications, table row Delete action -> DeleteAppDialog",
 				"owner": "ConductionNL/buildiq",
 				"spec": "openspec/specs/application-rename-and-delete",
-				"readOn": "2026-10-07"
+				"readOn": "2026-10-07",
+				"requirement": "openspec/specs/application-rename-and-delete :: An owner deletes an app and chooses whether its data goes too"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -1319,7 +1328,8 @@
 				"evidence": "src/components/ApplicationDetailActions.vue:668-707 publish/unpublish toggle (owner-only, isPublished bound at :58) POSTs /apps/buildiq/api/applications/{appUuid}/publish|unpublish (routes.php:116-117 applicationPublish#publish/unpublish) -> flips Application.status draft<->published, gating AppNavigationService (lib/Service/AppNavigationService.php:135 STATUS_PUBLISHED filter)",
 				"reachedOn": "VirtualAppDetail header actions, Publish/Unpublish",
 				"owner": "ConductionNL/buildiq",
-				"spec": "openspec/specs/openbuild-runtime"
+				"spec": "openspec/specs/openbuild-runtime",
+				"requirement": "openspec/changes/capability-requirements-backfill/specs/openbuild-runtime :: An owner publishes and unpublishes an app (REQ-BQCV-002)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -1357,7 +1367,8 @@
 				"evidence": "lib/AppInfo/Application.php:713-720 boot() calls AppNavigationService::registerNavEntries(INavigationManager) every request; lib/Service/AppNavigationService.php:59-180 registers one INavigationManager::add() entry per published Application (status==published), gated by owners/editors/viewers roles + group:* wildcard, ordered via nav_order_base appconfig, href generated from route 'buildiq.icon.iconLight' + /builder/{slug}",
 				"reachedOn": "Nextcloud top bar, once an app is published",
 				"owner": "nextcloud/server",
-				"change": "openbuild-nextcloud-nav"
+				"change": "openbuild-nextcloud-nav",
+				"requirement": "openspec/specs/app-nav-entries :: Dynamic per-app top-bar entry for each published Application"
 			},
 			"provider": "nextcloud",
 			"providerHow": "read-from-code",
@@ -1392,7 +1403,8 @@
 				"evidence": "routes.php:175-176 icon#iconDark '/icons/{slug}-dark.svg' before icon#iconLight '/icons/{slug}.svg' (deliberate ordering, see comment); lib/Settings/openbuild_register.json:160-184 Application.icon/iconDark reference an SVG file attached to the record via OR files-attached-to-object",
 				"reachedOn": "Any published app's nav entry icon + VirtualAppDetail 'Icons' sidebar tab (ApplicationIconTab)",
 				"owner": "ConductionNL/buildiq",
-				"spec": "openspec/specs/app-icon-management"
+				"spec": "openspec/specs/app-icon-management",
+				"requirement": "openspec/specs/app-icon-management :: Icon section on Application detail page; openspec/specs/app-icon-management :: Icon-serving endpoint (dark)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -1430,7 +1442,8 @@
 				"evidence": "routes.php:124-160 dashboard#builder '/builder/{slug}' (+ trailing-slash alias, + designer sub-paths, + catch-all builderPath for the app's own deep links) serves the standalone virtual-app runtime via CnAppRoot/CnPageRenderer at a stable URL per app slug",
 				"reachedOn": "/builder/{slug} for any published (or previewed) app",
 				"owner": "ConductionNL/buildiq",
-				"spec": "openspec/specs/openbuild-runtime"
+				"spec": "openspec/specs/openbuild-runtime",
+				"requirement": "openspec/specs/openbuild-runtime :: A published virtual app runs in its own standalone shell; openspec/specs/openbuild-runtime :: A virtual app's own routes resolve on its own router"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -1465,7 +1478,8 @@
 				"evidence": "src/manifest.json:31-46 setup wizard steps 'demo-data' (choice) + 'load-demo-data' (run-action) -> POST /api/setup/action/load-demo-data (routes.php:30 setup#runAction) -> lib/Controller/SetupController.php:263 runAction() branches on 'load-demo-data' -> lib/Service/DemoDataService.php:132 listChoices() / :230 install()",
 				"reachedOn": "First-run setup wizard (CnSetupWizard), 'Load example data?' step",
 				"owner": "ConductionNL/buildiq",
-				"change": "openbuild-first-time-setup"
+				"change": "openbuild-first-time-setup",
+				"requirement": "openspec/specs/first-time-setup :: Each example data card loads itself"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -1500,7 +1514,8 @@
 				"evidence": "src/manifest.json:19-27 setup.enabled + steps (welcome, demo-data, load-demo-data, seed, store) rendered by the shared CnSetupWizard; GET /api/setup/status (routes.php:29 setup#status) -> lib/Controller/SetupController.php reports what is still missing (e.g. templates not seeded, no remote store configured)",
 				"reachedOn": "Admin settings, Buildiq first-time setup wizard",
 				"owner": "ConductionNL/buildiq",
-				"change": "openbuild-first-time-setup"
+				"change": "openbuild-first-time-setup",
+				"requirement": "openspec/specs/first-time-setup :: Setup status reports every manifest step; openspec/changes/openbuild-first-time-setup :: Manifest declares a first-time setup block"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -1535,7 +1550,8 @@
 				"evidence": "grep -rniF 'iframe|embed' src lib (excl. tests, node_modules): no hits. No embed-token or iframe-safe-headers mechanism found.",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/apps-embed-in-other-sites (OpenSpec pass 2026-09-27).",
-				"change": "apps-embed-in-other-sites"
+				"change": "apps-embed-in-other-sites",
+				"requirement": "openspec/changes/apps-embed-in-other-sites :: A maker switches embedding on and lists the allowed sites (REQ-BQEM-001); openspec/changes/apps-embed-in-other-sites :: A maker embeds one page (REQ-BQEM-004)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -1569,7 +1585,8 @@
 				"evidence": "grep -rniF 'docker|standalone deploy|self-host|deploy.*server' lib/Controller lib/Service: no hits. lc-export-real-app produces an installable Nextcloud-app ZIP (still requires a Nextcloud+OpenRegister host), not a self-contained standalone server.",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/apps-standalone-deploy (OpenSpec pass 2026-09-27).",
-				"change": "apps-standalone-deploy"
+				"change": "apps-standalone-deploy",
+				"requirement": "openspec/changes/apps-standalone-deploy :: The export offers its own server as a target (REQ-BQSD-001); openspec/changes/apps-standalone-deploy :: The bundle runs the app without the builder (REQ-BQSD-002)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -1604,7 +1621,8 @@
 				"reachedOn": "buildiq builder, Schemas tab -> Add schema -> field editor",
 				"owner": "ConductionNL/buildiq",
 				"note": "Corrections round 8 (2026-09-28): saving a schema in the designer drops each field's enum, title and x- keys, buildiq#990; rating kept because adding an object type and its fields, which this row rates, works, and choice fields are rated in data-field-types and data-choice-lists.",
-				"spec": "openspec/specs/openbuild-schema-designer"
+				"spec": "openspec/specs/openbuild-schema-designer",
+				"requirement": "openspec/specs/openbuild-schema-designer :: Add Schema flow captures slug, title, description, version; openspec/specs/openbuild-schema-designer :: Field editor manages property add, remove, reorder, type, and validation"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -1647,7 +1665,8 @@
 				"reachedOn": "buildiq builder, Schemas tab, field type dropdown",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/data-field-types-and-choice-lists (OpenSpec pass 2026-09-27).",
-				"change": "data-field-types-and-choice-lists"
+				"change": "data-field-types-and-choice-lists",
+				"requirement": "openspec/changes/data-field-types-and-choice-lists :: The designer offers named field types (REQ-BQFT-001)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -1683,7 +1702,8 @@
 				"evidence": "src/components/schema-editor/FieldEditor.vue:84-86 required checkbox; :109-173 pattern/minLength/maxLength/minimum/maximum/multipleOf inputs per type; propertyFromField() writes them back into JSON Schema properties + required[] (FieldEditor.vue:751-800 area)",
 				"reachedOn": "buildiq builder, Schemas tab, field editor validation fields",
 				"owner": "ConductionNL/buildiq",
-				"spec": "openspec/specs/openbuild-schema-designer"
+				"spec": "openspec/specs/openbuild-schema-designer",
+				"requirement": "openspec/specs/openbuild-schema-designer :: Field editor manages property add, remove, reorder, type, and validation"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -1718,7 +1738,8 @@
 				"evidence": "src/components/schema-editor/FieldEditor.vue:242-275 field.type==='relation' writes x-openregister-relation (target+cardinality) per property (FieldEditor.vue:814-818); src/components/schema-editor/RelationEditor.vue authors schema-level x-openregister-relations. OpenRegister executes both: git -C openregister grep x-openregister-relation origin/development hits lib/Service/Relation/RelationTypeResolver.php and lib/Service/Object/RenderObject.php, so it is resolved at render/read time, not merely declared",
 				"reachedOn": "buildiq builder, Schemas tab, Relations section and per-field relation type",
 				"owner": "ConductionNL/buildiq",
-				"spec": "openspec/specs/openbuild-schema-designer"
+				"spec": "openspec/specs/openbuild-schema-designer",
+				"requirement": "openspec/changes/capability-requirements-backfill/specs/openbuild-schema-designer :: A maker links one object type to another (REQ-BQCV-003)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -1753,7 +1774,8 @@
 				"evidence": "src/components/schema-editor/CalculationEditor.vue (add, type, expression builder from the OpenRegister operator catalogue, try panel) and ExpressionNodeEditor.vue; src/services/calculations.js applyCalculations writes properties.<name>.calculation, which OpenRegister PropertyCalculations forwards and validates; src/views/SchemaDesigner.vue stages propertyCalculations and maps a 422 refusal onto its field",
 				"owner": "ConductionNL/buildiq",
 				"change": "2026-09-29-data-calculated-field-authoring",
-				"reachedOn": "Schema designer of an app version, open a schema, Calculations section"
+				"reachedOn": "Schema designer of an app version, open a schema, Calculations section",
+				"requirement": "openspec/specs/data-calculated-fields :: A maker adds a calculated field in the schema designer (REQ-BQCF-001)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -1789,7 +1811,8 @@
 				"evidence": "searched: grep -rn 'choice-list|choiceList|x-openregister-choices|enum' across src/ and lib/; no field type, no schema-editor component, and no shared-choice-list concept anywhere in buildiq. The only 'enum' hit is a docblock comment describing the fixed type picker itself (FieldEditor.vue:7), not a choice-list feature. openspec/parity/capabilities.json:472 lists the row id but that is the self-description file the brief says not to rate from",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/data-field-types-and-choice-lists (OpenSpec pass 2026-09-27).",
-				"change": "data-field-types-and-choice-lists"
+				"change": "data-field-types-and-choice-lists",
+				"requirement": "openspec/changes/data-field-types-and-choice-lists :: A choice field has inline or shared options (REQ-BQFT-002)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -1823,7 +1846,8 @@
 				"evidence": "src/components/schema-editor/LifecycleEditor.vue authors states/transitions; SchemaDesigner.vue:574-577 validates exactly one initial state client-side; SchemaDesigner.vue:979-1029 converts editor model to/from x-openregister-lifecycle via lifecycleToEditor/editorToLifecycle and writes it on Save. OpenRegister actually executes it (not just a declaration): git -C openregister grep x-openregister-lifecycle origin/development hits lib/Controller/TransitionController.php, lib/Listener/LifecycleValidationListener.php, lib/Listener/LifecycleInitialStateListener.php, lib/Listener/AutoTransitionRecordListener.php, lib/Db/StateHistory.php",
 				"reachedOn": "buildiq builder, Schemas tab, Lifecycle section",
 				"owner": "ConductionNL/buildiq",
-				"spec": "openspec/specs/openbuild-schema-designer"
+				"spec": "openspec/specs/openbuild-schema-designer",
+				"requirement": "openspec/specs/openbuild-schema-designer :: Visual lifecycle editor authors x-openregister-lifecycle declaratively"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -1859,7 +1883,8 @@
 				"evidence": "src/views/SchemaDesigner.vue:30 'Import data' button opens ImportDataWizard.vue; ImportDataWizard.vue:766 calls useDataImport().importFile(); src/composables/useDataImport.js:145-179 POSTs multipart to /apps/openregister/api/registers/{registerId}/import (routes.php owned by OpenRegister). Buildiq's own docblock (useDataImport.js:4-8) states it adds no parsing/inference/writing of its own",
 				"reachedOn": "buildiq builder, Schemas tab -> Import data wizard",
 				"owner": "ConductionNL/openregister",
-				"spec": "openspec/specs/data-import-wizard"
+				"spec": "openspec/specs/data-import-wizard",
+				"requirement": "openspec/specs/data-import-wizard :: A maker can seed a virtual app's data from an uploaded file"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -1898,7 +1923,8 @@
 				"evidence": "ImportDataWizard.vue:786-798 Undo action calls useDataImport().rollbackImport(); useDataImport.js:186-200 POSTs to /apps/openregister/api/registers/import/rollback with the importJobId returned by the import summary",
 				"reachedOn": "buildiq builder, Schemas tab -> Import data wizard, result step -> Undo",
 				"owner": "ConductionNL/openregister",
-				"spec": "openspec/specs/data-import-wizard"
+				"spec": "openspec/specs/data-import-wizard",
+				"requirement": "openspec/specs/data-import-wizard :: A maker can seed a virtual app's data from an uploaded file"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -1937,7 +1963,8 @@
 				"reachedOn": "Published app, any index page, Actions menu, Export, pick Excel or CSV",
 				"owner": "ConductionNL/nextcloud-vue",
 				"note": "Matrix corrected in the OpenSpec pass 2026-09-27: the earlier reading grepped buildiq's own src and missed the renderer. It exports every record of the schema, not the filtered view; the filtered menu (allowExport) also needs a schema exportable flag OpenRegister does not serve.",
-				"spec": "openspec/specs/openbuild-exporter"
+				"spec": "openspec/specs/openbuild-exporter",
+				"requirement": "openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer :: A list page exports its records to CSV or Excel (REQ-BQCV-004)"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -1978,7 +2005,8 @@
 				"reachedOn": "",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/data-index-grid-and-saved-views (OpenSpec pass 2026-09-27).",
-				"change": "data-index-grid-and-saved-views"
+				"change": "data-index-grid-and-saved-views",
+				"requirement": "openspec/changes/data-index-grid-and-saved-views :: A maker can build a grid page (REQ-BQIX-001); openspec/changes/data-index-grid-and-saved-views :: A cell edit is saved to its record, or refused visibly (REQ-BQIX-002)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -2052,7 +2080,8 @@
 				"reachedOn": "",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/data-external-database-sources (OpenSpec pass 2026-09-27).",
-				"change": "data-external-database-sources"
+				"change": "data-external-database-sources",
+				"requirement": "openspec/changes/data-external-database-sources :: An app binds a connected database (REQ-BQDB-001); openspec/changes/data-external-database-sources :: Pages follow the database's write setting (REQ-BQDB-002)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -2089,7 +2118,8 @@
 				"reachedOn": "authoring: page editor, Data source = OpenConnector; runtime: no authored page renders the connector data",
 				"readingRating": "r2 read yes from the authoring half; r4 read the runtime half as missing",
 				"note": "Specified in openspec/changes/integrations-connector-bound-pages (OpenSpec pass 2026-09-27).",
-				"change": "integrations-connector-bound-pages"
+				"change": "integrations-connector-bound-pages",
+				"requirement": "openspec/changes/integrations-connector-bound-pages :: A connector-bound index page renders its records (REQ-BQCB-001)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -2201,7 +2231,8 @@
 				"evidence": "searched: grep -rni 'restore|revert|rollback' src/ lib/ -> every hit is about ApplicationVersion rollback (ApplicationVersionsTab.vue), theme preview revert (ThemePickerDialog.vue), or Copilot manifest-snapshot rollback (CopilotService.php), none about restoring a data RECORD's earlier state. nextcloud-vue's CnAuditTrailTab.vue (the record history viewer) has no restore/revert action in its template (grep -i 'restore|revert' on that file returned nothing)",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/data-restore-record-version (OpenSpec pass 2026-09-27).",
-				"change": "data-restore-record-version"
+				"change": "data-restore-record-version",
+				"requirement": "openspec/changes/data-restore-record-version :: An app user restores a record to an earlier state (REQ-BQRR-003)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -2237,7 +2268,8 @@
 				"reachedOn": "buildiq builder, any page editor's register/schema picker (Data source = OpenRegister)",
 				"owner": "ConductionNL/buildiq",
 				"note": "Corrections round 8 (2026-09-28): buildiq#990 loses field keys only when a schema is saved through the designer, which does not list schemas of other apps' registers; rating kept because reuse binds to the other app's schema without rewriting it.",
-				"change": "data-registers-runtime"
+				"change": "data-registers-runtime",
+				"requirement": "openspec/specs/page-designer-ui :: Register/schema pickers surface the Application's declared dataRegisters"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -2275,7 +2307,8 @@
 				"evidence": "buildiq registers CnIndexPage as a built-in page type (src/registry.js:18 'Built-in page types (CnIndexPage, CnDetailPage, CnDashboardPage, ...)' resolved before buildiq's own registry) and IndexPageEditor.vue configures it; nextcloud-vue's CnIndexPage.vue wires :searchValue/:searchPlaceholder/@search (lines 60-61, 83) into the object list query against the bound register/schema. Also a dedicated type:'search' page exists (SearchPageEditor.vue) that scopes a search box to a register/schema, though it says its own query execution is 'wired by the consuming app via the @search contract'",
 				"reachedOn": "buildiq builder, any index page (search box) or a dedicated search page",
 				"owner": "ConductionNL/nextcloud-vue",
-				"spec": "openspec/specs/page-editor-coverage"
+				"spec": "openspec/specs/page-editor-coverage",
+				"requirement": "openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer :: A list page searches its records by keyword (REQ-BQCV-005)"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -2311,7 +2344,8 @@
 				"reachedOn": "",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/data-index-grid-and-saved-views (OpenSpec pass 2026-09-27).",
-				"change": "data-index-grid-and-saved-views"
+				"change": "data-index-grid-and-saved-views",
+				"requirement": "openspec/changes/data-index-grid-and-saved-views :: A maker switches on saved views and defines views for everyone (REQ-BQIX-003)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -2384,7 +2418,8 @@
 				"evidence": "src/views/PageDesigner.vue (1474 lines, form-based sub-editors dispatched via SUB_EDITOR_MAP at line 252) edits manifest.pages[], saved through useApplicationVersion.js -> PUT /apps/buildiq/api/applications/{slug}/manifest (builder.js:313,420; ApplicationManifestTab.vue:124,183); rendered at runtime by BuilderHost.vue (nested CnAppRoot) via lib/Service/ManifestResolverService.php:107 resolve()",
 				"reachedOn": "buildiq builder, /builder/{slug}/pages tab",
 				"owner": "ConductionNL/buildiq",
-				"spec": "openspec/specs/openbuild-page-designer"
+				"spec": "openspec/specs/openbuild-page-designer",
+				"requirement": "openspec/specs/openbuild-page-designer :: Per-page-type config sub-editor for each of the nine canonical types; openspec/specs/openbuild-page-designer :: Save flow PUTs the manifest via OpenRegister REST"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -2462,7 +2497,8 @@
 				"evidence": "src/components/page-editor/PreviewSandbox.vue (473 lines) mounted in PageDesigner.vue:178 (:pageTypes=\"previewPageTypes\"); useLivePreview.js composable feeds edited manifest into an in-memory CnAppRoot render at PREVIEW_VIEWPORT_WIDTH=1024 (PageDesigner.vue:244)",
 				"reachedOn": "buildiq builder, Pages tab, live preview pane next to the config form",
 				"owner": "ConductionNL/buildiq",
-				"spec": "openspec/specs/openbuild-page-designer"
+				"spec": "openspec/specs/openbuild-page-designer",
+				"requirement": "openspec/specs/openbuild-page-designer :: Live-preview pane mounts a sandboxed CnAppRoot when available"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -2497,7 +2533,8 @@
 				"evidence": "src/views/PageDesigner.vue:236 imports useSessionHistory from src/composables/useSessionHistory.js (thin adapter over nc-vue's shared history engine); history created at PageDesigner.vue:354 with limit:100; undo()/redo() methods at lines 1069/1084; keyboard chords Ctrl+Z / Ctrl+Shift+Z wired at ~1106-1121 (spec openspec/specs/builder-undo-redo/spec.md#req-bur-003); same pattern reused in SchemaDesigner.vue:281",
 				"reachedOn": "buildiq builder, Pages and Schemas tabs, toolbar undo/redo buttons + keyboard shortcuts",
 				"owner": "ConductionNL/buildiq",
-				"spec": "openspec/specs/builder-undo-redo"
+				"spec": "openspec/specs/builder-undo-redo",
+				"requirement": "openspec/specs/builder-undo-redo :: Page-designer session undo/redo runs on the shared manifestEditHistory engine (REQ-BUR-001); openspec/specs/builder-undo-redo :: Keyboard shortcuts with an editable-target guard (REQ-BUR-003)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -2535,7 +2572,8 @@
 				"evidence": "src/components/page-editor/IndexPageEditor.vue (471 lines) authors config.register/schema/columns/actions/sidebar for `type:\"index\"`; SUB_EDITOR_MAP['index']='IndexPageEditor' (PageDesigner.vue:253); renderer mounts CnIndexPage for type 'index' (nextcloud-vue v2.55.1 src/components/CnPageRenderer/pageTypes.js line 'index: ... CnIndexPage.vue')",
 				"reachedOn": "any built app page authored as type index, e.g. /apps/buildiq/builder/{slug}/{route}",
 				"owner": "ConductionNL/nextcloud-vue",
-				"spec": "openspec/specs/openbuild-page-designer"
+				"spec": "openspec/specs/openbuild-page-designer",
+				"requirement": "openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer :: A list page shows records in a table with sorting, filtering and paging (REQ-BQCV-006)"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -2575,7 +2613,8 @@
 				"reachedOn": "any built app page authored as type detail",
 				"owner": "ConductionNL/buildiq",
 				"note": "The missing half is buildiq's designer, so the owner moved to ConductionNL/buildiq (nextcloud-vue lane) (nextcloud-vue lane, OpenSpec pass 2026-09-27; owner was ConductionNL/nextcloud-vue). Specified in openspec/changes/pages-detail-related-items (owner-moves pass 2026-09-28) for related lists, link buttons and the files tab; header and status buttons are specified in openspec/changes/pages-action-buttons.",
-				"change": "pages-detail-related-items"
+				"change": "pages-detail-related-items",
+				"requirement": "openspec/changes/pages-detail-related-items :: A detail page lists related records (REQ-BQRI-001); openspec/specs/openbuild-page-designer :: Detail-page sub-editor: sidebar tabs and route param schema"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -2614,7 +2653,8 @@
 				"evidence": "src/components/page-editor/DashboardPageEditor.vue authors config.widgets (via WidgetBuilder.vue) and config.layout (via LayoutItemBuilder.vue) for type:\"dashboard\"; renders via CnDashboardPage (pageTypes.js)",
 				"reachedOn": "any built app page authored as type dashboard",
 				"owner": "ConductionNL/nextcloud-vue",
-				"spec": "openspec/specs/openbuild-page-designer"
+				"spec": "openspec/specs/openbuild-page-designer",
+				"requirement": "openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer :: A maker adds a dashboard page (REQ-BQCV-007)"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -2654,7 +2694,8 @@
 				"reachedOn": "Dashboard page editor, Widgets fieldset",
 				"owner": "ConductionNL/buildiq",
 				"note": "The missing half is buildiq's designer, so the owner moved to ConductionNL/buildiq (nextcloud-vue lane) (nextcloud-vue lane, OpenSpec pass 2026-09-27; owner was ConductionNL/nextcloud-vue). Specified in openspec/changes/pages-chart-widget-authoring (owner-moves pass 2026-09-28): WidgetBuilder mounts nextcloud-vue's CnChartWidgetForm for a chart widget and saves props.chartKind and dataSource.",
-				"change": "pages-chart-widget-authoring"
+				"change": "pages-chart-widget-authoring",
+				"requirement": "openspec/changes/pages-chart-widget-authoring :: A chart widget is configured with the library's chart form (REQ-BQCW-001); openspec/changes/pages-chart-widget-authoring :: A new chart is placed on the page (REQ-BQCW-003)"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -2834,7 +2875,8 @@
 				"evidence": "src/components/page-editor/FilesPageEditor.vue (306 lines) authors config for type:\"files\"; SUB_EDITOR_MAP['files']='FilesPageEditor'; renderer mounts CnFilesPage (pageTypes.js)",
 				"reachedOn": "any built app page authored as type files",
 				"owner": "ConductionNL/nextcloud-vue",
-				"spec": "openspec/specs/openbuild-page-designer"
+				"spec": "openspec/specs/openbuild-page-designer",
+				"requirement": "openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer :: A maker adds a files page (REQ-BQCV-008)"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -2872,7 +2914,8 @@
 				"evidence": "src/components/page-editor/WikiPageEditor.vue (624 lines) authors config for type:\"wiki\"; SUB_EDITOR_MAP['wiki']='WikiPageEditor'; renderer mounts CnWikiPage (pageTypes.js)",
 				"reachedOn": "any built app page authored as type wiki",
 				"owner": "ConductionNL/nextcloud-vue",
-				"spec": "openspec/specs/openbuild-page-designer"
+				"spec": "openspec/specs/openbuild-page-designer",
+				"requirement": "openspec/specs/page-editor-coverage :: Wiki-page sub-editor: article binding, field mapping and sidebar tree"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -2910,7 +2953,8 @@
 				"evidence": "src/components/page-editor/SearchPageEditor.vue (597 lines) authors config for type:\"search\"; SUB_EDITOR_MAP['search']='SearchPageEditor'; renderer mounts CnSearchPage (pageTypes.js)",
 				"reachedOn": "any built app page authored as type search",
 				"owner": "ConductionNL/nextcloud-vue",
-				"spec": "openspec/specs/openbuild-page-designer"
+				"spec": "openspec/specs/openbuild-page-designer",
+				"requirement": "openspec/specs/page-editor-coverage :: Search-page sub-editor: scope, texts and facet declarations"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -2948,7 +2992,8 @@
 				"evidence": "src/components/page-editor/ChatPageEditor.vue (272 lines) authors config.conversationSource or config.postUrl for type:\"chat\" (api-paths.txt: /api/objects/:slug/messages referenced at ChatPageEditor.vue:61,48); SUB_EDITOR_MAP['chat']='ChatPageEditor'; renderer mounts CnChatPage (pageTypes.js)",
 				"reachedOn": "any built app page authored as type chat",
 				"owner": "ConductionNL/nextcloud-vue",
-				"spec": "openspec/specs/openbuild-page-designer"
+				"spec": "openspec/specs/openbuild-page-designer",
+				"requirement": "openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer :: A maker adds a chat page (REQ-BQCV-009)"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -2986,7 +3031,8 @@
 				"evidence": "src/components/page-editor/LogsPageEditor.vue (425 lines) authors config for type:\"logs\" (api-paths.txt: /api/objects/:slug/audit referenced at LogsPageEditor.vue:94); SUB_EDITOR_MAP['logs']='LogsPageEditor'; renderer mounts CnLogsPage (pageTypes.js)",
 				"reachedOn": "any built app page authored as type logs",
 				"owner": "ConductionNL/nextcloud-vue",
-				"spec": "openspec/specs/openbuild-page-designer"
+				"spec": "openspec/specs/openbuild-page-designer",
+				"requirement": "openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer :: A maker adds a log page (REQ-BQCV-010)"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -3024,7 +3070,8 @@
 				"evidence": "src/components/page-editor/SettingsPageEditor.vue (417 lines) authors config for type:\"settings\" (api-paths.txt: /api/objects/:slug/settings at SettingsPageEditor.vue:35); SUB_EDITOR_MAP['settings']='SettingsPageEditor'; renderer mounts CnSettingsPage (pageTypes.js)",
 				"reachedOn": "any built app page authored as type settings",
 				"owner": "ConductionNL/nextcloud-vue",
-				"spec": "openspec/specs/openbuild-page-designer"
+				"spec": "openspec/specs/openbuild-page-designer",
+				"requirement": "openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer :: A maker adds a settings page (REQ-BQCV-011)"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -3062,7 +3109,8 @@
 				"evidence": "src/components/page-editor/MenuTreeEditor.vue (584 lines) drag-reorders top-level + child menu entries with a depth-2 cap (vuedraggable, handle='.menu-tree-editor__drag-handle', lines 24-140), authors id/label/icon/route/href/target/action/permission per entry (updateField, lines ~288-289)",
 				"reachedOn": "buildiq builder, Pages tab, Menu editor panel",
 				"owner": "ConductionNL/buildiq",
-				"spec": "openspec/specs/openbuild-page-designer"
+				"spec": "openspec/specs/openbuild-page-designer",
+				"requirement": "openspec/specs/openbuild-page-designer :: Menu tree editor with two-level nesting"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -3101,7 +3149,8 @@
 				"evidence": "Two mechanisms: (1) role/permission gating on menu entries (MenuTreeEditor.vue:124-127, `entry.permission`) and pages (PageListEditor.vue:115-120, `page.permission`), both authored via PermissionGroupField.vue (group:<gid> grammar) and enforced server/render-side by nextcloud-vue v2.55.1 CnPageRenderer.vue:376,812 (`cnPermissions` inject, forbiddenPagePermission() at ~805-818) and CnAppRoot.vue:820 (cnPermissions getter) -- fixed from a prior SCHEMA-ONLY state per the CnAppRoot.vue:810-821 comment (dossiq had a page reachable by direct URL despite being hidden from nav before this fix). (2) field-level conditional visibility on form pages via `visibleWhen` ({field, op, value} predicate, ops eq/neq/gt/gte/lt/lte) authored in src/components/page-editor/fields/VisibleWhenBuilder.vue and FormFieldBuilder.vue:94,206-220,303-352.",
 				"reachedOn": "Menu editor (per-entry permission), Page list editor (per-page permission), Form page editor (per-field visibleWhen)",
 				"owner": "ConductionNL/nextcloud-vue",
-				"spec": "openspec/specs/openbuild-runtime"
+				"spec": "openspec/specs/openbuild-runtime",
+				"requirement": "openspec/specs/openbuild-runtime :: Menu items and pages MUST be filterable by permission; openspec/specs/form-editor-logic :: Conditions builder authors per-field visibleWhen from the form's own fields (REQ-OBFEL-002)"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -3141,7 +3190,8 @@
 				"reachedOn": "Index (list) page editor, Actions list",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/pages-action-buttons (OpenSpec pass 2026-09-27).",
-				"change": "pages-action-buttons"
+				"change": "pages-action-buttons",
+				"requirement": "openspec/changes/pages-action-buttons :: The action editor authors typed actions (REQ-BQAB-001); openspec/changes/pages-action-buttons :: Status buttons follow the lifecycle (REQ-BQAB-003)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -3181,7 +3231,8 @@
 				"reachedOn": "any built app page authored as type custom",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/pages-custom-code (OpenSpec pass 2026-09-27).",
-				"change": "pages-custom-code"
+				"change": "pages-custom-code",
+				"requirement": "openspec/changes/pages-custom-code :: An owner writes a code component (REQ-BQCC-001)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -3220,7 +3271,8 @@
 				"evidence": "searched for 'expression'/'jsExpr'/'customJs'/'bindingExpression'/'Function(' across src/components/page-editor/ and src/services/: no hits. The only conditional-value mechanism found is visibleWhen ({field, op, value} with a fixed op enum eq/neq/gt/gte/lt/lte, VisibleWhenBuilder.vue:69-73) -- a declarative predicate, not a JavaScript expression language. No formula/computed-value field editor exists.",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/pages-custom-code (OpenSpec pass 2026-09-27).",
-				"change": "pages-custom-code"
+				"change": "pages-custom-code",
+				"requirement": "openspec/changes/pages-custom-code :: An owner writes expressions for columns and form fields (REQ-BQCC-002)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -3291,7 +3343,8 @@
 				"evidence": "grep for capacitor/cordova/react-native/ios/android across src/ and package.json: no genuine hits (the few 'ios'/'android' string matches were substrings of unrelated words like 'axios'). No native mobile build tooling anywhere in the repo.",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/pages-installable-offline-and-mobile (OpenSpec pass 2026-09-27).",
-				"change": "pages-installable-offline-and-mobile"
+				"change": "pages-installable-offline-and-mobile",
+				"requirement": "openspec/changes/pages-installable-offline-and-mobile :: The export writes a mobile app project (REQ-BQOM-006)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -3325,7 +3378,8 @@
 				"evidence": "grep for serviceWorker/offline/workbox/indexedDB across src/: only hits are in src/composables/useDataImport.js and src/dialogs/ImportDataWizard.vue, an 'offline import template' -- a CSV/spreadsheet TEMPLATE users download, fill in offline, and re-upload later for bulk data import. This is unrelated to running a built app while offline with sync; no service worker, no offline cache, no local-first storage for the running app anywhere in the repo.",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/pages-installable-offline-and-mobile (OpenSpec pass 2026-09-27).",
-				"change": "pages-installable-offline-and-mobile"
+				"change": "pages-installable-offline-and-mobile",
+				"requirement": "openspec/changes/pages-installable-offline-and-mobile :: App users work offline and sync later (REQ-BQOM-004)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -3359,7 +3413,8 @@
 				"evidence": "src/views/WalkthroughDesignerHost.vue (264 lines) authors an app's walkthrough, saved via PUT to /apps/buildiq/api/applications/{routeSlug}/versions/{versionSlug} (WalkthroughDesignerHost.vue:220); route registered at appinfo/routes.php:151 designerPath enum includes 'walkthrough' (dashboard#builderDesigner -> /builder/{slug}/walkthrough); at runtime nextcloud-vue v2.55.1 CnAppRoot.vue provides a walkthrough overlay (translate() calls for 'Walkthrough'/'Take the guided tour of this app again.'/'Restart walkthrough' at lines 2699-2717). buildiq dogfoods the same mechanism for its OWN builder UI: src/manifest.json:89 declares a 'walkthrough' block with steps 'define-schema' (line 211) and 'add-page' (line 273) whose data-walkthrough-id spotlight targets exist in src/views/SchemaDesigner.vue:24 and src/views/PageDesigner.vue:13,42",
 				"reachedOn": "buildiq builder, /builder/{slug}/walkthrough tab; running built app shows the tour via CnAppRoot on first visit",
 				"owner": "ConductionNL/buildiq",
-				"change": "openbuild-walkthrough-editor"
+				"change": "openbuild-walkthrough-editor",
+				"requirement": "openspec/specs/openbuild-walkthrough-editor :: REQ-WALK-OB-001 — Visual Tour Recorder In The Edit Shell; openspec/specs/openbuild-walkthrough-editor :: REQ-WALK-OB-003 — Steps Are Editable, Orderable, And Versioned"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -3434,7 +3489,8 @@
 				"reachedOn": "buildiq builder /builder/:slug/pages, a page of type form (Fields section); and a detail page's Registration forms list",
 				"owner": "ConductionNL/buildiq",
 				"readOn": "2026-09-26",
-				"spec": "openspec/specs/openbuild-page-designer"
+				"spec": "openspec/specs/openbuild-page-designer",
+				"requirement": "openspec/specs/openbuild-page-designer :: Form-page sub-editor with exactly-one-of submit handling; openspec/specs/page-designer-ui :: Reusable field builders edit list-shaped config"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -3470,7 +3526,8 @@
 				"evidence": "src/components/page-editor/fields/FormFieldBuilder.vue:85-107 per-field details area (show-logic, passed by FormPageEditor.vue:139) mounts fields/VisibleWhenBuilder.vue (field picker :34, operator :41-44) writing field.visibleWhen (FormFieldBuilder.vue updateVisibleWhen); dangling-condition warning FormFieldBuilder.vue:313-321. Runtime: nextcloud-vue v2.55.1 CnFormPage.vue:20-34,485-510 evaluates visibleWhen (local synchronously, endpoint/source once at mount :695-710) and excludes hidden fields from validation and payload",
 				"reachedOn": "buildiq builder /builder/:slug/pages, form page, field Details -> Conditions",
 				"owner": "ConductionNL/nextcloud-vue",
-				"spec": "openspec/specs/form-editor-logic"
+				"spec": "openspec/specs/form-editor-logic",
+				"requirement": "openspec/specs/form-editor-logic :: Conditions builder authors per-field visibleWhen from the form's own fields (REQ-OBFEL-002)"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -3506,7 +3563,8 @@
 				"evidence": "src/components/page-editor/fields/FieldValidationBuilder.vue:4,37-59 authors field.validation {required,min,max,pattern,message} (custom message input :57); FormFieldBuilder.vue updateValidation. Runtime nextcloud-vue v2.55.1 CnFormPage.vue:27-31,240 validateFieldValue() before Next/Submit, per-field error rendered through NcInputField error props or an aria-describedby element (CnFormPage.vue:134-163)",
 				"reachedOn": "buildiq builder /builder/:slug/pages, form page, field Details -> Validation; shown on the rendered form page",
 				"owner": "ConductionNL/nextcloud-vue",
-				"spec": "openspec/specs/form-editor-logic"
+				"spec": "openspec/specs/form-editor-logic",
+				"requirement": "openspec/specs/form-editor-logic :: Validation builder authors the structured validation object (REQ-OBFEL-003)"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -3541,7 +3599,8 @@
 				"evidence": "FormPageEditor.vue:145-151 mounts src/components/page-editor/fields/FormStepsManager.vue (add, move up/down :79-88, remove :95, assign fields as chips :120) writing config.steps; nextcloud-vue v2.55.1 CnFormPage.vue:15-18,103-124,313 renders an accessible step indicator with Back/Next, skips steps whose fields are all hidden (:678-690), validates per step (:781-800) and jumps to the first invalid step on submit (:853-860)",
 				"reachedOn": "buildiq builder /builder/:slug/pages, form page, Steps section",
 				"owner": "ConductionNL/nextcloud-vue",
-				"spec": "openspec/specs/form-editor-logic"
+				"spec": "openspec/specs/form-editor-logic",
+				"requirement": "openspec/specs/form-editor-logic :: Steps manager authors multi-step wizards over the existing field list (REQ-OBFEL-001)"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -3576,7 +3635,8 @@
 				"evidence": "Working path: registration forms authored in buildiq (DetailPageEditor.vue:151 RegistrationFormList, PUT /api/registration-forms routes.php:280, stored in schema registrationForm, lib/Settings/register.d/50-registration-forms.json:5) are read at render time by portaliq origin/development lib/Service/Intake/PortalFormBindingResolver.php:67,73 (DEFAULT_FORM_REGISTER 'buildiq', schema 'registrationForm') and served anonymously by portaliq lib/Controller/PortalEmbedController.php:100-103 frame() and :160-163 submit(), both #[PublicPage] with #[AnonRateLimit]. Second path: FormPageEditor.vue:153-196 'External access' opens src/dialogs/ExternalFormAccessDialog.vue which via src/services/externalFormProvisioningService.js:114-123 adds group 'public' to the target OR schema's authorization.create (and read) and POSTs a portaliq portalPage whose create action and collection are anonymous unless the maker chose a sign-in level (buildiq#935)",
 				"reachedOn": "portaliq public portal page bound to a buildiq registration form; builder side: detail page Registration forms, or form page External access -> Configure",
 				"owner": "ConductionNL/portaliq",
-				"spec": "openspec/specs/external-form-provisioning"
+				"spec": "openspec/specs/external-form-provisioning",
+				"requirement": "openspec/specs/external-form-provisioning :: REQ-EFP-002 Builder UI: External access toggle on the Form page editor; openspec/specs/external-form-provisioning :: REQ-EFP-003 Provisioning: merge-safe schema authorization"
 			},
 			"provider": "portaliq",
 			"providerHow": "read-from-code",
@@ -3615,7 +3675,8 @@
 				"evidence": "src/components/page-editor/DetailPageEditor.vue:151-156 RegistrationFormList bound to register, schema, typeProperty and typeValue; fields/RegistrationFormEditor.vue:42-43 audience, :57-82 channel property and intake channel (picked from the consumer schema's enum via GET /api/registration-forms/target, routes.php:283); save PUT /api/registration-forms (routes.php:280) -> lib/Controller/RegistrationFormController.php:148 (admin only, :175-190) -> lib/Service/RegistrationFormAuthoringService.php (validated by RegistrationFormValidator: name, audience, sections, channel, one default per type). Served by lib/Integration/RegistrationFormLeafProvider.php:61 leaf 'buildiq-registration-form' (registered lib/Listener/BuildiqLeafRegistrationListener.php:90, lib/AppInfo/Application.php:486-489) and read directly by portaliq PortalFormBindingResolver.php:67-73",
 				"reachedOn": "buildiq builder, detail page editor -> Registration forms list; filled in on a portaliq portal page",
 				"owner": "ConductionNL/buildiq",
-				"change": "registration-form-builder"
+				"change": "registration-form-builder",
+				"requirement": "openspec/changes/forms-per-case-type/specs/registration-form-builder :: Several forms per type value, one default per audience (REQ-OBRF-004); openspec/changes/forms-per-case-type/specs/registration-form-builder :: A form declares the intake channel it serves (REQ-OBRF-007)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -3729,7 +3790,8 @@
 				"reachedOn": "",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/forms-signature-audio-and-location (OpenSpec pass 2026-09-27).",
-				"change": "forms-signature-audio-and-location"
+				"change": "forms-signature-audio-and-location",
+				"requirement": "openspec/changes/forms-signature-audio-and-location/specs/form-device-fields :: Forms offer signature, audio and location fields (REQ-BQSA-001)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -3796,7 +3858,8 @@
 				"evidence": "FormPageEditor.vue:121-128 'Success message' writes config.successMessage; nextcloud-vue v2.55.1 CnFormPage.vue:94-100,877 shows the success banner after submit (public mode hides the form). Registration forms: RegistrationFormEditor.vue:144-151 confirmationText, stored per form (register.d/50-registration-forms.json:71) and returned by portaliq PortalFormBindingResolver.php:225,253",
 				"reachedOn": "buildiq builder /builder/:slug/pages, form page, Submit -> Success message",
 				"owner": "ConductionNL/nextcloud-vue",
-				"spec": "openspec/specs/openbuild-page-designer"
+				"spec": "openspec/specs/openbuild-page-designer",
+				"requirement": "openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer :: A form shows its confirmation text after a submit (REQ-BQCV-012)"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -3863,7 +3926,8 @@
 				"evidence": "A built app's detail page renders nextcloud-vue v2.55.1 CnDetailPage, whose default body (materializeAutoBody, CnDetailPage.vue:3660-3700) includes the 'data' widget; CnDetailWidgetHost.vue:87-102 mounts CnObjectDataWidget with editable unless content.editable === false; click-to-edit cells and save() at CnObjectDataWidget.vue:1768-1795 persist via objectStore.saveObject(objectType, merged) to OpenRegister",
 				"reachedOn": "any record detail page of a built app (/builder/:slug/... detail route), data card",
 				"owner": "ConductionNL/nextcloud-vue",
-				"spec": "openspec/specs/page-editor-coverage"
+				"spec": "openspec/specs/page-editor-coverage",
+				"requirement": "openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer :: A detail page lets users edit record fields in place (REQ-BQCV-013)"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -3901,7 +3965,8 @@
 				"owner": "ConductionNL/buildiq",
 				"change": "case-page-layout-per-case-type",
 				"blocker": "nextcloud-vue runtime-detail-layout: CnDetailPage does not ask the buildiq-page-layout leaf yet (case-page-layout-per-case-type task 3.2); dossiq hand-off is task 8.5.",
-				"note": "Buildiq half complete 2026-09-29: the page designer authors tabs, widgets, header, task list and upload fields per case type (PageLayoutBodyEditor.vue) and the leaf serves them. The row stays building until a consumer renders them."
+				"note": "Buildiq half complete 2026-09-29: the page designer authors tabs, widgets, header, task list and upload fields per case type (PageLayoutBodyEditor.vue) and the leaf serves them. The row stays building until a consumer renders them.",
+				"requirement": "openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type :: The detail-page editor authors a layout per type (REQ-OBPL-002)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -3939,7 +4004,8 @@
 				"owner": "ConductionNL/buildiq",
 				"change": "case-page-layout-per-case-type",
 				"blocker": "nextcloud-vue runtime-detail-layout: CnDetailPage does not ask the buildiq-page-layout leaf yet (case-page-layout-per-case-type task 3.2); dossiq hand-off is task 8.5.",
-				"note": "Buildiq half complete 2026-09-29: the page designer authors tabs, widgets, header, task list and upload fields per case type (PageLayoutBodyEditor.vue) and the leaf serves them. The row stays building until a consumer renders them."
+				"note": "Buildiq half complete 2026-09-29: the page designer authors tabs, widgets, header, task list and upload fields per case type (PageLayoutBodyEditor.vue) and the leaf serves them. The row stays building until a consumer renders them.",
+				"requirement": "openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers :: A screen override stores a patch, not a copy (REQ-OBSO-001); openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers :: An override is named and bound to an audience (REQ-OBSO-004)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -3976,7 +4042,8 @@
 				"reachedOn": "/business-rules (BusinessRules page, src/manifest.d/20-business-rules.json:7), which has menu: [] and no in-app link or router push anywhere in src/: only reachable by typing the URL",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/logic-automation-actions-that-run (OpenSpec pass 2026-09-27).",
-				"change": "logic-automation-actions-that-run"
+				"change": "logic-automation-actions-that-run",
+				"requirement": "openspec/specs/business-rules-engine :: REQ-BRE-006 Runtime evaluation API with synchronous execution"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -4016,7 +4083,8 @@
 				"evidence": "src/dialogs/DecisionTableEditor.vue:26 hit policy select (unique/first/priority/any/collect, :162), input columns and rule grid, FEEL cell validation via src/utils/feelCell.js:22; save posts rule-set + decision-table (DecisionTableEditor.vue:259-275). Evaluation lib/Service/DecisionTableEvaluator.php:96-151 delegates matching and hit policy to OpenRegister's shared OCA\\OpenRegister\\Service\\Dmn\\DecisionTableEvaluator (DecisionTableEvaluator.php:42,121; file exists on openregister origin/development).",
 				"reachedOn": "/business-rules, header 'New rule set' (RuleSetsPage.vue:19, openCreate :210) opens the decision-table editor; page reachable only by typed URL",
 				"owner": "ConductionNL/buildiq",
-				"spec": "openspec/specs/business-rules-engine"
+				"spec": "openspec/specs/business-rules-engine",
+				"requirement": "openspec/specs/business-rules-engine :: REQ-BRE-002 DecisionTable schema for DMN-based multi-condition rules"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -4055,7 +4123,8 @@
 				"evidence": "lib/Service/FeelParser.php:6-18 declares a deliberately small FEEL subset (comparisons, ranges, in-lists, and/or/not, null checks, arithmetic, dot paths; no function calls, no string interpolation); lib/Service/ExpressionEvaluator.php:72 evaluates the AST; client-side cell check src/utils/feelCell.js:22 used by DecisionTableEditor.vue:126. Automation conditions of type feel compile to a condition string (lib/Service/AutomationCompilerService.php:980-984).",
 				"reachedOn": "/business-rules decision-table and condition-action editors; Automations page condition editor (manual trigger only, CONDITION_ALLOWED_TRIGGERS AutomationCompilerService.php:205)",
 				"owner": "ConductionNL/buildiq",
-				"spec": "openspec/specs/business-rules-engine"
+				"spec": "openspec/specs/business-rules-engine",
+				"requirement": "openspec/specs/business-rules-engine :: REQ-BRE-011 FEEL-subset expression parsing and validation"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -4094,7 +4163,8 @@
 				"evidence": "src/modals/RuleSetTestSandboxModal.vue:158 lists and :239 creates rule-test-case rows via OR REST; :180 POST /apps/buildiq/api/rules/{slug}/test-all -> lib/Controller/RulesController.php:236 testAll() -> lib/Service/RuleSetVersioningService.php:154 runTestGate() -> RuleEngineService::evaluate(dryRun: true) per case, comparing expectedResult as a subset. RuleSetsPage.vue:227 'Run tests' shows a pass/fail badge per row.",
 				"reachedOn": "/business-rules, row actions 'Test' (sandbox modal) and 'Run tests'; page reachable only by typed URL",
 				"owner": "ConductionNL/buildiq",
-				"spec": "openspec/specs/business-rules-engine"
+				"spec": "openspec/specs/business-rules-engine",
+				"requirement": "openspec/specs/business-rules-engine :: REQ-BRE-004 Test-case driven sandbox validation"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -4197,7 +4267,8 @@
 				"evidence": "src/components/ApplicationDetailActions.vue:304-306 'Automations' action -> openAutomations() :842-854 router.push({name:'Automations'}); src/views/AutomationsPage.vue lists automations (GET /apps/openregister/api/objects/buildiq/automation :405) and opens src/dialogs/AutomationEditDialog.vue (trigger select :486-494, action list :570-584, per-action forms :172-300); save POST /apps/buildiq/api/automations (AutomationEditDialog.vue:1377, routes.php:227) then compile (:1391 -> routes.php:230 -> lib/Controller/AutomationsController.php:238 -> lib/Service/AutomationCompilerService.php compile()/apply()). The page also embeds OpenRegister's flow canvas: 'Edit flows...' (AutomationsPage.vue:22) opens FlowPickerDialog + CnFlowEditModal from @conduction/nextcloud-vue 2.55.1 (src/dialogs/CnFlowEditModal.vue exists at v2.55.1).",
 				"reachedOn": "app detail /applications/{slug}, header action 'Automations' opens /automations?app={slug}&version=..., 'New automation' opens the composer",
 				"owner": "ConductionNL/buildiq",
-				"spec": "openspec/specs/automation-designer"
+				"spec": "openspec/specs/automation-designer",
+				"requirement": "openspec/specs/automation-designer :: Automation editor composes trigger, condition and actions (REQ-AUTD-002)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -4236,7 +4307,8 @@
 				"evidence": "object-created/updated/deleted triggers (AutomationEditDialog.vue:486-488). send-notification compiles to an x-openregister-notifications entry on the target schema (AutomationCompilerService.php:762-781, written by applyNotifications :1177-1218 via schemaMapper->update), executed by OpenRegister's AnnotationNotificationListener (openregister origin/development lib/AppInfo/Application.php:3415-3417, ObjectCreated/Updated/Transitioned only). approval and generateDocument fire from buildiq listeners registered for ObjectCreated/Updated/Deleted/Transitioned (lib/AppInfo/Application.php:477-503 AutomationApprovalTriggerListener, :539-554 DocumentGenerationListener), which check the automation is enabled (AutomationApprovalTriggerListener.php:433).",
 				"reachedOn": "/automations (from app detail 'Automations'), trigger 'Object created' / 'Object updated' / 'Object deleted'",
 				"owner": "ConductionNL/buildiq",
-				"spec": "openspec/specs/automation-designer"
+				"spec": "openspec/specs/automation-designer",
+				"requirement": "openspec/specs/automation-designer :: Automation editor composes trigger, condition and actions (REQ-AUTD-002)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -4275,7 +4347,8 @@
 				"evidence": "trigger 'lifecycle-transition' (AutomationEditDialog.vue:490) with the target schema's transitions loaded from GET /apps/openregister/api/schemas/{schema} (AutomationEditDialog.vue:911). send-notification compiles to a notifications entry with trigger {type: transition, action} (AutomationCompilerService.php:765-766), executed by OpenRegister AnnotationNotificationListener on ObjectTransitionedEvent; approval/generateDocument fire via buildiq listeners on ObjectTransitionedEvent (Application.php:500-503, :551-554).",
 				"reachedOn": "/automations (from app detail 'Automations'), trigger 'Lifecycle transition'",
 				"owner": "ConductionNL/buildiq",
-				"spec": "openspec/specs/automation-designer"
+				"spec": "openspec/specs/automation-designer",
+				"requirement": "openspec/specs/automation-designer :: Automation editor composes trigger, condition and actions (REQ-AUTD-002)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -4354,7 +4427,8 @@
 				"evidence": "AutomationEditDialog.vue:248-278 'Require approval' with assignee group picker and on-approve/on-reject action lists; compile writes an x-openregister-approval-chains declaration (AutomationCompilerService.php:783-795, applyApprovalChain :1493); on trigger lib/Listener/AutomationApprovalTriggerListener.php:561 calls OpenRegister TaskSequenceService::provision() (exists on openregister origin/development lib/Service/Task/TaskSequenceService.php:109); decision in runtime widget src/components/runtime/MyApprovalsWidget.vue:144 GET /apps/openregister/api/flow-tasks and :176 POST /api/flow-tasks/{uuid}/complete (openregister routes.php:2108, :2119); outcome handled by lib/Listener/ApprovalOutcomeListener.php:364 through RuleActionDispatcher (registered Application.php:517-523 on TaskSequenceCompletedEvent/TaskTerminalEvent).",
 				"reachedOn": "/automations composer, action 'Require approval'; approvers act in the 'my-approvals' runtime widget (src/runtimeRegistry.js:99) placed on a built app dashboard",
 				"owner": "ConductionNL/openregister",
-				"change": "automation-approval-steps"
+				"change": "automation-approval-steps",
+				"requirement": "openspec/specs/automation-designer :: Automation editor composes trigger, condition and actions (REQ-AUTD-002)"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -4393,7 +4467,8 @@
 				"evidence": "AutomationEditDialog.vue:281-300 generateDocument with template picker from filinq templates (src/composables/useDocudeskTemplates.js); compile validates config (AutomationCompilerService.php:184 DOCUDESK_APP_ID = 'filinq', :197 output modes attach/download-link/notify); lib/Listener/DocumentGenerationListener.php (registered Application.php:539-554) -> lib/Service/DocumentGenerationService.php:418-424 resolves route {filinq|docudesk}.correspondence#generate via FleetAppId::CANDIDATES (lib/Support/FleetAppId.php:81) and POSTs at :481. filinq's appinfo/info.xml id is 'filinq' and routes.php:220 has correspondence#generate (docudesk repo origin/development). download-link mode served by GET /api/generated-documents/{token} (routes.php:339).",
 				"reachedOn": "/automations composer, action 'Generate document'",
 				"owner": "ConductionNL/filinq",
-				"spec": "openspec/specs/automation-document-action"
+				"spec": "openspec/specs/automation-document-action",
+				"requirement": "openspec/specs/automation-designer :: Automation editor composes trigger, condition and actions (REQ-AUTD-002); openspec/specs/automation-document-action :: DocumentGenerationService dispatches attach, download-link, and notify output modes"
 			},
 			"provider": "filinq",
 			"providerHow": "read-from-code",
@@ -4516,7 +4591,8 @@
 				"reachedOn": "/automations composer: only effective inside a 'Require approval' action's on-approve/on-reject list",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/logic-automation-actions-that-run (OpenSpec pass 2026-09-27).",
-				"change": "logic-automation-actions-that-run"
+				"change": "logic-automation-actions-that-run",
+				"requirement": "openspec/changes/logic-automation-actions-that-run/specs/automation-designer :: A webhook step calls a configured source (REQ-BQAR-003)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -4556,7 +4632,8 @@
 				"reachedOn": "/automations composer, only inside a 'Require approval' follow-up list; or the embedded OpenRegister flow canvas",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/logic-automation-actions-that-run (OpenSpec pass 2026-09-27).",
-				"change": "logic-automation-actions-that-run"
+				"change": "logic-automation-actions-that-run",
+				"requirement": "openspec/specs/automation-designer :: Automation editor composes trigger, condition and actions (REQ-AUTD-002); openspec/changes/logic-automation-actions-that-run/specs/automation-designer :: A record step runs outside an approval (REQ-BQAR-002)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -4595,7 +4672,8 @@
 				"evidence": "AutomationsPage.vue row action 'Test' -> openTestPanel -> src/modals/AutomationTestPanelModal.vue:159 POST /apps/buildiq/api/automations/{uuid}/dry-run (routes.php:233) -> lib/Controller/AutomationsController.php:314 dryRun() -> AutomationCompilerService::compileDryRunRule (:940) + ConditionActionExecutor->execute([$rule], $payload, true, null) (AutomationsController.php:333), side effects suppressed; returns executed actions and approvalState.",
 				"reachedOn": "/automations (from app detail 'Automations'), row action 'Test'",
 				"owner": "ConductionNL/buildiq",
-				"spec": "openspec/specs/automation-designer"
+				"spec": "openspec/specs/automation-designer",
+				"requirement": "openspec/specs/automation-designer :: Dry-run test panel evaluates an automation without side effects (REQ-AUTD-007)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -4635,7 +4713,8 @@
 				"evidence": "AutomationsPage.vue:105-110 NcCheckboxRadioSwitch 'Enabled' -> toggleEnabled (:625-630) POST /apps/buildiq/api/automations/{uuid}/enable|disable (routes.php:231-232) -> AutomationsController.php:262/287 set enabled and recompile (:468-486), which writes enabled into each compiled artifact (notifications entry enabled flag AutomationCompilerService.php:775, schedules :887, ConditionActionRule active :930); buildiq listeners skip disabled automations (AutomationApprovalTriggerListener.php:433).",
 				"reachedOn": "/automations (from app detail 'Automations'), 'Enabled' switch per row",
 				"owner": "ConductionNL/buildiq",
-				"spec": "openspec/specs/automation-designer"
+				"spec": "openspec/specs/automation-designer",
+				"requirement": "openspec/specs/automation-designer :: Enable and disable toggle the compiled artifacts as a unit (REQ-AUTD-006)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -4676,7 +4755,8 @@
 				"owner": "ConductionNL/openregister",
 				"note": "Specified in ConductionNL/openregister openspec/changes/rules-engine-operability (openregister lane, OpenSpec pass 2026-09-27). Spec round part 3 (2026-10-07): openregister/rules-engine-operability is delivered (OpenRegister rule run log) but logs no buildiq automation; the buildiq run log is specified in logic-automation-run-log.",
 				"change": "logic-automation-run-log",
-				"readOn": "2026-10-07"
+				"readOn": "2026-10-07",
+				"requirement": "openspec/changes/logic-automation-run-log/specs/automation-designer :: Every run of an automation that buildiq dispatches is recorded (REQ-BQRL-001); openspec/changes/logic-automation-run-log/specs/automation-designer :: The Automations page shows the last run and opens the run log (REQ-BQRL-003)"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -4752,7 +4832,8 @@
 				"reachedOn": "",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/logic-script-step (OpenSpec pass 2026-09-27).",
-				"change": "logic-script-step"
+				"change": "logic-script-step",
+				"requirement": "openspec/changes/logic-script-step/specs/automation-script-step :: The composer offers a script step (REQ-BQSS-001)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -4791,7 +4872,8 @@
 				"reachedOn": "app detail /applications/{slug}, settings modal, 'Flows' picker (owner only)",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/logic-shared-flows-and-automations (OpenSpec pass 2026-09-27).",
-				"change": "logic-shared-flows-and-automations"
+				"change": "logic-shared-flows-and-automations",
+				"requirement": "openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings :: A bound flow declares where it runs (REQ-BQSF-001); openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings :: A binding runs the flow on the app's records (REQ-BQSF-002)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -4828,7 +4910,8 @@
 				"reachedOn": "page designer, index or dashboard page editor, Data source = OpenConnector (authoring only); the built app page does not render the bound data",
 				"owner": "ConductionNL/buildiq",
 				"note": "Owner moved from ConductionNL/integriq to ConductionNL/buildiq in the OpenSpec pass 2026-09-27: integriq serves the endpoint call (endpoints#handlePath); the missing half is buildiq's page renderer. Specified in openspec/changes/integrations-connector-bound-pages (OpenSpec pass 2026-09-27).",
-				"change": "integrations-connector-bound-pages"
+				"change": "integrations-connector-bound-pages",
+				"requirement": "openspec/specs/openconnector-api-sources :: REQ-OCAS-002 Builder step: bind an OpenConnector endpoint as a data source; openspec/changes/integrations-connector-bound-pages/specs/connector-bound-page-runtime :: A connector-bound index page renders its records (REQ-BQCB-001)"
 			},
 			"provider": "integriq",
 			"providerHow": "read-from-code",
@@ -4864,7 +4947,8 @@
 				"evidence": "src/manifest.d/80-connection-registry.json: menu 'Integrations' (section settings, permission admin, visibleIf appInstalled 'integriq'; integriq repo appinfo/info.xml id is 'integriq') and page /settings/integrations, type index on register integriq, schema app_connection, columns status/statusMessage/checkedAt/settingsUrl, header action openIntegriqConnections (src/services/connectionRegistry.js:43). buildiq declares its own connections in lib/Settings/connections.json (store, github, documents, rule-webhooks) and reports observations through lib/Service/Connection/ConnectionReporter.php:155-212 (store search, GitHub search/sync, document call).",
 				"reachedOn": "buildiq settings section, 'Integrations' menu entry (admin, only when integriq is installed) -> /settings/integrations",
 				"owner": "ConductionNL/integriq",
-				"change": "adopt-connection-registry"
+				"change": "adopt-connection-registry",
+				"requirement": "openspec/changes/adopt-connection-registry/specs/app-connections :: REQ-BIQ-CONN-004 An admin reads the connections on an Integrations page"
 			},
 			"provider": "integriq",
 			"providerHow": "read-from-code",
@@ -4901,7 +4985,8 @@
 				"reachedOn": "page designer, index/dashboard editor, Data source = OpenConnector, field mapper (authoring only)",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/integrations-connector-bound-pages (OpenSpec pass 2026-09-27).",
-				"change": "integrations-connector-bound-pages"
+				"change": "integrations-connector-bound-pages",
+				"requirement": "openspec/specs/openconnector-api-sources :: REQ-OCAS-003 Schema mapping of the external payload to display fields"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -4973,7 +5058,8 @@
 				"reachedOn": "",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/data-external-database-sources (OpenSpec pass 2026-09-27).",
-				"change": "data-external-database-sources"
+				"change": "data-external-database-sources",
+				"requirement": "openspec/changes/data-external-database-sources/specs/external-database-sources :: An administrator saves a SQL query as a table (REQ-BQDB-005)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -5010,7 +5096,8 @@
 				"owner": "ConductionNL/integriq",
 				"note": "The connectors exist in integriq now (sibling-has). The buildiq half is rendering a connector-bound page, specified in integrations-connector-bound-pages; the integriq change is integriq/connectors-catalogue-expansion (archived).",
 				"change": "integrations-connector-bound-pages",
-				"readOn": "2026-10-07"
+				"readOn": "2026-10-07",
+				"requirement": "openspec/changes/integrations-connector-bound-pages/specs/connector-bound-page-runtime :: An endpoint from a ready-made connector binds like any other endpoint (REQ-BQCB-005)"
 			},
 			"provider": "integriq",
 			"providerHow": "read-from-code",
@@ -5046,7 +5133,8 @@
 				"evidence": "src/components/ApplicationDetailActions.vue:330-337 'GitHub' action opens src/modals/GitHubSyncModal.vue (credential list from GET /apps/openregister/api/credentials filtered to provider github :402-414; status :383 GET /api/applications/{slug}/github/status; pull :503), LinkRepoDialog.vue:133 POST .../github/link, PublishConfirmDialog.vue:276 POST .../github/push; routes.php:305-308 -> lib/Controller/GitHubSyncController.php:108/147/191/233 -> lib/Service/GitHubAppSyncService.php:221 push through OpenRegister's CredentialBrokerService (GitHubAppSyncService.php:62; class exists on openregister origin/development); repo layout by AppRepoSerializer/AppRepoParser.",
 				"reachedOn": "app detail /applications/{slug}, header action 'GitHub' (link repo, push, pull, status)",
 				"owner": "ConductionNL/buildiq",
-				"change": "github-app-sync"
+				"change": "github-app-sync",
+				"requirement": "openspec/changes/github-app-sync/specs/github-app-sync :: Owner links an application to a GitHub repository; openspec/changes/github-app-sync/specs/github-app-sync :: Push serializes via the repo format and routes every call through the broker; openspec/changes/github-app-sync/specs/github-app-sync :: Pull creates a new draft ApplicationVersion, never overwriting production"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -5232,7 +5320,8 @@
 				"evidence": "Page designer: src/views/PageDesignerHost.vue:133 DocumentAttachmentsSection -> src/dialogs/DocumentTemplateAttachmentDialog.vue (template picker from GET /apps/filinq/api/templates via src/composables/useDocudeskTemplates.js:17; show :393; preview :423 -> filinq routes.php:228,234); DocumentAttachmentsSection.vue:254-282 injects a 'docudesk-document-actions' tab on the detail page; runtime src/components/runtime/DocumentActions.vue:105 -> src/composables/useDocudeskDocument.js:22 POST /apps/filinq/api/correspondence/generate (filinq routes.php:220) and downloads the result. Also the automation generateDocument action (logic-action-document). filinq's appinfo/info.xml id is 'filinq' (docudesk repo origin/development).",
 				"reachedOn": "page designer 'Document templates' section on a schema; built app detail page tab with generate buttons",
 				"owner": "ConductionNL/filinq",
-				"spec": "openspec/specs/docudesk-document-templates"
+				"spec": "openspec/specs/docudesk-document-templates",
+				"requirement": "openspec/specs/docudesk-document-templates :: REQ-DDT-002 Builder UI: attach a Docudesk template to a virtual-app schema; openspec/specs/docudesk-document-templates :: REQ-DDT-004 Document actions rendered on the object's detail surface"
 			},
 			"provider": "filinq",
 			"providerHow": "read-from-code",
@@ -5273,7 +5362,8 @@
 				"owner": "ConductionNL/integriq",
 				"note": "Still specified: the registry lookup exists in integriq and the schema key in openregister, but a buildiq maker cannot declare a registry-backed field and a built form cannot show one. Missing: a field-type option in buildiq's schema designer and a nextcloud-vue form field that calls integriq's property source. Spec round part 3 (2026-10-07): buildiq's half (the field editor declares x-openregister-property-source) is specified in data-registry-backed-field-option; the nextcloud-vue form field that renders it is cross-repo.",
 				"change": "data-registry-backed-field-option",
-				"readOn": "2026-10-07"
+				"readOn": "2026-10-07",
+				"requirement": "openspec/changes/data-registry-backed-field-option/specs/schema-designer-ui :: A maker declares that a field takes its value from a registry (REQ-BQRF-001)"
 			},
 			"provider": "integriq",
 			"providerHow": "read-from-code",
@@ -5312,7 +5402,8 @@
 				"evidence": "Page designer: src/views/PageDesignerHost.vue:111 WorkflowAttachmentsSection (gated by useAppStatus('dossiq') :442) -> src/dialogs/WorkflowAttachmentDialog.vue:297 case types from /apps/{dossiq|procest}/api/zgw/catalogi/v1/zaaktypen; WorkflowAttachmentsSection.vue:235-259 injects a 'procest-case-status' tab (src/runtimeRegistry.js:88). Runtime src/components/runtime/ProcestCaseStatusPanel.vue:117-220 -> src/composables/useProcestCase.js:125 startCase POST {zrc}/zaken, :161 write-back onto the OR object, :218 loadDetail; zrc base fleetAppPath('dossiq','api/zgw/zaken/v1') (useProcestCase.js:33, candidates dossiq then procest in src/services/fleetAppId.js). dossiq's appinfo/info.xml id is 'dossiq' and its routes.php carries the /api/zgw/zaken/v1 and catalogi routes (procest repo origin/development).",
 				"reachedOn": "page designer 'Workflows' section on a schema; built app detail page tab 'case status' with start case / retry",
 				"owner": "ConductionNL/dossiq",
-				"spec": "openspec/specs/procest-workflow-attachments"
+				"spec": "openspec/specs/procest-workflow-attachments",
+				"requirement": "openspec/specs/procest-workflow-attachments :: REQ-PWA-002 Builder UI: attach a Procest case type to a virtual-app schema; openspec/specs/procest-workflow-attachments :: REQ-PWA-003 Runtime: object creation starts a linked Procest case"
 			},
 			"provider": "dossiq",
 			"providerHow": "read-from-code",
@@ -5384,7 +5475,8 @@
 				"evidence": "New-application wizard step 1: src/dialogs/CreateApplicationWizard/Step1Basics.vue:53-56 'Generate with AI' opens src/dialogs/CopilotGenerateDialog.vue (useCopilot plan() :237) -> src/services/copilot.js:73 POST /apps/buildiq/api/copilot/plan (routes.php:320) -> lib/Controller/CopilotController.php:122 -> lib/Service/CopilotService.php:249 plan() via Nextcloud Task Processing TextToText (CopilotService.php:13,54-55, :199-203); proposal reviewed, then copilot.js:101 execute (CopilotService.php:825); on success CreateApplicationWizard.vue:339 routes to the new app's page designer. Health gate copilot.js:42 GET /api/copilot/health.",
 				"reachedOn": "/applications, 'New application' wizard, 'Generate with AI' in step 1",
 				"owner": "ConductionNL/buildiq",
-				"spec": "openspec/specs/ai-copilot"
+				"spec": "openspec/specs/ai-copilot",
+				"requirement": "openspec/specs/ai-copilot :: The creation wizard offers a prompt-to-app path"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -5424,7 +5516,8 @@
 				"evidence": "plan() performs no writes (routes.php:314 comment; CopilotService.php:249) and returns steps plus predicted manifests (CopilotService.php:760 predictManifests); src/components/copilot/CopilotPanel.vue:75 renders src/components/copilot/CopilotProposal.vue (step list and manifest diff); apply = copilot.js:101 POST /api/copilot/execute, reject = copilot.js:126 POST /api/copilot/discard (CopilotController.php:168,207). Same review step in CopilotGenerateDialog.vue (discard :357,:420).",
 				"reachedOn": "page designer /applications/{slug}/pages, 'AI copilot' toggle panel; new-app wizard 'Generate with AI'",
 				"owner": "ConductionNL/buildiq",
-				"spec": "openspec/specs/ai-copilot"
+				"spec": "openspec/specs/ai-copilot",
+				"requirement": "openspec/specs/ai-copilot :: The plan response carries a predicted manifest for review and validation"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -5463,7 +5556,8 @@
 				"evidence": "src/views/PageDesignerHost.vue:51-60 'AI copilot' toggle (copilotToggleVisible: health-gated, hidden for hybrid apps) and :152-158 CopilotPanel bound to appSlug/versionSlug; plan against the existing app (CopilotService.php:249 plan(brief, appSlug, ..., versionSlug)); tools include upsert page, add widget, upsert schema and menu item (lib/Mcp/BuildiqToolProvider.php:155-258, handlers in lib/Mcp/Handler/UpsertPageHandler.php, AddWidgetHandler.php).",
 				"reachedOn": "page designer for an existing virtual app, 'AI copilot' button",
 				"owner": "ConductionNL/buildiq",
-				"spec": "openspec/specs/ai-copilot"
+				"spec": "openspec/specs/ai-copilot",
+				"requirement": "openspec/specs/ai-copilot :: The builder offers a copilot side panel with approve-before-apply"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -5503,7 +5597,8 @@
 				"reachedOn": "/agents, only by typing the URL (no menu entry or in-app link)",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/ai-agents-knowledge-and-run-trace (OpenSpec pass 2026-09-27).",
-				"change": "ai-agents-knowledge-and-run-trace"
+				"change": "ai-agents-knowledge-and-run-trace",
+				"requirement": "openspec/specs/agent-workspace :: Agent entity declares a named, tool-scoped configuration"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -5543,7 +5638,8 @@
 				"reachedOn": "/agents, per-agent run history, only by typing the URL",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/ai-agents-knowledge-and-run-trace (OpenSpec pass 2026-09-27).",
-				"change": "ai-agents-knowledge-and-run-trace"
+				"change": "ai-agents-knowledge-and-run-trace",
+				"requirement": "openspec/specs/agent-workspace :: Every agent run is transparently logged and reviewable"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -5620,7 +5716,8 @@
 				"reachedOn": "",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/ai-llm-steps-and-computed-fields (OpenSpec pass 2026-09-27).",
-				"change": "ai-llm-steps-and-computed-fields"
+				"change": "ai-llm-steps-and-computed-fields",
+				"requirement": "openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps :: The composer offers an Ask AI step (REQ-BQLS-001)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -5739,7 +5836,8 @@
 				"reachedOn": "",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/ai-copilot-documents-and-code-help (OpenSpec pass 2026-09-27).",
-				"change": "ai-copilot-documents-and-code-help"
+				"change": "ai-copilot-documents-and-code-help",
+				"requirement": "openspec/changes/ai-copilot-documents-and-code-help/specs/ai-builder-assist :: Expression editors offer an Ask AI button (REQ-BQCH-001); openspec/changes/ai-copilot-documents-and-code-help/specs/ai-builder-assist :: The assist proposes a checked value (REQ-BQCH-002)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -5777,7 +5875,8 @@
 				"evidence": "The builder's own copilot does not stream: CopilotService.php:94-98 synchronous plan call with a 120 s timeout, and grep -iE 'stream|eventsource' over src/composables/useCopilot.js, src/services/copilot.js, src/components/copilot, CopilotController.php, CopilotService.php: none. The builder shell also mounts hermiq's companion (src/App.vue:17 :aiCompanion=\"true\"), which streams through nextcloud-vue v2.55.1 src/composables/useAiChatStream.js:358 fetchEventSource POST /apps/hermiq/api/chat/stream (hermiq routes.php:545), falling back to /api/chat/send.",
 				"reachedOn": "buildiq shell, floating AI companion (hermiq, when installed and healthy); the 'AI copilot' panel answers in one block",
 				"owner": "ConductionNL/hermiq",
-				"change": "ai-chat-companion-streaming"
+				"change": "ai-chat-companion-streaming",
+				"requirement": "openspec/changes/ai-chat-companion-streaming/specs/ai-chat-companion :: The assistant response is delivered incrementally"
 			},
 			"provider": "hermiq",
 			"providerHow": "read-from-code",
@@ -5813,7 +5912,8 @@
 				"evidence": "UI: src/components/ApplicationDetailActions.vue:312-316 'Manage permissions' opens src/modals/PermissionsModal.vue:5-10,29-48 (owners, editors, viewers pickers; empty owners refused), saved by onPermissionsSave :987-993 via src/mixins/applicationContext.js:121-128 PUT /apps/openregister/api/objects/buildiq/built-app/{uuid}. Server-side enforcement through lib/Service/PermissionResolver.php:99 matchesCaller(): list filter ApplicationsController.php:1150-1170 (viewers get the roster stripped), manifest read ApplicationsController.php:212 -> requirePermission :1439-1480, manifest write :355-367 (owners/editors, audited admin bypass), versions read/write lib/Controller/ApplicationVersionsController.php:102,109,157,254,340,457, release owner-only :531-532, publish ApplicationPublishController.php:61,413, promotion VersionPromotionController.php:71,349, automations AutomationsController.php:107,116,438, agents AgentsController.php:90,151, GitHub sync GitHubSyncController.php:234,262,290; OR write path gated by lib/Lifecycle/ApplicationVersionOwnerGuard.php (owners on publish/archive/reopen)",
 				"reachedOn": "VirtualApps application detail, actions menu -> Manage permissions",
 				"owner": "ConductionNL/buildiq",
-				"spec": "openspec/specs/openbuild-rbac"
+				"spec": "openspec/specs/openbuild-rbac",
+				"requirement": "openspec/specs/openbuild-rbac :: Permissions field shape and default on creation; openspec/specs/openbuild-rbac :: Role-to-action mapping in editor UIs"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -5852,7 +5952,8 @@
 				"evidence": "src/modals/PermissionsModal.vue:24-48 the three role pickers take Nextcloud groups (options from ApplicationDetailActions.vue:497-506 availableGroups); lib/Service/PermissionResolver.php:10-20,242-270 resolves 'group:<gid>' (and bare gid, back-compat) against IGroupManager group membership (:162-170); lib/Service/AppNavigationService.php:296-305 uses the same roster for the app's navigation entry",
 				"reachedOn": "VirtualApps application detail, actions menu -> Manage permissions",
 				"owner": "ConductionNL/buildiq",
-				"spec": "openspec/specs/openbuild-rbac"
+				"spec": "openspec/specs/openbuild-rbac",
+				"requirement": "openspec/specs/openbuild-rbac :: Manifest endpoint enforces role membership"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -5890,7 +5991,8 @@
 				"owner": "ConductionNL/buildiq",
 				"readOn": "2026-09-26",
 				"note": "OpenSpec pass 2026-09-27: buildiq's half shipped with openspec/changes/archive/2026-07-11-data-scopes-authoring. The missing half is openregister's: it does not advertise capabilities.openregister.authorization.scopes (ae898b0 lib/Capabilities has only IntegrationsCapability and UrnCapability), so buildiq offers the group scope only. Corrections round 9 (2026-09-28): the OpenRegister half is specified in ConductionNL/openregister openspec/changes/access-owner-and-condition-scopes (owner-moves pass, openregister#4112; openregister openspec/parity/gap-decisions.json records it build for this row): OpenRegister reads the @creator and condition rules buildiq writes and advertises capabilities.openregister.authorization.scopes.",
-				"spec": "openspec/specs/data-scopes-authoring"
+				"spec": "openspec/specs/data-scopes-authoring",
+				"requirement": "openspec/specs/data-scopes-authoring :: The Schema Designer MUST provide an Access sub-editor with per-operation scopes (REQ-OBDSA-001)"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -5969,7 +6071,8 @@
 				"evidence": "src/components/page-editor/PageListEditor.vue:114-120 and MenuTreeEditor.vue:123 mount fields/PermissionGroupField.vue, which writes page.permission = 'group:<gid>' (:127-130). Server side lib/Service/ManifestResolverService.php:586-610 filterManifestForCaller strips menu and page entries whose permission the caller lacks (entryPasses :786-800, caller set 'group:<gid>' :700-707), called from ApplicationsController.php:280,555; group-scoped dashboard becomes the landing page (:810-835). Client mirrors it in nextcloud-vue v2.55.1 CnAppNav.vue:1039-1045 and CnAppRoot.vue:2859-2865",
 				"reachedOn": "buildiq builder /builder/:slug/pages, page list, permission group picker",
 				"owner": "ConductionNL/buildiq",
-				"spec": "openspec/specs/openbuild-runtime"
+				"spec": "openspec/specs/openbuild-runtime",
+				"requirement": "openspec/specs/openbuild-runtime :: The runtime MUST inject the current user's group context"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -6008,7 +6111,8 @@
 				"evidence": "Creating an app is Nextcloud-admin only: lib/Controller/ApplicationCreationController.php:108-124 #[AuthorizedAdminSetting] plus isAdmin() in the body. Changing an app needs owners/editors: ApplicationsController.php:355-367 saveManifest, ApplicationVersionsController.php:102,254,340,457; releasing, publishing and permissions are owner-only (ApplicationVersionsController.php:531-532, ApplicationPublishController.php:61, PermissionsModal.vue:24). Using the app needs only a viewer role (ApplicationsController.php:212, :1150-1157). Registration forms and page layouts are admin-only (RegistrationFormController.php:84-190, PageLayoutController.php:92-196)",
 				"reachedOn": "VirtualApps application detail -> Manage permissions (editors vs viewers)",
 				"owner": "ConductionNL/buildiq",
-				"spec": "openspec/specs/openbuild-rbac"
+				"spec": "openspec/specs/openbuild-rbac",
+				"requirement": "openspec/specs/openbuild-rbac :: Role-to-action mapping in editor UIs"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -6084,7 +6188,8 @@
 				"reachedOn": "VirtualApps application detail, actions menu -> Permission history (permissions only)",
 				"owner": "ConductionNL/buildiq",
 				"note": "Open Register's half shipped in ConductionNL/openregister openspec/changes/archive/2026-03-21-audit-trail-immutable; the missing half is buildiq's own work, so the owner moved to ConductionNL/buildiq (openregister lane, OpenSpec pass 2026-09-27; owner was ConductionNL/openregister).",
-				"spec": "openspec/specs/openbuild-rbac"
+				"spec": "openspec/specs/openbuild-rbac",
+				"requirement": "openspec/changes/capability-requirements-backfill/specs/openbuild-rbac :: An owner sees who changed an app's design and when (REQ-BQCV-014)"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -6120,7 +6225,8 @@
 				"evidence": "OpenRegister records every object write in its audit trail (route origin/development appinfo/routes.php:1341 '/api/objects/{register}/{schema}/{id}/audit-trails'). Built-app detail pages get nextcloud-vue v2.55.1 CnObjectSidebar with the auditTrail tab by default (CnObjectSidebar.vue:877) rendering CnAuditTrailTab.vue:244, which reads that route; buildiq's DetailPageEditor.vue:67-99 toggles the sidebar. A logs page type also exists (src/components/page-editor/LogsPageEditor.vue)",
 				"reachedOn": "record detail page of a built app, sidebar Audit trail tab",
 				"owner": "ConductionNL/openregister",
-				"spec": "openspec/specs/page-editor-coverage"
+				"spec": "openspec/specs/page-editor-coverage",
+				"requirement": "openspec/specs/openbuild-page-designer :: Detail-page sub-editor: sidebar tabs and route param schema"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -6156,7 +6262,8 @@
 				"evidence": "A manifest declares credentials[] by name only; on publish lib/Controller/ApplicationPublishController.php:273 calls lib/Service/Credential/VirtualAppCredentialRegistrar.php onPublish(), which onboards the app to OpenRegister's credential broker (origin/development lib/Service/Credential/CredentialAppTokenService.php, DoriathApplicationRegistrar.php). Connector configs reference credentials by UUID; the GitHub repo export strips secret-named keys (lib/Service/AppRepoPayloadSafety.php:48-67,143-171, used by AppRepoSerializer.php:445,568); GitHub push reads the token from OR's credentials API (src/modals/GitHubSyncModal.vue:397-412) and redacts tokens from errors (GitHubPushService.php:652)",
 				"reachedOn": "VirtualApps application detail -> Publish (credential onboarding); GitHub sync modal",
 				"owner": "ConductionNL/openregister",
-				"spec": "openspec/specs/github-app-repo-format"
+				"spec": "openspec/specs/github-app-repo-format",
+				"requirement": "openspec/specs/github-app-repo-format :: Credentials declaration in the descriptor; openspec/specs/github-app-repo-format :: Credential values never leave the instance"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -6272,7 +6379,8 @@
 				"evidence": "Editors work on draft versions; only an owner can release a draft to production: lib/Controller/ApplicationVersionsController.php:516-532 isOwnerStrict, also enforced on OR's write path by lib/Lifecycle/ApplicationVersionOwnerGuard.php (publish/archive/reopen require owners); UI src/views/VersionHistory.vue:68-72 Release shown to owners only (canRelease :139); promotion between versions VersionPromotionController.php:71,349. grep -i 'approv' in VersionPromotionService.php, VersionPromotionController.php, ApplicationVersionsController.php, ApplicationPublishController.php, VersionHistory.vue: no hits",
 				"reachedOn": "application detail -> Version history -> Release (owner only)",
 				"owner": "ConductionNL/buildiq",
-				"spec": "openspec/specs/version-lifecycle-ui"
+				"spec": "openspec/specs/version-lifecycle-ui",
+				"requirement": "openspec/specs/version-lifecycle-ui :: Release action sets production, publishes, and demotes the previous production"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -6311,7 +6419,8 @@
 				"evidence": "All app definitions and records live in OpenRegister on the instance's own database: lib/Settings/openbuild_register.json (built-app, applicationVersion), per-version data registers provisioned at creation (lib/Service/ApplicationCreationService.php:262-325, lib/Service/DataRegisterProvisioner.php). The AI copilot uses Nextcloud Task Processing (lib/Service/CopilotService.php:13,54-55), so the model provider is the admin's choice. Outbound calls in lib/Service are only GitHub (GitHubCatalogService.php:60, GitHubPushService.php) and connectors the maker adds",
 				"reachedOn": "every built app (storage default)",
 				"owner": "ConductionNL/openregister",
-				"spec": "openspec/specs/openbuild-application-register"
+				"spec": "openspec/specs/openbuild-application-register",
+				"requirement": "openspec/changes/platform-properties/specs/platform-properties :: The builder runs on the customer's own Nextcloud (REQ-PLAT-007)"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -6346,7 +6455,8 @@
 				"evidence": "appinfo/routes.php:84-85 applicationVersions#index/create GET|POST /api/applications/{appSlug}/versions -> lib/Controller/ApplicationVersionsController.php; src/views/VersionHistory.vue:6-9 reads this endpoint (not generic OR objects, which never matched the register shape) and lists draft/staging/production versions side by side",
 				"reachedOn": "VirtualAppDetail 'Version history' sidebar tab",
 				"owner": "ConductionNL/buildiq",
-				"spec": "openspec/specs/application-versions"
+				"spec": "openspec/specs/application-versions",
+				"requirement": "openspec/specs/version-lifecycle-ui :: New-draft action creates a manifest-cloned, shared-register draft; openspec/specs/version-lifecycle-ui :: Production and active versions are visually marked"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -6381,7 +6491,8 @@
 				"evidence": "routes.php:110 versionPromotion#promote POST /api/applications/{appUuid}/versions/{versionUuid}/promote -> lib/Controller/VersionPromotionController.php; called from src/components/applicationDetail/ApplicationDetailHeader.vue:679 (promote pill/dialog), RBAC owners+editors only in-body (admins not auto-granted); also one-step release: src/views/VersionHistory.vue:409-420 release() POSTs /api/applications/{slug}/versions/{versionSlug}/release (routes.php:92 applicationVersions#release: set-as-production + demote previous production, owner-only)",
 				"reachedOn": "VirtualAppDetail header, promote pill on a non-production version",
 				"owner": "ConductionNL/buildiq",
-				"change": "openbuild-version-promotion"
+				"change": "openbuild-version-promotion",
+				"requirement": "openspec/specs/version-promotion :: Promotion endpoint accepts a strategy and targets `sourceVersion.promotesTo`"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -6416,7 +6527,8 @@
 				"evidence": "src/views/VersionHistory.vue:83-95 askRollback()/RollbackConfirmModal emits 'rollback' -> src/components/tabs/ApplicationVersionsTab.vue:95 onRollback() PUTs {manifest} (:123) to /apps/buildiq/api/applications/{slug}/manifest (routes.php:59 applications#saveManifest). Comment at ApplicationVersionsTab.vue:90-118 documents and fixes a prior defect where rollback went through the generic Application PUT and silently dropped both manifest and version (OR strips undeclared properties) -- now fixed by targeting the manifest endpoint directly.",
 				"reachedOn": "VirtualAppDetail 'Version history' tab, row action Rollback",
 				"owner": "ConductionNL/buildiq",
-				"spec": "openspec/specs/application-versions"
+				"spec": "openspec/specs/application-versions",
+				"requirement": "openspec/changes/capability-requirements-backfill/specs/application-versions :: A maker rolls a version back to an earlier manifest (REQ-BQCV-015)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -6490,7 +6602,8 @@
 				"evidence": "src/dialogs/CreateApplicationWizard/Step2Preset.vue:82-128 four canned presets (single, dev-prod, dev-staging-prod, custom) pre-populate the version chain; lib/Service/ApplicationCreationService.php:262-330 creates one ApplicationVersion PLUS one dedicated OpenRegister register per version/environment (registerSlug = VERSION_REGISTER_PREFIX+appSlug+'-'+versionSlug, provisionRegister():675-715) -- real separate data stores, not just labels",
 				"reachedOn": "CreateApplicationWizard Step 2, 'Development + Staging + Production' preset",
 				"owner": "ConductionNL/buildiq",
-				"change": "openbuild-versioning-model"
+				"change": "openbuild-versioning-model",
+				"requirement": "openspec/specs/application-creation-wizard :: Four-step wizard shape; openspec/specs/application-versions :: Release endpoint sets production, publishes, and demotes the previous production"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -6617,7 +6730,8 @@
 				"evidence": "lib/Service/ExportService.php:270-276 'Build the installable NC-app scaffold as an in-memory path=>contents map... both the config-set store AND an app-store-installable, standalone nc-vue app (info.xml + the manifest runtime + OpenRegister as its data layer)'; lib/Service/ExportAppContentBundler.php:352 confirms the bundle is 'a standalone Nextcloud app'",
 				"reachedOn": "VirtualAppDetail header actions 'Export' (src/components/ApplicationDetailActions.vue:39 mounts ExportDialog) and the 'Exports' sidebar tab (src/views/ExportJobsList.vue:77)",
 				"owner": "ConductionNL/buildiq",
-				"change": "openbuild-export-to-real-app"
+				"change": "openbuild-export-to-real-app",
+				"requirement": "openspec/specs/openbuild-exporter :: Exported app boots standalone with zero Buildiq dependency"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -6656,7 +6770,8 @@
 				"evidence": "routes.php:169-171 exports#submit POST /api/applications/{slug}/exports, exports#download GET /api/exports/{uuid}/download; src/dialogs/ExportDialog.vue:220-274 target='zip' 'ZIP download' option, :471 submits, download link follows",
 				"reachedOn": "VirtualAppDetail header actions 'Export' (src/components/ApplicationDetailActions.vue:39 mounts ExportDialog) and the 'Exports' sidebar tab (src/views/ExportJobsList.vue:77)",
 				"owner": "ConductionNL/buildiq",
-				"change": "openbuild-exporter"
+				"change": "openbuild-exporter",
+				"requirement": "openspec/specs/openbuild-exporter :: Export target — ZIP archive"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -6695,7 +6810,8 @@
 				"evidence": "src/dialogs/ExportDialog.vue:273-274 target='github' 'Push to GitHub' option, :336 filters credentials to provider github, :455 dispatches; underlying push uses lib/Service/GitHubPushService.php via ExportService, same info.xml-carrying bundle as the ZIP path",
 				"reachedOn": "VirtualAppDetail header actions 'Export' (src/components/ApplicationDetailActions.vue:39 mounts ExportDialog) and the 'Exports' sidebar tab (src/views/ExportJobsList.vue:77)",
 				"owner": "ConductionNL/buildiq",
-				"change": "openbuild-exporter"
+				"change": "openbuild-exporter",
+				"requirement": "openspec/specs/openbuild-exporter :: Export target — GitHub repository"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -6735,7 +6851,8 @@
 				"evidence": "lib/Service/ExportJobService.php:159,182,187 schedules lib/BackgroundJob/RunExportJob.php (extends QueuedJob) via IJobList::add()/has()/remove() on export submit -- correctly NOT listed in appinfo/info.xml <job> because it is a one-shot QueuedJob added dynamically per request, not a periodic TimedJob (only CleanupExpiredExports, a periodic job, is declared at appinfo/info.xml:107); routes.php:170-171 exports#download/run + src/components/tabs/ExportJobsTab.vue -> src/views/ExportJobsList.vue polls/downloads",
 				"reachedOn": "VirtualAppDetail 'Exports' sidebar tab",
 				"owner": "ConductionNL/buildiq",
-				"change": "openbuild-exporter"
+				"change": "openbuild-exporter",
+				"requirement": "openspec/specs/openbuild-exporter :: Export is asynchronous via Nextcloud's IJob"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -6775,7 +6892,8 @@
 				"evidence": "grep for 'import' across lib/Controller: only SettingsController's internal re-import of openbuild_register.json config, and ExportsController comments unrelated to importing an app package. No route or controller accepts an uploaded ZIP/ package to recreate an app; lib/Service/AppRepoParser.php only parses a GitHub repo URL (github-shop-catalogue / github-app-sync), not an uploaded file.",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/lifecycle-import-app-and-cli (OpenSpec pass 2026-09-27).",
-				"change": "lifecycle-import-app-and-cli"
+				"change": "lifecycle-import-app-and-cli",
+				"requirement": "openspec/changes/lifecycle-import-app-and-cli/specs/app-package-import :: A maker imports an exported archive as a new app (REQ-BQIC-001)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -6809,7 +6927,8 @@
 				"evidence": "lib/Controller/GitHubSyncController.php + lib/Service/GitHubPushService.php/GitHubAppSyncService.php: link/push/pull/status against a single repo, no branch parameter or merge concept -- one manifest round-trip per app, not a branching workflow.",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/lifecycle-git-branches (OpenSpec pass 2026-09-27).",
-				"change": "lifecycle-git-branches"
+				"change": "lifecycle-git-branches",
+				"requirement": "openspec/changes/lifecycle-git-branches/specs/app-version-branches :: A maker starts a branch from a version (REQ-BQGB-001); openspec/changes/lifecycle-git-branches/specs/app-version-branches :: A maker merges a branch and picks a side per conflict (REQ-BQGB-003)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -6844,7 +6963,8 @@
 				"reachedOn": "RuleSets page /business-rules (typed URL only), 'Run all tests' on a business-rule set",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/lifecycle-release-test-gate (OpenSpec pass 2026-09-27).",
-				"change": "lifecycle-release-test-gate"
+				"change": "lifecycle-release-test-gate",
+				"requirement": "openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate :: The suite runs the app's rule-set tests (REQ-BQRT-002); openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate :: Release waits for a green suite (REQ-BQRT-004)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -6960,7 +7080,8 @@
 				"state": "building",
 				"evidence": "Backend exists: routes.php:289-290 store#search GET /api/store/templates and store#install POST /api/store/templates/{slug}/install -> lib/Controller/StoreController.php:161 search(), :259 install(), delegating to OpenRegister's OCA\\OpenRegister\\AppHost\\Service\\GenericStoreService (present on openregister origin/development lib/AppHost/Service/GenericStoreService.php) with descriptor schema application-template (:121-137). No page reaches it: _lane/api-paths.txt has no frontend reference to /api/store/templates (search); the only install caller is src/modals/CloneTemplateDialog.vue:297-303 installRemote(), used only when the 'remote' prop (:65) is true, and the sole parent src/views/TemplateGallery.vue:304-305 passes only :github, never :remote (grep ':remote' in src: no hits).",
 				"owner": "ConductionNL/openregister",
-				"change": "reuse-remote-store-section"
+				"change": "reuse-remote-store-section",
+				"requirement": "openspec/changes/reuse-remote-store-section/specs/template-catalogue-ui :: The app store shows the shared catalogue as a section (REQ-BQRS-001); openspec/changes/reuse-remote-store-section/specs/template-catalogue-ui :: A maker installs a catalogue template (REQ-BQRS-004)"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -6999,7 +7120,8 @@
 				"evidence": "src/views/TemplateGallery.vue:122-232 'Apps on GitHub' section, :580 searchGithub() GETs /apps/buildiq/api/shop/github/search (routes.php:297 -> lib/Controller/ShopController.php:121 githubSearch() -> lib/Service/GitHubCatalogService.php:208 search(), fixed host api.github.com :60, topics buildiq-app and openbuild-app :78-79, /search/repositories :345); install: TemplateGallery.vue:638 openGithubInstall() opens CloneTemplateDialog in github mode, CloneTemplateDialog.vue:338 POSTs /api/shop/github/install (routes.php:298 -> ShopController.php:194 githubInstall(), fetchRepoFiles :227, ApplicationsController::installFromTemplateArray :244); optional GitHub credential from /apps/openregister/api/credentials (TemplateGallery.vue:615) raises the rate limit",
 				"reachedOn": "Templates page /templates, 'Apps on GitHub' search and Install",
 				"owner": "ConductionNL/buildiq",
-				"change": "github-shop-catalogue"
+				"change": "github-shop-catalogue",
+				"requirement": "openspec/changes/github-shop-catalogue/specs/github-shop-catalogue :: Server-side GitHub search over the buildiq-app topic; openspec/changes/github-shop-catalogue/specs/github-shop-catalogue :: GitHub install parses the repo and reuses the clone seam"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -7039,7 +7161,8 @@
 				"evidence": "src/components/ApplicationDetailActions.vue:325 'Save as template' action (owners and editors, :431), :1053 opens SaveAsTemplateDialog (:87-95) with the active version manifest and companion schemas; src/dialogs/SaveAsTemplateDialog.vue:572-574 PUTs an existing or POSTs a new application-template record (isSeeded false, :8) to /apps/openregister/api/objects/buildiq/application-template; the record then lists in TemplateGallery (sortedTemplates puts isSeeded===false after seeded ones, TemplateGallery.vue:388-393) and clones through /api/applications/from-template/{templateSlug}",
 				"reachedOn": "VirtualAppDetail header actions 'Save as template'; result appears on /templates",
 				"owner": "ConductionNL/buildiq",
-				"spec": "openspec/specs/save-as-template"
+				"spec": "openspec/specs/save-as-template",
+				"requirement": "openspec/specs/save-as-template :: REQ-SAT-001 \"Save as template\" action and dialog on the application-detail surface"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -7077,7 +7200,8 @@
 				"evidence": "Save: src/views/PageDesigner.vue:102 WidgetSelectionPanel -> src/components/page-editor/WidgetSelectionPanel.vue:63 SaveBlockDialog -> src/dialogs/SaveBlockDialog.vue:451 POSTs a component-block record to /apps/openregister/api/objects/buildiq/component-block; place: PageDesigner.vue:64-68 BlockLibraryPanel lists blocks (BlockLibraryPanel.vue:226 GET; import creates via :385) and emits insert-widgets (:140,:295) with freshly minted ids, handled by onInsertWidgets (PageDesigner.vue:844-852); PageDesigner is mounted by src/views/PageDesignerHost.vue:101 (registry.js:88,231, page PageDesigner /builder/:slug/pages src/manifest.json:588); blocks also browsable on /templates Blocks view with a category filter (TemplateGallery.vue:254)",
 				"reachedOn": "Page designer /builder/:slug/pages: select widgets, Save as block; Block library panel, Insert",
 				"owner": "ConductionNL/buildiq",
-				"spec": "openspec/specs/component-blocks"
+				"spec": "openspec/specs/component-blocks",
+				"requirement": "openspec/specs/component-blocks :: Save-as-block flow captures a widget or a page section; openspec/specs/component-blocks :: Insert deep-copies the fragment with freshly minted ids"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -7119,7 +7243,8 @@
 				"reachedOn": "Inside pipelinq: the buildiq edit button on a page switches to edit mode and saves the delta; buildiq then lists pipelinq as a hybrid app (src/views/DashboardIndex.vue:275 hybrid count) with its layers on /applications/:objectId/manifest",
 				"owner": "ConductionNL/buildiq",
 				"note": "OpenSpec pass 2026-09-27: buildiq's half is specified and built by openspec/changes/openbuild-inline-edit-persistence. The missing half is each fleet app wiring persistManifestDelta through nextcloud-vue (hydra ADR-101); only pipelinq does.",
-				"spec": "openspec/specs/app-override-persistence"
+				"spec": "openspec/specs/app-override-persistence",
+				"requirement": "openspec/specs/app-override-persistence :: Fleet-app override is stored as a keyed delta keyed by appId"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -7158,7 +7283,8 @@
 				"evidence": "routes.php:251-255 appOverride#listUserOverrides/getUser/saveUser/clearUser -> AppOverrideController.php:201,249,317,360 -> AppOverrideService.php:199 getUserDelta, :253 upsertUserDelta (scope 'user' ApplicationVersion owned by the session uid, gated on Application.allowUserOverrides); toggle 'Allow per-user customisation' in src/modals/AppSettingsModal.vue:40-46 (from ApplicationDetailActions.vue:55); user edits own delta in src/components/applicationDetail/widgets/ManifestWidget.vue:74-100 and src/views/ManifestLayersDetail.vue:452-510 via src/modals/UserDeltaEditModal.vue:135; the user delta is applied only by GET /api/app-overrides/{appId} (AppOverrideService.php:166-176), consumed only by pipelinq src/main.js:217",
 				"reachedOn": "VirtualAppDetail Manifest widget 'Your delta', and /applications/:objectId/manifest; applied at runtime only inside pipelinq",
 				"owner": "ConductionNL/buildiq",
-				"change": "layered-versioned-app-deltas"
+				"change": "layered-versioned-app-deltas",
+				"requirement": "openspec/specs/layered-app-deltas :: A user delta is owned solely by its creator and gated by the flag; openspec/specs/layered-app-deltas :: Manifest resolves as base, then admin delta, then caller's user delta"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -7198,7 +7324,8 @@
 				"evidence": "Two layer stacks. (1) Manifest deltas: base, then admin (instance-wide), then user; ApplicationVersion.scope enum is only ['admin','user'] (lib/Settings/openbuild_register.json ApplicationVersion.scope), merged in AppOverrideService.php:149-182; no organisation or team layer. (2) Page-layout screen overrides: lib/Service/PageLayoutLayerStack.php:1-10 orders baseRef base, schema-wide layout, type layout, audience override (group/team from the session, IGroupManager) and user override, narrowest last, each falling through; authored in src/components/page-editor/DetailPageEditor.vue:138-151 (AppliesToPanel, ScreenOverrideList) via src/services/pageLayouts.js:20 -> routes.php:271-273 pageLayout#index/save/recut -> lib/Controller/PageLayoutController.php, lib/Service/PageLayoutAuthoringService.php; served only through the OpenRegister leaf buildiq-page-layout (lib/Integration/PageLayoutLeafProvider.php:71), which no fleet app consumes (grep 'buildiq-page-layout' in procest, portaliq, nextcloud-vue, pipelinq, decidesk, openregister origin/development and nextcloud-vue v2.55.1: no hits)",
 				"reachedOn": "Page designer detail-page editor (screen overrides) and /applications/:objectId/manifest (admin and user deltas)",
 				"owner": "ConductionNL/buildiq",
-				"change": "screen-overrides-as-a-patch-with-fall-through"
+				"change": "screen-overrides-as-a-patch-with-fall-through",
+				"requirement": "openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers :: Fall-through is declared, total and tie-free (REQ-OBSO-005)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -7237,7 +7364,8 @@
 				"evidence": "Page-layout overrides: lib/Service/LayoutDeltaService.php:187 orphanedPaths(), PageLayoutAuthoringService.php:194-211 stamps each layout with drifted and orphanedPaths; src/components/page-editor/fields/ScreenOverrideList.vue:48-65 marks a drifted override, lists its orphaned paths and offers Re-cut (src/services/pageLayouts.js:96 POST /api/page-layouts/{layoutId}/recut, routes.php:271). Manifest deltas: no drift check in buildiq (grep orphan/drift in AppOverrideService.php, ManifestLayersDetail.vue, ManifestWidget.vue: none); pipelinq origin/development src/main.js:225-231 only console.warns orphanedDeltaPaths from mergeManifestDelta.",
 				"reachedOn": "Page designer detail-page editor, screen override list (drifted badge, Re-cut)",
 				"owner": "ConductionNL/buildiq",
-				"change": "screen-overrides-as-a-patch-with-fall-through"
+				"change": "screen-overrides-as-a-patch-with-fall-through",
+				"requirement": "openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers :: Drift is loud, and the page still renders (REQ-OBSO-003)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -7303,7 +7431,8 @@
 				"reachedOn": "Automations dialog condition 'Reference a rule set' (reached from ApplicationDetailActions.vue:854); rule sets on /business-rules by typed URL only",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/logic-shared-flows-and-automations (OpenSpec pass 2026-09-27).",
-				"change": "logic-shared-flows-and-automations"
+				"change": "logic-shared-flows-and-automations",
+				"requirement": "openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings :: An automation can be shared with other apps (REQ-BQSF-003)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -7339,7 +7468,8 @@
 				"evidence": "Bind: src/views/AutomationsPage.vue:21-22 'Edit flows...' opens src/dialogs/FlowPickerDialog.vue (:147) and writes Application.flows[].flow UUIDs (via ApplicationDetailActions setFlows, see ApplicationDetailDashboard.vue:563-566); src/components/applicationDetail/widgets/FlowsWidget.vue (mounted ApplicationDetailDashboard.vue:296) lists them; agents belong by their applicationSlug. Export: lib/Service/ExportService.php:210,309 flowAndAgentBundler->bundle() (lib/Service/FlowAndAgentExportBundler.php, reads the Flow entity, agents by applicationSlug with a hermiq register fallback); src/dialogs/ExportDialog.vue:64-70 flows option on by default ('an exported app without them installs and does nothing'). Install: lib/Service/AppChannelApplier.php:211,217 flowProvisioner/agentProvisioner apply() called from ApplicationsController.php:1725 (installFromTemplateArray, used by GitHub shop install) and GitHubAppSyncService.php:523 (GitHub pull); flows arrive disabled",
 				"reachedOn": "Automations page (from VirtualAppDetail actions, ApplicationDetailActions.vue:854) 'Edit flows...'; VirtualAppDetail Flows widget and Export dialog; applied on /templates GitHub install and GitHub sync pull",
 				"owner": "ConductionNL/buildiq",
-				"change": "app-repo-format-flow-agent-export"
+				"change": "app-repo-format-flow-agent-export",
+				"requirement": "openspec/specs/github-app-repo-format :: A published repository carries the app's bound flows and agents; openspec/specs/app-export-completeness :: An export MUST carry the flows the application binds, and the agents that point at it"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -7378,7 +7508,8 @@
 				"evidence": "Served: lib/AppInfo/Application.php:486-490 registers BuildiqLeafRegistrationListener on OCA\\OpenRegister\\Event\\RegisterLeafProvidersEvent (present on openregister origin/development lib/Event/RegisterLeafProvidersEvent.php), contributing lib/Integration/PageLayoutLeafProvider.php:71 LEAF_ID buildiq-page-layout and lib/Integration/RegistrationFormLeafProvider.php:61 buildiq-registration-form (extending OCA\\OpenRegister\\Service\\Integration\\IntegrationProvider). Authored: src/components/page-editor/DetailPageEditor.vue:138-151 (AppliesToPanel, ScreenOverrideList, RegistrationFormList) -> src/services/pageLayouts.js:20 and src/services/registrationForms.js:14 -> routes.php:271-283 pageLayout#index/save/recut, registrationForm#index/save/target. Consumers: grep 'buildiq-page-layout|buildiq-registration-form' in procest (dossiq), portaliq, nextcloud-vue, pipelinq, decidesk, openregister origin/development and nextcloud-vue v2.55.1: no hits; portaliq's registrationForm (lib/Service/Intake/PortalFormBindingResolver.php:73) is its own schema, not this leaf.",
 				"reachedOn": "Page designer detail-page editor (authoring only); no consuming app renders the served layout or form",
 				"owner": "ConductionNL/buildiq",
-				"change": "forms-per-case-type"
+				"change": "forms-per-case-type",
+				"requirement": "openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type :: The layout is served as a data-provider leaf (REQ-OBPL-003); openspec/changes/forms-per-case-type/specs/registration-form-builder :: The leaf serves by audience and by name (REQ-OBRF-006)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -7414,7 +7545,8 @@
 				"evidence": "src/dialogs/ThemePickerDialog.vue lets a user pick an NL Design token set from a catalogue when Thematiq is installed (nldesignAvailable gate, checked via src/composables/useAppStatus.js which resolves fleet-renamed app ids correctly -- confirmed thematiq's current <id> in appinfo/info.xml is 'thematiq', and useAppStatus.js:26 imports fleetAppCandidates/resolveFleetAppId from src/services/fleetAppId.js to answer to both old and new ids); saved to manifest runtime.theme and applied at render time by the shared scoped-theme-applier",
 				"reachedOn": "Application detail page, Theme section -> Choose an NL Design theme",
 				"owner": "ConductionNL/thematiq",
-				"spec": "openspec/specs/nldesign-theme-selection"
+				"spec": "openspec/specs/nldesign-theme-selection",
+				"requirement": "openspec/specs/nldesign-theme-selection :: REQ-NTS-002 Builder UI: visual theme picker; openspec/specs/nldesign-theme-selection :: REQ-NTS-003 Runtime: theme application delegates entirely to `CnAppRoot`/`useScopedTheme`"
 			},
 			"provider": "thematiq",
 			"providerHow": "read-from-code",
@@ -7484,7 +7616,8 @@
 				"evidence": "buildiq and nextcloud-vue components use Nextcloud CSS custom properties throughout (e.g. DashboardPageEditor.vue, DetailPageEditor.vue, StubPageEditor.vue all use var(--color-main-background), var(--color-main-text), var(--color-border) rather than hardcoded colours), which is the platform's own dark-mode mechanism -- no dedicated dark-mode code needed in buildiq itself",
 				"reachedOn": "any built app or builder screen, following the Nextcloud account's dark mode setting",
 				"owner": "nextcloud/server",
-				"change": "openbuild-nc-color-variables"
+				"change": "openbuild-nc-color-variables",
+				"requirement": "openspec/changes/openbuild-nc-color-variables/specs/frontend-foundation :: Built apps follow the user's dark mode"
 			},
 			"provider": "nextcloud",
 			"providerHow": "read-from-code",
@@ -7520,7 +7653,8 @@
 				"evidence": "src/builder.js:157-167, translateForApp(key, vars) comment: 'Virtual-app manifests usually carry plain strings; t() returns them unchanged when no translation is registered.' There is no per-built-app translation catalogue or locale-keyed label shape anywhere in the manifest schema or page-editor fields (labels are plain strings, e.g. IndexPageEditor.vue field placeholders).",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/experience-multilingual-apps (OpenSpec pass 2026-09-27).",
-				"change": "experience-multilingual-apps"
+				"change": "experience-multilingual-apps",
+				"requirement": "openspec/changes/experience-multilingual-apps/specs/app-interface-languages :: A maker sets the app's languages (REQ-BQML-001); openspec/changes/experience-multilingual-apps/specs/app-interface-languages :: An app user sees the app in their language (REQ-BQML-003)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -7555,7 +7689,8 @@
 				"evidence": "l10n/nl.json and l10n/nl.js exist among 60 locale files shipped in l10n/; buildiq's own UI strings are wrapped in t('buildiq', ...) throughout (e.g. src/builder.js:11-12,166-167)",
 				"reachedOn": "buildiq builder UI, when the Nextcloud account language is set to Dutch",
 				"owner": "ConductionNL/buildiq",
-				"change": "openbuild-nl-locale-parity"
+				"change": "openbuild-nl-locale-parity",
+				"requirement": "openspec/changes/openbuild-nl-locale-parity/specs/frontend-foundation :: Dutch locale has full translation key parity, enforced in CI"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -7693,7 +7828,8 @@
 				"evidence": "src/dialogs/ThemePickerDialog.vue implements REQ-NTS-008 warn-only contrast facts: calls /api/contrast/evaluate and renders pass/warn rows per contrastResults (lines 81-104, 292-308); explicitly documented as 'never a save gate' (line 81 comment)",
 				"reachedOn": "Application detail page, Theme section -> theme picker shows contrast pass/warn rows for the selected candidate",
 				"owner": "ConductionNL/buildiq",
-				"spec": "openspec/specs/nldesign-theme-selection"
+				"spec": "openspec/specs/nldesign-theme-selection",
+				"requirement": "openspec/specs/nldesign-theme-selection :: REQ-NTS-008 Warn-only contrast preview, no local WCAG math"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -7732,7 +7868,8 @@
 				"evidence": "src/manifest.json:89 declares buildiq's OWN 'walkthrough' block (completionConfigKey 'walkthrough_completed_version') with steps including 'define-schema' (line 211) and 'add-page' (line 273); the spotlight targets are data-walkthrough-id attributes present in src/views/SchemaDesigner.vue:24 and src/views/PageDesigner.vue:13,42 (15 data-walkthrough-id attributes total across src/). buildiq mounts itself via CnAppRoot like any built app, so this is the same walkthrough runtime that pg-walkthrough gives to built apps, dogfooded for the builder's own onboarding.",
 				"reachedOn": "buildiq's own app shell, first visit (or Settings -> Restart walkthrough)",
 				"owner": "ConductionNL/buildiq",
-				"change": "openbuild-first-time-setup"
+				"change": "openbuild-first-time-setup",
+				"requirement": "openspec/changes/openbuild-first-time-setup/specs/openbuild-first-time-setup :: The builder guides a first-time maker through its own walkthrough"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -7767,7 +7904,8 @@
 				"evidence": "src/components/page-editor/RoadmapPageEditor.vue (303 lines) authors config for type:\"roadmap\"; SUB_EDITOR_MAP['roadmap']='RoadmapPageEditor'; renderer mounts CnFeaturesAndRoadmapPage (pageTypes.js). buildiq also uses the same mechanism for itself: src/views/FeaturesRoadmap.vue wraps CnFeaturesAndRoadmapView, mounted as a manifest 'custom' page at route /features-roadmap surfaced from Settings.",
 				"reachedOn": "any built app page authored as type roadmap; also buildiq's own Settings -> Features & Roadmap",
 				"owner": "ConductionNL/nextcloud-vue",
-				"spec": "openspec/specs/openbuild-page-designer"
+				"spec": "openspec/specs/openbuild-page-designer",
+				"requirement": "openspec/specs/page-editor-coverage :: Roadmap-page sub-editor: forge, repo and override URLs"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -7805,7 +7943,8 @@
 				"evidence": "lib/Controller/ApplicationInsightsController.php + lib/Service/ApplicationInsightsService.php, route GET /api/applications/{appUuid}/versions/{versionUuid}/insights?window=7d|30d|90d (appinfo/routes.php:100); consumed by src/composables/useApplicationInsights.js and rendered in src/components/applicationDetail/ApplicationDetailDashboard.vue:1141 (api-paths.txt confirms both call sites)",
 				"reachedOn": "Application detail page, Insights/Dashboard tab, per version, windowed 7d/30d/90d",
 				"owner": "ConductionNL/buildiq",
-				"spec": "openspec/specs/application-insights"
+				"spec": "openspec/specs/application-insights",
+				"requirement": "openspec/specs/application-insights :: Insights endpoint returns KPIs and activity timeline for a version; openspec/specs/application-detail-overview :: Window toggle scopes time-windowed KPIs and activity graph"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -7912,7 +8051,8 @@
 				"evidence": "lib/Service/ManifestResolverService.php:233-236 explicit comment: applications 'operate in the global (non-tenant-isolated) scope. Buildiq ships... are not partitioned by tenant/organisation. Cross-tenant slug [collisions possible]'; lib/Controller/ApplicationsController.php:2193 comment warns a tenant-partitioning change 'breaks every existing single-tenant install'; lib/Service/RuleEngineService.php:11 lists 'Multi-tenant isolation' as an explicit non-goal/future item in its design notes.",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/operate-organisation-scoped-apps (OpenSpec pass 2026-09-27).",
-				"change": "operate-organisation-scoped-apps"
+				"change": "operate-organisation-scoped-apps",
+				"requirement": "openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps :: A scoped app is invisible to other organisations (REQ-BQOS-002); openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps :: A scoped app's records stay with its organisation (REQ-BQOS-003)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -8005,7 +8145,8 @@
 				"evidence": "appinfo/info.xml:277 <admin>OCA\\Buildiq\\Settings\\AdminSettings</admin> registers lib/Settings/AdminSettings.php as a Nextcloud admin settings section",
 				"reachedOn": "Nextcloud Administration settings, Buildiq section",
 				"owner": "ConductionNL/buildiq",
-				"spec": "openspec/specs/settings-and-observability"
+				"spec": "openspec/specs/settings-and-observability",
+				"requirement": "openspec/specs/first-time-setup :: Provisioning runs from the admin settings page; openspec/specs/settings-and-observability :: REQ-OBS-002: Settings update persists only whitelisted keys"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -8040,7 +8181,8 @@
 				"evidence": "appinfo/info.xml:106-109 <background-jobs> registers OCA\\Buildiq\\BackgroundJob\\CleanupExpiredExports and OCA\\Buildiq\\BackgroundJob\\RuleExecutionLogCleanup; both classes exist at lib/BackgroundJob/CleanupExpiredExports.php and lib/BackgroundJob/RuleExecutionLogCleanup.php",
 				"reachedOn": "runs automatically via Nextcloud's background job cron, no user-facing page",
 				"owner": "ConductionNL/buildiq",
-				"spec": "openspec/specs/openbuild-exporter"
+				"spec": "openspec/specs/openbuild-exporter",
+				"requirement": "openspec/specs/openbuild-exporter :: Export target — ZIP archive; openspec/specs/business-rules-engine :: REQ-BRE-013 Cleanup job for aged execution logs"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -8075,7 +8217,8 @@
 				"evidence": "grep for errorTracking/Sentry/'performance monitor'/APM/'slow quer' across lib/ and src/: no hits. ops-usage-insights (view/create counts per version/window) is the closest built capability but it is usage analytics, not error/performance monitoring.",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/operate-debug-log-and-monitoring (OpenSpec pass 2026-09-27).",
-				"change": "operate-debug-log-and-monitoring"
+				"change": "operate-debug-log-and-monitoring",
+				"requirement": "openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring :: A running app reports counts, not content (REQ-BQDM-004); openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring :: The app detail page shows the app's health (REQ-BQDM-006)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -8146,7 +8289,8 @@
 				"reachedOn": "occ buildiq:templates:publish / occ buildiq:seed-hello-world-fixture",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/lifecycle-import-app-and-cli (OpenSpec pass 2026-09-27).",
-				"change": "lifecycle-import-app-and-cli"
+				"change": "lifecycle-import-app-and-cli",
+				"requirement": "openspec/changes/lifecycle-import-app-and-cli/specs/app-management-cli :: Publish templates from the command line (REQ-BQIC-008)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -8182,7 +8326,8 @@
 				"evidence": "grep for OpenAPI/swagger/'api-docs'/apiDocs across lib/ and src/: the only hits (lib/Service/SettingsService.php:296,367) are internal comments about OpenAPI-SHAPED data structures (components.schemas/paths as keyed objects) used for schema import/export bookkeeping, not generated API documentation for a built app.",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/operate-api-docs (OpenSpec pass 2026-09-27).",
-				"change": "operate-api-docs"
+				"change": "operate-api-docs",
+				"requirement": "openspec/changes/operate-api-docs/specs/app-api-docs :: An app has an API tab per version (REQ-BQAD-001); openspec/changes/operate-api-docs/specs/app-api-docs :: The reference stays inside the instance and downloads as a file (REQ-BQAD-003)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -8216,7 +8361,8 @@
 				"evidence": "src/services/blockExport.js:10 client-side JSON export; src/components/page-editor/BlockLibraryPanel.vue:375-390 import resolves dependencies then createBlock() POSTs a component-block record to OpenRegister; the panel is mounted at src/views/PageDesigner.vue:64",
 				"reachedOn": "Page designer /builder/{slug}/pages, block library panel",
 				"owner": "ConductionNL/buildiq",
-				"spec": "openspec/specs/component-blocks"
+				"spec": "openspec/specs/component-blocks",
+				"requirement": "openspec/specs/component-blocks :: Blocks export and import as standalone JSON"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -8256,7 +8402,8 @@
 				"evidence": "src/views/DashboardIndex.vue:193,232,275 hybrid widget and count on built-app appType 'hybrid'; src/components/ApplicationCard.vue:163-167 hybrid marker; hybrid applications created by lib/Service/AppOverrideService.php:668 createHybridApp; DashboardIndex registered at src/registry.js:234",
 				"reachedOn": "Dashboard / and the application cards",
 				"owner": "ConductionNL/buildiq",
-				"spec": "openspec/specs/unified-app-model"
+				"spec": "openspec/specs/unified-app-model",
+				"requirement": "openspec/changes/capability-requirements-backfill/specs/unified-app-model :: Customised installed apps are listed beside built apps and marked hybrid (REQ-BQCV-016)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -8297,7 +8444,8 @@
 				"reachedOn": "App detail page, Versions list, Open on a draft or development version",
 				"owner": "ConductionNL/buildiq",
 				"note": "Matrix corrected in the OpenSpec pass 2026-09-27: the version list links every version to its preview, shipped with openspec/changes/archive/2026-06-26-version-lifecycle-and-switcher (anchors since 52db97a, 2026-09-10). The earlier reading grepped for a button that builds the URL and missed the string concatenation.",
-				"spec": "openspec/specs/version-routing"
+				"spec": "openspec/specs/version-routing",
+				"requirement": "openspec/specs/version-routing :: Manifest endpoint accepts optional `?_version=<versionSlug>` query param; openspec/specs/version-routing :: RBAC gate: editor/owner required for non-production versions"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -8334,7 +8482,8 @@
 				"reachedOn": "authoring: page designer registration-form editor; effect: portaliq reads the published registration form with its presets from the buildiq register (portaliq lib/Service/Intake/PortalFormBindingResolver.php:67 DEFAULT_FORM_REGISTER 'buildiq', :279-287 publishedForm(), :342-361 fieldsOf() applies presets); the buildiq-registration-form leaf itself is still requested by no fleet app",
 				"owner": "ConductionNL/buildiq",
 				"readOn": "2026-09-26",
-				"change": "forms-per-case-type"
+				"change": "forms-per-case-type",
+				"requirement": "openspec/changes/forms-per-case-type/specs/registration-form-builder :: A form presets fields, hidden or visible (REQ-OBRF-005)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -8371,7 +8520,8 @@
 				"reachedOn": "nothing: the leaf is served to no consumer",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/registration-form-builder (existing change, OpenSpec pass 2026-09-27): the formDraft schema and leaf are built; saving and resuming a draft is the consumer screen its task 4.4 hands to dossiq.",
-				"change": "registration-form-builder"
+				"change": "registration-form-builder",
+				"requirement": "openspec/changes/registration-form-builder/specs/registration-form-builder :: The form and the user's drafts are a data-provider leaf (REQ-OBRF-003); openspec/changes/registration-form-builder/specs/registration-form-builder :: A registration form is bound to one type value (REQ-OBRF-001)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -8407,7 +8557,8 @@
 				"evidence": "src/components/runtime/TrackLinkAction.vue:1-20 detail-page action registered at src/runtimeRegistry.js:104-106 (config.actionsComponent), gated on runtime.externalForms[].trackLinkAction.enabled set in src/dialogs/ExternalFormAccessDialog.vue",
 				"reachedOn": "a built app's detail page whose external form has track links enabled",
 				"owner": "ConductionNL/buildiq",
-				"spec": "openspec/specs/external-form-provisioning"
+				"spec": "openspec/specs/external-form-provisioning",
+				"requirement": "openspec/specs/external-form-provisioning :: REQ-EFP-006 Owner-context track-link minting"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -8443,7 +8594,8 @@
 				"evidence": "lib/Controller/ApplicationsController.php:354-376 lets a Nextcloud admin with no app role save and calls recordAdminBypass() writing an rbac.admin_bypass event; the only viewer, src/modals/PermissionHistoryModal.vue:172-174, calls /audit where OpenRegister's route is /audit-trails, so it 404s",
 				"reachedOn": "recorded on save; not visible on any working page",
 				"owner": "ConductionNL/buildiq",
-				"spec": "openspec/specs/openbuild-rbac"
+				"spec": "openspec/specs/openbuild-rbac",
+				"requirement": "openspec/specs/openbuild-rbac :: Global `buildiq.use` navigation-entry permission; openspec/specs/openbuild-rbac :: MCP admin-bypass MUST be recorded to the OpenRegister audit trail"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -8479,7 +8631,8 @@
 				"evidence": "src/views/AutomationsPage.vue:429-463 'Drift detected' badge from GET /api/automations/{uuid}/status (lib/Controller/AutomationsController.php:375 -> lib/Service/AutomationCompilerService.php:480 status()) with a 'Recompile (overwrite)' button",
 				"reachedOn": "Automations page /automations",
 				"owner": "ConductionNL/buildiq",
-				"spec": "openspec/specs/automation-designer"
+				"spec": "openspec/specs/automation-designer",
+				"requirement": "openspec/specs/automation-designer :: An automation is managed as one unit with provenance (REQ-AUTD-005)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -8558,7 +8711,8 @@
 				"evidence": "src/views/RuleSetsPage.vue:90-92 row action 'Export' (exportRuleSet), page registered at src/manifest.d/20-business-rules.json",
 				"reachedOn": "/business-rules, which has no menu entry or link (reader r1), so reached only by typing the URL",
 				"owner": "ConductionNL/buildiq",
-				"spec": "openspec/specs/business-rules-engine"
+				"spec": "openspec/specs/business-rules-engine",
+				"requirement": "openspec/changes/capability-requirements-backfill/specs/business-rules-engine :: A rule set can be exported as a file (REQ-BQCV-017)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -8594,7 +8748,8 @@
 				"evidence": "src/components/DocumentAttachmentsSection.vue:254-282 injects a 'docudesk-document-actions' tab; src/components/runtime/DocumentActions.vue:105 -> useDocudeskDocument.js:22 POST /apps/filinq/api/correspondence/generate; filinq's current appinfo id is filinq (docudesk origin/development)",
 				"reachedOn": "a built app's record detail page, document actions tab",
 				"owner": "ConductionNL/filinq",
-				"spec": "openspec/specs/docudesk-document-templates"
+				"spec": "openspec/specs/docudesk-document-templates",
+				"requirement": "openspec/specs/docudesk-document-templates :: REQ-DDT-004 Document actions rendered on the object's detail surface"
 			},
 			"provider": "filinq",
 			"providerHow": "read-from-code",
@@ -8633,7 +8788,8 @@
 				"evidence": "src/components/runtime/ProcestCaseStatusPanel.vue:117-220 -> src/composables/useProcestCase.js:125 startCase and :218 loadDetail against /apps/dossiq/api/zgw/zaken/v1; dossiq's current appinfo id is dossiq (procest origin/development)",
 				"reachedOn": "a built app's record detail page with a workflow attachment, case status panel",
 				"owner": "ConductionNL/dossiq",
-				"spec": "openspec/specs/procest-workflow-attachments"
+				"spec": "openspec/specs/procest-workflow-attachments",
+				"requirement": "openspec/specs/procest-workflow-attachments :: REQ-PWA-003 Runtime: object creation starts a linked Procest case; openspec/specs/procest-workflow-attachments :: REQ-PWA-004 Case status and progress rendered on the object's detail surface"
 			},
 			"provider": "dossiq",
 			"providerHow": "read-from-code",
@@ -8674,7 +8830,8 @@
 				"evidence": "buildiq reaches the flow editor: src/views/AutomationsPage.vue:22 'Edit flows...' -> src/dialogs/FlowPickerDialog.vue:114 -> CnFlowEditModal; nextcloud-vue v2.55.1 src/components/CnFlowDetail/CnFlowDetail.vue:51-53 refuses edits to a published flow and offers 'Create draft version'; openregister origin/development lib/Service/Flow/FlowVersionService.php publishes N+1 and deprecates N in one transaction, and lib/Service/Flow/FlowPublishedGraph.php:89 runs each FlowRun on its own pinned getFlowVersion() (lib/Db/FlowRun.php:207)",
 				"reachedOn": "app detail -> Automations -> 'Edit flows...' -> flow canvas, Create draft version then Publish",
 				"owner": "ConductionNL/openregister",
-				"spec": "openspec/specs/automation-designer"
+				"spec": "openspec/specs/automation-designer",
+				"requirement": "openspec/changes/capability-requirements-backfill/specs/automation-designer :: Changing a published flow leaves running flows on their version (REQ-BQCV-018)"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -8951,7 +9108,8 @@
 				"evidence": "A maker sets a per-form sign-in level (minTrust: low, substantial or high; absent is anonymous) on both publish paths (buildiq#935). Registration forms: src/components/page-editor/fields/RegistrationFormEditor.vue 'Sign-in required' select writes minTrust into schema registrationForm (lib/Settings/register.d/50-registration-forms.json, enum low|substantial|high), lib/Service/RegistrationFormSignInLevel.php assertValid() (called from RegistrationFormValidator::validate()) refuses an unknown level or one combined with isPublic, and portaliq origin/development lib/Service/Intake/PortalFormBindingResolver.php render() carries the form's minTrust into lib/Service/Intake/PortalFormTrustLevel.php required(), enforced on the embed frame and submit (portaliq#725, PR #727). Form pages: src/dialogs/ExternalFormAccessDialog.vue 'Sign-in required' select; src/services/externalFormProvisioningService.js applySignInLevel() writes the level on the portalPage create action and collection without anonymous, keeps a stored level on a repeat save that names none, and grants no OpenRegister public create when a level is set. Tests: tests/services/externalFormProvisioningService.spec.js, tests/dialogs/ExternalFormAccessDialog.spec.js, tests/components/RegistrationFormEditorSignIn.spec.js, tests/Unit/Service/RegistrationFormValidatorTest.php.",
 				"reachedOn": "buildiq detail page, Registration forms, form editor 'Sign-in required'; or form page, External access, 'Sign-in required'; portaliq enforces it on the form",
 				"owner": "ConductionNL/portaliq",
-				"spec": "openspec/specs/external-form-provisioning"
+				"spec": "openspec/specs/external-form-provisioning",
+				"requirement": "openspec/changes/capability-requirements-backfill/specs/external-form-provisioning :: A form can require sign-in at a trust level (REQ-BQCV-019)"
 			},
 			"provider": "portaliq",
 			"providerHow": "read-from-code",
@@ -9032,7 +9190,8 @@
 				"evidence": "src/components/page-editor/PreviewSandbox.vue mounted in src/views/PageDesigner.vue:178 renders the edited form page in an in-memory CnAppRoot (PageDesigner.vue:244) before the version is promoted; releasing a draft is a separate owner step (src/views/VersionHistory.vue:68-72)",
 				"reachedOn": "buildiq builder, Pages tab, form page, live preview pane; then Version history -> Release",
 				"owner": "ConductionNL/buildiq",
-				"spec": "openspec/specs/openbuild-page-designer"
+				"spec": "openspec/specs/openbuild-page-designer",
+				"requirement": "openspec/specs/openbuild-page-designer :: Live-preview pane mounts a sandboxed CnAppRoot when available"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -9071,7 +9230,8 @@
 				"reachedOn": "Page designer: the copy button on a page row; a registration form list: Copy form",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/apps-copy-app-and-page (OpenSpec pass 2026-09-27).",
-				"change": "apps-copy-app-and-page"
+				"change": "apps-copy-app-and-page",
+				"requirement": "openspec/changes/apps-copy-app-and-page/specs/copy-app-page-and-form :: A maker copies a registration form as a draft (REQ-BQCP-004)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -9109,7 +9269,8 @@
 				"evidence": "For registration forms served on a portaliq portal: portaliq origin/development src/widgets/TrafficForms.vue (registered src/registry.js:172, placed src/manifest.json:429) shows per form Started, Submitted, abandons, completion rate and the field most people left on. buildiq's own form pages have no usage statistics (src/ grep -iE 'submission.?count|abandon|conversion': no hits)",
 				"reachedOn": "portaliq traffic dashboard, forms table; nothing in buildiq",
 				"owner": "ConductionNL/portaliq",
-				"spec": "openspec/specs/external-form-provisioning"
+				"spec": "openspec/specs/external-form-provisioning",
+				"requirement": "openspec/changes/capability-requirements-backfill/specs/external-form-provisioning :: A form's use is reported where it is served (REQ-BQCV-020)"
 			},
 			"provider": "portaliq",
 			"providerHow": "read-from-code",
@@ -9234,7 +9395,8 @@
 				"reachedOn": "nothing reaches it",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/forms-multi-product-request (OpenSpec pass 2026-09-27).",
-				"change": "forms-multi-product-request"
+				"change": "forms-multi-product-request",
+				"requirement": "openspec/changes/forms-multi-product-request/specs/journey-designer :: A write can repeat per list item (REQ-BQMP-001); openspec/changes/forms-multi-product-request/specs/journey-designer :: Each item goes to its product's target (REQ-BQMP-002)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -9465,7 +9627,8 @@
 				"reachedOn": "nothing reaches it",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/ai-agents-knowledge-and-run-trace (OpenSpec pass 2026-09-27).",
-				"change": "ai-agents-knowledge-and-run-trace"
+				"change": "ai-agents-knowledge-and-run-trace",
+				"requirement": "openspec/changes/ai-agents-knowledge-and-run-trace/specs/agent-knowledge-base :: A maker attaches knowledge files to an agent (REQ-BQAG-001); openspec/changes/ai-agents-knowledge-and-run-trace/specs/agent-knowledge-base :: An agent's plan reads its knowledge (REQ-BQAG-002)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -9546,7 +9709,8 @@
 				"reachedOn": "nothing reaches it",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/ai-smart-paste-into-forms (OpenSpec pass 2026-09-27).",
-				"change": "ai-smart-paste-into-forms"
+				"change": "ai-smart-paste-into-forms",
+				"requirement": "openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste :: A maker turns on smart paste for chosen fields (REQ-BQSP-001); openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste :: The authored behaviour is fixed for the renderer (REQ-BQSP-003)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -9731,7 +9895,8 @@
 				"reachedOn": "/applications, New application wizard, 'Generate with AI'",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/ai-copilot-documents-and-code-help (OpenSpec pass 2026-09-27).",
-				"change": "ai-copilot-documents-and-code-help"
+				"change": "ai-copilot-documents-and-code-help",
+				"requirement": "openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot :: The wizard reads a document from Files (REQ-BQCH-005); openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot :: The plan carries user stories (REQ-BQCH-006)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -10160,7 +10325,8 @@
 				"reachedOn": "nothing reaches it",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/pages-qr-and-barcodes (OpenSpec pass 2026-09-27).",
-				"change": "pages-qr-and-barcodes"
+				"change": "pages-qr-and-barcodes",
+				"requirement": "openspec/changes/pages-qr-and-barcodes/specs/page-codes :: Index pages can scan to find a record (REQ-BQQR-001)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -10200,7 +10366,8 @@
 				"owner": "ConductionNL/openregister",
 				"note": "Still specified: the change was archived without the user-facing part. Missing: a task-completion component in nextcloud-vue that renders the resolved form, and buildiq's my-approvals widget (or a task inbox) using it. Spec round part 3 (2026-10-07): buildiq's half (fields on the approval action, the form in My approvals) is specified in logic-approval-task-form; it waits on a nextcloud-vue task form component and on openregister carrying a chain form into the task.",
 				"change": "logic-approval-task-form",
-				"readOn": "2026-10-07"
+				"readOn": "2026-10-07",
+				"requirement": "openspec/changes/logic-approval-task-form/specs/automation-approval-action :: A maker names the fields an approver fills in (REQ-BQTF-001); openspec/changes/logic-approval-task-form/specs/automation-approval-action :: An approver fills in the form before approving (REQ-BQTF-003)"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -10276,7 +10443,8 @@
 				"spec": "openspec/specs/buildiq-reports",
 				"note": "Added by decision 99 (8 Oct): board without a row. Main spec buildiq-reports written after the fact for the built part.",
 				"owner": "ConductionNL/buildiq",
-				"readOn": "2026-10-08"
+				"readOn": "2026-10-08",
+				"requirement": "openspec/specs/buildiq-reports :: A Reports page lists the reports (REQ-BQREP-001); openspec/specs/buildiq-reports :: The Applications report counts apps across the instance (REQ-BQREP-002); openspec/specs/buildiq-reports :: The Versions and exports report shows delivery (REQ-BQREP-003)"
 			},
 			"feature": "application-insights",
 			"screen": {
@@ -10303,7 +10471,8 @@
 				"reachedOn": "nothing reaches it",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/data-model-diagram (OpenSpec pass 2026-09-27).",
-				"change": "data-model-diagram"
+				"change": "data-model-diagram",
+				"requirement": "openspec/changes/data-model-diagram/specs/data-model-diagram :: The schema list has a diagram view (REQ-BQMD-001); openspec/changes/data-model-diagram/specs/data-model-diagram :: Relations made in buildiq are drawn (REQ-BQMD-002)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -10376,7 +10545,8 @@
 				"reachedOn": "nothing reaches it",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/logic-email-and-webhook-triggers (OpenSpec pass 2026-09-27).",
-				"change": "logic-email-and-webhook-triggers"
+				"change": "logic-email-and-webhook-triggers",
+				"requirement": "openspec/changes/logic-email-and-webhook-triggers/specs/automation-inbound-triggers :: The composer offers email and webhook triggers (REQ-BQTR-001); openspec/changes/logic-email-and-webhook-triggers/specs/automation-inbound-triggers :: Mail starts the automation's flow (REQ-BQTR-002)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -10415,7 +10585,8 @@
 				"reachedOn": "nothing reaches it",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/logic-email-and-webhook-triggers (OpenSpec pass 2026-09-27).",
-				"change": "logic-email-and-webhook-triggers"
+				"change": "logic-email-and-webhook-triggers",
+				"requirement": "openspec/changes/logic-email-and-webhook-triggers/specs/automation-inbound-triggers :: A webhook starts the automation's flow (REQ-BQTR-003)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -10454,7 +10625,8 @@
 				"reachedOn": "nothing reaches it",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/pages-qr-and-barcodes (OpenSpec pass 2026-09-27).",
-				"change": "pages-qr-and-barcodes"
+				"change": "pages-qr-and-barcodes",
+				"requirement": "openspec/changes/pages-qr-and-barcodes/specs/page-codes :: Detail pages can show a code (REQ-BQQR-003)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -10493,7 +10665,8 @@
 				"reachedOn": "nothing reaches it",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/data-field-types-and-choice-lists (OpenSpec pass 2026-09-27).",
-				"change": "data-field-types-and-choice-lists"
+				"change": "data-field-types-and-choice-lists",
+				"requirement": "openspec/changes/data-field-types-and-choice-lists/specs/schema-designer-field-types :: A user field points at a Nextcloud user (REQ-BQFT-003)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -10532,7 +10705,8 @@
 				"reachedOn": "nothing reaches it",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/ai-llm-steps-and-computed-fields (OpenSpec pass 2026-09-27).",
-				"change": "ai-llm-steps-and-computed-fields"
+				"change": "ai-llm-steps-and-computed-fields",
+				"requirement": "openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps :: A schema field can be filled by AI (REQ-BQLS-004)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -10645,7 +10819,8 @@
 				"reachedOn": "nothing reaches it",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/forms-signature-audio-and-location (OpenSpec pass 2026-09-27).",
-				"change": "forms-signature-audio-and-location"
+				"change": "forms-signature-audio-and-location",
+				"requirement": "openspec/changes/forms-signature-audio-and-location/specs/form-device-fields :: Forms offer signature, audio and location fields (REQ-BQSA-001); openspec/changes/forms-signature-audio-and-location/specs/form-device-fields :: Map pages show the user's position (REQ-BQSA-003)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -10682,7 +10857,8 @@
 				"spec": "openspec/specs/openbuild-walkthrough-editor",
 				"note": "Added by decision 99 (8 Oct): board without a row. Covered by REQ-WALK-OB-005 (the editor also edits the setup block).",
 				"owner": "ConductionNL/buildiq",
-				"readOn": "2026-10-08"
+				"readOn": "2026-10-08",
+				"requirement": "openspec/specs/openbuild-walkthrough-editor :: REQ-WALK-OB-005 — The Editor Also Edits The Setup Block"
 			},
 			"feature": "walkthroughs",
 			"screen": {
@@ -10709,7 +10885,8 @@
 				"reachedOn": "nothing reaches it",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/forms-signature-audio-and-location (OpenSpec pass 2026-09-27).",
-				"change": "forms-signature-audio-and-location"
+				"change": "forms-signature-audio-and-location",
+				"requirement": "openspec/changes/forms-signature-audio-and-location/specs/form-device-fields :: Forms offer signature, audio and location fields (REQ-BQSA-001); openspec/changes/forms-signature-audio-and-location/specs/form-device-fields :: The value lands in a matching property (REQ-BQSA-002)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -10789,7 +10966,8 @@
 				"reachedOn": "nothing reaches it",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/operate-debug-log-and-monitoring (OpenSpec pass 2026-09-27).",
-				"change": "operate-debug-log-and-monitoring"
+				"change": "operate-debug-log-and-monitoring",
+				"requirement": "openspec/changes/operate-debug-log-and-monitoring/specs/builder-debug-log :: The designer logs the preview's requests and errors (REQ-BQDM-001); openspec/changes/operate-debug-log-and-monitoring/specs/builder-debug-log :: The log names binding problems (REQ-BQDM-002)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -10824,7 +11002,8 @@
 				"state": "built",
 				"evidence": "lib/Settings/openbuild_register.json:725 exportJob declares x-openregister-notifications export-succeeded and export-failed on its transitions; :465 ApplicationVersion declares version-published; OpenRegister dispatches them as Nextcloud notifications",
 				"owner": "ConductionNL/buildiq",
-				"spec": "openspec/specs/notifications"
+				"spec": "openspec/specs/notifications",
+				"requirement": "openspec/specs/notifications :: Export job outcome notifications; openspec/specs/notifications :: Application version lifecycle notifications"
 			},
 			"feature": "buildiq-exporter",
 			"screen": {
@@ -10876,7 +11055,8 @@
 				"change": "apps-support-note-editor-saves",
 				"note": "Added by decision 99 (8 Oct): board without a row.",
 				"owner": "ConductionNL/buildiq",
-				"readOn": "2026-10-08"
+				"readOn": "2026-10-08",
+				"requirement": "openspec/changes/apps-support-note-editor-saves/specs/support-note :: The support editor saves the note to the app's manifest (REQ-BQSN-001); openspec/changes/apps-support-note-editor-saves/specs/support-note :: A virtual app shows the note only when it is switched on (REQ-BQSN-003)"
 			},
 			"feature": "app-management",
 			"screen": {

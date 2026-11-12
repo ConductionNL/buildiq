@@ -63,3 +63,20 @@ anything it tried and failed to remove.
 - **GIVEN** the app `meldingen` with records
 - **WHEN** an administrator runs the delete command for `meldingen` and confirms
 - **THEN** the app and its versions are gone, its registers and records remain, and the command exits with 0
+
+### Requirement: Publish templates from the command line (REQ-BQIC-008)
+
+The system SHALL offer an occ command that publishes the instance's seeded application templates as template repositories on GitHub, reporting per template whether it was published, updated or skipped. Together with the app commands (REQ-BQIC-004 to REQ-BQIC-007) an administrator SHALL be able to manage apps and templates without opening the builder.
+
+#### Scenario: An administrator publishes the seeded templates
+
+- **GIVEN** an instance with seeded templates and a configured GitHub credential
+- **WHEN** an administrator runs the template publish command
+- **THEN** each seeded template is published as a template repository
+- **AND** the command prints one line per template with its outcome
+
+#### Scenario: No credential
+
+- **GIVEN** no GitHub credential is configured
+- **WHEN** an administrator runs the template publish command
+- **THEN** the command exits with an error that names the missing credential and publishes nothing

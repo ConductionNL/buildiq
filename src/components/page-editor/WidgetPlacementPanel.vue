@@ -345,6 +345,132 @@ import {
 	slotOffersSpan,
 } from '../../services/slotGeometry.js'
 
+/**
+ * The page's own config object, or null when it has none (or a non-object).
+ *
+ * @param {object|null} page - the page under edit.
+ * @return {?object} the config.
+ */
+function pageConfigOf(page) {
+	return page && page.config && typeof page.config === 'object'
+		? page.config
+		: null
+}
+
+/**
+ * The `<prefix>:<id>` slot of every declared tab or section that has an id;
+ * null for the entries that have none.
+ *
+ * @param {Array<object>|undefined} entries - `config.tabs` or `config.sections`.
+ * @param {string} prefix - `'tab'` or `'section'`.
+ * @return {Array<?string>} the slot names.
+ */
+function declaredIdSlots(entries, prefix) {
+	if (!Array.isArray(entries)) {
+		return []
+	}
+	return entries.map((entry) => (entry && entry.id ? `${prefix}:${entry.id}` : null))
+}
+
+/**
+ * The grid entry that stands for a placement: the same object first, then the
+ * one with its id (how the grid itself keys an item).
+ *
+ * @param {Array<object>} emitted - the entries the grid emitted.
+ * @param {object} entry - the placement.
+ * @return {?object} the matching entry, if any.
+ */
+function matchEmittedEntry(emitted, entry) {
+	return (
+		emitted.find((candidate) => candidate === entry)
+		|| (entry.id
+			? emitted.find((candidate) => candidate && candidate.id === entry.id)
+			: null)
+	)
+}
+
+/**
+ * A copy of a placement carrying the grid geometry of another entry.
+ *
+ * @param {object} entry - the placement.
+ * @param {object} moved - the entry holding the new geometry.
+ * @return {object} the placement with the new geometry.
+ */
+function withGridGeometry(entry, moved) {
+	return {
+		...entry,
+		gridX: moved.gridX,
+		gridY: moved.gridY,
+		gridWidth: moved.gridWidth,
+		gridHeight: moved.gridHeight,
+	}
+}
+
+/**
+ * One object part (`content` or `chrome`) of the modal's payload, or `{}`.
+ *
+ * @param {object|null} payload - the modal's submit payload.
+ * @param {string} key - `'content'` or `'chrome'`.
+ * @return {object} the part.
+ */
+function payloadObject(payload, key) {
+	return payload && payload[key] && typeof payload[key] === 'object'
+		? payload[key]
+		: {}
+}
+
+/**
+ * Write the chrome's custom title, title visibility and custom icon onto the
+ * props, each only when the author set it.
+ *
+ * @param {object} props - the props being built.
+ * @param {object} chrome - the modal's chrome.
+ * @return {void}
+ */
+function applyChromeLabels(props, chrome) {
+	if (chrome.customTitle) {
+		props.title = chrome.customTitle
+	}
+	if (typeof chrome.showTitle === 'boolean') {
+		props.showTitle = chrome.showTitle
+	}
+	if (chrome.customIcon) {
+		props.icon = chrome.customIcon
+	}
+}
+
+/**
+ * Write the chrome's background colour into the props' style config, keeping
+ * the rest of that config.
+ *
+ * @param {object} props - the props being built.
+ * @param {object} chrome - the modal's chrome.
+ * @return {void}
+ */
+function applyChromeBackground(props, chrome) {
+	if (chrome.backgroundColor) {
+		props.styleConfig = {
+			...(props.styleConfig || {}),
+			backgroundColor: chrome.backgroundColor,
+		}
+	}
+}
+
+/**
+ * Store the props on an entry, or drop the key when there are none.
+ *
+ * @param {object} entry - the placement.
+ * @param {object} props - the built props.
+ * @return {void}
+ */
+function setOrDropProps(entry, props) {
+	if (Object.keys(props).length > 0) {
+		entry.props = props
+	} else {
+		delete entry.props
+	}
+}
+
 export default {
 	name: 'WidgetPlacementPanel',
 	components: { CnWidgetGrid, CnAddWidgetModal },
@@ -448,21 +574,10 @@ export default {
 		 */
 		slotOptions() {
 			const options = [...SLOT_DISPLAY_ORDER]
-			const config =
-				this.page && this.page.config && typeof this.page.config === 'object'
-					? this.page.config
-					: {}
+			const config = pageConfigOf(this.page) || {}
 			const declared = [
-				...(Array.isArray(config.tabs)
-					? config.tabs.map((tab) =>
-							tab && tab.id ? `tab:${tab.id}` : null,
-						)
-					: []),
-				...(Array.isArray(config.sections)
-					? config.sections.map((section) =>
-							section && section.id ? `section:${section.id}` : null,
-						)
-					: []),
+				...declaredIdSlots(config.tabs, 'tab'),
+				...declaredIdSlots(config.sections, 'section'),
 				...this.placements.map((entry) => (entry ? entry.slot : null)),
 			]
 			for (const slot of declared) {
@@ -576,10 +691,7 @@ export default {
 		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
 		 */
 		dataContext() {
-			const config =
-				this.page && this.page.config && typeof this.page.config === 'object'
-					? this.page.config
-					: null
+			const config = pageConfigOf(this.page)
 			if (!config || !config.register || !config.schema) {
 				return null
 			}
@@ -790,25 +902,10 @@ export default {
 				// id, which is how the grid itself keys an item. Then body order,
 				// which is the grid's own index fallback.
 				const moved =
-					emitted.find((candidate) => candidate === entry)
-					|| (entry.id
-						? emitted.find(
-								(candidate) =>
-									candidate && candidate.id === entry.id,
-							)
-						: null)
+					matchEmittedEntry(emitted, entry)
 					|| emitted[bodyIndex]
 					|| entry
-				return applySlotRules(
-					{
-						...entry,
-						gridX: moved.gridX,
-						gridY: moved.gridY,
-						gridWidth: moved.gridWidth,
-						gridHeight: moved.gridHeight,
-					},
-					this.page,
-				)
+				return applySlotRules(withGridGeometry(entry, moved), this.page)
 			})
 			this.emitWidgets(next)
 		},
@@ -872,30 +969,11 @@ export default {
 		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
 		 */
 		buildProps(payload, existingProps) {
-			const content =
-				payload && payload.content && typeof payload.content === 'object'
-					? payload.content
-					: {}
-			const chrome =
-				payload && payload.chrome && typeof payload.chrome === 'object'
-					? payload.chrome
-					: {}
+			const content = payloadObject(payload, 'content')
+			const chrome = payloadObject(payload, 'chrome')
 			const props = { ...(existingProps || {}), ...content }
-			if (chrome.customTitle) {
-				props.title = chrome.customTitle
-			}
-			if (typeof chrome.showTitle === 'boolean') {
-				props.showTitle = chrome.showTitle
-			}
-			if (chrome.customIcon) {
-				props.icon = chrome.customIcon
-			}
-			if (chrome.backgroundColor) {
-				props.styleConfig = {
-					...(props.styleConfig || {}),
-					backgroundColor: chrome.backgroundColor,
-				}
-			}
+			applyChromeLabels(props, chrome)
+			applyChromeBackground(props, chrome)
 			return props
 		},
 
@@ -921,43 +999,73 @@ export default {
 			}
 
 			if (this.editingIndex >= 0) {
-				const current = this.placements[this.editingIndex]
-				if (current) {
-					const props = this.buildProps(payload, current.props)
-					const entry = { ...current, widgetKey: payload.type }
-					if (Object.keys(props).length > 0) {
-						entry.props = props
-					} else {
-						delete entry.props
-					}
-					const next = this.placements.slice()
-					next[this.editingIndex] = applySlotRules(entry, this.page)
-					this.emitWidgets(next)
-				}
+				this.applyEdit(payload)
 				this.closeModal()
 				return
 			}
 
-			const slot = isValidSlot(this.pendingSlot) ? this.pendingSlot : 'body'
-			const existingIds = new Set(
-				this.placements.map((entry) => entry && entry.id).filter(Boolean),
-			)
-			const entry = {
-				id: mintWidgetId(payload.type, existingIds),
-				widgetKey: payload.type,
-				...defaultGeometryFor(slot, this.page, this.placements),
+			this.addPlacement(payload)
+			this.closeModal()
+		},
+
+		/**
+		 * Write the modal's payload onto the placement being edited, keeping its
+		 * id; nothing when that placement is gone.
+		 *
+		 * @param {{type: string, content: object, chrome: object}} payload - the
+		 *   modal's submit payload.
+		 * @return {void}
+		 */
+		applyEdit(payload) {
+			const current = this.placements[this.editingIndex]
+			if (!current) {
+				return
 			}
-			const props = this.buildProps(payload, null)
-			if (Object.keys(props).length > 0) {
-				entry.props = props
-			}
+			const props = this.buildProps(payload, current.props)
+			const entry = { ...current, widgetKey: payload.type }
+			setOrDropProps(entry, props)
+			const next = this.placements.slice()
+			next[this.editingIndex] = applySlotRules(entry, this.page)
+			this.emitWidgets(next)
+		},
+
+		/**
+		 * Append the modal's payload as a new placement in the pending slot, with
+		 * the placement note when the page needs one.
+		 *
+		 * @param {{type: string, content: object, chrome: object}} payload - the
+		 *   modal's submit payload.
+		 * @return {void}
+		 */
+		addPlacement(payload) {
+			const entry = this.newPlacementFor(payload)
+			setOrDropProps(entry, this.buildProps(payload, null))
 			if (this.noteIsRequired && this.pendingNote.trim() !== '') {
 				entry._note = this.pendingNote
 			}
 
 			this.emitWidgets([...this.placements, applySlotRules(entry, this.page)])
 			this.pendingNote = ''
-			this.closeModal()
+		},
+
+		/**
+		 * A new placement of the payload's type in the pending slot (body when the
+		 * pending slot is not valid), with a freshly minted id and the slot's
+		 * default geometry.
+		 *
+		 * @param {{type: string}} payload - the modal's submit payload.
+		 * @return {object} the new entry, without props.
+		 */
+		newPlacementFor(payload) {
+			const slot = isValidSlot(this.pendingSlot) ? this.pendingSlot : 'body'
+			const existingIds = new Set(
+				this.placements.map((entry) => entry && entry.id).filter(Boolean),
+			)
+			return {
+				id: mintWidgetId(payload.type, existingIds),
+				widgetKey: payload.type,
+				...defaultGeometryFor(slot, this.page, this.placements),
+			}
 		},
 
 		/**

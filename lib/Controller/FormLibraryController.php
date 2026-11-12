@@ -89,16 +89,13 @@ class FormLibraryController extends Controller {
 			return $this->error(code: 'unauthenticated', status: Http::STATUS_UNAUTHORIZED);
 		}
 
-		$query = $this->request->getParam('q');
-		if (is_string($query) === false) {
-			$query = null;
-		}
+		$query = GitHubRequestParams::searchQuery(request: $this->request);
 
 		try {
 			$result = $this->formCatalog->searchForms(
 				query: $query,
 				actingUserId: $user->getUID(),
-				credentialId: $this->credentialParam()
+				credentialId: GitHubRequestParams::credentialId(request: $this->request)
 			);
 		} catch (Throwable $e) {
 			$this->logger->error('Buildiq shop: GitHub form search failed: ' . $e->getMessage());
@@ -113,20 +110,6 @@ class FormLibraryController extends Controller {
 			statusCode: Http::STATUS_OK
 		);
 	}//end githubSearch()
-
-	/**
-	 * The advisory `credentialId` query parameter, or null.
-	 *
-	 * @return string|null
-	 */
-	private function credentialParam(): ?string {
-		$credentialId = $this->request->getParam('credentialId');
-		if (is_string($credentialId) === true && $credentialId !== '') {
-			return $credentialId;
-		}
-
-		return null;
-	}//end credentialParam()
 
 	/**
 	 * A JSON error body.

@@ -55,3 +55,20 @@ The wizard SHALL stamp `completionConfigKey` with the manifest `setup.version` w
 - **WHEN** an admin first visits Buildiq
 - **THEN** the setup wizard SHALL take precedence over the `first-visit` walkthrough trigger
 - **AND** after completion the walkthrough MAY start with the Store populated
+
+### Requirement: The builder guides a first-time maker through its own walkthrough
+
+The builder SHALL declare its own walkthrough in its manifest and SHALL start it on a maker's first visit once setup is complete. The walkthrough SHALL highlight, one step at a time, where to define a schema and where to add a page, and SHALL not start again for that maker after they finish or skip it, until the walkthrough version changes.
+
+#### Scenario: A new maker is shown around
+
+- **GIVEN** an instance where setup is complete and a maker who has never finished the walkthrough
+- **WHEN** the maker opens the builder
+- **THEN** the walkthrough starts and its first step highlights where to define a schema
+- **AND** a later step highlights where to add a page
+
+#### Scenario: A finished walkthrough stays closed
+
+- **GIVEN** a maker who finished the walkthrough of the current version
+- **WHEN** they open the builder again
+- **THEN** the walkthrough does not start

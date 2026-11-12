@@ -660,6 +660,46 @@ final class RuleEngineServiceTest extends TestCase {
 	}//end testCallRuleSetSelfReferenceIsRefused()
 
 	/**
+	 * An evaluator that throws leaves an empty answer carrying only its message,
+	 * and the evaluation still answers instead of failing.
+	 *
+	 * @return void
+	 */
+	public function testThrowingEvaluatorAnswersWithItsMessage(): void {
+		$conditionExecutor = $this->createMock(ConditionActionExecutor::class);
+		$service = new RuleEngineService(
+			objectService: $this->objectService,
+			evaluators: new RuleEvaluators(
+				decisionEvaluator: $this->createMock(DecisionTableEvaluator::class),
+				conditionExecutor: $conditionExecutor,
+				actionDispatcher: $this->actionDispatcher,
+				cacheManager: $this->cacheManager
+			),
+			userSession: $this->userSession,
+			logger: $this->createMock(LoggerInterface::class),
+			reader: $this->reader,
+			tables: $this->tables,
+		);
+		$this->stubScopedRows(
+			function (string $registerSlug, string $schema, array $filters = []): array {
+				return $this->conditionActionFindAllResults($schema);
+			}
+		);
+		$conditionExecutor->expects($this->once())
+			->method('execute')
+			->with($this->anything(), [], true, $this->actionDispatcher)
+			->willThrowException(new RuntimeException('executor failed'));
+
+		$outcome = $service->evaluate(ruleSetSlug: 'escalate', payload: [], preview: true);
+
+		$this->assertSame([], $outcome['result']);
+		$this->assertSame([], $outcome['triggeredRules']);
+		$this->assertSame(['executor failed'], $outcome['errors']);
+		$this->assertSame(['result', 'triggeredRules', 'executionTime', 'errors'], array_keys($outcome));
+
+	}//end testThrowingEvaluatorAnswersWithItsMessage()
+
+	/**
 	 * DoS guard: a chain of distinct rule sets calling one another is bounded by
 	 * the maximum call depth — the executor fires at most MAX_CALL_DEPTH times.
 	 *

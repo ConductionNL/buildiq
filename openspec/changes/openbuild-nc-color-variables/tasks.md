@@ -26,3 +26,4 @@
 - [x] 5.1 `grep -rnE 'color:\s*#|background:\s*#|rgba\(' src/` — remaining hits are only the commented exemptions and `var(..., #fallback)` fallbacks.
 - [ ] 5.2 Rebuild and visually verify the application-detail header badges and group chips in BOTH light and dark themes (dark-mode text must be readable — the driving bug). DEFERRED — needs a live instance for visual/dark-mode review; CSS now uses theme-aware NC variables (--color-*-text on --color-*), correct per theme by construction.
 - [x] 5.3 Run `npm run lint` / stylelint — clean.
+- [ ] Check that row `ux-dark-mode` meets "Built apps follow the user's dark mode", and add a test that asserts its scenarios.

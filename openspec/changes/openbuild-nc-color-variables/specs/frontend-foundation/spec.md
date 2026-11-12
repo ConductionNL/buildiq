@@ -21,3 +21,14 @@ All color declarations in Buildiq component CSS (`color`, `background`, `backgro
 - **WHEN** the icon upload/review previews render their fixed light and dark canvases
 - **THEN** those canvases MAY use literal colors that do not track the active theme
 - **AND** each such declaration SHALL carry an inline comment marking it intentional
+
+### Requirement: Built apps follow the user's dark mode
+
+A published built app SHALL style its pages only with Nextcloud CSS color variables (through the shared renderer components), so that when a user has chosen the dark theme in their Nextcloud settings the built app SHALL render with dark backgrounds and light text, without a per-app setting.
+
+#### Scenario: A built app opens in dark mode
+
+- **GIVEN** a user whose Nextcloud theme is set to dark
+- **WHEN** they open a published built app with an index page and a detail page
+- **THEN** both pages render on the dark main background with readable text
+- **AND** no page area keeps a fixed light background
