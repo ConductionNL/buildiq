@@ -97,33 +97,19 @@
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcDialog, NcSelect, NcTextField } from '@nextcloud/vue'
+import { attachmentDialogMixin } from '../mixins/attachmentDialog.js'
 import { fleetAppPath } from '../services/fleetAppId.js'
 
 export default {
 	name: 'WorkflowAttachmentDialog',
 	components: { NcDialog, NcButton, NcSelect, NcTextField },
+	mixins: [attachmentDialogMixin],
+
 	props: {
-		open: {
-			type: Boolean,
-			default: false,
-		},
-
-		// The app's schemas as `[{ slug, title, properties }]`.
-		schemas: {
-			type: Array,
-			default: () => [],
-		},
-
 		// Schema slugs already attached (excluded from the schema picker).
 		attachedSchemas: {
 			type: Array,
 			default: () => [],
-		},
-
-		// Existing attachment when editing (null when adding).
-		attachment: {
-			type: Object,
-			default: null,
 		},
 
 		// Soft capability flag for Procest.
@@ -148,11 +134,6 @@ export default {
 	},
 
 	computed: {
-		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
-		editing() {
-			return !!this.attachment
-		},
-
 		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
 		caseTypeOptions() {
 			return this.caseTypes.map((ct) => ({
@@ -315,9 +296,7 @@ export default {
 			if (!this.canSave) {
 				return
 			}
-			const id =
-				(this.attachment && this.attachment.id)
-				|| `wf-${this.schemaOption.slug}-${Date.now()}`
+			const id = this.entryId('wf')
 			const entry = {
 				id,
 				schema: this.schemaOption.slug,
@@ -330,11 +309,6 @@ export default {
 				entry.descriptionTemplate = this.descriptionTemplate
 			}
 			this.$emit('save', { entry, addStatusTab: this.addStatusTab })
-			this.$emit('update:open', false)
-		},
-
-		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
-		onClose() {
 			this.$emit('update:open', false)
 		},
 	},

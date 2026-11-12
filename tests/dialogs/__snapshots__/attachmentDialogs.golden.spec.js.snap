@@ -1,0 +1,77 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`DocumentTemplateAttachmentDialog shared plumbing > declares its props and events 1`] = `
+{
+  "emits": [
+    "save",
+    "update:open",
+  ],
+  "props": {
+    "attachment": {
+      "default": null,
+      "type": "Object",
+    },
+    "attachments": {
+      "default": [],
+      "type": "Array",
+    },
+    "docudeskAvailable": {
+      "default": true,
+      "type": "Boolean",
+    },
+    "open": {
+      "default": false,
+      "type": "Boolean",
+    },
+    "schemas": {
+      "default": [],
+      "type": "Array",
+    },
+  },
+}
+`;
+
+exports[`DocumentTemplateAttachmentDialog shared plumbing > gives a new entry a generated id and keeps the id of an edited one 1`] = `
+[
+  "doc-case-1700000000000",
+  "kept",
+]
+`;
+
+exports[`WorkflowAttachmentDialog shared plumbing > declares its props and events 1`] = `
+{
+  "emits": [
+    "save",
+    "update:open",
+  ],
+  "props": {
+    "attachedSchemas": {
+      "default": [],
+      "type": "Array",
+    },
+    "attachment": {
+      "default": null,
+      "type": "Object",
+    },
+    "open": {
+      "default": false,
+      "type": "Boolean",
+    },
+    "procestAvailable": {
+      "default": true,
+      "type": "Boolean",
+    },
+    "schemas": {
+      "default": [],
+      "type": "Array",
+    },
+  },
+}
+`;
+
+exports[`WorkflowAttachmentDialog shared plumbing > gives a new entry a generated id and keeps the id of an edited one 1`] = `
+[
+  "wf-case-1700000000000",
+  "kept",
+]
+`;
