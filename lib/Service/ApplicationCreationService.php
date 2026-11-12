@@ -424,12 +424,7 @@ class ApplicationCreationService {
 	private function provisionVersionRegister(array $version, array $state): void {
 		$registerSlug = $version['registerSlug'];
 		try {
-			$this->provisionRegister(
-				registerSlug: $registerSlug,
-				appSlug: $version['appSlug'],
-				versionSlug: $version['slug'],
-				defaultSchemas: $version['schemas']
-			);
+			$this->provisionRegister(version: $version);
 		} catch (Throwable $e) {
 			$this->logger->error(
 				'Buildiq: wizard register-provision failed for ' . $registerSlug . ': ' . $e->getMessage(),
@@ -800,10 +795,9 @@ class ApplicationCreationService {
 	/**
 	 * Provision a per-version OR register and seed its schema set.
 	 *
-	 * @param string $registerSlug The register slug to create
-	 * @param string $appSlug Parent application slug (for labels)
-	 * @param string $versionSlug Version slug (for labels)
-	 * @param array<int,array<string,mixed>> $defaultSchemas Seed schema blobs from default-schemas.json
+	 * @param array<string,mixed> $version The version plan: `registerSlug` (the register to create), `appSlug` and
+	 *                                     `slug` (for labels and the schema prefix), and `schemas` (seed schema
+	 *                                     blobs from default-schemas.json).
 	 *
 	 * @return void
 	 *
@@ -811,30 +805,58 @@ class ApplicationCreationService {
 	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-13
 	 */
-	private function provisionRegister(
-		string $registerSlug,
-		string $appSlug,
-		string $versionSlug,
-		array $defaultSchemas,
-	): void {
-		$register = $this->store->registerMapper->createFromArray(
-			[
-				'slug' => $registerSlug,
-				'title' => 'Buildiq — ' . $appSlug . ' (' . $versionSlug . ')',
-				'description' => 'Per-version schema namespace for Buildiq app `' . $appSlug . '` version `' . $versionSlug . '`.',
-				'version' => '0.1.0',
-				'schemas' => [],
-			]
-		);
+	private function provisionRegister(array $version): void {
+		$register = $this->store->registerMapper->createFromArray($this->versionRegisterFields(version: $version));
 
-		// Seed the default schema set into the freshly-provisioned register.
-		// Schema slugs are unique per organisation, so namespace each seed slug
-		// with the app+version prefix to avoid colliding with the same seed
-		// already installed in another register (e.g. the global `buildiq`
-		// register or another wizard-provisioned app's register).
-		$slugPrefix = $appSlug . '-' . $versionSlug . '-';
+		$createdIds = $this->seedVersionSchemas(version: $version);
+		if ($createdIds === []) {
+			return;
+		}
+
+		$existing = $register->getSchemas();
+		if (is_array($existing) === false) {
+			$existing = [];
+		}
+
+		$register->setSchemas(array_values(array_unique(array_merge($existing, $createdIds))));
+		$this->store->registerMapper->update($register);
+	}//end provisionRegister()
+
+	/**
+	 * The fields a per-version register is created with.
+	 *
+	 * @param array<string,mixed> $version The version plan (`registerSlug`, `appSlug`, `slug`).
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function versionRegisterFields(array $version): array {
+		$appSlug = $version['appSlug'];
+		$versionSlug = $version['slug'];
+		return [
+			'slug' => $version['registerSlug'],
+			'title' => 'Buildiq — ' . $appSlug . ' (' . $versionSlug . ')',
+			'description' => 'Per-version schema namespace for Buildiq app `' . $appSlug . '` version `' . $versionSlug . '`.',
+			'version' => '0.1.0',
+			'schemas' => [],
+		];
+	}//end versionRegisterFields()
+
+	/**
+	 * Seed the default schema set for a freshly-provisioned register.
+	 *
+	 * Schema slugs are unique per organisation, so each seed slug is namespaced
+	 * with the app+version prefix to avoid colliding with the same seed already
+	 * installed in another register (e.g. the global `buildiq` register or
+	 * another wizard-provisioned app's register).
+	 *
+	 * @param array<string,mixed> $version The version plan (`appSlug`, `slug`, `schemas`).
+	 *
+	 * @return array<int,mixed> The created schemas' ids.
+	 */
+	private function seedVersionSchemas(array $version): array {
+		$slugPrefix = $version['appSlug'] . '-' . $version['slug'] . '-';
 		$createdIds = [];
-		foreach ($defaultSchemas as $schemaBlob) {
+		foreach ($version['schemas'] as $schemaBlob) {
 			$blob = $schemaBlob;
 			$originalSlug = (string)($blob['slug'] ?? '');
 			if ($originalSlug !== '') {
@@ -845,16 +867,8 @@ class ApplicationCreationService {
 			$createdIds[] = $schema->getId();
 		}
 
-		if ($createdIds !== []) {
-			$existing = $register->getSchemas();
-			if (is_array($existing) === false) {
-				$existing = [];
-			}
-
-			$register->setSchemas(array_values(array_unique(array_merge($existing, $createdIds))));
-			$this->store->registerMapper->update($register);
-		}
-	}//end provisionRegister()
+		return $createdIds;
+	}//end seedVersionSchemas()
 
 	/**
 	 * Delete a per-version register as part of rollback.
