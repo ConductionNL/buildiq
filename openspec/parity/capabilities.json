@@ -1103,12 +1103,13 @@
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "built",
-				"evidence": "src/dialogs/ImportDataWizard.vue:1-20 uploads xlsx/xls/csv/json and either adds rows to an EXISTING schema or 'create a new schema from the file' (OR infers fields from header row). Only reachable from src/views/SchemaDesigner.vue:190 and src/components/applicationDetail/ApplicationDetailDashboard.vue:305, both of which require an app/version to already exist. Delegates parsing to OpenRegister's register-import via useDataImport.js.",
+				"state": "specified",
+				"evidence": "Not built: the create-app wizard has no spreadsheet start. src/dialogs/ImportDataWizard.vue imports a file into a schema of an app that already exists (reached from SchemaDesigner.vue:190 and ApplicationDetailDashboard.vue:305), so no new app, pages or register come from the upload. Plan: capability-requirements-backfill T01 (REQ-BQCV-001). Was: src/dialogs/ImportDataWizard.vue:1-20 uploads xlsx/xls/csv/json and either adds rows to an EXISTING schema or 'create a new schema from the file' (OR infers fields from header row). Only reachable from src/views/SchemaDesigner.vue:190 and src/components/applicationDetail/ApplicationDetailDashboard.vue:305, both of which require an app/version to already exist. Delegates parsing to OpenRegister's register-import via useDataImport.js.",
 				"owner": "ConductionNL/buildiq",
 				"note": "Open Register's half shipped in ConductionNL/openregister openspec/changes/archive/2026-07-23-register-import-auto-create; the missing half is buildiq's own work, so the owner moved to ConductionNL/buildiq (openregister lane, OpenSpec pass 2026-09-27; owner was ConductionNL/openregister).",
 				"change": "openbuild-data-import-wizard",
-				"requirement": "openspec/changes/capability-requirements-backfill/specs/data-import-wizard :: A maker creates a new app from an uploaded spreadsheet (REQ-BQCV-001)"
+				"requirement": "openspec/changes/capability-requirements-backfill/specs/data-import-wizard :: A maker creates a new app from an uploaded spreadsheet (REQ-BQCV-001)",
+				"plan": "openspec/changes/capability-requirements-backfill"
 			},
 			"reachedOn": "SchemaDesigner (opened on an existing app version)",
 			"provider": "openregister",
@@ -1495,10 +1496,7 @@
 				"reachedOn": "First-run setup wizard (CnSetupWizard), 'Load example data?' step",
 				"owner": "ConductionNL/buildiq",
 				"change": "openbuild-first-time-setup",
-				"requirement": [
-					"openspec/specs/first-time-setup :: Each example data card loads itself",
-					"openspec/changes/capability-requirements-backfill/specs/application-creation-wizard :: A maker fills a new app with demo records (REQ-BQCV-030)"
-				],
+				"requirement": "openspec/changes/capability-requirements-backfill/specs/application-creation-wizard :: A maker fills a new app with demo records (REQ-BQCV-030)",
 				"plan": "openspec/changes/capability-requirements-backfill"
 			},
 			"provider": "buildiq",
@@ -1758,7 +1756,10 @@
 			},
 			"screen": {
 				"canvas": "QAAxpcsFKBCvDUGbQbwtCa",
-				"board": "BqSchema"
+				"board": [
+					"BqSchema",
+					"BqVeldBewerken"
+				]
 			}
 		},
 		{
@@ -2207,7 +2208,10 @@
 				"reachedOn": "buildiq builder, page editor for a detail page, enable Sidebar -> Files tab",
 				"owner": "ConductionNL/nextcloud-vue",
 				"spec": "openspec/specs/openbuild-page-designer",
-				"requirement": "openspec/specs/openbuild-page-designer :: Detail-page sub-editor: sidebar tabs and route param schema"
+				"requirement": [
+					"openregister:openspec/specs/file-actions :: File creation and upsert run a fixed validate-write-own-tag pipeline",
+					"openspec/changes/pages-detail-related-items/specs/page-detail-related-items :: A maker decides whether the files tab shows (REQ-BQRI-003)"
+				]
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -2224,7 +2228,10 @@
 			},
 			"screen": {
 				"canvas": "QAAxpcsFKBCvDUGbQbwtCa",
-				"board": "BqPaginaOntwerper"
+				"board": [
+					"BqPaginaOntwerper",
+					"openregister/OrBestanden"
+				]
 			}
 		},
 		{
@@ -2244,7 +2251,10 @@
 				"reachedOn": "buildiq builder, page editor for a detail page, enable Sidebar -> Audit trail tab",
 				"owner": "ConductionNL/nextcloud-vue",
 				"spec": "openspec/specs/openbuild-page-designer",
-				"requirement": "openspec/specs/openbuild-page-designer :: Detail-page sub-editor: sidebar tabs and route param schema"
+				"requirement": [
+					"openspec/changes/data-restore-record-version/specs/record-history-restore :: A maker shows the record history on a detail page (REQ-BQRR-001)",
+					"nextcloud-vue:openspec/specs/version-diff-viewer :: CnVersionHistory lists version/audit history newest-first with OpenRegister pagination"
+				]
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -2260,7 +2270,10 @@
 			},
 			"screen": {
 				"canvas": "QAAxpcsFKBCvDUGbQbwtCa",
-				"board": "BqPaginaOntwerper"
+				"board": [
+					"BqPaginaOntwerper",
+					"openregister/OrObjectHistorie"
+				]
 			}
 		},
 		{
@@ -2658,7 +2671,8 @@
 				"canvas": "QAAxpcsFKBCvDUGbQbwtCa",
 				"board": [
 					"BqPaginaOntwerper",
-					"BqPaginaToevoegen"
+					"BqPaginaToevoegen",
+					"BqPaginaEditors"
 				]
 			}
 		},
@@ -2743,7 +2757,8 @@
 				"canvas": "QAAxpcsFKBCvDUGbQbwtCa",
 				"board": [
 					"BqPaginaOntwerper",
-					"BqPaginaToevoegen"
+					"BqPaginaToevoegen",
+					"BqPaginaEditors"
 				]
 			}
 		},
@@ -2837,15 +2852,17 @@
 			"mendix": "unknown",
 			"power-apps": "partial",
 			"built": {
-				"state": "built",
-				"evidence": "nextcloud-vue #1214 628f1d57d (in 2.56.0; buildiq locks 2.57.1): CnIndexPage board and dateAxis view modes (src/components/CnIndexPage/CnIndexPage.vue:538, :555 at nextcloud-vue development f2bc02c3). buildiq's index page editor does not offer the mode yet",
+				"state": "specified",
+				"evidence": "Not built: buildiq's index page editor offers no 'board' view mode, so a maker cannot switch it on; the renderer half is in nextcloud-vue 2.56.0 (#1214). Plan: pages-index-calendar-and-manual-order T07 (REQ-PEC-010). Was: nextcloud-vue #1214 628f1d57d (in 2.56.0; buildiq locks 2.57.1): CnIndexPage board and dateAxis view modes (src/components/CnIndexPage/CnIndexPage.vue:538, :555 at nextcloud-vue development f2bc02c3). buildiq's index page editor does not offer the mode yet",
 				"owner": "ConductionNL/nextcloud-vue",
 				"note": "Library half shipped in nextcloud-vue 2.56.0 (#1214); rated partial until buildiq's index page editor offers the mode, which is buildiq's half. Before: grep -ri 'kanban' across buildiq src/ and lib/: no hits. nextcloud-vue v2.55.1 src/components/CnPageRenderer/pageTypes.js defaultPageTypes has no 'kanban' entry (full list: index, detail, dashboard, logs, settings, chat, files, form, map, roadmap, reports, store, search, wiki, flow/flows/flow-detail) (OpenSpec pass 2026-09-27, corrected 2026-09-28).",
 				"change": "nextcloud-vue/status-board-and-date-axis",
 				"requirement": [
 					"nextcloud-vue:openspec/changes/status-board-and-date-axis/specs/index-page :: The index page offers a board bound to the status field",
-					"nextcloud-vue:openspec/changes/status-board-and-date-axis/specs/index-page :: Moving a card runs a transition and a refusal is shown"
-				]
+					"nextcloud-vue:openspec/changes/status-board-and-date-axis/specs/index-page :: Moving a card runs a transition and a refusal is shown",
+					"openspec/changes/pages-index-calendar-and-manual-order/specs/page-editor-coverage :: An index page can offer a board or a date axis view (REQ-PEC-010)"
+				],
+				"plan": "openspec/changes/pages-index-calendar-and-manual-order"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -2912,12 +2929,16 @@
 			"mendix": "unknown",
 			"power-apps": "unknown",
 			"built": {
-				"state": "built",
-				"evidence": "nextcloud-vue #1214 628f1d57d (in 2.56.0; buildiq locks 2.57.1): CnIndexPage board and dateAxis view modes (src/components/CnIndexPage/CnIndexPage.vue:538, :555 at nextcloud-vue development f2bc02c3). buildiq's index page editor does not offer the mode yet",
+				"state": "specified",
+				"evidence": "Not built: buildiq's index page editor offers no 'dateAxis' view mode, so a maker cannot switch it on; the renderer half is in nextcloud-vue 2.56.0 (#1214). Plan: pages-index-calendar-and-manual-order T07 (REQ-PEC-010). Was: nextcloud-vue #1214 628f1d57d (in 2.56.0; buildiq locks 2.57.1): CnIndexPage board and dateAxis view modes (src/components/CnIndexPage/CnIndexPage.vue:538, :555 at nextcloud-vue development f2bc02c3). buildiq's index page editor does not offer the mode yet",
 				"owner": "ConductionNL/nextcloud-vue",
 				"note": "Library half shipped in nextcloud-vue 2.56.0 (#1214); rated partial until buildiq's index page editor offers the mode, which is buildiq's half. Before: grep -ri 'gantt|timeline' across buildiq src/ and lib/: no hits at all. No 'gantt'/'timeline' entry in nextcloud-vue v2.55.1 pageTypes.js (OpenSpec pass 2026-09-27, corrected 2026-09-28).",
 				"change": "nextcloud-vue/status-board-and-date-axis",
-				"requirement": "nextcloud-vue:openspec/changes/status-board-and-date-axis/specs/index-page :: The date axis shows overlapping work and hides nothing"
+				"requirement": [
+					"nextcloud-vue:openspec/changes/status-board-and-date-axis/specs/index-page :: The date axis shows overlapping work and hides nothing",
+					"openspec/changes/pages-index-calendar-and-manual-order/specs/page-editor-coverage :: An index page can offer a board or a date axis view (REQ-PEC-010)"
+				],
+				"plan": "openspec/changes/pages-index-calendar-and-manual-order"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -3010,7 +3031,8 @@
 				"canvas": "QAAxpcsFKBCvDUGbQbwtCa",
 				"board": [
 					"BqPaginaOntwerper",
-					"BqPaginaToevoegen"
+					"BqPaginaToevoegen",
+					"BqPaginaEditors"
 				]
 			}
 		},
@@ -3049,7 +3071,8 @@
 				"canvas": "QAAxpcsFKBCvDUGbQbwtCa",
 				"board": [
 					"BqPaginaOntwerper",
-					"BqPaginaToevoegen"
+					"BqPaginaToevoegen",
+					"BqPaginaEditors"
 				]
 			}
 		},
@@ -3088,7 +3111,8 @@
 				"canvas": "QAAxpcsFKBCvDUGbQbwtCa",
 				"board": [
 					"BqPaginaOntwerper",
-					"BqPaginaToevoegen"
+					"BqPaginaToevoegen",
+					"BqPaginaEditors"
 				]
 			}
 		},
@@ -3127,7 +3151,8 @@
 				"canvas": "QAAxpcsFKBCvDUGbQbwtCa",
 				"board": [
 					"BqPaginaOntwerper",
-					"BqPaginaToevoegen"
+					"BqPaginaToevoegen",
+					"BqPaginaEditors"
 				]
 			}
 		},
@@ -3166,7 +3191,8 @@
 				"canvas": "QAAxpcsFKBCvDUGbQbwtCa",
 				"board": [
 					"BqPaginaOntwerper",
-					"BqPaginaToevoegen"
+					"BqPaginaToevoegen",
+					"BqPaginaEditors"
 				]
 			}
 		},
@@ -3840,7 +3866,7 @@
 			"area": "forms",
 			"name": "Prefill a form with known data, such as the logged-in user's details.",
 			"source": "competitor",
-			"buildiq": "no",
+			"buildiq": "yes",
 			"nocobase": "yes",
 			"budibase": "yes",
 			"appsmith": "partial",
@@ -3860,7 +3886,7 @@
 			"providerHow": "read-from-code",
 			"feature": "form-editor-logic",
 			"featureConfidence": "high",
-			"note": "A static initialValue can be typed into the manifest via Raw JSON, which is not prefill from known data. Edit-mode forms load the record, which is editing, not prefill.",
+			"note": "Built in forms-live-values-and-checks: FieldDefaultBuilder.vue offers @me, @me.displayName, @me.email, @today and @object.<field> as a field default, and CnFormPage fills them when the form opens. Before that change only a static initialValue in Raw JSON existed.",
 			"reachedOn": "",
 			"evidence": {
 				"nocobase": "source read at v2.2.18, not driven: packages/core/client-v2/src/flow/models/blocks/form/FormItemModel.tsx:373 \"Default value\" per form field accepting variables; the current user is exposed as ctx.user at packages/core/client-v2/src/nocobase-buildin-plugin/index.tsx:259 Reached on: form field settings, Default value, Current user",
@@ -4286,7 +4312,8 @@
 				"canvas": "QAAxpcsFKBCvDUGbQbwtCa",
 				"board": [
 					"BqBedrijfsregels",
-					"BqBeslistabel"
+					"BqBeslistabel",
+					"BqRegelBewerken"
 				]
 			}
 		},
@@ -4684,7 +4711,8 @@
 				"canvas": "QAAxpcsFKBCvDUGbQbwtCa",
 				"board": [
 					"BqAutomatiseringen",
-					"BqAutomatiseringBewerken"
+					"BqAutomatiseringBewerken",
+					"BqFlowsBewerken"
 				]
 			}
 		},
@@ -5379,7 +5407,8 @@
 				"canvas": "QAAxpcsFKBCvDUGbQbwtCa",
 				"board": [
 					"BqAutomatiseringen",
-					"BqAutomatiseringBewerken"
+					"BqAutomatiseringBewerken",
+					"openregister/OrWebhooks"
 				]
 			}
 		},
@@ -6004,7 +6033,10 @@
 				"note": "Open Register's half shipped in ConductionNL/openregister openspec/changes/archive/2026-08-17-declared-actions-and-mcp-scope; the missing half is buildiq's own work, so the owner moved to ConductionNL/buildiq (openregister lane, OpenSpec pass 2026-09-27; owner was ConductionNL/openregister).",
 				"change": "archive/retrofit-2026-05-24-openbuild-runtime-mcp",
 				"spec": "openspec/specs/openbuild-runtime",
-				"requirement": "openspec/specs/openbuild-runtime :: MCP tool-provider contract"
+				"requirement": [
+					"openspec/specs/openbuild-runtime :: MCP tool-provider contract",
+					"openregister:openspec/specs/mcp-discovery :: Derived schema tools are served over the JSON-RPC MCP surface"
+				]
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -6401,13 +6433,14 @@
 			"mendix": "partial",
 			"power-apps": "partial",
 			"built": {
-				"state": "built",
-				"evidence": "OpenRegister writes a per-object audit trail on every save of the built-app and applicationVersion objects (route openregister origin/development appinfo/routes.php:1341 auditTrail#objects '/api/objects/{register}/{schema}/{id}/audit-trails'); buildiq adds admin-bypass records (ApplicationsController.php recordAdminBypass after :367). Buildiq's own surface is src/modals/PermissionHistoryModal.vue (actions menu 'Permission history', ApplicationDetailActions.vue:342-343), limited to permission changes. src/views/VersionHistory.vue lists versions with status, not who changed the design or when",
+				"state": "specified",
+				"evidence": "Not built: src/modals/PermissionHistoryModal.vue:248 requests /apps/openregister/api/objects/buildiq/built-app/{uuid}/audit while OpenRegister serves .../audit-trails, so the history does not load, and no buildiq screen lists who changed an app's design and when. Plan: capability-requirements-backfill T14 (REQ-BQCV-014). Was: OpenRegister writes a per-object audit trail on every save of the built-app and applicationVersion objects (route openregister origin/development appinfo/routes.php:1341 auditTrail#objects '/api/objects/{register}/{schema}/{id}/audit-trails'); buildiq adds admin-bypass records (ApplicationsController.php recordAdminBypass after :367). Buildiq's own surface is src/modals/PermissionHistoryModal.vue (actions menu 'Permission history', ApplicationDetailActions.vue:342-343), limited to permission changes. src/views/VersionHistory.vue lists versions with status, not who changed the design or when",
 				"reachedOn": "VirtualApps application detail, actions menu -> Permission history (permissions only)",
 				"owner": "ConductionNL/buildiq",
 				"note": "Open Register's half shipped in ConductionNL/openregister openspec/changes/archive/2026-03-21-audit-trail-immutable; the missing half is buildiq's own work, so the owner moved to ConductionNL/buildiq (openregister lane, OpenSpec pass 2026-09-27; owner was ConductionNL/openregister).",
 				"spec": "openspec/specs/openbuild-rbac",
-				"requirement": "openspec/changes/capability-requirements-backfill/specs/openbuild-rbac :: An owner sees who changed an app's design and when (REQ-BQCV-014)"
+				"requirement": "openspec/changes/capability-requirements-backfill/specs/openbuild-rbac :: An owner sees who changed an app's design and when (REQ-BQCV-014)",
+				"plan": "openspec/changes/capability-requirements-backfill"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -6464,7 +6497,10 @@
 			},
 			"screen": {
 				"canvas": "QAAxpcsFKBCvDUGbQbwtCa",
-				"board": "BqPaginaOntwerper"
+				"board": [
+					"BqPaginaOntwerper",
+					"openregister/OrObjectHistorie"
+				]
 			}
 		},
 		{
@@ -7279,7 +7315,7 @@
 			"area": "reuse",
 			"name": "Browse a gallery of starter templates by category.",
 			"source": "own-code",
-			"buildiq": "partial",
+			"buildiq": "yes",
 			"nocobase": "no",
 			"budibase": "no",
 			"appsmith": "yes",
@@ -7299,7 +7335,7 @@
 			"providerHow": "read-from-code",
 			"feature": "buildiq-remote-template-store",
 			"featureConfidence": "medium",
-			"note": "Category is only a label on each card: there is no category filter or grouping for templates (the only category filter, TemplateGallery.vue:254, applies to component blocks). Four seeded templates, one per category.",
+			"note": "Built in reuse-gallery-categories-and-form-library T01: TemplateGallery.vue filters and groups built-in, organisation and GitHub templates by category and keeps the choice in ?category=.",
 			"reachedOn": "Templates page /templates (titled 'App store'), 'Built-in templates' section",
 			"evidence": {
 				"nocobase": "source read at v2.2.18, not driven: searched en-US.json for gallery, starter template, solution: none; packages/plugins/@nocobase/plugin-multi-app-manager/src/client/settings/schemas/applications.tsx:417 app creation has no template picker; ready-made solutions are downloaded from the NocoBase site and restored as backups (packages/plugins/@nocobase/plugin-backups/src/client-v2/components/RestoreFromLocal.tsx:128)",
@@ -8212,7 +8248,8 @@
 				"canvas": "QAAxpcsFKBCvDUGbQbwtCa",
 				"board": [
 					"BqPaginaOntwerper",
-					"BqPaginaToevoegen"
+					"BqPaginaToevoegen",
+					"BqPaginaEditors"
 				]
 			}
 		},
@@ -9018,7 +9055,8 @@
 				"canvas": "QAAxpcsFKBCvDUGbQbwtCa",
 				"board": [
 					"BqPaginaOntwerper",
-					"BqWidgetToevoegen"
+					"BqWidgetToevoegen",
+					"BqMijnGoedkeuringen"
 				]
 			}
 		},
@@ -9345,7 +9383,10 @@
 			},
 			"screen": {
 				"canvas": "QAAxpcsFKBCvDUGbQbwtCa",
-				"board": "BqAutomatiseringBewerken"
+				"board": [
+					"BqAutomatiseringBewerken",
+					"BqGoedkeuringVoorOpslaan"
+				]
 			}
 		},
 		{
@@ -9490,7 +9531,10 @@
 				"owner": "ConductionNL/nextcloud-vue",
 				"note": "Provider half built: nextcloud-vue journey-runtime renders the review step (only a bundle measurement open). buildiq half: journey-designer Task 1 authors form, review and confirmation steps (src/views/JourneyDesigner.vue, src/components/journey-editor/JourneyStepsManager.vue). Was nextcloud-vue/journey-runtime.",
 				"change": "journey-designer",
-				"requirement": "openspec/changes/journey-designer/specs/journey-designer :: The designer MUST author steps over existing form objects"
+				"requirement": [
+					"openspec/changes/journey-designer/specs/journey-designer :: The designer MUST author steps over existing form objects",
+					"nextcloud-vue:openspec/changes/journey-runtime/specs/journey-runtime :: The review step MUST show every answer collected so far"
+				]
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -9715,7 +9759,10 @@
 			},
 			"screen": {
 				"canvas": "QAAxpcsFKBCvDUGbQbwtCa",
-				"board": "BqBedrijfsregels"
+				"board": [
+					"BqBedrijfsregels",
+					"BqFormulierOntwerper"
+				]
 			}
 		},
 		{
@@ -10284,7 +10331,8 @@
 				"canvas": "QAAxpcsFKBCvDUGbQbwtCa",
 				"board": [
 					"BqCopilot",
-					"BqNieuweApp"
+					"BqNieuweApp",
+					"BqGenererenMetAI"
 				]
 			}
 		},
@@ -10996,7 +11044,10 @@
 			},
 			"screen": {
 				"canvas": "QAAxpcsFKBCvDUGbQbwtCa",
-				"board": "BqAutomatiseringBewerken"
+				"board": [
+					"BqAutomatiseringBewerken",
+					"openregister/OrFlowTriggerWebhook"
+				]
 			}
 		},
 		{
