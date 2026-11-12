@@ -35,6 +35,49 @@ import DeleteAppDialog from '../dialogs/DeleteAppDialog.vue'
 // library object store keys its collections/objects maps by it.
 const APPLICATION_OBJECT_TYPE = 'openbuild-application'
 
+/**
+ * The OpenRegister id of an app row: `id`, the `@self` id, or `uuid`.
+ *
+ * @param {object} item The app row.
+ * @return {string}
+ */
+function itemUuid(item) {
+	const self = item['@self'] || {}
+	return String(item.id || self.id || item.uuid || '')
+}
+
+/**
+ * Drop an app from the store's list collection, when it holds the type.
+ *
+ * @param {object} store The shared object store.
+ * @param {string} uuid The deleted application's id.
+ * @return {void}
+ */
+function evictFromCollection(store, uuid) {
+	const type = APPLICATION_OBJECT_TYPE
+	if (store.collections && store.collections[type]) {
+		store.collections = {
+			...store.collections,
+			[type]: store.collections[type].filter((o) => o.id !== uuid),
+		}
+	}
+}
+
+/**
+ * Drop an app from the store's object map, when it holds the type.
+ *
+ * @param {object} store The shared object store.
+ * @param {string} uuid The deleted application's id.
+ * @return {void}
+ */
+function evictFromObjects(store, uuid) {
+	const type = APPLICATION_OBJECT_TYPE
+	if (store.objects && store.objects[type]) {
+		const { [uuid]: _removed, ...rest } = store.objects[type]
+		store.objects = { ...store.objects, [type]: rest }
+	}
+}
+
 export default {
 	name: 'AppDeleteDialogSlot',
 
@@ -68,8 +111,7 @@ export default {
 		 * @return {string}
 		 */
 		appUuid() {
-			const i = this.item || {}
-			return String(i.id || (i['@self'] && i['@self'].id) || i.uuid || '')
+			return itemUuid(this.item || {})
 		},
 	},
 
@@ -101,27 +143,47 @@ export default {
 			}
 			this.busy = true
 			try {
-				await axios.delete(
-					generateUrl(`/apps/buildiq/api/applications/${this.appUuid}`),
-					{
-						params: { deleteData: deleteData ? 1 : 0 },
-					},
-				)
-				this.evictFromList(this.appUuid)
-				if (typeof this.close === 'function') {
-					this.close()
-				}
+				await this.destroyAndClose(deleteData)
 			} catch (e) {
-				const detail =
-					(e.response && e.response.data && e.response.data.detail)
-					|| e.message
-					|| e
-				showError(
-					this.t('buildiq', 'Delete failed: {error}', { error: detail }),
-				)
+				showError(this.deleteFailureText(e))
 			} finally {
 				this.busy = false
 			}
+		},
+
+		/**
+		 * DELETE the app, keeping or wiping its data, then evict it from the
+		 * list and close the dialog.
+		 *
+		 * @param {boolean} deleteData Whether to also delete all app data.
+		 * @return {Promise<void>}
+		 */
+		async destroyAndClose(deleteData) {
+			await axios.delete(
+				generateUrl(`/apps/buildiq/api/applications/${this.appUuid}`),
+				{
+					params: { deleteData: deleteData ? 1 : 0 },
+				},
+			)
+			this.evictFromList(this.appUuid)
+			if (typeof this.close === 'function') {
+				this.close()
+			}
+		},
+
+		/**
+		 * The error shown when the delete fails: the server's detail, else the
+		 * error message, else the error itself.
+		 *
+		 * @param {Error} e The rejected request.
+		 * @return {string}
+		 */
+		deleteFailureText(e) {
+			const detail =
+				(e.response && e.response.data && e.response.data.detail)
+				|| e.message
+				|| e
+			return this.t('buildiq', 'Delete failed: {error}', { error: detail })
 		},
 
 		/**
@@ -137,17 +199,8 @@ export default {
 		evictFromList(uuid) {
 			try {
 				const store = useObjectStore()
-				const type = APPLICATION_OBJECT_TYPE
-				if (store.collections && store.collections[type]) {
-					store.collections = {
-						...store.collections,
-						[type]: store.collections[type].filter((o) => o.id !== uuid),
-					}
-				}
-				if (store.objects && store.objects[type]) {
-					const { [uuid]: _removed, ...rest } = store.objects[type]
-					store.objects = { ...store.objects, [type]: rest }
-				}
+				evictFromCollection(store, uuid)
+				evictFromObjects(store, uuid)
 			} catch (e) {
 				// eslint-disable-next-line no-console
 				console.warn(
