@@ -102,7 +102,7 @@ export default {
 		/**
 		 * Validate the slug against the lowercase-kebab pattern.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
 		 * @return {boolean} True when valid.
 		 */
 		slugValid() {
@@ -112,7 +112,7 @@ export default {
 		/**
 		 * Validate that a non-empty title is present.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
 		 * @return {boolean} True when valid.
 		 */
 		titleValid() {
@@ -122,7 +122,7 @@ export default {
 		/**
 		 * Validate the version string against semver MAJOR.MINOR.PATCH.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
 		 * @return {boolean} True when valid.
 		 */
 		versionValid() {
@@ -132,7 +132,7 @@ export default {
 		/**
 		 * Aggregate validity of the whole header form.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
 		 * @return {boolean} True when slug, title, and version are all valid.
 		 */
 		allValid() {
@@ -144,7 +144,7 @@ export default {
 		/**
 		 * Emit an updated header object when a field changes.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
 		 * @param {string} field Field name.
 		 * @param {*} val New value.
 		 * @return {void}

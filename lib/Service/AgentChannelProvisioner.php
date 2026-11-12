@@ -42,7 +42,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/app-repo-format-flow-agent-export/specs/app-channel-application/spec.md
+ * @spec openspec/specs/app-channel-application/spec.md
  */
 
 declare(strict_types=1);
@@ -57,7 +57,7 @@ use Throwable;
 /**
  * Applies the agents channel, tagging every agent with the local application's slug.
  *
- * @spec openspec/changes/app-repo-format-flow-agent-export/specs/app-channel-application/spec.md
+ * @spec openspec/specs/app-channel-application/spec.md
  */
 class AgentChannelProvisioner {
 
@@ -113,7 +113,7 @@ class AgentChannelProvisioner {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/app-repo-format-flow-agent-export/specs/app-channel-application/spec.md#requirement-published-agents-are-tagged-with-the-local-applications-slug
+	 * @spec openspec/specs/app-channel-application/spec.md#requirement-published-agents-are-tagged-with-the-local-applications-slug
 	 */
 	public function apply(array $agents, ?string $applicationSlug, ChannelApplyReport $report): void {
 		$report->declareChannel(channel: self::CHANNEL, declared: count($agents));

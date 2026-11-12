@@ -60,7 +60,7 @@ export default {
 		/**
 		 * Observed behaviour of `validatedConfigKeys` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		validatedConfigKeys() {
 			return ['widgets', 'layout']
@@ -75,7 +75,7 @@ export default {
 		 *
 		 * @param {string} key - the config key being written: `widgets` or `layout`.
 		 * @param {Array<object>} value - the rebuilt list from WidgetBuilder / LayoutItemBuilder. Any falsy value or an empty array deletes the key rather than storing `[]`.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		update(key, value) {
 			const next = { ...this.config }
@@ -92,7 +92,7 @@ export default {
 		 * dashboard config (REQ-OCAS-002).
 		 *
 		 * @param {object} dataSource - the updated dataSource object.
-		 * @spec openspec/changes/openconnector-api-sources/tasks.md#task-3.2
+		 * @spec openspec/changes/archive/2026-06-14-openconnector-api-sources/tasks.md#task-3.2
 		 */
 		onDataSourceUpdate(dataSource) {
 			const next = { ...this.config }

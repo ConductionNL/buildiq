@@ -171,7 +171,7 @@ function auditRowsOf(res) {
  * PermissionHistoryModal — owner-only read view of permission changes
  * on a single Application, sourced from OR's audit trail.
  *
- * @spec openspec/changes/openbuild-rbac/tasks.md#task-2-6
+ * @spec openspec/changes/archive/2026-06-14-openbuild-rbac/tasks.md#task-2-6
  */
 export default {
 	name: 'PermissionHistoryModal',

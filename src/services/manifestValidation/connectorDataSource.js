@@ -12,7 +12,7 @@
  * mechanism (REQ-OBPD-011) lights up the offending editor field, and the
  * side panel shows the human message resolved from the i18n code.
  *
- * @spec openspec/changes/openconnector-api-sources/tasks.md#task-1.1
+ * @spec openspec/changes/archive/2026-06-14-openconnector-api-sources/tasks.md#task-1.1
  */
 
 /** Closed enum of supported HTTP methods for v1 read-bindings. */
@@ -250,7 +250,7 @@ function mixedFormErrors(dataSource, pointer) {
  * @param {string} pointer - JSON-Pointer to this dataSource (e.g.
  *   `/pages/1/config/dataSource`).
  * @return {string[]}
- * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-001
+ * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-001
  */
 export function validateConnectorDataSource(dataSource, pointer) {
 	if (!isPlainObject(dataSource) || dataSource.connector === undefined) {
@@ -275,7 +275,7 @@ export function validateConnectorDataSource(dataSource, pointer) {
  *
  * @param {object} manifest - the in-flight manifest.
  * @return {string[]}
- * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-001
+ * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-001
  */
 export function validateManifestConnectors(manifest) {
 	const errors = []

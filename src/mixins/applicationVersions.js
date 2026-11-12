@@ -80,7 +80,7 @@ function asError(e) {
  * Loading, ordering and picking the versions of the application a detail
  * component shows. A component runs its own follow-up in `onVersionsLoaded()`.
  *
- * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+ * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
  */
 export const applicationVersionsMixin = {
 	computed: {
@@ -88,7 +88,7 @@ export const applicationVersionsMixin = {
 		 * App slug from the resolved Application record.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		appSlug() {
 			return (this.application && this.application.slug) || ''
@@ -98,7 +98,7 @@ export const applicationVersionsMixin = {
 		 * Production version UUID resolved from the Application record.
 		 *
 		 * @return {string|null}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		productionVersionUuid() {
 			return versionUuidOf(this.application && this.application.productionVersion)
@@ -108,7 +108,7 @@ export const applicationVersionsMixin = {
 		 * Versions ordered along the promotesTo chain (most-upstream first).
 		 *
 		 * @return {Array<object>}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		orderedVersions() {
 			const all = Array.isArray(this.versions) ? this.versions.slice() : []
@@ -137,7 +137,7 @@ export const applicationVersionsMixin = {
 		 * Currently active version (selected, or production, or first).
 		 *
 		 * @return {object|null}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		activeVersion() {
 			if (!this.selectedVersionUuid) {
@@ -153,7 +153,7 @@ export const applicationVersionsMixin = {
 		 * The production version row (for the chain/star resolution).
 		 *
 		 * @return {object|null}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		productionVersion() {
 			if (!this.productionVersionUuid) return null
@@ -171,7 +171,7 @@ export const applicationVersionsMixin = {
 		 *
 		 * @param {object} next The new Application record.
 		 * @return {void}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		object(next) {
 			if (next) {
@@ -195,7 +195,7 @@ export const applicationVersionsMixin = {
 	 * Fetch the Application + versions on mount.
 	 *
 	 * @return {void}
-	 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+	 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 	 */
 	mounted() {
 		if (!this.application) {
@@ -210,7 +210,7 @@ export const applicationVersionsMixin = {
 		 * Re-load the Application record by `objectId`.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		async refreshApplication() {
 			const uuid = requestedApplicationId(this)

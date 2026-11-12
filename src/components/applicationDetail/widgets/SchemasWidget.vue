@@ -105,7 +105,7 @@ export default {
 		 *
 		 * @param {number|undefined} count Object count value.
 		 * @return {string}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-2
 		 */
 		formatCount(count) {
 			const n = Number(count || 0)
@@ -118,7 +118,7 @@ export default {
 		 *
 		 * @param {object} schema The schema row.
 		 * @return {void}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-2
 		 */
 		openSchema(schema) {
 			const id = schema.id || schema.uuid || schema.slug
@@ -140,7 +140,7 @@ export default {
 		 * scenario).
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-2
 		 */
 		addSchema() {
 			const opener = registeredSchemaDialog()

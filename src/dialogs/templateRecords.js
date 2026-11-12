@@ -24,7 +24,7 @@ const CATEGORY_LABELS = {
  * Category picker options over the REQ-OBTC-001 enum.
  *
  * @return {Array<{id: string, label: string}>} one option per category.
- * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+ * @spec openspec/specs/save-as-template/spec.md
  */
 export function templateCategoryOptions() {
 	return TEMPLATE_CATEGORIES.map((value) => ({
@@ -38,7 +38,7 @@ export function templateCategoryOptions() {
  *
  * @param {object} record - the template record.
  * @return {string} the generated url.
- * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+ * @spec openspec/specs/save-as-template/spec.md
  */
 export function templateRecordUrl(record) {
 	const uuid =

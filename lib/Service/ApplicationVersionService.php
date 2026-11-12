@@ -35,10 +35,10 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-22
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-23
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-25
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-31
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-22
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-23
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-25
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-31
  */
 
 declare(strict_types=1);
@@ -181,7 +181,7 @@ class ApplicationVersionService {
 	 *
 	 * @throws \JsonException When the structure contains non-encodable values
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-22
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-22
 	 */
 	public function canonicaliseManifest(array $manifest): string {
 		return json_encode(
@@ -199,7 +199,7 @@ class ApplicationVersionService {
 	 *
 	 * @throws \JsonException When the manifest contains non-encodable values
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-22
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-22
 	 */
 	public function hashManifest(array $manifest): string {
 		return hash(algo: 'sha256', data: $this->canonicaliseManifest(manifest: $manifest));
@@ -215,7 +215,7 @@ class ApplicationVersionService {
 	 *
 	 * @throws RuntimeException When the input is not a recognisable semver
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-22
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-22
 	 */
 	public function bumpPatch(string $semver): string {
 		$matches = [];
@@ -252,7 +252,7 @@ class ApplicationVersionService {
 	 *
 	 * @throws \JsonException When the manifest cannot be canonicalised
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-22
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-22
 	 */
 	public function onSave(?array $current, array $next): array {
 		$manifest = $next['manifest'] ?? null;
@@ -307,7 +307,7 @@ class ApplicationVersionService {
 	 *
 	 * @throws RuntimeException When a cycle is detected or the cap is exceeded
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-23
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-23
 	 */
 	public function guardNoCycle(string $currentUuid, ?string $proposedTargetUuid): void {
 		if ($proposedTargetUuid === null || $proposedTargetUuid === '') {
@@ -379,7 +379,7 @@ class ApplicationVersionService {
 	 *
 	 * @throws RuntimeException When the back-reference does not point at the parent
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-31
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-31
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	public function guardProductionVersionOwnership(string $applicationUuid, string $proposedVersionUuid): void {
@@ -444,7 +444,7 @@ class ApplicationVersionService {
 	 *
 	 * @throws RuntimeException On back-reference mismatch or a missing object
 	 *
-	 * @spec openspec/changes/version-lifecycle-and-switcher/specs/application-versions/spec.md
+	 * @spec openspec/specs/application-versions/spec.md
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	public function releaseVersion(string $applicationUuid, string $versionUuid): array {
@@ -578,7 +578,7 @@ class ApplicationVersionService {
 	 * @throws RuntimeException On unknown strategy, missing version, or
 	 *                          production-version refusal
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-25
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-25
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	public function deleteVersion(string $versionUuid, string $strategy): void {
@@ -651,7 +651,7 @@ class ApplicationVersionService {
 	 *
 	 * @throws RuntimeException When the strategy is not recognised
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-25
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-25
 	 */
 	private function assertValidStrategy(string $strategy): void {
 		if (in_array($strategy, self::VALID_STRATEGIES, true) === false) {
@@ -675,7 +675,7 @@ class ApplicationVersionService {
 	 *
 	 * @throws RuntimeException When the row is the parent's productionVersion
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-25
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-25
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function assertNotProductionVersion(array $versionData, string $versionUuid): void {
@@ -775,7 +775,7 @@ class ApplicationVersionService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-25
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-25
 	 */
 	private function dropPerVersionRegister(string $registerSlug, string $versionUuid): void {
 		if ($registerSlug === '') {
@@ -825,7 +825,7 @@ class ApplicationVersionService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-25
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-25
 	 */
 	private function flagRegisterOrphaned(string $registerSlug, string $versionUuid): void {
 		if ($registerSlug === '') {
@@ -949,7 +949,7 @@ class ApplicationVersionService {
 	 *
 	 * @return int The number of automations successfully cloned.
 	 *
-	 * @spec openspec/changes/automation-designer/tasks.md#2.6
+	 * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#2.6
 	 * @spec openspec/specs/automation-designer/spec.md#req-autd-009
 	 */
 	public function cloneAutomationsToVersion(string $applicationSlug, string $sourceVersionUuid, string $newVersionUuid): int {

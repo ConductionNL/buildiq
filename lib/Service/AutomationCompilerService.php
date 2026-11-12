@@ -94,16 +94,16 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/automation-designer/tasks.md#2.1
- * @spec openspec/changes/automation-designer/tasks.md#2.2
+ * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#2.1
+ * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#2.2
  * @spec openspec/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-existing-declarative-primitives-req-autd-004
  * @spec openspec/specs/automation-designer/spec.md#requirement-an-automation-is-managed-as-one-unit-with-provenance-req-autd-005
- * @spec openspec/changes/automation-approval-steps/tasks.md#1.1
- * @spec openspec/changes/automation-approval-steps/tasks.md#1.2
+ * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#1.1
+ * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#1.2
  * @spec openspec/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-existing-declarative-primitives-req-autd-004
- * @spec openspec/changes/automation-document-action/tasks.md#1.1
- * @spec openspec/changes/automation-document-action/tasks.md#1.2
- * @spec openspec/changes/automation-document-action/tasks.md#1.3
+ * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#1.1
+ * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#1.2
+ * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#1.3
  * @spec openspec/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-existing-declarative-primitives-req-autd-004
  */
 
@@ -127,7 +127,7 @@ use Throwable;
 /**
  * Pure compile() + I/O-performing apply()/remove()/status().
  *
- * @spec openspec/changes/automation-designer/tasks.md#2.1
+ * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#2.1
  */
 class AutomationCompilerService {
 	/**
@@ -292,7 +292,7 @@ class AutomationCompilerService {
 	 *
 	 * @throws UnsupportedAutomationCombinationException When the matrix (or condition placement) rejects the shape.
 	 *
-	 * @spec openspec/changes/automation-designer/tasks.md#2.1
+	 * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#2.1
 	 * @spec openspec/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-existing-declarative-primitives-req-autd-004
 	 */
 	public function compile(array $automation): array {
@@ -333,7 +333,7 @@ class AutomationCompilerService {
 	 *
 	 * @return array<string,mixed> The new `provenance` block.
 	 *
-	 * @spec openspec/changes/automation-designer/tasks.md#2.2
+	 * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#2.2
 	 */
 	public function apply(array $automation, array $plan, array $priorProvenance = []): array {
 		$slug = (string)($automation['slug'] ?? '');
@@ -417,7 +417,7 @@ class AutomationCompilerService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/automation-designer/tasks.md#2.2
+	 * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#2.2
 	 * @spec openspec/specs/automation-designer/spec.md#requirement-an-automation-is-managed-as-one-unit-with-provenance-req-autd-005
 	 */
 	public function remove(array $automation, array $provenance): void {
@@ -457,7 +457,7 @@ class AutomationCompilerService {
 	 *
 	 * @return array{drift:bool,compiledHash:?string,liveHash:?string}
 	 *
-	 * @spec openspec/changes/automation-designer/tasks.md#2.2
+	 * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#2.2
 	 * @spec openspec/specs/automation-designer/spec.md#requirement-an-automation-is-managed-as-one-unit-with-provenance-req-autd-005
 	 */
 	public function status(array $automation, array $provenance): array {
@@ -519,7 +519,7 @@ class AutomationCompilerService {
 	 *
 	 * @return string One of `none|pending|approved|rejected`.
 	 *
-	 * @spec openspec/changes/automation-approval-steps/tasks.md#5.1
+	 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#5.1
 	 * @spec openspec/specs/automation-designer/spec.md#requirement-dry-run-test-panel-evaluates-an-automation-without-side-effects-req-autd-007
 	 */
 	public function approvalState(array $automation, array $provenance): string {
@@ -638,8 +638,8 @@ class AutomationCompilerService {
 	 * @throws UnsupportedAutomationCombinationException On any invalid `generateDocument` config
 	 *                                                   or when Docudesk is absent.
 	 *
-	 * @spec openspec/changes/automation-document-action/tasks.md#1.2
-	 * @spec openspec/changes/automation-document-action/tasks.md#1.3
+	 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#1.2
+	 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#1.3
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) FleetAppId is a stateless
 	 *  resolver over a constant map, with no state to inject and nothing to
@@ -943,7 +943,7 @@ class AutomationCompilerService {
 	 *
 	 * @return array<string,mixed> A synthetic ConditionActionRule-shaped record.
 	 *
-	 * @spec openspec/changes/automation-designer/tasks.md#3.1
+	 * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#3.1
 	 * @spec openspec/specs/automation-designer/spec.md#requirement-dry-run-test-panel-evaluates-an-automation-without-side-effects-req-autd-007
 	 */
 	public function compileDryRunRule(array $automation): array {
@@ -1016,7 +1016,7 @@ class AutomationCompilerService {
 	 *
 	 * @return array<string,mixed>
 	 *
-	 * @spec openspec/changes/automation-approval-steps/tasks.md#2.1
+	 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#2.1
 	 */
 	public function mapActionToRuleAction(array $action): array {
 		$type = (string)($action['type'] ?? '');
@@ -1483,8 +1483,8 @@ class AutomationCompilerService {
 	 *
 	 * @return string|null The applied `ApprovalChain` name, or null.
 	 *
-	 * @spec openspec/changes/automation-approval-steps/tasks.md#1.2
-	 * @spec openspec/changes/automation-approval-steps/tasks.md#1.4
+	 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#1.2
+	 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#1.4
 	 */
 	private function applyApprovalChain(?array $planned, ?string $priorName, string $fallbackSchemaSlug): ?string {
 		if ($planned === null) {

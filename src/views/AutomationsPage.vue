@@ -219,7 +219,7 @@ export default {
 	},
 
 	computed: {
-		/** @spec openspec/changes/automation-designer/tasks.md#5.1 */
+		/** @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#5.1 */
 		selectedVersionId() {
 			return this.selectedVersion ? this.selectedVersion.id : ''
 		},
@@ -457,7 +457,7 @@ export default {
 		 *
 		 * @param {string} uuid - the automation's uuid.
 		 * @return {string}
-		 * @spec openspec/changes/automation-approval-steps/tasks.md#5.1
+		 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#5.1
 		 */
 		approvalStateFor(uuid) {
 			const status = this.statusByUuid[uuid]
@@ -470,7 +470,7 @@ export default {
 		 *
 		 * @param {string} state - one of pending|approved|rejected.
 		 * @return {string}
-		 * @spec openspec/changes/automation-approval-steps/tasks.md#5.1
+		 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#5.1
 		 */
 		approvalStateLabel(state) {
 			const labels = {

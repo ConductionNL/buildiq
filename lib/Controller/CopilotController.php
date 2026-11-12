@@ -38,7 +38,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+ * @spec openspec/specs/ai-copilot/spec.md
  */
 
 declare(strict_types=1);
@@ -61,7 +61,7 @@ use Throwable;
 /**
  * Controller exposing the copilot health/plan/execute endpoints.
  *
- * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+ * @spec openspec/specs/ai-copilot/spec.md
  */
 class CopilotController extends Controller {
 	/**
@@ -88,7 +88,7 @@ class CopilotController extends Controller {
 	 *
 	 * @return JSONResponse 200 `{status: "ok"}` when available, 503 `{status, reason}` otherwise.
 	 *
-	 * @spec                 openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+	 * @spec                 openspec/specs/ai-copilot/spec.md
 	 * @no-admin-idor-exempt Server-wide TaskProcessing availability probe — takes no caller-supplied
 	 *                       object id and reads no per-object data; there is nothing to gate per-caller.
 	 */
@@ -114,7 +114,7 @@ class CopilotController extends Controller {
 	 *
 	 * @return JSONResponse 200 `{summary, steps, manifests}`, or an error envelope.
 	 *
-	 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+	 * @spec openspec/specs/ai-copilot/spec.md
 	 * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
 	 */
 	#[NoAdminRequired]
@@ -160,7 +160,7 @@ class CopilotController extends Controller {
 	 *
 	 * @return JSONResponse 200 `{results}`, or an error envelope.
 	 *
-	 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+	 * @spec openspec/specs/ai-copilot/spec.md
 	 * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
 	 */
 	#[NoAdminRequired]

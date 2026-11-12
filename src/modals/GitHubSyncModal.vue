@@ -279,7 +279,7 @@ export default {
 		 * pull-success note card rather than buried in `channels.<name>.reason`.
 		 *
 		 * @return {Array<{code: string, channel: string, message: string}>}
-		 * @spec openspec/changes/surface-hermiq-credential-scope-requirement/specs/app-channel-application/spec.md
+		 * @spec openspec/specs/app-channel-application/spec.md
 		 */
 		pullWarnings() {
 			return (this.pullResult && this.pullResult.warnings) || []

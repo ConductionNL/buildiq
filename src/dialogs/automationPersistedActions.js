@@ -8,7 +8,7 @@
  * webhook without a payload template OMIT the key entirely rather than send
  * {}/null.
  *
- * @spec openspec/changes/automation-approval-steps/tasks.md#3.1
+ * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#3.1
  */
 
 /**

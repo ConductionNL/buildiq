@@ -17,7 +17,7 @@
  *     It is a property of the page, not of the placement: the same placement
  *     is perfectly valid the moment a second one joins it.
  *
- * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+ * @spec openspec/specs/openbuild-page-designer/spec.md
  */
 
 // The exempt key list is NOT exported from the package barrel, so it is read
@@ -38,7 +38,7 @@ const LIBRARY_KEYS = new Set(LIBRARY_WIDGET_KEYS)
  * @param {string} pageType - the page's `type`.
  * @return {string} `'detail-page'` for a detail page, `'app-dashboard'`
  *   otherwise.
- * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+ * @spec openspec/specs/openbuild-page-designer/spec.md
  */
 export function widgetSurfaceForPageType(pageType) {
 	return pageType === 'detail' ? 'detail-page' : 'app-dashboard'
@@ -51,7 +51,7 @@ export function widgetSurfaceForPageType(pageType) {
  *
  * @param {string} widgetKey - the placement's `widgetKey`.
  * @return {boolean} true when the library ships the component.
- * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+ * @spec openspec/specs/openbuild-page-designer/spec.md
  */
 export function isLibraryWidgetKey(widgetKey) {
 	return typeof widgetKey === 'string' && LIBRARY_KEYS.has(widgetKey)
@@ -70,7 +70,7 @@ export function isLibraryWidgetKey(widgetKey) {
  *
  * @param {object|null} page - the page to check.
  * @return {boolean} true when the page is a custom page in disguise.
- * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+ * @spec openspec/specs/openbuild-page-designer/spec.md
  */
 export function isCustomPageInDisguise(page) {
 	return customPageInDisguiseKey(page) !== null
@@ -162,7 +162,7 @@ function widgetKeyOf(widget) {
  *
  * @param {object|null} page - the page to check.
  * @return {string|null} the offending widget key, or null.
- * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+ * @spec openspec/specs/openbuild-page-designer/spec.md
  */
 export function customPageInDisguiseKey(page) {
 	const widget = soleDashboardWidget(page)
@@ -183,7 +183,7 @@ export function customPageInDisguiseKey(page) {
  *
  * @param {object|null} page - the page being edited.
  * @return {boolean} true when `_note` is required on each placement.
- * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+ * @spec openspec/specs/openbuild-page-designer/spec.md
  */
 export function pageRequiresPlacementNote(page) {
 	return Boolean(page) && page.type === 'custom'

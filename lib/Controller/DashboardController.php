@@ -23,7 +23,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-52
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-52
  */
 
 declare(strict_types=1);
@@ -45,7 +45,7 @@ use OCP\IUserSession;
 /**
  * Controller for the main Buildiq dashboard page.
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-52
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-52
  */
 class DashboardController extends Controller {
 	/**
@@ -79,7 +79,7 @@ class DashboardController extends Controller {
 	 *
 	 * @return TemplateResponse
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-52
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-52
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -93,7 +93,7 @@ class DashboardController extends Controller {
 	 *
 	 * @return TemplateResponse
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-52
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-52
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -118,7 +118,7 @@ class DashboardController extends Controller {
 	 *
 	 * @return TemplateResponse
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-52
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-52
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -151,7 +151,7 @@ class DashboardController extends Controller {
 	 *
 	 * @return TemplateResponse
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-52
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-52
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -236,7 +236,7 @@ class DashboardController extends Controller {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-52
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-52
 	 */
 	private function publishCurrentUserGroups(): void {
 		$user = $this->userSession->getUser();

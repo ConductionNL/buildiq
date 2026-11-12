@@ -114,7 +114,7 @@ export default {
 	},
 
 	computed: {
-		/** @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-001 */
+		/** @spec openspec/specs/openbuild-schedules-authoring/spec.md#req-obsa-001 */
 		schedules() {
 			return (
 				(this.manifest
@@ -129,7 +129,7 @@ export default {
 		 * dialog's uniqueness check).
 		 *
 		 * @return {string[]}
-		 * @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-004
+		 * @spec openspec/specs/openbuild-schedules-authoring/spec.md#req-obsa-004
 		 */
 		otherIds() {
 			const editingId = this.editingEntry && this.editingEntry.id
@@ -145,7 +145,7 @@ export default {
 		 *
 		 * @param {object} schedule - the schedule entry.
 		 * @return {string}
-		 * @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-001
+		 * @spec openspec/specs/openbuild-schedules-authoring/spec.md#req-obsa-001
 		 */
 		cadenceSummary(schedule) {
 			if (typeof schedule.cron === 'string' && schedule.cron !== '') {
@@ -168,7 +168,7 @@ export default {
 		 *
 		 * @param {object} schedule - the schedule entry.
 		 * @return {string}
-		 * @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-003
+		 * @spec openspec/specs/openbuild-schedules-authoring/spec.md#req-obsa-003
 		 */
 		actionSummary(schedule) {
 			if (schedule.action === 'openconnector:synchronization') {
@@ -182,14 +182,14 @@ export default {
 		 *
 		 * @param {object} schedule - the schedule entry.
 		 * @return {string}
-		 * @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-003
+		 * @spec openspec/specs/openbuild-schedules-authoring/spec.md#req-obsa-003
 		 */
 		syncSummary(schedule) {
 			const id = schedule.arguments && schedule.arguments.synchronizationId
 			return id || t('buildiq', 'No synchronization')
 		},
 
-		/** @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-001 */
+		/** @spec openspec/specs/openbuild-schedules-authoring/spec.md#req-obsa-001 */
 		openAdd() {
 			this.editingEntry = null
 			this.dialogOpen = true
@@ -203,7 +203,7 @@ export default {
 		 *   entry the user clicked. Kept in `editingEntry` so `onDialogSave` can
 		 *   replace it by `id` rather than appending a duplicate. Cadence is either
 		 *   `interval` (seconds) or `cron`, never both.
-		 * @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-005
+		 * @spec openspec/specs/openbuild-schedules-authoring/spec.md#req-obsa-005
 		 */
 		openEdit(schedule) {
 			this.editingEntry = schedule
@@ -214,7 +214,7 @@ export default {
 		 * Persist an added / edited entry into `manifest.schedules[]`.
 		 *
 		 * @param {object} entry - the assembled schedule entry from the dialog.
-		 * @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-005
+		 * @spec openspec/specs/openbuild-schedules-authoring/spec.md#req-obsa-005
 		 */
 		onDialogSave(entry) {
 			const list = this.schedules.slice()
@@ -233,7 +233,7 @@ export default {
 		 * Remove an entry from `manifest.schedules[]`.
 		 *
 		 * @param {object} schedule - the entry to remove.
-		 * @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-005
+		 * @spec openspec/specs/openbuild-schedules-authoring/spec.md#req-obsa-005
 		 */
 		remove(schedule) {
 			this.pendingRemoval = schedule
@@ -248,7 +248,7 @@ export default {
 		 * manifest untouched.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-005
+		 * @spec openspec/specs/openbuild-schedules-authoring/spec.md#req-obsa-005
 		 */
 		onConfirmRemove() {
 			const schedule = this.pendingRemoval
@@ -268,7 +268,7 @@ export default {
 		 *
 		 * @param {Array} list - the schedules list.
 		 * @return {object}
-		 * @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-007
+		 * @spec openspec/specs/openbuild-schedules-authoring/spec.md#req-obsa-007
 		 */
 		withSchedules(list) {
 			const next = { ...this.manifest }

@@ -388,8 +388,8 @@ function schemaColumns(s) {
  *   output byte-identical to the pre-existing (perApp-only) behaviour.
  * @return {object} - { fetchRegisters, fetchSchemas, fetchSchemaProperties,
  *   resolveAppRegister }.
- * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-1
- * @spec openspec/changes/data-registers-runtime/tasks.md#task-1.1
+ * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-frontend-foundation/tasks.md#task-1
+ * @spec openspec/changes/archive/2026-10-07-data-registers-runtime/tasks.md#task-1.1
  */
 export function useRegisterPicker(opts = {}) {
 	const appRegister = opts.appRegister || ''
@@ -415,7 +415,7 @@ export function useRegisterPicker(opts = {}) {
 	 * order; every other entry keeps OR's original relative order.
 	 *
 	 * @return {Promise<Array>} - registers list.
-	 * @spec openspec/changes/data-registers-runtime/tasks.md#task-1.1
+	 * @spec openspec/changes/archive/2026-10-07-data-registers-runtime/tasks.md#task-1.1
 	 */
 	async function fetchRegisters() {
 		try {

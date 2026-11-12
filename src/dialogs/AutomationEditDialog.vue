@@ -431,7 +431,7 @@ export default {
 	 * mirrors `docudesk-document-templates` REQ-DDT-005's editor-side
 	 * degradation and `ConnectorSourcePicker`'s existing `setup()` usage).
 	 *
-	 * @spec openspec/changes/automation-document-action/tasks.md#4.2
+	 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#4.2
 	 */
 	setup() {
 		const docudeskStatus = useAppStatus('filinq')
@@ -574,7 +574,7 @@ export default {
 		 * Action type options for the type picker on each action row.
 		 *
 		 * @return {Array<object>}
-		 * @spec openspec/changes/automation-approval-steps/tasks.md#3.1
+		 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#3.1
 		 */
 		actionTypeOptions() {
 			return [
@@ -605,7 +605,7 @@ export default {
 		 * `ConnectorSourcePicker::appAvailable`).
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/automation-document-action/tasks.md#4.2
+		 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#4.2
 		 */
 		docudeskAvailable() {
 			return (
@@ -619,7 +619,7 @@ export default {
 		 * (design.md Decision 3 of automation-document-action).
 		 *
 		 * @return {Array<object>}
-		 * @spec openspec/changes/automation-document-action/tasks.md#4.1
+		 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#4.1
 		 */
 		outputModeOptions() {
 			return [
@@ -634,7 +634,7 @@ export default {
 		 * should degrade to a free-text template id.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/automation-document-action/tasks.md#4.1
+		 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#4.1
 		 */
 		templatePickerAvailable() {
 			return (
@@ -670,7 +670,7 @@ export default {
 		 * at least one option), or the field should degrade to free-text.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/automation-approval-steps/tasks.md#3.1
+		 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#3.1
 		 */
 		groupPickerAvailable() {
 			return !this.groupFetchFailed && this.groupOptions.length > 0
@@ -683,7 +683,7 @@ export default {
 		 * (automation-document-action).
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/automation-document-action/tasks.md#4.1
+		 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#4.1
 		 */
 		valid() {
 			if (this.derivedSlug === '' || this.name.trim() === '') {
@@ -737,7 +737,7 @@ export default {
 		 *
 		 * @param {boolean} isOpen - the dialog's new open state.
 		 * @return {void}
-		 * @spec openspec/changes/automation-approval-steps/tasks.md#3.1
+		 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#3.1
 		 */
 		open(isOpen) {
 			if (isOpen) {
@@ -752,7 +752,7 @@ export default {
 	},
 
 	methods: {
-		/** @spec openspec/changes/automation-designer/tasks.md#5.2 */
+		/** @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#5.2 */
 		hydrate() {
 			this.showValidation = false
 			this.errorMessage = ''
@@ -812,7 +812,7 @@ export default {
 		 *
 		 * @param {object} action - the stored action record.
 		 * @return {object}
-		 * @spec openspec/changes/automation-approval-steps/tasks.md#3.1
+		 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#3.1
 		 */
 		actionToEditor(action) {
 			const subject = action.subject || {}
@@ -991,7 +991,7 @@ export default {
 		 * (e.g. openregister's EditSchema.vue).
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/automation-approval-steps/tasks.md#3.1
+		 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#3.1
 		 */
 		async fetchGroups() {
 			this.groupLoading = true
@@ -1026,7 +1026,7 @@ export default {
 		 *
 		 * @param {string} groupId - the stored assignee group id.
 		 * @return {?object}
-		 * @spec openspec/changes/automation-approval-steps/tasks.md#3.1
+		 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#3.1
 		 */
 		groupOption(groupId) {
 			return this.groupOptions.find((o) => o.value === groupId) || null
@@ -1038,7 +1038,7 @@ export default {
 		 * @param {number} index - the action's index in `actions`.
 		 * @param {?object} option - the selected group option.
 		 * @return {void}
-		 * @spec openspec/changes/automation-approval-steps/tasks.md#3.1
+		 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#3.1
 		 */
 		onGroupSelect(index, option) {
 			this.updateAction(index, 'assigneeGroup', option ? option.value : '')
@@ -1051,7 +1051,7 @@ export default {
 		 * on failure/absence.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/automation-document-action/tasks.md#4.1
+		 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#4.1
 		 */
 		async fetchDocudeskTemplateOptions() {
 			if (!this.docudeskAvailable) {
@@ -1072,7 +1072,7 @@ export default {
 		 *
 		 * @param {string} templateId - the stored template uuid.
 		 * @return {?object}
-		 * @spec openspec/changes/automation-document-action/tasks.md#4.1
+		 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#4.1
 		 */
 		templateOption(templateId) {
 			return (
@@ -1087,7 +1087,7 @@ export default {
 		 * @param {number} index - the action's index in `actions`.
 		 * @param {?object} option - the selected template option.
 		 * @return {void}
-		 * @spec openspec/changes/automation-document-action/tasks.md#4.1
+		 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#4.1
 		 */
 		onTemplateSelect(index, option) {
 			this.updateAction(index, 'templateId', option ? option.uuid : '')
@@ -1099,7 +1099,7 @@ export default {
 		 *
 		 * @param {object} action - the editor-shape action row.
 		 * @return {Array<object>}
-		 * @spec openspec/changes/automation-document-action/tasks.md#4.1
+		 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#4.1
 		 */
 		outputModeSelection(action) {
 			const modes = Array.isArray(action.output) ? action.output : []
@@ -1113,7 +1113,7 @@ export default {
 		 * @param {number} index - the action's index in `actions`.
 		 * @param {?Array<object>} options - the selected output-mode options.
 		 * @return {void}
-		 * @spec openspec/changes/automation-document-action/tasks.md#4.1
+		 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#4.1
 		 */
 		onOutputModesSelect(index, options) {
 			const modes = Array.isArray(options) ? options.map((o) => o.value) : []
@@ -1129,7 +1129,7 @@ export default {
 		 *
 		 * @param {object} action - the editor-shape `generateDocument` action.
 		 * @return {boolean}
-		 * @spec openspec/changes/automation-document-action/tasks.md#4.1
+		 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#4.1
 		 */
 		generateDocumentActionValid(action) {
 			if (!action.templateId) {
@@ -1170,8 +1170,8 @@ export default {
 		 *
 		 * @param {string} type - the action's type.
 		 * @return {string}
-		 * @spec openspec/changes/automation-document-action/tasks.md#4.2
-		 * @spec openspec/changes/automation-document-action/tasks.md#4.3
+		 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#4.2
+		 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#4.3
 		 */
 		actionBlockedReason(type) {
 			const matrixReason = blockedActionReason(this.triggerType, type)
@@ -1262,7 +1262,7 @@ export default {
 		 * Assemble the persisted `actions[]` from the working state.
 		 *
 		 * @return {Array}
-		 * @spec openspec/changes/automation-approval-steps/tasks.md#3.1
+		 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#3.1
 		 */
 		buildActions() {
 			return this.actions.map(toPersistedAction)

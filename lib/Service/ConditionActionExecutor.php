@@ -31,8 +31,8 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/business-rules-engine/tasks.md#4.1
- * @spec openspec/changes/automation-approval-steps/tasks.md#5.2
+ * @spec openspec/changes/archive/2026-06-14-business-rules-engine/tasks.md#4.1
+ * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#5.2
  */
 
 declare(strict_types=1);
@@ -44,8 +44,8 @@ use Throwable;
 /**
  * Synchronous condition-action rule chain executor.
  *
- * @spec openspec/changes/business-rules-engine/tasks.md#4.1
- * @spec openspec/changes/automation-approval-steps/tasks.md#5.2
+ * @spec openspec/changes/archive/2026-06-14-business-rules-engine/tasks.md#4.1
+ * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#5.2
  */
 class ConditionActionExecutor {
 
@@ -95,7 +95,7 @@ class ConditionActionExecutor {
 	 *
 	 * @return array{triggeredRules:array<int,array<string,mixed>>,result:array<string,mixed>,errors:array<int,string>}
 	 *
-	 * @spec openspec/changes/business-rules-engine/tasks.md#4.1
+	 * @spec openspec/changes/archive/2026-06-14-business-rules-engine/tasks.md#4.1
 	 */
 	public function execute(array $rules, array $payload, bool $dryRun = false, ?callable $dispatcher = null): array {
 		$ordered = $this->sortRules(rules: $rules);

@@ -278,7 +278,7 @@ export default {
 		 * Whether a previously-enabled entry exists to offer the Disable action.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-005
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-005
 		 */
 		hadEnabledEntry() {
 			return !!(this.entry && this.entry.status === 'enabled')
@@ -289,7 +289,7 @@ export default {
 		 * into an external form/website (REQ-EFP-002).
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-002
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-002
 		 */
 		rawSubmitUrl() {
 			if (!this.register || !this.schema) {
@@ -307,7 +307,7 @@ export default {
 		 * The Portaliq portal URL, when provisioned.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-004
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-004
 		 */
 		portalUrl() {
 			if (this.savedPortalUrl) {
@@ -331,7 +331,7 @@ export default {
 		 * completed or an entry already exists (reopen case).
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-002
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-002
 		 */
 		showUrls() {
 			return this.enabled && (this.saved || this.hadEnabledEntry)
@@ -344,7 +344,7 @@ export default {
 		 *
 		 * @param {boolean} isOpen - the new `open` prop value.
 		 * @return {void}
-		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-002
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-002
 		 */
 		open(isOpen) {
 			if (isOpen) {
@@ -358,7 +358,7 @@ export default {
 		 * Seed the form from the current entry when (re)opening.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-002
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-002
 		 */
 		hydrate() {
 			this.errorMessage = ''
@@ -384,7 +384,7 @@ export default {
 		 *
 		 * @param {string} value - '' for none, or a level.
 		 * @return {void}
-		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-004
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-004
 		 */
 		onMinTrustChange(value) {
 			this.minTrust = SIGN_IN_LEVELS.includes(value) ? value : ''
@@ -442,8 +442,8 @@ export default {
 		 * (design.md Decision 5 / OQ-2).
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-003
-		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-004
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-003
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-004
 		 */
 		async onSave() {
 			if (!this.register || !this.schema || this.saving) {
@@ -477,7 +477,7 @@ export default {
 		 * with zero findings, before and (for an anonymous form) after the grant.
 		 *
 		 * @return {Promise<boolean>} true when the portal page may be provisioned.
-		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-003
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-003
 		 */
 		async applyAccessGrant() {
 			if (!(await this.destinationAccepts(false))) {
@@ -502,7 +502,7 @@ export default {
 		 * anonymous save gave.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-004
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-004
 		 */
 		async revokeAnonymousGrant() {
 			const grantedBefore =
@@ -521,7 +521,7 @@ export default {
 		 * enabled entry. A Portaliq outage leaves the entry without a portal page.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-004
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-004
 		 */
 		async provisionAndEmit() {
 			const portalResult = await provisionPortalPage(this.portalPageRequest())
@@ -539,7 +539,7 @@ export default {
 		 * the level is only sent when the maker changed it.
 		 *
 		 * @return {object}
-		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-004
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-004
 		 */
 		portalPageRequest() {
 			return {
@@ -556,7 +556,7 @@ export default {
 		 * The stored portal page's object id, when the entry has one.
 		 *
 		 * @return {string|null|undefined}
-		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-004
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-004
 		 */
 		linkedPortalObjectId() {
 			return this.entry
@@ -568,7 +568,7 @@ export default {
 		 * The entry id: the stored one, or a fresh one for a first save.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-002
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-002
 		 */
 		entryId() {
 			return (this.entry && this.entry.id) || generateEntryId()
@@ -579,7 +579,7 @@ export default {
 		 *
 		 * @param {object} portalResult - what the portal-page provisioning answered.
 		 * @return {object}
-		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-004
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-004
 		 */
 		enabledEntry(portalResult) {
 			return {
@@ -605,7 +605,7 @@ export default {
 		 * `portalPage` was ever linked.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-005
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-005
 		 */
 		async onDisable() {
 			if (!this.register || !this.schema) {
@@ -635,7 +635,7 @@ export default {
 		 * draft the linked portal page.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-005
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-005
 		 */
 		async revokeAccess() {
 			const hadPublicRead = !!(this.entry && this.entry.publicRead)
@@ -653,7 +653,7 @@ export default {
 		 * The disabled entry: the portal page stays linked (drafted, not deleted).
 		 *
 		 * @return {object}
-		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-005
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-005
 		 */
 		disabledEntry() {
 			return {
@@ -677,7 +677,7 @@ export default {
 		 *
 		 * @param {boolean} value - the new open state.
 		 * @return {void}
-		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-002
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-002
 		 */
 		onDialogOpenChange(value) {
 			if (!value) {
@@ -687,7 +687,7 @@ export default {
 
 		/**
 		 * @return {void}
-		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-002
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-002
 		 */
 		onClose() {
 			this.$emit('update:open', false)

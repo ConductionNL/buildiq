@@ -510,7 +510,7 @@ export default {
 		 * rbac source of truth as the edit actions (REQ-SAT-001).
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+		 * @spec openspec/specs/save-as-template/spec.md
 		 */
 		canSaveAsTemplate() {
 			return this.obAppRole === 'owner' || this.obAppRole === 'editor'
@@ -715,7 +715,7 @@ export default {
 		 *
 		 * @return {Promise<void>}
 		 *
-		 * @spec openspec/changes/version-lifecycle-and-switcher/specs/version-lifecycle-ui/spec.md
+		 * @spec openspec/specs/version-lifecycle-ui/spec.md
 		 */
 		async loadVersions() {
 			if (!this.obApp || !this.obApp.slug) {
@@ -1234,7 +1234,7 @@ export default {
 		 * open the SaveAsTemplateDialog (REQ-SAT-001).
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+		 * @spec openspec/specs/save-as-template/spec.md
 		 */
 		async openSaveAsTemplate() {
 			if (!this.canSaveAsTemplate || !this.obApp || this.saveTemplateLoading) {
@@ -1317,7 +1317,7 @@ export default {
 		 * resolution). Plain OR REST read — no new PHP (REQ-SAT-006).
 		 *
 		 * @return {Promise<Array>}
-		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+		 * @spec openspec/specs/save-as-template/spec.md
 		 */
 		async loadExistingTemplates() {
 			try {
@@ -1337,7 +1337,7 @@ export default {
 		 *
 		 * @param {{slug: string, mode: string}} payload The save result.
 		 * @return {void}
-		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+		 * @spec openspec/specs/save-as-template/spec.md
 		 */
 		onTemplateSaved(payload) {
 			this.saveTemplateOpen = false

@@ -71,7 +71,7 @@ class SettingsController extends Controller {
 	 *
 	 * @return JSONResponse
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-25-settings-and-observability/tasks.md#task-1
+	 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-settings-and-observability/tasks.md#task-1
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -155,7 +155,7 @@ class SettingsController extends Controller {
 	 *
 	 * @return JSONResponse
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-25-settings-and-observability/tasks.md#task-2
+	 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-settings-and-observability/tasks.md#task-2
 	 */
 	#[NoAdminRequired]
 	public function create(): JSONResponse {
@@ -175,7 +175,7 @@ class SettingsController extends Controller {
 	 *
 	 * @return JSONResponse
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-25-settings-and-observability/tasks.md#task-3
+	 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-settings-and-observability/tasks.md#task-3
 	 */
 	#[NoAdminRequired]
 	public function load(): JSONResponse {

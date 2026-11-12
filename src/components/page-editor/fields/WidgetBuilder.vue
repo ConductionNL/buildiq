@@ -58,7 +58,7 @@ export default {
 		/**
 		 * Observed behaviour of `localWidgets` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		localWidgets() {
 			return Array.isArray(this.modelValue) ? this.modelValue : []
@@ -73,7 +73,7 @@ export default {
 		 * @param {'id'|'title'|'type'} key - the widgetDef property the edited input is bound to.
 		 * @param {string} value - the input's new text; written verbatim, so an
 		 *   emptied input keeps the key with an empty string rather than dropping it.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		updateField(index, key, value) {
 			const next = this.localWidgets.slice()
@@ -85,7 +85,7 @@ export default {
 		/**
 		 * Observed behaviour of `addWidget` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		addWidget() {
 			const next = this.localWidgets.slice()
@@ -97,7 +97,7 @@ export default {
 		 * Observed behaviour of `removeWidget` (retrofit annotation).
 		 *
 		 * @param {number} index - position of the widget to drop from the `widgets` array.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		removeWidget(index) {
 			const next = this.localWidgets.slice()

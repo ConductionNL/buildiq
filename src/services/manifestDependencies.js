@@ -13,8 +13,8 @@
  * manifest (`_buildiqAutoDeps`). A dependency a builder added manually (or
  * that predates this layer) is never silently removed.
  *
- * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-006
- * @spec openspec/changes/openconnector-api-sources/tasks.md#task-5.1
+ * @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-006
+ * @spec openspec/changes/archive/2026-06-14-openconnector-api-sources/tasks.md#task-5.1
  */
 
 const MARKER = '_buildiqAutoDeps'
@@ -24,7 +24,7 @@ const MARKER = '_buildiqAutoDeps'
  *
  * @param {object} manifest - the manifest.
  * @return {boolean}
- * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-006
+ * @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-006
  */
 export function hasWorkflowAttachment(manifest) {
 	const workflows = manifest && manifest.runtime && manifest.runtime.workflows
@@ -36,7 +36,7 @@ export function hasWorkflowAttachment(manifest) {
  *
  * @param {object} manifest - the manifest.
  * @return {boolean}
- * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-005
+ * @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-005
  */
 export function hasDocumentAttachment(manifest) {
 	const documents = manifest && manifest.runtime && manifest.runtime.documents
@@ -48,7 +48,7 @@ export function hasDocumentAttachment(manifest) {
  *
  * @param {object} manifest - the manifest.
  * @return {boolean}
- * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-005
+ * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-005
  */
 export function hasConnectorBinding(manifest) {
 	if (!manifest || !Array.isArray(manifest.pages)) {
@@ -98,8 +98,8 @@ function namesConnector(dataSource) {
  * @param {object} manifest - the manifest (mutated and returned).
  * @param {string} appId - the dependency app id, e.g. `procest` or `openconnector`.
  * @return {object} - the manifest.
- * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-006
- * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-005
+ * @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-006
+ * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-005
  */
 export function ensureDependency(manifest, appId) {
 	if (!manifest || !appId) {
@@ -137,8 +137,8 @@ function addAutoDependency(manifest, appId) {
  * @param {object} manifest - the manifest (mutated and returned).
  * @param {string} appId - the dependency app id.
  * @return {object} - the manifest.
- * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-006
- * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-005
+ * @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-006
+ * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-005
  */
 export function removeAutoDependency(manifest, appId) {
 	if (!listsDependencies(manifest, appId)) {
@@ -170,7 +170,7 @@ function listsDependencies(manifest, appId) {
  *
  * @param {object} manifest - the manifest (mutated and returned).
  * @return {object} - the manifest.
- * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-006
+ * @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-006
  */
 export function reconcileWorkflowDependency(manifest) {
 	if (hasWorkflowAttachment(manifest)) {
@@ -185,7 +185,7 @@ export function reconcileWorkflowDependency(manifest) {
  *
  * @param {object} manifest - the manifest (mutated and returned).
  * @return {object} - the manifest.
- * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-005
+ * @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-005
  */
 export function reconcileDocumentDependency(manifest) {
 	if (hasDocumentAttachment(manifest)) {
@@ -200,7 +200,7 @@ export function reconcileDocumentDependency(manifest) {
  *
  * @param {object} manifest - the manifest (mutated and returned).
  * @return {object} - the manifest.
- * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-005
+ * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-005
  */
 export function reconcileConnectorDependency(manifest) {
 	if (hasConnectorBinding(manifest)) {
@@ -215,8 +215,8 @@ export function reconcileConnectorDependency(manifest) {
  *
  * @param {object} manifest - the manifest (mutated and returned).
  * @return {object} - the manifest.
- * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-006
- * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-005
+ * @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-006
+ * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-005
  */
 export function stripDependencyMarker(manifest) {
 	if (manifest && manifest[MARKER] !== undefined) {

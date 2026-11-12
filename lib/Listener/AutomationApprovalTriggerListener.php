@@ -52,7 +52,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/automation-approval-steps/tasks.md#1.3
+ * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#1.3
  * @spec openspec/specs/automation-designer/spec.md#req-autd-004
  */
 
@@ -79,7 +79,7 @@ use Throwable;
  *
  * @template-implements IEventListener<Event>
  *
- * @spec openspec/changes/automation-approval-steps/tasks.md#1.3
+ * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#1.3
  */
 class AutomationApprovalTriggerListener implements IEventListener {
 	/**
@@ -275,7 +275,7 @@ class AutomationApprovalTriggerListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/automation-approval-steps/tasks.md#1.3
+	 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#1.3
 	 * @spec openspec/specs/automation-designer/spec.md#req-autd-004
 	 * @SuppressWarnings(PHPMD.StaticAccess) FiredAutomationTrigger is a pure value read off the event.
 	 */
@@ -331,7 +331,7 @@ class AutomationApprovalTriggerListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/automation-approval-steps/tasks.md#1.3
+	 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#1.3
 	 * @spec openspec/specs/automation-designer/spec.md#req-autd-004
 	 */
 	private function initializeFor(array $automation, string $objectUuid): void {

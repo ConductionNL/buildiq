@@ -100,7 +100,7 @@ export default {
 		/**
 		 * Observed behaviour of `localColumns` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		localColumns() {
 			return Array.isArray(this.modelValue) ? this.modelValue : []
@@ -109,7 +109,7 @@ export default {
 		/**
 		 * Observed behaviour of `schemaPropertyKeys` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		schemaPropertyKeys() {
 			return Object.keys(this.schemaProperties || {})
@@ -125,7 +125,7 @@ export default {
 		 *   the typed column object, which may name its key as `key` or as the alias `property`.
 		 * @return {string} the property key the row's `<select>` shows — a schema property
 		 *   name or an `@self.*` virtual key; `''` when the entry names neither.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		rowKey(col) {
 			if (typeof col === 'string') {
@@ -141,7 +141,7 @@ export default {
 		 *   the string shorthand carries no label by construction.
 		 * @return {string} the i18n label key shown in the row's label input, `''` when
 		 *   the column is unlabelled.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		rowLabel(col) {
 			if (typeof col === 'string') {
@@ -157,7 +157,7 @@ export default {
 		 * @param {string} value - the newly selected property key: a schema property
 		 *   name, an `@self.*` virtual key, or `''` for the placeholder option. A
 		 *   labelled column keeps its object shape; an unlabelled one stays a string.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		onKeyChange(index, value) {
 			const next = this.localColumns.slice()
@@ -178,7 +178,7 @@ export default {
 		 * @param {string} value - the new i18n label key. A non-empty label PROMOTES a
 		 *   string-shorthand column to `{ key, label }`; clearing it DEMOTES a
 		 *   key-only object back to the string shorthand.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		onLabelInput(index, value) {
 			const next = this.localColumns.slice()
@@ -196,7 +196,7 @@ export default {
 		/**
 		 * Observed behaviour of `addColumn` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		addColumn() {
 			const next = this.localColumns.slice()
@@ -208,7 +208,7 @@ export default {
 		 * Observed behaviour of `removeColumn` (retrofit annotation).
 		 *
 		 * @param {number} index - position of the column to drop from the `columns` array.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		removeColumn(index) {
 			const next = this.localColumns.slice()

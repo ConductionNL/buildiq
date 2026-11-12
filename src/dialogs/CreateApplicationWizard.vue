@@ -367,7 +367,7 @@ export default {
 		 *
 		 * @param {string} appSlug - the newly-created app's slug.
 		 * @return {void}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		onAiAppCreated(appSlug) {
 			this.onClose()

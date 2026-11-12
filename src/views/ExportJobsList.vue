@@ -126,7 +126,7 @@ export default {
 	/**
 	 * Observed behaviour of `mounted` (retrofit annotation).
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-26-exporter-ui/tasks.md#task-2
+	 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-exporter-ui/tasks.md#task-2
 	 */
 	mounted() {
 		this.fetchJobs()
@@ -135,7 +135,7 @@ export default {
 	/**
 	 * Observed behaviour of `beforeDestroy` (retrofit annotation).
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-26-exporter-ui/tasks.md#task-2
+	 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-exporter-ui/tasks.md#task-2
 	 */
 	beforeUnmount() {
 		this.destroyed = true
@@ -146,7 +146,7 @@ export default {
 		/**
 		 * Observed behaviour of `openDialog` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-exporter-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-exporter-ui/tasks.md#task-2
 		 */
 		openDialog() {
 			this.showDialog = true
@@ -155,7 +155,7 @@ export default {
 		/**
 		 * Observed behaviour of `onQueued` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-exporter-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-exporter-ui/tasks.md#task-2
 		 */
 		onQueued() {
 			this.fetchJobs()
@@ -210,7 +210,7 @@ export default {
 		/**
 		 * Observed behaviour of `fetchJobs` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-exporter-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-exporter-ui/tasks.md#task-2
 		 */
 		async fetchJobs() {
 			if (!this.applicationUuid) {
@@ -266,7 +266,7 @@ export default {
 		 *   state this build does not know about (so a new backend state degrades to
 		 *   untranslated rather than to a blank cell).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-exporter-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-exporter-ui/tasks.md#task-2
 		 */
 		statusLabel(status) {
 			const map = {

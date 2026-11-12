@@ -36,7 +36,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/automation-document-action/tasks.md#3.1
+ * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#3.1
  * @spec openspec/specs/automation-designer/spec.md#req-autd-004
  */
 
@@ -60,7 +60,7 @@ use Throwable;
  *
  * @template-implements IEventListener<Event>
  *
- * @spec openspec/changes/automation-document-action/tasks.md#3.1
+ * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#3.1
  */
 class DocumentGenerationListener implements IEventListener {
 	/**
@@ -144,7 +144,7 @@ class DocumentGenerationListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/automation-document-action/tasks.md#3.1
+	 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#3.1
 	 * @spec openspec/specs/automation-designer/spec.md#req-autd-004
 	 * @SuppressWarnings(PHPMD.StaticAccess) FiredAutomationTrigger is a pure value read off the event.
 	 */

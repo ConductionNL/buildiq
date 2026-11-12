@@ -6,7 +6,7 @@
   - VirtualAppDetail page. Resolves the Application slug from the shared tab
   - props (applicationContext mixin) and passes it to ExportJobsList.
   -
-  - @spec openspec/changes/openbuild-exporter/tasks.md#task-9.2
+  - @spec openspec/changes/archive/2026-06-14-openbuild-exporter/tasks.md#task-9.2
   -->
 <template>
 	<div class="ob-exports-tab">

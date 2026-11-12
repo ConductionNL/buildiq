@@ -300,7 +300,7 @@ export default {
 		/**
 		 * Observed behaviour of `duplicateIds` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		duplicateIds() {
 			const counts = new Map()
@@ -336,7 +336,7 @@ export default {
 		/**
 		 * Observed behaviour of `invalidRoutes` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		invalidRoutes() {
 			return this.pages
@@ -349,7 +349,7 @@ export default {
 		/**
 		 * Observed behaviour of `startAdd` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		startAdd() {
 			this.addingType = ''
@@ -360,7 +360,7 @@ export default {
 		/**
 		 * Observed behaviour of `cancelAdd` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		cancelAdd() {
 			this.addingType = null
@@ -371,7 +371,7 @@ export default {
 		/**
 		 * Observed behaviour of `confirmAdd` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		confirmAdd() {
 			if (!this.addingType) {
@@ -443,7 +443,7 @@ export default {
 		 * @param {number} index - position of the page in the `pages` prop, taken from the vuedraggable `#item` slot.
 		 * @param {string} key - the page key being written: `title`, `id`, `route` or `permission`.
 		 * @param {string} value - the new value from the bound input (for `permission` the `group:<gid>` string from PermissionGroupField); `''` deletes the key.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		updateField(index, key, value) {
 			const next = this.pages.slice()
@@ -481,7 +481,7 @@ export default {
 		 * the centre pane instead of pointing at a shifted neighbour.
 		 *
 		 * @param {number} index - position of the page to remove in the `pages` prop.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		removePage(index) {
 			const next = this.pages.slice()
@@ -499,7 +499,7 @@ export default {
 		 * order key, their array position IS their order in the manifest.
 		 *
 		 * @param {Array<{id: string, route: string, type: string, config: object}>} newOrder - the pages in their new visual order, as emitted by vuedraggable.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		onReorder(newOrder) {
 			this.$emit('update:pages', newOrder)
@@ -513,7 +513,7 @@ export default {
 		 * @param {{id?: string, route?: string, type: string, config?: object}} page - the page record for this row, from the vuedraggable `#item` slot.
 		 * @param {number} index - position of the page in the `pages` prop. It is only ever compared against -1, a value the `#item` slot cannot produce, so in practice it never makes a row invalid.
 		 * @return {boolean} - true when the row is invalid.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		hasError(page, index) {
 			if (this.duplicateIds.includes(page && page.id)) {

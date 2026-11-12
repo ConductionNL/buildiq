@@ -19,7 +19,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/openbuild-exporter/tasks.md#task-4.1
+ * @spec openspec/changes/archive/2026-06-14-openbuild-exporter/tasks.md#task-4.1
  */
 
 declare(strict_types=1);
@@ -29,7 +29,7 @@ namespace OCA\Buildiq\Service;
 /**
  * The application, version and export job an archive is built for.
  *
- * @spec openspec/changes/openbuild-exporter/tasks.md#task-4.1
+ * @spec openspec/changes/archive/2026-06-14-openbuild-exporter/tasks.md#task-4.1
  */
 final class ExportTarget {
 

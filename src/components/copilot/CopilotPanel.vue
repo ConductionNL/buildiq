@@ -227,7 +227,7 @@ export default {
 		 * The copilot state machine's current state.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		state() {
 			return this.copilot.state.value
@@ -238,7 +238,7 @@ export default {
 		 * canonical manifest v2 validator.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		canApprove() {
 			return this.copilot.canApprove.value
@@ -251,7 +251,7 @@ export default {
 		 * leaving the reader to guess at their own wording.
 		 *
 		 * @return {Array<string>}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		validationErrors() {
 			const seen = new Set()
@@ -273,7 +273,7 @@ export default {
 		 * exists at a time).
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		inputDisabled() {
 			return (
@@ -291,7 +291,7 @@ export default {
 		 *
 		 * @param {object} message - a message list entry.
 		 * @return {boolean}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		isPendingProposal(message) {
 			return message.id === this.pendingMessageId
@@ -301,7 +301,7 @@ export default {
 		 * Add the assistant's answer to the last request: the plan to review, or the error.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		appendPlanOutcome() {
 			const assistantId = this.nextMessageId++
@@ -326,7 +326,7 @@ export default {
 		 * Send the draft as a new user turn and request a plan.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		async onSend() {
 			const text = this.draft.trim()
@@ -351,7 +351,7 @@ export default {
 		 *
 		 * @param {object} message - the assistant message carrying the plan.
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		async onApprove(message) {
 			if (!this.isPendingProposal(message)) {
@@ -370,7 +370,7 @@ export default {
 		 *
 		 * @param {object} message - the assistant message carrying the plan.
 		 * @return {void}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		onDiscard(message) {
 			if (!this.isPendingProposal(message)) {

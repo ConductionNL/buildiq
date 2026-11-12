@@ -142,7 +142,7 @@ class SetupController extends Controller {
 	 * @return JSONResponse `{ version, completed, templatesSeeded, steps: { <id>: { done } } }`.
 	 *
 	 * @spec openspec/changes/openbuild-first-time-setup/tasks.md#task-4.1
-	 * @spec openspec/changes/wizard-dataset-card-load/specs/first-time-setup/spec.md
+	 * @spec openspec/specs/first-time-setup/spec.md
 	 */
 	#[AuthorizedAdminSetting(AdminSettings::class)]
 	public function status(): JSONResponse {
@@ -315,7 +315,7 @@ class SetupController extends Controller {
 	 *
 	 * @return JSONResponse The outcome, carrying the counts.
 	 *
-	 * @spec openspec/changes/wizard-dataset-card-load/specs/first-time-setup/spec.md
+	 * @spec openspec/specs/first-time-setup/spec.md
 	 */
 	private function loadDataset(string $actionId): JSONResponse {
 		$picked = $this->appConfig->getValueString(Application::APP_ID, self::DATASET_KEY, '');
@@ -399,7 +399,7 @@ class SetupController extends Controller {
 	 * @return string|null The posted id, empty when the body held no scalar,
 	 *                     or null when nothing was posted.
 	 *
-	 * @spec openspec/changes/wizard-dataset-card-load/specs/first-time-setup/spec.md
+	 * @spec openspec/specs/first-time-setup/spec.md
 	 */
 	private function postedDataset(): ?string {
 		$posted = $this->request->getParam('dataset');
@@ -425,7 +425,7 @@ class SetupController extends Controller {
 	 *
 	 * @return JSONResponse|null The refusal, or null when the dataset is known.
 	 *
-	 * @spec openspec/changes/wizard-dataset-card-load/specs/first-time-setup/spec.md
+	 * @spec openspec/specs/first-time-setup/spec.md
 	 */
 	private function refuseDataset(string $value): ?JSONResponse {
 		$known = array_column($this->setup->demoDataService->listChoices(), 'id');

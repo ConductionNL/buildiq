@@ -401,7 +401,7 @@ export default {
 		 * objects target) — gates the External access section (REQ-EFP-002).
 		 *
 		 * @return {?{register: string, schema: string}}
-		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-002
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-002
 		 */
 		externalTarget() {
 			if (this.submitShape !== 'endpoint') {
@@ -438,7 +438,7 @@ export default {
 		 * The existing `runtime.externalForms[]` entry for THIS page, if any.
 		 *
 		 * @return {?object}
-		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-001
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-001
 		 */
 		externalFormEntry() {
 			if (!this.pageId) {
@@ -456,7 +456,7 @@ export default {
 		 * `steps` added by REQ-OBFEL-001 so `formLogic.js` / the canonical
 		 * validator's `/pages/<n>/config/steps` errors mark inline.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 * @spec openspec/specs/form-editor-logic/spec.md#req-obfel-001
 		 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-form-can-check-eligibility-as-it-is-filled-in-req-bqlv-003
 		 */
@@ -478,7 +478,7 @@ export default {
 		/**
 		 * Observed behaviour of `submitShape` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		submitShape() {
 			if (this.config.submitHandler) {
@@ -541,7 +541,7 @@ export default {
 		 *
 		 * @param {string} key - the config key being written: `submitMethod`, `mode`, `submitLabel`, `successMessage`, `fields` or `steps`.
 		 * @param {string|Array<object>} value - the new value: the enum choice from a `<select>`, the i18n key from a text input, or the rebuilt list from FormFieldBuilder / FormStepsManager. `''` and `null` delete the key.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		update(key, value) {
 			const next = { ...this.config }
@@ -559,7 +559,7 @@ export default {
 		 * never carries both halves of the one-of.
 		 *
 		 * @param {'handler'|'endpoint'} shape - the radio's value: `handler` drops `submitEndpoint`, anything else drops `submitHandler`.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		setSubmitShape(shape) {
 			this.chosenShape = shape === 'handler' ? 'handler' : 'endpoint'
@@ -577,7 +577,7 @@ export default {
 		 * so typing a handler can never leave a stale endpoint behind.
 		 *
 		 * @param {string} value - the customComponents registry key of the submit handler; `''` deletes `submitHandler`, leaving the form with neither submit target.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		setSubmitHandler(value) {
 			const next = { ...this.config }
@@ -634,7 +634,7 @@ export default {
 		 * access section.
 		 *
 		 * @param {string} value - the submit URL; `''` deletes `submitEndpoint`, leaving the form with neither submit target.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		setSubmitEndpoint(value) {
 			const next = { ...this.config }
@@ -655,7 +655,7 @@ export default {
 		 *
 		 * @param {object} entry - the resolved `runtime.externalForms[]` entry.
 		 * @return {void}
-		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-002
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-002
 		 */
 		async onExternalFormSave(entry) {
 			const list = (this.runtimeExternalForms || []).slice()

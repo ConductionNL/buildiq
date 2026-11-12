@@ -34,7 +34,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 /**
  * OpenRegister's object service, register and schema mappers and audit trail.
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-9
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-9
  */
 final class RegisterStore {
 	/**

@@ -535,7 +535,7 @@ export default {
 		 *
 		 * @return {Promise<void>}
 		 *
-		 * @spec openspec/changes/version-lifecycle-and-switcher/specs/version-lifecycle-ui/spec.md
+		 * @spec openspec/specs/version-lifecycle-ui/spec.md
 		 */
 		async createDraft() {
 			if (!this.appSlug || this.creatingDraft) {

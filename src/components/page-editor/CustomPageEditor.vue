@@ -90,7 +90,7 @@ export default {
 	/**
 	 * Observed behaviour of `setup` (retrofit annotation).
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
+	 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
 	 */
 	setup() {
 		// When chain spec #2's in-memory preview is wired AND it exposes a
@@ -111,7 +111,7 @@ export default {
 		/**
 		 * Observed behaviour of `validatedConfigKeys` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
 		 */
 		validatedConfigKeys() {
 			return ['component', 'props']
@@ -120,7 +120,7 @@ export default {
 		/**
 		 * Observed behaviour of `registryKeys` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
 		 */
 		registryKeys() {
 			const reg = this.preview && this.preview.componentRegistry
@@ -136,7 +136,7 @@ export default {
 		/**
 		 * Observed behaviour of `otherKeys` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
 		 */
 		otherKeys() {
 			return Object.keys(this.config || {}).filter(
@@ -154,7 +154,7 @@ export default {
 			 * caret and half-typed JSON survive their own keystrokes.
 			 *
 			 * @param {?object} val - the new `config.props` prop bag; `null`/`undefined` empties the textarea.
-			 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
+			 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
 			 */
 			handler(val) {
 				const fresh = this.stringifyProps(val)
@@ -172,7 +172,7 @@ export default {
 		 *
 		 * @param {?object} value - the `config.props` prop bag; `null`/`undefined` (or anything JSON.stringify chokes on, e.g. a cyclic object) yields an empty textarea rather than throwing.
 		 * @return {string} - the indented JSON, or `''`.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
 		 */
 		stringifyProps(value) {
 			if (value === undefined || value === null) {
@@ -192,7 +192,7 @@ export default {
 		 *
 		 * @param {string} key - the config key being written: `component` (the customComponents registry key) or `props`.
 		 * @param {string|object|undefined} value - the new value: the registry key from the text input, or the parsed prop bag from the JSON textarea. `''`, `null` and `undefined` delete the key — that is how an emptied textarea removes `props`.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
 		 */
 		update(key, value) {
 			const next = { ...this.config }
@@ -210,7 +210,7 @@ export default {
 		 * blank the live page; the last valid parse stays in the manifest.
 		 *
 		 * @param {string} value - the raw textarea contents. Blank/whitespace-only clears the error and removes `config.props` entirely.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
 		 */
 		onPropsInput(value) {
 			this.propsDraft = value

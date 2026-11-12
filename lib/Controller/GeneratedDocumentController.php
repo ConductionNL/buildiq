@@ -37,8 +37,8 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/automation-document-action/tasks.md#2.4
- * @spec openspec/changes/automation-document-action/specs/automation-document-action/spec.md
+ * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#2.4
+ * @spec openspec/specs/automation-document-action/spec.md
  */
 
 declare(strict_types=1);
@@ -63,13 +63,13 @@ use Throwable;
 /**
  * Public (anonymous) download-link resolver for `generateDocument` output.
  *
- * @spec openspec/changes/automation-document-action/tasks.md#2.4
+ * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#2.4
  */
 class GeneratedDocumentController extends Controller {
 	/**
 	 * Appdata folder name (matches {@see DocumentGenerationService::APPDATA_FOLDER}).
 	 *
-	 * @spec openspec/changes/automation-document-action/tasks.md#2.4
+	 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#2.4
 	 */
 	private const APPDATA_FOLDER = 'generated-documents';
 
@@ -102,7 +102,7 @@ class GeneratedDocumentController extends Controller {
 	 * @PublicPage
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/automation-document-action/tasks.md#2.4
+	 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#2.4
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]

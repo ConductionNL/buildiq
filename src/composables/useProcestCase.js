@@ -14,7 +14,7 @@ import { generateUrl } from '@nextcloud/router'
  * carrying a `linkProperty` value, or a case already created for the object's
  * UUID kenmerk) instead of creating a duplicate.
  *
- * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-003
+ * @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-003
  */
 import { ref } from 'vue'
 import { fleetAppPath } from '../services/fleetAppId.js'
@@ -40,7 +40,7 @@ function zrc() {
  * @param {string} template - the description template.
  * @param {object} object - the created OR object.
  * @return {string} - the rendered description.
- * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-003
+ * @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-003
  */
 export function renderDescription(template, object) {
 	if (typeof template !== 'string' || template === '') {
@@ -194,7 +194,7 @@ function isForbidden(e) {
  * @param {object} opts.attachment - the `runtime.workflows[]` entry.
  * @param {Function} [opts.client] - axios-like client injection for tests.
  * @return {object} - the integration API (see returned keys).
- * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-003
+ * @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-003
  */
 export function useProcestCase(opts = {}) {
 	const attachment = opts.attachment || {}
@@ -237,7 +237,7 @@ export function useProcestCase(opts = {}) {
 	 *
 	 * @param {object} object - the created OR object.
 	 * @return {Promise<?object>} - the created zaak, or null on failure.
-	 * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-003
+	 * @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-003
 	 */
 	async function startCase(object) {
 		starting.value = true
@@ -294,7 +294,7 @@ export function useProcestCase(opts = {}) {
 	 *
 	 * @param {object} object - the OR object.
 	 * @return {Promise<?object>} - the linked/created zaak, or null.
-	 * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-003
+	 * @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-003
 	 */
 	async function reconcileOrStart(object) {
 		const existingRef =
@@ -318,7 +318,7 @@ export function useProcestCase(opts = {}) {
 	 *
 	 * @param {string} reference - the stored case reference (UUID or URL).
 	 * @return {Promise<void>}
-	 * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-004
+	 * @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-004
 	 */
 	async function loadDetail(reference) {
 		const uuid = caseUuidFromReference(reference)

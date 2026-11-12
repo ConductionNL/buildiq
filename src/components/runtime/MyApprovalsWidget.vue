@@ -215,7 +215,7 @@ export default {
 		 * each scope to the viewer's user and groups, so no client filter.
 		 *
 		 * @return {Array}
-		 * @spec openspec/changes/automation-approval-steps/tasks.md#4.1
+		 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#4.1
 		 */
 		pendingSteps() {
 			return this.steps
@@ -234,7 +234,7 @@ export default {
 		 *
 		 * @param {object} step - the task row.
 		 * @return {string|null} ISO-8601 instant, or null.
-		 * @spec openspec/changes/automation-approval-steps/tasks.md#4.1
+		 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#4.1
 		 */
 		deadlineOf(step) {
 			return step.dueAt || step.expiresAt || null
@@ -245,7 +245,7 @@ export default {
 		 *
 		 * @param {object} step - the task row.
 		 * @return {string} 'overdue', 'soon' or ''.
-		 * @spec openspec/changes/automation-approval-steps/tasks.md#4.1
+		 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#4.1
 		 */
 		deadlineFlag(step) {
 			if (step.overdue === true) {
@@ -265,7 +265,7 @@ export default {
 		 *
 		 * @param {string} iso - ISO-8601 instant.
 		 * @return {string}
-		 * @spec openspec/changes/automation-approval-steps/tasks.md#4.1
+		 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#4.1
 		 */
 		formatDeadline(iso) {
 			const date = new Date(iso)
@@ -283,7 +283,7 @@ export default {
 		 *
 		 * @param {object} step - the task row.
 		 * @return {string}
-		 * @spec openspec/changes/automation-approval-steps/tasks.md#4.1
+		 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#4.1
 		 */
 		candidateLabel(step) {
 			const groups = Array.isArray(step.candidateGroups)
@@ -299,7 +299,7 @@ export default {
 		 * Load pending approval steps directly from OpenRegister's REST API.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/automation-approval-steps/tasks.md#4.1
+		 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#4.1
 		 */
 		async load() {
 			this.loading = true
@@ -368,7 +368,7 @@ export default {
 		 * @param {object} step - the approval step row.
 		 * @param {string} action - 'approve' or 'reject'.
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/automation-approval-steps/tasks.md#4.2
+		 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#4.2
 		 */
 		async decide(step, action) {
 			this.decideError = ''

@@ -222,7 +222,7 @@ export default {
 		 * The copilot state machine's current state.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		state() {
 			return this.copilot.state.value
@@ -232,7 +232,7 @@ export default {
 		 * The current plan response, or null before one has been generated.
 		 *
 		 * @return {object|null}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		plan() {
 			return this.copilot.plan.value
@@ -242,7 +242,7 @@ export default {
 		 * Whether every predicted manifest passes the canonical validator.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		canApprove() {
 			return this.copilot.canApprove.value
@@ -252,7 +252,7 @@ export default {
 		 * The current error message, or '' when there is none.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		errorMessage() {
 			return this.copilot.errorMessage.value
@@ -263,7 +263,7 @@ export default {
 		 * message so a missing provider does not read as a bad brief.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		errorDetail() {
 			return this.copilot.errorDetail.value
@@ -281,7 +281,7 @@ export default {
 		 * below it are what a reader can act on.
 		 *
 		 * @return {Array<string>}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		validationErrors() {
 			return this.allValidationErrors.slice(0, VALIDATION_ERRORS_SHOWN)
@@ -292,7 +292,7 @@ export default {
 		 * says how long it really is.
 		 *
 		 * @return {number}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		hiddenValidationErrorCount() {
 			return Math.max(
@@ -305,7 +305,7 @@ export default {
 		 * The uncapped, de-duplicated validator message list.
 		 *
 		 * @return {Array<string>}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		allValidationErrors() {
 			const seen = new Set()
@@ -323,7 +323,7 @@ export default {
 		 * Proposed `upsertSchema` steps, for the "Schemas" review group.
 		 *
 		 * @return {Array<object>}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		schemaSteps() {
 			return this.stepsByTool('buildiq.upsertSchema')
@@ -333,7 +333,7 @@ export default {
 		 * Proposed `upsertPage` steps, for the "Pages" review group.
 		 *
 		 * @return {Array<object>}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		pageSteps() {
 			return this.stepsByTool('buildiq.upsertPage')
@@ -343,7 +343,7 @@ export default {
 		 * Proposed `upsertMenuItem` steps, for the "Menu items" review group.
 		 *
 		 * @return {Array<object>}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		menuSteps() {
 			return this.stepsByTool('buildiq.upsertMenuItem')
@@ -366,7 +366,7 @@ export default {
 		 *
 		 * @param {string} tool - the tool id, e.g. `buildiq.upsertPage`.
 		 * @return {Array<object>}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		stepsByTool(tool) {
 			const steps = (this.plan && this.plan.steps) || []
@@ -377,7 +377,7 @@ export default {
 		 * Request a plan for the current brief.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		async onGenerate() {
 			if (!this.brief.trim()) {
@@ -391,7 +391,7 @@ export default {
 		 * the new app's slug and close the dialog.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		async onConfirm() {
 			await this.copilot.approve()
@@ -414,7 +414,7 @@ export default {
 		 * Discard the dialog without sending any execute request.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		onCancel() {
 			this.copilot.discard()

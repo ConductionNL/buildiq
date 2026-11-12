@@ -562,7 +562,7 @@ class GitHubCatalogService {
 	 *
 	 * @return array<string,string> The `path => contents` map for the v2 channels.
 	 *
-	 * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-app-s-whole-configuration
+	 * @spec openspec/changes/archive/2026-10-07-app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-app-s-whole-configuration
 	 */
 	private function fetchChannelFiles(RepoSource $source, ?string $actingUserId): array {
 		$files = [];
