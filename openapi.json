@@ -3646,6 +3646,7 @@
                 "tags": [
                     "store"
                 ],
+                "x-provided-by": "openregister",
                 "requestBody": {
                     "required": false,
                     "content": {

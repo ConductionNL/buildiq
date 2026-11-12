@@ -51,6 +51,18 @@ class OpenApiDocumentTest extends TestCase {
 		// Operations marked x-provided-by come from OpenRegister's AppHost route table, which tests may not load.
 		$documented = [];
 		$hosted     = [];
+		$protocol  = [];
+		$standards = dirname(__DIR__, 4).'/openapi.standards.json';
+		if (is_file($standards) === true) {
+			// The endpoints that implement an external standard, under their unversioned base.
+			$document = json_decode((string) file_get_contents($standards), true);
+			$this->assertStringEndsWith(suffix: '/apps/buildiq/api', string: $document['servers'][0]['url']);
+			foreach (array_keys($document['paths']) as $path) {
+				$this->assertTrue(condition: StandardProtocolPaths::matches(path: '/api'.$path), message: $path.' is not a standard protocol path');
+				$protocol[] = '/api'.self::shape(path: $path);
+			}
+		}
+
 		foreach (self::document()['paths'] as $path => $item) {
 			foreach ($item as $verb => $operation) {
 				if (in_array($verb, ['get', 'put', 'post', 'delete', 'patch', 'options', 'head'], true) === false) {
@@ -65,8 +77,10 @@ class OpenApiDocumentTest extends TestCase {
 			}
 		}
 
-		$routed = [];
+		$routed   = [];
 		$declared = require dirname(__DIR__, 4).'/appinfo/routes.php';
+		$urls     = array_map(static fn (array $route): string => self::shape(path: '/'.ltrim((string) $route['url'], '/')), $declared['routes']);
+		$this->assertSame(expected: [], actual: array_values(array_diff($protocol, $urls)), message: 'documented protocol paths without a route');
 		foreach ($declared['routes'] as $route) {
 			$url = '/'.ltrim((string) $route['url'], '/');
 			if (str_starts_with($url, '/api/v1/') === true && StandardProtocolPaths::matches(path: $url) === false) {
