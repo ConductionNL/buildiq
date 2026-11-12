@@ -3,6 +3,9 @@
 /**
  * Buildiq GitHubCatalogService unit tests
  *
+ * SPDX-FileCopyrightText:  2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Regression coverage for a defect found live during
  * app-repo-format-flow-agent-export's round-trip verification: the flows/
  * and agents/ channels are written by `AppRepoSerializer` and understood by
@@ -27,9 +30,6 @@
  * @version GIT: <git-id>
  *
  * @link https://conduction.nl
- *
- * @SPDX-License-Identifier: EUPL-1.2
- * @SPDX-FileCopyrightText:  2026 Conduction B.V. <info@conduction.nl>
  */
 
 declare(strict_types=1);

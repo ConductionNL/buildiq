@@ -3,6 +3,9 @@
 /**
  * Buildiq first-time-setup contract (ADR-042).
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Backs the shared CnSetupWizard renderer for Buildiq's own manifest `setup`
  * block: reports per-step completion (`GET /api/setup/status`), persists config
  * values from `config-fields` steps (`POST /api/setup/config`), and runs
@@ -28,9 +31,6 @@
  * defence-in-depth layer the original comment was reaching for. CSRF is
  * enforced (no `#[NoCSRFRequired]`): the SPA posts via `@nextcloud/axios`,
  * which sends the `requesttoken`.
- *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Controller
  * @package  OCA\Buildiq\Controller

@@ -3,6 +3,9 @@
 /**
  * Resolve an OpenRegister ObjectEntity's register and schema SLUGS.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * OpenRegister object events carry the register and schema as **numeric ids**,
  * never as slugs. `ObjectEntity::$schema` is declared `?string` and typed as a
  * string, but `SaveObject` writes it as `(string) $schemaId` — so it holds
@@ -32,9 +35,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
  * @version GIT: <git-id>
  *

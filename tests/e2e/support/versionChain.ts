@@ -1,4 +1,8 @@
 /**
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ */
+/**
  * Shared e2e fixture: an application with a real multi-version chain.
  *
  * Several suites need more than one ApplicationVersion to assert anything at

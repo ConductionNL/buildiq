@@ -3,6 +3,9 @@
 /**
  * Buildiq AutomationCompilerService
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Compiles a stored `Automation` declarative object (design.md Decision 1 of
  * the automation-designer change) to Buildiq's EXISTING declarative
  * primitives, and nothing else (ADR-031 — no new imperative engine):
@@ -79,9 +82,6 @@
  * reversible (delete removes exactly the provenance-listed artifacts). Every
  * compiled artifact id/key carries the `aut-` prefix so hand-authored
  * entries are never touched.
- *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
  * @package  OCA\Buildiq\Service

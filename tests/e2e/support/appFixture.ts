@@ -1,4 +1,8 @@
 /**
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ */
+/**
  * Shared e2e fixture helper: create an Buildiq virtual app idempotently.
  *
  * Replaces the obsolete "Add application" button + slug-field UI flow that

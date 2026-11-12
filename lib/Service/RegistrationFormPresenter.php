@@ -3,6 +3,9 @@
 /**
  * Registration Form Presenter
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * The shape a form takes on its way OUT of buildiq: presets applied, hidden
  * presets removed from the fields entirely, sections in the administrator's
  * order and fields grouped inside them.
@@ -31,9 +34,6 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-005, REQ-OBRF-008)
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);

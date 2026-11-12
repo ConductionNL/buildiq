@@ -3,6 +3,9 @@
 /**
  * Buildiq Export Job Service
  *
+ * SPDX-FileCopyrightText:  2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Orchestration helper between the HTTP controller and the OR-backed
  * ExportJob record + the imperative ExportService pipeline.
  *
@@ -28,9 +31,6 @@
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-37
  * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-38
- *
- * @SPDX-License-Identifier: EUPL-1.2
- * @SPDX-FileCopyrightText:  2026 Conduction B.V. <info@conduction.nl>
  */
 
 declare(strict_types=1);

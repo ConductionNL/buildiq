@@ -3,6 +3,9 @@
 /**
  * FleetAppId — resolve a Conduction fleet app's installed id across the rename.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * The fleet renamed: `openconnector` became `integriq`, `procest` became
  * `dossiq`, `nldesign` became `thematiq`, `docudesk` became `filinq`, and so
  * on. The new names have reached `development`, `beta` and `main`, so a
@@ -30,9 +33,6 @@
  * from `dossiq/lib/Support/FleetAppId.php` rather than writing new ones:
  * fixing the id half and not the namespace half leaves the integration just
  * as dark.
- *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Support
  * @package  OCA\Buildiq\Support

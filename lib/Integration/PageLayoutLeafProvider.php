@@ -3,6 +3,9 @@
 /**
  * Page Layout Leaf Provider
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * `buildiq-page-layout`. A consuming app asks: what should this object's detail
  * page show. Buildiq answers with at most ONE layout, and the app merges it
  * over its own manifest config.
@@ -38,9 +41,6 @@
  *
  * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-003, REQ-OBPL-006)
  * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-007, REQ-OBPL-008, REQ-OBPL-009)
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);

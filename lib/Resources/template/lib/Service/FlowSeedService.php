@@ -3,6 +3,9 @@
 /**
  * Seeds the flows this app ships into OpenRegister, so they can actually run.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * An exported app carries its flows as JSON under `lib/Settings/flows/`. Files
  * alone are inert: the engine executes the OpenRegister **`Flow` ENTITY** and
  * knows nothing about a directory in an app. Without this step the import
@@ -33,8 +36,6 @@
  * does not, the local edit is kept and the divergence recorded. Last-writer-
  * wins would silently delete the customisation that made the app useful to
  * that organisation.
- *
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @category Service
  * @package  OCA\AppTemplate\Service

@@ -3,6 +3,9 @@
 /**
  * Unit tests for ObjectSchemaSlugResolver.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * WHY THESE DOUBLES EXTEND THE REAL `OCP\AppFramework\Db\Entity`
  * ------------------------------------------------------------
  * The resolver's guards were written with `method_exists()`. OpenRegister's
@@ -27,9 +30,6 @@
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  *
  * @link https://buildiq.nl
  */

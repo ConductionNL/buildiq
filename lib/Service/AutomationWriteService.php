@@ -3,6 +3,9 @@
 /**
  * Buildiq AutomationWriteService
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Owns the WRITE path of the automation designer — the create/update/delete
  * half of `AutomationsController` (spec REQ-AUTD-008, Conduction/buildiq#173).
  * The controller keeps the effectual actions (compile/enable/disable/dry-run/
@@ -38,9 +41,6 @@
  *   - `destroy()` removes the compiled artifacts BEFORE deleting the object: a
  *     deleted definition whose artifacts are still live is the one outcome that
  *     leaves the instance acting on a rule nobody can see or edit any more.
- *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
  * @package  OCA\Buildiq\Service

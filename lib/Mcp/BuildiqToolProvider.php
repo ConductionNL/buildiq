@@ -3,6 +3,9 @@
 /**
  * Buildiq MCP Tool Provider
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Per-app implementation of OCA\OpenRegister\Mcp\IMcpToolProvider. Exposes the
  * full Buildiq authoring surface to an LLM via MCP: list/read apps, create
  * new apps, promote versions, and mutate a draft version's manifest (pages,
@@ -30,9 +33,6 @@
  * @spec openspec/changes/retrofit-2026-05-24-openbuild-runtime-mcp/tasks.md#task-2
  * @spec openspec/changes/retrofit-2026-05-24-openbuild-runtime-mcp/tasks.md#task-3
  * @spec openspec/changes/retrofit-2026-05-24-openbuild-runtime-mcp/tasks.md#task-4
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
- * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);

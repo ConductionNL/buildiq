@@ -3,6 +3,9 @@
 /**
  * Layout Delta Service
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * The PHP side of the keyed-delta contract `@conduction/nextcloud-vue` already
  * implements in JavaScript for app overrides: a patch is a map keyed by id, a
  * deletion is `{"$op": "remove"}`, and a reorder is `__order`. There is
@@ -36,9 +39,6 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-001, REQ-OBSO-002)
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);

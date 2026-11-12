@@ -3,6 +3,9 @@
 /**
  * Buildiq GitHub Push Service
  *
+ * SPDX-FileCopyrightText:  2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Pushes the generated app tree to a new GitHub repository and opens a
  * placeholder pull request, over the GitHub REST + Git Data API (create-repo,
  * create-blob, create-tree, create-commit, create-ref, create-pull).
@@ -32,9 +35,6 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/openbuild-exporter/tasks.md#task-6.2
- *
- * @SPDX-License-Identifier: EUPL-1.2
- * @SPDX-FileCopyrightText:  2026 Conduction B.V. <info@conduction.nl>
  */
 
 declare(strict_types=1);

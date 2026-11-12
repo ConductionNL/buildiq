@@ -1,4 +1,8 @@
 /**
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ */
+/**
  * Shared fetch for the Application record behind the app-detail page.
  *
  * WHY THIS EXISTS (#49). `ApplicationDetailHeader` and

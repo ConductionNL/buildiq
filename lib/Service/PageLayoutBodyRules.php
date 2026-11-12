@@ -3,6 +3,9 @@
 /**
  * Page Layout Body Rules
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * What a layout's BODY has to satisfy to be renderable at all: the kinds a tab
  * may be and the reference each kind needs, the widths the grid knows, the
  * operators a display condition may use, and the upload fields a person can
@@ -28,9 +31,6 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-004, REQ-OBPL-005, REQ-OBPL-009)
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);

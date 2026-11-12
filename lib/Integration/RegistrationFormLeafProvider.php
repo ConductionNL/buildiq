@@ -3,6 +3,9 @@
 /**
  * Registration Form Leaf Provider
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * `buildiq-registration-form`. A consuming app places this leaf on its own type
  * object and asks: which form should I show, for this audience and this
  * channel. Buildiq answers with the form, its presets and the person's own
@@ -31,9 +34,6 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-005, REQ-OBRF-006, REQ-OBRF-009)
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
