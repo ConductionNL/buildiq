@@ -206,6 +206,20 @@ describe('ManifestLayersDetail', () => {
 		expect(wrapper.find('.ob-manifest-detail__overrides').exists()).toBe(false)
 	})
 
+	it('falls back to an empty user delta when it cannot be read', async () => {
+		installGet({ app: APP, userDelta: 'error' })
+		const wrapper = mountDetail()
+		await flush(wrapper)
+		expect(wrapper.vm.userDelta).toEqual({
+			allowed: false,
+			exists: false,
+			versionUuid: null,
+			manifestDelta: {},
+		})
+		expect(axiosGetMock).toHaveBeenCalledWith('/apps/buildiq/api/app-overrides/petstore/user')
+		expect(axiosGetMock).toHaveBeenCalledWith('/apps/buildiq/api/app-overrides/petstore/user-deltas')
+	})
+
 	describe('computeds & RBAC', () => {
 		it('resolves appUuid from prop, record, then route', async () => {
 			installGet({ app: APP })
