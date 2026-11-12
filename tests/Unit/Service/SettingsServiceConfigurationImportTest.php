@@ -21,6 +21,7 @@ namespace OCA\Buildiq\Tests\Unit\Service;
 
 use OCA\Buildiq\Service\CallerContext;
 use OCA\Buildiq\Service\PermissionResolver;
+use OCA\Buildiq\Service\RegisterConfigAssembler;
 use OCA\Buildiq\Service\SettingsService;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
@@ -39,6 +40,7 @@ use RuntimeException;
  * outcomes with their log lines, and the fragment merge rules.
  *
  * @covers \OCA\Buildiq\Service\SettingsService
+ * @covers \OCA\Buildiq\Service\RegisterConfigAssembler
  */
 final class SettingsServiceConfigurationImportTest extends TestCase {
 
@@ -257,7 +259,7 @@ final class SettingsServiceConfigurationImportTest extends TestCase {
 	 * @return void
 	 */
 	public function testDeepMergeRules(): void {
-		$merge = new ReflectionMethod(SettingsService::class, 'deepMergeConfig');
+		$merge = new ReflectionMethod(RegisterConfigAssembler::class, 'deepMergeConfig');
 
 		$base = [
 			'paths' => ['/a' => ['get' => 1], '/b' => 2],

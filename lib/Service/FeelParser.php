@@ -125,11 +125,13 @@ class FeelParser {
 	 * @return array<string,mixed> The root AST node.
 	 *
 	 * @throws InvalidArgumentException On any syntax error, with the offending position.
+	 *
+	 * @spec openspec/specs/business-rules-engine/spec.md#requirement-req-bre-011-feel-subset-expression-parsing-and-validation
 	 */
 	public function parse(string $expression): array {
 		$this->assertSourceLength(expression: $expression);
 
-		$this->tokens = $this->tokenize(src: $expression);
+		$this->tokens = (new FeelLexer(src: $expression))->tokenize();
 		$this->cursor = 0;
 		$this->depth = 0;
 
@@ -197,20 +199,6 @@ class FeelParser {
 		}
 
 	}//end assertFullyConsumed()
-
-	/**
-	 * Lexer — convert the source string into a token stream.
-	 *
-	 * @param string $src The expression source.
-	 *
-	 * @return array<int,array{kind:string,value:mixed,pos:int}>
-	 *
-	 * @throws InvalidArgumentException On an unknown character or operator.
-	 */
-	private function tokenize(string $src): array {
-		return (new FeelLexer(src: $src))->tokenize();
-
-	}//end tokenize()
 
 	/**
 	 * Peek at the current token without consuming it.

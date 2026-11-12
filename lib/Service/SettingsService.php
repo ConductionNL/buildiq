@@ -25,7 +25,6 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\AppInfo\Application;
-use OCA\Buildiq\Exception\RegisterConfigUnavailableException;
 use OCA\Buildiq\Service\Connection\ConnectionReporter;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
@@ -275,160 +274,27 @@ class SettingsService {
 			return self::failure(message: 'OpenRegister is not installed or enabled.');
 		}
 
-		try {
-			$import = $this->assembleRegisterConfig();
-		} catch (RegisterConfigUnavailableException $e) {
-			return self::failure(message: $e->getMessage());
+		$config = new RegisterConfigAssembler(logger: $this->logger);
+		$failure = $config->assemble();
+		if ($failure !== null) {
+			return self::failure(message: $failure);
 		}
 
-		return $this->importRegisterConfig(import: $import, force: $force);
+		return $this->importRegisterConfig(config: $config, force: $force);
 	}//end doLoadConfiguration()
-
-	/**
-	 * Merge the register.d fragments onto the base register configuration and
-	 * sign the version with them.
-	 *
-	 * ADR-037: each OpenSpec change drops its own fragment file in
-	 * Settings/register.d/*.json instead of editing the monolith, so concurrent
-	 * builds touch disjoint files (no merge conflicts). OpenAPI
-	 * `components.schemas` / `paths` are keyed objects, so disjoint fragments
-	 * union cleanly by key.
-	 *
-	 * @return RegisterConfigImport
-	 *
-	 * @throws RegisterConfigUnavailableException When the base configuration cannot be loaded.
-	 */
-	private function assembleRegisterConfig(): RegisterConfigImport {
-		$configData = $this->readBaseRegisterConfig();
-		$fragmentSig = '';
-		foreach ($this->readRegisterFragments() as $fragment) {
-			$configData = self::deepMergeConfig(base: $configData, overlay: $fragment['data']);
-			$fragmentSig .= $fragment['name'] . ':' . md5($fragment['content']) . ';';
-		}
-
-		// Fold the fragment signature into the version so OpenRegister's
-		// version-gated importFromApp re-imports whenever fragments change.
-		$configVersion = ($configData['info']['version'] ?? '0.0.0');
-		if ($fragmentSig !== '') {
-			$configVersion .= '+frag.' . substr(md5($fragmentSig), 0, 8);
-		}
-
-		return new RegisterConfigImport(data: $configData, version: $configVersion);
-	}//end assembleRegisterConfig()
-
-	/**
-	 * Read and decode openbuild_register.json, logging why it cannot be used.
-	 *
-	 * @return array<string,mixed>
-	 *
-	 * @throws RegisterConfigUnavailableException When the file is missing or unreadable.
-	 */
-	private function readBaseRegisterConfig(): array {
-		$configPath = __DIR__ . '/../Settings/openbuild_register.json';
-		if (file_exists($configPath) === false) {
-			$this->logger->error('Buildiq: openbuild_register.json not found at ' . $configPath);
-			throw new RegisterConfigUnavailableException(message: 'Configuration file openbuild_register.json not found.');
-		}
-
-		$configContent = file_get_contents($configPath);
-		if ($configContent === false) {
-			$this->logger->error('Buildiq: failed to read openbuild_register.json');
-			throw new RegisterConfigUnavailableException(message: 'Failed to read configuration file.');
-		}
-
-		return $this->decodeBaseRegisterConfig(configContent: $configContent);
-	}//end readBaseRegisterConfig()
-
-	/**
-	 * Decode openbuild_register.json, logging a parse failure.
-	 *
-	 * @param string $configContent The raw file contents.
-	 *
-	 * @return array<string,mixed>
-	 *
-	 * @throws RegisterConfigUnavailableException When the contents are not valid JSON.
-	 */
-	private function decodeBaseRegisterConfig(string $configContent): array {
-		$configData = json_decode($configContent, true);
-		if (json_last_error() !== JSON_ERROR_NONE) {
-			$this->logger->error('Buildiq: failed to parse openbuild_register.json: ' . json_last_error_msg());
-			throw new RegisterConfigUnavailableException(message: 'Failed to parse configuration file: ' . json_last_error_msg());
-		}
-
-		return $configData;
-	}//end decodeBaseRegisterConfig()
-
-	/**
-	 * Read the readable, well-formed register.d fragments in file-name order.
-	 *
-	 * @return array<int,array{name:string,content:string,data:array<mixed>}>
-	 */
-	private function readRegisterFragments(): array {
-		$fragments = [];
-		foreach ($this->registerFragmentFiles() as $fragmentFile) {
-			$fragment = $this->readRegisterFragment(fragmentFile: $fragmentFile);
-			if ($fragment !== null) {
-				$fragments[] = $fragment;
-			}
-		}
-
-		return $fragments;
-	}//end readRegisterFragments()
-
-	/**
-	 * The register.d fragment paths in file-name order.
-	 *
-	 * @return array<int,string>
-	 */
-	private function registerFragmentFiles(): array {
-		$fragmentDir = __DIR__ . '/../Settings/register.d';
-		if (is_dir($fragmentDir) === false) {
-			return [];
-		}
-
-		$fragmentFiles = glob($fragmentDir . '/*.json');
-		sort($fragmentFiles);
-		return $fragmentFiles;
-	}//end registerFragmentFiles()
-
-	/**
-	 * Read one register.d fragment; an unreadable one is skipped silently, a
-	 * malformed one with a warning.
-	 *
-	 * @param string $fragmentFile The fragment path.
-	 *
-	 * @return array{name:string,content:string,data:array<mixed>}|null
-	 */
-	private function readRegisterFragment(string $fragmentFile): ?array {
-		$fragmentContent = file_get_contents($fragmentFile);
-		if ($fragmentContent === false) {
-			return null;
-		}
-
-		$fragmentData = json_decode($fragmentContent, true);
-		if (json_last_error() !== JSON_ERROR_NONE) {
-			$this->logger->warning(
-				'Buildiq: skipping malformed register fragment ' . basename($fragmentFile)
-				. ': ' . json_last_error_msg()
-			);
-			return null;
-		}
-
-		return ['name' => basename($fragmentFile), 'content' => $fragmentContent, 'data' => $fragmentData];
-	}//end readRegisterFragment()
 
 	/**
 	 * Hand the assembled configuration to OpenRegister's ConfigurationService.
 	 *
-	 * @param RegisterConfigImport $import The assembled configuration.
+	 * @param RegisterConfigAssembler $config The assembled configuration.
 	 * @param bool                 $force  Whether to force re-import.
 	 *
 	 * @return array<string,mixed> Result with success flag, message, and version.
 	 */
-	private function importRegisterConfig(RegisterConfigImport $import, bool $force): array {
+	private function importRegisterConfig(RegisterConfigAssembler $config, bool $force): array {
 		try {
-			$result = $this->callImportFromApp(import: $import, force: $force);
-			return $this->importOutcome(result: $result, configVersion: $import->version);
+			$result = $this->callImportFromApp(config: $config, force: $force);
+			return $this->importOutcome(result: $result, configVersion: $config->version());
 		} catch (\Throwable $e) {
 			$this->logger->error(
 				'Buildiq: configuration import failed',
@@ -441,17 +307,17 @@ class SettingsService {
 	/**
 	 * Call OpenRegister's ConfigurationService::importFromApp.
 	 *
-	 * @param RegisterConfigImport $import The assembled configuration.
+	 * @param RegisterConfigAssembler $config The assembled configuration.
 	 * @param bool                 $force  Whether to force re-import.
 	 *
 	 * @return mixed What importFromApp returned.
 	 */
-	private function callImportFromApp(RegisterConfigImport $import, bool $force): mixed {
+	private function callImportFromApp(RegisterConfigAssembler $config, bool $force): mixed {
 		$configurationService = $this->container->get('OCA\OpenRegister\Service\ConfigurationService');
 		return $configurationService->importFromApp(
 			appId: Application::APP_ID,
-			data: $import->data,
-			version: $import->version,
+			data: $config->data(),
+			version: $config->version(),
 			force: $force
 		);
 	}//end callImportFromApp()
@@ -490,57 +356,4 @@ class SettingsService {
 			'message' => $message,
 		];
 	}//end failure()
-
-	/**
-	 * Deep-merge a register fragment onto the base config (ADR-037).
-	 *
-	 * Associative arrays (OpenAPI objects like `components.schemas`, `paths`) are
-	 * merged by key union (recursing on shared keys); list arrays are concatenated;
-	 * scalars in the fragment overwrite the base. Disjoint fragments never collide.
-	 *
-	 * @param array<mixed> $base The accumulated config.
-	 * @param array<mixed> $overlay The fragment to merge in.
-	 *
-	 * @return array<mixed> The merged config.
-	 */
-	private static function deepMergeConfig(array $base, array $overlay): array {
-		foreach ($overlay as $key => $value) {
-			$base[$key] = self::mergeConfigValue(base: ($base[$key] ?? null), overlay: $value);
-		}
-
-		return $base;
-	}//end deepMergeConfig()
-
-	/**
-	 * Merge one fragment value onto the base value under the same key: two
-	 * lists concatenate, two arrays otherwise merge by key, anything else is
-	 * overwritten by the fragment.
-	 *
-	 * @param mixed $base    The base value (null when the key is absent).
-	 * @param mixed $overlay The fragment value.
-	 *
-	 * @return mixed The merged value.
-	 */
-	private static function mergeConfigValue(mixed $base, mixed $overlay): mixed {
-		if (is_array($overlay) === false || is_array($base) === false) {
-			return $overlay;
-		}
-
-		if (self::isConfigList(value: $base) === true && self::isConfigList(value: $overlay) === true) {
-			return array_merge($base, $overlay);
-		}
-
-		return self::deepMergeConfig(base: $base, overlay: $overlay);
-	}//end mergeConfigValue()
-
-	/**
-	 * Whether an array is empty or a 0-based sequential list.
-	 *
-	 * @param array<mixed> $value The array.
-	 *
-	 * @return bool
-	 */
-	private static function isConfigList(array $value): bool {
-		return $value === [] || array_keys($value) === range(0, (count($value) - 1));
-	}//end isConfigList()
 }//end class

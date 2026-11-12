@@ -206,7 +206,11 @@ class CopilotPromptBuilder {
 	 * @return string
 	 */
 	private function catalogueJson(array $descriptors): string {
-		$catalogue = json_encode(array_map([self::class, 'catalogueEntry'], $descriptors), JSON_PRETTY_PRINT);
+		$entries = array_map(
+			static fn (array $descriptor): array => self::catalogueEntry(descriptor: $descriptor),
+			$descriptors
+		);
+		$catalogue = json_encode($entries, JSON_PRETTY_PRINT);
 		if ($catalogue === false) {
 			return '[]';
 		}
