@@ -204,6 +204,62 @@ final class ExportAppContentBundlerTest extends TestCase {
 	}//end testBundleWritesRecordsOnlyWhenSeedDataIsIncluded()
 
 	/**
+	 * Every file the bundler writes, and the summary it answers, for an
+	 * application with all its fields, without its name and description, and
+	 * also without its slug, with and
+	 * without seed data, compared with the recorded fixture. Set GOLDEN_RECORD=1
+	 * to write a missing fixture.
+	 */
+	public function testBundledTreeGolden(): void {
+		$fixture = __DIR__ . '/fixtures/export-app-content.golden.json';
+		$cases = [];
+		foreach ([[], ['name', 'description'], ['name', 'description', 'slug']] as $dropped) {
+			foreach ([false, true] as $includeSeedData) {
+				$cases[] = $this->goldenCase(dropped: $dropped, includeSeedData: $includeSeedData);
+			}
+		}
+
+		$actual = json_encode($cases, (JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)) . "\n";
+		if (file_exists($fixture) === false && getenv('GOLDEN_RECORD') === '1') {
+			file_put_contents($fixture, $actual);
+		}
+
+		self::assertFileExists($fixture);
+		self::assertSame(file_get_contents($fixture), $actual);
+	}//end testBundledTreeGolden()
+
+	/**
+	 * Bundle one golden case into a fresh copy of the template tree.
+	 *
+	 * @param array<int,string> $dropped The application fields to leave out.
+	 * @param bool $includeSeedData Whether to include records.
+	 *
+	 * @return array<string,mixed> The case, the summary and every written file.
+	 */
+	private function goldenCase(array $dropped, bool $includeSeedData): array {
+		$this->tearDown();
+		$this->setUp();
+		$bundler = $this->bundler();
+		$source = $bundler->resolveSource(applicationUuid: self::APP_UUID, semver: '0.1.0', versionSlug: 'development');
+		self::assertNotNull($source);
+		$source['includeSeedData'] = $includeSeedData;
+		foreach ($dropped as $field) {
+			unset($source['application'][$field]);
+		}
+
+		$summary = $bundler->bundle(rootDir: $this->root, source: $source, appId: 'demo-app', semver: '0.1.0');
+
+		$files = [];
+		$iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($this->root, \FilesystemIterator::SKIP_DOTS));
+		foreach ($iterator as $file) {
+			$files[substr($file->getPathname(), strlen($this->root) + 1)] = (string)file_get_contents($file->getPathname());
+		}
+
+		ksort($files);
+		return ['dropped' => $dropped, 'includeSeedData' => $includeSeedData, 'summary' => $summary, 'files' => $files];
+	}//end goldenCase()
+
+	/**
 	 * Run the bundler on the development version.
 	 *
 	 * @param bool $includeSeedData Whether to include records.
