@@ -68,6 +68,7 @@ use OCA\Buildiq\Service\Connection\ConnectionReporter;
 use OCA\Buildiq\Service\StoreClient;
 use OCA\OpenRegister\AppHost\Service\GenericStoreService;
 use OCA\OpenRegister\AppHost\Service\StoreDescriptor;
+use OCA\OpenRegister\AppHost\Service\StoreListing;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -121,18 +122,20 @@ class StoreController extends Controller {
 	 */
 	private function descriptor(): StoreDescriptor {
 		return new StoreDescriptor(
-			appId: Application::APP_ID,
-			schema: 'application-template',
-			defaultRegister: 'buildiq',
-			cardFields: [
-				'slug' => 'slug',
-				'title' => 'title',
-				'description' => 'description',
-				'useCase' => 'useCase',
-				'category' => 'category',
-				'version' => 'version',
-				'screenshotUrl' => 'screenshotUrl',
-			]
+			listing: new StoreListing(
+				appId: Application::APP_ID,
+				schema: 'application-template',
+				defaultRegister: 'buildiq',
+				cardFields: [
+					'slug' => 'slug',
+					'title' => 'title',
+					'description' => 'description',
+					'useCase' => 'useCase',
+					'category' => 'category',
+					'version' => 'version',
+					'screenshotUrl' => 'screenshotUrl',
+				]
+			)
 		);
 	}//end descriptor()
 
