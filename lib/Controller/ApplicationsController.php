@@ -1412,21 +1412,7 @@ class ApplicationsController extends Controller {
 			}
 		}
 
-		$runtime = ($manifest['runtime'] ?? []);
-		if (is_array($runtime) === false) {
-			$runtime = [];
-		}
-
-		$runtimeUser = ($runtime['user'] ?? []);
-		if (is_array($runtimeUser) === false) {
-			$runtimeUser = [];
-		}
-
-		$runtimeUser['isOwner'] = $isOwner;
-		$runtime['user'] = $runtimeUser;
-		$manifest['runtime'] = $runtime;
-
-		return $manifest;
+		return $this->withRuntimeUser(manifest: $manifest, fields: ['isOwner' => $isOwner]);
 	}//end injectOwnerSignal()
 
 	/**
@@ -1457,6 +1443,24 @@ class ApplicationsController extends Controller {
 			caller: $caller
 		);
 
+		return $this->withRuntimeUser(manifest: $manifest, fields: ['permissions' => $permissions]);
+	}//end injectPermissionsSignal()
+
+	/**
+	 * Set fields on the manifest's `runtime.user` block, keeping everything else.
+	 *
+	 * Additive-only: a missing or non-array `runtime` / `runtime.user` starts
+	 * empty, every other key stays where it is, and each field is overwritten
+	 * in place or appended when new.
+	 *
+	 * @param array<string, mixed> $manifest The manifest payload (mutated copy is returned).
+	 * @param array<string, mixed> $fields The `runtime.user` fields to set.
+	 *
+	 * @return array<string, mixed> The manifest with the fields set.
+	 *
+	 * @spec openspec/specs/openbuild-runtime/spec.md#requirement-the-runtime-must-inject-the-current-user-s-group-context
+	 */
+	private function withRuntimeUser(array $manifest, array $fields): array {
 		$runtime = ($manifest['runtime'] ?? []);
 		if (is_array($runtime) === false) {
 			$runtime = [];
@@ -1467,12 +1471,14 @@ class ApplicationsController extends Controller {
 			$runtimeUser = [];
 		}
 
-		$runtimeUser['permissions'] = $permissions;
+		foreach ($fields as $key => $value) {
+			$runtimeUser[$key] = $value;
+		}
+
 		$runtime['user'] = $runtimeUser;
 		$manifest['runtime'] = $runtime;
-
 		return $manifest;
-	}//end injectPermissionsSignal()
+	}//end withRuntimeUser()
 
 	/**
 	 * Enforce the per-Application RBAC permissions block.
