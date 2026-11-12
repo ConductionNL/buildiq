@@ -13,43 +13,12 @@
 			:data-source="config.dataSource || {}"
 			@update:dataSource="onDataSourceUpdate" />
 		<div v-if="!connectorActive" class="index-page-editor__group">
-			<label>
-				{{ t('buildiq', 'Register') }}
-				<select
-					:value="config.register || ''"
-					:aria-invalid="isInvalid('register')"
-					@change="update('register', $event.target.value)">
-					<option value="">
-						{{ t('buildiq', '— select register —') }}
-					</option>
-					<option
-						v-for="r in registers"
-						:key="r.slug || r.id"
-						:value="r.slug">
-						{{ r.title || r.slug }}
-					</option>
-				</select>
-				<InlineFieldMark :error="markFor('register')" />
-			</label>
-			<label>
-				{{ t('buildiq', 'Schema') }}
-				<select
-					:value="config.schema || ''"
-					:disabled="!config.register"
-					:aria-invalid="isInvalid('schema')"
-					@change="update('schema', $event.target.value)">
-					<option value="">
-						{{ t('buildiq', '— select schema —') }}
-					</option>
-					<option
-						v-for="s in schemas"
-						:key="s.slug || s.id"
-						:value="s.slug">
-						{{ s.title || s.slug }}
-					</option>
-				</select>
-				<InlineFieldMark :error="markFor('schema')" />
-			</label>
+			<RegisterSchemaFields
+				:config="config"
+				:registers="registers"
+				:schemas="schemas"
+				@register="update('register', $event)"
+				@schema="update('schema', $event)" />
 			<label>
 				{{ t('buildiq', 'Card component (optional)') }}
 				<input
@@ -102,6 +71,7 @@ import DataSourceOriginToggle from './DataSourceOriginToggle.vue'
 import ActionBuilder from './fields/ActionBuilder.vue'
 import ColumnBuilder from './fields/ColumnBuilder.vue'
 import InlineFieldMark from './fields/InlineFieldMark.vue'
+import RegisterSchemaFields from './fields/RegisterSchemaFields.vue'
 import SidebarSectionBuilder from './fields/SidebarSectionBuilder.vue'
 import { useEditorRegisterPicker } from '../../composables/useEditorRegisterPicker.js'
 import {
@@ -117,6 +87,7 @@ export default {
 		ActionBuilder,
 		SidebarSectionBuilder,
 		InlineFieldMark,
+		RegisterSchemaFields,
 		DataSourceOriginToggle,
 	},
 
