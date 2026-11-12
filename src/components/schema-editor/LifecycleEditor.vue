@@ -564,22 +564,59 @@ export function lifecycleToEditor(lifecycle) {
 			initial: name === initial,
 		}
 	})
-	const transitions = (lifecycle.transitions || []).map((tr) => ({
+	const transitions = (lifecycle.transitions || []).map(toEditorTransition)
+	return { states, transitions }
+}
+
+/**
+ * A lifecycle transition as an editor row; missing fields become ''.
+ *
+ * @param {object} tr A transition of the lifecycle block.
+ * @return {object} The editor transition row.
+ */
+function toEditorTransition(tr) {
+	return {
 		_key: nextKey(),
 		from: tr.from || '',
 		to: tr.to || '',
 		label: tr.label || '',
-		actions: (
-			(tr.on_transition && tr.on_transition.actions)
-			|| tr.actions
-			|| []
-		).map((a) => ({
-			_key: nextKey(),
-			type: a.type || 'audit-event-emit',
-			payload: a.payload || a.event || a.template || a.url || '',
-		})),
-	}))
-	return { states, transitions }
+		actions: transitionActions(tr).map(toEditorAction),
+	}
+}
+
+/**
+ * The actions of a transition: its `on_transition` actions, else its flat
+ * `actions` list, else none.
+ *
+ * @param {object} tr A transition of the lifecycle block.
+ * @return {Array<object>} The raw actions.
+ */
+function transitionActions(tr) {
+	return (tr.on_transition && tr.on_transition.actions) || tr.actions || []
+}
+
+/**
+ * A transition action as an editor row, defaulting to an audit event.
+ *
+ * @param {object} a A raw transition action.
+ * @return {object} The editor action row.
+ */
+function toEditorAction(a) {
+	return {
+		_key: nextKey(),
+		type: a.type || 'audit-event-emit',
+		payload: actionPayload(a),
+	}
+}
+
+/**
+ * The payload of an action: its payload, event, template or url.
+ *
+ * @param {object} a A raw transition action.
+ * @return {string} The payload, or ''.
+ */
+function actionPayload(a) {
+	return a.payload || a.event || a.template || a.url || ''
 }
 
 /**
