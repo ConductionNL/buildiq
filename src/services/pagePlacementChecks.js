@@ -96,14 +96,33 @@ const FULL_GRID = Object.freeze({
  * @spec exclude step of customPageInDisguiseKey
  */
 function soleDashboardWidget(page) {
-	if (!page || page.type !== 'dashboard') {
-		return null
-	}
-	if (!Array.isArray(page.widgets) || page.widgets.length !== 1) {
+	if (!isDashboard(page) || !hasOneWidget(page)) {
 		return null
 	}
 	const widget = page.widgets[0]
 	return widget && typeof widget === 'object' ? widget : null
+}
+
+/**
+ * Whether a page is a dashboard.
+ *
+ * @param {object|null} page - the page to check.
+ * @return {boolean}
+ * @spec exclude step of soleDashboardWidget
+ */
+function isDashboard(page) {
+	return Boolean(page) && page.type === 'dashboard'
+}
+
+/**
+ * Whether a page carries exactly one widget.
+ *
+ * @param {object} page - the page to check.
+ * @return {boolean}
+ * @spec exclude step of soleDashboardWidget
+ */
+function hasOneWidget(page) {
+	return Array.isArray(page.widgets) && page.widgets.length === 1
 }
 
 /**
@@ -126,6 +145,17 @@ function fillsBody(widget) {
 }
 
 /**
+ * A placement's widget key, or '' when it names none.
+ *
+ * @param {object} widget - the placement.
+ * @return {string}
+ * @spec exclude step of customPageInDisguiseKey
+ */
+function widgetKeyOf(widget) {
+	return typeof widget.widgetKey === 'string' ? widget.widgetKey : ''
+}
+
+/**
  * The `widgetKey` that makes a page a custom page in disguise, so the editor
  * can name the component in the alternative it offers, or `null` when the page
  * is fine.
@@ -139,7 +169,7 @@ export function customPageInDisguiseKey(page) {
 	if (widget === null || !fillsBody(widget)) {
 		return null
 	}
-	const widgetKey = typeof widget.widgetKey === 'string' ? widget.widgetKey : ''
+	const widgetKey = widgetKeyOf(widget)
 	if (widgetKey === '' || isLibraryWidgetKey(widgetKey)) {
 		return null
 	}
