@@ -68,6 +68,71 @@ import Step3Custom from './CreateApplicationWizard/Step3Custom.vue'
 import Step4Review from './CreateApplicationWizard/Step4Review.vue'
 import { resolveAppIcon } from '../utils/iconCatalogues.js'
 
+/**
+ * Per-step validity flag and the message shown when it is not set. Steps
+ * without an entry always advance.
+ */
+const STEP_CHECKS = new Map([
+	['basics', ['_step1Valid', () => t('buildiq', 'Enter a name and a valid slug.')]],
+	['preset', ['_step2Valid', () => t('buildiq', 'Choose a version preset.')]],
+	[
+		'custom',
+		['_step3Valid', () => t('buildiq', 'Complete the custom version chain.')],
+	],
+])
+
+/**
+ * The message of a failed create: the API's message or detail, else the
+ * error's message, else a generic one.
+ *
+ * @param {object} data The error payload from the API.
+ * @param {Error} [err] The original error, for a message fallback.
+ * @return {string}
+ */
+function createFailureMessage(data, err) {
+	const message = data.message || data.detail || (err && err.message)
+	return message || t('buildiq', 'Failed to create the application.')
+}
+
+/**
+ * The note listing resources a failed create left behind, or `''`.
+ *
+ * @param {object} data The error payload from the API.
+ * @return {string}
+ */
+function orphanNote(data) {
+	if (
+		!Array.isArray(data.orphanedResources)
+		|| data.orphanedResources.length === 0
+	) {
+		return ''
+	}
+	return (
+		' '
+		+ t('buildiq', 'Some resources need manual cleanup: {list}', {
+			list: data.orphanedResources.join(', '),
+		})
+	)
+}
+
+/**
+ * The icons to attach for the wizard's picks: a light glyph, and a dark one
+ * that defaults to the primary pick. Variants that resolve to nothing are
+ * left out.
+ *
+ * @param {object} stepData The accumulated wizard data.
+ * @return {Array<{field: string, filename: string, svg: string}>}
+ */
+function appIconVariants(stepData) {
+	const lightSvg = resolveAppIcon(stepData.iconValue, { dark: false })
+	const darkSource = stepData.iconDarkValue || stepData.iconValue
+	const darkSvg = resolveAppIcon(darkSource, { dark: true })
+	return [
+		{ field: 'icon', filename: 'app-icon.svg', svg: lightSvg },
+		{ field: 'iconDark', filename: 'app-icon-dark.svg', svg: darkSvg },
+	].filter((icon) => icon.svg)
+}
+
 export default {
 	name: 'CreateApplicationWizard',
 
@@ -167,22 +232,12 @@ export default {
 		 * @spec openspec/specs/application-creation-wizard/spec.md
 		 */
 		validateStep(stepId, stepData) {
-			if (stepId === 'basics') {
-				return stepData._step1Valid
-					? true
-					: t('buildiq', 'Enter a name and a valid slug.')
+			const check = STEP_CHECKS.get(stepId)
+			if (!check) {
+				return true
 			}
-			if (stepId === 'preset') {
-				return stepData._step2Valid
-					? true
-					: t('buildiq', 'Choose a version preset.')
-			}
-			if (stepId === 'custom') {
-				return stepData._step3Valid
-					? true
-					: t('buildiq', 'Complete the custom version chain.')
-			}
-			return true
+			const [flag, message] = check
+			return stepData[flag] ? true : message()
 		},
 
 		/**
@@ -237,23 +292,13 @@ export default {
 		 * @spec openspec/specs/application-creation-wizard/spec.md
 		 */
 		async uploadIcons(uuid, stepData) {
-			const lightSvg = resolveAppIcon(stepData.iconValue, { dark: false })
-			const darkSource = stepData.iconDarkValue || stepData.iconValue
-			const darkSvg = resolveAppIcon(darkSource, { dark: true })
-			if (!lightSvg && !darkSvg) {
+			const icons = appIconVariants(stepData)
+			if (icons.length === 0) {
 				return
 			}
 			try {
-				if (lightSvg) {
-					await this.attachIcon(uuid, 'icon', 'app-icon.svg', lightSvg)
-				}
-				if (darkSvg) {
-					await this.attachIcon(
-						uuid,
-						'iconDark',
-						'app-icon-dark.svg',
-						darkSvg,
-					)
+				for (const icon of icons) {
+					await this.attachIcon(uuid, icon.field, icon.filename, icon.svg)
 				}
 			} catch (err) {
 				console.error('Buildiq: failed to attach app icon', err)
@@ -299,19 +344,7 @@ export default {
 		 * @spec openspec/specs/application-creation-wizard/spec.md
 		 */
 		reportError(data, err) {
-			let message = data.message || data.detail
-			if (!message && err) message = err.message
-			if (!message) message = t('buildiq', 'Failed to create the application.')
-			if (
-				Array.isArray(data.orphanedResources)
-				&& data.orphanedResources.length > 0
-			) {
-				message +=
-					' '
-					+ t('buildiq', 'Some resources need manual cleanup: {list}', {
-						list: data.orphanedResources.join(', '),
-					})
-			}
+			const message = createFailureMessage(data, err) + orphanNote(data)
 			if (this.$refs.wizard) {
 				this.$refs.wizard.setError(message)
 			}
