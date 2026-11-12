@@ -168,46 +168,12 @@ class ApplicationVersionsController extends Controller {
 				return $this->errorResponse(code: 'not_found', detail: 'Application ' . $appSlug . ' not found', status: Http::STATUS_NOT_FOUND);
 			}
 
-			$applicationUuid = (string)($application['id'] ?? $application['uuid'] ?? '');
-
-			$ids = $this->resolveRegisterAndSchema(schemaSlug: ApplicationVersionService::APPLICATION_VERSION_SCHEMA);
-			if ($ids === null) {
+			$versions = $this->versionRowsOf(application: $application);
+			if ($versions === null) {
 				return $this->errorResponse(code: 'not_found', detail: 'Application ' . $appSlug . ' not found', status: Http::STATUS_NOT_FOUND);
 			}
 
-			[$registerId, $schemaId] = $ids;
-
-			// OR's searchObjects doesn't reliably filter by relation-string equality
-			// on the `application` field (the value is stored both inline AND in
-			// @self.relations, and the matcher matches neither shape consistently).
-			// Fetch every ApplicationVersion row and filter client-side by the
-			// parent Application UUID. Cheap — we expect ~3 rows per app.
-			$rows = $this->objectService->searchObjects(
-				query: [
-					'@self' => [
-						'register' => $registerId,
-						'schema' => $schemaId,
-					],
-				]
-			);
-
-			$rowsList = [];
-			if (is_array($rows) === true) {
-				$rowsList = $rows;
-			}
-
-			$normalised = [];
-			foreach ($rowsList as $row) {
-				$normalisedRow = ObjectRecord::toArray(object: $row);
-				$rowAppUuid = (string)($normalisedRow['application'] ?? '');
-				if ($rowAppUuid !== $applicationUuid) {
-					continue;
-				}
-
-				$normalised[] = $normalisedRow;
-			}
-
-			return new JSONResponse(data: $normalised, statusCode: Http::STATUS_OK);
+			return new JSONResponse(data: $versions, statusCode: Http::STATUS_OK);
 		} catch (Throwable $e) {
 			$this->logger->error(
 				'Buildiq: ApplicationVersionsController::index failed for slug ' . $appSlug . ': ' . $e->getMessage(),
@@ -655,38 +621,53 @@ class ApplicationVersionsController extends Controller {
 	 * @param string $versionSlug The version slug to find
 	 *
 	 * @return array<string,mixed>|null The version row, or null on miss
-	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function findVersionRowBySlug(array $application, string $versionSlug): ?array {
-		$applicationUuid = (string)($application['id'] ?? $application['uuid'] ?? '');
-
-		$ids = $this->resolveRegisterAndSchema(schemaSlug: ApplicationVersionService::APPLICATION_VERSION_SCHEMA);
-		if ($ids === null) {
-			return null;
-		}
-
-		[$registerId, $schemaId] = $ids;
-
-		$rows = $this->objectService->searchObjects(
-			query: ['@self' => ['register' => $registerId, 'schema' => $schemaId]]
-		);
-		if (is_array($rows) === false) {
-			return null;
-		}
-
-		foreach ($rows as $row) {
-			$normalised = ObjectRecord::toArray(object: $row);
-			if ((string)($normalised['application'] ?? '') !== $applicationUuid) {
-				continue;
-			}
-
-			if ((string)($normalised['slug'] ?? '') === $versionSlug) {
-				return $normalised;
+		foreach (($this->versionRowsOf(application: $application) ?? []) as $version) {
+			if ((string)($version['slug'] ?? '') === $versionSlug) {
+				return $version;
 			}
 		}
 
 		return null;
 	}//end findVersionRowBySlug()
+
+	/**
+	 * Every ApplicationVersion row of an Application, normalised, in stored order.
+	 *
+	 * OR's searchObjects doesn't reliably filter by relation-string equality on
+	 * the `application` field (the value is stored both inline AND in the
+	 * `@self.relations` block, and the matcher matches neither shape
+	 * consistently). Fetch every ApplicationVersion row and filter client-side
+	 * by the parent Application UUID. Cheap — we expect ~3 rows per app.
+	 *
+	 * @param array<string,mixed> $application Normalised Application data
+	 *
+	 * @return array<int,array<string,mixed>>|null The rows, or null when the version schema cannot be resolved
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
+	 */
+	private function versionRowsOf(array $application): ?array {
+		$ids = $this->resolveRegisterAndSchema(schemaSlug: ApplicationVersionService::APPLICATION_VERSION_SCHEMA);
+		if ($ids === null) {
+			return null;
+		}
+
+		$applicationUuid = (string)($application['id'] ?? $application['uuid'] ?? '');
+		$rows = $this->objectService->searchObjects(query: ['@self' => ['register' => $ids[0], 'schema' => $ids[1]]]);
+		if (is_array($rows) === false) {
+			$rows = [];
+		}
+
+		$mine = [];
+		foreach ($rows as $row) {
+			$version = ObjectRecord::toArray(object: $row);
+			if ((string)($version['application'] ?? '') === $applicationUuid) {
+				$mine[] = $version;
+			}
+		}
+
+		return $mine;
+	}//end versionRowsOf()
 
 	/**
 	 * Owner-only check with NO admin bypass (REQ-OBV-110).
