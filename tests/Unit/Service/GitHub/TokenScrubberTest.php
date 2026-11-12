@@ -27,6 +27,7 @@ use RuntimeException;
  * Credential shapes in, redacted text out; ordinary text and commit ids stay.
  *
  * @covers \OCA\Buildiq\Service\GitHub\TokenScrubber
+ * @uses \OCA\Buildiq\Service\GitHubShopSearch
  */
 class TokenScrubberTest extends TestCase {
 	/**

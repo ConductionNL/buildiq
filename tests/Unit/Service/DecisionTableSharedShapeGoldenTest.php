@@ -36,6 +36,7 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\Buildiq\Service\DecisionTableEvaluator
  * @uses   \OCA\Buildiq\Service\ExpressionEvaluator
  * @uses   \OCA\Buildiq\Service\FeelParser
+ * @uses \OCA\Buildiq\Service\FeelLexer
  */
 class DecisionTableSharedShapeGoldenTest extends TestCase {
 
