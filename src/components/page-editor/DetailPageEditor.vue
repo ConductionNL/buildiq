@@ -10,43 +10,12 @@
 			{{ t('buildiq', 'Detail page') }}
 		</h3>
 		<div class="detail-page-editor__group">
-			<label>
-				{{ t('buildiq', 'Register') }}
-				<select
-					:value="config.register || ''"
-					:aria-invalid="isInvalid('register')"
-					@change="update('register', $event.target.value)">
-					<option value="">
-						{{ t('buildiq', '— select register —') }}
-					</option>
-					<option
-						v-for="r in registers"
-						:key="r.slug || r.id"
-						:value="r.slug">
-						{{ r.title || r.slug }}
-					</option>
-				</select>
-				<InlineFieldMark :error="markFor('register')" />
-			</label>
-			<label>
-				{{ t('buildiq', 'Schema') }}
-				<select
-					:value="config.schema || ''"
-					:disabled="!config.register"
-					:aria-invalid="isInvalid('schema')"
-					@change="update('schema', $event.target.value)">
-					<option value="">
-						{{ t('buildiq', '— select schema —') }}
-					</option>
-					<option
-						v-for="s in schemas"
-						:key="s.slug || s.id"
-						:value="s.slug">
-						{{ s.title || s.slug }}
-					</option>
-				</select>
-				<InlineFieldMark :error="markFor('schema')" />
-			</label>
+			<RegisterSchemaFields
+				:config="config"
+				:registers="registers"
+				:schemas="schemas"
+				@register="update('register', $event)"
+				@schema="update('schema', $event)" />
 		</div>
 
 		<p v-if="!routeHasParam" class="detail-page-editor__warn" role="alert">
@@ -160,6 +129,7 @@
 <script>
 import AppliesToPanel from './fields/AppliesToPanel.vue'
 import InlineFieldMark from './fields/InlineFieldMark.vue'
+import RegisterSchemaFields from './fields/RegisterSchemaFields.vue'
 import RegistrationFormList from './fields/RegistrationFormList.vue'
 import ScreenOverrideList from './fields/ScreenOverrideList.vue'
 import SidebarTabBuilder from './fields/SidebarTabBuilder.vue'
@@ -177,6 +147,7 @@ export default {
 	components: {
 		AppliesToPanel,
 		InlineFieldMark,
+		RegisterSchemaFields,
 		RegistrationFormList,
 		ScreenOverrideList,
 		SidebarTabBuilder,

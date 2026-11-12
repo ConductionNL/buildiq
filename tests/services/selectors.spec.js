@@ -67,3 +67,32 @@ describe('flattenSample', () => {
 		expect(leaf.value).toBe('Acme')
 	})
 })
+
+describe('selector edges', () => {
+	const sample = { a: [{ b: null, c: 'text', d: 0 }], n: { 0: 'zero' } }
+
+	it('pins every way a path resolves or breaks', () => {
+		expect(resolveSelector(sample, null)).toBe(sample)
+		expect(resolveSelector(sample, undefined)).toBe(sample)
+		expect(resolveSelector(sample, 0)).toBeUndefined()
+		expect(resolveSelector(sample.n, 0)).toBe('zero')
+		expect(resolveSelector(sample, 'a.0.b')).toBeNull()
+		expect(resolveSelector(sample, 'a.0.b.x')).toBeUndefined()
+		expect(resolveSelector(sample, 'a.0.c.length')).toBeUndefined()
+		expect(resolveSelector(sample, 'a.0.d')).toBe(0)
+		expect(resolveSelector(sample, 'a.length')).toBe(1)
+		expect(resolveSelector('text', 'length')).toBeUndefined()
+		expect(resolveSelector(null, 'a')).toBeUndefined()
+		expect(resolveSelector(sample, 'a.')).toBeUndefined()
+	})
+
+	it('wraps only a present root and requires a list under itemsPath', () => {
+		expect(extractItems(null)).toEqual([])
+		expect(extractItems(undefined, '')).toEqual([])
+		expect(extractItems(0, null)).toEqual([0])
+		expect(extractItems('', undefined)).toEqual([''])
+		expect(extractItems(sample, 'a')).toBe(sample.a)
+		expect(extractItems(sample, 'n')).toEqual([])
+		expect(extractItems(null, 'a')).toEqual([])
+	})
+})

@@ -183,19 +183,15 @@ import {
 	bumpMinor,
 	captureTemplate,
 	resolveSaveTarget,
-	SlugCollisionError,
+	slugCollisionMessage,
 	suggestSlug,
-	TEMPLATE_CATEGORIES,
 } from '../services/templateCapture.js'
-
-const OR_TEMPLATES = '/apps/openregister/api/objects/buildiq/application-template'
-
-const CATEGORY_LABELS = {
-	'government-services': 'Government services',
-	'internal-operations': 'Internal operations',
-	'citizen-engagement': 'Citizen engagement',
-	'field-work': 'Field work',
-}
+import { requestErrorMessage } from '../utils/requestErrorMessage.js'
+import {
+	OR_TEMPLATES,
+	templateCategoryOptions,
+	templateRecordUrl,
+} from './templateRecords.js'
 
 export default {
 	name: 'SaveAsTemplateDialog',
@@ -240,10 +236,7 @@ export default {
 		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
 		 */
 		categoryOptions() {
-			return TEMPLATE_CATEGORIES.map((value) => ({
-				id: value,
-				label: t('buildiq', CATEGORY_LABELS[value] || value),
-			}))
+			return templateCategoryOptions()
 		},
 
 		/**
@@ -490,7 +483,7 @@ export default {
 		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
 		 */
 		recomputeCollision() {
-			try {
+			this.collisionError = slugCollisionMessage(() =>
 				captureTemplate(
 					this.application || {},
 					this.schemas,
@@ -500,15 +493,8 @@ export default {
 						slug: this.form.slug,
 						category: this.selectedCategory,
 					},
-				)
-				this.collisionError = ''
-			} catch (e) {
-				if (e instanceof SlugCollisionError) {
-					this.collisionError = e.sourceSlugs.join(', ')
-				} else {
-					this.collisionError = ''
-				}
-			}
+				),
+			)
 		},
 
 		/**
@@ -561,27 +547,21 @@ export default {
 				const record = { ...this.capture.record }
 				if (target.mode === 'update') {
 					const existing = target.record
-					const uuid =
-						(existing['@self'] && existing['@self'].id)
-						|| existing.uuid
-						|| existing.id
 					record.version = bumpMinor(existing.version)
-					const url = generateUrl(
-						`${OR_TEMPLATES}/${encodeURIComponent(uuid)}`,
-					)
-					await axios.put(url, { ...existing, ...record })
+					await axios.put(templateRecordUrl(existing), {
+						...existing,
+						...record,
+					})
 				} else {
 					await axios.post(generateUrl(OR_TEMPLATES), record)
 				}
 				this.$emit('saved', { slug: record.slug, mode: target.mode })
 				this.$emit('update:open', false)
 			} catch (e) {
-				const data = e?.response?.data
-				this.saveError =
-					data?.detail
-					|| data?.error
-					|| e?.message
-					|| t('buildiq', 'Saving the template failed.')
+				this.saveError = requestErrorMessage(
+					e,
+					t('buildiq', 'Saving the template failed.'),
+				)
 			} finally {
 				this.saving = false
 			}

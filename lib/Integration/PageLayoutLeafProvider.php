@@ -53,7 +53,6 @@ use OCA\Buildiq\Service\PageLayoutLayerStack;
 use OCA\Buildiq\Service\PageLayoutParts;
 use OCA\Buildiq\Service\PageLayoutPresenter;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
-use OCA\OpenRegister\Service\Integration\IntegrationProvider;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -63,7 +62,7 @@ use RuntimeException;
  *
  * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-003)
  */
-final class PageLayoutLeafProvider implements IntegrationProvider {
+final class PageLayoutLeafProvider extends AppLocalLeafProvider {
 	/**
 	 * The leaf id, equal on both halves so gate-24 can pair them.
 	 *
@@ -163,61 +162,6 @@ final class PageLayoutLeafProvider implements IntegrationProvider {
 	public function getGroup(): string {
 		return 'Design';
 	}//end getGroup()
-
-	/**
-	 * The app that must be installed for this leaf to answer.
-	 *
-	 * @return string The app id.
-	 */
-	public function getRequiredApp(): string {
-		return 'buildiq';
-	}//end getRequiredApp()
-
-	/**
-	 * Layouts live in buildiq's own register.
-	 *
-	 * @return string The storage strategy.
-	 */
-	public function getStorageStrategy(): string {
-		return 'app-local';
-	}//end getStorageStrategy()
-
-	/**
-	 * No OpenConnector source.
-	 *
-	 * @return string|null The source.
-	 */
-	public function getOpenConnectorSource(): ?string {
-		return null;
-	}//end getOpenConnectorSource()
-
-	/**
-	 * The leaf answers whenever buildiq is installed.
-	 *
-	 * @return bool True.
-	 */
-	public function isEnabled(): bool {
-		return true;
-	}//end isEnabled()
-
-	/**
-	 * Reading a layout needs no right of its own; it is page furniture, and the
-	 * object's own permissions still decide what the page can show.
-	 *
-	 * @return string|null Null.
-	 */
-	public function requiresPermission(): ?string {
-		return null;
-	}//end requiresPermission()
-
-	/**
-	 * The leaf needs no credentials of its own.
-	 *
-	 * @return array<string, mixed> The requirements.
-	 */
-	public function authRequirements(): array {
-		return [];
-	}//end authRequirements()
 
 	/**
 	 * The one layout that applies to this host object, or nothing.

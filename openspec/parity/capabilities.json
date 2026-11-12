@@ -1515,7 +1515,10 @@
 			},
 			"screen": {
 				"canvas": "QAAxpcsFKBCvDUGbQbwtCa",
-				"board": "BqBuildiqInstellen"
+				"board": [
+					"BqNieuweAppControleren",
+					"BqApp"
+				]
 			}
 		},
 		{
@@ -2774,8 +2777,10 @@
 			"evidence": {},
 			"screen": {
 				"board": [
-					"BqPaginaOntwerper"
-				]
+					"BqPaginaOntwerper",
+					"BqNextcloudDashboard"
+				],
+				"canvas": "design-system"
 			},
 			"note": "Row added 12 Nov 2026 in the closing round (decision 395): the open change publish-widgets-to-nc-dashboard covered no row."
 		},
@@ -2965,7 +2970,8 @@
 				"canvas": "QAAxpcsFKBCvDUGbQbwtCa",
 				"board": [
 					"BqPaginaOntwerper",
-					"BqPaginaToevoegen"
+					"BqPaginaToevoegen",
+					"BqAppKaartpagina"
 				]
 			}
 		},
@@ -3199,7 +3205,8 @@
 				"canvas": "QAAxpcsFKBCvDUGbQbwtCa",
 				"board": [
 					"BqPaginaOntwerper",
-					"BqPaginaToevoegen"
+					"BqPaginaToevoegen",
+					"BqAppInstellingenpagina"
 				]
 			}
 		},
@@ -9779,7 +9786,10 @@
 			},
 			"screen": {
 				"canvas": "QAAxpcsFKBCvDUGbQbwtCa",
-				"board": "BqAutomatiseringBewerken"
+				"board": [
+					"BqAutomatiseringBewerken",
+					"BqGoedkeuringVoorOpslaan"
+				]
 			}
 		},
 		{

@@ -66,6 +66,68 @@ function failureBucket(status) {
 }
 
 /**
+ * Count one request: the request, its failure bucket (if any) and its
+ * duration bucket.
+ *
+ * @param {object} counts The page's counts (mutated).
+ * @param {object} report A diagnostics report of kind `request`.
+ * @return {void}
+ */
+function countRequestOutcome(counts, report) {
+	const status = Number(report.status) || 0
+	counts.requests += 1
+	const failure = failureBucket(status)
+	if (failure !== null) {
+		counts[failure] += 1
+	}
+	counts[durationBucket(Number(report.durationMs) || 0)] += 1
+}
+
+/**
+ * Whether a request belongs to the load of the page view in progress: same
+ * page, load not counted yet, within the load window.
+ *
+ * @param {?object} view The page view in progress.
+ * @param {{pageId: string, at: number}} request The request's page and time.
+ * @return {boolean}
+ */
+function isPartOfLoad(view, request) {
+	return Boolean(
+		view
+			&& !view.counted
+			&& view.pageId === request.pageId
+			&& request.at - view.start <= LOAD_WINDOW_MS,
+	)
+}
+
+/**
+ * The page a report is about: its own page, else the page in view.
+ *
+ * @param {object} report A diagnostics report.
+ * @param {?object} view The page view in progress.
+ * @return {string|undefined}
+ */
+function reportPageId(report, view) {
+	return report.pageId || view?.pageId
+}
+
+/**
+ * Whether a report is a client error: a render error or an unknown component.
+ *
+ * @param {object} report A diagnostics report.
+ * @return {boolean}
+ */
+function isClientError(report) {
+	return report.kind === 'render-error' || report.kind === 'unknown-component'
+}
+
+/**
+ *
+ * @param root0
+ * @param root0.post
+ * @param root0.now
+ */
+/**
  * Create a reporter.
  *
  * @param {object} options Options.
@@ -101,21 +163,9 @@ export function createHealthReporter({ post, now = () => Date.now() }) {
 	}
 
 	const countRequest = (report, pageId) => {
-		const counts = countsOf(pageId)
-		const status = Number(report.status) || 0
-		counts.requests += 1
-		const failure = failureBucket(status)
-		if (failure !== null) {
-			counts[failure] += 1
-		}
-		counts[durationBucket(Number(report.durationMs) || 0)] += 1
+		countRequestOutcome(countsOf(pageId), report)
 		const at = now()
-		if (
-			view
-			&& !view.counted
-			&& view.pageId === pageId
-			&& at - view.start <= LOAD_WINDOW_MS
-		) {
+		if (isPartOfLoad(view, { pageId, at })) {
 			view.loadEnd = at
 		}
 	}
@@ -132,15 +182,12 @@ export function createHealthReporter({ post, now = () => Date.now() }) {
 			if (!report || typeof report !== 'object') {
 				return
 			}
-			const pageId = report.pageId || view?.pageId
+			const pageId = reportPageId(report, view)
 			if (report.kind === 'request') {
 				countRequest(report, pageId)
 				return
 			}
-			if (
-				report.kind === 'render-error'
-				|| report.kind === 'unknown-component'
-			) {
+			if (isClientError(report)) {
 				countsOf(pageId).clientErrors += 1
 			}
 		},

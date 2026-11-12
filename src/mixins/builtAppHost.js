@@ -50,6 +50,17 @@ function builtAppsIn(data) {
 	return Array.isArray(data) ? data : []
 }
 
+/**
+ * The id a record carries in its `@self` block.
+ *
+ * @param {?object} record An OpenRegister record.
+ * @return {string|undefined}
+ */
+function selfIdOf(record) {
+	const self = record && record['@self']
+	return self && self.id
+}
+
 export default {
 	computed: {
 		/**
@@ -58,9 +69,8 @@ export default {
 		 * @return {string}
 		 */
 		applicationUuid() {
-			const self = this.application && this.application['@self']
 			return (
-				(self && self.id)
+				selfIdOf(this.application)
 				|| (this.application && this.application.uuid)
 				|| ''
 			)

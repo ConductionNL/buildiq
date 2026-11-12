@@ -57,20 +57,41 @@ export function getCurrentUserGroups() {
 export function getCurrentUid() {
 	try {
 		if (typeof window !== 'undefined' && window.OC) {
-			if (typeof window.OC.getCurrentUser === 'function') {
-				const u = window.OC.getCurrentUser()
-				if (u && u.uid) {
-					return String(u.uid)
-				}
-			}
-			if (window.OC.currentUser) {
-				return String(window.OC.currentUser)
-			}
+			return uidFromOc(window.OC)
 		}
 	} catch (e) {
 		// Defensive: never throw from a pure role derivation.
 	}
 	return ''
+}
+
+/**
+ * The uid the global OC object names: `getCurrentUser().uid`, else
+ * `currentUser`.
+ *
+ * @param {object} oc The global OC object.
+ * @return {string} The uid, or ''.
+ */
+function uidFromOc(oc) {
+	const fromUser = currentUserUid(oc)
+	if (fromUser !== null) {
+		return fromUser
+	}
+	return oc.currentUser ? String(oc.currentUser) : ''
+}
+
+/**
+ * The uid `OC.getCurrentUser()` returns.
+ *
+ * @param {object} oc The global OC object.
+ * @return {?string} The uid, or null when it names none.
+ */
+function currentUserUid(oc) {
+	if (typeof oc.getCurrentUser !== 'function') {
+		return null
+	}
+	const u = oc.getCurrentUser()
+	return u && u.uid ? String(u.uid) : null
 }
 
 /** The permission buckets, strongest first, with the role each grants. */
@@ -120,16 +141,43 @@ export function useRole(application, userGroups) {
 	if (!application || typeof application !== 'object') {
 		return 'none'
 	}
-	const groups = Array.isArray(userGroups) ? userGroups : getCurrentUserGroups()
-	const uid = getCurrentUid()
-	if (groups.length === 0 && uid === '') {
+	const caller = callerOf(userGroups)
+	if (isAnonymous(caller)) {
 		return 'none'
 	}
-	const permissions = application.permissions || {}
-	const holds = principalMatcher({ groups, uid })
-	const role = ROLE_BUCKETS.find(([bucket]) =>
-		holdsAny(permissions[bucket], holds),
-	)
+	return roleIn(application.permissions || {}, principalMatcher(caller))
+}
+
+/**
+ * The caller's groups (the explicit list, else initial state) and uid.
+ *
+ * @param {string[]} [userGroups] Optional explicit group list.
+ * @return {{groups: string[], uid: string}}
+ */
+function callerOf(userGroups) {
+	const groups = Array.isArray(userGroups) ? userGroups : getCurrentUserGroups()
+	return { groups, uid: getCurrentUid() }
+}
+
+/**
+ * Whether the caller has neither a group nor a uid.
+ *
+ * @param {{groups: string[], uid: string}} caller The caller.
+ * @return {boolean}
+ */
+function isAnonymous(caller) {
+	return caller.groups.length === 0 && caller.uid === ''
+}
+
+/**
+ * The strongest role whose bucket names the caller.
+ *
+ * @param {ApplicationPermissions} permissions The Application's permission block.
+ * @param {function(string): boolean} holds Tells whether a principal is the caller.
+ * @return {'owner'|'editor'|'viewer'|'none'}
+ */
+function roleIn(permissions, holds) {
+	const role = ROLE_BUCKETS.find(([bucket]) => holdsAny(permissions[bucket], holds))
 	return role ? role[1] : 'none'
 }
 

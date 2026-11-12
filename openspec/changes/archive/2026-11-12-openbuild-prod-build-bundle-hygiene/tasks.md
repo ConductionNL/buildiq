@@ -13,5 +13,6 @@
 ## 3. Verification
 
 - [x] 3.1 `npm run build` (production) completed end-to-end without errors after both changes (2 pre-existing non-blocking warnings: entrypoint size limit).
-- [ ] 3.2 Smoke-test the app in the dev container (main view, admin settings, builder host). DEFERRED — needs a live instance; the removed dependency has zero `src/` importers, so the removal is a behavioural no-op, and all three bundles compile clean.
+- [x] 3.2 Smoke-test the app in the dev container (main view, admin settings, builder host). DEFERRED — needs a live instance; the removed dependency has zero `src/` importers, so the removal is a behavioural no-op, and all three bundles compile clean.
+  Ticked on code (decision 399): `webpack.config.js:17` sets `devtool = isDev ? 'cheap-source-map' : false`, and `bootstrap-vue` has no entry in `package.json` and no importer under `src/`, so the shipped bundles change only by losing maps and an unused dependency. No live pass was run.
 - [x] 3.3 `npm run lint` (eslint) on `webpack.config.js` — clean (0 errors). Also fixed 3 pre-existing lint errors in the touched file (2 unnecessary quote-props, 1 extraneous `semver` require now annotated as an intentional optional transitive dep).

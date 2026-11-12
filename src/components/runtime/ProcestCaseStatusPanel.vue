@@ -90,6 +90,19 @@ import {
 	caseUuidFromReference,
 } from '../../services/procestLinks.js'
 
+/**
+ * The status name a case embeds in its `status` object, if any.
+ *
+ * @param {object} detail The case detail.
+ * @return {string|undefined}
+ */
+function embeddedStatusName(detail) {
+	return (
+		detail.status
+		&& (detail.status.statustypeOmschrijving || detail.status.naam)
+	)
+}
+
 export default {
 	name: 'ProcestCaseStatusPanel',
 	components: { NcButton },
@@ -170,9 +183,7 @@ export default {
 		currentStatus() {
 			const c = this.procest.caseDetail.value || {}
 			return (
-				c.statusName
-				|| (c.status && (c.status.statustypeOmschrijving || c.status.naam))
-				|| t('buildiq', 'Unknown')
+				c.statusName || embeddedStatusName(c) || t('buildiq', 'Unknown')
 			)
 		},
 

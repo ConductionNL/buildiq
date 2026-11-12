@@ -163,6 +163,23 @@ export class SlugCollisionError extends Error {
 }
 
 /**
+ * The collision message of a capture attempt: the colliding source slugs
+ * when `capture` throws a SlugCollisionError, '' otherwise.
+ *
+ * @param {function(): object} capture - runs the capture.
+ * @return {string} the comma-separated source slugs, or ''.
+ * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+ */
+export function slugCollisionMessage(capture) {
+	try {
+		capture()
+		return ''
+	} catch (e) {
+		return e instanceof SlugCollisionError ? e.sourceSlugs.join(', ') : ''
+	}
+}
+
+/**
  * The source-slug to canonical-slug rewrite map of an app's schemas, and one
  * summary entry per schema.
  *

@@ -126,9 +126,12 @@ import {
 	BLOCK_CATEGORIES,
 	captureBlock,
 	isSectionFragment,
-	SlugCollisionError,
 } from '../services/blockCapture.js'
-import { suggestSlug } from '../services/templateCapture.js'
+import {
+	slugCollisionMessage,
+	suggestSlug,
+} from '../services/templateCapture.js'
+import { requestErrorMessage } from '../utils/requestErrorMessage.js'
 
 const OR_BLOCKS = '/apps/openregister/api/objects/buildiq/component-block'
 
@@ -406,20 +409,13 @@ export default {
 				this.collisionError = ''
 				return
 			}
-			try {
+			this.collisionError = slugCollisionMessage(() =>
 				captureBlock(this.fragment, this.appSlug, {
 					slug: this.form.slug,
 					name: this.form.name,
 					category: this.form.category,
-				})
-				this.collisionError = ''
-			} catch (e) {
-				if (e instanceof SlugCollisionError) {
-					this.collisionError = e.sourceSlugs.join(', ')
-				} else {
-					this.collisionError = ''
-				}
-			}
+				}),
+			)
 		},
 
 		/**
@@ -452,12 +448,10 @@ export default {
 				this.$emit('saved', { slug: this.capture.record.slug })
 				this.$emit('update:open', false)
 			} catch (e) {
-				const data = e?.response?.data
-				this.saveError =
-					data?.detail
-					|| data?.error
-					|| e?.message
-					|| t('buildiq', 'Saving the block failed.')
+				this.saveError = requestErrorMessage(
+					e,
+					t('buildiq', 'Saving the block failed.'),
+				)
 			} finally {
 				this.saving = false
 			}

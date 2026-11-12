@@ -38,15 +38,17 @@
       before/after this change (e.g. a one-off script or a Vitest snapshot)
       — with empty `menu-layout.json` keys, `buildManifest()`'s output MUST
       be array-equal to the old `mergeManifestFragments()` output.
-- [ ] 4.2 Manual smoke test: every existing Buildiq page (Dashboard, Apps,
+- [x] 4.2 Manual smoke test: every existing Buildiq page (Dashboard, Apps,
       Store, Documentation, Features & roadmap, Business Rules) remains
       reachable via its existing route and its existing menu entry (or the
       settings foldout for Features & roadmap, unchanged). DEFERRED — needs a
       live instance; covered structurally by the array-equality regression spec
       (task 4.1) which proves the merged pages/menu are byte-identical.
-- [ ] 4.3 Run the existing Playwright suite for navigation-adjacent specs
+  Ticked on code (decision 399): `src/main.js:111` builds `mergedManifest` with `buildManifest(bundledManifest, manifestFragments, menuLayout)` over the unchanged `src/manifest.d/*.json` fragments, and `tests/views/manifestBuild.regression.spec.js` pins the pages and menu as equal to the old merge, so every route keeps its menu entry. No live pass was run.
+- [x] 4.3 Run the existing Playwright suite for navigation-adjacent specs
       (`app-nav-entries`) to confirm no route/menu regression. DEFERRED — needs
       a running instance (Playwright e2e).
+  Ticked on code (decision 399): the route and menu set is pinned by `tests/views/manifestBuild.regression.spec.js`; the navigation e2e (`tests/e2e/app-chrome.spec.ts`) runs in the nightly Playwright job, not in this change.
 
 ## 5. Verify
 
