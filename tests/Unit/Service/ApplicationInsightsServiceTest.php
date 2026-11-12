@@ -50,6 +50,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use RuntimeException;
 
 /**
  * Tests for ApplicationInsightsService.
@@ -654,4 +655,106 @@ class ApplicationInsightsServiceTest extends TestCase {
 			$method->invoke($service, $permissions, $this->mockUser('mallory'), ['owners', 'editors'])
 		);
 	}//end testCallerInAnyRoleDeniesUnmatchedCaller()
+
+	/**
+	 * The whole payload and every cache call, for a computed version, a
+	 * cached one, a refused caller while the cache is warm, a hybrid app, a
+	 * failing read and a failing cache, compared with the recorded
+	 * fixture. Set GOLDEN_RECORD=1 to write a missing fixture.
+	 *
+	 * @return void
+	 */
+	public function testInsightsPayloadGolden(): void {
+		$fixture = __DIR__ . '/fixtures/application-insights-payload.golden.json';
+		$cases = [];
+		foreach (['computed', 'cached', 'refused-with-cache', 'hybrid', 'failing', 'cache-down'] as $shape) {
+			$cases[] = $this->insightsCase(shape: $shape);
+		}
+
+		$actual = json_encode($cases, (JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)) . "\n";
+		if (file_exists($fixture) === false && getenv('GOLDEN_RECORD') === '1') {
+			file_put_contents($fixture, $actual);
+		}
+
+		self::assertFileExists($fixture);
+		self::assertSame(file_get_contents($fixture), $actual);
+	}//end testInsightsPayloadGolden()
+
+	/**
+	 * Compute one golden case and record the payload and the cache traffic.
+	 *
+	 * @param string $shape Which case: computed, cached, refused-with-cache, hybrid, failing or cache-down.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function insightsCase(string $shape): array {
+		$this->setUp();
+		$trace = [];
+		$cache = $this->createMock(ICache::class);
+		$cache->method('get')->willReturnCallback(
+			static function (string $key) use (&$trace, $shape) {
+				$trace[] = 'get ' . $key;
+				if ($shape === 'cached' || $shape === 'refused-with-cache') {
+					return ['kpis' => ['from' => 'cache']];
+				}
+
+				if ($shape === 'cache-down') {
+					throw new RuntimeException('cache down');
+				}
+
+				return null;
+			}
+		);
+		$cache->method('set')->willReturnCallback(
+			static function (string $key, $value, int $ttl = 0) use (&$trace): bool {
+				$trace[] = 'set ' . $key . ' ' . $ttl;
+				return true;
+			}
+		);
+		$cacheFactory = $this->createMock(ICacheFactory::class);
+		$cacheFactory->method('createDistributed')->willReturn($cache);
+		$this->logger->method('error')->willReturnCallback(
+			static function (string $message, array $context = []) use (&$trace): void {
+				$trace[] = 'error ' . $message . ' ' . ($context['message'] ?? '');
+			}
+		);
+		$service = new ApplicationInsightsService(
+			store: new RegisterStore(objectService: $this->objectService, registerMapper: $this->registerMapper, schemaMapper: $this->schemaMapper),
+			auditTrailMapper: $this->auditTrailMapper,
+			cacheFactory: $cacheFactory,
+			logger: $this->logger,
+		);
+
+		if ($shape === 'failing') {
+			$this->objectService->method('find')->willThrowException(new RuntimeException('register offline'));
+		} else if ($shape === 'hybrid') {
+			$this->objectService->method('find')->willReturnOnConsecutiveCalls(
+				$this->mockEntity(['uuid' => 'app-uuid', 'slug' => 'pipelinq', 'appType' => 'hybrid', 'productionVersion' => 'prod-uuid']),
+				$this->mockEntity(['uuid' => 'prod-uuid', 'slug' => 'production', 'application' => 'app-uuid', 'manifest' => []])
+			);
+			$this->registerMapper->method('findAll')->willReturn([]);
+		} else {
+			$this->wireVersion(manifest: ['pages' => []], register: '');
+			$register = new Register();
+			$register->setSchemas([21, 22]);
+			$this->registerMapper->method('find')->willReturn($register);
+			$this->schemaMapper->method('find')->willReturnCallback(
+				static fn (string|int $ref): Schema => self::schema(id: (int)$ref, slug: 'hello-world-production-s' . $ref)
+			);
+			$this->countPerRegister(counts: ['openbuild-hello-world-production#21' => 2, 'openbuild-hello-world-production#22' => 5]);
+		}
+
+		$this->auditTrailMapper->method('getActionChartData')->willReturn(
+			['labels' => ['2026-11-10', '2026-11-09', ''], 'series' => [['name' => 'create', 'data' => [3, 4, 9]], 'junk', ['data' => [1]]]]
+		);
+
+		$uid = 'alice';
+		if ($shape === 'refused-with-cache') {
+			$uid = 'mallory';
+		}
+
+		$payload = $service->computeInsights(appUuid: 'app-uuid', versionUuid: 'prod-uuid', window: '30d', caller: $this->mockUser(uid: $uid));
+
+		return ['shape' => $shape, 'payload' => $payload, 'trace' => $trace];
+	}//end insightsCase()
 }//end class
