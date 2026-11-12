@@ -313,6 +313,7 @@ import ChevronUpIcon from 'vue-material-design-icons/ChevronUp.vue'
 import DeleteIcon from 'vue-material-design-icons/Delete.vue'
 import PlusIcon from 'vue-material-design-icons/Plus.vue'
 import DeleteFieldDialog from '../../modals/DeleteFieldDialog.vue'
+import { relationPickerMixin } from '../../mixins/relationPicker.js'
 
 const FIELD_NAME_PATTERN = /^[a-zA-Z][a-zA-Z0-9_-]*$/
 
@@ -326,7 +327,6 @@ const SUPPORTED_TYPES = [
 	'relation',
 ]
 const ITEMS_TYPES = ['string', 'number', 'integer', 'boolean', 'object']
-const CARDINALITIES = ['one', 'many']
 
 let keyCounter = 0
 /**
@@ -351,9 +351,10 @@ export default {
 		PlusIcon,
 	},
 
+	mixins: [relationPickerMixin],
+
 	props: {
 		fields: { type: Array, default: () => [] },
-		schemaSlugs: { type: Array, default: () => [] },
 	},
 
 	emits: ['update:fields'],
@@ -391,32 +392,6 @@ export default {
 				label: this.t('buildiq', value),
 			}))
 		},
-
-		/**
-		 * Build relation target-schema picker options.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
-		 * @return {Array} Option objects.
-		 */
-		schemaOptions() {
-			return this.schemaSlugs.map((slug) => ({ value: slug, label: slug }))
-		},
-
-		/**
-		 * Build cardinality picker options (one/many).
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
-		 * @return {Array} Option objects.
-		 */
-		cardinalityOptions() {
-			return CARDINALITIES.map((value) => ({
-				value,
-				label:
-					value === 'one'
-						? this.t('buildiq', 'One')
-						: this.t('buildiq', 'Many'),
-			}))
-		},
 	},
 
 	methods: {
@@ -430,31 +405,6 @@ export default {
 		typeOption(type) {
 			return (
 				this.typeOptions.find((o) => o.value === type) || this.typeOptions[0]
-			)
-		},
-
-		/**
-		 * Resolve the selected target-schema option.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
-		 * @param {string} value Schema slug.
-		 * @return {object|null} Matching option.
-		 */
-		schemaOption(value) {
-			return this.schemaOptions.find((o) => o.value === value) || null
-		},
-
-		/**
-		 * Resolve the selected cardinality option.
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
-		 * @param {string} value Cardinality.
-		 * @return {object} Matching option.
-		 */
-		cardinalityOption(value) {
-			return (
-				this.cardinalityOptions.find((o) => o.value === value)
-				|| this.cardinalityOptions[0]
 			)
 		},
 
