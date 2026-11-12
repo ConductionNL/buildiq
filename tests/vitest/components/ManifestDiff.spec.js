@@ -35,6 +35,7 @@ vi.mock('@nextcloud/router', () => ({
 	generateUrl: (path) => path,
 }))
 
+import axios from '@nextcloud/axios'
 import ManifestDiff from '../../../src/components/ManifestDiff.vue'
 
 describe('ManifestDiff — design.md Decision 5 (client-side jsdiff)', () => {
@@ -147,5 +148,57 @@ describe('ManifestDiff — design.md Decision 5 (client-side jsdiff)', () => {
 			'Nothing to diff',
 		)
 		expect(wrapper.text()).not.toContain('publish the app first')
+	})
+	describe('fetch branches', () => {
+		it.each([
+			[{ fromManifest: { a: 1 }, slug: 's', to: 't' }],
+			[{ slug: '', to: 't' }],
+			[{ slug: 's', to: '' }],
+		])('does not fetch for %j', async (props) => {
+			axios.get.mockClear()
+			const wrapper = mount(ManifestDiff, { props })
+			await flushPromises()
+			await wrapper.vm.fetch()
+			expect(axios.get).not.toHaveBeenCalled()
+		})
+
+		it('fetches both sides of the diff', async () => {
+			axios.get.mockClear()
+			axios.get.mockResolvedValue({ data: { from: { v: 1 }, to: { v: 2 } } })
+			const wrapper = mount(ManifestDiff, { props: { slug: 'shop', from: 'dev', to: 'prod' } })
+			await flushPromises()
+			expect(axios.get).toHaveBeenCalledWith(
+				'/apps/buildiq/api/applications/shop/versions/diff',
+				{ params: { from: 'dev', to: 'prod' } },
+			)
+			expect(wrapper.vm.fromBlob).toEqual({ v: 1 })
+			expect(wrapper.vm.toBlob).toEqual({ v: 2 })
+			expect(wrapper.vm.loading).toBe(false)
+			expect(wrapper.vm.error).toBe('')
+		})
+
+		it.each([[{ from: { v: 1 } }], [{}], [null]])('keeps a missing side as null (%j)', async (data) => {
+			axios.get.mockResolvedValue({ data })
+			const wrapper = mount(ManifestDiff, { props: { slug: 'shop', to: 'prod' } })
+			await flushPromises()
+			expect(wrapper.vm.toBlob).toBeNull()
+			expect(wrapper.vm.fromBlob).toEqual(data && data.from ? data.from : null)
+		})
+
+		it.each([
+			[new Error('down'), 'Diff failed: down'],
+			['raw', 'Diff failed: raw'],
+		])('reports a failed fetch %j', async (err, message) => {
+			axios.get.mockRejectedValue(err)
+			const wrapper = mount(ManifestDiff, { props: { slug: 'shop', to: 'prod' } })
+			await flushPromises()
+			expect(wrapper.vm.fromBlob).toBeNull()
+			expect(wrapper.vm.toBlob).toBeNull()
+			expect(wrapper.vm.error).toBe(message)
+			expect(wrapper.vm.loading).toBe(false)
+			axios.get.mockImplementation(() =>
+				Promise.resolve({ data: { from: null, to: null } }),
+			)
+		})
 	})
 })

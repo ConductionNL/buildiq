@@ -1,0 +1,78 @@
+[
+    {
+        "shape": "computed",
+        "payload": {
+            "kpis": {
+                "activeUsers": 0,
+                "objectCount": 7,
+                "filesCount": 0,
+                "auditEventCount": 34
+            },
+            "activity": [
+                {
+                    "timestamp": "2026-11-09T00:00:00Z",
+                    "eventCount": 8
+                },
+                {
+                    "timestamp": "2026-11-10T00:00:00Z",
+                    "eventCount": 8
+                }
+            ],
+            "schemaCounts": {
+                "21": 2,
+                "hello-world-production-s21": 2,
+                "22": 5,
+                "hello-world-production-s22": 5
+            }
+        },
+        "trace": [
+            "get payload_app-uuid_prod-uuid_30d",
+            "set payload_app-uuid_prod-uuid_30d 600"
+        ]
+    },
+    {
+        "shape": "cached",
+        "payload": {
+            "kpis": {
+                "from": "cache"
+            }
+        },
+        "trace": [
+            "get payload_app-uuid_prod-uuid_30d"
+        ]
+    },
+    {
+        "shape": "refused-with-cache",
+        "payload": null,
+        "trace": []
+    },
+    {
+        "shape": "hybrid",
+        "payload": {
+            "kpis": {
+                "activeUsers": 0,
+                "objectCount": 0,
+                "filesCount": 0,
+                "auditEventCount": 0
+            },
+            "activity": []
+        },
+        "trace": [
+            "get payload_app-uuid_prod-uuid_30d",
+            "set payload_app-uuid_prod-uuid_30d 600"
+        ]
+    },
+    {
+        "shape": "failing",
+        "payload": null,
+        "trace": []
+    },
+    {
+        "shape": "cache-down",
+        "payload": null,
+        "trace": [
+            "get payload_app-uuid_prod-uuid_30d",
+            "error Buildiq: ApplicationInsightsService::computeInsights failed: {message} cache down"
+        ]
+    }
+]

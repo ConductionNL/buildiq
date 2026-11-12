@@ -104,6 +104,69 @@ import { showError } from '@nextcloud/dialogs'
 import { generateUrl } from '@nextcloud/router'
 import HistoryIcon from 'vue-material-design-icons/History.vue'
 
+/** Accepted spellings per audit field, in order of preference. */
+const AUDIT_FIELD_SPELLINGS = {
+	id: ['id', 'uuid'],
+	actor: ['actor', 'userId', 'user'],
+	timestamp: ['timestamp', 'createdAt', 'created'],
+	event: ['event', 'action'],
+}
+
+/**
+ * The value of the first spelling of `field` that the row carries (neither
+ * null nor undefined), or undefined when it carries none.
+ *
+ * @param {object} row An audit row.
+ * @param {string} field A key of AUDIT_FIELD_SPELLINGS.
+ * @return {string|undefined}
+ */
+function auditField(row, field) {
+	const key = AUDIT_FIELD_SPELLINGS[field].find((k) => row[k] !== null && row[k] !== undefined)
+	return key === undefined ? undefined : row[key]
+}
+
+/**
+ * One side (`before` / `after`) of an audit row's change, from `changes`
+ * first and the flat field second.
+ *
+ * @param {object} row An audit row.
+ * @param {string} side 'before' or 'after'.
+ * @return {object|null}
+ */
+function auditSide(row, side) {
+	return row.changes?.[side] ?? row[side] ?? null
+}
+
+/**
+ * Collapse one audit row to the canonical table shape, with a positional
+ * fallback id for rows carrying neither `id` nor `uuid`.
+ *
+ * @param {object} row An audit row.
+ * @param {number} idx The row's position in the list.
+ * @return {{id: string, actor: string, timestamp: string, event: string, before: object|null, after: object|null}}
+ */
+function shapeAuditRow(row, idx) {
+	return {
+		id: auditField(row, 'id') ?? `idx-${idx}`,
+		actor: auditField(row, 'actor') ?? '',
+		timestamp: auditField(row, 'timestamp') ?? '',
+		event: auditField(row, 'event') ?? 'permissions.changed',
+		before: auditSide(row, 'before'),
+		after: auditSide(row, 'after'),
+	}
+}
+
+/**
+ * The audit rows of a response, from either envelope (`data.data` or a bare
+ * `data` list).
+ *
+ * @param {object} res The axios response.
+ * @return {Array<object>}
+ */
+function auditRowsOf(res) {
+	return res.data?.data ?? res.data ?? []
+}
+
 /**
  * PermissionHistoryModal — owner-only read view of permission changes
  * on a single Application, sourced from OR's audit trail.
@@ -164,33 +227,47 @@ export default {
 		async load() {
 			this.loading = true
 			try {
-				// OR audit endpoint — per-object audit trail filtered by
-				// register + schema + uuid. The endpoint is paginated; the
-				// owner-only panel intentionally fetches only the first
-				// page (most recent ~50 events) — older history can be
-				// inspected via OR's admin UI.
-				const url = generateUrl(
-					`/apps/openregister/api/objects/buildiq/built-app/${this.applicationUuid}/audit`,
-				)
-				const res = await axios.get(url, {
-					params: {
-						filter: 'permissions,rbac.admin_bypass',
-						limit: 50,
-					},
-				})
-				const list = res.data?.data ?? res.data ?? []
-				this.entries = this.shape(list)
+				this.entries = this.shape(auditRowsOf(await this.readAuditTrail()))
 			} catch (e) {
-				const status = e?.response?.status
-				if (status === 403 || status === 401) {
-					// Endpoint correctly rejected the caller. Render empty
-					// state; the modal would not be visible to non-owners.
-					this.entries = []
-				} else {
-					showError(this.t('buildiq', 'Failed to load permission history'))
-				}
+				this.onLoadFailure(e)
 			} finally {
 				this.loading = false
+			}
+		},
+
+		/**
+		 * OR audit endpoint — per-object audit trail filtered by register +
+		 * schema + uuid. The endpoint is paginated; the owner-only panel
+		 * intentionally fetches only the first page (most recent ~50 events) —
+		 * older history can be inspected via OR's admin UI.
+		 *
+		 * @return {Promise<object>} The axios response.
+		 */
+		readAuditTrail() {
+			const url = generateUrl(
+				`/apps/openregister/api/objects/buildiq/built-app/${this.applicationUuid}/audit`,
+			)
+			return axios.get(url, {
+				params: {
+					filter: 'permissions,rbac.admin_bypass',
+					limit: 50,
+				},
+			})
+		},
+
+		/**
+		 * A refused read renders the empty state; any other failure is shown.
+		 *
+		 * @param {Error} e The failed read.
+		 */
+		onLoadFailure(e) {
+			const status = e?.response?.status
+			if (status === 403 || status === 401) {
+				// Endpoint correctly rejected the caller. Render empty
+				// state; the modal would not be visible to non-owners.
+				this.entries = []
+			} else {
+				showError(this.t('buildiq', 'Failed to load permission history'))
 			}
 		},
 
@@ -212,14 +289,7 @@ export default {
 		 *   before: object|null, after: object|null}>} Normalised rows for the table.
 		 */
 		shape(rawList) {
-			return rawList.map((row, idx) => ({
-				id: row.id ?? row.uuid ?? `idx-${idx}`,
-				actor: row.actor ?? row.userId ?? row.user ?? '',
-				timestamp: row.timestamp ?? row.createdAt ?? row.created ?? '',
-				event: row.event ?? row.action ?? 'permissions.changed',
-				before: row.changes?.before ?? row.before ?? null,
-				after: row.changes?.after ?? row.after ?? null,
-			}))
+			return rawList.map(shapeAuditRow)
 		},
 
 		/**

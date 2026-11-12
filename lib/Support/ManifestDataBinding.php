@@ -151,11 +151,26 @@ final class ManifestDataBinding {
 	 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generated-pages-keep-the-database-register-req-bqdb-004
 	 */
 	public static function bindBlock(array $config, string $appSlug, string $versionSlug, array $dataRegisters = []): array {
-		if ($appSlug === '' || $versionSlug === '') {
+		return self::bindBlockTo(
+			config: $config,
+			binding: new VersionBinding(appSlug: $appSlug, versionSlug: $versionSlug, dataRegisters: $dataRegisters)
+		);
+	}//end bindBlock()
+
+	/**
+	 * Bind one whole config block to a version (see {@see bindBlock()}).
+	 *
+	 * @param array<string, mixed> $config  The config block as the step carries it.
+	 * @param VersionBinding       $binding The version and the data registers it binds.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function bindBlockTo(array $config, VersionBinding $binding): array {
+		if ($binding->isComplete() === false) {
 			return $config;
 		}
 
-		$bound = self::bind(node: $config, appSlug: $appSlug, versionSlug: $versionSlug, dataRegisters: $dataRegisters);
+		$bound = self::bind(node: $config, binding: $binding);
 		if (is_array($bound) === false) {
 			return $config;
 		}
@@ -163,11 +178,11 @@ final class ManifestDataBinding {
 		if (self::namesValue(block: $bound, key: 'schema') === true
 			&& self::namesValue(block: $bound, key: 'register') === false
 		) {
-			$bound['register'] = self::registerSlug(appSlug: $appSlug, versionSlug: $versionSlug);
+			$bound['register'] = self::registerSlug(appSlug: $binding->appSlug, versionSlug: $binding->versionSlug);
 		}
 
 		return $bound;
-	}//end bindBlock()
+	}//end bindBlockTo()
 
 	/**
 	 * Whether a config block names a non-empty string under one key.
@@ -190,60 +205,63 @@ final class ManifestDataBinding {
 	 * widget's `content.{register, schema}` are both reached. A level whose
 	 * register is a bound data register keeps its register and schema.
 	 *
-	 * @param mixed $node The config block, or any part of it.
-	 * @param string $appSlug The application slug the step targets.
-	 * @param string $versionSlug The version slug the step targets.
-	 * @param array<int, string> $dataRegisters Register slugs the Application binds in `dataRegisters`.
+	 * @param mixed          $node    The config block, or any part of it.
+	 * @param VersionBinding $binding The version and the data registers it binds.
 	 *
 	 * @return mixed The block with its bindings pointed at this version's data.
 	 *
 	 * @spec openspec/specs/ai-copilot/spec.md
 	 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generated-pages-keep-the-database-register-req-bqdb-004
 	 */
-	public static function bind(mixed $node, string $appSlug, string $versionSlug, array $dataRegisters = []): mixed {
-		if (is_array($node) === false || $appSlug === '' || $versionSlug === '') {
+	public static function bind(mixed $node, VersionBinding $binding): mixed {
+		if (is_array($node) === false || $binding->isComplete() === false) {
 			return $node;
 		}
 
-		$onDataRegister = self::isOnDataRegister(block: $node, dataRegisters: $dataRegisters);
+		$onDataRegister = self::isOnDataRegister(block: $node, dataRegisters: $binding->dataRegisters);
 		foreach ($node as $key => $value) {
-			if ($onDataRegister === true && ($key === 'register' || $key === 'schema')) {
+			if (self::keepsEntry(onDataRegister: $onDataRegister, key: $key) === true) {
 				continue;
 			}
 
-			$node[$key] = self::bindEntry(
-				key: $key,
-				value: $value,
-				appSlug: $appSlug,
-				versionSlug: $versionSlug,
-				dataRegisters: $dataRegisters
-			);
+			$node[$key] = self::bindEntry(key: $key, value: $value, binding: $binding);
 		}
 
 		return $node;
 	}//end bind()
 
 	/**
+	 * Whether an entry stays as written: the `register` and `schema` of a level
+	 * that sits on a bound data register.
+	 *
+	 * @param bool       $onDataRegister Whether the level's register is a bound data register.
+	 * @param int|string $key            The entry's key.
+	 *
+	 * @return bool
+	 */
+	private static function keepsEntry(bool $onDataRegister, int|string $key): bool {
+		return ($onDataRegister === true && ($key === 'register' || $key === 'schema'));
+	}//end keepsEntry()
+
+	/**
 	 * Bind one entry of a block: its `register`, its `schema`, or a nested level.
 	 *
-	 * @param int|string $key The entry's key.
-	 * @param mixed $value The entry's value.
-	 * @param string $appSlug The application slug.
-	 * @param string $versionSlug The version slug.
-	 * @param array<int, string> $dataRegisters Register slugs the Application binds in `dataRegisters`.
+	 * @param int|string     $key     The entry's key.
+	 * @param mixed          $value   The entry's value.
+	 * @param VersionBinding $binding The version and the data registers it binds.
 	 *
 	 * @return mixed
 	 */
-	private static function bindEntry(int|string $key, mixed $value, string $appSlug, string $versionSlug, array $dataRegisters): mixed {
+	private static function bindEntry(int|string $key, mixed $value, VersionBinding $binding): mixed {
 		if ($key === 'register') {
-			return self::bindRegister(value: $value, appSlug: $appSlug, versionSlug: $versionSlug);
+			return self::bindRegister(value: $value, binding: $binding);
 		}
 
 		if ($key === 'schema') {
-			return self::bindSchema(value: $value, appSlug: $appSlug, versionSlug: $versionSlug);
+			return self::bindSchema(value: $value, binding: $binding);
 		}
 
-		return self::bind(node: $value, appSlug: $appSlug, versionSlug: $versionSlug, dataRegisters: $dataRegisters);
+		return self::bind(node: $value, binding: $binding);
 	}//end bindEntry()
 
 	/**
@@ -266,19 +284,18 @@ final class ManifestDataBinding {
 	/**
 	 * Point one `register` value at this version's own register.
 	 *
-	 * @param mixed $value The value as written.
-	 * @param string $appSlug The application slug.
-	 * @param string $versionSlug The version slug.
+	 * @param mixed          $value   The value as written.
+	 * @param VersionBinding $binding The version to bind to.
 	 *
 	 * @return mixed
 	 */
-	private static function bindRegister(mixed $value, string $appSlug, string $versionSlug): mixed {
+	private static function bindRegister(mixed $value, VersionBinding $binding): mixed {
 		if (is_string($value) === false || trim($value) === '') {
 			return $value;
 		}
 
 		$slug = trim($value);
-		$target = self::registerSlug(appSlug: $appSlug, versionSlug: $versionSlug);
+		$target = self::registerSlug(appSlug: $binding->appSlug, versionSlug: $binding->versionSlug);
 		if ($slug === self::REGISTER_TOKEN) {
 			return $target;
 		}
@@ -297,19 +314,18 @@ final class ManifestDataBinding {
 	 * A numeric value is an OpenRegister schema id, which is already
 	 * unambiguous, so it is left as it is.
 	 *
-	 * @param mixed $value The value as written.
-	 * @param string $appSlug The application slug.
-	 * @param string $versionSlug The version slug.
+	 * @param mixed          $value   The value as written.
+	 * @param VersionBinding $binding The version to bind to.
 	 *
 	 * @return mixed
 	 */
-	private static function bindSchema(mixed $value, string $appSlug, string $versionSlug): mixed {
+	private static function bindSchema(mixed $value, VersionBinding $binding): mixed {
 		if (is_string($value) === false || trim($value) === '' || is_numeric($value) === true) {
 			return $value;
 		}
 
 		$slug = trim($value);
-		$prefix = self::schemaPrefix(appSlug: $appSlug, versionSlug: $versionSlug);
+		$prefix = self::schemaPrefix(appSlug: $binding->appSlug, versionSlug: $binding->versionSlug);
 		if (str_starts_with($slug, $prefix) === true) {
 			return $slug;
 		}

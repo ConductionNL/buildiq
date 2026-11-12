@@ -63,14 +63,88 @@ export function renderFilename(template, object) {
  * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-003
  */
 export function resolveDataRef(object, attachment) {
-	const self = (object && object['@self']) || {}
-	const register = self.register ?? object.register
-	const schema = self.schema ?? object.schema ?? (attachment && attachment.schema)
-	const id = self.id || object.uuid || object.id
-	if (register === undefined || register === null || !schema || !id) {
+	const self = selfOf(object)
+	const register = recordRegister(self, object)
+	const schema = recordSchema(self, object) ?? attachmentSchema(attachment)
+	const id = recordId(self, object)
+	if (isNullish(register) || !schema || !id) {
 		return null
 	}
 	return { register, schema, id }
+}
+
+/**
+ * The object's `@self` envelope, or an empty one.
+ *
+ * @param {object} object - the OR object.
+ * @return {object}
+ */
+function selfOf(object) {
+	return (object && object['@self']) || {}
+}
+
+/**
+ * The register the object names, from `@self` first, then the top level.
+ *
+ * @param {object} self - the object's `@self` envelope.
+ * @param {object} object - the OR object.
+ * @return {(string|number|undefined|null)}
+ */
+function recordRegister(self, object) {
+	return self.register ?? object.register
+}
+
+/**
+ * The schema the object names, from `@self` first, then the top level.
+ *
+ * @param {object} self - the object's `@self` envelope.
+ * @param {object} object - the OR object.
+ * @return {(string|number|undefined|null)}
+ */
+function recordSchema(self, object) {
+	return self.schema ?? object.schema
+}
+
+/**
+ * The schema the attachment declares, if any.
+ *
+ * @param {?object} attachment - the `runtime.documents[]` entry.
+ * @return {(string|number|undefined|null)}
+ */
+function attachmentSchema(attachment) {
+	return attachment && attachment.schema
+}
+
+/**
+ * The object's id: the `@self` id, else its uuid, else its id.
+ *
+ * @param {object} self - the object's `@self` envelope.
+ * @param {object} object - the OR object.
+ * @return {(string|undefined)}
+ */
+function recordId(self, object) {
+	return self.id || object.uuid || object.id
+}
+
+/**
+ * Whether a value is undefined or null.
+ *
+ * @param {unknown} value - any value.
+ * @return {boolean}
+ */
+function isNullish(value) {
+	return value === undefined || value === null
+}
+
+/**
+ * The typed error code for a failed generate request.
+ *
+ * @param {unknown} e - the rejection.
+ * @return {string} - `no-access` for a 403, `generate-failed` otherwise.
+ */
+function generateErrorCode(e) {
+	const status = e && e.response && e.response.status
+	return status === 403 ? 'no-access' : 'generate-failed'
 }
 
 /**
@@ -143,58 +217,37 @@ export function useDocudeskDocument(opts = {}) {
 			// In-flight guard — double-click yields exactly one request.
 			return null
 		}
-		const dataRef = resolveDataRef(object, attachment)
-		if (!dataRef) {
+		if (!resolveDataRef(object, attachment)) {
 			setError(key, 'generate-failed')
 			return 'generate-failed'
 		}
 		setBusy(key, true)
 		setError(key, null)
-		const format = attachment.format || 'pdf'
-		const filename = buildFilename(attachment, object, format)
-		const body = {
-			templateId: attachment.templateId,
-			dataRefs: [dataRef],
-			options: { format },
-			filename,
-		}
+		return postDocument(key, documentRequest(attachment, object))
+	}
+
+	/**
+	 * POST a generate request and deliver the document; record the typed error
+	 * code on failure and always clear the busy flag.
+	 *
+	 * @param {string} key - state key.
+	 * @param {{format: string, filename: string, body: object}} request - the request.
+	 * @return {Promise<?string>} - null on success, error code on failure.
+	 */
+	async function postDocument(key, request) {
 		try {
-			const response = await client.post(generateUrl(GENERATE), body, {
+			const response = await client.post(generateUrl(GENERATE), request.body, {
 				responseType: 'blob',
 			})
-			deliver(response, filename, format, doDownload)
+			deliver(response, request.filename, request.format, doDownload)
 			return null
 		} catch (e) {
-			const status = e && e.response && e.response.status
-			const code = status === 403 ? 'no-access' : 'generate-failed'
+			const code = generateErrorCode(e)
 			setError(key, code)
 			return code
 		} finally {
 			setBusy(key, false)
 		}
-	}
-
-	/**
-	 * Compose the download filename: rendered template, else the default
-	 * `<label>-<objectUuid>.<ext>` (REQ-DDT-001).
-	 *
-	 * @param {object} attachment - the attachment.
-	 * @param {object} object - the OR object.
-	 * @param {string} format - the resolved format.
-	 * @return {string}
-	 */
-	function buildFilename(attachment, object, format) {
-		const rendered = renderFilename(attachment.filenameTemplate, object)
-		if (rendered) {
-			return rendered
-		}
-		const ref2 = resolveDataRef(object, attachment) || {}
-		const ext = FORMAT_EXT[format] || 'pdf'
-		const safeLabel = String(attachment.label || 'document').replace(
-			/[^\w.-]+/g,
-			'-',
-		)
-		return `${safeLabel}-${ref2.id || 'object'}.${ext}`
 	}
 
 	/**
@@ -214,6 +267,49 @@ export function useDocudeskDocument(opts = {}) {
 	}
 
 	return { busyFor, errorFor, generate, renderFilename, resolveDataRef }
+}
+
+/**
+ * The generate request for an attachment against an object: the resolved
+ * format, the download filename and the POST body.
+ *
+ * @param {object} attachment - the `runtime.documents[]` entry.
+ * @param {object} object - the OR object being viewed.
+ * @return {{format: string, filename: string, body: object}}
+ */
+function documentRequest(attachment, object) {
+	const format = attachment.format || 'pdf'
+	const filename = buildFilename(attachment, object, format)
+	const body = {
+		templateId: attachment.templateId,
+		dataRefs: [resolveDataRef(object, attachment)],
+		options: { format },
+		filename,
+	}
+	return { format, filename, body }
+}
+
+/**
+ * Compose the download filename: rendered template, else the default
+ * `<label>-<objectUuid>.<ext>` (REQ-DDT-001).
+ *
+ * @param {object} attachment - the attachment.
+ * @param {object} object - the OR object.
+ * @param {string} format - the resolved format.
+ * @return {string}
+ */
+function buildFilename(attachment, object, format) {
+	const rendered = renderFilename(attachment.filenameTemplate, object)
+	if (rendered) {
+		return rendered
+	}
+	const ref2 = resolveDataRef(object, attachment) || {}
+	const ext = FORMAT_EXT[format] || 'pdf'
+	const safeLabel = String(attachment.label || 'document').replace(
+		/[^\w.-]+/g,
+		'-',
+	)
+	return `${safeLabel}-${ref2.id || 'object'}.${ext}`
 }
 
 /**

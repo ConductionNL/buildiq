@@ -187,9 +187,48 @@ class RuleEngineService {
 		bool $maskPii = true,
 		bool $preview = false,
 	): array {
+		$options = new RuleEvaluationOptions(version: $version, dryRun: ($dryRun === true || $preview === true), maskPii: $maskPii, preview: $preview);
+		return $this->evaluateGuarded(evaluation: new RuleSetEvaluation(ruleSetSlug: $ruleSetSlug, payload: $payload, options: $options));
+
+	}//end evaluate()
+
+	/**
+	 * Evaluate a RuleSet inside the re-entry and depth guards of a call-rule-set chain.
+	 *
+	 * @param RuleSetEvaluation $evaluation The rule set, payload and options.
+	 *
+	 * @return array{result:array<string,mixed>,triggeredRules:array<int,mixed>,executionTime:int,errors:array<int,string>}
+	 *
+	 * @throws RuntimeException On a cycle, an over-deep chain, a missing RuleSet or a timeout.
+	 */
+	private function evaluateGuarded(RuleSetEvaluation $evaluation): array {
+		$this->assertCanEnter(ruleSetSlug: $evaluation->ruleSetSlug);
+
+		++$this->callDepth;
+		$this->activeSlugs[] = $evaluation->ruleSetSlug;
+		try {
+			return $this->evaluateChain(evaluation: $evaluation);
+		} finally {
+			--$this->callDepth;
+			array_pop($this->activeSlugs);
+		}
+
+	}//end evaluateGuarded()
+
+	/**
+	 * Refuse a rule set that is already active in this chain, or a chain that is too deep.
+	 *
+	 * Thrown before any state mutation, log write, or side effect for this level.
+	 *
+	 * @param string $ruleSetSlug The RuleSet slug about to be evaluated.
+	 *
+	 * @return void
+	 *
+	 * @throws RuntimeException With code 508 on a cycle or an over-deep chain.
+	 */
+	private function assertCanEnter(string $ruleSetSlug): void {
 		// Re-entry cycle guard: a rule set already active in this chain must not
-		// be re-evaluated (self- or mutually-referential call-rule-set). Thrown
-		// before any state mutation, log write, or side effect for this level.
+		// be re-evaluated (self- or mutually-referential call-rule-set).
 		if (in_array($ruleSetSlug, $this->activeSlugs, true) === true) {
 			throw new RuntimeException(
 				'Rule-set cycle detected: "' . $ruleSetSlug . '" is already being evaluated in this chain.',
@@ -205,107 +244,142 @@ class RuleEngineService {
 			);
 		}
 
-		++$this->callDepth;
-		$this->activeSlugs[] = $ruleSetSlug;
-		try {
-			return $this->evaluateChain(
-				ruleSetSlug: $ruleSetSlug,
-				payload: $payload,
-				version: $version,
-				dryRun: ($dryRun === true || $preview === true),
-				maskPii: $maskPii,
-				preview: $preview
-			);
-		} finally {
-			--$this->callDepth;
-			array_pop($this->activeSlugs);
-		}
-
-	}//end evaluate()
+	}//end assertCanEnter()
 
 	/**
-	 * Run a single RuleSet evaluation (re-entry-guarded by {@see evaluate()}).
+	 * Run a single RuleSet evaluation (re-entry-guarded by {@see evaluateGuarded()}).
 	 *
-	 * @param string $ruleSetSlug The RuleSet slug.
-	 * @param array<string,mixed> $payload The input payload.
-	 * @param string|null $version Optional pinned version (default: active).
-	 * @param bool $dryRun When true, side-effecting actions are suppressed.
-	 * @param bool $maskPii When true, mask PII fields in the audit log.
-	 * @param bool $preview When true, no execution log entry is written.
+	 * @param RuleSetEvaluation $evaluation The rule set, payload and options.
 	 *
 	 * @return array{result:array<string,mixed>,triggeredRules:array<int,mixed>,executionTime:int,errors:array<int,string>}
 	 *
 	 * @throws RuntimeException When the RuleSet is not found / not owned, or on timeout.
 	 */
-	private function evaluateChain(
-		string $ruleSetSlug,
-		array $payload,
-		?string $version = null,
-		bool $dryRun = false,
-		bool $maskPii = true,
-		bool $preview = false,
-	): array {
+	private function evaluateChain(RuleSetEvaluation $evaluation): array {
 		$startedAt = microtime(true);
 
-		$bundle = $this->loadBundle(slug: $ruleSetSlug, version: $version);
+		$bundle = $this->loadBundle(slug: $evaluation->ruleSetSlug, version: $evaluation->options->version);
 		if ($bundle === null) {
-			throw new RuntimeException('RuleSet "' . $ruleSetSlug . '" not found.', 404);
+			throw new RuntimeException('RuleSet "' . $evaluation->ruleSetSlug . '" not found.', 404);
 		}
 
-		$errors = [];
-		$result = [];
-		$triggeredRules = [];
+		$answer = $this->runBundle(bundle: $bundle, evaluation: $evaluation);
+		$outcome = $this->timedOutcome(answer: $answer, startedAt: $startedAt);
 
-		try {
-			$ruleType = (string)($bundle['ruleSet']['ruleType'] ?? 'decision-table');
-
-			if ($ruleType === 'decision-table' && $bundle['decisionTables'] !== []) {
-				$table = $bundle['decisionTables'][0];
-				$outcome = $this->decisionEvaluator->evaluate($table, $payload);
-				$result = $outcome['outputColumns'];
-				if ($outcome['triggeredRuleId'] !== null) {
-					$triggeredRules[] = $outcome['triggeredRuleId'];
-				}
-			} elseif ($ruleType === 'condition-action') {
-				// Pass the wired dispatcher (spec REQ-AUTD-010) — the executor
-				// itself suppresses dispatch when $dryRun is true, so it is
-				// always safe to hand the real dispatcher through here.
-				$outcome = $this->conditionExecutor->execute($bundle['conditionRules'], $payload, $dryRun, $this->actionDispatcher);
-				$result = $outcome['result'];
-				$errors = $outcome['errors'];
-				$triggeredRules = array_column($outcome['triggeredRules'], 'name');
-			}
-		} catch (Throwable $e) {
-			$errors[] = $e->getMessage();
-		}//end try
-
-		$durationMs = (int)round((microtime(true) - $startedAt) * 1000);
-
-		if ($durationMs > self::TIMEOUT_MS) {
-			$errors[] = 'Evaluation exceeded the ' . self::TIMEOUT_MS . 'ms soft timeout (' . $durationMs . 'ms).';
-		}
-
-		$outcome = [
-			'result' => $result,
-			'triggeredRules' => $triggeredRules,
-			'executionTime' => $durationMs,
-			'errors' => $errors,
-		];
-
-		if ($preview === false) {
-			$this->persistLog(
-				run: [
-					'ruleSetSlug' => $ruleSetSlug,
-					'version' => (string)($bundle['ruleSet']['version'] ?? ''),
-					'payload' => $payload,
-					'maskPii' => $maskPii,
-				],
-				outcome: $outcome
-			);
+		if ($evaluation->options->preview === false) {
+			$this->persistLog(run: $this->runRecord(evaluation: $evaluation, bundle: $bundle), outcome: $outcome);
 		}
 
 		return $outcome;
 	}//end evaluateChain()
+
+	/**
+	 * Evaluate a loaded bundle by its rule type; a throwing evaluator becomes an error.
+	 *
+	 * @param array<string,mixed> $bundle     The RuleSet bundle.
+	 * @param RuleSetEvaluation   $evaluation The rule set, payload and options.
+	 *
+	 * @return array{result:array<string,mixed>,triggeredRules:array<int,mixed>,errors:array<int,string>}
+	 */
+	private function runBundle(array $bundle, RuleSetEvaluation $evaluation): array {
+		try {
+			$ruleType = (string)($bundle['ruleSet']['ruleType'] ?? 'decision-table');
+
+			if ($ruleType === 'decision-table' && $bundle['decisionTables'] !== []) {
+				return $this->runDecisionTable(table: $bundle['decisionTables'][0], payload: $evaluation->payload);
+			}
+
+			if ($ruleType === 'condition-action') {
+				return $this->runConditionRules(rules: $bundle['conditionRules'], evaluation: $evaluation);
+			}
+		} catch (Throwable $e) {
+			return ['result' => [], 'triggeredRules' => [], 'errors' => [$e->getMessage()]];
+		}
+
+		return ['result' => [], 'triggeredRules' => [], 'errors' => []];
+	}//end runBundle()
+
+	/**
+	 * Evaluate the first decision table of a RuleSet.
+	 *
+	 * @param array<string,mixed> $table   The decision table.
+	 * @param array<string,mixed> $payload The input payload.
+	 *
+	 * @return array{result:array<string,mixed>,triggeredRules:array<int,mixed>,errors:array<int,string>}
+	 */
+	private function runDecisionTable(array $table, array $payload): array {
+		$outcome = $this->decisionEvaluator->evaluate($table, $payload);
+		$result = $outcome['outputColumns'];
+		$triggeredRules = [];
+		if ($outcome['triggeredRuleId'] !== null) {
+			$triggeredRules[] = $outcome['triggeredRuleId'];
+		}
+
+		return ['result' => $result, 'triggeredRules' => $triggeredRules, 'errors' => []];
+	}//end runDecisionTable()
+
+	/**
+	 * Execute the condition-action rules of a RuleSet.
+	 *
+	 * Pass the wired dispatcher (spec REQ-AUTD-010) — the executor itself
+	 * suppresses dispatch when dry-run is set, so it is always safe to hand the
+	 * real dispatcher through here.
+	 *
+	 * @param array<int,mixed>  $rules      The condition-action rules.
+	 * @param RuleSetEvaluation $evaluation The rule set, payload and options.
+	 *
+	 * @return array{result:array<string,mixed>,triggeredRules:array<int,mixed>,errors:array<int,string>}
+	 */
+	private function runConditionRules(array $rules, RuleSetEvaluation $evaluation): array {
+		$outcome = $this->conditionExecutor->execute($rules, $evaluation->payload, $evaluation->options->dryRun, $this->actionDispatcher);
+
+		return [
+			'result' => $outcome['result'],
+			'triggeredRules' => array_column($outcome['triggeredRules'], 'name'),
+			'errors' => $outcome['errors'],
+		];
+	}//end runConditionRules()
+
+	/**
+	 * The evaluation answer with its duration, flagging a run over the soft timeout.
+	 *
+	 * @param array{result:array<string,mixed>,triggeredRules:array<int,mixed>,errors:array<int,string>} $answer    What the evaluators answered.
+	 * @param float                                                                                       $startedAt When the evaluation started.
+	 *
+	 * @return array{result:array<string,mixed>,triggeredRules:array<int,mixed>,executionTime:int,errors:array<int,string>}
+	 */
+	private function timedOutcome(array $answer, float $startedAt): array {
+		$durationMs = (int)round((microtime(true) - $startedAt) * 1000);
+
+		$errors = $answer['errors'];
+		if ($durationMs > self::TIMEOUT_MS) {
+			$errors[] = 'Evaluation exceeded the ' . self::TIMEOUT_MS . 'ms soft timeout (' . $durationMs . 'ms).';
+		}
+
+		return [
+			'result' => $answer['result'],
+			'triggeredRules' => $answer['triggeredRules'],
+			'executionTime' => $durationMs,
+			'errors' => $errors,
+		];
+	}//end timedOutcome()
+
+	/**
+	 * What the execution log records about the run itself.
+	 *
+	 * @param RuleSetEvaluation   $evaluation The rule set, payload and options.
+	 * @param array<string,mixed> $bundle     The RuleSet bundle.
+	 *
+	 * @return array{ruleSetSlug:string,version:string,payload:array<string,mixed>,maskPii:bool}
+	 */
+	private function runRecord(RuleSetEvaluation $evaluation, array $bundle): array {
+		return [
+			'ruleSetSlug' => $evaluation->ruleSetSlug,
+			'version' => (string)($bundle['ruleSet']['version'] ?? ''),
+			'payload' => $evaluation->payload,
+			'maskPii' => $evaluation->options->maskPii,
+		];
+	}//end runRecord()
 
 	/**
 	 * Load (and cache) a RuleSet bundle: the RuleSet plus its tables/rules.

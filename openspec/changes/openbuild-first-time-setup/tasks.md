@@ -32,3 +32,4 @@
 - [ ] 5.1 Newman/API: POST as admin → 200 `{ success, detail.seeded>0 }` on a clean instance; re-POST → skipped; non-admin → 403. DEFERRED — needs a live instance; the seed/skip/partial/403 logic is fully covered by the PHP unit suite (service + controller behaviour), but the true HTTP round-trip needs a running NC + OR.
 - [ ] 5.2 Playwright e2e: fresh instance → admin first visit shows the setup wizard; complete it; Store lists templates; tour reaches `create-app`. DEFERRED — live-instance e2e.
 - [ ] 5.3 Repair-step regression: `occ maintenance:repair` still seeds identically on a clean install. DEFERRED — needs a live instance; the repair step now delegates to the same unit-tested seeding service, and its wrapper is unit-tested (4 repair tests green).
+- [ ] Check that row `ux-onboarding-builder` meets "The builder guides a first-time maker through its own walkthrough", and add a test that asserts its scenarios.

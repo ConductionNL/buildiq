@@ -274,89 +274,148 @@ class ApplicationInsightsService {
 			return null;
 		}
 
+		return $this->guardedInsights(request: new InsightsRequest(appUuid: $appUuid, versionUuid: $versionUuid, window: $window), caller: $caller);
+	}//end computeInsights()
+
+	/**
+	 * The insights payload, null (after an error log) when computing it fails.
+	 *
+	 * @param InsightsRequest $request The Application, version and window.
+	 * @param IUser|null      $caller  The authenticated user, or null for unauthenticated.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private function guardedInsights(InsightsRequest $request, ?IUser $caller): ?array {
 		try {
-			$resolved = $this->requireAuthorisedCaller(
-				appUuid: $appUuid,
-				versionUuid: $versionUuid,
-				caller: $caller
-			);
-			if ($resolved === null) {
-				return null;
-			}
-
-			[$application, $version] = $resolved;
-
-			// These aggregations fan out across every schema/register of the
-			// (possibly very large) installed app — tens of seconds for a big
-			// hybrid app. The PAYLOAD is identical for all callers (RBAC is
-			// already enforced above), so memoise it in the distributed cache
-			// keyed by (app, version, window). First viewer pays the cost (the
-			// dashboard shows a spinner); everyone else gets it instantly until
-			// the short TTL lapses.
-			$cacheKey = sprintf('payload_%s_%s_%s', $appUuid, $versionUuid, $window);
-			$cached = $this->cache->get($cacheKey);
-			if (is_array($cached) === true) {
-				return $cached;
-			}
-
-			$appSlug = (string)($application['slug'] ?? '');
-			$hours = self::WINDOW_HOURS[$window];
-
-			// A hybrid app mirrors a live installed Nextcloud app — its KPIs
-			// should reflect that installed app's real footprint (objects /
-			// audit / files across the registers OpenRegister associates with
-			// the app via `register.application`), NOT the override version's
-			// per-version register (which is usually empty). See REQ unified-app.
-			$isHybrid = (($application['appType'] ?? 'virtual') === 'hybrid');
-			if ($isHybrid === true) {
-				$payload = $this->computeHybridInsights(appSlug: $appSlug, hours: $hours);
-				$this->cache->set($cacheKey, $payload, self::CACHE_TTL_SECONDS);
-				return $payload;
-			}
-
-			// Prefer the version's REAL register; fall back to the per-version
-			// naming convention only when the version carries none. The prefix
-			// comes from ApplicationVersionService and is never typed here: see
-			// this method's docblock.
-			$versionSlug = (string)($version['slug'] ?? '');
-			$registerSlug = (string)($version['register'] ?? '');
-			if ($registerSlug === '') {
-				$registerSlug = ApplicationVersionService::VERSION_REGISTER_PREFIX . $appSlug . '-' . $versionSlug;
-			}
-
-			$manifest = $this->extractManifest(version: $version);
-			$sources = $this->dataSources->resolve(
-				manifest: $manifest,
-				registerSlug: $registerSlug,
-				pageSchemaRefs: $this->deriveSchemaIds(manifest: $manifest, registerSlug: $registerSlug)
-			);
-
-			[$objectCount, $schemaCounts, $schemaIds] = $this->countDataSources(sources: $sources);
-
-			$kpis = [
-				'activeUsers' => $this->safeDistinctActorCount(schemaIds: $schemaIds, hours: $hours),
-				'objectCount' => $objectCount,
-				'filesCount' => $this->countAttachedFiles(registerSlug: $registerSlug, schemaIds: $schemaIds),
-				'auditEventCount' => $this->countAuditEvents(schemaIds: $schemaIds, hours: $hours),
-			];
-
-			$activity = $this->buildActivityTimeline(schemaIds: $schemaIds, hours: $hours, registerSlug: $registerSlug);
-
-			$payload = [
-				'kpis' => $kpis,
-				'activity' => $activity,
-				'schemaCounts' => $schemaCounts,
-			];
-			$this->cache->set($cacheKey, $payload, self::CACHE_TTL_SECONDS);
-			return $payload;
+			return $this->authorisedInsights(request: $request, caller: $caller);
 		} catch (Throwable $e) {
 			$this->logger->error(
 				'Buildiq: ApplicationInsightsService::computeInsights failed: {message}',
 				['message' => $e->getMessage(), 'exception' => $e]
 			);
 			return null;
-		}//end try
-	}//end computeInsights()
+		}
+	}//end guardedInsights()
+
+	/**
+	 * The insights payload once the caller is authorised, from the cache when present.
+	 *
+	 * These aggregations fan out across every schema/register of the
+	 * (possibly very large) installed app — tens of seconds for a big hybrid
+	 * app. The PAYLOAD is identical for all callers (RBAC is already enforced
+	 * first), so it is memoised in the distributed cache keyed by (app,
+	 * version, window). First viewer pays the cost (the dashboard shows a
+	 * spinner); everyone else gets it instantly until the short TTL lapses.
+	 *
+	 * @param InsightsRequest $request The Application, version and window.
+	 * @param IUser|null      $caller  The authenticated user, or null for unauthenticated.
+	 *
+	 * @return array<string, mixed>|null Insights payload, or null on 404.
+	 */
+	private function authorisedInsights(InsightsRequest $request, ?IUser $caller): ?array {
+		$resolved = $this->requireAuthorisedCaller(appUuid: $request->appUuid, versionUuid: $request->versionUuid, caller: $caller);
+		if ($resolved === null) {
+			return null;
+		}
+
+		$cached = $this->cache->get($request->cacheKey());
+		if (is_array($cached) === true) {
+			return $cached;
+		}
+
+		$payload = $this->insightsPayload(resolved: $resolved, hours: self::WINDOW_HOURS[$request->window]);
+		$this->cache->set($request->cacheKey(), $payload, self::CACHE_TTL_SECONDS);
+		return $payload;
+	}//end authorisedInsights()
+
+	/**
+	 * Compute the payload for an authorised Application and version.
+	 *
+	 * A hybrid app mirrors a live installed Nextcloud app — its KPIs should
+	 * reflect that installed app's real footprint (objects / audit / files
+	 * across the registers OpenRegister associates with the app via
+	 * `register.application`), NOT the override version's per-version
+	 * register (which is usually empty). See REQ unified-app.
+	 *
+	 * @param array{0: array<string, mixed>, 1: array<string, mixed>} $resolved The Application and version.
+	 * @param int                                                     $hours    Window hours.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function insightsPayload(array $resolved, int $hours): array {
+		$application = $resolved[0];
+		if (($application['appType'] ?? 'virtual') === 'hybrid') {
+			return $this->computeHybridInsights(appSlug: (string)($application['slug'] ?? ''), hours: $hours);
+		}
+
+		return $this->computeVersionInsights(resolved: $resolved, hours: $hours);
+	}//end insightsPayload()
+
+	/**
+	 * Compute the payload of a virtual app's version from the data its pages read.
+	 *
+	 * @param array{0: array<string, mixed>, 1: array<string, mixed>} $resolved The Application and version.
+	 * @param int                                                     $hours    Window hours.
+	 *
+	 * @return array<string, mixed> Payload `{kpis, activity, schemaCounts}`.
+	 */
+	private function computeVersionInsights(array $resolved, int $hours): array {
+		$registerSlug = $this->versionRegisterSlug(application: $resolved[0], version: $resolved[1]);
+		[$objectCount, $schemaCounts, $schemaIds] = $this->countVersionData(version: $resolved[1], registerSlug: $registerSlug);
+
+		return [
+			'kpis' => [
+				'activeUsers' => $this->safeDistinctActorCount(schemaIds: $schemaIds, hours: $hours),
+				'objectCount' => $objectCount,
+				'filesCount' => $this->countAttachedFiles(registerSlug: $registerSlug, schemaIds: $schemaIds),
+				'auditEventCount' => $this->countAuditEvents(schemaIds: $schemaIds, hours: $hours),
+			],
+			'activity' => $this->buildActivityTimeline(schemaIds: $schemaIds, hours: $hours),
+			'schemaCounts' => $schemaCounts,
+		];
+	}//end computeVersionInsights()
+
+	/**
+	 * The register a version's data lives in.
+	 *
+	 * Prefer the version's REAL register; fall back to the per-version naming
+	 * convention only when the version carries none. The prefix comes from
+	 * ApplicationVersionService and is never typed here: see
+	 * {@see computeInsights()}'s docblock.
+	 *
+	 * @param array<string, mixed> $application The Application.
+	 * @param array<string, mixed> $version     The version.
+	 *
+	 * @return string
+	 */
+	private function versionRegisterSlug(array $application, array $version): string {
+		$registerSlug = (string)($version['register'] ?? '');
+		if ($registerSlug === '') {
+			$registerSlug = ApplicationVersionService::VERSION_REGISTER_PREFIX . (string)($application['slug'] ?? '')
+				. '-' . (string)($version['slug'] ?? '');
+		}
+
+		return $registerSlug;
+	}//end versionRegisterSlug()
+
+	/**
+	 * Count the data a version's pages read, plus its register's own schemas.
+	 *
+	 * @param array<string, mixed> $version      The version.
+	 * @param string               $registerSlug The version's register.
+	 *
+	 * @return array{0: int, 1: array<string, int>, 2: array<int, int>} Object count, count per schema, schema ids.
+	 */
+	private function countVersionData(array $version, string $registerSlug): array {
+		$manifest = $this->extractManifest(version: $version);
+		$sources = $this->dataSources->resolve(
+			manifest: $manifest,
+			registerSlug: $registerSlug,
+			pageSchemaRefs: $this->deriveSchemaIds(manifest: $manifest, registerSlug: $registerSlug)
+		);
+
+		return $this->countDataSources(sources: $sources);
+	}//end countVersionData()
 
 	/**
 	 * Compute insights for a hybrid app from its installed-app footprint.
@@ -1077,48 +1136,18 @@ class ApplicationInsightsService {
 	 *
 	 * @param array<int, int> $schemaIds Integer schema IDs.
 	 * @param int $hours Window hours.
-	 * @param string $registerSlug The register slug (reserved for future use).
 	 *
 	 * @return array<int, array{timestamp: string, eventCount: int}>
 	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-	 *
-	 * @psalm-suppress UnusedParam
-	 *
 	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-20
 	 */
-	private function buildActivityTimeline(array $schemaIds, int $hours, string $registerSlug): array {
+	private function buildActivityTimeline(array $schemaIds, int $hours): array {
 		if (empty($schemaIds) === true) {
 			return [];
 		}
 
 		try {
-			$from = new DateTime(sprintf('-%d hours', $hours));
-			$till = new DateTime();
-
-			$merged = [];
-			foreach ($schemaIds as $schemaId) {
-				$chart = $this->auditTrailMapper->getActionChartData(
-					$from,
-					$till,
-					null,
-					$schemaId
-				);
-
-				$this->mergeChartIntoBuckets(chart: $chart, buckets: $merged);
-			}
-
-			ksort($merged);
-
-			$timeline = [];
-			foreach ($merged as $date => $count) {
-				$timeline[] = [
-					'timestamp' => sprintf('%sT00:00:00Z', $date),
-					'eventCount' => (int)$count,
-				];
-			}
-
-			return $timeline;
+			return $this->timelineOf(buckets: $this->auditBuckets(schemaIds: $schemaIds, hours: $hours));
 		} catch (Throwable $e) {
 			$this->logger->debug(
 				'Buildiq: buildActivityTimeline failed: {message}',
@@ -1127,6 +1156,54 @@ class ApplicationInsightsService {
 			return [];
 		}//end try
 	}//end buildActivityTimeline()
+
+	/**
+	 * Total audit events per date across the schemas.
+	 *
+	 * @param array<int, int> $schemaIds Integer schema IDs.
+	 * @param int $hours Window hours.
+	 *
+	 * @return array<string, int> Date string → total event count.
+	 */
+	private function auditBuckets(array $schemaIds, int $hours): array {
+		$from = new DateTime(sprintf('-%d hours', $hours));
+		$till = new DateTime();
+
+		$merged = [];
+		foreach ($schemaIds as $schemaId) {
+			$chart = $this->auditTrailMapper->getActionChartData(
+				$from,
+				$till,
+				null,
+				$schemaId
+			);
+
+			$this->mergeChartIntoBuckets(chart: $chart, buckets: $merged);
+		}
+
+		return $merged;
+	}//end auditBuckets()
+
+	/**
+	 * One timeline entry per date bucket, in date order.
+	 *
+	 * @param array<string, int> $buckets Date string → total event count.
+	 *
+	 * @return array<int, array{timestamp: string, eventCount: int}>
+	 */
+	private function timelineOf(array $buckets): array {
+		ksort($buckets);
+
+		$timeline = [];
+		foreach ($buckets as $date => $count) {
+			$timeline[] = [
+				'timestamp' => sprintf('%sT00:00:00Z', $date),
+				'eventCount' => (int)$count,
+			];
+		}
+
+		return $timeline;
+	}//end timelineOf()
 
 	/**
 	 * Merge one `getActionChartData` payload's series rows into the

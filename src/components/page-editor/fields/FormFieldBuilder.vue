@@ -150,6 +150,64 @@ import VisibleWhenBuilder from './VisibleWhenBuilder.vue'
 
 const FIELD_TYPES = ['string', 'number', 'boolean', 'select', 'textarea', 'date']
 
+/**
+ * Whether a `visibleWhen` condition points at a field of this form (not an
+ * endpoint or a remote source), so its key can be checked for existence.
+ *
+ * @param {object|undefined} vw - the field's `visibleWhen`.
+ * @return {boolean}
+ */
+function isLocalFieldCondition(vw) {
+	return !!vw && !vw.endpoint && !vw.source && typeof vw.field === 'string'
+}
+
+/**
+ * Whether a field is required, from its validation object when it has one
+ * and from the legacy flat key otherwise.
+ *
+ * @param {object} field - the field entry.
+ * @return {boolean}
+ */
+function hasRequiredMark(field) {
+	const validation = field && field.validation
+	return validation ? !!validation.required : !!(field && field.required)
+}
+
+/**
+ * Whether a field carries a pattern: a validation pattern that is set at all,
+ * or else a truthy legacy flat pattern.
+ *
+ * @param {object} field - the field entry.
+ * @return {boolean}
+ */
+function hasPatternMark(field) {
+	const validation = field && field.validation
+	return validation && validation.pattern !== undefined
+		? true
+		: !!(field && field.pattern)
+}
+
+/**
+ * The marks of a field's collapsed-row summary, in display order: when each
+ * applies and its label.
+ */
+const SUMMARY_MARKS = [
+	{ applies: hasRequiredMark, label: () => t('buildiq', 'required') },
+	{ applies: hasPatternMark, label: () => t('buildiq', 'pattern') },
+	{
+		applies: (field) => !!(field && field.visibleWhen),
+		label: () => t('buildiq', '1 condition'),
+	},
+	{
+		applies: (field) => !!(field && field.default !== undefined),
+		label: () => t('buildiq', 'prefilled'),
+	},
+	{
+		applies: (field) => !!(field && field.calculate),
+		label: () => t('buildiq', 'calculated'),
+	},
+]
+
 export default {
 	name: 'FormFieldBuilder',
 	components: {
@@ -376,7 +434,7 @@ export default {
 		 */
 		danglingConditionMark(field) {
 			const vw = field && field.visibleWhen
-			if (!vw || vw.endpoint || vw.source || typeof vw.field !== 'string') {
+			if (!isLocalFieldCondition(vw)) {
 				return { hasError: false, message: '' }
 			}
 			if (this.declaredKeys.includes(vw.field)) {
@@ -400,31 +458,9 @@ export default {
 		 * @spec openspec/specs/form-editor-logic/spec.md
 		 */
 		summaryFor(field) {
-			const validation = field && field.validation
-			const parts = []
-			const hasRequired = validation
-				? !!validation.required
-				: !!(field && field.required)
-			if (hasRequired) {
-				parts.push(t('buildiq', 'required'))
-			}
-			const hasPattern =
-				validation && validation.pattern !== undefined
-					? true
-					: !!(field && field.pattern)
-			if (hasPattern) {
-				parts.push(t('buildiq', 'pattern'))
-			}
-			if (field && field.visibleWhen) {
-				parts.push(t('buildiq', '1 condition'))
-			}
-			if (field && field.default !== undefined) {
-				parts.push(t('buildiq', 'prefilled'))
-			}
-			if (field && field.calculate) {
-				parts.push(t('buildiq', 'calculated'))
-			}
-			return parts.join(' · ')
+			return SUMMARY_MARKS.filter((mark) => mark.applies(field))
+				.map((mark) => mark.label())
+				.join(' · ')
 		},
 
 		/**

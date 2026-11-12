@@ -216,4 +216,73 @@ class CopilotPlanValidatorTest extends TestCase {
 		self::assertNotEmpty($violations);
 		self::assertSame(0, $violations[0]['stepIndex']);
 	}//end testRejectsNonObjectStep()
+
+	/**
+	 * Every constraint kind, every step shape and every message, in order.
+	 *
+	 * @return void
+	 */
+	public function testEveryViolationInOrder(): void {
+		$descriptors = [
+			['id' => ''],
+			[
+				'id' => 't.all',
+				'inputSchema' => [
+					'properties' => [
+						's' => ['type' => 'string', 'pattern' => '^a+$', 'minLength' => 2, 'maxLength' => 3],
+						'i' => ['type' => 'integer', 'minimum' => 1, 'maximum' => 5],
+						'n' => ['type' => 'number', 'minimum' => 0.5],
+						'b' => ['type' => 'boolean'],
+						'l' => ['type' => 'array'],
+						'o' => ['type' => 'object'],
+						'e' => ['enum' => ['x', 'y']],
+						'u' => ['type' => 'custom'],
+						'z' => 'not-a-schema',
+					],
+					'required' => ['s', 'missing1', 7],
+				],
+			],
+			['id' => 't.none'],
+		];
+		$steps = [
+			'nope',
+			['tool' => 'unknown'],
+			['tool' => 't.all', 'arguments' => 'x'],
+			['tool' => 't.all', 'arguments' => ['s' => 'b', 'i' => '3', 'n' => 0.1, 'b' => 1, 'l' => ['k' => 1], 'o' => 'str', 'e' => 'z', 'u' => 1, 'z' => 5]],
+			['tool' => 't.all', 'arguments' => ['s' => 'aaaa', 'i' => 9, 'n' => 7]],
+			['tool' => 't.all', 'arguments' => ['s' => 'a', 'i' => 0, 'l' => [1, 2], 'o' => [], 'e' => 'x', 'b' => true]],
+			['tool' => 't.none'],
+		];
+
+		$messages = array_map(
+			static fn (array $violation): string => $violation['stepIndex'] . ' ' . $violation['message'],
+			$this->validator->validate(['steps' => $steps], $descriptors)
+		);
+
+		self::assertSame(
+			[
+				'0 Step is not an object.',
+				"1 Step 1: unknown tool 'unknown'. Allowed tools: t.all, t.none.",
+				"2 Step 2: 'arguments' must be an object.",
+				"3 Step 3: missing required argument 'missing1'.",
+				"3 Step 3: missing required argument '7'.",
+				"3 Step 3: argument 's' does not match the required pattern.",
+				"3 Step 3: argument 'i' must be of type integer.",
+				"3 Step 3: argument 'n' must be >= 0.5.",
+				"3 Step 3: argument 'b' must be of type boolean.",
+				"3 Step 3: argument 'l' must be of type array.",
+				"3 Step 3: argument 'o' must be of type object.",
+				"3 Step 3: argument 'e' must be one of: x, y.",
+				"4 Step 4: missing required argument 'missing1'.",
+				"4 Step 4: missing required argument '7'.",
+				"4 Step 4: argument 's' must be at most 3 characters.",
+				"4 Step 4: argument 'i' must be <= 5.",
+				"5 Step 5: missing required argument 'missing1'.",
+				"5 Step 5: missing required argument '7'.",
+				"5 Step 5: argument 's' must be at least 2 characters.",
+				"5 Step 5: argument 'i' must be >= 1.",
+			],
+			$messages
+		);
+	}//end testEveryViolationInOrder()
 }//end class

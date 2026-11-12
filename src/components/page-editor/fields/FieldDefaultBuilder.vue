@@ -41,6 +41,33 @@
 <script>
 const TOKEN_KINDS = ['@me', '@me.displayName', '@me.email', '@today']
 
+/**
+ * Whether no default is stored.
+ *
+ * @param {boolean|string|number|null|undefined} value The stored default.
+ * @return {boolean}
+ */
+function isUnset(value) {
+	return value === null || value === undefined || value === ''
+}
+
+/**
+ * The kind of a stored default: a user/date token, an `@object.` field or a
+ * literal value.
+ *
+ * @param {boolean|string|number} value The stored default.
+ * @return {string}
+ */
+function storedKind(value) {
+	if (typeof value !== 'string') {
+		return 'literal'
+	}
+	if (TOKEN_KINDS.includes(value)) {
+		return value
+	}
+	return value.startsWith('@object.') ? 'object' : 'literal'
+}
+
 export default {
 	name: 'FieldDefaultBuilder',
 	props: {
@@ -88,17 +115,10 @@ export default {
 		 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-prefilled-from-the-user-or-the-record-req-bqlv-001
 		 */
 		kind() {
-			const value = this.modelValue
-			if (value === null || value === undefined || value === '') {
+			if (isUnset(this.modelValue)) {
 				return this.pickedKind || 'none'
 			}
-			if (typeof value === 'string' && TOKEN_KINDS.includes(value)) {
-				return value
-			}
-			if (typeof value === 'string' && value.startsWith('@object.')) {
-				return 'object'
-			}
-			return 'literal'
+			return storedKind(this.modelValue)
 		},
 
 		/**
