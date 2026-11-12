@@ -1,0 +1,23 @@
+# Tasks: capability-requirements-backfill
+
+- [ ] **T01**: Check that the built behaviour of row `app-create-from-spreadsheet` meets REQ-BQCV-001 in `data-import-wizard`; add a test that asserts each scenario, and close any gap the scenarios name.
+- [ ] **T02**: Check that the built behaviour of row `app-publish` meets REQ-BQCV-002 in `openbuild-runtime`; add a test that asserts each scenario, and close any gap the scenarios name.
+- [ ] **T03**: Check that the built behaviour of row `data-relations` meets REQ-BQCV-003 in `openbuild-schema-designer`; add a test that asserts each scenario, and close any gap the scenarios name.
+- [ ] **T04**: Check that the built behaviour of row `data-export-records` meets REQ-BQCV-004 in `openbuild-page-designer`; add a test that asserts each scenario, and close any gap the scenarios name.
+- [ ] **T05**: Check that the built behaviour of row `data-search` meets REQ-BQCV-005 in `openbuild-page-designer`; add a test that asserts each scenario, and close any gap the scenarios name.
+- [ ] **T06**: Check that the built behaviour of row `pg-list-table` meets REQ-BQCV-006 in `openbuild-page-designer`; add a test that asserts each scenario, and close any gap the scenarios name.
+- [ ] **T07**: Check that the built behaviour of row `pg-dashboard` meets REQ-BQCV-007 in `openbuild-page-designer`; add a test that asserts each scenario, and close any gap the scenarios name.
+- [ ] **T08**: Check that the built behaviour of row `pg-files-page` meets REQ-BQCV-008 in `openbuild-page-designer`; add a test that asserts each scenario, and close any gap the scenarios name.
+- [ ] **T09**: Check that the built behaviour of row `pg-chat-page` meets REQ-BQCV-009 in `openbuild-page-designer`; add a test that asserts each scenario, and close any gap the scenarios name.
+- [ ] **T10**: Check that the built behaviour of row `pg-logs-page` meets REQ-BQCV-010 in `openbuild-page-designer`; add a test that asserts each scenario, and close any gap the scenarios name.
+- [ ] **T11**: Check that the built behaviour of row `pg-settings-page` meets REQ-BQCV-011 in `openbuild-page-designer`; add a test that asserts each scenario, and close any gap the scenarios name.
+- [ ] **T12**: Check that the built behaviour of row `form-confirmation` meets REQ-BQCV-012 in `openbuild-page-designer`; add a test that asserts each scenario, and close any gap the scenarios name.
+- [ ] **T13**: Check that the built behaviour of row `form-inline-edit` meets REQ-BQCV-013 in `openbuild-page-designer`; add a test that asserts each scenario, and close any gap the scenarios name.
+- [ ] **T14**: Check that the built behaviour of row `acc-builder-audit` meets REQ-BQCV-014 in `openbuild-rbac`; add a test that asserts each scenario, and close any gap the scenarios name.
+- [ ] **T15**: Check that the built behaviour of row `lc-rollback` meets REQ-BQCV-015 in `application-versions`; add a test that asserts each scenario, and close any gap the scenarios name.
+- [ ] **T16**: Check that the built behaviour of row `reuse-hybrid-app-registry` meets REQ-BQCV-016 in `unified-app-model`; add a test that asserts each scenario, and close any gap the scenarios name.
+- [ ] **T17**: Check that the built behaviour of row `logic-rule-set-export` meets REQ-BQCV-017 in `business-rules-engine`; add a test that asserts each scenario, and close any gap the scenarios name.
+- [ ] **T18**: Check that the built behaviour of row `logic-running-case-keeps-version` meets REQ-BQCV-018 in `automation-designer`; add a test that asserts each scenario, and close any gap the scenarios name.
+- [ ] **T19**: Check that the built behaviour of row `form-digid-login` meets REQ-BQCV-019 in `external-form-provisioning`; add a test that asserts each scenario, and close any gap the scenarios name.
+- [ ] **T20**: Check that the built behaviour of row `form-usage-stats` meets REQ-BQCV-020 in `external-form-provisioning`; add a test that asserts each scenario, and close any gap the scenarios name.
+- [ ] **T21**: Run `openspec validate capability-requirements-backfill --strict`.

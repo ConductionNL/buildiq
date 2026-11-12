@@ -1100,7 +1100,8 @@
 				"evidence": "src/dialogs/ImportDataWizard.vue:1-20 uploads xlsx/xls/csv/json and either adds rows to an EXISTING schema or 'create a new schema from the file' (OR infers fields from header row). Only reachable from src/views/SchemaDesigner.vue:190 and src/components/applicationDetail/ApplicationDetailDashboard.vue:305, both of which require an app/version to already exist. Delegates parsing to OpenRegister's register-import via useDataImport.js.",
 				"owner": "ConductionNL/buildiq",
 				"note": "Open Register's half shipped in ConductionNL/openregister openspec/changes/archive/2026-07-23-register-import-auto-create; the missing half is buildiq's own work, so the owner moved to ConductionNL/buildiq (openregister lane, OpenSpec pass 2026-09-27; owner was ConductionNL/openregister).",
-				"change": "openbuild-data-import-wizard"
+				"change": "openbuild-data-import-wizard",
+				"requirement": "openspec/changes/capability-requirements-backfill/specs/data-import-wizard :: A maker creates a new app from an uploaded spreadsheet (REQ-BQCV-001)"
 			},
 			"reachedOn": "SchemaDesigner (opened on an existing app version)",
 			"provider": "openregister",
@@ -1327,7 +1328,8 @@
 				"evidence": "src/components/ApplicationDetailActions.vue:668-707 publish/unpublish toggle (owner-only, isPublished bound at :58) POSTs /apps/buildiq/api/applications/{appUuid}/publish|unpublish (routes.php:116-117 applicationPublish#publish/unpublish) -> flips Application.status draft<->published, gating AppNavigationService (lib/Service/AppNavigationService.php:135 STATUS_PUBLISHED filter)",
 				"reachedOn": "VirtualAppDetail header actions, Publish/Unpublish",
 				"owner": "ConductionNL/buildiq",
-				"spec": "openspec/specs/openbuild-runtime"
+				"spec": "openspec/specs/openbuild-runtime",
+				"requirement": "openspec/changes/capability-requirements-backfill/specs/openbuild-runtime :: An owner publishes and unpublishes an app (REQ-BQCV-002)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -1736,7 +1738,8 @@
 				"evidence": "src/components/schema-editor/FieldEditor.vue:242-275 field.type==='relation' writes x-openregister-relation (target+cardinality) per property (FieldEditor.vue:814-818); src/components/schema-editor/RelationEditor.vue authors schema-level x-openregister-relations. OpenRegister executes both: git -C openregister grep x-openregister-relation origin/development hits lib/Service/Relation/RelationTypeResolver.php and lib/Service/Object/RenderObject.php, so it is resolved at render/read time, not merely declared",
 				"reachedOn": "buildiq builder, Schemas tab, Relations section and per-field relation type",
 				"owner": "ConductionNL/buildiq",
-				"spec": "openspec/specs/openbuild-schema-designer"
+				"spec": "openspec/specs/openbuild-schema-designer",
+				"requirement": "openspec/changes/capability-requirements-backfill/specs/openbuild-schema-designer :: A maker links one object type to another (REQ-BQCV-003)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -1960,7 +1963,8 @@
 				"reachedOn": "Published app, any index page, Actions menu, Export, pick Excel or CSV",
 				"owner": "ConductionNL/nextcloud-vue",
 				"note": "Matrix corrected in the OpenSpec pass 2026-09-27: the earlier reading grepped buildiq's own src and missed the renderer. It exports every record of the schema, not the filtered view; the filtered menu (allowExport) also needs a schema exportable flag OpenRegister does not serve.",
-				"spec": "openspec/specs/openbuild-exporter"
+				"spec": "openspec/specs/openbuild-exporter",
+				"requirement": "openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer :: A list page exports its records to CSV or Excel (REQ-BQCV-004)"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -2303,7 +2307,8 @@
 				"evidence": "buildiq registers CnIndexPage as a built-in page type (src/registry.js:18 'Built-in page types (CnIndexPage, CnDetailPage, CnDashboardPage, ...)' resolved before buildiq's own registry) and IndexPageEditor.vue configures it; nextcloud-vue's CnIndexPage.vue wires :searchValue/:searchPlaceholder/@search (lines 60-61, 83) into the object list query against the bound register/schema. Also a dedicated type:'search' page exists (SearchPageEditor.vue) that scopes a search box to a register/schema, though it says its own query execution is 'wired by the consuming app via the @search contract'",
 				"reachedOn": "buildiq builder, any index page (search box) or a dedicated search page",
 				"owner": "ConductionNL/nextcloud-vue",
-				"spec": "openspec/specs/page-editor-coverage"
+				"spec": "openspec/specs/page-editor-coverage",
+				"requirement": "openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer :: A list page searches its records by keyword (REQ-BQCV-005)"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -2567,7 +2572,8 @@
 				"evidence": "src/components/page-editor/IndexPageEditor.vue (471 lines) authors config.register/schema/columns/actions/sidebar for `type:\"index\"`; SUB_EDITOR_MAP['index']='IndexPageEditor' (PageDesigner.vue:253); renderer mounts CnIndexPage for type 'index' (nextcloud-vue v2.55.1 src/components/CnPageRenderer/pageTypes.js line 'index: ... CnIndexPage.vue')",
 				"reachedOn": "any built app page authored as type index, e.g. /apps/buildiq/builder/{slug}/{route}",
 				"owner": "ConductionNL/nextcloud-vue",
-				"spec": "openspec/specs/openbuild-page-designer"
+				"spec": "openspec/specs/openbuild-page-designer",
+				"requirement": "openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer :: A list page shows records in a table with sorting, filtering and paging (REQ-BQCV-006)"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -2647,7 +2653,8 @@
 				"evidence": "src/components/page-editor/DashboardPageEditor.vue authors config.widgets (via WidgetBuilder.vue) and config.layout (via LayoutItemBuilder.vue) for type:\"dashboard\"; renders via CnDashboardPage (pageTypes.js)",
 				"reachedOn": "any built app page authored as type dashboard",
 				"owner": "ConductionNL/nextcloud-vue",
-				"spec": "openspec/specs/openbuild-page-designer"
+				"spec": "openspec/specs/openbuild-page-designer",
+				"requirement": "openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer :: A maker adds a dashboard page (REQ-BQCV-007)"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -2868,7 +2875,8 @@
 				"evidence": "src/components/page-editor/FilesPageEditor.vue (306 lines) authors config for type:\"files\"; SUB_EDITOR_MAP['files']='FilesPageEditor'; renderer mounts CnFilesPage (pageTypes.js)",
 				"reachedOn": "any built app page authored as type files",
 				"owner": "ConductionNL/nextcloud-vue",
-				"spec": "openspec/specs/openbuild-page-designer"
+				"spec": "openspec/specs/openbuild-page-designer",
+				"requirement": "openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer :: A maker adds a files page (REQ-BQCV-008)"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -2984,7 +2992,8 @@
 				"evidence": "src/components/page-editor/ChatPageEditor.vue (272 lines) authors config.conversationSource or config.postUrl for type:\"chat\" (api-paths.txt: /api/objects/:slug/messages referenced at ChatPageEditor.vue:61,48); SUB_EDITOR_MAP['chat']='ChatPageEditor'; renderer mounts CnChatPage (pageTypes.js)",
 				"reachedOn": "any built app page authored as type chat",
 				"owner": "ConductionNL/nextcloud-vue",
-				"spec": "openspec/specs/openbuild-page-designer"
+				"spec": "openspec/specs/openbuild-page-designer",
+				"requirement": "openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer :: A maker adds a chat page (REQ-BQCV-009)"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -3022,7 +3031,8 @@
 				"evidence": "src/components/page-editor/LogsPageEditor.vue (425 lines) authors config for type:\"logs\" (api-paths.txt: /api/objects/:slug/audit referenced at LogsPageEditor.vue:94); SUB_EDITOR_MAP['logs']='LogsPageEditor'; renderer mounts CnLogsPage (pageTypes.js)",
 				"reachedOn": "any built app page authored as type logs",
 				"owner": "ConductionNL/nextcloud-vue",
-				"spec": "openspec/specs/openbuild-page-designer"
+				"spec": "openspec/specs/openbuild-page-designer",
+				"requirement": "openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer :: A maker adds a log page (REQ-BQCV-010)"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -3060,7 +3070,8 @@
 				"evidence": "src/components/page-editor/SettingsPageEditor.vue (417 lines) authors config for type:\"settings\" (api-paths.txt: /api/objects/:slug/settings at SettingsPageEditor.vue:35); SUB_EDITOR_MAP['settings']='SettingsPageEditor'; renderer mounts CnSettingsPage (pageTypes.js)",
 				"reachedOn": "any built app page authored as type settings",
 				"owner": "ConductionNL/nextcloud-vue",
-				"spec": "openspec/specs/openbuild-page-designer"
+				"spec": "openspec/specs/openbuild-page-designer",
+				"requirement": "openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer :: A maker adds a settings page (REQ-BQCV-011)"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -3847,7 +3858,8 @@
 				"evidence": "FormPageEditor.vue:121-128 'Success message' writes config.successMessage; nextcloud-vue v2.55.1 CnFormPage.vue:94-100,877 shows the success banner after submit (public mode hides the form). Registration forms: RegistrationFormEditor.vue:144-151 confirmationText, stored per form (register.d/50-registration-forms.json:71) and returned by portaliq PortalFormBindingResolver.php:225,253",
 				"reachedOn": "buildiq builder /builder/:slug/pages, form page, Submit -> Success message",
 				"owner": "ConductionNL/nextcloud-vue",
-				"spec": "openspec/specs/openbuild-page-designer"
+				"spec": "openspec/specs/openbuild-page-designer",
+				"requirement": "openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer :: A form shows its confirmation text after a submit (REQ-BQCV-012)"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -3914,7 +3926,8 @@
 				"evidence": "A built app's detail page renders nextcloud-vue v2.55.1 CnDetailPage, whose default body (materializeAutoBody, CnDetailPage.vue:3660-3700) includes the 'data' widget; CnDetailWidgetHost.vue:87-102 mounts CnObjectDataWidget with editable unless content.editable === false; click-to-edit cells and save() at CnObjectDataWidget.vue:1768-1795 persist via objectStore.saveObject(objectType, merged) to OpenRegister",
 				"reachedOn": "any record detail page of a built app (/builder/:slug/... detail route), data card",
 				"owner": "ConductionNL/nextcloud-vue",
-				"spec": "openspec/specs/page-editor-coverage"
+				"spec": "openspec/specs/page-editor-coverage",
+				"requirement": "openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer :: A detail page lets users edit record fields in place (REQ-BQCV-013)"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -5083,7 +5096,8 @@
 				"owner": "ConductionNL/integriq",
 				"note": "The connectors exist in integriq now (sibling-has). The buildiq half is rendering a connector-bound page, specified in integrations-connector-bound-pages; the integriq change is integriq/connectors-catalogue-expansion (archived).",
 				"change": "integrations-connector-bound-pages",
-				"readOn": "2026-10-07"
+				"readOn": "2026-10-07",
+				"requirement": "openspec/changes/integrations-connector-bound-pages/specs/connector-bound-page-runtime :: An endpoint from a ready-made connector binds like any other endpoint (REQ-BQCB-005)"
 			},
 			"provider": "integriq",
 			"providerHow": "read-from-code",
@@ -6174,7 +6188,8 @@
 				"reachedOn": "VirtualApps application detail, actions menu -> Permission history (permissions only)",
 				"owner": "ConductionNL/buildiq",
 				"note": "Open Register's half shipped in ConductionNL/openregister openspec/changes/archive/2026-03-21-audit-trail-immutable; the missing half is buildiq's own work, so the owner moved to ConductionNL/buildiq (openregister lane, OpenSpec pass 2026-09-27; owner was ConductionNL/openregister).",
-				"spec": "openspec/specs/openbuild-rbac"
+				"spec": "openspec/specs/openbuild-rbac",
+				"requirement": "openspec/changes/capability-requirements-backfill/specs/openbuild-rbac :: An owner sees who changed an app's design and when (REQ-BQCV-014)"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -6512,7 +6527,8 @@
 				"evidence": "src/views/VersionHistory.vue:83-95 askRollback()/RollbackConfirmModal emits 'rollback' -> src/components/tabs/ApplicationVersionsTab.vue:95 onRollback() PUTs {manifest} (:123) to /apps/buildiq/api/applications/{slug}/manifest (routes.php:59 applications#saveManifest). Comment at ApplicationVersionsTab.vue:90-118 documents and fixes a prior defect where rollback went through the generic Application PUT and silently dropped both manifest and version (OR strips undeclared properties) -- now fixed by targeting the manifest endpoint directly.",
 				"reachedOn": "VirtualAppDetail 'Version history' tab, row action Rollback",
 				"owner": "ConductionNL/buildiq",
-				"spec": "openspec/specs/application-versions"
+				"spec": "openspec/specs/application-versions",
+				"requirement": "openspec/changes/capability-requirements-backfill/specs/application-versions :: A maker rolls a version back to an earlier manifest (REQ-BQCV-015)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -7600,7 +7616,8 @@
 				"evidence": "buildiq and nextcloud-vue components use Nextcloud CSS custom properties throughout (e.g. DashboardPageEditor.vue, DetailPageEditor.vue, StubPageEditor.vue all use var(--color-main-background), var(--color-main-text), var(--color-border) rather than hardcoded colours), which is the platform's own dark-mode mechanism -- no dedicated dark-mode code needed in buildiq itself",
 				"reachedOn": "any built app or builder screen, following the Nextcloud account's dark mode setting",
 				"owner": "nextcloud/server",
-				"change": "openbuild-nc-color-variables"
+				"change": "openbuild-nc-color-variables",
+				"requirement": "openspec/changes/openbuild-nc-color-variables/specs/frontend-foundation :: Built apps follow the user's dark mode"
 			},
 			"provider": "nextcloud",
 			"providerHow": "read-from-code",
@@ -7851,7 +7868,8 @@
 				"evidence": "src/manifest.json:89 declares buildiq's OWN 'walkthrough' block (completionConfigKey 'walkthrough_completed_version') with steps including 'define-schema' (line 211) and 'add-page' (line 273); the spotlight targets are data-walkthrough-id attributes present in src/views/SchemaDesigner.vue:24 and src/views/PageDesigner.vue:13,42 (15 data-walkthrough-id attributes total across src/). buildiq mounts itself via CnAppRoot like any built app, so this is the same walkthrough runtime that pg-walkthrough gives to built apps, dogfooded for the builder's own onboarding.",
 				"reachedOn": "buildiq's own app shell, first visit (or Settings -> Restart walkthrough)",
 				"owner": "ConductionNL/buildiq",
-				"change": "openbuild-first-time-setup"
+				"change": "openbuild-first-time-setup",
+				"requirement": "openspec/changes/openbuild-first-time-setup/specs/openbuild-first-time-setup :: The builder guides a first-time maker through its own walkthrough"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -8271,7 +8289,8 @@
 				"reachedOn": "occ buildiq:templates:publish / occ buildiq:seed-hello-world-fixture",
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/lifecycle-import-app-and-cli (OpenSpec pass 2026-09-27).",
-				"change": "lifecycle-import-app-and-cli"
+				"change": "lifecycle-import-app-and-cli",
+				"requirement": "openspec/changes/lifecycle-import-app-and-cli/specs/app-management-cli :: Publish templates from the command line (REQ-BQIC-008)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -8383,7 +8402,8 @@
 				"evidence": "src/views/DashboardIndex.vue:193,232,275 hybrid widget and count on built-app appType 'hybrid'; src/components/ApplicationCard.vue:163-167 hybrid marker; hybrid applications created by lib/Service/AppOverrideService.php:668 createHybridApp; DashboardIndex registered at src/registry.js:234",
 				"reachedOn": "Dashboard / and the application cards",
 				"owner": "ConductionNL/buildiq",
-				"spec": "openspec/specs/unified-app-model"
+				"spec": "openspec/specs/unified-app-model",
+				"requirement": "openspec/changes/capability-requirements-backfill/specs/unified-app-model :: Customised installed apps are listed beside built apps and marked hybrid (REQ-BQCV-016)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -8691,7 +8711,8 @@
 				"evidence": "src/views/RuleSetsPage.vue:90-92 row action 'Export' (exportRuleSet), page registered at src/manifest.d/20-business-rules.json",
 				"reachedOn": "/business-rules, which has no menu entry or link (reader r1), so reached only by typing the URL",
 				"owner": "ConductionNL/buildiq",
-				"spec": "openspec/specs/business-rules-engine"
+				"spec": "openspec/specs/business-rules-engine",
+				"requirement": "openspec/changes/capability-requirements-backfill/specs/business-rules-engine :: A rule set can be exported as a file (REQ-BQCV-017)"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -8809,7 +8830,8 @@
 				"evidence": "buildiq reaches the flow editor: src/views/AutomationsPage.vue:22 'Edit flows...' -> src/dialogs/FlowPickerDialog.vue:114 -> CnFlowEditModal; nextcloud-vue v2.55.1 src/components/CnFlowDetail/CnFlowDetail.vue:51-53 refuses edits to a published flow and offers 'Create draft version'; openregister origin/development lib/Service/Flow/FlowVersionService.php publishes N+1 and deprecates N in one transaction, and lib/Service/Flow/FlowPublishedGraph.php:89 runs each FlowRun on its own pinned getFlowVersion() (lib/Db/FlowRun.php:207)",
 				"reachedOn": "app detail -> Automations -> 'Edit flows...' -> flow canvas, Create draft version then Publish",
 				"owner": "ConductionNL/openregister",
-				"spec": "openspec/specs/automation-designer"
+				"spec": "openspec/specs/automation-designer",
+				"requirement": "openspec/changes/capability-requirements-backfill/specs/automation-designer :: Changing a published flow leaves running flows on their version (REQ-BQCV-018)"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -9086,7 +9108,8 @@
 				"evidence": "A maker sets a per-form sign-in level (minTrust: low, substantial or high; absent is anonymous) on both publish paths (buildiq#935). Registration forms: src/components/page-editor/fields/RegistrationFormEditor.vue 'Sign-in required' select writes minTrust into schema registrationForm (lib/Settings/register.d/50-registration-forms.json, enum low|substantial|high), lib/Service/RegistrationFormSignInLevel.php assertValid() (called from RegistrationFormValidator::validate()) refuses an unknown level or one combined with isPublic, and portaliq origin/development lib/Service/Intake/PortalFormBindingResolver.php render() carries the form's minTrust into lib/Service/Intake/PortalFormTrustLevel.php required(), enforced on the embed frame and submit (portaliq#725, PR #727). Form pages: src/dialogs/ExternalFormAccessDialog.vue 'Sign-in required' select; src/services/externalFormProvisioningService.js applySignInLevel() writes the level on the portalPage create action and collection without anonymous, keeps a stored level on a repeat save that names none, and grants no OpenRegister public create when a level is set. Tests: tests/services/externalFormProvisioningService.spec.js, tests/dialogs/ExternalFormAccessDialog.spec.js, tests/components/RegistrationFormEditorSignIn.spec.js, tests/Unit/Service/RegistrationFormValidatorTest.php.",
 				"reachedOn": "buildiq detail page, Registration forms, form editor 'Sign-in required'; or form page, External access, 'Sign-in required'; portaliq enforces it on the form",
 				"owner": "ConductionNL/portaliq",
-				"spec": "openspec/specs/external-form-provisioning"
+				"spec": "openspec/specs/external-form-provisioning",
+				"requirement": "openspec/changes/capability-requirements-backfill/specs/external-form-provisioning :: A form can require sign-in at a trust level (REQ-BQCV-019)"
 			},
 			"provider": "portaliq",
 			"providerHow": "read-from-code",
@@ -9246,7 +9269,8 @@
 				"evidence": "For registration forms served on a portaliq portal: portaliq origin/development src/widgets/TrafficForms.vue (registered src/registry.js:172, placed src/manifest.json:429) shows per form Started, Submitted, abandons, completion rate and the field most people left on. buildiq's own form pages have no usage statistics (src/ grep -iE 'submission.?count|abandon|conversion': no hits)",
 				"reachedOn": "portaliq traffic dashboard, forms table; nothing in buildiq",
 				"owner": "ConductionNL/portaliq",
-				"spec": "openspec/specs/external-form-provisioning"
+				"spec": "openspec/specs/external-form-provisioning",
+				"requirement": "openspec/changes/capability-requirements-backfill/specs/external-form-provisioning :: A form's use is reported where it is served (REQ-BQCV-020)"
 			},
 			"provider": "portaliq",
 			"providerHow": "read-from-code",

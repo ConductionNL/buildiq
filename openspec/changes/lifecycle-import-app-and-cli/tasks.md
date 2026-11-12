@@ -11,3 +11,4 @@
 - [ ] **T09**: Keep the exported README honest: its "Import application" line matches the button's label, and it names `occ buildiq:app:import` (REQ-BQIC-001). Verify: case in `tests/Unit/Service/ExportAppContentBundlerTest.php`.
 - [ ] **T10**: English and Dutch strings for the button, the dialog and the command descriptions (`l10n/en.json`, `l10n/nl.json`), and pages in `docs/user-guide/` (import) and `docs/Technical/` (commands).
 - [ ] **T11**: Run `openspec validate lifecycle-import-app-and-cli --strict`.
+- [ ] Check that row `ops-cli` meets "Publish templates from the command line (REQ-BQIC-008)", and add a test that asserts its scenarios.
