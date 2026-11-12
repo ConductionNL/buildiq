@@ -7,6 +7,7 @@
  */
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
+import { refusalData, refusalStatus } from './requestRefusal.js'
 
 /**
  * Normalise an axios rejection into `{status, error, message, providerMessage}`.
@@ -20,10 +21,9 @@ import { generateUrl } from '@nextcloud/router'
  * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
  */
 function normaliseError(err) {
-	const response = err && err.response
-	const data = (response && response.data) || {}
+	const data = refusalData(err)
 	return {
-		status: response ? response.status : 0,
+		status: refusalStatus(err),
 		error: data.error || 'network_error',
 		message: data.message || err.message || 'Request failed.',
 		providerMessage: data.providerMessage || '',
