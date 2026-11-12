@@ -339,6 +339,27 @@ import DownloadIcon from 'vue-material-design-icons/Download.vue'
 import UploadIcon from 'vue-material-design-icons/Upload.vue'
 import { useDataImport } from '../composables/useDataImport.js'
 
+/** OR import type by file extension. */
+const IMPORT_TYPES = new Map([
+	['xlsx', 'excel'],
+	['xls', 'excel'],
+	['csv', 'csv'],
+	['json', 'json'],
+])
+
+/**
+ * The lower-cased extension of a file name ('' without a name).
+ *
+ * @param {string|undefined} name The file name.
+ * @return {string}
+ */
+function fileExtension(name) {
+	return String(name || '')
+		.split('.')
+		.pop()
+		.toLowerCase()
+}
+
 const MAX_SAMPLE_ROWS = 5
 const LARGE_FILE_BYTES = 5 * 1024 * 1024
 
@@ -536,20 +557,7 @@ export default {
 			if (!this.file) {
 				return ''
 			}
-			const ext = String(this.file.name || '')
-				.split('.')
-				.pop()
-				.toLowerCase()
-			if (ext === 'xlsx' || ext === 'xls') {
-				return 'excel'
-			}
-			if (ext === 'csv') {
-				return 'csv'
-			}
-			if (ext === 'json') {
-				return 'json'
-			}
-			return ''
+			return IMPORT_TYPES.get(fileExtension(this.file.name)) || ''
 		},
 
 		/**
