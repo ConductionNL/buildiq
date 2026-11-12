@@ -3,6 +3,9 @@
 /**
  * Buildiq DocumentGenerationService
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Imperative half of the `generateDocument` automation action (design.md
  * Decision 1/2/3 of automation-document-action). On trigger fire, calls
  * Docudesk's EXISTING, already-integration-tested public route
@@ -56,9 +59,6 @@
  * `notify` dispatches a notification through the existing
  * {@see RuleActionDispatcher} (reuse, not a second notification path) and
  * MUST be paired with `attach` and/or `download-link`.
- *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
  * @package  OCA\Buildiq\Service

@@ -3,6 +3,9 @@
 /**
  * Buildiq RuleActionDispatcher
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Completes the ADR-031 §Exceptions rules-engine code path: the concrete
  * side-effect dispatcher `ConditionActionExecutor` has always accepted as an
  * optional `?callable $dispatcher` but that `RuleEngineService` never wired
@@ -43,9 +46,6 @@
  * unrecognised type so one bad action cannot abort a rule's remaining
  * actions when `continueOnError` is false but the type itself is merely
  * unsupported rather than a hard failure.
- *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
  * @package  OCA\Buildiq\Service

@@ -3,6 +3,9 @@
 /**
  * Nextcloud core `OC\Hooks\Emitter` stub.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * `OCP\Files\IRootFolder` (public API, `nextcloud/ocp`) extends BOTH
  * `OCP\Files\Folder` and `OC\Hooks\Emitter` — the latter is Nextcloud SERVER
  * CORE, not part of the `nextcloud/ocp` composer stub package, so it is
@@ -29,9 +32,6 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/automation-document-action/tasks.md#6.1
- *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
  */
 
 declare(strict_types=1);

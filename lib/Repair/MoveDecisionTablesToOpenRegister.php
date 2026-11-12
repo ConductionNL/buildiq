@@ -3,6 +3,9 @@
 /**
  * Buildiq MoveDecisionTablesToOpenRegister repair step.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Moves every decision table buildiq kept in its own `decision-table` schema
  * into OpenRegister's `decision-tables` register (decision 196), where the
  * rule engine now reads it through OpenRegister's DecisionTableStore.
@@ -32,9 +35,6 @@
  * @author    Conduction <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @version GIT: <git-id>
  *

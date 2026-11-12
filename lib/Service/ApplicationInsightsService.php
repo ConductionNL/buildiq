@@ -3,6 +3,9 @@
 /**
  * Buildiq ApplicationInsightsService
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Computes the four KPI scalars + activity timeline rendered by the
  * Application detail-page maintainer dashboard (spec
  * `buildiq-app-detail-overview`, capability `application-insights`).
@@ -31,9 +34,6 @@
  * `openregister-distinct-actor-aggregation`). When that floor change has
  * not yet landed, the Active-users KPI degrades to `0` rather than
  * 500-ing the whole endpoint.
- *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
  * @package  OCA\Buildiq\Service

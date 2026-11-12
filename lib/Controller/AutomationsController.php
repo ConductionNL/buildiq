@@ -3,6 +3,9 @@
 /**
  * Buildiq AutomationsController
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * REST surface for the automation-designer change (spec automation-designer
  * REQ-AUTD-005/006/007/008). This controller owns BOTH the CRUD on the
  * `automation` object and the EFFECTUAL actions that turn a stored automation
@@ -50,9 +53,6 @@
  * `versionUuid` is the Application's current `productionVersion`, in which
  * case only `['owners']` may enable. Every check runs BEFORE any compile
  * side effect; a rejected call never touches a compiled artifact.
- *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Controller
  * @package  OCA\Buildiq\Controller

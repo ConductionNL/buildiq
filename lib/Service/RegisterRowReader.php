@@ -3,6 +3,9 @@
 /**
  * Buildiq Register Row Reader
  *
+ * SPDX-FileCopyrightText:  2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Reads every row held in an OpenRegister register, across all of the
  * schemas that register owns.
  *
@@ -33,9 +36,6 @@
  * @link https://conduction.nl
  *
  * @spec openspec/specs/version-promotion/spec.md#requirement-empty-start-drops-target-rows-imports-source-schema-set
- *
- * @SPDX-License-Identifier: EUPL-1.2
- * @SPDX-FileCopyrightText:  2026 Conduction B.V. <info@conduction.nl>
  */
 
 declare(strict_types=1);

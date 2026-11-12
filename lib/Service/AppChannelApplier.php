@@ -3,6 +3,9 @@
 /**
  * Buildiq AppChannelApplier
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Applies a parsed v2 app-repo template's channels — `dataRegisters`,
  * `connectors`, `automations`, `skills`, `flows` and `agents` — onto this
  * instance (app-channel-application). The last two (app-repo-format-flow-agent-
@@ -32,9 +35,6 @@
  * `openconnector` and `hermiq` are OPTIONAL — Buildiq declares only
  * `openregister` — so their channels degrade with a machine-readable reason while
  * the remaining channels still apply.
- *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
  * @package  OCA\Buildiq\Service

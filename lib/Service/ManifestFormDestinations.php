@@ -3,6 +3,9 @@
 /**
  * Manifest Form Destinations
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Checks every form page of an app manifest against the object it saves
  * into, through OpenRegister's form destination validator (decision 179).
  * The page designer asks on every save, so an author sees each finding on its
@@ -36,9 +39,6 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/forms-are-valid-against-their-destination/specs/form-destination-authoring/spec.md#requirement-every-buildiq-form-must-be-valid-against-its-destination-before-it-is-published
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
