@@ -1738,7 +1738,8 @@
 				"requirement": [
 					"openspec/specs/openbuild-schema-designer :: Field editor manages property add, remove, reorder, type, and validation",
 					"openspec/changes/capability-requirements-backfill/specs/openbuild-schema-designer :: A field carries required, length, range and pattern rules (REQ-BQCV-021)"
-				]
+				],
+				"plan": "openspec/changes/form-dutch-field-formats"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -2553,7 +2554,11 @@
 				"reachedOn": "buildiq builder, Pages tab, live preview pane next to the config form",
 				"owner": "ConductionNL/buildiq",
 				"spec": "openspec/specs/openbuild-page-designer",
-				"requirement": "openspec/specs/openbuild-page-designer :: Live-preview pane mounts a sandboxed CnAppRoot when available"
+				"requirement": "openspec/specs/openbuild-page-designer :: Live-preview pane mounts a sandboxed CnAppRoot when available",
+				"plan": [
+					"openspec/changes/runtime-back-to-virtual-apps",
+					"openspec/changes/page-designer-live-preview-pane"
+				]
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -2738,6 +2743,41 @@
 					"BqPaginaToevoegen"
 				]
 			}
+		},
+		{
+			"id": "pg-nc-dashboard-widgets",
+			"area": "pages",
+			"name": "Show a built app's widgets on the user's Nextcloud dashboard.",
+			"source": "spec-round-2026-11-12",
+			"buildiq": "partial",
+			"nocobase": "unknown",
+			"budibase": "unknown",
+			"appsmith": "unknown",
+			"mendix": "unknown",
+			"power-apps": "unknown",
+			"built": {
+				"state": "building",
+				"evidence": "Building in openspec/changes/publish-widgets-to-nc-dashboard (14 of 18 tasks ticked). Open: move package-lock onto the nextcloud-vue release with ncDashboard (1.1), the manifest validation spec (1.2), the promote control in the widget placement editor (8.1) and a Playwright run (9.1).",
+				"owner": "ConductionNL/buildiq",
+				"change": "publish-widgets-to-nc-dashboard",
+				"plan": "openspec/changes/publish-widgets-to-nc-dashboard",
+				"requirement": [
+					"openspec/changes/publish-widgets-to-nc-dashboard/specs/openbuild-page-designer :: Promote a widget to the Nextcloud dashboard from the page designer",
+					"openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets :: Promoted widgets are registered with the Nextcloud dashboard"
+				]
+			},
+			"provider": "buildiq",
+			"providerHow": "read-from-code",
+			"feature": "page-types",
+			"featureConfidence": "low",
+			"reachedOn": "Page designer, widget placement editor (promote control, task 8.1), then the Nextcloud dashboard widget picker",
+			"evidence": {},
+			"screen": {
+				"board": [
+					"BqPaginaOntwerper"
+				]
+			},
+			"note": "Row added 12 Nov 2026 in the closing round (decision 395): the open change publish-widgets-to-nc-dashboard covered no row."
 		},
 		{
 			"id": "pg-charts",
@@ -3648,7 +3688,8 @@
 				"reachedOn": "buildiq builder /builder/:slug/pages, form page, field Details -> Validation; shown on the rendered form page",
 				"owner": "ConductionNL/nextcloud-vue",
 				"spec": "openspec/specs/form-editor-logic",
-				"requirement": "openspec/specs/form-editor-logic :: Validation builder authors the structured validation object (REQ-OBFEL-003)"
+				"requirement": "openspec/specs/form-editor-logic :: Validation builder authors the structured validation object (REQ-OBFEL-003)",
+				"plan": "openspec/changes/forms-are-valid-against-their-destination"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -3766,7 +3807,8 @@
 				"requirement": [
 					"openspec/changes/forms-per-case-type/specs/registration-form-builder :: Several forms per type value, one default per audience (REQ-OBRF-004)",
 					"openspec/changes/forms-per-case-type/specs/registration-form-builder :: A form declares the intake channel it serves (REQ-OBRF-007)"
-				]
+				],
+				"plan": "openspec/changes/competitor-parity-2026-09"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -4177,7 +4219,8 @@
 				"reachedOn": "/business-rules, header 'New rule set' (RuleSetsPage.vue:19, openCreate :210) opens the decision-table editor; page reachable only by typed URL",
 				"owner": "ConductionNL/buildiq",
 				"spec": "openspec/specs/business-rules-engine",
-				"requirement": "openspec/specs/business-rules-engine :: REQ-BRE-002 DecisionTable schema for DMN-based multi-condition rules"
+				"requirement": "openspec/specs/business-rules-engine :: REQ-BRE-002 DecisionTable schema for DMN-based multi-condition rules",
+				"plan": "openspec/changes/decision-tables-live-in-openregister"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -4485,7 +4528,8 @@
 				"owner": "ConductionNL/openregister",
 				"note": "Specified in ConductionNL/openregister openspec/changes/apphost-schedule-flow-action (openregister lane, OpenSpec pass 2026-09-27).",
 				"change": "openregister/apphost-schedule-flow-action",
-				"requirement": "openregister:openspec/specs/apphost-scheduling :: Publishing a manifest applies its schedules as scheduled flows"
+				"requirement": "openregister:openspec/specs/apphost-scheduling :: Publishing a manifest applies its schedules as scheduled flows",
+				"plan": "openspec/changes/schedules-editor-flow-migration"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -5029,7 +5073,8 @@
 				"requirement": [
 					"openspec/specs/openconnector-api-sources :: REQ-OCAS-002 Builder step: bind an OpenConnector endpoint as a data source",
 					"openspec/changes/integrations-connector-bound-pages/specs/connector-bound-page-runtime :: A connector-bound index page renders its records (REQ-BQCB-001)"
-				]
+				],
+				"plan": "openspec/changes/openbuild-connector-widget-runtime"
 			},
 			"provider": "integriq",
 			"providerHow": "read-from-code",
@@ -5257,7 +5302,8 @@
 					"openspec/changes/github-app-sync/specs/github-app-sync :: Owner links an application to a GitHub repository",
 					"openspec/changes/github-app-sync/specs/github-app-sync :: Push serializes via the repo format and routes every call through the broker",
 					"openspec/changes/github-app-sync/specs/github-app-sync :: Pull creates a new draft ApplicationVersion, never overwriting production"
-				]
+				],
+				"plan": "openspec/changes/github-app-repo-format"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -6428,7 +6474,8 @@
 				"requirement": [
 					"openspec/specs/github-app-repo-format :: Credentials declaration in the descriptor",
 					"openspec/specs/github-app-repo-format :: Credential values never leave the instance"
-				]
+				],
+				"plan": "openspec/changes/export-github-broker"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -6989,7 +7036,8 @@
 				"reachedOn": "VirtualAppDetail header actions 'Export' (src/components/ApplicationDetailActions.vue:39 mounts ExportDialog) and the 'Exports' sidebar tab (src/views/ExportJobsList.vue:77)",
 				"owner": "ConductionNL/buildiq",
 				"change": "openbuild-exporter",
-				"requirement": "openspec/specs/openbuild-exporter :: Export target — GitHub repository"
+				"requirement": "openspec/specs/openbuild-exporter :: Export target — GitHub repository",
+				"plan": "openspec/changes/export-github-broker"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -7315,7 +7363,8 @@
 				"requirement": [
 					"openspec/changes/github-shop-catalogue/specs/github-shop-catalogue :: Server-side GitHub search over the buildiq-app topic",
 					"openspec/changes/github-shop-catalogue/specs/github-shop-catalogue :: GitHub install parses the repo and reuses the clone seam"
-				]
+				],
+				"plan": "openspec/changes/github-app-repo-format"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -7484,7 +7533,8 @@
 				"requirement": [
 					"openspec/specs/layered-app-deltas :: A user delta is owned solely by its creator and gated by the flag",
 					"openspec/specs/layered-app-deltas :: Manifest resolves as base, then admin delta, then caller's user delta"
-				]
+				],
+				"plan": "openspec/changes/app-delta-override"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -7637,7 +7687,8 @@
 				"owner": "ConductionNL/buildiq",
 				"note": "Specified in openspec/changes/logic-shared-flows-and-automations (OpenSpec pass 2026-09-27).",
 				"change": "logic-shared-flows-and-automations",
-				"requirement": "openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings :: An automation can be shared with other apps (REQ-BQSF-003)"
+				"requirement": "openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings :: An automation can be shared with other apps (REQ-BQSF-003)",
+				"plan": "openspec/changes/rules-evaluation-for-other-apps"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -7677,7 +7728,8 @@
 				"requirement": [
 					"openspec/specs/github-app-repo-format :: A published repository carries the app's bound flows and agents",
 					"openspec/specs/app-export-completeness :: An export MUST carry the flows the application binds, and the agents that point at it"
-				]
+				],
+				"plan": "openspec/changes/apply-v2-channels"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -7720,6 +7772,10 @@
 				"requirement": [
 					"openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type :: The layout is served as a data-provider leaf (REQ-OBPL-003)",
 					"openspec/changes/forms-per-case-type/specs/registration-form-builder :: The leaf serves by audience and by name (REQ-OBRF-006)"
+				],
+				"plan": [
+					"openspec/changes/competitor-parity-2026-09",
+					"openspec/changes/pages-task-panel-beside-case-tabs"
 				]
 			},
 			"provider": "buildiq",
@@ -7943,7 +7999,8 @@
 				"reachedOn": "any built app, via the shared renderer components",
 				"owner": "ConductionNL/nextcloud-vue",
 				"change": "platform-properties",
-				"requirement": "openspec/changes/platform-properties/specs/platform-properties :: Built apps meet WCAG 2.1 AA without extra work (REQ-PLAT-005)"
+				"requirement": "openspec/changes/platform-properties/specs/platform-properties :: Built apps meet WCAG 2.1 AA without extra work (REQ-PLAT-005)",
+				"plan": "openspec/changes/openbuild-icon-button-accessible-names"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -8372,7 +8429,8 @@
 				"requirement": [
 					"openspec/specs/first-time-setup :: Provisioning runs from the admin settings page",
 					"openspec/changes/capability-requirements-backfill/specs/settings-and-observability :: An administrator configures the builder on the admin settings page (REQ-BQCV-026)"
-				]
+				],
+				"plan": "openspec/changes/openbuild-admin-settings-abstraction"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -9455,7 +9513,8 @@
 				"requirement": [
 					"openspec/specs/openbuild-page-designer :: Live-preview pane mounts a sandboxed CnAppRoot when available",
 					"openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer :: A form page is previewed as its users see it before it is published (REQ-BQCV-025)"
-				]
+				],
+				"plan": "openspec/changes/page-designer-live-preview-pane"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
