@@ -1,0 +1,3953 @@
+{
+    "openapi": "3.0.3",
+    "info": {
+        "title": "Buildiq",
+        "version": "0.7.16-unstable.20261103190000",
+        "description": "The JSON API of Buildiq, the app builder for Nextcloud: applications and their versions, page layouts, forms and registration forms, rules and automations, the copilot, exports, the shop and the settings behind them. The records themselves are stored in OpenRegister and read and written through its API; this document covers the endpoints Buildiq adds on top.\n\nEvery path is served under `/api/v1/`, the version this document describes. The unversioned `/api/` paths keep working, are deprecated, and name their `/api/v1/` successor in a `Link` header next to a `Deprecation` header. Errors are RFC 9457 problem details (`application/problem+json`), and every response carries an `API-Version` header. Paths that implement an external standard keep the formats of that standard and are not described here.",
+        "contact": {
+            "name": "Conduction B.V.",
+            "email": "info@conduction.nl",
+            "url": "https://conduction.nl"
+        },
+        "license": {
+            "name": "EUPL-1.2",
+            "url": "https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12"
+        }
+    },
+    "servers": [
+        {
+            "url": "https://{host}/index.php/apps/buildiq/api/v1",
+            "description": "The Buildiq API, version 1, on a Nextcloud instance.",
+            "variables": {
+                "host": {
+                    "default": "localhost",
+                    "description": "The host name of the Nextcloud instance."
+                }
+            }
+        }
+    ],
+    "security": [
+        {
+            "basic_auth": []
+        },
+        {
+            "bearer_auth": []
+        }
+    ],
+    "tags": [
+        {
+            "name": "agents",
+            "description": "Controller serving the Agent run-history read surface."
+        },
+        {
+            "name": "app-health",
+            "description": "Health samples in, a version's health out."
+        },
+        {
+            "name": "app-override",
+            "description": "Controller for the fleet-app manifest-override store-and-serve endpoints."
+        },
+        {
+            "name": "application-creation",
+            "description": "Controller for the four-step app-creation wizard."
+        },
+        {
+            "name": "application-insights",
+            "description": "Insights endpoint controller."
+        },
+        {
+            "name": "application-publish",
+            "description": "Controller exposing the Application publish / unpublish endpoints."
+        },
+        {
+            "name": "application-versions",
+            "description": "Controller serving the ApplicationVersion CRUD + strategy-delete surface."
+        },
+        {
+            "name": "applications",
+            "description": "Controller for the Buildiq manifest, list, diff and clone-from-template endpoints."
+        },
+        {
+            "name": "automations",
+            "description": "Controller serving the automation compile/enable/disable/dry-run/status API."
+        },
+        {
+            "name": "copilot",
+            "description": "Controller exposing the copilot health/plan/execute endpoints."
+        },
+        {
+            "name": "exports",
+            "description": "Controller for the Buildiq export pipeline."
+        },
+        {
+            "name": "form-destination",
+            "description": "Checks a manifest's form pages against their destinations."
+        },
+        {
+            "name": "form-library",
+            "description": "Controller for the form library's GitHub search."
+        },
+        {
+            "name": "generated-document",
+            "description": "Public (anonymous) download-link resolver for `generateDocument` output."
+        },
+        {
+            "name": "git-hub-sync",
+            "description": "Owner-gated controller for the GitHub link/push/pull/status endpoints."
+        },
+        {
+            "name": "open-api",
+            "description": "The OpenAPI document that describes this API."
+        },
+        {
+            "name": "page-layout",
+            "description": "HTTP surface for authoring page layouts and screen overrides."
+        },
+        {
+            "name": "preferences",
+            "description": "Per-user preferences controller."
+        },
+        {
+            "name": "registration-form",
+            "description": "HTTP surface for authoring registration forms."
+        },
+        {
+            "name": "rules",
+            "description": "Controller serving the rule-evaluation API."
+        },
+        {
+            "name": "settings",
+            "description": "Controller for managing Buildiq application settings."
+        },
+        {
+            "name": "setup",
+            "description": "First-time-setup status + config + actions for the abstract setup wizard."
+        },
+        {
+            "name": "shop",
+            "description": "Controller for the GitHub shop search + install endpoints."
+        },
+        {
+            "name": "store",
+            "description": "Store search + Buildiq's own template install."
+        },
+        {
+            "name": "version-promotion",
+            "description": "Controller exposing the promotion endpoint."
+        }
+    ],
+    "paths": {
+        "/agents/{uuid}/runs": {
+            "get": {
+                "operationId": "agents-runs",
+                "summary": "GET /api/agents/{uuid}/runs — an agent's transparent run-history list, newest first (agent-workspace spec \"Every agent run is transparently logged...",
+                "description": "GET /api/agents/{uuid}/runs — an agent's transparent run-history list, newest first (agent-workspace spec \"Every agent run is transparently logged and reviewable\"). Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "agents"
+                ],
+                "parameters": [
+                    {
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true,
+                        "description": "The Agent object uuid.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                }
+            }
+        },
+        "/app-overrides/{appId}": {
+            "get": {
+                "operationId": "app-override-get",
+                "summary": "Return the stored manifest delta for a fleet app, raw, for client-side merge",
+                "description": "Return the stored manifest delta for a fleet app, raw, for client-side merge. Returns the stored `manifestDelta` unchanged, or an empty delta `{}` (status 200) when no override exists, so the loader's delta merge is a no-op and the bundled manifest passes through. NEVER merges server-side (Buildiq lacks the fleet base — design D2). Login-required (the capability/edit flow is for authenticated users); `#[NoCSRFRequired]` is set because this is a read-only GET commonly fetched by the loader. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "app-override"
+                ],
+                "parameters": [
+                    {
+                        "name": "appId",
+                        "in": "path",
+                        "required": true,
+                        "description": "The kebab-case fleet-app id from the URL.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "scope",
+                        "in": "query",
+                        "required": false,
+                        "description": "The scope.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Problem422"
+                    }
+                }
+            },
+            "put": {
+                "operationId": "app-override-save",
+                "summary": "Upsert the manifest delta for a fleet app (the write endpoint)",
+                "description": "Upsert the manifest delta for a fleet app (the write endpoint). CSRF is enforced (no `#[NoCSRFRequired]`). Rejects anonymous callers (401) and callers without Buildiq access (403). Validates the delta shape and rejects an app-blanking delta (422) before persisting. Records `updatedBy` from the session UID. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "app-override"
+                ],
+                "parameters": [
+                    {
+                        "name": "appId",
+                        "in": "path",
+                        "required": true,
+                        "description": "The kebab-case fleet-app id from the URL.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "app-override-clear",
+                "summary": "Clear the manifest override for a fleet app (the reset endpoint)",
+                "description": "Clear the manifest override for a fleet app (the reset endpoint). CSRF is enforced (no `#[NoCSRFRequired]`). Rejects anonymous (401) and out-of-scope (403). Idempotent — a non-existent override is a success. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "app-override"
+                ],
+                "parameters": [
+                    {
+                        "name": "appId",
+                        "in": "path",
+                        "required": true,
+                        "description": "The kebab-case fleet-app id from the URL.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                }
+            }
+        },
+        "/app-overrides/{appId}/user": {
+            "get": {
+                "operationId": "app-override-get-user",
+                "summary": "Return the calling user's OWN user-scoped delta for a fleet app (for editing)",
+                "description": "Return the calling user's OWN user-scoped delta for a fleet app (for editing). Login-required. Always owner-scoped to the session UID — a caller can only ever read their own user delta (the UID is never a request param), so this is not an IDOR vector. Returns `{ allowed, exists, manifestDelta, versionUuid }` where `versionUuid` drives the Manifest detail page's OR version history. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "app-override"
+                ],
+                "parameters": [
+                    {
+                        "name": "appId",
+                        "in": "path",
+                        "required": true,
+                        "description": "The kebab-case fleet-app id from the URL.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                }
+            },
+            "put": {
+                "operationId": "app-override-save-user",
+                "summary": "Create or update the calling user's OWN user-scoped delta (the write endpoint)",
+                "description": "Create or update the calling user's OWN user-scoped delta (the write endpoint). CSRF-enforced. Rejects anonymous (401) and out-of-scope (403) callers, a malformed / app-blanking delta (422), and an app that does not permit per-user overrides (403). The owner is always the session UID — a caller can only ever write their own user delta (no-admin-idor). Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "app-override"
+                ],
+                "parameters": [
+                    {
+                        "name": "appId",
+                        "in": "path",
+                        "required": true,
+                        "description": "The kebab-case fleet-app id from the URL.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "app-override-clear-user",
+                "summary": "Clear the calling user's OWN user-scoped delta (the reset endpoint)",
+                "description": "Clear the calling user's OWN user-scoped delta (the reset endpoint). CSRF-enforced. Rejects anonymous (401) and out-of-scope (403). Idempotent — a non-existent user delta is a success. Owner-scoped to the session UID. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "app-override"
+                ],
+                "parameters": [
+                    {
+                        "name": "appId",
+                        "in": "path",
+                        "required": true,
+                        "description": "The kebab-case fleet-app id from the URL.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                }
+            }
+        },
+        "/app-overrides/{appId}/user-deltas": {
+            "get": {
+                "operationId": "app-override-list-user-overrides",
+                "summary": "List ALL users' overrides for a fleet app (the maintainer view)",
+                "description": "List ALL users' overrides for a fleet app (the maintainer view). Unlike {@see getUser()} (which is owner-scoped to the caller's own delta), this returns every user-scoped delta for the app so a maintainer can see who has a personal override from the Buildiq management screen. Gated to an OWNER/EDITOR of the parent Application or an NC admin — a regular user may NOT enumerate other users' deltas (no-admin-idor). Returns owner + version metadata only, never the private delta bodies. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "app-override"
+                ],
+                "parameters": [
+                    {
+                        "name": "appId",
+                        "in": "path",
+                        "required": true,
+                        "description": "The kebab-case fleet-app id from the URL.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                }
+            }
+        },
+        "/applications": {
+            "get": {
+                "operationId": "applications-list-mine",
+                "summary": "Return the list of Applications the caller has any role on",
+                "description": "Return the list of Applications the caller has any role on. Closes the list-endpoint IDOR (REQ-OBRBAC-002 / REQ-OBR-007). OR's schema-level read rule is a coarse group ACL — not a row-level predicate on `permissions.owners ∪ editors ∪ viewers` — so the frontend cannot rely on OR's REST list endpoint without leaking every Application's permissions block and manifest to every authenticated user. This action fetches all Applications via OR and filters them server-side using the same role-derivation rule as `requirePermission`. Admin callers receive the full unfiltered list and a single audit event is recorded (REQ-OBRBAC-006). Output shape mirrors what `ApplicationEditor.vue` previously received from OR REST: a flat array of Application objects with `uuid`, `id`, `slug`, `name`, `status`, `version`, `manifest`, `permissions` — no OR envelope, no pagination metadata. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "applications"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "201": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Problem409"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/Problem503"
+                    }
+                }
+            }
+        },
+        "/applications/from-template/{templateSlug}": {
+            "post": {
+                "operationId": "applications-create-from-template",
+                "summary": "Clone an Application from a template",
+                "description": "Clone an Application from a template. Reads the ApplicationTemplate identified by $templateSlug, creates a per-app `buildiq-{newSlug}` register, deep-copies its companion JSON schemas into that per-app register (REQ-OBTC-005 / hybrid register model), rewrites manifest schema refs to the new slug, and creates a new Application record in the shared `buildiq` register, tagged with the caller's UID (multi-user isolation). Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "applications"
+                ],
+                "parameters": [
+                    {
+                        "name": "templateSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "The source template slug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/Problem503"
+                    }
+                }
+            }
+        },
+        "/applications/wizard": {
+            "post": {
+                "operationId": "application-creation-wizard",
+                "summary": "Execute the wizard payload and return the newly-created Application UUID",
+                "description": "Execute the wizard payload and return the newly-created Application UUID. Returns 201 `{ \"applicationUuid\": \"<uuid>\" }` on success. Returns 403 when the caller is not an NC admin (issue #157). Returns 422 when the payload fails server-side validation. Returns 500 with rollback details when creation fails mid-flight. Returns 401 when the caller is not authenticated. Needs an administrator, or a user the matching admin setting is delegated to.",
+                "tags": [
+                    "application-creation"
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Problem422"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                }
+            }
+        },
+        "/applications/{appSlug}/versions": {
+            "get": {
+                "operationId": "application-versions-index",
+                "summary": "List ApplicationVersions for the named Application (spec REQ-OBV-107)",
+                "description": "List ApplicationVersions for the named Application (spec REQ-OBV-107). Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "application-versions"
+                ],
+                "parameters": [
+                    {
+                        "name": "appSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "Parent Application slug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "application-versions-create",
+                "summary": "Create an ApplicationVersion under the named Application (spec REQ-OBV-107 / REQ-OBV-102)",
+                "description": "Create an ApplicationVersion under the named Application (spec REQ-OBV-107 / REQ-OBV-102). Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "application-versions"
+                ],
+                "parameters": [
+                    {
+                        "name": "appSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "Parent Application slug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "strategy": {
+                                        "description": "The strategy."
+                                    }
+                                },
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "201": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "204": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Problem409"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Problem422"
+                    }
+                }
+            }
+        },
+        "/applications/{appSlug}/versions/{versionSlug}": {
+            "get": {
+                "operationId": "application-versions-show",
+                "summary": "Fetch a single ApplicationVersion by version slug (spec REQ-OBV-107)",
+                "description": "Fetch a single ApplicationVersion by version slug (spec REQ-OBV-107). Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "application-versions"
+                ],
+                "parameters": [
+                    {
+                        "name": "appSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "Parent Application slug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "versionSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "ApplicationVersion slug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    }
+                }
+            },
+            "put": {
+                "operationId": "application-versions-update",
+                "summary": "Update an ApplicationVersion (spec REQ-OBV-103 / REQ-OBV-104 / REQ-OBV-107)",
+                "description": "Update an ApplicationVersion (spec REQ-OBV-103 / REQ-OBV-104 / REQ-OBV-107). Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "application-versions"
+                ],
+                "parameters": [
+                    {
+                        "name": "appSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "Parent Application slug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "versionSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "ApplicationVersion slug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "strategy": {
+                                        "description": "The strategy."
+                                    }
+                                },
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "204": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Problem409"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Problem422"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "application-versions-destroy",
+                "summary": "Delete an ApplicationVersion using the requested strategy (spec REQ-OBV-108)",
+                "description": "Delete an ApplicationVersion using the requested strategy (spec REQ-OBV-108). Accepts the `strategy` query parameter (`delete-now | orphan-grace | keep-register`). Missing/unknown values yield 400. Attempts to delete the parent Application's production version yield 422. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "application-versions"
+                ],
+                "parameters": [
+                    {
+                        "name": "appSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "Parent Application slug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "versionSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "ApplicationVersion slug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "strategy",
+                        "in": "query",
+                        "required": false,
+                        "description": "The strategy.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Problem422"
+                    }
+                }
+            }
+        },
+        "/applications/{appSlug}/versions/{versionSlug}/release": {
+            "post": {
+                "operationId": "application-versions-release",
+                "summary": "Release a version: set-as-production + publish + demote previous production",
+                "description": "Release a version: set-as-production + publish + demote previous production. Owner-only with NO admin bypass (REQ-OBV-110 scenario 4): a Nextcloud admin who is not an owner of this Application cannot release. Delegates the cross-row mutation (publish chosen + move productionVersion pointer + archive previous production) to {@see ApplicationVersionService::releaseVersion()}. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "application-versions"
+                ],
+                "parameters": [
+                    {
+                        "name": "appSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "Parent Application slug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "versionSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "ApplicationVersion slug to release.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Problem422"
+                    }
+                }
+            }
+        },
+        "/applications/{appUuid}": {
+            "delete": {
+                "operationId": "application-publish-destroy",
+                "summary": "Delete an Application and the app wrapper it owns (versions, routes). The optional `deleteData` request param opts into ALSO deleting the...",
+                "description": "Delete an Application and the app wrapper it owns (versions, routes). The optional `deleteData` request param opts into ALSO deleting the per-version registers and every object stored in them; by default that data is preserved. Owner-only (admin bypass). Wired as `applicationPublish#destroy`. `deleteData` is read from the request (not a typed bool method arg) and resolved safe-by-default via {@see wantsDataPurge()}: only an explicit affirmative purges. This deliberately does NOT rely on PHP/Nextcloud stringy-bool coercion for an irreversible action. `orphanedResources` is a FAILURE list, not an inventory of what the delete left standing: it names the resources this call tried to remove and could not. The normal answer is an empty array, including the ordinary `deleteData: false` case, where the registers and their objects are kept on purpose and so were never attempted. Read as an inventory it says the opposite of what it means, which is how it was read during the demo review of 2026-09-19. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "application-publish"
+                ],
+                "parameters": [
+                    {
+                        "name": "appUuid",
+                        "in": "path",
+                        "required": true,
+                        "description": "Parent Application UUID (path param).",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                }
+            }
+        },
+        "/applications/{appUuid}/publish": {
+            "post": {
+                "operationId": "application-publish-publish",
+                "summary": "Publish an Application (status → published), making it appear in the menu",
+                "description": "Publish an Application (status → published), making it appear in the menu. Wired in `appinfo/routes.php` under name `applicationPublish#publish`. `#[NoAdminRequired]` — auth is per-Application owner RBAC, not NC admin. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "application-publish"
+                ],
+                "parameters": [
+                    {
+                        "name": "appUuid",
+                        "in": "path",
+                        "required": true,
+                        "description": "Parent Application UUID (path param).",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                }
+            }
+        },
+        "/applications/{appUuid}/unpublish": {
+            "post": {
+                "operationId": "application-publish-unpublish",
+                "summary": "Unpublish an Application (status → draft), removing it from the menu",
+                "description": "Unpublish an Application (status → draft), removing it from the menu. Wired in `appinfo/routes.php` under name `applicationPublish#unpublish`. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "application-publish"
+                ],
+                "parameters": [
+                    {
+                        "name": "appUuid",
+                        "in": "path",
+                        "required": true,
+                        "description": "Parent Application UUID (path param).",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                }
+            }
+        },
+        "/applications/{appUuid}/versions/{versionUuid}/health": {
+            "get": {
+                "operationId": "app-health-show",
+                "summary": "A version's health over `?window=` (7d, 30d, 90d), for whoever may see its insights",
+                "description": "A version's health over `?window=` (7d, 30d, 90d), for whoever may see its insights. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "app-health"
+                ],
+                "parameters": [
+                    {
+                        "name": "appUuid",
+                        "in": "path",
+                        "required": true,
+                        "description": "The application.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "versionUuid",
+                        "in": "path",
+                        "required": true,
+                        "description": "The version.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "window",
+                        "in": "query",
+                        "required": false,
+                        "description": "The window.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    }
+                }
+            }
+        },
+        "/applications/{appUuid}/versions/{versionUuid}/insights": {
+            "get": {
+                "operationId": "application-insights-get-insights",
+                "summary": "Return the insights payload for an Application + ApplicationVersion",
+                "description": "Return the insights payload for an Application + ApplicationVersion. Wired in `appinfo/routes.php` under name `applicationInsights#getInsights`. Annotated `#[NoAdminRequired]` per spec REQ-OBAI-002 — auth is per- Application RBAC inside the service, not Nextcloud admin. Status codes: - 200 + payload + `Cache-Control: public, max-age=60` on success - 400 on missing or invalid `window` value - 404 on unknown app/version, IDOR mismatch, or RBAC denial. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "application-insights"
+                ],
+                "parameters": [
+                    {
+                        "name": "appUuid",
+                        "in": "path",
+                        "required": true,
+                        "description": "Parent Application UUID (path param).",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "versionUuid",
+                        "in": "path",
+                        "required": true,
+                        "description": "ApplicationVersion UUID (path param).",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "window",
+                        "in": "query",
+                        "required": false,
+                        "description": "The window.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    }
+                }
+            }
+        },
+        "/applications/{appUuid}/versions/{versionUuid}/promote": {
+            "post": {
+                "operationId": "version-promotion-promote",
+                "summary": "Promote a source ApplicationVersion to its `promotesTo` neighbour",
+                "description": "Promote a source ApplicationVersion to its `promotesTo` neighbour. Wired in `appinfo/routes.php` under name `VersionPromotion#promote`. Annotated `#[NoAdminRequired]` per spec REQ-OBVP-001 — auth is per-Application RBAC, not Nextcloud admin (spec REQ-OBVP-007). Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "version-promotion"
+                ],
+                "parameters": [
+                    {
+                        "name": "appUuid",
+                        "in": "path",
+                        "required": true,
+                        "description": "Parent Application UUID (path param).",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "versionUuid",
+                        "in": "path",
+                        "required": true,
+                        "description": "Source ApplicationVersion UUID (path param).",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "strategy": {
+                                        "description": "The strategy."
+                                    }
+                                },
+                                "additionalProperties": false
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Problem409"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Problem422"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                }
+            }
+        },
+        "/applications/{slug}/copy": {
+            "post": {
+                "operationId": "applications-copy",
+                "summary": "Copy an app into a new one, owned by the caller (REQ-BQCP-001)",
+                "description": "Copy an app into a new one, owned by the caller (REQ-BQCP-001). The copy goes through the template seam without touching the template catalogue: the source's companion schemas and current manifest are captured in memory, de-namespaced exactly as \"Save as template\" does ({@see AppTemplateCapture}), and installed by installFromTemplateArray(). So the copy gets its own register, its own namespaced schemas and rewritten references, and no records. Gates (REQ-BQCP-002), the same as cloning a template: a signed-in Nextcloud administrator (copying provisions a register), the from-template rate limit, and on top an owner or editor of the source app; a viewer is refused even when they are an administrator. A taken slug is the seam's 409. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "applications"
+                ],
+                "parameters": [
+                    {
+                        "name": "slug",
+                        "in": "path",
+                        "required": true,
+                        "description": "The source app's slug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Problem409"
+                    }
+                }
+            }
+        },
+        "/applications/{slug}/exports": {
+            "post": {
+                "operationId": "exports-submit",
+                "summary": "Queue an export of an Application version",
+                "description": "Queue an export of an Application version. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "exports"
+                ],
+                "parameters": [
+                    {
+                        "name": "slug",
+                        "in": "path",
+                        "required": true,
+                        "description": "Application slug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "202": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Problem422"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                }
+            }
+        },
+        "/applications/{slug}/github/link": {
+            "post": {
+                "operationId": "git-hub-sync-link",
+                "summary": "Link the app to a GitHub repository (owner-only)",
+                "description": "Link the app to a GitHub repository (owner-only). Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "git-hub-sync"
+                ],
+                "parameters": [
+                    {
+                        "name": "slug",
+                        "in": "path",
+                        "required": true,
+                        "description": "The Application slug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "owner": {
+                                        "description": "The owner."
+                                    },
+                                    "name": {
+                                        "description": "The name."
+                                    },
+                                    "org": {
+                                        "description": "The org."
+                                    }
+                                },
+                                "additionalProperties": false
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                }
+            }
+        },
+        "/applications/{slug}/github/pull": {
+            "post": {
+                "operationId": "git-hub-sync-pull",
+                "summary": "Pull a ref into a new draft version (owner-only, never overwrites production)",
+                "description": "Pull a ref into a new draft version (owner-only, never overwrites production). Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "git-hub-sync"
+                ],
+                "parameters": [
+                    {
+                        "name": "slug",
+                        "in": "path",
+                        "required": true,
+                        "description": "The Application slug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "ref": {
+                                        "description": "The ref."
+                                    }
+                                },
+                                "additionalProperties": false
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Problem422"
+                    }
+                }
+            }
+        },
+        "/applications/{slug}/github/push": {
+            "post": {
+                "operationId": "git-hub-sync-push",
+                "summary": "Publish (push) the chosen version to GitHub through the broker (owner-only)",
+                "description": "Publish (push) the chosen version to GitHub through the broker (owner-only). Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "git-hub-sync"
+                ],
+                "parameters": [
+                    {
+                        "name": "slug",
+                        "in": "path",
+                        "required": true,
+                        "description": "The Application slug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                }
+            }
+        },
+        "/applications/{slug}/github/status": {
+            "get": {
+                "operationId": "git-hub-sync-status",
+                "summary": "Report linkage, provenance, and feature-detection flags (viewer-readable)",
+                "description": "Report linkage, provenance, and feature-detection flags (viewer-readable). Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "git-hub-sync"
+                ],
+                "parameters": [
+                    {
+                        "name": "slug",
+                        "in": "path",
+                        "required": true,
+                        "description": "The Application slug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                }
+            }
+        },
+        "/applications/{slug}/health-samples": {
+            "post": {
+                "operationId": "app-health-record",
+                "summary": "Store a running app's samples. The app and version come from the slug and `_version`; a caller who may not open that version gets the unknown-app...",
+                "description": "Store a running app's samples. The app and version come from the slug and `_version`; a caller who may not open that version gets the unknown-app answer and nothing is stored. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "app-health"
+                ],
+                "parameters": [
+                    {
+                        "name": "slug",
+                        "in": "path",
+                        "required": true,
+                        "description": "The app slug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "_version": {
+                                        "description": "The version."
+                                    },
+                                    "pages": {
+                                        "description": "The pages."
+                                    }
+                                },
+                                "additionalProperties": false
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    }
+                }
+            }
+        },
+        "/applications/{slug}/manifest": {
+            "get": {
+                "operationId": "applications-get-manifest",
+                "summary": "Return the stored manifest JSON blob for a given virtual-app slug",
+                "description": "Return the stored manifest JSON blob for a given virtual-app slug. Lookup path: slug → BuiltAppRoute → applicationUuid → Application → manifest. The manifest is returned UNWRAPPED (no OR envelope) so useAppManifest in @conduction/nextcloud-vue consumes it directly. Version routing (spec `buildiq-version-routing` REQ-OBVR-001): --------------------------------------------------------------- An optional `?_version=<versionSlug>` query parameter selects a specific ApplicationVersion. The underscore-prefix form (`_version`, not `version`) is Buildiq's system-reserved namespace marker — it prevents collision with user-defined `?version=` params that citizen developers may add to their virtual apps' routes. When `?_version=` is present, the request is routed through ManifestResolverService which enforces RBAC: viewers and non-members receive 404 (not 403) for non-production versions; unknown version slugs also 404 (same response — no existence leak, REQ-OBVR-003 / Decision 8). When `?_version=` is absent the endpoint behaves exactly as before, returning the production manifest to any authenticated caller with any role on the Application (the existing requirePermission check). Visibility model ---------------- `#[NoAdminRequired]` is intentional: the hello-world seed app (and any future \"always-on\" virtual app) is publicly mountable as soon as a route exists. RBAC lives inside ManifestResolverService (for versioned access) and requirePermission (for the production path). Owner signal (admin-settings-owner-gating): before the `permissions` block is stripped, {@see injectOwnerSignal()} projects a read-only `runtime.user.isOwner` boolean onto the returned manifest, computed via `PermissionResolver::matchesCaller(...['owners'])` with no NC super-admin fallback — see design.md Decision D3. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "applications"
+                ],
+                "parameters": [
+                    {
+                        "name": "slug",
+                        "in": "path",
+                        "required": true,
+                        "description": "The virtual-app slug from the URL.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "_version",
+                        "in": "query",
+                        "required": false,
+                        "description": "The version.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "manifest",
+                        "in": "query",
+                        "required": false,
+                        "description": "The manifest.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "201": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Problem409"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/Problem503"
+                    }
+                }
+            },
+            "put": {
+                "operationId": "applications-save-manifest",
+                "summary": "Persist an in-app manifest edit (pages / menu / settings / sidebar / actions)",
+                "description": "Persist an in-app manifest edit (pages / menu / settings / sidebar / actions). Symmetric write counterpart to {@see getManifest}: the standalone runtime's Buildiq edit shell (ADR-041) PUTs the full edited manifest here on Save. Resolves the app by slug, enforces owner/editor RBAC (viewers are read-only; NC admins get an audited bypass), then surgically writes the `manifest` field onto the production ApplicationVersion (versioned model, ADR-002), falling back to the Application object for legacy un-versioned apps. The caller- supplied `permissions` block is stripped so a non-owner cannot escalate. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "applications"
+                ],
+                "parameters": [
+                    {
+                        "name": "slug",
+                        "in": "path",
+                        "required": true,
+                        "description": "The virtual-app slug from the URL.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "manifest": {
+                                        "description": "The manifest."
+                                    }
+                                },
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "201": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Problem409"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/Problem503"
+                    }
+                }
+            }
+        },
+        "/applications/{slug}/versions/diff": {
+            "get": {
+                "operationId": "applications-diff-versions",
+                "summary": "Return two manifest blobs side-by-side so the client diff component can render without a second round-trip (REQ-OBV-005, chain spec #6)",
+                "description": "Return two manifest blobs side-by-side so the client diff component can render without a second round-trip (REQ-OBV-005, chain spec #6). Resolves `{slug}` to an Application via the BuiltAppRoute index, accepts the literal string `draft` for either `from`/`to` to mean \"the current draft manifest on the Application\", otherwise looks up both referenced ApplicationVersion rows. Returns a shape of `{ from: { manifest, version, publishedAt }, to: { manifest, version, publishedAt } }`. Per ADR-032 this is thin glue (~30 LOC of logic); no service class. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "applications"
+                ],
+                "parameters": [
+                    {
+                        "name": "slug",
+                        "in": "path",
+                        "required": true,
+                        "description": "The virtual-app slug from the URL.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "from",
+                        "in": "query",
+                        "required": true,
+                        "description": "ApplicationVersion UUID or the literal `draft`.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "in": "query",
+                        "required": true,
+                        "description": "ApplicationVersion UUID or the literal `draft`.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                }
+            }
+        },
+        "/automations": {
+            "post": {
+                "operationId": "automations-create",
+                "summary": "Create an automation on an Application version (REQ-AUTD-008)",
+                "description": "Create an automation on an Application version (REQ-AUTD-008). Delegates to {@see AutomationWriteService::create()}, which authorises against the PARENT APPLICATION's `permissions` block (named by the body's mandatory `applicationSlug`/`versionUuid`) and only then writes, in system context. See the class docblock for why this route exists rather than the designer POSTing OR REST directly. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "automations"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                }
+            }
+        },
+        "/automations/{uuid}": {
+            "put": {
+                "operationId": "automations-update",
+                "summary": "Replace an automation's definition (REQ-AUTD-008)",
+                "description": "Replace an automation's definition (REQ-AUTD-008). The stored record's OWN `applicationSlug`/`versionUuid` decide the authorization scope, never the client's body — otherwise a caller who holds a role on application A could move an automation belonging to application B by posting A's slug. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "automations"
+                ],
+                "parameters": [
+                    {
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true,
+                        "description": "The Automation object uuid.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "automations-destroy",
+                "summary": "Delete an automation and remove its compiled artifacts (REQ-AUTD-008)",
+                "description": "Delete an automation and remove its compiled artifacts (REQ-AUTD-008). The artifacts are removed FIRST: a deleted definition whose compiled artifacts are still live is the one outcome that leaves the instance acting on a rule nobody can see or edit any more. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "automations"
+                ],
+                "parameters": [
+                    {
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true,
+                        "description": "The Automation object uuid.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                }
+            }
+        },
+        "/automations/{uuid}/compile": {
+            "post": {
+                "operationId": "automations-compile",
+                "summary": "Recompile an automation in place (upsert its artifacts)",
+                "description": "Recompile an automation in place (upsert its artifacts). Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "automations"
+                ],
+                "parameters": [
+                    {
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true,
+                        "description": "The Automation object uuid.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                }
+            }
+        },
+        "/automations/{uuid}/disable": {
+            "post": {
+                "operationId": "automations-disable",
+                "summary": "Disable an automation — recompiles with every artifact inert (design.md Decision 5)",
+                "description": "Disable an automation — recompiles with every artifact inert (design.md Decision 5). Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "automations"
+                ],
+                "parameters": [
+                    {
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true,
+                        "description": "The Automation object uuid.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                }
+            }
+        },
+        "/automations/{uuid}/dry-run": {
+            "post": {
+                "operationId": "automations-dry-run",
+                "summary": "Evaluate an automation via the rules engine with `dryRun: true` — dispatches no side effect and mutates no compiled artifact (spec REQ-AUTD-007 /...",
+                "description": "Evaluate an automation via the rules engine with `dryRun: true` — dispatches no side effect and mutates no compiled artifact (spec REQ-AUTD-007 / design.md Decision 9). Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "automations"
+                ],
+                "parameters": [
+                    {
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true,
+                        "description": "The Automation object uuid.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Problem422"
+                    }
+                }
+            }
+        },
+        "/automations/{uuid}/enable": {
+            "post": {
+                "operationId": "automations-enable",
+                "summary": "Enable an automation (owners-only when its version is the Application's current production version — spec REQ-AUTD-008)",
+                "description": "Enable an automation (owners-only when its version is the Application's current production version — spec REQ-AUTD-008). Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "automations"
+                ],
+                "parameters": [
+                    {
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true,
+                        "description": "The Automation object uuid.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                }
+            }
+        },
+        "/automations/{uuid}/status": {
+            "get": {
+                "operationId": "automations-status",
+                "summary": "Recompute drift against the last-applied provenance (spec REQ-AUTD-005)",
+                "description": "Recompute drift against the last-applied provenance (spec REQ-AUTD-005). Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "automations"
+                ],
+                "parameters": [
+                    {
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true,
+                        "description": "The Automation object uuid.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Problem422"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                }
+            }
+        },
+        "/copilot/discard": {
+            "post": {
+                "operationId": "copilot-discard",
+                "summary": "POST /api/copilot/discard — log a discarded agent-chat proposal",
+                "description": "POST /api/copilot/discard — log a discarded agent-chat proposal. Body: `{ agentId: string, prompt: string, summary: string, steps: array }`. Exists only for the agent-scoped chat surface (agent-workspace spec \"A discarded proposal is still logged\") — the bare copilot panel never calls this endpoint, so a bare-copilot discard remains request-free exactly as before this change. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "copilot"
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "agentId": {
+                                        "description": "The agent id."
+                                    },
+                                    "prompt": {
+                                        "description": "The prompt."
+                                    }
+                                },
+                                "additionalProperties": false
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Problem422"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                }
+            }
+        },
+        "/copilot/execute": {
+            "post": {
+                "operationId": "copilot-execute",
+                "summary": "POST /api/copilot/execute — execute a reviewed plan atomically",
+                "description": "POST /api/copilot/execute — execute a reviewed plan atomically. Body: `{ summary: string, steps: array, agentId?: string, prompt?: string }` — the plan echoed back verbatim. `agentId`/`prompt` are only meaningful together (the original brief for this turn, needed to write a complete `AgentRun` record). Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "copilot"
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "agentId": {
+                                        "description": "The agent id."
+                                    },
+                                    "prompt": {
+                                        "description": "The prompt."
+                                    }
+                                },
+                                "additionalProperties": false
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                }
+            }
+        },
+        "/copilot/health": {
+            "get": {
+                "operationId": "copilot-health",
+                "summary": "GET /api/copilot/health — provider availability probe",
+                "description": "GET /api/copilot/health — provider availability probe. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "copilot"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/Problem503"
+                    }
+                }
+            }
+        },
+        "/copilot/plan": {
+            "post": {
+                "operationId": "copilot-plan",
+                "summary": "POST /api/copilot/plan — turn a brief into a validated, reviewable plan",
+                "description": "POST /api/copilot/plan — turn a brief into a validated, reviewable plan. Body: `{ brief: string, appSlug?: string, agentId?: string, versionSlug?: string }`. Performs zero builder writes (an agent-scoped rejected plan still writes one `AgentRun` audit record — see `CopilotService::plan()`). Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "copilot"
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "brief": {
+                                        "description": "The brief."
+                                    },
+                                    "appSlug": {
+                                        "description": "The app slug."
+                                    },
+                                    "agentId": {
+                                        "description": "The agent id."
+                                    },
+                                    "versionSlug": {
+                                        "description": "The version slug."
+                                    }
+                                },
+                                "additionalProperties": false
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                }
+            }
+        },
+        "/exports/server-requirements": {
+            "get": {
+                "operationId": "exports-server-requirements",
+                "summary": "What a server needs to run an exported app on its own",
+                "description": "What a server needs to run an exported app on its own. Read-only and not tied to an application: the versions come from the app template and the installed OpenRegister. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "exports"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                }
+            }
+        },
+        "/exports/{uuid}/download": {
+            "get": {
+                "operationId": "exports-download",
+                "summary": "Stream the ZIP for a completed ExportJob",
+                "description": "Stream the ZIP for a completed ExportJob. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "exports"
+                ],
+                "parameters": [
+                    {
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true,
+                        "description": "ExportJob UUID.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            },
+                            "application/octet-stream": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "410": {
+                        "$ref": "#/components/responses/Problem410"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                }
+            }
+        },
+        "/exports/{uuid}/run": {
+            "post": {
+                "operationId": "exports-run",
+                "summary": "Run a queued export now instead of waiting for the next cron run",
+                "description": "Run a queued export now instead of waiting for the next cron run. The export dialog calls this right after submit() and does not wait for the answer; it follows the job's status as before. The request itself runs the export, so it keeps going when the browser moves on. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "exports"
+                ],
+                "parameters": [
+                    {
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true,
+                        "description": "ExportJob UUID.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Problem409"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                }
+            }
+        },
+        "/forms/destination-check": {
+            "post": {
+                "operationId": "form-destination-check",
+                "summary": "Every destination finding on the manifest's form pages",
+                "description": "Every destination finding on the manifest's form pages. Body: `{ appSlug, manifest }`. Answer: `{ accepted, findings }`. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "form-destination"
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "manifest": {
+                                        "description": "The manifest."
+                                    },
+                                    "appSlug": {
+                                        "description": "The app slug."
+                                    }
+                                },
+                                "additionalProperties": false
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                }
+            }
+        },
+        "/generated-documents/{token}": {
+            "get": {
+                "operationId": "generated-document-download",
+                "summary": "Stream a `download-link`-mode generated document, or a uniform 404 for any unknown/expired/malformed token",
+                "description": "Stream a `download-link`-mode generated document, or a uniform 404 for any unknown/expired/malformed token. Public: it needs no login.",
+                "tags": [
+                    "generated-document"
+                ],
+                "security": [],
+                "parameters": [
+                    {
+                        "name": "token",
+                        "in": "path",
+                        "required": true,
+                        "description": "The random download token.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            },
+                            "application/octet-stream": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/openapi.json": {
+            "get": {
+                "operationId": "open-api-show",
+                "summary": "The OpenAPI document of this API",
+                "description": "Returns this document, with `info.version` set to the installed version. It needs no login and can be read from any origin.",
+                "tags": [
+                    "open-api"
+                ],
+                "security": [],
+                "responses": {
+                    "200": {
+                        "description": "The OpenAPI document.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            },
+                            "access-control-allow-origin": {
+                                "description": "Always `*`.",
+                                "schema": {
+                                    "type": "string",
+                                    "enum": [
+                                        "*"
+                                    ]
+                                }
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    }
+                }
+            }
+        },
+        "/page-layouts": {
+            "get": {
+                "operationId": "page-layout-index",
+                "summary": "The stored layouts for one schema, with their drift state",
+                "description": "The stored layouts for one schema, with their drift state. Needs an administrator, or a user the matching admin setting is delegated to.",
+                "tags": [
+                    "page-layout"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    }
+                }
+            },
+            "put": {
+                "operationId": "page-layout-save",
+                "summary": "Store one layout or override",
+                "description": "Store one layout or override. Needs an administrator, or a user the matching admin setting is delegated to.",
+                "tags": [
+                    "page-layout"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Problem422"
+                    }
+                }
+            }
+        },
+        "/page-layouts/{layoutId}/recut": {
+            "post": {
+                "operationId": "page-layout-recut",
+                "summary": "Re-pin a drifted override to the base it has now",
+                "description": "Re-pin a drifted override to the base it has now. Needs an administrator, or a user the matching admin setting is delegated to.",
+                "tags": [
+                    "page-layout"
+                ],
+                "parameters": [
+                    {
+                        "name": "layoutId",
+                        "in": "path",
+                        "required": true,
+                        "description": "The override's id.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Problem422"
+                    }
+                }
+            }
+        },
+        "/preferences/{key}": {
+            "get": {
+                "operationId": "preferences-get-preference",
+                "summary": "Read a per-user preference value",
+                "description": "Read a per-user preference value. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "preferences"
+                ],
+                "x-provided-by": "openregister",
+                "parameters": [
+                    {
+                        "name": "key",
+                        "in": "path",
+                        "required": true,
+                        "description": "The preference key (kebab/alphanumeric).",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                }
+            },
+            "put": {
+                "operationId": "preferences-set-preference",
+                "summary": "Write a per-user preference value. An empty value clears it",
+                "description": "Write a per-user preference value. An empty value clears it. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "preferences"
+                ],
+                "x-provided-by": "openregister",
+                "parameters": [
+                    {
+                        "name": "key",
+                        "in": "path",
+                        "required": true,
+                        "description": "The preference key (kebab/alphanumeric).",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "value": {
+                                        "type": "string",
+                                        "description": "The value to store (empty string clears it)."
+                                    }
+                                },
+                                "additionalProperties": false
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                }
+            }
+        },
+        "/registration-forms": {
+            "get": {
+                "operationId": "registration-form-index",
+                "summary": "The stored forms for one schema",
+                "description": "The stored forms for one schema. Needs an administrator, or a user the matching admin setting is delegated to.",
+                "tags": [
+                    "registration-form"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    }
+                }
+            },
+            "put": {
+                "operationId": "registration-form-save",
+                "summary": "Store one form",
+                "description": "Store one form. Needs an administrator, or a user the matching admin setting is delegated to.",
+                "tags": [
+                    "registration-form"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Problem422"
+                    }
+                }
+            }
+        },
+        "/registration-forms/target": {
+            "get": {
+                "operationId": "registration-form-target",
+                "summary": "What the consuming schema declares: its property names and the channels it accepts, so the builder offers pickers instead of free text",
+                "description": "What the consuming schema declares: its property names and the channels it accepts, so the builder offers pickers instead of free text. Needs an administrator, or a user the matching admin setting is delegated to.",
+                "tags": [
+                    "registration-form"
+                ],
+                "parameters": [
+                    {
+                        "name": "channelProperty",
+                        "in": "query",
+                        "required": false,
+                        "description": "The channel property.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    }
+                }
+            }
+        },
+        "/rules/{ruleSetSlug}/decision-table": {
+            "put": {
+                "operationId": "rules-save-decision-table",
+                "summary": "Write a rule set's decision table into OpenRegister's decision-tables register",
+                "description": "Write a rule set's decision table into OpenRegister's decision-tables register. The table editor sends buildiq's authoring shape (input columns with an expression path, rules as a condition map and a value map); the table is stored in the shape OpenRegister evaluates, under the key of the rule set the caller resolved. OpenRegister refuses a table it cannot run, and that refusal comes back as 422 with its reason. Admin-only, as writing a decision table was in buildiq's own register: the guard lives in the method body, the posture SettingsController::update() uses, because `#[NoAdminRequired]` alone would open the write to any signed-in user. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "rules"
+                ],
+                "parameters": [
+                    {
+                        "name": "ruleSetSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "The RuleSet slug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "hitPolicy": {
+                                        "description": "The hit policy."
+                                    },
+                                    "inputColumns": {
+                                        "description": "The input columns."
+                                    },
+                                    "outputColumns": {
+                                        "description": "The output columns."
+                                    },
+                                    "rules": {
+                                        "description": "The rules."
+                                    }
+                                },
+                                "additionalProperties": false
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Problem422"
+                    }
+                }
+            }
+        },
+        "/rules/{ruleSetSlug}/evaluate": {
+            "post": {
+                "operationId": "rules-evaluate",
+                "summary": "Synchronously evaluate a RuleSet against a payload",
+                "description": "Synchronously evaluate a RuleSet against a payload. `mode: preview` is the live evaluation a form runs while it is filled in: the same authentication, RBAC, rate limit and size guard, but no execution log entry and no side-effecting action (REQ-BQLV-004). Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "rules"
+                ],
+                "parameters": [
+                    {
+                        "name": "ruleSetSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "The RuleSet slug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                }
+            }
+        },
+        "/rules/{ruleSetSlug}/schema": {
+            "get": {
+                "operationId": "rules-schema",
+                "summary": "Return a RuleSet's metadata + active version for UI binding",
+                "description": "Return a RuleSet's metadata + active version for UI binding. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "rules"
+                ],
+                "parameters": [
+                    {
+                        "name": "ruleSetSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "The RuleSet slug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    }
+                }
+            }
+        },
+        "/rules/{ruleSetSlug}/test-all": {
+            "post": {
+                "operationId": "rules-test-all",
+                "summary": "Run all TestCases for a RuleSet and return pass/fail per case",
+                "description": "Run all TestCases for a RuleSet and return pass/fail per case. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "rules"
+                ],
+                "parameters": [
+                    {
+                        "name": "ruleSetSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "The RuleSet slug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Problem422"
+                    }
+                }
+            }
+        },
+        "/settings": {
+            "get": {
+                "operationId": "settings-index",
+                "summary": "Retrieve all current settings",
+                "description": "Retrieve all current settings. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "settings"
+                ],
+                "x-provided-by": "openregister",
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "settings-create",
+                "summary": "Legacy alias for {@see update()} — `POST /api/settings`",
+                "description": "Legacy alias for {@see update()} — `POST /api/settings`. The canonical AppHost route table still ships `settings#create` for the pre-ADR-066 `index/create/load` dialect, so this stays reachable and MUST remain a real write, not an empty success (ADR-029). It delegates to `update()`, which carries the H6 admin guard, so both verbs share one enforcement path and cannot drift apart. Admin-only via the guard inside {@see update()}; non-admin callers receive 403 and unauthenticated callers 401, exactly as before. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "settings"
+                ],
+                "x-provided-by": "openregister",
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                }
+            },
+            "put": {
+                "operationId": "settings-update",
+                "summary": "Update settings with provided data — the canonical write",
+                "description": "Update settings with provided data — the canonical write. `\\OCA\\OpenRegister\\AppHost\\Routes::standard()` (invoked from `appinfo/routes.php`) ships `PUT /api/settings` as `settings#update`, and `AppHost\\Bootstrap::aliasControllerUnlessLeafDefinesIt()` only substitutes OpenRegister's `GenericSettingsController` when the leaf app does NOT ship a class of that name. Buildiq DOES ship this class, so the alias is skipped and every canonical method routed to `settings#` must exist HERE. A missing one is not a 404 — the router matches the URL and the dispatcher reflects the method, so the request dies with a 500 (measured 2026-08-08: `PUT /apps/buildiq/api/settings` → 500, `ReflectionException: Method OCA\\Buildiq\\Controller\\SettingsController::update() does not exist`). Persists only the whitelisted `CONFIG_KEYS` / `SECRET_KEYS` (the service ignores anything else) and returns the freshly re-read settings array, so the caller sees what was actually stored rather than what it submitted. Admin-only: writing Buildiq configuration affects all users on the instance; non-admin callers receive 403 (H6 guard). The guard lives in the method body rather than in an `#[AuthorizedAdminSetting]` attribute to match `index()`/`load()`'s established posture — Nextcloud's SecurityMiddleware only evaluates attributes on the DISPATCHED method, so `#[NoAdminRequired]` alone would leave this admin write open to any authenticated user. Needs an administrator, or a user the matching admin setting is delegated to.",
+                "tags": [
+                    "settings"
+                ],
+                "x-provided-by": "openregister",
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    }
+                }
+            }
+        },
+        "/settings/load": {
+            "post": {
+                "operationId": "settings-load",
+                "summary": "Re-import the configuration from openbuild_register.json",
+                "description": "Re-import the configuration from openbuild_register.json. Forces a fresh import regardless of version, auto-configuring all schema and register IDs from the import result. Admin-only: reloading configuration re-provisions registers and schemas instance-wide; non-admin callers receive 403 (H6 guard). Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "settings"
+                ],
+                "x-provided-by": "openregister",
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    }
+                }
+            }
+        },
+        "/setup/action/{actionId}": {
+            "post": {
+                "operationId": "setup-run-action",
+                "summary": "Run a privileged server-side setup action",
+                "description": "Run a privileged server-side setup action. Needs an administrator, or a user the matching admin setting is delegated to.",
+                "tags": [
+                    "setup"
+                ],
+                "parameters": [
+                    {
+                        "name": "actionId",
+                        "in": "path",
+                        "required": true,
+                        "description": "The action id; `seed-templates` is the only one.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Problem422"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                }
+            }
+        },
+        "/setup/config": {
+            "post": {
+                "operationId": "setup-save-config",
+                "summary": "Persist app-config values from a `config-fields` step (the remote template store: `registry_url`, `registry_register`, `registry_token`). Routed...",
+                "description": "Persist app-config values from a `config-fields` step (the remote template store: `registry_url`, `registry_register`, `registry_token`). Routed through SettingsService so the write-only secret semantics on `registry_token` are preserved. Needs an administrator, or a user the matching admin setting is delegated to.",
+                "tags": [
+                    "setup"
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    }
+                }
+            }
+        },
+        "/setup/status": {
+            "get": {
+                "operationId": "setup-status",
+                "summary": "Report per-step setup status for the wizard, and stamp the completion key",
+                "description": "Report per-step setup status for the wizard, and stamp the completion key. The wizard has no required step any more: seeding the starter templates moved to the admin settings page (wizard-dataset-card-load), where the same `seed-templates` action runs. `templatesSeeded` travels as information, not as a step. Needs an administrator, or a user the matching admin setting is delegated to.",
+                "tags": [
+                    "setup"
+                ],
+                "parameters": [
+                    {
+                        "name": "dataset",
+                        "in": "query",
+                        "required": false,
+                        "description": "The dataset.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Problem422"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                }
+            }
+        },
+        "/shop/github/forms": {
+            "get": {
+                "operationId": "form-library-github-search",
+                "summary": "Search GitHub for shared forms (`topic:buildiq-form`, a form.json at the root)",
+                "description": "Search GitHub for shared forms (`topic:buildiq-form`, a form.json at the root). Login-required (in-body 401 guard). Each card carries the form export envelope its repository publishes; installing one is creating a local library form from that envelope, which the browser does through OpenRegister after validating it (src/services/formExport.js). Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "form-library"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                }
+            }
+        },
+        "/shop/github/install": {
+            "post": {
+                "operationId": "shop-github-install",
+                "summary": "Install a GitHub app: fetch → strictly parse → reuse the clone seam",
+                "description": "Install a GitHub app: fetch → strictly parse → reuse the clone seam. Login-required (in-body 401 guard). Validates `owner`/`repo`/`ref` against safe patterns and `slug` against the kebab-case Application pattern, fetches the repo file map, parses it strictly (all-or-nothing), and hands the parsed template array (with the user-supplied name + slug) to the shared install seam. The caller becomes the app owner. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "shop"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                }
+            }
+        },
+        "/shop/github/search": {
+            "get": {
+                "operationId": "shop-github-search",
+                "summary": "Search GitHub for `topic:buildiq-app` repos",
+                "description": "Search GitHub for `topic:buildiq-app` repos. Login-required (in-body 401 guard). Returns the normalised cards plus a `brokerCredentialAvailable` / `rateLimited` hint; never exposes the raw GitHub body or any token. The outcome is also reported to integriq's connection registry, at most once an hour while it stays the same (adopt-connection-registry). The report never changes the response. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "shop"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                }
+            }
+        },
+        "/store/publish": {
+            "post": {
+                "operationId": "store-publish",
+                "summary": "Publish one store item through the engine",
+                "description": "Publish one store item through the engine. OpenRegister's canonical routes include `POST /api/store/publish`, and buildiq answers its own store routes here rather than through the engine's GenericStoreController, so this action must exist or the route fails at dispatch. The engine decides: buildiq's descriptor declares no publish fields or groups, so it answers `not_publishable`. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "store"
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "item": {
+                                        "description": "The item."
+                                    }
+                                },
+                                "additionalProperties": false
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    }
+                }
+            }
+        },
+        "/store/templates": {
+            "get": {
+                "operationId": "store-search",
+                "summary": "Search the remote template store",
+                "description": "Search the remote template store. Login-required (in-body guard, so an anonymous caller gets an explicit 401 rather than a redirect). Returns normalised cards or a generic outcome — NEVER the registry URL or token, which stay server-side. The outcome is also reported to integriq's connection registry, at most once an hour while it stays the same (adopt-connection-registry). The report never changes the response. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "store"
+                ],
+                "parameters": [
+                    {
+                        "name": "q",
+                        "in": "query",
+                        "required": false,
+                        "description": "The q.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "kind",
+                        "in": "query",
+                        "required": false,
+                        "description": "The kind.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                }
+            }
+        },
+        "/store/templates/{slug}/install": {
+            "post": {
+                "operationId": "store-install",
+                "summary": "Resolve a remote template by slug and install it locally (clone)",
+                "description": "Resolve a remote template by slug and install it locally (clone). Login-required (in-body guard). The remote `{slug}` is validated and resolved by the inherited helper; this action owns only the local clone and its response. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "store"
+                ],
+                "parameters": [
+                    {
+                        "name": "slug",
+                        "in": "path",
+                        "required": true,
+                        "description": "The remote template slug to install.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "name": {
+                                        "description": "The name."
+                                    }
+                                },
+                                "additionalProperties": false
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "basic_auth": {
+                "type": "http",
+                "scheme": "basic",
+                "description": "A Nextcloud user name with an app password."
+            },
+            "bearer_auth": {
+                "type": "http",
+                "scheme": "bearer",
+                "description": "A Nextcloud OAuth2 access token."
+            }
+        },
+        "headers": {
+            "API-Version": {
+                "description": "The version of the API that answered, which is the installed app version.",
+                "schema": {
+                    "type": "string",
+                    "example": "1.0.0"
+                }
+            }
+        },
+        "schemas": {
+            "Problem": {
+                "type": "object",
+                "description": "An RFC 9457 problem details document. The members the error already had are kept next to these.",
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "description": "A URI reference that identifies the problem type.",
+                        "example": "about:blank"
+                    },
+                    "title": {
+                        "type": "string",
+                        "description": "A short summary of the problem type.",
+                        "example": "Not Found"
+                    },
+                    "status": {
+                        "type": "integer",
+                        "description": "The HTTP status code.",
+                        "example": 404
+                    },
+                    "detail": {
+                        "type": "string",
+                        "description": "An explanation of this occurrence of the problem."
+                    },
+                    "instance": {
+                        "type": "string",
+                        "description": "A URI reference that identifies this occurrence."
+                    }
+                },
+                "required": [
+                    "type",
+                    "title",
+                    "status"
+                ],
+                "additionalProperties": true
+            }
+        },
+        "responses": {
+            "Problem400": {
+                "description": "Bad request",
+                "content": {
+                    "application/problem+json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Problem"
+                        }
+                    }
+                }
+            },
+            "Problem401": {
+                "description": "Unauthorized",
+                "content": {
+                    "application/problem+json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Problem"
+                        }
+                    }
+                }
+            },
+            "Problem403": {
+                "description": "Forbidden",
+                "content": {
+                    "application/problem+json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Problem"
+                        }
+                    }
+                }
+            },
+            "Problem404": {
+                "description": "Not found",
+                "content": {
+                    "application/problem+json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Problem"
+                        }
+                    }
+                }
+            },
+            "Problem409": {
+                "description": "Conflict",
+                "content": {
+                    "application/problem+json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Problem"
+                        }
+                    }
+                }
+            },
+            "Problem410": {
+                "description": "Gone",
+                "content": {
+                    "application/problem+json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Problem"
+                        }
+                    }
+                }
+            },
+            "Problem422": {
+                "description": "Unprocessable content",
+                "content": {
+                    "application/problem+json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Problem"
+                        }
+                    }
+                }
+            },
+            "Problem500": {
+                "description": "Internal server error",
+                "content": {
+                    "application/problem+json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Problem"
+                        }
+                    }
+                }
+            },
+            "Problem503": {
+                "description": "Service unavailable",
+                "content": {
+                    "application/problem+json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Problem"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
