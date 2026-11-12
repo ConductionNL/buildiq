@@ -4953,12 +4953,18 @@
 			"mendix": "yes",
 			"power-apps": "partial",
 			"built": {
-				"state": "built",
-				"evidence": "src/views/AutomationsPage.vue:22 'Edit flows...' -> FlowPickerDialog (src/dialogs/FlowPickerDialog.vue:114 GET /apps/openregister/api/flows?app={slug}) -> CnFlowEditModal (AutomationsPage.vue:153-157,176; @conduction/nextcloud-vue 2.55.1 src/dialogs/CnFlowEditModal.vue renders CnFlowDetail canvas). Engine on openregister origin/development: Petri-net joins in lib/Service/Flow/Nodes/MergeNode.php ('wait for all' at a join), RouterNode/SwitchNode branches, WaitNode (timer), AwaitSignalNode, UserTaskNode; BPMN import/export routes flow#exportBpmn/importBpmn (openregister appinfo/routes.php:825-826).",
+				"state": "specified",
+				"evidence": "src/views/AutomationsPage.vue:22 'Edit flows...' -> FlowPickerDialog (src/dialogs/FlowPickerDialog.vue:114 GET /apps/openregister/api/flows?app={slug}) -> CnFlowEditModal (AutomationsPage.vue:153-157,176; @conduction/nextcloud-vue 2.55.1 src/dialogs/CnFlowEditModal.vue renders CnFlowDetail canvas). Engine on openregister origin/development: Petri-net joins in lib/Service/Flow/Nodes/MergeNode.php ('wait for all' at a join), RouterNode/SwitchNode branches, WaitNode (timer), AwaitSignalNode, UserTaskNode; BPMN import/export routes flow#exportBpmn/importBpmn (openregister appinfo/routes.php:825-826). Not built: the designer half. @conduction/nextcloud-vue CnFlowNodeEditModal.vue, CnFlowNode.vue and CnFlowDetail.vue offer no 'Wait for all paths' toggle that writes join: true, so a person cannot draw a synchronising join; openregister change flow-designer-parallel-paths-and-waits tasks 1.1-2.1 are all open.",
 				"reachedOn": "app detail 'Automations' -> /automations -> 'Edit flows...' -> pick or start a flow, canvas modal",
 				"owner": "ConductionNL/openregister",
 				"spec": "openregister/openspec/specs/flow-engine",
-				"requirement": "openregister:openspec/specs/flow-engine :: Converging edges MERGE by default; synchronising requires `join: true` @e2e exclude engine-internal lowering semantics — covered by FlowMergeTest"
+				"requirement": [
+					"openregister:openspec/specs/flow-engine :: Converging edges MERGE by default; synchronising requires `join: true` @e2e exclude engine-internal lowering semantics — covered by FlowMergeTest",
+					"openregister:openspec/changes/flow-designer-parallel-paths-and-waits/specs/flow-engine :: A person draws parallel paths and waits in the flow editor, and the flow runs as drawn"
+				],
+				"plan": "openregister/flow-designer-parallel-paths-and-waits",
+				"change": "openregister/flow-designer-parallel-paths-and-waits",
+				"note": "12 Nov 2026 (decision 389): loses built. The engine runs parallel paths, joins and waits (flow-engine requirement); the requirement that a person draws them in the editor and the flow runs as drawn is in openregister change flow-designer-parallel-paths-and-waits (openregister#10018), not built."
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -6558,12 +6564,14 @@
 				"evidence": "No built-app page is public: every builder route is #[NoAdminRequired] behind login (DashboardController.php:123-226), no #[PublicPage] except the generated-document download link (GeneratedDocumentController.php:107). Deliberate public exposure exists for data and forms only: ExternalFormAccessDialog.vue:37-47 adds 'public' to a schema's create/read authorization (externalFormProvisioningService.js:114-151) and portaliq serves anonymous pages (PortalEmbedController.php:100,160 #[PublicPage])",
 				"reachedOn": "form page External access -> Configure; portaliq portal",
 				"owner": "ConductionNL/portaliq",
-				"note": "Specified in ConductionNL/portaliq openspec/changes/portal-theme-blocks-and-contributed-pages (owning lane, OpenSpec pass 2026-09-27).",
+				"note": "Specified in ConductionNL/portaliq openspec/changes/portal-theme-blocks-and-contributed-pages (owning lane, OpenSpec pass 2026-09-27). 12 Nov 2026: the deliberate act is stated in portaliq change page-public-on-purpose (portaliq#2362): Publish says anyone can read the page without signing in and asks to confirm; not built, tasks 1.1-1.3.",
 				"change": "portaliq/portal-theme-blocks-and-contributed-pages",
 				"requirement": [
 					"portaliq:openspec/specs/portaliq-cms :: Only explicitly public widgets MUST render at a public origin",
-					"portaliq:openspec/changes/portal-theme-blocks-and-contributed-pages/specs/portaliq-cms :: A contributed page MUST be reachable at its own route (REQ-PTB-011)"
-				]
+					"portaliq:openspec/changes/portal-theme-blocks-and-contributed-pages/specs/portaliq-cms :: A contributed page MUST be reachable at its own route (REQ-PTB-011)",
+					"portaliq:openspec/changes/page-public-on-purpose/specs/portaliq-cms :: Publishing a page is the act that makes it public, and the editor is told so"
+				],
+				"plan": "portaliq/page-public-on-purpose"
 			},
 			"provider": "portaliq",
 			"providerHow": "read-from-code",
@@ -9231,12 +9239,16 @@
 			"power-apps": "unknown",
 			"built": {
 				"state": "specified",
-				"evidence": "openregister origin/development lib/Db/Task.php gives a flow task an advisory dueAt and an enforcing expiresAt with a declared on-expiry behaviour, run by lib/BackgroundJob/FlowTimerWorker.php, and lib/Service/Task/TaskInboxService.php row() sends the derived overdue, daysUntilDue and daysOverdue on every /api/flow-tasks row. buildiq's task surface, src/components/runtime/MyApprovalsWidget.vue, reads the pooled and assigned inbox scopes (#936) and shows each task its deadline (dueAt, else expiresAt) in a time element, sorts soonest first, and flags a task 'Overdue' (overdue true) or 'Due soon' (daysUntilDue under 2) in words, not colour alone (#937; tests/components/MyApprovalsWidget.spec.js 'shows each task its due date, and flags overdue and due-soon tasks in words'). The second half of the row, reporting on workflow progress, has no buildiq page, so the rating stays partial.",
+				"evidence": "openregister origin/development lib/Db/Task.php gives a flow task an advisory dueAt and an enforcing expiresAt with a declared on-expiry behaviour, run by lib/BackgroundJob/FlowTimerWorker.php, and lib/Service/Task/TaskInboxService.php row() sends the derived overdue, daysUntilDue and daysOverdue on every /api/flow-tasks row. buildiq's task surface, src/components/runtime/MyApprovalsWidget.vue, reads the pooled and assigned inbox scopes (#936) and shows each task its deadline (dueAt, else expiresAt) in a time element, sorts soonest first, and flags a task 'Overdue' (overdue true) or 'Due soon' (daysUntilDue under 2) in words, not colour alone (#937; tests/components/MyApprovalsWidget.spec.js 'shows each task its due date, and flags overdue and due-soon tasks in words'). The second half of the row, reporting on workflow progress, has no buildiq page, so the rating stays partial. Not built: the warning. Nothing records the due-soon action, so the taskDueSoon rule in openregister TaskNotificationRules.php never fires; openregister change flow-task-inbox-projections tasks 7.1-7.2 are open.",
 				"reachedOn": "a built app dashboard with the My approvals widget: each open task shows its due date, with an Overdue or Due soon flag; no buildiq page reports workflow progress",
 				"owner": "ConductionNL/openregister",
-				"note": "Specified in ConductionNL/openregister openspec/changes/tasks-progress-report (openregister lane, OpenSpec pass 2026-09-27).",
+				"note": "Specified in ConductionNL/openregister openspec/changes/tasks-progress-report (openregister lane, OpenSpec pass 2026-09-27). 12 Nov 2026: the warning is stated in openregister change flow-task-inbox-projections (openregister#10018), not built.",
 				"change": "openregister/tasks-progress-report",
-				"requirement": "openregister:openspec/changes/tasks-progress-report/specs/flow-progress-report :: A flow reports its progress per step"
+				"requirement": [
+					"openregister:openspec/changes/tasks-progress-report/specs/flow-progress-report :: A flow reports its progress per step",
+					"openregister:openspec/changes/flow-task-inbox-projections/specs/flow-task-projections :: A task nearing its deadline warns its assignee once"
+				],
+				"plan": "openregister/flow-task-inbox-projections"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -10601,9 +10613,13 @@
 				"evidence": "A schema can relate to itself (data-relations, src/components/schema-editor), so a parent link can be modelled; no built page shows a tree: nextcloud-vue v2.55.1 CnIndexPage renders a flat table (grep -iE 'tree' in buildiq src/ finds only code comments)",
 				"reachedOn": "schema designer relation to the same schema; no tree view",
 				"owner": "ConductionNL/openregister",
-				"note": "Specified in ConductionNL/openregister openspec/changes/records-tree-view (openregister lane, OpenSpec pass 2026-09-27).",
+				"note": "Specified in ConductionNL/openregister openspec/changes/records-tree-view (openregister lane, OpenSpec pass 2026-09-27). 12 Nov 2026: browsing the tree and opening a record from it is stated in records-tree-view (openregister#10018), not built.",
 				"change": "openregister/records-tree-view",
-				"requirement": "openregister:openspec/changes/records-tree-view/specs/saved-search-views :: A saved view can present hierarchical records as a tree"
+				"requirement": [
+					"openregister:openspec/changes/records-tree-view/specs/saved-search-views :: A saved view can present hierarchical records as a tree",
+					"openregister:openspec/changes/records-tree-view/specs/saved-search-views :: A user moves through the tree and opens a record from it"
+				],
+				"plan": "openregister/records-tree-view"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
