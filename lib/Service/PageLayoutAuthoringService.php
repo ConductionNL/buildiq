@@ -71,6 +71,13 @@ class PageLayoutAuthoringService {
 	public const REGISTRY_CLASS = 'OCA\\OpenRegister\\Service\\Integration\\IntegrationRegistry';
 
 	/**
+	 * The stored rows of this service's schema.
+	 *
+	 * @var AuthoredRowReader
+	 */
+	private readonly AuthoredRowReader $rows;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ObjectServiceInterface $objectService OpenRegister's object service.
@@ -90,6 +97,7 @@ class PageLayoutAuthoringService {
 		private readonly PageLayoutLeafProvider $provider,
 		private readonly ?ContainerLocator $locator=null,
 	) {
+		$this->rows = new AuthoredRowReader(objectService: $objectService, appConfig: $appConfig, schema: self::SCHEMA);
 	}//end __construct()
 
 	/**
@@ -350,24 +358,8 @@ class PageLayoutAuthoringService {
 	 * @return array<int, array<string, mixed>> The stored layouts.
 	 */
 	private function storedFor(string $register, string $schema, string $exceptId): array {
-		$rows = $this->objectService
-			->setRegister($this->registerSlug())
-			->setSchema(self::SCHEMA)
-			->findAll(['filters' => ['register' => $register], 'limit' => 500]);
-
-		if (is_array($rows) === false) {
-			return [];
-		}
-
 		$mine = [];
-		foreach ($rows as $row) {
-			if (is_array($row) === false
-				|| (string)($row['register'] ?? '') !== $register
-				|| (string)($row['schema'] ?? '') !== $schema
-			) {
-				continue;
-			}
-
+		foreach ($this->rows->storedFor(register: $register, schema: $schema) as $row) {
 			if ($exceptId !== '' && (string)($row['id'] ?? '') === $exceptId) {
 				continue;
 			}
@@ -427,14 +419,6 @@ class PageLayoutAuthoringService {
 	 * @return string The slug.
 	 */
 	private function registerSlug(): string {
-		$slug = $this->appConfig->getValueString('buildiq', 'register', 'buildiq');
-		if ($slug === '') {
-			// A setting emptied by hand is a misconfiguration, and reading on
-			// with no register names every register at once. Buildiq's own
-			// register is where these objects live, so that is what is used.
-			return 'buildiq';
-		}
-
-		return $slug;
+		return $this->rows->registerSlug();
 	}//end registerSlug()
 }//end class
