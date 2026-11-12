@@ -1619,7 +1619,7 @@ class ApplicationsController extends Controller {
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-55
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-56
-	 * @spec openspec/changes/store-shows-built-in-templates/specs/template-catalogue-ui/spec.md
+	 * @spec openspec/specs/template-catalogue-ui/spec.md
 	 */
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 10, period: 3600)]
@@ -1846,7 +1846,7 @@ class ApplicationsController extends Controller {
 	 *
 	 * @return array{status:int,data:array<string,mixed>} 201 + app on success; 409/500/503 on failure.
 	 *
-	 * @spec openspec/changes/openbuild-remote-template-store/specs/openbuild-remote-template-store/spec.md
+	 * @spec openspec/specs/openbuild-remote-template-store/spec.md
 	 */
 	public function installFromTemplateArray(
 		array $template,
@@ -2123,7 +2123,7 @@ class ApplicationsController extends Controller {
 	 *                   caller nothing was created when something was.
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-55
-	 * @spec openspec/changes/store-shows-built-in-templates/specs/template-catalogue-ui/spec.md
+	 * @spec openspec/specs/template-catalogue-ui/spec.md
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function persistApplication(

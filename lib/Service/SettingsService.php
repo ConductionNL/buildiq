@@ -37,7 +37,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Service for managing Buildiq application configuration and settings.
  *
- * @spec openspec/changes/openbuild-remote-template-store/specs/openbuild-remote-template-store/spec.md
+ * @spec openspec/specs/openbuild-remote-template-store/spec.md
  */
 class SettingsService {
 
@@ -135,7 +135,7 @@ class SettingsService {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-25-settings-and-observability/tasks.md#task-1
+	 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-settings-and-observability/tasks.md#task-1
 	 */
 	public function isOpenRegisterAvailable(): bool {
 		return $this->appManager->isInstalled('openregister');
@@ -149,7 +149,7 @@ class SettingsService {
 	 *
 	 * @return array<string,mixed>
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-25-settings-and-observability/tasks.md#task-1
+	 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-settings-and-observability/tasks.md#task-1
 	 */
 	public function getSettings(): array {
 		$settings = [];
@@ -194,7 +194,7 @@ class SettingsService {
 	 *
 	 * @return array<string,mixed> The updated settings
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-25-settings-and-observability/tasks.md#task-2
+	 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-settings-and-observability/tasks.md#task-2
 	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md#requirement-req-biq-conn-002-a-store-settings-save-asks-integriq-to-look-again
 	 */
 	public function updateSettings(array $data): array {
@@ -241,7 +241,7 @@ class SettingsService {
 	 *
 	 * @return array<string,mixed> Result with success flag, message, and version.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-25-settings-and-observability/tasks.md#task-3
+	 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-settings-and-observability/tasks.md#task-3
 	 */
 	public function loadConfiguration(): array {
 		return $this->doLoadConfiguration(force: false);
@@ -255,7 +255,7 @@ class SettingsService {
 	 *
 	 * @return array<string,mixed> Result with success flag, message, and version.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-25-settings-and-observability/tasks.md#task-3
+	 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-settings-and-observability/tasks.md#task-3
 	 */
 	public function reloadConfiguration(): array {
 		return $this->doLoadConfiguration(force: true);

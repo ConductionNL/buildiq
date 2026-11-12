@@ -26,7 +26,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+ * @spec openspec/specs/ai-copilot/spec.md
  */
 
 declare(strict_types=1);
@@ -39,7 +39,7 @@ namespace OCA\Buildiq\Service\Copilot;
  * Stateless / side-effect free: takes the decoded plan and the tool
  * descriptor array, returns a list of violations (empty = valid).
  *
- * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+ * @spec openspec/specs/ai-copilot/spec.md
  */
 class CopilotPlanValidator {
 	/**
@@ -50,7 +50,7 @@ class CopilotPlanValidator {
 	 *
 	 * @return array<int, array{stepIndex: int, message: string}> Empty when the plan is valid.
 	 *
-	 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+	 * @spec openspec/specs/ai-copilot/spec.md
 	 */
 	public function validate(array $plan, array $toolDescriptors): array {
 		$steps = ($plan['steps'] ?? null);

@@ -224,7 +224,7 @@ export default {
 	/**
 	 * Soft capability check for OpenConnector (REQ-OCAS-005).
 	 *
-	 * @spec openspec/changes/openconnector-api-sources/tasks.md#task-2.2
+	 * @spec openspec/changes/archive/2026-06-14-openconnector-api-sources/tasks.md#task-2.2
 	 */
 	setup() {
 		const status = useAppStatus('integriq')
@@ -250,7 +250,7 @@ export default {
 		 * async soft-check resolves so the live UI does not flash.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-005
+		 * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-005
 		 */
 		appAvailable() {
 			return !this.status.checked.value || this.status.available.value
@@ -261,7 +261,7 @@ export default {
 		 * ONLY (REQ-OCAS-004: never a credential).
 		 *
 		 * @return {Array<{label: string, path: string}>}
-		 * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-004
+		 * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-004
 		 */
 		endpointOptions() {
 			const sourceId = this.selectedSourceId
@@ -277,7 +277,7 @@ export default {
 		 * Source rows projected to NcSelect options, name only.
 		 *
 		 * @return {Array<{label: string, id: string}>}
-		 * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-004
+		 * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-004
 		 */
 		sourceOptions() {
 			return this.sources.map((source) => ({
@@ -291,7 +291,7 @@ export default {
 		 * source of the endpoint already bound.
 		 *
 		 * @return {string} source id, or ''.
-		 * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-002
+		 * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-002
 		 */
 		selectedSourceId() {
 			if (this.pickedSourceId) {
@@ -306,7 +306,7 @@ export default {
 		 * The source option matching `selectedSourceId`, for NcSelect's value.
 		 *
 		 * @return {?object}
-		 * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-002
+		 * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-002
 		 */
 		selectedSourceOption() {
 			return (
@@ -319,7 +319,7 @@ export default {
 		 * The option matching the current binding, for NcSelect's value.
 		 *
 		 * @return {?object}
-		 * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-002
+		 * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-002
 		 */
 		selectedOption() {
 			const current = trimPath(this.binding && this.binding.endpointPath)
@@ -327,7 +327,7 @@ export default {
 		},
 	},
 
-	/** @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-002 */
+	/** @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-002 */
 	async mounted() {
 		await this.status.check()
 		if (this.status.available.value) {
@@ -344,7 +344,7 @@ export default {
 		 * DOM or component state (REQ-OCAS-004).
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/openconnector-api-sources/tasks.md#task-2.1
+		 * @spec openspec/changes/archive/2026-06-14-openconnector-api-sources/tasks.md#task-2.1
 		 */
 		async fetchEndpoints() {
 			this.loading = true
@@ -403,7 +403,7 @@ export default {
 		 * source is unbound, since it no longer matches the choice.
 		 *
 		 * @param {?object} option - selected source option.
-		 * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-002
+		 * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-002
 		 */
 		onSelectSource(option) {
 			const id = optionId(option)
@@ -418,7 +418,7 @@ export default {
 		 * Handle endpoint selection from the live list.
 		 *
 		 * @param {?object} option - selected NcSelect option.
-		 * @spec openspec/changes/openconnector-api-sources/tasks.md#task-2.1
+		 * @spec openspec/changes/archive/2026-06-14-openconnector-api-sources/tasks.md#task-2.1
 		 */
 		onSelect(option) {
 			const path = option && option.path ? option.path : ''
@@ -434,7 +434,7 @@ export default {
 		 * same-origin per REQ-OCAS-004.
 		 *
 		 * @param {string} value - raw input.
-		 * @spec openspec/changes/openconnector-api-sources/tasks.md#task-2.2
+		 * @spec openspec/changes/archive/2026-06-14-openconnector-api-sources/tasks.md#task-2.2
 		 */
 		onManualInput(value) {
 			const cleaned = String(value || '')

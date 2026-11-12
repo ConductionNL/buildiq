@@ -30,7 +30,7 @@ use OCA\Buildiq\Service\ApplicationVersionService;
 /**
  * Handles the buildiq.upsertSchema tool invocation.
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-8
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-8
  */
 class UpsertSchemaHandler extends AbstractToolHandler {
 	/**

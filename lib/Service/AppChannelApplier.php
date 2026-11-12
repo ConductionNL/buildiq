@@ -65,7 +65,7 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  *
  * @spec openspec/changes/apply-v2-channels/specs/app-channel-application/spec.md
- * @spec openspec/changes/app-repo-format-flow-agent-export/specs/app-channel-application/spec.md
+ * @spec openspec/specs/app-channel-application/spec.md
  */
 class AppChannelApplier {
 
@@ -198,7 +198,7 @@ class AppChannelApplier {
 	 * @return array<string,mixed> The channel report.
 	 *
 	 * @spec openspec/changes/apply-v2-channels/specs/app-channel-application/spec.md#requirement-every-install-path-applies-the-v2-channels
-	 * @spec openspec/changes/app-repo-format-flow-agent-export/specs/app-channel-application/spec.md#requirement-published-flows-are-created-and-rebound-onto-the-local-application
+	 * @spec openspec/specs/app-channel-application/spec.md#requirement-published-flows-are-created-and-rebound-onto-the-local-application
 	 */
 	public function apply(
 		array $template,
@@ -268,7 +268,7 @@ class AppChannelApplier {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/surface-hermiq-credential-scope-requirement/specs/app-channel-application/spec.md#requirement-skills-are-delegated-to-hermiq-by-repository-coordinates
+	 * @spec openspec/specs/app-channel-application/spec.md#requirement-skills-are-delegated-to-hermiq-by-repository-coordinates
 	 */
 	private function applySkillsChannel(
 		array $skills,
@@ -327,7 +327,7 @@ class AppChannelApplier {
 	 *
 	 * @return bool|null True/false when conclusive, null when the credential is absent or the lookup failed.
 	 *
-	 * @spec openspec/changes/surface-hermiq-credential-scope-requirement/specs/app-channel-application/spec.md#requirement-skills-are-delegated-to-hermiq-by-repository-coordinates
+	 * @spec openspec/specs/app-channel-application/spec.md#requirement-skills-are-delegated-to-hermiq-by-repository-coordinates
 	 */
 	private function credentialAllowsApp(string $credentialId, string $appId): ?bool {
 		try {

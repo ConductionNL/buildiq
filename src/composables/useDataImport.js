@@ -24,7 +24,7 @@
 // OpenRegister's own register manage-permission (default-secure), so Buildiq
 // never becomes a permission-bypass path.
 //
-// @spec openspec/changes/openbuild-data-import-wizard/tasks.md#1.1
+// @spec openspec/changes/archive/2026-07-07-openbuild-data-import-wizard/tasks.md#1.1
 
 import axiosDefault from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
@@ -45,7 +45,7 @@ import { generateUrl } from '@nextcloud/router'
  *
  * @param {object} responseData The raw JSON body from OR's import endpoint.
  * @return {{importJobId: (string|null), created: number, updated: number, skipped: number, errors: Array<object>, errorsCsv: (string|null), errorsCsvFilename: (string|null)}}
- * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#1.1
+ * @spec openspec/changes/archive/2026-07-07-openbuild-data-import-wizard/tasks.md#1.1
  */
 export function summarizeImport(responseData) {
 	const result = emptySummary()
@@ -203,7 +203,7 @@ function importForm(params) {
  *   for tests; defaults to `@nextcloud/axios` (carries the NC session +
  *   request token, so the import rides the caller's own permissions).
  * @return {{importFile: Function, rollbackImport: Function, templateUrl: Function}}
- * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#1.1
+ * @spec openspec/changes/archive/2026-07-07-openbuild-data-import-wizard/tasks.md#1.1
  */
 export function useDataImport(opts = {}) {
 	const client = opts.client || axiosDefault
@@ -225,7 +225,7 @@ export function useDataImport(opts = {}) {
 	 * @param {string} [params.type] Import type override; omitted lets OR
 	 *   auto-detect from the file extension.
 	 * @return {Promise<object>} The flattened summary from {@link summarizeImport}.
-	 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#1.1
+	 * @spec openspec/changes/archive/2026-07-07-openbuild-data-import-wizard/tasks.md#1.1
 	 */
 	async function importFile({
 		registerId,
@@ -252,7 +252,7 @@ export function useDataImport(opts = {}) {
 	 *
 	 * @param {string} importJobId The rollback token from the import summary.
 	 * @return {Promise<object>} OR's rollback report.
-	 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#1.1
+	 * @spec openspec/changes/archive/2026-07-07-openbuild-data-import-wizard/tasks.md#1.1
 	 */
 	async function rollbackImport(importJobId) {
 		if (!importJobId) {
@@ -279,7 +279,7 @@ export function useDataImport(opts = {}) {
 	 * @param {string} params.schema The schema slug/id.
 	 * @param {string} [params.format] `xlsx` (default) or `csv`.
 	 * @return {string} The template download URL.
-	 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#1.1
+	 * @spec openspec/changes/archive/2026-07-07-openbuild-data-import-wizard/tasks.md#1.1
 	 */
 	function templateUrl({ registerId, schema, format = 'xlsx' }) {
 		if (!registerId || !schema) {

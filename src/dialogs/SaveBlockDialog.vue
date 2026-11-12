@@ -171,7 +171,7 @@ export default {
 		 * Whether the current selection is a multi-widget section capture.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 * @spec openspec/specs/component-blocks/spec.md
 		 */
 		isSection() {
 			return isSectionFragment(this.fragment)
@@ -181,7 +181,7 @@ export default {
 		 * Dialog title — varies for a single-widget vs a section capture.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 * @spec openspec/specs/component-blocks/spec.md
 		 */
 		dialogTitle() {
 			return this.isSection
@@ -193,7 +193,7 @@ export default {
 		 * Suggested category examples shown in the field label.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 * @spec openspec/specs/component-blocks/spec.md
 		 */
 		categoryHint() {
 			return BLOCK_CATEGORIES.join(', ')
@@ -204,7 +204,7 @@ export default {
 		 * collision (surfaced via `collisionError`).
 		 *
 		 * @return {?{record: object, summary: object}}
-		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 * @spec openspec/specs/component-blocks/spec.md
 		 */
 		capture() {
 			if (!this.fragment) {
@@ -227,7 +227,7 @@ export default {
 		 * The source Application's slug (used for de-namespacing).
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 * @spec openspec/specs/component-blocks/spec.md
 		 */
 		appSlug() {
 			return (this.application && this.application.slug) || ''
@@ -237,7 +237,7 @@ export default {
 		 * The current Nextcloud user id, recorded as `createdBy`.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 * @spec openspec/specs/component-blocks/spec.md
 		 */
 		currentUserId() {
 			const user = getCurrentUser()
@@ -248,7 +248,7 @@ export default {
 		 * Schema-dependency summary rendered in the capture-summary section.
 		 *
 		 * @return {Array<object>}
-		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 * @spec openspec/specs/component-blocks/spec.md
 		 */
 		dependencySummary() {
 			return this.capture ? this.capture.summary.schemaDependencies : []
@@ -258,7 +258,7 @@ export default {
 		 * Slug well-formedness (mirrors the schema's `^[a-z0-9][a-z0-9-]*[a-z0-9]$`).
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 * @spec openspec/specs/component-blocks/spec.md
 		 */
 		slugValid() {
 			return (
@@ -273,7 +273,7 @@ export default {
 		 * chain" non-goal).
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 * @spec openspec/specs/component-blocks/spec.md
 		 */
 		slugTakenError() {
 			return this.existingBlocks.some((b) => b && b.slug === this.form.slug)
@@ -283,7 +283,7 @@ export default {
 		 * Whether Save is allowed.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 * @spec openspec/specs/component-blocks/spec.md
 		 */
 		canSave() {
 			return (
@@ -300,7 +300,7 @@ export default {
 		 * Save button label.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 * @spec openspec/specs/component-blocks/spec.md
 		 */
 		saveLabel() {
 			return this.saving ? t('buildiq', 'Saving…') : t('buildiq', 'Save block')
@@ -313,7 +313,7 @@ export default {
 		 *
 		 * @param {boolean} value - the new `open` prop value.
 		 * @return {void}
-		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 * @spec openspec/specs/component-blocks/spec.md
 		 */
 		open(value) {
 			if (value) {
@@ -327,7 +327,7 @@ export default {
 			 * fragment changes.
 			 *
 			 * @return {void}
-			 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+			 * @spec openspec/specs/component-blocks/spec.md
 			 */
 			handler() {
 				this.recomputeCollision()
@@ -346,7 +346,7 @@ export default {
 	 * with `v-if="open"`, so `created` fires with `open: true`).
 	 *
 	 * @return {void}
-	 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+	 * @spec openspec/specs/component-blocks/spec.md
 	 */
 	created() {
 		if (this.open) {
@@ -359,7 +359,7 @@ export default {
 		 * Reset the form, prefilled from the selected fragment.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 * @spec openspec/specs/component-blocks/spec.md
 		 */
 		resetForm() {
 			const first = this.isSection
@@ -387,7 +387,7 @@ export default {
 		 *
 		 * @param {string} value - the new name value.
 		 * @return {void}
-		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 * @spec openspec/specs/component-blocks/spec.md
 		 */
 		onNameInput(value) {
 			this.form.name = value
@@ -402,7 +402,7 @@ export default {
 		 * capture; `SlugCollisionError` names both colliding schemas.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 * @spec openspec/specs/component-blocks/spec.md
 		 */
 		recomputeCollision() {
 			if (!this.fragment) {
@@ -422,7 +422,7 @@ export default {
 		 * Close the dialog.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 * @spec openspec/specs/component-blocks/spec.md
 		 */
 		onClose() {
 			if (this.saving) {
@@ -435,7 +435,7 @@ export default {
 		 * Persist the captured block via OR REST (create-only, v1).
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 * @spec openspec/specs/component-blocks/spec.md
 		 */
 		async save() {
 			if (!this.canSave || this.saving) {

@@ -34,9 +34,9 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-24
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-25
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-47
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-24
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-25
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-47
  */
 
 declare(strict_types=1);
@@ -152,7 +152,7 @@ class ApplicationVersionsController extends Controller {
 	 *
 	 * @return JSONResponse Versions array on 200, error envelope on miss
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-24
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-24
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	#[NoAdminRequired]
@@ -225,7 +225,7 @@ class ApplicationVersionsController extends Controller {
 	 *
 	 * @return JSONResponse The version on 200, error envelope on miss
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-24
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-24
 	 */
 	#[NoAdminRequired]
 	public function show(string $appSlug, string $versionSlug): JSONResponse {
@@ -249,7 +249,7 @@ class ApplicationVersionsController extends Controller {
 	 *
 	 * @return JSONResponse 201 with the created version, or error envelope
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-24
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-24
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	#[NoAdminRequired]
@@ -336,7 +336,7 @@ class ApplicationVersionsController extends Controller {
 	 *
 	 * @return JSONResponse 200 with the updated version, or error envelope
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-24
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-24
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	#[NoAdminRequired]
@@ -454,7 +454,7 @@ class ApplicationVersionsController extends Controller {
 	 *
 	 * @return JSONResponse 204 on success, error envelope otherwise
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-25
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-25
 	 */
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 10, period: 60)]
@@ -514,7 +514,7 @@ class ApplicationVersionsController extends Controller {
 	 *
 	 * @return JSONResponse 200 with the release result, or an error envelope
 	 *
-	 * @spec openspec/changes/version-lifecycle-and-switcher/specs/application-versions/spec.md
+	 * @spec openspec/specs/application-versions/spec.md
 	 */
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 10, period: 60)]
@@ -754,7 +754,7 @@ class ApplicationVersionsController extends Controller {
 	 *
 	 * @return array<string,mixed>|null Version record or null on miss
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-24
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-24
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function findVersionForApplication(string $slug, string $versionSlug): ?array {
@@ -802,7 +802,7 @@ class ApplicationVersionsController extends Controller {
 	 *
 	 * @return JSONResponse|null Null on allow, 401/403/404 envelope on deny
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-47
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-47
 	 */
 	private function requireRole(string $slug, array $roles): ?JSONResponse {
 		$user = $this->userSession->getUser();

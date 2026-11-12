@@ -123,7 +123,7 @@ export default {
 			 *   while the record is still loading (in which case the buffer is left
 			 *   alone rather than blanked).
 			 *
-			 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-4
+			 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-4
 			 */
 			handler(app) {
 				if (app) {
@@ -173,7 +173,7 @@ export default {
 		/**
 		 * Observed behaviour of `parseAndValidate` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-4
 		 */
 		parseAndValidate() {
 			const parsed = this.parseManifestText()
@@ -207,7 +207,7 @@ export default {
 		/**
 		 * Observed behaviour of `save` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-4
 		 */
 		async save() {
 			if (this.obAppRole !== 'editor' && this.obAppRole !== 'owner') {

@@ -29,7 +29,7 @@ namespace OCA\Buildiq\Service\GitHub;
 /**
  * A broker credential and its owner.
  *
- * @spec openspec/changes/openbuild-exporter/tasks.md#task-6.2
+ * @spec openspec/changes/archive/2026-06-14-openbuild-exporter/tasks.md#task-6.2
  */
 final class BrokerAccess {
 	/**

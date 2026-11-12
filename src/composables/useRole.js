@@ -36,7 +36,7 @@ import { loadState } from '@nextcloud/initial-state'
  * the controller's 403 enforces server-side.
  *
  * @return {string[]} The caller's group IDs
- * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-2
+ * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-frontend-foundation/tasks.md#task-2
  */
 export function getCurrentUserGroups() {
 	try {
@@ -135,7 +135,7 @@ function holdsAny(bucket, holds) {
  * @param {Application | null | undefined} application The Application object
  * @param {string[]}                       [userGroups] Optional explicit group list (defaults to loadState)
  * @return {'owner'|'editor'|'viewer'|'none'} The caller's effective role
- * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-2
+ * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-frontend-foundation/tasks.md#task-2
  */
 export function useRole(application, userGroups) {
 	if (!application || typeof application !== 'object') {
@@ -188,7 +188,7 @@ function roleIn(permissions, holds) {
  * @param {Application | null | undefined} application The Application object
  * @param {string[]}                       [userGroups] Optional explicit group list
  * @return {boolean} True when the caller has owner/editor/viewer
- * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-2
+ * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-frontend-foundation/tasks.md#task-2
  */
 export function hasAnyRole(application, userGroups) {
 	return useRole(application, userGroups) !== 'none'

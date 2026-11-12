@@ -32,7 +32,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+ * @spec openspec/specs/unified-app-model/spec.md
  */
 
 declare(strict_types=1);
@@ -52,7 +52,7 @@ use Throwable;
 /**
  * Idempotent migration of AppOverride rows into hybrid Applications.
  *
- * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+ * @spec openspec/specs/unified-app-model/spec.md
  */
 class MigrateAppOverridesToHybrid implements IRepairStep {
 	/**
@@ -85,7 +85,7 @@ class MigrateAppOverridesToHybrid implements IRepairStep {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+	 * @spec openspec/specs/unified-app-model/spec.md
 	 */
 	public function getName(): string {
 		return 'Migrate Buildiq AppOverride records to hybrid Applications';
@@ -98,7 +98,7 @@ class MigrateAppOverridesToHybrid implements IRepairStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+	 * @spec openspec/specs/unified-app-model/spec.md
 	 */
 	public function run(IOutput $output): void {
 		$schemaId = $this->resolveLegacySchemaId();

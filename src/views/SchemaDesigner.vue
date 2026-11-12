@@ -327,7 +327,7 @@ export default {
 		/**
 		 * Resolve the active application slug from the route (seed fallback).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @return {string} App slug.
 		 */
 		appSlug() {
@@ -339,7 +339,7 @@ export default {
 		/**
 		 * Resolve the active schema id from the route.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @return {string} Schema id.
 		 */
 		schemaId() {
@@ -351,7 +351,7 @@ export default {
 		 * The underscore-prefix param name is Buildiq's system-reserved marker
 		 * to avoid colliding with user-defined `?version=` params.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @return {string|undefined}
 		 */
 		versionSlug() {
@@ -361,7 +361,7 @@ export default {
 		/**
 		 * Resolve the schemas store bound to the active app/version register.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @return {object} Pinia store instance.
 		 */
 		store() {
@@ -396,7 +396,7 @@ export default {
 		},
 
 		/**
-		 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.2
+		 * @spec openspec/changes/archive/2026-07-07-openbuild-data-import-wizard/tasks.md#2.2
 		 * @return {string} Register slug.
 		 */
 		importRegisterId() {
@@ -409,7 +409,7 @@ export default {
 		 * independently re-gated server-side by OpenRegister's own register
 		 * manage-permission.
 		 *
-		 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.2
+		 * @spec openspec/changes/archive/2026-07-07-openbuild-data-import-wizard/tasks.md#2.2
 		 * @return {boolean}
 		 */
 		canImport() {
@@ -420,7 +420,7 @@ export default {
 		/**
 		 * List the slugs of the other schemas (relation targets).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @return {Array<string>} Other schema slugs.
 		 */
 		otherSchemaSlugs() {
@@ -432,7 +432,7 @@ export default {
 		/**
 		 * Project the staged schema header fields for the header form.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @return {object} Header value object.
 		 */
 		headerValue() {
@@ -585,7 +585,7 @@ export default {
 		/**
 		 * Validate that exactly one initial lifecycle state is set.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @return {boolean} True when valid (or no lifecycle states).
 		 */
 		hasInitialLifecycleState() {
@@ -598,7 +598,7 @@ export default {
 		/**
 		 * Validate that all staged field names are present and unique.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @return {boolean} True when unique.
 		 */
 		fieldNamesUnique() {
@@ -621,7 +621,7 @@ export default {
 		/**
 		 * Gate Save on dirty-state plus all validation gates.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @return {boolean} True when the staged schema may be saved.
 		 */
 		canSave() {
@@ -644,7 +644,7 @@ export default {
 		/**
 		 * Detect whether the staged body differs from the persisted one.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @return {boolean} True when there are unsaved changes.
 		 */
 		hasStagedChanges() {
@@ -681,7 +681,7 @@ export default {
 			/**
 			 * Reload schema detail when the route schema id changes.
 			 *
-			 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+			 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 			 * @return {void}
 			 */
 			handler() {
@@ -699,7 +699,7 @@ export default {
 			 * REQ-BUR-004: an app switch is a session boundary — reset the
 			 * undo/redo history (design.md D3/D5).
 			 *
-			 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+			 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 			 * @spec openspec/specs/builder-undo-redo/spec.md#req-bur-005
 			 * @return {void}
 			 */
@@ -718,7 +718,7 @@ export default {
 			 * REQ-BUR-004: a version switch is a session boundary — reset the
 			 * undo/redo history (design.md D3/D5).
 			 *
-			 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+			 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 			 * @spec openspec/specs/builder-undo-redo/spec.md#req-bur-005
 			 * @return {void}
 			 */
@@ -736,7 +736,7 @@ export default {
 	 * On mount: resolve version, load the list, and load detail if a schema
 	 * is selected in the route.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+	 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 	 * @return {Promise<void>}
 	 */
 	async mounted() {
@@ -794,7 +794,7 @@ export default {
 		 * build/manage role. The list only returns apps the caller has a role
 		 * on; `useRole` then derives owner/editor/viewer from its permissions.
 		 *
-		 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.2
+		 * @spec openspec/changes/archive/2026-07-07-openbuild-data-import-wizard/tasks.md#2.2
 		 * @return {Promise<void>}
 		 */
 		async loadApplicationRecord() {
@@ -816,7 +816,7 @@ export default {
 		 * Refresh the schema list after a successful import (a create-from-file
 		 * import may have added a new schema to the register).
 		 *
-		 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.2
+		 * @spec openspec/changes/archive/2026-07-07-openbuild-data-import-wizard/tasks.md#2.2
 		 * @return {Promise<void>}
 		 */
 		async onSchemaImported() {
@@ -835,7 +835,7 @@ export default {
 		 * Returns the composable's `ready` promise: `refreshList()` needs the
 		 * resolved version's register, not merely a reactive render of it.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @return {Promise<void>}
 		 */
 		resolveVersion() {
@@ -880,7 +880,7 @@ export default {
 		 * times"). `register.schemas` is the authoritative set — and it costs one
 		 * scoped request instead of ~1900 rows.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @return {Promise<void>}
 		 */
 		async refreshList() {
@@ -913,7 +913,7 @@ export default {
 		/**
 		 * Load a single schema's detail and stage it for editing.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @return {Promise<void>}
 		 */
 		async loadDetail() {
@@ -982,7 +982,7 @@ export default {
 		/**
 		 * Convert a persisted schema body into the staged editor model.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @param {object} body Persisted schema body.
 		 * @return {object} Staged editor model.
 		 */
@@ -1021,7 +1021,7 @@ export default {
 		/**
 		 * Compose a canonical schema body from the staged editor model.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @param {object} staged Staged editor model.
 		 * @return {object} Canonical schema body.
 		 */
@@ -1100,7 +1100,7 @@ export default {
 		/**
 		 * Apply a header-form change into the staged model (slug locked).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @param {object} value Header values.
 		 * @return {void}
 		 */
@@ -1117,7 +1117,7 @@ export default {
 		/**
 		 * Apply a fields-editor change into the staged model.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @param {Array} fields Updated fields.
 		 * @return {void}
 		 */
@@ -1128,7 +1128,7 @@ export default {
 		/**
 		 * Apply a states change into the staged model.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @param {Array} states Updated states.
 		 * @return {void}
 		 */
@@ -1139,7 +1139,7 @@ export default {
 		/**
 		 * Apply a transitions change into the staged model.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @param {Array} transitions Updated transitions.
 		 * @return {void}
 		 */
@@ -1150,7 +1150,7 @@ export default {
 		/**
 		 * Apply a relations change into the staged model.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @param {Array} relations Updated relations.
 		 * @return {void}
 		 */
@@ -1178,7 +1178,7 @@ export default {
 		/**
 		 * Apply a widgets change into the staged model.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @param {Array} widgets Updated widgets.
 		 * @return {void}
 		 */
@@ -1304,7 +1304,7 @@ export default {
 		/**
 		 * Create a new schema via the store, surfacing duplicate-slug errors.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @param {object} payload New schema payload.
 		 * @return {Promise<void>}
 		 */
@@ -1396,7 +1396,7 @@ export default {
 		/**
 		 * Navigate to a schema's detail, preserving ?_version=.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @param {string} slug Schema slug.
 		 * @return {void}
 		 */
@@ -1414,7 +1414,7 @@ export default {
 		/**
 		 * Navigate back to the schema list, preserving ?_version=.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @return {void}
 		 */
 		goToList() {
@@ -1431,7 +1431,7 @@ export default {
 		/**
 		 * Delete a schema via the store and refresh the list.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @param {string} slug Schema slug.
 		 * @return {Promise<void>}
 		 */
@@ -1472,7 +1472,7 @@ export default {
 		 * When OpenRegister refuses a breaking change, the designer asks the
 		 * author to confirm and calls this again with `acknowledgeBreaking`.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @param {object} [options] Save options.
 		 * @param {boolean} [options.acknowledgeBreaking] Whether the author confirmed a breaking change.
 		 * @return {Promise<void>}
@@ -1614,7 +1614,7 @@ export default {
 		 * is recorded as exactly one history entry — a single undo brings
 		 * the discarded staged edits back.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @spec openspec/specs/builder-undo-redo/spec.md#req-bur-005
 		 * @return {void}
 		 */
@@ -1687,7 +1687,7 @@ export default {
 		/**
 		 * Extract a human-readable message from an error/response.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @param {*} e Error.
 		 * @return {string} Message.
 		 */

@@ -17,7 +17,7 @@
  * manifests to before this feature — this module never touches the manifest,
  * it only reads it, and returns `[]` when the key is absent.
  *
- * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-001
+ * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-001
  */
 
 /** Closed enum of supported `status` values. */
@@ -287,7 +287,7 @@ function entryErrors(entry, ctx) {
  *
  * @param {object} manifest - the in-flight manifest.
  * @return {string[]} - list of `<pointer>: <code>` error strings.
- * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-001
+ * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-001
  */
 export function validateExternalForms(manifest) {
 	const externalForms =

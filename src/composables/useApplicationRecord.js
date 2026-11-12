@@ -25,7 +25,7 @@
  * fresh call still goes to the server and no component can observe a stale
  * record. Only the concurrent stampede is collapsed.
  *
- * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+ * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
  */
 
 import axios from '@nextcloud/axios'

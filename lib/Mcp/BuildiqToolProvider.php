@@ -25,14 +25,14 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-8
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-42
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-50
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-59
- * @spec openspec/changes/retrofit-2026-05-24-openbuild-runtime-mcp/tasks.md#task-1
- * @spec openspec/changes/retrofit-2026-05-24-openbuild-runtime-mcp/tasks.md#task-2
- * @spec openspec/changes/retrofit-2026-05-24-openbuild-runtime-mcp/tasks.md#task-3
- * @spec openspec/changes/retrofit-2026-05-24-openbuild-runtime-mcp/tasks.md#task-4
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-8
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-42
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-50
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-59
+ * @spec openspec/changes/archive/retrofit-2026-05-24-openbuild-runtime-mcp/tasks.md#task-1
+ * @spec openspec/changes/archive/retrofit-2026-05-24-openbuild-runtime-mcp/tasks.md#task-2
+ * @spec openspec/changes/archive/retrofit-2026-05-24-openbuild-runtime-mcp/tasks.md#task-3
+ * @spec openspec/changes/archive/retrofit-2026-05-24-openbuild-runtime-mcp/tasks.md#task-4
  */
 
 declare(strict_types=1);
@@ -335,7 +335,7 @@ class BuildiqToolProvider implements IMcpToolProvider {
 	 *
 	 * @return array<int, array<string, mixed>>
 	 *
-	 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+	 * @spec openspec/specs/ai-copilot/spec.md
 	 */
 	public function getToolDescriptors(): array {
 		return self::TOOL_DESCRIPTORS;

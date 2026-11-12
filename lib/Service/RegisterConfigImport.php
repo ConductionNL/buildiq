@@ -29,7 +29,7 @@ namespace OCA\Buildiq\Service;
 /**
  * Assembled register configuration plus its import version.
  *
- * @spec openspec/changes/retrofit-2026-05-25-settings-and-observability/tasks.md#task-3
+ * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-settings-and-observability/tasks.md#task-3
  */
 final class RegisterConfigImport {
 

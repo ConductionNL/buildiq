@@ -29,10 +29,10 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-59
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-64
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-65
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-67
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-59
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-64
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-65
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-67
  */
 
 declare(strict_types=1);
@@ -106,8 +106,8 @@ class VersionPromotionController extends Controller {
 	 *
 	 * @return JSONResponse 200 + updated target on success, error envelope otherwise
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-59
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-65
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-59
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-65
 	 */
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 5, period: 60)]
@@ -169,8 +169,8 @@ class VersionPromotionController extends Controller {
 	 *
 	 * @return JSONResponse Error envelope with the spec-defined code + status
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-64
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-67
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-64
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-67
 	 */
 	private function mapExceptionToResponse(Throwable $error): JSONResponse {
 		if ($error instanceof NoPromoteTargetException) {
@@ -234,7 +234,7 @@ class VersionPromotionController extends Controller {
 	 *
 	 * @return JSONResponse
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-64
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-64
 	 */
 	private function buildLockedResponse(VersionLockedException $error): JSONResponse {
 		$this->logger->info('Buildiq: promote rejected (locked): ' . $error->getMessage());
@@ -336,7 +336,7 @@ class VersionPromotionController extends Controller {
 	 *
 	 * @throws InsufficientPermissionException When the user lacks owner/editor role
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-65
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-65
 	 */
 	private function assertEditorOrOwner(array $application, IUser $user): void {
 		$permissions = ($application['permissions'] ?? []);

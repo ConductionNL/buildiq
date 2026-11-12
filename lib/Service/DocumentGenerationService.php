@@ -71,12 +71,12 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/automation-document-action/tasks.md#2.1
- * @spec openspec/changes/automation-document-action/tasks.md#2.2
- * @spec openspec/changes/automation-document-action/tasks.md#2.3
- * @spec openspec/changes/automation-document-action/tasks.md#2.4
- * @spec openspec/changes/automation-document-action/tasks.md#2.5
- * @spec openspec/changes/automation-document-action/specs/automation-document-action/spec.md
+ * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#2.1
+ * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#2.2
+ * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#2.3
+ * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#2.4
+ * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#2.5
+ * @spec openspec/specs/automation-document-action/spec.md
  */
 
 declare(strict_types=1);
@@ -103,7 +103,7 @@ use Throwable;
 /**
  * Owner-impersonated internal caller of Docudesk's pinned generate route.
  *
- * @spec openspec/changes/automation-document-action/tasks.md#2.1
+ * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#2.1
  */
 class DocumentGenerationService {
 	/**
@@ -226,9 +226,9 @@ class DocumentGenerationService {
 	 *
 	 * @return bool Whether generation succeeded.
 	 *
-	 * @spec openspec/changes/automation-document-action/tasks.md#2.1
-	 * @spec openspec/changes/automation-document-action/tasks.md#2.2
-	 * @spec openspec/changes/automation-document-action/specs/automation-document-action/spec.md
+	 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#2.1
+	 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#2.2
+	 * @spec openspec/specs/automation-document-action/spec.md
 	 */
 	public function generate(array $automation, array $action, string $schemaSlug, string $objectUuid): bool {
 		$templateId = (string)($action['templateId'] ?? '');
@@ -471,7 +471,7 @@ class DocumentGenerationService {
 	 *                                          (the name is then the newest
 	 *                                          candidate, for the report).
 	 *
-	 * @spec openspec/changes/automation-document-action/tasks.md#2.1
+	 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#2.1
 	 */
 	private function generateRoute(): array {
 		$candidates = FleetAppId::CANDIDATES['filinq'];

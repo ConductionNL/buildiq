@@ -174,7 +174,7 @@ export default {
 		/**
 		 * Observed behaviour of `validatedConfigKeys` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		validatedConfigKeys() {
 			return ['register', 'schema', 'sidebar', 'sidebarProps']
@@ -183,7 +183,7 @@ export default {
 		/**
 		 * Observed behaviour of `routeParams` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		routeParams() {
 			const matches =
@@ -194,7 +194,7 @@ export default {
 		/**
 		 * Observed behaviour of `routeHasParam` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		routeHasParam() {
 			return this.routeParams.length > 0
@@ -203,7 +203,7 @@ export default {
 		/**
 		 * Observed behaviour of `sidebarShape` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		sidebarShape() {
 			const s = this.config.sidebar
@@ -225,7 +225,7 @@ export default {
 		 *
 		 * @param {string} key - the config key being written: `register`, `schema`, or `sidebar` in its legacy boolean form. Writing `register` also drops `schema`, since a schema is only meaningful inside its register.
 		 * @param {string|boolean} value - the new value: a slug from a `<select>`, or the checkbox state for the boolean-shaped sidebar. An empty string or `null` deletes the key; `false` is stored, so `sidebar: false` survives as an explicit "off".
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		update(key, value) {
 			const next = { ...this.config }
@@ -246,7 +246,7 @@ export default {
 		 * object form's keys do not survive a trip through `boolean`/`none`.
 		 *
 		 * @param {'none'|'boolean'|'object'} shape - the radio's value: `none` deletes `sidebar`, `boolean` writes the legacy `true`, `object` seeds the preferred `{ enabled: true }`.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		setSidebarShape(shape) {
 			const next = { ...this.config }
@@ -266,7 +266,7 @@ export default {
 		 *
 		 * @param {string} key - the sidebar key being written: `enabled`, `show` or `tabs`.
 		 * @param {boolean|Array<object>} value - the checkbox state for `enabled`/`show`, or the rebuilt tab list from SidebarTabBuilder for `tabs`. Falsy values are stored, not deleted, so `enabled: false` is preserved as an explicit "off".
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		updateSidebarKey(key, value) {
 			const next = { ...this.config }
@@ -284,7 +284,7 @@ export default {
 		 * used this path round-trips byte-identically.
 		 *
 		 * @param {Array<{id: string, label: string, icon?: string, component?: string}>} tabs - the rebuilt tab list from SidebarTabBuilder; empty or missing means "no tabs".
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		updateSidebarPropsTabs(tabs) {
 			const next = { ...this.config }

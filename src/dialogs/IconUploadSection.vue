@@ -204,7 +204,7 @@ export default {
 		/**
 		 * Observed behaviour of `objectUuid` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
 		 */
 		objectUuid() {
 			const self = this.application['@self'] || {}
@@ -214,7 +214,7 @@ export default {
 		/**
 		 * Observed behaviour of `iconLightUrl` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
 		 */
 		iconLightUrl() {
 			if (!this.objectUuid) return null
@@ -224,7 +224,7 @@ export default {
 		/**
 		 * Observed behaviour of `iconDarkUrl` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
 		 */
 		iconDarkUrl() {
 			if (!this.objectUuid) return null
@@ -244,7 +244,7 @@ export default {
 			 *   immediately, and may receive `undefined` while the parent is still
 			 *   loading the record.
 			 *
-			 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
+			 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
 			 */
 			handler(app) {
 				this.lightRef = app?.icon?.ref || null
@@ -262,7 +262,7 @@ export default {
 		 *   picked the upload up); `e.target` is the image, which is hidden so the
 		 *   broken-image glyph never shows.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
 		 */
 		onLightPreviewError(e) {
 			e.target.style.display = 'none'
@@ -274,7 +274,7 @@ export default {
 		 * @param {Event} e - The `<img>` `error` event for the dark-icon preview; same
 		 *   contract as `onLightPreviewError`.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
 		 */
 		onDarkPreviewError(e) {
 			e.target.style.display = 'none'
@@ -288,7 +288,7 @@ export default {
 		 * @return {boolean} `true` when a file was picked and its name ends in `.svg`.
 		 *   Extension-only — the file's bytes and MIME type are not inspected here.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
 		 */
 		validateSvgFile(file) {
 			if (!file) return false
@@ -306,7 +306,7 @@ export default {
 		 *   inline and the input is cleared so the same file can be re-picked.
 		 * @return {Promise<void>}
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
 		 */
 		async onLightFileChange(event) {
 			this.lightError = ''
@@ -326,7 +326,7 @@ export default {
 		 *   contract as `onLightFileChange`, routed to the `dark` variant.
 		 * @return {Promise<void>}
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
 		 */
 		async onDarkFileChange(event) {
 			this.darkError = ''
@@ -354,7 +354,7 @@ export default {
 		 *   re-uploading replaces the previous icon rather than accumulating files.
 		 * @return {Promise<void>}
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
 		 */
 		async uploadIcon(file, variant) {
 			if (!this.objectUuid) return
@@ -427,7 +427,7 @@ export default {
 		/**
 		 * Observed behaviour of `removeLightIcon` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
 		 */
 		async removeLightIcon() {
 			await this.removeIcon('light')
@@ -436,7 +436,7 @@ export default {
 		/**
 		 * Observed behaviour of `removeDarkIcon` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
 		 */
 		async removeDarkIcon() {
 			await this.removeIcon('dark')

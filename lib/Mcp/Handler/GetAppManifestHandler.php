@@ -28,7 +28,7 @@ namespace OCA\Buildiq\Mcp\Handler;
 /**
  * Handles the buildiq.getAppManifest tool invocation.
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-50
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-50
  */
 class GetAppManifestHandler extends AbstractToolHandler {
 	/**

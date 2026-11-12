@@ -345,7 +345,7 @@ export default {
 		/**
 		 * Observed behaviour of `versionOptions` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-exporter-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-exporter-ui/tasks.md#task-1
 		 */
 		versionOptions() {
 			return this.loadedVersions.length
@@ -356,7 +356,7 @@ export default {
 		/**
 		 * Observed behaviour of `targetOptions` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-exporter-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-exporter-ui/tasks.md#task-1
 		 */
 		targetOptions() {
 			return [
@@ -420,7 +420,7 @@ export default {
 		/**
 		 * Observed behaviour of `licenseOptions` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-exporter-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-exporter-ui/tasks.md#task-1
 		 */
 		licenseOptions() {
 			return [
@@ -433,7 +433,7 @@ export default {
 		/**
 		 * Observed behaviour of `visibilityOptions` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-exporter-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-exporter-ui/tasks.md#task-1
 		 */
 		visibilityOptions() {
 			return [
@@ -571,7 +571,7 @@ export default {
 		/**
 		 * Observed behaviour of `onClose` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-exporter-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-exporter-ui/tasks.md#task-1
 		 */
 		onClose() {
 			if (this.submitting) {
@@ -583,7 +583,7 @@ export default {
 		/**
 		 * Observed behaviour of `submit` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-exporter-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-exporter-ui/tasks.md#task-1
 		 */
 		async submit() {
 			this.submitting = true

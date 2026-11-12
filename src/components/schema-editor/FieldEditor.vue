@@ -369,7 +369,7 @@ export default {
 		/**
 		 * Build the field-type picker options.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
 		 * @return {Array} Option objects.
 		 */
 		typeOptions() {
@@ -382,7 +382,7 @@ export default {
 		/**
 		 * Build the array-items-type picker options.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
 		 * @return {Array} Option objects.
 		 */
 		itemsTypeOptions() {
@@ -395,7 +395,7 @@ export default {
 		/**
 		 * Build relation target-schema picker options.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
 		 * @return {Array} Option objects.
 		 */
 		schemaOptions() {
@@ -405,7 +405,7 @@ export default {
 		/**
 		 * Build cardinality picker options (one/many).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
 		 * @return {Array} Option objects.
 		 */
 		cardinalityOptions() {
@@ -423,7 +423,7 @@ export default {
 		/**
 		 * Resolve the selected field-type option.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
 		 * @param {string} type Field type.
 		 * @return {object} Matching option.
 		 */
@@ -436,7 +436,7 @@ export default {
 		/**
 		 * Resolve the selected target-schema option.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
 		 * @param {string} value Schema slug.
 		 * @return {object|null} Matching option.
 		 */
@@ -447,7 +447,7 @@ export default {
 		/**
 		 * Resolve the selected cardinality option.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
 		 * @param {string} value Cardinality.
 		 * @return {object} Matching option.
 		 */
@@ -461,7 +461,7 @@ export default {
 		/**
 		 * Validate a field name: presence, pattern, and uniqueness.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
 		 * @param {object} field Field row.
 		 * @param {number} index Row index.
 		 * @return {string} Error message, or empty when valid.
@@ -489,7 +489,7 @@ export default {
 		/**
 		 * Coerce an input to an integer or null.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
 		 * @param {*} value Raw input.
 		 * @return {number|null} Parsed integer or null.
 		 */
@@ -504,7 +504,7 @@ export default {
 		/**
 		 * Coerce an input to a number or null.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
 		 * @param {*} value Raw input.
 		 * @return {number|null} Parsed number or null.
 		 */
@@ -519,7 +519,7 @@ export default {
 		/**
 		 * Emit the updated fields array to the parent.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
 		 * @param {Array} next Next fields array.
 		 * @return {void}
 		 */
@@ -530,7 +530,7 @@ export default {
 		/**
 		 * Append a new blank field row.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
 		 * @return {void}
 		 */
 		addField() {
@@ -550,7 +550,7 @@ export default {
 		/**
 		 * Update a single field property; resets validation on type change.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
 		 * @param {number} index Row index.
 		 * @param {string} key Property key.
 		 * @param {*} value New value.
@@ -572,7 +572,7 @@ export default {
 		/**
 		 * Set or clear a single validation slot on a field.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
 		 * @param {number} index Row index.
 		 * @param {string} key Validation key.
 		 * @param {*} value New value (empty clears the slot).
@@ -595,7 +595,7 @@ export default {
 		/**
 		 * Move a field up one position.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
 		 * @param {number} index Row index.
 		 * @return {void}
 		 */
@@ -612,7 +612,7 @@ export default {
 		/**
 		 * Move a field down one position.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
 		 * @param {number} index Row index.
 		 * @return {void}
 		 */
@@ -629,7 +629,7 @@ export default {
 		/**
 		 * Open the remove-field confirmation dialog.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
 		 * @param {number} index Row index.
 		 * @return {void}
 		 */
@@ -643,7 +643,7 @@ export default {
 		/**
 		 * Confirm removal of the pending field.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
 		 * @return {void}
 		 */
 		confirmRemove() {
@@ -660,7 +660,7 @@ export default {
 		/**
 		 * Cancel the pending field removal and reset state.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
 		 * @return {void}
 		 */
 		cancelRemove() {

@@ -85,7 +85,7 @@ export default {
 		 * The available all/virtual/hybrid filter options.
 		 *
 		 * @return {Array<{value: string, label: string}>}
-		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+		 * @spec openspec/specs/unified-app-model/spec.md
 		 */
 		filterOptions() {
 			return [
@@ -100,7 +100,7 @@ export default {
 		 * to 'all' when absent or unrecognised.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+		 * @spec openspec/specs/unified-app-model/spec.md
 		 */
 		activeFilter() {
 			const filter =
@@ -117,7 +117,7 @@ export default {
 		 * @param {string} value The filter value ('all' | 'virtual' | 'hybrid').
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+		 * @spec openspec/specs/unified-app-model/spec.md
 		 */
 		setFilter(value) {
 			if (!this.$router) {
@@ -149,7 +149,7 @@ export default {
 		 *   `created` with no uuid on its AI-copilot path (which has already
 		 *   navigated), so an absent value must only close the wizard, not navigate.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-4
 		 */
 		onWizardCreated(applicationUuid) {
 			this.showWizard = false

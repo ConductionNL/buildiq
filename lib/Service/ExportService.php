@@ -21,9 +21,9 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-40
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-41
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-40
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-41
  *
  * @SPDX-License-Identifier: EUPL-1.2
  * @SPDX-FileCopyrightText:  2026 Conduction B.V. <info@conduction.nl>
@@ -67,7 +67,7 @@ use Psr\Log\LoggerInterface;
  *   - GitHub PAT NEVER passes through this class. It is fetched from
  *     ICredentialsManager by RunExportJob and handed to GitHubPushService.
  *
- * @spec openspec/changes/openbuild-exporter/tasks.md#task-4.1
+ * @spec openspec/changes/archive/2026-06-14-openbuild-exporter/tasks.md#task-4.1
  */
 class ExportService {
 
@@ -152,8 +152,8 @@ class ExportService {
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flag mirrors the export job's includeServerBundle field.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-40
-	 * @spec openspec/changes/data-registers-runtime/tasks.md#task-4.2
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-40
+	 * @spec openspec/changes/archive/2026-10-07-data-registers-runtime/tasks.md#task-4.2
 	 */
 	public function generateAppZip(
 		ExportTarget $target,
@@ -239,8 +239,8 @@ class ExportService {
 	 *
 	 * @return array<int, array{kind: string, ref: string, reason: string}> Skips, empty when everything resolved.
 	 *
-	 * @spec openspec/changes/openbuild-exports-flows-and-agents/specs/app-export-completeness/spec.md#requirement-an-unresolvable-binding-must-be-reported-not-silently-dropped
-	 * @spec openspec/changes/openbuild-exports-flows-and-agents/specs/app-composition-bindings/spec.md#requirement-a-dangling-binding-must-reach-the-operator
+	 * @spec openspec/specs/app-export-completeness/spec.md#requirement-an-unresolvable-binding-must-be-reported-not-silently-dropped
+	 * @spec openspec/specs/app-composition-bindings/spec.md#requirement-a-dangling-binding-must-reach-the-operator
 	 */
 	public function lastSkipped(): array {
 		return $this->lastSkipped;
@@ -348,7 +348,7 @@ class ExportService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/data-registers-runtime/tasks.md#task-4.2
+	 * @spec openspec/changes/archive/2026-10-07-data-registers-runtime/tasks.md#task-4.2
 	 */
 	private function bundleDataRegisterSchemas(string $rootDir, array $dataRegisters): void {
 		$this->bundlers->dataRegisterBundler->bundle(rootDir: $rootDir, dataRegisters: $dataRegisters);
@@ -366,7 +366,7 @@ class ExportService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/data-registers-runtime/tasks.md#task-4.2
+	 * @spec openspec/changes/archive/2026-10-07-data-registers-runtime/tasks.md#task-4.2
 	 */
 	private function pinDataRegisterFileTimestamps(string $rootDir): void {
 		$targetDir = $rootDir . '/lib/Settings/data-registers';
@@ -398,7 +398,7 @@ class ExportService {
 	 *
 	 * @return string Local path to the ZIP file.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
 	 */
 	private function packageZip(string $sourceDir, string $jobUuid): string {
 		$exportRoot = $this->getOrCreateAppDataDir(name: 'exports');
@@ -442,7 +442,7 @@ class ExportService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-40
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-40
 	 */
 	private function resolvePlaceholders(string $rootDir, array $context): void {
 		$stringContext = [];
@@ -500,7 +500,7 @@ class ExportService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-40
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-40
 	 */
 	private function copyTemplate(string $source, string $dest): void {
 		$this->treeFiles->requireDirectory(dir: $source, label: 'Template snapshot');
@@ -549,7 +549,7 @@ class ExportService {
 	 *
 	 * @return string Absolute path to the scratch tree directory.
 	 *
-	 * @spec openspec/changes/openbuild-exporter/tasks.md#task-6.2
+	 * @spec openspec/changes/archive/2026-06-14-openbuild-exporter/tasks.md#task-6.2
 	 */
 	public function scratchTreeDir(string $jobUuid): string {
 		return $this->getOrCreateAppDataDir(name: 'work') . '/' . $jobUuid;
@@ -576,7 +576,7 @@ class ExportService {
 	 *
 	 * @return string Absolute local path.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
 	 */
 	private function getOrCreateAppDataDir(string $name): string {
 		// Best-effort: make sure the IAppData folder exists so any

@@ -95,7 +95,7 @@ class AppVisibilityResolver {
 	 * @return bool True when the surface should be visible.
 	 *
 	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-a-user-only-sees-widgets-they-are-allowed-to-see
-	 * @spec openspec/changes/widget-roles-on-app-pages/specs/openbuild-runtime/spec.md#requirement-page-widgets-must-be-filterable-by-roles
+	 * @spec openspec/specs/openbuild-runtime/spec.md#requirement-page-widgets-must-be-filterable-by-roles
 	 */
 	public function isVisibleToUser(
 		array $permissions,
@@ -178,7 +178,7 @@ class AppVisibilityResolver {
 	 * @return array<int,mixed>|null The roles, or null when malformed.
 	 *
 	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-a-user-only-sees-widgets-they-are-allowed-to-see
-	 * @spec openspec/changes/widget-roles-on-app-pages/specs/openbuild-runtime/spec.md#requirement-page-widgets-must-be-filterable-by-roles
+	 * @spec openspec/specs/openbuild-runtime/spec.md#requirement-page-widgets-must-be-filterable-by-roles
 	 */
 	public function normaliseRoles(mixed $roles): ?array {
 		if ($roles === null || $roles === '') {

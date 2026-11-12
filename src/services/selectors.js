@@ -10,7 +10,7 @@
  * syntax — keep it the minimal subset every binding shares so the same
  * resolver works for the runtime read path and the designer preview.
  *
- * @spec openspec/changes/openconnector-api-sources/tasks.md#task-4.1
+ * @spec openspec/changes/archive/2026-06-14-openconnector-api-sources/tasks.md#task-4.1
  */
 
 /**
@@ -25,7 +25,7 @@
  * @param {string} selector - dot-path like `resultaten.0.naam`. Empty /
  *   nullish selector returns the root value unchanged.
  * @return {*} - the resolved value, or `undefined` when the path breaks.
- * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006
+ * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-006
  */
 export function resolveSelector(value, selector) {
 	if (isBlankPath(selector)) {
@@ -73,7 +73,7 @@ function isTraversable(cursor) {
  * @param {Function} [onMissing] - called `(fieldName, selector)` for each
  *   selector that resolved to `undefined`.
  * @return {object} - the projected row.
- * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006
+ * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-006
  */
 export function projectFields(item, fields, onMissing) {
 	const row = {}
@@ -102,7 +102,7 @@ export function projectFields(item, fields, onMissing) {
  * @param {*} response - the raw response payload.
  * @param {string} [itemsPath] - dot-path to the list root.
  * @return {Array} - the items list (possibly empty).
- * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006
+ * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-006
  */
 export function extractItems(response, itemsPath) {
 	if (isBlankPath(itemsPath)) {
@@ -131,7 +131,7 @@ function isAbsent(response) {
  * @param {string} [basePath] - accumulated dot-path prefix.
  * @param {number} [maxDepth] - recursion guard (default 8).
  * @return {Array<{path: string, value: *, isLeaf: boolean, isArray: boolean}>}
- * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-003
+ * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-003
  */
 export function flattenSample(value, basePath = '', maxDepth = 8) {
 	const out = []

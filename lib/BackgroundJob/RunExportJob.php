@@ -18,8 +18,8 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-34
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-34
  *
  * @SPDX-License-Identifier: EUPL-1.2
  * @SPDX-FileCopyrightText:  2026 Conduction B.V. <info@conduction.nl>
@@ -45,7 +45,7 @@ use RuntimeException;
 /**
  * Background job that runs a single ExportJob to completion.
  *
- * @spec openspec/changes/openbuild-exporter/tasks.md#task-7.1
+ * @spec openspec/changes/archive/2026-06-14-openbuild-exporter/tasks.md#task-7.1
  */
 class RunExportJob extends QueuedJob {
 	/**
@@ -83,7 +83,7 @@ class RunExportJob extends QueuedJob {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
 	 */
 	protected function run($argument): void {
 		$jobUuid = $this->extractJobUuid(argument: $argument);
@@ -179,8 +179,8 @@ class RunExportJob extends QueuedJob {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
-	 * @spec openspec/changes/data-registers-runtime/tasks.md#task-4.3
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
+	 * @spec openspec/changes/archive/2026-10-07-data-registers-runtime/tasks.md#task-4.3
 	 */
 	private function executePipeline(string $jobUuid): void {
 		// Load the queued ExportJob record so we have the real application
@@ -399,7 +399,7 @@ class RunExportJob extends QueuedJob {
 	 *
 	 * @throws RuntimeException When a GitHub export has no broker credential.
 	 *
-	 * @spec openspec/changes/openbuild-exporter/tasks.md#task-6.2
+	 * @spec openspec/changes/archive/2026-06-14-openbuild-exporter/tasks.md#task-6.2
 	 */
 	private function maybePush(string $jobUuid, array $job): ?array {
 		if ((string)($job['target'] ?? 'zip') !== 'github') {

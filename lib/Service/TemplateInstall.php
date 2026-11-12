@@ -20,7 +20,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/openbuild-remote-template-store/specs/openbuild-remote-template-store/spec.md
+ * @spec openspec/specs/openbuild-remote-template-store/spec.md
  */
 
 declare(strict_types=1);

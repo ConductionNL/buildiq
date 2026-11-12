@@ -120,7 +120,7 @@ export default {
 	},
 
 	computed: {
-		/** @spec openspec/changes/nldesign-theme-selection/specs/nldesign-theme-selection/spec.md#req-nts-002 */
+		/** @spec openspec/specs/nldesign-theme-selection/spec.md#req-nts-002 */
 		theme() {
 			return (
 				(this.manifest
@@ -130,7 +130,7 @@ export default {
 			)
 		},
 
-		/** @spec openspec/changes/nldesign-theme-selection/specs/nldesign-theme-selection/spec.md#req-nts-002 */
+		/** @spec openspec/specs/nldesign-theme-selection/spec.md#req-nts-002 */
 		primaryColor() {
 			return (
 				(this.theme && this.theme.preview && this.theme.preview.primaryColor)
@@ -138,7 +138,7 @@ export default {
 			)
 		},
 
-		/** @spec openspec/changes/nldesign-theme-selection/specs/nldesign-theme-selection/spec.md#req-nts-002 */
+		/** @spec openspec/specs/nldesign-theme-selection/spec.md#req-nts-002 */
 		backgroundColor() {
 			return (
 				(this.theme
@@ -150,7 +150,7 @@ export default {
 	},
 
 	methods: {
-		/** @spec openspec/changes/nldesign-theme-selection/specs/nldesign-theme-selection/spec.md#req-nts-002 */
+		/** @spec openspec/specs/nldesign-theme-selection/spec.md#req-nts-002 */
 		openPicker() {
 			if (!this.nldesignAvailable) {
 				return
@@ -162,7 +162,7 @@ export default {
 		 * Persist the chosen theme into `runtime.theme`.
 		 *
 		 * @param {object} theme - the runtime.theme object.
-		 * @spec openspec/changes/nldesign-theme-selection/specs/nldesign-theme-selection/spec.md#req-nts-001
+		 * @spec openspec/specs/nldesign-theme-selection/spec.md#req-nts-001
 		 */
 		onSave(theme) {
 			this.$emit('update:manifest', this.withTheme(theme))
@@ -171,7 +171,7 @@ export default {
 		/**
 		 * Remove the theme (delete `runtime.theme` entirely).
 		 *
-		 * @spec openspec/changes/nldesign-theme-selection/specs/nldesign-theme-selection/spec.md#req-nts-002
+		 * @spec openspec/specs/nldesign-theme-selection/spec.md#req-nts-002
 		 */
 		removeTheme() {
 			this.confirmRemoveOpen = true
@@ -199,7 +199,7 @@ export default {
 		 *
 		 * @param {?object} theme - the theme object, or null to clear.
 		 * @return {object}
-		 * @spec openspec/changes/nldesign-theme-selection/specs/nldesign-theme-selection/spec.md#req-nts-001
+		 * @spec openspec/specs/nldesign-theme-selection/spec.md#req-nts-001
 		 */
 		withTheme(theme) {
 			const next = { ...this.manifest }

@@ -65,11 +65,11 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/automation-designer/tasks.md#3.1
+ * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#3.1
  * @spec openspec/specs/automation-designer/spec.md#req-autd-007
  * @spec openspec/specs/automation-designer/spec.md#req-autd-008
- * @spec openspec/changes/automation-approval-steps/tasks.md#5.1
- * @spec openspec/changes/automation-approval-steps/tasks.md#5.2
+ * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#5.1
+ * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#5.2
  */
 
 declare(strict_types=1);
@@ -96,7 +96,7 @@ use Throwable;
 /**
  * Controller serving the automation compile/enable/disable/dry-run/status API.
  *
- * @spec openspec/changes/automation-designer/tasks.md#3.1
+ * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#3.1
  */
 class AutomationsController extends Controller {
 	/**
@@ -246,7 +246,7 @@ class AutomationsController extends Controller {
 	 *
 	 * @return JSONResponse
 	 *
-	 * @spec openspec/changes/automation-designer/tasks.md#3.1
+	 * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#3.1
 	 */
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 30, period: 60)]
@@ -270,7 +270,7 @@ class AutomationsController extends Controller {
 	 *
 	 * @return JSONResponse
 	 *
-	 * @spec openspec/changes/automation-designer/tasks.md#3.1
+	 * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#3.1
 	 */
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 30, period: 60)]
@@ -295,7 +295,7 @@ class AutomationsController extends Controller {
 	 *
 	 * @return JSONResponse
 	 *
-	 * @spec openspec/changes/automation-designer/tasks.md#3.1
+	 * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#3.1
 	 */
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 30, period: 60)]
@@ -321,8 +321,8 @@ class AutomationsController extends Controller {
 	 *
 	 * @return JSONResponse
 	 *
-	 * @spec openspec/changes/automation-designer/tasks.md#3.1
-	 * @spec openspec/changes/automation-approval-steps/tasks.md#5.2
+	 * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#3.1
+	 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#5.2
 	 */
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 60, period: 60)]
@@ -383,8 +383,8 @@ class AutomationsController extends Controller {
 	 *
 	 * @return JSONResponse
 	 *
-	 * @spec openspec/changes/automation-designer/tasks.md#3.1
-	 * @spec openspec/changes/automation-approval-steps/tasks.md#5.1
+	 * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#3.1
+	 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#5.1
 	 */
 	#[NoAdminRequired]
 	public function status(string $uuid): JSONResponse {

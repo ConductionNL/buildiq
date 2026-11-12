@@ -34,7 +34,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/openbuild-exporter/tasks.md#task-6.2
+ * @spec openspec/changes/archive/2026-06-14-openbuild-exporter/tasks.md#task-6.2
  */
 
 declare(strict_types=1);
@@ -54,7 +54,7 @@ use RuntimeException;
 /**
  * GitHub delivery target. PAT-handling contract documented in Decision 3.
  *
- * @spec openspec/changes/openbuild-exporter/tasks.md#task-6.2
+ * @spec openspec/changes/archive/2026-06-14-openbuild-exporter/tasks.md#task-6.2
  */
 class GitHubPushService {
 	/**
@@ -144,7 +144,7 @@ class GitHubPushService {
 	 *
 	 * @throws RuntimeException On any GitHub API failure (auth, repo-exists, …).
 	 *
-	 * @spec openspec/changes/openbuild-exporter/tasks.md#task-6.2
+	 * @spec openspec/changes/archive/2026-06-14-openbuild-exporter/tasks.md#task-6.2
 	 */
 	public function push(string $jobUuid, string $treeDir, BrokerAccess $access, PushTarget $target): array {
 		$org = $target->org;
@@ -227,7 +227,7 @@ class GitHubPushService {
 	 *
 	 * @throws RuntimeException On API failure.
 	 *
-	 * @spec openspec/changes/openbuild-exporter/tasks.md#task-6.2
+	 * @spec openspec/changes/archive/2026-06-14-openbuild-exporter/tasks.md#task-6.2
 	 */
 	public function createRepo(PushTarget $target, BrokerAccess $access): array {
 		$created = $this->brokerCall(
@@ -266,7 +266,7 @@ class GitHubPushService {
 	 *
 	 * @throws RuntimeException On API failure.
 	 *
-	 * @spec openspec/changes/openbuild-exporter/tasks.md#task-6.2
+	 * @spec openspec/changes/archive/2026-06-14-openbuild-exporter/tasks.md#task-6.2
 	 */
 	public function pushTree(PushTarget $target, string $branch, string $treeDir, BrokerAccess $access): string {
 		$base = $target->repoPath();
@@ -322,7 +322,7 @@ class GitHubPushService {
 	 *
 	 * @throws RuntimeException On API failure.
 	 *
-	 * @spec openspec/changes/openbuild-exporter/tasks.md#task-6.2
+	 * @spec openspec/changes/archive/2026-06-14-openbuild-exporter/tasks.md#task-6.2
 	 */
 	public function openPullRequest(PushTarget $target, string $toBranch, BrokerAccess $access): string {
 		$pullRequest = $this->postJson(
@@ -499,7 +499,7 @@ class GitHubPushService {
 	 *
 	 * @return bool True when the broker class can be resolved.
 	 *
-	 * @spec openspec/changes/openbuild-exporter/tasks.md#task-6.2
+	 * @spec openspec/changes/archive/2026-06-14-openbuild-exporter/tasks.md#task-6.2
 	 */
 	public function isBrokerAvailable(): bool {
 		return class_exists(self::BROKER_CLASS) === true;

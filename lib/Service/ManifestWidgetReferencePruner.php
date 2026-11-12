@@ -22,7 +22,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/widget-roles-on-app-pages/specs/openbuild-runtime/spec.md#requirement-page-widgets-must-be-filterable-by-roles
+ * @spec openspec/specs/openbuild-runtime/spec.md#requirement-page-widgets-must-be-filterable-by-roles
  */
 
 declare(strict_types=1);
@@ -32,7 +32,7 @@ namespace OCA\Buildiq\Service;
 /**
  * Prunes references to widgets that were removed from a page.
  *
- * @spec openspec/changes/widget-roles-on-app-pages/specs/openbuild-runtime/spec.md#requirement-page-widgets-must-be-filterable-by-roles
+ * @spec openspec/specs/openbuild-runtime/spec.md#requirement-page-widgets-must-be-filterable-by-roles
  */
 class ManifestWidgetReferencePruner {
 	/**
@@ -45,7 +45,7 @@ class ManifestWidgetReferencePruner {
 	 *
 	 * @return array<string, mixed> The page without dangling tab references.
 	 *
-	 * @spec openspec/changes/widget-roles-on-app-pages/specs/openbuild-runtime/spec.md#requirement-page-widgets-must-be-filterable-by-roles
+	 * @spec openspec/specs/openbuild-runtime/spec.md#requirement-page-widgets-must-be-filterable-by-roles
 	 */
 	public function pruneTabReferences(array $page, array $removedIds): array {
 		if (is_array($page['widgets'] ?? null) === true) {
@@ -69,7 +69,7 @@ class ManifestWidgetReferencePruner {
 	 * @return mixed The list without references to removed widgets, or the
 	 *               value unchanged when it is not a list.
 	 *
-	 * @spec openspec/changes/widget-roles-on-app-pages/specs/openbuild-runtime/spec.md#requirement-page-widgets-must-be-filterable-by-roles
+	 * @spec openspec/specs/openbuild-runtime/spec.md#requirement-page-widgets-must-be-filterable-by-roles
 	 */
 	public function dropReferences(mixed $entries, array $removedIds): mixed {
 		if (is_array($entries) === false) {

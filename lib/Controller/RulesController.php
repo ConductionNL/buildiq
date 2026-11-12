@@ -36,8 +36,8 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/business-rules-engine/tasks.md#9.1
- * @spec openspec/changes/business-rules-engine/tasks.md#9.2
+ * @spec openspec/changes/archive/2026-06-14-business-rules-engine/tasks.md#9.1
+ * @spec openspec/changes/archive/2026-06-14-business-rules-engine/tasks.md#9.2
  */
 
 declare(strict_types=1);
@@ -105,7 +105,7 @@ class RulesController extends Controller {
 	 *
 	 * @return JSONResponse 200 with the result, 404 on miss, 408 on timeout, 422 on bad input.
 	 *
-	 * @spec openspec/changes/business-rules-engine/tasks.md#9.1
+	 * @spec openspec/changes/archive/2026-06-14-business-rules-engine/tasks.md#9.1
 	 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-live-evaluation-leaves-no-log-trail-req-bqlv-004
 	 *
 	 * @no-admin-idor-exempt Authorization is delegated to OpenRegister: every read here
@@ -235,7 +235,7 @@ class RulesController extends Controller {
 	 *
 	 * @return JSONResponse 200 with the schema metadata, or 404.
 	 *
-	 * @spec openspec/changes/business-rules-engine/tasks.md#9.1
+	 * @spec openspec/changes/archive/2026-06-14-business-rules-engine/tasks.md#9.1
 	 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-calculated-from-a-rule-set-req-bqlv-002
 	 *
 	 * @no-admin-idor-exempt Authorization is delegated to OpenRegister: every read here
@@ -377,7 +377,7 @@ class RulesController extends Controller {
 	 *
 	 * @return JSONResponse 200 with the test summary, or 404.
 	 *
-	 * @spec openspec/changes/business-rules-engine/tasks.md#9.1
+	 * @spec openspec/changes/archive/2026-06-14-business-rules-engine/tasks.md#9.1
 	 *
 	 * @no-admin-idor-exempt Authorization is delegated to OpenRegister: every read here
 	 *   goes through RuleObjectReader::find(), which searches with `_rbac: true` and

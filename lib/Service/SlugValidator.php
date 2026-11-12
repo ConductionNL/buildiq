@@ -28,8 +28,8 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-10
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-11
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-10
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-11
  */
 
 declare(strict_types=1);
@@ -80,7 +80,7 @@ class SlugValidator {
 	 *
 	 * @return array<string,mixed> Empty array on success; error array on failure
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-10
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-10
 	 */
 	public function validateAppSlug(string $slug): array {
 		if ($slug === '') {
@@ -119,7 +119,7 @@ class SlugValidator {
 	 *
 	 * @return array<string,mixed> Empty array on success; error array on failure
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-10
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-10
 	 */
 	public function validateVersionSlug(string $slug): array {
 		if ($slug === '') {
@@ -177,7 +177,7 @@ class SlugValidator {
 	 *
 	 * @return array<string,mixed> Empty array on success; error array identifying the collision
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-11
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-11
 	 */
 	public function validateChainSlugs(array $slugs): array {
 		$seen = [];

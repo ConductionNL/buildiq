@@ -12,7 +12,7 @@
  * routing a single-object download through the async job pipeline built
  * for multi-file app exports.
  *
- * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+ * @spec openspec/specs/component-blocks/spec.md
  */
 
 import { isEnvelope, parsedInput } from './importEnvelope.js'
@@ -29,7 +29,7 @@ export const BLOCK_EXPORT_SCHEMA_VERSION = '1.0'
 export class BlockImportError extends Error {
 	/**
 	 * @param {string} code - `invalid-json` | `invalid-shape`.
-	 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+	 * @spec openspec/specs/component-blocks/spec.md
 	 */
 	constructor(code) {
 		super(`buildiq.blocks.import.error.${code}`)
@@ -46,7 +46,7 @@ export class BlockImportError extends Error {
  *
  * @param {object} block - the `ComponentBlock` record (as returned by OR REST).
  * @return {{schemaVersion: string, kind: string, block: object}} the export envelope.
- * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+ * @spec openspec/specs/component-blocks/spec.md
  */
 export function exportBlockPayload(block) {
 	const source = block || {}
@@ -66,7 +66,7 @@ export function exportBlockPayload(block) {
  *
  * @param {object} block - the `ComponentBlock` record to export.
  * @return {void}
- * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+ * @spec openspec/specs/component-blocks/spec.md
  */
 export function downloadBlockExport(block) {
 	const payload = exportBlockPayload(block)
@@ -89,7 +89,7 @@ export function downloadBlockExport(block) {
  * @return {object} the block record with `uuid`/`createdBy` stripped.
  * @throws {BlockImportError} `invalid-json` on unparsable input,
  *   `invalid-shape` when the envelope isn't a recognised block export.
- * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+ * @spec openspec/specs/component-blocks/spec.md
  */
 export function parseBlockImport(input) {
 	const data = parsedInput(input, () => new BlockImportError('invalid-json'))

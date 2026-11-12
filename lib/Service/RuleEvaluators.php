@@ -28,7 +28,7 @@ namespace OCA\Buildiq\Service;
 /**
  * The decision table evaluator, condition executor, action dispatcher and rule cache.
  *
- * @spec openspec/changes/business-rules-engine/tasks.md#5.1
+ * @spec openspec/changes/archive/2026-06-14-business-rules-engine/tasks.md#5.1
  */
 final class RuleEvaluators {
 	/**

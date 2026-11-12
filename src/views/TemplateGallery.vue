@@ -530,7 +530,7 @@ export default {
 		 * returned them.
 		 *
 		 * @return {Array<object>}
-		 * @spec openspec/changes/store-shows-built-in-templates/specs/template-catalogue-ui/spec.md
+		 * @spec openspec/specs/template-catalogue-ui/spec.md
 		 */
 		sortedTemplates() {
 			const list = this.templates.filter((tpl) => tpl && (tpl.slug || tpl.id))
@@ -558,7 +558,7 @@ export default {
 		 * Distinct categories present across the loaded blocks, for the filter.
 		 *
 		 * @return {Array<{id: string, label: string}>}
-		 * @spec openspec/changes/component-blocks/specs/openbuild-template-catalogue/spec.md
+		 * @spec openspec/specs/openbuild-template-catalogue/spec.md
 		 */
 		blockCategoryOptions() {
 			const seen = new Set()
@@ -572,7 +572,7 @@ export default {
 		 * The visible blocks after the category filter is applied.
 		 *
 		 * @return {Array<object>}
-		 * @spec openspec/changes/component-blocks/specs/openbuild-template-catalogue/spec.md
+		 * @spec openspec/specs/openbuild-template-catalogue/spec.md
 		 */
 		filteredBlocks() {
 			const selected =
@@ -604,7 +604,7 @@ export default {
 	 * GitHub credential.
 	 *
 	 * @return {void}
-	 * @spec openspec/changes/store-shows-built-in-templates/specs/template-catalogue-ui/spec.md
+	 * @spec openspec/specs/template-catalogue-ui/spec.md
 	 */
 	mounted() {
 		// The store is GitHub-only: run the initial (empty-query) search so the
@@ -647,7 +647,7 @@ export default {
 		 * Load the built-in templates from the buildiq register.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/store-shows-built-in-templates/specs/template-catalogue-ui/spec.md
+		 * @spec openspec/specs/template-catalogue-ui/spec.md
 		 */
 		async fetchTemplates() {
 			this.templatesLoading = true
@@ -674,7 +674,7 @@ export default {
 		 *
 		 * @param {object} template The template record.
 		 * @return {void}
-		 * @spec openspec/changes/store-shows-built-in-templates/specs/template-catalogue-ui/spec.md
+		 * @spec openspec/specs/template-catalogue-ui/spec.md
 		 */
 		openClone(template) {
 			this.cloneMode = 'local'
@@ -689,7 +689,7 @@ export default {
 		 *
 		 * @param {{name: string, slug: string, description?: string}} payload The dialog input.
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/store-shows-built-in-templates/specs/template-catalogue-ui/spec.md
+		 * @spec openspec/specs/template-catalogue-ui/spec.md
 		 */
 		async onCloneSubmit(payload) {
 			const templateSlug = this.cloneTarget?.slug
@@ -717,7 +717,7 @@ export default {
 		 *
 		 * @param {object} e The axios error.
 		 * @return {string} The message to show in the dialog.
-		 * @spec openspec/changes/store-shows-built-in-templates/specs/template-catalogue-ui/spec.md
+		 * @spec openspec/specs/template-catalogue-ui/spec.md
 		 */
 		cloneErrorMessage(e) {
 			const data = e?.response?.data || {}
@@ -859,7 +859,7 @@ export default {
 		 *
 		 * @param {{warnings?: Array<{message: string}>}} created The install response.
 		 * @return {void}
-		 * @spec openspec/changes/surface-hermiq-credential-scope-requirement/specs/app-channel-application/spec.md
+		 * @spec openspec/specs/app-channel-application/spec.md
 		 */
 		showInstallWarnings(created) {
 			const warnings = Array.isArray(created?.warnings) ? created.warnings : []
@@ -873,7 +873,7 @@ export default {
 		 *
 		 * @param {string} category The category key.
 		 * @return {string}
-		 * @spec openspec/changes/retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-1
 		 */
 		categoryLabel(category) {
 			return t('buildiq', CATEGORY_LABELS[category] || category || '')
@@ -887,7 +887,7 @@ export default {
 		 *   build the route params; a payload without one (a backend that answered 200
 		 *   with no body) leaves the user on the gallery rather than navigating
 		 *   nowhere.
-		 * @spec openspec/changes/retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-1
 		 */
 		redirectAfterClone(created) {
 			const slug = created?.slug
@@ -929,7 +929,7 @@ export default {
 		 * first time it is opened.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/component-blocks/specs/openbuild-template-catalogue/spec.md
+		 * @spec openspec/specs/openbuild-template-catalogue/spec.md
 		 */
 		onSelectBlocksTab() {
 			this.viewMode = 'blocks'
@@ -943,7 +943,7 @@ export default {
 		 * OR REST listing the page designer's block-library panel uses).
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/component-blocks/specs/openbuild-template-catalogue/spec.md
+		 * @spec openspec/specs/openbuild-template-catalogue/spec.md
 		 */
 		async fetchBlocks() {
 			this.blocksLoading = true

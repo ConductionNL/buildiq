@@ -90,7 +90,7 @@ export default {
 		 *   rollback restored nothing — see the writeup in the method body.
 		 * @return {Promise<void>}
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-4
 		 */
 		async onRollback(version) {
 			if (!version || !version.manifest || !this.obApp) {
