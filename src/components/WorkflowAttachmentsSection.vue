@@ -82,6 +82,19 @@
 import { NcButton } from '@nextcloud/vue'
 import ConfirmActionDialog from '../dialogs/ConfirmActionDialog.vue'
 import WorkflowAttachmentDialog from '../dialogs/WorkflowAttachmentDialog.vue'
+import {
+	detailTabInjector,
+	runtimeListWriter,
+	upsertById,
+} from './runtimeAttachments.js'
+
+const writeWorkflows = runtimeListWriter('workflows')
+
+const addStatusTab = detailTabInjector({
+	id: 'procest-case-status',
+	label: 'Case',
+	component: 'procest-case-status',
+})
 
 export default {
 	name: 'WorkflowAttachmentsSection',
@@ -161,16 +174,9 @@ export default {
 		 */
 		onDialogSave(payload) {
 			const entry = payload.entry
-			const list = this.attachments.slice()
-			const idx = list.findIndex((wf) => wf.id === entry.id)
-			if (idx >= 0) {
-				list.splice(idx, 1, entry)
-			} else {
-				list.push(entry)
-			}
-			let next = this.withWorkflows(list)
+			let next = writeWorkflows(this.manifest, upsertById(this.attachments, entry))
 			if (payload.addStatusTab) {
-				next = this.injectStatusTab(next, entry)
+				next = addStatusTab(next, entry)
 			}
 			this.$emit('update:manifest', next)
 		},
@@ -203,68 +209,7 @@ export default {
 				return
 			}
 			const list = this.attachments.filter((a) => a.id !== wf.id)
-			this.$emit('update:manifest', this.withWorkflows(list))
-		},
-
-		/**
-		 * Return a manifest copy with the given workflows list set (or the
-		 * `runtime.workflows` key removed when empty so zero-attachment
-		 * manifests serialize byte-identically).
-		 *
-		 * @param {Array} list - the workflows list.
-		 * @return {object}
-		 * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-001
-		 */
-		withWorkflows(list) {
-			const next = { ...this.manifest }
-			const runtime = { ...(next.runtime || {}) }
-			if (list.length === 0) {
-				delete runtime.workflows
-			} else {
-				runtime.workflows = list
-			}
-			if (Object.keys(runtime).length === 0) {
-				delete next.runtime
-			} else {
-				next.runtime = runtime
-			}
-			return next
-		},
-
-		/**
-		 * Inject a `procest-case-status` tab into the detail page that targets
-		 * the attachment's schema, if such a page exists and lacks one.
-		 *
-		 * @param {object} manifest - the manifest.
-		 * @param {object} entry - the attachment entry.
-		 * @return {object}
-		 * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002
-		 */
-		injectStatusTab(manifest, entry) {
-			const next = { ...manifest, pages: (manifest.pages || []).slice() }
-			next.pages = next.pages.map((page) => {
-				const cfg = page && page.config
-				const isDetail =
-					page
-					&& page.type === 'detail'
-					&& cfg
-					&& cfg.schema === entry.schema
-				if (!isDetail) {
-					return page
-				}
-				const sidebarProps = { ...(cfg.sidebarProps || {}) }
-				const tabs = (sidebarProps.tabs || []).slice()
-				if (!tabs.some((t2) => t2.component === 'procest-case-status')) {
-					tabs.push({
-						id: 'procest-case-status',
-						label: 'Case',
-						component: 'procest-case-status',
-					})
-				}
-				sidebarProps.tabs = tabs
-				return { ...page, config: { ...cfg, sidebarProps } }
-			})
-			return next
+			this.$emit('update:manifest', writeWorkflows(this.manifest, list))
 		},
 	},
 }
