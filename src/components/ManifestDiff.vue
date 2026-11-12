@@ -247,21 +247,40 @@ export default {
 			this.loading = true
 			this.error = ''
 			try {
-				const url = generateUrl(
-					`/apps/buildiq/api/applications/${this.slug}/versions/diff`,
-				)
-				const { data } = await axios.get(url, {
-					params: { from: this.from, to: this.to },
-				})
-				this.fromBlob = data?.from || null
-				this.toBlob = data?.to || null
+				await this.loadDiff()
 			} catch (e) {
-				this.fromBlob = null
-				this.toBlob = null
-				this.error = `Diff failed: ${e.message || e}`
+				this.showDiffFailure(e)
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Fetch both sides of the diff; a missing side becomes null.
+		 *
+		 * @return {Promise<void>}
+		 */
+		async loadDiff() {
+			const url = generateUrl(
+				`/apps/buildiq/api/applications/${this.slug}/versions/diff`,
+			)
+			const { data } = await axios.get(url, {
+				params: { from: this.from, to: this.to },
+			})
+			this.fromBlob = data?.from || null
+			this.toBlob = data?.to || null
+		},
+
+		/**
+		 * Clear both sides and say why the diff could not be fetched.
+		 *
+		 * @param {Error|string} e - The rejected request.
+		 * @return {void}
+		 */
+		showDiffFailure(e) {
+			this.fromBlob = null
+			this.toBlob = null
+			this.error = `Diff failed: ${e.message || e}`
 		},
 
 		/**
