@@ -115,6 +115,67 @@ import { generateUrl } from '@nextcloud/router'
 const REGISTER = 'buildiq'
 const SCHEMA = 'built-app'
 
+/**
+ * Per-variant icon slot: the stored filename, the Application field, the
+ * local ref and nonce keys, and the file input ref. The filenames are fixed,
+ * so re-uploading replaces the previous icon rather than accumulating files.
+ */
+const ICON_SLOTS = {
+	light: {
+		filename: 'app-icon.svg',
+		field: 'icon',
+		refKey: 'lightRef',
+		nonceKey: 'lightNonce',
+		input: 'lightInput',
+	},
+	dark: {
+		filename: 'app-icon-dark.svg',
+		field: 'iconDark',
+		refKey: 'darkRef',
+		nonceKey: 'darkNonce',
+		input: 'darkInput',
+	},
+}
+
+/**
+ * The icon slot of a variant; anything but `dark` is the light slot.
+ *
+ * @param {string} variant - `light` or `dark`.
+ * @return {object}
+ */
+function iconSlot(variant) {
+	return variant === 'dark' ? ICON_SLOTS.dark : ICON_SLOTS.light
+}
+
+/**
+ * The generic message of a failed upload.
+ *
+ * @return {string}
+ */
+function uploadFailedText() {
+	return t('buildiq', 'Upload failed — please try again')
+}
+
+/**
+ * The generic message of a failed removal.
+ *
+ * @return {string}
+ */
+function removeFailedText() {
+	return t('buildiq', 'Remove failed — please try again')
+}
+
+/**
+ * The server's message of a failed request, else the generic one.
+ *
+ * @param {Error} error - The rejected request.
+ * @param {function(): string} fallback - Returns the generic message.
+ * @return {string}
+ */
+function requestFailure(error, fallback) {
+	return error?.response?.data?.message || fallback()
+}
+
 export default {
 	name: 'IconUploadSection',
 
@@ -299,48 +360,68 @@ export default {
 			if (!this.objectUuid) return
 			this.uploading = true
 			this.uploadError = ''
-			const filename =
-				variant === 'dark' ? 'app-icon-dark.svg' : 'app-icon.svg'
+			const slot = iconSlot(variant)
 
 			try {
-				// 1. Upload the SVG to OR's files#create endpoint, which takes
-				//    JSON { name, content } and writes the content verbatim.
-				const content = await file.text()
-				const uploadUrl = generateUrl(
-					`/apps/openregister/api/objects/${REGISTER}/${SCHEMA}/${this.objectUuid}/files`,
-				)
-				await axios.post(uploadUrl, { name: filename, content })
-
-				// 2. PATCH (partial merge) the icon ref — a PUT would replace the
-				//    whole object and fail validation on the missing name/slug.
-				const field = variant === 'dark' ? 'iconDark' : 'icon'
-				const patchUrl = generateUrl(
-					`/apps/openregister/api/objects/${REGISTER}/${SCHEMA}/${this.objectUuid}`,
-				)
-				await axios.patch(patchUrl, { [field]: { ref: filename } })
-
-				// 3. Update local state and notify parent.
-				if (variant === 'dark') {
-					this.darkRef = filename
-					this.darkNonce = Date.now()
-				} else {
-					this.lightRef = filename
-					this.lightNonce = Date.now()
-				}
-
-				this.$emit('updated', { field, ref: filename })
+				await this.storeIcon(file, slot)
 			} catch (error) {
-				this.uploadError =
-					error?.response?.data?.message
-					|| t('buildiq', 'Upload failed — please try again')
+				this.uploadError = requestFailure(error, uploadFailedText)
 			} finally {
 				this.uploading = false
-				if (variant === 'dark') {
-					this.$refs.darkInput.value = ''
-				} else {
-					this.$refs.lightInput.value = ''
-				}
+				this.$refs[slot.input].value = ''
 			}
+		},
+
+		/**
+		 * Attach the SVG to the Application, point the slot's field at it,
+		 * then refresh the preview and emit `updated`.
+		 *
+		 * @param {File} file - The validated SVG.
+		 * @param {object} slot - The icon slot being written.
+		 * @return {Promise<void>}
+		 */
+		async storeIcon(file, slot) {
+			// 1. Upload the SVG to OR's files#create endpoint, which takes
+			//    JSON { name, content } and writes the content verbatim.
+			const content = await file.text()
+			await axios.post(this.objectUrl('/files'), {
+				name: slot.filename,
+				content,
+			})
+
+			// 2. PATCH (partial merge) the icon ref — a PUT would replace the
+			//    whole object and fail validation on the missing name/slug.
+			await axios.patch(this.objectUrl(''), {
+				[slot.field]: { ref: slot.filename },
+			})
+
+			// 3. Update local state and notify parent.
+			this.showIconRef(slot, slot.filename)
+			this.$emit('updated', { field: slot.field, ref: slot.filename })
+		},
+
+		/**
+		 * The OpenRegister URL of this Application, plus a sub-path.
+		 *
+		 * @param {string} suffix - The sub-path (`''`, `/files`, ...).
+		 * @return {string}
+		 */
+		objectUrl(suffix) {
+			return generateUrl(
+				`/apps/openregister/api/objects/${REGISTER}/${SCHEMA}/${this.objectUuid}${suffix}`,
+			)
+		},
+
+		/**
+		 * Set a slot's local ref and bump its preview nonce.
+		 *
+		 * @param {object} slot - The icon slot.
+		 * @param {?string} ref - The new ref, or null when removed.
+		 * @return {void}
+		 */
+		showIconRef(slot, ref) {
+			this[slot.refKey] = ref
+			this[slot.nonceKey] = Date.now()
 		},
 
 		/**
@@ -400,58 +481,54 @@ export default {
 			if (!this.objectUuid) return
 			this.uploading = true
 			this.uploadError = ''
-			const filename =
-				variant === 'dark' ? 'app-icon-dark.svg' : 'app-icon.svg'
-			const field = variant === 'dark' ? 'iconDark' : 'icon'
+			const slot = iconSlot(variant)
 
 			try {
-				// 1. Resolve the attachment's NUMERIC id, then delete by it.
-				const filesUrl = generateUrl(
-					`/apps/openregister/api/objects/${REGISTER}/${SCHEMA}/${this.objectUuid}/files`,
-				)
-				const listed = await axios.get(filesUrl)
-				const attachment = (listed?.data?.results || []).find(
-					(f) => f?.title === filename,
-				)
-
-				if (!attachment?.id) {
-					// The ref points at a file OR no longer holds. Nothing to
-					// detach — fall through and clear the ref so the record stops
-					// advertising an attachment that is not there.
-					// eslint-disable-next-line no-console
-					console.warn(
-						`[buildiq] no OR attachment named ${filename}; clearing the ref only`,
-					)
-				} else {
-					const deleteUrl = generateUrl(
-						`/apps/openregister/api/objects/${REGISTER}/${SCHEMA}/${this.objectUuid}/files/${attachment.id}`,
-					)
-					await axios.delete(deleteUrl)
-				}
-
-				// 2. Clear the ref on the Application (partial merge, not replace).
-				const patchUrl = generateUrl(
-					`/apps/openregister/api/objects/${REGISTER}/${SCHEMA}/${this.objectUuid}`,
-				)
-				await axios.patch(patchUrl, { [field]: null })
-
-				// 3. Update local state.
-				if (variant === 'dark') {
-					this.darkRef = null
-					this.darkNonce = Date.now()
-				} else {
-					this.lightRef = null
-					this.lightNonce = Date.now()
-				}
-
-				this.$emit('updated', { field, ref: null })
+				await this.detachIconFile(slot)
+				await this.clearIconRef(slot)
 			} catch (error) {
-				this.uploadError =
-					error?.response?.data?.message
-					|| t('buildiq', 'Remove failed — please try again')
+				this.uploadError = requestFailure(error, removeFailedText)
 			} finally {
 				this.uploading = false
 			}
+		},
+
+		/**
+		 * Resolve the slot's attachment by its NUMERIC id, then delete by it.
+		 *
+		 * @param {object} slot - The icon slot being cleared.
+		 * @return {Promise<void>}
+		 */
+		async detachIconFile(slot) {
+			const listed = await axios.get(this.objectUrl('/files'))
+			const attachment = (listed?.data?.results || []).find(
+				(f) => f?.title === slot.filename,
+			)
+
+			if (!attachment?.id) {
+				// The ref points at a file OR no longer holds. Nothing to
+				// detach — fall through and clear the ref so the record stops
+				// advertising an attachment that is not there.
+				// eslint-disable-next-line no-console
+				console.warn(
+					`[buildiq] no OR attachment named ${slot.filename}; clearing the ref only`,
+				)
+				return
+			}
+			await axios.delete(this.objectUrl(`/files/${attachment.id}`))
+		},
+
+		/**
+		 * Clear the slot's ref on the Application (partial merge, not
+		 * replace), then locally, and emit `updated`.
+		 *
+		 * @param {object} slot - The icon slot being cleared.
+		 * @return {Promise<void>}
+		 */
+		async clearIconRef(slot) {
+			await axios.patch(this.objectUrl(''), { [slot.field]: null })
+			this.showIconRef(slot, null)
+			this.$emit('updated', { field: slot.field, ref: null })
 		},
 	},
 }
