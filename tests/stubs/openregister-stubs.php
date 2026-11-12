@@ -3,6 +3,9 @@
 /**
  * OpenRegister test stubs.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Provides minimal class declarations for the OpenRegister types that
  * Buildiq's controllers, services, repair steps and listeners reference
  * by hard-typed constructor parameters or return types. These stubs are
@@ -30,9 +33,6 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://conduction.nl
- *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
  */
 
 declare(strict_types=1);

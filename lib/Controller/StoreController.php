@@ -3,6 +3,9 @@
 /**
  * Buildiq StoreController
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * HTTP surface for the remote template "store" (buildiq-remote-template-
  * store):
  *   - GET  /api/store/templates            — search remote templates (cards).
@@ -41,9 +44,6 @@
  * (any authenticated Buildiq user may search + install; the install caller
  * becomes the new app's owner — mirrors the local createFromTemplate posture).
  * No publishing in this cut.
- *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Controller
  * @package  OCA\Buildiq\Controller

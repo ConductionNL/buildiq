@@ -3,6 +3,9 @@
 /**
  * ManifestDataBinding — point a copilot-authored page at the data it created.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * `upsertSchema` namespaces everything it makes: a schema the model calls
  * `loan`, authored against app `tool-library` version `development`, is stored
  * as `tool-library-development-loan` inside the register
@@ -29,9 +32,6 @@
  * A block whose register is one the Application binds in `dataRegisters` is
  * shared data somebody else owns: its register and the schema beside it are
  * returned untouched too (REQ-BQDB-004).
- *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Support
  * @package  OCA\Buildiq\Support

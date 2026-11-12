@@ -3,6 +3,9 @@
 /**
  * Buildiq FlowChannelProvisioner
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Applies a published app repo's `flows/` channel: creates OpenRegister `Flow`
  * ENTITIES for every published flow definition the local Application does not
  * already carry, and re-binds the newly created flows onto the local
@@ -45,9 +48,6 @@
  * property is declared on the schema (`register.d/22-flows-and-agents.json`)
  * before this class ever writes it, so OpenRegister's `additionalProperties:
  * false` validation does not silently reject the rebind.
- *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
  * @package  OCA\Buildiq\Service

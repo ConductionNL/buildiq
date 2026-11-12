@@ -3,6 +3,9 @@
 /**
  * Bundles an Application's flows and agents into an export tree.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Sibling to {@see DataRegisterExportBundler}: same "write JSON into the
  * scaffold, skip what does not resolve" shape, different stores and different
  * failure modes.
@@ -64,8 +67,6 @@
  * (`hermiq.workload-step`, `hermiq.workload-collect`) is an ORDINARY
  * OpenRegister flow. This class does not branch on node type, does not
  * special-case hermiq, and emits one file shape for every flow.
- *
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @category Service
  * @package  OCA\Buildiq\Service

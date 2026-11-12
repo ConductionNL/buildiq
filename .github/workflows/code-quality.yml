@@ -46,9 +46,18 @@ on:
     branches: [main, master, development, beta]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   quality:
     if: (github.event_name != 'pull_request' || github.head_ref != 'development')
+    permissions:
+      contents: write
+      actions: write
+      issues: write
+      pull-requests: write
+      packages: read
     uses: ConductionNL/.github/.github/workflows/quality.yml@main
     with:
       app-name: buildiq

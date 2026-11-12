@@ -3,6 +3,9 @@
 /**
  * Buildiq Flag Registry Token Sensitive Repair Step
  *
+ * SPDX-FileCopyrightText:  2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Retro-flags an already-stored `registry_token` as sensitive.
  *
  * SettingsService always kept the token write-only — it is never returned to the
@@ -28,9 +31,6 @@
  * @version GIT: <git-id>
  *
  * @link https://conduction.nl
- *
- * @SPDX-License-Identifier: EUPL-1.2
- * @SPDX-FileCopyrightText:  2026 Conduction B.V. <info@conduction.nl>
  */
 
 declare(strict_types=1);

@@ -3,6 +3,9 @@
 /**
  * Buildiq AgentChannelProvisioner
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Applies a published app repo's `agents/` channel: writes each published
  * agent at its published uuid, with the same create-or-skip rules as
  * connectors, but ALWAYS overwriting `applicationSlug` to the LOCAL
@@ -29,9 +32,6 @@
  * application that, on this instance, is a different app (or does not exist)
  * — the same class of bug `HybridMetadataLockListener`'s docblock warns
  * against for identity fields crossing a boundary they were not authored for.
- *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
  * @package  OCA\Buildiq\Service

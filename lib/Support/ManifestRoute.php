@@ -3,6 +3,9 @@
 /**
  * ManifestRoute — one place that says what a manifest route looks like.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * `UpsertPageHandler` and `UpsertMenuItemHandler` each carried a private copy
  * of the same route guard: a route must start with `/` and hold only path-safe
  * characters (issue #167, the route-injection guard). The tool catalogue that
@@ -38,9 +41,6 @@
  * guard exists to refuse into one it accepts. Those are handed back untouched
  * and both guards reject them, which keeps the ai-copilot spec's "Execution
  * reuses the handlers, not a copy" scenario true.
- *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Support
  * @package  OCA\Buildiq\Support

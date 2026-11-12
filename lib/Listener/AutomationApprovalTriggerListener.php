@@ -3,6 +3,9 @@
 /**
  * Buildiq AutomationApprovalTriggerListener
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Trigger-fire half of the `approval` automation action (design.md Decision 1
  * / Decision 2 of automation-approval-steps). `AutomationCompilerService`
  * only writes the DEFINITION; opening an approval against a concretely fired
@@ -37,9 +40,6 @@
  * Never implements approval logic itself (ADR-022 consume-not-rebuild) — every
  * approval-domain decision (role/group check, separation of duties, sequence
  * advancement) stays inside OpenRegister's task engine.
- *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Listener
  * @package  OCA\Buildiq\Listener
