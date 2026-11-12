@@ -64,16 +64,30 @@ export function defaultEditableVersion(versions, productionUuid) {
 		return nonProd
 	}
 
-	// Fall back to production version when no non-production upstream exists.
-	if (productionUuid) {
-		const prod = versions.find((v) => v.uuid === productionUuid)
-		if (prod) {
-			return prod
-		}
-	}
+	return fallbackVersion(versions, productionUuid)
+}
 
-	// Last resort: first version in the list.
-	return versions[0] || null
+/**
+ * The version to edit when no non-production upstream exists: the production
+ * version, else (last resort) the first version in the list.
+ *
+ * @param {Array<object>} versions All ApplicationVersion records for the app.
+ * @param {string|null} productionUuid UUID of the production ApplicationVersion.
+ * @return {object|null}
+ */
+function fallbackVersion(versions, productionUuid) {
+	return productionVersionIn(versions, productionUuid) || versions[0] || null
+}
+
+/**
+ * The production version in the list, if it is named and present.
+ *
+ * @param {Array<object>} versions All ApplicationVersion records for the app.
+ * @param {string|null} productionUuid UUID of the production ApplicationVersion.
+ * @return {object|undefined}
+ */
+function productionVersionIn(versions, productionUuid) {
+	return productionUuid ? versions.find((v) => v.uuid === productionUuid) : undefined
 }
 
 /**
