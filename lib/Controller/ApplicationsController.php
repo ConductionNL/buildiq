@@ -248,31 +248,14 @@ class ApplicationsController extends Controller {
 			}
 
 			// No `?_version=` param: original production-manifest path (backwards-compat).
-			$resolved = $this->resolveApplicationBySlug(slug: $slug);
+			// RBAC enforcement per REQ-OBRBAC-002 / REQ-OBR-006 — deny-by-default
+			// before any branch that would emit the manifest payload.
+			$resolved = $this->resolvePermittedApplication(slug: $slug);
 			if ($resolved instanceof JSONResponse) {
 				return $resolved;
 			}
 
-			[$application, $applicationArray, $applicationUuid] = $resolved;
-
-			// RBAC enforcement per REQ-OBRBAC-002 / REQ-OBR-006 — deny-by-default
-			// before any branch that would emit the manifest payload (ADR-005,
-			// ADR-022 §Exceptions(1)). Returns 403 with a fixed error envelope
-			// when the caller has no role intersection and is not exercising
-			// the audited admin bypass declared in REQ-OBRBAC-006.
-			$applicationEntity = null;
-			if ($application instanceof ObjectEntity) {
-				$applicationEntity = $application;
-			}
-
-			$denial = $this->requirePermission(
-				application: $applicationEntity,
-				applicationArray: $applicationArray,
-				slug: $slug
-			);
-			if ($denial !== null) {
-				return $denial;
-			}
+			[, $applicationArray, $applicationUuid] = $resolved;
 
 			// Resolve the production manifest from the application's
 			// productionVersion. The versioned model (ADR-002) stores the
@@ -660,30 +643,15 @@ class ApplicationsController extends Controller {
 			// Same lookup as getManifest(), including the fallback for apps
 			// without a route index entry. This used to repeat the route-only
 			// lookup, so the Diff tab 404'd for every app without one.
-			$resolved = $this->resolveApplicationBySlug(slug: $slug);
+			// RBAC enforcement (C5 / REQ-OBRBAC-002): the same gate as getManifest().
+			// Both `from` and `to` blobs come from this Application, so a single
+			// gate on the resolved Application is sufficient.
+			$resolved = $this->resolvePermittedApplication(slug: $slug);
 			if ($resolved instanceof JSONResponse) {
 				return $resolved;
 			}
 
-			[$application, $applicationArray, $applicationUuid] = $resolved;
-
-			// RBAC enforcement (C5 / REQ-OBRBAC-002): deny-by-default before
-			// returning any manifest data. Mirrors the identical gate in getManifest().
-			// Both `from` and `to` blobs come from this Application, so a single
-			// requirePermission call on the resolved Application is sufficient.
-			$applicationEntity = null;
-			if ($application instanceof ObjectEntity) {
-				$applicationEntity = $application;
-			}
-
-			$denial = $this->requirePermission(
-				application: $applicationEntity,
-				applicationArray: $applicationArray,
-				slug: $slug
-			);
-			if ($denial !== null) {
-				return $denial;
-			}
+			[, $applicationArray, $applicationUuid] = $resolved;
 
 			$fromBlob = $this->resolveVersionBlob(token: $from, application: $applicationArray, applicationUuid: $applicationUuid);
 			if ($fromBlob === null) {
@@ -713,6 +681,36 @@ class ApplicationsController extends Controller {
 			);
 		}//end try
 	}//end diffVersions()
+
+	/**
+	 * Resolve a slug to its Application and run the role gate on it.
+	 *
+	 * Deny-by-default before any manifest data leaves the server (ADR-005,
+	 * ADR-022 §Exceptions(1)): the 404 of an unknown slug, or the fixed 403
+	 * envelope when the caller has no role intersection and is not exercising
+	 * the audited admin bypass declared in REQ-OBRBAC-006.
+	 *
+	 * @param string $slug The virtual-app slug from the URL
+	 *
+	 * @return JSONResponse|array{0: mixed, 1: array<string, mixed>, 2: string} The refusal, or the resolved tuple
+	 *
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-45
+	 */
+	private function resolvePermittedApplication(string $slug): JSONResponse|array {
+		$resolved = $this->resolveApplicationBySlug(slug: $slug);
+		if ($resolved instanceof JSONResponse) {
+			return $resolved;
+		}
+
+		[$application, $applicationArray] = $resolved;
+		$applicationEntity = null;
+		if ($application instanceof ObjectEntity) {
+			$applicationEntity = $application;
+		}
+
+		$denial = $this->requirePermission(application: $applicationEntity, applicationArray: $applicationArray, slug: $slug);
+		return ($denial ?? $resolved);
+	}//end resolvePermittedApplication()
 
 	/**
 	 * Resolve a `from`/`to` token to a `{ manifest, version, publishedAt }` blob.
