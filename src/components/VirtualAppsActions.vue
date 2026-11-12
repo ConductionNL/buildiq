@@ -48,6 +48,24 @@
 import { NcButton } from '@nextcloud/vue'
 import CreateApplicationWizard from '../dialogs/CreateApplicationWizard.vue'
 
+/**
+ * The route's query with `filter` set to a value, or cleared for 'all'; the
+ * route's own query is left untouched.
+ *
+ * @param {?object} route The current route.
+ * @param {string} value The filter value ('all' | 'virtual' | 'hybrid').
+ * @return {object} The new query.
+ */
+function filterQuery(route, value) {
+	const query = { ...(route ? route.query : {}) }
+	if (value === 'all') {
+		delete query.filter
+	} else {
+		query.filter = value
+	}
+	return query
+}
+
 export default {
 	name: 'VirtualAppsActions',
 
@@ -105,16 +123,21 @@ export default {
 			if (!this.$router) {
 				return
 			}
-			const query = { ...(this.$route ? this.$route.query : {}) }
-			if (value === 'all') {
-				delete query.filter
-			} else {
-				query.filter = value
-			}
+			const query = filterQuery(this.$route, value)
 			// Avoid a NavigationDuplicated error when the filter is unchanged.
-			if ((query.filter || 'all') !== (this.activeFilter || 'all')) {
+			if (this.changesFilter(query)) {
 				this.$router.replace({ query }).catch(() => {})
 			}
+		},
+
+		/**
+		 * Whether a query names another filter than the one in force.
+		 *
+		 * @param {object} query The query about to be written.
+		 * @return {boolean}
+		 */
+		changesFilter(query) {
+			return (query.filter || 'all') !== (this.activeFilter || 'all')
 		},
 
 		/**
