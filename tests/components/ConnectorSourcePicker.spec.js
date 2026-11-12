@@ -184,4 +184,106 @@ describe('ConnectorSourcePicker', () => {
 			'kvk/companies',
 		])
 	})
+	describe('fetchEndpoints and onSelectSource branches', () => {
+		/**
+		 * Mount the picker and run a fetch against the given responses.
+		 *
+		 * @param {object} responses `{ sources, endpoints }` response bodies.
+		 * @param {object} binding The binding prop.
+		 * @return {Promise<import('@vue/test-utils').Wrapper>}
+		 */
+		async function fetchWith({ sources, endpoints }, binding = {}) {
+			axios.get.mockImplementation(async (url) =>
+				url.endsWith('/source') ? { data: sources } : { data: endpoints },
+			)
+			const wrapper = mount(ConnectorSourcePicker, {
+				propsData: { binding },
+				stubs: { NcSelect: NcSelectStub },
+			})
+			await flush()
+			await flush()
+			await wrapper.vm.fetchEndpoints()
+			return wrapper
+		}
+
+		it('reads bare lists and names sources by name, slug or key', async () => {
+			const wrapper = await fetchWith({
+				sources: [
+					{ uuid: 'u1', id: 'i1', name: 'Named' },
+					{ id: 'i2', slug: 'slugged' },
+					{ '@self': { id: 's3' } },
+					{ name: 'No id' },
+				],
+				endpoints: [
+					{ endpoint: '//a', path: 'b', slug: 'c', targetId: 'u1' },
+					{ path: '/b', targetId: 'i2' },
+					{ slug: 'c', targetId: 'unknown' },
+					{ targetId: 'u1' },
+				],
+			})
+			expect(wrapper.vm.sources).toEqual([
+				{ id: 'u1', name: 'Named' },
+				{ id: 'i2', name: 'slugged' },
+				{ id: 's3', name: 's3' },
+			])
+			expect(wrapper.vm.endpoints).toEqual([
+				{ path: 'a', sourceId: 'u1', sourceName: 'Named' },
+				{ path: 'b', sourceId: 'i2', sourceName: 'slugged' },
+				{ path: 'c', sourceId: 'unknown', sourceName: '' },
+			])
+			expect(wrapper.vm.error).toBe(false)
+			expect(wrapper.vm.loading).toBe(false)
+		})
+
+		it('keeps an endpoint without a target as unbound to any source', async () => {
+			const wrapper = await fetchWith({ sources: [], endpoints: [{ endpoint: 'x' }] })
+			expect(wrapper.vm.endpoints).toEqual([{ path: 'x', sourceId: '', sourceName: '' }])
+		})
+
+		it.each([[null], [{ results: 'nope' }], [{}], ['text']])('reads the response %j as no rows', async (body) => {
+			const wrapper = await fetchWith({ sources: body, endpoints: body })
+			expect(wrapper.vm.sources).toEqual([])
+			expect(wrapper.vm.endpoints).toEqual([])
+		})
+
+		it('clears both lists and flags an error when a request fails', async () => {
+			const wrapper = await fetchWith({ sources: [{ id: 'a' }], endpoints: [] })
+			axios.get.mockRejectedValue(new Error('down'))
+			await wrapper.vm.fetchEndpoints()
+			expect(wrapper.vm.error).toBe(true)
+			expect(wrapper.vm.sources).toEqual([])
+			expect(wrapper.vm.endpoints).toEqual([])
+			expect(wrapper.vm.loading).toBe(false)
+		})
+
+		it.each([
+			[null, 'kvk/companies'],
+			[{ id: 'src-kvk' }, 'kvk/companies'],
+			[{ id: 'src-bag' }, ''],
+			[{ id: 'src-bag' }, 'unknown/path'],
+		])('keeps the binding when picking %j with %j bound', async (option, endpointPath) => {
+			wireObjects({ sources: [KVK, BAG], endpoints: ENDPOINTS })
+			const wrapper = mount(ConnectorSourcePicker, {
+				propsData: { binding: { endpointPath } },
+				stubs: { NcSelect: NcSelectStub },
+			})
+			await flush()
+			await flush()
+			wrapper.vm.onSelectSource(option)
+			expect(wrapper.vm.pickedSourceId).toBe(option ? option.id : '')
+			expect(wrapper.emitted('update:endpointPath')).toBeUndefined()
+		})
+
+		it('unbinds an endpoint bound with a leading slash on a source switch', async () => {
+			wireObjects({ sources: [KVK, BAG], endpoints: ENDPOINTS })
+			const wrapper = mount(ConnectorSourcePicker, {
+				propsData: { binding: { endpointPath: '/kvk/companies' } },
+				stubs: { NcSelect: NcSelectStub },
+			})
+			await flush()
+			await flush()
+			wrapper.vm.onSelectSource({ id: 'src-bag' })
+			expect(wrapper.emitted('update:endpointPath')).toEqual([['']])
+		})
+	})
 })
