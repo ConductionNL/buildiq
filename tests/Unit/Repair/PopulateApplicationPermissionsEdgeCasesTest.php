@@ -1,7 +1,11 @@
 <?php
 
 /**
- * Unit tests for the repair step that gives pre-existing Applications an owner.
+ * Edge cases of the repair step that gives pre-existing Applications an owner.
+ *
+ * Complements tests/unit/Repair/PopulateApplicationPermissionsTest.php: non-array
+ * owners and serialisable entities, the exact save arguments, the skip and refusal
+ * reporting, and a failing lookup.
  *
  * SPDX-License-Identifier: EUPL-1.2
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
@@ -32,12 +36,12 @@ use Psr\Log\LoggerInterface;
 use RuntimeException;
 
 /**
- * Tests for PopulateApplicationPermissions.
+ * Edge-case tests for PopulateApplicationPermissions.
  *
  * @covers \OCA\Buildiq\Repair\PopulateApplicationPermissions
  * @uses   \OCA\Buildiq\Support\ObjectRecord
  */
-final class PopulateApplicationPermissionsTest extends TestCase {
+final class PopulateApplicationPermissionsEdgeCasesTest extends TestCase {
 
 	/**
 	 * Mock OR object service; runAsSystem() runs the operation it is given.
@@ -110,24 +114,6 @@ final class PopulateApplicationPermissionsTest extends TestCase {
 
 		return $lines;
 	}//end collectInfo()
-
-	/**
-	 * With no Applications nothing is saved.
-	 *
-	 * @return void
-	 */
-	public function testNoApplicationsMeansNothingToMigrate(): void {
-		$this->applications(applications: []);
-		$this->objectService->expects($this->never())->method('saveObject');
-		$info = $this->collectInfo();
-
-		$this->step->run(output: $this->output);
-
-		$this->assertSame(
-			expected: ['Populating permissions on pre-existing Applications...', 'No Applications found; nothing to migrate.'],
-			actual: $info->getArrayCopy()
-		);
-	}//end testNoApplicationsMeansNothingToMigrate()
 
 	/**
 	 * Applications without owners get the admin group as owner; those with owners are left alone.
