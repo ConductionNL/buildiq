@@ -257,6 +257,7 @@ import { versionRegister } from '../services/appRegister.js'
 import { findingsForPage } from '../services/formDestinationCheck.js'
 import { resolveValidationMessage as resolveMessage } from '../services/manifestValidation/connectorErrorMessages.js'
 import { isEditableTarget } from '../utils/isEditableTarget.js'
+import { mirrorVersionLoad } from '../utils/mirrorVersionLoad.js'
 
 // Width the preview lays out at before scaling. The shell's nav is a rigid
 // 300px and NcAppContent's list pane another 300px, so narrower breaks it.
@@ -711,23 +712,7 @@ export default {
 			)
 			this.applicationVersion = applicationVersion.value
 			this.versionLoading = loading.value
-			const unwatch = this.$watch(
-				() => applicationVersion.value,
-				(v) => {
-					this.applicationVersion = v
-				},
-			)
-			const unwatchLoading = this.$watch(
-				() => loading.value,
-				(v) => {
-					this.versionLoading = v
-					if (!v) {
-						unwatch()
-						unwatchLoading()
-						this.versionError = error.value
-					}
-				},
-			)
+			mirrorVersionLoad(this, { applicationVersion, loading, error })
 		}
 	},
 
