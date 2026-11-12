@@ -20,4 +20,14 @@
 - [ ] **T18**: Check that the built behaviour of row `logic-running-case-keeps-version` meets REQ-BQCV-018 in `automation-designer`; add a test that asserts each scenario, and close any gap the scenarios name.
 - [ ] **T19**: Check that the built behaviour of row `form-digid-login` meets REQ-BQCV-019 in `external-form-provisioning`; add a test that asserts each scenario, and close any gap the scenarios name.
 - [ ] **T20**: Check that the built behaviour of row `form-usage-stats` meets REQ-BQCV-020 in `external-form-provisioning`; add a test that asserts each scenario, and close any gap the scenarios name.
-- [ ] **T21**: Run `openspec validate capability-requirements-backfill --strict`.
+- [ ] **T21**: Check that the built behaviour of row `data-required-validation` meets REQ-BQCV-021 in `openbuild-schema-designer`; add a test that asserts each scenario, and close any gap the scenarios name.
+- [ ] **T22**: Check that the built behaviour of row `data-import-rollback` meets REQ-BQCV-022 in `data-import-wizard`; add a test that asserts each scenario, and close any gap the scenarios name.
+- [ ] **T23**: Check that the built behaviour of row `data-schema-reuse` meets REQ-BQCV-023 in `page-designer-ui`; add a test that asserts each scenario, and close any gap the scenarios name.
+- [ ] **T24**: Check that the built behaviour of row `form-builder` meets REQ-BQCV-024 in `openbuild-page-designer`; add a test that asserts each scenario, and close any gap the scenarios name.
+- [ ] **T25**: Check that the built behaviour of row `form-preview-before-publish` meets REQ-BQCV-025 in `openbuild-page-designer`; add a test that asserts each scenario, and close any gap the scenarios name.
+- [ ] **T26**: Check that the built behaviour of row `ops-admin-settings` meets REQ-BQCV-026 in `settings-and-observability`; add a test that asserts each scenario, and close any gap the scenarios name.
+- [ ] **T27**: Check that the built behaviour of row `acc-approval-publish` meets REQ-BQCV-027 in `version-lifecycle-ui`; add a test that asserts each scenario, and close any gap the scenarios name.
+- [ ] **T28**: Check that the built behaviour of row `logic-trigger-status` meets REQ-BQCV-028 in `automation-designer`; add a test that asserts each scenario, and close any gap the scenarios name.
+- [ ] **T29**: Check that the built behaviour of row `logic-action-approval` meets REQ-BQCV-029 in `automation-approval-action`; add a test that asserts each scenario, and close any gap the scenarios name.
+- [ ] **T30**: Build REQ-BQCV-030 in `application-creation-wizard` for row `app-demo-data`: a "Fill with demo records" action on the create-app wizard and the app detail page that generates records from the app's own schemas (today `lib/Service/DemoDataService.php` only loads buildiq's own demo register), marks them as demo data and removes them in one action; add tests for each scenario.
+- [ ] **T31**: Run `openspec validate capability-requirements-backfill --strict`.
