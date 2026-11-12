@@ -3,15 +3,13 @@
 **Status**: in-progress
 **Scope**: buildiq
 **OpenSpec changes**:
-- `buildiq-mcp-adoption` — the Copilot's tool catalogue moves from an `IMcpToolProvider` to a Copilot-owned executor; the flow, the handlers and the rollback semantics are unchanged (kind: code)
+- `buildiq-mcp-adoption`: the Copilot and outside MCP agents share the eight builder operations, and both write only under an approved plan (kind: code)
 
 ## Purpose
 
-The Copilot is unchanged in behaviour. Only the **ownership** of its tool catalogue changes: the eight
-builder operations stop being MCP tools and become Copilot-internal operations, because ADR-063 and
-`buildiq-mcp-surface` remove Buildiq's hand-written MCP provider. The Copilot remains the *only*
-path through which an Buildiq manifest can be authored by an LLM — and it keeps its plan, preview,
-human approval and atomic rollback.
+The Copilot is unchanged in behaviour. Its eight builder operations stay in `BuildiqToolProvider`,
+which also serves outside MCP agents (decision 392). Both doors keep a person between the plan and
+the write.
 
 ## MODIFIED Requirements
 
@@ -21,7 +19,7 @@ human approval and atomic rollback.
 re-validate it server-side (allow-list, per-tool `inputSchema`, predicted
 caps — the server never trusts the client's review), snapshot the manifest
 of every ApplicationVersion the plan touches, and dispatch each step in
-order through `CopilotToolExecutor::invokeTool()` — the same handler
+order through `BuildiqToolProvider::invokeTool()`, the same handler
 classes, RBAC checks, OR object locks and caps as before, with no
 duplicated builder logic. On any step failure the service SHALL restore all
 snapshotted manifests, delete an application created by this plan (via
@@ -29,15 +27,10 @@ snapshotted manifests, delete an application created by this plan (via
 and the handler's error envelope — a failed plan leaves no plan-created
 state behind. On success it SHALL return the ordered per-step results.
 
-The executor SHALL NOT implement `OCA\OpenRegister\Mcp\IMcpToolProvider`, and its operations SHALL
-NOT be reachable from any MCP client. The Copilot is the **sole** LLM-driven path to a manifest write,
-and it SHALL keep a human between the plan and the write: `plan()` performs zero writes and returns a
-predicted manifest for review, and only an explicitly approved plan may be executed.
-
-*Previously: dispatch went through `BuildiqToolProvider::invokeTool()`, and the same handlers were
-simultaneously exposed as hand-written MCP tools ("the same handler classes … as the MCP surface").
-That MCP exposure is removed by `buildiq-mcp-surface`; the handlers and the flow are otherwise
-identical.*
+Outside MCP agents reach the same handlers through `BuildiqToolProvider`, and SHALL write only
+under a plan a person approved, as `buildiq-mcp-surface` says. The Copilot and an outside agent
+therefore share one approval rule: `plan()` performs zero writes and returns a predicted manifest
+for review, and only an explicitly approved plan may be executed.
 
 **ID:** REQ-OBAIC-004
 
@@ -69,14 +62,21 @@ Playwright specs under REQ-OBAIC-006/007, which create and mutate real apps.
   (issue #167) — proving the copilot path runs the identical handler
   validation
 
-#### Scenario: The builder operations are not reachable without a human
+#### Scenario: An outside agent's write needs the same approval
 
-- **WHEN** an MCP client attempts to call `buildiq.upsertPage` directly
-- **THEN** no such tool exists in the catalog, because the executor is not an `IMcpToolProvider`
-- **AND** the only way to reach `UpsertPageHandler` is a plan the user has reviewed and approved
+- **WHEN** an MCP client calls `buildiq.upsertPage` without an approved plan
+- **THEN** the call is refused
+- **AND** the same call inside an approved plan runs `UpsertPageHandler` as the Copilot does
+
+#### Scenario: An agent-scoped execute persists a transparent run record
+
+- **GIVEN** an approved plan executed with `agentId` set
+- **WHEN** execution completes, whether successfully or via rollback
+- **THEN** an `AgentRun` record exists capturing the prompt, plan, every
+  tool call's arguments and result, and the final outcome
 
 ## Acceptance Criteria
 
-- [ ] `CopilotService`, `CopilotPlanValidator` and `CopilotPromptBuilder` compile against `CopilotToolExecutor` with no behavioural change
+- [ ] The Copilot's plan, preview, execute and rollback behave as before
 - [ ] Every existing `ai-copilot` PHPUnit and Playwright test passes unmodified in substance
-- [ ] The executor does not implement `IMcpToolProvider`
+- [ ] An outside agent's write is refused without an approved plan

@@ -9651,7 +9651,7 @@
 		{
 			"id": "ai-external-agent-builds",
 			"area": "ai",
-			"name": "Let an outside AI agent build and change apps through a structured interface such as MCP, with destructive changes confirmed by a person.",
+			"name": "Let an outside AI agent build and change apps through MCP, under the app's roles and a plan a person approved.",
 			"source": "competitor",
 			"origin": "changelog",
 			"originUrl": "https://github.com/appsmithorg/appsmith/releases/tag/v2.4",
@@ -9662,12 +9662,17 @@
 			"mendix": "partial",
 			"power-apps": "partial",
 			"built": {
-				"state": "built",
-				"evidence": "lib/Mcp/BuildiqToolProvider.php:84-258 gives MCP clients 8 builder tools (list, get and create apps :84-124, promote a version :134, upsert schema :155, page :178, widget :214, menu item :258), registered with OpenRegister's MCP server by lib/AppInfo/Application.php:561-564; no human confirmation handshake before a destructive call (promote runs directly)",
+				"state": "specified",
+				"evidence": "Not built: the eight builder tools are on MCP, but a write runs on a single tool call with no approved plan (promoteVersion runs directly); decision 392 keeps the tools behind the app's roles and an approved plan. Was: lib/Mcp/BuildiqToolProvider.php:84-258 gives MCP clients 8 builder tools (list, get and create apps :84-124, promote a version :134, upsert schema :155, page :178, widget :214, menu item :258), registered with OpenRegister's MCP server by lib/AppInfo/Application.php:561-564; no human confirmation handshake before a destructive call (promote runs directly)",
 				"reachedOn": "MCP clients via OpenRegister's MCP server; no buildiq page",
 				"owner": "ConductionNL/buildiq",
 				"note": "Open Register's half shipped in ConductionNL/openregister openspec/changes/archive/2026-07-13-or-mcp-attribute-hints; the missing half is buildiq's own work, so the owner moved to ConductionNL/buildiq (openregister lane, OpenSpec pass 2026-09-27; owner was ConductionNL/openregister).",
-				"spec": "openspec/specs/ai-copilot"
+				"spec": "openspec/specs/ai-copilot",
+				"requirement": [
+					"openspec/changes/openbuild-mcp-adoption/specs/openbuild-mcp-surface :: Outside agents SHALL build apps through the eight builder tools",
+					"openspec/changes/openbuild-mcp-adoption/specs/openbuild-mcp-surface :: A builder tool SHALL write only under a plan a person approved"
+				],
+				"plan": "openspec/changes/openbuild-mcp-adoption"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
