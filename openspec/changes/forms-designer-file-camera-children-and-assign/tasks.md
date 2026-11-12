@@ -7,4 +7,5 @@
 - [ ] **T05**: `src/services/manifestValidation/formLogic.js`: validate the new keys (a `child-records` field without schema or parent field, an `assign` rule naming an unknown field) as designer findings (REQ-BQFK-003, REQ-BQFK-004). Verify: vitest cases in the existing formLogic spec.
 - [ ] **T06**: English and Dutch strings in `l10n/en.json` and `l10n/nl.json`; a section in `docs/form-logic-authoring.md`.
 - [ ] **T07**: Playwright `tests/e2e/form-field-kinds.spec.ts`: author a form with a multi-file field with camera, an order-lines child table and a currency filled from the country; publish; in the built form add two lines and pick a country; assert the saved order, its two line records and the currency.
+- [ ] **T09**: The field type palette: drag a type onto the form at the drop place, drag to reorder, and add with Enter plus move up and down for keyboard users (REQ-BQFK-005). Verify: vitest for the drop index and the keyboard add; the Playwright run of T07 builds its form from the palette.
 - [ ] **T08**: When done, set the four rows to `built` in `openspec/parity/capabilities.json` and archive this change.
