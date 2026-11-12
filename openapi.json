@@ -1,0 +1,4178 @@
+{
+    "openapi": "3.0.3",
+    "info": {
+        "title": "BuildIQ",
+        "version": "0.7.16-unstable.20261103190000",
+        "description": "The JSON API of BuildIQ, the no-code app builder for Nextcloud: applications and their versions, templates, the store and shop, pages, forms, rules, automations, agents, exports, publishing and GitHub sync, settings and the setup wizard. The objects are stored in OpenRegister and read and written through its API; this document covers the endpoints BuildIQ adds on top.",
+        "contact": {
+            "name": "Conduction B.V.",
+            "email": "info@conduction.nl",
+            "url": "https://conduction.nl"
+        },
+        "license": {
+            "name": "EUPL-1.2",
+            "url": "https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12"
+        }
+    },
+    "servers": [
+        {
+            "url": "https://{host}/index.php/apps/buildiq/api",
+            "description": "The BuildIQ API on a Nextcloud instance.",
+            "variables": {
+                "host": {
+                    "default": "localhost",
+                    "description": "The host name of the Nextcloud instance."
+                }
+            }
+        }
+    ],
+    "security": [
+        {
+            "basic_auth": []
+        },
+        {
+            "bearer_auth": []
+        }
+    ],
+    "tags": [
+        {
+            "name": "agents",
+            "description": "Controller serving the Agent run-history read surface"
+        },
+        {
+            "name": "app-health",
+            "description": "Health samples in, a version's health out"
+        },
+        {
+            "name": "app-override",
+            "description": "Controller for the fleet-app manifest-override store-and-serve endpoints"
+        },
+        {
+            "name": "application-creation",
+            "description": "Controller for the four-step app-creation wizard"
+        },
+        {
+            "name": "application-insights",
+            "description": "Insights endpoint controller"
+        },
+        {
+            "name": "application-publish",
+            "description": "Controller exposing the Application publish / unpublish endpoints"
+        },
+        {
+            "name": "application-versions",
+            "description": "Controller serving the ApplicationVersion CRUD + strategy-delete surface"
+        },
+        {
+            "name": "applications",
+            "description": "Controller for the Buildiq manifest, list, diff and clone-from-template endpoints"
+        },
+        {
+            "name": "automations",
+            "description": "Controller serving the automation compile/enable/disable/dry-run/status API"
+        },
+        {
+            "name": "copilot",
+            "description": "Controller exposing the copilot health/plan/execute endpoints"
+        },
+        {
+            "name": "exports",
+            "description": "Controller for the Buildiq export pipeline"
+        },
+        {
+            "name": "form-destination",
+            "description": "Checks a manifest's form pages against their destinations"
+        },
+        {
+            "name": "form-library",
+            "description": "Controller for the form library's GitHub search"
+        },
+        {
+            "name": "generated-document",
+            "description": "Public (anonymous) download-link resolver for `generateDocument` output"
+        },
+        {
+            "name": "git-hub-sync",
+            "description": "Owner-gated controller for the GitHub link/push/pull/status endpoints"
+        },
+        {
+            "name": "health",
+            "description": "Public, declarative health endpoint for AppHost-adopting apps"
+        },
+        {
+            "name": "metrics",
+            "description": "Admin-only declarative Prometheus metrics endpoint for AppHost adopters"
+        },
+        {
+            "name": "page-layout",
+            "description": "HTTP surface for authoring page layouts and screen overrides"
+        },
+        {
+            "name": "preferences",
+            "description": "Per-user preferences controller"
+        },
+        {
+            "name": "registration-form",
+            "description": "HTTP surface for authoring registration forms"
+        },
+        {
+            "name": "rules",
+            "description": "Controller serving the rule-evaluation API"
+        },
+        {
+            "name": "settings",
+            "description": "Controller for managing Buildiq application settings"
+        },
+        {
+            "name": "setup",
+            "description": "First-time-setup status + config + actions for the abstract setup wizard"
+        },
+        {
+            "name": "shop",
+            "description": "Controller for the GitHub shop search + install endpoints"
+        },
+        {
+            "name": "store",
+            "description": "Store search + Buildiq's own template install"
+        },
+        {
+            "name": "version-promotion",
+            "description": "Controller exposing the promotion endpoint"
+        }
+    ],
+    "paths": {
+        "/agents/{uuid}/runs": {
+            "get": {
+                "operationId": "agents-runs",
+                "summary": "An agent's transparent run-history list, newest first (agent-workspace spec \"Every agent run is transparently logged and reviewable\")",
+                "description": "An agent's transparent run-history list, newest first (agent-workspace spec \"Every agent run is transparently logged and reviewable\").",
+                "tags": [
+                    "agents"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "200 with the ordered `AgentRun` list, or an error envelope.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true,
+                        "description": "The Agent object uuid.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ]
+            }
+        },
+        "/app-overrides/{appId}": {
+            "get": {
+                "operationId": "app-override-get",
+                "summary": "Return the stored manifest delta for a fleet app, raw, for client-side merge",
+                "description": "Return the stored manifest delta for a fleet app, raw, for client-side merge.\n\nReturns the stored `manifestDelta` unchanged, or an empty delta `{}` (status 200) when no override exists, so the loader's delta merge is a no-op and the bundled manifest passes through. NEVER merges server-side (Buildiq lacks the fleet base — design D2). Login-required (the capability/edit flow is for authenticated users); `#[NoCSRFRequired]` is set because this is a read-only GET commonly fetched by the loader.",
+                "tags": [
+                    "app-override"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "200 with the stored delta or an empty object; 400 on a bad appId.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "appId",
+                        "in": "path",
+                        "required": true,
+                        "description": "The kebab-case fleet-app id from the URL.",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^(?:[a-z0-9][a-z0-9-]*[a-z0-9])$"
+                        }
+                    }
+                ]
+            },
+            "put": {
+                "operationId": "app-override-save",
+                "summary": "Upsert the manifest delta for a fleet app (the write endpoint)",
+                "description": "Upsert the manifest delta for a fleet app (the write endpoint).\n\nCSRF is enforced (no `#[NoCSRFRequired]`). Rejects anonymous callers (401) and callers without Buildiq access (403). Validates the delta shape and rejects an app-blanking delta (422) before persisting. Records `updatedBy` from the session UID.",
+                "tags": [
+                    "app-override"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "200 on success; 400/401/403/422 on rejection.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                },
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "appId",
+                        "in": "path",
+                        "required": true,
+                        "description": "The kebab-case fleet-app id from the URL.",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^(?:[a-z0-9][a-z0-9-]*[a-z0-9])$"
+                        }
+                    }
+                ]
+            },
+            "delete": {
+                "operationId": "app-override-clear",
+                "summary": "Clear the manifest override for a fleet app (the reset endpoint)",
+                "description": "Clear the manifest override for a fleet app (the reset endpoint).\n\nCSRF is enforced (no `#[NoCSRFRequired]`). Rejects anonymous (401) and out-of-scope (403). Idempotent — a non-existent override is a success.",
+                "tags": [
+                    "app-override"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "200 on success; 400/401/403 on rejection.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "appId",
+                        "in": "path",
+                        "required": true,
+                        "description": "The kebab-case fleet-app id from the URL.",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^(?:[a-z0-9][a-z0-9-]*[a-z0-9])$"
+                        }
+                    }
+                ]
+            }
+        },
+        "/app-overrides/{appId}/user": {
+            "get": {
+                "operationId": "app-override-get-user",
+                "summary": "Return the calling user's OWN user-scoped delta for a fleet app (for editing)",
+                "description": "Return the calling user's OWN user-scoped delta for a fleet app (for editing).\n\nLogin-required. Always owner-scoped to the session UID — a caller can only ever read their own user delta (the UID is never a request param), so this is not an IDOR vector. Returns `{ allowed, exists, manifestDelta, versionUuid }` where `versionUuid` drives the Manifest detail page's OR version history.",
+                "tags": [
+                    "app-override"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "200 with the caller's user-delta summary; 400/401 on rejection.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "appId",
+                        "in": "path",
+                        "required": true,
+                        "description": "The kebab-case fleet-app id from the URL.",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^(?:[a-z0-9][a-z0-9-]*[a-z0-9])$"
+                        }
+                    }
+                ]
+            },
+            "put": {
+                "operationId": "app-override-save-user",
+                "summary": "Create or update the calling user's OWN user-scoped delta (the write endpoint)",
+                "description": "Create or update the calling user's OWN user-scoped delta (the write endpoint).\n\nCSRF-enforced. Rejects anonymous (401) and out-of-scope (403) callers, a malformed / app-blanking delta (422), and an app that does not permit per-user overrides (403). The owner is always the session UID — a caller can only ever write their own user delta (no-admin-idor).",
+                "tags": [
+                    "app-override"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "200 on success; 400/401/403/422 on rejection.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                },
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "appId",
+                        "in": "path",
+                        "required": true,
+                        "description": "The kebab-case fleet-app id from the URL.",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^(?:[a-z0-9][a-z0-9-]*[a-z0-9])$"
+                        }
+                    }
+                ]
+            },
+            "delete": {
+                "operationId": "app-override-clear-user",
+                "summary": "Clear the calling user's OWN user-scoped delta (the reset endpoint)",
+                "description": "Clear the calling user's OWN user-scoped delta (the reset endpoint).\n\nCSRF-enforced. Rejects anonymous (401) and out-of-scope (403). Idempotent — a non-existent user delta is a success. Owner-scoped to the session UID.",
+                "tags": [
+                    "app-override"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "200 on success; 400/401/403 on rejection.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "appId",
+                        "in": "path",
+                        "required": true,
+                        "description": "The kebab-case fleet-app id from the URL.",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^(?:[a-z0-9][a-z0-9-]*[a-z0-9])$"
+                        }
+                    }
+                ]
+            }
+        },
+        "/app-overrides/{appId}/user-deltas": {
+            "get": {
+                "operationId": "app-override-list-user-overrides",
+                "summary": "List ALL users' overrides for a fleet app (the maintainer view)",
+                "description": "List ALL users' overrides for a fleet app (the maintainer view).\n\nUnlike {@see getUser()} (which is owner-scoped to the caller's own delta), this returns every user-scoped delta for the app so a maintainer can see who has a personal override from the Buildiq management screen. Gated to an OWNER/EDITOR of the parent Application or an NC admin — a regular user may NOT enumerate other users' deltas (no-admin-idor). Returns owner + version metadata only, never the private delta bodies.",
+                "tags": [
+                    "app-override"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "200 with `{ appId, total, overrides: [...] }`; 400/401/403 on rejection.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "appId",
+                        "in": "path",
+                        "required": true,
+                        "description": "The kebab-case fleet-app id from the URL.",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^(?:[a-z0-9][a-z0-9-]*[a-z0-9])$"
+                        }
+                    }
+                ]
+            }
+        },
+        "/applications": {
+            "get": {
+                "operationId": "applications-list-mine",
+                "summary": "Return the list of Applications the caller has any role on",
+                "description": "Return the list of Applications the caller has any role on.\n\nCloses the list-endpoint IDOR (REQ-OBRBAC-002 / REQ-OBR-007). OR's schema-level read rule is a coarse group ACL — not a row-level predicate on `permissions.owners ∪ editors ∪ viewers` — so the frontend cannot rely on OR's REST list endpoint without leaking every Application's permissions block and manifest to every authenticated user. This action fetches all Applications via OR and filters them server-side using the same role-derivation rule as `requirePermission`. Admin callers receive the full unfiltered list and a single audit event is recorded (REQ-OBRBAC-006).\n\nOutput shape mirrors what `ApplicationEditor.vue` previously received from OR REST: a flat array of Application objects with `uuid`, `id`, `slug`, `name`, `status`, `version`, `manifest`, `permissions` — no OR envelope, no pagination metadata.",
+                "tags": [
+                    "applications"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The filtered Application list",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                }
+            }
+        },
+        "/applications/from-template/{templateSlug}": {
+            "post": {
+                "operationId": "applications-create-from-template",
+                "summary": "Clone an Application from a template",
+                "description": "Clone an Application from a template.\n\nReads the ApplicationTemplate identified by $templateSlug, creates a per-app `buildiq-{newSlug}` register, deep-copies its companion JSON schemas into that per-app register (REQ-OBTC-005 / hybrid register model), rewrites manifest schema refs to the new slug, and creates a new Application record in the shared `buildiq` register, tagged with the caller's UID (multi-user isolation).",
+                "tags": [
+                    "applications"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The new application's uuid + slug, or an error envelope",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/Problem503"
+                    }
+                },
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "templateSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "The source template slug",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ]
+            }
+        },
+        "/applications/wizard": {
+            "post": {
+                "operationId": "application-creation-wizard",
+                "summary": "Execute the wizard payload and return the newly-created Application UUID",
+                "description": "Execute the wizard payload and return the newly-created Application UUID.\n\nReturns 201 `{ \"applicationUuid\": \"<uuid>\" }` on success. Returns 403 when the caller is not an NC admin (issue #157). Returns 422 when the payload fails server-side validation. Returns 500 with rollback details when creation fails mid-flight. Returns 401 when the caller is not authenticated.",
+                "tags": [
+                    "application-creation"
+                ],
+                "responses": {
+                    "201": {
+                        "description": "The result.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Problem422"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                },
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/applications/{appSlug}/versions": {
+            "get": {
+                "operationId": "application-versions-index",
+                "summary": "List ApplicationVersions for the named Application (spec REQ-OBV-107)",
+                "description": "List ApplicationVersions for the named Application (spec REQ-OBV-107).",
+                "tags": [
+                    "application-versions"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Versions array on 200, error envelope on miss",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "appSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "Parent Application slug",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^(?:[a-z0-9][a-z0-9-]*[a-z0-9])$"
+                        }
+                    }
+                ]
+            },
+            "post": {
+                "operationId": "application-versions-create",
+                "summary": "Create an ApplicationVersion under the named Application (spec REQ-OBV-107 / REQ-OBV-102)",
+                "description": "Create an ApplicationVersion under the named Application (spec REQ-OBV-107 / REQ-OBV-102).",
+                "tags": [
+                    "application-versions"
+                ],
+                "responses": {
+                    "201": {
+                        "description": "201 with the created version, or error envelope",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Problem422"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                },
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "appSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "Parent Application slug",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^(?:[a-z0-9][a-z0-9-]*[a-z0-9])$"
+                        }
+                    }
+                ]
+            }
+        },
+        "/applications/{appSlug}/versions/{versionSlug}": {
+            "get": {
+                "operationId": "application-versions-show",
+                "summary": "Fetch a single ApplicationVersion by version slug (spec REQ-OBV-107)",
+                "description": "Fetch a single ApplicationVersion by version slug (spec REQ-OBV-107).",
+                "tags": [
+                    "application-versions"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The version on 200, error envelope on miss",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "appSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "Parent Application slug",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^(?:[a-z0-9][a-z0-9-]*[a-z0-9])$"
+                        }
+                    },
+                    {
+                        "name": "versionSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "ApplicationVersion slug",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^(?:[a-z0-9][a-z0-9-]*[a-z0-9])$"
+                        }
+                    }
+                ]
+            },
+            "put": {
+                "operationId": "application-versions-update",
+                "summary": "Update an ApplicationVersion (spec REQ-OBV-103 / REQ-OBV-104 / REQ-OBV-107)",
+                "description": "Update an ApplicationVersion (spec REQ-OBV-103 / REQ-OBV-104 / REQ-OBV-107).",
+                "tags": [
+                    "application-versions"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "200 with the updated version, or error envelope",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Problem409"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Problem422"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                },
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "appSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "Parent Application slug",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^(?:[a-z0-9][a-z0-9-]*[a-z0-9])$"
+                        }
+                    },
+                    {
+                        "name": "versionSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "ApplicationVersion slug",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^(?:[a-z0-9][a-z0-9-]*[a-z0-9])$"
+                        }
+                    }
+                ]
+            },
+            "delete": {
+                "operationId": "application-versions-destroy",
+                "summary": "Delete an ApplicationVersion using the requested strategy (spec REQ-OBV-108)",
+                "description": "Delete an ApplicationVersion using the requested strategy (spec REQ-OBV-108).\n\nAccepts the `strategy` query parameter (`delete-now | orphan-grace | keep-register`). Missing/unknown values yield 400. Attempts to delete the parent Application's production version yield 422.",
+                "tags": [
+                    "application-versions"
+                ],
+                "responses": {
+                    "204": {
+                        "description": "204 on success, error envelope otherwise",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Problem422"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "appSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "Parent Application slug",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^(?:[a-z0-9][a-z0-9-]*[a-z0-9])$"
+                        }
+                    },
+                    {
+                        "name": "versionSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "ApplicationVersion slug",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^(?:[a-z0-9][a-z0-9-]*[a-z0-9])$"
+                        }
+                    }
+                ]
+            }
+        },
+        "/applications/{appSlug}/versions/{versionSlug}/release": {
+            "post": {
+                "operationId": "application-versions-release",
+                "summary": "Release a version: set-as-production + publish + demote previous production",
+                "description": "Release a version: set-as-production + publish + demote previous production.\n\nOwner-only with NO admin bypass (REQ-OBV-110 scenario 4): a Nextcloud admin who is not an owner of this Application cannot release. Delegates the cross-row mutation (publish chosen + move productionVersion pointer + archive previous production) to {@see ApplicationVersionService::releaseVersion()}.",
+                "tags": [
+                    "application-versions"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "200 with the release result, or an error envelope",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Problem422"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                },
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "appSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "Parent Application slug",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^(?:[a-z0-9][a-z0-9-]*[a-z0-9])$"
+                        }
+                    },
+                    {
+                        "name": "versionSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "ApplicationVersion slug to release",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^(?:[a-z0-9][a-z0-9-]*[a-z0-9])$"
+                        }
+                    }
+                ]
+            }
+        },
+        "/applications/{appUuid}": {
+            "delete": {
+                "operationId": "application-publish-destroy",
+                "summary": "Delete an Application and the app wrapper it owns (versions, routes)",
+                "description": "Delete an Application and the app wrapper it owns (versions, routes). The optional `deleteData` request param opts into ALSO deleting the per-version registers and every object stored in them; by default that data is preserved. Owner-only (admin bypass). Wired as `applicationPublish#destroy`.\n\n`deleteData` is read from the request (not a typed bool method arg) and resolved safe-by-default via {@see wantsDataPurge()}: only an explicit affirmative purges. This deliberately does NOT rely on PHP/Nextcloud stringy-bool coercion for an irreversible action.\n\n`orphanedResources` is a FAILURE list, not an inventory of what the delete left standing: it names the resources this call tried to remove and could not. The normal answer is an empty array, including the ordinary `deleteData: false` case, where the registers and their objects are kept on purpose and so were never attempted. Read as an inventory it says the opposite of what it means, which is how it was read during the demo review of 2026-09-19.",
+                "tags": [
+                    "application-publish"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "200 + `{deleted, orphanedResources}`, or an error envelope",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "appUuid",
+                        "in": "path",
+                        "required": true,
+                        "description": "Parent Application UUID (path param)",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^(?:[a-f0-9-]{8,})$"
+                        }
+                    }
+                ]
+            }
+        },
+        "/applications/{appUuid}/publish": {
+            "post": {
+                "operationId": "application-publish-publish",
+                "summary": "Publish an Application (status → published), making it appear in the menu",
+                "description": "Publish an Application (status → published), making it appear in the menu.\n\nWired in `appinfo/routes.php` under name `applicationPublish#publish`. `#[NoAdminRequired]` — auth is per-Application owner RBAC, not NC admin.",
+                "tags": [
+                    "application-publish"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "200 + updated application, or an error envelope",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                },
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "appUuid",
+                        "in": "path",
+                        "required": true,
+                        "description": "Parent Application UUID (path param)",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^(?:[a-f0-9-]{8,})$"
+                        }
+                    }
+                ]
+            }
+        },
+        "/applications/{appUuid}/unpublish": {
+            "post": {
+                "operationId": "application-publish-unpublish",
+                "summary": "Unpublish an Application (status → draft), removing it from the menu",
+                "description": "Unpublish an Application (status → draft), removing it from the menu.\n\nWired in `appinfo/routes.php` under name `applicationPublish#unpublish`.",
+                "tags": [
+                    "application-publish"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "200 + updated application, or an error envelope",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                },
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "appUuid",
+                        "in": "path",
+                        "required": true,
+                        "description": "Parent Application UUID (path param)",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^(?:[a-f0-9-]{8,})$"
+                        }
+                    }
+                ]
+            }
+        },
+        "/applications/{appUuid}/versions/{versionUuid}/health": {
+            "get": {
+                "operationId": "app-health-show",
+                "summary": "A version's health over `?window=` (7d, 30d, 90d), for whoever may see its insights",
+                "description": "A version's health over `?window=` (7d, 30d, 90d), for whoever may see its insights.",
+                "tags": [
+                    "app-health"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The aggregate, 400 for an unknown window, 404 otherwise.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "appUuid",
+                        "in": "path",
+                        "required": true,
+                        "description": "The application.",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^(?:[a-f0-9-]{8,})$"
+                        }
+                    },
+                    {
+                        "name": "versionUuid",
+                        "in": "path",
+                        "required": true,
+                        "description": "The version.",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^(?:[a-f0-9-]{8,})$"
+                        }
+                    }
+                ]
+            }
+        },
+        "/applications/{appUuid}/versions/{versionUuid}/insights": {
+            "get": {
+                "operationId": "application-insights-get-insights",
+                "summary": "Return the insights payload for an Application + ApplicationVersion",
+                "description": "Return the insights payload for an Application + ApplicationVersion.\n\nWired in `appinfo/routes.php` under name `applicationInsights#getInsights`. Annotated `#[NoAdminRequired]` per spec REQ-OBAI-002 — auth is per- Application RBAC inside the service, not Nextcloud admin.\n\nStatus codes:   - 200 + payload + `Cache-Control: public, max-age=60` on success   - 400 on missing or invalid `window` value   - 404 on unknown app/version, IDOR mismatch, or RBAC denial.",
+                "tags": [
+                    "application-insights"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The result.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "appUuid",
+                        "in": "path",
+                        "required": true,
+                        "description": "Parent Application UUID (path param).",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^(?:[a-f0-9-]{8,})$"
+                        }
+                    },
+                    {
+                        "name": "versionUuid",
+                        "in": "path",
+                        "required": true,
+                        "description": "ApplicationVersion UUID (path param).",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^(?:[a-f0-9-]{8,})$"
+                        }
+                    }
+                ]
+            }
+        },
+        "/applications/{appUuid}/versions/{versionUuid}/promote": {
+            "post": {
+                "operationId": "version-promotion-promote",
+                "summary": "Promote a source ApplicationVersion to its `promotesTo` neighbour",
+                "description": "Promote a source ApplicationVersion to its `promotesTo` neighbour.\n\nWired in `appinfo/routes.php` under name `VersionPromotion#promote`. Annotated `#[NoAdminRequired]` per spec REQ-OBVP-001 — auth is per-Application RBAC, not Nextcloud admin (spec REQ-OBVP-007).",
+                "tags": [
+                    "version-promotion"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "200 + updated target on success, error envelope otherwise",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                },
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "appUuid",
+                        "in": "path",
+                        "required": true,
+                        "description": "Parent Application UUID (path param)",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^(?:[a-f0-9-]{8,})$"
+                        }
+                    },
+                    {
+                        "name": "versionUuid",
+                        "in": "path",
+                        "required": true,
+                        "description": "Source ApplicationVersion UUID (path param)",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^(?:[a-f0-9-]{8,})$"
+                        }
+                    }
+                ]
+            }
+        },
+        "/applications/{slug}/copy": {
+            "post": {
+                "operationId": "applications-copy",
+                "summary": "Copy an app into a new one, owned by the caller (REQ-BQCP-001)",
+                "description": "Copy an app into a new one, owned by the caller (REQ-BQCP-001).\n\nThe copy goes through the template seam without touching the template catalogue: the source's companion schemas and current manifest are captured in memory, de-namespaced exactly as \"Save as template\" does ({@see AppTemplateCapture}), and installed by installFromTemplateArray(). So the copy gets its own register, its own namespaced schemas and rewritten references, and no records.\n\nGates (REQ-BQCP-002), the same as cloning a template: a signed-in Nextcloud administrator (copying provisions a register), the from-template rate limit, and on top an owner or editor of the source app; a viewer is refused even when they are an administrator. A taken slug is the seam's 409.",
+                "tags": [
+                    "applications"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "201 with the new app; 400, 401, 403, 404 or 409 otherwise",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Problem409"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                },
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "slug",
+                        "in": "path",
+                        "required": true,
+                        "description": "The source app's slug",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^(?:[a-z0-9][a-z0-9-]*[a-z0-9])$"
+                        }
+                    }
+                ]
+            }
+        },
+        "/applications/{slug}/exports": {
+            "post": {
+                "operationId": "exports-submit",
+                "summary": "Queue an export of an Application version",
+                "description": "Queue an export of an Application version.",
+                "tags": [
+                    "exports"
+                ],
+                "responses": {
+                    "202": {
+                        "description": "202 Accepted with `{ uuid }` on success. State-changing POST: `#[NoCSRFRequired]` is DELIBERATELY NOT applied here. The SPA posts via `@nextcloud/axios`, which attaches the `requesttoken` header automatically, so the CSRF check costs the legitimate caller nothing while blocking a forged cross-site POST that could queue an export on behalf of an authenticated user. The body no longer carries a PAT (it names a broker credential instead), but it can still push a repository into existence under the user's GitHub identity, so it stays CSRF-protected.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Problem422"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                },
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "slug",
+                        "in": "path",
+                        "required": true,
+                        "description": "Application slug.",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^(?:[a-z0-9][a-z0-9-]*[a-z0-9])$"
+                        }
+                    }
+                ]
+            }
+        },
+        "/applications/{slug}/github/link": {
+            "post": {
+                "operationId": "git-hub-sync-link",
+                "summary": "Link the app to a GitHub repository (owner-only)",
+                "description": "Link the app to a GitHub repository (owner-only).",
+                "tags": [
+                    "git-hub-sync"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "200 with the stored linkage; 400/401/403/404 on failure.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                },
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "slug",
+                        "in": "path",
+                        "required": true,
+                        "description": "The Application slug.",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^(?:[a-z0-9][a-z0-9-]*[a-z0-9])$"
+                        }
+                    }
+                ]
+            }
+        },
+        "/applications/{slug}/github/pull": {
+            "post": {
+                "operationId": "git-hub-sync-pull",
+                "summary": "Pull a ref into a new draft version (owner-only, never overwrites production)",
+                "description": "Pull a ref into a new draft version (owner-only, never overwrites production).",
+                "tags": [
+                    "git-hub-sync"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "200 with the draft version; 401/403/404/422 or a generic outcome on failure.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Problem422"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                },
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "slug",
+                        "in": "path",
+                        "required": true,
+                        "description": "The Application slug.",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^(?:[a-z0-9][a-z0-9-]*[a-z0-9])$"
+                        }
+                    }
+                ]
+            }
+        },
+        "/applications/{slug}/github/push": {
+            "post": {
+                "operationId": "git-hub-sync-push",
+                "summary": "Publish (push) the chosen version to GitHub through the broker (owner-only)",
+                "description": "Publish (push) the chosen version to GitHub through the broker (owner-only).",
+                "tags": [
+                    "git-hub-sync"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "200 with the commit sha; 401/403/404/422 or a generic outcome on failure.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                },
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "slug",
+                        "in": "path",
+                        "required": true,
+                        "description": "The Application slug.",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^(?:[a-z0-9][a-z0-9-]*[a-z0-9])$"
+                        }
+                    }
+                ]
+            }
+        },
+        "/applications/{slug}/github/status": {
+            "get": {
+                "operationId": "git-hub-sync-status",
+                "summary": "Report linkage, provenance, and feature-detection flags (viewer-readable)",
+                "description": "Report linkage, provenance, and feature-detection flags (viewer-readable).",
+                "tags": [
+                    "git-hub-sync"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "200 with the status; 401/403/404 on failure.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "slug",
+                        "in": "path",
+                        "required": true,
+                        "description": "The Application slug.",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^(?:[a-z0-9][a-z0-9-]*[a-z0-9])$"
+                        }
+                    }
+                ]
+            }
+        },
+        "/applications/{slug}/health-samples": {
+            "post": {
+                "operationId": "app-health-record",
+                "summary": "Store a running app's samples",
+                "description": "Store a running app's samples. The app and version come from the slug and `_version`; a caller who may not open that version gets the unknown-app answer and nothing is stored.",
+                "tags": [
+                    "app-health"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`{stored}`, or 404.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    }
+                },
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "slug",
+                        "in": "path",
+                        "required": true,
+                        "description": "The app slug.",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^(?:[a-z0-9][a-z0-9-]*[a-z0-9])$"
+                        }
+                    }
+                ]
+            }
+        },
+        "/applications/{slug}/manifest": {
+            "get": {
+                "operationId": "applications-get-manifest",
+                "summary": "Return the stored manifest JSON blob for a given virtual-app slug",
+                "description": "Return the stored manifest JSON blob for a given virtual-app slug.\n\nLookup path: slug → BuiltAppRoute → applicationUuid → Application → manifest. The manifest is returned UNWRAPPED (no OR envelope) so useAppManifest in @conduction/nextcloud-vue consumes it directly.\n\nVersion routing (spec `buildiq-version-routing` REQ-OBVR-001): --------------------------------------------------------------- An optional `?_version=<versionSlug>` query parameter selects a specific ApplicationVersion. The underscore-prefix form (`_version`, not `version`) is Buildiq's system-reserved namespace marker — it prevents collision with user-defined `?version=` params that citizen developers may add to their virtual apps' routes.\n\nWhen `?_version=` is present, the request is routed through ManifestResolverService which enforces RBAC: viewers and non-members receive 404 (not 403) for non-production versions; unknown version slugs also 404 (same response — no existence leak, REQ-OBVR-003 / Decision 8).\n\nWhen `?_version=` is absent the endpoint behaves exactly as before, returning the production manifest to any authenticated caller with any role on the Application (the existing requirePermission check).\n\nVisibility model ---------------- `#[NoAdminRequired]` is intentional: the hello-world seed app (and any future \"always-on\" virtual app) is publicly mountable as soon as a route exists. RBAC lives inside ManifestResolverService (for versioned access) and requirePermission (for the production path).\n\nOwner signal (admin-settings-owner-gating): before the `permissions` block is stripped, {@see injectOwnerSignal()} projects a read-only `runtime.user.isOwner` boolean onto the returned manifest, computed via `PermissionResolver::matchesCaller(...['owners'])` with no NC super-admin fallback — see design.md Decision D3.",
+                "tags": [
+                    "applications"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The manifest blob (carrying `runtime.user.isOwner`), or a 404 envelope when not found",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "slug",
+                        "in": "path",
+                        "required": true,
+                        "description": "The virtual-app slug from the URL",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^(?:[a-z0-9][a-z0-9-]*[a-z0-9])$"
+                        }
+                    }
+                ]
+            },
+            "put": {
+                "operationId": "applications-save-manifest",
+                "summary": "Persist an in-app manifest edit (pages / menu / settings / sidebar / actions)",
+                "description": "Persist an in-app manifest edit (pages / menu / settings / sidebar / actions).\n\nSymmetric write counterpart to {@see getManifest}: the standalone runtime's Buildiq edit shell (ADR-041) PUTs the full edited manifest here on Save. Resolves the app by slug, enforces owner/editor RBAC (viewers are read-only; NC admins get an audited bypass), then surgically writes the `manifest` field onto the production ApplicationVersion (versioned model, ADR-002), falling back to the Application object for legacy un-versioned apps. The caller- supplied `permissions` block is stripped so a non-owner cannot escalate.",
+                "tags": [
+                    "applications"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "200 on save, 400 on bad body, 403 without write role.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                },
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "slug",
+                        "in": "path",
+                        "required": true,
+                        "description": "The virtual-app slug from the URL.",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^(?:[a-z0-9][a-z0-9-]*[a-z0-9])$"
+                        }
+                    }
+                ]
+            }
+        },
+        "/applications/{slug}/versions/diff": {
+            "get": {
+                "operationId": "applications-diff-versions",
+                "summary": "Return two manifest blobs side-by-side so the client diff component can render without a second round-trip (REQ-OBV-005, chain spec #6)",
+                "description": "Return two manifest blobs side-by-side so the client diff component can render without a second round-trip (REQ-OBV-005, chain spec #6).\n\nResolves `{slug}` to an Application via the BuiltAppRoute index, accepts the literal string `draft` for either `from`/`to` to mean \"the current draft manifest on the Application\", otherwise looks up both referenced ApplicationVersion rows. Returns a shape of `{ from: { manifest, version, publishedAt }, to: { manifest, version, publishedAt } }`. Per ADR-032 this is thin glue (~30 LOC of logic); no service class.",
+                "tags": [
+                    "applications"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Both blobs on 200, or a 404 envelope on miss IDOR-safe: slug → BuiltAppRoute lookup enforces org scope via OR's standard multitenancy (RegisterMapper::find + ObjectService::searchObjects), and the resolveVersionBlob() check on `applicationUuid` rejects snapshots that do not belong to this Application. Mirrors getManifest()'s pattern.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "slug",
+                        "in": "path",
+                        "required": true,
+                        "description": "The virtual-app slug from the URL",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^(?:[a-z0-9][a-z0-9-]*[a-z0-9])$"
+                        }
+                    },
+                    {
+                        "name": "from",
+                        "in": "query",
+                        "required": true,
+                        "description": "ApplicationVersion UUID or the literal `draft`",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "to",
+                        "in": "query",
+                        "required": true,
+                        "description": "ApplicationVersion UUID or the literal `draft`",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ]
+            }
+        },
+        "/automations": {
+            "post": {
+                "operationId": "automations-create",
+                "summary": "Create an automation on an Application version (REQ-AUTD-008)",
+                "description": "Create an automation on an Application version (REQ-AUTD-008).\n\nDelegates to {@see AutomationWriteService::create()}, which authorises against the PARENT APPLICATION's `permissions` block (named by the body's mandatory `applicationSlug`/`versionUuid`) and only then writes, in system context. See the class docblock for why this route exists rather than the designer POSTing OR REST directly.",
+                "tags": [
+                    "automations"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The created Automation, or an error envelope.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                },
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/automations/{uuid}": {
+            "put": {
+                "operationId": "automations-update",
+                "summary": "Replace an automation's definition (REQ-AUTD-008)",
+                "description": "Replace an automation's definition (REQ-AUTD-008).\n\nThe stored record's OWN `applicationSlug`/`versionUuid` decide the authorization scope, never the client's body — otherwise a caller who holds a role on application A could move an automation belonging to application B by posting A's slug.",
+                "tags": [
+                    "automations"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The saved Automation, or an error envelope.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                },
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true,
+                        "description": "The Automation object uuid.",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^(?:[a-f0-9-]{8,})$"
+                        }
+                    }
+                ]
+            },
+            "delete": {
+                "operationId": "automations-destroy",
+                "summary": "Delete an automation and remove its compiled artifacts (REQ-AUTD-008)",
+                "description": "Delete an automation and remove its compiled artifacts (REQ-AUTD-008).\n\nThe artifacts are removed FIRST: a deleted definition whose compiled artifacts are still live is the one outcome that leaves the instance acting on a rule nobody can see or edit any more.",
+                "tags": [
+                    "automations"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Empty success envelope, or an error envelope.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true,
+                        "description": "The Automation object uuid.",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^(?:[a-f0-9-]{8,})$"
+                        }
+                    }
+                ]
+            }
+        },
+        "/automations/{uuid}/compile": {
+            "post": {
+                "operationId": "automations-compile",
+                "summary": "Recompile an automation in place (upsert its artifacts)",
+                "description": "Recompile an automation in place (upsert its artifacts).",
+                "tags": [
+                    "automations"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The result.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                },
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true,
+                        "description": "The Automation object uuid.",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^(?:[a-f0-9-]{8,})$"
+                        }
+                    }
+                ]
+            }
+        },
+        "/automations/{uuid}/disable": {
+            "post": {
+                "operationId": "automations-disable",
+                "summary": "Disable an automation — recompiles with every artifact inert (design.md Decision 5)",
+                "description": "Disable an automation — recompiles with every artifact inert (design.md Decision 5).",
+                "tags": [
+                    "automations"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The result.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                },
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true,
+                        "description": "The Automation object uuid.",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^(?:[a-f0-9-]{8,})$"
+                        }
+                    }
+                ]
+            }
+        },
+        "/automations/{uuid}/dry-run": {
+            "post": {
+                "operationId": "automations-dry-run",
+                "summary": "Evaluate an automation via the rules engine with `dryRun: true` — dispatches no side effect and mutates no compiled artifact (spec REQ-AUTD-007 / design.md Decision 9)",
+                "description": "Evaluate an automation via the rules engine with `dryRun: true` — dispatches no side effect and mutates no compiled artifact (spec REQ-AUTD-007 / design.md Decision 9).",
+                "tags": [
+                    "automations"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The result.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Problem422"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                },
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true,
+                        "description": "The Automation object uuid.",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^(?:[a-f0-9-]{8,})$"
+                        }
+                    }
+                ]
+            }
+        },
+        "/automations/{uuid}/enable": {
+            "post": {
+                "operationId": "automations-enable",
+                "summary": "Enable an automation (owners-only when its version is the Application's current production version — spec REQ-AUTD-008)",
+                "description": "Enable an automation (owners-only when its version is the Application's current production version — spec REQ-AUTD-008).",
+                "tags": [
+                    "automations"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The result.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                },
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true,
+                        "description": "The Automation object uuid.",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^(?:[a-f0-9-]{8,})$"
+                        }
+                    }
+                ]
+            }
+        },
+        "/automations/{uuid}/status": {
+            "get": {
+                "operationId": "automations-status",
+                "summary": "Recompute drift against the last-applied provenance (spec REQ-AUTD-005)",
+                "description": "Recompute drift against the last-applied provenance (spec REQ-AUTD-005).",
+                "tags": [
+                    "automations"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The result.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true,
+                        "description": "The Automation object uuid.",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^(?:[a-f0-9-]{8,})$"
+                        }
+                    }
+                ]
+            }
+        },
+        "/copilot/discard": {
+            "post": {
+                "operationId": "copilot-discard",
+                "summary": "Log a discarded agent-chat proposal",
+                "description": "Log a discarded agent-chat proposal.\n\nBody: `{ agentId: string, prompt: string, summary: string, steps: array }`. Exists only for the agent-scoped chat surface (agent-workspace spec \"A discarded proposal is still logged\") — the bare copilot panel never calls this endpoint, so a bare-copilot discard remains request-free exactly as before this change.",
+                "tags": [
+                    "copilot"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "200 `{status: \"logged\"}`, or an error envelope.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Problem422"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                },
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/copilot/execute": {
+            "post": {
+                "operationId": "copilot-execute",
+                "summary": "Execute a reviewed plan atomically",
+                "description": "Execute a reviewed plan atomically.\n\nBody: `{ summary: string, steps: array, agentId?: string, prompt?: string }` — the plan echoed back verbatim. `agentId`/`prompt` are only meaningful together (the original brief for this turn, needed to write a complete `AgentRun` record).",
+                "tags": [
+                    "copilot"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "200 `{results}`, or an error envelope.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                },
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/copilot/health": {
+            "get": {
+                "operationId": "copilot-health",
+                "summary": "Provider availability probe",
+                "description": "Provider availability probe.",
+                "tags": [
+                    "copilot"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "200 `{status: \"ok\"}` when available, 503 `{status, reason}` otherwise.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/Problem503"
+                    }
+                }
+            }
+        },
+        "/copilot/plan": {
+            "post": {
+                "operationId": "copilot-plan",
+                "summary": "Turn a brief into a validated, reviewable plan",
+                "description": "Turn a brief into a validated, reviewable plan.\n\nBody: `{ brief: string, appSlug?: string, agentId?: string, versionSlug?: string }`. Performs zero builder writes (an agent-scoped rejected plan still writes one `AgentRun` audit record — see `CopilotService::plan()`).",
+                "tags": [
+                    "copilot"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "200 `{summary, steps, manifests}`, or an error envelope.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                },
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/exports/server-requirements": {
+            "get": {
+                "operationId": "exports-server-requirements",
+                "summary": "What a server needs to run an exported app on its own",
+                "description": "What a server needs to run an exported app on its own.\n\nRead-only and not tied to an application: the versions come from the app template and the installed OpenRegister.",
+                "tags": [
+                    "exports"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`{nextcloud, openregister, php, database}` minimum versions.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                }
+            }
+        },
+        "/exports/{uuid}/download": {
+            "get": {
+                "operationId": "exports-download",
+                "summary": "Stream the ZIP for a completed ExportJob",
+                "description": "Stream the ZIP for a completed ExportJob.",
+                "tags": [
+                    "exports"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "200 with the ZIP body, 410 Gone after expiry, 404 unknown. `#[NoCSRFRequired]` is INTENTIONAL here: this is a plain `<a href>` navigation download (idempotent GET, no state change), gated by `isAuthorisedForJob` with 404-masking of unauthorised job UUIDs. Do NOT remove this attribute in a future security sweep — a GET-only download link cannot carry the `requesttoken` header a CSRF check requires, and removing it would break the download link entirely.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "410": {
+                        "$ref": "#/components/responses/Problem410"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true,
+                        "description": "ExportJob UUID.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ]
+            }
+        },
+        "/exports/{uuid}/run": {
+            "post": {
+                "operationId": "exports-run",
+                "summary": "Run a queued export now instead of waiting for the next cron run",
+                "description": "Run a queued export now instead of waiting for the next cron run.\n\nThe export dialog calls this right after submit() and does not wait for the answer; it follows the job's status as before. The request itself runs the export, so it keeps going when the browser moves on.",
+                "tags": [
+                    "exports"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "200 `{started: true}` when this call ran it, 409 when it                      had already been picked up, 404 for an unknown or foreign job. State-changing POST, so CSRF stays on (the SPA sends the request token).",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Problem409"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                },
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true,
+                        "description": "ExportJob UUID.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ]
+            }
+        },
+        "/forms/destination-check": {
+            "post": {
+                "operationId": "form-destination-check",
+                "summary": "Every destination finding on the manifest's form pages",
+                "description": "Every destination finding on the manifest's form pages.\n\nBody: `{ appSlug, manifest }`. Answer: `{ accepted, findings }`.",
+                "tags": [
+                    "form-destination"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "200 with the findings; 400 without a manifest; 403 when the caller may not edit the app.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                },
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/generated-documents/{token}": {
+            "get": {
+                "operationId": "generated-document-download",
+                "summary": "Stream a `download-link`-mode generated document, or a uniform 404 for any unknown/expired/malformed token",
+                "description": "Stream a `download-link`-mode generated document, or a uniform 404 for any unknown/expired/malformed token.",
+                "tags": [
+                    "generated-document"
+                ],
+                "security": [],
+                "responses": {
+                    "200": {
+                        "description": "The result.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "*/*": {
+                                "schema": {
+                                    "type": "string",
+                                    "format": "binary"
+                                }
+                            }
+                        }
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "token",
+                        "in": "path",
+                        "required": true,
+                        "description": "The random download token.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ]
+            }
+        },
+        "/health": {
+            "get": {
+                "operationId": "health-index",
+                "summary": "Declarative health check (ADR-006)",
+                "description": "Declarative health check (ADR-006).\n\nThe rate-limit ceiling below is generous on purpose: a health endpoint is polled by monitoring on a short interval, and a ceiling that trips on a normal probe cadence turns the check itself into the outage it was meant to detect.",
+                "tags": [
+                    "health"
+                ],
+                "security": [],
+                "responses": {
+                    "200": {
+                        "description": "`{status, app, version, checks}` with HTTP code per statusCodePolicy.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/metrics": {
+            "get": {
+                "operationId": "metrics-index",
+                "summary": "Declarative Prometheus metrics (admin-only, ADR-006)",
+                "description": "Declarative Prometheus metrics (admin-only, ADR-006).",
+                "tags": [
+                    "metrics"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Prometheus text exposition 0.0.4.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "text/plain": {
+                                "schema": {
+                                    "type": "string"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    }
+                }
+            }
+        },
+        "/page-layouts": {
+            "get": {
+                "operationId": "page-layout-index",
+                "summary": "The stored layouts for one schema, with their drift state",
+                "description": "The stored layouts for one schema, with their drift state.",
+                "tags": [
+                    "page-layout"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "200 with `{items, total}`; 400 without a register and schema.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                }
+            },
+            "put": {
+                "operationId": "page-layout-save",
+                "summary": "Store one layout or override",
+                "description": "Store one layout or override.",
+                "tags": [
+                    "page-layout"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "200 with `{layout, warnings}`; 422 when a rule refuses it.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Problem422"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                },
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/page-layouts/{layoutId}/recut": {
+            "post": {
+                "operationId": "page-layout-recut",
+                "summary": "Re-pin a drifted override to the base it has now",
+                "description": "Re-pin a drifted override to the base it has now.",
+                "tags": [
+                    "page-layout"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "200 with `{layout, dropped}`; 404 when there is no such override.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Problem422"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                },
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "layoutId",
+                        "in": "path",
+                        "required": true,
+                        "description": "The override's id.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ]
+            }
+        },
+        "/preferences/{key}": {
+            "get": {
+                "operationId": "preferences-get-preference",
+                "summary": "Read a per-user preference value",
+                "description": "Read a per-user preference value.",
+                "tags": [
+                    "preferences"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`{value: string|null}`.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "key",
+                        "in": "path",
+                        "required": true,
+                        "description": "The preference key (kebab/alphanumeric).",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ]
+            },
+            "put": {
+                "operationId": "preferences-set-preference",
+                "summary": "Write a per-user preference value",
+                "description": "Write a per-user preference value. An empty value clears it.",
+                "tags": [
+                    "preferences"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`{value: string|null}`.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                },
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "value": {
+                                        "type": "string",
+                                        "description": "The value to store (empty string clears it)."
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "key",
+                        "in": "path",
+                        "required": true,
+                        "description": "The preference key (kebab/alphanumeric).",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ]
+            }
+        },
+        "/registration-forms": {
+            "get": {
+                "operationId": "registration-form-index",
+                "summary": "The stored forms for one schema",
+                "description": "The stored forms for one schema.",
+                "tags": [
+                    "registration-form"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "200 with `{items, total}`; 400 without a register and schema.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                }
+            },
+            "put": {
+                "operationId": "registration-form-save",
+                "summary": "Store one form",
+                "description": "Store one form.",
+                "tags": [
+                    "registration-form"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "200 with `{form, warnings, findings}` (a draft keeps its findings);   422 when a rule refuses it, with `findings` when the destination refuses a form that is not a draft.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Problem422"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                },
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/registration-forms/target": {
+            "get": {
+                "operationId": "registration-form-target",
+                "summary": "What the consuming schema declares: its property names and the channels it accepts, so the builder offers pickers instead of free text",
+                "description": "What the consuming schema declares: its property names and the channels it accepts, so the builder offers pickers instead of free text.",
+                "tags": [
+                    "registration-form"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "200 with `{properties, channels, note}`; 400 without a register and schema.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                }
+            }
+        },
+        "/rules/{ruleSetSlug}/decision-table": {
+            "put": {
+                "operationId": "rules-save-decision-table",
+                "summary": "Write a rule set's decision table into OpenRegister's decision-tables register",
+                "description": "Write a rule set's decision table into OpenRegister's decision-tables register.\n\nThe table editor sends buildiq's authoring shape (input columns with an expression path, rules as a condition map and a value map); the table is stored in the shape OpenRegister evaluates, under the key of the rule set the caller resolved. OpenRegister refuses a table it cannot run, and that refusal comes back as 422 with its reason.\n\nAdmin-only, as writing a decision table was in buildiq's own register: the guard lives in the method body, the posture SettingsController::update() uses, because `#[NoAdminRequired]` alone would open the write to any signed-in user.",
+                "tags": [
+                    "rules"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "200 with the stored table, 401, 403, 404 or 422.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Problem422"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                },
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "ruleSetSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "The RuleSet slug.",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^(?:[a-z0-9][a-z0-9-]*[a-z0-9])$"
+                        }
+                    }
+                ]
+            }
+        },
+        "/rules/{ruleSetSlug}/evaluate": {
+            "post": {
+                "operationId": "rules-evaluate",
+                "summary": "Synchronously evaluate a RuleSet against a payload",
+                "description": "Synchronously evaluate a RuleSet against a payload.\n\n`mode: preview` is the live evaluation a form runs while it is filled in: the same authentication, RBAC, rate limit and size guard, but no execution log entry and no side-effecting action (REQ-BQLV-004).",
+                "tags": [
+                    "rules"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "200 with the result, 404 on miss, 408 on timeout, 422 on bad input.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                },
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "ruleSetSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "The RuleSet slug.",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^(?:[a-z0-9][a-z0-9-]*[a-z0-9])$"
+                        }
+                    }
+                ]
+            }
+        },
+        "/rules/{ruleSetSlug}/schema": {
+            "get": {
+                "operationId": "rules-schema",
+                "summary": "Return a RuleSet's metadata + active version for UI binding",
+                "description": "Return a RuleSet's metadata + active version for UI binding.",
+                "tags": [
+                    "rules"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "200 with the schema metadata, or 404.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "ruleSetSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "The RuleSet slug.",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^(?:[a-z0-9][a-z0-9-]*[a-z0-9])$"
+                        }
+                    }
+                ]
+            }
+        },
+        "/rules/{ruleSetSlug}/test-all": {
+            "post": {
+                "operationId": "rules-test-all",
+                "summary": "Run all TestCases for a RuleSet and return pass/fail per case",
+                "description": "Run all TestCases for a RuleSet and return pass/fail per case.",
+                "tags": [
+                    "rules"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "200 with the test summary, or 404.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Problem422"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                },
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "ruleSetSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "The RuleSet slug.",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^(?:[a-z0-9][a-z0-9-]*[a-z0-9])$"
+                        }
+                    }
+                ]
+            }
+        },
+        "/settings": {
+            "get": {
+                "operationId": "settings-index",
+                "summary": "Retrieve all current settings",
+                "description": "Retrieve all current settings.",
+                "tags": [
+                    "settings"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The result.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                }
+            },
+            "post": {
+                "operationId": "settings-create",
+                "summary": "Legacy alias for {@see update()} — `POST /api/settings`",
+                "description": "Legacy alias for {@see update()} — `POST /api/settings`.\n\nThe canonical AppHost route table still ships `settings#create` for the pre-ADR-066 `index/create/load` dialect, so this stays reachable and MUST remain a real write, not an empty success (ADR-029). It delegates to `update()`, which carries the H6 admin guard, so both verbs share one enforcement path and cannot drift apart.\n\nAdmin-only via the guard inside {@see update()}; non-admin callers receive 403 and unauthenticated callers 401, exactly as before.",
+                "tags": [
+                    "settings"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The result.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                },
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "operationId": "settings-update",
+                "summary": "Update settings with provided data — the canonical write",
+                "description": "Update settings with provided data — the canonical write.\n\n`\\OCA\\OpenRegister\\AppHost\\Routes::standard()` (invoked from `appinfo/routes.php`) ships `PUT /api/settings` as `settings#update`, and `AppHost\\Bootstrap::aliasControllerUnlessLeafDefinesIt()` only substitutes OpenRegister's `GenericSettingsController` when the leaf app does NOT ship a class of that name. Buildiq DOES ship this class, so the alias is skipped and every canonical method routed to `settings#` must exist HERE. A missing one is not a 404 — the router matches the URL and the dispatcher reflects the method, so the request dies with a 500 (measured 2026-08-08: `PUT /apps/buildiq/api/settings` → 500, `ReflectionException: Method OCA\\Buildiq\\Controller\\SettingsController::update() does not exist`).\n\nPersists only the whitelisted `CONFIG_KEYS` / `SECRET_KEYS` (the service ignores anything else) and returns the freshly re-read settings array, so the caller sees what was actually stored rather than what it submitted.\n\nAdmin-only: writing Buildiq configuration affects all users on the instance; non-admin callers receive 403 (H6 guard). The guard lives in the method body rather than in an `#[AuthorizedAdminSetting]` attribute to match `index()`/`load()`'s established posture — Nextcloud's SecurityMiddleware only evaluates attributes on the DISPATCHED method, so `#[NoAdminRequired]` alone would leave this admin write open to any authenticated user.",
+                "tags": [
+                    "settings"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The result.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    }
+                },
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/settings/load": {
+            "post": {
+                "operationId": "settings-load",
+                "summary": "Re-import the configuration from openbuild_register.json",
+                "description": "Re-import the configuration from openbuild_register.json.\n\nForces a fresh import regardless of version, auto-configuring all schema and register IDs from the import result.\n\nAdmin-only: reloading configuration re-provisions registers and schemas instance-wide; non-admin callers receive 403 (H6 guard).",
+                "tags": [
+                    "settings"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The result.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    }
+                },
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/setup/action/{actionId}": {
+            "post": {
+                "operationId": "setup-run-action",
+                "summary": "Run a privileged server-side setup action",
+                "description": "Run a privileged server-side setup action.",
+                "tags": [
+                    "setup"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`{ success, message, detail }`.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Problem422"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                },
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "actionId",
+                        "in": "path",
+                        "required": true,
+                        "description": "The action id; `seed-templates` is the only one.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ]
+            }
+        },
+        "/setup/config": {
+            "post": {
+                "operationId": "setup-save-config",
+                "summary": "Persist app-config values from a `config-fields` step (the remote template store: `registry_url`, `registry_register`, `registry_token`)",
+                "description": "Persist app-config values from a `config-fields` step (the remote template store: `registry_url`, `registry_register`, `registry_token`). Routed through SettingsService so the write-only secret semantics on `registry_token` are preserved.",
+                "tags": [
+                    "setup"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`{ success }`.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    }
+                },
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/setup/status": {
+            "get": {
+                "operationId": "setup-status",
+                "summary": "Report per-step setup status for the wizard, and stamp the completion key",
+                "description": "Report per-step setup status for the wizard, and stamp the completion key.\n\nThe wizard has no required step any more: seeding the starter templates moved to the admin settings page (wizard-dataset-card-load), where the same `seed-templates` action runs. `templatesSeeded` travels as information, not as a step.",
+                "tags": [
+                    "setup"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`{ version, completed, templatesSeeded, steps: { <id>: { done } } }`.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    }
+                }
+            }
+        },
+        "/shop/github/forms": {
+            "get": {
+                "operationId": "form-library-github-search",
+                "summary": "Search GitHub for shared forms (`topic:buildiq-form`, a form.json at the root)",
+                "description": "Search GitHub for shared forms (`topic:buildiq-form`, a form.json at the root).\n\nLogin-required (in-body 401 guard). Each card carries the form export envelope its repository publishes; installing one is creating a local library form from that envelope, which the browser does through OpenRegister after validating it (src/services/formExport.js).",
+                "tags": [
+                    "form-library"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "200 with `{outcome, cards, rateLimited}`; 401 anonymous.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                }
+            }
+        },
+        "/shop/github/install": {
+            "post": {
+                "operationId": "shop-github-install",
+                "summary": "Install a GitHub app: fetch → strictly parse → reuse the clone seam",
+                "description": "Install a GitHub app: fetch → strictly parse → reuse the clone seam.\n\nLogin-required (in-body 401 guard). Validates `owner`/`repo`/`ref` against safe patterns and `slug` against the kebab-case Application pattern, fetches the repo file map, parses it strictly (all-or-nothing), and hands the parsed template array (with the user-supplied name + slug) to the shared install seam. The caller becomes the app owner.",
+                "tags": [
+                    "shop"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "201 with the new Application; 400/401/404/422 on failure.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                },
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/shop/github/search": {
+            "get": {
+                "operationId": "shop-github-search",
+                "summary": "Search GitHub for `topic:buildiq-app` repos",
+                "description": "Search GitHub for `topic:buildiq-app` repos.\n\nLogin-required (in-body 401 guard). Returns the normalised cards plus a `brokerCredentialAvailable` / `rateLimited` hint; never exposes the raw GitHub body or any token.\n\nThe outcome is also reported to integriq's connection registry, at most once an hour while it stays the same (adopt-connection-registry). The report never changes the response.",
+                "tags": [
+                    "shop"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "200 with `{outcome, cards, brokerCredentialAvailable, rateLimited}`; 401 anonymous.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                }
+            }
+        },
+        "/store/publish": {
+            "post": {
+                "operationId": "store-publish",
+                "summary": "Publish one store item through the engine",
+                "description": "Publish one store item through the engine.\n\nOpenRegister's canonical routes include `POST /api/store/publish`, and buildiq answers its own store routes here rather than through the engine's GenericStoreController, so this action must exist or the route fails at dispatch. The engine decides: buildiq's descriptor declares no publish fields or groups, so it answers `not_publishable`.",
+                "tags": [
+                    "store"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "`{outcome, slug}`; 401 anonymous, 403 not admitted, 400 without an item.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    }
+                },
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/store/templates": {
+            "get": {
+                "operationId": "store-search",
+                "summary": "Search the remote template store",
+                "description": "Search the remote template store.\n\nLogin-required (in-body guard, so an anonymous caller gets an explicit 401 rather than a redirect). Returns normalised cards or a generic outcome — NEVER the registry URL or token, which stay server-side.\n\nThe outcome is also reported to integriq's connection registry, at most once an hour while it stays the same (adopt-connection-registry). The report never changes the response.",
+                "tags": [
+                    "store"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "200 with `{outcome, cards}`; 401 for anonymous.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                }
+            }
+        },
+        "/store/templates/{slug}/install": {
+            "post": {
+                "operationId": "store-install",
+                "summary": "Resolve a remote template by slug and install it locally (clone)",
+                "description": "Resolve a remote template by slug and install it locally (clone).\n\nLogin-required (in-body guard). The remote `{slug}` is validated and resolved by the inherited helper; this action owns only the local clone and its response.",
+                "tags": [
+                    "store"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "201 with the new app; 400/401/404/5xx on failure.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    }
+                },
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "additionalProperties": true
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "slug",
+                        "in": "path",
+                        "required": true,
+                        "description": "The remote template slug to install.",
+                        "schema": {
+                            "type": "string",
+                            "pattern": "^(?:[a-z0-9][a-z0-9-]*[a-z0-9])$"
+                        }
+                    }
+                ]
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "basic_auth": {
+                "type": "http",
+                "scheme": "basic",
+                "description": "A Nextcloud user name with an app password."
+            },
+            "bearer_auth": {
+                "type": "http",
+                "scheme": "bearer",
+                "description": "A Nextcloud OAuth2 access token."
+            }
+        },
+        "headers": {
+            "API-Version": {
+                "description": "The version of the API that answered, which is the installed app version.",
+                "schema": {
+                    "type": "string",
+                    "example": "1.0.0"
+                }
+            }
+        },
+        "schemas": {
+            "Problem": {
+                "type": "object",
+                "description": "RFC 9457 problem details. Members the endpoint returned before, such as `error` or `message`, are kept.",
+                "required": [
+                    "type",
+                    "title",
+                    "status"
+                ],
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "description": "A URI that identifies the problem type.",
+                        "example": "about:blank"
+                    },
+                    "title": {
+                        "type": "string",
+                        "description": "The HTTP reason phrase of the status."
+                    },
+                    "status": {
+                        "type": "integer",
+                        "description": "The HTTP status code."
+                    },
+                    "detail": {
+                        "type": "string",
+                        "description": "What went wrong, for this occurrence."
+                    }
+                },
+                "additionalProperties": true
+            }
+        },
+        "responses": {
+            "Problem400": {
+                "description": "Bad request",
+                "content": {
+                    "application/problem+json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Problem"
+                        }
+                    }
+                }
+            },
+            "Problem401": {
+                "description": "Unauthorized",
+                "content": {
+                    "application/problem+json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Problem"
+                        }
+                    }
+                }
+            },
+            "Problem403": {
+                "description": "Forbidden",
+                "content": {
+                    "application/problem+json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Problem"
+                        }
+                    }
+                }
+            },
+            "Problem404": {
+                "description": "Not found",
+                "content": {
+                    "application/problem+json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Problem"
+                        }
+                    }
+                }
+            },
+            "Problem409": {
+                "description": "Conflict",
+                "content": {
+                    "application/problem+json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Problem"
+                        }
+                    }
+                }
+            },
+            "Problem410": {
+                "description": "Gone",
+                "content": {
+                    "application/problem+json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Problem"
+                        }
+                    }
+                }
+            },
+            "Problem422": {
+                "description": "Unprocessable content",
+                "content": {
+                    "application/problem+json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Problem"
+                        }
+                    }
+                }
+            },
+            "Problem500": {
+                "description": "Internal server error",
+                "content": {
+                    "application/problem+json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Problem"
+                        }
+                    }
+                }
+            },
+            "Problem503": {
+                "description": "Service unavailable",
+                "content": {
+                    "application/problem+json": {
+                        "schema": {
+                            "$ref": "#/components/schemas/Problem"
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
