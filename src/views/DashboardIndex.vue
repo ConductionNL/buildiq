@@ -31,59 +31,35 @@
 
 			<!-- KPI: Apps (total) — clickable → Apps index -->
 			<template #widget-apps>
-				<div
-					class="ob-kpi-link"
-					role="button"
-					tabindex="0"
-					@click="goTo('VirtualApps')"
-					@keyup.enter="goTo('VirtualApps')">
-					<CnStatsBlock
-						horizontal
-						:icon="iconApps"
-						:title="t('buildiq', 'Apps')"
-						:count="counts.apps"
-						:countLabel="t('buildiq', 'apps')"
-						variant="primary"
-						showZeroCount />
-				</div>
+				<KpiLinkTile
+					:icon="iconApps"
+					:title="t('buildiq', 'Apps')"
+					:count="counts.apps"
+					:countLabel="t('buildiq', 'apps')"
+					variant="primary"
+					@open="goTo('VirtualApps')" />
 			</template>
 
 			<!-- KPI: Hybrid apps — clickable → Apps index -->
 			<template #widget-hybrid>
-				<div
-					class="ob-kpi-link"
-					role="button"
-					tabindex="0"
-					@click="goTo('VirtualApps')"
-					@keyup.enter="goTo('VirtualApps')">
-					<CnStatsBlock
-						horizontal
-						:icon="iconHybrid"
-						:title="t('buildiq', 'Hybrid apps')"
-						:count="counts.hybrid"
-						:countLabel="t('buildiq', 'hybrid')"
-						variant="default"
-						showZeroCount />
-				</div>
+				<KpiLinkTile
+					:icon="iconHybrid"
+					:title="t('buildiq', 'Hybrid apps')"
+					:count="counts.hybrid"
+					:countLabel="t('buildiq', 'hybrid')"
+					variant="default"
+					@open="goTo('VirtualApps')" />
 			</template>
 
 			<!-- KPI: Published versions — clickable → Apps index -->
 			<template #widget-versions>
-				<div
-					class="ob-kpi-link"
-					role="button"
-					tabindex="0"
-					@click="goTo('VirtualApps')"
-					@keyup.enter="goTo('VirtualApps')">
-					<CnStatsBlock
-						horizontal
-						:icon="iconVersions"
-						:title="t('buildiq', 'Published versions')"
-						:count="counts.versions"
-						:countLabel="t('buildiq', 'versions')"
-						variant="success"
-						showZeroCount />
-				</div>
+				<KpiLinkTile
+					:icon="iconVersions"
+					:title="t('buildiq', 'Published versions')"
+					:count="counts.versions"
+					:countLabel="t('buildiq', 'versions')"
+					variant="success"
+					@open="goTo('VirtualApps')" />
 			</template>
 
 			<!-- Recent apps table — edge-to-edge inside the widget card (the wrapper's
@@ -135,7 +111,6 @@
 import {
 	CnDashboardPage,
 	CnDataTable,
-	CnStatsBlock,
 } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
@@ -144,6 +119,7 @@ import History from 'vue-material-design-icons/History.vue'
 import PencilOutline from 'vue-material-design-icons/PencilOutline.vue'
 import PuzzleOutline from 'vue-material-design-icons/PuzzleOutline.vue'
 import ShapeOutline from 'vue-material-design-icons/ShapeOutline.vue'
+import KpiLinkTile from '../components/dashboard/KpiLinkTile.vue'
 import CreateApplicationWizard from '../dialogs/CreateApplicationWizard.vue'
 
 export default {
@@ -151,8 +127,8 @@ export default {
 
 	components: {
 		CnDashboardPage,
-		CnStatsBlock,
 		CnDataTable,
+		KpiLinkTile,
 		PencilOutline,
 		CreateApplicationWizard,
 		NcButton,
