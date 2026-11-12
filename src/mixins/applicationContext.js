@@ -18,6 +18,53 @@ import { getCurrentUserGroups, useRole } from '../composables/useRole.js'
 
 const OR_OBJECTS = '/apps/openregister/api/objects/buildiq/built-app'
 
+/**
+ * Whether an object prop is a full Application record (it carries a manifest
+ * or a slug), so it can be used without a fetch.
+ *
+ * @param {object|null} object The object prop.
+ * @return {boolean} True when it can be used as-is.
+ */
+function isApplicationRecord(object) {
+	return Boolean(
+		object && (object.manifest !== undefined || object.slug !== undefined),
+	)
+}
+
+/**
+ * The record an objects-API answer carries: its `results` when it has them,
+ * else the answer itself.
+ *
+ * @param {object|null} data The answer.
+ * @return {object|null} The record.
+ */
+function unwrapRecord(data) {
+	return data && data.results ? data.results : data
+}
+
+/**
+ * The uuid of a resolved Application: its `@self` id, then its `@self` uuid,
+ * then its own uuid, then its id.
+ *
+ * @param {object} app The Application object.
+ * @return {string} The uuid, or '' without one.
+ */
+function applicationUuidOf(app) {
+	const self = app['@self'] || {}
+	return self.id || self.uuid || app.uuid || app.id || ''
+}
+
+/**
+ * The uuid of the object context a component was handed: its `@self` id,
+ * then its uuid, then its id.
+ *
+ * @param {object|null} object The object context.
+ * @return {string|undefined|null} The uuid, or a falsy value without one.
+ */
+function contextObjectUuidOf(object) {
+	return object && ((object['@self'] || {}).id || object.uuid || object.id)
+}
+
 export default {
 	props: {
 		// CnObjectSidebar's sharedTabProps / CnDetailPage's actionsComponent props.
@@ -43,17 +90,10 @@ export default {
 	computed: {
 		obAppUuid() {
 			if (this.obApp) {
-				const self = this.obApp['@self'] || {}
-				return self.id || self.uuid || this.obApp.uuid || this.obApp.id || ''
+				return applicationUuidOf(this.obApp)
 			}
 			return String(
-				this.objectId
-					|| this.objectUuid
-					|| (this.object
-						&& ((this.object['@self'] || {}).id
-							|| this.object.uuid
-							|| this.object.id))
-					|| '',
+				this.objectId || this.objectUuid || contextObjectUuidOf(this.object) || '',
 			)
 		},
 		obAppRole() {
@@ -74,12 +114,7 @@ export default {
 		 * @return {Promise<void>}
 		 */
 		async obLoadApp(force = false) {
-			if (
-				!force
-				&& this.object
-				&& (this.object.manifest !== undefined
-					|| this.object.slug !== undefined)
-			) {
+			if (!force && isApplicationRecord(this.object)) {
 				this.obApp = this.object
 				return
 			}
@@ -98,13 +133,7 @@ export default {
 				// identical requests per page load, all within ~2ms of each
 				// other. Routing every consumer through one coalescing helper
 				// collapses the burst to a single round-trip.
-				const data = await fetchApplicationRecord(uuid)
-				this.obApp =
-					data && data.results
-						? data.results
-						: data && data['@self']
-							? data
-							: data
+				this.obApp = unwrapRecord(await fetchApplicationRecord(uuid))
 			} catch (e) {
 				this.obAppError = `${t('buildiq', 'Failed to load application')}: ${e.message || e}`
 			} finally {
