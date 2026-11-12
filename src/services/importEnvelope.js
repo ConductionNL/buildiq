@@ -3,7 +3,7 @@
  * importEnvelope: reading an exported JSON envelope (`{ kind, <part>: {...} }`)
  * back in, shared by the block and form import parsers.
  *
- * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+ * @spec openspec/specs/component-blocks/spec.md
  */
 
 /**
@@ -13,7 +13,7 @@
  * @param {function(): Error} invalidJson Builds the error thrown for text that is not JSON.
  * @return {unknown} The data.
  * @throws {Error} The error `invalidJson` builds.
- * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+ * @spec openspec/specs/component-blocks/spec.md
  */
 export function parsedInput(input, invalidJson) {
 	if (typeof input !== 'string') {
@@ -32,7 +32,7 @@ export function parsedInput(input, invalidJson) {
  * @param {unknown} data The parsed data.
  * @param {{kind: string, part: string}} envelope The expected kind and the key of its part.
  * @return {boolean} True for a matching envelope.
- * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+ * @spec openspec/specs/component-blocks/spec.md
  */
 export function isEnvelope(data, envelope) {
 	return (

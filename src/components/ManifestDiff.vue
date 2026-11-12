@@ -108,7 +108,7 @@ export default {
 		 * manifest blobs instead of fetching stored versions by slug.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		isStaticMode() {
 			return this.fromManifest !== null || this.toManifest !== null
@@ -117,7 +117,7 @@ export default {
 		/**
 		 * Observed behaviour of `fromLabel` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 		 */
 		fromLabel() {
 			if (this.fromLabelText) {
@@ -134,7 +134,7 @@ export default {
 		/**
 		 * Observed behaviour of `toLabel` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 		 */
 		toLabel() {
 			if (this.toLabelText) {
@@ -173,7 +173,7 @@ export default {
 		/**
 		 * Observed behaviour of `diffParts` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 		 */
 		diffParts() {
 			const fromSource = this.isStaticMode
@@ -195,7 +195,7 @@ export default {
 		/**
 		 * Observed behaviour of `from` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 		 */
 		from() {
 			this.fetch()
@@ -204,7 +204,7 @@ export default {
 		/**
 		 * Observed behaviour of `to` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 		 */
 		to() {
 			this.fetch()
@@ -213,7 +213,7 @@ export default {
 		/**
 		 * Observed behaviour of `slug` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 		 */
 		slug() {
 			this.fetch()
@@ -223,7 +223,7 @@ export default {
 	/**
 	 * Observed behaviour of `mounted` (retrofit annotation).
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
+	 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 	 */
 	mounted() {
 		if (this.isStaticMode) {
@@ -238,7 +238,7 @@ export default {
 		/**
 		 * Observed behaviour of `fetch` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 		 */
 		async fetch() {
 			if (this.isStaticMode || !this.slug || !this.to) {
@@ -293,7 +293,7 @@ export default {
 		 *   keys sorted, so the line diff reflects real content changes and not
 		 *   serialisation order.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 		 */
 		prettyManifest(value) {
 			if (value === null || value === undefined) {
@@ -314,7 +314,7 @@ export default {
 		 *   primitives pass through untouched.
 		 * @return {*} The value to serialise in place of `val`.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 		 */
 		sortReplacer(_key, val) {
 			if (val && typeof val === 'object' && !Array.isArray(val)) {
@@ -336,7 +336,7 @@ export default {
 		 * @return {string} The `manifest-diff__part` class list for that hunk, with the
 		 *   `--added` / `--removed` / `--unchanged` modifier that colours it.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 		 */
 		partClass(part) {
 			if (part.added) {

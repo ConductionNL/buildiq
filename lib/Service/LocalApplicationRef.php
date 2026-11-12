@@ -19,7 +19,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/app-repo-format-flow-agent-export/specs/app-channel-application/spec.md#requirement-published-flows-are-created-and-rebound-onto-the-local-application
+ * @spec openspec/specs/app-channel-application/spec.md#requirement-published-flows-are-created-and-rebound-onto-the-local-application
  */
 
 declare(strict_types=1);

@@ -28,7 +28,7 @@ namespace OCA\Buildiq\Mcp\Handler;
 /**
  * Handles the buildiq.promoteVersion tool invocation.
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-59
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-59
  */
 class PromoteVersionHandler extends AbstractToolHandler {
 

@@ -503,7 +503,7 @@ export default {
 		 * The page's placements, always an array.
 		 *
 		 * @return {Array<object>} the page's `widgets[]`.
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		placements() {
 			return this.page && Array.isArray(this.page.widgets)
@@ -517,7 +517,7 @@ export default {
 		 * initialises GridStack on mount, not on every prop write.
 		 *
 		 * @return {Array<object>} the body placements, in page order.
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		bodyPlacements() {
 			return this.placements.filter((entry) => entry && entry.slot === 'body')
@@ -530,7 +530,7 @@ export default {
 		 *
 		 * @return {Array<{slot: string, rows: Array<{index: number, entry: object}>}>}
 		 *   the groups in display order.
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		groups() {
 			const bySlot = new Map([['body', []]])
@@ -570,7 +570,7 @@ export default {
 		 * says nothing about why.
 		 *
 		 * @return {string[]} the offerable slot names.
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		slotOptions() {
 			const options = [...SLOT_DISPLAY_ORDER]
@@ -592,7 +592,7 @@ export default {
 		 * The surface the page represents, for the modal's type picker.
 		 *
 		 * @return {string} `'detail-page'` or `'app-dashboard'`.
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		widgetSurface() {
 			return widgetSurfaceForPageType(this.page ? this.page.type : '')
@@ -606,7 +606,7 @@ export default {
 		 * which is the failure this reports.
 		 *
 		 * @return {string[]} the offerable widget type keys.
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		offerableTypes() {
 			return listWidgetTypes(this.widgetSurface)
@@ -616,7 +616,7 @@ export default {
 		 * Whether the catalogue has nothing to offer on this surface.
 		 *
 		 * @return {boolean} true when the type picker would be empty.
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		catalogueIsEmpty() {
 			return this.offerableTypes.length === 0
@@ -627,7 +627,7 @@ export default {
 		 * null.
 		 *
 		 * @return {string|null} the offending key.
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		disguisedWidgetKey() {
 			return customPageInDisguiseKey(this.page)
@@ -637,7 +637,7 @@ export default {
 		 * Whether this page demands a note on every placement.
 		 *
 		 * @return {boolean} true on a `custom` page.
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		noteIsRequired() {
 			return pageRequiresPlacementNote(this.page)
@@ -649,7 +649,7 @@ export default {
 		 * owns its own confirm button and has no note field to block.
 		 *
 		 * @return {boolean} true when the add action is available.
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		canAdd() {
 			if (this.catalogueIsEmpty) {
@@ -663,7 +663,7 @@ export default {
 		 * `CnAddWidgetModal` reads. Null while the modal is open for an add.
 		 *
 		 * @return {?{type: string, content: object}} the modal's edit seed.
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		editingWidget() {
 			if (this.editingIndex < 0) {
@@ -688,7 +688,7 @@ export default {
 		 * dashboards.
 		 *
 		 * @return {?{register: string, schema: string}} the object context.
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		dataContext() {
 			const config = pageConfigOf(this.page)
@@ -705,7 +705,7 @@ export default {
 		 *
 		 * @param {string} slot - the slot name.
 		 * @return {string} the label shown to the author.
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		slotLabel(slot) {
 			const labels = {
@@ -724,7 +724,7 @@ export default {
 		 *
 		 * @param {object} entry - the placement.
 		 * @return {string} the row label.
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		displayName(entry) {
 			const key = entry && entry.widgetKey ? entry.widgetKey : ''
@@ -737,7 +737,7 @@ export default {
 		 *
 		 * @param {string} slot - the placement's slot.
 		 * @return {boolean} true when `gridY` is the author's to set.
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		offersRow(slot) {
 			return slotOffersRow(slot)
@@ -748,7 +748,7 @@ export default {
 		 *
 		 * @param {string} slot - the placement's slot.
 		 * @return {boolean} true when `gridX` and `gridWidth` are the author's.
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		offersSpan(slot) {
 			return slotOffersSpan(slot, this.page)
@@ -759,7 +759,7 @@ export default {
 		 *
 		 * @param {string} slot - the placement's slot.
 		 * @return {number} the effective column count.
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		columnsFor(slot) {
 			return columnsForSlot(slot, this.page)
@@ -772,7 +772,7 @@ export default {
 		 * @param {number} index - the placement's position in `widgets[]`.
 		 * @param {object} changed - the keys being written.
 		 * @return {void}
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		writeEntry(index, changed) {
 			const current = this.placements[index]
@@ -792,7 +792,7 @@ export default {
 		 * @param {number} index - the placement's position in `widgets[]`.
 		 * @param {string} slot - the target slot.
 		 * @return {void}
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		updateSlot(index, slot) {
 			this.writeEntry(index, { slot })
@@ -807,7 +807,7 @@ export default {
 		 * @param {'gridX'|'gridY'|'gridWidth'|'gridHeight'} key - the coordinate.
 		 * @param {string} value - the number input's raw value.
 		 * @return {void}
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		updateGeometry(index, key, value) {
 			this.writeEntry(index, { [key]: value })
@@ -821,7 +821,7 @@ export default {
 		 * @param {number} index - the placement's position in `widgets[]`.
 		 * @param {string} value - the note text.
 		 * @return {void}
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		updateNote(index, value) {
 			const current = this.placements[index]
@@ -846,7 +846,7 @@ export default {
 		 * @param {number} index - the placement's current position.
 		 * @param {number} offset - `-1` to move up, `1` to move down.
 		 * @return {void}
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		move(index, offset) {
 			const target = index + offset
@@ -865,7 +865,7 @@ export default {
 		 *
 		 * @param {number} index - the placement's position in `widgets[]`.
 		 * @return {void}
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		remove(index) {
 			if (!this.placements[index]) {
@@ -888,7 +888,7 @@ export default {
 		 *
 		 * @param {Array<object>} payload - the entries the grid emitted.
 		 * @return {void}
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		onLayoutChange(payload) {
 			const emitted = Array.isArray(payload) ? payload : []
@@ -914,7 +914,7 @@ export default {
 		 * Open the type picker for a new placement in the pending slot.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		openAdd() {
 			if (!this.canAdd) {
@@ -929,7 +929,7 @@ export default {
 		 *
 		 * @param {number} index - the placement's position in `widgets[]`.
 		 * @return {void}
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		openEdit(index) {
 			if (!this.placements[index]) {
@@ -943,7 +943,7 @@ export default {
 		 * Close the type picker without writing anything.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		closeModal() {
 			this.modalOpen = false
@@ -966,7 +966,7 @@ export default {
 		 * @param {object} payload - the modal's submit payload.
 		 * @param {object|null} existingProps - the placement's current props.
 		 * @return {object} the merged props.
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		buildProps(payload, existingProps) {
 			const content = payloadObject(payload, 'content')
@@ -990,7 +990,7 @@ export default {
 		 * @param {{type: string, content: object, chrome: object}} payload - the
 		 *   modal's submit payload.
 		 * @return {void}
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		onModalSubmit(payload) {
 			if (!payload || !payload.type) {
@@ -1074,7 +1074,7 @@ export default {
 		 *
 		 * @param {Array<object>} widgets - the complete replacement array.
 		 * @return {void}
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		emitWidgets(widgets) {
 			this.$emit('update:widgets', widgets)

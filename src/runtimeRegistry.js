@@ -9,9 +9,9 @@
  * Self-contained (no import from `registry.js`) to avoid the
  * registry → BuilderHost → runtimeRegistry import cycle.
  *
- * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-004
- * @spec openspec/changes/openconnector-api-sources/tasks.md#task-4.3
- * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-004
+ * @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-004
+ * @spec openspec/changes/archive/2026-06-14-openconnector-api-sources/tasks.md#task-4.3
+ * @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-004
  */
 
 // Runtime widget — renders an OpenConnector-bound data source for a manifest

@@ -110,7 +110,7 @@ export default {
 		/**
 		 * Observed behaviour of `validatedConfigKeys` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		validatedConfigKeys() {
 			return [
@@ -128,7 +128,7 @@ export default {
 		 * OpenRegister register/schema pickers). REQ-OCAS-002.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/openconnector-api-sources/tasks.md#task-3.2
+		 * @spec openspec/changes/archive/2026-06-14-openconnector-api-sources/tasks.md#task-3.2
 		 */
 		connectorActive() {
 			return !!(this.config.dataSource && this.config.dataSource.connector)
@@ -137,7 +137,7 @@ export default {
 		/**
 		 * Observed behaviour of `sidebarEnabled` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		sidebarEnabled() {
 			const s = this.config.sidebar
@@ -159,7 +159,7 @@ export default {
 		 *
 		 * @param {string} key - the config key being written: `register`, `schema`, `cardComponent`, `columns` or `actions`. Writing `register` also drops `schema`, since a schema is only meaningful inside its register.
 		 * @param {string|Array<object>} value - the new value: a slug/component key from a `<select>`/`<input>`, or the rebuilt array from ColumnBuilder / ActionBuilder. An empty string, `null` or an empty array deletes the key instead of storing it.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		update(key, value) {
 			const next = { ...this.config }
@@ -185,7 +185,7 @@ export default {
 		 * under it — rather than leaving `{ enabled: false }` behind.
 		 *
 		 * @param {boolean} enabled - the checkbox's new `checked` state.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		onSidebarToggle(enabled) {
 			const next = { ...this.config }
@@ -205,7 +205,7 @@ export default {
 		 *
 		 * @param {string} key - the sidebar key being written; currently only `columnGroups`.
 		 * @param {Array<object>} value - the rebuilt column-group list from SidebarSectionBuilder. Stored as-is, including when empty, so the sidebar stays enabled with no groups.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		updateSidebar(key, value) {
 			const next = { ...this.config }
@@ -221,7 +221,7 @@ export default {
 		 *
 		 * @param {string} register - slug of the register to list schemas for, i.e. `config.register`.
 		 * @return {Promise<void>} - resolves once `this.schemas` holds the result (`[]` when the request fails).
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		async fetchSchemas(register) {
 			const schemas = await this.picker.fetchSchemas(register)
@@ -239,7 +239,7 @@ export default {
 		 * @param {string} register - slug of the register the schema lives in.
 		 * @param {string} schema - slug of the schema whose properties are wanted.
 		 * @return {Promise<void>} - resolves once `this.schemaProperties` holds the map (`{}` when the request fails).
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		async fetchSchemaProperties(register, schema) {
 			// The schema list already carries every schema's properties, so a
@@ -272,7 +272,7 @@ export default {
 		 * byte-identically (REQ-OCAS-002 regression guard).
 		 *
 		 * @param {object} dataSource - the updated dataSource object.
-		 * @spec openspec/changes/openconnector-api-sources/tasks.md#task-3.2
+		 * @spec openspec/changes/archive/2026-06-14-openconnector-api-sources/tasks.md#task-3.2
 		 */
 		onDataSourceUpdate(dataSource) {
 			const next = { ...this.config }

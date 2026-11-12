@@ -28,7 +28,7 @@ namespace OCA\Buildiq\Mcp\Handler;
 /**
  * Handles the buildiq.createApp tool invocation.
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-8
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-8
  */
 class CreateAppHandler extends AbstractToolHandler {
 

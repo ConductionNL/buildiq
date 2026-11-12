@@ -40,8 +40,8 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/automation-approval-steps/tasks.md#2.1
- * @spec openspec/changes/automation-approval-steps/tasks.md#2.2
+ * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#2.1
+ * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#2.2
  * @spec openspec/specs/automation-designer/spec.md#req-autd-004
  */
 
@@ -68,7 +68,7 @@ use Throwable;
  *
  * @template-implements IEventListener<Event>
  *
- * @spec openspec/changes/automation-approval-steps/tasks.md#2.1
+ * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#2.1
  */
 class ApprovalOutcomeListener implements IEventListener {
 	/**
@@ -214,7 +214,7 @@ class ApprovalOutcomeListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/automation-approval-steps/tasks.md#2.1
+	 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#2.1
 	 */
 	public function handle(Event $event): void {
 		// APPROVE: the sequence completing IS the approval concluding, so the
@@ -263,7 +263,7 @@ class ApprovalOutcomeListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/automation-approval-steps/tasks.md#2.2
+	 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#2.2
 	 */
 	private function dispatchFollowUp(string $chainName, string $objectUuid, string $outcomeKey): void {
 		if (str_starts_with($chainName, self::PROVENANCE_PREFIX) === false) {

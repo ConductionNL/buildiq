@@ -9,7 +9,7 @@ import { validateManifest } from '@conduction/nextcloud-vue'
  * (`@conduction/nextcloud-vue`, ADR-024) — a failed layer means nothing can
  * be applied, matching the server-side layers enforced in CopilotService.
  *
- * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+ * @spec openspec/specs/ai-copilot/spec.md
  */
 import { computed, ref } from 'vue'
 import {
@@ -26,7 +26,7 @@ let healthCache = null
  * Test helper — clear the module-level health cache.
  *
  * @return {void}
- * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+ * @spec openspec/specs/ai-copilot/spec.md
  */
 export function clearCopilotHealthCache() {
 	healthCache = null
@@ -38,7 +38,7 @@ export function clearCopilotHealthCache() {
  *
  * @param {object} manifests - `{ versionKey: { current, predicted } }` from the plan response.
  * @return {Map<string, Array<string>>} versionKey -> validation error list (empty when valid).
- * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+ * @spec openspec/specs/ai-copilot/spec.md
  */
 function validatePredictedManifests(manifests) {
 	const result = new Map()
@@ -68,7 +68,7 @@ function validatePredictedManifests(manifests) {
  * Own the copilot plan/review/approve/execute state machine.
  *
  * @return {object} Reactive copilot state + actions.
- * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+ * @spec openspec/specs/ai-copilot/spec.md
  */
 export function useCopilot() {
 	const state = ref('idle')
@@ -114,7 +114,7 @@ export function useCopilot() {
 	 * Probe (and cache for the session) copilot availability.
 	 *
 	 * @return {Promise<{available: boolean, reason?: string}>}
-	 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+	 * @spec openspec/specs/ai-copilot/spec.md
 	 */
 	async function checkHealth() {
 		if (healthCache) {
@@ -139,7 +139,7 @@ export function useCopilot() {
 	 * @param {string} [versionSlug] - the version the caller is editing; steps that
 	 *   omit a version are settled on it server-side.
 	 * @return {Promise<void>}
-	 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+	 * @spec openspec/specs/ai-copilot/spec.md
 	 * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
 	 */
 	async function generatePlan(brief, appSlug, agentId, versionSlug) {
@@ -183,7 +183,7 @@ export function useCopilot() {
 	 *   (spec `agent-workspace`) — threaded through so the resulting AgentRun
 	 *   record captures the full turn.
 	 * @return {Promise<void>}
-	 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+	 * @spec openspec/specs/ai-copilot/spec.md
 	 * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
 	 */
 	async function approve(agentId) {
@@ -217,7 +217,7 @@ export function useCopilot() {
 	 *
 	 * @param {string} [agentId] - optional Agent id this plan was planned with.
 	 * @return {void}
-	 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+	 * @spec openspec/specs/ai-copilot/spec.md
 	 * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/agent-workspace/spec.md
 	 */
 	function discard(agentId) {

@@ -11,7 +11,7 @@
  * kept in sync by hand (no cross-language codegen exists), so this file's
  * shape is the canonical reference the PHP docblock cites back to.
  *
- * @spec openspec/changes/automation-document-action/tasks.md#4.3
+ * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#4.3
  * @spec openspec/specs/automation-designer/spec.md#req-autd-003
  *
  * DEVIATION FROM design.md (documented, mirrored from the backend — see
@@ -23,9 +23,9 @@
  * here matches the compiler's ACTUAL enforced behaviour, not the
  * originally-proposed table.
  *
- * @spec openspec/changes/automation-designer/tasks.md#5.4
+ * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#5.4
  * @spec openspec/specs/automation-designer/spec.md#req-autd-003
- * @spec openspec/changes/automation-approval-steps/tasks.md#3.2
+ * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#3.2
  * @spec openspec/specs/automation-designer/spec.md#req-autd-003
  */
 
@@ -122,7 +122,7 @@ export function isConditionAllowed(triggerType) {
  * @param {string} triggerType - the automation's trigger type.
  * @param {string} actionType - the candidate action type.
  * @return {string}
- * @spec openspec/changes/automation-approval-steps/tasks.md#3.2
+ * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#3.2
  */
 export function blockedActionReason(triggerType, actionType) {
 	if (isActionAllowed(triggerType, actionType)) {

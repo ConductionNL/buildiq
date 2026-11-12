@@ -19,7 +19,7 @@
 	and the insights window via the shared `useInsightsWindow` singleton (driven
 	by the toggle here).
 
-	@spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+	@spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 -->
 <template>
 	<div class="ob-detail-header">
@@ -305,7 +305,7 @@ export default {
 		 * Display name of the application.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		applicationName() {
 			return (
@@ -319,7 +319,7 @@ export default {
 		 * Application description.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		applicationDescription() {
 			return (this.application && this.application.description) || ''
@@ -357,7 +357,7 @@ export default {
 		 * as 'virtual' (legacy default), matching the schema.
 		 *
 		 * @return {string} 'virtual' | 'hybrid'
-		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+		 * @spec openspec/specs/unified-app-model/spec.md
 		 */
 		appTypeKey() {
 			return (this.application && this.application.appType) === 'hybrid'
@@ -369,7 +369,7 @@ export default {
 		 * Human-readable label for the app-type badge.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+		 * @spec openspec/specs/unified-app-model/spec.md
 		 */
 		appTypeLabel() {
 			return this.appTypeKey === 'hybrid'
@@ -382,7 +382,7 @@ export default {
 		 * read-only — it mirrors the installed Nextcloud app it customizes.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+		 * @spec openspec/specs/unified-app-model/spec.md
 		 */
 		isHybrid() {
 			return this.appTypeKey === 'hybrid'
@@ -392,7 +392,7 @@ export default {
 		 * URL of the app's icon SVG.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		iconUrl() {
 			if (!this.appSlug) return ''
@@ -407,7 +407,7 @@ export default {
 		 * `/apps/{slug}`. Empty for virtual apps (not installed NC apps).
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+		 * @spec openspec/specs/unified-app-model/spec.md
 		 */
 		installedAppUrl() {
 			if (this.isHybrid === false || !this.appSlug) return ''
@@ -418,7 +418,7 @@ export default {
 		 * Active version UUID.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		activeVersionUuid() {
 			return this.activeVersion ? this.activeVersion.uuid : ''
@@ -428,7 +428,7 @@ export default {
 		 * Semver of the production version (badge in the hero).
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		productionSemver() {
 			return (this.productionVersion && this.productionVersion.semver) || ''
@@ -438,7 +438,7 @@ export default {
 		 * The caller's role on this application (owner / editor / viewer).
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		callerRole() {
 			const permissions =
@@ -456,7 +456,7 @@ export default {
 		 * versions are shown to editors/owners only.
 		 *
 		 * @return {Array<object>}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		visibleVersions() {
 			const uid = this.callerUid
@@ -480,7 +480,7 @@ export default {
 		 * Re-load when the route's objectId changes.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		objectId() {
 			this.refreshApplication()
@@ -538,7 +538,7 @@ export default {
 		 *
 		 * @param {object} version The version row.
 		 * @return {void}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		selectVersion(version) {
 			if (!version || !version.slug) return

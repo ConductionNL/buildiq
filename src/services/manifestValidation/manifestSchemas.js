@@ -8,7 +8,7 @@
  * manifest that embeds no schema set and binds none references external
  * schemas only, so nothing can be disproved and the slug is allowed.
  *
- * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-001
+ * @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-001
  */
 
 /**
@@ -36,7 +36,7 @@ function pagesOf(manifest) {
  *
  * @param {object} schema - a schema list entry.
  * @return {unknown} The name.
- * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-001
+ * @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-001
  */
 export function schemaName(schema) {
 	return schema.slug || schema.id || schema.title
@@ -90,7 +90,7 @@ function pageBinds(page, schemaSlug) {
  * @param {object} manifest - the manifest.
  * @param {string} schemaSlug - the schema slug.
  * @return {boolean}
- * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-001
+ * @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-001
  */
 export function schemaKnown(manifest, schemaSlug) {
 	const schemas = schemasOf(manifest)

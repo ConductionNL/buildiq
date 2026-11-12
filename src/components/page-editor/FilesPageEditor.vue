@@ -125,7 +125,7 @@ export default {
 		/**
 		 * Observed behaviour of `validatedConfigKeys` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		validatedConfigKeys() {
 			return ['folder', 'allowedTypes']
@@ -134,7 +134,7 @@ export default {
 		/**
 		 * Observed behaviour of `allowedTypes` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		allowedTypes() {
 			return Array.isArray(this.config.allowedTypes)
@@ -147,7 +147,7 @@ export default {
 		/**
 		 * Observed behaviour of `commitDraft` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		commitDraft() {
 			const value = (this.typeDraft || '').trim()
@@ -164,7 +164,7 @@ export default {
 		 * as "allow everything".
 		 *
 		 * @param {number} index - position of the tag in `allowedTypes`, from the `v-for` over the tag chips.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		removeType(index) {
 			const next = this.allowedTypes.slice()

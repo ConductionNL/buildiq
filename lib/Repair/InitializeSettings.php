@@ -63,7 +63,7 @@ class InitializeSettings implements IRepairStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-25-settings-and-observability/tasks.md#task-4
+	 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-settings-and-observability/tasks.md#task-4
 	 */
 	public function run(IOutput $output): void {
 		$output->info('Initializing Buildiq configuration...');

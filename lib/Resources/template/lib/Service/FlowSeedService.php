@@ -92,9 +92,9 @@ class FlowSeedService {
 	 *
 	 * @return array{seeded: int, kept: int, unknownNodeTypes: array<int,string>, failed: array<int,string>} What happened.
 	 *
-	 * @spec openspec/changes/openbuild-exports-flows-and-agents/specs/app-export-completeness/spec.md#requirement-an-imported-flow-must-be-runnable-not-merely-present
-	 * @spec openspec/changes/openbuild-exports-flows-and-agents/specs/app-export-completeness/spec.md#requirement-seeding-must-be-idempotent-and-must-not-clobber-local-edits
-	 * @spec openspec/changes/openbuild-exports-flows-and-agents/specs/app-export-completeness/spec.md#requirement-a-flow-naming-an-unregistered-node-type-must-be-surfaced-at-seeding
+	 * @spec openspec/specs/app-export-completeness/spec.md#requirement-an-imported-flow-must-be-runnable-not-merely-present
+	 * @spec openspec/specs/app-export-completeness/spec.md#requirement-seeding-must-be-idempotent-and-must-not-clobber-local-edits
+	 * @spec openspec/specs/app-export-completeness/spec.md#requirement-a-flow-naming-an-unregistered-node-type-must-be-surfaced-at-seeding
 	 */
 	public function seed(?object $flowMapper, array $registeredNodeTypes = []): array {
 		$report = ['seeded' => 0, 'kept' => 0, 'unknownNodeTypes' => [], 'failed' => []];

@@ -19,7 +19,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-16
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-16
  */
 
 declare(strict_types=1);
@@ -29,7 +29,7 @@ namespace OCA\Buildiq\Service;
 /**
  * An insights request: Application, version and window.
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-16
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-16
  */
 final class InsightsRequest {
 
@@ -54,7 +54,7 @@ final class InsightsRequest {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-16
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-16
 	 */
 	public function cacheKey(): string {
 		return sprintf('payload_%s_%s_%s', $this->appUuid, $this->versionUuid, $this->window);

@@ -57,7 +57,7 @@ use Throwable;
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+ * @spec openspec/specs/unified-app-model/spec.md
  */
 class SeedHelloWorldFixture extends Command {
 	/**
@@ -168,7 +168,7 @@ class SeedHelloWorldFixture extends Command {
 	 *
 	 * @return int Command exit code.
 	 *
-	 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+	 * @spec openspec/specs/unified-app-model/spec.md
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
 		$register = ApplicationVersionService::REGISTER_SLUG;
@@ -340,7 +340,7 @@ class SeedHelloWorldFixture extends Command {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+	 * @spec openspec/specs/unified-app-model/spec.md
 	 */
 	private function seedHybridExample(string $register, OutputInterface $output): void {
 		if ($this->hybridExists(register: $register) === true) {
@@ -446,7 +446,7 @@ class SeedHelloWorldFixture extends Command {
 	 *
 	 * @return string UUIDv4 in canonical 8-4-4-4-12 form.
 	 *
-	 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+	 * @spec openspec/specs/unified-app-model/spec.md
 	 */
 	private function uuid4(): string {
 		$data = random_bytes(16);

@@ -30,10 +30,10 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-26
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-27
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-28
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-29
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-26
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-27
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-28
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-29
  */
 
 declare(strict_types=1);
@@ -149,7 +149,7 @@ class MigrateToVersionedModel implements IRepairStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-26
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-26
 	 */
 	public function run(IOutput $output): void {
 		$state = $this->appConfig->getValueString(Application::APP_ID, self::STATE_KEY, '');
@@ -234,7 +234,7 @@ class MigrateToVersionedModel implements IRepairStep {
 	 * @throws Throwable Propagated by callers — the caller decides whether
 	 *                   to abort or continue
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-27
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-27
 	 */
 	private function isAlreadyVersioned(): bool {
 		// The previous check was "does the versioned schema exist?" — but
@@ -280,7 +280,7 @@ class MigrateToVersionedModel implements IRepairStep {
 	 *
 	 * @return array<int,array<string,mixed>>
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-26
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-26
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function enumerateApplications(): array {
@@ -336,8 +336,8 @@ class MigrateToVersionedModel implements IRepairStep {
 	 *
 	 * @return string One of self::ROW_OK, self::ROW_FAILED
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-28
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-29
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-28
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-29
 	 */
 	private function migrateOne(array $application, IOutput $output): string {
 		$slug = (string)($application['slug'] ?? '');

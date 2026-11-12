@@ -111,7 +111,7 @@ export default {
 	 * Bind the Docudesk generate integration and the soft capability probe.
 	 *
 	 * @return {object}
-	 * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-004
+	 * @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-004
 	 */
 	setup() {
 		const docs = useDocudeskDocument()
@@ -126,7 +126,7 @@ export default {
 		 * An explicit `docudeskAvailable` prop is a decision in itself.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-005
+		 * @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-005
 		 */
 		docudeskChecked() {
 			return this.docudeskAvailable !== null || this.docudesk.checked.value
@@ -136,7 +136,7 @@ export default {
 		 * May this surface talk to Docudesk?
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-005
+		 * @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-005
 		 */
 		docudeskUsable() {
 			return this.docudeskAvailable === null
@@ -149,7 +149,7 @@ export default {
 		 * one, else the built app's own `runtime.documents[]` from the manifest.
 		 *
 		 * @return {Array<object>}
-		 * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-004
+		 * @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-004
 		 */
 		effectiveAttachments() {
 			if (Array.isArray(this.attachments) && this.attachments.length) {
@@ -162,7 +162,7 @@ export default {
 		 * The object's schema slug from its `@self` envelope.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-004
+		 * @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-004
 		 */
 		objectSchema() {
 			return this.schemaKeys[0] || ''
@@ -177,7 +177,7 @@ export default {
 		 * rendered nothing for every object. See src/utils/objectSchemaKeys.js.
 		 *
 		 * @return {Array<string>}
-		 * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-004
+		 * @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-004
 		 */
 		schemaKeys() {
 			return objectSchemaKeys(this.object, this.cnObjectContext)
@@ -187,7 +187,7 @@ export default {
 		 * Attachments declared for this object's schema, in declared order.
 		 *
 		 * @return {Array<object>}
-		 * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-004
+		 * @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-004
 		 */
 		schemaAttachments() {
 			const keys = this.schemaKeys
@@ -212,7 +212,7 @@ export default {
 		/**
 		 * @param {object} att - the attachment.
 		 * @return {boolean}
-		 * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-004
+		 * @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-004
 		 */
 		isBusy(att) {
 			return this.docs.busyFor(att, this.object)
@@ -221,7 +221,7 @@ export default {
 		/**
 		 * @param {object} att - the attachment.
 		 * @return {?string}
-		 * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-004
+		 * @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-004
 		 */
 		errorCode(att) {
 			return this.docs.errorFor(att, this.object)
@@ -230,7 +230,7 @@ export default {
 		/**
 		 * @param {object} att - the attachment.
 		 * @return {string}
-		 * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-004
+		 * @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-004
 		 */
 		errorMessage(att) {
 			return this.errorCode(att) === 'no-access'
@@ -246,7 +246,7 @@ export default {
 		 *
 		 * @param {object} att - the attachment.
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-003
+		 * @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-003
 		 */
 		async onGenerate(att) {
 			// REQ-DDT-005: on an instance without Docudesk NO request may reach

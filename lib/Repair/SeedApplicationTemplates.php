@@ -26,8 +26,8 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-54
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-57
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-54
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-57
  */
 
 declare(strict_types=1);
@@ -83,7 +83,7 @@ class SeedApplicationTemplates implements IRepairStep {
 	 *
 	 * @throws RuntimeException When the service collects any seeding error (loud-fail, REQ-OBTC-009).
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-54
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-54
 	 * @spec openspec/changes/openbuild-first-time-setup/tasks.md#task-12
 	 */
 	public function run(IOutput $output): void {

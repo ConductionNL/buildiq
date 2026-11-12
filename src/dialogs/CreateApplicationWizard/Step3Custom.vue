@@ -192,7 +192,7 @@ export default {
 		/**
 		 * Observed behaviour of `slugErrors` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
 		 */
 		slugErrors() {
 			return this.localVersions.map((row) => {
@@ -205,7 +205,7 @@ export default {
 		/**
 		 * Observed behaviour of `duplicateSlugs` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
 		 */
 		duplicateSlugs() {
 			const seen = {}
@@ -225,7 +225,7 @@ export default {
 		/**
 		 * Observed behaviour of `isValid` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
 		 */
 		isValid() {
 			if (this.localVersions.length === 0) return false
@@ -244,7 +244,7 @@ export default {
 			/**
 			 * Observed behaviour of `handler` (retrofit annotation).
 			 *
-			 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
+			 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
 			 */
 			handler() {
 				this.emit()
@@ -255,7 +255,7 @@ export default {
 	/**
 	 * Observed behaviour of `mounted` (retrofit annotation).
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
+	 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
 	 */
 	mounted() {
 		// Emit initial validity + versions so the parent wizard shell can
@@ -267,7 +267,7 @@ export default {
 		/**
 		 * Observed behaviour of `emit` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
 		 */
 		emit() {
 			const clean = this.localVersions.map(({ name, slug }) => ({
@@ -289,7 +289,7 @@ export default {
 		 *   duplicate-slug message takes precedence over the pattern/empty-name one —
 		 *   or `null` when the row is valid.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
 		 */
 		getSlugError(index) {
 			if (this.isDuplicate(index)) {
@@ -316,7 +316,7 @@ export default {
 		 * @param {InputEvent} event - Native `input` event from the row's name field;
 		 *   `event.target.value` is the new version name (e.g. `Production`).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
 		 */
 		onNameInput(index, event) {
 			const name = event.target.value
@@ -340,7 +340,7 @@ export default {
 		 *   `event.target.value` is stored verbatim (validated separately, not
 		 *   kebab-cased here).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
 		 */
 		onSlugInput(index, event) {
 			this.localVersions[index]._slugManual = true
@@ -355,7 +355,7 @@ export default {
 		 *   row `_id`, so reordering carries the open state to whichever row lands
 		 *   there.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
 		 */
 		toggleAdvanced(index) {
 			this.advancedOpen[index] = !this.advancedOpen[index]
@@ -364,7 +364,7 @@ export default {
 		/**
 		 * Observed behaviour of `addRow` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
 		 */
 		addRow() {
 			this.localVersions.push({
@@ -383,7 +383,7 @@ export default {
 		 *   last remaining row is refused (a chain needs at least one version) and
 		 *   surfaces `minRowError` instead.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
 		 */
 		removeRow(index) {
 			if (this.localVersions.length <= 1) {
@@ -402,7 +402,7 @@ export default {
 		 *   (chain order is top-to-bottom, so "up" means closer to Development).
 		 *   No-ops on the first row.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
 		 */
 		moveUp(index) {
 			if (index === 0) return
@@ -416,7 +416,7 @@ export default {
 		 * @param {number} index - Position of the version row to move one step
 		 *   downstream (towards Production). No-ops on the last row.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
 		 */
 		moveDown(index) {
 			if (index >= this.localVersions.length - 1) return
@@ -431,7 +431,7 @@ export default {
 		 *   on; parked in `dragFromIndex` until `onDrop` resolves the move (or
 		 *   `onDragEnd` cancels it).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
 		 */
 		onDragStart(index) {
 			this.dragFromIndex = index
@@ -445,7 +445,7 @@ export default {
 		 *   `@dragover.prevent`, and no hover preview is rendered, so this handler has
 		 *   nothing to do with the index.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
 		 */
 		onDragOver(_index) {
 			// Allow drop by calling .prevent in the template
@@ -459,7 +459,7 @@ export default {
 		 *   here. No-ops when nothing is being dragged or the row was dropped on
 		 *   itself.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
 		 */
 		onDrop(toIndex) {
 			if (this.dragFromIndex === null || this.dragFromIndex === toIndex) return
@@ -471,7 +471,7 @@ export default {
 		/**
 		 * Observed behaviour of `onDragEnd` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-3
 		 */
 		onDragEnd() {
 			this.dragFromIndex = null

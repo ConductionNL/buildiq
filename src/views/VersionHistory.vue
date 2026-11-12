@@ -230,7 +230,7 @@ export default {
 			 * @param {string} slug The parent Application slug.
 			 * @return {void}
 			 *
-			 * @spec openspec/changes/version-lifecycle-and-switcher/specs/version-routing-ui/spec.md
+			 * @spec openspec/specs/version-routing-ui/spec.md
 			 */
 			handler(slug) {
 				if (slug) {
@@ -253,7 +253,7 @@ export default {
 		 *
 		 * @return {Promise<void>}
 		 *
-		 * @spec openspec/changes/version-lifecycle-and-switcher/specs/version-routing-ui/spec.md
+		 * @spec openspec/specs/version-routing-ui/spec.md
 		 */
 		async refresh() {
 			// Only the slug endpoint exists. The uuid fallback asked for
@@ -388,7 +388,7 @@ export default {
 		 * @param {object} row The version row.
 		 * @return {string}
 		 *
-		 * @spec openspec/changes/version-lifecycle-and-switcher/specs/version-routing-ui/spec.md
+		 * @spec openspec/specs/version-routing-ui/spec.md
 		 */
 		rowSemver(row) {
 			return (row && (row.semver || row.version)) || ''
@@ -443,7 +443,7 @@ export default {
 		 * @param {object} row The version row.
 		 * @return {string|null} The URL, or null without an app slug.
 		 *
-		 * @spec openspec/changes/version-lifecycle-and-switcher/specs/version-lifecycle-ui/spec.md
+		 * @spec openspec/specs/version-lifecycle-ui/spec.md
 		 */
 		versionUrl(row) {
 			if (!this.appSlug) {
@@ -465,7 +465,7 @@ export default {
 		 * @param {object} row The version row.
 		 * @return {object} A vue-router location.
 		 *
-		 * @spec openspec/changes/version-lifecycle-and-switcher/specs/version-lifecycle-ui/spec.md
+		 * @spec openspec/specs/version-lifecycle-ui/spec.md
 		 */
 		editRoute(row) {
 			return buildVersionedRoute(
@@ -494,7 +494,7 @@ export default {
 		 * @param {object} row The version row.
 		 * @return {Promise<void>}
 		 *
-		 * @spec openspec/changes/version-lifecycle-and-switcher/specs/version-lifecycle-ui/spec.md
+		 * @spec openspec/specs/version-lifecycle-ui/spec.md
 		 */
 		async release(row) {
 			const versionSlug = this.rowSlug(row)
@@ -539,7 +539,7 @@ export default {
 		 * @param {object} row The version row.
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/version-lifecycle-and-switcher/specs/version-lifecycle-ui/spec.md
+		 * @spec openspec/specs/version-lifecycle-ui/spec.md
 		 */
 		askRollback(row) {
 			this.rollbackTarget = {

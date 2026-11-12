@@ -31,10 +31,10 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-4
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-5
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-6
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-7
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-4
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-5
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-6
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-7
  */
 
 declare(strict_types=1);
@@ -147,7 +147,7 @@ class AppNavigationService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-4
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-4
 	 */
 	public function registerNavEntries(INavigationManager $nav): void {
 		try {
@@ -258,8 +258,8 @@ class AppNavigationService {
 	 *
 	 * @return bool True when the entry should be visible.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-5
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-6
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-5
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-6
 	 */
 	public function isVisibleForCurrentUser(
 		array $permissions,
@@ -285,8 +285,8 @@ class AppNavigationService {
 	 *
 	 * @throws \Throwable When the OR query fails.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-4
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-7
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-4
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-7
 	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-published-applications-are-read-once-per-request
 	 */
 	private function getPublishedApplications(): array {

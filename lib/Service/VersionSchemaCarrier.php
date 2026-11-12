@@ -20,7 +20,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/fix-promote-rewires-target-version/specs/version-promotion/spec.md
+ * @spec openspec/specs/version-promotion/spec.md
  */
 
 declare(strict_types=1);
@@ -36,7 +36,7 @@ use Throwable;
 /**
  * Syncs a promotion's schemas and rewires the copied manifest.
  *
- * @spec openspec/changes/fix-promote-rewires-target-version/specs/version-promotion/spec.md
+ * @spec openspec/specs/version-promotion/spec.md
  */
 class VersionSchemaCarrier {
 	/**
@@ -102,7 +102,7 @@ class VersionSchemaCarrier {
 	 *
 	 * @return array{schemaSlugs: array<string,string>, schemaIds: array<string,string>} Source to target maps
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-63
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-63
 	 */
 	public function carrySchemas(array $source, array $target): array {
 		$maps = ['schemaSlugs' => [], 'schemaIds' => []];
@@ -224,7 +224,7 @@ class VersionSchemaCarrier {
 	 *
 	 * @return mixed The rewritten node
 	 *
-	 * @spec openspec/changes/fix-promote-rewires-target-version/specs/version-promotion/spec.md
+	 * @spec openspec/specs/version-promotion/spec.md
 	 */
 	public function rewriteManifestWiring(mixed $node, string $sourceRegister, string $targetRegister, array $maps): mixed {
 		if (is_array($node) === false) {

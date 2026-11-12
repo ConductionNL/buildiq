@@ -20,7 +20,7 @@
 	singleton (driven by the header's 7d/30d/90d toggle). Insights re-fetch on
 	(versionUuid, window) change with a 200ms debounce.
 
-	@spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
+	@spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 -->
 <template>
 	<div class="ob-detail-dashboard">
@@ -430,7 +430,7 @@ export default {
 		 * Active version UUID.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		activeVersionUuid() {
 			return this.activeVersion ? this.activeVersion.uuid : ''
@@ -440,7 +440,7 @@ export default {
 		 * Active version slug.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		activeVersionSlug() {
 			return this.activeVersion ? this.activeVersion.slug : ''
@@ -450,7 +450,7 @@ export default {
 		 * Manifest of the active version.
 		 *
 		 * @return {object}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		/**
 		 * The application UUID the health section reads.
@@ -491,7 +491,7 @@ export default {
 		 * Pages declared in the active version's manifest.
 		 *
 		 * @return {Array<object>}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		activePages() {
 			const pages = this.activeManifest.pages
@@ -502,7 +502,7 @@ export default {
 		 * Menu items declared in the active version's manifest.
 		 *
 		 * @return {Array<object>}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		activeMenu() {
 			const menu = this.activeManifest.menu
@@ -513,7 +513,7 @@ export default {
 		 * Distinct schemas referenced by the active version's pages.
 		 *
 		 * @return {Array<object>}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		activeSchemas() {
 			const seen = new Set()
@@ -554,7 +554,7 @@ export default {
 		 * Total activity events across all buckets.
 		 *
 		 * @return {number}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		totalActivityEvents() {
 			return this.activity.reduce(
@@ -567,7 +567,7 @@ export default {
 		 * SVG polyline points for the activity sparkline.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		sparklinePoints() {
 			if (!this.activity || this.activity.length === 0) return '0,30 100,30'
@@ -592,7 +592,7 @@ export default {
 		 * The "version no longer accessible" banner descriptor, or null.
 		 *
 		 * @return {object|null}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		banner() {
 			// A hybrid app IS the live installed Nextcloud app — the
@@ -619,7 +619,7 @@ export default {
 		 * Whether this is a hybrid app (mirrors an installed Nextcloud app).
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+		 * @spec openspec/specs/unified-app-model/spec.md
 		 */
 		isHybrid() {
 			return (this.application && this.application.appType) === 'hybrid'
@@ -689,7 +689,7 @@ export default {
 		 * OpenRegister's own register manage-permission).
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.2
+		 * @spec openspec/changes/archive/2026-07-07-openbuild-data-import-wizard/tasks.md#2.2
 		 */
 		canImport() {
 			const role = useRole(this.application)
@@ -702,7 +702,7 @@ export default {
 		 * Re-fetch insights when the active version changes.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		activeVersionUuid() {
 			this.scheduleInsightsFetch()
@@ -712,7 +712,7 @@ export default {
 		 * Re-fetch insights when the shared window selection changes.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		selectedWindow() {
 			this.scheduleInsightsFetch()
@@ -723,7 +723,7 @@ export default {
 	 * Clear the pending insights debounce timer on teardown.
 	 *
 	 * @return {void}
-	 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
+	 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 	 */
 	beforeUnmount() {
 		if (this.insightsDebounce) {
@@ -763,7 +763,7 @@ export default {
 		 *
 		 * @param {number} bytes Raw byte count.
 		 * @return {string} Localised size with a binary unit.
-		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+		 * @spec openspec/specs/unified-app-model/spec.md
 		 */
 		formatBytes(bytes) {
 			const n = Number(bytes) || 0
@@ -787,7 +787,7 @@ export default {
 		 *
 		 * @param {object} application The Application record.
 		 * @return {void}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		/**
 		 * Open the schema designer for this app.
@@ -848,7 +848,7 @@ export default {
 		 * never offered as import targets.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.2
+		 * @spec openspec/changes/archive/2026-07-07-openbuild-data-import-wizard/tasks.md#2.2
 		 */
 		async onImportData() {
 			if (!this.registerSlug) {
@@ -868,7 +868,7 @@ export default {
 		 * the object counts reflect the freshly imported rows.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.2
+		 * @spec openspec/changes/archive/2026-07-07-openbuild-data-import-wizard/tasks.md#2.2
 		 */
 		onImported() {
 			if (typeof this.fetchInsights === 'function') {
@@ -934,7 +934,7 @@ export default {
 		 * Switch the active version to the production version (banner action).
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		switchToProduction() {
 			const prod = this.productionVersion
@@ -957,7 +957,7 @@ export default {
 		 * Start the insights and the user delta of the picked version.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		onVersionsLoaded() {
 			this.scheduleInsightsFetch()
@@ -968,7 +968,7 @@ export default {
 		 * 200ms-debounced wrapper around the insights fetch.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		scheduleInsightsFetch() {
 			if (this.insightsDebounce) {
@@ -981,7 +981,7 @@ export default {
 		 * Fetch the insights payload for the active (app, version, window).
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		async fetchInsights() {
 			const appUuid =

@@ -39,7 +39,7 @@ export default {
 		 *   and the attached filename (`null` when the icon was removed). Re-emitted
 		 *   unchanged so the detail page can refresh the record.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-4
 		 */
 		onIconUpdated(payload) {
 			// Bubble up so the detail page can refresh the Application record.

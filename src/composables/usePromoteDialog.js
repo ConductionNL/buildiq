@@ -77,6 +77,26 @@ export function versionUuidOf(version) {
 	if (!version) {
 		return ''
 	}
+	return topLevelUuid(version) || selfUuid(version) || ''
+}
+
+/**
+ * The uuid a version row carries at its top level.
+ *
+ * @param {object} version The version row.
+ * @return {string|undefined}
+ */
+function topLevelUuid(version) {
+	return version.uuid || version.id
+}
+
+/**
+ * The uuid a version row carries in its `@self` block.
+ *
+ * @param {object} version The version row.
+ * @return {string|undefined}
+ */
+function selfUuid(version) {
 	const self = version['@self'] || {}
-	return version.uuid || version.id || self.id || self.uuid || ''
+	return self.id || self.uuid
 }

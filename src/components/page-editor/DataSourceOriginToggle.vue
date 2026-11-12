@@ -120,7 +120,7 @@ export default {
 		 * otherwise default to OpenRegister.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-002
+		 * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-002
 		 */
 		origin() {
 			return this.dataSource && this.dataSource.connector
@@ -128,7 +128,7 @@ export default {
 				: 'openregister'
 		},
 
-		/** @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-002 */
+		/** @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-002 */
 		connector() {
 			return (this.dataSource && this.dataSource.connector) || {}
 		},
@@ -141,7 +141,7 @@ export default {
 		 * existing mapping prompts a confirm and clears the connector block.
 		 *
 		 * @param {string} next - `openregister` | `openconnector`.
-		 * @spec openspec/changes/openconnector-api-sources/tasks.md#task-3.2
+		 * @spec openspec/changes/archive/2026-06-14-openconnector-api-sources/tasks.md#task-3.2
 		 */
 		selectOrigin(next) {
 			if (next === this.origin) {
@@ -166,7 +166,7 @@ export default {
 		 * discarding the OpenConnector mapping.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/openconnector-api-sources/tasks.md#task-3.2
+		 * @spec openspec/changes/archive/2026-06-14-openconnector-api-sources/tasks.md#task-3.2
 		 */
 		onConfirmSwitch() {
 			this.confirmSwitchOpen = false
@@ -177,7 +177,7 @@ export default {
 		 * Remove the connector block and emit the updated data source.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/openconnector-api-sources/tasks.md#task-3.2
+		 * @spec openspec/changes/archive/2026-06-14-openconnector-api-sources/tasks.md#task-3.2
 		 */
 		dropConnector() {
 			const next2 = { ...this.dataSource }
@@ -190,7 +190,7 @@ export default {
 		 * Merge a partial connector update into the dataSource and emit.
 		 *
 		 * @param {object} patch - partial connector block.
-		 * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-002
+		 * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-002
 		 */
 		emitConnector(patch) {
 			const connector = { ...this.connector, ...patch }
@@ -201,7 +201,7 @@ export default {
 		 * Store the endpoint the source picker settled on.
 		 *
 		 * @param {string} endpointPath - host-relative OpenConnector endpoint path, already stripped of any scheme/host by ConnectorSourcePicker; `''` when the selection was cleared.
-		 * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-002
+		 * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-002
 		 */
 		onEndpointPath(endpointPath) {
 			this.emitConnector({ endpointPath })
@@ -211,7 +211,7 @@ export default {
 		 * Store the list-root selector picked in the field mapper.
 		 *
 		 * @param {string} itemsPath - dot-path, relative to the sample root, of the array the runtime iterates (e.g. `results.items`); `''` means the response root is the list.
-		 * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-003
+		 * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-003
 		 */
 		onItemsPath(itemsPath) {
 			this.emitConnector({ itemsPath })
@@ -223,7 +223,7 @@ export default {
 		 * delta.
 		 *
 		 * @param {{[fieldName: string]: string}} fields - display-field name to dot-path selector, relative to an item of the list (e.g. `{ Title: 'attributes.name' }`).
-		 * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-003
+		 * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-003
 		 */
 		onFields(fields) {
 			this.emitConnector({ fields })
@@ -234,7 +234,7 @@ export default {
 		 *
 		 * @param {string} endpointPath - endpoint to sample.
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/openconnector-api-sources/tasks.md#task-3.1
+		 * @spec openspec/changes/archive/2026-06-14-openconnector-api-sources/tasks.md#task-3.1
 		 */
 		async onSampleFetch(endpointPath) {
 			if (!endpointPath) {
@@ -265,7 +265,7 @@ export default {
 			return unwrapSample(data)
 		},
 
-		/** @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-003 */
+		/** @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-003 */
 		onRefetch() {
 			this.onSampleFetch(this.connector.endpointPath)
 		},

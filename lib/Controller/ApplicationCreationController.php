@@ -39,9 +39,9 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-8
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-12
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-15
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-8
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-12
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-15
  */
 
 declare(strict_types=1);
@@ -101,9 +101,9 @@ class ApplicationCreationController extends Controller {
 	 *
 	 * @return JSONResponse
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-8
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-12
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-15
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-8
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-12
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-15
 	 */
 	#[AuthorizedAdminSetting(AdminSettings::class)]
 	#[UserRateLimit(limit: 10, period: 3600)]
