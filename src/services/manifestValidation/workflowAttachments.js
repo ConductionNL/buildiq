@@ -12,7 +12,7 @@
  * path-prefix → inline-mark mechanism (REQ-OBPD-011) lights up the offending
  * editor entry.
  *
- * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-001
+ * @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-001
  */
 
 import { schemaKnown, schemaName } from './manifestSchemas.js'
@@ -331,7 +331,7 @@ function duplicateSchemaErrors(workflows, schemaCounts) {
  *
  * @param {object} manifest - the in-flight manifest.
  * @return {string[]} - list of `<pointer>: <code>` error strings.
- * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-001
+ * @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-001
  */
 export function validateWorkflowAttachments(manifest) {
 	const workflows = manifest && manifest.runtime && manifest.runtime.workflows

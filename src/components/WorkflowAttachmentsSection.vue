@@ -128,7 +128,7 @@ export default {
 	},
 
 	computed: {
-		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
+		/** @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
 		attachments() {
 			return (
 				(this.manifest
@@ -138,14 +138,14 @@ export default {
 			)
 		},
 
-		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
+		/** @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
 		attachedSchemas() {
 			return this.attachments.map((wf) => wf.schema)
 		},
 	},
 
 	methods: {
-		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
+		/** @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
 		openAdd() {
 			this.editingAttachment = null
 			this.dialogOpen = true
@@ -159,7 +159,7 @@ export default {
 		 *   descriptionTemplate?: string}} wf - The `runtime.workflows[]` entry the
 		 *   user clicked. Passed to the dialog as-is to prefill it; the edit is written
 		 *   back through `onDialogSave`, matched on `id`.
-		 * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002
+		 * @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-002
 		 */
 		openEdit(wf) {
 			this.editingAttachment = wf
@@ -170,7 +170,7 @@ export default {
 		 * Persist an added/edited attachment into `runtime.workflows[]`.
 		 *
 		 * @param {object} payload - `{ entry, addStatusTab }` from the dialog.
-		 * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002
+		 * @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-002
 		 */
 		onDialogSave(payload) {
 			const entry = payload.entry
@@ -185,7 +185,7 @@ export default {
 		 * Detach an attachment (existing linked cases are unaffected).
 		 *
 		 * @param {object} wf - the attachment to remove.
-		 * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002
+		 * @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-002
 		 */
 		detach(wf) {
 			this.pendingDetach = wf
@@ -199,7 +199,7 @@ export default {
 		 * cancelling or closing the dialog leaves the manifest untouched.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002
+		 * @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-002
 		 */
 		onConfirmDetach() {
 			const wf = this.pendingDetach

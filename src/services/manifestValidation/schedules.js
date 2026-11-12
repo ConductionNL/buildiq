@@ -17,7 +17,7 @@
  * path-prefix → inline-mark mechanism (REQ-OBPD-011) lights up the offending
  * editor entry.
  *
- * @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-006
+ * @spec openspec/specs/openbuild-schedules-authoring/spec.md#req-obsa-006
  */
 
 /** The allow-list of supported schedule actions in v1. */
@@ -206,7 +206,7 @@ const SCHEDULE_CHECKS = Object.freeze([
  * @param {object} entry - the schedule entry.
  * @param {number|string} [idx] - index for the JSON-Pointer prefix.
  * @return {string[]} - list of `<pointer>: <code>` error strings.
- * @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-006
+ * @spec openspec/specs/openbuild-schedules-authoring/spec.md#req-obsa-006
  */
 export function validateScheduleEntry(entry, idx = 0) {
 	const pointer = `/schedules/${idx}`
@@ -221,7 +221,7 @@ export function validateScheduleEntry(entry, idx = 0) {
  *
  * @param {object} manifest - the in-flight manifest.
  * @return {string[]} - list of `<pointer>: <code>` error strings.
- * @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-006
+ * @spec openspec/specs/openbuild-schedules-authoring/spec.md#req-obsa-006
  */
 export function validateSchedules(manifest) {
 	const errors = []

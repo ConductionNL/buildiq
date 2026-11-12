@@ -37,13 +37,13 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-9
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-10
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-11
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-12
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-13
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-14
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-15
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-9
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-10
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-11
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-12
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-13
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-14
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-15
  */
 
 declare(strict_types=1);
@@ -133,10 +133,10 @@ class ApplicationCreationService {
 	 * @throws WizardCreationException On validation failure (failedAtStep=validate)
 	 *                                 or on any mid-flight creation failure (with rollback)
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-12
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-13
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-14
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-15
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-12
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-13
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-14
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-15
 	 */
 	public function createApplication(array $payload): string {
 		// M2: Acquire a per-slug advisory lock before the slug-uniqueness check so
@@ -592,8 +592,8 @@ class ApplicationCreationService {
 	 *
 	 * @throws WizardCreationException With failedAtStep=validate on any failure
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-10
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-11
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-10
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-11
 	 */
 	private function validatePayload(array $payload): void {
 		$appSlug = (string)($payload['slug'] ?? '');
@@ -692,8 +692,8 @@ class ApplicationCreationService {
 	 *
 	 * @return array<int,array<string,string>> Version definitions [{name, slug}, ...]
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-9
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-11
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-9
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-11
 	 */
 	public function resolveVersionChain(array $payload): array {
 		$preset = (string)($payload['preset'] ?? '');
@@ -730,7 +730,7 @@ class ApplicationCreationService {
 	 *
 	 * @return bool True when a conflicting row exists
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-10
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-10
 	 */
 	private function appSlugExists(string $slug): bool {
 		try {
@@ -803,7 +803,7 @@ class ApplicationCreationService {
 	 *
 	 * @throws Throwable When register creation or schema seeding fails
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-13
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-13
 	 */
 	private function provisionRegister(array $version): void {
 		$register = $this->store->registerMapper->createFromArray($this->versionRegisterFields(version: $version));
@@ -879,7 +879,7 @@ class ApplicationCreationService {
 	 *
 	 * @return bool True on success, false on failure
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-12
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-12
 	 */
 	private function deleteRegister(string $registerSlug): bool {
 		try {
@@ -910,7 +910,7 @@ class ApplicationCreationService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-12
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-12
 	 */
 	private function rollback(array $state, array &$orphaned): void {
 		// 0. BuiltAppRoute objects first (last created, first torn down).
@@ -961,7 +961,7 @@ class ApplicationCreationService {
 	 *
 	 * @throws WizardCreationException Always — with the rollback status derived from orphaned resources
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-12
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-12
 	 */
 	private function rollbackAndThrow(array $state, string $failedAtStep, string|Throwable $cause): never {
 		$orphaned = [];
@@ -1002,7 +1002,7 @@ class ApplicationCreationService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-12
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-12
 	 */
 	private function rollbackObjects(array $uuids, string $label, string $prefix, array &$orphaned): void {
 		$ordered = array_reverse(array_values($uuids));
@@ -1035,7 +1035,7 @@ class ApplicationCreationService {
 	 *
 	 * @throws WizardCreationException When the fixture cannot be found, read or decoded
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-14
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-14
 	 */
 	private function loadWizardFixture(array $fixture): array {
 		$name = $fixture['name'];
@@ -1084,7 +1084,7 @@ class ApplicationCreationService {
 	 *
 	 * @return array<string,mixed> The manifest with the token substituted
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-13
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-13
 	 */
 	public function substituteRegisterSlug(array $manifest, string $registerSlug): array {
 		return $this->substituteVersionContext(
@@ -1113,7 +1113,7 @@ class ApplicationCreationService {
 	 *
 	 * @return array<string,mixed> The manifest with tokens substituted
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-14
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-14
 	 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generated-pages-keep-the-database-register-req-bqdb-004
 	 */
 	public function substituteVersionContext(

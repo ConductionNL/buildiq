@@ -111,7 +111,7 @@ export default {
 		 * already configured (the token value is never returned by the backend).
 		 *
 		 * @return {string} The translated placeholder.
-		 * @spec openspec/changes/openbuild-remote-template-store/specs/openbuild-remote-template-store/spec.md
+		 * @spec openspec/specs/openbuild-remote-template-store/spec.md
 		 */
 		tokenPlaceholder() {
 			return this.tokenIsSet
@@ -123,7 +123,7 @@ export default {
 	/**
 	 * Observed behaviour of `created` (retrofit annotation).
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-4
+	 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-frontend-foundation/tasks.md#task-4
 	 */
 	created() {
 		const settingsStore = useSettingsStore()
@@ -138,7 +138,7 @@ export default {
 		/**
 		 * Observed behaviour of `save` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-frontend-foundation/tasks.md#task-4
 		 */
 		async save() {
 			this.saving = true

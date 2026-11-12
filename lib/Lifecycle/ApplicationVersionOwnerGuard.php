@@ -63,7 +63,7 @@ use Psr\Log\LoggerInterface;
  * synthetically created Application — only the audited NC-admin escape hatch is
  * granted; every ordinary caller is still denied.
  *
- * @spec openspec/changes/openbuild-rbac/tasks.md#2.1
+ * @spec openspec/changes/archive/2026-06-14-openbuild-rbac/tasks.md#2.1
  */
 class ApplicationVersionOwnerGuard implements LifecycleGuardInterface {
 	/**
@@ -107,7 +107,7 @@ class ApplicationVersionOwnerGuard implements LifecycleGuardInterface {
 	 * @SuppressWarnings(PHPMD.StaticAccess) GuardResult exposes only the static
 	 *  allow()/deny() factories mandated by OpenRegister's contract.
 	 *
-	 * @spec openspec/changes/openbuild-rbac/tasks.md#2.1
+	 * @spec openspec/changes/archive/2026-06-14-openbuild-rbac/tasks.md#2.1
 	 */
 	public function check(array $object, string $action, string $userId): GuardResult {
 		$caller = $this->userManager->get($userId);

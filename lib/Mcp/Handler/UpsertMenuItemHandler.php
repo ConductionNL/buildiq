@@ -31,7 +31,7 @@ use OCA\Buildiq\Support\ManifestRoute;
 /**
  * Handles the buildiq.upsertMenuItem tool invocation.
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-42
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-42
  */
 class UpsertMenuItemHandler extends AbstractToolHandler {
 	/**

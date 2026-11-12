@@ -58,7 +58,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/automation-designer/tasks.md#2.3
+ * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#2.3
  * @spec openspec/specs/automation-designer/spec.md#req-autd-010
  */
 

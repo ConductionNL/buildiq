@@ -102,7 +102,7 @@ export default {
 		/**
 		 * Build target-schema picker options from the available slugs.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
 		 * @return {Array} Option objects.
 		 */
 		schemaOptions() {
@@ -112,7 +112,7 @@ export default {
 		/**
 		 * Build cardinality picker options (one/many) with translated labels.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
 		 * @return {Array} Option objects.
 		 */
 		cardinalityOptions() {
@@ -130,7 +130,7 @@ export default {
 		/**
 		 * Resolve the selected target-schema option for a value.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
 		 * @param {string} value Schema slug.
 		 * @return {object|null} The matching option.
 		 */
@@ -141,7 +141,7 @@ export default {
 		/**
 		 * Resolve the selected cardinality option for a value.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
 		 * @param {string} value Cardinality.
 		 * @return {object} The matching option (defaults to first).
 		 */
@@ -155,7 +155,7 @@ export default {
 		/**
 		 * Emit the updated relations array to the parent.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
 		 * @param {Array} next Next relations array.
 		 * @return {void}
 		 */
@@ -166,7 +166,7 @@ export default {
 		/**
 		 * Append a new blank relation row.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
 		 * @return {void}
 		 */
 		addRelation() {
@@ -184,7 +184,7 @@ export default {
 		/**
 		 * Update a single field of a relation row.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
 		 * @param {number} index Row index.
 		 * @param {string} key Field key.
 		 * @param {*} value New value.
@@ -199,7 +199,7 @@ export default {
 		/**
 		 * Remove a relation row by index.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
 		 * @param {number} index Row index.
 		 * @return {void}
 		 */

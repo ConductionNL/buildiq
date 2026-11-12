@@ -295,7 +295,7 @@ class AppRepoSerializer {
 	 *
 	 * @return array<string,array<string,mixed>> Register blobs keyed by register slug.
 	 *
-	 * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-app-s-whole-configuration
+	 * @spec openspec/changes/archive/2026-10-07-app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-app-s-whole-configuration
 	 */
 	private function collectDataRegisters(array $application): array {
 		$bindings = ($application['dataRegisters'] ?? []);
@@ -383,7 +383,7 @@ class AppRepoSerializer {
 	 *
 	 * @return array{files:array<string,array<string,mixed>>,declaredCount:int,resolvedCount:int,strippedCount:int,missingCount:int}
 	 *
-	 * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-connectors-are-declared-explicitly-never-inferred
+	 * @spec openspec/specs/github-app-repo-format/spec.md#requirement-connectors-are-declared-explicitly-never-inferred
 	 */
 	private function collectConnectors(array $application): array {
 		$run = new ConnectorExportRun();
@@ -696,7 +696,7 @@ class AppRepoSerializer {
 	 *
 	 * @return array<string,array<string,mixed>> Automation blobs keyed by slug.
 	 *
-	 * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-app-s-whole-configuration
+	 * @spec openspec/changes/archive/2026-10-07-app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-app-s-whole-configuration
 	 */
 	private function collectAutomations(string $slug): array {
 		// Buildiq's own register is renamed from `openbuild` per instance, so resolve it like the connector register.
@@ -759,7 +759,7 @@ class AppRepoSerializer {
 	 *
 	 * @return array{flows:array<string,array<string,mixed>>,agents:array<string,array<string,mixed>>,declaredFlows:int,skipped:array<int,array<string,mixed>>}
 	 *
-	 * @spec openspec/changes/app-repo-format-flow-agent-export/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-app-s-bound-flows-and-agents
+	 * @spec openspec/changes/archive/2026-08-19-app-repo-format-flow-agent-export/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-app-s-bound-flows-and-agents
 	 */
 	private function collectFlowsAndAgents(array $application): array {
 		if ($this->flowAgentCollector === null) {
@@ -804,7 +804,7 @@ class AppRepoSerializer {
 	 * @return array<string,mixed>
 	 *
 	 * @spec openspec/changes/github-app-repo-format/specs/github-app-repo-format/spec.md
-	 * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-app-s-whole-configuration
+	 * @spec openspec/changes/archive/2026-10-07-app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-app-s-whole-configuration
 	 * @SuppressWarnings(PHPMD.StaticAccess) RepoDescriptor is a pure function with no collaborators.
 	 */
 	private function buildDescriptor(array $application, array $version, array $manifest, array $channels = []): array {

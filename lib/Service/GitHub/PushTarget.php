@@ -28,7 +28,7 @@ namespace OCA\Buildiq\Service\GitHub;
 /**
  * The repository a push writes to.
  *
- * @spec openspec/changes/openbuild-exporter/tasks.md#task-6.2
+ * @spec openspec/changes/archive/2026-06-14-openbuild-exporter/tasks.md#task-6.2
  */
 final class PushTarget {
 	/**
@@ -52,7 +52,7 @@ final class PushTarget {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/openbuild-exporter/tasks.md#task-6.2
+	 * @spec openspec/changes/archive/2026-06-14-openbuild-exporter/tasks.md#task-6.2
 	 */
 	public function repoPath(): string {
 		return '/repos/' . rawurlencode($this->org) . '/' . rawurlencode($this->repo);

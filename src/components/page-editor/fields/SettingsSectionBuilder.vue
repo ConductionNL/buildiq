@@ -213,7 +213,7 @@ export default {
 		/**
 		 * Observed behaviour of `localSections` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		localSections() {
 			return Array.isArray(this.modelValue) ? this.modelValue : []
@@ -230,7 +230,7 @@ export default {
 		 * @return {'fields'|'component'|'widgets'} which of the three mutually-exclusive
 		 *   bodies the section declares — `'fields'` is also the fallback for a section
 		 *   that declares no body at all.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		bodyKind(section) {
 			if (section && Array.isArray(section.widgets)) {
@@ -249,7 +249,7 @@ export default {
 		 *   manifest; absent props arrive as `undefined`/`null`.
 		 * @return {string} the JSON text to seed the props textarea/input with — `''` when
 		 *   there are no props, or when they cannot be serialised (e.g. a cycle).
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		stringifyProps(value) {
 			if (value === undefined || value === null) {
@@ -268,7 +268,7 @@ export default {
 		 * @param {object[]} sections - the COMPLETE next sections list. Every mutator here
 		 *   clones the list plus the one section it touches and hands the whole array up,
 		 *   so extra keys the editor does not surface (icon, order, …) round-trip intact.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		emit(sections) {
 			this.$emit('update:modelValue', sections)
@@ -285,7 +285,7 @@ export default {
 		 *   `title`/`id`/`component`, the emitted formField list for `fields`, or the parsed
 		 *   JSON object for `props`. An empty string, `null`, `undefined` or an empty array
 		 *   DELETES the key so the manifest never carries an empty body.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		updateField(index, key, value) {
 			const next = this.localSections.slice()
@@ -313,7 +313,7 @@ export default {
 		 *   and only the chosen body is seeded empty, so the XOR invariant holds; any value
 		 *   other than `'fields'`/`'component'` falls through to `widgets`. The section's
 		 *   non-body keys (title, id, …) survive.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		setBodyKind(index, kind) {
 			const next = this.localSections.slice()
@@ -342,7 +342,7 @@ export default {
 		 * @param {string} value - the raw textarea text. Emptying it clears `props`; valid
 		 *   JSON is parsed and written; malformed JSON is only kept as a draft and reported
 		 *   through `propsError[index]`, leaving the manifest untouched mid-keystroke.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		onPropsInput(index, value) {
 			this.propsDraft[index] = value
@@ -366,7 +366,7 @@ export default {
 		 *
 		 * @param {number} index - position of the section to append a default
 		 *   `{ type: 'version-info' }` widget to.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		addWidget(index) {
 			const next = this.localSections.slice()
@@ -386,7 +386,7 @@ export default {
 		 * @param {string|object|undefined} value - the new value: the selected widget
 		 *   `type`, the componentName text, or the parsed props object from
 		 *   `onWidgetPropsInput`. `''`, `null` and `undefined` DELETE the key.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		updateWidget(index, wIndex, key, value) {
 			const next = this.localSections.slice()
@@ -413,7 +413,7 @@ export default {
 		 *   `props`; valid JSON is written; malformed JSON is silently ignored (unlike a
 		 *   section's props there is no per-widget error slot), so the last valid object
 		 *   stays in the manifest.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		onWidgetPropsInput(index, wIndex, value) {
 			const trimmed = (value || '').trim()
@@ -436,7 +436,7 @@ export default {
 		 * @param {number} wIndex - position of the widget to drop from that section's
 		 *   `widgets`; the (possibly empty) array is kept so the section stays a
 		 *   widgets-bodied section.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		removeWidget(index, wIndex) {
 			const next = this.localSections.slice()
@@ -451,7 +451,7 @@ export default {
 		/**
 		 * Observed behaviour of `addSection` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		addSection() {
 			const next = this.localSections.slice()
@@ -465,7 +465,7 @@ export default {
 		 * @param {number} index - position of the section to drop from the sections list.
 		 *   The index-keyed `propsDraft` / `propsError` maps are NOT re-based, so a
 		 *   surviving section can inherit the removed one's draft slot.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		removeSection(index) {
 			const next = this.localSections.slice()

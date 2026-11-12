@@ -20,7 +20,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/data-registers-runtime/tasks.md#task-4.2
+ * @spec openspec/changes/archive/2026-10-07-data-registers-runtime/tasks.md#task-4.2
  */
 
 declare(strict_types=1);
@@ -30,7 +30,7 @@ namespace OCA\Buildiq\Service;
 /**
  * The context, bindings and source an exported tree is filled from.
  *
- * @spec openspec/changes/data-registers-runtime/tasks.md#task-4.2
+ * @spec openspec/changes/archive/2026-10-07-data-registers-runtime/tasks.md#task-4.2
  */
 final class ExportContents {
 

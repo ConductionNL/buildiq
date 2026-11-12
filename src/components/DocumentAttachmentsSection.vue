@@ -149,7 +149,7 @@ export default {
 	},
 
 	computed: {
-		/** @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002 */
+		/** @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-002 */
 		attachments() {
 			return (
 				(this.manifest
@@ -161,7 +161,7 @@ export default {
 	},
 
 	methods: {
-		/** @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002 */
+		/** @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-002 */
 		openAdd() {
 			if (!this.docudeskAvailable) {
 				return
@@ -178,7 +178,7 @@ export default {
 		 *   filenameTemplate?: string}} doc - The `runtime.documents[]` entry the user
 		 *   clicked. Passed to the dialog as-is to prefill it; the edit is written back
 		 *   through `onDialogSave`, matched on `id`.
-		 * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002
+		 * @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-002
 		 */
 		openEdit(doc) {
 			this.editingAttachment = doc
@@ -189,7 +189,7 @@ export default {
 		 * Persist an added/edited attachment into `runtime.documents[]`.
 		 *
 		 * @param {object} payload - `{ entry, addActionsTab }` from the dialog.
-		 * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002
+		 * @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-002
 		 */
 		onDialogSave(payload) {
 			const entry = payload.entry
@@ -204,7 +204,7 @@ export default {
 		 * Detach an attachment (previously generated documents are unaffected).
 		 *
 		 * @param {object} doc - the attachment to remove.
-		 * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002
+		 * @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-002
 		 */
 		detach(doc) {
 			this.pendingDetach = doc
@@ -218,7 +218,7 @@ export default {
 		 * cancelling or closing the dialog leaves the manifest untouched.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002
+		 * @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-002
 		 */
 		onConfirmDetach() {
 			const doc = this.pendingDetach

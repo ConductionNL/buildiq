@@ -76,7 +76,7 @@ export default {
 	 * Bind the runtime resolver to the connector block.
 	 *
 	 * @param {object} props - component props.
-	 * @spec openspec/changes/openconnector-api-sources/tasks.md#task-4.3
+	 * @spec openspec/changes/archive/2026-06-14-openconnector-api-sources/tasks.md#task-4.3
 	 */
 	setup(props) {
 		const binding = (props.dataSource && props.dataSource.connector) || {}
@@ -85,27 +85,27 @@ export default {
 	},
 
 	computed: {
-		/** @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006 */
+		/** @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-006 */
 		loading() {
 			return this.resolver.loading.value
 		},
 
-		/** @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006 */
+		/** @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-006 */
 		error() {
 			return this.resolver.error.value
 		},
 
-		/** @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006 */
+		/** @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-006 */
 		isStale() {
 			return this.resolver.isStale.value
 		},
 
-		/** @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006 */
+		/** @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-006 */
 		rows() {
 			return this.resolver.data.value || []
 		},
 
-		/** @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006 */
+		/** @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-006 */
 		columns() {
 			const connector = (this.dataSource && this.dataSource.connector) || {}
 			return Object.keys(connector.fields || {})
@@ -117,7 +117,7 @@ export default {
 	},
 
 	methods: {
-		/** @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006 */
+		/** @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-006 */
 		retry() {
 			this.resolver.retry()
 		},

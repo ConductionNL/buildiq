@@ -26,11 +26,11 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-34
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-37
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-38
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-34
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-37
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-38
  */
 
 declare(strict_types=1);
@@ -45,7 +45,7 @@ use RuntimeException;
 /**
  * Bridges the ExportsController to the OR ExportJob record + RunExportJob.
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
  */
 class ExportJobService {
 	/**
@@ -107,8 +107,8 @@ class ExportJobService {
 	 *
 	 * @throws \InvalidArgumentException When required fields are missing.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
-	 * @spec openspec/changes/data-registers-runtime/tasks.md#task-4.3
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
+	 * @spec openspec/changes/archive/2026-10-07-data-registers-runtime/tasks.md#task-4.3
 	 */
 	public function queue(
 		string $applicationSlug,
@@ -222,7 +222,7 @@ class ExportJobService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-37
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-37
 	 */
 	public function persistJob(array $job): void {
 		try {
@@ -304,7 +304,7 @@ class ExportJobService {
 	 * @return bool True when the transition fired, false when OR's
 	 *              lifecycle engine is not available (gap recorded).
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-38
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-38
 	 */
 	public function transitionJob(
 		string $jobUuid,
@@ -373,7 +373,7 @@ class ExportJobService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-37
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-37
 	 */
 	public function mergeJobFields(string $jobUuid, array $fields): void {
 		if ($fields === []) {
@@ -431,7 +431,7 @@ class ExportJobService {
 	 *
 	 * @return array{path:string,expired:bool}|null Resolution result.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
 	 */
 	public function resolveDownload(string $uuid): ?array {
 		// Look for the ZIP in the deterministic location.
@@ -462,7 +462,7 @@ class ExportJobService {
 	 *
 	 * @return array<string, mixed>|null Job data, or null on failure.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
 	 */
 	public function loadJob(string $jobUuid): ?array {
 		try {

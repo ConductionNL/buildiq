@@ -58,7 +58,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/app-repo-format-flow-agent-export/specs/app-channel-application/spec.md
+ * @spec openspec/specs/app-channel-application/spec.md
  */
 
 declare(strict_types=1);
@@ -73,7 +73,7 @@ use Throwable;
 /**
  * Creates the flows a published app repo declares, and rebinds them locally.
  *
- * @spec openspec/changes/app-repo-format-flow-agent-export/specs/app-channel-application/spec.md
+ * @spec openspec/specs/app-channel-application/spec.md
  */
 class FlowChannelProvisioner {
 
@@ -140,7 +140,7 @@ class FlowChannelProvisioner {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/app-repo-format-flow-agent-export/specs/app-channel-application/spec.md#requirement-published-flows-are-created-and-rebound-onto-the-local-application
+	 * @spec openspec/specs/app-channel-application/spec.md#requirement-published-flows-are-created-and-rebound-onto-the-local-application
 	 */
 	public function apply(array $flows, ?string $applicationUuid, ChannelApplyReport $report): void {
 		$report->declareChannel(channel: self::CHANNEL, declared: count($flows));

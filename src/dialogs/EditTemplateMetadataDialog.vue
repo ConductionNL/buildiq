@@ -84,21 +84,21 @@ export default {
 
 	computed: {
 		/**
-		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+		 * @spec openspec/specs/save-as-template/spec.md
 		 */
 		categoryOptions() {
 			return templateCategoryOptions()
 		},
 
 		/**
-		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+		 * @spec openspec/specs/save-as-template/spec.md
 		 */
 		selectedCategory() {
 			return this.categoryOption?.id ?? this.categoryOption ?? ''
 		},
 
 		/**
-		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+		 * @spec openspec/specs/save-as-template/spec.md
 		 */
 		canSave() {
 			return this.form.title.trim().length > 0 && !!this.selectedCategory
@@ -110,7 +110,7 @@ export default {
 		 * @param {boolean} value - The dialog's new `open` state. Only the transition
 		 *   into "open" is acted on: it re-prefills the form from the template being
 		 *   edited, discarding any edits abandoned on a previous open.
-		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+		 * @spec openspec/specs/save-as-template/spec.md
 		 */
 		open(value) {
 			if (value) {
@@ -124,7 +124,7 @@ export default {
 		 * Prefill from the template being edited.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+		 * @spec openspec/specs/save-as-template/spec.md
 		 */
 		resetForm() {
 			const tpl = this.template || {}
@@ -144,7 +144,7 @@ export default {
 
 		/**
 		 * @return {void}
-		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+		 * @spec openspec/specs/save-as-template/spec.md
 		 */
 		onClose() {
 			if (this.saving) {
@@ -159,7 +159,7 @@ export default {
 		 * existing record so they can never drift (REQ-SAT-005).
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+		 * @spec openspec/specs/save-as-template/spec.md
 		 */
 		async save() {
 			if (!this.canSave || this.saving || !this.template) {

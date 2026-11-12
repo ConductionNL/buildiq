@@ -16,7 +16,7 @@
  * attachments per schema are allowed — an object commonly produces several
  * letters — so the uniqueness key is the *(schema, label)* pair, not `schema`.
  *
- * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-001
+ * @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-001
  */
 
 import { schemaKnown } from './manifestSchemas.js'
@@ -241,7 +241,7 @@ function duplicateLabelErrors(documents, labelKeyCounts) {
  *
  * @param {object} manifest - the in-flight manifest.
  * @return {string[]} - list of `<pointer>: <code>` error strings.
- * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-001
+ * @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-001
  */
 export function validateDocumentAttachments(manifest) {
 	const documents = manifest && manifest.runtime && manifest.runtime.documents

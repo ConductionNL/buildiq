@@ -29,9 +29,9 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-16
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-17
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-21
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-16
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-17
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-21
  */
 
 declare(strict_types=1);
@@ -85,9 +85,9 @@ class ApplicationInsightsController extends Controller {
 	 *
 	 * @return JSONResponse
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-16
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-17
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-21
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-16
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-17
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-21
 	 */
 	#[NoAdminRequired]
 	public function getInsights(string $appUuid, string $versionUuid): JSONResponse {

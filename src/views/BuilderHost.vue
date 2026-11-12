@@ -80,7 +80,7 @@ export default {
 		/**
 		 * Observed behaviour of `slug` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 */
 		slug() {
 			return this.$route.params.slug
@@ -91,7 +91,7 @@ export default {
 		 * Underscore-prefix to avoid colliding with user-defined `?version=` params.
 		 *
 		 * @return {string|undefined}
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 */
 		versionSlug() {
 			return this.$route.query._version || undefined
@@ -100,7 +100,7 @@ export default {
 		/**
 		 * Observed behaviour of `appId` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 */
 		appId() {
 			return `openbuild-${this.slug}`
@@ -110,7 +110,7 @@ export default {
 		 * Cache key forces CnAppRoot remount when slug OR version changes.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 */
 		cacheKey() {
 			return `${this.slug}:${this.versionSlug || 'default'}`
@@ -123,7 +123,7 @@ export default {
 		 * "you can't see it" cases — no auth cue exposed to the caller.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 */
 		versionNotFound() {
 			return (
@@ -136,7 +136,7 @@ export default {
 		/**
 		 * Observed behaviour of `placeholderManifest` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 */
 		placeholderManifest() {
 			return placeholderManifest
@@ -145,7 +145,7 @@ export default {
 		/**
 		 * Observed behaviour of `manifestOptions` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 */
 		manifestOptions() {
 			// Forward `?_version=` to the manifest endpoint so the server resolves
@@ -165,7 +165,7 @@ export default {
 		/**
 		 * Observed behaviour of `slug` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 */
 		slug() {
 			this.resolveVersion()
@@ -174,7 +174,7 @@ export default {
 		/**
 		 * Observed behaviour of `versionSlug` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 */
 		versionSlug() {
 			this.resolveVersion()
@@ -184,7 +184,7 @@ export default {
 	/**
 	 * Observed behaviour of `created` (retrofit annotation).
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
+	 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 	 */
 	created() {
 		// REQ-OBVR-004: resolve the active ApplicationVersion on mount.
@@ -201,7 +201,7 @@ export default {
 		 * Kick off useApplicationVersion and mirror reactive state into component data.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 */
 		resolveVersion() {
 			this.versionError = null

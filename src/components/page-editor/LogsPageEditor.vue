@@ -122,7 +122,7 @@ export default {
 		/**
 		 * Observed behaviour of `validatedConfigKeys` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		validatedConfigKeys() {
 			return ['register', 'schema', 'source', 'columns']
@@ -131,7 +131,7 @@ export default {
 		/**
 		 * Observed behaviour of `sourceShape` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		sourceShape() {
 			// `source` wins only when there is no register binding so a
@@ -152,7 +152,7 @@ export default {
 		 *
 		 * @param {string} key - the config key being written: `register`, `schema`, `source` or `columns`.
 		 * @param {string|Array<object>} value - the new value: a slug from a `<select>`, the free-text source URL/registry key, or the rebuilt column list from ColumnBuilder. An empty string, `null` or an empty array deletes the key instead of storing it.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		update(key, value) {
 			const next = { ...this.config }
@@ -184,7 +184,7 @@ export default {
 		 * never satisfies both halves of the XOR at once.
 		 *
 		 * @param {'register'|'source'} shape - the radio's value: `source` drops `register` + `schema`, `register` drops `source`.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		setSourceShape(shape) {
 			const next = { ...this.config }

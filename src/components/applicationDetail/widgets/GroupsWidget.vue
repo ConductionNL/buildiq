@@ -98,7 +98,7 @@ export default {
 		 * Each row carries `{ role, principal, label, isGroup }`.
 		 *
 		 * @return {Array<object>}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-2
 		 */
 		rows() {
 			const permissions =
@@ -122,7 +122,7 @@ export default {
 		 *
 		 * @param {string} role Role key.
 		 * @return {string}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-2
 		 */
 		roleLabel(role) {
 			if (role === 'owners') return t('buildiq', 'Owner')
@@ -135,7 +135,7 @@ export default {
 		 *
 		 * @param {object} row Row.
 		 * @return {string}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-2
 		 */
 		memberLabel(row) {
 			if (!row.isGroup) {
@@ -152,7 +152,7 @@ export default {
 		 * this to a route.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-2
 		 */
 		openEditor() {
 			this.$emit('open-permissions', this.application)

@@ -24,7 +24,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+ * @spec openspec/specs/ai-copilot/spec.md
  */
 
 declare(strict_types=1);
@@ -37,7 +37,7 @@ use Throwable;
 /**
  * Copilot failure envelope (REQ-OBAIC-001/002/004/005).
  *
- * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+ * @spec openspec/specs/ai-copilot/spec.md
  */
 class CopilotException extends RuntimeException {
 
@@ -104,7 +104,7 @@ class CopilotException extends RuntimeException {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+	 * @spec openspec/specs/ai-copilot/spec.md
 	 */
 	public function getErrorCode(): string {
 		return $this->errorCode;
@@ -115,7 +115,7 @@ class CopilotException extends RuntimeException {
 	 *
 	 * @return int
 	 *
-	 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+	 * @spec openspec/specs/ai-copilot/spec.md
 	 */
 	public function getHttpStatus(): int {
 		return $this->httpStatus;
@@ -126,7 +126,7 @@ class CopilotException extends RuntimeException {
 	 *
 	 * @return int|null
 	 *
-	 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+	 * @spec openspec/specs/ai-copilot/spec.md
 	 */
 	public function getStepIndex(): ?int {
 		return $this->stepIndex;
@@ -137,7 +137,7 @@ class CopilotException extends RuntimeException {
 	 *
 	 * @return array<string, mixed>
 	 *
-	 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+	 * @spec openspec/specs/ai-copilot/spec.md
 	 */
 	public function getContext(): array {
 		return $this->context;

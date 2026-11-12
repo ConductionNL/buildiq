@@ -21,7 +21,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/automation-document-action/specs/automation-document-action/spec.md
+ * @spec openspec/specs/automation-document-action/spec.md
  */
 
 declare(strict_types=1);
@@ -31,7 +31,7 @@ namespace OCA\Buildiq\Service;
 /**
  * The state of one document generation. Never leaves DocumentGenerationService.
  *
- * @spec openspec/changes/automation-document-action/specs/automation-document-action/spec.md
+ * @spec openspec/specs/automation-document-action/spec.md
  */
 final class DocumentRun {
 
@@ -72,7 +72,7 @@ final class DocumentRun {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/automation-document-action/specs/automation-document-action/spec.md
+	 * @spec openspec/specs/automation-document-action/spec.md
 	 */
 	public function filename(): string {
 		return 'document-' . $this->objectUuid . '.pdf';

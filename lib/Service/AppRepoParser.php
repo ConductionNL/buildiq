@@ -431,7 +431,7 @@ class AppRepoParser {
 	 *
 	 * @return array<string,mixed> The parsed channels.
 	 *
-	 * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-every-channel-path-is-validated-before-use
+	 * @spec openspec/specs/github-app-repo-format/spec.md#requirement-every-channel-path-is-validated-before-use
 	 */
 	private function parseChannels(array $files): array {
 		return (new AppRepoChannelReader(files: $files))->read();

@@ -46,11 +46,11 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-16
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-17
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-18
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-19
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-20
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-16
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-17
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-18
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-19
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-20
  */
 
 declare(strict_types=1);
@@ -200,7 +200,7 @@ class ApplicationInsightsService {
 	 *
 	 * @return array{0: array<string, mixed>, 1: array<string, mixed>}|null
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-17
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-17
 	 */
 	public function requireAuthorisedCaller(
 		string $appUuid,
@@ -260,9 +260,9 @@ class ApplicationInsightsService {
 	 *
 	 * @return array<string, mixed>|null Insights payload `{kpis, activity}` or null on 404.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-16
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-19
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-20
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-16
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-19
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-20
 	 */
 	public function computeInsights(
 		string $appUuid,
@@ -431,7 +431,7 @@ class ApplicationInsightsService {
 	 *
 	 * @return array<string, mixed> Insights payload `{kpis, activity}`.
 	 *
-	 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+	 * @spec openspec/specs/unified-app-model/spec.md
 	 */
 	private function computeHybridInsights(string $appSlug, int $hours): array {
 		$registers = $this->resolveInstalledAppRegisters(appSlug: $appSlug);
@@ -487,7 +487,7 @@ class ApplicationInsightsService {
 	 *
 	 * @return array{0: int, 1: array<int, array{timestamp: string, eventCount: int}>}
 	 *
-	 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+	 * @spec openspec/specs/unified-app-model/spec.md
 	 */
 	private function auditByRegisters(array $registerIds, int $hours): array {
 		if (empty($registerIds) === true) {
@@ -542,7 +542,7 @@ class ApplicationInsightsService {
 	 *
 	 * @return array<int, array{registerId: int, schemaIds: array<int, int>}>
 	 *
-	 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+	 * @spec openspec/specs/unified-app-model/spec.md
 	 */
 	private function resolveInstalledAppRegisters(string $appSlug): array {
 		if ($appSlug === '') {
@@ -600,7 +600,7 @@ class ApplicationInsightsService {
 	 *
 	 * @return array<int, string> Unique schema IDs (string form — OR stores audit schema column as VARCHAR).
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-18
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-18
 	 */
 	public function deriveSchemaIds(?array $manifest, string $registerSlug): array {
 		if ($manifest === null) {
@@ -663,7 +663,7 @@ class ApplicationInsightsService {
 	 *
 	 * @return string|null The schema ID, or null when the page does not match.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-18
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-18
 	 */
 	private function extractSchemaIdForRegister(mixed $page, string $registerSlug): ?string {
 		if (is_array($page) === false) {
@@ -701,7 +701,7 @@ class ApplicationInsightsService {
 	 *
 	 * @return bool True when authorised, false otherwise.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-17
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-17
 	 */
 	private function isAuthorised(array $application, array $version, ?IUser $caller): bool {
 		if ($caller === null) {
@@ -927,7 +927,7 @@ class ApplicationInsightsService {
 	 *
 	 * @return int Distinct actor count, or 0 when the aggregation API is unavailable.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-19
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-19
 	 */
 	private function safeDistinctActorCount(array $schemaIds, int $hours): int {
 		if (empty($schemaIds) === true) {
@@ -965,7 +965,7 @@ class ApplicationInsightsService {
 	 *
 	 * @return int Total object count across the schema-set.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-19
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-19
 	 */
 	private function countObjects(array $schemaIds, string $registerSlug): int {
 		if (empty($schemaIds) === true) {
@@ -1011,7 +1011,7 @@ class ApplicationInsightsService {
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-19
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-19
 	 */
 	private function countAttachedFiles(string $registerSlug, array $schemaIds): int {
 		if (empty($schemaIds) === true) {
@@ -1055,7 +1055,7 @@ class ApplicationInsightsService {
 	 *
 	 * @return int Audit-event count.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-19
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-19
 	 */
 	private function countAuditEvents(array $schemaIds, int $hours): int {
 		if (empty($schemaIds) === true) {
@@ -1139,7 +1139,7 @@ class ApplicationInsightsService {
 	 *
 	 * @return array<int, array{timestamp: string, eventCount: int}>
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-20
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-20
 	 */
 	private function buildActivityTimeline(array $schemaIds, int $hours): array {
 		if (empty($schemaIds) === true) {

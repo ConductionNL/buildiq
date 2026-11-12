@@ -18,7 +18,7 @@ import { refusalData, refusalStatus } from './requestRefusal.js'
  *
  * @param {Error} err - the axios error.
  * @return {{status: number, error: string, message: string, providerMessage: string}}
- * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+ * @spec openspec/specs/ai-copilot/spec.md
  */
 function normaliseError(err) {
 	const data = refusalData(err)
@@ -35,7 +35,7 @@ function normaliseError(err) {
  *
  * @return {Promise<{available: boolean, reason?: string}>} Never rejects —
  *   a network/503 failure resolves to `{available: false, reason}`.
- * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+ * @spec openspec/specs/ai-copilot/spec.md
  */
 export async function fetchCopilotHealth() {
 	try {
@@ -65,7 +65,7 @@ export async function fetchCopilotHealth() {
  *   step that omits `versionSlug` is settled on it server-side.
  * @return {Promise<{summary: string, steps: Array, manifests: object}>}
  * @throws {{status: number, error: string, message: string}} Normalised error envelope.
- * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+ * @spec openspec/specs/ai-copilot/spec.md
  * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
  */
 export async function requestPlan({ brief, appSlug, agentId, versionSlug } = {}) {
@@ -93,7 +93,7 @@ export async function requestPlan({ brief, appSlug, agentId, versionSlug } = {})
  *   a complete AgentRun record. Ignored server-side when `agentId` is omitted.
  * @return {Promise<{results: Array}>}
  * @throws {{status: number, error: string, message: string}} Normalised error envelope.
- * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+ * @spec openspec/specs/ai-copilot/spec.md
  * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
  */
 export async function executePlan(plan, { agentId, prompt } = {}) {

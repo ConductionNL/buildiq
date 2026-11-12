@@ -30,7 +30,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+ * @spec openspec/specs/ai-copilot/spec.md
  */
 
 declare(strict_types=1);
@@ -69,7 +69,7 @@ use Throwable;
 /**
  * Prompt-to-app copilot orchestrator (REQ-OBAIC-001 through REQ-OBAIC-007).
  *
- * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+ * @spec openspec/specs/ai-copilot/spec.md
  * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
  */
 class CopilotService {
@@ -196,7 +196,7 @@ class CopilotService {
 	 *
 	 * @return array{available: bool, reason?: string}
 	 *
-	 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+	 * @spec openspec/specs/ai-copilot/spec.md
 	 */
 	public function health(): array {
 		if (interface_exists('OCP\\TaskProcessing\\IManager') === false) {
@@ -246,7 +246,7 @@ class CopilotService {
 	 *
 	 * @throws CopilotException On unavailability, invalid input, RBAC denial, an unknown agent, or an unparsable/invalid plan.
 	 *
-	 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+	 * @spec openspec/specs/ai-copilot/spec.md
 	 * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
 	 */
 	public function plan(string $brief, ?string $appSlug, string $userId, ?string $agentId = null, ?string $versionSlug = null): array {
@@ -817,7 +817,7 @@ class CopilotService {
 	 *
 	 * @throws CopilotException (422 plan_invalid) When a predicted manifest exceeds a cap.
 	 *
-	 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+	 * @spec openspec/specs/ai-copilot/spec.md
 	 */
 	public function predictManifests(array $plan, ?string $appSlug): array {
 		$steps = (array)($plan['steps'] ?? []);
@@ -881,7 +881,7 @@ class CopilotService {
 	 *
 	 * @throws CopilotException On revalidation failure, an unknown agent, RBAC denial, or a mid-plan step failure.
 	 *
-	 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+	 * @spec openspec/specs/ai-copilot/spec.md
 	 * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
 	 */
 	public function execute(array $plan, string $userId, ?string $agentId = null, string $prompt = ''): array {

@@ -99,7 +99,7 @@ export default {
 		/**
 		 * Observed behaviour of `app` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		app() {
 			return this.object || this.item || {}
@@ -149,7 +149,7 @@ export default {
 		 * loading / when the application has no production version yet.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		productionSemver() {
 			return (this.productionVersion && this.productionVersion.semver) || '—'
@@ -161,7 +161,7 @@ export default {
 		/**
 		 * Observed behaviour of `appUuid` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		appUuid() {
 			const self = this.app['@self'] || {}
@@ -173,7 +173,7 @@ export default {
 		 * `appType` reads as `virtual` (legacy default), matching the schema.
 		 *
 		 * @return {string} 'virtual' | 'hybrid'
-		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+		 * @spec openspec/specs/unified-app-model/spec.md
 		 */
 		appTypeKey() {
 			return this.app.appType === 'hybrid' ? 'hybrid' : 'virtual'
@@ -183,7 +183,7 @@ export default {
 		 * Human-readable label for the app type pill.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+		 * @spec openspec/specs/unified-app-model/spec.md
 		 */
 		appTypeLabel() {
 			return this.appTypeKey === 'hybrid'
@@ -198,7 +198,7 @@ export default {
 		 * absent param shows everything.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+		 * @spec openspec/specs/unified-app-model/spec.md
 		 */
 		hiddenByFilter() {
 			const filter =
@@ -215,7 +215,7 @@ export default {
 		 * sensible default while loading or for brand-new applications.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		statusKey() {
 			const status = this.productionVersion && this.productionVersion.status
@@ -227,7 +227,7 @@ export default {
 		/**
 		 * Observed behaviour of `statusLabel` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		statusLabel() {
 			return {
@@ -240,7 +240,7 @@ export default {
 		/**
 		 * Observed behaviour of `role` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		role() {
 			return useRole(this.app, getCurrentUserGroups())
@@ -249,7 +249,7 @@ export default {
 		/**
 		 * Observed behaviour of `roleLabel` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		roleLabel() {
 			return (
@@ -285,7 +285,7 @@ export default {
 		 *   uploaded icon, or its URL 404s). `e.target` is swapped to the bundled
 		 *   fallback icon at most once — see the re-entry guard below.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		onIconError(e) {
 			// imagePath resolves to the app's real web root (e.g.
@@ -312,7 +312,7 @@ export default {
 		 *   verbatim as `click` for parents that want to intercept, before this card
 		 *   navigates to the application's detail route itself.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		onCardActivate(event) {
 			this.$emit('click', event)

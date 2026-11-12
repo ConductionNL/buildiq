@@ -123,7 +123,7 @@ export default {
 		 *
 		 * @param {{tool: string, arguments: object}} step - a plan step.
 		 * @return {string}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		stepDetail(step) {
 			const args = step.arguments || {}

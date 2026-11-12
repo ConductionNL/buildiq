@@ -267,7 +267,7 @@ export default {
 		/**
 		 * Count the declared properties on a schema row.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
 		 * @param {object} schema Schema record.
 		 * @return {number} Property count.
 		 */
@@ -281,7 +281,7 @@ export default {
 		/**
 		 * Build a human-readable lifecycle-state-count label.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
 		 * @param {object} schema Schema record.
 		 * @return {string} Lifecycle label.
 		 */
@@ -306,7 +306,7 @@ export default {
 		/**
 		 * Emit an open event for the activated schema row.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
 		 * @param {object} schema Schema record.
 		 * @return {void}
 		 */
@@ -317,7 +317,7 @@ export default {
 		/**
 		 * Confirm the add-schema dialog: emit add and surface slug conflicts.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
 		 * @param {object} payload New schema payload.
 		 * @return {Promise<*>} The add result.
 		 */
@@ -349,7 +349,7 @@ export default {
 		/**
 		 * Open the delete-confirmation dialog for a schema.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
 		 * @param {object} schema Schema record.
 		 * @return {void}
 		 */
@@ -361,7 +361,7 @@ export default {
 		/**
 		 * Confirm deletion: emit delete and reset the pending state.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
 		 * @return {void}
 		 */
 		onDeleteConfirm() {
@@ -373,7 +373,7 @@ export default {
 		/**
 		 * Cancel the pending deletion.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
 		 * @return {void}
 		 */
 		cancelDelete() {

@@ -17,7 +17,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-36
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-36
  *
  * @SPDX-License-Identifier: EUPL-1.2
  * @SPDX-FileCopyrightText:  2026 Conduction B.V. <info@conduction.nl>
@@ -34,7 +34,7 @@ use Psr\Log\LoggerInterface;
 /**
  * 24-hour cleanup job for expired export archives.
  *
- * @spec openspec/changes/openbuild-exporter/tasks.md#task-5.3
+ * @spec openspec/changes/archive/2026-06-14-openbuild-exporter/tasks.md#task-5.3
  */
 class CleanupExpiredExports extends TimedJob {
 	/**
@@ -64,7 +64,7 @@ class CleanupExpiredExports extends TimedJob {
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-36
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-36
 	 */
 	protected function run($argument): void {
 		unset($argument);

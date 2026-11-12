@@ -15,7 +15,7 @@ import { generateUrl } from '@nextcloud/router'
  * toast. Generation is idempotent under double-click via a per-attachment+
  * object in-flight guard.
  *
- * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-003
+ * @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-003
  */
 import { ref } from 'vue'
 
@@ -37,7 +37,7 @@ const FORMAT_EXT = Object.freeze({
  * @param {string} template - the filename template.
  * @param {object} object - the OR object.
  * @return {string} - the rendered filename (may be empty).
- * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-003
+ * @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-003
  */
 export function renderFilename(template, object) {
 	if (typeof template !== 'string' || template === '') {
@@ -60,7 +60,7 @@ export function renderFilename(template, object) {
  * @param {object} object - the OR object.
  * @param {object} attachment - the `runtime.documents[]` entry.
  * @return {?{register: (string|number), schema: (string|number), id: string}}
- * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-003
+ * @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-003
  */
 export function resolveDataRef(object, attachment) {
 	const self = selfOf(object)
@@ -155,7 +155,7 @@ function generateErrorCode(e) {
  * @param {Function} [opts.download] - download injection for tests
  *   (default: anchor-click on an object URL).
  * @return {object} - `{ busyFor, errorFor, generate }`.
- * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-003
+ * @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-003
  */
 export function useDocudeskDocument(opts = {}) {
 	const client = opts.client || axios
@@ -183,7 +183,7 @@ export function useDocudeskDocument(opts = {}) {
 	 * @param {object} attachment - the attachment.
 	 * @param {object} object - the OR object.
 	 * @return {boolean}
-	 * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-004
+	 * @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-004
 	 */
 	function busyFor(attachment, object) {
 		return !!busy.value[keyOf(attachment, object)]
@@ -195,7 +195,7 @@ export function useDocudeskDocument(opts = {}) {
 	 * @param {object} attachment - the attachment.
 	 * @param {object} object - the OR object.
 	 * @return {?string} - `no-access` | `generate-failed` | null.
-	 * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-004
+	 * @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-004
 	 */
 	function errorFor(attachment, object) {
 		return errorState.value[keyOf(attachment, object)] || null
@@ -209,7 +209,7 @@ export function useDocudeskDocument(opts = {}) {
 	 * @param {object} attachment - the `runtime.documents[]` entry.
 	 * @param {object} object - the OR object being viewed.
 	 * @return {Promise<?string>} - null on success, error code on failure.
-	 * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-003
+	 * @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-003
 	 */
 	async function generate(attachment, object) {
 		const key = keyOf(attachment, object)
@@ -322,7 +322,7 @@ function buildFilename(attachment, object, format) {
  * @param {string} format - the resolved format.
  * @param {Function} doDownload - the download sink.
  * @return {void}
- * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-003
+ * @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-003
  */
 function deliver(response, filename, format, doDownload) {
 	let blob = response && response.data

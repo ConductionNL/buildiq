@@ -252,7 +252,7 @@ export default {
 		/**
 		 * Observed behaviour of `localFields` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		localFields() {
 			return Array.isArray(this.modelValue) ? this.modelValue : []
@@ -284,7 +284,7 @@ export default {
 		 *   `false` DELETES the key, except for the identity keys `key`, `label` and
 		 *   `type`, which are always written.
 		 * @return {void}
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		updateField(index, key, value) {
 			const next = this.localFields.slice()
@@ -374,7 +374,7 @@ export default {
 		/**
 		 * Observed behaviour of `addField` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		addField() {
 			const next = this.localFields.slice()
@@ -397,7 +397,7 @@ export default {
 		 *
 		 * @param {number} index - position of the field to drop from the `fields` array.
 		 * @return {void}
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		removeField(index) {
 			const next = this.localFields.slice()

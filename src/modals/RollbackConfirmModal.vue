@@ -62,7 +62,7 @@ export default {
 		/**
 		 * Observed behaviour of `title` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-version-routing-ui/tasks.md#task-3
 		 */
 		title() {
 			const v = this.version?.version || ''
@@ -72,7 +72,7 @@ export default {
 		/**
 		 * Observed behaviour of `formattedPublishedAt` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-version-routing-ui/tasks.md#task-3
 		 */
 		formattedPublishedAt() {
 			if (!this.version?.publishedAt) {
@@ -90,7 +90,7 @@ export default {
 		/**
 		 * Observed behaviour of `confirm` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-version-routing-ui/tasks.md#task-3
 		 */
 		confirm() {
 			this.$emit('confirm', this.version)
@@ -100,7 +100,7 @@ export default {
 		/**
 		 * Observed behaviour of `cancel` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-version-routing-ui/tasks.md#task-3
 		 */
 		cancel() {
 			this.$emit('cancel')
@@ -116,7 +116,7 @@ export default {
 		 *   `cancel`; the state change is forwarded upwards either way, since `open` is
 		 *   the parent's to own.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-version-routing-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-version-routing-ui/tasks.md#task-3
 		 */
 		onUpdateOpen(value) {
 			if (!value) {

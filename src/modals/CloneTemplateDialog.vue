@@ -171,7 +171,7 @@ export default {
 		 * store template nor a GitHub app).
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/store-shows-built-in-templates/specs/template-catalogue-ui/spec.md
+		 * @spec openspec/specs/template-catalogue-ui/spec.md
 		 */
 		isLocal() {
 			return !this.remote && !this.github
@@ -194,7 +194,7 @@ export default {
 		/**
 		 * Observed behaviour of `resolvedTitle` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-2
 		 */
 		resolvedTitle() {
 			if (!this.template) return ''
@@ -204,7 +204,7 @@ export default {
 		/**
 		 * Observed behaviour of `canSubmit` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-2
 		 */
 		canSubmit() {
 			return (
@@ -219,7 +219,7 @@ export default {
 		 * template, cloning for a local built-in template.
 		 *
 		 * @return {string} The translated button label.
-		 * @spec openspec/changes/openbuild-remote-template-store/specs/openbuild-remote-template-store/spec.md
+		 * @spec openspec/specs/openbuild-remote-template-store/spec.md
 		 */
 		submitLabel() {
 			if (this.remote || this.github) {
@@ -270,7 +270,7 @@ export default {
 		 *   name/slug fields from the selected template and clears any error left over
 		 *   from a previous attempt; closing is ignored, so the fields survive until
 		 *   the next open.
-		 * @spec openspec/changes/retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-2
 		 */
 		open(value) {
 			if (value) {
@@ -303,7 +303,7 @@ export default {
 		 *
 		 * @param {string} value The new name.
 		 * @return {void}
-		 * @spec openspec/changes/store-shows-built-in-templates/specs/template-catalogue-ui/spec.md
+		 * @spec openspec/specs/template-catalogue-ui/spec.md
 		 */
 		onNameInput(value) {
 			this.localName = value
@@ -317,7 +317,7 @@ export default {
 		 *
 		 * @param {string} value The new slug.
 		 * @return {void}
-		 * @spec openspec/changes/store-shows-built-in-templates/specs/template-catalogue-ui/spec.md
+		 * @spec openspec/specs/template-catalogue-ui/spec.md
 		 */
 		onSlugInput(value) {
 			this.localSlug = value
@@ -327,7 +327,7 @@ export default {
 		/**
 		 * Observed behaviour of `onClose` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-2
 		 */
 		onClose() {
 			if (this.submitting) return
@@ -337,7 +337,7 @@ export default {
 		/**
 		 * Observed behaviour of `submit` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-2
 		 */
 		async submit() {
 			if (!this.canSubmit) {
@@ -420,7 +420,7 @@ export default {
 		 *
 		 * @param {object} payload The new app `{name, slug}`.
 		 * @return {Promise<void>} Resolves once the request settles.
-		 * @spec openspec/changes/openbuild-remote-template-store/specs/openbuild-remote-template-store/spec.md
+		 * @spec openspec/specs/openbuild-remote-template-store/spec.md
 		 */
 		async installRemote(payload) {
 			try {
@@ -493,7 +493,7 @@ export default {
 		 *
 		 * @param {string} source The source string (remote slug or title).
 		 * @return {string} A kebab-case slug, max 32 chars.
-		 * @spec openspec/changes/openbuild-remote-template-store/specs/openbuild-remote-template-store/spec.md
+		 * @spec openspec/specs/openbuild-remote-template-store/spec.md
 		 */
 		suggestSlug(source) {
 			return String(source || '')
@@ -512,7 +512,7 @@ export default {
 		 * dialog and re-enables the submit button so the user can correct and retry.
 		 *
 		 * @param {string} message - Already-translated error text to display.
-		 * @spec openspec/changes/retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-2
 		 */
 		setError(message) {
 			this.error = message

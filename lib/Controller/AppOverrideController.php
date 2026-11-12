@@ -36,7 +36,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/unify-apps-with-app-type/specs/app-override-persistence/spec.md
+ * @spec openspec/specs/app-override-persistence/spec.md
  */
 
 declare(strict_types=1);
@@ -60,7 +60,7 @@ use Throwable;
 /**
  * Controller for the fleet-app manifest-override store-and-serve endpoints.
  *
- * @spec openspec/changes/unify-apps-with-app-type/specs/app-override-persistence/spec.md
+ * @spec openspec/specs/app-override-persistence/spec.md
  */
 class AppOverrideController extends Controller {
 	/**
@@ -112,7 +112,7 @@ class AppOverrideController extends Controller {
 	 *  so this is not an IDOR vector (design D1). Any authenticated user who can see
 	 *  the fleet app must be able to read its delta.
 	 *
-	 * @spec openspec/changes/unify-apps-with-app-type/specs/app-override-persistence/spec.md
+	 * @spec openspec/specs/app-override-persistence/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -190,7 +190,7 @@ class AppOverrideController extends Controller {
 	 *
 	 * @return JSONResponse 200 with the caller's user-delta summary; 400/401 on rejection.
 	 *
-	 * @spec openspec/changes/layered-versioned-app-deltas/specs/application-delta-layers-ui/spec.md
+	 * @spec openspec/specs/application-delta-layers-ui/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -235,7 +235,7 @@ class AppOverrideController extends Controller {
 	 *
 	 * @return JSONResponse 200 on success; 400/401/403/422 on rejection.
 	 *
-	 * @spec openspec/changes/layered-versioned-app-deltas/specs/application-delta-layers-ui/spec.md
+	 * @spec openspec/specs/application-delta-layers-ui/spec.md
 	 */
 	#[NoAdminRequired]
 	public function saveUser(string $appId): JSONResponse {
@@ -281,7 +281,7 @@ class AppOverrideController extends Controller {
 	 *
 	 * @return JSONResponse 200 on success; 400/401/403 on rejection.
 	 *
-	 * @spec openspec/changes/layered-versioned-app-deltas/specs/application-delta-layers-ui/spec.md
+	 * @spec openspec/specs/application-delta-layers-ui/spec.md
 	 */
 	#[NoAdminRequired]
 	public function clearUser(string $appId): JSONResponse {
@@ -315,7 +315,7 @@ class AppOverrideController extends Controller {
 	 *
 	 * @return JSONResponse 200 with `{ appId, total, overrides: [...] }`; 400/401/403 on rejection.
 	 *
-	 * @spec openspec/changes/layered-versioned-app-deltas/specs/application-delta-layers-ui/spec.md
+	 * @spec openspec/specs/application-delta-layers-ui/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -359,7 +359,7 @@ class AppOverrideController extends Controller {
 	 *
 	 * @return JSONResponse|null Null on allow; 401/403 JSONResponse on deny.
 	 *
-	 * @spec openspec/changes/layered-versioned-app-deltas/specs/application-delta-layers-ui/spec.md
+	 * @spec openspec/specs/application-delta-layers-ui/spec.md
 	 */
 	private function requireAppMaintainer(string $appId): ?JSONResponse {
 		$caller = $this->userSession->getUser();
@@ -408,7 +408,7 @@ class AppOverrideController extends Controller {
 	 *
 	 * @return JSONResponse 200 on success; 400/401/403/422 on rejection.
 	 *
-	 * @spec openspec/changes/unify-apps-with-app-type/specs/app-override-persistence/spec.md
+	 * @spec openspec/specs/app-override-persistence/spec.md
 	 */
 	#[NoAdminRequired]
 	public function save(string $appId): JSONResponse {
@@ -454,7 +454,7 @@ class AppOverrideController extends Controller {
 	 *
 	 * @return JSONResponse|null Null on pass; 422 JSONResponse on rejection.
 	 *
-	 * @spec openspec/changes/unify-apps-with-app-type/specs/app-override-persistence/spec.md
+	 * @spec openspec/specs/app-override-persistence/spec.md
 	 */
 	private function validateDelta(array $delta): ?JSONResponse {
 		$violations = $this->appOverrideService->validateDeltaShape(delta: $delta);
@@ -518,7 +518,7 @@ class AppOverrideController extends Controller {
 	 *
 	 * @return JSONResponse 200 on success; 400/401/403 on rejection.
 	 *
-	 * @spec openspec/changes/unify-apps-with-app-type/specs/app-override-persistence/spec.md
+	 * @spec openspec/specs/app-override-persistence/spec.md
 	 */
 	#[NoAdminRequired]
 	public function clear(string $appId): JSONResponse {
@@ -548,7 +548,7 @@ class AppOverrideController extends Controller {
 	 *
 	 * @return JSONResponse|null Null on allow; 401/403 JSONResponse on deny.
 	 *
-	 * @spec openspec/changes/unify-apps-with-app-type/specs/app-override-persistence/spec.md
+	 * @spec openspec/specs/app-override-persistence/spec.md
 	 */
 	private function requireBuildiqAccess(): ?JSONResponse {
 		$user = $this->userSession->getUser();
@@ -606,7 +606,7 @@ class AppOverrideController extends Controller {
 	 *
 	 * @return JSONResponse|null Null on allow; 400/401/403 JSONResponse on deny.
 	 *
-	 * @spec openspec/changes/unify-apps-with-app-type/specs/app-override-persistence/spec.md
+	 * @spec openspec/specs/app-override-persistence/spec.md
 	 */
 	private function refuseWrite(string $appId): ?JSONResponse {
 		if ($this->isValidAppId(appId: $appId) === false) {
@@ -623,7 +623,7 @@ class AppOverrideController extends Controller {
 	 *
 	 * @return array<string, mixed>|JSONResponse The delta, or the 400/401/403/422 rejection.
 	 *
-	 * @spec openspec/changes/unify-apps-with-app-type/specs/app-override-persistence/spec.md
+	 * @spec openspec/specs/app-override-persistence/spec.md
 	 */
 	private function admitDeltaWrite(string $appId): array|JSONResponse {
 		$guard = $this->refuseWrite(appId: $appId);

@@ -18,11 +18,11 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-34
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-37
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-47
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-34
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-37
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-47
  *
  * @SPDX-License-Identifier: EUPL-1.2
  * @SPDX-FileCopyrightText:  2026 Conduction B.V. <info@conduction.nl>
@@ -54,8 +54,8 @@ use Throwable;
 /**
  * Controller for the Buildiq export pipeline.
  *
- * @spec openspec/changes/openbuild-exporter/tasks.md#task-7.2
- * @spec openspec/changes/openbuild-exporter/tasks.md#task-5.2
+ * @spec openspec/changes/archive/2026-06-14-openbuild-exporter/tasks.md#task-7.2
+ * @spec openspec/changes/archive/2026-06-14-openbuild-exporter/tasks.md#task-5.2
  */
 class ExportsController extends Controller {
 
@@ -155,7 +155,7 @@ class ExportsController extends Controller {
 	 *
 	 * @return bool True when the caller is allowed.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-47
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-47
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function isAuthorisedForApplication(string $applicationSlug): bool {
@@ -392,7 +392,7 @@ class ExportsController extends Controller {
 	 *
 	 * @return JSONResponse|null JSONResponse on validation error, null on success.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-37
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-37
 	 */
 	private function validateSubmitBody(array $body): ?JSONResponse {
 		$target = $this->readStringField(body: $body, field: 'target', default: 'zip');
@@ -460,7 +460,7 @@ class ExportsController extends Controller {
 	 *
 	 * @return JSONResponse|null
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-34
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-34
 	 */
 	private function validateGithubFields(array $body): ?JSONResponse {
 		$org = $this->readStringField(body: $body, field: 'githubOrg', default: '');
@@ -507,8 +507,8 @@ class ExportsController extends Controller {
 	 * credential instead), but it can still push a repository into existence under
 	 * the user's GitHub identity, so it stays CSRF-protected.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
-	 * @spec openspec/changes/openbuild-export-csrf-hardening/tasks.md#task-1.1
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
+	 * @spec openspec/changes/archive/2026-11-12-openbuild-export-csrf-hardening/tasks.md#task-1.1
 	 */
 	#[NoAdminRequired]
 	public function submit(string $slug): JSONResponse {
@@ -660,8 +660,8 @@ class ExportsController extends Controller {
 	 * download link cannot carry the `requesttoken` header a CSRF check
 	 * requires, and removing it would break the download link entirely.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
-	 * @spec openspec/changes/openbuild-export-csrf-hardening/tasks.md#task-1.3
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
+	 * @spec openspec/changes/archive/2026-11-12-openbuild-export-csrf-hardening/tasks.md#task-1.3
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]

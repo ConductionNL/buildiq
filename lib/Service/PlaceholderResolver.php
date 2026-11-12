@@ -18,7 +18,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-40
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-40
  *
  * @SPDX-License-Identifier: EUPL-1.2
  * @SPDX-FileCopyrightText:  2026 Conduction B.V. <info@conduction.nl>
@@ -36,7 +36,7 @@ namespace OCA\Buildiq\Service;
  * are replaced with the exported app's slug / namespace so the unzipped tree
  * builds standalone with no further hand-edits.
  *
- * @spec openspec/changes/openbuild-exporter/tasks.md#task-3.1
+ * @spec openspec/changes/archive/2026-06-14-openbuild-exporter/tasks.md#task-3.1
  */
 final class PlaceholderResolver {
 	/**
@@ -49,7 +49,7 @@ final class PlaceholderResolver {
 	 *
 	 * @return array<string,string> Map of search → replace.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-40
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-40
 	 */
 	public function buildMap(array $context): array {
 		$appId = $this->slug(value: ($context['appId'] ?? 'my-app'));
@@ -81,7 +81,7 @@ final class PlaceholderResolver {
 	 *
 	 * @return string Resolved content.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-40
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-40
 	 */
 	public function resolve(string $content, array $map): string {
 		if ($content === '' || $map === []) {
