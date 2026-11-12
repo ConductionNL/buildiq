@@ -144,6 +144,46 @@ import DeleteSchemaDialog from '../../modals/DeleteSchemaDialog.vue'
 const SCOPE_OPS = ['read', 'create', 'update', 'delete']
 
 /**
+ * Whether a schema's `authorization` is a non-empty object.
+ *
+ * @param {object|null|undefined} auth The schema's `authorization`.
+ * @return {boolean}
+ */
+function hasAuthorization(auth) {
+	return !!auth && typeof auth === 'object' && Object.keys(auth).length > 0
+}
+
+/**
+ * One operation's part of the badge title: its group list, else its
+ * condition, else nothing.
+ *
+ * @param {object} auth The schema's `authorization`.
+ * @param {string} op The operation (read, create, update, delete).
+ * @return {?string} e.g. `read: vets` or `read: condition(owner)`.
+ */
+function scopePart(auth, op) {
+	const list = auth[op]
+	if (Array.isArray(list) && list.length > 0) {
+		return `${op}: ${list.join(', ')}`
+	}
+	return conditionPart(auth, op)
+}
+
+/**
+ * One operation's condition as a badge part, naming the field it tests.
+ *
+ * @param {object} auth The schema's `authorization`.
+ * @param {string} op The operation.
+ * @return {?string} e.g. `read: condition(owner)`, or null.
+ */
+function conditionPart(auth, op) {
+	const condition = auth.conditions && auth.conditions[op]
+	return condition
+		? `${op}: condition(${(condition && condition.field) || '?'})`
+		: null
+}
+
+/**
  * Derive a compact "Restricted" badge for a schema carrying a
  * schema-level `authorization` block (REQ-OBDSA-005). Pure and
  * exported so it is unit-testable without mounting the panel.
@@ -161,21 +201,10 @@ const SCOPE_OPS = ['read', 'create', 'update', 'delete']
  */
 export function scopeSummary(schema) {
 	const auth = schema && schema.authorization
-	if (!auth || typeof auth !== 'object' || Object.keys(auth).length === 0) {
+	if (!hasAuthorization(auth)) {
 		return null
 	}
-	const parts = []
-	SCOPE_OPS.forEach((op) => {
-		const list = auth[op]
-		if (Array.isArray(list) && list.length > 0) {
-			parts.push(`${op}: ${list.join(', ')}`)
-			return
-		}
-		const condition = auth.conditions && auth.conditions[op]
-		if (condition) {
-			parts.push(`${op}: condition(${(condition && condition.field) || '?'})`)
-		}
-	})
+	const parts = SCOPE_OPS.map((op) => scopePart(auth, op)).filter(Boolean)
 	const title =
 		parts.length > 0 ? parts.join('; ') : 'Custom authorization metadata'
 	return { label: 'Restricted', title }
