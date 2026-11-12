@@ -62,17 +62,12 @@ class UpsertPageHandler extends AbstractToolHandler {
 		}
 
 		try {
-			// ADR-083 rule 1 / ADR-084: use the constructor-injected contract
-			// rather than reaching into the container by string name.
-			$objectService = $this->objectService;
-
-			$loaded = $this->loadVersion(objectService: $objectService, appSlug: $appSlug, versionSlug: $versionSlug);
-			if (isset($loaded['error']) === true) {
-				return $this->errorResult(error: $loaded['error'], message: $loaded['message']);
+			$loaded = $this->loadManifestForEdit(appSlug: $appSlug, versionSlug: $versionSlug);
+			if (isset($loaded['isError']) === true) {
+				return $loaded;
 			}
 
-			$version = $loaded['version'];
-			$manifest = (array)($version['manifest'] ?? []);
+			$manifest = $loaded['manifest'];
 			$pages = (array)($manifest['pages'] ?? []);
 
 			// Shared with CopilotService::applyUpsertPage() so the page reviewed
@@ -92,29 +87,17 @@ class UpsertPageHandler extends AbstractToolHandler {
 
 			// H4: enforce pages-per-manifest (100) and total manifest size (256 KB).
 			// Cap is applied after upsert so updates to existing pages always pass.
-			if ($replaced === false) {
-				$capError = $this->checkManifestCaps(manifest: $manifest);
-				if ($capError !== null) {
-					return $capError;
-				}
+			$capError = $this->appendCapError(manifest: $manifest, replaced: $replaced);
+			if ($capError !== null) {
+				return $capError;
 			}
 
-			$saved = $this->saveVersionManifest(objectService: $objectService, version: $version, manifest: $manifest);
+			$saved = $this->saveVersionManifest(objectService: $this->objectService, version: $loaded['version'], manifest: $manifest);
 
-			$action = 'created';
-			if ($replaced === true) {
-				$action = 'updated';
-			}
-
-			return [
-				'success' => true,
-				'action' => $action,
+			return $this->upsertOutcome(replaced: $replaced) + [
 				'page' => $newPage,
 				'pageCount' => count($pages),
-				'version' => [
-					'uuid' => $this->extractUuid(item: $saved),
-					'slug' => (string)($saved['slug'] ?? $versionSlug),
-				],
+				'version' => $this->versionSummary(saved: $saved, versionSlug: $versionSlug),
 			];
 		} catch (\Throwable $e) {
 			$this->logger->error(

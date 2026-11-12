@@ -109,17 +109,12 @@ class AddWidgetHandler extends AbstractToolHandler {
 		}
 
 		try {
-			// ADR-083 rule 1 / ADR-084: use the constructor-injected contract
-			// rather than reaching into the container by string name.
-			$objectService = $this->objectService;
-
-			$loaded = $this->loadVersion(objectService: $objectService, appSlug: $appSlug, versionSlug: $versionSlug);
-			if (isset($loaded['error']) === true) {
-				return $this->errorResult(error: $loaded['error'], message: $loaded['message']);
+			$loaded = $this->loadManifestForEdit(appSlug: $appSlug, versionSlug: $versionSlug);
+			if (isset($loaded['isError']) === true) {
+				return $loaded;
 			}
 
-			$version = $loaded['version'];
-			$manifest = (array)($version['manifest'] ?? []);
+			$manifest = $loaded['manifest'];
 			$pages = (array)($manifest['pages'] ?? []);
 
 			$foundIdx = $this->findPageIndex(pages: $pages, pageId: $pageId);
@@ -141,7 +136,7 @@ class AddWidgetHandler extends AbstractToolHandler {
 				return $capError;
 			}
 
-			$saved = $this->saveVersionManifest(objectService: $objectService, version: $version, manifest: $manifest);
+			$saved = $this->saveVersionManifest(objectService: $this->objectService, version: $loaded['version'], manifest: $manifest);
 
 			$pageConfig = (array)($pages[$foundIdx]['config'] ?? []);
 			$widgetCount = count((array)($pageConfig['widgets'] ?? []));
@@ -152,10 +147,7 @@ class AddWidgetHandler extends AbstractToolHandler {
 				'widget' => $widget,
 				'pageId' => $pageId,
 				'widgetCount' => $widgetCount,
-				'version' => [
-					'uuid' => $this->extractUuid(item: $saved),
-					'slug' => (string)($saved['slug'] ?? $versionSlug),
-				],
+				'version' => $this->versionSummary(saved: $saved, versionSlug: $versionSlug),
 			];
 		} catch (\Throwable $e) {
 			$this->logger->error(

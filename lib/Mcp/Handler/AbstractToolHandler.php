@@ -509,6 +509,76 @@ abstract class AbstractToolHandler {
 	}//end buildDeepLink()
 
 	/**
+	 * Resolve the version a manifest edit writes to, together with its manifest.
+	 *
+	 * @param string $appSlug Application slug to resolve.
+	 * @param string $versionSlug ApplicationVersion slug to resolve.
+	 *
+	 * @return array<string, mixed> The loadVersion() result plus `manifest`, or the error envelope.
+	 */
+	protected function loadManifestForEdit(string $appSlug, string $versionSlug): array {
+		// ADR-083 rule 1 / ADR-084: use the constructor-injected contract
+		// rather than reaching into the container by string name.
+		$loaded = $this->loadVersion(objectService: $this->objectService, appSlug: $appSlug, versionSlug: $versionSlug);
+		if (isset($loaded['error']) === true) {
+			return $this->errorResult(error: $loaded['error'], message: $loaded['message']);
+		}
+
+		$loaded['manifest'] = (array)($loaded['version']['manifest'] ?? []);
+		return $loaded;
+	}//end loadManifestForEdit()
+
+	/**
+	 * Apply the manifest caps to an upsert that appended an entry.
+	 *
+	 * The caps only apply to an append, so an update of an existing entry
+	 * always passes, even on a manifest that is already over a cap.
+	 *
+	 * @param array<string, mixed> $manifest The manifest after the upsert.
+	 * @param bool $replaced True when an existing entry was replaced.
+	 *
+	 * @return array{isError: true, error: string, message: string}|null Null on pass.
+	 */
+	protected function appendCapError(array $manifest, bool $replaced): ?array {
+		if ($replaced === true) {
+			return null;
+		}
+
+		return $this->checkManifestCaps(manifest: $manifest);
+	}//end appendCapError()
+
+	/**
+	 * The leading keys of a successful upsert result.
+	 *
+	 * @param bool $replaced True when an existing entry was replaced.
+	 *
+	 * @return array{success: true, action: string}
+	 */
+	protected function upsertOutcome(bool $replaced): array {
+		$action = 'created';
+		if ($replaced === true) {
+			$action = 'updated';
+		}
+
+		return ['success' => true, 'action' => $action];
+	}//end upsertOutcome()
+
+	/**
+	 * Summarise the saved version for a tool result.
+	 *
+	 * @param array<string, mixed> $saved The saved ApplicationVersion.
+	 * @param string $versionSlug The slug the caller asked for, used when the saved version carries none.
+	 *
+	 * @return array{uuid: string, slug: string}
+	 */
+	protected function versionSummary(array $saved, string $versionSlug): array {
+		return [
+			'uuid' => $this->extractUuid(item: $saved),
+			'slug' => (string)($saved['slug'] ?? $versionSlug),
+		];
+	}//end versionSummary()
+
+	/**
 	 * Build an MCP "source" descriptor pointing at the Buildiq app deep link.
 	 *
 	 * @param string $uuid Application UUID.
