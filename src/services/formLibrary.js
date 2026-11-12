@@ -43,8 +43,18 @@ function objectId(object) {
 	if (!object) {
 		return ''
 	}
+	return String(selfIdOf(object) || object.uuid || object.id || '')
+}
+
+/**
+ * The id a stored object carries in its `@self` block.
+ *
+ * @param {object} object A stored object.
+ * @return {(string|number|undefined)}
+ */
+function selfIdOf(object) {
 	const self = object['@self'] || {}
-	return String(self.id || object.uuid || object.id || '')
+	return self.id
 }
 
 /**
@@ -84,24 +94,52 @@ export async function createLibraryForm(record, client = defaultAxios) {
  * @spec openspec/changes/reuse-gallery-categories-and-form-library/specs/form-library/spec.md#requirement-the-app-store-lists-library-forms-req-bqgl-003
  */
 export function filterLibraryForms(forms, { query = '', category = '' } = {}) {
-	const needle = String(query || '')
+	const filter = { needle: searchNeedle(query), category }
+	return (Array.isArray(forms) ? forms : []).filter((form) =>
+		matchesLibraryFilter(form, filter),
+	)
+}
+
+/**
+ * The search text as matched: trimmed and lower-cased, '' for none.
+ *
+ * @param {?string} query The search text.
+ * @return {string}
+ */
+function searchNeedle(query) {
+	return String(query || '')
 		.trim()
 		.toLowerCase()
-	return (Array.isArray(forms) ? forms : []).filter((form) => {
-		if (!form) {
-			return false
-		}
-		if (category && form.category !== category) {
-			return false
-		}
-		if (needle === '') {
-			return true
-		}
-		return [form.name, form.description, form.publisher].some(
-			(text) =>
-				typeof text === 'string' && text.toLowerCase().includes(needle),
-		)
-	})
+}
+
+/**
+ * Whether a library form is in the category and mentions the search text.
+ *
+ * @param {?object} form A library form.
+ * @param {{needle: string, category: string}} filter The lower-cased search text and the category.
+ * @return {boolean}
+ */
+function matchesLibraryFilter(form, filter) {
+	if (!form) {
+		return false
+	}
+	if (filter.category && form.category !== filter.category) {
+		return false
+	}
+	return filter.needle === '' || mentions(form, filter.needle)
+}
+
+/**
+ * Whether a form's name, description or publisher contains the search text.
+ *
+ * @param {object} form A library form.
+ * @param {string} needle The lower-cased search text.
+ * @return {boolean}
+ */
+function mentions(form, needle) {
+	return [form.name, form.description, form.publisher].some(
+		(text) => typeof text === 'string' && text.toLowerCase().includes(needle),
+	)
 }
 
 /**
@@ -184,9 +222,20 @@ export async function addSchemaProperties(schema, additions, client = defaultAxi
 function mappedForm(template, schemaSlug) {
 	const form = deepClone((template && template.form) || {})
 	const source = template && template.sourceSchema
-	return source && schemaSlug && source !== schemaSlug
+	return isRemapped(source, schemaSlug)
 		? rewriteSchemaRefs(form, { [source]: schemaSlug })
 		: form
+}
+
+/**
+ * Whether the form's source schema is mapped to another schema.
+ *
+ * @param {?string} source The library's canonical schema slug.
+ * @param {string} schemaSlug The target schema's slug.
+ * @return {boolean}
+ */
+function isRemapped(source, schemaSlug) {
+	return Boolean(source && schemaSlug && source !== schemaSlug)
 }
 
 /**
@@ -288,42 +337,95 @@ export function planLibraryFormUse(template, targetSchema) {
  * @spec openspec/changes/reuse-gallery-categories-and-form-library/specs/form-library/spec.md#requirement-a-library-form-can-be-added-to-an-app-req-bqgl-004
  */
 export async function useLibraryForm(input, client = defaultAxios) {
-	const { template, target, schema, register, addProperties } = input
+	const { target } = input
 	if (!FORM_TARGETS.includes(target)) {
 		throw new Error(`Unknown target: ${target}`)
 	}
-	const { missing, missingNames } = planLibraryFormUse(template, schema)
-	if (missingNames.length > 0 && addProperties !== true) {
-		const error = new Error('missing-properties')
-		error.missing = missingNames
-		throw error
-	}
-	if (missingNames.length > 0) {
-		await addSchemaProperties(schema, missing, client)
-	}
-
+	const missingNames = await ensureSchemaProperties(input, client)
 	if (target === 'form-page') {
-		const version = input.version || {}
-		const pages = withLibraryFormPage(
-			(version.manifest && version.manifest.pages) || [],
-			template,
-			{ register, schema: schema.slug },
-		)
-		const manifest = { ...(version.manifest || {}), pages }
-		await client.patch(
-			generateUrl(
-				`/apps/openregister/api/objects/buildiq/applicationVersion/${encodeURIComponent(objectId(version))}`,
-			),
-			{ manifest },
-		)
-		return { added: missingNames, page: pages[pages.length - 1] }
+		return { added: missingNames, page: await addFormPage(input, client) }
 	}
+	return { added: missingNames, form: await saveRegistration(input) }
+}
 
-	const body = registrationFormFromLibrary(template, {
+/**
+ * Add the properties the target schema lacks, when the maker confirmed that.
+ *
+ * @param {object} input What useLibraryForm was asked to do.
+ * @param {object} client Axios-like client.
+ * @return {Promise<Array<string>>} The names of the properties added.
+ * @throws {Error} `missing-properties` when properties are missing and not confirmed.
+ */
+async function ensureSchemaProperties(input, client) {
+	const { missing, missingNames } = planLibraryFormUse(input.template, input.schema)
+	if (missingNames.length === 0) {
+		return missingNames
+	}
+	if (input.addProperties !== true) {
+		throw missingPropertiesError(missingNames)
+	}
+	await addSchemaProperties(input.schema, missing, client)
+	return missingNames
+}
+
+/**
+ * The error that stops a library form whose needed properties are missing.
+ *
+ * @param {Array<string>} missingNames The missing property names.
+ * @return {Error}
+ */
+function missingPropertiesError(missingNames) {
+	const error = new Error('missing-properties')
+	error.missing = missingNames
+	return error
+}
+
+/**
+ * Append the library form as a page to the version manifest, by a PATCH of the
+ * manifest only.
+ *
+ * @param {object} input What useLibraryForm was asked to do.
+ * @param {object} client Axios-like client.
+ * @return {Promise<object>} The page added.
+ */
+async function addFormPage(input, client) {
+	const version = input.version || {}
+	const pages = withLibraryFormPage(manifestPages(version), input.template, {
+		register: input.register,
+		schema: input.schema.slug,
+	})
+	const manifest = { ...(version.manifest || {}), pages }
+	await client.patch(
+		generateUrl(
+			`/apps/openregister/api/objects/buildiq/applicationVersion/${encodeURIComponent(objectId(version))}`,
+		),
+		{ manifest },
+	)
+	return pages[pages.length - 1]
+}
+
+/**
+ * The pages of a version's manifest, or none.
+ *
+ * @param {object} version The application version.
+ * @return {Array<object>}
+ */
+function manifestPages(version) {
+	return (version.manifest && version.manifest.pages) || []
+}
+
+/**
+ * Save the library form as a draft registration form.
+ *
+ * @param {object} input What useLibraryForm was asked to do.
+ * @return {Promise<object>} The saved form, or the body when the save returns none.
+ */
+async function saveRegistration(input) {
+	const body = registrationFormFromLibrary(input.template, {
 		...(input.registration || {}),
-		register,
-		schema: schema.slug,
+		register: input.register,
+		schema: input.schema.slug,
 	})
 	const saved = await input.saveRegistrationForm(body)
-	return { added: missingNames, form: (saved && saved.form) || body }
+	return (saved && saved.form) || body
 }
