@@ -134,3 +134,25 @@ A built app's detail page SHALL show the record's data widget as editable unless
 - **GIVEN** a detail page whose data widget has `editable: false`
 - **WHEN** a user clicks a field
 - **THEN** no edit control opens
+
+### Requirement: A maker picks and orders the fields of a form page (REQ-BQCV-024)
+
+The form page editor SHALL let a maker choose which properties of the bound schema appear on the form, add a property as a field, remove a field, and change the order of the fields. The saved form page SHALL render its fields in that order.
+
+#### Scenario: A maker builds a form from chosen fields
+
+- **GIVEN** a form page bound to a schema with the properties name, email, phone and note
+- **WHEN** the maker adds name, email and note, moves note above email, and saves
+- **THEN** the form shows the fields name, note and email in that order
+- **AND** phone is not on the form
+
+### Requirement: A form page is previewed as its users see it before it is published (REQ-BQCV-025)
+
+While a version is a draft, the page designer SHALL render a form page in its preview pane the way the app's users will see it, with the same fields, labels, conditions and submit button, without publishing the version and without saving a record.
+
+#### Scenario: A maker previews a draft form
+
+- **GIVEN** a draft version whose form page has three fields, one shown only when another has a value
+- **WHEN** the maker opens the form page in the designer's preview pane and fills in the first field
+- **THEN** the preview shows the fields as the published form will, including the conditional field
+- **AND** the version stays a draft and no record is created

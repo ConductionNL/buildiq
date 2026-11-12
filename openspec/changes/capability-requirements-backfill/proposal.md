@@ -32,10 +32,20 @@ One added requirement per row, each with at least one scenario, written from the
 - `logic-running-case-keeps-version` (Change a workflow while cases already started keep following the version they started with): Changing a published flow leaves running flows on their version (REQ-BQCV-018), in `automation-designer`
 - `form-digid-login` (Require citizens to sign in with DigiD, or businesses with eHerkenning, before filling in a form): A form can require sign-in at a trust level (REQ-BQCV-019), in `external-form-provisioning`
 - `form-usage-stats` (See how a form is used, such as how many people start, submit or abandon it): A form's use is reported where it is served (REQ-BQCV-020), in `external-form-provisioning`
+- `data-required-validation` (Mark fields as required and set validation rules such as length, range or pattern): A field carries required, length, range and pattern rules (REQ-BQCV-021), in `openbuild-schema-designer`
+- `data-import-rollback` (Undo an import that went wrong): A maker undoes an import from its summary (REQ-BQCV-022), in `data-import-wizard`
+- `data-schema-reuse` (Reuse an object type that another app already defines instead of copying it): A page binds to another app's schema without copying it (REQ-BQCV-023), in `page-designer-ui`
+- `form-builder` (Build a data-entry form by choosing and ordering fields): A maker picks and orders the fields of a form page (REQ-BQCV-024), in `openbuild-page-designer`
+- `form-preview-before-publish` (Preview a form as the public will see it before publishing it): A form page is previewed as its users see it before it is published (REQ-BQCV-025), in `openbuild-page-designer`
+- `ops-admin-settings` (Configure the builder centrally in the platform's admin settings): An administrator configures the builder on the admin settings page (REQ-BQCV-026), in `settings-and-observability`
+- `acc-approval-publish` (Require an approval before an app change goes live): A change goes live only when an owner releases it (REQ-BQCV-027), in `version-lifecycle-ui`
+- `logic-trigger-status` (Start an automation when a record moves to another status): A status change starts an automation (REQ-BQCV-028), in `automation-designer`
+- `logic-action-approval` (Add an approval step that waits for a person or group to approve): An approval step holds the run until it is approved (REQ-BQCV-029), in `automation-approval-action`
+- `app-demo-data` (Fill a new app with demo records so you can try it straight away): A maker fills a new app with demo records (REQ-BQCV-030), in `application-creation-wizard`
 
 No code changes. Where the scenarios describe more than is built today (rows rated partial), the tasks below name the work.
 
 ## Impact
 
-- Delta specs for `data-import-wizard`, `openbuild-runtime`, `openbuild-schema-designer`, `openbuild-page-designer`, `openbuild-rbac`, `application-versions`, `unified-app-model`, `business-rules-engine`, `automation-designer`, `external-form-provisioning`.
+- Delta specs for `data-import-wizard`, `openbuild-runtime`, `openbuild-schema-designer`, `openbuild-page-designer`, `openbuild-rbac`, `application-versions`, `unified-app-model`, `business-rules-engine`, `automation-designer`, `external-form-provisioning`, `page-designer-ui`, `settings-and-observability`, `version-lifecycle-ui`, `automation-approval-action`, `application-creation-wizard`.
 - The rows above record these requirements in `built.requirement`.

@@ -16,3 +16,21 @@ The create-app wizard SHALL offer to start from an uploaded spreadsheet (CSV, XL
 - **GIVEN** the same wizard
 - **WHEN** the maker uploads a file that OpenRegister cannot import
 - **THEN** the wizard shows the import error and no app, schema or record is created
+
+### Requirement: A maker undoes an import from its summary (REQ-BQCV-022)
+
+The import wizard's result summary SHALL offer an Undo action. Undo SHALL roll the import back through OpenRegister's import rollback, using the import job the summary reports, so the records that import created are removed and records that existed before it are left as they were.
+
+#### Scenario: A maker undoes an import that went wrong
+
+- **GIVEN** a maker who imported 200 rows into the schema `request` and sees the summary
+- **WHEN** they choose Undo
+- **THEN** the 200 records that import created are removed from the register
+- **AND** the records that were in `request` before the import are unchanged
+- **AND** the summary says the import was undone
+
+#### Scenario: A failed undo is shown
+
+- **GIVEN** the same summary
+- **WHEN** the rollback call fails
+- **THEN** the wizard shows the error and the imported records stay

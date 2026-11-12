@@ -16,3 +16,18 @@ A flow bound to an app SHALL NOT be edited in place once published. Editing it S
 - **GIVEN** a published flow
 - **WHEN** a maker opens it in the flow editor
 - **THEN** the editor refuses direct edits and offers to create a draft version
+
+### Requirement: A status change starts an automation (REQ-BQCV-028)
+
+An automation whose trigger is a lifecycle transition SHALL run when a record of the bound schema moves through that transition, and only then. Its condition SHALL be evaluated against the record after the transition, and its actions SHALL run when the condition holds.
+
+#### Scenario: A record moves to the status the automation listens for
+
+- **GIVEN** an automation on the schema `request` with the trigger "transition submitted to in review" and the action "send a notification to the group reviewers"
+- **WHEN** a request moves from submitted to in review
+- **THEN** the automation runs once and the reviewers get the notification
+
+#### Scenario: Another transition does not start it
+
+- **WHEN** a request moves from in review to closed
+- **THEN** the automation does not run

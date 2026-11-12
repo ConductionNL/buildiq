@@ -212,3 +212,15 @@ why, and neither has the administrator who is asked about it.
 - **WHEN** the provider answers
 - **THEN** `withheld[]` names it with the reason `drift`
 - @e2e exclude provider contract; covered by PHPUnit
+
+### Requirement: An override can be bound to an organisation (REQ-OBSO-007)
+
+`audience.kind` SHALL also accept `organisation`, with `ref` naming an OpenRegister organisation. An organisation override SHALL sit between the type layout and the group and team overrides, so a team override patches the organisation's screen and the organisation's screen patches the base. A caller SHALL get the organisation override of their own active organisation only.
+
+#### Scenario: Two organisations each get their own screen, and a team narrows one
+
+- **GIVEN** one case type with an override for organisation `Gemeente A`, an override for organisation `Gemeente B`, and a team override for the team `Vergunningen` in `Gemeente A`
+- **WHEN** a handler of `Gemeente B` opens a case of that type
+- **THEN** they get the base patched by the `Gemeente B` override, and `appliedLayers` names it
+- **WHEN** a member of team `Vergunningen` in `Gemeente A` opens a case of that type
+- **THEN** they get the base patched by the `Gemeente A` override and then by the team override
