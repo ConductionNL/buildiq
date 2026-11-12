@@ -188,4 +188,47 @@ class ManifestDataBindingTest extends TestCase {
 			ManifestDataBinding::bindBlock(config: $config, appSlug: 'tool-library', versionSlug: 'development')
 		);
 	}//end testABlockWithNoBindingIsUntouched()
+
+	/**
+	 * Every kind of value at every depth, bound once with a data register and
+	 * once without the version, pinned value by value.
+	 *
+	 * @return void
+	 */
+	public function testEveryBindingShapeAtEveryDepth(): void {
+		$config = [
+			'schema' => 'loan',
+			'title' => 'Loans',
+			'widgets' => [
+				['content' => ['register' => '{registerSlug}', 'schema' => 'tool-library-development-loan']],
+				['content' => ['register' => ' other ', 'schema' => ' member ']],
+				['content' => ['register' => 'crm-data', 'schema' => 'contact', 'nested' => ['schema' => 'note']]],
+				['content' => ['register' => '', 'schema' => 17, 'size' => 3]],
+				['content' => ['register' => ['x'], 'schema' => '   ']],
+				'plain',
+				7 => ['schema' => '42'],
+			],
+		];
+
+		self::assertSame(
+			[
+				'schema' => 'tool-library-development-loan',
+				'title' => 'Loans',
+				'widgets' => [
+					['content' => ['register' => 'openbuild-tool-library-development', 'schema' => 'tool-library-development-loan']],
+					['content' => ['register' => 'openbuild-tool-library-development', 'schema' => 'tool-library-development-member']],
+					['content' => ['register' => 'crm-data', 'schema' => 'contact', 'nested' => ['schema' => 'tool-library-development-note']]],
+					['content' => ['register' => '', 'schema' => 17, 'size' => 3]],
+					['content' => ['register' => ['x'], 'schema' => '   ']],
+					'plain',
+					7 => ['schema' => '42'],
+				],
+				'register' => 'openbuild-tool-library-development',
+			],
+			ManifestDataBinding::bindBlock(config: $config, appSlug: 'tool-library', versionSlug: 'development', dataRegisters: ['crm-data'])
+		);
+
+		self::assertSame($config, ManifestDataBinding::bindBlock(config: $config, appSlug: '', versionSlug: 'development'));
+		self::assertSame($config, ManifestDataBinding::bindBlock(config: $config, appSlug: 'tool-library', versionSlug: ''));
+	}//end testEveryBindingShapeAtEveryDepth()
 }//end class
