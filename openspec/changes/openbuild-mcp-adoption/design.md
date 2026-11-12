@@ -1,5 +1,10 @@
 # Design: buildiq-mcp-adoption
 
+> **Decision 392 (12 Nov 2026) supersedes Decisions 1 and 2 below.** Outside agents may build: the
+> alias stays, the class keeps its name, and every write needs the app's roles and an approved plan.
+> The curation table and Decision 3 (read-only dialect) still hold. The rest of this design is kept
+> as the record of the earlier proposal.
+
 ## Context
 
 Buildiq is the fleet's app builder, so "a tool that mutates a manifest" is not an abstract risk —
