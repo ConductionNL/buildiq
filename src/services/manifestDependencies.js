@@ -54,19 +54,41 @@ export function hasConnectorBinding(manifest) {
 	if (!manifest || !Array.isArray(manifest.pages)) {
 		return false
 	}
-	return manifest.pages.some((page) => {
-		const cfg = page && page.config
-		if (!cfg) {
-			return false
-		}
-		if (cfg.dataSource && cfg.dataSource.connector) {
-			return true
-		}
-		return (
-			Array.isArray(cfg.widgets)
-			&& cfg.widgets.some((w) => w && w.dataSource && w.dataSource.connector)
-		)
-	})
+	return manifest.pages.some(pageBindsConnector)
+}
+
+/**
+ * Whether a page, or one of its widgets, is bound to a connector.
+ *
+ * @param {?object} page - a manifest page.
+ * @return {boolean}
+ */
+function pageBindsConnector(page) {
+	const cfg = page && page.config
+	if (!cfg) {
+		return false
+	}
+	return namesConnector(cfg.dataSource) || widgetsBindConnector(cfg.widgets)
+}
+
+/**
+ * Whether one of a page's widgets is bound to a connector.
+ *
+ * @param {unknown} widgets - the page's widgets.
+ * @return {boolean}
+ */
+function widgetsBindConnector(widgets) {
+	return Array.isArray(widgets) && widgets.some((w) => w && namesConnector(w.dataSource))
+}
+
+/**
+ * Whether a data source names a connector.
+ *
+ * @param {?object} dataSource - a page or widget data source.
+ * @return {boolean}
+ */
+function namesConnector(dataSource) {
+	return Boolean(dataSource && dataSource.connector)
 }
 
 /**
@@ -87,14 +109,25 @@ export function ensureDependency(manifest, appId) {
 		manifest.dependencies = []
 	}
 	if (!manifest.dependencies.includes(appId)) {
-		manifest.dependencies.push(appId)
-		const auto = manifest[MARKER] || []
-		if (!auto.includes(appId)) {
-			auto.push(appId)
-		}
-		manifest[MARKER] = auto
+		addAutoDependency(manifest, appId)
 	}
 	return manifest
+}
+
+/**
+ * Add a dependency and record that this layer added it.
+ *
+ * @param {object} manifest - the manifest (mutated).
+ * @param {string} appId - the dependency app id.
+ * @return {void}
+ */
+function addAutoDependency(manifest, appId) {
+	manifest.dependencies.push(appId)
+	const auto = manifest[MARKER] || []
+	if (!auto.includes(appId)) {
+		auto.push(appId)
+	}
+	manifest[MARKER] = auto
 }
 
 /**
@@ -108,7 +141,7 @@ export function ensureDependency(manifest, appId) {
  * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-005
  */
 export function removeAutoDependency(manifest, appId) {
-	if (!manifest || !appId || !Array.isArray(manifest.dependencies)) {
+	if (!listsDependencies(manifest, appId)) {
 		return manifest
 	}
 	const auto = manifest[MARKER] || []
@@ -118,6 +151,17 @@ export function removeAutoDependency(manifest, appId) {
 	manifest.dependencies = manifest.dependencies.filter((d) => d !== appId)
 	manifest[MARKER] = auto.filter((d) => d !== appId)
 	return manifest
+}
+
+/**
+ * Whether there is an app id to remove and a dependency list to remove it from.
+ *
+ * @param {?object} manifest - the manifest.
+ * @param {string} appId - the dependency app id.
+ * @return {boolean}
+ */
+function listsDependencies(manifest, appId) {
+	return Boolean(manifest && appId && Array.isArray(manifest.dependencies))
 }
 
 /**
