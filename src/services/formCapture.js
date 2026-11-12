@@ -99,50 +99,152 @@ export function boundProperties(form, kind) {
  * @spec openspec/changes/reuse-gallery-categories-and-form-library/specs/form-library/spec.md#requirement-a-form-can-be-saved-to-the-library-req-bqgl-002
  */
 export function captureForm({ kind, form, schema, appSlug, metadata }) {
+	assertFormKind(kind)
+	const properties = propertiesOf(schema)
+	const bound = boundProperties(form, kind)
+	assertBoundInSchema(bound, properties)
+	const source = sourceSchemaOf(schema, appSlug)
+	return {
+		...recordIdentity(metadata),
+		kind,
+		form: capturedForm(form, source.rewrite),
+		schemaFragment: schemaFragmentOf(bound, properties),
+		sourceSchema: source.canonical,
+		...recordProvenance(metadata, appSlug),
+	}
+}
+
+/**
+ * Refuse a form kind the library does not know.
+ *
+ * @param {string} kind The form kind.
+ * @return {void}
+ * @throws {Error} When the kind is not one of FORM_KINDS.
+ */
+function assertFormKind(kind) {
 	if (!FORM_KINDS.includes(kind)) {
 		throw new Error(`Unknown form kind: ${kind}`)
 	}
-	const properties = (schema && schema.properties) || {}
-	const bound = boundProperties(form, kind)
+}
+
+/**
+ * The property definitions of a schema, or none.
+ *
+ * @param {?{properties: object}} schema The schema.
+ * @return {object}
+ */
+function propertiesOf(schema) {
+	return (schema && schema.properties) || {}
+}
+
+/**
+ * Refuse a form bound to a property its schema lacks.
+ *
+ * @param {Array<string>} bound The properties the form writes.
+ * @param {object} properties The schema's property definitions.
+ * @return {void}
+ * @throws {FormBindingError} Naming every property the schema lacks.
+ */
+function assertBoundInSchema(bound, properties) {
 	const missing = bound.filter((name) => !Object.hasOwn(properties, name))
 	if (missing.length > 0) {
 		throw new FormBindingError(missing)
 	}
+}
 
+/**
+ * The library's canonical slug for the form's schema, and the rewrite that
+ * points the form's schema references at it.
+ *
+ * @param {?{slug: string}} schema The schema the form writes to.
+ * @param {string} appSlug The app the form is saved from.
+ * @return {{canonical: string, rewrite: object}}
+ */
+function sourceSchemaOf(schema, appSlug) {
 	const sourceSlug = (schema && schema.slug) || ''
 	const canonical = sourceSlug ? deNamespaceSlug(sourceSlug, appSlug).slug : ''
 	const rewrite = sourceSlug ? { [sourceSlug]: canonical } : {}
+	return { canonical, rewrite }
+}
 
+/**
+ * The form parts the library keeps, cloned, with their schema references
+ * rewritten; always with a field list.
+ *
+ * @param {?object} form The form configuration.
+ * @param {object} rewrite Source schema slug to canonical slug.
+ * @return {object}
+ */
+function capturedForm(form, rewrite) {
 	const captured = {}
 	for (const part of FORM_PARTS) {
-		if (form && form[part] !== undefined && form[part] !== null) {
+		if (hasPart(form, part)) {
 			captured[part] = rewriteSchemaRefs(deepClone(form[part]), rewrite)
 		}
 	}
 	captured.fields = Array.isArray(captured.fields) ? captured.fields : []
+	return captured
+}
 
+/**
+ * Whether a form sets a part (neither undefined nor null).
+ *
+ * @param {?object} form The form configuration.
+ * @param {string} part One of FORM_PARTS.
+ * @return {boolean}
+ */
+function hasPart(form, part) {
+	return Boolean(form) && form[part] !== undefined && form[part] !== null
+}
+
+/**
+ * The definitions of the bound properties, cloned.
+ *
+ * @param {Array<string>} bound The properties the form writes.
+ * @param {object} properties The schema's property definitions.
+ * @return {object}
+ */
+function schemaFragmentOf(bound, properties) {
 	const schemaFragment = {}
 	for (const name of bound) {
 		schemaFragment[name] = deepClone(properties[name])
 	}
+	return schemaFragment
+}
 
-	const record = {
+/**
+ * The record's leading metadata: slug, name, description and category.
+ *
+ * @param {object} metadata The metadata the maker entered.
+ * @return {object}
+ */
+function recordIdentity(metadata) {
+	return {
 		slug: metadata.slug,
 		name: metadata.name,
 		description: metadata.description || '',
 		category: metadata.category,
-		kind,
-		form: captured,
-		schemaFragment,
-		sourceSchema: canonical,
+	}
+}
+
+/**
+ * The record's trailing metadata: publisher, version, the app it came from and,
+ * when known, who created it.
+ *
+ * @param {object} metadata The metadata the maker entered.
+ * @param {string} appSlug The app the form is saved from.
+ * @return {object}
+ */
+function recordProvenance(metadata, appSlug) {
+	const provenance = {
 		publisher: metadata.publisher || '',
 		version: metadata.version || '1.0.0',
 		sourceApplicationSlug: appSlug || '',
 	}
 	if (metadata.createdBy) {
-		record.createdBy = metadata.createdBy
+		provenance.createdBy = metadata.createdBy
 	}
-	return record
+	return provenance
 }
 
 /**
@@ -155,16 +257,23 @@ export function captureForm({ kind, form, schema, appSlug, metadata }) {
  * @spec openspec/changes/reuse-gallery-categories-and-form-library/specs/form-library/spec.md#requirement-a-library-form-can-be-added-to-an-app-req-bqgl-004
  */
 export function missingProperties(template, targetSchema) {
-	const have = (targetSchema && targetSchema.properties) || {}
+	const have = propertiesOf(targetSchema)
 	const fragment = (template && template.schemaFragment) || {}
 	const missing = {}
-	for (const name of boundProperties(
-		template && template.form,
-		template && template.kind,
-	)) {
+	for (const name of templateBound(template)) {
 		if (!Object.hasOwn(have, name)) {
 			missing[name] = deepClone(fragment[name] || { type: 'string' })
 		}
 	}
 	return missing
+}
+
+/**
+ * Every property a library form writes.
+ *
+ * @param {?object} template The form-template record.
+ * @return {Array<string>}
+ */
+function templateBound(template) {
+	return boundProperties(template && template.form, template && template.kind)
 }

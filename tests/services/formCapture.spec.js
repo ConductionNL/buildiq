@@ -233,3 +233,112 @@ describe('missingProperties (REQ-BQGL-004)', () => {
 		])
 	})
 })
+
+describe('captureForm record shape', () => {
+	it('pins the full record, its key order and the defaults', () => {
+		const record = captureForm({
+			kind: 'registration-form',
+			form: { fields: [{ name: 'naam' }], steps: null, sections: undefined },
+			schema: { properties: { naam: { type: 'string' } } },
+			appSlug: '',
+			metadata: { slug: 's', name: 'n', category: 'c' },
+		})
+		expect(Object.keys(record)).toEqual([
+			'slug',
+			'name',
+			'description',
+			'category',
+			'kind',
+			'form',
+			'schemaFragment',
+			'sourceSchema',
+			'publisher',
+			'version',
+			'sourceApplicationSlug',
+		])
+		expect(record).toEqual({
+			slug: 's',
+			name: 'n',
+			description: '',
+			category: 'c',
+			kind: 'registration-form',
+			form: { fields: [{ name: 'naam' }] },
+			schemaFragment: { naam: { type: 'string' } },
+			sourceSchema: '',
+			publisher: '',
+			version: '1.0.0',
+			sourceApplicationSlug: '',
+		})
+	})
+
+	it('adds createdBy last and keeps a given version and description', () => {
+		const record = captureForm({
+			kind: 'registration-form',
+			form: registrationForm,
+			schema,
+			appSlug: 'subsidies',
+			metadata: { ...metadata, version: '2.0.0', description: 'd' },
+		})
+		expect(Object.keys(record).at(-1)).toBe('createdBy')
+		expect(record.version).toBe('2.0.0')
+		expect(record.description).toBe('d')
+		expect(record.sourceApplicationSlug).toBe('subsidies')
+	})
+
+	it('captures an empty field list for a form without fields or without a form', () => {
+		const record = captureForm({
+			kind: 'form-page',
+			form: null,
+			schema: null,
+			appSlug: 'a',
+			metadata,
+		})
+		expect(record.form).toEqual({ fields: [] })
+		expect(record.schemaFragment).toEqual({})
+		const odd = captureForm({
+			kind: 'form-page',
+			form: { fields: 'x' },
+			schema: null,
+			appSlug: 'a',
+			metadata,
+		})
+		expect(odd.form).toEqual({ fields: [] })
+	})
+
+	it('refuses an unknown kind before reading the form, and throws without metadata', () => {
+		expect(() => captureForm({ kind: 'page', form: null, metadata })).toThrow(
+			'Unknown form kind: page',
+		)
+		expect(() =>
+			captureForm({ kind: 'page', form: { fields: [{ name: 'x' }] } }),
+		).toThrow('Unknown form kind: page')
+		expect(() => captureForm({ kind: 'form-page', form: null })).toThrow(TypeError)
+		expect(() =>
+			captureForm({
+				kind: 'form-page',
+				form: { fields: [{ key: 'gone' }] },
+				schema: null,
+			}),
+		).toThrow(FormBindingError)
+	})
+})
+
+describe('missingProperties edges', () => {
+	it('falls back to a string definition and handles missing inputs', () => {
+		const template = {
+			kind: 'form-page',
+			form: { fields: [{ key: 'a' }, { key: 'b' }] },
+			schemaFragment: { a: { type: 'number' } },
+		}
+		expect(missingProperties(template, null)).toEqual({
+			a: { type: 'number' },
+			b: { type: 'string' },
+		})
+		expect(missingProperties(template, { properties: { a: {}, b: {} } })).toEqual({})
+		expect(missingProperties(null, null)).toEqual({})
+		expect(missingProperties({ ...template, schemaFragment: null }, {})).toEqual({
+			a: { type: 'string' },
+			b: { type: 'string' },
+		})
+	})
+})
