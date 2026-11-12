@@ -72,50 +72,24 @@
 			<legend>{{ t('buildiq', 'Article field mapping') }}</legend>
 			<label class="wiki-page-editor__group-row">
 				{{ t('buildiq', 'Content field') }}
-				<select
-					v-if="hasBoundSchema"
+				<PropertyKeyField
 					:value="config.contentField || ''"
-					@change="update('contentField', $event.target.value)">
-					<option value="">
-						{{ t('buildiq', '— default: body —') }}
-					</option>
-					<option
-						v-for="key in schemaPropertyKeys"
-						:key="key"
-						:value="key">
-						{{ key }}
-					</option>
-				</select>
-				<input
-					v-else
-					type="text"
-					:value="config.contentField || ''"
+					:keys="schemaPropertyKeys"
+					:bound="hasBoundSchema"
+					:emptyLabel="t('buildiq', '— default: body —')"
 					:placeholder="t('buildiq', 'body')"
-					@input="update('contentField', $event.target.value)" />
+					@update="update('contentField', $event)" />
 				<InlineFieldMark :error="markFor('contentField')" />
 			</label>
 			<label class="wiki-page-editor__group-row">
 				{{ t('buildiq', 'Title field') }}
-				<select
-					v-if="hasBoundSchema"
+				<PropertyKeyField
 					:value="config.titleField || ''"
-					@change="update('titleField', $event.target.value)">
-					<option value="">
-						{{ t('buildiq', '— default: title —') }}
-					</option>
-					<option
-						v-for="key in schemaPropertyKeys"
-						:key="key"
-						:value="key">
-						{{ key }}
-					</option>
-				</select>
-				<input
-					v-else
-					type="text"
-					:value="config.titleField || ''"
+					:keys="schemaPropertyKeys"
+					:bound="hasBoundSchema"
+					:emptyLabel="t('buildiq', '— default: title —')"
 					:placeholder="t('buildiq', 'title')"
-					@input="update('titleField', $event.target.value)" />
+					@update="update('titleField', $event)" />
 				<InlineFieldMark :error="markFor('titleField')" />
 			</label>
 			<label class="wiki-page-editor__group-row">
@@ -168,49 +142,23 @@
 			</label>
 			<label class="wiki-page-editor__group-row">
 				{{ t('buildiq', 'Tree children field') }}
-				<select
-					v-if="hasBoundSidebarSchema"
+				<PropertyKeyField
 					:value="config.treeField || ''"
-					@change="update('treeField', $event.target.value)">
-					<option value="">
-						{{ t('buildiq', '— default: children —') }}
-					</option>
-					<option
-						v-for="key in sidebarSchemaPropertyKeys"
-						:key="key"
-						:value="key">
-						{{ key }}
-					</option>
-				</select>
-				<input
-					v-else
-					type="text"
-					:value="config.treeField || ''"
+					:keys="sidebarSchemaPropertyKeys"
+					:bound="hasBoundSidebarSchema"
+					:emptyLabel="t('buildiq', '— default: children —')"
 					:placeholder="t('buildiq', 'children')"
-					@input="update('treeField', $event.target.value)" />
+					@update="update('treeField', $event)" />
 				<InlineFieldMark :error="markFor('treeField')" />
 			</label>
 			<label class="wiki-page-editor__group-row">
 				{{ t('buildiq', 'Sidebar title field') }}
-				<select
-					v-if="hasBoundSidebarSchema"
+				<PropertyKeyField
 					:value="config.sidebarTitleField || ''"
-					@change="update('sidebarTitleField', $event.target.value)">
-					<option value="">
-						{{ t('buildiq', '— default: title field —') }}
-					</option>
-					<option
-						v-for="key in sidebarSchemaPropertyKeys"
-						:key="key"
-						:value="key">
-						{{ key }}
-					</option>
-				</select>
-				<input
-					v-else
-					type="text"
-					:value="config.sidebarTitleField || ''"
-					@input="update('sidebarTitleField', $event.target.value)" />
+					:keys="sidebarSchemaPropertyKeys"
+					:bound="hasBoundSidebarSchema"
+					:emptyLabel="t('buildiq', '— default: title field —')"
+					@update="update('sidebarTitleField', $event)" />
 				<InlineFieldMark :error="markFor('sidebarTitleField')" />
 			</label>
 		</fieldset>
@@ -255,6 +203,7 @@
 
 <script>
 import InlineFieldMark from './fields/InlineFieldMark.vue'
+import PropertyKeyField from './fields/PropertyKeyField.vue'
 import { useEditorRegisterPicker } from '../../composables/useEditorRegisterPicker.js'
 import {
 	pageEditorBaseMixin,
@@ -264,7 +213,7 @@ import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 
 export default {
 	name: 'WikiPageEditor',
-	components: { InlineFieldMark },
+	components: { InlineFieldMark, PropertyKeyField },
 	mixins: [
 		pageEditorBaseMixin,
 		pageEditorValidationMixin,
