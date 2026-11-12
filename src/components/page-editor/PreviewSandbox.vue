@@ -39,20 +39,133 @@ import { registerDirectives } from '../../registerDirectives.js'
 function dataBinding(page) {
 	const config = (page && page.config) || {}
 	try {
-		return JSON.stringify([
-			config.register || '',
-			config.schema || '',
-			config.columns || [],
-			config.dataSource || null,
-		])
+		return JSON.stringify(bindingParts(config))
 	} catch {
 		return ''
 	}
 }
 
+/**
+ * The parts of a page config the data binding is made of, each with its
+ * empty default.
+ *
+ * @param {object} config - a page's config.
+ * @return {Array} register, schema, columns and data source.
+ */
+function bindingParts(config) {
+	return [
+		config.register || '',
+		config.schema || '',
+		config.columns || [],
+		config.dataSource || null,
+	]
+}
+
+/**
+ * An element id as a CSS attribute value, escaped where the browser can.
+ *
+ * @param {string} id - the element id.
+ * @return {string} the escaped id.
+ */
+function cssId(id) {
+	return window.CSS?.escape ? window.CSS.escape(id) : id
+}
+
+/**
+ * Whether the host holds the trigger of a teleported element: a control
+ * pointing at the target, or one of its ancestors, through `aria-controls`
+ * or `aria-owns`.
+ *
+ * @param {HTMLElement} host - the preview's host element.
+ * @param {Node} target - the event's target.
+ * @return {boolean} true when a trigger inside the host points at it.
+ */
+function hostControls(host, target) {
+	for (let el = target; el; el = el.parentElement) {
+		if (!el.id) {
+			continue
+		}
+		const id = cssId(el.id)
+		if (host.querySelector(`[aria-controls="${id}"], [aria-owns="${id}"]`)) {
+			return true
+		}
+	}
+	return false
+}
+
+/**
+ * Whether a key event cannot activate a control: only Enter and Space do;
+ * Escape, arrows and Tab belong to the harmless affordances.
+ *
+ * @param {MouseEvent|KeyboardEvent} event - the event.
+ * @return {boolean} true for a keydown of any other key.
+ */
+function isNonActivatingKey(event) {
+	return (
+		event.type === 'keydown'
+		&& event.key !== 'Enter'
+		&& event.key !== ' '
+	)
+}
+
+/**
+ * Whether an anchor opens in a new tab rather than navigating this one.
+ *
+ * @param {HTMLAnchorElement} anchor - the anchor.
+ * @return {boolean} true for `target="_blank"`, in any case.
+ */
+function opensNewTab(anchor) {
+	return (anchor.getAttribute('target') || '').toLowerCase() === '_blank'
+}
+
+/**
+ * The page the sandbox router is on, for a render-error report.
+ *
+ * @param {object} router - the sandbox router.
+ * @return {?string} the page id, or null.
+ */
+function currentPageId(router) {
+	return router.currentRoute.value?.name
+		? String(router.currentRoute.value.name)
+		: null
+}
+
+/**
+ * The name of the component a render error came from.
+ *
+ * @param {?object} instance - the failing component instance.
+ * @return {string} its name, or 'unknown'.
+ */
+function componentNameOf(instance) {
+	return instance?.$options?.name || instance?.$options?.__name || 'unknown'
+}
+
+/**
+ * A render error's message, or the error itself as text.
+ *
+ * @param {Error|string|null} error - what was thrown.
+ * @return {string} the message.
+ */
+function errorMessageOf(error) {
+	return error && error.message ? String(error.message) : String(error)
+}
+
 // Own component identity per route record: the barrel export is a frozen
 // module record and the router keeps bookkeeping on the object it is handed.
 const PreviewPageRenderer = { ...CnPageRenderer }
+
+/**
+ * Put a rebuilt preview back on the route the previous one showed.
+ *
+ * @param {object} router - the new sandbox router.
+ * @param {string|undefined} previousPath - the previous preview's route.
+ * @return {void}
+ */
+function restoreRoute(router, previousPath) {
+	if (previousPath && previousPath !== '/') {
+		router.replace(previousPath).catch(() => {})
+	}
+}
 
 // What a preview may still do: work the affordances that only reveal UI, and
 // take input. `aria-expanded` / `aria-haspopup` are what a disclosure widget
@@ -75,6 +188,25 @@ const HARMLESS_TARGETS = [
 	'label',
 	'[contenteditable="true"]',
 ].join(',')
+
+/**
+ * Whether an activation on this target is left alone here: an anchor, or a
+ * harmless affordance.
+ *
+ * Anchors are decided in the bubble phase by blockAnchorNavigation(), once
+ * it's known whether a RouterLink already claimed the click: preventDefault()
+ * here would reach the anchor before RouterLink's own handler runs and be
+ * indistinguishable from one it fired itself.
+ *
+ * @param {EventTarget} target - the event's target.
+ * @return {boolean} true when the activation may proceed.
+ */
+function isLeftAlone(target) {
+	if (target?.closest?.('a[href]')) {
+		return true
+	}
+	return Boolean(target?.closest?.(HARMLESS_TARGETS))
+}
 
 export default {
 	name: 'PreviewSandbox',
@@ -259,20 +391,7 @@ export default {
 			if (host.contains(target)) {
 				return true
 			}
-			for (let el = target; el; el = el.parentElement) {
-				if (!el.id) {
-					continue
-				}
-				const id = window.CSS?.escape ? window.CSS.escape(el.id) : el.id
-				if (
-					host.querySelector(
-						`[aria-controls="${id}"], [aria-owns="${id}"]`,
-					)
-				) {
-					return true
-				}
-			}
-			return false
+			return hostControls(host, target)
 		},
 
 		/**
@@ -293,26 +412,14 @@ export default {
 			// Only the two keys that activate a control; Escape, arrows and
 			// Tab belong to the affordances above. Checked first so a keystroke
 			// anywhere in the designer costs one comparison.
-			if (
-				event.type === 'keydown'
-				&& event.key !== 'Enter'
-				&& event.key !== ' '
-			) {
+			if (isNonActivatingKey(event)) {
 				return
 			}
 			if (!this.ownsTarget(event.target)) {
 				return
 			}
 
-			// Anchors are decided in the bubble phase by blockAnchorNavigation(),
-			// once it's known whether a RouterLink already claimed the click:
-			// preventDefault() here would reach the anchor before RouterLink's
-			// own handler runs and be indistinguishable from one it fired itself.
-			if (event.target?.closest?.('a[href]')) {
-				return
-			}
-
-			if (event.target?.closest?.(HARMLESS_TARGETS)) {
+			if (isLeftAlone(event.target)) {
 				return
 			}
 			event.preventDefault()
@@ -341,7 +448,7 @@ export default {
 			if (!anchor) {
 				return
 			}
-			if ((anchor.getAttribute('target') || '').toLowerCase() === '_blank') {
+			if (opensNewTab(anchor)) {
 				return
 			}
 			event.preventDefault()
@@ -413,51 +520,25 @@ export default {
 			if (!host) {
 				return
 			}
+			this.startSandbox(host, previousPath)
+		},
 
+		/**
+		 * Build, mount and keep a new preview application in the host, back on
+		 * the route the previous one showed.
+		 *
+		 * @param {HTMLElement} host The preview's host element.
+		 * @param {string|undefined} previousPath The previous preview's route.
+		 * @return {void}
+		 */
+		startSandbox(host, previousPath) {
 			const state = shallowReactive({ ...this.rootProps })
-			let router
-			try {
-				router = createRouter({
-					history: createMemoryHistory(),
-					routes: this.buildRoutes(),
-				})
-			} catch {
-				// A route table the router rejects (two pages on one path with
-				// conflicting params, say) leaves the preview empty rather than
-				// breaking the designer around it.
+			const router = this.buildSandboxRouter()
+			if (!router) {
 				return
 			}
-			const app = createApp({ render: () => h(CnAppRoot, state) })
-			app.mixin({ methods: { t, n } })
-			// A render error in the preview lands in the designer's error log, not only the console.
-			app.config.errorHandler = (error, instance) => {
-				this.diagnostics?.({
-					kind: 'render-error',
-					at: Date.now(),
-					pageId: router.currentRoute.value?.name
-						? String(router.currentRoute.value.name)
-						: null,
-					component:
-						instance?.$options?.name
-						|| instance?.$options?.__name
-						|| 'unknown',
-					message:
-						error && error.message
-							? String(error.message)
-							: String(error),
-				})
-				// eslint-disable-next-line no-console
-				console.error(error)
-			}
-			// Its own store instances, so a preview never writes over the
-			// designer's state.
-			app.use(createPinia())
-			app.use(router)
-			registerDirectives(app)
-
-			if (previousPath && previousPath !== '/') {
-				router.replace(previousPath).catch(() => {})
-			}
+			const app = this.buildSandboxApp(state, router)
+			restoreRoute(router, previousPath)
 			app.mount(host)
 			// Installing a pinia also makes it the active one process-wide. Put
 			// the designer's back, or a store resolved outside a component would
@@ -467,6 +548,67 @@ export default {
 			this._sandboxApp = app
 			this._sandboxRouter = router
 			this._sandboxState = state
+		},
+
+		/**
+		 * The sandbox's memory router over the manifest's routes.
+		 *
+		 * @return {?object} the router, or null when it rejects the route table.
+		 */
+		buildSandboxRouter() {
+			try {
+				return createRouter({
+					history: createMemoryHistory(),
+					routes: this.buildRoutes(),
+				})
+			} catch {
+				// A route table the router rejects (two pages on one path with
+				// conflicting params, say) leaves the preview empty rather than
+				// breaking the designer around it.
+				return null
+			}
+		},
+
+		/**
+		 * The preview application rendering CnAppRoot from the shared state, with
+		 * its own stores, the router and the app directives.
+		 *
+		 * @param {object} state The reactive CnAppRoot prop bag.
+		 * @param {object} router The sandbox router.
+		 * @return {object} the (unmounted) application.
+		 */
+		buildSandboxApp(state, router) {
+			const app = createApp({ render: () => h(CnAppRoot, state) })
+			app.mixin({ methods: { t, n } })
+			// A render error in the preview lands in the designer's error log, not only the console.
+			app.config.errorHandler = this.renderErrorHandler(router)
+			// Its own store instances, so a preview never writes over the
+			// designer's state.
+			app.use(createPinia())
+			app.use(router)
+			registerDirectives(app)
+			return app
+		},
+
+		/**
+		 * The preview's error handler: report a render error to the designer's
+		 * diagnostics listener, then log it.
+		 *
+		 * @param {object} router The sandbox router.
+		 * @return {(error: Error, instance: object) => void} the handler.
+		 */
+		renderErrorHandler(router) {
+			return (error, instance) => {
+				this.diagnostics?.({
+					kind: 'render-error',
+					at: Date.now(),
+					pageId: currentPageId(router),
+					component: componentNameOf(instance),
+					message: errorMessageOf(error),
+				})
+				// eslint-disable-next-line no-console
+				console.error(error)
+			}
 		},
 
 		/**
