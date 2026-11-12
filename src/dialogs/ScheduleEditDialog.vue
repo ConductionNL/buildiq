@@ -151,28 +151,13 @@ import {
 	isValidCron,
 	validateScheduleEntry,
 } from '../services/manifestValidation/schedules.js'
-
-/** Cadence presets that write an `interval` in seconds. */
-const INTERVAL_PRESETS = Object.freeze([
-	{ id: 'hourly', interval: 3600 },
-	{ id: 'daily', interval: 86400 },
-	{ id: 'weekly', interval: 604800 },
-	{ id: 'monthly', interval: 2592000 },
-])
-
-/**
- * Derive a kebab-case slug from a human label.
- *
- * @param {string} label - the human label.
- * @return {string}
- */
-function slugify(label) {
-	return String(label || '')
-		.toLowerCase()
-		.trim()
-		.replace(/[^a-z0-9]+/g, '-')
-		.replace(/^-+|-+$/g, '')
-}
+import { slugify } from '../utils/slugify.js'
+import {
+	cadenceById,
+	cadenceOptions,
+	presetById,
+	presetForInterval,
+} from './scheduleCadence.js'
 
 /**
  * Suffix `-2`, `-3`, … until the slug is unique against `taken`.
@@ -245,17 +230,7 @@ export default {
 
 		/** @spec openspec/specs/openbuild-schedules-authoring/spec.md#req-obsa-002 */
 		cadenceOptions() {
-			return [
-				{ id: 'hourly', label: t('buildiq', 'Hourly') },
-				{ id: 'daily', label: t('buildiq', 'Daily') },
-				{ id: 'weekly', label: t('buildiq', 'Weekly') },
-				{ id: 'monthly', label: t('buildiq', 'Monthly') },
-				{ id: 'custom-cron', label: t('buildiq', 'Custom (cron)') },
-				{
-					id: 'custom-interval',
-					label: t('buildiq', 'Custom interval (seconds)'),
-				},
-			]
+			return cadenceOptions()
 		},
 
 		/** @spec openspec/specs/openbuild-schedules-authoring/spec.md#req-obsa-003 */
@@ -318,7 +293,7 @@ export default {
 				enabled: this.enabled,
 			}
 			const cadenceId = this.cadenceOption ? this.cadenceOption.id : null
-			const preset = INTERVAL_PRESETS.find((p) => p.id === cadenceId)
+			const preset = presetById(cadenceId)
 			if (preset) {
 				entry.interval = preset.interval
 			} else if (cadenceId === 'custom-cron') {
@@ -390,20 +365,15 @@ export default {
 			this.cron = typeof e.cron === 'string' ? e.cron : ''
 			this.intervalSeconds = ''
 			if (typeof e.cron === 'string') {
-				this.cadenceOption = this.cadenceOptions.find(
-					(o) => o.id === 'custom-cron',
-				)
+				this.cadenceOption = cadenceById(this.cadenceOptions, 'custom-cron')
 			} else {
-				const preset = INTERVAL_PRESETS.find(
-					(p) => p.interval === e.interval,
-				)
+				const preset = presetForInterval(e.interval)
 				if (preset) {
-					this.cadenceOption = this.cadenceOptions.find(
-						(o) => o.id === preset.id,
-					)
+					this.cadenceOption = cadenceById(this.cadenceOptions, preset.id)
 				} else {
-					this.cadenceOption = this.cadenceOptions.find(
-						(o) => o.id === 'custom-interval',
+					this.cadenceOption = cadenceById(
+						this.cadenceOptions,
+						'custom-interval',
 					)
 					this.intervalSeconds =
 						e.interval !== undefined ? String(e.interval) : ''
