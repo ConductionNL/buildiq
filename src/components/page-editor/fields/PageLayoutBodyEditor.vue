@@ -533,6 +533,16 @@ function renumber(items) {
 }
 
 /**
+ * The empty reference each tab kind starts with, built fresh per tab.
+ */
+const EMPTY_TAB_REFERENCES = new Map([
+	['widgets', () => ({ widgets: [] })],
+	['fieldGroup', () => ({ fields: [] })],
+	['leaf', () => ({ ref: '' })],
+	['relatedList', () => ({ relatedRegister: '', relatedSchema: '' })],
+])
+
+/**
  * Add a tab of a kind with the empty reference its kind needs.
  *
  * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md#requirement-a-tab-declares-its-kind-and-an-admin-orders-tabs-per-case-type-req-obpl-004
@@ -543,14 +553,8 @@ function renumber(items) {
 export function addTab(tabs, kind) {
 	const list = tabs || []
 	const tab = { id: freshId('tab', list), kind, label: '', order: list.length }
-	if (kind === 'widgets') tab.widgets = []
-	if (kind === 'fieldGroup') tab.fields = []
-	if (kind === 'leaf') tab.ref = ''
-	if (kind === 'relatedList') {
-		tab.relatedRegister = ''
-		tab.relatedSchema = ''
-	}
-	return [...list, tab]
+	const emptyReference = EMPTY_TAB_REFERENCES.get(kind)
+	return [...list, emptyReference ? { ...tab, ...emptyReference() } : tab]
 }
 
 /**
