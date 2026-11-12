@@ -104,6 +104,12 @@ import { NcButton, NcEmptyContent, NcLoadingIcon, NcSelect } from '@nextcloud/vu
 import BlockRemapDialog from '../../dialogs/BlockRemapDialog.vue'
 import { isSectionFragment } from '../../services/blockCapture.js'
 import {
+	blocksInCategory,
+	categoryOptionsOf,
+	fetchComponentBlocks,
+	OR_BLOCKS,
+} from '../../services/blockCatalogue.js'
+import {
 	BlockImportError,
 	downloadBlockExport,
 	parseBlockImport,
@@ -113,8 +119,6 @@ import {
 	insertBlock,
 	remapBlockRecord,
 } from '../../services/blockInsert.js'
-
-const OR_BLOCKS = '/apps/openregister/api/objects/buildiq/component-block'
 
 export default {
 	name: 'BlockLibraryPanel',
@@ -161,11 +165,7 @@ export default {
 		 * @spec openspec/specs/component-blocks/spec.md
 		 */
 		categoryOptions() {
-			const seen = new Set()
-			return this.blocks
-				.map((b) => b && b.category)
-				.filter((c) => c && !seen.has(c) && seen.add(c))
-				.map((c) => ({ id: c, label: c }))
+			return categoryOptionsOf(this.blocks)
 		},
 
 		/**
@@ -175,13 +175,7 @@ export default {
 		 * @spec openspec/specs/component-blocks/spec.md
 		 */
 		filteredBlocks() {
-			const selected =
-				this.categoryFilter
-				&& (this.categoryFilter.id ?? this.categoryFilter)
-			if (!selected) {
-				return this.blocks
-			}
-			return this.blocks.filter((b) => b && b.category === selected)
+			return blocksInCategory(this.blocks, this.categoryFilter)
 		},
 	},
 
@@ -223,12 +217,7 @@ export default {
 		async fetchBlocks() {
 			this.loading = true
 			try {
-				const { data } = await axios.get(generateUrl(OR_BLOCKS))
-				this.blocks = Array.isArray(data && data.results)
-					? data.results
-					: Array.isArray(data)
-						? data
-						: []
+				this.blocks = await fetchComponentBlocks()
 			} catch (e) {
 				this.blocks = []
 			} finally {

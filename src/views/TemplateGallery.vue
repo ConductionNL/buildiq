@@ -379,8 +379,12 @@ import {
 } from '@nextcloud/vue'
 import FormLibraryView from '../components/store/FormLibraryView.vue'
 import CloneTemplateDialog from '../modals/CloneTemplateDialog.vue'
+import {
+	blocksInCategory,
+	categoryOptionsOf,
+	fetchComponentBlocks,
+} from '../services/blockCatalogue.js'
 
-const OR_BLOCKS = '/apps/openregister/api/objects/buildiq/component-block'
 const OR_TEMPLATES = '/apps/openregister/api/objects/buildiq/application-template'
 
 const CATEGORY_LABELS = {
@@ -561,11 +565,7 @@ export default {
 		 * @spec openspec/specs/openbuild-template-catalogue/spec.md
 		 */
 		blockCategoryOptions() {
-			const seen = new Set()
-			return this.blocks
-				.map((b) => b && b.category)
-				.filter((c) => c && !seen.has(c) && seen.add(c))
-				.map((c) => ({ id: c, label: c }))
+			return categoryOptionsOf(this.blocks)
 		},
 
 		/**
@@ -575,13 +575,7 @@ export default {
 		 * @spec openspec/specs/openbuild-template-catalogue/spec.md
 		 */
 		filteredBlocks() {
-			const selected =
-				this.blockCategoryFilter
-				&& (this.blockCategoryFilter.id ?? this.blockCategoryFilter)
-			if (!selected) {
-				return this.blocks
-			}
-			return this.blocks.filter((b) => b && b.category === selected)
+			return blocksInCategory(this.blocks, this.blockCategoryFilter)
 		},
 	},
 
@@ -948,12 +942,7 @@ export default {
 		async fetchBlocks() {
 			this.blocksLoading = true
 			try {
-				const { data } = await axios.get(generateUrl(OR_BLOCKS))
-				this.blocks = Array.isArray(data && data.results)
-					? data.results
-					: Array.isArray(data)
-						? data
-						: []
+				this.blocks = await fetchComponentBlocks()
 			} catch (e) {
 				this.blocks = []
 			} finally {

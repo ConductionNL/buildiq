@@ -249,6 +249,7 @@ import {
 import { describeBreakingChanges } from '../services/schemaChanges.js'
 import { registerSlugForApp, useSchemasStore } from '../store/schemas.js'
 import { isEditableTarget } from '../utils/isEditableTarget.js'
+import { mirrorVersionLoad } from '../utils/mirrorVersionLoad.js'
 
 /**
  * Schema object type slug as registered with the store factory.
@@ -845,25 +846,7 @@ export default {
 			this.applicationVersion = applicationVersion.value
 			this.versionLoading = loading.value
 			this.versionError = error.value
-			// Set up watchers to keep component data in sync as the fetch resolves.
-			const unwatch = this.$watch(
-				() => applicationVersion.value,
-				(v) => {
-					this.applicationVersion = v
-				},
-			)
-			const unwatchLoading = this.$watch(
-				() => loading.value,
-				(v) => {
-					this.versionLoading = v
-					if (!v) {
-						// Fetch complete — clean up watchers to avoid leaks.
-						unwatch()
-						unwatchLoading()
-						this.versionError = error.value
-					}
-				},
-			)
+			mirrorVersionLoad(this, { applicationVersion, loading, error })
 
 			return ready
 		},

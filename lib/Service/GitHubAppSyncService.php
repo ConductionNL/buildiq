@@ -45,6 +45,7 @@ namespace OCA\Buildiq\Service;
 use OCA\Buildiq\Exception\AppRepoParseException;
 use OCA\Buildiq\Service\GitHub\AppPushRequest;
 use OCA\Buildiq\Service\GitHub\BrokerAccess;
+use OCA\Buildiq\Service\GitHub\CredentialBrokerClient;
 use OCA\Buildiq\Service\GitHub\BrokeredRepo;
 use OCA\Buildiq\Service\GitHub\FileCommit;
 use OCA\Buildiq\Service\GitHub\PushTarget;
@@ -67,11 +68,6 @@ class GitHubAppSyncService {
 	 * The credential-broker service FQCN (resolved lazily; may be absent).
 	 */
 	private const BROKER_CLASS = 'OCA\\OpenRegister\\Service\\Credential\\CredentialBrokerService';
-
-	/**
-	 * The broker `appId` Buildiq identifies itself with.
-	 */
-	private const APP_ID = 'buildiq';
 
 	/**
 	 * The shared Buildiq register slug.
@@ -169,6 +165,13 @@ class GitHubAppSyncService {
 	private readonly AppRepoParser $parser;
 
 	/**
+	 * Sends the JSON calls through OpenRegister's credential broker.
+	 *
+	 * @var CredentialBrokerClient
+	 */
+	private readonly CredentialBrokerClient $broker;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param RegisterStore $store OpenRegister's object service, register and schema mappers and audit trail.
@@ -187,13 +190,14 @@ class GitHubAppSyncService {
 		private readonly GitHubCatalogService $catalogService,
 		private readonly AppChannelApplier $channelApplier,
 		private readonly LoggerInterface $logger,
-		private readonly ContainerInterface $container,
+		ContainerInterface $container,
 	) {
 		$this->objectService = $store->objectService;
 		$this->registerMapper = $store->registerMapper;
 		$this->schemaMapper = $store->schemaMapper;
 		$this->serializer = $codec->serializer;
 		$this->parser = $codec->parser;
+		$this->broker = new CredentialBrokerClient(container: $container);
 	}//end __construct()
 
 	/**
@@ -1155,22 +1159,8 @@ class GitHubAppSyncService {
 		$method = (string)$request['method'];
 		$path = (string)$request['path'];
 
-		$encoded = null;
-		if ($request['body'] !== null) {
-			$encoded = (string)json_encode($request['body']);
-		}
-
 		try {
-			$broker = $this->container->get(self::BROKER_CLASS);
-			$response = $broker->request(
-				$access->credentialId,
-				self::APP_ID,
-				$method,
-				$path,
-				['Accept' => 'application/vnd.github+json', 'Content-Type' => 'application/json'],
-				$encoded,
-				$access->actingUserId
-			);
+			$response = $this->broker->sendJson(request: $request, access: $access);
 		} catch (Throwable $e) {
 			// At `debug` this is invisible on any instance running a normal
 			// loglevel, which leaves an operator with a bare 502 and nothing to

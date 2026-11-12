@@ -233,12 +233,12 @@
   },
   "src/views/AgentsPage.vue": {
     "@typescript-eslint/no-unused-vars": {
-      "count": 3
+      "count": 2
     }
   },
   "src/views/AutomationsPage.vue": {
     "@typescript-eslint/no-unused-vars": {
-      "count": 7
+      "count": 6
     }
   },
   "src/views/DashboardIndex.vue": {

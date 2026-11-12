@@ -179,6 +179,8 @@ import AutomationEditDialog from '../dialogs/AutomationEditDialog.vue'
 import ConfirmActionDialog from '../dialogs/ConfirmActionDialog.vue'
 import FlowPickerDialog from '../dialogs/FlowPickerDialog.vue'
 import AutomationTestPanelModal from '../modals/AutomationTestPanelModal.vue'
+import { applicationPickerMixin } from '../mixins/applicationPicker.js'
+import { listResults } from '../utils/listResults.js'
 
 export default {
 	name: 'AutomationsPage',
@@ -195,12 +197,12 @@ export default {
 		FlowPickerDialog,
 	},
 
+	mixins: [applicationPickerMixin],
+
 	data() {
 		return {
 			loading: false,
-			loadingApplications: false,
 			loadingVersions: false,
-			applications: [],
 			selectedApp: null,
 			versions: [],
 			selectedVersion: null,
@@ -297,26 +299,6 @@ export default {
 		},
 
 		/**
-		 * Load the caller's Applications for the picker.
-		 *
-		 * @return {Promise<void>}
-		 * @spec openspec/specs/automation-designer/spec.md#req-autd-001
-		 */
-		async fetchApplications() {
-			this.loadingApplications = true
-			this.errorMessage = ''
-			try {
-				const url = generateUrl('/apps/buildiq/api/applications')
-				const { data } = await axios.get(url)
-				this.applications = this.extractResults(data)
-			} catch (error) {
-				this.errorMessage = t('buildiq', 'Could not load applications.')
-			} finally {
-				this.loadingApplications = false
-			}
-		},
-
-		/**
 		 * Handle an application selection: reset the version + list, fetch
 		 * versions, and put the app in the URL.
 		 *
@@ -349,7 +331,7 @@ export default {
 					`/apps/buildiq/api/applications/${this.selectedApp.slug}/versions`,
 				)
 				const { data } = await axios.get(url)
-				this.versions = this.extractResults(data)
+				this.versions = listResults(data)
 			} catch (error) {
 				this.errorMessage = t('buildiq', 'Could not load versions.')
 			} finally {
@@ -399,7 +381,7 @@ export default {
 						versionUuid: this.selectedVersionId,
 					},
 				})
-				const all = this.extractResults(data)
+				const all = listResults(data)
 				this.automations = all.filter(
 					(a) =>
 						a.applicationSlug === this.selectedApp.slug
@@ -713,22 +695,6 @@ export default {
 				this.confirmDeleteOpen = false
 				this.pendingDelete = null
 			}
-		},
-
-		/**
-		 * Normalise an OR REST list response to a plain array.
-		 *
-		 * @param {object|Array} data - the raw axios response body.
-		 * @return {Array}
-		 */
-		extractResults(data) {
-			if (Array.isArray(data)) {
-				return data
-			}
-			if (data && Array.isArray(data.results)) {
-				return data.results
-			}
-			return []
 		},
 	},
 }

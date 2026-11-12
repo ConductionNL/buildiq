@@ -1,0 +1,71 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`ConditionActionRuleEditor save > renders the footer and wires Cancel and Save 1`] = `
+{
+  "busy": "<footer><button>Cancel</button><button data-variant="primary" disabled="">Saving…</button></footer>",
+  "idle": "<footer><button>Cancel</button><button data-variant="primary">Save</button></footer>",
+}
+`;
+
+exports[`ConditionActionRuleEditor save > sends the rule set, then its rule or table, and emits saved 1`] = `
+{
+  "post": [
+    [
+      "/apps/openregister/api/objects/buildiq/rule-set",
+      {
+        "name": "Rule",
+        "ruleType": "condition-action",
+        "slug": "r1",
+        "status": "active",
+      },
+    ],
+    [
+      "/apps/openregister/api/objects/buildiq/condition-action-rule",
+      {
+        "actions": [],
+        "active": true,
+        "condition": "x > 1",
+        "description": "",
+        "name": "Rule",
+        "priority": 0,
+        "ruleSetId": "r1",
+        "salience": 0,
+      },
+    ],
+  ],
+  "put": [],
+}
+`;
+
+exports[`DecisionTableEditor save > renders the footer and wires Cancel and Save 1`] = `
+{
+  "busy": "<footer><button>Cancel</button><button data-variant="primary" disabled="">Saving…</button></footer>",
+  "idle": "<footer><button>Cancel</button><button data-variant="primary">Save</button></footer>",
+}
+`;
+
+exports[`DecisionTableEditor save > sends the rule set, then its rule or table, and emits saved 1`] = `
+{
+  "post": [
+    [
+      "/apps/openregister/api/objects/buildiq/rule-set",
+      {
+        "name": "Table",
+        "ruleType": "decision-table",
+        "slug": "r1",
+        "status": "draft",
+      },
+    ],
+  ],
+  "put": [
+    [
+      "/apps/buildiq/api/rules/r1/decision-table",
+      {
+        "hitPolicy": "first",
+        "inputColumns": [],
+        "rules": [],
+      },
+    ],
+  ],
+}
+`;

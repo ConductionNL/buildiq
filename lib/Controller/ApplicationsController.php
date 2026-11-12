@@ -1412,21 +1412,7 @@ class ApplicationsController extends Controller {
 			}
 		}
 
-		$runtime = ($manifest['runtime'] ?? []);
-		if (is_array($runtime) === false) {
-			$runtime = [];
-		}
-
-		$runtimeUser = ($runtime['user'] ?? []);
-		if (is_array($runtimeUser) === false) {
-			$runtimeUser = [];
-		}
-
-		$runtimeUser['isOwner'] = $isOwner;
-		$runtime['user'] = $runtimeUser;
-		$manifest['runtime'] = $runtime;
-
-		return $manifest;
+		return $this->withRuntimeUser(manifest: $manifest, fields: ['isOwner' => $isOwner]);
 	}//end injectOwnerSignal()
 
 	/**
@@ -1457,6 +1443,24 @@ class ApplicationsController extends Controller {
 			caller: $caller
 		);
 
+		return $this->withRuntimeUser(manifest: $manifest, fields: ['permissions' => $permissions]);
+	}//end injectPermissionsSignal()
+
+	/**
+	 * Set fields on the manifest's `runtime.user` block, keeping everything else.
+	 *
+	 * Additive-only: a missing or non-array `runtime` / `runtime.user` starts
+	 * empty, every other key stays where it is, and each field is overwritten
+	 * in place or appended when new.
+	 *
+	 * @param array<string, mixed> $manifest The manifest payload (mutated copy is returned).
+	 * @param array<string, mixed> $fields The `runtime.user` fields to set.
+	 *
+	 * @return array<string, mixed> The manifest with the fields set.
+	 *
+	 * @spec openspec/specs/openbuild-runtime/spec.md#requirement-the-runtime-must-inject-the-current-user-s-group-context
+	 */
+	private function withRuntimeUser(array $manifest, array $fields): array {
 		$runtime = ($manifest['runtime'] ?? []);
 		if (is_array($runtime) === false) {
 			$runtime = [];
@@ -1467,12 +1471,14 @@ class ApplicationsController extends Controller {
 			$runtimeUser = [];
 		}
 
-		$runtimeUser['permissions'] = $permissions;
+		foreach ($fields as $key => $value) {
+			$runtimeUser[$key] = $value;
+		}
+
 		$runtime['user'] = $runtimeUser;
 		$manifest['runtime'] = $runtime;
-
 		return $manifest;
-	}//end injectPermissionsSignal()
+	}//end withRuntimeUser()
 
 	/**
 	 * Enforce the per-Application RBAC permissions block.
@@ -1625,33 +1631,13 @@ class ApplicationsController extends Controller {
 	#[UserRateLimit(limit: 10, period: 3600)]
 	public function createFromTemplate(string $templateSlug): JSONResponse {
 		// 1. Auth + request validation.
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return $this->errorResponse(code: 'unauthenticated', status: Http::STATUS_UNAUTHORIZED);
+		$admitted = $this->admitClone(refusal: 'Cloning an app from a template requires Nextcloud admin privileges.');
+		if ($admitted instanceof JSONResponse) {
+			return $admitted;
 		}
 
+		[$user, $name, $newSlug] = $admitted;
 		$ownerUid = $user->getUID();
-
-		// Parity with ApplicationCreationController::wizard: cloning an app
-		// provisions an OpenRegister register (an admin-only operation in OR,
-		// issue #157), so this fan-out is admin-gated too. Without the gate a
-		// non-admin fails opaquely deep in provisioning; with it they get a
-		// clear 403, and the endpoint cannot be used as an unthrottled
-		// register/schema-sprawl amplifier (paired with the rate limit above).
-		if ($this->groupManager->isInGroup($ownerUid, self::ADMIN_GROUP) === false) {
-			return $this->errorResponse(
-				code: 'forbidden',
-				detail: 'Cloning an app from a template requires Nextcloud admin privileges.',
-				status: Http::STATUS_FORBIDDEN
-			);
-		}
-
-		$validation = $this->validateCloneRequest(body: $this->request->getParams());
-		if (isset($validation['error']) === true) {
-			return new JSONResponse(data: $validation['error'], statusCode: $validation['status']);
-		}
-
-		[$name, $newSlug] = $validation;
 
 		// 2. Resolve shared register + schemas.
 		$ctx = $this->resolveSharedContext();
@@ -1722,25 +1708,12 @@ class ApplicationsController extends Controller {
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 10, period: 3600)]
 	public function copy(string $slug): JSONResponse {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return $this->errorResponse(code: 'unauthenticated', status: Http::STATUS_UNAUTHORIZED);
+		$admitted = $this->admitClone(refusal: 'Copying an app requires Nextcloud admin privileges.');
+		if ($admitted instanceof JSONResponse) {
+			return $admitted;
 		}
 
-		if ($this->groupManager->isInGroup($user->getUID(), self::ADMIN_GROUP) === false) {
-			return $this->errorResponse(
-				code: 'forbidden',
-				detail: 'Copying an app requires Nextcloud admin privileges.',
-				status: Http::STATUS_FORBIDDEN
-			);
-		}
-
-		$validation = $this->validateCloneRequest(body: $this->request->getParams());
-		if (isset($validation['error']) === true) {
-			return new JSONResponse(data: $validation['error'], statusCode: $validation['status']);
-		}
-
-		[$name, $newSlug] = $validation;
+		[$user, $name, $newSlug] = $admitted;
 
 		$resolved = $this->resolveApplicationBySlug(slug: $slug);
 		if ($resolved instanceof JSONResponse) {
@@ -2290,6 +2263,38 @@ class ApplicationsController extends Controller {
 
 		return [$name, $slug];
 	}//end validateCloneRequest()
+
+	/**
+	 * Admit a clone request: a signed-in admin with a valid name and slug.
+	 *
+	 * Parity with ApplicationCreationController::wizard: cloning an app
+	 * provisions an OpenRegister register (an admin-only operation in OR,
+	 * issue #157), so this fan-out is admin-gated too. Without the gate a
+	 * non-admin fails opaquely deep in provisioning; with it they get a
+	 * clear 403, and the endpoint cannot be used as an unthrottled
+	 * register/schema-sprawl amplifier (paired with the rate limit).
+	 *
+	 * @param string $refusal The 403 detail naming what the caller tried to do.
+	 *
+	 * @return JSONResponse|array{0: IUser, 1: string, 2: string} The refusal, or the caller, name and new slug.
+	 */
+	private function admitClone(string $refusal): JSONResponse|array {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return $this->errorResponse(code: 'unauthenticated', status: Http::STATUS_UNAUTHORIZED);
+		}
+
+		if ($this->groupManager->isInGroup($user->getUID(), self::ADMIN_GROUP) === false) {
+			return $this->errorResponse(code: 'forbidden', detail: $refusal, status: Http::STATUS_FORBIDDEN);
+		}
+
+		$validation = $this->validateCloneRequest(body: $this->request->getParams());
+		if (isset($validation['error']) === true) {
+			return new JSONResponse(data: $validation['error'], statusCode: $validation['status']);
+		}
+
+		return [$user, $validation[0], $validation[1]];
+	}//end admitClone()
 
 	/**
 	 * Extract companionSchemas array from a template record.

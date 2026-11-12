@@ -65,6 +65,25 @@ function validatePredictedManifests(manifests) {
 }
 
 /**
+ * The validator messages of a plan's predicted manifests, flattened in
+ * first-seen order and de-duplicated; only non-empty strings are kept.
+ *
+ * @param {Map<string, Array<string>|null>} errorsByManifest - the messages per predicted manifest.
+ * @return {Array<string>} the messages.
+ */
+export function uniqueValidatorMessages(errorsByManifest) {
+	const seen = new Set()
+	for (const errors of errorsByManifest.values()) {
+		for (const line of errors || []) {
+			if (typeof line === 'string' && line.length > 0) {
+				seen.add(line)
+			}
+		}
+	}
+	return [...seen]
+}
+
+/**
  * Own the copilot plan/review/approve/execute state machine.
  *
  * @return {object} Reactive copilot state + actions.

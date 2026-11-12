@@ -55,6 +55,7 @@ import {
 import placeholderManifest from '../manifests/placeholder.json'
 import { runtimeRegistry } from '../runtimeRegistry.js'
 import { fetchAppRegister } from '../services/appRegister.js'
+import { mirrorVersionLoad } from '../utils/mirrorVersionLoad.js'
 
 export default {
 	name: 'BuilderHost',
@@ -216,23 +217,7 @@ export default {
 			// manifest it receives changes, including a version switch.
 			// No data-source prefetch here: `dataSourcesLoader` reads the current
 			// manifest when an editor modal actually opens.
-			const unwatch = this.$watch(
-				() => applicationVersion.value,
-				(v) => {
-					this.applicationVersion = v
-				},
-			)
-			const unwatchLoading = this.$watch(
-				() => loading.value,
-				(v) => {
-					this.versionLoading = v
-					if (!v) {
-						unwatch()
-						unwatchLoading()
-						this.versionError = error.value
-					}
-				},
-			)
+			mirrorVersionLoad(this, { applicationVersion, loading, error })
 		},
 
 		/**

@@ -1303,6 +1303,31 @@ class CopilotServiceTest extends TestCase {
 	}//end testARealPlanPredictsAManifestTheValidatorAccepts()
 
 	/**
+	 * A predicted upsert replaces an existing entry case-insensitively, in place,
+	 * and appends an unknown one, for pages and menu items alike.
+	 *
+	 * @return void
+	 */
+	public function testPredictedUpsertsReplaceCaseInsensitivelyInPlace(): void {
+		$page = static fn (string $id, string $title): array => ['tool' => 'buildiq.upsertPage', 'arguments' => ['appSlug' => 'tool-library', 'pageId' => $id, 'title' => $title, 'type' => 'index', 'route' => '/' . strtolower($id)]];
+		$item = static fn (string $id, string $label): array => ['tool' => 'buildiq.upsertMenuItem', 'arguments' => ['appSlug' => 'tool-library', 'id' => $id, 'label' => $label, 'route' => strtolower($id)]];
+		$plan = [
+			'summary' => 'x',
+			'steps' => [
+				['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']],
+				$page('home', 'Home'), $page('about', 'About'), $page('HOME', 'Start'),
+				$item('home', 'Home'), $item('about', 'About'), $item('About', 'Over ons'),
+			],
+		];
+
+		$predicted = $this->makeService()->predictManifests(plan: $plan, appSlug: null)['tool-library@development']['predicted'];
+
+		self::assertSame([['HOME', 'Start'], ['about', 'About']], array_map(static fn (array $p): array => [$p['id'], $p['title']], $predicted['pages']));
+		$menu = [['id' => 'home', 'label' => 'Home', 'icon' => '', 'route' => 'home', 'order' => 100], ['id' => 'About', 'label' => 'Over ons', 'icon' => '', 'route' => 'about', 'order' => 100]];
+		self::assertSame($menu, $predicted['menu']);
+	}//end testPredictedUpsertsReplaceCaseInsensitivelyInPlace()
+
+	/**
 	 * predictManifests() throws when the predicted manifest exceeds the pages cap.
 	 *
 	 * @return void

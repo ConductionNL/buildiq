@@ -42,6 +42,7 @@ use OCA\Buildiq\Mcp\BuildiqToolProvider;
 use OCA\Buildiq\Service\Copilot\CopilotPlanValidator;
 use OCA\Buildiq\Service\Copilot\CopilotPromptBuilder;
 use OCA\Buildiq\Support\ManifestDataBinding;
+use OCA\Buildiq\Support\ManifestEntryList;
 use OCA\Buildiq\Support\ManifestPageShape;
 use OCA\Buildiq\Support\ManifestRoute;
 use OCA\Buildiq\Support\ManifestWidgetShape;
@@ -1737,22 +1738,10 @@ class CopilotService {
 			'config' => (array)($args['config'] ?? []),
 		]);
 
-		$pages = (array)($manifest['pages'] ?? []);
-		$replaced = false;
-		$pageIdLc = strtolower($pageId);
-		foreach ($pages as $i => $existing) {
-			if (is_array($existing) === true && strtolower((string)($existing['id'] ?? '')) === $pageIdLc) {
-				$pages[$i] = $newPage;
-				$replaced = true;
-				break;
-			}
-		}
+		$pages = new ManifestEntryList(entries: (array)($manifest['pages'] ?? []));
+		$pages->upsert(entry: $newPage);
 
-		if ($replaced === false) {
-			$pages[] = $newPage;
-		}
-
-		$manifest['pages'] = array_values($pages);
+		$manifest['pages'] = array_values($pages->entries());
 		return $manifest;
 	}//end applyUpsertPage()
 
@@ -1815,22 +1804,10 @@ class CopilotService {
 			'order' => (int)($args['order'] ?? 100),
 		];
 
-		$menu = (array)($manifest['menu'] ?? []);
-		$replaced = false;
-		$idLc = strtolower($id);
-		foreach ($menu as $i => $existing) {
-			if (is_array($existing) === true && strtolower((string)($existing['id'] ?? '')) === $idLc) {
-				$menu[$i] = $newItem;
-				$replaced = true;
-				break;
-			}
-		}
+		$menu = new ManifestEntryList(entries: (array)($manifest['menu'] ?? []));
+		$menu->upsert(entry: $newItem);
 
-		if ($replaced === false) {
-			$menu[] = $newItem;
-		}
-
-		$manifest['menu'] = array_values($menu);
+		$manifest['menu'] = array_values($menu->entries());
 		return $manifest;
 	}//end applyUpsertMenuItem()
 
