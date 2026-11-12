@@ -233,87 +233,144 @@ class DocumentGenerationService {
 	public function generate(array $automation, array $action, string $schemaSlug, string $objectUuid): bool {
 		$templateId = (string)($action['templateId'] ?? '');
 		$outputModes = $this->normaliseOutputModes(raw: $action['output'] ?? null);
-		if ($templateId === '' || $outputModes === []) {
+		$run = new DocumentRun(templateId: $templateId, outputModes: $outputModes, schemaSlug: $schemaSlug, objectUuid: $objectUuid);
+		if ($this->isRunnable(run: $run) === false) {
+			return false;
+		}
+
+		$applicationUuid = $this->applicationUuidFor(automation: $automation);
+		if ($applicationUuid === null) {
+			return false;
+		}
+
+		return $this->runAsOwner(applicationUuid: $applicationUuid, run: $run);
+	}//end generate()
+
+	/**
+	 * Whether the action names a template and at least one valid output mode.
+	 *
+	 * @param DocumentRun $run The generation.
+	 *
+	 * @return bool False (after a warning) when the action config is invalid.
+	 */
+	private function isRunnable(DocumentRun $run): bool {
+		if ($run->templateId === '' || $run->outputModes === []) {
 			$this->logger->warning('Buildiq: DocumentGenerationService skipped — invalid generateDocument action config.');
 			return false;
 		}
 
+		return true;
+	}//end isRunnable()
+
+	/**
+	 * The uuid of the Application the automation belongs to.
+	 *
+	 * @param array<string,mixed> $automation The matching Automation object (needs `applicationSlug`).
+	 *
+	 * @return string|null Null (after a warning) when the Application cannot be resolved.
+	 */
+	private function applicationUuidFor(array $automation): ?string {
 		$applicationSlug = (string)($automation['applicationSlug'] ?? '');
 		$applicationUuid = $this->resolveApplicationUuid(slug: $applicationSlug);
 		if ($applicationUuid === null) {
 			$this->logger->warning(
 				'Buildiq: DocumentGenerationService could not resolve Application "' . $applicationSlug . '" — generation skipped.'
 			);
-			return false;
 		}
 
+		return $applicationUuid;
+	}//end applicationUuidFor()
+
+	/**
+	 * Run the generation as the owning Application's owner.
+	 *
+	 * @param string      $applicationUuid The owning Application's uuid.
+	 * @param DocumentRun $run             The generation.
+	 *
+	 * @return bool Whether generation succeeded.
+	 */
+	private function runAsOwner(string $applicationUuid, DocumentRun $run): bool {
 		try {
 			$result = $this->ownerImpersonator->runAsOwner(
 				objectId: $applicationUuid,
-				work: function () use ($templateId, $outputModes, $schemaSlug, $objectUuid): bool {
-					return $this->generateImpersonated(
-						templateId: $templateId,
-						outputModes: $outputModes,
-						schemaSlug: $schemaSlug,
-						objectUuid: $objectUuid
-					);
-				}
+				work: fn (): bool => $this->generateImpersonated(run: $run)
 			);
 		} catch (Throwable $e) {
 			$this->logger->error(
-				'Buildiq: DocumentGenerationService failed for object "' . $objectUuid . '": ' . $e->getMessage(),
+				'Buildiq: DocumentGenerationService failed for object "' . $run->objectUuid . '": ' . $e->getMessage(),
 				['exception' => $e]
 			);
 			return false;
 		}
 
 		return (bool)$result;
-	}//end generate()
+	}//end runAsOwner()
 
 	/**
 	 * The impersonated unit of work: call Docudesk, then dispatch every
 	 * configured output mode.
 	 *
-	 * @param string $templateId Docudesk template UUID.
-	 * @param array<int,string> $outputModes Validated, non-empty output modes.
-	 * @param string $schemaSlug The fired object's schema slug.
-	 * @param string $objectUuid The fired object's uuid.
+	 * @param DocumentRun $run The generation (validated, non-empty output modes).
 	 *
 	 * @return bool
 	 */
-	private function generateImpersonated(string $templateId, array $outputModes, string $schemaSlug, string $objectUuid): bool {
-		$dataRef = ['register' => self::REGISTER_SLUG, 'schema' => $schemaSlug, 'id' => $objectUuid];
-		$filename = 'document-' . $objectUuid . '.pdf';
+	private function generateImpersonated(DocumentRun $run): bool {
+		$dataRef = ['register' => self::REGISTER_SLUG, 'schema' => $run->schemaSlug, 'id' => $run->objectUuid];
 
-		$response = $this->callGenerate(templateId: $templateId, dataRefs: [$dataRef], filename: $filename);
+		$response = $this->callGenerate(templateId: $run->templateId, dataRefs: [$dataRef], filename: $run->filename());
 		if ($response === null) {
 			return false;
 		}
 
-		$fileRef = null;
-		$downloadLink = null;
+		$this->attachOutput(run: $run, response: $response);
+		$this->downloadLinkOutput(run: $run, response: $response);
 
-		if (in_array('attach', $outputModes, true) === true) {
-			$fileRef = $this->attachToFiles(filename: $filename, body: (string)$response['body']);
-			if ($fileRef !== null) {
-				$this->writeAttachmentReference(schemaSlug: $schemaSlug, objectUuid: $objectUuid, fileId: $fileRef);
-			}
+		if (in_array('notify', $run->outputModes, true) === true) {
+			$this->dispatchNotification(run: $run);
 		}
 
-		if (in_array('download-link', $outputModes, true) === true) {
-			$downloadLink = $this->writeDownloadLink(
-				filename: $filename,
-				body: (string)$response['body'],
-				contentType: (string)($response['contentType'] ?? 'application/octet-stream')
-			);
-		}
-
-		if (in_array('notify', $outputModes, true) === true) {
-			$this->dispatchNotification(objectUuid: $objectUuid, fileRef: $fileRef, downloadLink: $downloadLink);
-		}
-
-		return $fileRef !== null || $downloadLink !== null || in_array('notify', $outputModes, true) === true;
+		return $run->fileRef !== null || $run->downloadLink !== null || in_array('notify', $run->outputModes, true) === true;
 	}//end generateImpersonated()
+
+	/**
+	 * `attach` output mode, when configured: write the document to Files and
+	 * reference it on the object.
+	 *
+	 * @param DocumentRun                                         $run      The generation.
+	 * @param array{status:int,body:string,contentType:?string} $response Docudesk's answer.
+	 *
+	 * @return void
+	 */
+	private function attachOutput(DocumentRun $run, array $response): void {
+		if (in_array('attach', $run->outputModes, true) === false) {
+			return;
+		}
+
+		$run->fileRef = $this->attachToFiles(filename: $run->filename(), body: (string)$response['body']);
+		if ($run->fileRef !== null) {
+			$this->writeAttachmentReference(schemaSlug: $run->schemaSlug, objectUuid: $run->objectUuid, fileId: $run->fileRef);
+		}
+	}//end attachOutput()
+
+	/**
+	 * `download-link` output mode, when configured.
+	 *
+	 * @param DocumentRun                                         $run      The generation.
+	 * @param array{status:int,body:string,contentType:?string} $response Docudesk's answer.
+	 *
+	 * @return void
+	 */
+	private function downloadLinkOutput(DocumentRun $run, array $response): void {
+		if (in_array('download-link', $run->outputModes, true) === false) {
+			return;
+		}
+
+		$run->downloadLink = $this->writeDownloadLink(
+			filename: $run->filename(),
+			body: (string)$response['body'],
+			contentType: (string)($response['contentType'] ?? 'application/octet-stream')
+		);
+	}//end downloadLinkOutput()
 
 	/**
 	 * Validate + normalise the action's `output` field to a non-empty list
@@ -759,34 +816,44 @@ class DocumentGenerationService {
 	 * {@see RuleActionDispatcher} `send-notification` path (reuse, not a
 	 * second notification implementation).
 	 *
-	 * @param string $objectUuid The fired object's uuid (notification's `object` id).
-	 * @param string|null $fileRef The `attach`-mode file id, if any.
-	 * @param string|null $downloadLink The `download-link`-mode signed URL, if any.
+	 * @param DocumentRun $run The generation: its object, and the attach / download-link results.
 	 *
 	 * @return void
 	 */
-	private function dispatchNotification(string $objectUuid, ?string $fileRef, ?string $downloadLink): void {
+	private function dispatchNotification(DocumentRun $run): void {
 		$user = $this->userSession->getUser();
 		if ($user === null) {
 			return;
 		}
 
-		$subject = 'Your generated document is ready';
-		if ($downloadLink !== null) {
-			$subject = 'Your generated document is ready to download';
-		} elseif ($fileRef !== null) {
-			$subject = 'Your generated document has been attached';
-		}
-
 		($this->ruleActionDispatcher)(
 			'send-notification',
 			[
-				'subject' => $subject,
+				'subject' => $this->notificationSubject(run: $run),
 				'recipientUid' => $user->getUID(),
-				'objectId' => $objectUuid,
+				'objectId' => $run->objectUuid,
 			],
 			[]
 		);
 
 	}//end dispatchNotification()
+
+	/**
+	 * The notification subject: a download link wins over an attachment.
+	 *
+	 * @param DocumentRun $run The generation.
+	 *
+	 * @return string
+	 */
+	private function notificationSubject(DocumentRun $run): string {
+		if ($run->downloadLink !== null) {
+			return 'Your generated document is ready to download';
+		}
+
+		if ($run->fileRef !== null) {
+			return 'Your generated document has been attached';
+		}
+
+		return 'Your generated document is ready';
+	}//end notificationSubject()
 }//end class

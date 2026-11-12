@@ -446,4 +446,89 @@ final class DocumentGenerationServiceTest extends TestCase {
 		$this->assertFalse($result);
 
 	}//end testMissingTokenProviderFailsClosed()
+
+	/**
+	 * Every output-mode combination, with Files working and failing: the
+	 * impersonated object, the attachment write, the notification subject and
+	 * the answer, compared with the recorded fixture. Set GOLDEN_RECORD=1 to
+	 * write a missing fixture.
+	 *
+	 * @return void
+	 */
+	public function testOutputModesGolden(): void {
+		$fixture = __DIR__ . '/fixtures/document-generation-outputs.golden.json';
+		$cases = [];
+		$combinations = [['attach'], ['download-link'], ['attach', 'notify'], ['download-link', 'notify'], ['attach', 'download-link', 'notify'], ['notify', 'attach', 'attach']];
+		foreach ($combinations as $modes) {
+			foreach ([true, false] as $filesWork) {
+				$cases[] = $this->outputCase(modes: $modes, filesWork: $filesWork);
+			}
+		}
+
+		$actual = json_encode($cases, (JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)) . "\n";
+		if (file_exists($fixture) === false && getenv('GOLDEN_RECORD') === '1') {
+			file_put_contents($fixture, $actual);
+		}
+
+		$this->assertFileExists($fixture);
+		$this->assertSame(file_get_contents($fixture), $actual);
+	}//end testOutputModesGolden()
+
+	/**
+	 * Run one generation and record what it did.
+	 *
+	 * @param array<int,string> $modes     The action's output modes.
+	 * @param bool              $filesWork Whether the user's Files and app data accept the write.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function outputCase(array $modes, bool $filesWork): array {
+		$this->setUp();
+		$trace = [];
+		$this->ownerImpersonator = $this->createMock(JobOwnerImpersonator::class);
+		$this->ownerImpersonator->method('runAsOwner')->willReturnCallback(
+			static function (string $objectId, callable $work) use (&$trace) {
+				$trace[] = 'runAsOwner ' . $objectId;
+				return $work();
+			}
+		);
+		$captured = [];
+		$this->wireSuccessfulDocudeskCall($captured);
+
+		$folder = $this->createMock(Folder::class);
+		$folder->method('newFolder')->willReturn($folder);
+		$folder->method('nodeExists')->willReturn(false);
+		$file = $this->createMock(Node::class);
+		$file->method('getId')->willReturn(42);
+		$folder->method('newFile')->willReturn($file);
+		$appData = $this->createMock(IAppData::class);
+		$tokenFolder = $this->createMock(ISimpleFolder::class);
+		$tokenFolder->method('newFile')->willReturn($this->createMock(ISimpleFile::class));
+		$appData->method('getFolder')->willReturn($tokenFolder);
+		$tokenFolder->method('newFolder')->willReturn($tokenFolder);
+		if ($filesWork === true) {
+			$this->rootFolder->method('getUserFolder')->willReturn($folder);
+			$this->appDataFactory->method('get')->willReturn($appData);
+		} else {
+			$this->rootFolder->method('getUserFolder')->willThrowException(new NotFoundException('no files'));
+			$this->appDataFactory->method('get')->willThrowException(new NotFoundException('no app data'));
+		}
+
+		$this->objectService->method('saveObject')->willReturnCallback(
+			static function (...$args) use (&$trace) {
+				$trace[] = 'saveObject ' . json_encode($args[0]);
+				return null;
+			}
+		);
+		$this->ruleActionDispatcher->method('__invoke')->willReturnCallback(
+			static function (string $type, array $params) use (&$trace) {
+				$trace[] = $type . ' ' . json_encode($params);
+				return null;
+			}
+		);
+
+		$result = $this->service->generate(self::AUTOMATION, ['templateId' => 'tpl-1', 'output' => $modes], 'permit', 'obj-uuid-9');
+
+		return ['modes' => $modes, 'filesWork' => $filesWork, 'result' => $result, 'request' => $captured['json'] ?? null, 'trace' => $trace];
+	}//end outputCase()
 }//end class
