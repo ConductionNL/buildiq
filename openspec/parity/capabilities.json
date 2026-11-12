@@ -2382,7 +2382,11 @@
 				"reachedOn": "buildiq builder, any index page, select rows -> Delete",
 				"owner": "ConductionNL/nextcloud-vue",
 				"note": "Specified in ConductionNL/nextcloud-vue openspec/changes/index-bulk-edit-and-transitions (nextcloud-vue lane, OpenSpec pass 2026-09-27).",
-				"change": "nextcloud-vue/index-bulk-edit-and-transitions"
+				"change": "nextcloud-vue/index-bulk-edit-and-transitions",
+				"requirement": [
+					"nextcloud-vue:openspec/changes/index-bulk-edit-and-transitions/specs/index-page :: The selection strip changes one field on every selected row",
+					"nextcloud-vue:openspec/changes/index-bulk-edit-and-transitions/specs/index-page :: A bulk act is previewed and committed as one OpenRegister job"
+				]
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -2731,7 +2735,11 @@
 				"evidence": "nextcloud-vue #1214 628f1d57d (in 2.56.0; buildiq locks 2.57.1): CnIndexPage board and dateAxis view modes (src/components/CnIndexPage/CnIndexPage.vue:538, :555 at nextcloud-vue development f2bc02c3). buildiq's index page editor does not offer the mode yet",
 				"owner": "ConductionNL/nextcloud-vue",
 				"note": "Library half shipped in nextcloud-vue 2.56.0 (#1214); rated partial until buildiq's index page editor offers the mode, which is buildiq's half. Before: grep -ri 'kanban' across buildiq src/ and lib/: no hits. nextcloud-vue v2.55.1 src/components/CnPageRenderer/pageTypes.js defaultPageTypes has no 'kanban' entry (full list: index, detail, dashboard, logs, settings, chat, files, form, map, roadmap, reports, store, search, wiki, flow/flows/flow-detail) (OpenSpec pass 2026-09-27, corrected 2026-09-28).",
-				"change": "nextcloud-vue/status-board-and-date-axis"
+				"change": "nextcloud-vue/status-board-and-date-axis",
+				"requirement": [
+					"nextcloud-vue:openspec/changes/status-board-and-date-axis/specs/index-page :: The index page offers a board bound to the status field",
+					"nextcloud-vue:openspec/changes/status-board-and-date-axis/specs/index-page :: Moving a card runs a transition and a refusal is shown"
+				]
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -2802,7 +2810,8 @@
 				"evidence": "nextcloud-vue #1214 628f1d57d (in 2.56.0; buildiq locks 2.57.1): CnIndexPage board and dateAxis view modes (src/components/CnIndexPage/CnIndexPage.vue:538, :555 at nextcloud-vue development f2bc02c3). buildiq's index page editor does not offer the mode yet",
 				"owner": "ConductionNL/nextcloud-vue",
 				"note": "Library half shipped in nextcloud-vue 2.56.0 (#1214); rated partial until buildiq's index page editor offers the mode, which is buildiq's half. Before: grep -ri 'gantt|timeline' across buildiq src/ and lib/: no hits at all. No 'gantt'/'timeline' entry in nextcloud-vue v2.55.1 pageTypes.js (OpenSpec pass 2026-09-27, corrected 2026-09-28).",
-				"change": "nextcloud-vue/status-board-and-date-axis"
+				"change": "nextcloud-vue/status-board-and-date-axis",
+				"requirement": "nextcloud-vue:openspec/changes/status-board-and-date-axis/specs/index-page :: The date axis shows overlapping work and hides nothing"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -3452,7 +3461,8 @@
 				"evidence": "nextcloud-vue v2.55.1 CnIndexPage.vue:410-415 renders NcEmptyContent with a resolvedEmptyText when a list has no records, automatically, with no config required from buildiq's IndexPageEditor.vue (which has no emptyState/emptyText field at all -- grep for 'empty' in that file returns nothing)",
 				"reachedOn": "any built app list page (type index) with zero records",
 				"owner": "ConductionNL/nextcloud-vue",
-				"spec": "nextcloud-vue/openspec/specs/index-page"
+				"spec": "nextcloud-vue/openspec/specs/index-page",
+				"requirement": "nextcloud-vue:openspec/specs/index-page :: Empty State"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -4388,7 +4398,8 @@
 				"reachedOn": "/automations: schedule trigger in the composer (compiles but never runs); 'Edit flows...' canvas with a schedule trigger node (runs in OpenRegister)",
 				"owner": "ConductionNL/openregister",
 				"note": "Specified in ConductionNL/openregister openspec/changes/apphost-schedule-flow-action (openregister lane, OpenSpec pass 2026-09-27).",
-				"change": "openregister/apphost-schedule-flow-action"
+				"change": "openregister/apphost-schedule-flow-action",
+				"requirement": "openregister:openspec/specs/apphost-scheduling :: Publishing a manifest applies its schedules as scheduled flows"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -4510,7 +4521,8 @@
 				"owner": "ConductionNL/openregister",
 				"note": "Satisfied by OpenRegister's flow node, reached from buildiq's automations page. The quick composer stays without an email action; that is a convenience, not the capability.",
 				"change": "openregister/flow-messaging-nodes",
-				"readOn": "2026-10-07"
+				"readOn": "2026-10-07",
+				"requirement": "openregister:openspec/specs/flow-messaging-nodes :: Flows send through the notification subsystem, never beside it"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -4551,7 +4563,8 @@
 				"owner": "ConductionNL/openregister",
 				"note": "Choosing a user or group works in the flow canvas. The quick composer in buildiq still fixes recipients to whoever may manage the record.",
 				"change": "openregister/flow-messaging-nodes",
-				"readOn": "2026-10-07"
+				"readOn": "2026-10-07",
+				"requirement": "openregister:openspec/specs/flow-messaging-nodes :: Flows send through the notification subsystem, never beside it"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -4795,7 +4808,8 @@
 				"evidence": "src/views/AutomationsPage.vue:22 'Edit flows...' -> FlowPickerDialog (src/dialogs/FlowPickerDialog.vue:114 GET /apps/openregister/api/flows?app={slug}) -> CnFlowEditModal (AutomationsPage.vue:153-157,176; @conduction/nextcloud-vue 2.55.1 src/dialogs/CnFlowEditModal.vue renders CnFlowDetail canvas). Engine on openregister origin/development: Petri-net joins in lib/Service/Flow/Nodes/MergeNode.php ('wait for all' at a join), RouterNode/SwitchNode branches, WaitNode (timer), AwaitSignalNode, UserTaskNode; BPMN import/export routes flow#exportBpmn/importBpmn (openregister appinfo/routes.php:825-826).",
 				"reachedOn": "app detail 'Automations' -> /automations -> 'Edit flows...' -> pick or start a flow, canvas modal",
 				"owner": "ConductionNL/openregister",
-				"spec": "openregister/openspec/specs/flow-engine"
+				"spec": "openregister/openspec/specs/flow-engine",
+				"requirement": "openregister:openspec/specs/flow-engine :: Converging edges MERGE by default; synchronising requires `join: true` @e2e exclude engine-internal lowering semantics — covered by FlowMergeTest"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -5022,7 +5036,8 @@
 				"evidence": "OpenRegister serves POST /api/graphql and /api/graphql/explorer (openregister appinfo/routes.php:1990-1991) over every register, including a built app's data registers. buildiq uses it only for its own dashboard widget (src/components/dashboard/DashboardAppsListWidget.vue:173). The page designer has no GraphQL authoring (grep -i graphql over src/components/page-editor: none); nextcloud-vue 2.55.1 dashboard widgets accept a dataSource.graphql block (CnDashboardPage.vue:454) only via raw JSON.",
 				"reachedOn": "no buildiq page; external systems or OpenRegister's GraphQL explorer query the app's register",
 				"owner": "ConductionNL/openregister",
-				"spec": "openregister/openspec/specs/graphql-api"
+				"spec": "openregister/openspec/specs/graphql-api",
+				"requirement": "openregister:openspec/specs/graphql-api :: The GraphQL schema MUST be auto-generated from register schemas"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -5174,7 +5189,8 @@
 				"reachedOn": "no buildiq page for record-event webhooks; OpenRegister's own webhook admin",
 				"owner": "ConductionNL/openregister",
 				"note": "Specified in ConductionNL/openregister openspec/changes/webhooks-for-owners (openregister lane, OpenSpec pass 2026-09-27).",
-				"change": "openregister/webhooks-for-owners"
+				"change": "openregister/webhooks-for-owners",
+				"requirement": "openregister:openspec/changes/webhooks-for-owners/specs/webhook-payload-mapping :: A person with the right may own webhook subscriptions"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -5213,7 +5229,8 @@
 				"evidence": "A built app's data lives in OpenRegister registers buildiq provisions (lib/Service/DataRegisterProvisioner.php, called from AppChannelApplier.php:144); OpenRegister serves them over REST /api/objects/{register}/{schema} and /{id} (openregister appinfo/routes.php:1164,1171,1177) with a generated OpenAPI document per register (routes.php:1667 oas#generate).",
 				"reachedOn": "OpenRegister REST API for the app's register; no buildiq page shows the endpoint or its docs",
 				"owner": "ConductionNL/openregister",
-				"spec": "openregister/openspec/specs/objects-crud"
+				"spec": "openregister/openspec/specs/objects-crud",
+				"requirement": "openregister:openspec/changes/records-api-and-table-stated/specs/objects-crud :: Every schema is served as a REST collection (REQ-RAT-001)"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -5249,7 +5266,8 @@
 				"evidence": "Record files go to Nextcloud Files through OpenRegister (openregister appinfo/routes.php:1453,1455 files#create/index on /api/objects/{register}/{schema}/{id}/files); a built app detail page gets the Files tab from nextcloud-vue v2.55.1 CnObjectSidebar when the sidebar is enabled (src/components/page-editor/DetailPageEditor.vue:67-99), and a 'files' page type (FilesPageEditor.vue, see r3 pg-files-page). buildiq itself uses the same route for icons (src/dialogs/IconUploadSection.vue:310,410).",
 				"reachedOn": "built app detail page, sidebar Files tab; built app page of type files",
 				"owner": "nextcloud/server",
-				"spec": "openregister/openspec/specs/file-actions"
+				"spec": "openregister/openspec/specs/file-actions",
+				"requirement": "openregister:openspec/specs/file-actions :: File creation and upsert run a fixed validate-write-own-tag pipeline"
 			},
 			"provider": "nextcloud",
 			"providerHow": "read-from-code",
@@ -5284,7 +5302,8 @@
 				"evidence": "nextcloud-vue v2.55.1 src/integrations/builtin/index.js registers calendar, contacts, talk, email, deck and more integration tabs; OpenRegister injects that registry on every page (openregister lib/Listener/IntegrationGlobalScriptListener.php, src/integration-global.js:29 ensureIntegrationRegistry). CnObjectSidebar shows them only in registry mode (CnObjectSidebar.vue:672-674), and CnDetailPage passes useRegistry only when config.sidebar.useRegistry === true (CnDetailPage.vue:4052). buildiq's DetailPageEditor has no useRegistry control (grep useRegistry over src: none), so it takes raw JSON.",
 				"reachedOn": "built app detail page sidebar, only after setting config.sidebar.useRegistry in the raw manifest",
 				"owner": "ConductionNL/nextcloud-vue",
-				"spec": "openregister/openspec/specs/integration-registry"
+				"spec": "openregister/openspec/specs/integration-registry",
+				"requirement": "openregister:openspec/specs/integration-registry :: The 8 built-in NC types MUST be migrated to providers"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -5439,7 +5458,8 @@
 				"evidence": "buildiq keeps no secrets itself: GitHub push/pull, export-to-GitHub and GitHub template search pick a credential from OpenRegister's broker (GET /apps/openregister/api/credentials in src/modals/GitHubSyncModal.vue:405, src/dialogs/ExportDialog.vue:332, src/views/TemplateGallery.vue:615; openregister routes.php:42,50) and call through CredentialBrokerService (lib/Service/GitHubAppSyncService.php:62). On publish, a built app whose manifest declares credentials[] is onboarded to the broker (lib/Controller/ApplicationPublishController.php:268 -> lib/Service/Credential/VirtualAppCredentialRegistrar.php, CredentialAppTokenService::registerApp). ConnectorSourcePicker.vue:269 strips source credentials before they reach the page.",
 				"reachedOn": "app detail 'GitHub' dialog and Export dialog credential pickers; credentials are created in OpenRegister",
 				"owner": "ConductionNL/openregister",
-				"spec": "openregister/openspec/specs/credential-broker"
+				"spec": "openregister/openspec/specs/credential-broker",
+				"requirement": "openregister:openspec/specs/credential-broker :: Credential metadata schema"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -5679,7 +5699,11 @@
 				"reachedOn": "any built app opened at /builder/{slug}, floating AI companion (hermiq installed, an agent picked for the app)",
 				"owner": "ConductionNL/hermiq",
 				"note": "Built by the hermiq lane (archive 2026-10-01-agents-bound-to-their-app); set built in buildiq's matrix 2026-10-02 after reading hermiq development.",
-				"change": "ConductionNL/hermiq archive openspec/changes/archive/2026-10-01-agents-bound-to-their-app (hermiq development d3cac1131)"
+				"change": "ConductionNL/hermiq archive openspec/changes/archive/2026-10-01-agents-bound-to-their-app (hermiq development d3cac1131)",
+				"requirement": [
+					"hermiq:openspec/changes/archive/2026-10-01-agents-bound-to-their-app/specs/agent-management-ui :: An organisation admin picks the agent that answers in an app (REQ-APPAG-002)",
+					"hermiq:openspec/changes/archive/2026-10-01-agents-bound-to-their-app/specs/agent-management-ui :: An app's agent answers from the app's data first (REQ-APPAG-003)"
+				]
 			},
 			"provider": "hermiq",
 			"providerHow": "read-from-code",
@@ -6032,7 +6056,8 @@
 				"reachedOn": "",
 				"owner": "ConductionNL/openregister",
 				"note": "Specified in ConductionNL/openregister openspec/changes/modelling-field-access-editor (openregister lane, OpenSpec pass 2026-09-27).",
-				"change": "openregister/modelling-field-access-editor"
+				"change": "openregister/modelling-field-access-editor",
+				"requirement": "openregister:openspec/specs/row-field-level-security :: Schemas MUST support field-level security via property authorization blocks"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -6340,7 +6365,11 @@
 				"reachedOn": "form page External access -> Configure; portaliq portal",
 				"owner": "ConductionNL/portaliq",
 				"note": "Specified in ConductionNL/portaliq openspec/changes/portal-theme-blocks-and-contributed-pages (owning lane, OpenSpec pass 2026-09-27).",
-				"change": "portaliq/portal-theme-blocks-and-contributed-pages"
+				"change": "portaliq/portal-theme-blocks-and-contributed-pages",
+				"requirement": [
+					"portaliq:openspec/specs/portaliq-cms :: Only explicitly public widgets MUST render at a public origin",
+					"portaliq:openspec/changes/portal-theme-blocks-and-contributed-pages/specs/portaliq-cms :: A contributed page MUST be reachable at its own route (REQ-PTB-011)"
+				]
 			},
 			"provider": "portaliq",
 			"providerHow": "read-from-code",
@@ -7003,7 +7032,11 @@
 				"evidence": "The shared runtime buildiq relies on (nextcloud-vue CnAppRoot v2.55.1) supports manifest.dependencies natively -- unresolved entries render a 'dependency-missing' slot with a per-app list (git show v2.55.1:src/components/CnAppRoot/CnAppRoot.vue lines ~19-22,144-153). Buildiq's own manifest.json:4-6 declares 'dependencies: [openregister]' using exactly this mechanism. lib/Controller/ApplicationsController.php:401-403 manifestShapeError() only requires 'version' (string) and 'pages' (array) -- it does not reject a 'dependencies' key, so a citizen developer CAN add one via the raw-JSON manifest editor (ApplicationManifestTab).",
 				"reachedOn": "VirtualAppDetail 'Manifest' raw-JSON sidebar tab (manual JSON key, not a dedicated UI field)",
 				"owner": "ConductionNL/nextcloud-vue",
-				"spec": "nextcloud-vue/openspec/specs/dependency-install-actions"
+				"spec": "nextcloud-vue/openspec/specs/dependency-install-actions",
+				"requirement": [
+					"nextcloud-vue:openspec/specs/dependency-install-actions :: REQ-DIA-4 — HARD vs SOFT dependency manifest model",
+					"nextcloud-vue:openspec/specs/dependency-install-actions :: REQ-DIA-6 — Dismissible soft-dependency banner in the shell"
+				]
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -8672,7 +8705,8 @@
 				"reachedOn": "a built app dashboard whose manifest names the my-approvals widget, placed by editing the manifest; the widget picker does not offer it",
 				"owner": "ConductionNL/openregister",
 				"note": "Specified in ConductionNL/openregister openspec/changes/flow-task-inbox-projections (openregister lane, OpenSpec pass 2026-09-27).",
-				"change": "openregister/flow-task-inbox-projections"
+				"change": "openregister/flow-task-inbox-projections",
+				"requirement": "openregister:openspec/specs/flow-tasks :: The inbox answers \"what is waiting for me?\" in one query"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -8873,7 +8907,8 @@
 				"reachedOn": "nothing reaches it",
 				"owner": "ConductionNL/openregister",
 				"note": "Specified in ConductionNL/openregister openspec/changes/tasks-delegation-and-substitution (openregister lane, OpenSpec pass 2026-09-27).",
-				"change": "openregister/tasks-delegation-and-substitution"
+				"change": "openregister/tasks-delegation-and-substitution",
+				"requirement": "openregister:openspec/changes/tasks-delegation-and-substitution/specs/flow-tasks :: A task goes to the stand-in of an absent assignee"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -8912,7 +8947,8 @@
 				"reachedOn": "a built app dashboard with the My approvals widget: each open task shows its due date, with an Overdue or Due soon flag; no buildiq page reports workflow progress",
 				"owner": "ConductionNL/openregister",
 				"note": "Specified in ConductionNL/openregister openspec/changes/tasks-progress-report (openregister lane, OpenSpec pass 2026-09-27).",
-				"change": "openregister/tasks-progress-report"
+				"change": "openregister/tasks-progress-report",
+				"requirement": "openregister:openspec/changes/tasks-progress-report/specs/flow-progress-report :: A flow reports its progress per step"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -8951,7 +8987,8 @@
 				"reachedOn": "nothing reaches it",
 				"owner": "ConductionNL/openregister",
 				"note": "Specified in ConductionNL/openregister openspec/changes/tasks-delegation-and-substitution (openregister lane, OpenSpec pass 2026-09-27).",
-				"change": "openregister/tasks-delegation-and-substitution"
+				"change": "openregister/tasks-delegation-and-substitution",
+				"requirement": "openregister:openspec/changes/tasks-delegation-and-substitution/specs/flow-tasks :: A delegate must hold the task's mandate"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -8990,7 +9027,8 @@
 				"reachedOn": "/automations composer, 'Require approval' on a record-changed trigger (after the change, not before)",
 				"owner": "ConductionNL/openregister",
 				"note": "Specified in ConductionNL/openregister openspec/changes/records-change-held-for-approval (openregister lane, OpenSpec pass 2026-09-27).",
-				"change": "openregister/records-change-held-for-approval"
+				"change": "openregister/records-change-held-for-approval",
+				"requirement": "openregister:openspec/changes/records-change-held-for-approval/specs/approval-workflow :: An approval chain can hold a change until it is approved"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -9435,7 +9473,8 @@
 				"reachedOn": "nothing reaches it",
 				"owner": "ConductionNL/openregister",
 				"note": "Specified in ConductionNL/openregister openspec/changes/records-change-held-for-approval (openregister lane, OpenSpec pass 2026-09-27).",
-				"change": "openregister/records-change-held-for-approval"
+				"change": "openregister/records-change-held-for-approval",
+				"requirement": "openregister:openspec/changes/records-change-held-for-approval/specs/approval-workflow :: A gated new record does not exist until it is approved"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -9475,7 +9514,12 @@
 				"owner": "ConductionNL/nextcloud-vue",
 				"note": "Specified in ConductionNL/nextcloud-vue openspec/changes/index-column-order-and-pinning (nextcloud-vue lane, OpenSpec pass 2026-09-27).",
 				"change": "nextcloud-vue/index-column-order-and-pinning",
-				"readOn": "2026-10-30"
+				"readOn": "2026-10-30",
+				"requirement": [
+					"nextcloud-vue:openspec/changes/index-column-order-and-pinning/specs/index-page :: A user orders the columns of a list",
+					"nextcloud-vue:openspec/changes/index-column-order-and-pinning/specs/index-page :: A user pins columns to the start of the table",
+					"nextcloud-vue:openspec/changes/index-column-order-and-pinning/specs/index-page :: The column layout is kept per user and per list"
+				]
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -9749,7 +9793,8 @@
 				"reachedOn": "a built app's record page with the hermiq agent leaf placed on it",
 				"owner": "ConductionNL/hermiq",
 				"note": "Built by the hermiq lane (archive 2026-10-01-agents-bound-to-their-app); set built in buildiq's matrix 2026-10-02 after reading hermiq development.",
-				"change": "ConductionNL/hermiq archive openspec/changes/archive/2026-10-01-agents-bound-to-their-app (hermiq development d3cac1131)"
+				"change": "ConductionNL/hermiq archive openspec/changes/archive/2026-10-01-agents-bound-to-their-app (hermiq development d3cac1131)",
+				"requirement": "hermiq:openspec/changes/archive/2026-10-01-agents-bound-to-their-app/specs/agent-object-leaf :: A record page can show an AI-written summary of the record (REQ-APPAG-004)"
 			},
 			"provider": "hermiq",
 			"providerHow": "read-from-code",
@@ -9972,7 +10017,8 @@
 				"reachedOn": "nothing reaches it from buildiq",
 				"owner": "ConductionNL/integriq",
 				"note": "Specified in ConductionNL/integriq openspec/changes/gateway-openapi-import-and-publish (owning lane, OpenSpec pass 2026-09-27).",
-				"change": "integriq/gateway-openapi-import-and-publish"
+				"change": "integriq/gateway-openapi-import-and-publish",
+				"requirement": "integriq:openspec/changes/gateway-openapi-import-and-publish/specs/openapi-import-and-publish :: An OpenAPI document is imported as a source and endpoints (REQ-OAPI-001)"
 			},
 			"provider": "integriq",
 			"providerHow": "read-from-code",
@@ -10011,7 +10057,8 @@
 				"reachedOn": "nothing reaches it",
 				"owner": "ConductionNL/integriq",
 				"note": "Specified in ConductionNL/integriq openspec/changes/sources-per-user-oauth (owning lane, OpenSpec pass 2026-09-27).",
-				"change": "integriq/sources-per-user-oauth"
+				"change": "integriq/sources-per-user-oauth",
+				"requirement": "integriq:openspec/changes/sources-per-user-oauth/specs/http-call-engine :: A source can call with the signed-in user's own account (REQ-PUOA-001)"
 			},
 			"provider": "integriq",
 			"providerHow": "read-from-code",
@@ -10243,7 +10290,8 @@
 				"reachedOn": "schema designer relation to the same schema; no tree view",
 				"owner": "ConductionNL/openregister",
 				"note": "Specified in ConductionNL/openregister openspec/changes/records-tree-view (openregister lane, OpenSpec pass 2026-09-27).",
-				"change": "openregister/records-tree-view"
+				"change": "openregister/records-tree-view",
+				"requirement": "openregister:openspec/changes/records-tree-view/specs/saved-search-views :: A saved view can present hierarchical records as a tree"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -10283,7 +10331,11 @@
 				"owner": "ConductionNL/nextcloud-vue",
 				"note": "Specified in ConductionNL/nextcloud-vue openspec/changes/notes-replies-group-mentions-and-images (nextcloud-vue lane, OpenSpec pass 2026-09-27).",
 				"change": "nextcloud-vue/notes-replies-group-mentions-and-images",
-				"readOn": "2026-10-30"
+				"readOn": "2026-10-30",
+				"requirement": [
+					"nextcloud-vue:openspec/changes/notes-replies-group-mentions-and-images/specs/notes-mentions-autocomplete :: A note can be answered, and the answer stays with it",
+					"nextcloud-vue:openspec/specs/notes-mentions-autocomplete :: The note composer SHALL offer `@mention` autocomplete via the upstream rich input"
+				]
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
