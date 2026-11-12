@@ -187,6 +187,66 @@ import {
 import { applicationVersionsMixin } from '../../mixins/applicationVersions.js'
 import { buildVersionedRoute } from '../../router/helpers.js'
 
+/**
+ * The permission buckets that give a role badge, highest first, with the
+ * badge each one shows.
+ */
+const ROLE_BADGES = [
+	['owners', () => t('buildiq', 'owner')],
+	['editors', () => t('buildiq', 'editor')],
+	['viewers', () => t('buildiq', 'viewer')],
+]
+
+/**
+ * Whether a permission bucket lists the user (as `user:<uid>` or bare).
+ *
+ * @param {Array<string>|string|undefined} bucket The bucket from the permissions block.
+ * @param {string} uid The user id.
+ * @return {boolean}
+ */
+function inBucket(bucket, uid) {
+	return (
+		Array.isArray(bucket)
+		&& bucket.some((p) => p === `user:${uid}` || p === uid)
+	)
+}
+
+/**
+ * The display names of a promotion's source and target versions.
+ *
+ * @param {object} source The version being promoted.
+ * @param {object|null} target The version it is promoted to.
+ * @return {{source: string, target: string}}
+ */
+function promotionNames(source, target) {
+	return {
+		source: source.name || source.slug,
+		target: (target && (target.name || target.slug)) || '',
+	}
+}
+
+/**
+ * The response body of a failed request, or `{}`.
+ *
+ * @param {Error|null} e The rejected request.
+ * @return {object}
+ */
+function responseData(e) {
+	return (e && e.response && e.response.data) || {}
+}
+
+/**
+ * Why a promotion failed: the server's message or detail, else the error
+ * message, else nothing.
+ *
+ * @param {Error|null} e The rejected request.
+ * @return {string}
+ */
+function promotionFailureReason(e) {
+	const data = responseData(e)
+	return data.message || data.detail || (e && e.message) || ''
+}
+
 export default {
 	name: 'ApplicationDetailHeader',
 	components: { NcLoadingIcon, OpenInNew, PromoteVersionDialog },
@@ -385,13 +445,10 @@ export default {
 				(this.application && this.application.permissions) || {}
 			const uid = this.callerUid
 			if (!uid) return ''
-			const inBucket = (bucket) =>
-				Array.isArray(bucket)
-				&& bucket.some((p) => p === `user:${uid}` || p === uid)
-			if (inBucket(permissions.owners)) return t('buildiq', 'owner')
-			if (inBucket(permissions.editors)) return t('buildiq', 'editor')
-			if (inBucket(permissions.viewers)) return t('buildiq', 'viewer')
-			return ''
+			const badge = ROLE_BADGES.find(([bucket]) =>
+				inBucket(permissions[bucket], uid),
+			)
+			return badge ? badge[1]() : ''
 		},
 
 		/**
@@ -486,16 +543,27 @@ export default {
 		selectVersion(version) {
 			if (!version || !version.slug) return
 			this.selectedVersionUuid = version.uuid
-			const route = buildVersionedRoute(
-				this.$route ? this.$route.name : 'VirtualAppDetail',
-				this.$route ? this.$route.params : {},
-				version.slug,
-			)
+			const route = this.versionRoute(version.slug)
 			if (this.$router) {
 				this.$router.replace(route).catch(() => {
 					/* ignore duplicate nav */
 				})
 			}
+		},
+
+		/**
+		 * The current route, re-aimed at a version.
+		 *
+		 * @param {string} slug The version slug.
+		 * @return {object}
+		 */
+		versionRoute(slug) {
+			const current = this.$route
+			return buildVersionedRoute(
+				current ? current.name : 'VirtualAppDetail',
+				current ? current.params : {},
+				slug,
+			)
 		},
 
 		/**
@@ -536,16 +604,44 @@ export default {
 		 */
 		async onPromoteConfirm({ strategy }) {
 			const source = this.promoteDialog.sourceVersion
-			const target = this.promoteTarget
-			const appUuid = versionUuidOf(this.application)
 			const sourceUuid = versionUuidOf(source)
-			if (this.promoting || !source || !appUuid || !sourceUuid) {
-				return
+			if (!this.canPromote(source, sourceUuid)) return
+			const names = promotionNames(source, this.promoteTarget)
+			this.startPromotion(names)
+			try {
+				await this.postPromotion(sourceUuid, strategy)
+				this.finishPromotion(names)
+			} catch (e) {
+				this.failPromotion(names, e)
+			} finally {
+				this.promoting = false
 			}
-			const names = {
-				source: source.name || source.slug,
-				target: (target && (target.name || target.slug)) || '',
-			}
+		},
+
+		/**
+		 * Whether a promotion of this source version can start: none is
+		 * running and both the app and the version have a UUID.
+		 *
+		 * @param {object|null} source The version being promoted.
+		 * @param {string} sourceUuid Its UUID.
+		 * @return {boolean}
+		 */
+		canPromote(source, sourceUuid) {
+			return (
+				!this.promoting
+				&& !!source
+				&& !!versionUuidOf(this.application)
+				&& !!sourceUuid
+			)
+		},
+
+		/**
+		 * Mark the promotion as running, show it and close the dialog.
+		 *
+		 * @param {{source: string, target: string}} names The version names.
+		 * @return {void}
+		 */
+		startPromotion(names) {
 			this.promoting = true
 			this.promoteFailed = false
 			this.promoteNotice = t(
@@ -554,35 +650,54 @@ export default {
 				names,
 			)
 			closePromoteDialog()
-			try {
-				await axios.post(
-					generateUrl(
-						'/apps/buildiq/api/applications/{appUuid}/versions/{versionUuid}/promote',
-						{ appUuid, versionUuid: sourceUuid },
-					),
-					{ strategy },
-				)
-				this.promoteNotice = t(
-					'buildiq',
-					'{source} is promoted to {target}.',
-					names,
-				)
-				markPromoted()
-			} catch (e) {
-				const data = (e && e.response && e.response.data) || {}
-				this.promoteFailed = true
-				this.promoteNotice = t(
-					'buildiq',
-					'Could not promote {source}: {reason}',
-					{
-						...names,
-						reason:
-							data.message || data.detail || (e && e.message) || '',
-					},
-				)
-			} finally {
-				this.promoting = false
-			}
+		},
+
+		/**
+		 * POST the promotion of a version with the chosen data strategy.
+		 *
+		 * @param {string} sourceUuid The UUID of the version being promoted.
+		 * @param {string} strategy The chosen data strategy.
+		 * @return {Promise<void>}
+		 */
+		async postPromotion(sourceUuid, strategy) {
+			await axios.post(
+				generateUrl(
+					'/apps/buildiq/api/applications/{appUuid}/versions/{versionUuid}/promote',
+					{ appUuid: versionUuidOf(this.application), versionUuid: sourceUuid },
+				),
+				{ strategy },
+			)
+		},
+
+		/**
+		 * Show the promotion as done and reload the versions.
+		 *
+		 * @param {{source: string, target: string}} names The version names.
+		 * @return {void}
+		 */
+		finishPromotion(names) {
+			this.promoteNotice = t(
+				'buildiq',
+				'{source} is promoted to {target}.',
+				names,
+			)
+			markPromoted()
+		},
+
+		/**
+		 * Show why the promotion failed.
+		 *
+		 * @param {{source: string, target: string}} names The version names.
+		 * @param {Error|null} e The rejected request.
+		 * @return {void}
+		 */
+		failPromotion(names, e) {
+			this.promoteFailed = true
+			this.promoteNotice = t(
+				'buildiq',
+				'Could not promote {source}: {reason}',
+				{ ...names, reason: promotionFailureReason(e) },
+			)
 		},
 	},
 }
