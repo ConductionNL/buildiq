@@ -5147,19 +5147,23 @@
 			"mendix": "partial",
 			"power-apps": "partial",
 			"built": {
-				"state": "built",
-				"evidence": "src/manifest.d/80-connection-registry.json: menu 'Integrations' (section settings, permission admin, visibleIf appInstalled 'integriq'; integriq repo appinfo/info.xml id is 'integriq') and page /settings/integrations, type index on register integriq, schema app_connection, columns status/statusMessage/checkedAt/settingsUrl, header action openIntegriqConnections (src/services/connectionRegistry.js:43). buildiq declares its own connections in lib/Settings/connections.json (store, github, documents, rule-webhooks) and reports observations through lib/Service/Connection/ConnectionReporter.php:155-212 (store search, GitHub search/sync, document call).",
-				"reachedOn": "buildiq settings section, 'Integrations' menu entry (admin, only when integriq is installed) -> /settings/integrations",
-				"owner": "ConductionNL/integriq",
-				"change": "adopt-connection-registry",
-				"requirement": "openspec/changes/adopt-connection-registry/specs/app-connections :: REQ-BIQ-CONN-004 An admin reads the connections on an Integrations page"
+				"state": "specified",
+				"evidence": "Not built: no app built in buildiq has a page listing its own sources and integrations with health; the Integrations page lists only buildiq's own four connections. Planned in openspec/changes/built-app-connections-page (decision 412, 13 Nov 2026). What exists: src/manifest.d/80-connection-registry.json: menu 'Integrations' (section settings, permission admin, visibleIf appInstalled 'integriq'; integriq repo appinfo/info.xml id is 'integriq') and page /settings/integrations, type index on register integriq, schema app_connection, columns status/statusMessage/checkedAt/settingsUrl, header action openIntegriqConnections (src/services/connectionRegistry.js:43). buildiq declares its own connections in lib/Settings/connections.json (store, github, documents, rule-webhooks) and reports observations through lib/Service/Connection/ConnectionReporter.php:155-212 (store search, GitHub search/sync, document call).",
+				"reachedOn": "nothing yet: planned as a Connections tab on the application detail page",
+				"owner": "ConductionNL/buildiq",
+				"change": "built-app-connections-page",
+				"requirement": [
+					"openspec/changes/built-app-connections-page/specs/app-connections :: REQ-BIQ-CONN-005 Every app built in buildiq has a connections page with health",
+					"openspec/changes/adopt-connection-registry/specs/app-connections :: REQ-BIQ-CONN-004 An admin reads the connections on an Integrations page"
+				],
+				"plan": "openspec/changes/built-app-connections-page"
 			},
 			"provider": "integriq",
 			"providerHow": "read-from-code",
 			"feature": "platform-integrations",
 			"featureConfidence": "medium",
-			"note": "Covers buildiq's own four connections, not the connections a built app uses: a built app's connector bindings, credentials or webhooks are not listed or probed. Whether the page filters to app=buildiq depends on CnIndexPage honouring the menu query; not verified.",
-			"reachedOn": "buildiq settings section, 'Integrations' menu entry (admin, only when integriq is installed) -> /settings/integrations",
+			"note": "Decision 412 (13 Nov 2026): a per-app connections page for apps built in buildiq, listing each app's sources and integrations with health. Specified, not built. Covers buildiq's own four connections, not the connections a built app uses: a built app's connector bindings, credentials or webhooks are not listed or probed. Whether the page filters to app=buildiq depends on CnIndexPage honouring the menu query; not verified.",
+			"reachedOn": "nothing yet: planned as a Connections tab on the application detail page",
 			"evidence": {
 				"nocobase": "source read at v2.2.18, not driven: packages/plugins/@nocobase/plugin-data-source-manager/src/client-v2/pages/DataSourcesPage.tsx:160 data source list with a Status column and Test Connection in packages/plugins/@nocobase/plugin-data-source-manager/src/client-v2/components/DataSourceForm.tsx:146; HTTP endpoints called from workflows or custom requests are not listed anywhere Reached on: Settings, Data sources",
 				"budibase": "source read at v3.46.0, not driven: packages/builder/src/settings/pages/connections/Connections.svelte:41-46 'Your connections' table shows name and type only (schema :17-20); a connection is checked only when saved (packages/builder/src/stores/builder/datasources.ts:203 validateDatasource). No live health status and no view of which app uses which Reached on: workspace settings > APIs > Connections",
