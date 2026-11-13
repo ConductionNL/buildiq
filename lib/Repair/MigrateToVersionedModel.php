@@ -353,44 +353,9 @@ class MigrateToVersionedModel implements IRepairStep {
 		// ApplicationVersionServiceInterface::VERSION_REGISTER_PREFIX.
 		$perAppRegisterSlug = ApplicationVersionServiceInterface::VERSION_REGISTER_PREFIX . $slug;
 
-		try {
-			$register = $this->registerMapper->find($perAppRegisterSlug, _multitenancy: false);
-		} catch (Throwable $e) {
-			// No per-app register to drop — proceed to delete the row.
-			$register = null;
-			$this->logger->debug(
-				'Buildiq: MigrateToVersionedModel: register ' . $perAppRegisterSlug . ' not found (' . $e->getMessage() . '); proceeding to row delete.'
-			);
+		if ($this->dropPerAppRegister(slug: $slug, output: $output) === false) {
+			return self::ROW_FAILED;
 		}
-
-		if ($register !== null) {
-			try {
-				$this->runElevated(
-					work: function () use ($register): void {
-						$this->registerService->delete(register: $register);
-					}
-				);
-			} catch (Throwable $e) {
-				$output->warning(
-					sprintf(
-						'Migrated-to-versioned-model: FAILED to drop register \'%s\''
-						. ' for Application \'%s\' (%s); Application row NOT deleted.',
-						$perAppRegisterSlug,
-						$slug,
-						$e->getMessage()
-					)
-				);
-				$this->logger->error(
-					'Buildiq: MigrateToVersionedModel: register-delete failed; preserving Application row',
-					[
-						'slug' => $slug,
-						'register' => $perAppRegisterSlug,
-						'exception' => $e->getMessage(),
-					]
-				);
-				return self::ROW_FAILED;
-			}//end try
-		}//end if
 
 		$applicationUuid = (string)($application['id'] ?? $application['uuid'] ?? '');
 		if ($applicationUuid === '') {
@@ -428,6 +393,61 @@ class MigrateToVersionedModel implements IRepairStep {
 		);
 		return self::ROW_OK;
 	}//end migrateOne()
+
+	/**
+	 * Drop the Application's per-version register when it exists.
+	 *
+	 * @param string  $slug   The Application slug.
+	 * @param IOutput $output The repair output.
+	 *
+	 * @return bool False when the register exists but could not be dropped.
+	 */
+	private function dropPerAppRegister(string $slug, IOutput $output): bool {
+		$perAppRegisterSlug = ApplicationVersionServiceInterface::VERSION_REGISTER_PREFIX . $slug;
+
+		try {
+			$register = $this->registerMapper->find($perAppRegisterSlug, _multitenancy: false);
+		} catch (Throwable $e) {
+			// No per-app register to drop — proceed to delete the row.
+			$this->logger->debug(
+				'Buildiq: MigrateToVersionedModel: register ' . $perAppRegisterSlug . ' not found (' . $e->getMessage() . '); proceeding to row delete.'
+			);
+			return true;
+		}
+
+		if ($register === null) {
+			return true;
+		}
+
+		try {
+			$this->runElevated(
+				work: function () use ($register): void {
+					$this->registerService->delete(register: $register);
+				}
+			);
+		} catch (Throwable $e) {
+			$output->warning(
+				sprintf(
+					'Migrated-to-versioned-model: FAILED to drop register \'%s\''
+					. ' for Application \'%s\' (%s); Application row NOT deleted.',
+					$perAppRegisterSlug,
+					$slug,
+					$e->getMessage()
+				)
+			);
+			$this->logger->error(
+				'Buildiq: MigrateToVersionedModel: register-delete failed; preserving Application row',
+				[
+					'slug' => $slug,
+					'register' => $perAppRegisterSlug,
+					'exception' => $e->getMessage(),
+				]
+			);
+			return false;
+		}//end try
+
+		return true;
+	}//end dropPerAppRegister()
 
 	/**
 	 * Run a unit of work under OpenRegister's system context.

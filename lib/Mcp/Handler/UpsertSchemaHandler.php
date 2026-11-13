@@ -61,6 +61,29 @@ class UpsertSchemaHandler extends AbstractToolHandler {
 		}
 
 		$appSlug = $validation['appSlug'];
+		$rawSlug = $validation['rawSlug'];
+
+		try {
+			return $this->upsert(validation: $validation);
+		} catch (\Throwable $e) {
+			$this->logger->error(
+				'Buildiq MCP: upsertSchema failed',
+				['appSlug' => $appSlug, 'slug' => $rawSlug, 'exception' => $e->getMessage(), 'trace' => $e->getTraceAsString()]
+			);
+			return $this->errorResult(error: 'upsert_failed', message: 'Failed to upsert schema. See server logs for details.');
+		}//end try
+
+	}//end handle()
+
+	/**
+	 * Create the schema in the version's register, or update it when it exists there.
+	 *
+	 * @param array<string, mixed> $validation The validated tool arguments.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function upsert(array $validation): array {
+		$appSlug = $validation['appSlug'];
 		$versionSlug = $validation['versionSlug'];
 		$rawSlug = $validation['rawSlug'];
 		$title = $validation['title'];
@@ -73,62 +96,41 @@ class UpsertSchemaHandler extends AbstractToolHandler {
 		// separate from REGISTER_SLUG and why it stays `openbuild-`.
 		$registerSlug = ApplicationVersionServiceInterface::VERSION_REGISTER_PREFIX . $appSlug . '-' . $versionSlug;
 
-		try {
-			// ADR-083 rule 1: establish availability BEFORE the reach.
-			if ($this->schemaMappersAvailable() === false) {
-				return $this->errorResult(error: 'openregister_unavailable', message: self::OR_ABSENT);
-			}
+		// ADR-083 rule 1: establish availability BEFORE the reach.
+		if ($this->schemaMappersAvailable() === false) {
+			return $this->errorResult(error: 'openregister_unavailable', message: self::OR_ABSENT);
+		}
 
-			$schemaMapper = $this->container->get('OCA\OpenRegister\Db\SchemaMapper');
-			$registerMapper = $this->container->get('OCA\OpenRegister\Db\RegisterMapper');
+		$schemaMapper = $this->container->get('OCA\OpenRegister\Db\SchemaMapper');
+		$registerMapper = $this->container->get('OCA\OpenRegister\Db\RegisterMapper');
 
-			$blob = [
-				'slug' => $namespacedSlug,
-				'title' => $title,
-				'description' => $description,
-				'type' => 'object',
-				'required' => array_values(array_filter((array)$required, 'is_string')),
-				'properties' => (array)$properties,
-			];
+		$blob = [
+			'slug' => $namespacedSlug,
+			'title' => $title,
+			'description' => $description,
+			'type' => 'object',
+			'required' => array_values(array_filter((array)$required, 'is_string')),
+			'properties' => (array)$properties,
+		];
 
-			$existing = $this->findExistingSchema(schemaMapper: $schemaMapper, namespacedSlug: $namespacedSlug);
+		$existing = $this->findExistingSchema(schemaMapper: $schemaMapper, namespacedSlug: $namespacedSlug);
 
-			if ($existing !== null) {
-				// Ownership guard: verify the found schema belongs to the expected
-				// per-version register before allowing an update (issue #168).
-				$ownershipError = $this->verifySchemaOwnership(
-					registerMapper: $registerMapper,
-					registerSlug: $registerSlug,
-					schemaId: $existing->getId()
-				);
-				if ($ownershipError !== null) {
-					return $ownershipError;
-				}
-
-				$schema = $schemaMapper->updateFromArray($existing->getId(), $blob);
-				return [
-					'success' => true,
-					'action' => 'updated',
-					'schema' => [
-						'id' => $schema->getId(),
-						'slug' => $namespacedSlug,
-						'shortSlug' => $rawSlug,
-						'title' => $title,
-						'register' => $registerSlug,
-					],
-				];
-			}//end if
-
-			$schema = $schemaMapper->createFromArray($blob);
-			$this->attachSchemaToRegister(
+		if ($existing !== null) {
+			// Ownership guard: verify the found schema belongs to the expected
+			// per-version register before allowing an update (issue #168).
+			$ownershipError = $this->verifySchemaOwnership(
 				registerMapper: $registerMapper,
 				registerSlug: $registerSlug,
-				schemaId: $schema->getId()
+				schemaId: $existing->getId()
 			);
+			if ($ownershipError !== null) {
+				return $ownershipError;
+			}
 
+			$schema = $schemaMapper->updateFromArray($existing->getId(), $blob);
 			return [
 				'success' => true,
-				'action' => 'created',
+				'action' => 'updated',
 				'schema' => [
 					'id' => $schema->getId(),
 					'slug' => $namespacedSlug,
@@ -137,15 +139,27 @@ class UpsertSchemaHandler extends AbstractToolHandler {
 					'register' => $registerSlug,
 				],
 			];
-		} catch (\Throwable $e) {
-			$this->logger->error(
-				'Buildiq MCP: upsertSchema failed',
-				['appSlug' => $appSlug, 'slug' => $rawSlug, 'exception' => $e->getMessage(), 'trace' => $e->getTraceAsString()]
-			);
-			return $this->errorResult(error: 'upsert_failed', message: 'Failed to upsert schema. See server logs for details.');
-		}//end try
+		}//end if
 
-	}//end handle()
+		$schema = $schemaMapper->createFromArray($blob);
+		$this->attachSchemaToRegister(
+			registerMapper: $registerMapper,
+			registerSlug: $registerSlug,
+			schemaId: $schema->getId()
+		);
+
+		return [
+			'success' => true,
+			'action' => 'created',
+			'schema' => [
+				'id' => $schema->getId(),
+				'slug' => $namespacedSlug,
+				'shortSlug' => $rawSlug,
+				'title' => $title,
+				'register' => $registerSlug,
+			],
+		];
+	}//end upsert()
 
 	/**
 	 * Whether OpenRegister's schema/register mappers can be reached at all.

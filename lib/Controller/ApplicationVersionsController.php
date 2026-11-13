@@ -320,55 +320,13 @@ class ApplicationVersionsController extends Controller {
 			}
 
 			$currentUuid = (string)($current['id'] ?? $current['uuid'] ?? '');
-
-			// WF2: strip caller input to the explicit MUTABLE_FIELDS allowlist
-			// before merging, so new schema properties added in future cannot
-			// become unintended write channels via implicit array_merge.
-			$clientInput = array_intersect_key($this->collectPayload(), array_flip(self::MUTABLE_FIELDS));
-			$payload = array_merge($current, $clientInput);
-			unset($payload['@self']);
-
-			// Preserve immutable fields.
-			$payload['application'] = $current['application'] ?? null;
-			$payload['id'] = $currentUuid;
-
-			// Cycle guard on cross-row.
-			$proposedPromotesTo = $payload['promotesTo'] ?? null;
-			if (is_string($proposedPromotesTo) === true) {
-				$cycleTarget = $proposedPromotesTo;
-				if ($cycleTarget === '') {
-					$cycleTarget = null;
-				}
-
-				$this->versionService->guardNoCycle(
-					currentUuid: $currentUuid,
-					proposedTargetUuid: $cycleTarget
-				);
-			}
-
-			$payload = $this->versionService->onSave(current: $current, next: $payload);
+			$payload = $this->buildUpdatePayload(current: $current, currentUuid: $currentUuid);
 
 			// Acquire an optimistic lock before the read-modify-write to prevent
 			// concurrent UI / MCP writes silently losing each other's changes (issue #159).
-			// `lockObject()`/`unlockObject()` are declared on
-			// ObjectServiceInterface, so the method_exists() probes that used to
-			// guard both calls could never be false.
-			$locked = false;
-			if ($currentUuid !== '') {
-				try {
-					$this->objectService->lockObject(
-						identifier: $currentUuid,
-						process: 'buildiq.controller-update',
-						duration: 15
-					);
-					$locked = true;
-				} catch (Throwable $lockError) {
-					return $this->errorResponse(
-						code: 'version_locked',
-						detail: 'Version ' . $versionSlug . ' is currently locked by another writer. Retry after a moment.',
-						status: Http::STATUS_CONFLICT
-					);
-				}
+			$locked = $this->lockForUpdate(currentUuid: $currentUuid, versionSlug: $versionSlug);
+			if ($locked instanceof JSONResponse) {
+				return $locked;
 			}
 
 			try {
@@ -379,15 +337,7 @@ class ApplicationVersionsController extends Controller {
 					uuid: $currentUuid
 				);
 			} finally {
-				if ($locked === true) {
-					try {
-						$this->objectService->unlockObject(identifier: $currentUuid);
-					} catch (Throwable $unlockErr) {
-						$this->logger->warning(
-							'Buildiq: failed to release update lock on ' . $currentUuid . ': ' . $unlockErr->getMessage()
-						);
-					}
-				}
+				$this->releaseUpdateLock(currentUuid: $currentUuid, locked: $locked);
 			}
 
 			return new JSONResponse(
@@ -406,6 +356,117 @@ class ApplicationVersionsController extends Controller {
 			);
 		}//end try
 	}//end update()
+
+	/**
+	 * The version payload of an update: the caller's mutable fields merged onto
+	 * the current version, its immutable fields kept, the promotion cycle guarded
+	 * and the save hook applied.
+	 *
+	 * @param array<string,mixed> $current     The current version.
+	 * @param string              $currentUuid The current version uuid.
+	 *
+	 * @return array<string,mixed>
+	 *
+	 * @throws \RuntimeException When the proposed promotion target closes a cycle.
+	 */
+	private function buildUpdatePayload(array $current, string $currentUuid): array {
+		// WF2: strip caller input to the explicit MUTABLE_FIELDS allowlist
+		// before merging, so new schema properties added in future cannot
+		// become unintended write channels via implicit array_merge.
+		$clientInput = array_intersect_key($this->collectPayload(), array_flip(self::MUTABLE_FIELDS));
+		$payload = array_merge($current, $clientInput);
+		unset($payload['@self']);
+
+		// Preserve immutable fields.
+		$payload['application'] = $current['application'] ?? null;
+		$payload['id'] = $currentUuid;
+
+		// Cycle guard on cross-row.
+		$this->guardPromotesTo(currentUuid: $currentUuid, proposedPromotesTo: ($payload['promotesTo'] ?? null));
+
+		return $this->versionService->onSave(current: $current, next: $payload);
+	}//end buildUpdatePayload()
+
+	/**
+	 * Refuse a promotesTo target that would close a promotion cycle.
+	 *
+	 * @param string $currentUuid        The current version uuid.
+	 * @param mixed  $proposedPromotesTo The proposed promotesTo value.
+	 *
+	 * @return void
+	 *
+	 * @throws \RuntimeException When the target closes a cycle.
+	 */
+	private function guardPromotesTo(string $currentUuid, mixed $proposedPromotesTo): void {
+		if (is_string($proposedPromotesTo) === false) {
+			return;
+		}
+
+		$cycleTarget = $proposedPromotesTo;
+		if ($cycleTarget === '') {
+			$cycleTarget = null;
+		}
+
+		$this->versionService->guardNoCycle(
+			currentUuid: $currentUuid,
+			proposedTargetUuid: $cycleTarget
+		);
+	}//end guardPromotesTo()
+
+	/**
+	 * Take the update lock on a version.
+	 *
+	 * `lockObject()` is declared on ObjectServiceInterface, so no
+	 * method_exists() probe guards it.
+	 *
+	 * @param string $currentUuid The version uuid; empty skips the lock.
+	 * @param string $versionSlug The version slug, for the conflict message.
+	 *
+	 * @return bool|JSONResponse Whether a lock was taken, or the 409 response.
+	 */
+	private function lockForUpdate(string $currentUuid, string $versionSlug): bool|JSONResponse {
+		if ($currentUuid === '') {
+			return false;
+		}
+
+		try {
+			$this->objectService->lockObject(
+				identifier: $currentUuid,
+				process: 'buildiq.controller-update',
+				duration: 15
+			);
+		} catch (Throwable $lockError) {
+			return $this->errorResponse(
+				code: 'version_locked',
+				detail: 'Version ' . $versionSlug . ' is currently locked by another writer. Retry after a moment.',
+				status: Http::STATUS_CONFLICT
+			);
+		}
+
+		return true;
+	}//end lockForUpdate()
+
+	/**
+	 * Release the update lock when one was taken; a failed release is logged.
+	 *
+	 * @param string $currentUuid The version uuid.
+	 * @param bool   $locked      Whether the lock was taken.
+	 *
+	 * @return void
+	 */
+	private function releaseUpdateLock(string $currentUuid, bool $locked): void {
+		if ($locked === false) {
+			return;
+		}
+
+		try {
+			$this->objectService->unlockObject(identifier: $currentUuid);
+		} catch (Throwable $unlockErr) {
+			$this->logger->warning(
+				'Buildiq: failed to release update lock on ' . $currentUuid . ': ' . $unlockErr->getMessage()
+			);
+		}
+	}//end releaseUpdateLock()
 
 	/**
 	 * Delete an ApplicationVersion using the requested strategy (spec REQ-OBV-108).

@@ -465,39 +465,9 @@ class ApplicationVersionService implements ApplicationVersionServiceInterface {
 		// (x-openregister-lifecycle has no draft→archived edge), so a draft
 		// ex-production is demoted by the pointer move alone and left as a
 		// draft the maintainer can keep editing or delete.
-		$archived = null;
-		if ($previousProduction !== '' && $previousProduction !== $versionUuid) {
-			$previous = $this->objectService->find(
-				id: $previousProduction,
-				register: self::REGISTER_SLUG,
-				schema: self::APPLICATION_VERSION_SCHEMA
-			);
-			if ($previous !== null) {
-				$previousData = ObjectRecord::toArray(object: $previous);
-				if ((string)($previousData['status'] ?? '') === 'published') {
-					unset($previousData['@self']);
-					$previousData['status'] = 'archived';
-					$this->objectService->saveObject(
-						object: $previousData,
-						register: self::REGISTER_SLUG,
-						schema: self::APPLICATION_VERSION_SCHEMA,
-						uuid: $previousProduction
-					);
-					$archived = $previousProduction;
-				}
-			}
-		}//end if
+		$archived = $this->archivePreviousProduction(previousProduction: $previousProduction, versionUuid: $versionUuid);
 
-		$previousLabel = $previousProduction;
-		if ($previousProduction === '') {
-			$previousLabel = '(none)';
-		}
-
-		$archivedLabel = 'unchanged';
-		if ($archived !== null) {
-			$archivedLabel = 'archived';
-		}
-
+		[$previousLabel, $archivedLabel] = $this->releaseLabels(previousProduction: $previousProduction, archived: $archived);
 		$this->logger->info(
 			sprintf(
 				'Buildiq: released ApplicationVersion %s as production for Application %s (previous %s %s).',
@@ -514,6 +484,89 @@ class ApplicationVersionService implements ApplicationVersionServiceInterface {
 			'archived' => $archived,
 		];
 	}//end releaseVersion()
+
+	/**
+	 * Archive the previous production version when it is published and not the released one.
+	 *
+	 * Only a `published` version can transition to `archived`, so a draft
+	 * ex-production is left as a draft.
+	 *
+	 * @param string $previousProduction The previous production version uuid, or ''.
+	 * @param string $versionUuid        The version being released.
+	 *
+	 * @return string|null The archived version uuid, or null when none was archived.
+	 *
+	 * @spec openspec/specs/application-versions/spec.md
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
+	 */
+	private function archivePreviousProduction(string $previousProduction, string $versionUuid): ?string {
+		if ($previousProduction === '' || $previousProduction === $versionUuid) {
+			return null;
+		}
+
+		return $this->archiveIfPublished(versionUuid: $previousProduction);
+	}//end archivePreviousProduction()
+
+	/**
+	 * Archive a version when it is published.
+	 *
+	 * @param string $versionUuid The version to archive.
+	 *
+	 * @return string|null The archived version uuid, or null when it was not archived.
+	 *
+	 * @spec openspec/specs/application-versions/spec.md
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
+	 */
+	private function archiveIfPublished(string $versionUuid): ?string {
+		$previous = $this->objectService->find(
+			id: $versionUuid,
+			register: self::REGISTER_SLUG,
+			schema: self::APPLICATION_VERSION_SCHEMA
+		);
+		if ($previous === null) {
+			return null;
+		}
+
+		$previousData = ObjectRecord::toArray(object: $previous);
+		if ((string)($previousData['status'] ?? '') !== 'published') {
+			return null;
+		}
+
+		unset($previousData['@self']);
+		$previousData['status'] = 'archived';
+		$this->objectService->saveObject(
+			object: $previousData,
+			register: self::REGISTER_SLUG,
+			schema: self::APPLICATION_VERSION_SCHEMA,
+			uuid: $versionUuid
+		);
+
+		return $versionUuid;
+	}//end archiveIfPublished()
+
+	/**
+	 * The log labels of a release: the previous production and whether it was archived.
+	 *
+	 * @param string      $previousProduction The previous production version uuid, or ''.
+	 * @param string|null $archived           The archived version uuid, or null.
+	 *
+	 * @return array{0: string, 1: string}
+	 *
+	 * @spec openspec/specs/application-versions/spec.md
+	 */
+	private function releaseLabels(string $previousProduction, ?string $archived): array {
+		$previousLabel = $previousProduction;
+		if ($previousProduction === '') {
+			$previousLabel = '(none)';
+		}
+
+		$archivedLabel = 'unchanged';
+		if ($archived !== null) {
+			$archivedLabel = 'archived';
+		}
+
+		return [$previousLabel, $archivedLabel];
+	}//end releaseLabels()
 
 	/**
 	 * Delete an ApplicationVersion using the named strategy (spec REQ-OBV-108).
