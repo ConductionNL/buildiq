@@ -162,6 +162,20 @@
     {
         "method": "registerServiceAlias",
         "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\FormLiveBindingIndexInterface",
+            "target": "OCA\\Buildiq\\Service\\FormLiveBindingIndex"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\FormLiveValuesRecomputerInterface",
+            "target": "OCA\\Buildiq\\Service\\FormLiveValuesRecomputer"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
             "alias": "OCA\\Buildiq\\Kernel\\Contracts\\GitHubAppSyncServiceInterface",
             "target": "OCA\\Buildiq\\Service\\GitHubAppSyncService"
         }
@@ -555,6 +569,13 @@
         "method": "registerServiceAlias",
         "args": {
             "alias": "OCA\\OpenRegister\\Mcp\\IMcpToolProvider::buildiq",
+            "target": "OCA\\Buildiq\\Mcp\\BuildiqToolProvider"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\BuildiqToolProviderInterface",
             "target": "OCA\\Buildiq\\Mcp\\BuildiqToolProvider"
         }
     },

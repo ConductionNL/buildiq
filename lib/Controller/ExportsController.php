@@ -34,7 +34,7 @@ namespace OCA\Buildiq\Controller;
 
 use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Kernel\Contracts\ExportJobServiceInterface;
-use OCA\Buildiq\Service\ServerBundleWriter;
+use OCA\Buildiq\Kernel\Contracts\ServerBundleWriterInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCP\AppFramework\Controller;
@@ -601,7 +601,7 @@ class ExportsController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function serverRequirements(): JSONResponse {
-		$writer = $this->container->get(ServerBundleWriter::class);
+		$writer = $this->container->get(ServerBundleWriterInterface::class);
 
 		return new JSONResponse($writer->requirements());
 	}//end serverRequirements()

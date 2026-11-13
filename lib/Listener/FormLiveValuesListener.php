@@ -41,9 +41,9 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Listener;
 
 use OCA\Buildiq\Kernel\Contracts\ApplicationVersionServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\FormLiveBindingIndexInterface;
+use OCA\Buildiq\Kernel\Contracts\FormLiveValuesRecomputerInterface;
 use OCA\Buildiq\Kernel\Contracts\ObjectSchemaSlugResolverInterface;
-use OCA\Buildiq\Service\FormLiveBindingIndex;
-use OCA\Buildiq\Service\FormLiveValuesRecomputer;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
@@ -57,8 +57,8 @@ use Throwable;
  *
  * @template-implements IEventListener<Event>
  *
- * @psalm-import-type LiveBinding from FormLiveBindingIndex
- * @phpstan-import-type LiveBinding from FormLiveBindingIndex
+ * @psalm-import-type LiveBinding from FormLiveBindingIndexInterface
+ * @phpstan-import-type LiveBinding from FormLiveBindingIndexInterface
  */
 class FormLiveValuesListener implements IEventListener {
 
@@ -74,16 +74,16 @@ class FormLiveValuesListener implements IEventListener {
 	 * Constructor.
 	 *
 	 * @param ObjectSchemaSlugResolverInterface $slugs Resolves register and schema slugs
-	 * @param FormLiveBindingIndex $index The live form index
-	 * @param FormLiveValuesRecomputer $recomputer Evaluates on save
+	 * @param FormLiveBindingIndexInterface $index The live form index
+	 * @param FormLiveValuesRecomputerInterface $recomputer Evaluates on save
 	 * @param LoggerInterface $logger PSR logger
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly ObjectSchemaSlugResolverInterface $slugs,
-		private readonly FormLiveBindingIndex $index,
-		private readonly FormLiveValuesRecomputer $recomputer,
+		private readonly FormLiveBindingIndexInterface $index,
+		private readonly FormLiveValuesRecomputerInterface $recomputer,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

@@ -41,6 +41,8 @@ use OCA\Buildiq\Kernel\Contracts\DocumentGenerationServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\ExportAppContentBundlerInterface;
 use OCA\Buildiq\Kernel\Contracts\ExportJobServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\ExportServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\FormLiveBindingIndexInterface;
+use OCA\Buildiq\Kernel\Contracts\FormLiveValuesRecomputerInterface;
 use OCA\Buildiq\Kernel\Contracts\GitHubAppSyncServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\GitHubCatalogServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\GitHubFormCatalogServiceInterface;
@@ -123,6 +125,8 @@ final class ContractBindings {
 		$context->registerServiceAlias(ExportAppContentBundlerInterface::class, ExportAppContentBundler::class);
 		$context->registerServiceAlias(ExportJobServiceInterface::class, ExportJobService::class);
 		$context->registerServiceAlias(ExportServiceInterface::class, ExportService::class);
+		$context->registerServiceAlias(FormLiveBindingIndexInterface::class, FormLiveBindingIndex::class);
+		$context->registerServiceAlias(FormLiveValuesRecomputerInterface::class, FormLiveValuesRecomputer::class);
 		$context->registerServiceAlias(GitHubAppSyncServiceInterface::class, GitHubAppSyncService::class);
 		$context->registerServiceAlias(GitHubCatalogServiceInterface::class, GitHubCatalogService::class);
 		$context->registerServiceAlias(GitHubFormCatalogServiceInterface::class, GitHubFormCatalogService::class);

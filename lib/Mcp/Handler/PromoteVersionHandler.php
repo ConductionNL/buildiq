@@ -25,6 +25,8 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Mcp\Handler;
 
+use OCA\Buildiq\Kernel\Contracts\VersionPromotionServiceInterface;
+
 /**
  * Handles the buildiq.promoteVersion tool invocation.
  *
@@ -76,7 +78,7 @@ class PromoteVersionHandler extends AbstractToolHandler {
 				);
 			}
 
-			$promotionService = $this->container->get('OCA\Buildiq\Service\VersionPromotionService');
+			$promotionService = $this->container->get(VersionPromotionServiceInterface::class);
 			$updatedTarget = $promotionService->promote($source, $strategy);
 			$targetUuid = $this->extractUuid(item: $updatedTarget);
 

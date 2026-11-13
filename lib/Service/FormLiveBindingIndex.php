@@ -36,18 +36,19 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Kernel\AppIdentity;
+use OCA\Buildiq\Kernel\Contracts\FormLiveBindingIndexInterface;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 
 /**
  * The live-form bindings of every app version, by register and schema.
  *
- * @psalm-type LiveCalc = array{field:string,ruleSet:string,output:string,inputs:list<string>}
- * @psalm-type LiveBinding = array{register:string,schema:string,calculate:list<LiveCalc>,eligibility:array<string,mixed>|null}
- * @phpstan-type LiveCalc array{field:string,ruleSet:string,output:string,inputs:list<string>}
- * @phpstan-type LiveBinding array{register:string,schema:string,calculate:list<LiveCalc>,eligibility:array<string,mixed>|null}
+ * @psalm-import-type LiveCalc from FormLiveBindingIndexInterface
+ * @psalm-import-type LiveBinding from FormLiveBindingIndexInterface
+ * @phpstan-import-type LiveCalc from FormLiveBindingIndexInterface
+ * @phpstan-import-type LiveBinding from FormLiveBindingIndexInterface
  */
-class FormLiveBindingIndex {
+class FormLiveBindingIndex implements FormLiveBindingIndexInterface {
 
 	/**
 	 * The app config key holding the index.
