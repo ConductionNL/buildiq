@@ -53,7 +53,6 @@ namespace OCA\Buildiq\Controller;
 use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Kernel\Contracts\DemoDataServiceInterface;
 use OCA\Buildiq\Service\CallerContext;
-use OCA\Buildiq\Service\SettingsService;
 use OCA\Buildiq\Service\SetupServices;
 use OCA\Buildiq\Settings\AdminSettings;
 use OCP\AppFramework\Controller;

@@ -12,7 +12,7 @@
  *
  * All endpoints carry `#[NoAdminRequired]` per ADR-005: any authenticated user
  * may evaluate a RuleSet of their own organisation. Every read goes through
- * {@see RuleObjectReader}, which applies the schema's RBAC and the caller's
+ * {@see \OCA\Buildiq\Service\RuleObjectReader}, which applies the schema's RBAC and the caller's
  * organisation (REQ-BRE-007): a RuleSet held by another organisation resolves
  * to a 404, not a 403, so its existence does not leak. The `buildiq` register
  * itself is system-wide, so only its lookup runs without the organisation
@@ -47,7 +47,6 @@ namespace OCA\Buildiq\Controller;
 use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Kernel\Contracts\RuleEngineServiceInterface;
 use OCA\Buildiq\Service\CallerContext;
-use OCA\Buildiq\Service\RuleObjectReader;
 use OCA\Buildiq\Service\RuleStorage;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;

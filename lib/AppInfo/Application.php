@@ -27,6 +27,7 @@ namespace OCA\Buildiq\AppInfo;
 use OCA\Buildiq\Capabilities;
 use OCA\Buildiq\Controller\ControllerRegistrar;
 use OCA\Buildiq\Kernel\AppIdentity;
+use OCA\Buildiq\Kernel\Contracts\BuildiqToolProviderInterface;
 use OCA\Buildiq\Lifecycle\LifecycleRegistrar;
 use OCA\Buildiq\Listener\ApprovalOutcomeListener;
 use OCA\Buildiq\Listener\AutomationApprovalTriggerListener;
@@ -417,6 +418,10 @@ class Application extends App implements IBootstrap {
 		// until then Buildiq implements the test stub at tests/Stubs/Mcp/IMcpToolProvider.php.
 		$context->registerServiceAlias(
 			'OCA\\OpenRegister\\Mcp\\IMcpToolProvider::buildiq',
+			BuildiqToolProvider::class
+		);
+		$context->registerServiceAlias(
+			BuildiqToolProviderInterface::class,
 			BuildiqToolProvider::class
 		);
 

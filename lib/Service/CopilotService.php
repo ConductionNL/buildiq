@@ -38,8 +38,8 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Exception\CopilotException;
+use OCA\Buildiq\Kernel\Contracts\BuildiqToolProviderInterface;
 use OCA\Buildiq\Kernel\Contracts\CopilotServiceInterface;
-use OCA\Buildiq\Mcp\BuildiqToolProvider;
 use OCA\Buildiq\Service\Copilot\CopilotPlanValidator;
 use OCA\Buildiq\Service\Copilot\CopilotPromptBuilder;
 use OCA\Buildiq\Support\ManifestDataBinding;
@@ -166,7 +166,7 @@ class CopilotService implements CopilotServiceInterface {
 	 * @param IUserManager $userManager Resolves a uid string to an `IUser` for RBAC.
 	 * @param IGroupManager $groupManager Group manager (admin bypass logging).
 	 * @param PermissionResolver $permissionResolver Shared permission-grammar resolver.
-	 * @param BuildiqToolProvider $toolProvider MCP dispatcher — the
+	 * @param BuildiqToolProviderInterface $toolProvider MCP dispatcher — the
 	 *                                          single execution path.
 	 * @param CopilotPlanValidator $planValidator Structural plan validator.
 	 * @param CopilotPromptBuilder $promptBuilder System-prompt builder.
@@ -185,7 +185,7 @@ class CopilotService implements CopilotServiceInterface {
 		private readonly IUserManager $userManager,
 		private readonly IGroupManager $groupManager,
 		private readonly PermissionResolver $permissionResolver,
-		private readonly BuildiqToolProvider $toolProvider,
+		private readonly BuildiqToolProviderInterface $toolProvider,
 		private readonly CopilotPlanValidator $planValidator,
 		private readonly CopilotPromptBuilder $promptBuilder,
 		private readonly ApplicationDeletionService $appDeletionService,

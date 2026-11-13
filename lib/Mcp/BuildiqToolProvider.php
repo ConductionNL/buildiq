@@ -39,6 +39,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Mcp;
 
+use OCA\Buildiq\Kernel\Contracts\BuildiqToolProviderInterface;
 use OCA\Buildiq\Kernel\Contracts\PermissionResolverInterface;
 use OCA\Buildiq\Mcp\Handler\AddWidgetHandler;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
@@ -69,7 +70,7 @@ use Psr\Log\LoggerInterface;
  * Authoring tools default to the `development` version so a misfired tool
  * call cannot mutate production. To promote the change use promoteVersion.
  */
-class BuildiqToolProvider implements IMcpToolProvider {
+class BuildiqToolProvider implements IMcpToolProvider, BuildiqToolProviderInterface {
 
 	/**
 	 * Tool catalogue.
