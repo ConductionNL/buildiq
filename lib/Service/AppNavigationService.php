@@ -162,82 +162,114 @@ class AppNavigationService implements AppNavigationServiceInterface {
 		);
 
 		foreach ($applications as $application) {
-			$slug = ($application['slug'] ?? null);
-			$name = ($application['name'] ?? null);
-
-			if (is_string($slug) === false || $slug === '') {
-				continue;
-			}
-
-			if (is_string($name) === false || $name === '') {
-				$name = $slug;
-			}
-
-			$permissions = ($application['permissions'] ?? []);
-			if (is_array($permissions) === false) {
-				$permissions = [];
-			}
-
-			$iconUrl = $this->urlGenerator->linkToRouteAbsolute(
-				'buildiq.icon.iconLight',
-				['slug' => $slug]
-			);
-
-			// Point at the virtual-app runtime host (/builder/{slug}). Generate the
-			// href via IURLGenerator (not a hand-built string) so linkToRoute adds
-			// the `/index.php` front-controller segment exactly when the instance
-			// requires it — the link then resolves on both instance kinds.
-			$appUrl = $this->urlGenerator->linkToRoute('buildiq.dashboard.builder', ['slug' => $slug]);
-			$entryId = self::ENTRY_ID_PREFIX . $slug;
-			$order = $orderBase + (abs(crc32($slug)) % 100);
-
-			// Capture variables for the closure — PHP closures close over
-			// variables by reference unless 'use' explicitly binds them by value.
-			$capturedPermissions = $permissions;
-			$userSession = $this->userSession;
-			$groupManager = $this->groupManager;
-
-			$nav->add(
-				function () use (
-					$entryId,
-					$name,
-					$appUrl,
-					$iconUrl,
-					$order,
-					$capturedPermissions,
-					$userSession,
-					$groupManager
-				): array {
-					$visible = $this->isVisibleForCurrentUser(
-						permissions: $capturedPermissions,
-						userSession: $userSession,
-						groupManager: $groupManager
-					);
-
-					// NavigationManager has no 'enabled' concept — entries
-					// are filtered by 'type' (getAll('link')). Returning a
-					// non-'link' type is the only way a closure entry can
-					// hide itself from the app menu per user.
-					$entryType = 'openbuild-hidden';
-					if ($visible === true) {
-						$entryType = 'link';
-					}
-
-					return [
-						'id' => $entryId,
-						'name' => $name,
-						'href' => $appUrl,
-						'icon' => $iconUrl,
-						'order' => $order,
-						'type' => $entryType,
-						'active' => false,
-						'classes' => '',
-						'enabled' => $visible,
-					];
-				}
-			);
-		}//end foreach
+			$this->addNavEntry(nav: $nav, application: $application, orderBase: $orderBase);
+		}
 	}//end registerNavEntries()
+
+	/**
+	 * Add the top-bar entry of one published Application; one without a slug is skipped.
+	 *
+	 * @param INavigationManager   $nav         The navigation manager.
+	 * @param array<string, mixed> $application The published Application.
+	 * @param int                  $orderBase   The configured order base.
+	 *
+	 * @return void
+	 */
+	private function addNavEntry(INavigationManager $nav, array $application, int $orderBase): void {
+		$identity = $this->navIdentity(application: $application);
+		if ($identity === []) {
+			return;
+		}
+
+		[$slug, $name] = $identity;
+
+		$permissions = ($application['permissions'] ?? []);
+		if (is_array($permissions) === false) {
+			$permissions = [];
+		}
+
+		$iconUrl = $this->urlGenerator->linkToRouteAbsolute(
+			'buildiq.icon.iconLight',
+			['slug' => $slug]
+		);
+
+		// Point at the virtual-app runtime host (/builder/{slug}). Generate the
+		// href via IURLGenerator (not a hand-built string) so linkToRoute adds
+		// the `/index.php` front-controller segment exactly when the instance
+		// requires it — the link then resolves on both instance kinds.
+		$appUrl = $this->urlGenerator->linkToRoute('buildiq.dashboard.builder', ['slug' => $slug]);
+		$entryId = self::ENTRY_ID_PREFIX . $slug;
+		$order = $orderBase + (abs(crc32($slug)) % 100);
+
+		// Capture variables for the closure — PHP closures close over
+		// variables by reference unless 'use' explicitly binds them by value.
+		$capturedPermissions = $permissions;
+		$userSession = $this->userSession;
+		$groupManager = $this->groupManager;
+
+		$nav->add(
+			function () use (
+				$entryId,
+				$name,
+				$appUrl,
+				$iconUrl,
+				$order,
+				$capturedPermissions,
+				$userSession,
+				$groupManager
+			): array {
+				$visible = $this->isVisibleForCurrentUser(
+					permissions: $capturedPermissions,
+					userSession: $userSession,
+					groupManager: $groupManager
+				);
+
+				// NavigationManager has no 'enabled' concept — entries
+				// are filtered by 'type' (getAll('link')). Returning a
+				// non-'link' type is the only way a closure entry can
+				// hide itself from the app menu per user.
+				$entryType = 'openbuild-hidden';
+				if ($visible === true) {
+					$entryType = 'link';
+				}
+
+				return [
+					'id' => $entryId,
+					'name' => $name,
+					'href' => $appUrl,
+					'icon' => $iconUrl,
+					'order' => $order,
+					'type' => $entryType,
+					'active' => false,
+					'classes' => '',
+					'enabled' => $visible,
+				];
+			}
+		);
+	}//end addNavEntry()
+
+	/**
+	 * The slug and display name of an Application's entry, or [] without a slug.
+	 * The name falls back to the slug.
+	 *
+	 * @param array<string, mixed> $application The published Application.
+	 *
+	 * @return array{}|array{0: string, 1: string}
+	 */
+	private function navIdentity(array $application): array {
+		$slug = ($application['slug'] ?? null);
+		$name = ($application['name'] ?? null);
+
+		if (is_string($slug) === false || $slug === '') {
+			return [];
+		}
+
+		if (is_string($name) === false || $name === '') {
+			$name = $slug;
+		}
+
+		return [$slug, $name];
+	}//end navIdentity()
 
 	/**
 	 * Determine whether the currently-signed-in user should see a nav entry.

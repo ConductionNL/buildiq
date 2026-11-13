@@ -176,87 +176,154 @@ class ExportsController extends Controller {
 		}
 
 		try {
-			// ADR-083 rule 1: state the availability check in the idiom the
-			// fleet (and hydra gate-66) recognises. This is not a behaviour
-			// change — NC's `SimpleContainer::has()` IS
-			// `isset($this->container[$id]) || class_exists($id)`
-			// (server/lib/private/AppFramework/Utility/SimpleContainer.php:50),
-			// so the previous `container->has()` probe answered the same
-			// question. Spelling it as class_exists() makes the optional reach
-			// visible to a reader without routing the answer through the
-			// container.
-			if (class_exists('\OCA\OpenRegister\Service\ObjectService') === false) {
+			$app = $this->exportApplicationBySlug(applicationSlug: $applicationSlug);
+			if ($app === []) {
 				return false;
 			}
-
-			$service = $this->container->get('OCA\\OpenRegister\\Service\\ObjectService');
-			if (method_exists($service, 'searchObjectsBySlug') === false) {
-				return false;
-			}
-
-			// Fails closed: this is the IDOR guard, so an unresolvable register denies.
-			$registerSlug = $this->ownRegisterSlug();
-			if ($registerSlug === null) {
-				return false;
-			}
-
-			$apps = $service->searchObjectsBySlug($registerSlug, 'built-app', ['slug' => $applicationSlug]);
-			if (is_array($apps) === false || $apps === []) {
-				return false;
-			}
-
-			// OpenRegister hands back ObjectEntity objects here. This used to read the
-			// permissions only `if (is_array($app))` — which is never true — so every
-			// non-admin fell through to an empty bucket list and was denied. The admin
-			// bypass above masked it.
-			$app = ObjectRecord::serialised(object: $apps[0]);
-			$permissions = ($app['permissions'] ?? []);
-
-			if (is_array($permissions) === false) {
-				$permissions = [];
-			}
-
-			// Check all three role buckets: owners, editors, viewers.
-			foreach (['owners', 'editors', 'viewers'] as $role) {
-				$bucket = ($permissions[$role] ?? []);
-				if (is_array($bucket) === false) {
-					continue;
-				}
-
-				foreach ($bucket as $principal) {
-					if (is_string($principal) === false || $principal === '') {
-						continue;
-					}
-
-					if (str_starts_with($principal, 'user:') === true) {
-						if (substr($principal, 5) === $uid) {
-							return true;
-						}
-
-						continue;
-					}
-
-					// Back-compat / group: prefix.
-					if (str_starts_with($principal, 'group:') === true) {
-						$gid = substr($principal, 6);
-					} else {
-						$gid = $principal;
-					}
-
-					if ($gid !== '' && $this->groupManager->isInGroup($uid, $gid) === true) {
-						return true;
-					}
-				}//end foreach
-			}//end foreach
 
 			// NC admin already short-circuited to true above; a non-admin who
 			// is not in any role bucket is not authorised.
-			return false;
+			return $this->uidHoldsAnyRole(app: $app, uid: $uid);
 		} catch (\Throwable $e) {
 			$this->logger->debug('Buildiq export: authz lookup failed: ' . $e->getMessage());
 			return false;
 		}//end try
 	}//end isAuthorisedForApplication()
+
+	/**
+	 * The Application with this slug in the app's own register, or [] when it
+	 * cannot be found or OpenRegister cannot answer.
+	 *
+	 * @param string $applicationSlug Application slug.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-47
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
+	 */
+	private function exportApplicationBySlug(string $applicationSlug): array {
+		// ADR-083 rule 1: state the availability check in the idiom the
+		// fleet (and hydra gate-66) recognises. This is not a behaviour
+		// change — NC's `SimpleContainer::has()` IS
+		// `isset($this->container[$id]) || class_exists($id)`
+		// (server/lib/private/AppFramework/Utility/SimpleContainer.php:50),
+		// so the previous `container->has()` probe answered the same
+		// question. Spelling it as class_exists() makes the optional reach
+		// visible to a reader without routing the answer through the
+		// container.
+		$service = $this->slugSearchService();
+		if ($service === null) {
+			return [];
+		}
+
+		// Fails closed: this is the IDOR guard, so an unresolvable register denies.
+		$registerSlug = $this->ownRegisterSlug();
+		if ($registerSlug === null) {
+			return [];
+		}
+
+		$apps = $service->searchObjectsBySlug($registerSlug, 'built-app', ['slug' => $applicationSlug]);
+		if (is_array($apps) === false || $apps === []) {
+			return [];
+		}
+
+		// OpenRegister hands back ObjectEntity objects here. This used to read the
+		// permissions only `if (is_array($app))` — which is never true — so every
+		// non-admin fell through to an empty bucket list and was denied. The admin
+		// bypass above masked it.
+		return ObjectRecord::serialised(object: $apps[0]);
+	}//end exportApplicationBySlug()
+
+	/**
+	 * OpenRegister's object service when it is installed and can search by slug.
+	 *
+	 * @return object|null
+	 *
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-47
+	 */
+	private function slugSearchService(): object|null {
+		if (class_exists('\OCA\OpenRegister\Service\ObjectService') === false) {
+			return null;
+		}
+
+		$service = $this->container->get('OCA\\OpenRegister\\Service\\ObjectService');
+		if (method_exists($service, 'searchObjectsBySlug') === false) {
+			return null;
+		}
+
+		return $service;
+	}//end slugSearchService()
+
+	/**
+	 * Whether the user is named in the owners, editors or viewers bucket, directly or through a group.
+	 *
+	 * @param array<string, mixed> $app The Application.
+	 * @param string               $uid The user id.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-47
+	 */
+	private function uidHoldsAnyRole(array $app, string $uid): bool {
+		$permissions = ($app['permissions'] ?? []);
+		if (is_array($permissions) === false) {
+			$permissions = [];
+		}
+
+		// Check all three role buckets: owners, editors, viewers.
+		foreach (['owners', 'editors', 'viewers'] as $role) {
+			$bucket = ($permissions[$role] ?? []);
+			if (is_array($bucket) === true && $this->bucketNamesUid(bucket: $bucket, uid: $uid) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end uidHoldsAnyRole()
+
+	/**
+	 * Whether a role bucket names the user, as `user:<uid>`, `group:<gid>` or a bare group id.
+	 *
+	 * @param array<mixed> $bucket The role bucket.
+	 * @param string       $uid    The user id.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-47
+	 */
+	private function bucketNamesUid(array $bucket, string $uid): bool {
+		foreach ($bucket as $principal) {
+			if (is_string($principal) === true && $principal !== '' && $this->principalNamesUid(principal: $principal, uid: $uid) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end bucketNamesUid()
+
+	/**
+	 * Whether one non-empty principal names the user.
+	 *
+	 * @param string $principal The principal entry.
+	 * @param string $uid       The user id.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-47
+	 */
+	private function principalNamesUid(string $principal, string $uid): bool {
+		if (str_starts_with($principal, 'user:') === true) {
+			return substr($principal, 5) === $uid;
+		}
+
+		// Back-compat / group: prefix.
+		$gid = $principal;
+		if (str_starts_with($principal, 'group:') === true) {
+			$gid = substr($principal, 6);
+		}
+
+		return $gid !== '' && $this->groupManager->isInGroup($uid, $gid) === true;
+	}//end principalNamesUid()
 
 	/**
 	 * Authorize the caller for an ExportJob UUID.

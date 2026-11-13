@@ -50,6 +50,7 @@ use OCA\Buildiq\Kernel\Contracts\PermissionResolverInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Lifecycle\GuardResult;
 use OCA\OpenRegister\Lifecycle\LifecycleGuardInterface;
+use OCP\IUser;
 use OCP\IUserManager;
 use Psr\Log\LoggerInterface;
 
@@ -127,33 +128,23 @@ class ApplicationVersionOwnerGuard implements LifecycleGuardInterface {
 		// closed: a foreign owner, an unresolvable parent, or a disabled flag
 		// denies.
 		if ((string)($object['scope'] ?? 'admin') === 'user') {
-			if ($this->permissionResolver->matchesUserScopeOwner(version: $object, caller: $caller) === false) {
-				$this->logger->warning(
-					'Buildiq ApplicationVersionOwnerGuard: non-owner denied on user-scoped delta',
-					['action' => $action, 'uid' => $userId]
-				);
-				return GuardResult::deny(
-					'U mag deze persoonlijke aanpassing niet ' . $action . '; alleen de eigenaar is gemachtigd.'
-				);
-			}
+			return $this->checkUserScoped(object: $object, action: $action, caller: $caller, userId: $userId);
+		}
 
-			$parent = $this->loadParentApplication(version: $object);
-			$flag = ($parent['allowUserOverrides'] ?? false);
-			// An NC admin keeps the audited escape hatch even when the flag is off.
-			if ($flag !== true && $this->permissionResolver->isAdmin(caller: $caller) === false) {
-				$this->logger->warning(
-					'Buildiq ApplicationVersionOwnerGuard: user-scoped transition denied — '
-					. 'parent app does not allow user overrides',
-					['action' => $action, 'uid' => $userId]
-				);
-				return GuardResult::deny(
-					'Deze app staat geen persoonlijke aanpassingen (meer) toe; transitie geweigerd.'
-				);
-			}
+		return $this->checkAppScoped(object: $object, action: $action, caller: $caller);
+	}//end check()
 
-			return GuardResult::allow();
-		}//end if
-
+	/**
+	 * The transition check of an app-scoped row: the caller must hold the owner
+	 * role on the parent Application (NC admins pass as the audited escape hatch).
+	 *
+	 * @param array<string, mixed> $object The ApplicationVersion payload.
+	 * @param string               $action The transition being attempted.
+	 * @param IUser                $caller The caller.
+	 *
+	 * @return GuardResult
+	 */
+	private function checkAppScoped(array $object, string $action, IUser $caller): GuardResult {
 		$application = $this->loadParentApplication(version: $object);
 		if ($application === null) {
 			$this->logger->warning(
@@ -167,39 +158,8 @@ class ApplicationVersionOwnerGuard implements LifecycleGuardInterface {
 
 		$permissions = ($application['permissions'] ?? []);
 		if (is_array($permissions) === false || $permissions === []) {
-			// No rechtenblok (permissions block). This is the shape of a
-			// programmatically / synthetically created Application — e.g. one
-			// seeded via `occ`, an import pipeline, or the App Host engine —
-			// that never went through the controller path which materialises
-			// the owners/editors/viewers role rows. A blanket deny here is the
-			// wrong fail-closed posture: it bricks publish/archive/reopen for
-			// every such Application, including the documented NC-admin escape
-			// hatch (design.md Decision 5), because this branch short-circuits
-			// BEFORE the admin bypass inside PermissionResolver::matchesCaller()
-			// can run.
-			//
-			// Security choice: WITHOUT a permissions block no per-Application
-			// owner can be proven, so we must NOT widen access to ordinary
-			// callers. We therefore grant ONLY the audited NC-admin escape
-			// hatch — exactly the principal matchesCaller() would have admitted
-			// had the block existed — and continue to deny everyone else. This
-			// keeps the guard fail-closed for non-admins (no privilege
-			// escalation on orphaned/synthetic Applications) while unblocking
-			// the legitimate admin/programmatic publish path.
-			if ($this->permissionResolver->isAdmin(caller: $caller) === true) {
-				return GuardResult::allow();
-			}
-
-			$this->logger->warning(
-				'Buildiq ApplicationVersionOwnerGuard: parent Application has no permissions block; '
-				. 'denying non-admin caller (admin escape hatch only)',
-				['action' => $action, 'slug' => ($application['slug'] ?? null)]
-			);
-			return GuardResult::deny(
-				'De bovenliggende applicatie heeft geen rechtenblok. Alleen een beheerder mag deze versie '
-				. $action . '; vraag een beheerder om het rechtenblok van de applicatie in te stellen.'
-			);
-		}//end if
+			return $this->checkWithoutPermissions(application: $application, action: $action, caller: $caller);
+		}
 
 		// Owner role required. NC admins are granted as the audited
 		// incident-response escape hatch (design.md Decision 5); the
@@ -222,7 +182,91 @@ class ApplicationVersionOwnerGuard implements LifecycleGuardInterface {
 			'U mag deze versie niet ' . $action . '. Alleen een eigenaar van de bovenliggende '
 			. 'applicatie (of een beheerder) is gemachtigd voor publiceren, archiveren of heropenen.'
 		);
-	}//end check()
+	}//end checkAppScoped()
+
+	/**
+	 * The transition check of a `scope: user` row: the caller must own the delta
+	 * and the parent Application must still permit per-user overrides.
+	 *
+	 * @param array<string, mixed> $object The ApplicationVersion payload.
+	 * @param string               $action The transition being attempted.
+	 * @param IUser                $caller The caller.
+	 * @param string               $userId The caller's UID as the transition named it.
+	 *
+	 * @return GuardResult
+	 */
+	private function checkUserScoped(array $object, string $action, IUser $caller, string $userId): GuardResult {
+		if ($this->permissionResolver->matchesUserScopeOwner(version: $object, caller: $caller) === false) {
+			$this->logger->warning(
+				'Buildiq ApplicationVersionOwnerGuard: non-owner denied on user-scoped delta',
+				['action' => $action, 'uid' => $userId]
+			);
+			return GuardResult::deny(
+				'U mag deze persoonlijke aanpassing niet ' . $action . '; alleen de eigenaar is gemachtigd.'
+			);
+		}
+
+		$parent = $this->loadParentApplication(version: $object);
+		$flag = ($parent['allowUserOverrides'] ?? false);
+		// An NC admin keeps the audited escape hatch even when the flag is off.
+		if ($flag !== true && $this->permissionResolver->isAdmin(caller: $caller) === false) {
+			$this->logger->warning(
+				'Buildiq ApplicationVersionOwnerGuard: user-scoped transition denied — '
+				. 'parent app does not allow user overrides',
+				['action' => $action, 'uid' => $userId]
+			);
+			return GuardResult::deny(
+				'Deze app staat geen persoonlijke aanpassingen (meer) toe; transitie geweigerd.'
+			);
+		}
+
+		return GuardResult::allow();
+	}//end checkUserScoped()
+
+	/**
+	 * The transition check when the parent Application has no permissions block:
+	 * only the audited NC-admin escape hatch passes.
+	 *
+	 * @param array<string, mixed> $application The parent Application.
+	 * @param string               $action      The transition being attempted.
+	 * @param IUser                $caller      The caller.
+	 *
+	 * @return GuardResult
+	 */
+	private function checkWithoutPermissions(array $application, string $action, IUser $caller): GuardResult {
+		// No rechtenblok (permissions block). This is the shape of a
+		// programmatically / synthetically created Application — e.g. one
+		// seeded via `occ`, an import pipeline, or the App Host engine —
+		// that never went through the controller path which materialises
+		// the owners/editors/viewers role rows. A blanket deny here is the
+		// wrong fail-closed posture: it bricks publish/archive/reopen for
+		// every such Application, including the documented NC-admin escape
+		// hatch (design.md Decision 5), because this branch short-circuits
+		// BEFORE the admin bypass inside PermissionResolver::matchesCaller()
+		// can run.
+		//
+		// Security choice: WITHOUT a permissions block no per-Application
+		// owner can be proven, so we must NOT widen access to ordinary
+		// callers. We therefore grant ONLY the audited NC-admin escape
+		// hatch — exactly the principal matchesCaller() would have admitted
+		// had the block existed — and continue to deny everyone else. This
+		// keeps the guard fail-closed for non-admins (no privilege
+		// escalation on orphaned/synthetic Applications) while unblocking
+		// the legitimate admin/programmatic publish path.
+		if ($this->permissionResolver->isAdmin(caller: $caller) === true) {
+			return GuardResult::allow();
+		}
+
+		$this->logger->warning(
+			'Buildiq ApplicationVersionOwnerGuard: parent Application has no permissions block; '
+			. 'denying non-admin caller (admin escape hatch only)',
+			['action' => $action, 'slug' => ($application['slug'] ?? null)]
+		);
+		return GuardResult::deny(
+			'De bovenliggende applicatie heeft geen rechtenblok. Alleen een beheerder mag deze versie '
+			. $action . '; vraag een beheerder om het rechtenblok van de applicatie in te stellen.'
+		);
+	}//end checkWithoutPermissions()
 
 	/**
 	 * Resolve the parent Application from the version's `application` relation.

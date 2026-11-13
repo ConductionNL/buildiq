@@ -282,65 +282,7 @@ class ApplicationPublishController extends Controller {
 		}
 
 		try {
-			$application = $this->loadApplication(uuid: $appUuid);
-			if ($application === null) {
-				return new JSONResponse(
-					data: ['error' => 'not_found', 'detail' => 'Application ' . $appUuid . ' not found'],
-					statusCode: Http::STATUS_NOT_FOUND
-				);
-			}
-
-			$this->assertOwner(application: $application, user: $user);
-
-			// Decision 179/189: the pages saved as a draft may carry destination
-			// findings; publishing makes them live, so it needs zero.
-			if ($status === self::STATUS_PUBLISHED) {
-				$findings = $this->formFindings(application: $application, user: $user);
-				if ($findings !== []) {
-					return new JSONResponse(
-						data: [
-							'error' => 'destination_findings',
-							'message' => sprintf(
-								'This app cannot be published: its forms have %d point(s) their destination refuses. Each one is marked on its field in the page designer.',
-								count($findings)
-							),
-							'findings' => $findings,
-						],
-						statusCode: Http::STATUS_UNPROCESSABLE_ENTITY
-					);
-				}
-			}
-
-			// Strip the OR-managed metadata envelope before writing back — the
-			// save path expects the bare object data + the uuid (mirrors how
-			// ApplicationCreationService updates the Application).
-			unset($application['@self']);
-			$application['status'] = $status;
-			$saved = $this->objectService->saveObject(
-				object: $application,
-				register: VersionPromotionServiceInterface::REGISTER_SLUG,
-				schema: VersionPromotionServiceInterface::APPLICATION_SCHEMA,
-				uuid: $appUuid
-			);
-
-			// On go-live, onboard the app to the credential broker when its
-			// manifest declares credentials[]. Best-effort + never-throw — a
-			// broker/Doriath hiccup must not fail the publish (see registrar).
-			if ($status === self::STATUS_PUBLISHED) {
-				$slug = (string)($application['slug'] ?? '');
-				if ($slug !== '') {
-					$this->credentialRegistrar->onPublish(slug: $slug, caller: $user);
-					$this->ensureBuiltAppRoute(slug: $slug, applicationUuid: $appUuid);
-				}
-			}
-
-			return new JSONResponse(
-				data: [
-					'status' => $status,
-					'application' => ObjectRecord::toArray(object: $saved),
-				],
-				statusCode: Http::STATUS_OK
-			);
+			return $this->changeStatus(appUuid: $appUuid, status: $status, user: $user);
 		} catch (InsufficientPermissionException $e) {
 			return new JSONResponse(
 				data: ['error' => 'forbidden', 'detail' => $e->getMessage()],
@@ -357,6 +299,114 @@ class ApplicationPublishController extends Controller {
 			);
 		}//end try
 	}//end setStatus()
+
+	/**
+	 * Flip the status of an Application the caller owns.
+	 *
+	 * @param string $appUuid The Application UUID.
+	 * @param string $status  Target status (`published` or `draft`).
+	 * @param IUser  $user    The caller.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @throws InsufficientPermissionException When the caller does not own the Application.
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
+	 */
+	private function changeStatus(string $appUuid, string $status, IUser $user): JSONResponse {
+		$application = $this->loadApplication(uuid: $appUuid);
+		if ($application === null) {
+			return new JSONResponse(
+				data: ['error' => 'not_found', 'detail' => 'Application ' . $appUuid . ' not found'],
+				statusCode: Http::STATUS_NOT_FOUND
+			);
+		}
+
+		$this->assertOwner(application: $application, user: $user);
+
+		// Decision 179/189: the pages saved as a draft may carry destination
+		// findings; publishing makes them live, so it needs zero.
+		$blocked = $this->publishBlocked(application: $application, user: $user, status: $status);
+		if ($blocked !== null) {
+			return $blocked;
+		}
+
+		// Strip the OR-managed metadata envelope before writing back — the
+		// save path expects the bare object data + the uuid (mirrors how
+		// ApplicationCreationService updates the Application).
+		unset($application['@self']);
+		$application['status'] = $status;
+		$saved = $this->objectService->saveObject(
+			object: $application,
+			register: VersionPromotionServiceInterface::REGISTER_SLUG,
+			schema: VersionPromotionServiceInterface::APPLICATION_SCHEMA,
+			uuid: $appUuid
+		);
+
+		// On go-live, onboard the app to the credential broker when its
+		// manifest declares credentials[]. Best-effort + never-throw — a
+		// broker/Doriath hiccup must not fail the publish (see registrar).
+		if ($status === self::STATUS_PUBLISHED) {
+			$this->goLive(application: $application, user: $user, appUuid: $appUuid);
+		}
+
+		return new JSONResponse(
+			data: [
+				'status' => $status,
+				'application' => ObjectRecord::toArray(object: $saved),
+			],
+			statusCode: Http::STATUS_OK
+		);
+	}//end changeStatus()
+
+	/**
+	 * The 422 response refusing to publish forms that carry destination findings,
+	 * or null when the status change may go ahead.
+	 *
+	 * @param array<string,mixed> $application The Application.
+	 * @param IUser               $user        The caller.
+	 * @param string              $status      Target status.
+	 *
+	 * @return JSONResponse|null
+	 */
+	private function publishBlocked(array $application, IUser $user, string $status): JSONResponse|null {
+		if ($status !== self::STATUS_PUBLISHED) {
+			return null;
+		}
+
+		$findings = $this->formFindings(application: $application, user: $user);
+		if ($findings !== []) {
+			return new JSONResponse(
+				data: [
+					'error' => 'destination_findings',
+					'message' => sprintf(
+						'This app cannot be published: its forms have %d point(s) their destination refuses. Each one is marked on its field in the page designer.',
+						count($findings)
+					),
+					'findings' => $findings,
+				],
+				statusCode: Http::STATUS_UNPROCESSABLE_ENTITY
+			);
+		}
+
+		return null;
+	}//end publishBlocked()
+
+	/**
+	 * Onboard a published app to the credential broker and its route index.
+	 *
+	 * @param array<string,mixed> $application The Application.
+	 * @param IUser               $user        The caller.
+	 * @param string              $appUuid     The Application UUID.
+	 *
+	 * @return void
+	 */
+	private function goLive(array $application, IUser $user, string $appUuid): void {
+		$slug = (string)($application['slug'] ?? '');
+		if ($slug !== '') {
+			$this->credentialRegistrar->onPublish(slug: $slug, caller: $user);
+			$this->ensureBuiltAppRoute(slug: $slug, applicationUuid: $appUuid);
+		}
+	}//end goLive()
 
 	/**
 	 * Idempotently ensure a BuiltAppRoute index object exists for this slug.
