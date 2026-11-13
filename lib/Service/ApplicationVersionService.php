@@ -636,7 +636,24 @@ class ApplicationVersionService implements ApplicationVersionServiceInterface {
 			$effectiveStrategy = self::STRATEGY_KEEP_REGISTER;
 		}
 
-		switch ($effectiveStrategy) {
+		$this->applyRegisterStrategy(strategy: $effectiveStrategy, registerSlug: $registerSlug, versionUuid: $versionUuid);
+
+		$this->objectService->deleteObject(uuid: $versionUuid);
+	}//end deleteVersion()
+
+	/**
+	 * Apply a delete strategy to the version's register: drop it, flag it orphaned, or keep it.
+	 *
+	 * @param string $strategy     The effective strategy.
+	 * @param string $registerSlug The version's register slug.
+	 * @param string $versionUuid  The version being deleted.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/application-versions/spec.md
+	 */
+	private function applyRegisterStrategy(string $strategy, string $registerSlug, string $versionUuid): void {
+		switch ($strategy) {
 			case self::STRATEGY_DELETE_NOW:
 				$this->dropPerVersionRegister(registerSlug: $registerSlug, versionUuid: $versionUuid);
 				break;
@@ -654,9 +671,7 @@ class ApplicationVersionService implements ApplicationVersionServiceInterface {
 				);
 				break;
 		}//end switch
-
-		$this->objectService->deleteObject(uuid: $versionUuid);
-	}//end deleteVersion()
+	}//end applyRegisterStrategy()
 
 	/**
 	 * Reject an unknown deletion strategy.

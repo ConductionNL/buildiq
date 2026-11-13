@@ -255,7 +255,7 @@ class SetupController extends Controller {
 		// `install-demo-data` is the id the step used before it asked WHICH
 		// dataset, and it still means "import the one this app ships". Kept so
 		// an older manifest, a runbook or a script that posts it keeps working.
-		if ($actionId === 'load-demo-data' || $actionId === 'install-demo-data') {
+		if ($this->isLoadAction(actionId: $actionId) === true) {
 			return $this->loadDataset(actionId: $actionId);
 		}
 
@@ -270,6 +270,26 @@ class SetupController extends Controller {
 			);
 		}
 
+		return $this->seedTemplates();
+	}//end runAction()
+
+	/**
+	 * Whether the action loads a dataset (`install-demo-data` is its older id).
+	 *
+	 * @param string $actionId The setup action id.
+	 *
+	 * @return bool
+	 */
+	private function isLoadAction(string $actionId): bool {
+		return $actionId === 'load-demo-data' || $actionId === 'install-demo-data';
+	}//end isLoadAction()
+
+	/**
+	 * Run the seed-templates action and report what was seeded.
+	 *
+	 * @return JSONResponse
+	 */
+	private function seedTemplates(): JSONResponse {
 		try {
 			$result = $this->setup->seedService->seed();
 		} catch (Throwable $e) {
@@ -303,7 +323,7 @@ class SetupController extends Controller {
 				'detail' => $result,
 			]
 		);
-	}//end runAction()
+	}//end seedTemplates()
 
 	/**
 	 * Import the dataset a card's Load button posted as `dataset`, or the
@@ -317,26 +337,9 @@ class SetupController extends Controller {
 	 * @spec openspec/specs/first-time-setup/spec.md
 	 */
 	private function loadDataset(string $actionId): JSONResponse {
-		$picked = $this->appConfig->getValueString(AppIdentity::APP_ID, self::DATASET_KEY, '');
-
-		// The card's Load button names its dataset in the body. An older wizard
-		// posts nothing and relies on the pick stored a step earlier. Nothing is
-		// stored before the load succeeds: a failed load must leave the step
-		// open for an operator who asked for data and got none.
-		$posted = $this->postedDataset();
-		if ($posted !== null) {
-			$refusal = $this->refuseDataset(value: $posted);
-			if ($refusal !== null) {
-				return $refusal;
-			}
-
-			$picked = $posted;
-		}
-
-		// The legacy id carries no answer, so it means the shipped dataset. A
-		// caller that posts it has said which one by posting it.
-		if ($actionId === 'install-demo-data' && $picked === '') {
-			$picked = DemoDataServiceInterface::DEMO_DATASET;
+		$picked = $this->pickedDataset(actionId: $actionId);
+		if ($picked instanceof JSONResponse) {
+			return $picked;
 		}
 
 		// 🔴 NO SILENT DEFAULT. Importing here because the operator clicked Run
@@ -373,6 +376,60 @@ class SetupController extends Controller {
 		// numbers cannot be told apart from an import that wrote nothing — and
 		// neither can a count that merely repeats what was asked for. An
 		// operator who got part of the dataset must see the gap.
+		$message = $this->importedMessage(imported: $imported);
+
+		return new JSONResponse(
+			[
+				'success' => true,
+				'message' => $message,
+				'detail' => $imported,
+			]
+		);
+	}//end loadDataset()
+
+	/**
+	 * The dataset to load: the posted one when the body names one, the stored
+	 * pick otherwise, the shipped one for the legacy id; or the refusal of a
+	 * posted value.
+	 *
+	 * @param string $actionId The setup action id.
+	 *
+	 * @return string|JSONResponse
+	 */
+	private function pickedDataset(string $actionId): string|JSONResponse {
+		$picked = $this->appConfig->getValueString(AppIdentity::APP_ID, self::DATASET_KEY, '');
+
+		// The card's Load button names its dataset in the body. An older wizard
+		// posts nothing and relies on the pick stored a step earlier. Nothing is
+		// stored before the load succeeds: a failed load must leave the step
+		// open for an operator who asked for data and got none.
+		$posted = $this->postedDataset();
+		if ($posted !== null) {
+			$refusal = $this->refuseDataset(value: $posted);
+			if ($refusal !== null) {
+				return $refusal;
+			}
+
+			$picked = $posted;
+		}
+
+		// The legacy id carries no answer, so it means the shipped dataset. A
+		// caller that posts it has said which one by posting it.
+		if ($actionId === 'install-demo-data' && $picked === '') {
+			$picked = DemoDataServiceInterface::DEMO_DATASET;
+		}
+
+		return $picked;
+	}//end pickedDataset()
+
+	/**
+	 * The message of a finished import: landed and declared counts, and the skipped ones.
+	 *
+	 * @param array<string, mixed> $imported The import counts.
+	 *
+	 * @return string
+	 */
+	private function importedMessage(array $imported): string {
 		$declared = (int)($imported['declared'] ?? $imported['objects']);
 		$skipped = (int)($imported['skipped'] ?? 0);
 		$message = sprintf('Imported %d of %d demo object(s).', $imported['objects'], $declared);
@@ -383,14 +440,8 @@ class SetupController extends Controller {
 			);
 		}
 
-		return new JSONResponse(
-			[
-				'success' => true,
-				'message' => $message,
-				'detail' => $imported,
-			]
-		);
-	}//end loadDataset()
+		return $message;
+	}//end importedMessage()
 
 	/**
 	 * Read the dataset id a card's Load button posted.
