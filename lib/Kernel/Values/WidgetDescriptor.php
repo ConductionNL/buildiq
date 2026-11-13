@@ -11,7 +11,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Dashboard
- * @package  OCA\Buildiq\Dashboard
+ * @package  OCA\Buildiq\Kernel\Values
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -26,7 +26,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\Buildiq\Dashboard;
+namespace OCA\Buildiq\Kernel\Values;
 
 /**
  * One promoted widget placement, ready to register.

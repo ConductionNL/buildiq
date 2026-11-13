@@ -27,7 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Tests\Unit\Support;
 
-use OCA\Buildiq\Support\FleetAppId;
+use OCA\Buildiq\Service\FleetAppId;
 use OCP\App\IAppManager;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;

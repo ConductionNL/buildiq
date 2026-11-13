@@ -25,10 +25,10 @@ use PHPUnit\Framework\TestCase;
  * repository is only taken when every name in it is a valid owner/repo name.
  *
  * @covers \OCA\Buildiq\Service\GitHub\SyncRequestParams
- * @uses   \OCA\Buildiq\Service\GitHub\AppPushRequest
- * @uses   \OCA\Buildiq\Service\GitHub\BrokerAccess
- * @uses   \OCA\Buildiq\Service\GitHub\BrokeredRepo
- * @uses   \OCA\Buildiq\Service\GitHub\PushTarget
+ * @uses   \OCA\Buildiq\Kernel\Values\AppPushRequest
+ * @uses   \OCA\Buildiq\Kernel\Values\BrokerAccess
+ * @uses   \OCA\Buildiq\Kernel\Values\BrokeredRepo
+ * @uses   \OCA\Buildiq\Kernel\Values\PushTarget
  */
 class SyncRequestParamsTest extends TestCase {
 	/**

@@ -9,7 +9,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\Buildiq\Service\GitHub
+ * @package  OCA\Buildiq\Kernel\Values
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -22,7 +22,9 @@
 
 declare(strict_types=1);
 
-namespace OCA\Buildiq\Service\GitHub;
+namespace OCA\Buildiq\Kernel\Values;
+
+use OCA\Buildiq\Kernel\Values\PushTarget;
 
 /**
  * One repository and the access its calls use.

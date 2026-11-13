@@ -44,7 +44,7 @@ use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Kernel\Contracts\AppRepoParserInterface;
 use OCA\Buildiq\Kernel\Contracts\GitHubCatalogServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\GitHubShopSearchInterface;
-use OCA\Buildiq\Service\RepoSource;
+use OCA\Buildiq\Kernel\Values\RepoSource;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;

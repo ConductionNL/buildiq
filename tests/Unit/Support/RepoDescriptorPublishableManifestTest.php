@@ -20,7 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Tests\Unit\Support;
 
-use OCA\Buildiq\Support\RepoDescriptor;
+use OCA\Buildiq\Service\RepoDescriptor;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -28,7 +28,7 @@ use PHPUnit\Framework\TestCase;
  * schema keys and types, secret-named keys dropped at any depth, and
  * token-shaped strings and private keys redacted.
  *
- * @covers \OCA\Buildiq\Support\RepoDescriptor
+ * @covers \OCA\Buildiq\Service\RepoDescriptor
  * @uses   \OCA\Buildiq\Service\GitHub\TokenScrubber
  */
 class RepoDescriptorPublishableManifestTest extends TestCase {

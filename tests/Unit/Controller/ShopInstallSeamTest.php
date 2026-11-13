@@ -41,7 +41,7 @@ use PHPUnit\Framework\TestCase;
  * Forged userId and ownerUid request parameters never become the owner.
  *
  * @covers \OCA\Buildiq\Controller\ShopController
- * @uses   \OCA\Buildiq\Service\RepoSource
+ * @uses   \OCA\Buildiq\Kernel\Values\RepoSource
  * @uses \OCA\Buildiq\Controller\GitHubRequestParams
  */
 class ShopInstallSeamTest extends TestCase {

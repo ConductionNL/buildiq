@@ -42,6 +42,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Kernel\Contracts\GitHubCatalogServiceInterface;
+use OCA\Buildiq\Kernel\Values\RepoSource;
 use OCA\Buildiq\Service\GitHub\ShortLivedCache;
 use OCP\Http\Client\IClientService;
 use OCP\ICacheFactory;

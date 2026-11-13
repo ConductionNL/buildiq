@@ -39,7 +39,7 @@ use Throwable;
  * @covers \OCA\Buildiq\Service\AutomationCompilerService
  * @uses   \OCA\Buildiq\Service\Automation\CompileInput
  * @uses   \OCA\Buildiq\Exception\UnsupportedAutomationCombinationException
- * @uses   \OCA\Buildiq\Support\FleetAppId
+ * @uses   \OCA\Buildiq\Service\FleetAppId
  */
 class AutomationCompileGoldenTest extends TestCase {
 

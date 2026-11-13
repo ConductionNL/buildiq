@@ -16,13 +16,13 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Tests\Unit\Service\GitHub;
 
-use OCA\Buildiq\Service\GitHub\PushTarget;
+use OCA\Buildiq\Kernel\Values\PushTarget;
 use PHPUnit\Framework\TestCase;
 
 /**
  * The path names owner and repository, each URL-encoded, and a new target is private by default.
  *
- * @covers \OCA\Buildiq\Service\GitHub\PushTarget
+ * @covers \OCA\Buildiq\Kernel\Values\PushTarget
  */
 class PushTargetTest extends TestCase {
 	/**
