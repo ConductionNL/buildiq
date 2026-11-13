@@ -14,8 +14,11 @@ declare(strict_types=1);
 //
 // This file references no OpenRegister symbol at top level — Routes::standard()
 // is a pure array builder — so requiring it is safe even when OR is disabled.
-return \OCA\OpenRegister\AppHost\Routes::standard(
+// Every unversioned API route is also served under /api/v1/; see ApiPathAliases.
+return \OCA\Buildiq\Middleware\Support\ApiPathAliases::withVersionedAliases(\OCA\OpenRegister\AppHost\Routes::standard(
     [
+        // The OpenAPI document of buildiq's own API, public, served under /api/v1/ too.
+        ['name' => 'openApi#show', 'url' => '/api/openapi.json', 'verb' => 'GET'],
         // App-creation wizard endpoint (buildiq-app-creation-wizard REQ-OBWIZ-001).
         // POST /api/applications/wizard — atomic creation of Application + N versions + N registers.
         // ADMIN-ONLY (issue #157): #[AuthorizedAdminSetting(AdminSettings::class)] on the controller
@@ -358,4 +361,4 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         // NB: the SPA catch-all (dashboard#catchAll) is appended by
         // \OCA\OpenRegister\AppHost\Routes::standard() — do NOT add it here.
     ]
-);
+));

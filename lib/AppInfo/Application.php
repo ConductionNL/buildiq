@@ -38,6 +38,7 @@ use OCA\Buildiq\Listener\FormLiveValuesListener;
 use OCA\Buildiq\Listener\HybridMetadataLockListener;
 use OCA\Buildiq\Listener\ProductionVersionGuardListener;
 use OCA\Buildiq\Mcp\BuildiqToolProvider;
+use OCA\Buildiq\Middleware\ApiContractMiddleware;
 use OCA\Buildiq\Repair\InitializeSettings;
 use OCA\Buildiq\Sections\SettingsSection;
 use OCA\Buildiq\Service\AppNavigationService;
@@ -109,6 +110,10 @@ class Application extends App implements IBootstrap {
 	 * @spec openspec/specs/openbuild-rbac/spec.md
 	 */
 	public function register(IRegistrationContext $context): void {
+		// The API contract (version header, deprecation of unversioned paths,
+		// problem details). Registered first: Nextcloud runs afterController in
+		// reverse order, so it sees the final response of every other middleware.
+		$context->registerMiddleware(class: ApiContractMiddleware::class);
 		$this->registerOpenRegisterContracts(context: $context);
 		$this->registerAppHostPlumbing(context: $context);
 		$this->registerDashboardServices(context: $context);

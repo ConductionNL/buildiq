@@ -1,5 +1,11 @@
 [
     {
+        "method": "registerMiddleware",
+        "args": {
+            "class": "OCA\\Buildiq\\Middleware\\ApiContractMiddleware"
+        }
+    },
+    {
         "method": "registerServiceAlias",
         "args": {
             "alias": "OCA\\OpenRegister\\Contract\\ObjectServiceInterface",
