@@ -30,7 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Controller;
 
-use OCA\Buildiq\AppInfo\Application;
+use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Service\GitHubCatalogService;
 use OCA\Buildiq\Service\GitHubFormCatalogService;
 use OCP\AppFramework\Controller;
@@ -67,7 +67,7 @@ class FormLibraryController extends Controller {
 		private readonly IUserSession $userSession,
 		private readonly GitHubFormCatalogService $formCatalog,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**

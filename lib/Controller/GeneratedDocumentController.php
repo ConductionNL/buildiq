@@ -45,7 +45,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Controller;
 
-use OCA\Buildiq\AppInfo\Application;
+use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Service\DocumentGenerationService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -87,7 +87,7 @@ class GeneratedDocumentController extends Controller {
 		private readonly IAppDataFactory $appDataFactory,
 		private readonly LoggerInterface $logger,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**

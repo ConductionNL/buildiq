@@ -50,7 +50,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Controller;
 
-use OCA\Buildiq\AppInfo\Application;
+use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Service\CallerContext;
 use OCA\Buildiq\Service\DemoDataService;
 use OCA\Buildiq\Service\SettingsService;
@@ -127,7 +127,7 @@ class SetupController extends Controller {
 		private readonly CallerContext $caller,
 		private readonly SetupServices $setup,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -152,16 +152,16 @@ class SetupController extends Controller {
 		}
 
 		$seedDone = $this->setup->seedService->countSeeded() > 0;
-		$storeDone = $this->appConfig->getValueString(Application::APP_ID, 'registry_url', '') !== '';
+		$storeDone = $this->appConfig->getValueString(AppIdentity::APP_ID, 'registry_url', '') !== '';
 		// DEALT WITH, not "demo objects exist". An operator who declines demo
 		// data has finished the step; re-offering it every visit would make
 		// "no thanks" impossible to express.
-		$demoDecided = $this->appConfig->getValueString(Application::APP_ID, self::DEMO_DATA_DECIDED_KEY, '') !== '';
-		$pickedDataset = $this->appConfig->getValueString(Application::APP_ID, self::DATASET_KEY, '');
+		$demoDecided = $this->appConfig->getValueString(AppIdentity::APP_ID, self::DEMO_DATA_DECIDED_KEY, '') !== '';
+		$pickedDataset = $this->appConfig->getValueString(AppIdentity::APP_ID, self::DATASET_KEY, '');
 		// No step is required, so setup is complete by definition. A missing
 		// OpenRegister is the manifest's dependency gate, not a wizard step.
 		$this->appConfig->setValueString(
-			Application::APP_ID,
+			AppIdentity::APP_ID,
 			self::COMPLETION_KEY,
 			(string)self::SETUP_VERSION
 		);
@@ -229,7 +229,7 @@ class SetupController extends Controller {
 				);
 			}
 
-			$this->appConfig->setValueString(Application::APP_ID, self::DATASET_KEY, $named);
+			$this->appConfig->setValueString(AppIdentity::APP_ID, self::DATASET_KEY, $named);
 		}
 
 		$this->setup->settings->updateSettings($params);
@@ -318,7 +318,7 @@ class SetupController extends Controller {
 	 * @spec openspec/specs/first-time-setup/spec.md
 	 */
 	private function loadDataset(string $actionId): JSONResponse {
-		$picked = $this->appConfig->getValueString(Application::APP_ID, self::DATASET_KEY, '');
+		$picked = $this->appConfig->getValueString(AppIdentity::APP_ID, self::DATASET_KEY, '');
 
 		// The card's Load button names its dataset in the body. An older wizard
 		// posts nothing and relies on the pick stored a step earlier. Nothing is
@@ -350,8 +350,8 @@ class SetupController extends Controller {
 		}
 
 		if ($picked === DemoDataService::NONE_DATASET) {
-			$this->appConfig->setValueString(Application::APP_ID, self::DATASET_KEY, DemoDataService::NONE_DATASET);
-			$this->appConfig->setValueString(Application::APP_ID, self::DEMO_DATA_DECIDED_KEY, 'skipped');
+			$this->appConfig->setValueString(AppIdentity::APP_ID, self::DATASET_KEY, DemoDataService::NONE_DATASET);
+			$this->appConfig->setValueString(AppIdentity::APP_ID, self::DEMO_DATA_DECIDED_KEY, 'skipped');
 
 			return new JSONResponse(['success' => true, 'message' => 'No example data was loaded.']);
 		}
@@ -367,8 +367,8 @@ class SetupController extends Controller {
 		// Recorded only after the import actually returned. Marking it first
 		// would let a failed install present as a finished step.
 		// Loading IS choosing the set, so the pick is recorded too.
-		$this->appConfig->setValueString(Application::APP_ID, self::DATASET_KEY, $picked);
-		$this->appConfig->setValueString(Application::APP_ID, self::DEMO_DATA_DECIDED_KEY, 'installed');
+		$this->appConfig->setValueString(AppIdentity::APP_ID, self::DATASET_KEY, $picked);
+		$this->appConfig->setValueString(AppIdentity::APP_ID, self::DEMO_DATA_DECIDED_KEY, 'installed');
 
 		// 🔴 THE COUNTS, ALWAYS, AND BOTH OF THEM. "Demo data installed" with no
 		// numbers cannot be told apart from an import that wrote nothing — and
@@ -458,8 +458,8 @@ class SetupController extends Controller {
 	private function skipDemoData(): JSONResponse {
 		// Skipping IS choosing "None", so both keys are written: an older
 		// runbook may read either one.
-		$this->appConfig->setValueString(Application::APP_ID, self::DATASET_KEY, DemoDataService::NONE_DATASET);
-		$this->appConfig->setValueString(Application::APP_ID, self::DEMO_DATA_DECIDED_KEY, 'skipped');
+		$this->appConfig->setValueString(AppIdentity::APP_ID, self::DATASET_KEY, DemoDataService::NONE_DATASET);
+		$this->appConfig->setValueString(AppIdentity::APP_ID, self::DEMO_DATA_DECIDED_KEY, 'skipped');
 
 		return new JSONResponse(['success' => true, 'message' => 'No example data was loaded.']);
 	}//end skipDemoData()

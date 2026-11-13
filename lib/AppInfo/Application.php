@@ -26,6 +26,7 @@ namespace OCA\Buildiq\AppInfo;
 
 use OCA\Buildiq\Capabilities;
 use OCA\Buildiq\Controller\ControllerRegistrar;
+use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Lifecycle\LifecycleRegistrar;
 use OCA\Buildiq\Listener\ApprovalOutcomeListener;
 use OCA\Buildiq\Listener\AutomationApprovalTriggerListener;
@@ -62,7 +63,7 @@ use Psr\Log\LoggerInterface;
  * @spec openspec/specs/openbuild-rbac/spec.md
  */
 class Application extends App implements IBootstrap {
-	public const APP_ID = 'buildiq';
+	public const APP_ID = AppIdentity::APP_ID;
 
 	/**
 	 * Constructor for the Application class.

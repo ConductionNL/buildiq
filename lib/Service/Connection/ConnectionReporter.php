@@ -29,7 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service\Connection;
 
-use OCA\Buildiq\AppInfo\Application;
+use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Support\FleetAppId;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\EventDispatcher\Event;
@@ -50,7 +50,7 @@ class ConnectionReporter {
 	 *
 	 * @var string
 	 */
-	public const APP_ID = Application::APP_ID;
+	public const APP_ID = AppIdentity::APP_ID;
 
 	/**
 	 * Integriq's report event (ADR-041). Named by string so Buildiq stays

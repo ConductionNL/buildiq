@@ -39,12 +39,12 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Controller;
 
-use OCA\Buildiq\AppInfo\Application;
 use OCA\Buildiq\Exception\InsufficientPermissionException;
 use OCA\Buildiq\Exception\InvalidStrategyException;
 use OCA\Buildiq\Exception\NoPromoteTargetException;
 use OCA\Buildiq\Exception\PromotionFailedException;
 use OCA\Buildiq\Exception\VersionLockedException;
+use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Service\PermissionResolver;
 use OCA\Buildiq\Service\VersionPromotionService;
 use OCA\Buildiq\Support\ObjectRecord;
@@ -91,7 +91,7 @@ class VersionPromotionController extends Controller {
 		private readonly VersionPromotionService $promotionService,
 		private readonly PermissionResolver $permissionResolver,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**

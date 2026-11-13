@@ -32,7 +32,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Controller;
 
-use OCA\Buildiq\AppInfo\Application;
+use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Service\ExportJobService;
 use OCA\Buildiq\Service\ServerBundleWriter;
 use OCA\Buildiq\Support\ObjectRecord;
@@ -89,7 +89,7 @@ class ExportsController extends Controller {
 		private LoggerInterface $logger,
 		private IGroupManager $groupManager,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**

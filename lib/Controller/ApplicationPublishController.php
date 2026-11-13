@@ -31,12 +31,12 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Controller;
 
-use OCA\Buildiq\AppInfo\Application;
 use OCA\Buildiq\Exception\InsufficientPermissionException;
+use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Service\ApplicationDeletionService;
+use OCA\Buildiq\Service\Credential\VirtualAppCredentialRegistrar;
 use OCA\Buildiq\Service\ManifestFormDestinations;
 use OCA\Buildiq\Service\ManifestResolverService;
-use OCA\Buildiq\Service\Credential\VirtualAppCredentialRegistrar;
 use OCA\Buildiq\Service\PermissionResolver;
 use OCA\Buildiq\Service\VersionPromotionService;
 use OCA\Buildiq\Support\ObjectRecord;
@@ -99,7 +99,7 @@ class ApplicationPublishController extends Controller {
 		private readonly ?ManifestResolverService $manifests = null,
 		private readonly ?ManifestFormDestinations $formDestinations = null,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**

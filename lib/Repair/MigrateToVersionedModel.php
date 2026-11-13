@@ -41,7 +41,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Repair;
 
 use Closure;
-use OCA\Buildiq\AppInfo\Application;
+use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Service\ApplicationVersionService;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
@@ -152,7 +152,7 @@ class MigrateToVersionedModel implements IRepairStep {
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-26
 	 */
 	public function run(IOutput $output): void {
-		$state = $this->appConfig->getValueString(Application::APP_ID, self::STATE_KEY, '');
+		$state = $this->appConfig->getValueString(AppIdentity::APP_ID, self::STATE_KEY, '');
 		if ($state === self::STATE_DONE) {
 			$this->logger->debug('Buildiq: MigrateToVersionedModel already completed; skipping.');
 			$output->info('Migrated-to-versioned-model: previously completed, skipping.');
@@ -171,7 +171,7 @@ class MigrateToVersionedModel implements IRepairStep {
 		try {
 			if ($this->isAlreadyVersioned() === true) {
 				$output->info('Migrated-to-versioned-model: schema already in versioned shape, skipping');
-				$this->appConfig->setValueString(Application::APP_ID, self::STATE_KEY, self::STATE_DONE);
+				$this->appConfig->setValueString(AppIdentity::APP_ID, self::STATE_KEY, self::STATE_DONE);
 				return;
 			}
 		} catch (Throwable $e) {
@@ -192,7 +192,7 @@ class MigrateToVersionedModel implements IRepairStep {
 		$applications = $this->enumerateApplications();
 		if ($applications === []) {
 			$output->info('Migrated-to-versioned-model: no pre-migration Application rows found.');
-			$this->appConfig->setValueString(Application::APP_ID, self::STATE_KEY, self::STATE_DONE);
+			$this->appConfig->setValueString(AppIdentity::APP_ID, self::STATE_KEY, self::STATE_DONE);
 			return;
 		}
 
@@ -217,7 +217,7 @@ class MigrateToVersionedModel implements IRepairStep {
 			$state = self::STATE_FAILED;
 		}
 
-		$this->appConfig->setValueString(Application::APP_ID, self::STATE_KEY, $state);
+		$this->appConfig->setValueString(AppIdentity::APP_ID, self::STATE_KEY, $state);
 	}//end run()
 
 	/**

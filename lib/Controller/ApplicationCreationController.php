@@ -48,8 +48,8 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Controller;
 
-use OCA\Buildiq\AppInfo\Application;
 use OCA\Buildiq\Exception\WizardCreationException;
+use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Service\ApplicationCreationService;
 use OCA\Buildiq\Settings\AdminSettings;
 use OCP\AppFramework\Controller;
@@ -87,7 +87,7 @@ class ApplicationCreationController extends Controller {
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**

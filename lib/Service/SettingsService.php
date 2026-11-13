@@ -24,8 +24,8 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
-use OCA\Buildiq\AppInfo\Application;
 use OCA\Buildiq\Exception\RegisterConfigUnavailableException;
+use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Service\Connection\ConnectionReporter;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
@@ -155,7 +155,7 @@ class SettingsService {
 		$settings = [];
 		foreach (self::CONFIG_KEYS as $key) {
 			$default = (self::CONFIG_DEFAULTS[$key] ?? '');
-			$value = $this->appConfig->getValueString(Application::APP_ID, $key, $default);
+			$value = $this->appConfig->getValueString(AppIdentity::APP_ID, $key, $default);
 			if ($value === '' && in_array($key, self::EMPTY_MEANS_DEFAULT, true) === true) {
 				$value = $default;
 			}
@@ -168,7 +168,7 @@ class SettingsService {
 
 		// Remote template store (buildiq-remote-template-store): expose a
 		// token-presence flag + a storeConfigured flag, but NEVER the token value.
-		$registryToken = $this->appConfig->getValueString(Application::APP_ID, 'registry_token', '');
+		$registryToken = $this->appConfig->getValueString(AppIdentity::APP_ID, 'registry_token', '');
 
 		return array_merge(
 			$settings,
@@ -201,7 +201,7 @@ class SettingsService {
 		$written = [];
 		foreach (self::CONFIG_KEYS as $key) {
 			if (isset($data[$key]) === true) {
-				$this->appConfig->setValueString(Application::APP_ID, $key, (string)$data[$key]);
+				$this->appConfig->setValueString(AppIdentity::APP_ID, $key, (string)$data[$key]);
 				$written[] = $key;
 			}
 		}
@@ -218,7 +218,7 @@ class SettingsService {
 		foreach (self::SECRET_KEYS as $key) {
 			if (isset($data[$key]) === true && (string)$data[$key] !== '') {
 				$this->appConfig->setValueString(
-					Application::APP_ID,
+					AppIdentity::APP_ID,
 					$key,
 					(string)$data[$key],
 					sensitive: true
@@ -449,7 +449,7 @@ class SettingsService {
 	private function callImportFromApp(RegisterConfigImport $import, bool $force): mixed {
 		$configurationService = $this->container->get('OCA\OpenRegister\Service\ConfigurationService');
 		return $configurationService->importFromApp(
-			appId: Application::APP_ID,
+			appId: AppIdentity::APP_ID,
 			data: $import->data,
 			version: $import->version,
 			force: $force
