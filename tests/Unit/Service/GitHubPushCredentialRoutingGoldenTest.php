@@ -42,6 +42,7 @@ use Throwable;
  *
  * @covers \OCA\Buildiq\Service\GitHubPushService
  * @uses   \OCA\Buildiq\Service\GitHub\BrokerAccess
+ * @uses   \OCA\Buildiq\Service\GitHub\CredentialBrokerClient
  * @uses   \OCA\Buildiq\Service\GitHub\PushTarget
  * @uses   \OCA\Buildiq\Service\GitHub\TokenScrubber
  */
