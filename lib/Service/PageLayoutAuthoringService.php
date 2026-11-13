@@ -44,8 +44,8 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use InvalidArgumentException;
-use OCA\Buildiq\Integration\PageLayoutLeafProvider;
 use OCA\Buildiq\Kernel\Contracts\PageLayoutAuthoringServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\PageLayoutLeafProviderInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\IAppConfig;
 use RuntimeException;
@@ -85,7 +85,7 @@ class PageLayoutAuthoringService implements PageLayoutAuthoringServiceInterface 
 	 * @param IAppConfig $appConfig App config, for the register slug.
 	 * @param PageLayoutValidator $validator The rules a layout has to pass.
 	 * @param LayoutDeltaService $deltas The fingerprint and the orphan report.
-	 * @param PageLayoutLeafProvider $provider The resolver, which owns what the base is.
+	 * @param PageLayoutLeafProviderInterface $provider The resolver, which owns what the base is.
 	 * @param ContainerLocator|null $locator Resolves OpenRegister's integration registry when it is installed.
 	 *
 	 * @return void
@@ -95,7 +95,7 @@ class PageLayoutAuthoringService implements PageLayoutAuthoringServiceInterface 
 		private readonly IAppConfig $appConfig,
 		private readonly PageLayoutValidator $validator,
 		private readonly LayoutDeltaService $deltas,
-		private readonly PageLayoutLeafProvider $provider,
+		private readonly PageLayoutLeafProviderInterface $provider,
 		private readonly ?ContainerLocator $locator=null,
 	) {
 		$this->rows = new AuthoredRowReader(objectService: $objectService, appConfig: $appConfig, schema: self::SCHEMA);

@@ -26,11 +26,11 @@ namespace OCA\Buildiq\AppInfo;
 
 use OCA\Buildiq\Capabilities;
 use OCA\Buildiq\Controller\ControllerRegistrar;
+use OCA\Buildiq\Integration\IntegrationRegistrar;
 use OCA\Buildiq\Kernel\AppIdentity;
-use OCA\Buildiq\Kernel\Contracts\BuildiqToolProviderInterface;
 use OCA\Buildiq\Lifecycle\LifecycleRegistrar;
 use OCA\Buildiq\Listener\ListenerRegistrar;
-use OCA\Buildiq\Mcp\BuildiqToolProvider;
+use OCA\Buildiq\Mcp\McpRegistrar;
 use OCA\Buildiq\Middleware\MiddlewareRegistrar;
 use OCA\Buildiq\Repair\RepairRegistrar;
 use OCA\Buildiq\Service\ServiceRegistrar;
@@ -76,6 +76,7 @@ class Application extends App implements IBootstrap {
 		(new MiddlewareRegistrar())->registerApiContractMiddleware(context: $context);
 		(new ServiceRegistrar())->registerOpenRegisterContracts(context: $context);
 		(new ServiceRegistrar())->registerContractBindings(context: $context);
+		(new IntegrationRegistrar())->registerContractBindings(context: $context);
 		$this->registerAppHostPlumbing(context: $context);
 		(new ServiceRegistrar())->registerDashboardServices(context: $context);
 		(new ControllerRegistrar())->registerConcreteControllers(context: $context);
@@ -204,19 +205,7 @@ class Application extends App implements IBootstrap {
 	 * @return void
 	 */
 	private function registerToolsAndCapabilities(IRegistrationContext $context): void {
-		// Register BuildiqToolProvider as the MCP tool provider for the AI Chat Companion.
-		// The alias key 'OCA\OpenRegister\Mcp\IMcpToolProvider::buildiq' is the format
-		// that OR's McpToolsService enumerates to discover per-app providers (hydra ADR-035).
-		// The interface ships in openregister PR #1466 (ai-chat-companion-orchestrator);
-		// until then Buildiq implements the test stub at tests/Stubs/Mcp/IMcpToolProvider.php.
-		$context->registerServiceAlias(
-			'OCA\\OpenRegister\\Mcp\\IMcpToolProvider::buildiq',
-			BuildiqToolProvider::class
-		);
-		$context->registerServiceAlias(
-			BuildiqToolProviderInterface::class,
-			BuildiqToolProvider::class
-		);
+		(new McpRegistrar())->registerToolProvider(context: $context);
 
 		(new LifecycleRegistrar())->registerOwnerGuard(context: $context);
 

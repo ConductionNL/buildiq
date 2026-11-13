@@ -370,6 +370,13 @@
         }
     },
     {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\PageLayoutLeafProviderInterface",
+            "target": "OCA\\Buildiq\\Integration\\PageLayoutLeafProvider"
+        }
+    },
+    {
         "method": "registerService",
         "args": {
             "name": "OCA\\Buildiq\\Service\\PublishedApplicationProvider",

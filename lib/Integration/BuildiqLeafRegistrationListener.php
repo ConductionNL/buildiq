@@ -12,7 +12,7 @@
  * must boot rather than fatal on a missing class.
  *
  * @category Listener
- * @package  OCA\Buildiq\Listener
+ * @package  OCA\Buildiq\Integration
  *
  * @author    Conduction Development Team <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -28,10 +28,8 @@
 
 declare(strict_types=1);
 
-namespace OCA\Buildiq\Listener;
+namespace OCA\Buildiq\Integration;
 
-use OCA\Buildiq\Integration\PageLayoutLeafProvider;
-use OCA\Buildiq\Integration\RegistrationFormLeafProvider;
 use OCA\OpenRegister\Event\RegisterLeafProvidersEvent;
 use OCA\OpenRegister\Service\Integration\LeafAvailability;
 use OCA\OpenRegister\Service\Integration\LeafDescriptor;
