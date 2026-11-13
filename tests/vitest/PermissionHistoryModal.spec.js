@@ -64,7 +64,7 @@ describe('PermissionHistoryModal', () => {
 		const wrapper = mountModal()
 		await wrapper.vm.load()
 		expect(axiosMock.get).toHaveBeenCalledWith(
-			'/apps/openregister/api/objects/buildiq/built-app/app-1/audit',
+			'/apps/openregister/api/objects/buildiq/built-app/app-1/audit-trails',
 			{ params: { filter: 'permissions,rbac.admin_bypass', limit: 50 } },
 		)
 		expect(wrapper.vm.entries).toEqual([

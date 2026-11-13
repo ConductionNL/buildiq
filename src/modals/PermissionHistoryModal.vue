@@ -236,16 +236,17 @@ export default {
 		},
 
 		/**
-		 * OR audit endpoint — per-object audit trail filtered by register +
+		 * OR audit-trails endpoint — per-object audit trail filtered by register +
 		 * schema + uuid. The endpoint is paginated; the owner-only panel
 		 * intentionally fetches only the first page (most recent ~50 events) —
 		 * older history can be inspected via OR's admin UI.
 		 *
+		 * @spec openspec/specs/openbuild-rbac/spec.md#requirement-permission-changes-are-recorded-in-the-or-audit-trail
 		 * @return {Promise<object>} The axios response.
 		 */
 		readAuditTrail() {
 			const url = generateUrl(
-				`/apps/openregister/api/objects/buildiq/built-app/${this.applicationUuid}/audit`,
+				`/apps/openregister/api/objects/buildiq/built-app/${this.applicationUuid}/audit-trails`,
 			)
 			return axios.get(url, {
 				params: {
