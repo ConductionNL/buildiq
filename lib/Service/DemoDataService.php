@@ -211,30 +211,13 @@ class DemoDataService implements DemoDataServiceInterface {
 	 * @spec openspec/changes/openbuild-first-time-setup/specs/openbuild-first-time-setup/spec.md
 	 */
 	public function install(): array {
-		$path = $this->descriptorPath();
-		if (is_file($path) === false) {
-			throw new RuntimeException('No demo dataset ships with this app (' . self::DESCRIPTOR . ' not found).');
-		}
-
-		$raw = file_get_contents($path);
-		if ($raw === false) {
-			throw new RuntimeException('The demo dataset could not be read: ' . $path);
-		}
-
-		$data = json_decode($raw, true);
-		if (is_array($data) === false) {
-			throw new RuntimeException('The demo dataset is not valid JSON: ' . $path);
-		}
+		$data = $this->readDescriptor();
 
 		// The number ASKED FOR comes from the file; the number that LANDED comes
 		// from the importer. They differ whenever OpenRegister skips an object
 		// whose schema it cannot resolve, and that gap is exactly the condition
 		// an operator must be able to see.
-		$declared = 0;
-		$components = ($data['components'] ?? []);
-		if (is_array($components) === true && is_array(($components['objects'] ?? null)) === true) {
-			$declared = count($components['objects']);
-		}
+		$declared = $this->declaredObjectCount(data: $data);
 
 		// 🔴 REFUSED BEFORE ANYTHING IS WRITTEN, NOT FILTERED. See
 		// `schemasThatCarryNoDemoData()`.
@@ -287,6 +270,49 @@ class DemoDataService implements DemoDataServiceInterface {
 
 		return $imported;
 	}//end install()
+
+	/**
+	 * The demo dataset descriptor, decoded.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @throws RuntimeException When the descriptor is missing, unreadable or not JSON.
+	 */
+	private function readDescriptor(): array {
+		$path = $this->descriptorPath();
+		if (is_file($path) === false) {
+			throw new RuntimeException('No demo dataset ships with this app (' . self::DESCRIPTOR . ' not found).');
+		}
+
+		$raw = file_get_contents($path);
+		if ($raw === false) {
+			throw new RuntimeException('The demo dataset could not be read: ' . $path);
+		}
+
+		$data = json_decode($raw, true);
+		if (is_array($data) === false) {
+			throw new RuntimeException('The demo dataset is not valid JSON: ' . $path);
+		}
+
+		return $data;
+	}//end readDescriptor()
+
+	/**
+	 * The number of objects the dataset declares.
+	 *
+	 * @param array<string, mixed> $data The decoded dataset.
+	 *
+	 * @return int
+	 */
+	private function declaredObjectCount(array $data): int {
+		$declared = 0;
+		$components = ($data['components'] ?? []);
+		if (is_array($components) === true && is_array(($components['objects'] ?? null)) === true) {
+			$declared = count($components['objects']);
+		}
+
+		return $declared;
+	}//end declaredObjectCount()
 
 	/**
 	 * The schemas this app writes about itself, by slug and by definition key.

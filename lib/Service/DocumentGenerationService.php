@@ -94,6 +94,7 @@ use OCP\Files\AppData\IAppDataFactory;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
 use OCP\Http\Client\IClientService;
+use OCP\Http\Client\IResponse;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
@@ -508,6 +509,57 @@ class DocumentGenerationService implements DocumentGenerationServiceInterface {
 	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md#requirement-req-biq-conn-003-buildiq-reports-what-its-connection-calls-met
 	 */
 	private function callGenerate(string $templateId, array $dataRefs, string $filename): ?array {
+		$credentials = $this->mintCallerToken();
+		if ($credentials === null) {
+			return null;
+		}
+
+		[$uid, $token, $provider] = $credentials;
+		[$route, $url] = $this->generateRoute();
+		if ($url === null) {
+			$this->invalidateToken(provider: $provider, token: $token);
+			$this->logger->error(
+				'Buildiq: DocumentGenerationService found no route "' . $route . '", so the document call is skipped. '
+				. 'Tried these app ids in order: ' . implode(', ', FleetAppId::CANDIDATES['filinq']) . '.'
+			);
+			$this->connectionReporter?->reportDocumentRouteMissing(route: $route);
+			return null;
+		}
+
+		try {
+			$response = $this->postGenerate(
+				url: $url,
+				auth: [$uid, $token],
+				json: [
+					'templateId' => $templateId,
+					'dataRefs' => $dataRefs,
+					'options' => ['format' => 'pdf'],
+					'filename' => $filename,
+				]
+			);
+		} finally {
+			// ALWAYS invalidate — the token is scoped to exactly this one
+			// call (class docblock "Transport detail"); a TEMPORARY_TOKEN
+			// (the only lifetime constant guaranteed present across the
+			// pinned `nextcloud/ocp` versions this app supports) would
+			// otherwise remain valid until its normal session-expiry.
+			$this->invalidateToken(provider: $provider, token: $token);
+		}//end try
+
+		if ($response === null) {
+			return null;
+		}
+
+		return $this->generateResult(response: $response);
+	}//end callGenerate()
+
+	/**
+	 * Mint a one-time internal token for the impersonated user, or null (logged)
+	 * when no user is active or no token can be minted.
+	 *
+	 * @return array{0: string, 1: string, 2: mixed}|null The uid, the token and its provider.
+	 */
+	private function mintCallerToken(): array|null {
 		$user = $this->userSession->getUser();
 		if ($user === null) {
 			$this->logger->warning('Buildiq: DocumentGenerationService has no impersonated user active — Docudesk call skipped.');
@@ -524,47 +576,45 @@ class DocumentGenerationService implements DocumentGenerationServiceInterface {
 		}
 
 		[$token, $provider] = $minted;
-		[$route, $url] = $this->generateRoute();
-		if ($url === null) {
-			$this->invalidateToken(provider: $provider, token: $token);
-			$this->logger->error(
-				'Buildiq: DocumentGenerationService found no route "' . $route . '", so the document call is skipped. '
-				. 'Tried these app ids in order: ' . implode(', ', FleetAppId::CANDIDATES['filinq']) . '.'
+
+		return [$uid, $token, $provider];
+	}//end mintCallerToken()
+
+	/**
+	 * POST the generate call; a transport failure is logged and reported, and answers null.
+	 *
+	 * @param string              $url  The generate route.
+	 * @param array{0: string, 1: string} $auth The uid and one-time token.
+	 * @param array<string,mixed> $json The request body.
+	 *
+	 * @return IResponse|null
+	 */
+	private function postGenerate(string $url, array $auth, array $json): IResponse|null {
+		try {
+			return $this->httpClientService->newClient()->post(
+				$url,
+				[
+					'auth' => $auth,
+					'headers' => ['OCS-APIRequest' => 'true'],
+					'json' => $json,
+					'timeout' => 30,
+				]
 			);
-			$this->connectionReporter?->reportDocumentRouteMissing(route: $route);
+		} catch (Throwable $e) {
+			$this->logger->error('Buildiq: DocumentGenerationService Docudesk call failed: ' . $e->getMessage(), ['exception' => $e]);
+			$this->connectionReporter?->reportDocumentCall(httpStatus: $this->connectionReporter->httpStatusOf(exception: $e));
 			return null;
 		}
+	}//end postGenerate()
 
-		try {
-			try {
-				$response = $this->httpClientService->newClient()->post(
-					$url,
-					[
-						'auth' => [$uid, $token],
-						'headers' => ['OCS-APIRequest' => 'true'],
-						'json' => [
-							'templateId' => $templateId,
-							'dataRefs' => $dataRefs,
-							'options' => ['format' => 'pdf'],
-							'filename' => $filename,
-						],
-						'timeout' => 30,
-					]
-				);
-			} catch (Throwable $e) {
-				$this->logger->error('Buildiq: DocumentGenerationService Docudesk call failed: ' . $e->getMessage(), ['exception' => $e]);
-				$this->connectionReporter?->reportDocumentCall(httpStatus: $this->connectionReporter->httpStatusOf(exception: $e));
-				return null;
-			}
-		} finally {
-			// ALWAYS invalidate — the token is scoped to exactly this one
-			// call (class docblock "Transport detail"); a TEMPORARY_TOKEN
-			// (the only lifetime constant guaranteed present across the
-			// pinned `nextcloud/ocp` versions this app supports) would
-			// otherwise remain valid until its normal session-expiry.
-			$this->invalidateToken(provider: $provider, token: $token);
-		}//end try
-
+	/**
+	 * The generate result of a response, or null (logged) on a non-2xx status.
+	 *
+	 * @param IResponse $response The Docudesk response.
+	 *
+	 * @return array{status: int, body: mixed, contentType: string}|null
+	 */
+	private function generateResult(IResponse $response): array|null {
 		$status = $response->getStatusCode();
 		$this->connectionReporter?->reportDocumentCall(httpStatus: $status);
 		if ($status < 200 || $status >= 300) {
@@ -577,8 +627,7 @@ class DocumentGenerationService implements DocumentGenerationServiceInterface {
 			'body' => $response->getBody(),
 			'contentType' => $response->getHeader('Content-Type'),
 		];
-
-	}//end callGenerate()
+	}//end generateResult()
 
 	/**
 	 * Mint a short-lived Nextcloud login token for `$uid`, presented as HTTP

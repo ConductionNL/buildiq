@@ -245,31 +245,14 @@ class ApplicationVersionsController extends Controller {
 			// register so the new version SHARES production's data — no
 			// per-version register is minted. An explicitly-supplied register is
 			// honoured unchanged (the wizard / promotion paths keep that option).
-			$suppliedRegister = (string)($payload['register'] ?? '');
-			if ($suppliedRegister === '') {
-				$inheritedRegister = $this->resolveProductionRegister(application: $application);
-				if ($inheritedRegister === null) {
-					return $this->errorResponse(
-						code: 'no_register_to_inherit',
-						detail: 'Application ' . $appSlug . ' has no production version to inherit a register from; supply an explicit `register`.',
-						status: Http::STATUS_UNPROCESSABLE_ENTITY
-					);
-				}
-
-				$payload['register'] = $inheritedRegister;
+			$payload = $this->withInheritedRegister(payload: $payload, application: $application, appSlug: $appSlug);
+			if ($payload instanceof JSONResponse) {
+				return $payload;
 			}
 
 			$payload = $this->versionService->onSave(current: null, next: $payload);
 
-			$promotesTo = (string)($payload['promotesTo'] ?? '');
-			if ($promotesTo !== '') {
-				// Cycle guard requires a uuid; for a brand-new row use a stable
-				// placeholder string that cannot occur in OR's actual UUID space.
-				$this->versionService->guardNoCycle(
-					currentUuid: '__pending_create__',
-					proposedTargetUuid: $promotesTo
-				);
-			}
+			$this->guardCreatePromotesTo(payload: $payload);
 
 			$created = $this->objectService->saveObject(
 				object: $payload,
@@ -293,6 +276,55 @@ class ApplicationVersionsController extends Controller {
 			);
 		}//end try
 	}//end create()
+
+	/**
+	 * The create payload with production's register when none is supplied, or
+	 * the 422 response when there is no production register to inherit.
+	 *
+	 * @param array<string,mixed> $payload     The create payload.
+	 * @param array<string,mixed> $application The parent Application.
+	 * @param string              $appSlug     The Application slug.
+	 *
+	 * @return array<string,mixed>|JSONResponse
+	 */
+	private function withInheritedRegister(array $payload, array $application, string $appSlug): array|JSONResponse {
+		$suppliedRegister = (string)($payload['register'] ?? '');
+		if ($suppliedRegister === '') {
+			$inheritedRegister = $this->resolveProductionRegister(application: $application);
+			if ($inheritedRegister === null) {
+				return $this->errorResponse(
+					code: 'no_register_to_inherit',
+					detail: 'Application ' . $appSlug . ' has no production version to inherit a register from; supply an explicit `register`.',
+					status: Http::STATUS_UNPROCESSABLE_ENTITY
+				);
+			}
+
+			$payload['register'] = $inheritedRegister;
+		}
+
+		return $payload;
+	}//end withInheritedRegister()
+
+	/**
+	 * Refuse a new version whose promotesTo target closes a promotion cycle.
+	 *
+	 * @param array<string,mixed> $payload The create payload.
+	 *
+	 * @return void
+	 *
+	 * @throws \RuntimeException When the target closes a cycle.
+	 */
+	private function guardCreatePromotesTo(array $payload): void {
+		$promotesTo = (string)($payload['promotesTo'] ?? '');
+		if ($promotesTo !== '') {
+			// Cycle guard requires a uuid; for a brand-new row use a stable
+			// placeholder string that cannot occur in OR's actual UUID space.
+			$this->versionService->guardNoCycle(
+				currentUuid: '__pending_create__',
+				proposedTargetUuid: $promotesTo
+			);
+		}
+	}//end guardCreatePromotesTo()
 
 	/**
 	 * Update an ApplicationVersion (spec REQ-OBV-103 / REQ-OBV-104 / REQ-OBV-107).

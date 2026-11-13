@@ -199,15 +199,8 @@ class RunExportJob extends QueuedJob {
 		$applicationSlug = (string)($job['applicationSlug'] ?? 'exported-app');
 		$license = (string)($job['license'] ?? 'EUPL-1.2');
 
-		$dataRegisters = [];
-		if (is_array($job['dataRegisters'] ?? null) === true) {
-			$dataRegisters = $job['dataRegisters'];
-		}
-
-		$flows = [];
-		if (is_array($job['flows'] ?? null) === true) {
-			$flows = $job['flows'];
-		}
+		$dataRegisters = $this->listField(job: $job, key: 'dataRegisters');
+		$flows = $this->listField(job: $job, key: 'flows');
 
 		if ($applicationUuid === '') {
 			throw new RuntimeException(
@@ -262,6 +255,22 @@ class RunExportJob extends QueuedJob {
 		$this->exportJobService->transitionJob(jobUuid: $jobUuid, action: 'succeed', extraFields: $extra);
 		$this->logger->info('Buildiq export succeeded', ['jobUuid' => $jobUuid]);
 	}//end executePipeline()
+
+	/**
+	 * An array field of the job record, or [] when it is absent or not an array.
+	 *
+	 * @param array<string, mixed> $job The ExportJob record.
+	 * @param string               $key The field name.
+	 *
+	 * @return array<mixed>
+	 */
+	private function listField(array $job, string $key): array {
+		if (is_array($job[$key] ?? null) === true) {
+			return $job[$key];
+		}
+
+		return [];
+	}//end listField()
 
 	/**
 	 * Find the application and version the job names.

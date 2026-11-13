@@ -51,7 +51,6 @@ class PromoteVersionHandler extends AbstractToolHandler {
 
 		$appSlug = $validation['appSlug'];
 		$sourceVersionSlug = $validation['sourceVersionSlug'];
-		$strategy = $validation['strategy'];
 
 		// Spec REQ-OBVP-007 — NC admins are NOT auto-granted; caller must hold
 		// an explicit owners or editors entry on the Application.
@@ -61,39 +60,7 @@ class PromoteVersionHandler extends AbstractToolHandler {
 		}
 
 		try {
-			// ADR-083 rule 1 / ADR-084: use the constructor-injected contract
-			// rather than reaching into the container by string name.
-			$objectService = $this->objectService;
-
-			$loaded = $this->loadVersion(objectService: $objectService, appSlug: $appSlug, versionSlug: $sourceVersionSlug);
-			if (isset($loaded['error']) === true) {
-				return $this->errorResult(error: $loaded['error'], message: $loaded['message']);
-			}
-
-			$source = $loaded['version'];
-			if (($source['promotesTo'] ?? null) === null || $source['promotesTo'] === '') {
-				return $this->errorResult(
-					error: 'no_promote_target',
-					message: "Version '{$sourceVersionSlug}' has no downstream target."
-				);
-			}
-
-			$promotionService = $this->container->get(VersionPromotionServiceInterface::class);
-			$updatedTarget = $promotionService->promote($source, $strategy);
-			$targetUuid = $this->extractUuid(item: $updatedTarget);
-
-			return [
-				'success' => true,
-				'promoted' => true,
-				'strategy' => $strategy,
-				'from' => ['uuid' => $this->extractUuid(item: $source), 'slug' => $sourceVersionSlug],
-				'to' => [
-					'uuid' => $targetUuid,
-					'slug' => (string)($updatedTarget['slug'] ?? ''),
-					'status' => (string)($updatedTarget['status'] ?? ''),
-				],
-				'sources' => [$this->sourceDescriptor(uuid: $loaded['appUuid'], slug: $appSlug, label: $loaded['appName'])],
-			];
+			return $this->promote(validation: $validation);
 		} catch (\Throwable $e) {
 			$this->logger->error(
 				'Buildiq MCP: promoteVersion failed',
@@ -103,6 +70,53 @@ class PromoteVersionHandler extends AbstractToolHandler {
 		}//end try
 
 	}//end handle()
+
+	/**
+	 * Promote the source version along its promotesTo chain.
+	 *
+	 * @param array<string, mixed> $validation The validated tool arguments.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function promote(array $validation): array {
+		$appSlug = $validation['appSlug'];
+		$sourceVersionSlug = $validation['sourceVersionSlug'];
+		$strategy = $validation['strategy'];
+
+		// ADR-083 rule 1 / ADR-084: use the constructor-injected contract
+		// rather than reaching into the container by string name.
+		$objectService = $this->objectService;
+
+		$loaded = $this->loadVersion(objectService: $objectService, appSlug: $appSlug, versionSlug: $sourceVersionSlug);
+		if (isset($loaded['error']) === true) {
+			return $this->errorResult(error: $loaded['error'], message: $loaded['message']);
+		}
+
+		$source = $loaded['version'];
+		if (($source['promotesTo'] ?? null) === null || $source['promotesTo'] === '') {
+			return $this->errorResult(
+				error: 'no_promote_target',
+				message: "Version '{$sourceVersionSlug}' has no downstream target."
+			);
+		}
+
+		$promotionService = $this->container->get(VersionPromotionServiceInterface::class);
+		$updatedTarget = $promotionService->promote($source, $strategy);
+		$targetUuid = $this->extractUuid(item: $updatedTarget);
+
+		return [
+			'success' => true,
+			'promoted' => true,
+			'strategy' => $strategy,
+			'from' => ['uuid' => $this->extractUuid(item: $source), 'slug' => $sourceVersionSlug],
+			'to' => [
+				'uuid' => $targetUuid,
+				'slug' => (string)($updatedTarget['slug'] ?? ''),
+				'status' => (string)($updatedTarget['status'] ?? ''),
+			],
+			'sources' => [$this->sourceDescriptor(uuid: $loaded['appUuid'], slug: $appSlug, label: $loaded['appName'])],
+		];
+	}//end promote()
 
 	/**
 	 * Validate and extract typed arguments for promoteVersion.

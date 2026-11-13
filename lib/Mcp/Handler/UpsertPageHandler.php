@@ -54,7 +54,6 @@ class UpsertPageHandler extends AbstractToolHandler {
 		}
 
 		$appSlug = $validation['appSlug'];
-		$versionSlug = $validation['versionSlug'];
 		$pageId = $validation['pageId'];
 
 		$rbacError = $this->requireWriteRole(appSlug: $appSlug);
@@ -63,43 +62,7 @@ class UpsertPageHandler extends AbstractToolHandler {
 		}
 
 		try {
-			$loaded = $this->loadManifestForEdit(appSlug: $appSlug, versionSlug: $versionSlug);
-			if (isset($loaded['isError']) === true) {
-				return $loaded;
-			}
-
-			$manifest = $loaded['manifest'];
-			$pages = (array)($manifest['pages'] ?? []);
-
-			// Shared with CopilotService::applyUpsertPage() so the page reviewed
-			// and the page stored are the same one. See ManifestPageShape for
-			// the per-type fields the canonical validator insists on.
-			$newPage = ManifestPageShape::normalise(page: [
-				'id' => $pageId,
-				'route' => $validation['route'],
-				'type' => $validation['type'],
-				'title' => $validation['title'],
-				'config' => $validation['config'],
-			]);
-
-			[$pages, $replaced] = $this->upsertPageInList(pages: $pages, newPage: $newPage);
-
-			$manifest['pages'] = array_values($pages);
-
-			// H4: enforce pages-per-manifest (100) and total manifest size (256 KB).
-			// Cap is applied after upsert so updates to existing pages always pass.
-			$capError = $this->appendCapError(manifest: $manifest, replaced: $replaced);
-			if ($capError !== null) {
-				return $capError;
-			}
-
-			$saved = $this->saveVersionManifest(objectService: $this->objectService, version: $loaded['version'], manifest: $manifest);
-
-			return $this->upsertOutcome(replaced: $replaced) + [
-				'page' => $newPage,
-				'pageCount' => count($pages),
-				'version' => $this->versionSummary(saved: $saved, versionSlug: $versionSlug),
-			];
+			return $this->upsertPage(validation: $validation);
 		} catch (\Throwable $e) {
 			$this->logger->error(
 				'Buildiq MCP: upsertPage failed',
@@ -109,6 +72,57 @@ class UpsertPageHandler extends AbstractToolHandler {
 		}//end try
 
 	}//end handle()
+
+	/**
+	 * Insert or replace the page and save the version manifest.
+	 *
+	 * @param array<string, mixed> $validation The validated tool arguments.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function upsertPage(array $validation): array {
+		$appSlug = $validation['appSlug'];
+		$versionSlug = $validation['versionSlug'];
+		$pageId = $validation['pageId'];
+
+		$loaded = $this->loadManifestForEdit(appSlug: $appSlug, versionSlug: $versionSlug);
+		if (isset($loaded['isError']) === true) {
+			return $loaded;
+		}
+
+		$manifest = $loaded['manifest'];
+		$pages = (array)($manifest['pages'] ?? []);
+
+		// Shared with CopilotService::applyUpsertPage() so the page reviewed
+		// and the page stored are the same one. See ManifestPageShape for
+		// the per-type fields the canonical validator insists on.
+		$newPage = ManifestPageShape::normalise(page: [
+			'id' => $pageId,
+			'route' => $validation['route'],
+			'type' => $validation['type'],
+			'title' => $validation['title'],
+			'config' => $validation['config'],
+		]);
+
+		[$pages, $replaced] = $this->upsertPageInList(pages: $pages, newPage: $newPage);
+
+		$manifest['pages'] = array_values($pages);
+
+		// H4: enforce pages-per-manifest (100) and total manifest size (256 KB).
+		// Cap is applied after upsert so updates to existing pages always pass.
+		$capError = $this->appendCapError(manifest: $manifest, replaced: $replaced);
+		if ($capError !== null) {
+			return $capError;
+		}
+
+		$saved = $this->saveVersionManifest(objectService: $this->objectService, version: $loaded['version'], manifest: $manifest);
+
+		return $this->upsertOutcome(replaced: $replaced) + [
+			'page' => $newPage,
+			'pageCount' => count($pages),
+			'version' => $this->versionSummary(saved: $saved, versionSlug: $versionSlug),
+		];
+	}//end upsertPage()
 
 	/**
 	 * Validate and extract typed arguments for upsertPage.

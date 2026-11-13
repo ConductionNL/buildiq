@@ -152,19 +152,7 @@ class MigrateToVersionedModel implements IRepairStep {
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-26
 	 */
 	public function run(IOutput $output): void {
-		$state = $this->appConfig->getValueString(AppIdentity::APP_ID, self::STATE_KEY, '');
-		if ($state === self::STATE_DONE) {
-			$this->logger->debug('Buildiq: MigrateToVersionedModel already completed; skipping.');
-			$output->info('Migrated-to-versioned-model: previously completed, skipping.');
-			return;
-		}
-
-		if ($state === self::STATE_FAILED) {
-			$this->logger->debug('Buildiq: MigrateToVersionedModel previously failed under system context; skipping until re-armed.');
-			$output->info(
-				'Migrated-to-versioned-model: previously failed and needs operator attention;'
-				. ' skipping (re-arm via `occ config:app:delete buildiq ' . self::STATE_KEY . '`).'
-			);
+		if ($this->skipForRecordedState(output: $output) === true) {
 			return;
 		}
 
@@ -196,6 +184,47 @@ class MigrateToVersionedModel implements IRepairStep {
 			return;
 		}
 
+		$state = $this->migrateAll(applications: $applications, output: $output);
+		$this->appConfig->setValueString(AppIdentity::APP_ID, self::STATE_KEY, $state);
+	}//end run()
+
+	/**
+	 * Whether a recorded done or failed state means this run is skipped (reported on the output).
+	 *
+	 * @param IOutput $output The repair output.
+	 *
+	 * @return bool
+	 */
+	private function skipForRecordedState(IOutput $output): bool {
+		$state = $this->appConfig->getValueString(AppIdentity::APP_ID, self::STATE_KEY, '');
+		if ($state === self::STATE_DONE) {
+			$this->logger->debug('Buildiq: MigrateToVersionedModel already completed; skipping.');
+			$output->info('Migrated-to-versioned-model: previously completed, skipping.');
+			return true;
+		}
+
+		if ($state === self::STATE_FAILED) {
+			$this->logger->debug('Buildiq: MigrateToVersionedModel previously failed under system context; skipping until re-armed.');
+			$output->info(
+				'Migrated-to-versioned-model: previously failed and needs operator attention;'
+				. ' skipping (re-arm via `occ config:app:delete buildiq ' . self::STATE_KEY . '`).'
+			);
+			return true;
+		}
+
+		return false;
+	}//end skipForRecordedState()
+
+	/**
+	 * Migrate every pre-migration Application row; the state to record is
+	 * failed when any row failed, done otherwise.
+	 *
+	 * @param array<int, array<string, mixed>> $applications The pre-migration rows.
+	 * @param IOutput                          $output       The repair output.
+	 *
+	 * @return string
+	 */
+	private function migrateAll(array $applications, IOutput $output): string {
 		$sawFailed = false;
 
 		foreach ($applications as $application) {
@@ -217,8 +246,8 @@ class MigrateToVersionedModel implements IRepairStep {
 			$state = self::STATE_FAILED;
 		}
 
-		$this->appConfig->setValueString(AppIdentity::APP_ID, self::STATE_KEY, $state);
-	}//end run()
+		return $state;
+	}//end migrateAll()
 
 	/**
 	 * Detect whether the schema is already in versioned shape.

@@ -49,7 +49,6 @@ class UpsertMenuItemHandler extends AbstractToolHandler {
 		}
 
 		$appSlug = $validation['appSlug'];
-		$versionSlug = $validation['versionSlug'];
 		$id = $validation['id'];
 
 		$rbacError = $this->requireWriteRole(appSlug: $appSlug);
@@ -58,40 +57,7 @@ class UpsertMenuItemHandler extends AbstractToolHandler {
 		}
 
 		try {
-			$loaded = $this->loadManifestForEdit(appSlug: $appSlug, versionSlug: $versionSlug);
-			if (isset($loaded['isError']) === true) {
-				return $loaded;
-			}
-
-			$manifest = $loaded['manifest'];
-			$menu = (array)($manifest['menu'] ?? []);
-
-			$newItem = [
-				'id' => $id,
-				'label' => $validation['label'],
-				'icon' => $validation['icon'],
-				'route' => $validation['route'],
-				'order' => $validation['order'],
-			];
-
-			[$menu, $replaced] = $this->upsertMenuItemInList(menu: $menu, newItem: $newItem);
-
-			$manifest['menu'] = array_values($menu);
-
-			// H4: enforce menu-per-manifest (30) and total manifest size (256 KB).
-			// Cap is applied after upsert so updates to existing items always pass.
-			$capError = $this->appendCapError(manifest: $manifest, replaced: $replaced);
-			if ($capError !== null) {
-				return $capError;
-			}
-
-			$saved = $this->saveVersionManifest(objectService: $this->objectService, version: $loaded['version'], manifest: $manifest);
-
-			return $this->upsertOutcome(replaced: $replaced) + [
-				'menuItem' => $newItem,
-				'menuCount' => count($menu),
-				'version' => $this->versionSummary(saved: $saved, versionSlug: $versionSlug),
-			];
+			return $this->upsertMenuItem(validation: $validation);
 		} catch (\Throwable $e) {
 			$this->logger->error(
 				'Buildiq MCP: upsertMenuItem failed',
@@ -101,6 +67,54 @@ class UpsertMenuItemHandler extends AbstractToolHandler {
 		}//end try
 
 	}//end handle()
+
+	/**
+	 * Insert or replace the menu item and save the version manifest.
+	 *
+	 * @param array<string, mixed> $validation The validated tool arguments.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function upsertMenuItem(array $validation): array {
+		$appSlug = $validation['appSlug'];
+		$versionSlug = $validation['versionSlug'];
+		$id = $validation['id'];
+
+		$loaded = $this->loadManifestForEdit(appSlug: $appSlug, versionSlug: $versionSlug);
+		if (isset($loaded['isError']) === true) {
+			return $loaded;
+		}
+
+		$manifest = $loaded['manifest'];
+		$menu = (array)($manifest['menu'] ?? []);
+
+		$newItem = [
+			'id' => $id,
+			'label' => $validation['label'],
+			'icon' => $validation['icon'],
+			'route' => $validation['route'],
+			'order' => $validation['order'],
+		];
+
+		[$menu, $replaced] = $this->upsertMenuItemInList(menu: $menu, newItem: $newItem);
+
+		$manifest['menu'] = array_values($menu);
+
+		// H4: enforce menu-per-manifest (30) and total manifest size (256 KB).
+		// Cap is applied after upsert so updates to existing items always pass.
+		$capError = $this->appendCapError(manifest: $manifest, replaced: $replaced);
+		if ($capError !== null) {
+			return $capError;
+		}
+
+		$saved = $this->saveVersionManifest(objectService: $this->objectService, version: $loaded['version'], manifest: $manifest);
+
+		return $this->upsertOutcome(replaced: $replaced) + [
+			'menuItem' => $newItem,
+			'menuCount' => count($menu),
+			'version' => $this->versionSummary(saved: $saved, versionSlug: $versionSlug),
+		];
+	}//end upsertMenuItem()
 
 	/**
 	 * Validate and extract typed arguments for upsertMenuItem.
