@@ -45,6 +45,8 @@ use RuntimeException;
  *
  * @covers \OCA\Buildiq\Controller\ShopController
  * @covers \OCA\Buildiq\Service\GitHubShopSearch
+ * @uses \OCA\Buildiq\Controller\GitHubRequestParams
+ * @uses \OCA\Buildiq\Service\GitHub\TokenScrubber
  */
 class ShopSearchGoldenTest extends TestCase {
 

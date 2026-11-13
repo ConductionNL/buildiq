@@ -34,6 +34,9 @@ use PHPUnit\Framework\TestCase;
  * depth bounds, verbatim skills).
  *
  * @covers \OCA\Buildiq\Service\AppRepoParser
+ * @uses \OCA\Buildiq\Exception\AppRepoParseException
+ * @uses \OCA\Buildiq\Service\AppRepoChannelReader
+ * @uses \OCA\Buildiq\Service\SchemaSlugClaims
  */
 final class AppRepoParserGoldenTest extends TestCase {
 

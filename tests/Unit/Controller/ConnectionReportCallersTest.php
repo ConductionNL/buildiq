@@ -64,6 +64,8 @@ use RuntimeException;
  * @uses   \OCA\Buildiq\Service\GitHub\SyncRequestParams
  * @uses   \OCA\Buildiq\Service\RepoSource
  * @uses   \OCA\Buildiq\Service\StoreClient
+ * @uses \OCA\Buildiq\Controller\GitHubRequestParams
+ * @uses \OCA\Buildiq\Service\GitHub\TokenScrubber
  */
 class ConnectionReportCallersTest extends TestCase {
 

@@ -42,6 +42,8 @@ use RuntimeException;
  * outcomes with their log lines, and the fragment merge rules.
  *
  * @covers \OCA\Buildiq\Service\SettingsService
+ * @uses \OCA\Buildiq\Service\CallerContext
+ * @uses \OCA\Buildiq\Service\RegisterConfigImport
  */
 final class SettingsServiceConfigurationImportTest extends TestCase {
 

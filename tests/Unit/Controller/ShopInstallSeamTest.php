@@ -42,6 +42,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\Buildiq\Controller\ShopController
  * @uses   \OCA\Buildiq\Service\RepoSource
+ * @uses \OCA\Buildiq\Controller\GitHubRequestParams
  */
 class ShopInstallSeamTest extends TestCase {
 

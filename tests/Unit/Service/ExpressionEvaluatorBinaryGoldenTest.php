@@ -34,6 +34,7 @@ use Throwable;
  *
  * @covers \OCA\Buildiq\Service\ExpressionEvaluator
  * @uses   \OCA\Buildiq\Service\FeelParser
+ * @uses \OCA\Buildiq\Service\FeelLexer
  */
 final class ExpressionEvaluatorBinaryGoldenTest extends TestCase {
 
