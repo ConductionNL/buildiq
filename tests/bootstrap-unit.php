@@ -54,6 +54,34 @@ foreach ($orCandidates as $orPath) {
 	}
 }
 
+// OpenRegister's published contracts, from the hydra-gates package, the same
+// way `bootstrap.php` loads them. The stub file below declares
+// `class ObjectEntity ... implements \OCA\OpenRegister\Contract\ObjectEntityInterface`,
+// and most tests mock `ObjectServiceInterface`, so without these this config
+// errored on every such test while `phpunit.xml` passed them.
+//
+// `RegisterSlugResolution` is a CLASS, so the guard asks both questions: a
+// duplicate declaration is a fatal, not a no-op.
+$buildiqContractDir = __DIR__ . '/../vendor/conduction/hydra-gates/hydra-gates/contracts';
+foreach ([
+	'ObjectEntityInterface',
+	'ObjectServiceInterface',
+	'RegisterSlugResolution',
+	'RegisterSlugResolverInterface',
+] as $contract) {
+	$fqcn = '\\OCA\\OpenRegister\\Contract\\' . $contract;
+	if (interface_exists($fqcn) === true || class_exists($fqcn) === true) {
+		continue;
+	}
+
+	$shipped = $buildiqContractDir . '/' . $contract . '.php';
+	if (file_exists($shipped) === true) {
+		require_once $shipped;
+	}
+}
+
+unset($buildiqContractDir, $contract, $fqcn, $shipped);
+
 // Final fallback — if OpenRegister sources aren't present at all,
 // register a stub set so type-hinted parameters resolve.
 require_once __DIR__ . '/stubs/openregister-stubs.php';
