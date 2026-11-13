@@ -39,7 +39,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service\Dashboard;
 
-use OCA\Buildiq\Dashboard\WidgetDescriptor;
+use OCA\Buildiq\Kernel\Values\WidgetDescriptor;
 use OCA\Buildiq\Kernel\Contracts\WidgetItemProjectorInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;

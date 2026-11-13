@@ -31,6 +31,7 @@ namespace OCA\Buildiq\Dashboard;
 
 use OCA\Buildiq\Kernel\Contracts\AppVisibilityResolverInterface;
 use OCA\Buildiq\Kernel\Contracts\WidgetItemProjectorInterface;
+use OCA\Buildiq\Kernel\Values\WidgetDescriptor;
 use OCP\AppFramework\Services\IInitialState;
 use OCP\IGroupManager;
 use OCP\IURLGenerator;

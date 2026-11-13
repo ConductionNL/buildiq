@@ -34,6 +34,8 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Kernel\Contracts\ExportServiceInterface;
+use OCA\Buildiq\Kernel\Values\ExportContents;
+use OCA\Buildiq\Kernel\Values\ExportTarget;
 use OCP\Files\IAppData;
 use OCP\Files\NotFoundException;
 use Psr\Log\LoggerInterface;

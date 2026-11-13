@@ -24,7 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Kernel\Contracts;
 
-use OCA\Buildiq\Service\RepoSource;
+use OCA\Buildiq\Kernel\Values\RepoSource;
 
 /**
  * Contract of GitHubCatalogService.

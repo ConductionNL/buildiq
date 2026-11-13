@@ -29,7 +29,6 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Kernel\Contracts\ExportAppContentBundlerInterface;
-use OCA\Buildiq\Support\RepoDescriptor;
 use Psr\Log\LoggerInterface;
 
 /**

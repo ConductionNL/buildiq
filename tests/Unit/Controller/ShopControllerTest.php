@@ -27,7 +27,7 @@ use OCA\Buildiq\Controller\ShopController;
 use OCA\Buildiq\Exception\AppRepoParseException;
 use OCA\Buildiq\Service\AppRepoParser;
 use OCA\Buildiq\Service\GitHubCatalogService;
-use OCA\Buildiq\Service\RepoSource;
+use OCA\Buildiq\Kernel\Values\RepoSource;
 use OCA\Buildiq\Service\GitHubShopSearch;
 use OCP\AppFramework\Http;
 use OCP\IRequest;

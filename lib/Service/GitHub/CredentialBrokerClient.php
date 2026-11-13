@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service\GitHub;
 
+use OCA\Buildiq\Kernel\Values\BrokerAccess;
 use Psr\Container\ContainerInterface;
 
 /**

@@ -28,8 +28,8 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\Dashboard;
 
 use OCA\Buildiq\Dashboard\VirtualAppWidgetContext;
-use OCA\Buildiq\Dashboard\WidgetApplication;
-use OCA\Buildiq\Dashboard\WidgetDescriptor;
+use OCA\Buildiq\Kernel\Values\WidgetApplication;
+use OCA\Buildiq\Kernel\Values\WidgetDescriptor;
 use OCA\Buildiq\Service\AppVisibilityResolver;
 use OCA\Buildiq\Service\Dashboard\WidgetItemProjector;
 use OCP\AppFramework\Services\IInitialState;
@@ -43,8 +43,8 @@ use PHPUnit\Framework\TestCase;
  * Tests for VirtualAppWidgetContext.
  *
  * @covers \OCA\Buildiq\Dashboard\VirtualAppWidgetContext
- * @uses   \OCA\Buildiq\Dashboard\WidgetApplication
- * @uses   \OCA\Buildiq\Dashboard\WidgetDescriptor
+ * @uses   \OCA\Buildiq\Kernel\Values\WidgetApplication
+ * @uses   \OCA\Buildiq\Kernel\Values\WidgetDescriptor
  * @uses   \OCA\Buildiq\Service\AppVisibilityResolver
  */
 class VirtualAppWidgetContextTest extends TestCase {

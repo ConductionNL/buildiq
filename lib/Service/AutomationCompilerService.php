@@ -114,7 +114,6 @@ namespace OCA\Buildiq\Service;
 use OCA\Buildiq\Exception\UnsupportedAutomationCombinationException;
 use OCA\Buildiq\Kernel\Contracts\AutomationCompilerServiceInterface;
 use OCA\Buildiq\Service\Automation\CompileInput;
-use OCA\Buildiq\Support\FleetAppId;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Schema;

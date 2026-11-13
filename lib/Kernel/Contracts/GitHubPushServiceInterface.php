@@ -24,8 +24,8 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Kernel\Contracts;
 
-use OCA\Buildiq\Service\GitHub\BrokerAccess;
-use OCA\Buildiq\Service\GitHub\PushTarget;
+use OCA\Buildiq\Kernel\Values\BrokerAccess;
+use OCA\Buildiq\Kernel\Values\PushTarget;
 use RuntimeException;
 
 /**

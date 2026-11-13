@@ -46,8 +46,8 @@ namespace OCA\Buildiq\Tests\Unit\Dashboard;
 
 use OCA\Buildiq\Dashboard\VirtualAppWidget;
 use OCA\Buildiq\Dashboard\VirtualAppWidgetContext;
-use OCA\Buildiq\Dashboard\WidgetApplication;
-use OCA\Buildiq\Dashboard\WidgetDescriptor;
+use OCA\Buildiq\Kernel\Values\WidgetApplication;
+use OCA\Buildiq\Kernel\Values\WidgetDescriptor;
 use OCA\Buildiq\Service\AppVisibilityResolver;
 use OCA\Buildiq\Service\Dashboard\WidgetItemProjector;
 use OCA\Buildiq\Service\DashboardWidgetRegistrar;

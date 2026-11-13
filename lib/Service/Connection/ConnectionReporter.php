@@ -31,7 +31,7 @@ namespace OCA\Buildiq\Service\Connection;
 
 use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Kernel\Contracts\ConnectionReporterInterface;
-use OCA\Buildiq\Support\FleetAppId;
+use OCA\Buildiq\Service\FleetAppId;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;

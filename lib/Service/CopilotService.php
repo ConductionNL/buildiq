@@ -42,7 +42,6 @@ use OCA\Buildiq\Kernel\Contracts\BuildiqToolProviderInterface;
 use OCA\Buildiq\Kernel\Contracts\CopilotServiceInterface;
 use OCA\Buildiq\Service\Copilot\CopilotPlanValidator;
 use OCA\Buildiq\Service\Copilot\CopilotPromptBuilder;
-use OCA\Buildiq\Support\ManifestDataBinding;
 use OCA\Buildiq\Support\ManifestEntryList;
 use OCA\Buildiq\Support\ManifestPageShape;
 use OCA\Buildiq\Support\ManifestRoute;

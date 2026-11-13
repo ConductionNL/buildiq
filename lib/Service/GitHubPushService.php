@@ -43,9 +43,9 @@ namespace OCA\Buildiq\Service;
 
 use FilesystemIterator;
 use OCA\Buildiq\Kernel\Contracts\GitHubPushServiceInterface;
-use OCA\Buildiq\Service\GitHub\BrokerAccess;
+use OCA\Buildiq\Kernel\Values\BrokerAccess;
 use OCA\Buildiq\Service\GitHub\CredentialBrokerClient;
-use OCA\Buildiq\Service\GitHub\PushTarget;
+use OCA\Buildiq\Kernel\Values\PushTarget;
 use OCA\Buildiq\Service\GitHub\TokenScrubber;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;

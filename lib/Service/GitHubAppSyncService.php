@@ -44,12 +44,14 @@ namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Exception\AppRepoParseException;
 use OCA\Buildiq\Kernel\Contracts\GitHubAppSyncServiceInterface;
-use OCA\Buildiq\Service\GitHub\AppPushRequest;
-use OCA\Buildiq\Service\GitHub\BrokerAccess;
-use OCA\Buildiq\Service\GitHub\BrokeredRepo;
+use OCA\Buildiq\Kernel\Values\LocalApplicationRef;
+use OCA\Buildiq\Kernel\Values\RepoSource;
+use OCA\Buildiq\Kernel\Values\AppPushRequest;
+use OCA\Buildiq\Kernel\Values\BrokerAccess;
+use OCA\Buildiq\Kernel\Values\BrokeredRepo;
 use OCA\Buildiq\Service\GitHub\CredentialBrokerClient;
 use OCA\Buildiq\Service\GitHub\FileCommit;
-use OCA\Buildiq\Service\GitHub\PushTarget;
+use OCA\Buildiq\Kernel\Values\PushTarget;
 use OCA\Buildiq\Service\GitHub\TokenScrubber;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;

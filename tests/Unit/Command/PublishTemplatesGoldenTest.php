@@ -23,7 +23,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\Command;
 
 use OCA\Buildiq\Command\PublishTemplates;
-use OCA\Buildiq\Service\GitHub\BrokeredRepo;
+use OCA\Buildiq\Kernel\Values\BrokeredRepo;
 use OCA\Buildiq\Service\GitHubAppSyncService;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use PHPUnit\Framework\TestCase;
@@ -38,9 +38,9 @@ use Symfony\Component\Console\Tester\CommandTester;
  *
  * @covers \OCA\Buildiq\Command\PublishTemplates
  * @uses   \OCA\Buildiq\Command\PublishTarget
- * @uses   \OCA\Buildiq\Service\GitHub\BrokerAccess
- * @uses   \OCA\Buildiq\Service\GitHub\BrokeredRepo
- * @uses   \OCA\Buildiq\Service\GitHub\PushTarget
+ * @uses   \OCA\Buildiq\Kernel\Values\BrokerAccess
+ * @uses   \OCA\Buildiq\Kernel\Values\BrokeredRepo
+ * @uses   \OCA\Buildiq\Kernel\Values\PushTarget
  * @uses   \OCA\Buildiq\Support\ObjectRecord
  */
 class PublishTemplatesGoldenTest extends TestCase {

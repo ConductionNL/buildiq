@@ -22,8 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Tests\Unit\Dashboard;
 
-use OCA\Buildiq\Dashboard\WidgetApplication;
-use OCA\Buildiq\Dashboard\WidgetDescriptor;
+use OCA\Buildiq\Kernel\Values\WidgetApplication;
+use OCA\Buildiq\Kernel\Values\WidgetDescriptor;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -32,8 +32,8 @@ use PHPUnit\Framework\TestCase;
  * widget-id alphabet, widget keys, panel objects and placements. Set
  * GOLDEN_RECORD=1 to write a missing fixture.
  *
- * @covers \OCA\Buildiq\Dashboard\WidgetDescriptor
- * @uses   \OCA\Buildiq\Dashboard\WidgetApplication
+ * @covers \OCA\Buildiq\Kernel\Values\WidgetDescriptor
+ * @uses   \OCA\Buildiq\Kernel\Values\WidgetApplication
  */
 class WidgetDescriptorGoldenTest extends TestCase {
 

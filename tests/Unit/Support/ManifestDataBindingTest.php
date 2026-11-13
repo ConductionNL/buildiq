@@ -29,7 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Tests\Unit\Support;
 
-use OCA\Buildiq\Support\ManifestDataBinding;
+use OCA\Buildiq\Service\ManifestDataBinding;
 use PHPUnit\Framework\TestCase;
 
 /**

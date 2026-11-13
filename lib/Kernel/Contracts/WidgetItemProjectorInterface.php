@@ -24,7 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Kernel\Contracts;
 
-use OCA\Buildiq\Dashboard\WidgetDescriptor;
+use OCA\Buildiq\Kernel\Values\WidgetDescriptor;
 use OCP\Dashboard\Model\WidgetItems;
 
 /**

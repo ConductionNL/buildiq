@@ -25,8 +25,8 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Kernel\Contracts;
 
 use OCA\Buildiq\Exception\AppRepoParseException;
-use OCA\Buildiq\Service\GitHub\AppPushRequest;
-use OCA\Buildiq\Service\GitHub\BrokeredRepo;
+use OCA\Buildiq\Kernel\Values\AppPushRequest;
+use OCA\Buildiq\Kernel\Values\BrokeredRepo;
 
 /**
  * Contract of GitHubAppSyncService.

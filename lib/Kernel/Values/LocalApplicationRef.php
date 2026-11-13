@@ -9,7 +9,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Service
- * @package  OCA\Buildiq\Service
+ * @package  OCA\Buildiq\Kernel\Values
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -24,7 +24,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\Buildiq\Service;
+namespace OCA\Buildiq\Kernel\Values;
 
 /**
  * Uuid and slug of the local application the flows and agents channels bind to.

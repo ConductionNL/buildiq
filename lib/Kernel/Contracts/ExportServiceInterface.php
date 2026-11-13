@@ -24,8 +24,8 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Kernel\Contracts;
 
-use OCA\Buildiq\Service\ExportContents;
-use OCA\Buildiq\Service\ExportTarget;
+use OCA\Buildiq\Kernel\Values\ExportContents;
+use OCA\Buildiq\Kernel\Values\ExportTarget;
 
 /**
  * Contract of ExportService.

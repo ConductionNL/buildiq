@@ -7,7 +7,7 @@
  * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Support
- * @package  OCA\Buildiq\Support
+ * @package  OCA\Buildiq\Service
  *
  * @author    Conduction Development Team <dev@conduction.nl>
  * @copyright 2026 Conduction B.V.
@@ -22,7 +22,7 @@
 
 declare(strict_types=1);
 
-namespace OCA\Buildiq\Support;
+namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Service\GitHub\TokenScrubber;
 

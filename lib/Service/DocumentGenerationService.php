@@ -85,7 +85,6 @@ namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Kernel\Contracts\DocumentGenerationServiceInterface;
 use OCA\Buildiq\Service\Connection\ConnectionReporter;
-use OCA\Buildiq\Support\FleetAppId;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;

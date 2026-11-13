@@ -26,7 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
-use OCA\Buildiq\Dashboard\WidgetApplication;
+use OCA\Buildiq\Kernel\Values\WidgetApplication;
 
 /**
  * The Application a promoted placement comes from, and who may see that Application.

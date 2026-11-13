@@ -24,8 +24,8 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Kernel\Contracts;
 
-use OCA\Buildiq\Service\LocalApplicationRef;
-use OCA\Buildiq\Service\RepoSource;
+use OCA\Buildiq\Kernel\Values\LocalApplicationRef;
+use OCA\Buildiq\Kernel\Values\RepoSource;
 
 /**
  * Contract of AppChannelApplier.
