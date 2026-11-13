@@ -40,6 +40,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\PermissionResolverInterface;
 use OCP\IGroup;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -54,7 +55,7 @@ use Psr\Log\LoggerInterface;
  * ManifestResolverService::bucketContainsUid) are replaced by
  * PermissionResolver::matchesCaller().
  */
-class PermissionResolver {
+class PermissionResolver implements PermissionResolverInterface {
 	/**
 	 * Constructor.
 	 *

@@ -47,11 +47,11 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Integration;
 
-use OCA\Buildiq\Service\LayoutDeltaService;
-use OCA\Buildiq\Service\PageLayoutFrozenBase;
-use OCA\Buildiq\Service\PageLayoutLayerStack;
+use OCA\Buildiq\Kernel\Contracts\LayoutDeltaServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\PageLayoutFrozenBaseInterface;
+use OCA\Buildiq\Kernel\Contracts\PageLayoutLayerStackInterface;
+use OCA\Buildiq\Kernel\Contracts\PageLayoutPresenterInterface;
 use OCA\Buildiq\Service\PageLayoutParts;
-use OCA\Buildiq\Service\PageLayoutPresenter;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
@@ -80,30 +80,30 @@ final class PageLayoutLeafProvider extends AppLocalLeafProvider {
 	/**
 	 * The keyed-delta merge and the base fingerprint.
 	 *
-	 * @var LayoutDeltaService
+	 * @var LayoutDeltaServiceInterface
 	 */
-	private readonly LayoutDeltaService $deltas;
+	private readonly LayoutDeltaServiceInterface $deltas;
 
 	/**
 	 * Which layers apply to this caller and this object, and in which order.
 	 *
-	 * @var PageLayoutLayerStack
+	 * @var PageLayoutLayerStackInterface
 	 */
-	private readonly PageLayoutLayerStack $layers;
+	private readonly PageLayoutLayerStackInterface $layers;
 
 	/**
 	 * Which layers an override's base is frozen from.
 	 *
-	 * @var PageLayoutFrozenBase
+	 * @var PageLayoutFrozenBaseInterface
 	 */
-	private readonly PageLayoutFrozenBase $frozenBase;
+	private readonly PageLayoutFrozenBaseInterface $frozenBase;
 
 	/**
 	 * The shape a resolved layout takes on its way out.
 	 *
-	 * @var PageLayoutPresenter
+	 * @var PageLayoutPresenterInterface
 	 */
-	private readonly PageLayoutPresenter $presenter;
+	private readonly PageLayoutPresenterInterface $presenter;
 
 	/**
 	 * Constructor.

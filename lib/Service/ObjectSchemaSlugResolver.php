@@ -45,20 +45,14 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\ObjectSchemaSlugResolverInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
  * Turns the register/schema ids an OpenRegister event carries into slugs.
  */
-class ObjectSchemaSlugResolver {
-
-	/**
-	 * The register slug buildiq's own objects live in.
-	 *
-	 * @var string
-	 */
-	public const REGISTER_SLUG = 'buildiq';
+class ObjectSchemaSlugResolver implements ObjectSchemaSlugResolverInterface {
 
 	/**
 	 * Resolved slugs keyed by "<mapperFqn>:<id>", for the request lifetime.

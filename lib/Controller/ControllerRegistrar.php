@@ -25,7 +25,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Controller;
 
 use OCA\Buildiq\Kernel\AppIdentity;
-use OCA\Buildiq\Service\SettingsService;
+use OCA\Buildiq\Kernel\Contracts\SettingsServiceInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**
@@ -108,7 +108,7 @@ final class ControllerRegistrar {
 			SettingsController::class,
 			static fn ($c): SettingsController => new SettingsController(
 				request: $c->get('OCP\\IRequest'),
-				settingsService: $c->get(SettingsService::class),
+				settingsService: $c->get(SettingsServiceInterface::class),
 				userSession: $c->get('OCP\\IUserSession'),
 				groupManager: $c->get('OCP\\IGroupManager')
 			)

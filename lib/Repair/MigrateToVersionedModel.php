@@ -42,7 +42,7 @@ namespace OCA\Buildiq\Repair;
 
 use Closure;
 use OCA\Buildiq\Kernel\AppIdentity;
-use OCA\Buildiq\Service\ApplicationVersionService;
+use OCA\Buildiq\Kernel\Contracts\ApplicationVersionServiceInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -286,11 +286,11 @@ class MigrateToVersionedModel implements IRepairStep {
 	private function enumerateApplications(): array {
 		try {
 			$registerId = $this->registerMapper->find(
-				ApplicationVersionService::REGISTER_SLUG,
+				ApplicationVersionServiceInterface::REGISTER_SLUG,
 				_multitenancy: false
 			)->getId();
 			$schemaId = $this->schemaMapper->find(
-				ApplicationVersionService::APPLICATION_SCHEMA,
+				ApplicationVersionServiceInterface::APPLICATION_SCHEMA,
 				_multitenancy: false
 			)->getId();
 		} catch (Throwable $e) {
@@ -350,8 +350,8 @@ class MigrateToVersionedModel implements IRepairStep {
 		}
 
 		// Per-version register — NOT the app's register slug. See
-		// ApplicationVersionService::VERSION_REGISTER_PREFIX.
-		$perAppRegisterSlug = ApplicationVersionService::VERSION_REGISTER_PREFIX . $slug;
+		// ApplicationVersionServiceInterface::VERSION_REGISTER_PREFIX.
+		$perAppRegisterSlug = ApplicationVersionServiceInterface::VERSION_REGISTER_PREFIX . $slug;
 
 		try {
 			$register = $this->registerMapper->find($perAppRegisterSlug, _multitenancy: false);

@@ -44,7 +44,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Controller;
 
 use OCA\Buildiq\Kernel\AppIdentity;
-use OCA\Buildiq\Service\IconService;
+use OCA\Buildiq\Kernel\Contracts\IconServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -79,7 +79,7 @@ class IconController extends Controller {
 	 * Constructor.
 	 *
 	 * @param IRequest $request The incoming HTTP request.
-	 * @param IconService $iconService The icon-resolution service.
+	 * @param IconServiceInterface $iconService The icon-resolution service.
 	 * @param IUserSession $userSession User session for authentication guard.
 	 * @param LoggerInterface $logger PSR logger.
 	 *
@@ -87,7 +87,7 @@ class IconController extends Controller {
 	 */
 	public function __construct(
 		IRequest $request,
-		private readonly IconService $iconService,
+		private readonly IconServiceInterface $iconService,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 	) {

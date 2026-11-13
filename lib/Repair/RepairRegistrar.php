@@ -24,7 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Repair;
 
-use OCA\Buildiq\Service\SettingsService;
+use OCA\Buildiq\Kernel\Contracts\SettingsServiceInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**
@@ -64,7 +64,7 @@ final class RepairRegistrar {
 		$context->registerService(
 			InitializeSettings::class,
 			static fn ($c): InitializeSettings => new InitializeSettings(
-				settingsService: $c->get(SettingsService::class),
+				settingsService: $c->get(SettingsServiceInterface::class),
 				logger: $c->get('Psr\\Log\\LoggerInterface')
 			)
 		);

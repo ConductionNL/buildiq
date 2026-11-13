@@ -37,6 +37,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\ExportJobServiceInterface;
 use OCA\Buildiq\Support\UuidV4;
 use OCP\BackgroundJob\IJobList;
 use Psr\Container\ContainerInterface;
@@ -48,7 +49,7 @@ use RuntimeException;
  *
  * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
  */
-class ExportJobService {
+class ExportJobService implements ExportJobServiceInterface {
 	/**
 	 * OR register slug hosting the ExportJob schema (#104).
 	 */

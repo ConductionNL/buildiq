@@ -64,7 +64,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Controller;
 
 use OCA\Buildiq\Kernel\AppIdentity;
-use OCA\Buildiq\Service\Connection\ConnectionReporter;
+use OCA\Buildiq\Kernel\Contracts\ConnectionReporterInterface;
 use OCA\Buildiq\Service\StoreClient;
 use OCA\OpenRegister\AppHost\Service\GenericStoreService;
 use OCA\OpenRegister\AppHost\Service\StoreDescriptor;
@@ -96,7 +96,7 @@ class StoreController extends Controller {
 	 * @param IUserSession $userSession Current NC user session.
 	 * @param StoreClient $store OpenRegister's store client and the authorizer that decides who may publish.
 	 * @param ApplicationsController $appsController Shared clone/install seam.
-	 * @param ConnectionReporter|null $connectionReporter Tells integriq what a search met, or nothing when absent.
+	 * @param ConnectionReporterInterface|null $connectionReporter Tells integriq what a search met, or nothing when absent.
 	 *
 	 * @return void
 	 *
@@ -108,7 +108,7 @@ class StoreController extends Controller {
 		private readonly IUserSession $userSession,
 		private readonly StoreClient $store,
 		private readonly ApplicationsController $appsController,
-		private readonly ?ConnectionReporter $connectionReporter = null,
+		private readonly ?ConnectionReporterInterface $connectionReporter = null,
 	) {
 		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()

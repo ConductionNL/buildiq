@@ -38,6 +38,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\TemplateSeedServiceInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -49,7 +50,7 @@ use Throwable;
  *
  * @spec openspec/changes/openbuild-first-time-setup/tasks.md#task-11
  */
-class TemplateSeedService {
+class TemplateSeedService implements TemplateSeedServiceInterface {
 
 	/**
 	 * The four seeded template slugs (one fixture per slug).

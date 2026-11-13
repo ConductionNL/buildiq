@@ -47,8 +47,8 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Repair;
 
-use OCA\Buildiq\Service\RuleEngineService;
-use OCA\Buildiq\Service\StoredDecisionTables;
+use OCA\Buildiq\Kernel\Contracts\RuleEngineServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\StoredDecisionTablesInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -86,14 +86,14 @@ class MoveDecisionTablesToOpenRegister implements IRepairStep {
 	 * @param IDBConnection          $db             Reads and renames the old schema row.
 	 * @param RegisterMapper         $registerMapper Resolves buildiq's register.
 	 * @param ObjectServiceInterface $objects        Reads the old rows.
-	 * @param StoredDecisionTables   $tables         Writes a table into OpenRegister's register.
+	 * @param StoredDecisionTablesInterface   $tables         Writes a table into OpenRegister's register.
 	 * @param LoggerInterface        $logger         Logger.
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
 		private readonly RegisterMapper $registerMapper,
 		private readonly ObjectServiceInterface $objects,
-		private readonly StoredDecisionTables $tables,
+		private readonly StoredDecisionTablesInterface $tables,
 		private readonly LoggerInterface $logger,
 	) {
 
@@ -137,7 +137,7 @@ class MoveDecisionTablesToOpenRegister implements IRepairStep {
 		try {
 			// Probe OpenRegister's register before reading anything: an
 			// OpenRegister that has not imported it yet answers a throw here.
-			$this->tables->exists(key: StoredDecisionTables::KEY_PREFIX . 'probe');
+			$this->tables->exists(key: StoredDecisionTablesInterface::KEY_PREFIX . 'probe');
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				'MoveDecisionTablesToOpenRegister: OpenRegister\'s decision-tables register is not readable; tables stay where they are until the next upgrade.',
@@ -224,7 +224,7 @@ class MoveDecisionTablesToOpenRegister implements IRepairStep {
 	 */
 	private function oldRows(array $schemaIds): array {
 		try {
-			$register = $this->registerMapper->find(RuleEngineService::REGISTER_SLUG, _multitenancy: false);
+			$register = $this->registerMapper->find(RuleEngineServiceInterface::REGISTER_SLUG, _multitenancy: false);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				'MoveDecisionTablesToOpenRegister: the buildiq register is not resolvable; nothing moved.',

@@ -33,7 +33,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Controller;
 
 use OCA\Buildiq\Kernel\AppIdentity;
-use OCA\Buildiq\Service\ExportJobService;
+use OCA\Buildiq\Kernel\Contracts\ExportJobServiceInterface;
 use OCA\Buildiq\Service\ServerBundleWriter;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
@@ -75,7 +75,7 @@ class ExportsController extends Controller {
 	 * Constructor.
 	 *
 	 * @param IRequest $request Request.
-	 * @param ExportJobService $exportJobService Job-orchestration service.
+	 * @param ExportJobServiceInterface $exportJobService Job-orchestration service.
 	 * @param IUserSession $userSession Current user session.
 	 * @param ContainerInterface $container Container for optional OR services.
 	 * @param LoggerInterface $logger Logger.
@@ -83,7 +83,7 @@ class ExportsController extends Controller {
 	 */
 	public function __construct(
 		IRequest $request,
-		private ExportJobService $exportJobService,
+		private ExportJobServiceInterface $exportJobService,
 		private IUserSession $userSession,
 		private ContainerInterface $container,
 		private LoggerInterface $logger,

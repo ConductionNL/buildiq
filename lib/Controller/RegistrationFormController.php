@@ -36,7 +36,7 @@ namespace OCA\Buildiq\Controller;
 
 use InvalidArgumentException;
 use OCA\Buildiq\Exception\FormDestinationRefusedException;
-use OCA\Buildiq\Service\RegistrationFormAuthoringService;
+use OCA\Buildiq\Kernel\Contracts\RegistrationFormAuthoringServiceInterface;
 use OCA\Buildiq\Settings\AdminSettings;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -63,7 +63,7 @@ class RegistrationFormController extends Controller {
 	 * Constructor.
 	 *
 	 * @param IRequest $request The current request.
-	 * @param RegistrationFormAuthoringService $authoring The save path.
+	 * @param RegistrationFormAuthoringServiceInterface $authoring The save path.
 	 * @param IUserSession $userSession The calling user.
 	 * @param IGroupManager $groupManager Resolves admin membership.
 	 * @param LoggerInterface $logger Logger.
@@ -72,7 +72,7 @@ class RegistrationFormController extends Controller {
 	 */
 	public function __construct(
 		IRequest $request,
-		private readonly RegistrationFormAuthoringService $authoring,
+		private readonly RegistrationFormAuthoringServiceInterface $authoring,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 		private readonly LoggerInterface $logger,

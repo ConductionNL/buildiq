@@ -44,7 +44,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Listener;
 
-use OCA\Buildiq\Service\DocumentGenerationService;
+use OCA\Buildiq\Kernel\Contracts\DocumentGenerationServiceInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Container\ContainerInterface;
@@ -73,14 +73,14 @@ class DocumentGenerationListener implements IEventListener {
 	 * @param ContainerInterface $container Resolves OpenRegister's object service at USE time, to scan
 	 *                                      the `automation` register — see LazyObjectService for why a
 	 *                                      listener cannot constructor-inject it.
-	 * @param DocumentGenerationService $documentGenerator Calls Docudesk + writes the configured output(s).
+	 * @param DocumentGenerationServiceInterface $documentGenerator Calls Docudesk + writes the configured output(s).
 	 * @param LoggerInterface $logger PSR logger.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly ContainerInterface $container,
-		private readonly DocumentGenerationService $documentGenerator,
+		private readonly DocumentGenerationServiceInterface $documentGenerator,
 		private readonly LoggerInterface $logger,
 	) {
 		$this->objects = new LazyObjectService(container: $container);

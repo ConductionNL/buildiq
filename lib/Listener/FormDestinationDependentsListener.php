@@ -34,7 +34,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Listener;
 
-use OCA\Buildiq\Service\RegistrationFormTargetWarnings;
+use OCA\Buildiq\Kernel\Contracts\RegistrationFormTargetWarningsInterface;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -68,7 +68,7 @@ final class FormDestinationDependentsListener implements IEventListener {
 	 * @param ObjectServiceInterface $objectService OpenRegister's object service.
 	 * @param RegisterMapper $registerMapper Resolves a form's destination register.
 	 * @param IAppConfig $appConfig App config, for buildiq's own register slug.
-	 * @param RegistrationFormTargetWarnings $forms Maps a form the way the save-time check does.
+	 * @param RegistrationFormTargetWarningsInterface $forms Maps a form the way the save-time check does.
 	 * @param LoggerInterface $logger Logger.
 	 *
 	 * @return void
@@ -77,7 +77,7 @@ final class FormDestinationDependentsListener implements IEventListener {
 		private readonly ObjectServiceInterface $objectService,
 		private readonly RegisterMapper $registerMapper,
 		private readonly IAppConfig $appConfig,
-		private readonly RegistrationFormTargetWarnings $forms,
+		private readonly RegistrationFormTargetWarningsInterface $forms,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()

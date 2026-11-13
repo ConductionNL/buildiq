@@ -31,6 +31,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\GitHubFormCatalogServiceInterface;
 use OCA\Buildiq\Service\GitHub\ShortLivedCache;
 use OCP\ICacheFactory;
 
@@ -39,7 +40,7 @@ use OCP\ICacheFactory;
  *
  * @spec openspec/changes/reuse-gallery-categories-and-form-library/specs/form-library/spec.md#requirement-forms-travel-between-organisations-req-bqgl-005
  */
-class GitHubFormCatalogService {
+class GitHubFormCatalogService implements GitHubFormCatalogServiceInterface {
 
 	/**
 	 * The GitHub topic a shared form repository carries (REQ-BQGL-005).

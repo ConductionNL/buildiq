@@ -78,11 +78,11 @@ namespace OCA\Buildiq\Controller;
 
 use OCA\Buildiq\Exception\UnsupportedAutomationCombinationException;
 use OCA\Buildiq\Kernel\AppIdentity;
-use OCA\Buildiq\Service\AutomationCompilerService;
-use OCA\Buildiq\Service\AutomationWriteService;
+use OCA\Buildiq\Kernel\Contracts\AutomationCompilerServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\AutomationWriteServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\ConditionActionExecutorInterface;
+use OCA\Buildiq\Kernel\Contracts\PermissionResolverInterface;
 use OCA\Buildiq\Service\CallerContext;
-use OCA\Buildiq\Service\ConditionActionExecutor;
-use OCA\Buildiq\Service\PermissionResolver;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -126,29 +126,29 @@ class AutomationsController extends Controller {
 	/**
 	 * Shared permission-grammar resolver.
 	 *
-	 * @var PermissionResolver
+	 * @var PermissionResolverInterface
 	 */
-	private readonly PermissionResolver $permissionResolver;
+	private readonly PermissionResolverInterface $permissionResolver;
 
 	/**
 	 * Constructor.
 	 *
 	 * @param IRequest $request The current HTTP request.
 	 * @param LoggerInterface $logger PSR logger.
-	 * @param AutomationCompilerService $compiler Compiler/apply/remove/status service.
-	 * @param ConditionActionExecutor $conditionExecutor Rules engine executor (dry-run panel).
+	 * @param AutomationCompilerServiceInterface $compiler Compiler/apply/remove/status service.
+	 * @param ConditionActionExecutorInterface $conditionExecutor Rules engine executor (dry-run panel).
 	 * @param CallerContext $caller The caller's session, group memberships and the shared permission matcher.
-	 * @param AutomationWriteService $writeService Create/update/delete write path.
+	 * @param AutomationWriteServiceInterface $writeService Create/update/delete write path.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		IRequest $request,
 		private readonly LoggerInterface $logger,
-		private readonly AutomationCompilerService $compiler,
-		private readonly ConditionActionExecutor $conditionExecutor,
+		private readonly AutomationCompilerServiceInterface $compiler,
+		private readonly ConditionActionExecutorInterface $conditionExecutor,
 		CallerContext $caller,
-		private readonly AutomationWriteService $writeService,
+		private readonly AutomationWriteServiceInterface $writeService,
 	) {
 		$this->userSession = $caller->userSession;
 		$this->permissionResolver = $caller->permissionResolver;

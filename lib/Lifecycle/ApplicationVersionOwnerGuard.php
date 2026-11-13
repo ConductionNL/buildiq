@@ -45,8 +45,8 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Lifecycle;
 
-use OCA\Buildiq\Service\ApplicationVersionService;
-use OCA\Buildiq\Service\PermissionResolver;
+use OCA\Buildiq\Kernel\Contracts\ApplicationVersionServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\PermissionResolverInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Lifecycle\GuardResult;
 use OCA\OpenRegister\Lifecycle\LifecycleGuardInterface;
@@ -79,7 +79,7 @@ class ApplicationVersionOwnerGuard implements LifecycleGuardInterface {
 	 * Constructor.
 	 *
 	 * @param ObjectServiceInterface $objectService OR object surface used to load the parent Application.
-	 * @param PermissionResolver $permissionResolver Shared permission-grammar resolver (same grammar as the controllers).
+	 * @param PermissionResolverInterface $permissionResolver Shared permission-grammar resolver (same grammar as the controllers).
 	 * @param IUserManager $userManager Resolves the acting UID to an IUser for the resolver.
 	 * @param LoggerInterface $logger PSR logger for fail-closed diagnostics.
 	 *
@@ -87,7 +87,7 @@ class ApplicationVersionOwnerGuard implements LifecycleGuardInterface {
 	 */
 	public function __construct(
 		private readonly ObjectServiceInterface $objectService,
-		private readonly PermissionResolver $permissionResolver,
+		private readonly PermissionResolverInterface $permissionResolver,
 		private readonly IUserManager $userManager,
 		private readonly LoggerInterface $logger,
 	) {
@@ -245,8 +245,8 @@ class ApplicationVersionOwnerGuard implements LifecycleGuardInterface {
 		try {
 			$entity = $this->objectService->find(
 				id: $applicationUuid,
-				register: ApplicationVersionService::REGISTER_SLUG,
-				schema: ApplicationVersionService::APPLICATION_SCHEMA
+				register: ApplicationVersionServiceInterface::REGISTER_SLUG,
+				schema: ApplicationVersionServiceInterface::APPLICATION_SCHEMA
 			);
 		} catch (\Throwable $e) {
 			$this->logger->warning(

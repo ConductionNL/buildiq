@@ -60,6 +60,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\AutomationWriteServiceInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\AppFramework\Http;
@@ -75,7 +76,7 @@ use Throwable;
  *
  * @spec openspec/specs/automation-designer/spec.md#req-autd-008
  */
-class AutomationWriteService {
+class AutomationWriteService implements AutomationWriteServiceInterface {
 	/**
 	 * Shared Buildiq register slug.
 	 */

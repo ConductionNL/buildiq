@@ -50,7 +50,7 @@ namespace OCA\Buildiq\Controller;
 
 use OCA\Buildiq\Exception\WizardCreationException;
 use OCA\Buildiq\Kernel\AppIdentity;
-use OCA\Buildiq\Service\ApplicationCreationService;
+use OCA\Buildiq\Kernel\Contracts\ApplicationCreationServiceInterface;
 use OCA\Buildiq\Settings\AdminSettings;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -74,7 +74,7 @@ class ApplicationCreationController extends Controller {
 	 *
 	 * @param IRequest $request The current HTTP request
 	 * @param LoggerInterface $logger PSR logger for diagnostics
-	 * @param ApplicationCreationService $creationService Atomic creation orchestrator
+	 * @param ApplicationCreationServiceInterface $creationService Atomic creation orchestrator
 	 * @param IUserSession $userSession Current Nextcloud user session
 	 * @param IGroupManager $groupManager Group membership resolver
 	 *
@@ -83,7 +83,7 @@ class ApplicationCreationController extends Controller {
 	public function __construct(
 		IRequest $request,
 		private readonly LoggerInterface $logger,
-		private readonly ApplicationCreationService $creationService,
+		private readonly ApplicationCreationServiceInterface $creationService,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 	) {

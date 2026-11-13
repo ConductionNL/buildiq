@@ -106,6 +106,19 @@ final class ServiceRegistrar {
 	}//end registerOpenRegisterContracts()
 
 	/**
+	 * Alias every Kernel contract to its Service implementation.
+	 *
+	 * @param IRegistrationContext $context The registration context
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/app-composition-bindings/spec.md
+	 */
+	public function registerContractBindings(IRegistrationContext $context): void {
+		(new ContractBindings())->register(context: $context);
+	}//end registerContractBindings()
+
+	/**
 	 * Bind the services behind the top bar and the dashboard widgets.
 	 *
 	 * @param IRegistrationContext $context The registration context

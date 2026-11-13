@@ -112,14 +112,15 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Exception\UnsupportedAutomationCombinationException;
+use OCA\Buildiq\Kernel\Contracts\AutomationCompilerServiceInterface;
 use OCA\Buildiq\Service\Automation\CompileInput;
 use OCA\Buildiq\Support\FleetAppId;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
-use Psr\Container\ContainerInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\App\IAppManager;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
@@ -129,16 +130,7 @@ use Throwable;
  *
  * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#2.1
  */
-class AutomationCompilerService {
-	/**
-	 * Shared Buildiq register slug.
-	 */
-	public const REGISTER_SLUG = 'buildiq';
-
-	/**
-	 * Schema slug of the Automation object itself.
-	 */
-	public const AUTOMATION_SCHEMA = 'automation';
+class AutomationCompilerService implements AutomationCompilerServiceInterface {
 
 	/**
 	 * The v1 compilation matrix: trigger type → allowed action types.
