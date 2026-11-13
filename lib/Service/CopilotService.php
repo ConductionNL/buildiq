@@ -1278,43 +1278,56 @@ class CopilotService implements CopilotServiceInterface {
 			) === false;
 
 		if ($genuineBypass === true) {
-			$context = [
-				'event' => 'rbac.admin_bypass',
-				'actor' => $userId,
-				'appSlug' => (string)($app['slug'] ?? ''),
-				'channel' => 'copilot',
-			];
-
-			// Audit-trail parity with the HTTP/MCP paths (REQ-OBRBAC-007): record
-			// the bypass to the OR per-object audit trail when the mapper + app
-			// entity are available; fail soft to a PSR log otherwise
-			// (harden-rules-authz-and-audit-parity, L2).
-			$entity = null;
-			try {
-				$entity = $this->objectService->find((string)($app['uuid'] ?? ($app['id'] ?? '')));
-			} catch (\Throwable $e) {
-				$entity = null;
-			}
-
-			if ($this->auditTrailMapper !== null && $entity instanceof ObjectEntity) {
-				try {
-					$this->auditTrailMapper->recordObjectEvent(
-						event: new ObjectAuditEvent(object: $entity, action: 'rbac.admin_bypass', context: $context)
-					);
-					$this->logger->info('Buildiq Copilot: rbac.admin_bypass', $context);
-					return;
-				} catch (\Throwable $e) {
-					$this->logger->critical(
-						'Buildiq Copilot: rbac.admin_bypass audit-trail write failed',
-						array_merge($context, ['exception' => $e->getMessage()])
-					);
-					return;
-				}
-			}//end if
-
-			$this->logger->info('Buildiq Copilot: rbac.admin_bypass', $context);
-		}//end if
+			$this->recordCopilotBypass(app: $app, userId: $userId);
+		}
 	}//end assertWriteRoleOnApp()
+
+	/**
+	 * Record a genuine admin bypass to the OpenRegister audit trail, or to the
+	 * log when the audit trail cannot take it.
+	 *
+	 * @param array<string, mixed> $app    Application data.
+	 * @param string               $userId Acting user's UID.
+	 *
+	 * @return void
+	 */
+	private function recordCopilotBypass(array $app, string $userId): void {
+		$context = [
+			'event' => 'rbac.admin_bypass',
+			'actor' => $userId,
+			'appSlug' => (string)($app['slug'] ?? ''),
+			'channel' => 'copilot',
+		];
+
+		// Audit-trail parity with the HTTP/MCP paths (REQ-OBRBAC-007): record
+		// the bypass to the OR per-object audit trail when the mapper + app
+		// entity are available; fail soft to a PSR log otherwise
+		// (harden-rules-authz-and-audit-parity, L2).
+		$entity = null;
+		try {
+			$entity = $this->objectService->find((string)($app['uuid'] ?? ($app['id'] ?? '')));
+		} catch (\Throwable $e) {
+			$entity = null;
+		}
+
+		if ($this->auditTrailMapper !== null && $entity instanceof ObjectEntity) {
+			try {
+				$this->auditTrailMapper->recordObjectEvent(
+					event: new ObjectAuditEvent(object: $entity, action: 'rbac.admin_bypass', context: $context)
+				);
+				$this->logger->info('Buildiq Copilot: rbac.admin_bypass', $context);
+				return;
+			} catch (\Throwable $e) {
+				$this->logger->critical(
+					'Buildiq Copilot: rbac.admin_bypass audit-trail write failed',
+					array_merge($context, ['exception' => $e->getMessage()])
+				);
+				return;
+			}
+		}//end if
+
+		$this->logger->info('Buildiq Copilot: rbac.admin_bypass', $context);
+	}//end recordCopilotBypass()
 
 	/**
 	 * Resolve `OCP\TaskProcessing\IManager` from the container, or null when unavailable.

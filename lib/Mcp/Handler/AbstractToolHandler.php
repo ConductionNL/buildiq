@@ -366,39 +366,21 @@ abstract class AbstractToolHandler {
 
 		// Inline fallback (no resolver injected — used by tests that pre-date
 		// the resolver injection).
-		$userSet = [];
-		$groupSet = [];
+		return $this->fallbackHasWriteRole(permissions: $permissions, uid: $uid, allowAdminBypass: $allowAdminBypass, caller: $caller);
+	}//end callerHasWriteRole()
 
-		foreach (self::WRITE_ROLES as $role) {
-			$bucket = ($permissions[$role] ?? []);
-			if (is_array($bucket) === false) {
-				continue;
-			}
-
-			foreach ($bucket as $principal) {
-				if (is_string($principal) === false || $principal === '') {
-					continue;
-				}
-
-				if (str_starts_with($principal, 'user:') === true) {
-					$pUid = substr($principal, 5);
-					if ($pUid !== '') {
-						$userSet[$pUid] = true;
-					}
-
-					continue;
-				}
-
-				$gid = $principal;
-				if (str_starts_with($principal, 'group:') === true) {
-					$gid = substr($principal, 6);
-				}
-
-				if ($gid !== '') {
-					$groupSet[$gid] = true;
-				}
-			}//end foreach
-		}//end foreach
+	/**
+	 * The write-role check without a PermissionResolver.
+	 *
+	 * @param array<string, mixed> $permissions      The Application's permissions block.
+	 * @param string               $uid              Caller's user ID.
+	 * @param bool                 $allowAdminBypass Whether NC admin bypass applies.
+	 * @param IUser                $caller           The session caller.
+	 *
+	 * @return bool
+	 */
+	private function fallbackHasWriteRole(array $permissions, string $uid, bool $allowAdminBypass, IUser $caller): bool {
+		[$userSet, $groupSet] = $this->writePrincipals(permissions: $permissions);
 
 		if (isset($userSet[$uid]) === true) {
 			return true;
@@ -408,6 +390,84 @@ abstract class AbstractToolHandler {
 			return true;
 		}
 
+		return $this->callerInGroupSet(caller: $caller, groupSet: $groupSet);
+	}//end fallbackHasWriteRole()
+
+	/**
+	 * The users and groups named in the WRITE_ROLES buckets of a permissions block.
+	 *
+	 * @param array<string, mixed> $permissions The Application's permissions block.
+	 *
+	 * @return array{0: array<string, true>, 1: array<string, true>} The user set and the group set.
+	 */
+	private function writePrincipals(array $permissions): array {
+		$sets = ['u' => [], 'g' => []];
+
+		foreach (self::WRITE_ROLES as $role) {
+			$bucket = ($permissions[$role] ?? []);
+			if (is_array($bucket) === false) {
+				continue;
+			}
+
+			foreach ($bucket as $principal) {
+				$key = $this->classifyPrincipal(principal: $principal);
+				if ($key !== []) {
+					$sets[$key[0]][$key[1]] = true;
+				}
+			}
+		}
+
+		return [$sets['u'], $sets['g']];
+	}//end writePrincipals()
+
+	/**
+	 * Classify one principal: `user:<uid>` is a user, `group:<gid>` or a bare id is a group.
+	 *
+	 * @param mixed $principal The principal entry.
+	 *
+	 * @return array{}|array{0: string, 1: string} ['u'|'g', id], or [] for an empty or non-string entry.
+	 */
+	private function classifyPrincipal(mixed $principal): array {
+		if (is_string($principal) === false || $principal === '') {
+			return [];
+		}
+
+		if (str_starts_with($principal, 'user:') === true) {
+			return $this->keyedPrincipal(kind: 'u', id: substr($principal, 5));
+		}
+
+		if (str_starts_with($principal, 'group:') === true) {
+			return $this->keyedPrincipal(kind: 'g', id: substr($principal, 6));
+		}
+
+		return $this->keyedPrincipal(kind: 'g', id: $principal);
+	}//end classifyPrincipal()
+
+	/**
+	 * A classified principal, or [] when its id is empty.
+	 *
+	 * @param string $kind 'u' or 'g'.
+	 * @param string $id   The user or group id.
+	 *
+	 * @return array{}|array{0: string, 1: string}
+	 */
+	private function keyedPrincipal(string $kind, string $id): array {
+		if ($id === '') {
+			return [];
+		}
+
+		return [$kind, $id];
+	}//end keyedPrincipal()
+
+	/**
+	 * Whether the caller is in one of the groups.
+	 *
+	 * @param IUser               $caller   The caller.
+	 * @param array<string, true> $groupSet The group ids.
+	 *
+	 * @return bool
+	 */
+	private function callerInGroupSet(IUser $caller, array $groupSet): bool {
 		$userGroups = $this->groupManager->getUserGroups($caller);
 		foreach ($userGroups as $group) {
 			if ($group instanceof IUser === false && isset($groupSet[$group->getGID()]) === true) {
@@ -416,7 +476,7 @@ abstract class AbstractToolHandler {
 		}
 
 		return false;
-	}//end callerHasWriteRole()
+	}//end callerInGroupSet()
 
 	/**
 	 * Validate that a candidate string matches the Buildiq slug shape.

@@ -633,30 +633,85 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 
 		// Validate each version slug.
 		foreach ($versions as $versionDef) {
-			$versionSlug = (string)($versionDef['slug'] ?? '');
-			$versionName = (string)($versionDef['name'] ?? '');
-
-			if ($versionName === '') {
-				throw new WizardCreationException(
-					errorCode: 'validation_error',
-					failedAtStep: 'validate',
-					message: 'Version name must not be empty.',
-					rollbackStatus: 'none'
-				);
-			}
-
-			$slugError = $this->slugValidator->validateVersionSlug(slug: $versionSlug);
-			if ($slugError !== []) {
-				throw new WizardCreationException(
-					errorCode: (string)($slugError['code'] ?? 'validation_error'),
-					failedAtStep: 'validate',
-					message: (string)($slugError['message'] ?? 'Invalid version slug.'),
-					rollbackStatus: 'none'
-				);
-			}
-		}//end foreach
+			$this->validateVersionDef(versionDef: $versionDef);
+		}
 
 		// Validate no duplicate version slugs in chain.
+		$this->validateChainSlugs(versions: $versions);
+
+		// Check app slug uniqueness across existing Applications.
+		$this->assertAppSlugFree(appSlug: $appSlug);
+	}//end validatePayload()
+
+	/**
+	 * Refuse an app slug that an existing Application already uses.
+	 *
+	 * @param string $appSlug The app slug.
+	 *
+	 * @return void
+	 *
+	 * @throws WizardCreationException With failedAtStep=validate on a conflict
+	 *
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-11
+	 */
+	private function assertAppSlugFree(string $appSlug): void {
+		if ($this->appSlugExists(slug: $appSlug) === true) {
+			throw new WizardCreationException(
+				errorCode: 'app_slug_conflict',
+				failedAtStep: 'validate',
+				message: sprintf('An Application with slug "%s" already exists.', $appSlug),
+				rollbackStatus: 'none'
+			);
+		}
+	}//end assertAppSlugFree()
+
+	/**
+	 * Validate one version definition: a name, and a valid version slug.
+	 *
+	 * @param array<string,mixed> $versionDef The version definition.
+	 *
+	 * @return void
+	 *
+	 * @throws WizardCreationException With failedAtStep=validate on any failure
+	 *
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-10
+	 */
+	private function validateVersionDef(array $versionDef): void {
+		$versionSlug = (string)($versionDef['slug'] ?? '');
+		$versionName = (string)($versionDef['name'] ?? '');
+
+		if ($versionName === '') {
+			throw new WizardCreationException(
+				errorCode: 'validation_error',
+				failedAtStep: 'validate',
+				message: 'Version name must not be empty.',
+				rollbackStatus: 'none'
+			);
+		}
+
+		$slugError = $this->slugValidator->validateVersionSlug(slug: $versionSlug);
+		if ($slugError !== []) {
+			throw new WizardCreationException(
+				errorCode: (string)($slugError['code'] ?? 'validation_error'),
+				failedAtStep: 'validate',
+				message: (string)($slugError['message'] ?? 'Invalid version slug.'),
+				rollbackStatus: 'none'
+			);
+		}
+	}//end validateVersionDef()
+
+	/**
+	 * Refuse a version chain that repeats a slug.
+	 *
+	 * @param array<int,array<string,mixed>> $versions The version chain.
+	 *
+	 * @return void
+	 *
+	 * @throws WizardCreationException With failedAtStep=validate on a duplicate
+	 *
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-10
+	 */
+	private function validateChainSlugs(array $versions): void {
 		$slugList = array_column($versions, 'slug');
 		$chainError = $this->slugValidator->validateChainSlugs(slugs: $slugList);
 		if ($chainError !== []) {
@@ -671,17 +726,7 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 				rollbackStatus: 'none'
 			);
 		}
-
-		// Check app slug uniqueness across existing Applications.
-		if ($this->appSlugExists(slug: $appSlug) === true) {
-			throw new WizardCreationException(
-				errorCode: 'app_slug_conflict',
-				failedAtStep: 'validate',
-				message: sprintf('An Application with slug "%s" already exists.', $appSlug),
-				rollbackStatus: 'none'
-			);
-		}
-	}//end validatePayload()
+	}//end validateChainSlugs()
 
 	/**
 	 * Resolve the version chain from the payload.
