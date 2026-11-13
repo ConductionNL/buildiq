@@ -3077,15 +3077,22 @@ namespace OCA\OpenRegister\Event {
 
 	if (class_exists(DeepLinkRegistrationEvent::class, autoload: false) === false) {
 		/**
-		 * Stub DeepLinkRegistrationEvent — `register` call surface.
+		 * Stub DeepLinkRegistrationEvent — `register` call surface, with the
+		 * parameter names of the real OpenRegister method (callers pass them
+		 * by name).
 		 */
 		class DeepLinkRegistrationEvent extends \OCP\EventDispatcher\Event {
 			/**
-			 * @param array<string, mixed> $metadata
-			 *
 			 * @return void
 			 */
-			public function register(string $appId, string $route, string $label, array $metadata = []): void {
+			public function register(
+				string $appId,
+				string $registerSlug,
+				string $schemaSlug,
+				string $urlTemplate,
+				string $icon = '',
+				?string $displayName = null,
+			): void {
 			}//end register()
 		}//end class
 	}
