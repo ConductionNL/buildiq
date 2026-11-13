@@ -425,4 +425,120 @@ class ConnectionReporterTest extends TestCase {
 		$this->assertFalse(condition: $this->reporter(appConfig: $appConfig)->reportStoreSearch(outcome: 'ok'));
 		$this->assertSame(expected: [], actual: $this->sent);
 	}//end testAFailingAppConfigNeverEscapes()
+
+	/**
+	 * The reporter with the class lookup answering a class that is not an Event.
+	 *
+	 * @return ConnectionReporter
+	 */
+	private function reporterResolvingANonEvent(): ConnectionReporter {
+		$time = $this->createMock(originalClassName: ITimeFactory::class);
+		$time->method('getTime')->willReturnCallback(fn (): int => $this->now);
+
+		return new class($this->dispatcher, $this->appConfig, $time, $this->logger) extends ConnectionReporter {
+
+			/**
+			 * Every lookup answers a plain object class with the event's constructor.
+			 *
+			 * @param string $eventClass The class name asked for.
+			 *
+			 * @return string|null The plain class.
+			 */
+			protected function resolveEventClass(string $eventClass): ?string {
+				return get_class(
+					new class() {
+
+						/**
+						 * Accepts what both events accept.
+						 *
+						 * @param string $app     The reporting app.
+						 * @param string $key     The connection key.
+						 * @param string $status  The observed status.
+						 * @param string $message The message.
+						 */
+						public function __construct(
+							public string $app='',
+							public string $key='',
+							public string $status='',
+							public string $message='',
+						) {
+						}//end __construct()
+					}
+				);
+			}//end resolveEventClass()
+		};
+	}//end reporterResolvingANonEvent()
+
+	/**
+	 * The HTTP status of a failed call is read from the response it carries.
+	 *
+	 * @return void
+	 */
+	public function testHttpStatusOfReadsTheResponseStatus(): void {
+		$withResponse = new class('bad gateway') extends RuntimeException {
+
+			/**
+			 * The response the client attached.
+			 *
+			 * @return object
+			 */
+			public function getResponse(): object {
+				return new class() {
+
+					/**
+					 * The status the server answered.
+					 *
+					 * @return string
+					 */
+					public function getStatusCode(): string {
+						return '502';
+					}//end getStatusCode()
+				};
+			}//end getResponse()
+		};
+
+		$reporter = $this->reporter();
+
+		$this->assertSame(expected: 502, actual: $reporter->httpStatusOf(exception: $withResponse));
+		$this->assertNull(actual: $reporter->httpStatusOf(exception: new RuntimeException('timeout')));
+	}//end testHttpStatusOfReadsTheResponseStatus()
+
+	/**
+	 * A memory that cannot be cleared is logged, and the refresh is still sent.
+	 *
+	 * @return void
+	 */
+	public function testAFailingMemoryClearStillSendsTheRefresh(): void {
+		$appConfig = $this->createMock(originalClassName: IAppConfig::class);
+		$appConfig->expects($this->once())->method('deleteKey')
+			->with('buildiq', 'connection_report_store')
+			->willThrowException(new RuntimeException('locked'));
+		$this->logger->expects($this->once())->method('warning')
+			->with(
+				'Buildiq: could not clear a connection report memory',
+				['key' => 'store', 'exception' => 'locked']
+			);
+
+		$refreshed = $this->reporter(appConfig: $appConfig)->refreshFromSave(savedKeys: ['registry_token']);
+
+		$this->assertSame(expected: ['store'], actual: $refreshed);
+		$this->assertCount(expectedCount: 1, haystack: $this->sent);
+		$this->assertInstanceOf(expected: ConnectionRefreshRequestedEvent::class, actual: $this->sent[0]);
+	}//end testAFailingMemoryClearStillSendsTheRefresh()
+
+	/**
+	 * A built object that is not an Event is never dispatched, reported or remembered.
+	 *
+	 * @return void
+	 */
+	public function testANonEventIsNeitherSentNorRemembered(): void {
+		$this->dispatcher->expects($this->never())->method('dispatchTyped');
+		$this->logger->expects($this->never())->method('warning');
+
+		$reporter = $this->reporterResolvingANonEvent();
+
+		$this->assertFalse(condition: $reporter->reportStoreSearch(outcome: 'ok'));
+		$this->assertSame(expected: [], actual: $reporter->refreshFromSave(savedKeys: ['registry_url']));
+		$this->assertArrayNotHasKey(key: 'connection_report_store', array: $this->store);
+	}//end testANonEventIsNeitherSentNorRemembered()
 }//end class
