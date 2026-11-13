@@ -44,6 +44,7 @@ use Stringable;
  * GOLDEN_RECORD=1 to write a missing fixture.
  *
  * @covers \OCA\Buildiq\Service\GitHubCatalogService
+ * @uses   \OCA\Buildiq\Service\GitHub\ShortLivedCache
  * @uses   \OCA\Buildiq\Service\GitHubFormCatalogService
  * @uses   \OCA\Buildiq\Service\RepoSource
  */

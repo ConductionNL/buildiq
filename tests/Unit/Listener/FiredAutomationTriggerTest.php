@@ -53,6 +53,7 @@ use RuntimeException;
  * @covers \OCA\Buildiq\Listener\FiredAutomationTrigger
  * @covers \OCA\Buildiq\Listener\DocumentGenerationListener
  * @covers \OCA\Buildiq\Listener\AutomationApprovalTriggerListener
+ * @uses   \OCA\Buildiq\Listener\LazyObjectService
  * @uses   \OCA\Buildiq\Support\ObjectRecord
  */
 class FiredAutomationTriggerTest extends TestCase {

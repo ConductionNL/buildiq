@@ -45,6 +45,7 @@ use RuntimeException;
  * result carries the applier's report and warnings.
  *
  * @covers \OCA\Buildiq\Service\GitHubAppSyncService
+ * @uses   \OCA\Buildiq\Service\GitHub\CredentialBrokerClient
  * @uses   \OCA\Buildiq\Service\LocalApplicationRef
  * @uses   \OCA\Buildiq\Service\RepoSource
  * @uses   \OCA\Buildiq\Support\ObjectRecord
