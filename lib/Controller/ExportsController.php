@@ -625,12 +625,36 @@ class ExportsController extends Controller {
 
 		// The queueing user's UID travels to the session-less background job so the
 		// broker's ownership guard has an identity to check the credential against.
+		$requestedBy = $this->requesterUid();
+
+		return $this->queueExport(slug: $slug, body: $body, requestedBy: $requestedBy);
+	}//end submit()
+
+	/**
+	 * The session user's UID, or null without a session user.
+	 *
+	 * @return string|null
+	 */
+	private function requesterUid(): string|null {
 		$requestedBy = null;
 		$user = $this->userSession->getUser();
 		if ($user !== null) {
 			$requestedBy = $user->getUID();
 		}
 
+		return $requestedBy;
+	}//end requesterUid()
+
+	/**
+	 * Queue the export job: 202 with its uuid, 422 on a refused payload, 500 on any other failure.
+	 *
+	 * @param string              $slug        The application slug.
+	 * @param array<string,mixed> $body        The validated request body.
+	 * @param string|null         $requestedBy The queueing user's UID.
+	 *
+	 * @return JSONResponse
+	 */
+	private function queueExport(string $slug, array $body, string|null $requestedBy): JSONResponse {
 		try {
 			$jobUuid = $this->exportJobService->queue(
 				applicationSlug: $slug,
@@ -654,7 +678,7 @@ class ExportsController extends Controller {
 			['uuid' => $jobUuid],
 			Http::STATUS_ACCEPTED
 		);
-	}//end submit()
+	}//end queueExport()
 
 	/**
 	 * What a server needs to run an exported app on its own.

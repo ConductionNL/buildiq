@@ -173,35 +173,13 @@ class VersionPromotionController extends Controller {
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-67
 	 */
 	private function mapExceptionToResponse(Throwable $error): JSONResponse {
-		if ($error instanceof NoPromoteTargetException) {
-			$this->logger->info('Buildiq: promote rejected (no target): ' . $error->getMessage());
-			return $this->errorResponse(
-				code: $error->getErrorCode(),
-				detail: $error->getMessage(),
-				status: Http::STATUS_UNPROCESSABLE_ENTITY
-			);
-		}
-
-		if ($error instanceof InvalidStrategyException) {
-			$this->logger->info('Buildiq: promote rejected (invalid strategy): ' . $error->getMessage());
-			return $this->errorResponse(
-				code: $error->getErrorCode(),
-				detail: $error->getMessage(),
-				status: Http::STATUS_BAD_REQUEST
-			);
+		$rejection = $this->rejectionResponse(error: $error);
+		if ($rejection !== null) {
+			return $rejection;
 		}
 
 		if ($error instanceof VersionLockedException) {
 			return $this->buildLockedResponse(error: $error);
-		}
-
-		if ($error instanceof InsufficientPermissionException) {
-			$this->logger->info('Buildiq: promote rejected (rbac): ' . $error->getMessage());
-			return $this->errorResponse(
-				code: $error->getErrorCode(),
-				detail: $error->getMessage(),
-				status: Http::STATUS_FORBIDDEN
-			);
 		}
 
 		if ($error instanceof PromotionFailedException) {
@@ -226,6 +204,45 @@ class VersionPromotionController extends Controller {
 			status: Http::STATUS_INTERNAL_SERVER_ERROR
 		);
 	}//end mapExceptionToResponse()
+
+	/**
+	 * The response to a rejected promotion (no target, invalid strategy,
+	 * missing role), or null for any other error.
+	 *
+	 * @param Throwable $error The caught error.
+	 *
+	 * @return JSONResponse|null
+	 */
+	private function rejectionResponse(Throwable $error): JSONResponse|null {
+		if ($error instanceof NoPromoteTargetException) {
+			$this->logger->info('Buildiq: promote rejected (no target): ' . $error->getMessage());
+			return $this->errorResponse(
+				code: $error->getErrorCode(),
+				detail: $error->getMessage(),
+				status: Http::STATUS_UNPROCESSABLE_ENTITY
+			);
+		}
+
+		if ($error instanceof InvalidStrategyException) {
+			$this->logger->info('Buildiq: promote rejected (invalid strategy): ' . $error->getMessage());
+			return $this->errorResponse(
+				code: $error->getErrorCode(),
+				detail: $error->getMessage(),
+				status: Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		if ($error instanceof InsufficientPermissionException) {
+			$this->logger->info('Buildiq: promote rejected (rbac): ' . $error->getMessage());
+			return $this->errorResponse(
+				code: $error->getErrorCode(),
+				detail: $error->getMessage(),
+				status: Http::STATUS_FORBIDDEN
+			);
+		}
+
+		return null;
+	}//end rejectionResponse()
 
 	/**
 	 * Build the 409 response for a VersionLockedException with optional lock context.
