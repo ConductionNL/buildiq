@@ -43,7 +43,7 @@ import TemplateGallery from '../../src/views/TemplateGallery.vue'
 let credentials = { data: [] }
 
 async function mountGallery(routes = ['PageEditor', 'VirtualApps', 'Dashboard']) {
-	axiosMock.get.mockImplementation((url, config) => {
+	axiosMock.get.mockImplementation((url) => {
 		const u = String(url)
 		if (u.includes('shop/github/search')) {
 			return Promise.resolve({
