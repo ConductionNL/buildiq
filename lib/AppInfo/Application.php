@@ -25,11 +25,8 @@ declare(strict_types=1);
 namespace OCA\Buildiq\AppInfo;
 
 use OCA\Buildiq\Capabilities;
-use OCA\Buildiq\Controller\DashboardController;
-use OCA\Buildiq\Controller\PreferencesController;
-use OCA\Buildiq\Controller\SettingsController;
-use OCA\Buildiq\Dashboard\VirtualAppWidgetContext;
-use OCA\Buildiq\Lifecycle\ApplicationVersionOwnerGuard;
+use OCA\Buildiq\Controller\ControllerRegistrar;
+use OCA\Buildiq\Lifecycle\LifecycleRegistrar;
 use OCA\Buildiq\Listener\ApprovalOutcomeListener;
 use OCA\Buildiq\Listener\AutomationApprovalTriggerListener;
 use OCA\Buildiq\Listener\AutomationCleanupListener;
@@ -38,26 +35,12 @@ use OCA\Buildiq\Listener\FormLiveValuesListener;
 use OCA\Buildiq\Listener\HybridMetadataLockListener;
 use OCA\Buildiq\Listener\ProductionVersionGuardListener;
 use OCA\Buildiq\Mcp\BuildiqToolProvider;
-use OCA\Buildiq\Middleware\ApiContractMiddleware;
-use OCA\Buildiq\Repair\InitializeSettings;
-use OCA\Buildiq\Sections\SettingsSection;
-use OCA\Buildiq\Service\AppNavigationService;
-use OCA\Buildiq\Service\AppVisibilityResolver;
-use OCA\Buildiq\Service\CallerContext;
-use OCA\Buildiq\Service\Connection\ConnectionReporter;
-use OCA\Buildiq\Service\Dashboard\AggregationGateway;
-use OCA\Buildiq\Service\Dashboard\OpenRegisterAggregationGateway;
-use OCA\Buildiq\Service\Dashboard\WidgetItemProjector;
-use OCA\Buildiq\Service\DashboardWidgetRegistrar;
-use OCA\Buildiq\Service\PermissionResolver;
-use OCA\Buildiq\Service\PublishedApplicationProvider;
-use OCA\Buildiq\Service\PublishedApps;
-use OCA\Buildiq\Service\SettingsService;
-use OCA\Buildiq\Settings\AdminSettings;
+use OCA\Buildiq\Middleware\MiddlewareRegistrar;
+use OCA\Buildiq\Repair\RepairRegistrar;
+use OCA\Buildiq\Service\ServiceRegistrar;
+use OCA\Buildiq\Settings\SettingsRegistrar;
 use OCA\OpenRegister\AppHost\Bootstrap;
 use OCA\OpenRegister\AppHost\LeafAdoption;
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
-use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
@@ -66,19 +49,11 @@ use OCA\OpenRegister\Event\ObjectUpdatedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Event\TaskSequenceCompletedEvent;
 use OCA\OpenRegister\Event\TaskTerminalEvent;
-use OCA\OpenRegister\Service\ObjectService;
-use OCP\App\IAppManager;
 use OCP\AppFramework\App;
 use OCP\AppFramework\Bootstrap\IBootContext;
 use OCP\AppFramework\Bootstrap\IBootstrap;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
-use OCP\AppFramework\Services\IInitialState;
-use OCP\Dashboard\IManager as IDashboardManager;
 use OCP\EventDispatcher\IEventDispatcher;
-use OCP\IAppConfig;
-use OCP\INavigationManager;
-use OCP\IURLGenerator;
-use OCP\IUserManager;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -110,72 +85,21 @@ class Application extends App implements IBootstrap {
 	 * @spec openspec/specs/openbuild-rbac/spec.md
 	 */
 	public function register(IRegistrationContext $context): void {
-		// The API contract (version header, deprecation of unversioned paths,
-		// problem details). Registered first: Nextcloud runs afterController in
-		// reverse order, so it sees the final response of every other middleware.
-		$context->registerMiddleware(class: ApiContractMiddleware::class);
-		$this->registerOpenRegisterContracts(context: $context);
+		(new MiddlewareRegistrar())->registerApiContractMiddleware(context: $context);
+		(new ServiceRegistrar())->registerOpenRegisterContracts(context: $context);
 		$this->registerAppHostPlumbing(context: $context);
-		$this->registerDashboardServices(context: $context);
-		$this->registerConcreteControllers(context: $context);
-		$this->registerSettingsServices(context: $context);
-		$this->registerAdminSettings(context: $context);
-		$this->registerObservabilityControllers(context: $context);
+		(new ServiceRegistrar())->registerDashboardServices(context: $context);
+		(new ControllerRegistrar())->registerConcreteControllers(context: $context);
+		(new ServiceRegistrar())->registerSettingsService(context: $context);
+		(new RepairRegistrar())->registerSettingsRepairStep(context: $context);
+		(new ControllerRegistrar())->registerSettingsController(context: $context);
+		(new SettingsRegistrar())->registerAdminSettings(context: $context);
+		(new ControllerRegistrar())->registerObservabilityControllers(context: $context);
 		$this->registerObjectGuardListeners(context: $context);
 		$this->registerApprovalListeners(context: $context);
 		$this->registerDocumentListeners(context: $context);
 		$this->registerToolsAndCapabilities(context: $context);
 	}//end register()
-
-	/**
-	 * Bind OpenRegister's published contracts to their implementations.
-	 *
-	 * @param IRegistrationContext $context The registration context
-	 *
-	 * @return void
-	 */
-	private function registerOpenRegisterContracts(IRegistrationContext $context): void {
-		// ADR-084: services type-hint OpenRegister's PUBLISHED interface, never its
-		// concrete class, so this app's unit tests can mock a type they are able to
-		// load. Nextcloud autowires concrete classes across apps but not interfaces,
-		// so the binding has to be stated — and the composition root is where this
-		// app says how it is wired.
-		//
-		// An ALIAS, not a factory: it resolves when something actually asks for the
-		// interface, so an instance without OpenRegister fails at the route that
-		// needed the data rather than at registration. Both names are strings and
-		// neither triggers an autoload, which is what keeps ADR-083 rule 3's promise
-		// that the start screen still boots.
-		$context->registerServiceAlias(
-			ObjectServiceInterface::class,
-			'OCA\OpenRegister\Service\ObjectService'
-		);
-
-		// The register-slug resolver, bound the same way and for the same reason.
-		//
-		// Register slugs live in `openregister_registers`, and nine fleet apps
-		// ship a repair step that renames theirs. The step is per instance, so
-		// both slugs are live across the estate at once and a literal is wrong
-		// on half of it. The old-slug case is the quiet one: OpenRegister finds
-		// no register, matches no rows, and returns an empty set that is
-		// byte-for-byte what a healthy empty register returns. No exception, no
-		// 404, no log line. This app read the connectors channel that way.
-		//
-		// Verified against this container, not assumed: OpenRegister registers
-		// the resolver in its OWN container, so nothing of that registration
-		// reaches here. What reaches here is the alias stated here plus autowiring
-		// of the concrete class, whose only dependencies are `RegisterMapper`
-		// and `LoggerInterface`. Both resolve from a leaf app's DIContainer, and
-		// the interface then answers with a live resolution. The one thing lost
-		// is OpenRegister's shared-instance registration: a leaf container
-		// autowires a fresh resolver per injection point, so the request-scoped
-		// memo is per consumer rather than per request. That costs one indexed
-		// read per consumer and changes no answer.
-		$context->registerServiceAlias(
-			RegisterSlugResolverInterface::class,
-			'OCA\OpenRegister\Service\RegisterSlugResolver'
-		);
-	}//end registerOpenRegisterContracts()
 
 	/**
 	 * Wire the generic AppHost plumbing when OpenRegister's Bootstrap is loadable.
@@ -282,303 +206,6 @@ class Application extends App implements IBootstrap {
 		// below regardless of load order. Same choice doriath made.
 		//
 	}//end registerAppHostPlumbing()
-
-	/**
-	 * Bind the services behind the top bar and the dashboard widgets.
-	 *
-	 * @param IRegistrationContext $context The registration context
-	 *
-	 * @return void
-	 */
-	private function registerDashboardServices(IRegistrationContext $context): void {
-		// The published-Application read is SHARED on purpose. Autowiring
-		// builds a fresh instance per injection point, and two instances mean
-		// two per-request caches and two OpenRegister queries — the exact
-		// thing this provider exists to prevent. Both boot-time consumers
-		// (AppNavigationService for the top bar, DashboardWidgetRegistrar for
-		// the dashboard widgets) resolve this one name.
-		$context->registerService(
-			PublishedApplicationProvider::class,
-			static fn ($c): PublishedApplicationProvider => new PublishedApplicationProvider(
-				objectService: $c->get(ObjectServiceInterface::class)
-			)
-		);
-
-		// AppNavigationService takes the shared provider explicitly, because
-		// its own constructor keeps the object service for the fallback path.
-		$context->registerService(
-			AppNavigationService::class,
-			static fn ($c): AppNavigationService => new AppNavigationService(
-				objectService: $c->get(ObjectServiceInterface::class),
-				urlGenerator: $c->get('OCP\\IURLGenerator'),
-				caller: $c->get(CallerContext::class),
-				appConfig: $c->get('OCP\\IAppConfig'),
-				logger: $c->get(LoggerInterface::class),
-				published: new PublishedApps(
-					applicationProvider: $c->get(PublishedApplicationProvider::class),
-					visibilityResolver: $c->get(AppVisibilityResolver::class)
-				)
-			)
-		);
-
-		// The registrar and the projector are bound explicitly rather than
-		// autowired. Autowiring builds them as PHP 8.4 lazy ghosts, and when a
-		// constructor argument fails to resolve, Nextcloud's ExceptionSerializer
-		// runs get_object_vars() over the half-built ghost while serialising
-		// that failure — which re-enters the initializer and throws a SECOND
-		// time, this time out of the catch block that was handling the first.
-		// A closure factory never becomes a ghost, so the guard in
-		// registerDashboardWidgets() actually gets to do its job.
-		$context->registerService(
-			DashboardWidgetRegistrar::class,
-			static fn ($c): DashboardWidgetRegistrar => new DashboardWidgetRegistrar(
-				applications: $c->get(PublishedApplicationProvider::class),
-				visibility: $c->get(AppVisibilityResolver::class),
-				logger: $c->get(LoggerInterface::class)
-			)
-		);
-		$context->registerService(
-			WidgetItemProjector::class,
-			static fn ($c): WidgetItemProjector => new WidgetItemProjector(
-				objectService: $c->get(ObjectServiceInterface::class),
-				aggregations: $c->get(AggregationGateway::class),
-				urlGenerator: $c->get(IURLGenerator::class),
-				l10n: $c->get('OCP\\IL10N'),
-				logger: $c->get(LoggerInterface::class)
-			)
-		);
-
-		// OpenRegister publishes no aggregation method on its contract, so the
-		// gateway resolves the runner duck-typed and answers null when it is
-		// absent. Bound here so the projector type-hints the interface.
-		$context->registerService(
-			AggregationGateway::class,
-			static fn ($c): AggregationGateway => new OpenRegisterAggregationGateway(
-				container: $c,
-				logger: $c->get(LoggerInterface::class)
-			)
-		);
-	}//end registerDashboardServices()
-
-	/**
-	 * Bind the concrete dashboard and preferences controllers that override the AppHost generics.
-	 *
-	 * @param IRegistrationContext $context The registration context
-	 *
-	 * @return void
-	 */
-	private function registerConcreteControllers(IRegistrationContext $context): void {
-		// Buildiq keeps three concrete controllers + the settings service that
-		// the AppHost generics cannot cover on OpenRegister `development` (see
-		// openspec/changes/adopt-apphost/design.md "Engine reality"):
-		//
-		// 1. DashboardController — publishes `currentUserGroups` to
-		// IInitialState (REQ-OBR-009); the generic dashboard controller
-		// does not, which would break client-side per-Application role
-		// derivation.
-		// 2. PreferencesController — there is NO GenericPreferencesController
-		// in OpenRegister `development` (Bootstrap aliases a class that does
-		// not exist), so the preferences routes would 500 under the alias.
-		// 3. SettingsController + SettingsService — the generic
-		// AppHostSettingsService::loadConfiguration() calls OR's
-		// ConfigurationService::importFromApp() with a 2-argument signature
-		// that no longer matches `development` (4 required args) and performs
-		// no ADR-037 `register.d/` fragment merge, which Buildiq relies on
-		// (10-business-rules.json). The bespoke SettingsController also
-		// enforces body-level admin guards on create()/load().
-		//
-		// Re-registering these concrete classes AFTER Bootstrap::register lets
-		// NC's DI container resolve the leaf class names to the real Buildiq
-		// controllers (last registration wins), so the canonical routes keep
-		// working while everything else is generic.
-		$context->registerService(
-			DashboardController::class,
-			static fn ($c): DashboardController => new DashboardController(
-				request: $c->get('OCP\\IRequest'),
-				initialState: $c->get('OCP\\AppFramework\\Services\\IInitialState'),
-				userSession: $c->get('OCP\\IUserSession'),
-				groupManager: $c->get('OCP\\IGroupManager'),
-				navigationManager: $c->get('OCP\\INavigationManager')
-			)
-		);
-		$context->registerService(
-			PreferencesController::class,
-			static fn ($c): PreferencesController => new PreferencesController(
-				request: $c->get('OCP\\IRequest'),
-				config: $c->get('OCP\\IConfig'),
-				userSession: $c->get('OCP\\IUserSession')
-			)
-		);
-	}//end registerConcreteControllers()
-
-	/**
-	 * Bind the concrete settings service, its repair step and its controller.
-	 *
-	 * @param IRegistrationContext $context The registration context
-	 *
-	 * @return void
-	 */
-	private function registerSettingsServices(IRegistrationContext $context): void {
-		// SettingsService — bind the concrete Buildiq implementation so it wins
-		// over the generic AppHost binding (last registration wins). When
-		// Bootstrap::register ran (above), it aliases this leaf class name to
-		// OpenRegister's generic AppHostSettingsService, whose loadConfiguration()
-		// calls ConfigurationService::importFromApp() with a stale 2-argument
-		// signature (OR `development` now requires 4) and skips the ADR-037
-		// register.d/ fragment merge. Without this override the SettingsController
-		// factory below also resolves `$c->get(SettingsService::class)` to the
-		// generic AppHostSettingsService and fatals with a TypeError (constructor
-		// arg #2 type mismatch), 500-ing `GET /api/settings` and leaving the app
-		// detail page in its empty fallback ("Untitled application", `buildiq--`
-		// register). On the app-enable/install path the InitializeSettings repair
-		// step resolves THIS class directly, so under the generic binding the
-		// register import fails with "importFromApp(): Argument #2 ($data) not
-		// passed" — leaving the buildiq register uncreated until a manual
-		// re-import. Registering the concrete class here (mirroring the controllers
-		// above) guarantees every caller — the InitializeSettings repair step AND
-		// SettingsController — uses the correct 4-arg importer + fragment merge on
-		// all paths.
-		$context->registerService(
-			SettingsService::class,
-			static fn ($c): SettingsService => new SettingsService(
-				appConfig: $c->get('OCP\\IAppConfig'),
-				appManager: $c->get('OCP\\App\\IAppManager'),
-				container: $c,
-				caller: $c->get(CallerContext::class),
-				logger: $c->get('Psr\\Log\\LoggerInterface'),
-				// Adopt-connection-registry: without it a store save would never
-				// ask integriq to look again, and nothing would say so. The
-				// argument is optional, so leaving it out here is a silent no-op.
-				connectionReporter: $c->get(ConnectionReporter::class)
-			)
-		);
-		// InitializeSettings repair step — bind Buildiq's own class so it wins
-		// over the generic AppHost binding (last registration wins). Bootstrap
-		// above re-registers this exact class name to OpenRegister's
-		// GenericInitializeSettings, which imports via the broken generic
-		// AppHostSettingsService (2-arg importFromApp) and does NO register.d/
-		// fragment merge. info.xml declares OCA\Buildiq\Repair\InitializeSettings
-		// as an <install>/<post-migration> step; NC's repair runner resolves that
-		// class name through the container, so without this the generic (failing)
-		// step runs on install and the buildiq register is never created.
-		// Re-registering the concrete step here makes install use the correct
-		// 4-arg importer + fragment merge (via the concrete SettingsService above).
-		$context->registerService(
-			InitializeSettings::class,
-			static fn ($c): InitializeSettings => new InitializeSettings(
-				settingsService: $c->get(SettingsService::class),
-				logger: $c->get('Psr\\Log\\LoggerInterface')
-			)
-		);
-		$context->registerService(
-			SettingsController::class,
-			static fn ($c): SettingsController => new SettingsController(
-				request: $c->get('OCP\\IRequest'),
-				settingsService: $c->get(SettingsService::class),
-				userSession: $c->get('OCP\\IUserSession'),
-				groupManager: $c->get('OCP\\IGroupManager')
-			)
-		);
-	}//end registerSettingsServices()
-
-	/**
-	 * Bind the admin settings section and panel.
-	 *
-	 * @param IRegistrationContext $context The registration context
-	 *
-	 * @return void
-	 */
-	private function registerAdminSettings(IRegistrationContext $context): void {
-		// 4. SettingsSection + AdminSettings — the admin settings section and
-		// panel referenced by info.xml `<settings>`. Both are one-line leaf
-		// subclasses of OpenRegister's GenericSettingsSection / GenericAdminSettings,
-		// whose constructors take scalar params (sectionId, name, icon, priority)
-		// that are NOT autowireable — they MUST be bound by a service factory.
-		// Bootstrap::register() normally binds them, but when Bootstrap is not
-		// autoloadable at register() time (it lives in OCA\OpenRegister and that
-		// app's autoloader is not guaranteed to be registered before Buildiq
-		// boots — `buildiq` sorts before `openregister`), the else branch above
-		// skips it. NC's settings Manager instantiates EVERY registered section to
-		// render ANY settings page, so an unbound `sectionId` throws
-		// QueryNotFoundException that escapes NC's catch and blanks ALL admin AND
-		// personal settings pages instance-wide (not just Buildiq's). Register
-		// the leaf classes unconditionally here with Bootstrap's exact defaults so
-		// they resolve regardless of app load order (last registration wins).
-		$context->registerService(
-			SettingsSection::class,
-			static fn ($c): SettingsSection => new SettingsSection(
-				sectionId: self::APP_ID,
-				name: 'Buildiq',
-				appId: self::APP_ID,
-				iconFile: 'app-dark.svg',
-				priority: 75,
-				urlGenerator: $c->get(IURLGenerator::class)
-			)
-		);
-		$context->registerService(
-			AdminSettings::class,
-			static fn ($c): AdminSettings => new AdminSettings(
-				appId: self::APP_ID,
-				sectionId: self::APP_ID,
-				priority: 10,
-				appManager: $c->get(IAppManager::class),
-				initialState: $c->get(IInitialState::class),
-				appConfig: $c->get(IAppConfig::class)
-			)
-		);
-	}//end registerAdminSettings()
-
-	/**
-	 * Bind the health and metrics controllers to the generic AppHost implementations.
-	 *
-	 * @param IRegistrationContext $context The registration context
-	 *
-	 * @return void
-	 */
-	private function registerObservabilityControllers(IRegistrationContext $context): void {
-		// 5. Observability probes (health + metrics) — same load-order hazard as
-		// the settings section above, but with a worse symptom. `routes.php`
-		// calls \OCA\OpenRegister\AppHost\Routes::standard(), which emits
-		// `health#index` and `metrics#index` UNCONDITIONALLY. routes.php is
-		// evaluated at request-routing time, by which point OpenRegister's
-		// autoloader IS registered — so the routes always exist. The controllers
-		// behind them, however, are only bound by Bootstrap::register(), which
-		// the guard above skips because `buildiq` sorts before `openregister`
-		// and OR is not autoloadable that early. The result is a routed endpoint
-		// with no controller: GET /api/health and GET /api/metrics both 500.
-		//
-		// Buildiq has no concrete Health/MetricsController of its own (ADR-040
-		// moved them to the AppHost engine), so bind the leaf class names to the
-		// generic implementations here, mirroring Bootstrap::registerControllers.
-		// The OpenRegister class names are referenced as STRINGS and every
-		// dependency is resolved INSIDE the closure, so nothing touches the
-		// OCA\OpenRegister namespace until the container resolves the controller
-		// at request time — deferring the binding instead of guarding at boot.
-		$context->registerService(
-			'OCA\\Buildiq\\Controller\\HealthController',
-			static function ($c) {
-				$class = 'OCA\\OpenRegister\\AppHost\\Controller\\GenericHealthController';
-				return new $class(
-					appName: self::APP_ID,
-					request: $c->get('OCP\\IRequest'),
-					manifestLoader: $c->get('OCA\\OpenRegister\\AppHost\\Observability\\ManifestLoader'),
-					executor: $c->get('OCA\\OpenRegister\\AppHost\\Observability\\HealthCheckExecutor')
-				);
-			}
-		);
-		$context->registerService(
-			'OCA\\Buildiq\\Controller\\MetricsController',
-			static function ($c) {
-				$class = 'OCA\\OpenRegister\\AppHost\\Controller\\GenericMetricsController';
-				return new $class(
-					appName: self::APP_ID,
-					request: $c->get('OCP\\IRequest'),
-					manifestLoader: $c->get('OCA\\OpenRegister\\AppHost\\Observability\\ManifestLoader'),
-					engine: $c->get('OCA\\OpenRegister\\AppHost\\Observability\\MetricsEngine')
-				);
-			}
-		);
-	}//end registerObservabilityControllers()
 
 	/**
 	 * Register the pre-save listeners that guard Application and form writes.
@@ -791,25 +418,7 @@ class Application extends App implements IBootstrap {
 			BuildiqToolProvider::class
 		);
 
-		// Per-Application RBAC lifecycle guard (ADR-022/ADR-023; buildiq-rbac).
-		// OpenRegister's LifecycleGuardRegistry resolves the destructive
-		// ApplicationVersion transitions' `requires` tag — keyed by this guard's
-		// FQCN in the schema's x-openregister-lifecycle.transitions[*].requires —
-		// to this concrete instance. It is the real, default-secure, fail-closed
-		// ownership rule the descriptive `authorization` block cannot express
-		// (issue #1). Registered explicitly because the guard's dependencies
-		// (PermissionResolver, ObjectService) need wiring through the container.
-		$context->registerService(
-			ApplicationVersionOwnerGuard::class,
-			static function ($c): ApplicationVersionOwnerGuard {
-				return new ApplicationVersionOwnerGuard(
-					objectService: $c->get(ObjectServiceInterface::class),
-					permissionResolver: $c->get(PermissionResolver::class),
-					userManager: $c->get(IUserManager::class),
-					logger: $c->get(LoggerInterface::class)
-				);
-			}
-		);
+		(new LifecycleRegistrar())->registerOwnerGuard(context: $context);
 
 		// Edit-availability capability (buildiq-inline-edit-persistence, spec
 		// buildiq-capability). Advertises `{ buildiq: { enabled, canEdit } }`
@@ -939,18 +548,7 @@ class Application extends App implements IBootstrap {
 			schemas: ['automation']
 		);
 
-		try {
-			$container = $context->getAppContainer();
-			$container->get(AppNavigationService::class)
-				->registerNavEntries($container->get(INavigationManager::class));
-		} catch (\Throwable $e) {
-			// Boot must never throw — log and continue.
-			// OpenRegister may not be installed on this instance.
-			\OCP\Server::get(LoggerInterface::class)->warning(
-				'Buildiq: nav-entry registration failed during boot: ' . $e->getMessage(),
-				['exception' => $e]
-			);
-		}//end try
+		$this->registerNavEntries(context: $context);
 
 		// Promoted dashboard widgets, beside the nav entries and reading the
 		// SAME published-Application query (PublishedApplicationProvider is a
@@ -962,6 +560,26 @@ class Application extends App implements IBootstrap {
 		// what it was.
 		$this->registerDashboardWidgets(context: $context);
 	}//end boot()
+
+	/**
+	 * Register the per-published-app top-bar navigation entries.
+	 *
+	 * @param IBootContext $context The boot context
+	 *
+	 * @return void
+	 */
+	private function registerNavEntries(IBootContext $context): void {
+		try {
+			(new ServiceRegistrar())->registerNavEntries(container: $context->getAppContainer());
+		} catch (\Throwable $e) {
+			// Boot must never throw — log and continue.
+			// OpenRegister may not be installed on this instance.
+			\OCP\Server::get(LoggerInterface::class)->warning(
+				'Buildiq: nav-entry registration failed during boot: ' . $e->getMessage(),
+				['exception' => $e]
+			);
+		}//end try
+	}//end registerNavEntries()
 
 	/**
 	 * Register the promoted virtual-app dashboard widgets.
@@ -979,21 +597,7 @@ class Application extends App implements IBootstrap {
 	 */
 	private function registerDashboardWidgets(IBootContext $context): void {
 		try {
-			$container = $context->getAppContainer();
-			$widgetContext = new VirtualAppWidgetContext(
-				urlGenerator: $container->get(IURLGenerator::class),
-				userSession: $container->get('OCP\\IUserSession'),
-				groupManager: $container->get('OCP\\IGroupManager'),
-				visibility: $container->get(AppVisibilityResolver::class),
-				projector: $container->get(WidgetItemProjector::class),
-				initialState: $container->get(IInitialState::class)
-			);
-
-			$container->get(DashboardWidgetRegistrar::class)->registerWidgets(
-				container: $container,
-				dashboardManager: $container->get(IDashboardManager::class),
-				context: $widgetContext
-			);
+			(new ServiceRegistrar())->registerDashboardWidgets(container: $context->getAppContainer());
 		} catch (\Throwable $e) {
 			\OCP\Server::get(LoggerInterface::class)->warning(
 				'Buildiq: dashboard-widget registration failed during boot: ' . $e->getMessage(),
