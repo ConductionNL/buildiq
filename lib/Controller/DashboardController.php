@@ -31,7 +31,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Controller;
 
 use OCA\Buildiq\Kernel\AppIdentity;
-use OCA\Buildiq\Service\AppNavigationService;
+use OCA\Buildiq\Kernel\Contracts\AppNavigationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
@@ -127,7 +127,7 @@ class DashboardController extends Controller {
 		// Application by AppNavigationService) as active — otherwise Nextcloud
 		// resolves the active entry from the URL's app id and the top bar
 		// shows Buildiq's name and icon instead of the virtual app's.
-		$this->navigationManager->setActiveEntry(AppNavigationService::ENTRY_ID_PREFIX . $slug);
+		$this->navigationManager->setActiveEntry(AppNavigationServiceInterface::ENTRY_ID_PREFIX . $slug);
 		$this->publishCurrentUserGroups();
 		$this->initialState->provideInitialState('builderSlug', $slug);
 		$this->initialState->provideInitialState(

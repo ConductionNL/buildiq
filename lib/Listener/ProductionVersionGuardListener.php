@@ -39,9 +39,9 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Listener;
 
-use OCA\Buildiq\Service\ApplicationVersionService;
-use OCA\Buildiq\Service\ListenerSlugContract;
-use OCA\Buildiq\Service\ObjectSchemaSlugResolver;
+use OCA\Buildiq\Kernel\Contracts\ApplicationVersionServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\ListenerSlugContractInterface;
+use OCA\Buildiq\Kernel\Contracts\ObjectSchemaSlugResolverInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
@@ -62,17 +62,17 @@ class ProductionVersionGuardListener implements IEventListener {
 	 * Constructor.
 	 *
 	 * @param LoggerInterface $logger PSR logger for diagnostics
-	 * @param ApplicationVersionService $service The cross-row guard owner
-	 * @param ObjectSchemaSlugResolver $slugs Resolves the event's schema id to a slug
-	 * @param ListenerSlugContract $contract Gates the corrected comparison
+	 * @param ApplicationVersionServiceInterface $service The cross-row guard owner
+	 * @param ObjectSchemaSlugResolverInterface $slugs Resolves the event's schema id to a slug
+	 * @param ListenerSlugContractInterface $contract Gates the corrected comparison
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly LoggerInterface $logger,
-		private readonly ApplicationVersionService $service,
-		private readonly ObjectSchemaSlugResolver $slugs,
-		private readonly ListenerSlugContract $contract,
+		private readonly ApplicationVersionServiceInterface $service,
+		private readonly ObjectSchemaSlugResolverInterface $slugs,
+		private readonly ListenerSlugContractInterface $contract,
 	) {
 	}//end __construct()
 
@@ -122,7 +122,7 @@ class ProductionVersionGuardListener implements IEventListener {
 
 		if ($this->slugs->isBuildiqSchema(
 			entity: $entity,
-			schemaSlug: ApplicationVersionService::APPLICATION_SCHEMA
+			schemaSlug: ApplicationVersionServiceInterface::APPLICATION_SCHEMA
 		) === false
 		) {
 			return;

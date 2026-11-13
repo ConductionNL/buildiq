@@ -45,6 +45,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\ApplicationVersionServiceInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -65,45 +66,7 @@ use Throwable;
  *
  * @spec openspec/specs/application-versions/spec.md#requirement-cycle-prevention-on-the-promotesto-chain
  */
-class ApplicationVersionService {
-	/**
-	 * Shared register that hosts both Application and ApplicationVersion.
-	 */
-	public const REGISTER_SLUG = 'buildiq';
-
-	/**
-	 * Prefix of the PER-VERSION register the creation wizard provisions.
-	 *
-	 * SEPARATE FROM REGISTER_SLUG, AND DELIBERATELY STILL `openbuild-`.
-	 *
-	 * Until the app-id rename these were the same string, and several callers
-	 * built a per-version name as `REGISTER_SLUG . '-' . $slug`. Renaming
-	 * REGISTER_SLUG to `buildiq` silently changed what those callers emit,
-	 * because one constant was doing two jobs. The applicationVersion schema
-	 * pins this one with `"pattern": "^openbuild-[a-z0-9][a-z0-9-]*[a-z0-9]$"`,
-	 * so the renamed value is not merely inconsistent — it is REJECTED, and the
-	 * failure surfaces as "Property 'register' should match pattern … but
-	 * 'buildiq-…' does not" at the moment an ApplicationVersion is written.
-	 *
-	 * Naming the two apart is what stops the next rename from doing it again.
-	 * Moving the per-version registers as well is a separate decision: existing
-	 * ones are real, populated registers, and renaming them needs a migration
-	 * and a change to that schema pattern, neither of which belongs in an
-	 * app-slug rename.
-	 *
-	 * @var string
-	 */
-	public const VERSION_REGISTER_PREFIX = 'openbuild-';
-
-	/**
-	 * Schema slug of the parent Application object.
-	 */
-	public const APPLICATION_SCHEMA = 'built-app';
-
-	/**
-	 * Schema slug of the versioned-model ApplicationVersion object.
-	 */
-	public const APPLICATION_VERSION_SCHEMA = 'applicationVersion';
+class ApplicationVersionService implements ApplicationVersionServiceInterface {
 
 	/**
 	 * Hard cap on the `promotesTo` chain walk in {@see guardNoCycle()}.

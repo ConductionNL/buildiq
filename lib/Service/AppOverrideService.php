@@ -42,6 +42,7 @@ namespace OCA\Buildiq\Service;
 
 use DateTimeImmutable;
 use DateTimeInterface;
+use OCA\Buildiq\Kernel\Contracts\AppOverrideServiceInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\App\IAppManager;
@@ -58,21 +59,7 @@ use Throwable;
  *
  * @spec openspec/specs/app-override-persistence/spec.md
  */
-class AppOverrideService {
-	/**
-	 * OpenRegister register slug that hosts the Buildiq control schemas.
-	 */
-	public const REGISTER_SLUG = 'buildiq';
-
-	/**
-	 * OpenRegister schema slug for the logical app record.
-	 */
-	public const APPLICATION_SCHEMA = 'built-app';
-
-	/**
-	 * OpenRegister schema slug for the deployable version record.
-	 */
-	public const APPLICATION_VERSION_SCHEMA = 'applicationVersion';
+class AppOverrideService implements AppOverrideServiceInterface {
 
 	/**
 	 * The fixed version slug used for a hybrid app's single production version.

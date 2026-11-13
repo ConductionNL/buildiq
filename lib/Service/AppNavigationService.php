@@ -41,6 +41,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\AppNavigationServiceInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -56,12 +57,7 @@ use Psr\Log\LoggerInterface;
  * evaluated by INavigationManager on every request boot cycle so draft→published
  * transitions are picked up automatically without any writeback (REQ-OBNAV-004).
  */
-class AppNavigationService {
-	/**
-	 * Prefix of every per-published-app nav entry id; the runtime host
-	 * (DashboardController::builder) uses it to mark the entry active.
-	 */
-	public const ENTRY_ID_PREFIX = 'openbuild-app-';
+class AppNavigationService implements AppNavigationServiceInterface {
 
 	/**
 	 * App-config key overriding the base nav order of virtual-app entries.

@@ -30,7 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\BackgroundJob;
 
-use OCA\Buildiq\Service\RuleEngineService;
+use OCA\Buildiq\Kernel\Contracts\RuleEngineServiceInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -93,8 +93,8 @@ class RuleExecutionLogCleanup extends TimedJob {
 			$results = $this->objectService->findAll(
 				config: [
 					'filters' => [
-						'register' => RuleEngineService::REGISTER_SLUG,
-						'schema' => RuleEngineService::EXECUTION_LOG_SCHEMA,
+						'register' => RuleEngineServiceInterface::REGISTER_SLUG,
+						'schema' => RuleEngineServiceInterface::EXECUTION_LOG_SCHEMA,
 					],
 				]
 			);

@@ -41,11 +41,12 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use FilesystemIterator;
+use OCA\Buildiq\Kernel\Contracts\GitHubPushServiceInterface;
 use OCA\Buildiq\Service\GitHub\BrokerAccess;
 use OCA\Buildiq\Service\GitHub\CredentialBrokerClient;
 use OCA\Buildiq\Service\GitHub\PushTarget;
 use OCA\Buildiq\Service\GitHub\TokenScrubber;
-use FilesystemIterator;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RecursiveDirectoryIterator;
@@ -57,7 +58,7 @@ use RuntimeException;
  *
  * @spec openspec/changes/archive/2026-06-14-openbuild-exporter/tasks.md#task-6.2
  */
-class GitHubPushService {
+class GitHubPushService implements GitHubPushServiceInterface {
 	/**
 	 * OpenRegister's credential broker.
 	 *

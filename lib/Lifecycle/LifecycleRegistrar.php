@@ -24,7 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Lifecycle;
 
-use OCA\Buildiq\Service\PermissionResolver;
+use OCA\Buildiq\Kernel\Contracts\PermissionResolverInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 use OCP\IUserManager;
@@ -66,7 +66,7 @@ final class LifecycleRegistrar {
 			static function ($c): ApplicationVersionOwnerGuard {
 				return new ApplicationVersionOwnerGuard(
 					objectService: $c->get(ObjectServiceInterface::class),
-					permissionResolver: $c->get(PermissionResolver::class),
+					permissionResolver: $c->get(PermissionResolverInterface::class),
 					userManager: $c->get(IUserManager::class),
 					logger: $c->get(LoggerInterface::class)
 				);

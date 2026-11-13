@@ -45,8 +45,8 @@ use OCA\Buildiq\Exception\NoPromoteTargetException;
 use OCA\Buildiq\Exception\PromotionFailedException;
 use OCA\Buildiq\Exception\VersionLockedException;
 use OCA\Buildiq\Kernel\AppIdentity;
-use OCA\Buildiq\Service\PermissionResolver;
-use OCA\Buildiq\Service\VersionPromotionService;
+use OCA\Buildiq\Kernel\Contracts\PermissionResolverInterface;
+use OCA\Buildiq\Kernel\Contracts\VersionPromotionServiceInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\AppFramework\Controller;
@@ -78,8 +78,8 @@ class VersionPromotionController extends Controller {
 	 * @param LoggerInterface $logger PSR logger
 	 * @param ObjectServiceInterface $objectService OR object surface (load source + parent)
 	 * @param IUserSession $userSession Current NC user session
-	 * @param VersionPromotionService $promotionService Imperative promotion flow owner
-	 * @param PermissionResolver $permissionResolver Shared permission-grammar resolver (H1 fix)
+	 * @param VersionPromotionServiceInterface $promotionService Imperative promotion flow owner
+	 * @param PermissionResolverInterface $permissionResolver Shared permission-grammar resolver (H1 fix)
 	 *
 	 * @return void
 	 */
@@ -88,8 +88,8 @@ class VersionPromotionController extends Controller {
 		private readonly LoggerInterface $logger,
 		private readonly ObjectServiceInterface $objectService,
 		private readonly IUserSession $userSession,
-		private readonly VersionPromotionService $promotionService,
-		private readonly PermissionResolver $permissionResolver,
+		private readonly VersionPromotionServiceInterface $promotionService,
+		private readonly PermissionResolverInterface $permissionResolver,
 	) {
 		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
@@ -270,8 +270,8 @@ class VersionPromotionController extends Controller {
 		try {
 			$entity = $this->objectService->find(
 				id: $uuid,
-				register: VersionPromotionService::REGISTER_SLUG,
-				schema: VersionPromotionService::APPLICATION_SCHEMA
+				register: VersionPromotionServiceInterface::REGISTER_SLUG,
+				schema: VersionPromotionServiceInterface::APPLICATION_SCHEMA
 			);
 		} catch (Throwable $e) {
 			$this->logger->debug(
@@ -304,8 +304,8 @@ class VersionPromotionController extends Controller {
 		try {
 			$entity = $this->objectService->find(
 				id: $uuid,
-				register: VersionPromotionService::REGISTER_SLUG,
-				schema: VersionPromotionService::APPLICATION_VERSION_SCHEMA
+				register: VersionPromotionServiceInterface::REGISTER_SLUG,
+				schema: VersionPromotionServiceInterface::APPLICATION_VERSION_SCHEMA
 			);
 		} catch (Throwable $e) {
 			$this->logger->debug(

@@ -26,11 +26,11 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Mcp\Handler;
 
-use OCA\Buildiq\Service\PermissionResolver;
+use OCA\Buildiq\Kernel\Contracts\PermissionResolverInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
-use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
+use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -63,7 +63,7 @@ abstract class AbstractToolHandler {
 	 * @param LoggerInterface $logger PSR logger used for non-fatal warnings and error logging.
 	 * @param IGroupManager $groupManager Group manager used for admin and group membership checks.
 	 * @param ObjectServiceInterface $objectService OpenRegister's published object contract (ADR-084) — the ONE way a handler reaches OR data.
-	 * @param PermissionResolver $permissionResolver Shared permission-grammar resolver (H1 fix).
+	 * @param PermissionResolverInterface $permissionResolver Shared permission-grammar resolver (H1 fix).
 	 * @param AuditTrailMapper|null $auditTrailMapper Optional OR audit-trail writer for admin-bypass parity (L2).
 	 */
 	public function __construct(
@@ -77,7 +77,7 @@ abstract class AbstractToolHandler {
 		// could see it) while this constructor-injected contract sat unused
 		// beside them. One injected dependency, one way in.
 		protected readonly ObjectServiceInterface $objectService,
-		protected readonly ?PermissionResolver $permissionResolver = null,
+		protected readonly ?PermissionResolverInterface $permissionResolver = null,
 		protected readonly ?AuditTrailMapper $auditTrailMapper = null,
 	) {
 	}//end __construct()

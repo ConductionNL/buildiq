@@ -19,6 +19,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\ServerBundleWriterInterface;
 use OCP\App\IAppManager;
 use RuntimeException;
 
@@ -30,7 +31,7 @@ use RuntimeException;
  *
  * @spec openspec/specs/openbuild-exporter/spec.md
  */
-class ServerBundleWriter {
+class ServerBundleWriter implements ServerBundleWriterInterface {
 
 	/**
 	 * The database the bundle's compose file runs.

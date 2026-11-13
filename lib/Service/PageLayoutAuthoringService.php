@@ -45,6 +45,7 @@ namespace OCA\Buildiq\Service;
 
 use InvalidArgumentException;
 use OCA\Buildiq\Integration\PageLayoutLeafProvider;
+use OCA\Buildiq\Kernel\Contracts\PageLayoutAuthoringServiceInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\IAppConfig;
 use RuntimeException;
@@ -54,7 +55,7 @@ use RuntimeException;
  *
  * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-002, REQ-OBSO-003)
  */
-class PageLayoutAuthoringService {
+class PageLayoutAuthoringService implements PageLayoutAuthoringServiceInterface {
 	/**
 	 * The schema holding layouts, equal to the leaf provider's.
 	 *

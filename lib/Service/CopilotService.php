@@ -38,6 +38,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Exception\CopilotException;
+use OCA\Buildiq\Kernel\Contracts\CopilotServiceInterface;
 use OCA\Buildiq\Mcp\BuildiqToolProvider;
 use OCA\Buildiq\Service\Copilot\CopilotPlanValidator;
 use OCA\Buildiq\Service\Copilot\CopilotPromptBuilder;
@@ -49,8 +50,8 @@ use OCA\Buildiq\Support\ManifestWidgetShape;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\Buildiq\Support\WidgetSpec;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
-use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
+use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -59,13 +60,14 @@ use OCP\TaskProcessing\Task;
 use OCP\TaskProcessing\TaskTypes\TextToText;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use Throwable;
+
 // NOTE: OCP\TaskProcessing\Task and OCP\TaskProcessing\TaskTypes\TextToText
 // ship only on NC 30+. A `use` import merely aliases the name — PHP does not
 // resolve/autoload it until the class is actually referenced — so importing
 // them here is safe even on NC 28/29; every call site that constructs or
 // references them is reached only after health()/assertAvailable() has
 // already confirmed `OCP\TaskProcessing\IManager` exists.
-use Throwable;
 
 /**
  * Prompt-to-app copilot orchestrator (REQ-OBAIC-001 through REQ-OBAIC-007).
@@ -73,7 +75,7 @@ use Throwable;
  * @spec openspec/specs/ai-copilot/spec.md
  * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
  */
-class CopilotService {
+class CopilotService implements CopilotServiceInterface {
 
 	private const REGISTER_SLUG = 'buildiq';
 

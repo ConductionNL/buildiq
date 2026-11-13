@@ -40,6 +40,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service\Dashboard;
 
 use OCA\Buildiq\Dashboard\WidgetDescriptor;
+use OCA\Buildiq\Kernel\Contracts\WidgetItemProjectorInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\Dashboard\Model\WidgetItem;
@@ -51,7 +52,7 @@ use Psr\Log\LoggerInterface;
 /**
  * Projects a promoted widget's declarative data source into dashboard items.
  */
-class WidgetItemProjector {
+class WidgetItemProjector implements WidgetItemProjectorInterface {
 	/**
 	 * Widget types whose value is a rendering rather than a list, so there is
 	 * nothing honest to project into items.

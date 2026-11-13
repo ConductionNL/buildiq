@@ -43,10 +43,11 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Exception\AppRepoParseException;
+use OCA\Buildiq\Kernel\Contracts\GitHubAppSyncServiceInterface;
 use OCA\Buildiq\Service\GitHub\AppPushRequest;
 use OCA\Buildiq\Service\GitHub\BrokerAccess;
-use OCA\Buildiq\Service\GitHub\CredentialBrokerClient;
 use OCA\Buildiq\Service\GitHub\BrokeredRepo;
+use OCA\Buildiq\Service\GitHub\CredentialBrokerClient;
 use OCA\Buildiq\Service\GitHub\FileCommit;
 use OCA\Buildiq\Service\GitHub\PushTarget;
 use OCA\Buildiq\Service\GitHub\TokenScrubber;
@@ -63,7 +64,7 @@ use Throwable;
  *
  * @spec openspec/changes/github-app-sync/specs/github-app-sync/spec.md
  */
-class GitHubAppSyncService {
+class GitHubAppSyncService implements GitHubAppSyncServiceInterface {
 	/**
 	 * The credential-broker service FQCN (resolved lazily; may be absent).
 	 */
@@ -88,46 +89,6 @@ class GitHubAppSyncService {
 	 * The discovery topic set on a freshly created repo.
 	 */
 	private const DISCOVERY_TOPIC = 'openbuild-app';
-
-	/**
-	 * Outcome: the operation succeeded.
-	 */
-	public const OUTCOME_OK = 'ok';
-
-	/**
-	 * Outcome: the credential broker is absent — publish is unavailable.
-	 */
-	public const OUTCOME_BROKER_UNAVAILABLE = 'broker_unavailable';
-
-	/**
-	 * Outcome: the broker denied the call (rules missing / credential not allowed).
-	 */
-	public const OUTCOME_BROKER_DENIED = 'broker_denied';
-
-	/**
-	 * Outcome: the app is not linked to a GitHub repository.
-	 */
-	public const OUTCOME_NOT_LINKED = 'not_linked';
-
-	/**
-	 * Outcome: the remote head moved — the owner must pull first (never force).
-	 */
-	public const OUTCOME_PUSH_CONFLICT = 'push_conflict';
-
-	/**
-	 * Outcome: GitHub / transport failure.
-	 */
-	public const OUTCOME_UNREACHABLE = 'github_unreachable';
-
-	/**
-	 * Outcome: GitHub refused the call on permissions grounds (HTTP 403).
-	 *
-	 * Distinct from a transport failure. Publishing a generated app needs a
-	 * credential carrying the `workflow` permission, because the scaffold always
-	 * emits `.github/workflows/*` and GitHub rejects a tree containing those
-	 * without it.
-	 */
-	public const OUTCOME_FORBIDDEN = 'github_forbidden';
 
 	/**
 	 * OR object CRUD (load/save Application + versions).

@@ -45,8 +45,8 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Controller;
 
 use OCA\Buildiq\Kernel\AppIdentity;
+use OCA\Buildiq\Kernel\Contracts\PermissionResolverInterface;
 use OCA\Buildiq\Service\CallerContext;
-use OCA\Buildiq\Service\PermissionResolver;
 use OCA\Buildiq\Service\RegisterStore;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
@@ -130,9 +130,9 @@ class AgentsController extends Controller {
 	/**
 	 * Shared permission-grammar resolver.
 	 *
-	 * @var PermissionResolver
+	 * @var PermissionResolverInterface
 	 */
-	private readonly PermissionResolver $permissionResolver;
+	private readonly PermissionResolverInterface $permissionResolver;
 
 	/**
 	 * Constructor.

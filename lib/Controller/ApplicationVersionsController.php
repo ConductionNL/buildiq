@@ -46,7 +46,7 @@ namespace OCA\Buildiq\Controller;
 use DateTimeImmutable;
 use DateTimeInterface;
 use OCA\Buildiq\Kernel\AppIdentity;
-use OCA\Buildiq\Service\ApplicationVersionService;
+use OCA\Buildiq\Kernel\Contracts\ApplicationVersionServiceInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
@@ -126,7 +126,7 @@ class ApplicationVersionsController extends Controller {
 	 * @param SchemaMapper $schemaMapper Resolves schema slugs
 	 * @param IUserSession $userSession Current Nextcloud user session
 	 * @param IGroupManager $groupManager Group membership resolver
-	 * @param ApplicationVersionService $versionService Owner of the imperative logic
+	 * @param ApplicationVersionServiceInterface $versionService Owner of the imperative logic
 	 * @param AuditTrailMapper|null $auditTrailMapper Optional OR audit-trail writer (null until OR loaded)
 	 *
 	 * @return void
@@ -139,7 +139,7 @@ class ApplicationVersionsController extends Controller {
 		private readonly SchemaMapper $schemaMapper,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
-		private readonly ApplicationVersionService $versionService,
+		private readonly ApplicationVersionServiceInterface $versionService,
 		private readonly ?AuditTrailMapper $auditTrailMapper = null,
 	) {
 		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
@@ -273,8 +273,8 @@ class ApplicationVersionsController extends Controller {
 
 			$created = $this->objectService->saveObject(
 				object: $payload,
-				register: ApplicationVersionService::REGISTER_SLUG,
-				schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
+				register: ApplicationVersionServiceInterface::REGISTER_SLUG,
+				schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
 			);
 
 			return new JSONResponse(
@@ -374,8 +374,8 @@ class ApplicationVersionsController extends Controller {
 			try {
 				$updated = $this->objectService->saveObject(
 					object: $payload,
-					register: ApplicationVersionService::REGISTER_SLUG,
-					schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA,
+					register: ApplicationVersionServiceInterface::REGISTER_SLUG,
+					schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA,
 					uuid: $currentUuid
 				);
 			} finally {
@@ -562,8 +562,8 @@ class ApplicationVersionsController extends Controller {
 		try {
 			$version = $this->objectService->find(
 				id: $versionUuid,
-				register: ApplicationVersionService::REGISTER_SLUG,
-				schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
+				register: ApplicationVersionServiceInterface::REGISTER_SLUG,
+				schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
 			);
 		} catch (Throwable $e) {
 			return null;
@@ -597,7 +597,7 @@ class ApplicationVersionsController extends Controller {
 		try {
 			return [
 				$this->registerMapper->find(
-					ApplicationVersionService::REGISTER_SLUG,
+					ApplicationVersionServiceInterface::REGISTER_SLUG,
 					_multitenancy: false
 				)->getId(),
 				$this->schemaMapper->find($schemaSlug, _multitenancy: false)->getId(),
@@ -647,7 +647,7 @@ class ApplicationVersionsController extends Controller {
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function versionRowsOf(array $application): ?array {
-		$ids = $this->resolveRegisterAndSchema(schemaSlug: ApplicationVersionService::APPLICATION_VERSION_SCHEMA);
+		$ids = $this->resolveRegisterAndSchema(schemaSlug: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA);
 		if ($ids === null) {
 			return null;
 		}
@@ -699,7 +699,7 @@ class ApplicationVersionsController extends Controller {
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function loadApplication(string $slug): ?array {
-		$ids = $this->resolveRegisterAndSchema(schemaSlug: ApplicationVersionService::APPLICATION_SCHEMA);
+		$ids = $this->resolveRegisterAndSchema(schemaSlug: ApplicationVersionServiceInterface::APPLICATION_SCHEMA);
 		if ($ids === null) {
 			return null;
 		}
@@ -746,7 +746,7 @@ class ApplicationVersionsController extends Controller {
 
 		$applicationUuid = (string)($application['id'] ?? $application['uuid'] ?? '');
 
-		$ids = $this->resolveRegisterAndSchema(schemaSlug: ApplicationVersionService::APPLICATION_VERSION_SCHEMA);
+		$ids = $this->resolveRegisterAndSchema(schemaSlug: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA);
 		if ($ids === null) {
 			return null;
 		}
@@ -848,11 +848,11 @@ class ApplicationVersionsController extends Controller {
 				$appEntity = null;
 				try {
 					$registerId = $this->registerMapper->find(
-						ApplicationVersionService::REGISTER_SLUG,
+						ApplicationVersionServiceInterface::REGISTER_SLUG,
 						_multitenancy: false
 					)->getId();
 					$schemaId = $this->schemaMapper->find(
-						ApplicationVersionService::APPLICATION_SCHEMA,
+						ApplicationVersionServiceInterface::APPLICATION_SCHEMA,
 						_multitenancy: false
 					)->getId();
 					$rows = $this->objectService->searchObjects(

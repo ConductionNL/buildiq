@@ -25,9 +25,9 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Controller;
 
 use OCA\Buildiq\Kernel\AppIdentity;
-use OCA\Buildiq\Service\AppHealthService;
-use OCA\Buildiq\Service\ApplicationInsightsService;
-use OCA\Buildiq\Service\ManifestResolverService;
+use OCA\Buildiq\Kernel\Contracts\AppHealthServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\ApplicationInsightsServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\ManifestResolverServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -47,16 +47,16 @@ class AppHealthController extends Controller {
 	 *
 	 * @param IRequest $request The request.
 	 * @param IUserSession $userSession The session.
-	 * @param ManifestResolverService $manifestResolver Who may open which version.
-	 * @param ApplicationInsightsService $insights Who may see a version's insights.
-	 * @param AppHealthService $health Stores and reads the samples.
+	 * @param ManifestResolverServiceInterface $manifestResolver Who may open which version.
+	 * @param ApplicationInsightsServiceInterface $insights Who may see a version's insights.
+	 * @param AppHealthServiceInterface $health Stores and reads the samples.
 	 */
 	public function __construct(
 		IRequest $request,
 		private readonly IUserSession $userSession,
-		private readonly ManifestResolverService $manifestResolver,
-		private readonly ApplicationInsightsService $insights,
-		private readonly AppHealthService $health,
+		private readonly ManifestResolverServiceInterface $manifestResolver,
+		private readonly ApplicationInsightsServiceInterface $insights,
+		private readonly AppHealthServiceInterface $health,
 	) {
 		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
@@ -110,7 +110,7 @@ class AppHealthController extends Controller {
 	#[NoAdminRequired]
 	public function show(string $appUuid, string $versionUuid): JSONResponse {
 		$window = (string)$this->request->getParam('window', '7d');
-		if (isset(AppHealthService::WINDOW_DAYS[$window]) === false) {
+		if (isset(AppHealthServiceInterface::WINDOW_DAYS[$window]) === false) {
 			return new JSONResponse(['error' => 'window must be 7d, 30d or 90d'], Http::STATUS_BAD_REQUEST);
 		}
 

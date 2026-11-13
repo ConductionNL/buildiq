@@ -51,6 +51,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Exception\WizardCreationException;
+use OCA\Buildiq\Kernel\Contracts\ApplicationCreationServiceInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Service\RegisterService;
 use OCP\IUserSession;
@@ -65,7 +66,7 @@ use Throwable;
  * N register provisions simultaneously, so we implement a careful-sequencing
  * + reverse-delete rollback strategy.
  */
-class ApplicationCreationService {
+class ApplicationCreationService implements ApplicationCreationServiceInterface {
 	/**
 	 * Four canonical presets and their hardcoded version chains.
 	 * Each entry is [name => string, slug => string] in chain order

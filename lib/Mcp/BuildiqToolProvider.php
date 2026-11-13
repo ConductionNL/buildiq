@@ -39,8 +39,8 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Mcp;
 
+use OCA\Buildiq\Kernel\Contracts\PermissionResolverInterface;
 use OCA\Buildiq\Mcp\Handler\AddWidgetHandler;
-use OCA\Buildiq\Service\PermissionResolver;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
@@ -290,7 +290,7 @@ class BuildiqToolProvider implements IMcpToolProvider {
 	 * @param ContainerInterface $container DI container used to resolve OpenRegister and Buildiq services lazily.
 	 * @param LoggerInterface $logger PSR logger used for non-fatal warnings and error logging.
 	 * @param ObjectServiceInterface $objectService OpenRegister's published object contract (ADR-084), threaded to every handler.
-	 * @param PermissionResolver|null $permissionResolver Shared permission-grammar resolver (H1 fix).
+	 * @param PermissionResolverInterface|null $permissionResolver Shared permission-grammar resolver (H1 fix).
 	 * @param AuditTrailMapper|null $auditTrailMapper Optional OR audit-trail writer threaded to handlers (L2).
 	 */
 	public function __construct(
@@ -299,7 +299,7 @@ class BuildiqToolProvider implements IMcpToolProvider {
 		private readonly ContainerInterface $container,
 		private readonly LoggerInterface $logger,
 		private readonly ObjectServiceInterface $objectService,
-		private readonly ?PermissionResolver $permissionResolver = null,
+		private readonly ?PermissionResolverInterface $permissionResolver = null,
 		private readonly ?AuditTrailMapper $auditTrailMapper = null,
 	) {
 	}//end __construct()

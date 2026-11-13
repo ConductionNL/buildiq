@@ -44,8 +44,8 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Controller;
 
 use OCA\Buildiq\Kernel\AppIdentity;
-use OCA\Buildiq\Service\AppOverrideService;
-use OCA\Buildiq\Service\PermissionResolver;
+use OCA\Buildiq\Kernel\Contracts\AppOverrideServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\PermissionResolverInterface;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -74,20 +74,20 @@ class AppOverrideController extends Controller {
 	 *
 	 * @param IRequest $request The current HTTP request.
 	 * @param LoggerInterface $logger PSR logger for diagnostics.
-	 * @param AppOverrideService $appOverrideService OR-backed override store.
+	 * @param AppOverrideServiceInterface $appOverrideService OR-backed override store.
 	 * @param IUserSession $userSession Current Nextcloud user session.
 	 * @param IAppManager $appManager Resolves Buildiq-access for a user.
-	 * @param PermissionResolver $permissionResolver Per-Application principal matcher (maintainer gate).
+	 * @param PermissionResolverInterface $permissionResolver Per-Application principal matcher (maintainer gate).
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		IRequest $request,
 		private readonly LoggerInterface $logger,
-		private readonly AppOverrideService $appOverrideService,
+		private readonly AppOverrideServiceInterface $appOverrideService,
 		private readonly IUserSession $userSession,
 		private readonly IAppManager $appManager,
-		private readonly PermissionResolver $permissionResolver,
+		private readonly PermissionResolverInterface $permissionResolver,
 	) {
 		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()

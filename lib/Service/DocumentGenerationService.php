@@ -83,6 +83,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\DocumentGenerationServiceInterface;
 use OCA\Buildiq\Service\Connection\ConnectionReporter;
 use OCA\Buildiq\Support\FleetAppId;
 use OCA\Buildiq\Support\ObjectRecord;
@@ -105,7 +106,7 @@ use Throwable;
  *
  * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#2.1
  */
-class DocumentGenerationService {
+class DocumentGenerationService implements DocumentGenerationServiceInterface {
 	/**
 	 * Shared Buildiq register slug (matches {@see AutomationCompilerService::REGISTER_SLUG}).
 	 */

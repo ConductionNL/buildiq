@@ -40,10 +40,10 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Listener;
 
-use OCA\Buildiq\Service\ApplicationVersionService;
+use OCA\Buildiq\Kernel\Contracts\ApplicationVersionServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\ObjectSchemaSlugResolverInterface;
 use OCA\Buildiq\Service\FormLiveBindingIndex;
 use OCA\Buildiq\Service\FormLiveValuesRecomputer;
-use OCA\Buildiq\Service\ObjectSchemaSlugResolver;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
@@ -73,7 +73,7 @@ class FormLiveValuesListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectSchemaSlugResolver $slugs Resolves register and schema slugs
+	 * @param ObjectSchemaSlugResolverInterface $slugs Resolves register and schema slugs
 	 * @param FormLiveBindingIndex $index The live form index
 	 * @param FormLiveValuesRecomputer $recomputer Evaluates on save
 	 * @param LoggerInterface $logger PSR logger
@@ -81,7 +81,7 @@ class FormLiveValuesListener implements IEventListener {
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ObjectSchemaSlugResolver $slugs,
+		private readonly ObjectSchemaSlugResolverInterface $slugs,
 		private readonly FormLiveBindingIndex $index,
 		private readonly FormLiveValuesRecomputer $recomputer,
 		private readonly LoggerInterface $logger,
@@ -113,8 +113,8 @@ class FormLiveValuesListener implements IEventListener {
 			$data = [];
 		}
 
-		if ($registerSlug === ObjectSchemaSlugResolver::REGISTER_SLUG
-			&& $schemaSlug === ApplicationVersionService::APPLICATION_VERSION_SCHEMA
+		if ($registerSlug === ObjectSchemaSlugResolverInterface::REGISTER_SLUG
+			&& $schemaSlug === ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
 		) {
 			$this->reindex(entity: $entity, version: $data);
 			return;

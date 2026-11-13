@@ -44,6 +44,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\ManifestResolverServiceInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -58,7 +59,7 @@ use Throwable;
  *
  * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-70
  */
-class ManifestResolverService {
+class ManifestResolverService implements ManifestResolverServiceInterface {
 	/**
 	 * Constructor.
 	 *

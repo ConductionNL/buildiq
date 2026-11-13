@@ -88,6 +88,7 @@ class Application extends App implements IBootstrap {
 	public function register(IRegistrationContext $context): void {
 		(new MiddlewareRegistrar())->registerApiContractMiddleware(context: $context);
 		(new ServiceRegistrar())->registerOpenRegisterContracts(context: $context);
+		(new ServiceRegistrar())->registerContractBindings(context: $context);
 		$this->registerAppHostPlumbing(context: $context);
 		(new ServiceRegistrar())->registerDashboardServices(context: $context);
 		(new ControllerRegistrar())->registerConcreteControllers(context: $context);

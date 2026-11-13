@@ -58,6 +58,7 @@ use OCA\Buildiq\Exception\InvalidStrategyException;
 use OCA\Buildiq\Exception\NoPromoteTargetException;
 use OCA\Buildiq\Exception\PromotionFailedException;
 use OCA\Buildiq\Exception\VersionLockedException;
+use OCA\Buildiq\Kernel\Contracts\VersionPromotionServiceInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use Psr\Log\LoggerInterface;
@@ -66,7 +67,7 @@ use Throwable;
 /**
  * Imperative business-logic surface for ApplicationVersion promotion.
  */
-class VersionPromotionService {
+class VersionPromotionService implements VersionPromotionServiceInterface {
 	/**
 	 * Strategy: replace target rows with source rows, import source schemas.
 	 */
@@ -92,21 +93,6 @@ class VersionPromotionService {
 		self::STRATEGY_MIGRATE_EXISTING_DATA,
 		self::STRATEGY_EMPTY_START,
 	];
-
-	/**
-	 * Shared register hosting Application + ApplicationVersion rows.
-	 */
-	public const REGISTER_SLUG = ApplicationVersionService::REGISTER_SLUG;
-
-	/**
-	 * Schema slug of the parent Application object.
-	 */
-	public const APPLICATION_SCHEMA = ApplicationVersionService::APPLICATION_SCHEMA;
-
-	/**
-	 * Schema slug of the ApplicationVersion object.
-	 */
-	public const APPLICATION_VERSION_SCHEMA = ApplicationVersionService::APPLICATION_VERSION_SCHEMA;
 
 	/**
 	 * Status string applied to a target after a failed promotion (spec REQ-OBVP-009).

@@ -31,7 +31,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Listener;
 
-use OCA\Buildiq\Service\AutomationCompilerService;
+use OCA\Buildiq\Kernel\Contracts\AutomationCompilerServiceInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
@@ -52,8 +52,8 @@ final class FiredAutomationTrigger {
 	 * @var array<string,string>
 	 */
 	public const AUTOMATION_FILTERS = [
-		'register' => AutomationCompilerService::REGISTER_SLUG,
-		'schema' => AutomationCompilerService::AUTOMATION_SCHEMA,
+		'register' => AutomationCompilerServiceInterface::REGISTER_SLUG,
+		'schema' => AutomationCompilerServiceInterface::AUTOMATION_SCHEMA,
 	];
 
 	/**

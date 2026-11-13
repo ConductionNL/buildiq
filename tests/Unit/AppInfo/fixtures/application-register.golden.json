@@ -20,6 +20,342 @@
         }
     },
     {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\AppChannelApplierInterface",
+            "target": "OCA\\Buildiq\\Service\\AppChannelApplier"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\AppHealthServiceInterface",
+            "target": "OCA\\Buildiq\\Service\\AppHealthService"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\AppNavigationServiceInterface",
+            "target": "OCA\\Buildiq\\Service\\AppNavigationService"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\AppOverrideServiceInterface",
+            "target": "OCA\\Buildiq\\Service\\AppOverrideService"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\AppRepoParserInterface",
+            "target": "OCA\\Buildiq\\Service\\AppRepoParser"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\AppVisibilityResolverInterface",
+            "target": "OCA\\Buildiq\\Service\\AppVisibilityResolver"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\ApplicationCreationServiceInterface",
+            "target": "OCA\\Buildiq\\Service\\ApplicationCreationService"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\ApplicationDeletionServiceInterface",
+            "target": "OCA\\Buildiq\\Service\\ApplicationDeletionService"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\ApplicationInsightsServiceInterface",
+            "target": "OCA\\Buildiq\\Service\\ApplicationInsightsService"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\ApplicationVersionServiceInterface",
+            "target": "OCA\\Buildiq\\Service\\ApplicationVersionService"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\AutomationCompilerServiceInterface",
+            "target": "OCA\\Buildiq\\Service\\AutomationCompilerService"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\AutomationWriteServiceInterface",
+            "target": "OCA\\Buildiq\\Service\\AutomationWriteService"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\ConditionActionExecutorInterface",
+            "target": "OCA\\Buildiq\\Service\\ConditionActionExecutor"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\ConnectionReporterInterface",
+            "target": "OCA\\Buildiq\\Service\\Connection\\ConnectionReporter"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\CopilotServiceInterface",
+            "target": "OCA\\Buildiq\\Service\\CopilotService"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\DemoDataServiceInterface",
+            "target": "OCA\\Buildiq\\Service\\DemoDataService"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\DocumentGenerationServiceInterface",
+            "target": "OCA\\Buildiq\\Service\\DocumentGenerationService"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\ExportAppContentBundlerInterface",
+            "target": "OCA\\Buildiq\\Service\\ExportAppContentBundler"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\ExportJobServiceInterface",
+            "target": "OCA\\Buildiq\\Service\\ExportJobService"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\ExportServiceInterface",
+            "target": "OCA\\Buildiq\\Service\\ExportService"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\GitHubAppSyncServiceInterface",
+            "target": "OCA\\Buildiq\\Service\\GitHubAppSyncService"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\GitHubCatalogServiceInterface",
+            "target": "OCA\\Buildiq\\Service\\GitHubCatalogService"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\GitHubFormCatalogServiceInterface",
+            "target": "OCA\\Buildiq\\Service\\GitHubFormCatalogService"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\GitHubPushServiceInterface",
+            "target": "OCA\\Buildiq\\Service\\GitHubPushService"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\GitHubShopSearchInterface",
+            "target": "OCA\\Buildiq\\Service\\GitHubShopSearch"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\IconServiceInterface",
+            "target": "OCA\\Buildiq\\Service\\IconService"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\LayoutDeltaServiceInterface",
+            "target": "OCA\\Buildiq\\Service\\LayoutDeltaService"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\ListenerSlugContractInterface",
+            "target": "OCA\\Buildiq\\Service\\ListenerSlugContract"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\ManifestFormDestinationsInterface",
+            "target": "OCA\\Buildiq\\Service\\ManifestFormDestinations"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\ManifestResolverServiceInterface",
+            "target": "OCA\\Buildiq\\Service\\ManifestResolverService"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\ObjectSchemaSlugResolverInterface",
+            "target": "OCA\\Buildiq\\Service\\ObjectSchemaSlugResolver"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\PageLayoutAuthoringServiceInterface",
+            "target": "OCA\\Buildiq\\Service\\PageLayoutAuthoringService"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\PageLayoutFrozenBaseInterface",
+            "target": "OCA\\Buildiq\\Service\\PageLayoutFrozenBase"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\PageLayoutLayerStackInterface",
+            "target": "OCA\\Buildiq\\Service\\PageLayoutLayerStack"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\PageLayoutPresenterInterface",
+            "target": "OCA\\Buildiq\\Service\\PageLayoutPresenter"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\PermissionResolverInterface",
+            "target": "OCA\\Buildiq\\Service\\PermissionResolver"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\RegistrationFormAuthoringServiceInterface",
+            "target": "OCA\\Buildiq\\Service\\RegistrationFormAuthoringService"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\RegistrationFormTargetWarningsInterface",
+            "target": "OCA\\Buildiq\\Service\\RegistrationFormTargetWarnings"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\RuleActionDispatcherInterface",
+            "target": "OCA\\Buildiq\\Service\\RuleActionDispatcher"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\RuleEngineServiceInterface",
+            "target": "OCA\\Buildiq\\Service\\RuleEngineService"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\RuleObjectReaderInterface",
+            "target": "OCA\\Buildiq\\Service\\RuleObjectReader"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\ServerBundleWriterInterface",
+            "target": "OCA\\Buildiq\\Service\\ServerBundleWriter"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\SettingsServiceInterface",
+            "target": "OCA\\Buildiq\\Service\\SettingsService"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\StoredDecisionTablesInterface",
+            "target": "OCA\\Buildiq\\Service\\StoredDecisionTables"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\TemplateSeedServiceInterface",
+            "target": "OCA\\Buildiq\\Service\\TemplateSeedService"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\VersionPromotionServiceInterface",
+            "target": "OCA\\Buildiq\\Service\\VersionPromotionService"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\VirtualAppCredentialRegistrarInterface",
+            "target": "OCA\\Buildiq\\Service\\Credential\\VirtualAppCredentialRegistrar"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\WidgetItemProjectorInterface",
+            "target": "OCA\\Buildiq\\Service\\Dashboard\\WidgetItemProjector"
+        }
+    },
+    {
         "method": "registerService",
         "args": {
             "name": "OCA\\Buildiq\\Service\\PublishedApplicationProvider",

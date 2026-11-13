@@ -45,8 +45,8 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Controller;
 
 use OCA\Buildiq\Kernel\AppIdentity;
+use OCA\Buildiq\Kernel\Contracts\RuleEngineServiceInterface;
 use OCA\Buildiq\Service\CallerContext;
-use OCA\Buildiq\Service\RuleEngineService;
 use OCA\Buildiq\Service\RuleObjectReader;
 use OCA\Buildiq\Service\RuleStorage;
 use OCP\AppFramework\Controller;
@@ -77,7 +77,7 @@ class RulesController extends Controller {
 	 *
 	 * @param IRequest $request The current HTTP request.
 	 * @param LoggerInterface $logger PSR logger.
-	 * @param RuleEngineService $ruleEngine The rule-evaluation orchestrator.
+	 * @param RuleEngineServiceInterface $ruleEngine The rule-evaluation orchestrator.
 	 * @param RuleStorage $storage The rule object reader, stored decision tables and rule set versioning.
 	 * @param CallerContext $caller The caller's session, group memberships and the shared permission matcher.
 	 *
@@ -86,7 +86,7 @@ class RulesController extends Controller {
 	public function __construct(
 		IRequest $request,
 		private readonly LoggerInterface $logger,
-		private readonly RuleEngineService $ruleEngine,
+		private readonly RuleEngineServiceInterface $ruleEngine,
 		private readonly RuleStorage $storage,
 		private readonly CallerContext $caller,
 	) {
@@ -431,7 +431,7 @@ class RulesController extends Controller {
 	 * @return array<string,mixed>|null
 	 */
 	private function findRuleSet(string $slug): ?array {
-		$rows = $this->query(schema: RuleEngineService::RULE_SET_SCHEMA, filters: ['slug' => $slug], limit: 1);
+		$rows = $this->query(schema: RuleEngineServiceInterface::RULE_SET_SCHEMA, filters: ['slug' => $slug], limit: 1);
 		if ($rows === []) {
 			return null;
 		}

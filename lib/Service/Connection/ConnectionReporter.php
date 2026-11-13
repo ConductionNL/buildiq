@@ -30,6 +30,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service\Connection;
 
 use OCA\Buildiq\Kernel\AppIdentity;
+use OCA\Buildiq\Kernel\Contracts\ConnectionReporterInterface;
 use OCA\Buildiq\Support\FleetAppId;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\EventDispatcher\Event;
@@ -43,7 +44,7 @@ use Throwable;
  *
  * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md#requirement-req-biq-conn-003-buildiq-reports-what-its-connection-calls-met
  */
-class ConnectionReporter {
+class ConnectionReporter implements ConnectionReporterInterface {
 
 	/**
 	 * The app id integriq keys the rows by.

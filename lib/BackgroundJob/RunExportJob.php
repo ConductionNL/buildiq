@@ -29,14 +29,14 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\BackgroundJob;
 
-use OCA\Buildiq\Service\ExportAppContentBundler;
-use OCA\Buildiq\Service\ExportJobService;
+use OCA\Buildiq\Kernel\Contracts\ExportAppContentBundlerInterface;
+use OCA\Buildiq\Kernel\Contracts\ExportJobServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\ExportServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\GitHubPushServiceInterface;
 use OCA\Buildiq\Service\ExportContents;
-use OCA\Buildiq\Service\ExportService;
 use OCA\Buildiq\Service\ExportTarget;
 use OCA\Buildiq\Service\GitHub\BrokerAccess;
 use OCA\Buildiq\Service\GitHub\PushTarget;
-use OCA\Buildiq\Service\GitHubPushService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\QueuedJob;
 use Psr\Log\LoggerInterface;
@@ -52,20 +52,20 @@ class RunExportJob extends QueuedJob {
 	 * Constructor.
 	 *
 	 * @param ITimeFactory $time Time factory (Nextcloud-injectable).
-	 * @param ExportService $exportService File-generation pipeline.
-	 * @param ExportJobService $exportJobService Job orchestration helper.
-	 * @param GitHubPushService $githubPushService GitHub delivery target.
+	 * @param ExportServiceInterface $exportService File-generation pipeline.
+	 * @param ExportJobServiceInterface $exportJobService Job orchestration helper.
+	 * @param GitHubPushServiceInterface $githubPushService GitHub delivery target.
 	 * @param LoggerInterface $logger Logger.
-	 * @param ExportAppContentBundler|null $contentBundler Finds the application and version the job names.
+	 * @param ExportAppContentBundlerInterface|null $contentBundler Finds the application and version the job names.
 	 *                                                     Null exports the bare scaffold.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private ExportService $exportService,
-		private ExportJobService $exportJobService,
-		private GitHubPushService $githubPushService,
+		private ExportServiceInterface $exportService,
+		private ExportJobServiceInterface $exportJobService,
+		private GitHubPushServiceInterface $githubPushService,
 		private LoggerInterface $logger,
-		private ?ExportAppContentBundler $contentBundler = null,
+		private ?ExportAppContentBundlerInterface $contentBundler = null,
 	) {
 		parent::__construct(time: $time);
 	}//end __construct()

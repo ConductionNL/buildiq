@@ -54,14 +54,14 @@ use DateTimeImmutable;
 use DateTimeInterface;
 use InvalidArgumentException;
 use OCA\Buildiq\Kernel\AppIdentity;
-use OCA\Buildiq\Service\AppChannelApplier;
-use OCA\Buildiq\Service\ApplicationVersionService;
+use OCA\Buildiq\Kernel\Contracts\AppChannelApplierInterface;
+use OCA\Buildiq\Kernel\Contracts\ApplicationVersionServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\ManifestResolverServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\PermissionResolverInterface;
 use OCA\Buildiq\Service\AppTemplateCapture;
 use OCA\Buildiq\Service\CallerContext;
 use OCA\Buildiq\Service\CompanionSchemaCollector;
 use OCA\Buildiq\Service\LocalApplicationRef;
-use OCA\Buildiq\Service\ManifestResolverService;
-use OCA\Buildiq\Service\PermissionResolver;
 use OCA\Buildiq\Service\RegisterStore;
 use OCA\Buildiq\Service\RepoSource;
 use OCA\Buildiq\Service\TemplateInstall;
@@ -147,9 +147,9 @@ class ApplicationsController extends Controller {
 	/**
 	 * Shared permission-grammar resolver (H1/H2 fix)
 	 *
-	 * @var PermissionResolver
+	 * @var PermissionResolverInterface
 	 */
-	private readonly PermissionResolver $permissionResolver;
+	private readonly PermissionResolverInterface $permissionResolver;
 
 	/**
 	 * Constructor.
@@ -158,8 +158,8 @@ class ApplicationsController extends Controller {
 	 * @param LoggerInterface $logger PSR logger for diagnostics
 	 * @param RegisterStore $store OpenRegister's object service, register and schema mappers and audit trail.
 	 * @param CallerContext $caller The caller's session, group memberships and the shared permission matcher.
-	 * @param ManifestResolverService $manifestResolver Version-aware manifest resolver (REQ-OBVR-002)
-	 * @param AppChannelApplier $channelApplier Applies the v2 repo channels (apply-v2-channels)
+	 * @param ManifestResolverServiceInterface $manifestResolver Version-aware manifest resolver (REQ-OBVR-002)
+	 * @param AppChannelApplierInterface $channelApplier Applies the v2 repo channels (apply-v2-channels)
 	 *
 	 * @return void
 	 */
@@ -168,8 +168,8 @@ class ApplicationsController extends Controller {
 		private readonly LoggerInterface $logger,
 		RegisterStore $store,
 		CallerContext $caller,
-		private readonly ManifestResolverService $manifestResolver,
-		private readonly AppChannelApplier $channelApplier,
+		private readonly ManifestResolverServiceInterface $manifestResolver,
+		private readonly AppChannelApplierInterface $channelApplier,
 	) {
 		$this->objectService = $store->objectService;
 		$this->registerMapper = $store->registerMapper;
@@ -468,7 +468,7 @@ class ApplicationsController extends Controller {
 				$versionEntity = $this->objectService->find(
 					id: $productionVersion,
 					register: 'buildiq',
-					schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
+					schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
 				);
 				if ($versionEntity !== null) {
 					$versionArray = ObjectRecord::toArray(object: $versionEntity);
@@ -476,7 +476,7 @@ class ApplicationsController extends Controller {
 					$this->objectService->saveObject(
 						object: $versionArray,
 						register: 'buildiq',
-						schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
+						schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
 					);
 					return new JSONResponse(data: ['status' => 'ok', 'target' => 'version'], statusCode: Http::STATUS_OK);
 				}
@@ -838,7 +838,7 @@ class ApplicationsController extends Controller {
 			$version = $this->objectService->find(
 				id: $token,
 				register: 'buildiq',
-				schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
+				schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
 			);
 		} catch (Throwable $e) {
 			$version = null;
@@ -884,8 +884,8 @@ class ApplicationsController extends Controller {
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function findVersionBySlugForDiff(string $slug, string $applicationUuid): mixed {
-		$registerId = $this->registerMapper->find(ApplicationVersionService::REGISTER_SLUG, _multitenancy: false)->getId();
-		$schemaId = $this->schemaMapper->find(ApplicationVersionService::APPLICATION_VERSION_SCHEMA, _multitenancy: false)->getId();
+		$registerId = $this->registerMapper->find(ApplicationVersionServiceInterface::REGISTER_SLUG, _multitenancy: false)->getId();
+		$schemaId = $this->schemaMapper->find(ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA, _multitenancy: false)->getId();
 
 		$results = $this->objectService->searchObjects(
 			query: [
@@ -941,7 +941,7 @@ class ApplicationsController extends Controller {
 		// caller with a framework 500 and a stack trace rather than a
 		// translated error. Translated below, cause logged.
 		try {
-			$registerId = $this->registerMapper->find(ApplicationVersionService::REGISTER_SLUG, _multitenancy: false)->getId();
+			$registerId = $this->registerMapper->find(ApplicationVersionServiceInterface::REGISTER_SLUG, _multitenancy: false)->getId();
 			$routeSchema = $this->schemaMapper->find('built-app-route', _multitenancy: false)->getId();
 		} catch (Throwable $e) {
 			$this->logger->error(
@@ -1050,7 +1050,7 @@ class ApplicationsController extends Controller {
 	 */
 	private function findApplicationUuidBySlug(string $slug, mixed $registerId): ?string {
 		try {
-			$appSchema = $this->schemaMapper->find(ApplicationVersionService::APPLICATION_SCHEMA, _multitenancy: false)->getId();
+			$appSchema = $this->schemaMapper->find(ApplicationVersionServiceInterface::APPLICATION_SCHEMA, _multitenancy: false)->getId();
 		} catch (Throwable $e) {
 			return null;
 		}
@@ -1116,7 +1116,7 @@ class ApplicationsController extends Controller {
 				);
 			}
 
-			$registerId = $this->registerMapper->find(ApplicationVersionService::REGISTER_SLUG, _multitenancy: false)->getId();
+			$registerId = $this->registerMapper->find(ApplicationVersionServiceInterface::REGISTER_SLUG, _multitenancy: false)->getId();
 			$appSchema = $this->schemaMapper->find('built-app', _multitenancy: false)->getId();
 
 			// Fetch all Applications scoped to the buildiq register +
@@ -1302,11 +1302,11 @@ class ApplicationsController extends Controller {
 
 		try {
 			$registerId = $this->registerMapper->find(
-				ApplicationVersionService::REGISTER_SLUG,
+				ApplicationVersionServiceInterface::REGISTER_SLUG,
 				_multitenancy: false
 			)->getId();
 			$schemaId = $this->schemaMapper->find(
-				ApplicationVersionService::APPLICATION_VERSION_SCHEMA,
+				ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA,
 				_multitenancy: false
 			)->getId();
 
@@ -1771,7 +1771,7 @@ class ApplicationsController extends Controller {
 				object: $this->objectService->find(
 					id: $versionId,
 					register: 'buildiq',
-					schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
+					schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
 				)
 			);
 		}
@@ -1997,7 +1997,7 @@ class ApplicationsController extends Controller {
 	private function resolveSharedContext(): ?array {
 		try {
 			return [
-				'register' => $this->registerMapper->find(ApplicationVersionService::REGISTER_SLUG, _multitenancy: false)->getId(),
+				'register' => $this->registerMapper->find(ApplicationVersionServiceInterface::REGISTER_SLUG, _multitenancy: false)->getId(),
 				'templateSchema' => $this->schemaMapper->find('application-template', _multitenancy: false)->getId(),
 				'applicationSchema' => $this->schemaMapper->find('built-app', _multitenancy: false)->getId(),
 			];
@@ -2198,8 +2198,8 @@ class ApplicationsController extends Controller {
 
 			$createdVersion = $this->objectService->saveObject(
 				object: $versionPayload,
-				register: ApplicationVersionService::REGISTER_SLUG,
-				schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
+				register: ApplicationVersionServiceInterface::REGISTER_SLUG,
+				schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
 			);
 			$versionData = ObjectRecord::toArray(object: $createdVersion);
 			$versionUuid = (string)($versionData['uuid'] ?? $versionData['id'] ?? '');
@@ -2223,8 +2223,8 @@ class ApplicationsController extends Controller {
 
 			$this->objectService->saveObject(
 				object: $application,
-				register: ApplicationVersionService::REGISTER_SLUG,
-				schema: ApplicationVersionService::APPLICATION_SCHEMA,
+				register: ApplicationVersionServiceInterface::REGISTER_SLUG,
+				schema: ApplicationVersionServiceInterface::APPLICATION_SCHEMA,
 				uuid: $appUuid
 			);
 		} catch (Throwable $e) {
@@ -2363,8 +2363,8 @@ class ApplicationsController extends Controller {
 		// belongs to the caller; otherwise fall back to the
 		// owner-namespaced form.
 		// Prefix from the constant, never typed: see
-		// ApplicationVersionService::VERSION_REGISTER_PREFIX.
-		$legacyRegisterSlug = ApplicationVersionService::VERSION_REGISTER_PREFIX . $newSlug;
+		// ApplicationVersionServiceInterface::VERSION_REGISTER_PREFIX.
+		$legacyRegisterSlug = ApplicationVersionServiceInterface::VERSION_REGISTER_PREFIX . $newSlug;
 
 		try {
 			$existing = $this->registerMapper->find($legacyRegisterSlug, _multitenancy: false);
@@ -2376,7 +2376,7 @@ class ApplicationsController extends Controller {
 
 			// Different user owns the org-wide slug — namespace ours.
 			return $this->findOrCreateRegister(
-				slug: ApplicationVersionService::VERSION_REGISTER_PREFIX . $ownerUid . '-' . $newSlug,
+				slug: ApplicationVersionServiceInterface::VERSION_REGISTER_PREFIX . $ownerUid . '-' . $newSlug,
 				appSlug: $newSlug,
 				ownerUid: $ownerUid,
 			);

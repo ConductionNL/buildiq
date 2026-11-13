@@ -58,6 +58,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use DateTime;
+use OCA\Buildiq\Kernel\Contracts\ApplicationInsightsServiceInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -73,13 +74,7 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class ApplicationInsightsService {
-	/**
-	 * Allowed `window` query parameter values (REQ-OBAI-001).
-	 *
-	 * @var array<int, string>
-	 */
-	public const ALLOWED_WINDOWS = ['7d', '30d', '90d'];
+class ApplicationInsightsService implements ApplicationInsightsServiceInterface {
 
 	/**
 	 * How long a computed insights payload is memoised (seconds). The

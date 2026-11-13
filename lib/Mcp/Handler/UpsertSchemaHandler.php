@@ -25,7 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Mcp\Handler;
 
-use OCA\Buildiq\Service\ApplicationVersionService;
+use OCA\Buildiq\Kernel\Contracts\ApplicationVersionServiceInterface;
 
 /**
  * Handles the buildiq.upsertSchema tool invocation.
@@ -69,9 +69,9 @@ class UpsertSchemaHandler extends AbstractToolHandler {
 		$required = $validation['required'];
 		$namespacedSlug = $appSlug . '-' . $versionSlug . '-' . $rawSlug;
 		// Prefix from the constant, never typed: see
-		// ApplicationVersionService::VERSION_REGISTER_PREFIX for why it is
+		// ApplicationVersionServiceInterface::VERSION_REGISTER_PREFIX for why it is
 		// separate from REGISTER_SLUG and why it stays `openbuild-`.
-		$registerSlug = ApplicationVersionService::VERSION_REGISTER_PREFIX . $appSlug . '-' . $versionSlug;
+		$registerSlug = ApplicationVersionServiceInterface::VERSION_REGISTER_PREFIX . $appSlug . '-' . $versionSlug;
 
 		try {
 			// ADR-083 rule 1: establish availability BEFORE the reach.

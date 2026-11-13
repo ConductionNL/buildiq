@@ -51,7 +51,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Support;
 
-use OCA\Buildiq\Service\ApplicationVersionService;
+use OCA\Buildiq\Kernel\Contracts\ApplicationVersionServiceInterface;
 
 /**
  * Rewrites `register` / `schema` bindings onto a version's own data.
@@ -70,7 +70,7 @@ final class ManifestDataBinding {
 	/**
 	 * The per-version register slug for an app version.
 	 *
-	 * Built from {@see ApplicationVersionService::VERSION_REGISTER_PREFIX} so
+	 * Built from {@see ApplicationVersionServiceInterface::VERSION_REGISTER_PREFIX} so
 	 * the prefix is never typed out, the same way `UpsertSchemaHandler` and
 	 * `ApplicationCreationService` build it.
 	 *
@@ -82,7 +82,7 @@ final class ManifestDataBinding {
 	 * @spec openspec/specs/ai-copilot/spec.md
 	 */
 	public static function registerSlug(string $appSlug, string $versionSlug): string {
-		return ApplicationVersionService::VERSION_REGISTER_PREFIX . $appSlug . '-' . $versionSlug;
+		return ApplicationVersionServiceInterface::VERSION_REGISTER_PREFIX . $appSlug . '-' . $versionSlug;
 	}//end registerSlug()
 
 	/**
@@ -301,7 +301,7 @@ final class ManifestDataBinding {
 		}
 
 		// Already a per-version register: somebody named it on purpose.
-		if (str_starts_with($slug, ApplicationVersionService::VERSION_REGISTER_PREFIX) === true) {
+		if (str_starts_with($slug, ApplicationVersionServiceInterface::VERSION_REGISTER_PREFIX) === true) {
 			return $slug;
 		}
 
