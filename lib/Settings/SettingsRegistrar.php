@@ -24,7 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Settings;
 
-use OCA\Buildiq\AppInfo\Application;
+use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Sections\SettingsSection;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
@@ -73,9 +73,9 @@ final class SettingsRegistrar {
 		$context->registerService(
 			SettingsSection::class,
 			static fn ($c): SettingsSection => new SettingsSection(
-				sectionId: Application::APP_ID,
+				sectionId: AppIdentity::APP_ID,
 				name: 'Buildiq',
-				appId: Application::APP_ID,
+				appId: AppIdentity::APP_ID,
 				iconFile: 'app-dark.svg',
 				priority: 75,
 				urlGenerator: $c->get(IURLGenerator::class)
@@ -84,8 +84,8 @@ final class SettingsRegistrar {
 		$context->registerService(
 			AdminSettings::class,
 			static fn ($c): AdminSettings => new AdminSettings(
-				appId: Application::APP_ID,
-				sectionId: Application::APP_ID,
+				appId: AppIdentity::APP_ID,
+				sectionId: AppIdentity::APP_ID,
 				priority: 10,
 				appManager: $c->get(IAppManager::class),
 				initialState: $c->get(IInitialState::class),

@@ -23,7 +23,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\BackgroundJob;
 
-use OCA\Buildiq\AppInfo\Application;
+use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Service\AppHealthService;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -101,7 +101,7 @@ class AppHealthSampleCleanup extends TimedJob {
 	 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-the-server-scopes-and-bounds-samples-req-bqdm-005
 	 */
 	public function purge(int $now): int {
-		$days = $this->appConfig->getValueInt(Application::APP_ID, 'health_retention_days', self::DEFAULT_DAYS);
+		$days = $this->appConfig->getValueInt(AppIdentity::APP_ID, 'health_retention_days', self::DEFAULT_DAYS);
 		$days = max(self::MIN_DAYS, min(self::MAX_DAYS, $days));
 		$cutoff = gmdate('Y-m-d\TH:i:s', $now - ($days * 86400));
 

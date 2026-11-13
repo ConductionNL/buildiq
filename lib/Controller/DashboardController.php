@@ -30,7 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Controller;
 
-use OCA\Buildiq\AppInfo\Application;
+use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Service\AppNavigationService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -66,7 +66,7 @@ class DashboardController extends Controller {
 		private readonly IGroupManager $groupManager,
 		private readonly INavigationManager $navigationManager,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -85,7 +85,7 @@ class DashboardController extends Controller {
 	#[NoCSRFRequired]
 	public function page(): TemplateResponse {
 		$this->publishCurrentUserGroups();
-		return new TemplateResponse(Application::APP_ID, 'index');
+		return new TemplateResponse(AppIdentity::APP_ID, 'index');
 	}//end page()
 
 	/**
@@ -134,7 +134,7 @@ class DashboardController extends Controller {
 			'builderVersion',
 			(string)$this->request->getParam('_version', '')
 		);
-		return new TemplateResponse(Application::APP_ID, 'builder');
+		return new TemplateResponse(AppIdentity::APP_ID, 'builder');
 	}//end builder()
 
 	/**

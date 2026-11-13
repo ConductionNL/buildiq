@@ -63,7 +63,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Controller;
 
-use OCA\Buildiq\AppInfo\Application;
+use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Service\Connection\ConnectionReporter;
 use OCA\Buildiq\Service\StoreClient;
 use OCA\OpenRegister\AppHost\Service\GenericStoreService;
@@ -110,7 +110,7 @@ class StoreController extends Controller {
 		private readonly ApplicationsController $appsController,
 		private readonly ?ConnectionReporter $connectionReporter = null,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -121,7 +121,7 @@ class StoreController extends Controller {
 	 */
 	private function descriptor(): StoreDescriptor {
 		return new StoreDescriptor(
-			appId: Application::APP_ID,
+			appId: AppIdentity::APP_ID,
 			schema: 'application-template',
 			defaultRegister: 'buildiq',
 			cardFields: [

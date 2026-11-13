@@ -43,7 +43,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Controller;
 
-use OCA\Buildiq\AppInfo\Application;
+use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Service\AppOverrideService;
 use OCA\Buildiq\Service\PermissionResolver;
 use OCP\App\IAppManager;
@@ -89,7 +89,7 @@ class AppOverrideController extends Controller {
 		private readonly IAppManager $appManager,
 		private readonly PermissionResolver $permissionResolver,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -556,7 +556,7 @@ class AppOverrideController extends Controller {
 			return $this->error(code: 'unauthenticated', status: Http::STATUS_UNAUTHORIZED);
 		}
 
-		if ($this->appManager->isEnabledForUser(Application::APP_ID, $user) === false) {
+		if ($this->appManager->isEnabledForUser(AppIdentity::APP_ID, $user) === false) {
 			return $this->error(code: 'forbidden', status: Http::STATUS_FORBIDDEN);
 		}
 

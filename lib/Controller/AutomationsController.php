@@ -76,8 +76,8 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Controller;
 
-use OCA\Buildiq\AppInfo\Application;
 use OCA\Buildiq\Exception\UnsupportedAutomationCombinationException;
+use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Service\AutomationCompilerService;
 use OCA\Buildiq\Service\AutomationWriteService;
 use OCA\Buildiq\Service\CallerContext;
@@ -152,7 +152,7 @@ class AutomationsController extends Controller {
 	) {
 		$this->userSession = $caller->userSession;
 		$this->permissionResolver = $caller->permissionResolver;
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 
 	}//end __construct()
 

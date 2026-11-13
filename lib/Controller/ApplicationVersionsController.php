@@ -45,12 +45,12 @@ namespace OCA\Buildiq\Controller;
 
 use DateTimeImmutable;
 use DateTimeInterface;
-use OCA\Buildiq\AppInfo\Application;
+use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Service\ApplicationVersionService;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
-use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
+use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -142,7 +142,7 @@ class ApplicationVersionsController extends Controller {
 		private readonly ApplicationVersionService $versionService,
 		private readonly ?AuditTrailMapper $auditTrailMapper = null,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**

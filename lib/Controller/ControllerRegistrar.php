@@ -24,7 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Controller;
 
-use OCA\Buildiq\AppInfo\Application;
+use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Service\SettingsService;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
@@ -148,7 +148,7 @@ final class ControllerRegistrar {
 			static function ($c) {
 				$class = 'OCA\\OpenRegister\\AppHost\\Controller\\GenericHealthController';
 				return new $class(
-					appName: Application::APP_ID,
+					appName: AppIdentity::APP_ID,
 					request: $c->get('OCP\\IRequest'),
 					manifestLoader: $c->get('OCA\\OpenRegister\\AppHost\\Observability\\ManifestLoader'),
 					executor: $c->get('OCA\\OpenRegister\\AppHost\\Observability\\HealthCheckExecutor')
@@ -160,7 +160,7 @@ final class ControllerRegistrar {
 			static function ($c) {
 				$class = 'OCA\\OpenRegister\\AppHost\\Controller\\GenericMetricsController';
 				return new $class(
-					appName: Application::APP_ID,
+					appName: AppIdentity::APP_ID,
 					request: $c->get('OCP\\IRequest'),
 					manifestLoader: $c->get('OCA\\OpenRegister\\AppHost\\Observability\\ManifestLoader'),
 					engine: $c->get('OCA\\OpenRegister\\AppHost\\Observability\\MetricsEngine')

@@ -24,7 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Controller;
 
-use OCA\Buildiq\AppInfo\Application;
+use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Service\AppHealthService;
 use OCA\Buildiq\Service\ApplicationInsightsService;
 use OCA\Buildiq\Service\ManifestResolverService;
@@ -58,7 +58,7 @@ class AppHealthController extends Controller {
 		private readonly ApplicationInsightsService $insights,
 		private readonly AppHealthService $health,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**

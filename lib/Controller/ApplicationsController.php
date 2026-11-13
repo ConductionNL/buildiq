@@ -53,7 +53,7 @@ namespace OCA\Buildiq\Controller;
 use DateTimeImmutable;
 use DateTimeInterface;
 use InvalidArgumentException;
-use OCA\Buildiq\AppInfo\Application;
+use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Service\AppChannelApplier;
 use OCA\Buildiq\Service\ApplicationVersionService;
 use OCA\Buildiq\Service\AppTemplateCapture;
@@ -68,8 +68,8 @@ use OCA\Buildiq\Service\TemplateInstall;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
-use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
+use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -178,7 +178,7 @@ class ApplicationsController extends Controller {
 		$this->userSession = $caller->userSession;
 		$this->groupManager = $caller->groupManager;
 		$this->permissionResolver = $caller->permissionResolver;
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**

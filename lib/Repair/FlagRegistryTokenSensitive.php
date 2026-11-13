@@ -37,7 +37,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Repair;
 
-use OCA\Buildiq\AppInfo\Application;
+use OCA\Buildiq\Kernel\AppIdentity;
 use OCP\IAppConfig;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
@@ -87,7 +87,7 @@ class FlagRegistryTokenSensitive implements IRepairStep {
 	 */
 	public function run(IOutput $output): void {
 		$token = $this->appConfig->getValueString(
-			Application::APP_ID,
+			AppIdentity::APP_ID,
 			self::REGISTRY_TOKEN_KEY,
 			''
 		);
@@ -99,7 +99,7 @@ class FlagRegistryTokenSensitive implements IRepairStep {
 
 		try {
 			$this->appConfig->updateSensitive(
-				Application::APP_ID,
+				AppIdentity::APP_ID,
 				self::REGISTRY_TOKEN_KEY,
 				true
 			);

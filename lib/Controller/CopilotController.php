@@ -45,8 +45,8 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Controller;
 
-use OCA\Buildiq\AppInfo\Application;
 use OCA\Buildiq\Exception\CopilotException;
+use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Service\CopilotService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -80,7 +80,7 @@ class CopilotController extends Controller {
 		private readonly CopilotService $copilotService,
 		private readonly IUserSession $userSession,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**

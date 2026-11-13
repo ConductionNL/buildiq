@@ -35,7 +35,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
-use OCA\Buildiq\AppInfo\Application;
+use OCA\Buildiq\Kernel\AppIdentity;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 
@@ -285,7 +285,7 @@ class FormLiveBindingIndex {
 	 * @return array<string,list<LiveBinding>>
 	 */
 	private function read(): array {
-		$raw = $this->appConfig->getValueString(Application::APP_ID, self::CONFIG_KEY, '');
+		$raw = $this->appConfig->getValueString(AppIdentity::APP_ID, self::CONFIG_KEY, '');
 		if ($raw === '') {
 			return [];
 		}
@@ -311,7 +311,7 @@ class FormLiveBindingIndex {
 	 */
 	private function write(array $index): void {
 		$this->appConfig->setValueString(
-			Application::APP_ID,
+			AppIdentity::APP_ID,
 			self::CONFIG_KEY,
 			(string)json_encode($index, JSON_UNESCAPED_SLASHES)
 		);

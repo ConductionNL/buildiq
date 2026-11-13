@@ -39,8 +39,8 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Controller;
 
-use OCA\Buildiq\AppInfo\Application;
 use OCA\Buildiq\Exception\AppRepoParseException;
+use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Service\Connection\ConnectionReporter;
 use OCA\Buildiq\Service\GitHub\SyncRequestParams;
 use OCA\Buildiq\Service\GitHubAppSyncService;
@@ -88,7 +88,7 @@ class GitHubSyncController extends Controller {
 		private readonly PermissionResolver $permissionResolver,
 		private readonly ?ConnectionReporter $connectionReporter = null,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
