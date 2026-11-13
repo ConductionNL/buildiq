@@ -949,4 +949,96 @@ final class AutomationCompilerServiceTest extends TestCase {
 		);
 
 	}//end testMapActionToRuleActionMapsGenerateDocument()
+
+	/**
+	 * Serve one ApplicationVersion and capture what is saved for it.
+	 *
+	 * @param array<string, mixed>          $version The stored version.
+	 * @param array<int, array<string, mixed>> $saved   Receives the saved objects.
+	 *
+	 * @return void
+	 */
+	private function serveVersion(array $version, array &$saved): void {
+		$entity = $this->createMock(\OCA\OpenRegister\Contract\ObjectEntityInterface::class);
+		$entity->method('jsonSerialize')->willReturn($version);
+		$entity->method('getObject')->willReturn($version);
+		$this->objectService->method('find')->willReturnCallback(
+			static fn (...$args) => (($args[0] ?? null) === 'version-1' ? $entity : null)
+		);
+		$this->objectService->method('saveObject')->willReturnCallback(
+			function (...$args) use (&$saved, $entity) {
+				$saved[] = $args[0];
+				return $entity;
+			}
+		);
+	}//end serveVersion()
+
+	/**
+	 * Applying a schedule plan replaces the entry with the same id, keeps
+	 * unrelated entries, drops a prior-provenance id no longer planned, and
+	 * records the planned ids as provenance.
+	 *
+	 * @return void
+	 */
+	public function testApplyUpsertsScheduleEntriesIntoTheVersionManifest(): void {
+		$saved = [];
+		$this->serveVersion(
+			[
+				'id' => 'version-1',
+				'manifest' => [
+					'pages' => ['p'],
+					'schedules' => [
+						['id' => 'other', 'interval' => 60],
+						['id' => 'aut-nightly-sync-1', 'interval' => 1],
+						['id' => 'aut-nightly-sync-old', 'interval' => 2],
+						'not-a-row',
+					],
+				],
+			],
+			$saved
+		);
+		$automation = [
+			'id' => 'auto-2',
+			'slug' => 'nightly-sync',
+			'applicationSlug' => 'permit-tracker',
+			'versionUuid' => 'version-1',
+			'enabled' => true,
+			'trigger' => ['type' => 'schedule', 'interval' => 86400],
+			'condition' => null,
+			'actions' => [['type' => 'run-synchronization', 'synchronizationId' => 'sync-1']],
+		];
+		$plan = $this->compiler->compile($automation);
+
+		$provenance = $this->compiler->apply($automation, $plan, ['scheduleIds' => ['aut-nightly-sync-1', 'aut-nightly-sync-old']]);
+
+		$this->assertSame(['aut-nightly-sync-1'], $provenance['scheduleIds']);
+		$this->assertCount(1, $saved);
+		$this->assertSame(['p'], $saved[0]['manifest']['pages']);
+		$this->assertSame(
+			[
+				['id' => 'other', 'interval' => 60],
+				$plan['schedules'][0],
+				'not-a-row',
+			],
+			$saved[0]['manifest']['schedules']
+		);
+	}//end testApplyUpsertsScheduleEntriesIntoTheVersionManifest()
+
+	/**
+	 * Removing an automation drops its schedule entries and the schedules key
+	 * when nothing is left; an unknown version is warned about and nothing is saved.
+	 *
+	 * @return void
+	 */
+	public function testRemoveDropsScheduleEntriesAndAnEmptySchedulesKey(): void {
+		$saved = [];
+		$this->serveVersion(['id' => 'version-1', 'manifest' => ['schedules' => [['id' => 'aut-x-1']]]], $saved);
+
+		$this->compiler->remove(['slug' => 'x', 'versionUuid' => 'version-1'], ['scheduleIds' => ['aut-x-1']]);
+		$this->compiler->remove(['slug' => 'x', 'versionUuid' => 'version-9'], ['scheduleIds' => ['aut-x-1']]);
+		$this->compiler->remove(['slug' => 'x', 'versionUuid' => 'version-1'], []);
+
+		$this->assertCount(1, $saved);
+		$this->assertSame(['id' => 'version-1', 'manifest' => []], $saved[0]);
+	}//end testRemoveDropsScheduleEntriesAndAnEmptySchedulesKey()
 }//end class

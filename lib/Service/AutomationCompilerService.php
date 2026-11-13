@@ -1304,41 +1304,11 @@ class AutomationCompilerService {
 		$schedules = $this->orArray(value: $manifest['schedules'] ?? null);
 
 		$plannedIds = array_map(static fn (array $e): string => (string)$e['id'], $plannedEntries);
-
-		$schedules = array_values(
-			array_filter(
-				$schedules,
-				static function ($scheduleRow) use ($priorScheduleIds, $plannedIds): bool {
-					$id = '';
-					if (is_array($scheduleRow) === true) {
-						$id = (string)($scheduleRow['id'] ?? '');
-					}
-
-					return in_array($id, $priorScheduleIds, true) === false || in_array($id, $plannedIds, true) === true;
-				}
-			)
+		$schedules = $this->mergeScheduleEntries(
+			schedules: $schedules,
+			plannedEntries: $plannedEntries,
+			priorScheduleIds: $priorScheduleIds
 		);
-
-		foreach ($plannedEntries as $entry) {
-			$idx = null;
-			foreach ($schedules as $i => $scheduleRow) {
-				$rowId = null;
-				if (is_array($scheduleRow) === true) {
-					$rowId = ($scheduleRow['id'] ?? null);
-				}
-
-				if ($rowId === $entry['id']) {
-					$idx = $i;
-					break;
-				}
-			}
-
-			if ($idx !== null) {
-				$schedules[$idx] = $entry;
-			} else {
-				$schedules[] = $entry;
-			}
-		}
 
 		if ($schedules === []) {
 			unset($manifest['schedules']);
@@ -1358,6 +1328,70 @@ class AutomationCompilerService {
 
 		return $plannedIds;
 	}//end applySchedules()
+
+	/**
+	 * Merge planned schedule entries into a manifest's schedules list: drop every
+	 * prior-provenance id that is no longer planned, replace the row with the same
+	 * id as a planned entry, and append planned entries that are new. Rows that are
+	 * not this automation's are kept as they are, in their order.
+	 *
+	 * @param array<int|string,mixed>          $schedules        The manifest's current schedules rows.
+	 * @param array<int,array<string,mixed>>   $plannedEntries   Planned schedules entries.
+	 * @param array<int,string>                $priorScheduleIds Prior-provenance schedule ids.
+	 *
+	 * @return array<int,mixed> The merged rows.
+	 */
+	private function mergeScheduleEntries(array $schedules, array $plannedEntries, array $priorScheduleIds): array {
+		$plannedIds = array_map(static fn (array $e): string => (string)$e['id'], $plannedEntries);
+
+		$schedules = array_values(
+			array_filter(
+				$schedules,
+				static function ($scheduleRow) use ($priorScheduleIds, $plannedIds): bool {
+					$id = '';
+					if (is_array($scheduleRow) === true) {
+						$id = (string)($scheduleRow['id'] ?? '');
+					}
+
+					return in_array($id, $priorScheduleIds, true) === false || in_array($id, $plannedIds, true) === true;
+				}
+			)
+		);
+
+		foreach ($plannedEntries as $entry) {
+			$idx = $this->scheduleRowIndex(schedules: $schedules, id: $entry['id']);
+			if ($idx !== null) {
+				$schedules[$idx] = $entry;
+			} else {
+				$schedules[] = $entry;
+			}
+		}
+
+		return $schedules;
+	}//end mergeScheduleEntries()
+
+	/**
+	 * The index of the schedules row whose id is exactly the given id.
+	 *
+	 * @param array<int,mixed> $schedules The schedules rows.
+	 * @param mixed            $id        The planned entry's id.
+	 *
+	 * @return int|null The index, or null when no row carries it.
+	 */
+	private function scheduleRowIndex(array $schedules, mixed $id): ?int {
+		foreach ($schedules as $i => $scheduleRow) {
+			$rowId = null;
+			if (is_array($scheduleRow) === true) {
+				$rowId = ($scheduleRow['id'] ?? null);
+			}
+
+			if ($rowId === $id) {
+				return $i;
+			}
+		}
+
+		return null;
+	}//end scheduleRowIndex()
 
 	/**
 	 * Upsert the compiled RuleSet + ConditionActionRule (manual trigger), or
