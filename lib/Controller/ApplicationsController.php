@@ -383,40 +383,9 @@ class ApplicationsController extends Controller {
 
 			[$application, $applicationArray] = $resolved;
 
-			$user = $this->userSession->getUser();
-			if ($user === null) {
-				return new JSONResponse(
-					data: ['error' => 'forbidden', 'code' => 'buildiq.rbac.no_role'],
-					statusCode: Http::STATUS_FORBIDDEN
-				);
-			}
-
-			// Write requires owner/editor (NOT viewer). NC admins get an audited bypass.
-			$hasWrite = $this->permissionResolver->matchesCaller(
-				permissions: ($applicationArray['permissions'] ?? []),
-				caller: $user,
-				userGroups: $this->permissionResolver->resolveUserGroups($user),
-				allowAdminBypass: false,
-				roles: ['owners', 'editors']
-			);
-			if ($hasWrite === false && $this->groupManager->isInGroup($user->getUID(), self::ADMIN_GROUP) === false) {
-				return new JSONResponse(
-					data: ['error' => 'forbidden', 'code' => 'buildiq.rbac.no_role'],
-					statusCode: Http::STATUS_FORBIDDEN
-				);
-			}
-
-			if ($hasWrite === false) {
-				$bypassApplication = null;
-				if ($application instanceof ObjectEntity) {
-					$bypassApplication = $application;
-				}
-
-				$this->recordAdminBypass(
-					application: $bypassApplication,
-					slug: $slug,
-					actor: $user->getUID()
-				);
+			$refusal = $this->refuseManifestWriter(application: $application, applicationArray: $applicationArray, slug: $slug);
+			if ($refusal !== null) {
+				return $refusal;
 			}
 
 			$manifest = $this->request->getParam('manifest');
@@ -451,57 +420,7 @@ class ApplicationsController extends Controller {
 			// Never let a manifest body inject/overwrite the permissions roster.
 			unset($manifest['permissions']);
 
-			// Versioned model: write onto the production ApplicationVersion when one
-			// is resolvable; fall back to the Application object for legacy apps.
-			// Mirror ManifestResolverService::resolveProductionManifest's read
-			// shape EXACTLY so the write target matches the read target:
-			// productionVersion is either a UUID string (→ the ApplicationVersion
-			// object), an inline embedded object (→ its nested manifest on the
-			// Application), or absent (→ legacy application-level manifest).
-			$productionVersion = ($applicationArray['productionVersion'] ?? null);
-
-			// Case 1: UUID reference — write onto that ApplicationVersion. The
-			// uuid comes from the already-RBAC'd Application, so no cross-app check
-			// is needed (and the version's app-link field is `application`, not
-			// `applicationUuid`).
-			if (is_string($productionVersion) === true && $productionVersion !== '' && $productionVersion !== 'draft') {
-				$versionEntity = $this->objectService->find(
-					id: $productionVersion,
-					register: 'buildiq',
-					schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
-				);
-				if ($versionEntity !== null) {
-					$versionArray = ObjectRecord::toArray(object: $versionEntity);
-					$versionArray['manifest'] = $manifest;
-					$this->objectService->saveObject(
-						object: $versionArray,
-						register: 'buildiq',
-						schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
-					);
-					return new JSONResponse(data: ['status' => 'ok', 'target' => 'version'], statusCode: Http::STATUS_OK);
-				}
-			}
-
-			// Case 2: inline embedded version object — update its nested manifest
-			// and persist the Application (the embedded version travels with it).
-			if (is_array($productionVersion) === true) {
-				$applicationArray['productionVersion']['manifest'] = $manifest;
-				$this->objectService->saveObject(
-					object: $applicationArray,
-					register: 'buildiq',
-					schema: 'built-app'
-				);
-				return new JSONResponse(data: ['status' => 'ok', 'target' => 'embedded'], statusCode: Http::STATUS_OK);
-			}
-
-			// Case 3: legacy un-versioned app — application-level manifest.
-			$applicationArray['manifest'] = $manifest;
-			$this->objectService->saveObject(
-				object: $applicationArray,
-				register: 'buildiq',
-				schema: 'built-app'
-			);
-			return new JSONResponse(data: ['status' => 'ok', 'target' => 'application'], statusCode: Http::STATUS_OK);
+			return $this->persistManifest(applicationArray: $applicationArray, manifest: $manifest);
 		} catch (Throwable $e) {
 			$correlationId = bin2hex(random_bytes(8));
 			$this->logger->error(
@@ -514,6 +433,124 @@ class ApplicationsController extends Controller {
 			);
 		}//end try
 	}//end saveManifest()
+
+	/**
+	 * The refusal for a caller who may not write this app's manifest, or null.
+	 *
+	 * Write requires owner/editor (NOT viewer); an NC admin without a role gets
+	 * an audited bypass.
+	 *
+	 * @param mixed               $application      The Application as found.
+	 * @param array<string,mixed> $applicationArray The Application as an array.
+	 * @param string              $slug             The virtual-app slug.
+	 *
+	 * @return JSONResponse|null 403 when refused, null when the caller may write.
+	 *
+	 * @spec openspec/specs/openbuild-rbac/spec.md
+	 */
+	private function refuseManifestWriter(mixed $application, array $applicationArray, string $slug): ?JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(
+				data: ['error' => 'forbidden', 'code' => 'buildiq.rbac.no_role'],
+				statusCode: Http::STATUS_FORBIDDEN
+			);
+		}
+
+		// Write requires owner/editor (NOT viewer). NC admins get an audited bypass.
+		$hasWrite = $this->permissionResolver->matchesCaller(
+			permissions: ($applicationArray['permissions'] ?? []),
+			caller: $user,
+			userGroups: $this->permissionResolver->resolveUserGroups($user),
+			allowAdminBypass: false,
+			roles: ['owners', 'editors']
+		);
+		if ($hasWrite === false && $this->groupManager->isInGroup($user->getUID(), self::ADMIN_GROUP) === false) {
+			return new JSONResponse(
+				data: ['error' => 'forbidden', 'code' => 'buildiq.rbac.no_role'],
+				statusCode: Http::STATUS_FORBIDDEN
+			);
+		}
+
+		if ($hasWrite === false) {
+			$bypassApplication = null;
+			if ($application instanceof ObjectEntity) {
+				$bypassApplication = $application;
+			}
+
+			$this->recordAdminBypass(
+				application: $bypassApplication,
+				slug: $slug,
+				actor: $user->getUID()
+			);
+		}
+
+		return null;
+	}//end refuseManifestWriter()
+
+	/**
+	 * Write a validated manifest where the read path finds it.
+	 *
+	 * @param array<string,mixed> $applicationArray The Application as an array.
+	 * @param array<string,mixed> $manifest         The manifest, permissions stripped.
+	 *
+	 * @return JSONResponse 200 naming the target written.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
+	 */
+	private function persistManifest(array $applicationArray, array $manifest): JSONResponse {
+		// Versioned model: write onto the production ApplicationVersion when one
+		// is resolvable; fall back to the Application object for legacy apps.
+		// Mirror ManifestResolverService::resolveProductionManifest's read
+		// shape EXACTLY so the write target matches the read target:
+		// productionVersion is either a UUID string (→ the ApplicationVersion
+		// object), an inline embedded object (→ its nested manifest on the
+		// Application), or absent (→ legacy application-level manifest).
+		$productionVersion = ($applicationArray['productionVersion'] ?? null);
+
+		// Case 1: UUID reference — write onto that ApplicationVersion. The
+		// uuid comes from the already-RBAC'd Application, so no cross-app check
+		// is needed (and the version's app-link field is `application`, not
+		// `applicationUuid`).
+		if (is_string($productionVersion) === true && $productionVersion !== '' && $productionVersion !== 'draft') {
+			$versionEntity = $this->objectService->find(
+				id: $productionVersion,
+				register: 'buildiq',
+				schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
+			);
+			if ($versionEntity !== null) {
+				$versionArray = ObjectRecord::toArray(object: $versionEntity);
+				$versionArray['manifest'] = $manifest;
+				$this->objectService->saveObject(
+					object: $versionArray,
+					register: 'buildiq',
+					schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
+				);
+				return new JSONResponse(data: ['status' => 'ok', 'target' => 'version'], statusCode: Http::STATUS_OK);
+			}
+		}
+
+		// Case 2: inline embedded version object — update its nested manifest
+		// and persist the Application (the embedded version travels with it).
+		if (is_array($productionVersion) === true) {
+			$applicationArray['productionVersion']['manifest'] = $manifest;
+			$this->objectService->saveObject(
+				object: $applicationArray,
+				register: 'buildiq',
+				schema: 'built-app'
+			);
+			return new JSONResponse(data: ['status' => 'ok', 'target' => 'embedded'], statusCode: Http::STATUS_OK);
+		}
+
+		// Case 3: legacy un-versioned app — application-level manifest.
+		$applicationArray['manifest'] = $manifest;
+		$this->objectService->saveObject(
+			object: $applicationArray,
+			register: 'buildiq',
+			schema: 'built-app'
+		);
+		return new JSONResponse(data: ['status' => 'ok', 'target' => 'application'], statusCode: Http::STATUS_OK);
+	}//end persistManifest()
 
 	/**
 	 * Return why a manifest cannot be rendered, or null when its shape is sound.
