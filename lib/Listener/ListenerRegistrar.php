@@ -156,7 +156,7 @@ final class ListenerRegistrar {
 		if (class_exists('OCA\\OpenRegister\\Event\\RegisterLeafProvidersEvent') === true) {
 			$context->registerEventListener(
 				event: \OCA\OpenRegister\Event\RegisterLeafProvidersEvent::class,
-				listener: \OCA\Buildiq\Listener\BuildiqLeafRegistrationListener::class
+				listener: \OCA\Buildiq\Integration\BuildiqLeafRegistrationListener::class
 			);
 		}
 

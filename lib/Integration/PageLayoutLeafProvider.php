@@ -50,6 +50,7 @@ namespace OCA\Buildiq\Integration;
 use OCA\Buildiq\Kernel\Contracts\LayoutDeltaServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\PageLayoutFrozenBaseInterface;
 use OCA\Buildiq\Kernel\Contracts\PageLayoutLayerStackInterface;
+use OCA\Buildiq\Kernel\Contracts\PageLayoutLeafProviderInterface;
 use OCA\Buildiq\Kernel\Contracts\PageLayoutPresenterInterface;
 use OCA\Buildiq\Service\PageLayoutParts;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
@@ -62,7 +63,7 @@ use RuntimeException;
  *
  * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-003)
  */
-final class PageLayoutLeafProvider extends AppLocalLeafProvider {
+final class PageLayoutLeafProvider extends AppLocalLeafProvider implements PageLayoutLeafProviderInterface {
 	/**
 	 * The leaf id, equal on both halves so gate-24 can pair them.
 	 *
