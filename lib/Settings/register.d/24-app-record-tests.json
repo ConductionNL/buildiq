@@ -1,0 +1,165 @@
+{
+	"_comment": "ADR-037 register fragment, lifecycle-release-test-gate (REQ-BQRT-003, REQ-BQRT-005). AppRecordTest: a sample record a maker expects a schema of the app to accept or refuse, run by AppTestSuiteService against the version's schema without saving it. AppTestRun: one run of an app version's test suite, kept with its trigger, counts, report and any owner override. Writes go through buildiq's services, so the object API leaves them to admins, as for rule-test-case. The register version in openbuild_register.json is bumped so the import runs.",
+	"components": {
+		"schemas": {
+			"AppRecordTest": {
+				"slug": "app-record-test",
+				"icon": "TestTube",
+				"version": "1.0.0",
+				"title": "Record test",
+				"description": "A sample record a schema of an app should accept or refuse, checked before a version is released.",
+				"x-openregister-demo-data": "Written by makers for their own schemas. A generated test checks a record nobody expects anything of.",
+				"authorization": {
+					"read": [
+						"authenticated"
+					],
+					"create": [
+						"admin"
+					],
+					"update": [
+						"admin"
+					],
+					"delete": [
+						"admin"
+					]
+				},
+				"type": "object",
+				"required": [
+					"application",
+					"schema",
+					"name",
+					"record",
+					"expect"
+				],
+				"properties": {
+					"application": {
+						"title": "App",
+						"type": "string",
+						"description": "The built app the test belongs to (its uuid)."
+					},
+					"schema": {
+						"title": "Schema",
+						"type": "string",
+						"description": "The schema of the app the record is checked against (its slug)."
+					},
+					"name": {
+						"title": "Name",
+						"type": "string",
+						"maxLength": 255,
+						"description": "What the test checks, as the report names it."
+					},
+					"record": {
+						"title": "Record",
+						"type": "object",
+						"description": "The sample record. It is checked, never saved."
+					},
+					"expect": {
+						"title": "Expected outcome",
+						"type": "string",
+						"enum": [
+							"accept",
+							"refuse"
+						],
+						"description": "Whether the schema should accept or refuse the record."
+					},
+					"expectedFields": {
+						"title": "Refused on",
+						"type": "array",
+						"items": {
+							"type": "string"
+						},
+						"description": "For a refusal: the fields the record should be refused on."
+					}
+				}
+			},
+			"AppTestRun": {
+				"slug": "app-test-run",
+				"icon": "ClipboardCheckOutline",
+				"version": "1.0.0",
+				"title": "Test run",
+				"description": "One run of an app version's test suite: when and why it ran, how many checks passed, failed or were skipped, the report and any owner override.",
+				"x-openregister-demo-data": "Written by the test suite. A generated run reports checks that never ran.",
+				"authorization": {
+					"read": [
+						"authenticated"
+					],
+					"create": [
+						"admin"
+					],
+					"update": [
+						"admin"
+					],
+					"delete": [
+						"admin"
+					]
+				},
+				"type": "object",
+				"required": [
+					"application",
+					"version",
+					"ranAt",
+					"trigger"
+				],
+				"properties": {
+					"application": {
+						"title": "App",
+						"type": "string",
+						"description": "The built app (its uuid)."
+					},
+					"version": {
+						"title": "Version",
+						"type": "string",
+						"description": "The app version the suite ran on (its uuid)."
+					},
+					"ranAt": {
+						"title": "Ran at",
+						"type": "string",
+						"format": "date-time",
+						"description": "When the suite ran."
+					},
+					"trigger": {
+						"title": "Trigger",
+						"type": "string",
+						"enum": [
+							"manual",
+							"release",
+							"promotion"
+						],
+						"description": "What started the run."
+					},
+					"passed": {
+						"title": "Passed",
+						"type": "integer",
+						"minimum": 0,
+						"description": "The number of checks that passed."
+					},
+					"failed": {
+						"title": "Failed",
+						"type": "integer",
+						"minimum": 0,
+						"description": "The number of checks that failed."
+					},
+					"skipped": {
+						"title": "Skipped",
+						"type": "integer",
+						"minimum": 0,
+						"description": "The number of checks that could not run, each with its reason in the report."
+					},
+					"report": {
+						"title": "Report",
+						"type": "array",
+						"items": {
+							"type": "object"
+						},
+						"description": "Every check: its kind, name, outcome and message."
+					},
+					"override": {
+						"title": "Override",
+						"type": "object",
+						"description": "When an owner released despite failures: who, and the reason they gave."
+					}
+				}
+			}
+		}
+	}
+}

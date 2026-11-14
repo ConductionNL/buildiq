@@ -45,9 +45,12 @@ namespace OCA\Buildiq\Controller;
 
 use DateTimeImmutable;
 use DateTimeInterface;
+use OCA\Buildiq\Exception\ReleaseOverrideRefusedException;
+use OCA\Buildiq\Exception\ReleaseTestsFailedException;
 use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Kernel\Contracts\ApplicationVersionServiceInterface;
 use OCA\Buildiq\Support\ObjectRecord;
+use OCA\Buildiq\Support\ReleaseOverride;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -605,12 +608,29 @@ class ApplicationVersionsController extends Controller {
 			$applicationUuid = (string)($application['id'] ?? $application['uuid'] ?? '');
 			$versionUuid = (string)($version['id'] ?? $version['uuid'] ?? '');
 
+			// The caller is an owner (checked above), so an override is theirs to give.
 			$result = $this->versionService->releaseVersion(
 				applicationUuid: $applicationUuid,
-				versionUuid: $versionUuid
+				versionUuid: $versionUuid,
+				override: ReleaseOverride::fromRequest(
+					param: $this->request->getParam('override'),
+					userId: $user->getUID(),
+					byOwner: true
+				)
 			);
 
 			return new JSONResponse(data: $result, statusCode: Http::STATUS_OK);
+		} catch (ReleaseTestsFailedException $e) {
+			return new JSONResponse(
+				data: ['error' => $e->getErrorCode(), 'detail' => $e->getMessage(), 'testRun' => $e->getRun()],
+				statusCode: Http::STATUS_UNPROCESSABLE_ENTITY
+			);
+		} catch (ReleaseOverrideRefusedException $e) {
+			return $this->errorResponse(
+				code: $e->getErrorCode(),
+				detail: $e->getMessage(),
+				status: $e->getStatus()
+			);
 		} catch (Throwable $e) {
 			$this->logger->info(
 				'Buildiq: ApplicationVersionsController::release refused for slug ' . $appSlug . '/' . $versionSlug . ': ' . $e->getMessage()

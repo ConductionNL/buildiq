@@ -27,7 +27,10 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Tests\Unit\Service;
 
+use OCA\Buildiq\Exception\ReleaseTestsFailedException;
 use OCA\Buildiq\Service\ApplicationVersionService;
+use OCA\Buildiq\Service\ReleaseTestGate;
+use OCA\Buildiq\Support\ReleaseOverride;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -71,6 +74,13 @@ class ApplicationVersionServiceTest extends TestCase {
 	private RegisterMapper&MockObject $registerMapper;
 
 	/**
+	 * Mock test gate (lifecycle-release-test-gate).
+	 *
+	 * @var ReleaseTestGate&MockObject
+	 */
+	private ReleaseTestGate&MockObject $testGate;
+
+	/**
 	 * Service under test.
 	 */
 	private ApplicationVersionService $service;
@@ -87,6 +97,7 @@ class ApplicationVersionServiceTest extends TestCase {
 		$this->objectService = $this->createMock(ObjectServiceInterface::class);
 		$this->registerService = $this->createMock(RegisterService::class);
 		$this->registerMapper = $this->createMock(RegisterMapper::class);
+		$this->testGate = $this->createMock(ReleaseTestGate::class);
 
 		$this->service = new ApplicationVersionService(
 			logger: $this->logger,
@@ -94,6 +105,7 @@ class ApplicationVersionServiceTest extends TestCase {
 			registerService: $this->registerService,
 			registerMapper: $this->registerMapper,
 			automationCompiler: $this->createMock(\OCA\Buildiq\Service\AutomationCompilerService::class),
+			testGate: $this->testGate,
 		);
 	}//end setUp()
 
@@ -504,6 +516,80 @@ class ApplicationVersionServiceTest extends TestCase {
 		$this->expectExceptionMessageMatches('/back-reference mismatch/');
 		$this->service->releaseVersion(applicationUuid: 'uuid-app', versionUuid: 'uuid-v');
 	}//end testReleaseVersionRejectsForeignVersion()
+
+	/**
+	 * release() runs the app's test suite on the chosen version before it writes,
+	 * as a release, and hands the owner's override through (REQ-BQRT-004).
+	 *
+	 * @return void
+	 */
+	public function testReleaseRunsTheTestSuiteFirstAndPassesTheOverride(): void {
+		$newVersion = $this->mockVersion(application: 'uuid-app', register: 'openbuild-foo-prod', uuid: 'uuid-new');
+		$application = $this->mockApplication(productionVersion: '');
+		$this->objectService->method('find')
+			->willReturnCallback(
+				static fn (string|int $id): ?ObjectEntity => match ($id) {
+					'uuid-new' => $newVersion,
+					'uuid-app' => $application,
+					default => null,
+				}
+			);
+
+		$override = new ReleaseOverride(reason: 'Column removed on purpose', userId: 'alice', byOwner: true);
+		$order = [];
+		$this->testGate->expects(self::once())->method('guard')
+			->with(
+				self::callback(static fn (array $app): bool => $app['id'] === 'uuid-app'),
+				self::callback(static fn (array $version): bool => $version['id'] === 'uuid-new' && ($version['status'] ?? null) !== 'published'),
+				ReleaseTestGate::TRIGGER_RELEASE,
+				$override
+			)
+			->willReturnCallback(
+				static function () use (&$order): array {
+					$order[] = 'gate';
+					return ['id' => 'run-1', 'failed' => 1, 'override' => ['user' => 'alice', 'reason' => 'Column removed on purpose']];
+				}
+			);
+		$this->objectService->expects(self::exactly(2))->method('saveObject')
+			->willReturnCallback(
+				function () use (&$order): ObjectEntity {
+					$order[] = 'save';
+					return $this->createMock(ObjectEntity::class);
+				}
+			);
+
+		$result = $this->service->releaseVersion(applicationUuid: 'uuid-app', versionUuid: 'uuid-new', override: $override);
+
+		self::assertSame(['gate', 'save', 'save'], $order);
+		self::assertSame('uuid-new', $result['productionVersion']);
+		self::assertSame('run-1', $result['testRun']['id']);
+	}//end testReleaseRunsTheTestSuiteFirstAndPassesTheOverride()
+
+	/**
+	 * A failing suite stops the release before anything is written: the version
+	 * stays a draft and the production pointer does not move (REQ-BQRT-004).
+	 *
+	 * @return void
+	 */
+	public function testAFailingSuiteStopsTheReleaseAndWritesNothing(): void {
+		$newVersion = $this->mockVersion(application: 'uuid-app', register: 'openbuild-foo-prod', uuid: 'uuid-new');
+		$application = $this->mockApplication(productionVersion: 'uuid-old');
+		$this->objectService->method('find')
+			->willReturnCallback(
+				static fn (string|int $id): ?ObjectEntity => match ($id) {
+					'uuid-new' => $newVersion,
+					'uuid-app' => $application,
+					default => null,
+				}
+			);
+		$this->testGate->method('guard')
+			->willThrowException(new ReleaseTestsFailedException(run: ['id' => 'run-2', 'failed' => 1, 'report' => []]));
+
+		$this->objectService->expects(self::never())->method('saveObject');
+
+		$this->expectException(ReleaseTestsFailedException::class);
+		$this->service->releaseVersion(applicationUuid: 'uuid-app', versionUuid: 'uuid-new');
+	}//end testAFailingSuiteStopsTheReleaseAndWritesNothing()
 
 	/**
 	 * delete-now on a draft whose register is SHARED with production must NOT drop

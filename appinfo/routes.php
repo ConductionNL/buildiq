@@ -96,6 +96,12 @@ return \OCA\Buildiq\Middleware\Support\ApiPathAliases::withVersionedAliases(\OCA
         // Owner-only release: set-as-production + publish + demote previous production
         // (`application-versions` REQ-OBV-110). Single-production invariant; NO admin bypass.
         ['name' => 'applicationVersions#release',  'url' => '/api/applications/{appSlug}/versions/{versionSlug}/release', 'verb' => 'POST', 'requirements' => ['appSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'versionSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        // App test suite and the Tests tab (lifecycle-release-test-gate D4).
+        ['name' => 'applicationTests#index',             'url' => '/api/applications/{appSlug}/tests',                        'verb' => 'GET',    'requirements' => ['appSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        ['name' => 'applicationTests#run',               'url' => '/api/applications/{appSlug}/versions/{versionSlug}/tests', 'verb' => 'POST',   'requirements' => ['appSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'versionSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        ['name' => 'applicationTests#createRecordTest',  'url' => '/api/applications/{appSlug}/record-tests',                 'verb' => 'POST',   'requirements' => ['appSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        ['name' => 'applicationTests#updateRecordTest',  'url' => '/api/applications/{appSlug}/record-tests/{id}',            'verb' => 'PUT',    'requirements' => ['appSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'id' => '[a-f0-9-]{8,}']],
+        ['name' => 'applicationTests#destroyRecordTest', 'url' => '/api/applications/{appSlug}/record-tests/{id}',            'verb' => 'DELETE', 'requirements' => ['appSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'id' => '[a-f0-9-]{8,}']],
 
         // Insights endpoint (buildiq-app-detail-overview REQ-OBAI-001 / REQ-OBAI-007).
         // GET /api/applications/{appUuid}/versions/{versionUuid}/insights?window=7d|30d|90d

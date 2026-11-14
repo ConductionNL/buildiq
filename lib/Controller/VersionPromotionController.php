@@ -43,11 +43,14 @@ use OCA\Buildiq\Exception\InsufficientPermissionException;
 use OCA\Buildiq\Exception\InvalidStrategyException;
 use OCA\Buildiq\Exception\NoPromoteTargetException;
 use OCA\Buildiq\Exception\PromotionFailedException;
+use OCA\Buildiq\Exception\ReleaseOverrideRefusedException;
+use OCA\Buildiq\Exception\ReleaseTestsFailedException;
 use OCA\Buildiq\Exception\VersionLockedException;
 use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Kernel\Contracts\PermissionResolverInterface;
 use OCA\Buildiq\Kernel\Contracts\VersionPromotionServiceInterface;
 use OCA\Buildiq\Support\ObjectRecord;
+use OCA\Buildiq\Support\ReleaseOverride;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -70,6 +73,13 @@ class VersionPromotionController extends Controller {
 	 * @var array<int,string>
 	 */
 	private const WRITE_ROLES = ['owners', 'editors'];
+
+	/**
+	 * The role allowed to promote onto production past failing tests (REQ-BQRT-004).
+	 *
+	 * @var array<int,string>
+	 */
+	private const OWNER_ROLES = ['owners'];
 
 	/**
 	 * Constructor.
@@ -150,8 +160,13 @@ class VersionPromotionController extends Controller {
 			$this->assertEditorOrOwner(application: $application, user: $user);
 
 			$strategy = (string)$this->request->getParam('strategy', '');
+			$override = ReleaseOverride::fromRequest(
+				param: $this->request->getParam('override'),
+				userId: $user->getUID(),
+				byOwner: $this->isOwner(application: $application, user: $user)
+			);
 
-			$updated = $this->promotionService->promote(source: $source, strategy: $strategy);
+			$updated = $this->promotionService->promote(source: $source, strategy: $strategy, override: $override);
 			return new JSONResponse(data: $updated, statusCode: Http::STATUS_OK);
 		} catch (Throwable $e) {
 			return $this->mapExceptionToResponse(error: $e);
@@ -229,6 +244,23 @@ class VersionPromotionController extends Controller {
 				code: $error->getErrorCode(),
 				detail: $error->getMessage(),
 				status: Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		if ($error instanceof ReleaseTestsFailedException) {
+			$this->logger->info('Buildiq: promote rejected (tests failed): ' . $error->getMessage());
+			return new JSONResponse(
+				data: ['error' => $error->getErrorCode(), 'detail' => $error->getMessage(), 'testRun' => $error->getRun()],
+				statusCode: Http::STATUS_UNPROCESSABLE_ENTITY
+			);
+		}
+
+		if ($error instanceof ReleaseOverrideRefusedException) {
+			$this->logger->info('Buildiq: promote rejected (override refused): ' . $error->getMessage());
+			return $this->errorResponse(
+				code: $error->getErrorCode(),
+				detail: $error->getMessage(),
+				status: $error->getStatus()
 			);
 		}
 
@@ -383,6 +415,33 @@ class VersionPromotionController extends Controller {
 				. (string)($application['slug'] ?? ($application['id'] ?? '?'))
 		);
 	}//end assertEditorOrOwner()
+
+	/**
+	 * Whether the calling user owns the Application: only an owner may release
+	 * past failing tests (lifecycle-release-test-gate REQ-BQRT-004). NC admins
+	 * are not auto-granted, as for the promotion itself.
+	 *
+	 * @param array<string,mixed> $application Application data
+	 * @param IUser $user Current Nextcloud user
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
+	 */
+	private function isOwner(array $application, IUser $user): bool {
+		$permissions = ($application['permissions'] ?? []);
+		if (is_array($permissions) === false) {
+			return false;
+		}
+
+		return $this->permissionResolver->matchesCaller(
+			permissions: $permissions,
+			caller: $user,
+			userGroups: $this->permissionResolver->resolveUserGroups($user),
+			allowAdminBypass: false,
+			roles: self::OWNER_ROLES
+		);
+	}//end isOwner()
 
 	/**
 	 * Build a uniform error envelope.

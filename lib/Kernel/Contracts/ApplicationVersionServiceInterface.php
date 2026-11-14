@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Kernel\Contracts;
 
+use OCA\Buildiq\Support\ReleaseOverride;
 use RuntimeException;
 
 /**
@@ -192,15 +193,23 @@ interface ApplicationVersionServiceInterface {
 	 *   4. archive the previous production version (if any and different) so exactly
 	 *      one production version remains (single-production invariant).
 	 *
+	 * Before step 2 the app's test suite runs (lifecycle-release-test-gate D2):
+	 * a failing suite throws {@see \OCA\Buildiq\Exception\ReleaseTestsFailedException}
+	 * with the stored run and nothing is written, unless `$override` is an
+	 * owner's "release anyway" with a reason.
+	 *
 	 * @param string $applicationUuid Parent Application UUID
 	 * @param string $versionUuid ApplicationVersion UUID to release
+	 * @param ReleaseOverride|null $override An owner's "release anyway", when asked for
 	 *
-	 * @return array{productionVersion: string, published: string, archived: string|null}
+	 * @return array{productionVersion: string, published: string, archived: string|null, testRun?: array<string, mixed>}
 	 *
 	 * @throws RuntimeException On back-reference mismatch or a missing object
+	 * @throws \OCA\Buildiq\Exception\ReleaseTestsFailedException When the suite fails and no override was given
+	 * @throws \OCA\Buildiq\Exception\ReleaseOverrideRefusedException When the override is not an owner's or has no reason
 	 *
 	 * @spec openspec/specs/application-versions/spec.md
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
-	public function releaseVersion(string $applicationUuid, string $versionUuid): array;
+	public function releaseVersion(string $applicationUuid, string $versionUuid, ?ReleaseOverride $override = null): array;
 }//end interface

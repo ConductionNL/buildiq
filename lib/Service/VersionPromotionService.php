@@ -59,9 +59,11 @@ use OCA\Buildiq\Exception\NoPromoteTargetException;
 use OCA\Buildiq\Exception\PromotionFailedException;
 use OCA\Buildiq\Exception\VersionLockedException;
 use OCA\Buildiq\Kernel\Contracts\VersionPromotionServiceInterface;
+use OCA\Buildiq\Support\ReleaseOverride;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use Psr\Log\LoggerInterface;
+use RuntimeException;
 use Throwable;
 
 /**
@@ -115,6 +117,7 @@ class VersionPromotionService implements VersionPromotionServiceInterface {
 	 * @param RegisterMapper $registerMapper Resolves register slugs to entities
 	 * @param VersionSchemaCarrier $schemaCarrier Carries schemas and manifest wiring to the target version
 	 * @param RegisterRowReader $rowReader Reads a register's rows across every schema it owns
+	 * @param ReleaseTestGate $testGate Runs the app's test suite before a promotion onto production
 	 *
 	 * @return void
 	 */
@@ -124,6 +127,7 @@ class VersionPromotionService implements VersionPromotionServiceInterface {
 		private readonly RegisterMapper $registerMapper,
 		private readonly VersionSchemaCarrier $schemaCarrier,
 		private readonly RegisterRowReader $rowReader,
+		private readonly ReleaseTestGate $testGate,
 	) {
 	}//end __construct()
 
@@ -162,8 +166,14 @@ class VersionPromotionService implements VersionPromotionServiceInterface {
 	 * a {@see PromotionFailedException} is re-thrown so the controller can
 	 * map it to a 500 response.
 	 *
+	 * A promotion onto the Application's production version first runs the
+	 * app's test suite on the source (lifecycle-release-test-gate D2): a
+	 * failing suite throws before the lock is taken and nothing is written,
+	 * unless `$override` is an owner's "release anyway" with a reason.
+	 *
 	 * @param array<string,mixed> $source Source ApplicationVersion object data
 	 * @param string $strategy One of {@see self::VALID_STRATEGIES}
+	 * @param ReleaseOverride|null $override An owner's "release anyway", when asked for
 	 *
 	 * @return array<string,mixed> The updated target ApplicationVersion data
 	 *
@@ -171,14 +181,19 @@ class VersionPromotionService implements VersionPromotionServiceInterface {
 	 * @throws InvalidStrategyException When the strategy is missing or unknown
 	 * @throws VersionLockedException When OR's lock is held by another caller
 	 * @throws PromotionFailedException When the strategy branch fails midway
+	 * @throws \OCA\Buildiq\Exception\ReleaseTestsFailedException When the target is production and the suite fails
+	 * @throws \OCA\Buildiq\Exception\ReleaseOverrideRefusedException When the override is not an owner's or has no reason
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-59
+	 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
 	 */
-	public function promote(array $source, string $strategy): array {
+	public function promote(array $source, string $strategy, ?ReleaseOverride $override = null): array {
 		$this->assertValidStrategy(strategy: $strategy);
 
 		$targetUuid = $this->resolveTargetUuid(source: $source);
 		$target = $this->loadVersion(uuid: $targetUuid);
+
+		$this->guardProductionPromotion(source: $source, targetUuid: $targetUuid, override: $override);
 
 		$this->acquireLock(targetUuid: $targetUuid);
 
@@ -610,6 +625,55 @@ class VersionPromotionService implements VersionPromotionServiceInterface {
 
 		return $this->normaliseObjectArray(object: $entity);
 	}//end loadVersion()
+
+	/**
+	 * Run the test gate when the promotion lands on the Application's production version.
+	 *
+	 * The suite runs on the source, whose manifest the target receives. The
+	 * Application is read to know which version is production; when it cannot
+	 * be read the promotion stops rather than skip the gate.
+	 *
+	 * @param array<string,mixed> $source The source ApplicationVersion.
+	 * @param string $targetUuid The target's uuid.
+	 * @param ReleaseOverride|null $override An owner's "release anyway", when asked for.
+	 *
+	 * @return void
+	 *
+	 * @throws RuntimeException When the Application cannot be read.
+	 *
+	 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
+	 */
+	private function guardProductionPromotion(array $source, string $targetUuid, ?ReleaseOverride $override): void {
+		$applicationUuid = (string)($source['application'] ?? '');
+		$application = [];
+		if ($applicationUuid !== '') {
+			$entity = $this->objectService->find(
+				id: $applicationUuid,
+				register: self::REGISTER_SLUG,
+				schema: self::APPLICATION_SCHEMA
+			);
+			if ($entity !== null) {
+				$application = $this->normaliseObjectArray(object: $entity);
+			}
+		}
+
+		if ($application === []) {
+			throw new RuntimeException(
+				message: sprintf('Application %s of the promoted version could not be read; the promotion was not run.', $applicationUuid)
+			);
+		}
+
+		if ((string)($application['productionVersion'] ?? '') !== $targetUuid) {
+			return;
+		}
+
+		$this->testGate->guard(
+			application: $application + ['id' => $applicationUuid],
+			version: $source,
+			trigger: ReleaseTestGate::TRIGGER_PROMOTION,
+			override: $override
+		);
+	}//end guardProductionPromotion()
 
 	/**
 	 * Resolve the target UUID from the source's `promotesTo` field (spec REQ-OBVP-001).

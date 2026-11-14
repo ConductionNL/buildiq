@@ -47,6 +47,7 @@ namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Kernel\Contracts\ApplicationVersionServiceInterface;
 use OCA\Buildiq\Support\ObjectRecord;
+use OCA\Buildiq\Support\ReleaseOverride;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -116,6 +117,8 @@ class ApplicationVersionService implements ApplicationVersionServiceInterface {
 	 * @param AutomationCompilerService $automationCompiler Recompiles a cloned automation's
 	 *                                                      artifacts into the new version
 	 *                                                      (automation-designer design.md Decision 6).
+	 * @param ReleaseTestGate $testGate Runs the app's test suite before a release
+	 *                                  (lifecycle-release-test-gate D2).
 	 *
 	 * @return void
 	 */
@@ -125,6 +128,7 @@ class ApplicationVersionService implements ApplicationVersionServiceInterface {
 		private readonly RegisterService $registerService,
 		private readonly RegisterMapper $registerMapper,
 		private readonly AutomationCompilerService $automationCompiler,
+		private readonly ReleaseTestGate $testGate,
 	) {
 	}//end __construct()
 
@@ -400,17 +404,26 @@ class ApplicationVersionService implements ApplicationVersionServiceInterface {
 	 *   4. archive the previous production version (if any and different) so exactly
 	 *      one production version remains (single-production invariant).
 	 *
+	 * Before step 2 the app's test suite runs (lifecycle-release-test-gate D2):
+	 * a failing suite throws {@see \OCA\Buildiq\Exception\ReleaseTestsFailedException}
+	 * with the stored run and nothing is written, unless `$override` is an
+	 * owner's "release anyway" with a reason.
+	 *
 	 * @param string $applicationUuid Parent Application UUID
 	 * @param string $versionUuid ApplicationVersion UUID to release
+	 * @param ReleaseOverride|null $override An owner's "release anyway", when asked for
 	 *
-	 * @return array{productionVersion: string, published: string, archived: string|null}
+	 * @return array{productionVersion: string, published: string, archived: string|null, testRun?: array<string, mixed>}
 	 *
 	 * @throws RuntimeException On back-reference mismatch or a missing object
+	 * @throws \OCA\Buildiq\Exception\ReleaseTestsFailedException When the suite fails and no override was given
+	 * @throws \OCA\Buildiq\Exception\ReleaseOverrideRefusedException When the override is not an owner's or has no reason
 	 *
 	 * @spec openspec/specs/application-versions/spec.md
+	 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
-	public function releaseVersion(string $applicationUuid, string $versionUuid): array {
+	public function releaseVersion(string $applicationUuid, string $versionUuid, ?ReleaseOverride $override = null): array {
 		// 1. Back-reference integrity (REQ-OBV-105) — surfaced as 422 by the caller.
 		$this->guardProductionVersionOwnership(
 			applicationUuid: $applicationUuid,
@@ -441,6 +454,16 @@ class ApplicationVersionService implements ApplicationVersionServiceInterface {
 
 		$versionData = ObjectRecord::toArray(object: $version);
 		unset($versionData['@self']);
+
+		// 2a. The app's test suite runs before anything is written (REQ-BQRT-004):
+		// a failure throws with the stored run, unless the owner overrode it.
+		$testRun = $this->testGate->guard(
+			application: $applicationData + ['id' => $applicationUuid],
+			version: $versionData + ['id' => $versionUuid],
+			trigger: ReleaseTestGate::TRIGGER_RELEASE,
+			override: $override
+		);
+
 		$versionData['status'] = 'published';
 		$this->objectService->saveObject(
 			object: $versionData,
@@ -482,6 +505,7 @@ class ApplicationVersionService implements ApplicationVersionServiceInterface {
 			'productionVersion' => $versionUuid,
 			'published' => $versionUuid,
 			'archived' => $archived,
+			'testRun' => $testRun,
 		];
 	}//end releaseVersion()
 

@@ -55,6 +55,8 @@ import ApplicationIconTab from './components/tabs/ApplicationIconTab.vue'
 // lives at /builder/:slug/pages).
 import ApplicationManifestTab from './components/tabs/ApplicationManifestTab.vue'
 // ── Virtual apps — detail header ──────────────────────────────────────────────
+// VirtualAppDetail sidebar tab: the app's test suite, record tests and runs.
+import ApplicationTestsTab from './components/tabs/ApplicationTestsTab.vue'
 // VirtualAppDetail sidebar tab: version history + rollback.
 import ApplicationVersionsTab from './components/tabs/ApplicationVersionsTab.vue'
 // Export jobs tab — wraps ExportJobsList as the "Exports" sidebar tab on the
@@ -215,6 +217,7 @@ export default {
 	ApplicationVersionsTab: tab(ApplicationVersionsTab),
 	ApplicationDiffTab: tab(ApplicationDiffTab),
 	ApplicationIconTab: tab(ApplicationIconTab),
+	ApplicationTestsTab: tab(ApplicationTestsTab),
 
 	// Actions bar components (kind "actions" — resolved via slot-override path).
 	VirtualAppsActions: actions(VirtualAppsActions),

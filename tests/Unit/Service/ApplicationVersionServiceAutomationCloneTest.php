@@ -71,7 +71,8 @@ final class ApplicationVersionServiceAutomationCloneTest extends TestCase {
 			objectService: $this->objectService,
 			registerService: $this->createMock(RegisterService::class),
 			registerMapper: $this->createMock(RegisterMapper::class),
-			automationCompiler: $this->automationCompiler
+			automationCompiler: $this->automationCompiler,
+			testGate: $this->createMock(\OCA\Buildiq\Service\ReleaseTestGate::class)
 		);
 
 	}//end setUp()
