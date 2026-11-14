@@ -2059,7 +2059,9 @@ OC.L10N.register(
         "Requests under 250 ms": "Requests under 250 ms",
         "Total load time (ms)": "Total load time (ms)",
         "Window start": "Window start",
-        "Include server bundle": "Include server bundle"
+        "Include server bundle": "Include server bundle",
+        "Search": "Search",
+        "Add external data widget": "Add external data widget"
     },
     "nplurals=2; plural=(n != 1);"
 )
