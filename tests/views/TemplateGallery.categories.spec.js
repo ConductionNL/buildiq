@@ -130,6 +130,8 @@ const githubForms = [
  * @param {object} query The route query.
  * @return {Promise<{wrapper: object, $router: object}>}
  */
+let storeResponse = { outcome: 'not_configured', cards: [] }
+
 async function mountGallery(query = {}) {
 	axiosMock.get.mockImplementation((url) => {
 		const u = String(url)
@@ -144,6 +146,9 @@ async function mountGallery(query = {}) {
 		}
 		if (u.includes('shop/github/forms')) {
 			return Promise.resolve({ data: { outcome: 'ok', cards: githubForms } })
+		}
+		if (u.includes('store/templates')) {
+			return Promise.resolve({ data: storeResponse })
 		}
 		return Promise.resolve({ data: [] })
 	})
@@ -408,5 +413,47 @@ describe('TemplateGallery forms view (REQ-BQGL-003, REQ-BQGL-005)', () => {
 		expect(url).toBe('/apps/openregister/api/objects/buildiq/form-template')
 		expect(record.publisher).toBe('Gemeente Ander')
 		expect(record.category).toBe('citizen-engagement')
+	})
+})
+
+describe('TemplateGallery: the shared catalogue section (REQ-BQRS-001, REQ-BQRS-002)', () => {
+	beforeEach(() => {
+		axiosMock.get.mockReset()
+		storeResponse = {
+			outcome: 'ok',
+			source: 'store.example.nl',
+			cards: [
+				{ slug: 'vergunningen-volgen', title: 'Vergunningen volgen', category: 'government-services' },
+				{ slug: 'schouwronde', title: 'Schouwronde', category: 'field-work' },
+			],
+		}
+	})
+
+	it('sits between the built-in templates and the apps on GitHub', async () => {
+		const { wrapper } = await mountGallery()
+
+		const html = wrapper.html()
+		const builtin = html.indexOf('data-testid="builtin-templates"')
+		const shared = html.indexOf('data-testid="shared-catalogue"')
+		const github = html.indexOf('Apps on GitHub')
+		expect(builtin).toBeGreaterThan(-1)
+		expect(shared).toBeGreaterThan(builtin)
+		expect(github).toBeGreaterThan(shared)
+	})
+
+	it('narrows the catalogue cards by the picked category', async () => {
+		const { wrapper } = await mountGallery({ category: 'field-work' })
+
+		const titles = wrapper
+			.findAll('[data-testid="shared-catalogue-card"] .template-card__title')
+			.map((c) => c.text())
+		expect(titles).toEqual(['Schouwronde'])
+	})
+
+	it('is absent when no catalogue is configured', async () => {
+		storeResponse = { outcome: 'not_configured', cards: [] }
+		const { wrapper } = await mountGallery()
+
+		expect(wrapper.find('[data-testid="shared-catalogue"]').exists()).toBe(false)
 	})
 })

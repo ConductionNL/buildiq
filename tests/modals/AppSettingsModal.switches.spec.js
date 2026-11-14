@@ -45,6 +45,16 @@ const stubs = {
 }
 
 /**
+ * The flow picker; the modal also has a database picker (REQ-BQDB-001).
+ *
+ * @param {import('@vue/test-utils').VueWrapper} wrapper The mounted modal.
+ * @return {import('@vue/test-utils').VueWrapper} The flow select.
+ */
+function flowPicker(wrapper) {
+	return wrapper.findAllComponents({ name: 'NcSelect' }).find((select) => select.props('inputLabel') === 'Flows this app is made of')
+}
+
+/**
  * Mount the modal.
  *
  * @param {object} props Props to override.
@@ -102,7 +112,7 @@ describe('AppSettingsModal switches and flows', () => {
 			flows: [{ flow: 'f-1' }, { flow: 'f-gone', label: 'Old intake' }, { flow: 'f-lost' }],
 			availableFlows: [{ value: 'f-1', label: 'Intake' }, { value: 'f-2', label: 'Review' }],
 		})
-		expect(wrapper.findComponent({ name: 'NcSelect' }).props('modelValue')).toEqual([
+		expect(flowPicker(wrapper).props('modelValue')).toEqual([
 			{ value: 'f-1', label: 'Intake' },
 			{ value: 'f-gone', label: 'Old intake' },
 			{ value: 'f-lost', label: '{uuid} (no longer exists)' },
@@ -111,7 +121,7 @@ describe('AppSettingsModal switches and flows', () => {
 
 	it('emits the picked flows as bindings, and none when cleared', async () => {
 		const wrapper = mountModal({ availableFlows: [{ value: 'f-1', label: 'Intake' }] })
-		const select = wrapper.findComponent({ name: 'NcSelect' })
+		const select = flowPicker(wrapper)
 		await select.vm.$emit('update:modelValue', [{ value: 'f-1', label: 'Intake' }])
 		await select.vm.$emit('update:modelValue', null)
 		expect(wrapper.emitted('update:flows')).toEqual([[[{ flow: 'f-1', label: 'Intake' }]], [[]]])
