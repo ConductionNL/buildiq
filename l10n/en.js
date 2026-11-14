@@ -2059,7 +2059,18 @@ OC.L10N.register(
         "Requests under 250 ms": "Requests under 250 ms",
         "Total load time (ms)": "Total load time (ms)",
         "Window start": "Window start",
-        "Include server bundle": "Include server bundle"
+        "Include server bundle": "Include server bundle",
+        "API": "API",
+        "Base address": "Base address",
+        "Download OpenAPI file": "Download OpenAPI file",
+        "Its register did not describe this schema.": "Its register did not describe this schema.",
+        "Loading the API reference…": "Loading the API reference…",
+        "Not documented here": "Not documented here",
+        "Sign in with your user name and an app password, which you create under Personal settings, Security. Never use your own password in an integration.": "Sign in with your user name and an app password, which you create under Personal settings, Security. Never use your own password in an integration.",
+        "The description of one or more registers could not be read.": "The description of one or more registers could not be read.",
+        "The pages of this version use no OpenRegister schema.": "The pages of this version use no OpenRegister schema.",
+        "These pages read from a connector, not from an OpenRegister schema.": "These pages read from a connector, not from an OpenRegister schema.",
+        "This app has no version to document yet.": "This app has no version to document yet."
     },
     "nplurals=2; plural=(n != 1);"
 )

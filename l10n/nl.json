@@ -1660,7 +1660,17 @@
         "Requests under 250 ms": "Verzoeken onder 250 ms",
         "Total load time (ms)": "Totale laadtijd (ms)",
         "Window start": "Begin van het venster",
-        "Include server bundle": "Serverbundel meenemen"
+        "Include server bundle": "Serverbundel meenemen",
+        "Base address": "Basisadres",
+        "Download OpenAPI file": "OpenAPI-bestand downloaden",
+        "Its register did not describe this schema.": "Het register van dit schema heeft het niet beschreven.",
+        "Loading the API reference…": "De API-beschrijving laden…",
+        "Not documented here": "Hier niet beschreven",
+        "Sign in with your user name and an app password, which you create under Personal settings, Security. Never use your own password in an integration.": "Meld je aan met je gebruikersnaam en een app-wachtwoord, dat je aanmaakt onder Persoonlijke instellingen, Beveiliging. Gebruik nooit je eigen wachtwoord in een koppeling.",
+        "The description of one or more registers could not be read.": "De beschrijving van een of meer registers kon niet worden gelezen.",
+        "The pages of this version use no OpenRegister schema.": "De pagina's van deze versie gebruiken geen OpenRegister-schema.",
+        "These pages read from a connector, not from an OpenRegister schema.": "Deze pagina's lezen uit een connector, niet uit een OpenRegister-schema.",
+        "This app has no version to document yet.": "Deze app heeft nog geen versie om te beschrijven."
     },
     "plurals": null,
     "pluralForm": "nplurals=2; plural=(n != 1);"
