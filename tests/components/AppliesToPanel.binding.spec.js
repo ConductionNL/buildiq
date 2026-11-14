@@ -95,12 +95,14 @@ describe('AppliesToPanel binding', () => {
 			'One team',
 			'Portal visitors',
 			'One person',
+			'One organisation',
 		])
 		expect(wrapper.vm.audienceLabel('robots')).toBe('robots')
 
 		expect(mountPanel({ audience: { kind: 'team', ref: 't1' } }).text()).toContain('Which team')
 		expect(mountPanel({ audience: { kind: 'user', ref: 'u1' } }).text()).toContain('Which user')
 		expect(mountPanel({ audience: { kind: 'group', ref: 'g1' } }).text()).toContain('Which group')
+		expect(mountPanel({ audience: { kind: 'organisation', ref: 'o1' } }).text()).toContain('Which organisation')
 		expect(mountPanel({ audience: { kind: 'portal', ref: '' } }).find('input[aria-invalid]').exists()).toBe(false)
 	})
 

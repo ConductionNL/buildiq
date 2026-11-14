@@ -217,7 +217,7 @@ export default {
 		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-002)
 		 */
 		audienceKinds() {
-			return ['everyone', 'group', 'team', 'portal', 'user']
+			return ['everyone', 'group', 'team', 'portal', 'user', 'organisation']
 		},
 
 		/**
@@ -250,7 +250,7 @@ export default {
 		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-002)
 		 */
 		audienceNeedsRef() {
-			return ['group', 'team', 'user'].includes(this.audienceKind)
+			return ['group', 'team', 'user', 'organisation'].includes(this.audienceKind)
 		},
 
 		/**
@@ -293,6 +293,9 @@ export default {
 			if (this.audienceKind === 'team') {
 				return t('buildiq', 'Which team')
 			}
+			if (this.audienceKind === 'organisation') {
+				return t('buildiq', 'Which organisation')
+			}
 			return t('buildiq', 'Which user')
 		},
 
@@ -322,6 +325,7 @@ export default {
 				team: t('buildiq', 'One team'),
 				portal: t('buildiq', 'Portal visitors'),
 				user: t('buildiq', 'One person'),
+				organisation: t('buildiq', 'One organisation'),
 			}
 			return labels[kind] || kind
 		},
@@ -357,7 +361,7 @@ export default {
 			const next = { ...this.binding }
 			if (kind === 'everyone') {
 				delete next.audience
-			} else if (['group', 'team', 'user'].includes(kind)) {
+			} else if (['group', 'team', 'user', 'organisation'].includes(kind)) {
 				next.audience = { kind, ref: this.audienceRef }
 			} else {
 				next.audience = { kind, ref: '' }

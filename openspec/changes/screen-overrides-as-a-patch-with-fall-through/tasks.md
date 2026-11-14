@@ -13,8 +13,8 @@
 - [x] 2.3 Resolve the audience from the caller's own session, and refuse `group`, `team` and `user` for a caller with no account (REQ-OBSO-004)
 - [x] 2.4 Compare `baseFingerprint` against the normalised base, withhold on drift and serve the base (REQ-OBSO-002, REQ-OBSO-003)
 - [x] 2.5 Return `appliedLayers[]` and `withheld[]` beside the resolved layout (REQ-OBSO-006)
-- [ ] 2.6 Cache on the composing layers' ids and fingerprints
-- [ ] 2.7 Add the `organisation` audience kind to `pageLayout` in `lib/Settings/openbuild_register.json`, resolve it from the caller's active OpenRegister organisation in `lib/Service/PageLayoutLayerStack.php`, and place it between the type layout and the group and team overrides; offer it in the "applies to" panel of `DetailPageEditor.vue` (REQ-OBSO-007). Verify: a PHPUnit case for two organisations and a team override in one of them
+- [x] 2.6 Cache on the composing layers' ids and fingerprints. `PageLayoutLeafProvider` folds the ordered stack once per key in the local cache (`buildiq-page-layout`, 300 s): every composing layer's id with a hash of its content, since a whole layout carries no fingerprint and an edit to it must not serve a stale fold. The host object stays out of the fold, so one fold serves every case of the type; a drifted override is flagged on the fold, not on each read (`PageLayoutFoldCacheTest`)
+- [x] 2.7 Add the `organisation` audience kind to `pageLayout` in `lib/Settings/openbuild_register.json`, resolve it from the caller's active OpenRegister organisation in `lib/Service/PageLayoutLayerStack.php`, and place it between the type layout and the group and team overrides; offer it in the "applies to" panel of `DetailPageEditor.vue` (REQ-OBSO-007). Verify: a PHPUnit case for two organisations and a team override in one of them
 
 ## 3. Editor
 
@@ -31,6 +31,7 @@
 - [x] 4.4 Playwright `tests/e2e/screen-override-drift.spec.ts` for the re-cut of a drifted override — the spec ships and asserts that the answer carries appliedLayers and withheld over the wire, and that a caller with no account never gets an internal screen; the re-cut itself waits on the editor in section 3
 - [x] 4.5 Register-import test that the lifecycle and notification dialects import, per the notification-dialect gate
 - [ ] 4.6 Dutch and English strings for the panel, the state and the notification; docs with screenshots
+  - 2026-11-14: the Dutch strings of the "applies to" panel are in `l10n/nl.json` and `l10n/nl.js` (English was already complete). Open: the docs with screenshots, which need a running instance.
 
 ## 5. Consumers
 

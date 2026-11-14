@@ -55,6 +55,8 @@ use OCA\Buildiq\Kernel\Contracts\PageLayoutPresenterInterface;
 use OCA\Buildiq\Service\PageLayoutParts;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\IAppConfig;
+use OCP\ICache;
+use OCP\ICacheFactory;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 
@@ -77,6 +79,28 @@ final class PageLayoutLeafProvider extends AppLocalLeafProvider implements PageL
 	 * @var string
 	 */
 	private const SCHEMA = 'pageLayout';
+
+	/**
+	 * The local cache the fold of the composing layers is kept in.
+	 *
+	 * @var string
+	 */
+	private const CACHE_PREFIX = 'buildiq-page-layout';
+
+	/**
+	 * How long a fold is kept, in seconds. The key changes with every layer
+	 * edit, so this only bounds how long an unused fold lingers.
+	 *
+	 * @var int
+	 */
+	private const CACHE_TTL = 300;
+
+	/**
+	 * The cache of folded layer stacks, or null without a cache.
+	 *
+	 * @var ICache|null
+	 */
+	private readonly ?ICache $cache;
 
 	/**
 	 * The keyed-delta merge and the base fingerprint.
@@ -113,6 +137,7 @@ final class PageLayoutLeafProvider extends AppLocalLeafProvider implements PageL
 	 * @param IAppConfig $appConfig App config, for the register slug.
 	 * @param PageLayoutParts $parts The layer stack, frozen base, presenter and delta store of a page layout.
 	 * @param LoggerInterface $logger Logger.
+	 * @param ICacheFactory|null $cacheFactory Caches the fold of the composing layers.
 	 *
 	 * @return void
 	 */
@@ -121,11 +146,13 @@ final class PageLayoutLeafProvider extends AppLocalLeafProvider implements PageL
 		private readonly IAppConfig $appConfig,
 		PageLayoutParts $parts,
 		private readonly LoggerInterface $logger,
+		?ICacheFactory $cacheFactory = null,
 	) {
 		$this->deltas = $parts->deltas;
 		$this->layers = $parts->layers;
 		$this->frozenBase = $parts->frozenBase;
 		$this->presenter = $parts->presenter;
+		$this->cache = $cacheFactory?->createLocal(self::CACHE_PREFIX);
 	}//end __construct()
 
 	/**
@@ -193,6 +220,89 @@ final class PageLayoutLeafProvider extends AppLocalLeafProvider implements PageL
 		$published = $this->publishedLayoutsFor(register: $register, schema: $schema);
 		$stack = $this->layers->orderLayers(published: $published, object: $object);
 
+		['composed' => $composed, 'applied' => $applied, 'withheld' => $withheld] = $this->foldCached(stack: $stack);
+
+		if ($composed === []) {
+			// Nothing answers, and the consumer renders its manifest unchanged.
+			// This is the path an instance without any layout takes, and it is
+			// the reason buildiq can be absent entirely.
+			return ['items' => [], 'total' => 0, 'nextCursor' => null, 'appliedLayers' => [], 'withheld' => $withheld];
+		}
+
+		return [
+			'items' => [$this->presenter->serve(layout: $composed, schemaWide: $this->layers->schemaWideOf(layers: $stack), object: $object)],
+			'total' => 1,
+			'nextCursor' => null,
+			// A handler who sees fewer tabs than a colleague has no way to learn
+			// why, and neither has the administrator who is asked about it. This
+			// is that answer. A consumer is never required to read it to render.
+			'appliedLayers' => $applied,
+			'withheld' => $withheld,
+		];
+	}//end list()
+
+	/**
+	 * The fold of a layer stack, from the cache when the same layers composed it before.
+	 *
+	 * The key is every composing layer's id with a hash of its content, so an
+	 * edit to any layer, or a different stack for another caller, is a
+	 * different key and is folded afresh. The host object is not part of the
+	 * fold: the presenter applies it afterwards.
+	 *
+	 * @param array<int, array<string, mixed>> $stack The ordered layers.
+	 *
+	 * @return array{composed: array<string, mixed>, applied: array<int, array<string, mixed>>, withheld: array<int, array<string, mixed>>} The fold.
+	 *
+	 * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/tasks.md#task-2.6
+	 */
+	private function foldCached(array $stack): array {
+		if ($this->cache === null) {
+			return $this->fold(stack: $stack);
+		}
+
+		$key = self::foldKey(stack: $stack);
+		$cached = $this->cache->get($key);
+		if (is_array($cached) === true && is_array($cached['composed'] ?? null) === true
+			&& is_array($cached['applied'] ?? null) === true && is_array($cached['withheld'] ?? null) === true
+		) {
+			return $cached;
+		}
+
+		$fold = $this->fold(stack: $stack);
+		$this->cache->set($key, $fold, self::CACHE_TTL);
+
+		return $fold;
+	}//end foldCached()
+
+	/**
+	 * The cache key of a layer stack: its layers' ids and content hashes, in order.
+	 *
+	 * @param array<int, array<string, mixed>> $stack The ordered layers.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/tasks.md#task-2.6
+	 */
+	private static function foldKey(array $stack): string {
+		$parts = [];
+		foreach ($stack as $layer) {
+			$parts[] = (string)($layer['id'] ?? '') . ':' . hash('sha256', (string)json_encode($layer));
+		}
+
+		return 'fold-' . hash('sha256', implode('|', $parts));
+	}//end foldKey()
+
+	/**
+	 * Fold the ordered layers into one layout, applying each override that is
+	 * current and withholding each that drifted.
+	 *
+	 * @param array<int, array<string, mixed>> $stack The ordered layers.
+	 *
+	 * @return array{composed: array<string, mixed>, applied: array<int, array<string, mixed>>, withheld: array<int, array<string, mixed>>} The fold.
+	 *
+	 * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-005)
+	 */
+	private function fold(array $stack): array {
 		$composed = [];
 		$applied = [];
 		$withheld = [];
@@ -247,24 +357,8 @@ final class PageLayoutLeafProvider extends AppLocalLeafProvider implements PageL
 			$applied[] = $this->layers->describeLayer(layer: $layer);
 		}
 
-		if ($composed === []) {
-			// Nothing answers, and the consumer renders its manifest unchanged.
-			// This is the path an instance without any layout takes, and it is
-			// the reason buildiq can be absent entirely.
-			return ['items' => [], 'total' => 0, 'nextCursor' => null, 'appliedLayers' => [], 'withheld' => $withheld];
-		}
-
-		return [
-			'items' => [$this->presenter->serve(layout: $composed, schemaWide: $this->layers->schemaWideOf(layers: $stack), object: $object)],
-			'total' => 1,
-			'nextCursor' => null,
-			// A handler who sees fewer tabs than a colleague has no way to learn
-			// why, and neither has the administrator who is asked about it. This
-			// is that answer. A consumer is never required to read it to render.
-			'appliedLayers' => $applied,
-			'withheld' => $withheld,
-		];
-	}//end list()
+		return ['composed' => $composed, 'applied' => $applied, 'withheld' => $withheld];
+	}//end fold()
 
 	/**
 	 * The base an override is cut against, composed the way resolution composes
