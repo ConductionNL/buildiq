@@ -133,20 +133,49 @@ class AgentPlanService {
 			return self::error(error: 'plan_invalid', message: $invalid);
 		}
 
+		$normalised = self::normalisedSteps(steps: $steps);
+		$planId = $this->createPlan(
+			object: ['appSlug' => $appSlug, 'steps' => $normalised, 'status' => self::STATUS_PENDING, 'submittedBy' => $userId, 'usedSteps' => []]
+		);
+		if ($planId === null) {
+			return self::error(error: 'plan_store_failed', message: 'The plan could not be stored.');
+		}
+
+		return [
+			'planId' => $planId,
+			'status' => self::STATUS_PENDING,
+			'appSlug' => $appSlug,
+			'steps' => $normalised,
+		];
+	}//end submit()
+
+	/**
+	 * The steps as stored: the tool and its arguments without any planId.
+	 *
+	 * @param array<int, array<string, mixed>> $steps The validated steps.
+	 *
+	 * @return array<int, array{tool: string, arguments: array<string, mixed>}>
+	 */
+	private static function normalisedSteps(array $steps): array {
 		$normalised = [];
 		foreach ($steps as $step) {
 			$normalised[] = ['tool' => (string)$step['tool'], 'arguments' => self::withoutPlanId(arguments: (array)$step['arguments'])];
 		}
 
+		return $normalised;
+	}//end normalisedSteps()
+
+	/**
+	 * Store a new plan.
+	 *
+	 * @param array<string, mixed> $object The plan.
+	 *
+	 * @return string|null The plan id, or null when it could not be stored.
+	 */
+	private function createPlan(array $object): ?string {
 		try {
 			$saved = $this->objectService->saveObject(
-				object: [
-					'appSlug' => $appSlug,
-					'steps' => $normalised,
-					'status' => self::STATUS_PENDING,
-					'submittedBy' => $userId,
-					'usedSteps' => [],
-				],
+				object: $object,
 				register: self::REGISTER_SLUG,
 				schema: self::PLAN_SCHEMA,
 				_rbac: false,
@@ -154,16 +183,11 @@ class AgentPlanService {
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning('Buildiq: storing an agent plan failed: ' . $e->getMessage());
-			return self::error(error: 'plan_store_failed', message: 'The plan could not be stored.');
+			return null;
 		}
 
-		return [
-			'planId' => (string)$saved->getUuid(),
-			'status' => self::STATUS_PENDING,
-			'appSlug' => $appSlug,
-			'steps' => $normalised,
-		];
-	}//end submit()
+		return (string)$saved->getUuid();
+	}//end createPlan()
 
 	/**
 	 * Approve or reject a pending plan, as a person with a write role on its app.
@@ -181,16 +205,9 @@ class AgentPlanService {
 	 */
 	public function decide(string $planId, bool $approve, IUser $caller): array {
 		$plan = $this->loadPlan(planId: $planId);
-		if ($plan === null) {
-			return self::error(error: 'not_found', message: 'No such plan.');
-		}
-
-		if (($plan['data']['status'] ?? '') !== self::STATUS_PENDING) {
-			return self::error(error: 'plan_decided', message: 'This plan was already approved or rejected.');
-		}
-
-		if ($this->mayDecide(appSlug: (string)($plan['data']['appSlug'] ?? ''), caller: $caller) === false) {
-			return self::error(error: 'forbidden', message: 'Only an owner or editor of this app can approve or reject its plans.');
+		$refusal = $this->decisionRefusal(plan: $plan, caller: $caller);
+		if ($refusal !== null || $plan === null) {
+			return ($refusal ?? self::error(error: 'not_found', message: 'No such plan.'));
 		}
 
 		$data = $plan['data'];
@@ -210,6 +227,30 @@ class AgentPlanService {
 
 		return ['planId' => $plan['uuid'], 'status' => $data['status']];
 	}//end decide()
+
+	/**
+	 * Why a plan cannot be decided by this caller, or null when it can.
+	 *
+	 * @param array{uuid: string, data: array<string, mixed>}|null $plan   The plan, null when there is none.
+	 * @param IUser                                               $caller The deciding user.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private function decisionRefusal(?array $plan, IUser $caller): ?array {
+		if ($plan === null) {
+			return self::error(error: 'not_found', message: 'No such plan.');
+		}
+
+		if (($plan['data']['status'] ?? '') !== self::STATUS_PENDING) {
+			return self::error(error: 'plan_decided', message: 'This plan was already approved or rejected.');
+		}
+
+		if ($this->mayDecide(appSlug: (string)($plan['data']['appSlug'] ?? ''), caller: $caller) === false) {
+			return self::error(error: 'forbidden', message: 'Only an owner or editor of this app can approve or reject its plans.');
+		}
+
+		return null;
+	}//end decisionRefusal()
 
 	/**
 	 * A plan, for a person with a write role on its app.
@@ -250,6 +291,34 @@ class AgentPlanService {
 	 */
 	public function authorizeStep(string $planId, string $toolId, array $arguments, string $userId): ?array {
 		$plan = $this->loadPlan(planId: $planId);
+		$refusal = $this->useRefusal(plan: $plan, userId: $userId);
+		if ($refusal !== null || $plan === null) {
+			return ($refusal ?? self::error(error: 'plan_required', message: 'No approved plan with this planId.'));
+		}
+
+		$data = $plan['data'];
+		$index = $this->matchingStep(data: $data, wanted: self::callKey(toolId: $toolId, arguments: self::withoutPlanId(arguments: $arguments)));
+		if ($index === null) {
+			return self::error(error: 'plan_step_mismatch', message: 'This call does not match an unused step of the approved plan.');
+		}
+
+		$data['usedSteps'] = array_values(array_merge((array)($data['usedSteps'] ?? []), [$index]));
+		if ($this->savePlan(data: $data, uuid: $plan['uuid']) === false) {
+			return self::error(error: 'plan_store_failed', message: 'The plan could not be updated.');
+		}
+
+		return null;
+	}//end authorizeStep()
+
+	/**
+	 * Why this user may not use the plan, or null when they may: it must be approved, untampered and theirs.
+	 *
+	 * @param array{uuid: string, data: array<string, mixed>}|null $plan   The plan, null when there is none.
+	 * @param string                                              $userId The calling user.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private function useRefusal(?array $plan, string $userId): ?array {
 		if ($plan === null) {
 			return self::error(error: 'plan_required', message: 'No approved plan with this planId.');
 		}
@@ -265,18 +334,20 @@ class AgentPlanService {
 			return self::error(error: 'plan_required', message: 'This plan was submitted by another user.');
 		}
 
-		$index = $this->matchingStep(data: $data, toolId: $toolId, arguments: $arguments);
-		if ($index === null) {
-			return self::error(error: 'plan_step_mismatch', message: 'This call does not match an unused step of the approved plan.');
-		}
-
-		$data['usedSteps'] = array_values(array_merge((array)($data['usedSteps'] ?? []), [$index]));
-		if ($this->savePlan(data: $data, uuid: $plan['uuid']) === false) {
-			return self::error(error: 'plan_store_failed', message: 'The plan could not be updated.');
-		}
-
 		return null;
-	}//end authorizeStep()
+	}//end useRefusal()
+
+	/**
+	 * A tool call as one comparable key: the tool and its canonical arguments.
+	 *
+	 * @param string               $toolId    The tool.
+	 * @param array<string, mixed> $arguments Its arguments, without a planId.
+	 *
+	 * @return string
+	 */
+	private static function callKey(string $toolId, array $arguments): string {
+		return $toolId . "\0" . self::canonical(value: $arguments);
+	}//end callKey()
 
 	/**
 	 * The arguments without the `planId` an MCP call carries.
@@ -350,23 +421,19 @@ class AgentPlanService {
 	/**
 	 * The index of the first unused step equal to this call, or null.
 	 *
-	 * @param array<string,mixed> $data      The plan.
-	 * @param string              $toolId    The tool called.
-	 * @param array<string,mixed> $arguments The call's arguments.
+	 * @param array<string,mixed> $data   The plan.
+	 * @param string              $wanted The call's key (callKey()): the tool and its arguments without a planId.
 	 *
 	 * @return int|null
 	 */
-	private function matchingStep(array $data, string $toolId, array $arguments): ?int {
+	private function matchingStep(array $data, string $wanted): ?int {
 		$used = array_map('intval', (array)($data['usedSteps'] ?? []));
-		$wanted = self::canonical(value: self::withoutPlanId(arguments: $arguments));
 		foreach ((array)($data['steps'] ?? []) as $index => $step) {
-			if (in_array((int)$index, $used, true) === true || is_array($step) === false) {
+			if (in_array((int)$index, $used, true) === true || is_array($step) === false || is_string($step['tool'] ?? null) === false) {
 				continue;
 			}
 
-			if (($step['tool'] ?? null) === $toolId
-				&& self::canonical(value: (array)($step['arguments'] ?? [])) === $wanted
-			) {
+			if (self::callKey(toolId: $step['tool'], arguments: (array)($step['arguments'] ?? [])) === $wanted) {
 				return (int)$index;
 			}
 		}
