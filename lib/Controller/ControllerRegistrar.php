@@ -26,6 +26,7 @@ namespace OCA\Buildiq\Controller;
 
 use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Kernel\Contracts\SettingsServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\TemplateInstallSeamInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
 
 /**
@@ -114,6 +115,19 @@ final class ControllerRegistrar {
 			)
 		);
 	}//end registerSettingsController()
+
+	/**
+	 * Alias the contracts this component implements for other components.
+	 *
+	 * @param IRegistrationContext $context The registration context
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/app-composition-bindings/spec.md
+	 */
+	public function registerContractBindings(IRegistrationContext $context): void {
+		$context->registerServiceAlias(TemplateInstallSeamInterface::class, ApplicationsController::class);
+	}//end registerContractBindings()
 
 	/**
 	 * Bind the health and metrics controllers to the generic AppHost implementations.

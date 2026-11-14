@@ -308,6 +308,225 @@
             "default": "openbaar"
           }
         ]
+      },
+      {
+        "@self": {
+          "register": "buildiq",
+          "schema": "registrationForm",
+          "slug": "registration-form-bouwvergunning-client-intake"
+        },
+        "targetApp": "dossiq",
+        "register": "dossiq",
+        "schema": "case",
+        "typeProperty": "caseType",
+        "typeValue": "bouwvergunning",
+        "name": "client-intake",
+        "audience": "client",
+        "isDefault": true,
+        "channel": "portal",
+        "channelProperty": "intakeChannel",
+        "isPublic": true,
+        "confirmationText": "Bedankt voor uw aanvraag. U krijgt binnen vijf werkdagen bericht over de ontvangst en de verdere behandeling.",
+        "sections": [
+          {
+            "name": "uw-gegevens",
+            "label": "Uw gegevens",
+            "order": 1
+          },
+          {
+            "name": "het-bouwplan",
+            "label": "Het bouwplan",
+            "order": 2
+          }
+        ],
+        "fields": [
+          {
+            "name": "applicantRole",
+            "label": "Rol van de aanvrager",
+            "type": "select",
+            "required": true,
+            "section": "uw-gegevens",
+            "order": 10
+          },
+          {
+            "name": "title",
+            "label": "Wat wilt u bouwen?",
+            "type": "text",
+            "required": true,
+            "section": "het-bouwplan",
+            "order": 10
+          },
+          {
+            "name": "description",
+            "label": "Omschrijving van het bouwplan",
+            "type": "textarea",
+            "required": false,
+            "section": "het-bouwplan",
+            "order": 20
+          },
+          {
+            "name": "intakeChannel",
+            "label": "Kanaal",
+            "type": "select",
+            "required": true,
+            "section": "uw-gegevens",
+            "order": 20
+          }
+        ],
+        "presets": [
+          {
+            "field": "intakeChannel",
+            "value": "portal",
+            "hidden": true
+          }
+        ],
+        "allowSaveForLater": true,
+        "status": "published"
+      },
+      {
+        "@self": {
+          "register": "buildiq",
+          "schema": "registrationForm",
+          "slug": "registration-form-bouwvergunning-desk-intake"
+        },
+        "targetApp": "dossiq",
+        "register": "dossiq",
+        "schema": "case",
+        "typeProperty": "caseType",
+        "typeValue": "bouwvergunning",
+        "name": "desk-intake",
+        "audience": "internal",
+        "isDefault": true,
+        "channel": "desk",
+        "channelProperty": "intakeChannel",
+        "isPublic": false,
+        "sections": [
+          {
+            "name": "uw-gegevens",
+            "label": "Uw gegevens",
+            "order": 1
+          },
+          {
+            "name": "het-bouwplan",
+            "label": "Het bouwplan",
+            "order": 2
+          }
+        ],
+        "fields": [
+          {
+            "name": "applicantRole",
+            "label": "Rol van de aanvrager",
+            "type": "select",
+            "required": true,
+            "section": "uw-gegevens",
+            "order": 10
+          },
+          {
+            "name": "title",
+            "label": "Wat wilt u bouwen?",
+            "type": "text",
+            "required": true,
+            "section": "het-bouwplan",
+            "order": 10
+          },
+          {
+            "name": "description",
+            "label": "Omschrijving van het bouwplan",
+            "type": "textarea",
+            "required": false,
+            "section": "het-bouwplan",
+            "order": 20
+          },
+          {
+            "name": "intakeChannel",
+            "label": "Kanaal",
+            "type": "select",
+            "required": true,
+            "section": "uw-gegevens",
+            "order": 20
+          }
+        ],
+        "presets": [
+          {
+            "field": "intakeChannel",
+            "value": "desk",
+            "hidden": true
+          }
+        ],
+        "allowSaveForLater": false,
+        "status": "published"
+      },
+      {
+        "@self": {
+          "register": "buildiq",
+          "schema": "registrationForm",
+          "slug": "registration-form-bouwvergunning-architect-intake"
+        },
+        "targetApp": "dossiq",
+        "register": "dossiq",
+        "schema": "case",
+        "typeProperty": "caseType",
+        "typeValue": "bouwvergunning",
+        "name": "architect-intake",
+        "audience": "supplier",
+        "isDefault": true,
+        "isPublic": false,
+        "minTrust": "substantial",
+        "sections": [
+          {
+            "name": "uw-gegevens",
+            "label": "Uw gegevens",
+            "order": 1
+          },
+          {
+            "name": "het-bouwplan",
+            "label": "Het bouwplan",
+            "order": 2
+          }
+        ],
+        "fields": [
+          {
+            "name": "applicantRole",
+            "label": "Rol van de aanvrager",
+            "type": "select",
+            "required": true,
+            "section": "uw-gegevens",
+            "order": 10
+          },
+          {
+            "name": "title",
+            "label": "Wat wilt u bouwen?",
+            "type": "text",
+            "required": true,
+            "section": "het-bouwplan",
+            "order": 10
+          },
+          {
+            "name": "description",
+            "label": "Omschrijving van het bouwplan",
+            "type": "textarea",
+            "required": false,
+            "section": "het-bouwplan",
+            "order": 20
+          },
+          {
+            "name": "intakeChannel",
+            "label": "Kanaal",
+            "type": "select",
+            "required": true,
+            "section": "uw-gegevens",
+            "order": 20
+          }
+        ],
+        "presets": [
+          {
+            "field": "applicantRole",
+            "value": "gemachtigde",
+            "hidden": false
+          }
+        ],
+        "allowSaveForLater": true,
+        "status": "published"
       }
     ]
   }

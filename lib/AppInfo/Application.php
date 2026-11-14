@@ -80,6 +80,7 @@ class Application extends App implements IBootstrap {
 		$this->registerAppHostPlumbing(context: $context);
 		(new ServiceRegistrar())->registerDashboardServices(context: $context);
 		(new ControllerRegistrar())->registerConcreteControllers(context: $context);
+		(new ControllerRegistrar())->registerContractBindings(context: $context);
 		(new ServiceRegistrar())->registerSettingsService(context: $context);
 		(new RepairRegistrar())->registerSettingsRepairStep(context: $context);
 		(new ControllerRegistrar())->registerSettingsController(context: $context);
@@ -102,9 +103,9 @@ class Application extends App implements IBootstrap {
 		// ADR-040 AppHost adoption: one call wires the standard plumbing —
 		// the generic dashboard/settings/preferences controllers, the
 		// observability (health + metrics) controllers, the install repair
-		// steps, the admin settings panel + section, and the manifest-driven
-		// deep-link listener (reads src/manifest.json `deepLinks`, replacing
-		// the bespoke DeepLinkRegistrationListener that was deleted).
+		// steps and the admin settings panel + section. The manifest-driven
+		// deep-link listener is switched off (`deepLinks => false`): buildiq's
+		// BuiltAppDeepLinkListener extends it, adding the built apps' records.
 		//
 		// Every Bootstrap registration is a lazy closure, so a disabled/absent
 		// OpenRegister never fatals NC bootstrap (see Bootstrap docblock).
@@ -175,9 +176,13 @@ class Application extends App implements IBootstrap {
 						'namespace' => 'OCA\\Buildiq',
 						'sectionName' => 'Buildiq',
 						'observability' => true,
+						// Buildiq registers its own deep-link listener below,
+						// so the event is handled once (REQ-OBDL-001).
+						'deepLinks' => false,
 					]
 				)
 			);
+			$this->registerDeepLinkListener(context: $context);
 		}
 
 		// No else branch, deliberately. It used to write a line to the PHP error
@@ -196,6 +201,23 @@ class Application extends App implements IBootstrap {
 		// below regardless of load order. Same choice doriath made.
 		//
 	}//end registerAppHostPlumbing()
+
+	/**
+	 * Register the deep-link listener for buildiq's own schemas and the records of built apps.
+	 *
+	 * Called only inside the OpenRegister guard. The event and the listener's
+	 * parent class are named as strings here and resolved lazily, so an absent
+	 * OpenRegister never fatals: the event then simply never fires.
+	 *
+	 * @param IRegistrationContext $context The registration context
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/apps-unified-search-deep-links/tasks.md#task-2.2
+	 */
+	private function registerDeepLinkListener(IRegistrationContext $context): void {
+		(new ListenerRegistrar())->registerDeepLinkListener(context: $context);
+	}//end registerDeepLinkListener()
 
 	/**
 	 * Register the MCP tool provider, the RBAC lifecycle guard and the capability.

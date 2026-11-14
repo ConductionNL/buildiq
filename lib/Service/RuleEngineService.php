@@ -184,6 +184,50 @@ class RuleEngineService implements RuleEngineServiceInterface {
 	}//end evaluate()
 
 	/**
+	 * Resolve the active rule set another app asks for, and whether that app may call it.
+	 *
+	 * The one read of rule sets outside a person's scope (design D1): the rule
+	 * set is read as the system, so this method alone decides what the app
+	 * gets. `not-allowed` unless the app is listed in `callableBy`;
+	 * `unknown-rule-set` when no active rule set has the slug, or when more
+	 * than one does (two organisations' rule sets are never guessed between).
+	 *
+	 * @param string $app  The calling app id.
+	 * @param string $slug The rule set slug.
+	 *
+	 * @return array{status:'ok'|'unknown-rule-set'|'not-allowed',ruleSet:array<string,mixed>|null}
+	 *
+	 * @spec openspec/changes/rules-evaluation-for-other-apps/specs/rules-evaluation-for-other-apps/spec.md#requirement-another-app-evaluates-a-rule-set-through-a-typed-command-req-bqrx-002
+	 */
+	public function resolveForApp(string $app, string $slug): array {
+		if (trim($slug) === '') {
+			return ['status' => 'unknown-rule-set', 'ruleSet' => null];
+		}
+
+		$active = array_values(
+			array_filter(
+				$this->reader->findAsSystem(schema: self::RULE_SET_SCHEMA, filters: ['slug' => $slug]),
+				static fn (array $row): bool => ($row['slug'] ?? null) === $slug && ($row['status'] ?? '') === 'active'
+			)
+		);
+		if (count($active) !== 1) {
+			if (count($active) > 1) {
+				$this->logger->warning('Buildiq: more than one active rule set has slug "' . $slug . '"; another app is not given either');
+			}
+
+			return ['status' => 'unknown-rule-set', 'ruleSet' => null];
+		}
+
+		$callableBy = $active[0]['callableBy'] ?? [];
+		if (trim($app) === '' || is_array($callableBy) === false || in_array($app, $callableBy, true) === false) {
+			return ['status' => 'not-allowed', 'ruleSet' => null];
+		}
+
+		return ['status' => 'ok', 'ruleSet' => $active[0]];
+
+	}//end resolveForApp()
+
+	/**
 	 * Evaluate a RuleSet inside the re-entry and depth guards of a call-rule-set chain.
 	 *
 	 * @param RuleSetEvaluation $evaluation The rule set, payload and options.

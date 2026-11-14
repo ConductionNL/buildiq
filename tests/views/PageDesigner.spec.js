@@ -117,6 +117,9 @@ vi.mock('../../src/components/page-editor/FilesPageEditor.vue', () =>
 vi.mock('../../src/components/page-editor/CustomPageEditor.vue', () =>
 	stub('CustomPageEditor'),
 )
+vi.mock('../../src/components/page-editor/GridPageEditor.vue', () =>
+	stub('GridPageEditor'),
+)
 vi.mock('../../src/components/page-editor/MapPageEditor.vue', () =>
 	stub('MapPageEditor'),
 )
@@ -303,6 +306,19 @@ describe('PageDesigner', () => {
 				expect(wrapper.vm.subEditorFor(type)).toBe(expected)
 			}
 			expect(wrapper.vm.subEditorFor('timeline')).toBe('StubPageEditor')
+		})
+
+		it('subEditorFor gives a record-grid custom page the grid editor (data-index-grid-and-saved-views T04)', () => {
+			const wrapper = mountDesigner()
+			expect(
+				wrapper.vm.subEditorFor('custom', { type: 'custom', component: 'record-grid', config: {} }),
+			).toBe('GridPageEditor')
+			expect(
+				wrapper.vm.subEditorFor('custom', { type: 'custom', component: 'DashboardIndex', config: {} }),
+			).toBe('CustomPageEditor')
+			expect(
+				wrapper.vm.subEditorFor('index', { type: 'index', component: 'record-grid' }),
+			).toBe('IndexPageEditor')
 		})
 
 		it('unknown page type still falls back to the stub with its title/message props bound', async () => {

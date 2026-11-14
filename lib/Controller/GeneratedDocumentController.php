@@ -39,6 +39,7 @@
  *
  * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#2.4
  * @spec openspec/specs/automation-document-action/spec.md
+ * @spec openspec/specs/platform-properties/spec.md#REQ-PLAT-003
  */
 
 declare(strict_types=1);
