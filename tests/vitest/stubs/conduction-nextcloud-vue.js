@@ -71,6 +71,18 @@ export function createObjectStore() {
 	})
 }
 
+// Record-grid page family (data-index-grid-and-saved-views) — symbols the
+// runtime `record-grid` page imports, so the runtime registry loads. Its own
+// spec mocks them with behaviour.
+export const CnDataMatrix = stub('CnDataMatrix')
+export class LockConflictError extends Error {}
+export function useObjectStore() {
+	return createObjectStore()()
+}
+export function useObjectLock() {
+	return { acquire: async () => {}, release: async () => {} }
+}
+
 // Manifest-renderer family — stubbed so App.vue / main.js transitive
 // imports load under the vitest pipeline. None of the current tests mount
 // these; they only need the symbols to exist.
