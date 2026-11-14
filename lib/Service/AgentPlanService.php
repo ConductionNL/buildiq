@@ -210,23 +210,34 @@ class AgentPlanService {
 			return ($refusal ?? self::error(error: 'not_found', message: 'No such plan.'));
 		}
 
-		$data = $plan['data'];
-		$data['status'] = self::STATUS_REJECTED;
-		if ($approve === true) {
-			$data['status'] = self::STATUS_APPROVED;
-		}
-		$data['decidedBy'] = $caller->getUID();
-		$data['approval'] = '';
-		if ($approve === true) {
-			$data['approval'] = $this->signature(uuid: $plan['uuid'], data: $data);
-		}
-
+		$plan['data']['decidedBy'] = $caller->getUID();
+		$data = $this->decided(plan: $plan, approve: $approve);
 		if ($this->savePlan(data: $data, uuid: $plan['uuid']) === false) {
 			return self::error(error: 'plan_store_failed', message: 'The plan could not be updated.');
 		}
 
 		return ['planId' => $plan['uuid'], 'status' => $data['status']];
 	}//end decide()
+
+	/**
+	 * The plan's data after the decision: its status and the approval signature (empty on a rejection).
+	 *
+	 * @param array<string,mixed> $plan    The plan: uuid and data, `decidedBy` already set.
+	 * @param bool                $approve Approve, or reject.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function decided(array $plan, bool $approve): array {
+		$data = $plan['data'];
+		$data['status'] = self::STATUS_REJECTED;
+		$data['approval'] = '';
+		if ($approve === true) {
+			$data['status'] = self::STATUS_APPROVED;
+			$data['approval'] = $this->signature(uuid: $plan['uuid'], data: $data);
+		}
+
+		return $data;
+	}//end decided()
 
 	/**
 	 * Why a plan cannot be decided by this caller, or null when it can.
@@ -302,13 +313,26 @@ class AgentPlanService {
 			return self::error(error: 'plan_step_mismatch', message: 'This call does not match an unused step of the approved plan.');
 		}
 
+		return $this->markUsed(plan: $plan, index: $index);
+	}//end authorizeStep()
+
+	/**
+	 * Record a step as used; a refusal when the plan cannot be saved, else null.
+	 *
+	 * @param array<string,mixed> $plan  The plan: uuid and data.
+	 * @param int                 $index The step used.
+	 *
+	 * @return array<string,mixed>|null
+	 */
+	private function markUsed(array $plan, int $index): ?array {
+		$data = $plan['data'];
 		$data['usedSteps'] = array_values(array_merge((array)($data['usedSteps'] ?? []), [$index]));
 		if ($this->savePlan(data: $data, uuid: $plan['uuid']) === false) {
 			return self::error(error: 'plan_store_failed', message: 'The plan could not be updated.');
 		}
 
 		return null;
-	}//end authorizeStep()
+	}//end markUsed()
 
 	/**
 	 * Why this user may not use the plan, or null when they may: it must be approved, untampered and theirs.
@@ -323,19 +347,44 @@ class AgentPlanService {
 			return self::error(error: 'plan_required', message: 'No approved plan with this planId.');
 		}
 
-		$data = $plan['data'];
-		if (($data['status'] ?? '') !== self::STATUS_APPROVED
-			|| hash_equals($this->signature(uuid: $plan['uuid'], data: $data), (string)($data['approval'] ?? '')) === false
-		) {
+		if ($this->isApproved(plan: $plan) === false) {
 			return self::error(error: 'plan_not_approved', message: 'This plan is not approved. Ask an owner or editor of the app to approve it in Buildiq.');
 		}
 
-		if ($userId === '' || ($data['submittedBy'] ?? null) !== $userId) {
+		if (self::isSubmitter(plan: $plan, userId: $userId) === false) {
 			return self::error(error: 'plan_required', message: 'This plan was submitted by another user.');
 		}
 
 		return null;
 	}//end useRefusal()
+
+	/**
+	 * Whether this user, a signed-in one, submitted the plan.
+	 *
+	 * @param array<string,mixed> $plan   The plan: uuid and data.
+	 * @param string              $userId The calling user; '' when nobody is signed in.
+	 *
+	 * @return bool
+	 */
+	private static function isSubmitter(array $plan, string $userId): bool {
+		return $userId !== '' && ($plan['data']['submittedBy'] ?? null) === $userId;
+	}//end isSubmitter()
+
+	/**
+	 * Whether a plan is approved and its approval signature matches its content.
+	 *
+	 * @param array<string,mixed> $plan The plan: uuid and data.
+	 *
+	 * @return bool
+	 */
+	private function isApproved(array $plan): bool {
+		$data = $plan['data'];
+		if (($data['status'] ?? '') !== self::STATUS_APPROVED) {
+			return false;
+		}
+
+		return hash_equals($this->signature(uuid: $plan['uuid'], data: $data), (string)($data['approval'] ?? ''));
+	}//end isApproved()
 
 	/**
 	 * A tool call as one comparable key: the tool and its canonical arguments.
@@ -372,6 +421,30 @@ class AgentPlanService {
 	 * @return string|null
 	 */
 	private static function stepsError(string $appSlug, array $steps): ?string {
+		$shape = self::shapeError(appSlug: $appSlug, steps: $steps);
+		if ($shape !== null) {
+			return $shape;
+		}
+
+		foreach ($steps as $index => $step) {
+			$error = self::stepError(appSlug: $appSlug, step: $step);
+			if ($error !== null) {
+				return 'Step ' . $index . ' ' . $error;
+			}
+		}
+
+		return null;
+	}//end stepsError()
+
+	/**
+	 * Why the app slug or the step list's shape is not a plan's, or null.
+	 *
+	 * @param string $appSlug The app every step targets.
+	 * @param array  $steps   The steps.
+	 *
+	 * @return string|null
+	 */
+	private static function shapeError(string $appSlug, array $steps): ?string {
 		if (preg_match(self::SLUG_PATTERN, $appSlug) !== 1) {
 			return 'appSlug must be a kebab-case app slug.';
 		}
@@ -380,24 +453,49 @@ class AgentPlanService {
 			return 'A plan holds 1 to ' . self::MAX_STEPS . ' steps.';
 		}
 
-		foreach ($steps as $index => $step) {
-			if (is_array($step) === false) {
-				$step = [];
-			}
+		return null;
+	}//end shapeError()
 
-			$tool = ($step['tool'] ?? null);
-			$arguments = ($step['arguments'] ?? null);
-			if (is_string($tool) === false || self::isWriteTool(toolId: $tool) === false || is_array($arguments) === false) {
-				return 'Step ' . $index . ' must be {tool, arguments} with tool one of: ' . implode(', ', self::WRITE_TOOLS) . '.';
-			}
+	/**
+	 * Why one step is not a write call on the app, or null when it is.
+	 *
+	 * @param string $appSlug The app every step targets.
+	 * @param mixed  $step    The step.
+	 *
+	 * @return string|null The reason, to follow "Step <index> ".
+	 */
+	private static function stepError(string $appSlug, mixed $step): ?string {
+		if (is_array($step) === false) {
+			$step = [];
+		}
 
-			if (self::targetApp(toolId: $tool, arguments: $arguments) !== $appSlug) {
-				return 'Step ' . $index . ' targets another app than ' . $appSlug . '.';
-			}
+		$tool = ($step['tool'] ?? null);
+		$arguments = ($step['arguments'] ?? null);
+		if (self::isWriteCall(tool: $tool, arguments: $arguments) === false) {
+			return 'must be {tool, arguments} with tool one of: ' . implode(', ', self::WRITE_TOOLS) . '.';
+		}
+
+		if (self::targetApp(toolId: $tool, arguments: $arguments) !== $appSlug) {
+			return 'targets another app than ' . $appSlug . '.';
 		}
 
 		return null;
-	}//end stepsError()
+	}//end stepError()
+
+	/**
+	 * Whether a tool and its arguments form a builder write call.
+	 *
+	 * @param mixed $tool      The tool id.
+	 * @param mixed $arguments The arguments.
+	 *
+	 * @return bool
+	 *
+	 * @psalm-assert-if-true string $tool
+	 * @psalm-assert-if-true array $arguments
+	 */
+	private static function isWriteCall(mixed $tool, mixed $arguments): bool {
+		return is_string($tool) === true && self::isWriteTool(toolId: $tool) === true && is_array($arguments) === true;
+	}//end isWriteCall()
 
 	/**
 	 * The app a write call targets: createApp names it `slug`, the others `appSlug`.
@@ -429,17 +527,31 @@ class AgentPlanService {
 	private function matchingStep(array $data, string $wanted): ?int {
 		$used = array_map('intval', (array)($data['usedSteps'] ?? []));
 		foreach ((array)($data['steps'] ?? []) as $index => $step) {
-			if (in_array((int)$index, $used, true) === true || is_array($step) === false || is_string($step['tool'] ?? null) === false) {
-				continue;
-			}
-
-			if (self::callKey(toolId: $step['tool'], arguments: (array)($step['arguments'] ?? [])) === $wanted) {
+			if (self::isOpenStep(step: $step, used: in_array((int)$index, $used, true)) === true
+				&& self::callKey(toolId: $step['tool'], arguments: (array)($step['arguments'] ?? [])) === $wanted
+			) {
 				return (int)$index;
 			}
 		}
 
 		return null;
 	}//end matchingStep()
+
+	/**
+	 * Whether a step is unused and names a tool.
+	 *
+	 * @param mixed $step The step.
+	 * @param bool  $used Whether the step was used already.
+	 *
+	 * @return bool
+	 */
+	private static function isOpenStep(mixed $step, bool $used): bool {
+		if ($used === true || is_array($step) === false) {
+			return false;
+		}
+
+		return is_string($step['tool'] ?? null);
+	}//end isOpenStep()
 
 	/**
 	 * A key-order independent encoding of a value.

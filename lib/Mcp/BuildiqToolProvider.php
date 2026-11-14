@@ -50,6 +50,7 @@ use OCP\IGroupManager;
 use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use Throwable;
 
 /**
  * Buildiq MCP Tool Provider — thin dispatcher to per-tool handler classes.
@@ -294,7 +295,6 @@ class BuildiqToolProvider implements IMcpToolProvider, BuildiqToolProviderInterf
 	 * @param ObjectServiceInterface $objectService OpenRegister's published object contract (ADR-084), threaded to every handler.
 	 * @param PermissionResolverInterface|null $permissionResolver Shared permission-grammar resolver (H1 fix).
 	 * @param AuditTrailMapper|null $auditTrailMapper Optional OR audit-trail writer threaded to handlers (L2).
-	 * @param AgentPlanService|null $planService Approved-plan store for outside agents' writes (null: every MCP write is refused).
 	 */
 	public function __construct(
 		private readonly IUserSession $userSession,
@@ -304,7 +304,6 @@ class BuildiqToolProvider implements IMcpToolProvider, BuildiqToolProviderInterf
 		private readonly ObjectServiceInterface $objectService,
 		private readonly ?PermissionResolverInterface $permissionResolver = null,
 		private readonly ?AuditTrailMapper $auditTrailMapper = null,
-		private readonly ?AgentPlanService $planService = null,
 	) {
 	}//end __construct()
 
@@ -415,7 +414,8 @@ class BuildiqToolProvider implements IMcpToolProvider, BuildiqToolProviderInterf
 	 * @return array<string, mixed>|null
 	 */
 	private function planRefusal(string $toolId, array $arguments): ?array {
-		if ($this->planService === null) {
+		$plans = $this->planService();
+		if ($plans === null) {
 			return [
 				'isError' => true,
 				'error' => 'plan_required',
@@ -423,36 +423,77 @@ class BuildiqToolProvider implements IMcpToolProvider, BuildiqToolProviderInterf
 			];
 		}
 
-		$userId = (string)($this->userSession->getUser()?->getUID() ?? '');
 		$planId = $arguments['planId'] ?? null;
 		if (is_string($planId) === false || $planId === '') {
-			$submitted = $this->planService->submit(
-				appSlug: AgentPlanService::targetApp(toolId: $toolId, arguments: $arguments),
-				steps: [['tool' => $toolId, 'arguments' => AgentPlanService::withoutPlanId(arguments: $arguments)]],
-				userId: $userId
-			);
-			$planNote = '';
-			if (isset($submitted['planId']) === true) {
-				$planNote = ' This call was submitted as plan ' . $submitted['planId']
-					. '; once an owner or editor of the app approves it in Buildiq (the copilot panel, Plans from outside agents),'
-					. ' call again with the same arguments and planId.';
-			}
-
-			return [
-				'isError' => true,
-				'error' => 'plan_required',
-				'message' => 'This write needs a plan a person approved. Nothing was written.' . $planNote,
-				'planId' => ($submitted['planId'] ?? null),
-			];
+			return $this->submittedForApproval(toolId: $toolId, arguments: $arguments);
 		}
 
-		return $this->planService->authorizeStep(
+		return $plans->authorizeStep(
 			planId: $planId,
 			toolId: $toolId,
 			arguments: AgentPlanService::withoutPlanId(arguments: $arguments),
-			userId: $userId
+			userId: $this->userId()
 		);
 	}//end planRefusal()
+
+	/**
+	 * Submit a write call without a plan as a plan for approval, and refuse the call itself.
+	 *
+	 * @param string               $toolId    The write tool.
+	 * @param array<string, mixed> $arguments The call's arguments.
+	 *
+	 * @return array<string, mixed> The refusal, naming the submitted plan when there is one.
+	 */
+	private function submittedForApproval(string $toolId, array $arguments): array {
+		$submitted = $this->planService()?->submit(
+			appSlug: AgentPlanService::targetApp(toolId: $toolId, arguments: $arguments),
+			steps: [['tool' => $toolId, 'arguments' => AgentPlanService::withoutPlanId(arguments: $arguments)]],
+			userId: $this->userId()
+		);
+		$planNote = '';
+		if (isset($submitted['planId']) === true) {
+			$planNote = ' This call was submitted as plan ' . $submitted['planId']
+				. '; once an owner or editor of the app approves it in Buildiq (the copilot panel, Plans from outside agents),'
+				. ' call again with the same arguments and planId.';
+		}
+
+		return [
+			'isError' => true,
+			'error' => 'plan_required',
+			'message' => 'This write needs a plan a person approved. Nothing was written.' . $planNote,
+			'planId' => ($submitted['planId'] ?? null),
+		];
+	}//end submittedForApproval()
+
+	/**
+	 * The signed-in user's id; '' when nobody is signed in.
+	 *
+	 * @return string
+	 */
+	private function userId(): string {
+		return (string)($this->userSession->getUser()?->getUID() ?? '');
+	}//end userId()
+
+	/**
+	 * The approved-plan store for outside agents' writes, from the container; null when it cannot be had.
+	 *
+	 * Null refuses every MCP write: without the store no write is authorised.
+	 *
+	 * @return AgentPlanService|null
+	 */
+	private function planService(): ?AgentPlanService {
+		try {
+			$plans = $this->container->get(AgentPlanService::class);
+		} catch (Throwable) {
+			return null;
+		}
+
+		if ($plans instanceof AgentPlanService === false) {
+			return null;
+		}
+
+		return $plans;
+	}//end planService()
 
 	/**
 	 * Run the handler for a tool.

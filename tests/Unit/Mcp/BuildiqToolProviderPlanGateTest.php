@@ -182,13 +182,23 @@ class BuildiqToolProviderPlanGateTest extends TestCase {
 		$session = $this->createMock(IUserSession::class);
 		$session->method('getUser')->willReturn($user);
 
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturnCallback(
+			static function (string $id) use ($plans): mixed {
+				if ($id === AgentPlanService::class && $plans !== null) {
+					return $plans;
+				}
+
+				throw new \RuntimeException('not in the container: ' . $id);
+			}
+		);
+
 		return new BuildiqToolProvider(
 			userSession: $session,
 			groupManager: $this->createMock(IGroupManager::class),
-			container: $this->createMock(ContainerInterface::class),
+			container: $container,
 			logger: $this->createMock(LoggerInterface::class),
-			objectService: $objects,
-			planService: $plans
+			objectService: $objects
 		);
 	}//end provider()
 }//end class
