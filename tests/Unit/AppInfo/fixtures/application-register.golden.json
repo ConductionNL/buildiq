@@ -36,6 +36,13 @@
     {
         "method": "registerServiceAlias",
         "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\AutomationRunRecorderInterface",
+            "target": "OCA\\Buildiq\\Service\\AutomationRunRecorder"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
             "alias": "OCA\\Buildiq\\Kernel\\Contracts\\AppNavigationServiceInterface",
             "target": "OCA\\Buildiq\\Service\\AppNavigationService"
         }
