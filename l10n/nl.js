@@ -203,6 +203,7 @@ OC.L10N.register(
         "Audit events": "Auditgebeurtenissen",
         "Back": "Terug",
         "Back to Virtual apps": "Terug naar Virtuele apps",
+        "Back to virtual apps": "Terug naar virtuele apps",
         "Back to schemas": "Terug naar schema's",
         "Before": "Voor",
         "Boolean form (legacy)": "Booleaanse vorm (verouderd)",
