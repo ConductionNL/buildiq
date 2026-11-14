@@ -26,8 +26,12 @@ namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Kernel\Contracts\AppTemplateCaptureInterface;
 use OCA\Buildiq\Kernel\Contracts\CompanionSchemaCollectorInterface;
+use OCA\Buildiq\Kernel\Contracts\RegistrationFormPresenterInterface;
+use OCA\Buildiq\Kernel\Contracts\SyncRequestParamsInterface;
+use OCA\Buildiq\Service\GitHub\SyncRequestParams;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCP\IRequest;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -73,4 +77,28 @@ final class HelperFactory {
 	public function appTemplateCapture(): AppTemplateCaptureInterface {
 		return new AppTemplateCapture();
 	}//end appTemplateCapture()
+
+	/**
+	 * A request's GitHub sync parameters.
+	 *
+	 * @param IRequest $request The request the parameters are read from.
+	 *
+	 * @return SyncRequestParamsInterface
+	 *
+	 * @spec openspec/specs/app-composition-bindings/spec.md
+	 */
+	public function syncRequestParams(IRequest $request): SyncRequestParamsInterface {
+		return new SyncRequestParams(request: $request);
+	}//end syncRequestParams()
+
+	/**
+	 * The shape a registration form takes on its way out.
+	 *
+	 * @return RegistrationFormPresenterInterface
+	 *
+	 * @spec openspec/specs/app-composition-bindings/spec.md
+	 */
+	public function registrationFormPresenter(): RegistrationFormPresenterInterface {
+		return new RegistrationFormPresenter();
+	}//end registrationFormPresenter()
 }//end class

@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\PublishedApplicationProviderInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 
@@ -41,7 +42,7 @@ use OCA\OpenRegister\Contract\ObjectServiceInterface;
  * instances mean two caches and two queries, which is the thing this class
  * exists to prevent.
  */
-class PublishedApplicationProvider {
+class PublishedApplicationProvider implements PublishedApplicationProviderInterface {
 	/**
 	 * Register slug that hosts Application objects.
 	 */

@@ -26,7 +26,7 @@ namespace OCA\Buildiq\Listener;
 
 use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Kernel\Contracts\ManifestResolverServiceInterface;
-use OCA\Buildiq\Service\PublishedApplicationProvider;
+use OCA\Buildiq\Kernel\Contracts\PublishedApplicationProviderInterface;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
@@ -270,7 +270,7 @@ final class ListenerRegistrar {
 				appId: AppIdentity::APP_ID,
 				appManager: $c->get('OCP\\App\\IAppManager'),
 				logger: $c->get(LoggerInterface::class),
-				applications: $c->get(PublishedApplicationProvider::class),
+				applications: $c->get(PublishedApplicationProviderInterface::class),
 				manifestResolver: $c->get(ManifestResolverServiceInterface::class)
 			)
 		);

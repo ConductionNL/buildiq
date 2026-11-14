@@ -32,8 +32,8 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Listener;
 
 use OCA\Buildiq\Kernel\Contracts\ManifestResolverServiceInterface;
-use OCA\Buildiq\Service\ManifestDataBinding;
-use OCA\Buildiq\Service\PublishedApplicationProvider;
+use OCA\Buildiq\Kernel\Contracts\PublishedApplicationProviderInterface;
+use OCA\Buildiq\Kernel\Values\VersionRegisterSlug;
 use OCA\OpenRegister\AppHost\Listener\GenericDeepLinkRegistrationListener;
 use OCP\App\IAppManager;
 use Psr\Log\LoggerInterface;
@@ -61,7 +61,7 @@ class BuiltAppDeepLinkListener extends GenericDeepLinkRegistrationListener {
 	 * @param string $appId The leaf app id whose manifest is read (`buildiq`).
 	 * @param IAppManager $appManager App path resolution.
 	 * @param LoggerInterface $logger PSR logger.
-	 * @param PublishedApplicationProvider $applications The published Applications, production version extended.
+	 * @param PublishedApplicationProviderInterface $applications The published Applications, production version extended.
 	 * @param ManifestResolverServiceInterface $manifestResolver Resolves a production manifest by app slug.
 	 *
 	 * @return void
@@ -70,7 +70,7 @@ class BuiltAppDeepLinkListener extends GenericDeepLinkRegistrationListener {
 		string $appId,
 		IAppManager $appManager,
 		LoggerInterface $logger,
-		private readonly PublishedApplicationProvider $applications,
+		private readonly PublishedApplicationProviderInterface $applications,
 		private readonly ManifestResolverServiceInterface $manifestResolver,
 	) {
 		parent::__construct(appId: $appId, appManager: $appManager, logger: $logger);
@@ -256,7 +256,7 @@ class BuiltAppDeepLinkListener extends GenericDeepLinkRegistrationListener {
 	 * A concrete `config.register` is used as is. A template token
 	 * (`{registerSlug}`, `{{register}}`) stands for the version's own register:
 	 * its stored register slug, else the per-version slug buildiq provisions,
-	 * built by {@see ManifestDataBinding::registerSlug()}.
+	 * built by {@see VersionRegisterSlug::forVersion()}.
 	 *
 	 * @param string $pageRegister The page's `config.register`.
 	 * @param string $appSlug The Application slug.
@@ -265,7 +265,7 @@ class BuiltAppDeepLinkListener extends GenericDeepLinkRegistrationListener {
 	 * @return string The register slug, or '' when it cannot be determined.
 	 *
 	 * @spec openspec/changes/apps-unified-search-deep-links/tasks.md#task-2.3
-	 * @SuppressWarnings(PHPMD.StaticAccess) ManifestDataBinding::registerSlug is a pure slug builder.
+	 * @SuppressWarnings(PHPMD.StaticAccess) VersionRegisterSlug::forVersion is a pure slug builder.
 	 */
 	private function registerOf(string $pageRegister, string $appSlug, array $version): string {
 		if ($pageRegister === '') {
@@ -284,7 +284,7 @@ class BuiltAppDeepLinkListener extends GenericDeepLinkRegistrationListener {
 			return '';
 		}
 
-		return ManifestDataBinding::registerSlug(appSlug: $appSlug, versionSlug: $version['slug']);
+		return VersionRegisterSlug::forVersion(appSlug: $appSlug, versionSlug: $version['slug']);
 	}//end registerOf()
 
 	/**
