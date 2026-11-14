@@ -177,6 +177,7 @@ export default {
 				iconDarkValue: null,
 				preset: '',
 				versions: [],
+				fromDatabase: null,
 				_step1Valid: false,
 				_step2Valid: false,
 				_step3Valid: true,
@@ -257,6 +258,13 @@ export default {
 				description: stepData.description,
 				preset: stepData.preset,
 				versions: stepData.versions,
+			}
+			// REQ-BQDB-003: the server checks the database and tables again.
+			if (stepData.fromDatabase && stepData.fromDatabase.register) {
+				body.fromDatabase = {
+					register: stepData.fromDatabase.register,
+					schemas: stepData.fromDatabase.schemas || [],
+				}
 			}
 
 			try {
