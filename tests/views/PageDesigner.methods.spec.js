@@ -16,7 +16,7 @@
  */
 
 import { shallowMount } from '@vue/test-utils'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ref } from 'vue'
 
 vi.mock('@nextcloud/axios', () => ({
@@ -333,5 +333,136 @@ describe('PageDesigner — drag ordering on an index page (REQ-PEC-009)', () => 
 		expect(props.manualOrder).toBe(true)
 		expect(props['onUpdate:manualOrder']).toBe(c.onManualOrderUpdate)
 		expect(PageDesigner.methods.stubEditorProps.call(c, 'detail')).toEqual({})
+	})
+})
+
+describe('PageDesigner provided validator, preview surface and teardown', () => {
+	it('the provided pageEditorValidator forwards to the selected page path', () => {
+		const wrapper = mountDesigner({
+			pages: [{ id: 'a', type: 'index', config: {} }],
+			menu: [],
+		})
+		wrapper.vm.selectPage(0)
+		const { pageEditorValidator } = PageDesigner.provide.call(wrapper.vm)
+		validatorStub.errorFor.mockReturnValue({ hasError: true, message: 'Required' })
+
+		pageEditorValidator.register('schema')
+		pageEditorValidator.unregister('schema')
+		const bag = pageEditorValidator.errorFor('schema')
+
+		expect(validatorStub.register).toHaveBeenCalledWith('/pages/0/config/schema')
+		expect(validatorStub.unregister).toHaveBeenCalledWith('/pages/0/config/schema')
+		expect(validatorStub.errorFor).toHaveBeenCalledWith('/pages/0/config/schema')
+		expect(bag).toEqual({ hasError: true, message: 'Required' })
+	})
+
+	it('configErrorFor returns the empty bag when the validator has no errorFor', () => {
+		const prefix = vi.fn(() => '/pages/0/config/x')
+		const bag = PageDesigner.methods.configErrorFor.call(
+			{ validator: { errors: { value: [] } }, configPathPrefix: prefix },
+			'x',
+		)
+		expect(bag).toEqual({ hasError: false, message: '' })
+		expect(prefix).not.toHaveBeenCalled()
+	})
+
+	it('livePreviewProps is null while preview is unavailable, else the preview props of the slug and manifest', () => {
+		const manifest = { pages: [{ id: 'a' }], menu: [] }
+		const previewProps = vi.fn(() => ({ manifest, slug: 'demo' }))
+		const off = PageDesigner.computed.livePreviewProps.call({
+			previewAvailable: false,
+			previewProps,
+			slug: 'demo',
+			manifest,
+		})
+		const on = PageDesigner.computed.livePreviewProps.call({
+			previewAvailable: true,
+			previewProps,
+			slug: 'demo',
+			manifest,
+		})
+		expect(off).toBeNull()
+		expect(on).toEqual({ manifest, slug: 'demo' })
+		expect(previewProps).toHaveBeenCalledTimes(1)
+		expect(previewProps).toHaveBeenCalledWith('demo', manifest)
+	})
+
+	describe('observePreviewSurface', () => {
+		let observers
+		let original
+
+		beforeEach(() => {
+			observers = []
+			original = globalThis.ResizeObserver
+			globalThis.ResizeObserver = class {
+				constructor(callback) {
+					this.callback = callback
+					this.observe = vi.fn()
+					this.disconnect = vi.fn()
+					observers.push(this)
+				}
+			}
+		})
+
+		afterEach(() => {
+			globalThis.ResizeObserver = original
+		})
+
+		it('does nothing without ResizeObserver', () => {
+			globalThis.ResizeObserver = undefined
+			const self = { $refs: { previewSurface: {} }, _previewSurfaceEl: undefined }
+			PageDesigner.methods.observePreviewSurface.call(self)
+			expect(self._previewSurfaceEl).toBeUndefined()
+		})
+
+		it('observes a new surface once and scales the preview to its width', () => {
+			const el = { id: 'surface' }
+			const self = { $refs: { previewSurface: el }, _previewSurfaceEl: null, _previewResizeObs: null, previewScale: 1 }
+
+			PageDesigner.methods.observePreviewSurface.call(self)
+			expect(observers).toHaveLength(1)
+			expect(observers[0].disconnect).toHaveBeenCalledTimes(1)
+			expect(observers[0].observe).toHaveBeenCalledWith(el)
+
+			observers[0].callback([{ contentRect: { width: 512 } }])
+			expect(self.previewScale).toBe(0.5)
+			observers[0].callback([{ contentRect: { width: 4096 } }])
+			expect(self.previewScale).toBe(1)
+			observers[0].callback([{ contentRect: { width: 0 } }])
+			observers[0].callback([{}])
+			expect(self.previewScale).toBe(1)
+
+			// The same element again is not re-observed.
+			PageDesigner.methods.observePreviewSurface.call(self)
+			expect(observers).toHaveLength(1)
+			expect(observers[0].observe).toHaveBeenCalledTimes(1)
+		})
+
+		it('reuses the observer and stops observing when the surface goes away', () => {
+			const el = { id: 'surface' }
+			const self = { $refs: { previewSurface: el }, _previewSurfaceEl: null, _previewResizeObs: null, previewScale: 1 }
+			PageDesigner.methods.observePreviewSurface.call(self)
+
+			self.$refs = {}
+			PageDesigner.methods.observePreviewSurface.call(self)
+
+			expect(observers).toHaveLength(1)
+			expect(observers[0].disconnect).toHaveBeenCalledTimes(2)
+			expect(observers[0].observe).toHaveBeenCalledTimes(1)
+			expect(self._previewSurfaceEl).toBeNull()
+		})
+	})
+
+	it('unmounting removes the shortcut listener and disconnects the preview observer', () => {
+		const wrapper = mountDesigner()
+		const disconnect = vi.fn()
+		wrapper.vm._previewResizeObs = { disconnect }
+		const remove = vi.spyOn(document, 'removeEventListener')
+
+		wrapper.unmount()
+
+		expect(remove).toHaveBeenCalledWith('keydown', expect.any(Function))
+		expect(disconnect).toHaveBeenCalledTimes(1)
+		remove.mockRestore()
 	})
 })
