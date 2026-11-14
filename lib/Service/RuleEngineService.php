@@ -132,6 +132,7 @@ class RuleEngineService implements RuleEngineServiceInterface {
 	 * @param LoggerInterface $logger PSR logger.
 	 * @param RuleObjectReader $reader Organisation-scoped reads of rule-engine objects (REQ-BRE-007).
 	 * @param StoredDecisionTables $tables A rule set's decision table, held in OpenRegister's decision-tables register (decision 196).
+	 * @param AutomationRunLog|null $runLog Records a wet run of an automation's `aut-` rule set (logic-automation-run-log).
 	 *
 	 * @return void
 	 *
@@ -144,6 +145,7 @@ class RuleEngineService implements RuleEngineServiceInterface {
 		private readonly LoggerInterface $logger,
 		private readonly RuleObjectReader $reader,
 		private readonly StoredDecisionTables $tables,
+		private readonly ?AutomationRunLog $runLog = null,
 	) {
 		$this->decisionEvaluator = $evaluators->decisionEvaluator;
 		$this->conditionExecutor = $evaluators->conditionExecutor;
@@ -303,6 +305,16 @@ class RuleEngineService implements RuleEngineServiceInterface {
 
 		if ($evaluation->options->preview === false) {
 			$this->persistLog(run: $this->runRecord(evaluation: $evaluation, bundle: $bundle), outcome: $outcome);
+		}
+
+		if ($evaluation->options->dryRun === false) {
+			$this->runLog?->ruleSetRan(
+				ruleSetSlug: $evaluation->ruleSetSlug,
+				payload: $evaluation->payload,
+				outcome: $outcome,
+				rules: $bundle['conditionRules'],
+				actor: (string)($this->userSession->getUser()?->getUID() ?? '')
+			);
 		}
 
 		return $outcome;

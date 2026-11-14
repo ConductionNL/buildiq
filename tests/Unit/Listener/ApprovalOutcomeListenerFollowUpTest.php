@@ -24,7 +24,9 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Tests\Unit\Listener;
 
+use OCA\Buildiq\Kernel\Contracts\AutomationRunRecorderInterface;
 use OCA\Buildiq\Listener\ApprovalOutcomeListener;
+use OCA\Buildiq\Service\AutomationRunLog;
 use OCA\Buildiq\Service\AutomationCompilerService;
 use OCA\Buildiq\Service\RuleActionDispatcher;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
@@ -80,6 +82,13 @@ final class ApprovalOutcomeListenerFollowUpTest extends TestCase {
 	private ApprovalOutcomeListener $listener;
 
 	/**
+	 * Every run the listener completed or wrote, as [method, args].
+	 *
+	 * @var array<int, array{0: string, 1: array<string, mixed>}>
+	 */
+	private array $runs = [];
+
+	/**
 	 * The dispatch to throw on, by type, or null.
 	 *
 	 * @var string|null
@@ -120,7 +129,24 @@ final class ApprovalOutcomeListenerFollowUpTest extends TestCase {
 			}
 		);
 
-		$this->listener = new ApprovalOutcomeListener($container, $this->compiler, $dispatcher, $logger);
+		$this->runs = [];
+		$recorder   = $this->createMock(AutomationRunRecorderInterface::class);
+		$waiting  = ['id' => 'run-1', 'outcome' => 'waiting', 'subject' => ['schema' => 'klacht', 'uuid' => 'object-1']];
+		$recorder->method('runsOf')->willReturn(['results' => [$waiting], 'total' => 1, 'summary' => []]);
+		$recorder->method('complete')->willReturnCallback(
+			function (string $runUuid, string $outcome, array $steps, ?string $reason = null): bool {
+				$this->runs[] = ['complete', ['run' => $runUuid, 'outcome' => $outcome, 'steps' => $steps, 'reason' => $reason]];
+				return true;
+			}
+		);
+
+		$this->listener = new ApprovalOutcomeListener(
+			$container,
+			$this->compiler,
+			$dispatcher,
+			$logger,
+			new AutomationRunLog(recorder: $recorder, objectService: $this->objectService, logger: $logger)
+		);
 	}//end setUp()
 
 	/**
@@ -247,6 +273,40 @@ final class ApprovalOutcomeListenerFollowUpTest extends TestCase {
 	}//end testAFailingDispatchIsLogged()
 
 	/**
+	 * The decision and each follow-up complete the waiting run on that object; a failed follow-up fails the run.
+	 *
+	 * @return void
+	 */
+	public function testTheDecisionCompletesTheWaitingRun(): void {
+		$this->automation([['type' => 'approval', 'onApprove' => [['type' => 'send-notification'], ['type' => 'object-op']]]]);
+		$this->compiler->method('mapActionToRuleAction')->willReturnCallback(
+			static fn (array $action): array => ['type' => $action['type'], 'parameters' => []]
+		);
+		$this->failOn = 'send-notification';
+
+		$this->listener->handle($this->approved(chainKey: 'aut-route'));
+
+		$this->assertSame(
+			[
+				[
+					'complete',
+					[
+						'run' => 'run-1',
+						'outcome' => 'failed',
+						'steps' => [
+							['action' => 'approval', 'outcome' => 'succeeded', 'message' => 'Approved'],
+							['action' => 'send-notification', 'outcome' => 'failed', 'message' => 'target missing'],
+							['action' => 'object-op', 'outcome' => 'succeeded', 'message' => ''],
+						],
+						'reason' => 'target missing',
+					],
+				],
+			],
+			$this->runs
+		);
+	}//end testTheDecisionCompletesTheWaitingRun()
+
+	/**
 	 * The automation `route` with these actions, as findAll returns it.
 	 *
 	 * @param array<int, mixed> $actions The actions.
@@ -254,7 +314,7 @@ final class ApprovalOutcomeListenerFollowUpTest extends TestCase {
 	 * @return void
 	 */
 	private function automation(array $actions): void {
-		$this->objectService->method('findAll')->willReturn([['slug' => 'route', 'actions' => $actions]]);
+		$this->objectService->method('findAll')->willReturn([['id' => 'a1b2c3d4-0000-4000-8000-000000000001', 'slug' => 'route', 'actions' => $actions]]);
 	}//end automation()
 
 	/**
