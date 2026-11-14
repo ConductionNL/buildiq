@@ -99,15 +99,68 @@ class ApplicationImportController extends Controller {
 			);
 		}
 
-		$result = $this->importer->import(
+		$result = $this->importer->importWithRecords(
 			archivePath: $path,
-			name: (string)($this->request->getParam('name') ?? ''),
-			slug: (string)($this->request->getParam('slug') ?? ''),
-			ownerUid: $user->getUID()
+			target: [
+				'name' => (string)($this->request->getParam('name') ?? ''),
+				'slug' => (string)($this->request->getParam('slug') ?? ''),
+				'owner' => $user->getUID(),
+				'records' => self::isOn(value: $this->request->getParam('records')),
+			]
 		);
 
 		return new JSONResponse(data: $result['data'], statusCode: $result['status']);
 	}//end import()
+
+	/**
+	 * Read an uploaded archive and say what it would import, without importing it.
+	 *
+	 * The dialog shows this summary before the maker confirms; nothing is created.
+	 *
+	 * @return JSONResponse 200 with name, slug, pages, schemas and records; 400 without an archive,
+	 *                      401 signed out, 413 or 422 for a bad archive.
+	 *
+	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-a-maker-imports-an-exported-archive-as-a-new-app-req-bqic-001
+	 */
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 30, period: 3600)]
+	public function preview(): JSONResponse {
+		if ($this->userSession->getUser() === null) {
+			return new JSONResponse(data: ['error' => 'unauthenticated'], statusCode: Http::STATUS_UNAUTHORIZED);
+		}
+
+		$path = self::uploadedPath(upload: $this->request->getUploadedFile(self::UPLOAD_FIELD));
+		if ($path === null) {
+			return new JSONResponse(
+				data: ['error' => 'archive_missing', 'detail' => 'Upload the exported archive in the "archive" field.'],
+				statusCode: Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		$result = $this->importer->preview(archivePath: $path);
+		return new JSONResponse(data: $result['data'], statusCode: $result['status']);
+	}//end preview()
+
+	/**
+	 * Whether a form flag is on: true, 1, "1", "true" or "on". Anything else, absent included, is off.
+	 *
+	 * @param mixed $value The submitted value.
+	 *
+	 * @return bool Whether it is on.
+	 *
+	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-records-come-along-only-when-asked-req-bqic-003
+	 */
+	private static function isOn(mixed $value): bool {
+		if (is_bool($value) === true) {
+			return $value;
+		}
+
+		if (is_scalar($value) === false) {
+			return false;
+		}
+
+		return in_array(strtolower(trim((string)$value)), ['1', 'true', 'on'], true);
+	}//end isOn()
 
 	/**
 	 * The temporary path of a successful upload, or null.

@@ -37,14 +37,18 @@ The import SHALL read only the package files (`openbuild-app.json`,
 SHALL ignore every other entry. It SHALL refuse an archive over 50 MB or with
 more than 5,000 entries, an entry with an absolute path, a `..` segment or a
 symlink, and an archive whose unpacked size passes 200 MB. It SHALL NOT load or
-execute any code from the archive. A package that fails parsing SHALL be refused
-as a whole, with the parser's error code and the path of the file at fault.
+execute any code from the archive.
 
 #### Scenario: An archive with a path outside the package is refused
 
 - **GIVEN** an archive with an entry named `../../config/config.php`
 - **WHEN** a maker imports it
 - **THEN** the import is refused with a message about an unsafe path, and nothing is written or created
+
+### Requirement: A package that fails parsing is refused as a whole (REQ-BQIC-009)
+
+A package that fails parsing SHALL be refused as a whole, with the parser's
+error code and the path of the file at fault, and nothing SHALL be created.
 
 #### Scenario: A broken schema file names itself
 

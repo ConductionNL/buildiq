@@ -652,7 +652,7 @@
             "post": {
                 "operationId": "application-import-import",
                 "summary": "Import an exported app archive as a new app owned by the caller",
-                "description": "Import an exported app archive, uploaded as multipart field `archive`, as a new app owned by the caller. Only the package files are read; the archive's code is never run. Returns 201 with the app, 400 without an archive or with a bad slug, 401 when signed out, 409 when the slug is taken, 413 for an archive over the size or entry limits, 422 with the parser's code and the file at fault.",
+                "description": "Import an exported app archive, uploaded as multipart field `archive`, as a new app owned by the caller. Only the package files are read; the archive's code is never run. With `records` set to 1, true or on, the archive's records come along, schema by schema, and the answer's `records` lists per schema what arrived and what failed. Returns 201 with the app, 400 without an archive or with a bad slug, 401 when signed out, 409 when the slug is taken, 413 for an archive over the size or entry limits, 422 with the parser's code and the file at fault.",
                 "tags": [
                     "application-import"
                 ],
@@ -672,6 +672,10 @@
                                     },
                                     "slug": {
                                         "type": "string"
+                                    },
+                                    "records": {
+                                        "type": "string",
+                                        "description": "1, true or on to import the archive's records too; anything else leaves them behind."
                                     }
                                 },
                                 "required": [
@@ -706,6 +710,84 @@
                     },
                     "409": {
                         "$ref": "#/components/responses/Problem409"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Problem422"
+                    }
+                }
+            }
+        },
+        "/applications/import/preview": {
+            "post": {
+                "operationId": "application-import-preview",
+                "summary": "Say what an app archive would import, without importing it",
+                "description": "Read an exported app archive, uploaded as multipart field `archive`, with the same checks and parse as the import, and answer its name, slug and how many pages, schemas and records it holds. Nothing is created. Returns 200 with the summary, 400 without an archive, 401 when signed out, 413 for an archive over the size or entry limits, 422 with the parser's code and the file at fault.",
+                "tags": [
+                    "application-import"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "archive": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "required": [
+                                    "archive"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "What the archive holds.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "name": {
+                                            "type": "string"
+                                        },
+                                        "slug": {
+                                            "type": "string"
+                                        },
+                                        "pages": {
+                                            "type": "integer"
+                                        },
+                                        "schemas": {
+                                            "type": "integer"
+                                        },
+                                        "records": {
+                                            "type": "integer"
+                                        },
+                                        "recordsBySchema": {
+                                            "type": "object",
+                                            "additionalProperties": {
+                                                "type": "integer"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
                     },
                     "422": {
                         "$ref": "#/components/responses/Problem422"

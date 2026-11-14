@@ -502,7 +502,11 @@ class ExportAppContentBundler implements ExportAppContentBundlerInterface {
 	/**
 	 * The README section on how to use the archive.
 	 *
+	 * The import line uses the Applications page's button label and names the occ command, so it matches what exists.
+	 *
 	 * @return array<int,string>
+	 *
+	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-a-maker-imports-an-exported-archive-as-a-new-app-req-bqic-001
 	 */
 	private function readmeUsage(): array {
 		return [
@@ -510,7 +514,9 @@ class ExportAppContentBundler implements ExportAppContentBundlerInterface {
 			'',
 			'- As its own app: run `composer install`, `npm ci` and `npm run build`, then enable it.'
 				. ' It needs OpenRegister.',
-			'- Buildiq cannot import this archive yet.',
+			'- In another buildiq: on the Applications page choose "Import app" and pick this archive, or run'
+				. ' `occ buildiq:app:import <archive> --owner=<uid>`. Add `--records` (or tick "Import records") to bring'
+				. ' the records along.',
 			'',
 		];
 	}//end readmeUsage()
