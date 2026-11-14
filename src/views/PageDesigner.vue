@@ -39,6 +39,14 @@
 					@click="blocksSidebarOpen = true">
 					{{ t('buildiq', 'Blocks') }}
 				</button>
+				<button
+					type="button"
+					class="page-designer__tool-btn"
+					data-test="open-translations"
+					:aria-pressed="translationsOpen ? 'true' : 'false'"
+					@click="translationsOpen = !translationsOpen">
+					{{ t('buildiq', 'Translations') }}
+				</button>
 				<!-- data-walkthrough-id: spotlighted by the tour's `preview` step. -->
 				<button
 					type="button"
@@ -67,6 +75,15 @@
 				:targetWidgets="(selectedPage && selectedPage.widgets) || []"
 				@insertWidgets="onInsertWidgets" />
 		</NcAppSidebar>
+
+		<!-- experience-multilingual-apps (REQ-BQML-002): every label of the
+		     version, one column per language. Edits go through emitManifest
+		     like any designer edit, so undo/redo and the save cover them. -->
+		<TranslationsView
+			v-if="translationsOpen"
+			:manifest="manifest"
+			@update:manifest="emitManifest"
+			@close="translationsOpen = false" />
 
 		<div class="page-designer__panes">
 			<aside class="page-designer__left">
@@ -165,7 +182,29 @@
 				<div
 					v-if="previewAvailable && livePreviewProps"
 					class="page-designer__preview">
-					<h4>{{ t('buildiq', 'Live preview') }}</h4>
+					<div class="page-designer__preview-head">
+						<h4>{{ t('buildiq', 'Live preview') }}</h4>
+						<!-- REQ-BQML-004: show the preview in one of the app's
+						     languages; the designer around it keeps the maker's. -->
+						<label
+							v-if="previewLanguages.length > 1"
+							class="page-designer__preview-language">
+							{{ t('buildiq', 'Preview language') }}
+							<select
+								v-model="previewLanguage"
+								data-test="preview-language">
+								<option value="">
+									{{ t('buildiq', 'My language') }}
+								</option>
+								<option
+									v-for="code in previewLanguages"
+									:key="code"
+									:value="code">
+									{{ languageLabel(code) }}
+								</option>
+							</select>
+						</label>
+					</div>
 					<div
 						ref="previewSurface"
 						class="page-designer__preview-surface"
@@ -185,6 +224,7 @@
 								:customComponents="previewFlatRegistry"
 								:pageTypes="previewPageTypes"
 								:translate="translateForPreview"
+								:language="previewLanguage"
 								:permissions="previewPermissions"
 								:diagnostics="debugLog.record" />
 						</div>
@@ -222,7 +262,7 @@
 <script>
 import { defaultPageTypes, mergeManifestDelta } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
-import { translate as ncT } from '@nextcloud/l10n'
+import { getLanguage, translate as ncT } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcAppSidebar } from '@nextcloud/vue'
 import BlockLibraryPanel from '../components/page-editor/BlockLibraryPanel.vue'
@@ -246,6 +286,7 @@ import StubPageEditor from '../components/page-editor/StubPageEditor.vue'
 import WidgetPlacementPanel from '../components/page-editor/WidgetPlacementPanel.vue'
 import WidgetSelectionPanel from '../components/page-editor/WidgetSelectionPanel.vue'
 import WikiPageEditor from '../components/page-editor/WikiPageEditor.vue'
+import TranslationsView from './TranslationsView.vue'
 import { useApplicationVersion } from '../composables/useApplicationVersion.js'
 import { useDebugLog } from '../composables/useDebugLog.js'
 import { useLivePreview } from '../composables/useLivePreview.js'
@@ -253,7 +294,9 @@ import { useManifestValidator } from '../composables/useManifestValidator.js'
 import { useRegisterPicker } from '../composables/useRegisterPicker.js'
 import { useSessionHistory } from '../composables/useSessionHistory.js'
 import registry from '../registry.js'
+import { appI18n, languageName } from '../services/appLanguages.js'
 import { versionRegister } from '../services/appRegister.js'
+import { createAppTranslate } from '../services/appTranslate.js'
 import { findingsForPage } from '../services/formDestinationCheck.js'
 import { resolveValidationMessage as resolveMessage } from '../services/manifestValidation/connectorErrorMessages.js'
 import { isEditableTarget } from '../utils/isEditableTarget.js'
@@ -310,6 +353,7 @@ export default {
 		SearchPageEditor,
 		WikiPageEditor,
 		StubPageEditor,
+		TranslationsView,
 	},
 
 	/**
@@ -407,6 +451,10 @@ export default {
 			blocksSidebarOpen: false,
 			targetSchemaSlugs: [],
 			existingBlocks: [],
+			// experience-multilingual-apps: the Translations view's open state,
+			// and the language the live preview shows ('' = the maker's own).
+			translationsOpen: false,
+			previewLanguage: '',
 			// Ratio the preview viewport is scaled by to fit the pane. Kept in
 			// sync with the pane's width by a ResizeObserver (see
 			// observePreviewSurface).
@@ -424,6 +472,23 @@ export default {
 		 */
 		previewViewportWidth() {
 			return PREVIEW_VIEWPORT_WIDTH
+		},
+
+		/**
+		 * The languages the preview can show: the written one first, then the
+		 * ones the app is translated into. Empty for an app without languages.
+		 *
+		 * @return {string[]} Language codes.
+		 * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-the-preview-can-switch-language-req-bqml-004
+		 */
+		previewLanguages() {
+			const i18n = appI18n(this.manifest)
+			if (!i18n.sourceLanguage && i18n.languages.length === 0) {
+				return []
+			}
+			return Array.from(new Set(
+				[i18n.sourceLanguage, ...i18n.languages].filter(Boolean),
+			))
 		},
 
 		/**
@@ -1149,16 +1214,37 @@ export default {
 
 		/**
 		 * REQ-OBPD-008: translate function handed to the sandboxed CnAppRoot
-		 * preview (mirrors App.vue's `translateForApp`). Closes over
-		 * Nextcloud's translate against the buildiq app id so preview chrome
-		 * (nav labels, empty states) localises identically to the built app.
+		 * preview, the same host lookup the built app gets (src/builder.js):
+		 * buildiq's catalogue for buildiq's strings, and a maker's own label
+		 * as written when the app declares languages (REQ-BQML-003), so the
+		 * renderer's manifest lookup is not masked by buildiq's catalogue.
 		 *
 		 * @param {string} key - Translation key.
+		 * @param {object} [vars] - Interpolation vars.
 		 * @return {string} Translated string (or the key on miss).
 		 * @spec openspec/changes/page-designer-live-preview-pane/tasks.md#task-2.3
+		 * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-the-preview-can-switch-language-req-bqml-004
 		 */
-		translateForPreview(key) {
-			return ncT('buildiq', key)
+		translateForPreview(key, vars) {
+			if (!this._previewTranslate) {
+				this._previewTranslate = createAppTranslate(
+					() => this.manifest,
+					(text, values) => ncT('buildiq', text, values),
+				)
+			}
+			return this._previewTranslate(key, vars)
+		},
+
+		/**
+		 * A language's name for the preview picker, in the maker's language.
+		 *
+		 * @param {string} code - a Nextcloud language code.
+		 * @return {string} The name, with the code.
+		 * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-the-preview-can-switch-language-req-bqml-004
+		 */
+		languageLabel(code) {
+			const name = languageName(code, getLanguage())
+			return name === code ? code : `${name} (${code})`
 		},
 
 		// --- Undo / redo (OQ-1) -------------------------------------------
@@ -1311,6 +1397,21 @@ export default {
 </script>
 
 <style scoped>
+.page-designer__preview-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	flex-wrap: wrap;
+}
+
+.page-designer__preview-language {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	color: var(--color-main-text);
+}
+
 .page-designer {
 	display: flex;
 	flex-direction: column;

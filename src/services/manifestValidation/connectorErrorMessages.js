@@ -86,6 +86,11 @@ function messages() {
 			'buildiq',
 			'Cache lifetime is a whole number of seconds, from 0 to 3600.',
 		),
+		// experience-multilingual-apps (REQ-BQML-001): the i18n validator.
+		'buildiq.i18n.error.unknown-language': t(
+			'buildiq',
+			'This is not a Nextcloud language code. Pick the language from the list in the app settings.',
+		),
 	}
 }
 

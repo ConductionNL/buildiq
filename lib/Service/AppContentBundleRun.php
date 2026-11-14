@@ -50,6 +50,13 @@ final class AppContentBundleRun {
 	public array $manifest = [];
 
 	/**
+	 * The version's `i18n` block as stored: languages and label translations.
+	 *
+	 * @var array<string,mixed>
+	 */
+	public array $i18n = [];
+
+	/**
 	 * The definitions, and the records when asked, keyed by exported slug.
 	 *
 	 * @var array{definitions: array<string,array<mixed>>, records: array<string,array<int,array{key: string, data: array<string,mixed>}>>}

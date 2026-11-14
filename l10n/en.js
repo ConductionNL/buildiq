@@ -1,7 +1,3 @@
-/**
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
- * SPDX-License-Identifier: EUPL-1.2
- */
 OC.L10N.register(
     "buildiq",
     {
@@ -2059,7 +2055,31 @@ OC.L10N.register(
         "Requests under 250 ms": "Requests under 250 ms",
         "Total load time (ms)": "Total load time (ms)",
         "Window start": "Window start",
-        "Include server bundle": "Include server bundle"
+        "Include server bundle": "Include server bundle",
+        "{language} translation of {text}": "{language} translation of {text}",
+        "{language}: {count} missing": "{language}: {count} missing",
+        "Add a language": "Add a language",
+        "All pages and the menu": "All pages and the menu",
+        "Every label is translated.": "Every label is translated.",
+        "From the schema: not translatable here": "From the schema: not translatable here",
+        "Labels are written in": "Labels are written in",
+        "Labels are written in {language}. A label without a translation is shown as written.": "Labels are written in {language}. A label without a translation is shown as written.",
+        "Languages": "Languages",
+        "Missing only": "Missing only",
+        "My language": "My language",
+        "Only the app's owners and editors can change its languages.": "Only the app's owners and editors can change its languages.",
+        "Page {number}": "Page {number}",
+        "Preview language": "Preview language",
+        "Remove {language}": "Remove {language}",
+        "Remove {language} and drop its translations?": "Remove {language} and drop its translations?",
+        "Remove language": "Remove language",
+        "The language the app's labels are written in, and the languages they are translated into. Each user sees the app in their own Nextcloud language where a translation exists. Translate the labels from the page designer.": "The language the app's labels are written in, and the languages they are translated into. Each user sees the app in their own Nextcloud language where a translation exists. Translate the labels from the page designer.",
+        "the written language": "the written language",
+        "This app is offered in one language only. Add languages in the app settings to translate its labels.": "This app is offered in one language only. Add languages in the app settings to translate its labels.",
+        "This is not a Nextcloud language code. Pick the language from the list in the app settings.": "This is not a Nextcloud language code. Pick the language from the list in the app settings.",
+        "This version has no labels yet.": "This version has no labels yet.",
+        "Translations": "Translations",
+        "Used at": "Used at"
     },
     "nplurals=2; plural=(n != 1);"
 )

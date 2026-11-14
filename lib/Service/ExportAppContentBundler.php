@@ -58,11 +58,13 @@ class ExportAppContentBundler implements ExportAppContentBundlerInterface {
 	 * @param ExportAppSourceResolver $sourceResolver Finds the application and version.
 	 * @param ExportAppSchemaReader $schemaReader Reads the version's schemas and records.
 	 * @param LoggerInterface $logger Logger.
+	 * @param ExportAppTranslationWriter $translationWriter Writes the app's own l10n files.
 	 */
 	public function __construct(
 		private readonly ExportAppSourceResolver $sourceResolver,
 		private readonly ExportAppSchemaReader $schemaReader,
 		private readonly LoggerInterface $logger,
+		private readonly ExportAppTranslationWriter $translationWriter = new ExportAppTranslationWriter(),
 	) {
 	}//end __construct()
 
@@ -97,6 +99,7 @@ class ExportAppContentBundler implements ExportAppContentBundlerInterface {
 	 *
 	 * @spec openspec/specs/openbuild-exporter/spec.md#requirement-companion-schemas-migrate-into-the-exported-app-s-own-namespace
 	 * @spec openspec/specs/openbuild-exporter/spec.md#requirement-optional-seed-data-inclusion
+	 * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-translations-travel-with-the-app-req-bqml-005
 	 */
 	public function bundle(string $rootDir, array $source, string $appId, string $semver): array {
 		$run = new AppContentBundleRun(rootDir: $rootDir, appId: $appId, semver: $semver);
@@ -105,6 +108,7 @@ class ExportAppContentBundler implements ExportAppContentBundlerInterface {
 		$this->writeAppManifest(run: $run);
 		$this->writeAppRegister(run: $run);
 		$this->writePortableFiles(run: $run);
+		$this->translationWriter->write(rootDir: $run->rootDir, i18n: $run->i18n);
 
 		$summary = $this->summarise(run: $run);
 		$this->writeReadme(run: $run, summary: $summary);
@@ -137,6 +141,9 @@ class ExportAppContentBundler implements ExportAppContentBundlerInterface {
 		$run->manifest = RepoDescriptor::publishableManifest(
 			manifest: $this->schemaReader->renameSlugs(node: (array)($version['manifest'] ?? []), renames: $renames)
 		);
+		// Read off the version as stored: the publishable manifest drops
+		// secret-NAMED keys, and a label such as "Password" is a key here.
+		$run->i18n = (array)(((array)($version['manifest'] ?? []))['i18n'] ?? []);
 		$run->content = $this->readContent(schemas: $schemas, renames: $renames, withRecords: (($source['includeSeedData'] ?? false) === true));
 	}//end readSource()
 

@@ -242,6 +242,16 @@ export default {
 			default: null,
 		},
 
+		/**
+		 * The language the previewed app's labels are shown in; '' is the
+		 * maker's own Nextcloud language. CnAppRoot looks each label up in the
+		 * manifest's translations for it (REQ-BQML-004).
+		 */
+		language: {
+			type: String,
+			default: '',
+		},
+
 		permissions: {
 			type: [Array, Object],
 			default: () => [],
@@ -278,6 +288,7 @@ export default {
 				customComponents: this.customComponents,
 				pageTypes: this.pageTypes,
 				translate: this.translate,
+				language: this.language,
 				permissions: this.permissions,
 				diagnostics: this.diagnostics,
 			}

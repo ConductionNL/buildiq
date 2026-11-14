@@ -1,7 +1,3 @@
-/**
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
- * SPDX-License-Identifier: EUPL-1.2
- */
 OC.L10N.register(
     "buildiq",
     {
@@ -1644,7 +1640,31 @@ OC.L10N.register(
         "Requests under 250 ms": "Verzoeken onder 250 ms",
         "Total load time (ms)": "Totale laadtijd (ms)",
         "Window start": "Begin van het venster",
-        "Include server bundle": "Serverbundel meenemen"
+        "Include server bundle": "Serverbundel meenemen",
+        "{language} translation of {text}": "{language}-vertaling van {text}",
+        "{language}: {count} missing": "{language}: {count} ontbreken",
+        "Add a language": "Een taal toevoegen",
+        "All pages and the menu": "Alle pagina's en het menu",
+        "Every label is translated.": "Elk label is vertaald.",
+        "From the schema: not translatable here": "Uit het schema: hier niet te vertalen",
+        "Labels are written in": "Labels zijn geschreven in",
+        "Labels are written in {language}. A label without a translation is shown as written.": "Labels zijn geschreven in {language}. Een label zonder vertaling wordt getoond zoals het is geschreven.",
+        "Languages": "Talen",
+        "Missing only": "Alleen ontbrekende",
+        "My language": "Mijn taal",
+        "Only the app's owners and editors can change its languages.": "Alleen de eigenaren en bewerkers van de app kunnen de talen wijzigen.",
+        "Page {number}": "Pagina {number}",
+        "Preview language": "Taal van het voorbeeld",
+        "Remove {language}": "{language} verwijderen",
+        "Remove {language} and drop its translations?": "{language} verwijderen en de vertalingen ervan weggooien?",
+        "Remove language": "Taal verwijderen",
+        "The language the app's labels are written in, and the languages they are translated into. Each user sees the app in their own Nextcloud language where a translation exists. Translate the labels from the page designer.": "De taal waarin de labels van de app zijn geschreven, en de talen waarin ze worden vertaald. Elke gebruiker ziet de app in de eigen Nextcloud-taal als er een vertaling is. Vertaal de labels vanuit de pagina-ontwerper.",
+        "the written language": "de geschreven taal",
+        "This app is offered in one language only. Add languages in the app settings to translate its labels.": "Deze app is in maar één taal beschikbaar. Voeg talen toe in de app-instellingen om de labels te vertalen.",
+        "This is not a Nextcloud language code. Pick the language from the list in the app settings.": "Dit is geen Nextcloud-taalcode. Kies de taal uit de lijst in de app-instellingen.",
+        "This version has no labels yet.": "Deze versie heeft nog geen labels.",
+        "Translations": "Vertalingen",
+        "Used at": "Gebruikt bij"
     },
     "nplurals=2; plural=(n != 1);"
 )

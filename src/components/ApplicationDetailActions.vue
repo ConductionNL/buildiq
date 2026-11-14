@@ -61,7 +61,12 @@
 			:flows="(obApp && obApp.flows) || []"
 			:availableFlows="availableFlows"
 			:loadingFlows="loadingFlows"
-			:busy="publishing"
+			:busy="publishing || savingLanguages"
+			:sourceLanguage="appLanguages.sourceLanguage"
+			:languages="appLanguages.languages"
+			:canEditLanguages="canSaveAsTemplate"
+			@update:languages="setLanguages"
+			@loadLanguages="loadLanguages"
 			@update:open="onSettingsOpen"
 			@setPublished="setPublished"
 			@update:allowOverrides="setAllowOverrides"
@@ -122,6 +127,7 @@ import { useRegisterPicker } from '../composables/useRegisterPicker.js'
 import { getCurrentUserGroups } from '../composables/useRole.js'
 import applicationContext from '../mixins/applicationContext.js'
 import { buildVersionedRoute } from '../router/helpers.js'
+import { appI18n, withLanguages } from '../services/appLanguages.js'
 import { fetchProductionRegister } from '../services/appRegister.js'
 
 // Vue 3 requires `defineAsyncComponent()` around a lazy import. The bare
@@ -285,6 +291,10 @@ export default {
 			deleting: false,
 			githubOpen: false,
 			settingsOpen: false,
+			// experience-multilingual-apps: the active version's languages,
+			// read from its manifest when the settings modal opens.
+			appLanguages: { sourceLanguage: '', languages: [] },
+			savingLanguages: false,
 			// The support-note editor mutates a working manifest copy in place
 			// and emits `close`, so it needs its own copy to edit and a flag to
 			// mount it. Held here rather than in the modal so a cancel simply
@@ -1078,6 +1088,79 @@ export default {
 				this.error = `${t('buildiq', 'Failed to load flows')}: ${e.message || e}`
 			} finally {
 				this.loadingFlows = false
+			}
+		},
+
+		/**
+		 * The active version's manifest, as the app's own endpoint returns it.
+		 *
+		 * @return {Promise<object>} The manifest.
+		 */
+		async fetchActiveManifest() {
+			const { data } = await axios.get(
+				generateUrl(
+					`/apps/buildiq/api/applications/${encodeURIComponent(this.obApp.slug)}/manifest`,
+				),
+			)
+			return data && typeof data === 'object' ? data : {}
+		},
+
+		/**
+		 * Read the languages the active version offers, for the settings modal.
+		 * An app that never set any shows the viewer's language as written.
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-sets-the-app-s-languages-req-bqml-001
+		 */
+		async loadLanguages() {
+			if (!this.obApp || !this.obApp.slug) {
+				return
+			}
+			try {
+				const i18n = appI18n(await this.fetchActiveManifest())
+				this.appLanguages = {
+					sourceLanguage: i18n.sourceLanguage,
+					languages: i18n.languages,
+				}
+			} catch (e) {
+				this.error = `${t('buildiq', 'Failed to load settings')}: ${e.message || e}`
+			}
+		},
+
+		/**
+		 * Persist the app's languages into the active version's manifest
+		 * (owner or editor). A removed language's translations go with it.
+		 *
+		 * Read-modify-write on the freshest manifest, so a concurrent edit to
+		 * pages or menu is not overwritten with a stale copy.
+		 *
+		 * @param {{sourceLanguage: string, languages: string[]}} next The languages.
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-sets-the-app-s-languages-req-bqml-001
+		 */
+		async setLanguages(next) {
+			if (!this.canSaveAsTemplate || !this.obApp || !this.obApp.slug) {
+				return
+			}
+			this.error = ''
+			this.savingLanguages = true
+			try {
+				const manifest = withLanguages(await this.fetchActiveManifest(), next)
+				await axios.put(
+					generateUrl(
+						`/apps/buildiq/api/applications/${encodeURIComponent(this.obApp.slug)}/manifest`,
+					),
+					{ manifest },
+				)
+				const i18n = appI18n(manifest)
+				this.appLanguages = {
+					sourceLanguage: i18n.sourceLanguage,
+					languages: i18n.languages,
+				}
+			} catch (e) {
+				this.error = `${t('buildiq', 'Failed to save settings')}: ${e.message || e}`
+			} finally {
+				this.savingLanguages = false
 			}
 		},
 

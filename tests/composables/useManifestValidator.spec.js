@@ -195,4 +195,23 @@ describe('useManifestValidator', () => {
 		expect(validateSpy).toHaveBeenCalledTimes(1)
 		expect(validateSpy).toHaveBeenCalledWith({})
 	})
+
+	// experience-multilingual-apps (T07): buildiq's own i18n checks join the
+	// library's errors, so the side panel lists an unknown language code.
+	it('adds buildiq\'s i18n language-code checks to the library errors', () => {
+		validateSpy.mockImplementation(() => ({
+			valid: false,
+			errors: ['i18n/labels/fr: language "fr" is not declared in i18n.languages'],
+		}))
+		const v = useManifestValidator()
+		v.validate({
+			pages: [],
+			i18n: { sourceLanguage: 'nl', languages: ['english'], labels: { fr: {} } },
+		})
+		vi.advanceTimersByTime(300)
+		expect(v.errors.value).toEqual([
+			'i18n/labels/fr: language "fr" is not declared in i18n.languages',
+			'/i18n/languages/0: buildiq.i18n.error.unknown-language',
+		])
+	})
 })

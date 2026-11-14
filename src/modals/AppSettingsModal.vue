@@ -5,7 +5,9 @@
   - AppSettingsModal — owner-facing app settings. Holds the publish/unpublish
   - toggle (whether the app is live in the Nextcloud app menu), the
   - allow-user-overrides toggle, and the Data registers section (add/remove
-  - `Application.dataRegisters` bindings — data-registers-runtime task 5.1).
+  - `Application.dataRegisters` bindings — data-registers-runtime task 5.1),
+  - and the Languages section (the version manifest's `i18n.sourceLanguage`
+  - and `i18n.languages`, experience-multilingual-apps REQ-BQML-001).
   - Emits intent; the parent (ApplicationDetailActions) performs the API
   - calls. Kept in its own file per ADR-004 gate-modal-isolation.
   -->
@@ -130,16 +132,88 @@
 					}}
 				</p>
 			</div>
+
+			<div class="app-settings__row" data-test="app-settings-languages">
+				<h4 class="app-settings__subtitle">
+					{{ t('buildiq', 'Languages') }}
+				</h4>
+				<p class="app-settings__hint app-settings__hint--inline">
+					{{
+						t(
+							'buildiq',
+							'The language the app\'s labels are written in, and the languages they are translated into. Each user sees the app in their own Nextcloud language where a translation exists. Translate the labels from the page designer.',
+						)
+					}}
+				</p>
+				<div data-test="app-settings-source-language">
+					<NcSelect
+						:modelValue="sourceOption"
+						:options="sourceOptions"
+						:clearable="false"
+						:disabled="!canEditLanguages || busy"
+						:inputLabel="t('buildiq', 'Labels are written in')"
+						@update:modelValue="onSourcePicked" />
+				</div>
+				<ul class="app-settings__languages">
+					<li
+						v-for="code in languages"
+						:key="code"
+						class="app-settings__language"
+						data-test="app-settings-language">
+						<span>{{ languageLabel(code) }}</span>
+						<template v-if="pendingRemoval === code">
+							<span class="app-settings__confirm" role="alert">
+								{{ t('buildiq', 'Remove {language} and drop its translations?', { language: languageLabel(code) }) }}
+							</span>
+							<NcButton
+								variant="error"
+								:disabled="busy"
+								data-test="app-settings-language-confirm-remove"
+								@click="confirmRemoveLanguage(code)">
+								{{ t('buildiq', 'Remove language') }}
+							</NcButton>
+							<NcButton
+								variant="tertiary"
+								:disabled="busy"
+								@click="pendingRemoval = ''">
+								{{ t('buildiq', 'Cancel') }}
+							</NcButton>
+						</template>
+						<NcButton
+							v-else
+							variant="tertiary"
+							:disabled="!canEditLanguages || busy"
+							:aria-label="t('buildiq', 'Remove {language}', { language: languageLabel(code) })"
+							data-test="app-settings-language-remove"
+							@click="pendingRemoval = code">
+							{{ t('buildiq', 'Remove') }}
+						</NcButton>
+					</li>
+				</ul>
+				<div data-test="app-settings-add-language">
+					<NcSelect
+						:modelValue="null"
+						:options="addOptions"
+						:disabled="!canEditLanguages || busy || !sourceLanguage"
+						:inputLabel="t('buildiq', 'Add a language')"
+						@update:modelValue="onLanguageAdded" />
+				</div>
+				<p v-if="!canEditLanguages" class="app-settings__hint app-settings__hint--inline">
+					{{ t('buildiq', 'Only the app\'s owners and editors can change its languages.') }}
+				</p>
+			</div>
 		</div>
 	</NcModal>
 </template>
 
 <script>
+import { getLanguage } from '@nextcloud/l10n'
 import NcButton from '@nextcloud/vue/components/NcButton'
 import NcCheckboxRadioSwitch from '@nextcloud/vue/components/NcCheckboxRadioSwitch'
 import NcModal from '@nextcloud/vue/components/NcModal'
 import NcSelect from '@nextcloud/vue/components/NcSelect'
 import NcTextField from '@nextcloud/vue/components/NcTextField'
+import { languageName, NEXTCLOUD_LANGUAGES } from '../services/appLanguages.js'
 
 export default {
 	name: 'AppSettingsModal',
@@ -178,6 +252,12 @@ export default {
 		loadingFlows: { type: Boolean, default: false },
 		/** Whether an action is in flight (disables the switches). */
 		busy: { type: Boolean, default: false },
+		/** The language the app's labels are written in (`i18n.sourceLanguage`). */
+		sourceLanguage: { type: String, default: '' },
+		/** The languages the labels are translated into (`i18n.languages`). */
+		languages: { type: Array, default: () => [] },
+		/** Whether the viewer may change the languages (owner or editor). */
+		canEditLanguages: { type: Boolean, default: false },
 	},
 
 	emits: [
@@ -186,6 +266,8 @@ export default {
 		'update:allow-overrides',
 		'update:data-registers',
 		'update:flows',
+		'update:languages',
+		'loadLanguages',
 	],
 
 	data() {
@@ -194,10 +276,48 @@ export default {
 			// (see the watcher below). `register`/`label` default to '' so
 			// NcTextField always receives a string, never undefined.
 			rows: this.toRows(this.dataRegisters),
+			// The language a maker asked to remove, awaiting confirmation.
+			pendingRemoval: '',
 		}
 	},
 
 	computed: {
+		/**
+		 * Every Nextcloud language as a picker option.
+		 *
+		 * @return {Array<{label: string, value: string}>} Options.
+		 * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-sets-the-app-s-languages-req-bqml-001
+		 */
+		sourceOptions() {
+			return NEXTCLOUD_LANGUAGES.map((code) => ({
+				label: this.languageLabel(code),
+				value: code,
+			}))
+		},
+
+		/**
+		 * The written language as a picker option, null when unset.
+		 *
+		 * @return {?{label: string, value: string}} The option.
+		 */
+		sourceOption() {
+			return this.sourceLanguage
+				? { label: this.languageLabel(this.sourceLanguage), value: this.sourceLanguage }
+				: null
+		},
+
+		/**
+		 * The languages that can still be added: not the written one and not
+		 * one already offered.
+		 *
+		 * @return {Array<{label: string, value: string}>} Options.
+		 * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-sets-the-app-s-languages-req-bqml-001
+		 */
+		addOptions() {
+			const taken = new Set([this.sourceLanguage, ...this.languages])
+			return this.sourceOptions.filter((option) => !taken.has(option.value))
+		},
+
 		/**
 		 * The bound flows, as picker options.
 		 *
@@ -232,6 +352,24 @@ export default {
 	},
 
 	watch: {
+		open: {
+			immediate: true,
+			/**
+			 * Ask the parent for the version's languages each time the modal
+			 * opens: they live in the manifest, which the Application record
+			 * the other settings come from does not carry.
+			 *
+			 * @param {boolean} open Whether the modal is now open.
+			 * @return {void}
+			 * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-sets-the-app-s-languages-req-bqml-001
+			 */
+			handler(open) {
+				if (open) {
+					this.$emit('loadLanguages')
+				}
+			},
+		},
+
 		dataRegisters: {
 			deep: true,
 			/**
@@ -250,6 +388,68 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * A language's name in the viewer's language, with its code.
+		 *
+		 * @param {string} code A Nextcloud language code.
+		 * @return {string} The label.
+		 */
+		languageLabel(code) {
+			const name = languageName(code, getLanguage())
+			return name === code ? code : `${name} (${code})`
+		},
+
+		/**
+		 * Emit the languages after the written language changes. A language
+		 * that becomes the written one stops being translated into.
+		 *
+		 * @param {?{value: string}} option The picked option.
+		 * @return {void}
+		 * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-sets-the-app-s-languages-req-bqml-001
+		 */
+		onSourcePicked(option) {
+			if (!option || !option.value || option.value === this.sourceLanguage) {
+				return
+			}
+			this.$emit('update:languages', {
+				sourceLanguage: option.value,
+				languages: this.languages.filter((code) => code !== option.value),
+			})
+		},
+
+		/**
+		 * Emit the languages with one added.
+		 *
+		 * @param {?{value: string}} option The picked option.
+		 * @return {void}
+		 * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-sets-the-app-s-languages-req-bqml-001
+		 */
+		onLanguageAdded(option) {
+			if (!option || !option.value || this.languages.includes(option.value)) {
+				return
+			}
+			this.$emit('update:languages', {
+				sourceLanguage: this.sourceLanguage,
+				languages: [...this.languages, option.value],
+			})
+		},
+
+		/**
+		 * Emit the languages with one removed, after the maker confirmed it.
+		 * The parent drops that language's translations with it.
+		 *
+		 * @param {string} code The language to remove.
+		 * @return {void}
+		 * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-sets-the-app-s-languages-req-bqml-001
+		 */
+		confirmRemoveLanguage(code) {
+			this.pendingRemoval = ''
+			this.$emit('update:languages', {
+				sourceLanguage: this.sourceLanguage,
+				languages: this.languages.filter((language) => language !== code),
+			})
+		},
+
 		/**
 		 * Emit the new bindings when the picker changes.
 		 *
@@ -382,6 +582,26 @@ export default {
 
 .app-settings__hint--inline {
 	margin-left: 0;
+}
+
+.app-settings__languages {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.app-settings__language {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.app-settings__confirm {
+	color: var(--color-error-text, var(--color-error));
 }
 
 .app-settings__data-register-row {
