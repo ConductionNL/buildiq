@@ -17,6 +17,7 @@
 				:config="config"
 				:registers="registers"
 				:schemas="schemas"
+				:databaseRegisters="databaseRegisters"
 				@register="update('register', $event)"
 				@schema="update('schema', $event)" />
 			<label>
@@ -42,6 +43,11 @@
 
 		<fieldset class="index-page-editor__fieldset">
 			<legend>{{ t('buildiq', 'Actions') }}</legend>
+			<WriteActionSwitches
+				:config="config"
+				:actions="writeActions"
+				:readOnly="databaseReadOnly"
+				@set="setWriteAction" />
 			<ActionBuilder
 				:modelValue="config.actions || []"
 				@update:modelValue="update('actions', $event)" />
@@ -98,11 +104,13 @@ import InlineFieldMark from './fields/InlineFieldMark.vue'
 import RegisterSchemaFields from './fields/RegisterSchemaFields.vue'
 import SavedViewsBuilder from './fields/SavedViewsBuilder.vue'
 import SidebarSectionBuilder from './fields/SidebarSectionBuilder.vue'
+import WriteActionSwitches from './fields/WriteActionSwitches.vue'
 import { useEditorRegisterPicker } from '../../composables/useEditorRegisterPicker.js'
 import {
 	pageEditorBaseMixin,
 	pageEditorSchemaBoundMixin,
 } from '../../mixins/pageEditorBase.js'
+import { pageEditorDatabaseMixin } from '../../mixins/pageEditorDatabase.js'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 
 export default {
@@ -115,12 +123,14 @@ export default {
 		RegisterSchemaFields,
 		DataSourceOriginToggle,
 		SavedViewsBuilder,
+		WriteActionSwitches,
 	},
 
 	mixins: [
 		pageEditorBaseMixin,
 		pageEditorValidationMixin,
 		pageEditorSchemaBoundMixin,
+		pageEditorDatabaseMixin,
 	],
 
 	props: {
@@ -133,6 +143,30 @@ export default {
 	setup: useEditorRegisterPicker,
 
 	computed: {
+		/**
+		 * The config keys a read-only database switches off on an index page.
+		 *
+		 * @return {string[]}
+		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-pages-follow-the-databases-write-setting-req-bqdb-002
+		 */
+		writeActionKeys() {
+			return ['showAdd', 'showEditAction', 'showDeleteAction']
+		},
+
+		/**
+		 * The write action switches of an index page.
+		 *
+		 * @return {Array<{key: string, label: string}>}
+		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-pages-follow-the-databases-write-setting-req-bqdb-002
+		 */
+		writeActions() {
+			return [
+				{ key: 'showAdd', label: this.t('buildiq', 'Add button') },
+				{ key: 'showEditAction', label: this.t('buildiq', 'Edit button') },
+				{ key: 'showDeleteAction', label: this.t('buildiq', 'Delete button') },
+			]
+		},
+
 		/**
 		 * Observed behaviour of `validatedConfigKeys` (retrofit annotation).
 		 *

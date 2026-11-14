@@ -22,7 +22,7 @@
 				v-for="r in registers"
 				:key="r.slug || r.id"
 				:value="r.slug">
-				{{ r.title || r.slug }}
+				{{ registerLabel(r) }}
 			</option>
 		</select>
 		<InlineFieldMark :error="markFor('register')" />
@@ -62,9 +62,28 @@ export default {
 		// The registers and schemas the owning editor loaded.
 		registers: { type: Array, default: () => [] },
 		schemas: { type: Array, default: () => [] },
+		// The registers served from a connected database (REQ-BQDB-002).
+		databaseRegisters: { type: Array, default: () => [] },
 	},
 
 	emits: ['register', 'schema'],
+
+	methods: {
+		/**
+		 * A register's option text, marked when a connected database serves it.
+		 *
+		 * @param {{slug?: string, title?: string}} register The register.
+		 * @return {string}
+		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-pages-follow-the-databases-write-setting-req-bqdb-002
+		 */
+		registerLabel(register) {
+			const name = register.title || register.slug
+			if (!this.databaseRegisters.includes(register.slug)) {
+				return name
+			}
+			return name + ' — ' + this.t('buildiq', 'Connected database')
+		},
+	},
 }
 </script>
 
