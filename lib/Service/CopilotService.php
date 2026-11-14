@@ -326,7 +326,8 @@ class CopilotService implements CopilotServiceInterface {
 	 * @param array<string, mixed>|null $agent The resolved `Agent` record, or null for the bare copilot path.
 	 * @param string|null $versionSlug The version the caller is editing, or null.
 	 *
-	 * @return array{summary: string, steps: array<int, array<string, mixed>>, manifests: array<string, array{current: array, predicted: array}>}
+	 * @return array{summary: string, stories: array<int, array<string, mixed>>, steps: array<int, array<string, mixed>>,
+	 *               manifests: array<string, array{current: array, predicted: array}>}
 	 *
 	 * @throws CopilotException On RBAC denial or an unparsable/invalid/over-cap plan.
 	 */

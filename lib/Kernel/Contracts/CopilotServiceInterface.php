@@ -117,7 +117,8 @@ interface CopilotServiceInterface {
 	 *                                 than on the tools' `development` default.
 	 * @param int|null $documentFileId Optional Files id of a requirements document, read as the user.
 	 *
-	 * @return array{summary: string, steps: array<int, array<string, mixed>>, manifests: array<string, array{current: array, predicted: array}>}
+	 * @return array{summary: string, stories: array<int, array<string, mixed>>, steps: array<int, array<string, mixed>>,
+	 *               manifests: array<string, array{current: array, predicted: array}>, document?: array{fileId: int, name: string}}
 	 *
 	 * @throws CopilotException On unavailability, invalid input, RBAC denial, an unknown agent, or an unparsable/invalid plan.
 	 *
