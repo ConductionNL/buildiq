@@ -22,58 +22,18 @@
 						type="text"
 						@input="updateField(index, 'title', $event.target.value)" />
 				</label>
-				<label>
-					{{ t('buildiq', 'Register') }}
-					<select
-						:value="entry.register || ''"
-						:aria-invalid="!entry.register"
-						@change="updateRegister(index, $event.target.value)">
-						<option value="">
-							{{ t('buildiq', '— select register —') }}
-						</option>
-						<option
-							v-for="r in registers"
-							:key="r.slug || r.id"
-							:value="r.slug">
-							{{ r.title || r.slug }}
-						</option>
-					</select>
-				</label>
-				<label>
-					{{ t('buildiq', 'Schema') }}
-					<select
-						:value="entry.schema || ''"
-						:disabled="!entry.register"
-						:aria-invalid="!entry.schema"
-						@change="updateSchema(index, $event.target.value)">
-						<option value="">
-							{{ t('buildiq', '— select schema —') }}
-						</option>
-						<option
-							v-for="s in schemasOf(entry.register)"
-							:key="s.slug || s.id"
-							:value="s.slug">
-							{{ s.title || s.slug }}
-						</option>
-					</select>
-				</label>
-				<label>
-					{{ t('buildiq', 'Field that points at this record') }}
-					<select
-						:value="linkFieldOf(entry)"
-						:disabled="!entry.schema"
-						@change="updateLinkField(index, $event.target.value)">
-						<option value="">
-							{{ t('buildiq', '— select field —') }}
-						</option>
-						<option
-							v-for="field in fieldsOf(entry.register, entry.schema)"
-							:key="field"
-							:value="field">
-							{{ field }}
-						</option>
-					</select>
-				</label>
+				<RegisterSchemaPicker
+					:entry="entry"
+					:registers="registers"
+					:schemas="schemasOf(entry.register)"
+					@pick="onPick(index, $event)" />
+				<FieldSelect
+					:label="t('buildiq', 'Field that points at this record')"
+					:value="linkFieldOf(entry)"
+					:fields="fieldsOf(entry.register, entry.schema)"
+					:emptyText="t('buildiq', '— select field —')"
+					:disabled="!entry.schema"
+					@change="updateLinkField(index, $event)" />
 				<label>
 					{{ t('buildiq', 'Columns (comma-separated; empty uses the schema list columns)') }}
 					<input
@@ -112,8 +72,8 @@
 </template>
 
 <script>
-import InlineFieldMark from './InlineFieldMark.vue'
-import { schemaListCacheMixin } from '../../../mixins/schemaListCache.js'
+import { entryListMixin } from '../../../mixins/entryList.js'
+import { FieldSelect, InlineFieldMark, RegisterSchemaPicker } from './entryBuilderParts.js'
 
 /**
  * The filter token the detail page replaces with the open record's id.
@@ -127,21 +87,9 @@ export const DEFAULT_LIMIT = 10
 
 export default {
 	name: 'RelatedCollectionBuilder',
-	components: { InlineFieldMark },
-	mixins: [schemaListCacheMixin],
+	components: { FieldSelect, InlineFieldMark, RegisterSchemaPicker },
+	mixins: [entryListMixin],
 	props: {
-		// The `relatedCollections` array.
-		modelValue: {
-			type: Array,
-			default: () => [],
-		},
-
-		// The registers the editor offers, as loaded by its picker.
-		registers: {
-			type: Array,
-			default: () => [],
-		},
-
 		// The register a new entry starts on: the page's own register.
 		defaultRegister: {
 			type: String,
@@ -149,18 +97,7 @@ export default {
 		},
 	},
 
-	emits: ['update:modelValue'],
-
 	computed: {
-		/**
-		 * The entries as an array, whatever the bound value is.
-		 *
-		 * @return {Array<object>}
-		 */
-		localEntries() {
-			return Array.isArray(this.modelValue) ? this.modelValue : []
-		},
-
 		/**
 		 * The renderer's default row limit, shown as the placeholder.
 		 *
@@ -168,15 +105,6 @@ export default {
 		 */
 		defaultLimit() {
 			return DEFAULT_LIMIT
-		},
-	},
-
-	watch: {
-		localEntries: {
-			immediate: true,
-			handler(entries) {
-				entries.forEach((entry) => this.loadSchemas(entry && entry.register))
-			},
 		},
 	},
 
@@ -208,30 +136,6 @@ export default {
 				hasError: true,
 				message: t('buildiq', 'Pick a register and a schema for this list.'),
 			}
-		},
-
-		/**
-		 * Emit the list with one entry replaced.
-		 *
-		 * @param {number} index - position of the entry.
-		 * @param {object} entry - its new value.
-		 */
-		replace(index, entry) {
-			const next = this.localEntries.slice()
-			next[index] = entry
-			this.$emit('update:modelValue', next)
-		},
-
-		/**
-		 * Write a text key of an entry; an empty value deletes it.
-		 *
-		 * @param {number} index - position of the entry.
-		 * @param {string} key - the key, e.g. `title`.
-		 * @param {string} value - the input's text.
-		 */
-		updateField(index, key, value) {
-			const { [key]: _omit, ...rest } = this.localEntries[index] || {}
-			this.replace(index, value === '' ? rest : { ...rest, [key]: value })
 		},
 
 		/**
@@ -313,21 +217,8 @@ export default {
 		 * Append a list on the page's own register.
 		 */
 		addEntry() {
-			const next = this.localEntries.slice()
-			next.push(this.defaultRegister ? { title: '', register: this.defaultRegister } : { title: '' })
-			this.$emit('update:modelValue', next)
+			this.appendEntry(this.defaultRegister ? { title: '', register: this.defaultRegister } : { title: '' })
 			this.loadSchemas(this.defaultRegister)
-		},
-
-		/**
-		 * Drop one list.
-		 *
-		 * @param {number} index - position of the entry.
-		 */
-		removeEntry(index) {
-			const next = this.localEntries.slice()
-			next.splice(index, 1)
-			this.$emit('update:modelValue', next)
 		},
 	},
 }
