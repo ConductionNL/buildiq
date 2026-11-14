@@ -69,6 +69,23 @@
 					@input="update('height', $event.target.value)" />
 				<InlineFieldMark :error="markFor('height')" />
 			</label>
+			<!-- REQ-BQSA-003: the app user's own position on the map. -->
+			<label class="map-page-editor__inline">
+				<input
+					type="checkbox"
+					data-testid="map-show-user-location"
+					:checked="config.showUserLocation === true"
+					@change="update('showUserLocation', $event.target.checked || null)" />
+				{{ t('buildiq', 'Show my position') }}
+			</label>
+			<label class="map-page-editor__inline">
+				<input
+					type="checkbox"
+					data-testid="map-center-on-user"
+					:checked="config.centerOnUser === true"
+					@change="update('centerOnUser', $event.target.checked || null)" />
+				{{ t('buildiq', 'Center on my position when the page opens') }}
+			</label>
 		</fieldset>
 
 		<fieldset class="map-page-editor__fieldset">

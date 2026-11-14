@@ -18,6 +18,7 @@ import {
 	moveToSlot,
 	parentReferenceFields,
 } from '../../../src/components/page-editor/fields/fieldTypes.js'
+import { DEVICE_FIELD_TYPES } from '../../../src/services/deviceFields.js'
 
 function optionValues(wrapper) {
 	const select = wrapper.findAll('select').find((s) => s.findAll('option').some((o) => o.element.value === 'date'))
@@ -29,15 +30,18 @@ describe('FIELD_TYPES', () => {
 		expect([...FIELD_TYPES]).toEqual(['string', 'number', 'boolean', 'select', 'textarea', 'date', 'file', 'child-records'])
 	})
 
-	it('is offered identically by both form builders', () => {
+	it('is offered by both form builders, the field builder adding the device fields', () => {
 		const pageBuilder = mount(FormFieldBuilder, { props: { modelValue: [{ key: 'a', label: 'A', type: 'string' }] } })
 		const layoutBuilder = mount(FormLayoutBuilder, { props: { fields: [{ name: 'a', label: 'A' }] } })
-		expect(optionValues(pageBuilder)).toEqual([...FIELD_TYPES])
+		// forms-signature-audio-and-location REQ-BQSA-001: the form field builder
+		// offers signature, audio and location after the shared types.
+		expect(optionValues(pageBuilder)).toEqual([...FIELD_TYPES, ...DEVICE_FIELD_TYPES])
 		expect(optionValues(layoutBuilder)).toEqual([...FIELD_TYPES])
 	})
 
 	it('names each type for the palette and falls back to the raw type', () => {
 		expect(fieldTypeLabel('file')).toBe('File')
+		expect(fieldTypeLabel('signature')).toBe('Signature')
 		expect(fieldTypeLabel('date')).toBe('Date')
 		expect(fieldTypeLabel('unknown')).toBe('unknown')
 	})
