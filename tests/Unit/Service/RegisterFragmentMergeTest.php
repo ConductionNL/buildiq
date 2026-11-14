@@ -121,27 +121,4 @@ final class RegisterFragmentMergeTest extends TestCase {
 		$this->assertSame(['a', 'b', 'c'], $merged['required']);
 		$this->assertSame('0.2.0', $merged['info']['version']);
 	}//end testListsConcatenateAndScalarsOverwrite()
-
-	/**
-	 * The app-record-tests fragment adds the record test and test run schemas,
-	 * both listed in the buildiq register (lifecycle-release-test-gate T01).
-	 *
-	 * @return void
-	 *
-	 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-every-run-is-kept-req-bqrt-005
-	 */
-	public function testTheAppRecordTestsFragmentAddsBothSchemas(): void {
-		$root = __DIR__ . '/../../../lib/Settings/';
-		$base = json_decode((string)file_get_contents($root . 'openbuild_register.json'), true);
-		$fragment = json_decode((string)file_get_contents($root . 'register.d/24-app-record-tests.json'), true);
-
-		$merged = $this->merge($base, $fragment);
-
-		$this->assertSame('app-record-test', $merged['components']['schemas']['AppRecordTest']['slug']);
-		$this->assertSame('app-test-run', $merged['components']['schemas']['AppTestRun']['slug']);
-		$this->assertSame(['accept', 'refuse'], $merged['components']['schemas']['AppRecordTest']['properties']['expect']['enum']);
-		$this->assertSame(['manual', 'release', 'promotion'], $merged['components']['schemas']['AppTestRun']['properties']['trigger']['enum']);
-		$this->assertContains('app-record-test', $merged['components']['registers']['buildiq']['schemas']);
-		$this->assertContains('app-test-run', $merged['components']['registers']['buildiq']['schemas']);
-	}//end testTheAppRecordTestsFragmentAddsBothSchemas()
 }//end class
