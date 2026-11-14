@@ -28,18 +28,20 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Tests\Unit\Listener;
 
+use OCA\Buildiq\Kernel\Contracts\AutomationRunRecorderInterface;
 use OCA\Buildiq\Listener\AutomationApprovalTriggerListener;
-use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
-use OCA\OpenRegister\Service\Lifecycle\TransitionMove;
-use OCA\OpenRegister\Service\Task\ResolvedChain;
-use OCA\OpenRegister\Service\Task\SequenceAnchor;
+use OCA\Buildiq\Service\AutomationRunLog;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
-use OCA\OpenRegister\Db\TaskSequenceMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\TaskSequenceMapper;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
 use OCA\OpenRegister\Service\ApprovalChainAnnotationInstaller;
+use OCA\OpenRegister\Service\Lifecycle\TransitionMove;
+use OCA\OpenRegister\Service\Task\ResolvedChain;
+use OCA\OpenRegister\Service\Task\SequenceAnchor;
 use OCA\OpenRegister\Service\Task\TaskSequenceService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -595,4 +597,78 @@ final class AutomationApprovalTriggerListenerTest extends TestCase {
 
 	}//end testDedupeLookupFailureStillProvisions()
 
+	/**
+	 * An approval that was asked for is a waiting run with the step "approval requested"; one that opened no sequence is not recorded.
+	 *
+	 * @return void
+	 */
+	public function testAnOpenedApprovalIsRecordedAsAWaitingRun(): void {
+		$calls    = new \stdClass();
+		$calls->list = [];
+		$recorder = $this->createMock(AutomationRunRecorderInterface::class);
+		$recorder->method('start')->willReturnCallback(
+			static function (array $automation, string $trigger, ?array $subject, string $actor) use ($calls): array {
+				$calls->list[] = ['start', $trigger, $subject, $actor];
+				return [];
+			}
+		);
+		$recorder->method('step')->willReturnCallback(
+			static function (array $run, string $action, string $outcome, string $message = '') use ($calls): array {
+				$calls->list[] = ['step', $action, $outcome];
+				return $run;
+			}
+		);
+		$recorder->method('finish')->willReturnCallback(
+			static function (array $run, string $outcome, ?string $reason = null) use ($calls): string {
+				$calls->list[] = ['finish', $outcome];
+				return 'run-1';
+			}
+		);
+
+		$this->objectService->method('findAll')->willReturn(
+			[
+				[
+					'enabled' => true,
+					'trigger' => ['type' => 'object-created', 'schema' => 'permit-application'],
+					'actions' => [['type' => 'approval', 'assigneeGroup' => 'permit-reviewers']],
+					'provenance' => ['approvalChainName' => 'aut-route-permit-application-for-approval'],
+				],
+			]
+		);
+		$this->schemaMapper->method('find')->willReturn($this->schemaWithId(42));
+		$this->annotationInstaller->method('compile')->willReturn($this->templateFor('tpl-permit-7'));
+		$this->sequenceMapper->method('findForAnchor')->willReturnOnConsecutiveCalls([], [['id' => 'open']]);
+
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturnCallback(
+			fn (string $id): object => match ($id) {
+				'OCA\\OpenRegister\\Service\\ApprovalChainAnnotationInstaller' => $this->annotationInstaller,
+				'OCA\\OpenRegister\\Db\\TaskSequenceMapper' => $this->sequenceMapper,
+				'OCA\\OpenRegister\\Service\\Task\\TaskSequenceService' => $this->sequenceService,
+				default => $this->objectService,
+			}
+		);
+		$userSession = $this->createMock(\OCP\IUserSession::class);
+		$userSession->method('getUser')->willReturn(null);
+		$listener = new AutomationApprovalTriggerListener(
+			$container,
+			$this->schemaMapper,
+			$userSession,
+			new NullLogger(),
+			new AutomationRunLog(recorder: $recorder, objectService: $this->objectService, logger: new NullLogger())
+		);
+
+		$listener->handle(new ObjectCreatedEvent($this->objectEntity('permit-application', 'object-uuid-1')));
+		$listener->handle(new ObjectCreatedEvent($this->objectEntity('permit-application', 'object-uuid-1')));
+
+		$this->assertSame(
+			[
+				['start', 'object-created', ['schema' => 'permit-application', 'uuid' => 'object-uuid-1'], ''],
+				['step', 'approval requested', 'waiting'],
+				['finish', 'waiting'],
+			],
+			$calls->list
+		);
+
+	}//end testAnOpenedApprovalIsRecordedAsAWaitingRun()
 }//end class

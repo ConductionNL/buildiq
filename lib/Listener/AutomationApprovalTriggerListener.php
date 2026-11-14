@@ -60,10 +60,13 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Listener;
 
+use OCA\Buildiq\Service\AutomationRunLog;
+use OCA\Buildiq\Service\AutomationRunRecorder;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Service\Task\ResolvedChain;
 use OCA\OpenRegister\Service\Task\SequenceAnchor;
 use OCA\OpenRegister\Service\Task\TaskSequenceService;
+use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\IUserSession;
@@ -98,6 +101,7 @@ class AutomationApprovalTriggerListener implements IEventListener {
 	 * @param SchemaMapper $schemaMapper Resolves a schema slug to its numeric id.
 	 * @param IUserSession $userSession Current user session (requester identity).
 	 * @param LoggerInterface $logger PSR logger.
+	 * @param AutomationRunLog|null $runLog Records each approval asked for as a waiting run; built at use time when not given.
 	 *
 	 * @return void
 	 */
@@ -106,6 +110,7 @@ class AutomationApprovalTriggerListener implements IEventListener {
 		private readonly SchemaMapper $schemaMapper,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
+		private ?AutomationRunLog $runLog = null,
 	) {
 		$this->objects = new LazyObjectService(container: $container);
 	}//end __construct()
@@ -215,7 +220,15 @@ class AutomationApprovalTriggerListener implements IEventListener {
 		$automations = $this->findMatchingAutomations(fired: $fired);
 
 		foreach ($automations as $automation) {
-			$this->initializeFor(automation: $automation, objectUuid: $objectUuid);
+			if ($this->initializeFor(automation: $automation, objectUuid: $objectUuid) === true) {
+				$this->runLog()?->approvalRequested(
+					automation: $automation,
+					trigger: $fired->triggerType(),
+					schemaSlug: $fired->schemaSlug(),
+					objectUuid: $objectUuid,
+					actor: (string)($this->userSession->getUser()?->getUID() ?? '')
+				);
+			}
 		}
 
 	}//end handle()
@@ -255,12 +268,12 @@ class AutomationApprovalTriggerListener implements IEventListener {
 	 * @param array<string,mixed> $automation The matching Automation object.
 	 * @param string $objectUuid The fired object's uuid.
 	 *
-	 * @return void
+	 * @return bool True when a sequence was opened, so the approval now waits.
 	 *
 	 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#1.3
 	 * @spec openspec/specs/automation-designer/spec.md#req-autd-004
 	 */
-	private function initializeFor(array $automation, string $objectUuid): void {
+	private function initializeFor(array $automation, string $objectUuid): bool {
 		$provenance = $automation['provenance'] ?? [];
 		if (is_array($provenance) === false) {
 			$provenance = [];
@@ -268,7 +281,7 @@ class AutomationApprovalTriggerListener implements IEventListener {
 
 		$chainName = (string)($provenance['approvalChainName'] ?? '');
 		if ($chainName === '') {
-			return;
+			return false;
 		}
 
 		$template = $this->resolveTemplate(
@@ -276,7 +289,7 @@ class AutomationApprovalTriggerListener implements IEventListener {
 			chainName: $chainName
 		);
 		if ($template === null) {
-			return;
+			return false;
 		}
 
 		$templateId = (string)($template['templateId'] ?? '');
@@ -284,7 +297,7 @@ class AutomationApprovalTriggerListener implements IEventListener {
 			$this->logger->warning(
 				'Buildiq: AutomationApprovalTriggerListener compiled a template with no id for chain "' . $chainName . '".'
 			);
-			return;
+			return false;
 		}
 
 		try {
@@ -298,7 +311,7 @@ class AutomationApprovalTriggerListener implements IEventListener {
 			// sequence (v1 has no resubmission-cycle handling; that is the
 			// gate-listener's job for the BLOCKING approval-chains flow,
 			// out of this change's scope).
-			return;
+			return false;
 		}
 
 		$requesterId = $this->userSession->getUser()?->getUID();
@@ -308,12 +321,14 @@ class AutomationApprovalTriggerListener implements IEventListener {
 				chain: new ResolvedChain(template: $template),
 				anchor: new SequenceAnchor(objectUuid: $objectUuid, requesterId: $requesterId)
 			);
+			return true;
 		} catch (Throwable $e) {
 			$message = 'Buildiq: AutomationApprovalTriggerListener failed to open a task sequence for chain "' . $chainName . '"'
 				. ' on object "' . $objectUuid . '": ' . $e->getMessage();
 			$this->logger->error($message, ['exception' => $e]);
 		}
 
+		return false;
 	}//end initializeFor()
 
 	/**
@@ -362,4 +377,32 @@ class AutomationApprovalTriggerListener implements IEventListener {
 
 		return $template;
 	}//end resolveTemplate()
+	/**
+	 * The run log, built at use time from the same lazily resolved object
+	 * service: a listener cannot constructor-inject the recorder's published
+	 * dependencies (see LazyObjectService). Null when it cannot be built.
+	 *
+	 * @return AutomationRunLog|null
+	 *
+	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
+	 */
+	private function runLog(): ?AutomationRunLog {
+		if ($this->runLog !== null) {
+			return $this->runLog;
+		}
+
+		try {
+			$objectService = $this->objects->get();
+			$this->runLog  = new AutomationRunLog(
+				recorder: new AutomationRunRecorder(objectService: $objectService, time: $this->container->get(ITimeFactory::class), logger: $this->logger),
+				objectService: $objectService,
+				logger: $this->logger
+			);
+		} catch (Throwable $e) {
+			$this->logger->error('Buildiq: automation runs cannot be recorded: ' . $e->getMessage());
+			return null;
+		}
+
+		return $this->runLog;
+	}//end runLog()
 }//end class

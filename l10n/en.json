@@ -2187,7 +2187,19 @@
         "Window start": "Window start",
         "Include server bundle": "Include server bundle",
         "Failures": "Failures",
-        "Failed requests, 4xx and 5xx together. Derived by the server, never posted; summed by the request failure metric.": "Failed requests, 4xx and 5xx together. Derived by the server, never posted; summed by the request failure metric."
+        "Failed requests, 4xx and 5xx together. Derived by the server, never posted; summed by the request failure metric.": "Failed requests, 4xx and 5xx together. Derived by the server, never posted; summed by the request failure metric.",
+        "Could not load the runs.": "Could not load the runs.",
+        "Last run {time}, {outcome}": "Last run {time}, {outcome}",
+        "Last run failed: {reason}": "Last run failed: {reason}",
+        "No run in the last 90 days": "No run in the last 90 days",
+        "Object": "Object",
+        "Outcome": "Outcome",
+        "Runs": "Runs",
+        "Runs in OpenRegister. No per-run record yet.": "Runs in OpenRegister. No per-run record yet.",
+        "succeeded": "succeeded",
+        "This automation runs entirely in OpenRegister": "This automation runs entirely in OpenRegister",
+        "Time": "Time",
+        "waiting": "waiting"
     },
     "plurals": "",
     "pluralForm": "nplurals=2; plural=(n != 1);"

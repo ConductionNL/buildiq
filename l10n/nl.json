@@ -1787,7 +1787,21 @@
         "Window start": "Begin van het venster",
         "Include server bundle": "Serverbundel meenemen",
         "Failures": "Fouten",
-        "Failed requests, 4xx and 5xx together. Derived by the server, never posted; summed by the request failure metric.": "Mislukte verzoeken, 4xx en 5xx samen. Afgeleid door de server, nooit meegestuurd; opgeteld door de metriek voor mislukte verzoeken."
+        "Failed requests, 4xx and 5xx together. Derived by the server, never posted; summed by the request failure metric.": "Mislukte verzoeken, 4xx en 5xx samen. Afgeleid door de server, nooit meegestuurd; opgeteld door de metriek voor mislukte verzoeken.",
+        "Could not load the runs.": "De uitvoeringen konden niet worden geladen.",
+        "Last run {time}, {outcome}": "Laatst uitgevoerd {time}, {outcome}",
+        "Last run failed: {reason}": "Laatste uitvoering mislukt: {reason}",
+        "No run in the last 90 days": "Geen uitvoering in de afgelopen 90 dagen",
+        "Object": "Object",
+        "Outcome": "Uitkomst",
+        "Runs": "Uitvoeringen",
+        "Runs in OpenRegister. No per-run record yet.": "Draait in OpenRegister. Nog geen verslag per uitvoering.",
+        "succeeded": "geslaagd",
+        "This automation runs entirely in OpenRegister": "Deze automatisering draait helemaal in OpenRegister",
+        "Time": "Tijd",
+        "waiting": "wacht",
+        "skipped": "overgeslagen",
+        "Trigger": "Trigger"
     },
     "plurals": null,
     "pluralForm": "nplurals=2; plural=(n != 1);"

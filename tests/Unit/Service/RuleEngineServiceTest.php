@@ -1075,4 +1075,78 @@ final class RuleEngineServiceTest extends TestCase {
 		);
 
 	}//end serviceWith()
+
+	/**
+	 * A wet run of an automation's `aut-` rule set is recorded as that automation's run; a dry run is not.
+	 *
+	 * @return void
+	 */
+	public function testAWetAutomationRunIsRecordedAndADryRunIsNot(): void {
+		$this->stubScopedRows(
+			function (string $registerSlug, string $schema, array $filters = []): array {
+				$rows = $this->conditionActionFindAllResults($schema);
+				foreach ($rows as $i => $row) {
+					$rows[$i]['slug']      = 'aut-a1b2c3d4';
+					$rows[$i]['ruleSetId'] = 'aut-a1b2c3d4';
+				}
+
+				return $rows;
+			}
+		);
+
+		$finished = [];
+		$recorder = $this->createMock(\OCA\Buildiq\Kernel\Contracts\AutomationRunRecorderInterface::class);
+		$recorder->method('start')->willReturnCallback(
+			static fn (array $automation, string $trigger): array => ['automation' => (string)$automation['id'], 'trigger' => $trigger]
+		);
+		$recorder->method('step')->willReturnCallback(
+			static function (array $run, string $action, string $outcome, string $message = ''): array {
+				$run['steps'][] = [$action, $outcome];
+				return $run;
+			}
+		);
+		$recorder->method('finish')->willReturnCallback(
+			static function (array $run, string $outcome) use (&$finished): string {
+				$finished[] = $run + ['outcome' => $outcome];
+				return 'run-1';
+			}
+		);
+		$automations = $this->createMock(ObjectServiceInterface::class);
+		$automations->method('findAll')->willReturn(
+			[['id' => 'a1b2c3d4-0000-4000-8000-000000000001', 'provenance' => ['ruleSetSlug' => 'aut-a1b2c3d4']]]
+		);
+
+		$evaluator = new ExpressionEvaluator();
+		$service   = new RuleEngineService(
+			objectService: $this->objectService,
+			evaluators: new RuleEvaluators(
+				decisionEvaluator: new DecisionTableEvaluator($evaluator, $this->sharedEvaluator()),
+				conditionExecutor: new ConditionActionExecutor($evaluator),
+				actionDispatcher: $this->actionDispatcher,
+				cacheManager: $this->cacheManager
+			),
+			userSession: $this->userSession,
+			logger: $this->createMock(LoggerInterface::class),
+			reader: $this->reader,
+			tables: $this->tables,
+			runLog: new \OCA\Buildiq\Service\AutomationRunLog(recorder: $recorder, objectService: $automations, logger: $this->createMock(LoggerInterface::class))
+		);
+
+		$service->evaluate('aut-a1b2c3d4', [], null, true);
+		$this->assertSame([], $finished);
+
+		$service->evaluate('aut-a1b2c3d4', [], null, false);
+		$this->assertSame(
+			[
+				[
+					'automation' => 'a1b2c3d4-0000-4000-8000-000000000001',
+					'trigger' => 'manual',
+					'steps' => [['send-notification', 'succeeded']],
+					'outcome' => 'succeeded',
+				],
+			],
+			$finished
+		);
+
+	}//end testAWetAutomationRunIsRecordedAndADryRunIsNot()
 }//end class
