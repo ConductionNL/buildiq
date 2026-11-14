@@ -228,21 +228,100 @@ class RuleEngineService implements RuleEngineServiceInterface {
 	}//end resolveForApp()
 
 	/**
+	 * Evaluate a rule set that {@see resolveForApp()} gave another app.
+	 *
+	 * Every action is suppressed (as a dry run), and one execution log line is
+	 * written naming the calling app and the version (design D2 steps 3 and 4).
+	 * The rule set is not read again: its tables come from the decision-tables
+	 * register under its own key, its condition-action rules from its own
+	 * organisation.
+	 *
+	 * @param string              $app     The calling app id.
+	 * @param array<string,mixed> $ruleSet The rule set resolveForApp() answered.
+	 * @param array<string,mixed> $payload The checked inputs.
+	 *
+	 * @return array{result:array<string,mixed>,triggeredRules:array<int,mixed>,executionTime:int,errors:array<int,string>,version:string}
+	 *
+	 * @throws RuntimeException On a cycle or an over-deep chain.
+	 *
+	 * @spec openspec/changes/rules-evaluation-for-other-apps/specs/rules-evaluation-for-other-apps/spec.md#requirement-another-app-evaluates-a-rule-set-through-a-typed-command-req-bqrx-002
+	 */
+	public function evaluateForApp(string $app, array $ruleSet, array $payload): array {
+		$options = new RuleEvaluationOptions(dryRun: true, callerApp: $app);
+		$evaluation = new RuleSetEvaluation(ruleSetSlug: (string)($ruleSet['slug'] ?? ''), payload: $payload, options: $options);
+
+		$outcome = $this->evaluateGuarded(evaluation: $evaluation, resolved: $ruleSet);
+		$outcome['version'] = (string)($ruleSet['version'] ?? '');
+
+		return $outcome;
+
+	}//end evaluateForApp()
+
+	/**
+	 * The bundle of a rule set resolved for a calling app, read without a person's scope.
+	 *
+	 * Condition-action rules are kept only when they belong to the rule set's
+	 * own organisation, so another organisation's rules under the same slug
+	 * never join the evaluation.
+	 *
+	 * @param array<string,mixed> $ruleSet The resolved rule set.
+	 *
+	 * @return array{ruleSet:array<string,mixed>,decisionTables:array<int,mixed>,conditionRules:array<int,mixed>}
+	 *
+	 * @spec openspec/changes/rules-evaluation-for-other-apps/specs/rules-evaluation-for-other-apps/spec.md#requirement-another-app-evaluates-a-rule-set-through-a-typed-command-req-bqrx-002
+	 */
+	private function resolvedBundle(array $ruleSet): array {
+		$organisation = self::organisationOf(row: $ruleSet);
+		$rules = array_values(
+			array_filter(
+				$this->reader->findAsSystem(schema: self::CONDITION_RULE_SCHEMA, filters: ['ruleSetId' => (string)($ruleSet['slug'] ?? '')]),
+				static fn (array $rule): bool => self::organisationOf(row: $rule) === $organisation
+			)
+		);
+
+		return [
+			'ruleSet' => $ruleSet,
+			'decisionTables' => $this->tables->forRuleSet(ruleSet: $ruleSet),
+			'conditionRules' => $rules,
+		];
+
+	}//end resolvedBundle()
+
+	/**
+	 * The organisation an OpenRegister object belongs to, or '' when it names none.
+	 *
+	 * @param array<string,mixed> $row The object.
+	 *
+	 * @return string
+	 */
+	private static function organisationOf(array $row): string {
+		$self = $row['@self'] ?? [];
+		if (is_array($self) === false) {
+			return '';
+		}
+
+		return (string)($self['organisation'] ?? '');
+
+	}//end organisationOf()
+
+	/**
 	 * Evaluate a RuleSet inside the re-entry and depth guards of a call-rule-set chain.
 	 *
-	 * @param RuleSetEvaluation $evaluation The rule set, payload and options.
+	 * @param RuleSetEvaluation        $evaluation The rule set, payload and options.
+	 * @param array<string,mixed>|null $resolved   A rule set already resolved by {@see resolveForApp()},
+	 *                                             or null to resolve it in the caller's scope.
 	 *
 	 * @return array{result:array<string,mixed>,triggeredRules:array<int,mixed>,executionTime:int,errors:array<int,string>}
 	 *
 	 * @throws RuntimeException On a cycle, an over-deep chain, a missing RuleSet or a timeout.
 	 */
-	private function evaluateGuarded(RuleSetEvaluation $evaluation): array {
+	private function evaluateGuarded(RuleSetEvaluation $evaluation, ?array $resolved = null): array {
 		$this->assertCanEnter(ruleSetSlug: $evaluation->ruleSetSlug);
 
 		++$this->callDepth;
 		$this->activeSlugs[] = $evaluation->ruleSetSlug;
 		try {
-			return $this->evaluateChain(evaluation: $evaluation);
+			return $this->evaluateChain(evaluation: $evaluation, resolved: $resolved);
 		} finally {
 			--$this->callDepth;
 			array_pop($this->activeSlugs);
@@ -284,16 +363,23 @@ class RuleEngineService implements RuleEngineServiceInterface {
 	/**
 	 * Run a single RuleSet evaluation (re-entry-guarded by {@see evaluateGuarded()}).
 	 *
-	 * @param RuleSetEvaluation $evaluation The rule set, payload and options.
+	 * @param RuleSetEvaluation        $evaluation The rule set, payload and options.
+	 * @param array<string,mixed>|null $resolved   A rule set resolved for a calling app, or null.
 	 *
 	 * @return array{result:array<string,mixed>,triggeredRules:array<int,mixed>,executionTime:int,errors:array<int,string>}
 	 *
 	 * @throws RuntimeException When the RuleSet is not found / not owned, or on timeout.
 	 */
-	private function evaluateChain(RuleSetEvaluation $evaluation): array {
+	private function evaluateChain(RuleSetEvaluation $evaluation, ?array $resolved = null): array {
 		$startedAt = microtime(true);
 
-		$bundle = $this->loadBundle(slug: $evaluation->ruleSetSlug, version: $evaluation->options->version);
+		if ($resolved !== null) {
+			$bundle = $this->resolvedBundle(ruleSet: $resolved);
+		}
+
+		if ($resolved === null) {
+			$bundle = $this->loadBundle(slug: $evaluation->ruleSetSlug, version: $evaluation->options->version);
+		}
 		if ($bundle === null) {
 			throw new RuntimeException('RuleSet "' . $evaluation->ruleSetSlug . '" not found.', 404);
 		}
@@ -405,7 +491,7 @@ class RuleEngineService implements RuleEngineServiceInterface {
 	 * @param RuleSetEvaluation   $evaluation The rule set, payload and options.
 	 * @param array<string,mixed> $bundle     The RuleSet bundle.
 	 *
-	 * @return array{ruleSetSlug:string,version:string,payload:array<string,mixed>,maskPii:bool}
+	 * @return array{ruleSetSlug:string,version:string,payload:array<string,mixed>,maskPii:bool,callerApp:string}
 	 */
 	private function runRecord(RuleSetEvaluation $evaluation, array $bundle): array {
 		return [
@@ -413,6 +499,7 @@ class RuleEngineService implements RuleEngineServiceInterface {
 			'version' => (string)($bundle['ruleSet']['version'] ?? ''),
 			'payload' => $evaluation->payload,
 			'maskPii' => $evaluation->options->maskPii,
+			'callerApp' => $evaluation->options->callerApp,
 		];
 	}//end runRecord()
 
@@ -497,8 +584,9 @@ class RuleEngineService implements RuleEngineServiceInterface {
 	/**
 	 * Persist a RuleExecutionLog audit record.
 	 *
-	 * @param array{ruleSetSlug:string,version:string,payload:array<string,mixed>,maskPii:bool} $run The run:
-	 *        the RuleSet slug and version, the raw input payload, and whether to mask PII in the log.
+	 * @param array{ruleSetSlug:string,version:string,payload:array<string,mixed>,maskPii:bool,callerApp:string} $run The run:
+	 *        the RuleSet slug and version, the raw input payload, whether to mask PII in the log,
+	 *        and the app that asked (empty for the API).
 	 * @param array{result:array<string,mixed>,triggeredRules:array<int,mixed>,executionTime:int,errors:array<int,string>} $outcome The answer.
 	 *
 	 * @return void
@@ -528,6 +616,11 @@ class RuleEngineService implements RuleEngineServiceInterface {
 			'userId' => $userId,
 			'archived' => false,
 		];
+		if ($run['callerApp'] !== '') {
+			// REQ-BQRX-002: an auditor sees which app used which rule set version.
+			$log['triggerContext'] = 'app';
+			$log['callerApp'] = $run['callerApp'];
+		}
 
 		try {
 			$this->objectService->saveObject(

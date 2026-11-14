@@ -41,6 +41,8 @@ final class RuleEvaluationOptions {
 	 * @param bool        $dryRun  When true, side-effecting actions are suppressed.
 	 * @param bool        $maskPii When true, mask PII fields in the audit log.
 	 * @param bool        $preview When true, no execution log entry is written.
+	 * @param string      $callerApp The app that asked through RuleEvaluationRequestedEvent;
+	 *                               empty for an evaluation through the API (REQ-BQRX-002).
 	 *
 	 * @return void
 	 */
@@ -49,6 +51,7 @@ final class RuleEvaluationOptions {
 		public readonly bool $dryRun = false,
 		public readonly bool $maskPii = true,
 		public readonly bool $preview = false,
+		public readonly string $callerApp = '',
 	) {
 	}//end __construct()
 }//end class
