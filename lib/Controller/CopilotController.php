@@ -111,7 +111,7 @@ class CopilotController extends Controller {
 	/**
 	 * POST /api/copilot/plan — turn a brief into a validated, reviewable plan.
 	 *
-	 * Body: `{ brief: string, appSlug?: string, agentId?: string, versionSlug?: string }`. Performs
+	 * Body: `{ brief: string, appSlug?: string, agentId?: string, versionSlug?: string, documentFileId?: int }`. Performs
 	 * zero builder writes (an agent-scoped rejected plan still writes one
 	 * `AgentRun` audit record — see `CopilotService::plan()`).
 	 *
@@ -132,6 +132,7 @@ class CopilotController extends Controller {
 		$appSlug = $this->resolveOptionalString(raw: $this->request->getParam('appSlug', null));
 		$agentId = $this->resolveOptionalString(raw: $this->request->getParam('agentId', null));
 		$versionSlug = $this->resolveOptionalString(raw: $this->request->getParam('versionSlug', null));
+		$documentFileId = $this->resolveOptionalFileId(raw: $this->request->getParam('documentFileId', null));
 
 		try {
 			$result = $this->copilotService->plan(
@@ -139,7 +140,8 @@ class CopilotController extends Controller {
 				appSlug: $appSlug,
 				userId: $user->getUID(),
 				agentId: $agentId,
-				versionSlug: $versionSlug
+				versionSlug: $versionSlug,
+				documentFileId: $documentFileId
 			);
 			return new JSONResponse(data: $result, statusCode: Http::STATUS_OK);
 		} catch (CopilotException $e) {
@@ -316,6 +318,27 @@ class CopilotController extends Controller {
 
 		return (string)$raw;
 	}//end resolveOptionalString()
+
+	/**
+	 * Normalise the optional `documentFileId` param: a positive integer, or null.
+	 * A value that is not a file id reads as a file nobody can read (id 0),
+	 * so it answers the same 404 as someone else's file.
+	 *
+	 * @param mixed $raw Raw request param value.
+	 *
+	 * @return int|null
+	 */
+	private function resolveOptionalFileId(mixed $raw): ?int {
+		if ($raw === null || $raw === '') {
+			return null;
+		}
+
+		if (is_int($raw) === true || (is_string($raw) === true && ctype_digit($raw) === true)) {
+			return (int)$raw;
+		}
+
+		return 0;
+	}//end resolveOptionalFileId()
 
 	/**
 	 * Read the `{summary, steps}` plan payload from the request body.

@@ -260,6 +260,43 @@ class CopilotControllerTest extends TestCase {
 		self::assertSame(Http::STATUS_OK, $response->getStatus());
 	}//end testPlanPassesAgentIdThrough()
 
+	/**
+	 * plan() passes a picked document id through, and a non-numeric one as id 0 (a file nobody can read).
+	 *
+	 * @return void
+	 */
+	public function testPlanPassesTheDocumentFileIdThrough(): void {
+		$this->wireUser(uid: 'alice');
+		$calls = [];
+		$this->copilotService->method('plan')->willReturnCallback(
+			static function (string $brief, ?string $appSlug, string $userId, ?string $agentId = null, ?string $versionSlug = null, ?int $documentFileId = null) use (&$calls): array {
+				$calls[] = $documentFileId;
+				return ['summary' => 'x', 'steps' => [], 'manifests' => []];
+			}
+		);
+
+		foreach (['42' => 42, '' => null, 'abc' => 0] as $raw => $expected) {
+			$request = $this->createMock(IRequest::class);
+			$request->method('getParam')->willReturnCallback(
+				static fn (string $name, mixed $default): mixed => match ($name) {
+					'brief' => '',
+					'documentFileId' => ($raw === '' ? null : (string)$raw),
+					default => $default,
+				}
+			);
+			$controller = new CopilotController(
+				request: $request,
+				logger: $this->logger,
+				copilotService: $this->copilotService,
+				userSession: $this->userSession,
+				assistService: $this->assistService,
+			);
+			self::assertSame(Http::STATUS_OK, $controller->plan()->getStatus());
+		}
+
+		self::assertSame([42, null, 0], $calls);
+	}//end testPlanPassesTheDocumentFileIdThrough()
+
 	// -------------------------------------------------------------------
 	// execute()
 	// -------------------------------------------------------------------

@@ -28,6 +28,7 @@ use OCA\Buildiq\Exception\CopilotException;
 use OCA\Buildiq\Mcp\BuildiqToolProvider;
 use OCA\Buildiq\Service\AgentRunLogger;
 use OCA\Buildiq\Service\ApplicationDeletionService;
+use OCA\Buildiq\Service\Copilot\CopilotDocumentReader;
 use OCA\Buildiq\Service\Copilot\CopilotPlanValidator;
 use OCA\Buildiq\Service\Copilot\CopilotPromptBuilder;
 use OCA\Buildiq\Service\CopilotService;
@@ -37,6 +38,9 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
+use OCP\Files\File;
+use OCP\Files\Folder;
+use OCP\Files\IRootFolder;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -1877,4 +1881,166 @@ class CopilotServiceTest extends TestCase {
 		$result = $this->makeService()->execute(plan: $plan, userId: 'anyone');
 		self::assertCount(1, $result['results']);
 	}//end testExecuteCreateAppOnlyRequiresNoExistingAppRole()
+
+	// -------------------------------------------------------------------
+	// plan() with a requirements document (ai-copilot-documents-and-code-help REQ-BQCH-005)
+	// -------------------------------------------------------------------
+
+	/**
+	 * The SUT with a document reader over a user folder that holds the given files for alice.
+	 *
+	 * @param array<int, File> $files File id => file.
+	 *
+	 * @return CopilotService
+	 */
+	private function makeServiceWithDocuments(array $files): CopilotService {
+		$folder = $this->createMock(Folder::class);
+		$folder->method('getById')->willReturnCallback(
+			static fn (int $id): array => (isset($files[$id]) === true ? [$files[$id]] : [])
+		);
+		$root = $this->createMock(IRootFolder::class);
+		$root->method('getUserFolder')->with('alice')->willReturn($folder);
+
+		$logger = $this->createMock(LoggerInterface::class);
+
+		return new CopilotService(
+			container: $this->container,
+			logger: $logger,
+			objectService: $this->objectService,
+			userManager: $this->userManager,
+			groupManager: $this->groupManager,
+			permissionResolver: new PermissionResolver(groupManager: $this->groupManager, logger: $logger),
+			toolProvider: $this->toolProvider,
+			planValidator: new CopilotPlanValidator(),
+			promptBuilder: new CopilotPromptBuilder(toolProvider: $this->toolProvider),
+			appDeletionService: $this->deletionService,
+			agentRunLogger: $this->agentRunLogger,
+			documentReader: new CopilotDocumentReader(rootFolder: $root),
+		);
+	}//end makeServiceWithDocuments()
+
+	/**
+	 * A file with this name, mimetype and text.
+	 *
+	 * @param string $name     The file name.
+	 * @param string $mimetype The mimetype.
+	 * @param string $text     The content.
+	 *
+	 * @return File&MockObject
+	 */
+	private function documentFile(string $name, string $mimetype, string $text): File&MockObject {
+		$file = $this->createMock(File::class);
+		$file->method('getName')->willReturn($name);
+		$file->method('getMimetype')->willReturn($mimetype);
+		$file->method('getSize')->willReturn(strlen($text));
+		$file->method('getContent')->willReturn($text);
+		$file->method('isReadable')->willReturn(true);
+		return $file;
+	}//end documentFile()
+
+	/**
+	 * The plan reads the document as the user, puts its text in the prompt, accepts an empty brief and names the file.
+	 *
+	 * @return void
+	 */
+	public function testPlanReadsADocumentIntoThePrompt(): void {
+		$this->wireTaskProcessingManager();
+		$this->taskManager->method('getAvailableTaskTypes')->willReturn([TextToText::ID => []]);
+		$prompts = [];
+		$this->taskManager->method('scheduleTask')->willReturnCallback(
+			function (Task $task) use (&$prompts): void {
+				$prompts[] = $task->getInput()['input'];
+				$task->setId(1);
+			}
+		);
+		$done = new Task(TextToText::ID, ['input' => 'x'], 'buildiq', 'alice');
+		$done->setStatus(Task::STATUS_SUCCESSFUL);
+		$done->setOutput(['output' => json_encode(['summary' => 'Garden permits', 'steps' => [['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'tuin', 'name' => 'Tuin']]]])]);
+		$this->taskManager->method('getTask')->willReturn($done);
+
+		$service = $this->makeServiceWithDocuments([42 => $this->documentFile('Eisen tuinvergunning.md', 'application/octet-stream', "# Eisen\nAanvragers volgen hun aanvraag.")]);
+		$result = $service->plan(brief: '', appSlug: null, userId: 'alice', documentFileId: 42);
+
+		self::assertSame(['fileId' => 42, 'name' => 'Eisen tuinvergunning.md'], $result['document']);
+		self::assertCount(1, $prompts);
+		self::assertStringContainsString("Requirements document \"Eisen tuinvergunning.md\":\n# Eisen\nAanvragers volgen hun aanvraag.", $prompts[0]);
+		self::assertStringContainsString('Build the app this requirements document describes.', $prompts[0]);
+	}//end testPlanReadsADocumentIntoThePrompt()
+
+	/**
+	 * A file the user cannot read is 404 and no text task is scheduled.
+	 *
+	 * @return void
+	 */
+	public function testPlanAnswers404ForAnUnreadableDocument(): void {
+		$this->wireTaskProcessingManager();
+		$this->taskManager->method('getAvailableTaskTypes')->willReturn([TextToText::ID => []]);
+		$this->taskManager->expects(self::never())->method('scheduleTask');
+
+		try {
+			$this->makeServiceWithDocuments([])->plan(brief: 'An app', appSlug: null, userId: 'alice', documentFileId: 999);
+			self::fail('An unreadable document must be refused.');
+		} catch (CopilotException $e) {
+			self::assertSame(404, $e->getHttpStatus());
+			self::assertSame('not_found', $e->getErrorCode());
+			self::assertSame('The document could not be found.', $e->getMessage());
+		}
+	}//end testPlanAnswers404ForAnUnreadableDocument()
+
+	/**
+	 * A type that cannot be read yet is refused naming the accepted types, before the model.
+	 *
+	 * @return void
+	 */
+	public function testPlanRefusesAnUnsupportedDocumentType(): void {
+		$this->wireTaskProcessingManager();
+		$this->taskManager->method('getAvailableTaskTypes')->willReturn([TextToText::ID => []]);
+		$this->taskManager->expects(self::never())->method('scheduleTask');
+
+		try {
+			$this->makeServiceWithDocuments([7 => $this->documentFile('Eisen.pdf', 'application/pdf', '%PDF')])
+				->plan(brief: 'An app', appSlug: null, userId: 'alice', documentFileId: 7);
+			self::fail('A PDF must be refused until OpenRegister serves its text.');
+		} catch (CopilotException $e) {
+			self::assertSame(422, $e->getHttpStatus());
+			self::assertSame('unsupported_document', $e->getErrorCode());
+			self::assertStringContainsString('plain text (.txt) or Markdown (.md)', $e->getMessage());
+		}
+	}//end testPlanRefusesAnUnsupportedDocumentType()
+
+	/**
+	 * A document over 60,000 characters is refused naming the limit, never cut.
+	 *
+	 * @return void
+	 */
+	public function testPlanRefusesAnOversizedDocument(): void {
+		$this->wireTaskProcessingManager();
+		$this->taskManager->method('getAvailableTaskTypes')->willReturn([TextToText::ID => []]);
+		$this->taskManager->expects(self::never())->method('scheduleTask');
+
+		try {
+			$this->makeServiceWithDocuments([8 => $this->documentFile('Eisen.txt', 'text/plain', str_repeat('é', 60001))])
+				->plan(brief: 'An app', appSlug: null, userId: 'alice', documentFileId: 8);
+			self::fail('An oversized document must be refused.');
+		} catch (CopilotException $e) {
+			self::assertSame(422, $e->getHttpStatus());
+			self::assertSame('document_too_long', $e->getErrorCode());
+			self::assertStringContainsString('60,000 characters', $e->getMessage());
+			self::assertSame(['maxCharacters' => 60000], $e->getContext());
+		}
+	}//end testPlanRefusesAnOversizedDocument()
+
+	/**
+	 * Without a document an empty brief is still refused.
+	 *
+	 * @return void
+	 */
+	public function testPlanStillRefusesAnEmptyBriefWithoutADocument(): void {
+		$this->wireTaskProcessingManager();
+		$this->taskManager->method('getAvailableTaskTypes')->willReturn([TextToText::ID => []]);
+
+		$this->expectExceptionMessage('Brief must be between 1 and 2000 characters.');
+
+		$this->makeServiceWithDocuments([])->plan(brief: '', appSlug: null, userId: 'alice');
+	}//end testPlanStillRefusesAnEmptyBriefWithoutADocument()
 }//end class

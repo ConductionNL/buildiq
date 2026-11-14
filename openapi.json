@@ -2720,7 +2720,7 @@
             "post": {
                 "operationId": "copilot-plan",
                 "summary": "POST /api/copilot/plan — turn a brief into a validated, reviewable plan",
-                "description": "POST /api/copilot/plan — turn a brief into a validated, reviewable plan. Body: `{ brief: string, appSlug?: string, agentId?: string, versionSlug?: string }`. Performs zero builder writes (an agent-scoped rejected plan still writes one `AgentRun` audit record — see `CopilotService::plan()`). Needs a signed-in Nextcloud user.",
+                "description": "POST /api/copilot/plan — turn a brief into a validated, reviewable plan. Body: `{ brief: string, appSlug?: string, agentId?: string, versionSlug?: string, documentFileId?: int }`. Performs zero builder writes (an agent-scoped rejected plan still writes one `AgentRun` audit record — see `CopilotService::plan()`). Needs a signed-in Nextcloud user.",
                 "tags": [
                     "copilot"
                 ],
@@ -2742,6 +2742,9 @@
                                     },
                                     "versionSlug": {
                                         "description": "The version slug."
+                                    },
+                                    "documentFileId": {
+                                        "description": "Files id of a requirements document, read as the caller (plain text or Markdown, at most 60,000 characters)."
                                     }
                                 },
                                 "additionalProperties": false
@@ -2765,6 +2768,12 @@
                     },
                     "401": {
                         "$ref": "#/components/responses/Problem401"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Problem422"
                     },
                     "500": {
                         "$ref": "#/components/responses/Problem500"

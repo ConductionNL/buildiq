@@ -40,6 +40,7 @@ namespace OCA\Buildiq\Service;
 use OCA\Buildiq\Exception\CopilotException;
 use OCA\Buildiq\Kernel\Contracts\BuildiqToolProviderInterface;
 use OCA\Buildiq\Kernel\Contracts\CopilotServiceInterface;
+use OCA\Buildiq\Service\Copilot\CopilotDocumentReader;
 use OCA\Buildiq\Service\Copilot\CopilotPlanValidator;
 use OCA\Buildiq\Service\Copilot\CopilotPromptBuilder;
 use OCA\Buildiq\Service\Copilot\CopilotTextTask;
@@ -161,6 +162,7 @@ class CopilotService implements CopilotServiceInterface {
 	 *                                       turn.
 	 * @param AuditTrailMapper|null $auditTrailMapper Optional OR audit-trail writer for admin-bypass parity (L2).
 	 * @param CopilotTextTask|null $textTask The text-to-text task seam; built from the container and logger when not given.
+	 * @param CopilotDocumentReader|null $documentReader Reads a picked requirements document as the user.
 	 *
 	 * @return void
 	 */
@@ -178,6 +180,7 @@ class CopilotService implements CopilotServiceInterface {
 		private readonly AgentRunLogger $agentRunLogger,
 		private readonly ?AuditTrailMapper $auditTrailMapper = null,
 		?CopilotTextTask $textTask = null,
+		private readonly ?CopilotDocumentReader $documentReader = null,
 	) {
 		$this->textTask = ($textTask ?? new CopilotTextTask(container: $container, logger: $logger));
 	}//end __construct()
@@ -232,17 +235,34 @@ class CopilotService implements CopilotServiceInterface {
 	 *                                 filled in on any step that leaves `versionSlug` out, so a
 	 *                                 plan lands on the version the user is looking at rather
 	 *                                 than on the tools' `development` default.
+	 * @param int|null $documentFileId Optional Files id of a requirements document, read as the user;
+	 *                                 with one, the typed brief may be empty.
 	 *
-	 * @return array{summary: string, steps: array<int, array<string, mixed>>, manifests: array<string, array{current: array, predicted: array}>}
+	 * @return array{summary: string, steps: array<int, array<string, mixed>>, manifests: array<string, array{current: array, predicted: array}>,
+	 *               document?: array{fileId: int, name: string}}
 	 *
-	 * @throws CopilotException On unavailability, invalid input, RBAC denial, an unknown agent, or an unparsable/invalid plan.
+	 * @throws CopilotException On unavailability, invalid input, RBAC denial, an unknown agent, an unreadable document, or an unparsable/invalid plan.
 	 *
 	 * @spec openspec/specs/ai-copilot/spec.md
 	 * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
+	 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot/spec.md#requirement-the-wizard-reads-a-document-from-files-req-bqch-005
 	 */
-	public function plan(string $brief, ?string $appSlug, string $userId, ?string $agentId = null, ?string $versionSlug = null): array {
+	public function plan(
+		string $brief,
+		?string $appSlug,
+		string $userId,
+		?string $agentId = null,
+		?string $versionSlug = null,
+		?int $documentFileId = null,
+	): array {
 		$this->assertAvailable();
-		$this->assertValidBrief(brief: $brief);
+		$document = null;
+		if ($documentFileId !== null) {
+			$document = $this->readDocument(fileId: $documentFileId, userId: $userId);
+		}
+
+		$this->assertValidBrief(brief: $brief, allowEmpty: $document !== null);
+		$promptBrief = $this->briefWithDocument(brief: $brief, document: $document);
 
 		$agent = null;
 		if ($agentId !== null && $agentId !== '') {
@@ -251,7 +271,12 @@ class CopilotService implements CopilotServiceInterface {
 		}
 
 		try {
-			return $this->planWithinContext(brief: $brief, appSlug: $appSlug, userId: $userId, agent: $agent, versionSlug: $versionSlug);
+			$result = $this->planWithinContext(brief: $promptBrief, appSlug: $appSlug, userId: $userId, agent: $agent, versionSlug: $versionSlug);
+			if ($document !== null) {
+				$result['document'] = ['fileId' => $document['fileId'], 'name' => $document['name']];
+			}
+
+			return $result;
 		} catch (CopilotException $e) {
 			if ($agent !== null) {
 				$this->agentRunLogger->log(
@@ -1086,17 +1111,23 @@ class CopilotService implements CopilotServiceInterface {
 	}//end assertAvailable()
 
 	/**
-	 * Validate the brief length (1-2000 chars).
+	 * Validate the brief length (1-2000 chars; 0-2000 next to a document).
 	 *
-	 * @param string $brief The user's brief.
+	 * @param string $brief      The user's brief.
+	 * @param bool   $allowEmpty Whether an empty brief is fine because a document carries the request.
 	 *
 	 * @return void
 	 *
 	 * @throws CopilotException (422) When the brief is empty or too long.
 	 */
-	private function assertValidBrief(string $brief): void {
+	private function assertValidBrief(string $brief, bool $allowEmpty = false): void {
 		$length = mb_strlen($brief);
-		if ($length < 1 || $length > 2000) {
+		$minimum = 1;
+		if ($allowEmpty === true) {
+			$minimum = 0;
+		}
+
+		if ($length < $minimum || $length > 2000) {
 			throw new CopilotException(
 				errorCode: 'invalid_arguments',
 				message: 'Brief must be between 1 and 2000 characters.',
@@ -1104,6 +1135,45 @@ class CopilotService implements CopilotServiceInterface {
 			);
 		}
 	}//end assertValidBrief()
+
+	/**
+	 * Read a picked requirements document as the user.
+	 *
+	 * @param int    $fileId The picked file's id.
+	 * @param string $userId Acting user's UID.
+	 *
+	 * @return array{fileId: int, name: string, text: string}
+	 *
+	 * @throws CopilotException (404 when no reader or the user cannot read it, 422 for a refused type or size).
+	 */
+	private function readDocument(int $fileId, string $userId): array {
+		if ($this->documentReader === null) {
+			throw new CopilotException(errorCode: 'not_found', message: 'The document could not be found.', httpStatus: 404);
+		}
+
+		return $this->documentReader->read(fileId: $fileId, userId: $userId);
+	}//end readDocument()
+
+	/**
+	 * The brief the prompt carries: the typed brief, then the document text under its name.
+	 *
+	 * @param string                                             $brief    The typed brief.
+	 * @param array{fileId: int, name: string, text: string}|null $document The read document, if any.
+	 *
+	 * @return string
+	 */
+	private function briefWithDocument(string $brief, ?array $document): string {
+		if ($document === null) {
+			return $brief;
+		}
+
+		$lead = trim($brief);
+		if ($lead === '') {
+			$lead = 'Build the app this requirements document describes.';
+		}
+
+		return $lead . "\n\nRequirements document \"" . $document['name'] . "\":\n" . $document['text'];
+	}//end briefWithDocument()
 
 	/**
 	 * Resolve an existing virtual (non-hybrid) app by slug, or throw.

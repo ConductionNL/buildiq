@@ -63,12 +63,14 @@ export async function fetchCopilotHealth() {
  *   (spec `agent-workspace`).
  * @param {string} [params.versionSlug] - the version the caller is editing; every
  *   step that omits `versionSlug` is settled on it server-side.
+ * @param {number} [params.documentFileId] - Files id of a requirements document the
+ *   server reads as the caller; with one, the brief may be empty.
  * @return {Promise<{summary: string, steps: Array, manifests: object}>}
  * @throws {{status: number, error: string, message: string}} Normalised error envelope.
  * @spec openspec/specs/ai-copilot/spec.md
  * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
  */
-export async function requestPlan({ brief, appSlug, agentId, versionSlug } = {}) {
+export async function requestPlan({ brief, appSlug, agentId, versionSlug, documentFileId } = {}) {
 	try {
 		const url = generateUrl('/apps/buildiq/api/copilot/plan')
 		const { data } = await axios.post(url, {
@@ -76,6 +78,7 @@ export async function requestPlan({ brief, appSlug, agentId, versionSlug } = {})
 			appSlug,
 			agentId,
 			versionSlug,
+			documentFileId,
 		})
 		return data
 	} catch (err) {

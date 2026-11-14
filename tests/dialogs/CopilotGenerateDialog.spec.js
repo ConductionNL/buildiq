@@ -23,6 +23,11 @@ vi.mock('@nextcloud/router', async (importOriginal) => ({
 	generateUrl: (p) => p,
 }))
 
+const pickRequirementsDocument = vi.fn()
+vi.mock('../../src/services/documentPicker.js', () => ({
+	pickRequirementsDocument: (...a) => pickRequirementsDocument(...a),
+}))
+
 import CopilotGenerateDialog from '../../src/dialogs/CopilotGenerateDialog.vue'
 import { clearCopilotHealthCache } from '../../src/composables/useCopilot.js'
 
@@ -249,5 +254,84 @@ describe('CopilotGenerateDialog.vue — spec ai-copilot REQ-OBAIC-001/006', () =
 			.findAll('button')
 			.find((b) => b.text().includes('Generate'))
 		expect(generateButton.attributes('disabled')).toBeUndefined()
+	})
+})
+
+describe('CopilotGenerateDialog.vue — Add a document (ai-copilot-documents-and-code-help REQ-BQCH-005)', () => {
+	beforeEach(() => {
+		axiosGet.mockReset()
+		axiosPost.mockReset()
+		axiosGet.mockResolvedValue({ data: { status: 'ok' } })
+		pickRequirementsDocument.mockReset()
+		clearCopilotHealthCache()
+	})
+
+	const mountOpen = () => mount(CopilotGenerateDialog, { propsData: { open: true }, stubs })
+
+	it('picks a document, shows its name under the brief, and sends only its id', async () => {
+		pickRequirementsDocument.mockResolvedValue({ id: 42, name: 'Eisen tuinvergunning.md' })
+		axiosPost.mockResolvedValueOnce({ data: { summary: 'Garden permits', steps: [], manifests: {} } })
+		const wrapper = mountOpen()
+
+		await wrapper.find('[data-testid="copilot-document-add"]').trigger('click')
+		await flush()
+
+		expect(wrapper.find('[data-testid="copilot-document-name"]').text()).toBe('Eisen tuinvergunning.md')
+		expect(wrapper.vm.canGenerate).toBe(true)
+
+		await wrapper.vm.onGenerate()
+		await flush()
+
+		const [url, body] = axiosPost.mock.calls[0]
+		expect(url).toBe('/apps/buildiq/api/copilot/plan')
+		expect(body).toEqual({ brief: '', appSlug: undefined, agentId: undefined, versionSlug: undefined, documentFileId: 42 })
+	})
+
+	it('keeps Generate disabled with neither a brief nor a document', () => {
+		const wrapper = mountOpen()
+		expect(wrapper.vm.canGenerate).toBe(false)
+	})
+
+	it('a closed picker leaves the dialog as it was', async () => {
+		pickRequirementsDocument.mockResolvedValue(null)
+		const wrapper = mountOpen()
+
+		await wrapper.find('[data-testid="copilot-document-add"]').trigger('click')
+		await flush()
+
+		expect(wrapper.find('[data-testid="copilot-document-name"]').exists()).toBe(false)
+		expect(wrapper.vm.document).toBeNull()
+	})
+
+	it('removes the document, and forgets it when reopened', async () => {
+		pickRequirementsDocument.mockResolvedValue({ id: 7, name: 'Eisen.txt' })
+		const wrapper = mount(CopilotGenerateDialog, { propsData: { open: true }, stubs })
+		await wrapper.find('[data-testid="copilot-document-add"]').trigger('click')
+		await flush()
+
+		await wrapper.find('[data-testid="copilot-document-remove"]').trigger('click')
+		expect(wrapper.vm.document).toBeNull()
+
+		await wrapper.find('[data-testid="copilot-document-add"]').trigger('click')
+		await flush()
+		await wrapper.setProps({ open: false })
+		await wrapper.setProps({ open: true })
+		expect(wrapper.vm.document).toBeNull()
+	})
+
+	it('shows the server refusal for an unsupported or oversized document', async () => {
+		pickRequirementsDocument.mockResolvedValue({ id: 9, name: 'Eisen.pdf' })
+		axiosPost.mockRejectedValueOnce({
+			response: { status: 422, data: { error: 'unsupported_document', message: 'This document type cannot be read yet. Use a plain text (.txt) or Markdown (.md) file.' } },
+		})
+		const wrapper = mountOpen()
+		await wrapper.find('[data-testid="copilot-document-add"]').trigger('click')
+		await flush()
+
+		await wrapper.vm.onGenerate()
+		await flush()
+		await wrapper.vm.$nextTick()
+
+		expect(wrapper.find('[role="alert"]').text()).toBe('This document type cannot be read yet. Use a plain text (.txt) or Markdown (.md) file.')
 	})
 })
