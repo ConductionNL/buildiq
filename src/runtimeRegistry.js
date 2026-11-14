@@ -1,7 +1,13 @@
 // SPDX-License-Identifier: EUPL-1.2
 /**
- * Runtime registry — components that BUILT (virtual) apps resolve at runtime,
- * passed as the `registry` prop to the NESTED CnAppRoot in BuilderHost.
+ * Runtime registry — components that BUILT (virtual) apps resolve at runtime.
+ *
+ * Every host that mounts a virtual app's CnAppRoot — the published standalone
+ * entry `src/builder.js` and the preview host `src/views/BuilderHost.vue` —
+ * MUST pass `getRuntimeRegistry()` as CnAppRoot's `registry` prop. A host that
+ * omits it renders every registry-only widget key (e.g. `connector-data`) as
+ * CnUnknownWidget with nothing but a console warning
+ * (connector-widget-runtime REQ-CWR-001).
  *
  * Kept separate from the shell `registry.js` (which the manifest test guards
  * as "every entry referenced by buildiq's own manifest") because these
@@ -12,6 +18,7 @@
  * @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-004
  * @spec openspec/changes/archive/2026-06-14-openconnector-api-sources/tasks.md#task-4.3
  * @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-004
+ * @spec openspec/changes/data-index-grid-and-saved-views/tasks.md#t03
  */
 
 // Runtime widget — renders an OpenConnector-bound data source for a manifest
@@ -28,6 +35,9 @@ import MyApprovalsWidget from './components/runtime/MyApprovalsWidget.vue'
 // Runtime panel — renders the linked Procest case for the current object on a
 // detail page (sidebar tab `procest-case-status`).
 import ProcestCaseStatusPanel from './components/runtime/ProcestCaseStatusPanel.vue'
+// Runtime page — a "Grid" page (`type: "custom"`, `component: "record-grid"`)
+// that edits one schema's records cell by cell (REQ-BQIX-001/002).
+import RecordGridPage from './components/runtime/RecordGridPage.vue'
 // Runtime action — Detail-page `actionsComponent` letting staff mint a
 // "track your case" link for the object they are viewing
 // (external-form-provisioning REQ-EFP-006). Owner-context only; self-gates
@@ -83,6 +93,21 @@ function actions(component) {
 	return { kind: 'actions', component }
 }
 
+/**
+ * Build a `kind: "page"` registry entry: the body of a `type: "custom"` page
+ * whose `component` names it (CnPageRenderer resolves a custom page with
+ * `requireKind = 'page'`).
+ *
+ * @param {object} component - Vue component options.
+ * @param {string} note - ADR-049 `_note` justifying a custom page when no
+ *   built-in page type expresses the surface.
+ * @return {object} - the registry entry.
+ * @spec openspec/changes/data-index-grid-and-saved-views/tasks.md#t03
+ */
+function page(component, note) {
+	return { kind: 'page', component, _note: note }
+}
+
 export const runtimeRegistry = {
 	// Sidebar-tab widgetKey for a detail page's `sidebarProps.tabs`.
 	'procest-case-status': tab(ProcestCaseStatusPanel),
@@ -104,4 +129,28 @@ export const runtimeRegistry = {
 	// Detail-page `config.actionsComponent: "TrackLinkAction"` — mint a
 	// "track your case" link (external-form-provisioning REQ-EFP-006).
 	TrackLinkAction: actions(TrackLinkAction),
+	// @custom-widget-ratchet exclude data-index-grid-and-saved-views: a grid
+	// page edits records cell by cell, which no built-in page type does.
+	'record-grid': page(
+		RecordGridPage,
+		'No built-in page type edits records in a grid: index pages edit one record at a time in a form, so a spreadsheet-like page over CnDataMatrix is a custom page (ADR-049).',
+	),
+}
+
+/**
+ * The canonical runtime registry every virtual-app host passes as its
+ * CnAppRoot `registry` prop.
+ *
+ * Returns a fresh shallow copy on each call so a host can never mutate the
+ * shared entries into a host-specific variant; the entries themselves are the
+ * same objects, so every host resolves the same widget keys to the same
+ * components. Hosts must use this instead of importing `runtimeRegistry` and
+ * wiring it by hand, so the set of keys a virtual app can render is identical
+ * on the published and the preview path.
+ *
+ * @spec openspec/changes/openbuild-connector-widget-runtime/specs/connector-widget-runtime/spec.md#requirement-req-cwr-001-single-runtime-registry-seam-for-every-virtual-app-host
+ * @return {object} the full runtime registry, keyed by widget key.
+ */
+export function getRuntimeRegistry() {
+	return { ...runtimeRegistry }
 }

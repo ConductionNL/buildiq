@@ -28,8 +28,8 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Command;
 
+use OCA\Buildiq\Kernel\Contracts\AppCatalogueInterface;
 use OCA\Buildiq\Kernel\Contracts\ApplicationDeletionServiceInterface;
-use OCA\Buildiq\Service\AppCatalogue;
 use OCA\Buildiq\Support\ObjectRecord;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\QuestionHelper;
@@ -48,13 +48,13 @@ class AppDelete extends Command {
 	/**
 	 * Constructor.
 	 *
-	 * @param AppCatalogue                        $catalogue Finds the app by slug.
+	 * @param AppCatalogueInterface                        $catalogue Finds the app by slug.
 	 * @param ApplicationDeletionServiceInterface $deletion  The deletion the browser uses.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly AppCatalogue $catalogue,
+		private readonly AppCatalogueInterface $catalogue,
 		private readonly ApplicationDeletionServiceInterface $deletion,
 	) {
 		parent::__construct();

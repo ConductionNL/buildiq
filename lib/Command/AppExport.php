@@ -29,8 +29,8 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Command;
 
+use OCA\Buildiq\Kernel\Contracts\AppCatalogueInterface;
 use OCA\Buildiq\Kernel\Contracts\ExportJobServiceInterface;
-use OCA\Buildiq\Service\AppCatalogue;
 use OCA\Buildiq\Support\ObjectRecord;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -48,13 +48,13 @@ class AppExport extends Command {
 	/**
 	 * Constructor.
 	 *
-	 * @param AppCatalogue              $catalogue Finds the app and its versions.
+	 * @param AppCatalogueInterface              $catalogue Finds the app and its versions.
 	 * @param ExportJobServiceInterface $exports   The export the dialog uses.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly AppCatalogue $catalogue,
+		private readonly AppCatalogueInterface $catalogue,
 		private readonly ExportJobServiceInterface $exports,
 	) {
 		parent::__construct();
