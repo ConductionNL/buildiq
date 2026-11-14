@@ -91,3 +91,7 @@ Unknown `x-openregister-*` keys are dropped at save time and the dropped slug is
 - nc-vue shared lib: [`@conduction/nextcloud-vue`](https://www.npmjs.com/package/@conduction/nextcloud-vue) (CnAppRoot, page-type registry, widget pool)
 
 All code EUPL-1.2 — free to copy, modify and redistribute across the public sector.
+
+## Command line
+
+- [App commands](./app-commands.md): list, export, import and delete apps, and publish templates, with `occ`.

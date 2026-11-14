@@ -178,6 +178,45 @@ class AppPackageImportService implements AppPackageImportServiceInterface {
 	}//end importWithRecords()
 
 	/**
+	 * What an archive would import, without importing it: its name and slug and how many pages, schemas and records it holds.
+	 *
+	 * The archive passes the same checks and parse as an import, so a package the import would refuse is refused here
+	 * with the same code and path.
+	 *
+	 * @param string $archivePath The archive.
+	 *
+	 * @return array{status:int,data:array<string,mixed>} 200 with the summary; 413 or 422 with an error code.
+	 *
+	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-a-maker-imports-an-exported-archive-as-a-new-app-req-bqic-001
+	 */
+	public function preview(string $archivePath): array {
+		try {
+			$files = $this->readPackage(archivePath: $archivePath);
+			$template = $this->parser->parse(files: $this->packageFiles(files: $files));
+		} catch (AppRepoParseException $exception) {
+			return self::refusal(exception: $exception);
+		}
+
+		$records = [];
+		foreach (AppRecordsImporter::recordFiles(files: $files) as $schema => $contents) {
+			$records[$schema] = count(array_filter(preg_split('/\r\n|\n|\r/', $contents), static fn (string $line): bool => trim($line) !== ''));
+		}
+
+		$slug = (string)($template['slug'] ?? '');
+		return [
+			'status' => Http::STATUS_OK,
+			'data' => [
+				'name' => (string)($template['title'] ?? $slug),
+				'slug' => $slug,
+				'pages' => count((array)($template['manifest']['pages'] ?? [])),
+				'schemas' => count((array)($template['companionSchemas'] ?? [])),
+				'records' => array_sum($records),
+				'recordsBySchema' => $records,
+			],
+		];
+	}//end preview()
+
+	/**
 	 * The package entries of an archive, read into memory after every entry is checked.
 	 *
 	 * @param string $archivePath The archive.

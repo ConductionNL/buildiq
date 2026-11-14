@@ -188,4 +188,28 @@ class ApplicationImportControllerTest extends TestCase {
 		$this->assertSame(['imported' => 40], $response->getData()['records']);
 
 	}//end testTheRecordsFlagIsReadFromTheForm()
+	/**
+	 * The preview needs a session and an upload, and answers the service's summary without importing.
+	 *
+	 * @return void
+	 */
+	public function testThePreviewSummarisesTheUpload(): void {
+		$this->importer->expects($this->never())->method('importWithRecords');
+		$this->importer->expects($this->once())->method('preview')->with('/tmp/php123')
+			->willReturn(['status' => 200, 'data' => ['name' => 'Vergunningen', 'pages' => 3, 'schemas' => 1, 'records' => 40]]);
+
+		$this->assertSame(401, $this->controller()->preview()->getStatus());
+
+		$this->signedIn();
+		$files = [null, ['error' => UPLOAD_ERR_OK, 'tmp_name' => '/tmp/php123']];
+		$this->request->method('getUploadedFile')->willReturnCallback(static function () use (&$files): ?array {
+			return array_shift($files);
+		});
+		$this->assertSame('archive_missing', $this->controller()->preview()->getData()['error']);
+
+		$response = $this->controller()->preview();
+		$this->assertSame(200, $response->getStatus());
+		$this->assertSame(['name' => 'Vergunningen', 'pages' => 3, 'schemas' => 1, 'records' => 40], $response->getData());
+
+	}//end testThePreviewSummarisesTheUpload()
 }//end class

@@ -113,6 +113,35 @@ class ApplicationImportController extends Controller {
 	}//end import()
 
 	/**
+	 * Read an uploaded archive and say what it would import, without importing it.
+	 *
+	 * The dialog shows this summary before the maker confirms; nothing is created.
+	 *
+	 * @return JSONResponse 200 with name, slug, pages, schemas and records; 400 without an archive,
+	 *                      401 signed out, 413 or 422 for a bad archive.
+	 *
+	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-a-maker-imports-an-exported-archive-as-a-new-app-req-bqic-001
+	 */
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 30, period: 3600)]
+	public function preview(): JSONResponse {
+		if ($this->userSession->getUser() === null) {
+			return new JSONResponse(data: ['error' => 'unauthenticated'], statusCode: Http::STATUS_UNAUTHORIZED);
+		}
+
+		$path = self::uploadedPath(upload: $this->request->getUploadedFile(self::UPLOAD_FIELD));
+		if ($path === null) {
+			return new JSONResponse(
+				data: ['error' => 'archive_missing', 'detail' => 'Upload the exported archive in the "archive" field.'],
+				statusCode: Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		$result = $this->importer->preview(archivePath: $path);
+		return new JSONResponse(data: $result['data'], statusCode: $result['status']);
+	}//end preview()
+
+	/**
 	 * Whether a form flag is on: true, 1, "1", "true" or "on". Anything else, absent included, is off.
 	 *
 	 * @param mixed $value The submitted value.

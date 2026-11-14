@@ -359,4 +359,41 @@ class AppPackageImportServiceTest extends TestCase {
 		$this->assertSame(201, $this->service()->importWithRecords($archive, ['owner' => 'sanne', 'records' => '1'])['status']);
 
 	}//end testOnlyTrueTurnsRecordsOn()
+	/**
+	 * The preview names the app and counts its pages, schemas and records, and installs nothing.
+	 *
+	 * @return void
+	 */
+	public function testThePreviewCountsWithoutInstalling(): void {
+		$archive = $this->archive(self::package(['data/permit.jsonl' => "{\"name\":\"a\"}\n\n{\"name\":\"b\"}\n", 'data/notes.txt' => 'x']));
+		$this->install->expects($this->never())->method('installFromTemplateArray');
+		$this->records->expects($this->never())->method('import');
+
+		$result = $this->service()->preview($archive);
+
+		$this->assertSame(200, $result['status']);
+		$this->assertSame('Vergunningen', $result['data']['name']);
+		$this->assertSame('vergunningen', $result['data']['slug']);
+		$this->assertSame(1, $result['data']['schemas']);
+		$this->assertSame(2, $result['data']['records']);
+		$this->assertSame(['permit' => 2], $result['data']['recordsBySchema']);
+		$this->assertSame(0, $result['data']['pages']);
+
+	}//end testThePreviewCountsWithoutInstalling()
+
+	/**
+	 * A package the import would refuse is refused by the preview with the same code and path.
+	 *
+	 * @return void
+	 */
+	public function testThePreviewRefusesWhatTheImportRefuses(): void {
+		$archive = $this->archive(self::package(['schemas/permit.json' => '{not json']));
+
+		$preview = $this->service()->preview($archive);
+		$import = $this->service()->import($archive, '', '', 'sanne');
+
+		$this->assertSame($import, $preview);
+		$this->assertSame(422, $preview['status']);
+
+	}//end testThePreviewRefusesWhatTheImportRefuses()
 }//end class

@@ -61,4 +61,15 @@ interface AppPackageImportServiceInterface {
 	 * @spec exclude declaration only, the behaviour and its spec live on AppPackageImportService::importWithRecords()
 	 */
 	public function importWithRecords(string $archivePath, array $target): array;
+
+	/**
+	 * What an archive would import, without importing it.
+	 *
+	 * @param string $archivePath The archive.
+	 *
+	 * @return array{status:int,data:array<string,mixed>} 200 with name, slug, pages, schemas and records; 413 or 422 with an error code.
+	 *
+	 * @spec exclude declaration only, the behaviour and its spec live on AppPackageImportService::preview()
+	 */
+	public function preview(string $archivePath): array;
 }//end interface
