@@ -11,5 +11,6 @@
 - [ ] **T05**: File the run half with openregister (`or-form-and-journey-registry`): `forEach`, `targetBy`, `targets` and `bundle` in the journey schema, one commit per item, per-item outcome on `journeyRun`, retry without duplicates. Verify: the openregister change carries these requirements and cites REQ-BQMP-001 to REQ-BQMP-003.
 - [ ] **T06**: File the widget half with nextcloud-vue: the `sub-objects` widget (`form-widgets-duration-and-subobject-table`) and a per-item review in `CnJourney`. Verify: the nextcloud-vue changes cite REQ-BQMP-003.
 - [ ] **T07**: Playwright `tests/e2e/journey-multi-product.spec.ts`, once the run and the widget exist: author the journey, submit two products in the preview host, see one bundle and two requests (REQ-BQMP-003).
-- [ ] **T08**: Strings and docs: English and Dutch for the repeating write, the targets table, the product list and the warning (`l10n/en.json`, `l10n/nl.json`), and a section in `docs/` on requesting several products in one form.
+- [x] **T08**: Strings and docs: English and Dutch for the repeating write, the targets table, the product list and the warning (`l10n/en.json`, `l10n/nl.json`), and a section in `docs/` on requesting several products in one form.
+  - Done: en/nl strings for the repeating write, the targets table, the process warning and the product list settings (`l10n/en.json`, `l10n/nl.json`, built into `en.js`/`nl.js`); section "Request several products in one form" in `docs/form-library.md`.
 - [ ] **T09**: Run `openspec validate forms-multi-product-request --strict`.
