@@ -120,7 +120,11 @@ final class AppInfoPropertiesTest extends TestCase {
 		self::assertSame([], self::matching($services, '/openai|anthropic|mistral\.ai|generativelanguage/i'));
 		self::assertSame([], self::matching($services, '/\w*(model|llm)\w*api_?key|api_?key\w*(model|llm)/i'));
 
+		// The copilot asks its text-to-text seam for the Task Processing
+		// manager, and the seam is what reads it from the container.
 		$copilot = $services['lib/Service/CopilotService.php'];
-		self::assertStringContainsString("container->get('OCP\\\\TaskProcessing\\\\IManager')", $copilot);
+		self::assertStringContainsString('$this->textTask->manager()', $copilot);
+		$textTask = $services['lib/Service/Copilot/CopilotTextTask.php'];
+		self::assertStringContainsString("container->get('OCP\\\\TaskProcessing\\\\IManager')", $textTask);
 	}//end testTheModelIsReachedOnlyThroughTaskProcessing()
 }//end class
