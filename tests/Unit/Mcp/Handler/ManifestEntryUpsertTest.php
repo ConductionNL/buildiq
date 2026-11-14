@@ -90,7 +90,7 @@ class ManifestEntryUpsertTest extends TestCase {
 	public function testPageIsReplacedInPlace(): void {
 		$this->wire(pages: [$this->page(id: 'home'), $this->page(id: 'about'), 'stray']);
 
-		$result = $this->provider->invokeTool('buildiq.upsertPage', ['appSlug' => 'my-app', 'pageId' => 'ABOUT', 'title' => 'Over ons', 'type' => 'index', 'route' => '/about']);
+		$result = $this->provider->invokeApprovedTool('buildiq.upsertPage', ['appSlug' => 'my-app', 'pageId' => 'ABOUT', 'title' => 'Over ons', 'type' => 'index', 'route' => '/about']);
 
 		self::assertSame(['updated', 3], [$result['action'], $result['pageCount']]);
 		self::assertSame(['home', 'ABOUT', null], array_map(static fn ($p) => is_array($p) ? $p['id'] : null, $this->saved['pages']));
@@ -104,7 +104,7 @@ class ManifestEntryUpsertTest extends TestCase {
 	public function testUnknownPageIsAppended(): void {
 		$this->wire(pages: [$this->page(id: 'home')]);
 
-		$result = $this->provider->invokeTool('buildiq.upsertPage', ['appSlug' => 'my-app', 'pageId' => 'contact', 'title' => 'Contact', 'type' => 'index', 'route' => '/contact']);
+		$result = $this->provider->invokeApprovedTool('buildiq.upsertPage', ['appSlug' => 'my-app', 'pageId' => 'contact', 'title' => 'Contact', 'type' => 'index', 'route' => '/contact']);
 
 		self::assertSame(['created', 2], [$result['action'], $result['pageCount']]);
 		self::assertSame(['home', 'contact'], array_column($this->saved['pages'], 'id'));
@@ -119,7 +119,7 @@ class ManifestEntryUpsertTest extends TestCase {
 		$menu = [['id' => 'm1', 'label' => 'One'], ['id' => 'M1', 'label' => 'Dup'], ['id' => 'm2', 'label' => 'Two']];
 		$this->wire(pages: [$this->page(id: 'home')], menu: $menu);
 
-		$result = $this->provider->invokeTool('buildiq.upsertMenuItem', ['appSlug' => 'my-app', 'id' => 'M1', 'label' => 'Een', 'route' => 'home']);
+		$result = $this->provider->invokeApprovedTool('buildiq.upsertMenuItem', ['appSlug' => 'my-app', 'id' => 'M1', 'label' => 'Een', 'route' => 'home']);
 
 		self::assertSame(['updated', 3], [$result['action'], $result['menuCount']]);
 		self::assertSame([['M1', 'Een'], ['M1', 'Dup'], ['m2', 'Two']], array_map(static fn (array $m): array => [$m['id'], $m['label']], $this->saved['menu']));

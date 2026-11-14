@@ -1,5 +1,18 @@
 {
     "translations": {
+        "Plans from outside agents": "Plans from outside agents",
+        "Plan id": "Plan id",
+        "Open plan": "Open plan",
+        "For {app}, submitted by {user}.": "For {app}, submitted by {user}.",
+        "Approve plan": "Approve plan",
+        "Reject plan": "Reject plan",
+        "Waiting for a decision": "Waiting for a decision",
+        "The plan is approved. The agent can now make these changes.": "The plan is approved. The agent can now make these changes.",
+        "The plan is rejected. Nothing was changed.": "The plan is rejected. Nothing was changed.",
+        "Only an owner or editor of this app can see and decide its plans.": "Only an owner or editor of this app can see and decide its plans.",
+        "There is no plan with this id.": "There is no plan with this id.",
+        "This plan was already approved or rejected.": "This plan was already approved or rejected.",
+        "The plan could not be loaded or saved. Try again.": "The plan could not be loaded or saved. Try again.",
         "Could not save the support note: {reason}": "Could not save the support note: {reason}",
         "Load example data?": "Load example data?",
         "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Pick \"None\" on a production install.": "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Pick \"None\" on a production install.",

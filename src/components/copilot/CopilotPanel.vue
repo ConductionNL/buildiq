@@ -131,18 +131,22 @@
 				{{ t('buildiq', 'Send') }}
 			</NcButton>
 		</div>
+
+		<!-- openbuild-mcp-adoption: plans outside agents submitted, decided here. -->
+		<AgentPlanReview v-if="!agentId" />
 	</div>
 </template>
 
 <script>
 import { NcButton } from '@nextcloud/vue'
+import AgentPlanReview from './AgentPlanReview.vue'
 import CopilotProposal from './CopilotProposal.vue'
 import { uniqueValidatorMessages, useCopilot } from '../../composables/useCopilot.js'
 
 export default {
 	name: 'CopilotPanel',
 
-	components: { NcButton, CopilotProposal },
+	components: { AgentPlanReview, NcButton, CopilotProposal },
 
 	props: {
 		/** The virtual app slug this panel is scoped to. */

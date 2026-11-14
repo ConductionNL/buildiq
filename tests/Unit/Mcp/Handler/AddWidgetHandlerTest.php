@@ -161,7 +161,7 @@ class AddWidgetHandlerTest extends TestCase {
 	public function testStoredWidgetCarriesIdTitleAndType(): void {
 		$this->wireVersion(manifest: $this->emptyDashboardManifest());
 
-		$result = $this->provider->invokeTool('buildiq.addWidget', [
+		$result = $this->provider->invokeApprovedTool('buildiq.addWidget', [
 			'appSlug' => 'my-app',
 			'pageId' => 'home',
 			'widgetType' => 'stat',
@@ -188,7 +188,7 @@ class AddWidgetHandlerTest extends TestCase {
 	public function testStoredWidgetGetsALayoutRow(): void {
 		$this->wireVersion(manifest: $this->emptyDashboardManifest());
 
-		$this->provider->invokeTool('buildiq.addWidget', [
+		$this->provider->invokeApprovedTool('buildiq.addWidget', [
 			'appSlug' => 'my-app',
 			'pageId' => 'home',
 			'widgetType' => 'stat',
@@ -213,7 +213,7 @@ class AddWidgetHandlerTest extends TestCase {
 	public function testTheCallersWidgetIdWinsOverTheTitle(): void {
 		$this->wireVersion(manifest: $this->emptyDashboardManifest());
 
-		$this->provider->invokeTool('buildiq.addWidget', [
+		$this->provider->invokeApprovedTool('buildiq.addWidget', [
 			'appSlug' => 'my-app',
 			'pageId' => 'home',
 			'widgetType' => 'stat',
@@ -243,7 +243,7 @@ class AddWidgetHandlerTest extends TestCase {
 		];
 		$this->wireVersion(manifest: $manifest);
 
-		$this->provider->invokeTool('buildiq.addWidget', [
+		$this->provider->invokeApprovedTool('buildiq.addWidget', [
 			'appSlug' => 'my-app',
 			'pageId' => 'home',
 			'widgetType' => 'stat',
@@ -264,7 +264,7 @@ class AddWidgetHandlerTest extends TestCase {
 	public function testAMalformedWidgetIdIsRefused(): void {
 		$this->wireVersion(manifest: $this->emptyDashboardManifest());
 
-		$result = $this->provider->invokeTool('buildiq.addWidget', [
+		$result = $this->provider->invokeApprovedTool('buildiq.addWidget', [
 			'appSlug' => 'my-app',
 			'pageId' => 'home',
 			'widgetType' => 'stat',

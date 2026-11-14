@@ -22,6 +22,7 @@
         "schemas": [
           "app-health-sample",
           "buildAgent",
+          "agent-plan",
           "agent-run",
           "built-app",
           "application-template",
@@ -41,6 +42,26 @@
     },
     "schemas": {
       "Application": {
+        "x-openregister-mcp": {
+          "enabled": true,
+          "tools": {
+            "search": {
+              "description": "Find the virtual apps built with Buildiq in this organisation. Filter by status (draft, published, archived), by appType or by slug. Returns app metadata only: name, description, status and which version is in production.",
+              "scope": "read",
+              "readOnlyHint": true,
+              "filters": [
+                "status",
+                "appType",
+                "slug"
+              ]
+            },
+            "get": {
+              "description": "Read one Buildiq virtual app by id: its name, description, type, status, production version and linked GitHub repository.",
+              "scope": "read",
+              "readOnlyHint": true
+            }
+          }
+        },
         "x-schema-org": "schema:SoftwareApplication",
         "x-openregister-demo-data": "buildiq's own register of the apps it has built. A generated app has no version with pages behind it, so it lists on the dashboard and never opens.",
         "slug": "built-app",
@@ -264,6 +285,26 @@
         }
       },
       "ApplicationTemplate": {
+        "x-openregister-mcp": {
+          "enabled": true,
+          "tools": {
+            "search": {
+              "description": "Find the starter templates a new Buildiq app can be created from. Filter by category, useCase or slug.",
+              "scope": "read",
+              "readOnlyHint": true,
+              "filters": [
+                "category",
+                "useCase",
+                "slug"
+              ]
+            },
+            "get": {
+              "description": "Read one Buildiq app template by id: its title, description, use case, category and the manifest it starts from.",
+              "scope": "read",
+              "readOnlyHint": true
+            }
+          }
+        },
         "x-schema-org": "schema:CreativeWork",
         "x-openregister-demo-data": "The store's starter packs. A generated template stands beside the real built-in ones and clones into an app with no pages.",
         "slug": "application-template",
@@ -459,6 +500,26 @@
         }
       },
       "ApplicationVersion": {
+        "x-openregister-mcp": {
+          "enabled": true,
+          "tools": {
+            "search": {
+              "description": "Find the versions of Buildiq apps. Filter by application (the app uuid), status (for example draft or production) or semver, to see what is live and what is still a draft.",
+              "scope": "read",
+              "readOnlyHint": true,
+              "filters": [
+                "application",
+                "status",
+                "semver"
+              ]
+            },
+            "get": {
+              "description": "Read one version of a Buildiq app by id, including its manifest: the pages, widgets and menu that version renders.",
+              "scope": "read",
+              "readOnlyHint": true
+            }
+          }
+        },
         "x-schema-org": "schema:SoftwareApplication",
         "x-openregister-demo-data": "Written by publish and promote. A generated version points at no application and carries a manifest with no pages, so the app it belongs to renders empty.",
         "x-openregister-notifications": {
@@ -718,6 +779,26 @@
         }
       },
       "exportJob": {
+        "x-openregister-mcp": {
+          "enabled": true,
+          "tools": {
+            "search": {
+              "description": "Find export jobs of Buildiq apps (zip download or push to GitHub). Filter by status, target or applicationUuid, to see whether an export finished and, if it failed, why (errorMessage).",
+              "scope": "read",
+              "readOnlyHint": true,
+              "filters": [
+                "status",
+                "target",
+                "applicationUuid"
+              ]
+            },
+            "get": {
+              "description": "Read one export job by id: its target, status, error message, log and the download or GitHub URL it produced. githubCredentialId is a reference to a broker credential, never a token.",
+              "scope": "read",
+              "readOnlyHint": true
+            }
+          }
+        },
         "x-schema-org": "schema:Action",
         "x-openregister-demo-data": "Written by the export pipeline. A generated row reads as a finished export nobody ran.",
         "x-openregister-notifications": {
