@@ -3456,7 +3456,8 @@
 				"reachedOn": "any built app page, rendered through CnAppRoot/CnPageRenderer",
 				"owner": "ConductionNL/nextcloud-vue",
 				"change": "platform-properties",
-				"requirement": "openspec/changes/platform-properties/specs/platform-properties :: Built pages adapt to phone and tablet screens (REQ-PLAT-001)"
+				"requirement": "openspec/specs/platform-properties :: Built pages adapt to phone and tablet screens (REQ-PLAT-001)",
+				"spec": "openspec/specs/platform-properties"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -5993,9 +5994,9 @@
 				"evidence": "lib/Service/CopilotService.php:13 'LLM access rides Nextcloud's Task Processing API', :54-55 OCP\\TaskProcessing\\Task + TaskTypes\\TextToText, :199-203 health() checks a TextToText provider is registered, :1256 resolves OCP\\TaskProcessing\\IManager; no provider-specific client or API key in buildiq (grep -iE 'openai|anthropic|api_key' over lib/Service/Copilot*: none). Agents carry a modelTaskType (src/dialogs/AgentEditDialog.vue:6).",
 				"reachedOn": "any copilot surface (wizard 'Generate with AI', page designer 'AI copilot'), using whichever Task Processing provider the admin installed, local or cloud",
 				"owner": "nextcloud/server",
-				"spec": "openspec/specs/ai-copilot",
+				"spec": "openspec/specs/platform-properties",
 				"change": "platform-properties",
-				"requirement": "openspec/changes/platform-properties/specs/platform-properties :: The language model is the one the Nextcloud instance provides (REQ-PLAT-002)"
+				"requirement": "openspec/specs/platform-properties :: The language model is the one the Nextcloud instance provides (REQ-PLAT-002)"
 			},
 			"provider": "nextcloud",
 			"providerHow": "read-from-code",
@@ -6404,9 +6405,9 @@
 				"evidence": "Built apps are served inside the Nextcloud session: appinfo/routes.php:124-162 dashboard#builder/builderPath -> lib/Controller/DashboardController.php:123-226 #[NoAdminRequired] TemplateResponse, no #[PublicPage] on any builder route (the only PublicPage in lib/Controller is GeneratedDocumentController.php:107). Whatever sign-in the Nextcloud instance uses (user_oidc, user_saml, LDAP) applies unchanged",
 				"reachedOn": "/apps/buildiq/builder/:slug after Nextcloud login",
 				"owner": "nextcloud/server",
-				"spec": "openspec/specs/openbuild-runtime",
+				"spec": "openspec/specs/platform-properties",
 				"change": "platform-properties",
-				"requirement": "openspec/changes/platform-properties/specs/platform-properties :: Built apps sit behind the Nextcloud login (REQ-PLAT-003)"
+				"requirement": "openspec/specs/platform-properties :: Built apps sit behind the Nextcloud login (REQ-PLAT-003)"
 			},
 			"provider": "nextcloud",
 			"providerHow": "read-from-code",
@@ -6567,9 +6568,9 @@
 				"evidence": "Nextcloud's CSRF middleware applies to every state-changing buildiq route: #[NoCSRFRequired] appears only on GET handlers (DashboardController page routes, ApplicationsController.php:174,596,1048, AppOverrideController.php:118,200,359 GETs, ExportsController.php:674 download link; ExportsController.php:526 and AppOverrideController.php:444,578 state explicitly that CSRF stays on). XSS: Vue escaping by default; the three v-html sites are sanitised: DocumentTemplateAttachmentDialog.vue:431 DOMPurify.sanitize, wizard icon previews Step1Basics.vue:156 and Step4Review.vue:63 via src/utils/iconCatalogues.js:108-113 DOMPurify SVG profile",
 				"reachedOn": "all built apps (framework default)",
 				"owner": "nextcloud/server",
-				"spec": "openspec/specs/frontend-foundation",
+				"spec": "openspec/specs/platform-properties",
 				"change": "platform-properties",
-				"requirement": "openspec/changes/platform-properties/specs/platform-properties :: Forged requests and script injection are blocked by default (REQ-PLAT-004)"
+				"requirement": "openspec/specs/platform-properties :: Forged requests and script injection are blocked by default (REQ-PLAT-004)"
 			},
 			"provider": "nextcloud",
 			"providerHow": "read-from-code",
@@ -6694,7 +6695,7 @@
 				"reachedOn": "every built app (storage default)",
 				"owner": "ConductionNL/openregister",
 				"spec": "openspec/specs/openbuild-application-register",
-				"requirement": "openspec/changes/platform-properties/specs/platform-properties :: The builder runs on the customer's own Nextcloud (REQ-PLAT-007)"
+				"requirement": "openspec/specs/platform-properties :: The builder runs on the customer's own Nextcloud (REQ-PLAT-007)"
 			},
 			"provider": "openregister",
 			"providerHow": "read-from-code",
@@ -8054,8 +8055,9 @@
 				"reachedOn": "any built app, via the shared renderer components",
 				"owner": "ConductionNL/nextcloud-vue",
 				"change": "platform-properties",
-				"requirement": "openspec/changes/platform-properties/specs/platform-properties :: Built apps meet WCAG 2.1 AA without extra work (REQ-PLAT-005)",
-				"plan": "openspec/changes/openbuild-icon-button-accessible-names"
+				"requirement": "openspec/specs/platform-properties :: Built apps meet WCAG 2.1 AA without extra work (REQ-PLAT-005)",
+				"plan": "openspec/changes/openbuild-icon-button-accessible-names",
+				"spec": "openspec/specs/platform-properties"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -8121,7 +8123,8 @@
 				"reachedOn": "any built app or builder screen",
 				"owner": "ConductionNL/nextcloud-vue",
 				"change": "platform-properties",
-				"requirement": "openspec/changes/platform-properties/specs/platform-properties :: Built apps work by keyboard alone (REQ-PLAT-006)"
+				"requirement": "openspec/specs/platform-properties :: Built apps work by keyboard alone (REQ-PLAT-006)",
+				"spec": "openspec/specs/platform-properties"
 			},
 			"provider": "nextcloud-vue",
 			"providerHow": "read-from-code",
@@ -8313,7 +8316,8 @@
 				"reachedOn": "any self-managed Nextcloud instance with the app installed",
 				"owner": "nextcloud/server",
 				"change": "platform-properties",
-				"requirement": "openspec/changes/platform-properties/specs/platform-properties :: The builder runs on the customer's own Nextcloud (REQ-PLAT-007)"
+				"requirement": "openspec/specs/platform-properties :: The builder runs on the customer's own Nextcloud (REQ-PLAT-007)",
+				"spec": "openspec/specs/platform-properties"
 			},
 			"provider": "nextcloud",
 			"providerHow": "read-from-code",
@@ -8349,7 +8353,8 @@
 				"reachedOn": "/apps/buildiq/builder/{slug}/...",
 				"owner": "nextcloud/server",
 				"change": "platform-properties",
-				"requirement": "openspec/changes/platform-properties/specs/platform-properties :: Built apps run inside the same Nextcloud (REQ-PLAT-008)"
+				"requirement": "openspec/specs/platform-properties :: Built apps run inside the same Nextcloud (REQ-PLAT-008)",
+				"spec": "openspec/specs/platform-properties"
 			},
 			"provider": "nextcloud",
 			"providerHow": "read-from-code",
@@ -8599,7 +8604,8 @@
 				"reachedOn": "n/a (licensing model, not a UI feature)",
 				"owner": "ConductionNL/buildiq",
 				"change": "platform-properties",
-				"requirement": "openspec/changes/platform-properties/specs/platform-properties :: No per-user licence fees (REQ-PLAT-009)"
+				"requirement": "openspec/specs/platform-properties :: No per-user licence fees (REQ-PLAT-009)",
+				"spec": "openspec/specs/platform-properties"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -9959,7 +9965,8 @@
 				"reachedOn": "platform deployment, not a buildiq screen",
 				"owner": "nextcloud/server",
 				"change": "platform-properties",
-				"requirement": "openspec/changes/platform-properties/specs/platform-properties :: The platform scales out over several servers (REQ-PLAT-010)"
+				"requirement": "openspec/specs/platform-properties :: The platform scales out over several servers (REQ-PLAT-010)",
+				"spec": "openspec/specs/platform-properties"
 			},
 			"provider": "nextcloud",
 			"providerHow": "read-from-code",
@@ -10239,7 +10246,8 @@
 				"reachedOn": "Nextcloud admin settings, LDAP/AD integration; groups then usable in buildiq role pickers",
 				"owner": "nextcloud/server",
 				"change": "platform-properties",
-				"requirement": "openspec/changes/platform-properties/specs/platform-properties :: Users and groups come from the organisation's directory (REQ-PLAT-011)"
+				"requirement": "openspec/specs/platform-properties :: Users and groups come from the organisation's directory (REQ-PLAT-011)",
+				"spec": "openspec/specs/platform-properties"
 			},
 			"provider": "nextcloud",
 			"providerHow": "read-from-code",
@@ -10507,7 +10515,8 @@
 				"reachedOn": "Nextcloud login, two-factor challenge before any built app opens",
 				"owner": "nextcloud/server",
 				"change": "platform-properties",
-				"requirement": "openspec/changes/platform-properties/specs/platform-properties :: Two-factor authentication applies to built apps (REQ-PLAT-012)"
+				"requirement": "openspec/specs/platform-properties :: Two-factor authentication applies to built apps (REQ-PLAT-012)",
+				"spec": "openspec/specs/platform-properties"
 			},
 			"provider": "nextcloud",
 			"providerHow": "read-from-code",
