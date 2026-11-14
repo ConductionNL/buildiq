@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\ApplicationDeletionServiceInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -41,7 +42,7 @@ use Throwable;
 /**
  * Imperative teardown of an Application and its owned resources.
  */
-class ApplicationDeletionService {
+class ApplicationDeletionService implements ApplicationDeletionServiceInterface {
 	/**
 	 * Page size when draining a register's objects before deleting it.
 	 *

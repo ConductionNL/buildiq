@@ -37,6 +37,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\PageLayoutLayerStackInterface;
 use OCP\IGroupManager;
 use OCP\IUserSession;
 
@@ -45,7 +46,7 @@ use OCP\IUserSession;
  *
  * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-005)
  */
-final class PageLayoutLayerStack {
+final class PageLayoutLayerStack implements PageLayoutLayerStackInterface {
 	/**
 	 * Constructor.
 	 *

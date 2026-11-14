@@ -41,7 +41,6 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
-use OCA\Buildiq\Support\FleetAppId;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCP\App\IAppManager;
 use Psr\Log\LoggerInterface;

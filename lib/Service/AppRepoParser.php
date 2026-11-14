@@ -41,13 +41,14 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Exception\AppRepoParseException;
+use OCA\Buildiq\Kernel\Contracts\AppRepoParserInterface;
 
 /**
  * Strict, all-or-nothing parser for the canonical GitHub app-repo layout.
  *
  * @spec openspec/changes/github-app-repo-format/specs/github-app-repo-format/spec.md
  */
-class AppRepoParser {
+class AppRepoParser implements AppRepoParserInterface {
 	/**
 	 * The descriptor filename that anchors a conforming repo.
 	 */

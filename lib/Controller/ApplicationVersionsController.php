@@ -45,12 +45,12 @@ namespace OCA\Buildiq\Controller;
 
 use DateTimeImmutable;
 use DateTimeInterface;
-use OCA\Buildiq\AppInfo\Application;
-use OCA\Buildiq\Service\ApplicationVersionService;
+use OCA\Buildiq\Kernel\AppIdentity;
+use OCA\Buildiq\Kernel\Contracts\ApplicationVersionServiceInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
-use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
+use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -126,7 +126,7 @@ class ApplicationVersionsController extends Controller {
 	 * @param SchemaMapper $schemaMapper Resolves schema slugs
 	 * @param IUserSession $userSession Current Nextcloud user session
 	 * @param IGroupManager $groupManager Group membership resolver
-	 * @param ApplicationVersionService $versionService Owner of the imperative logic
+	 * @param ApplicationVersionServiceInterface $versionService Owner of the imperative logic
 	 * @param AuditTrailMapper|null $auditTrailMapper Optional OR audit-trail writer (null until OR loaded)
 	 *
 	 * @return void
@@ -139,10 +139,10 @@ class ApplicationVersionsController extends Controller {
 		private readonly SchemaMapper $schemaMapper,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
-		private readonly ApplicationVersionService $versionService,
+		private readonly ApplicationVersionServiceInterface $versionService,
 		private readonly ?AuditTrailMapper $auditTrailMapper = null,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -245,36 +245,19 @@ class ApplicationVersionsController extends Controller {
 			// register so the new version SHARES production's data — no
 			// per-version register is minted. An explicitly-supplied register is
 			// honoured unchanged (the wizard / promotion paths keep that option).
-			$suppliedRegister = (string)($payload['register'] ?? '');
-			if ($suppliedRegister === '') {
-				$inheritedRegister = $this->resolveProductionRegister(application: $application);
-				if ($inheritedRegister === null) {
-					return $this->errorResponse(
-						code: 'no_register_to_inherit',
-						detail: 'Application ' . $appSlug . ' has no production version to inherit a register from; supply an explicit `register`.',
-						status: Http::STATUS_UNPROCESSABLE_ENTITY
-					);
-				}
-
-				$payload['register'] = $inheritedRegister;
+			$payload = $this->withInheritedRegister(payload: $payload, application: $application, appSlug: $appSlug);
+			if ($payload instanceof JSONResponse) {
+				return $payload;
 			}
 
 			$payload = $this->versionService->onSave(current: null, next: $payload);
 
-			$promotesTo = (string)($payload['promotesTo'] ?? '');
-			if ($promotesTo !== '') {
-				// Cycle guard requires a uuid; for a brand-new row use a stable
-				// placeholder string that cannot occur in OR's actual UUID space.
-				$this->versionService->guardNoCycle(
-					currentUuid: '__pending_create__',
-					proposedTargetUuid: $promotesTo
-				);
-			}
+			$this->guardCreatePromotesTo(payload: $payload);
 
 			$created = $this->objectService->saveObject(
 				object: $payload,
-				register: ApplicationVersionService::REGISTER_SLUG,
-				schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
+				register: ApplicationVersionServiceInterface::REGISTER_SLUG,
+				schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
 			);
 
 			return new JSONResponse(
@@ -293,6 +276,55 @@ class ApplicationVersionsController extends Controller {
 			);
 		}//end try
 	}//end create()
+
+	/**
+	 * The create payload with production's register when none is supplied, or
+	 * the 422 response when there is no production register to inherit.
+	 *
+	 * @param array<string,mixed> $payload     The create payload.
+	 * @param array<string,mixed> $application The parent Application.
+	 * @param string              $appSlug     The Application slug.
+	 *
+	 * @return array<string,mixed>|JSONResponse
+	 */
+	private function withInheritedRegister(array $payload, array $application, string $appSlug): array|JSONResponse {
+		$suppliedRegister = (string)($payload['register'] ?? '');
+		if ($suppliedRegister === '') {
+			$inheritedRegister = $this->resolveProductionRegister(application: $application);
+			if ($inheritedRegister === null) {
+				return $this->errorResponse(
+					code: 'no_register_to_inherit',
+					detail: 'Application ' . $appSlug . ' has no production version to inherit a register from; supply an explicit `register`.',
+					status: Http::STATUS_UNPROCESSABLE_ENTITY
+				);
+			}
+
+			$payload['register'] = $inheritedRegister;
+		}
+
+		return $payload;
+	}//end withInheritedRegister()
+
+	/**
+	 * Refuse a new version whose promotesTo target closes a promotion cycle.
+	 *
+	 * @param array<string,mixed> $payload The create payload.
+	 *
+	 * @return void
+	 *
+	 * @throws \RuntimeException When the target closes a cycle.
+	 */
+	private function guardCreatePromotesTo(array $payload): void {
+		$promotesTo = (string)($payload['promotesTo'] ?? '');
+		if ($promotesTo !== '') {
+			// Cycle guard requires a uuid; for a brand-new row use a stable
+			// placeholder string that cannot occur in OR's actual UUID space.
+			$this->versionService->guardNoCycle(
+				currentUuid: '__pending_create__',
+				proposedTargetUuid: $promotesTo
+			);
+		}
+	}//end guardCreatePromotesTo()
 
 	/**
 	 * Update an ApplicationVersion (spec REQ-OBV-103 / REQ-OBV-104 / REQ-OBV-107).
@@ -320,74 +352,24 @@ class ApplicationVersionsController extends Controller {
 			}
 
 			$currentUuid = (string)($current['id'] ?? $current['uuid'] ?? '');
-
-			// WF2: strip caller input to the explicit MUTABLE_FIELDS allowlist
-			// before merging, so new schema properties added in future cannot
-			// become unintended write channels via implicit array_merge.
-			$clientInput = array_intersect_key($this->collectPayload(), array_flip(self::MUTABLE_FIELDS));
-			$payload = array_merge($current, $clientInput);
-			unset($payload['@self']);
-
-			// Preserve immutable fields.
-			$payload['application'] = $current['application'] ?? null;
-			$payload['id'] = $currentUuid;
-
-			// Cycle guard on cross-row.
-			$proposedPromotesTo = $payload['promotesTo'] ?? null;
-			if (is_string($proposedPromotesTo) === true) {
-				$cycleTarget = $proposedPromotesTo;
-				if ($cycleTarget === '') {
-					$cycleTarget = null;
-				}
-
-				$this->versionService->guardNoCycle(
-					currentUuid: $currentUuid,
-					proposedTargetUuid: $cycleTarget
-				);
-			}
-
-			$payload = $this->versionService->onSave(current: $current, next: $payload);
+			$payload = $this->buildUpdatePayload(current: $current, currentUuid: $currentUuid);
 
 			// Acquire an optimistic lock before the read-modify-write to prevent
 			// concurrent UI / MCP writes silently losing each other's changes (issue #159).
-			// `lockObject()`/`unlockObject()` are declared on
-			// ObjectServiceInterface, so the method_exists() probes that used to
-			// guard both calls could never be false.
-			$locked = false;
-			if ($currentUuid !== '') {
-				try {
-					$this->objectService->lockObject(
-						identifier: $currentUuid,
-						process: 'buildiq.controller-update',
-						duration: 15
-					);
-					$locked = true;
-				} catch (Throwable $lockError) {
-					return $this->errorResponse(
-						code: 'version_locked',
-						detail: 'Version ' . $versionSlug . ' is currently locked by another writer. Retry after a moment.',
-						status: Http::STATUS_CONFLICT
-					);
-				}
+			$locked = $this->lockForUpdate(currentUuid: $currentUuid, versionSlug: $versionSlug);
+			if ($locked instanceof JSONResponse) {
+				return $locked;
 			}
 
 			try {
 				$updated = $this->objectService->saveObject(
 					object: $payload,
-					register: ApplicationVersionService::REGISTER_SLUG,
-					schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA,
+					register: ApplicationVersionServiceInterface::REGISTER_SLUG,
+					schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA,
 					uuid: $currentUuid
 				);
 			} finally {
-				if ($locked === true) {
-					try {
-						$this->objectService->unlockObject(identifier: $currentUuid);
-					} catch (Throwable $unlockErr) {
-						$this->logger->warning(
-							'Buildiq: failed to release update lock on ' . $currentUuid . ': ' . $unlockErr->getMessage()
-						);
-					}
-				}
+				$this->releaseUpdateLock(currentUuid: $currentUuid, locked: $locked);
 			}
 
 			return new JSONResponse(
@@ -406,6 +388,117 @@ class ApplicationVersionsController extends Controller {
 			);
 		}//end try
 	}//end update()
+
+	/**
+	 * The version payload of an update: the caller's mutable fields merged onto
+	 * the current version, its immutable fields kept, the promotion cycle guarded
+	 * and the save hook applied.
+	 *
+	 * @param array<string,mixed> $current     The current version.
+	 * @param string              $currentUuid The current version uuid.
+	 *
+	 * @return array<string,mixed>
+	 *
+	 * @throws \RuntimeException When the proposed promotion target closes a cycle.
+	 */
+	private function buildUpdatePayload(array $current, string $currentUuid): array {
+		// WF2: strip caller input to the explicit MUTABLE_FIELDS allowlist
+		// before merging, so new schema properties added in future cannot
+		// become unintended write channels via implicit array_merge.
+		$clientInput = array_intersect_key($this->collectPayload(), array_flip(self::MUTABLE_FIELDS));
+		$payload = array_merge($current, $clientInput);
+		unset($payload['@self']);
+
+		// Preserve immutable fields.
+		$payload['application'] = $current['application'] ?? null;
+		$payload['id'] = $currentUuid;
+
+		// Cycle guard on cross-row.
+		$this->guardPromotesTo(currentUuid: $currentUuid, proposedPromotesTo: ($payload['promotesTo'] ?? null));
+
+		return $this->versionService->onSave(current: $current, next: $payload);
+	}//end buildUpdatePayload()
+
+	/**
+	 * Refuse a promotesTo target that would close a promotion cycle.
+	 *
+	 * @param string $currentUuid        The current version uuid.
+	 * @param mixed  $proposedPromotesTo The proposed promotesTo value.
+	 *
+	 * @return void
+	 *
+	 * @throws \RuntimeException When the target closes a cycle.
+	 */
+	private function guardPromotesTo(string $currentUuid, mixed $proposedPromotesTo): void {
+		if (is_string($proposedPromotesTo) === false) {
+			return;
+		}
+
+		$cycleTarget = $proposedPromotesTo;
+		if ($cycleTarget === '') {
+			$cycleTarget = null;
+		}
+
+		$this->versionService->guardNoCycle(
+			currentUuid: $currentUuid,
+			proposedTargetUuid: $cycleTarget
+		);
+	}//end guardPromotesTo()
+
+	/**
+	 * Take the update lock on a version.
+	 *
+	 * `lockObject()` is declared on ObjectServiceInterface, so no
+	 * method_exists() probe guards it.
+	 *
+	 * @param string $currentUuid The version uuid; empty skips the lock.
+	 * @param string $versionSlug The version slug, for the conflict message.
+	 *
+	 * @return bool|JSONResponse Whether a lock was taken, or the 409 response.
+	 */
+	private function lockForUpdate(string $currentUuid, string $versionSlug): bool|JSONResponse {
+		if ($currentUuid === '') {
+			return false;
+		}
+
+		try {
+			$this->objectService->lockObject(
+				identifier: $currentUuid,
+				process: 'buildiq.controller-update',
+				duration: 15
+			);
+		} catch (Throwable $lockError) {
+			return $this->errorResponse(
+				code: 'version_locked',
+				detail: 'Version ' . $versionSlug . ' is currently locked by another writer. Retry after a moment.',
+				status: Http::STATUS_CONFLICT
+			);
+		}
+
+		return true;
+	}//end lockForUpdate()
+
+	/**
+	 * Release the update lock when one was taken; a failed release is logged.
+	 *
+	 * @param string $currentUuid The version uuid.
+	 * @param bool   $locked      Whether the lock was taken.
+	 *
+	 * @return void
+	 */
+	private function releaseUpdateLock(string $currentUuid, bool $locked): void {
+		if ($locked === false) {
+			return;
+		}
+
+		try {
+			$this->objectService->unlockObject(identifier: $currentUuid);
+		} catch (Throwable $unlockErr) {
+			$this->logger->warning(
+				'Buildiq: failed to release update lock on ' . $currentUuid . ': ' . $unlockErr->getMessage()
+			);
+		}
+	}//end releaseUpdateLock()
 
 	/**
 	 * Delete an ApplicationVersion using the requested strategy (spec REQ-OBV-108).
@@ -562,8 +655,8 @@ class ApplicationVersionsController extends Controller {
 		try {
 			$version = $this->objectService->find(
 				id: $versionUuid,
-				register: ApplicationVersionService::REGISTER_SLUG,
-				schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
+				register: ApplicationVersionServiceInterface::REGISTER_SLUG,
+				schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
 			);
 		} catch (Throwable $e) {
 			return null;
@@ -597,7 +690,7 @@ class ApplicationVersionsController extends Controller {
 		try {
 			return [
 				$this->registerMapper->find(
-					ApplicationVersionService::REGISTER_SLUG,
+					ApplicationVersionServiceInterface::REGISTER_SLUG,
 					_multitenancy: false
 				)->getId(),
 				$this->schemaMapper->find($schemaSlug, _multitenancy: false)->getId(),
@@ -647,7 +740,7 @@ class ApplicationVersionsController extends Controller {
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function versionRowsOf(array $application): ?array {
-		$ids = $this->resolveRegisterAndSchema(schemaSlug: ApplicationVersionService::APPLICATION_VERSION_SCHEMA);
+		$ids = $this->resolveRegisterAndSchema(schemaSlug: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA);
 		if ($ids === null) {
 			return null;
 		}
@@ -699,7 +792,7 @@ class ApplicationVersionsController extends Controller {
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function loadApplication(string $slug): ?array {
-		$ids = $this->resolveRegisterAndSchema(schemaSlug: ApplicationVersionService::APPLICATION_SCHEMA);
+		$ids = $this->resolveRegisterAndSchema(schemaSlug: ApplicationVersionServiceInterface::APPLICATION_SCHEMA);
 		if ($ids === null) {
 			return null;
 		}
@@ -746,7 +839,7 @@ class ApplicationVersionsController extends Controller {
 
 		$applicationUuid = (string)($application['id'] ?? $application['uuid'] ?? '');
 
-		$ids = $this->resolveRegisterAndSchema(schemaSlug: ApplicationVersionService::APPLICATION_VERSION_SCHEMA);
+		$ids = $this->resolveRegisterAndSchema(schemaSlug: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA);
 		if ($ids === null) {
 			return null;
 		}
@@ -848,11 +941,11 @@ class ApplicationVersionsController extends Controller {
 				$appEntity = null;
 				try {
 					$registerId = $this->registerMapper->find(
-						ApplicationVersionService::REGISTER_SLUG,
+						ApplicationVersionServiceInterface::REGISTER_SLUG,
 						_multitenancy: false
 					)->getId();
 					$schemaId = $this->schemaMapper->find(
-						ApplicationVersionService::APPLICATION_SCHEMA,
+						ApplicationVersionServiceInterface::APPLICATION_SCHEMA,
 						_multitenancy: false
 					)->getId();
 					$rows = $this->objectService->searchObjects(

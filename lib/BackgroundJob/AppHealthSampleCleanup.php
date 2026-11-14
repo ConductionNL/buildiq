@@ -23,8 +23,8 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\BackgroundJob;
 
-use OCA\Buildiq\AppInfo\Application;
-use OCA\Buildiq\Service\AppHealthService;
+use OCA\Buildiq\Kernel\AppIdentity;
+use OCA\Buildiq\Kernel\Contracts\AppHealthServiceInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
@@ -60,14 +60,14 @@ class AppHealthSampleCleanup extends TimedJob {
 	 *
 	 * @param ITimeFactory $time Time factory.
 	 * @param ObjectServiceInterface $objectService OpenRegister objects.
-	 * @param AppHealthService $health Normalises stored samples.
+	 * @param AppHealthServiceInterface $health Normalises stored samples.
 	 * @param IAppConfig $appConfig Reads `health_retention_days`.
 	 * @param LoggerInterface $logger Logger.
 	 */
 	public function __construct(
 		ITimeFactory $time,
 		private readonly ObjectServiceInterface $objectService,
-		private readonly AppHealthService $health,
+		private readonly AppHealthServiceInterface $health,
 		private readonly IAppConfig $appConfig,
 		private readonly LoggerInterface $logger,
 	) {
@@ -101,14 +101,14 @@ class AppHealthSampleCleanup extends TimedJob {
 	 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-the-server-scopes-and-bounds-samples-req-bqdm-005
 	 */
 	public function purge(int $now): int {
-		$days = $this->appConfig->getValueInt(Application::APP_ID, 'health_retention_days', self::DEFAULT_DAYS);
+		$days = $this->appConfig->getValueInt(AppIdentity::APP_ID, 'health_retention_days', self::DEFAULT_DAYS);
 		$days = max(self::MIN_DAYS, min(self::MAX_DAYS, $days));
 		$cutoff = gmdate('Y-m-d\TH:i:s', $now - ($days * 86400));
 
 		try {
 			$rows = $this->objectService->findAll(
 				config: [
-					'filters' => ['register' => AppHealthService::REGISTER_SLUG, 'schema' => AppHealthService::SCHEMA_SLUG],
+					'filters' => ['register' => AppHealthServiceInterface::REGISTER_SLUG, 'schema' => AppHealthServiceInterface::SCHEMA_SLUG],
 					'limit' => self::BATCH,
 				],
 				_rbac: false,
@@ -130,8 +130,8 @@ class AppHealthSampleCleanup extends TimedJob {
 			try {
 				$this->objectService->deleteObject(
 					uuid: $uuid,
-					register: AppHealthService::REGISTER_SLUG,
-					schema: AppHealthService::SCHEMA_SLUG,
+					register: AppHealthServiceInterface::REGISTER_SLUG,
+					schema: AppHealthServiceInterface::SCHEMA_SLUG,
 					_rbac: false,
 					_multitenancy: false
 				);

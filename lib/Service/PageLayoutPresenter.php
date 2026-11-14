@@ -36,12 +36,14 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\PageLayoutPresenterInterface;
+
 /**
  * Turns a resolved page layout into what the consumer renders.
  *
  * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-006)
  */
-final class PageLayoutPresenter {
+final class PageLayoutPresenter implements PageLayoutPresenterInterface {
 	/**
 	 * Turn a resolved layout into what the consumer renders.
 	 *
@@ -191,7 +193,6 @@ final class PageLayoutPresenter {
 			if (is_scalar($actual) === true) {
 				$actualText = (string)$actual;
 			}
-
 
 			$holds = match ($operator) {
 				'equals' => ($actualText === $expected),

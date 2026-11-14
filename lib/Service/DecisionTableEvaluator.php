@@ -96,16 +96,7 @@ class DecisionTableEvaluator {
 		$hitPolicy = $this->sharedHitPolicy(hitPolicy: (string)($table['hitPolicy'] ?? 'first'));
 
 		// Resolve each input column's value from the payload once.
-		$columnValues = [];
-		foreach ($inputs as $col) {
-			$name = (string)($col['name'] ?? '');
-			if ($name === '') {
-				continue;
-			}
-
-			$path = (string)($col['expressionPath'] ?? $name);
-			$columnValues[$name] = $this->expressionEvaluator->evaluateExpression($path, $payload);
-		}
+		$columnValues = $this->resolveColumnValues(inputs: $inputs, payload: $payload);
 
 		// A path that does not resolve in the payload yields null, and the shared
 		// evaluator coerces every declared input up front, so a single null
@@ -126,18 +117,7 @@ class DecisionTableEvaluator {
 				inputs: $columnValues,
 			);
 		} catch (DecisionEvaluationException $e) {
-			if ($e->getErrorCode() === 'no_rule_matched') {
-				return $this->noMatchResult(outputs: $outputs);
-			}
-
-			if ($e->getErrorCode() === 'hit_policy_violation') {
-				$matched = implode(', ', ($e->getDetails()['matchedRuleIds'] ?? []));
-				throw new RuntimeException(
-					'Hit policy "' . strtolower($hitPolicy) . '" violated: rules ' . $matched . ' all matched.'
-				);
-			}
-
-			throw $e;
+			return $this->evaluationFailure(exception: $e, hitPolicy: $hitPolicy, outputs: $outputs);
 		}//end try
 
 		$matched = array_map(static fn (string $id): int => (int)$id, $outcome['matchedRuleIds']);
@@ -146,12 +126,7 @@ class DecisionTableEvaluator {
 		}
 
 		if ($hitPolicy === 'COLLECT') {
-			$collected = [];
-			foreach ($matched as $index) {
-				$collected[] = ($rules[$index]['values'] ?? []);
-			}
-
-			return $this->result(output: ['collected' => $collected], ruleId: $this->ruleLabel(index: $matched[0], rules: $rules), matched: $matched);
+			return $this->collectedResult(matched: $matched, rules: $rules);
 		}
 
 		return $this->result(
@@ -161,6 +136,72 @@ class DecisionTableEvaluator {
 		);
 
 	}//end evaluate()
+
+	/**
+	 * Each named input column's value, resolved from the payload.
+	 *
+	 * @param array<int, mixed>    $inputs  The table's input columns.
+	 * @param array<string, mixed> $payload The payload.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function resolveColumnValues(array $inputs, array $payload): array {
+		$columnValues = [];
+		foreach ($inputs as $col) {
+			$name = (string)($col['name'] ?? '');
+			if ($name === '') {
+				continue;
+			}
+
+			$path = (string)($col['expressionPath'] ?? $name);
+			$columnValues[$name] = $this->expressionEvaluator->evaluateExpression($path, $payload);
+		}
+
+		return $columnValues;
+	}//end resolveColumnValues()
+
+	/**
+	 * The no-match result when no rule matched; any other evaluation failure is thrown.
+	 *
+	 * @param DecisionEvaluationException $exception The shared evaluator's failure.
+	 * @param string                      $hitPolicy The shared hit policy.
+	 * @param array<int, mixed>           $outputs   The table's output columns.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @throws RuntimeException On a hit policy violation; any other failure is rethrown.
+	 */
+	private function evaluationFailure(DecisionEvaluationException $exception, string $hitPolicy, array $outputs): array {
+		if ($exception->getErrorCode() === 'no_rule_matched') {
+			return $this->noMatchResult(outputs: $outputs);
+		}
+
+		if ($exception->getErrorCode() === 'hit_policy_violation') {
+			$matched = implode(', ', ($exception->getDetails()['matchedRuleIds'] ?? []));
+			throw new RuntimeException(
+				'Hit policy "' . strtolower($hitPolicy) . '" violated: rules ' . $matched . ' all matched.'
+			);
+		}
+
+		throw $exception;
+	}//end evaluationFailure()
+
+	/**
+	 * The COLLECT result: the output values of every matched rule.
+	 *
+	 * @param array<int, int>   $matched The matched rule indexes.
+	 * @param array<int, mixed> $rules   The table's rules.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function collectedResult(array $matched, array $rules): array {
+		$collected = [];
+		foreach ($matched as $index) {
+			$collected[] = ($rules[$index]['values'] ?? []);
+		}
+
+		return $this->result(output: ['collected' => $collected], ruleId: $this->ruleLabel(index: $matched[0], rules: $rules), matched: $matched);
+	}//end collectedResult()
 
 	/**
 	 * Translate buildiq's table shape into the shared evaluator's.

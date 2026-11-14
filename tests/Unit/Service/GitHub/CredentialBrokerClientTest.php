@@ -16,7 +16,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Tests\Unit\Service\GitHub;
 
-use OCA\Buildiq\Service\GitHub\BrokerAccess;
+use OCA\Buildiq\Kernel\Values\BrokerAccess;
 use OCA\Buildiq\Service\GitHub\CredentialBrokerClient;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -26,7 +26,7 @@ use Psr\Container\ContainerInterface;
  * with GitHub JSON headers, the body JSON-encoded and the acting user passed on.
  *
  * @covers \OCA\Buildiq\Service\GitHub\CredentialBrokerClient
- * @uses   \OCA\Buildiq\Service\GitHub\BrokerAccess
+ * @uses   \OCA\Buildiq\Kernel\Values\BrokerAccess
  */
 class CredentialBrokerClientTest extends TestCase {
 	/**

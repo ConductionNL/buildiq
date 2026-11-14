@@ -40,9 +40,9 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Listener;
 
-use OCA\Buildiq\Service\AutomationCompilerService;
-use OCA\Buildiq\Service\ListenerSlugContract;
-use OCA\Buildiq\Service\ObjectSchemaSlugResolver;
+use OCA\Buildiq\Kernel\Contracts\AutomationCompilerServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\ListenerSlugContractInterface;
+use OCA\Buildiq\Kernel\Contracts\ObjectSchemaSlugResolverInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCP\EventDispatcher\Event;
@@ -60,17 +60,17 @@ class AutomationCleanupListener implements IEventListener {
 	 * Constructor.
 	 *
 	 * @param LoggerInterface $logger PSR logger for diagnostics.
-	 * @param AutomationCompilerService $compiler Owns the artifact-removal logic.
-	 * @param ObjectSchemaSlugResolver $slugs Resolves the event's schema id to a slug.
-	 * @param ListenerSlugContract $contract Gates the corrected comparison.
+	 * @param AutomationCompilerServiceInterface $compiler Owns the artifact-removal logic.
+	 * @param ObjectSchemaSlugResolverInterface $slugs Resolves the event's schema id to a slug.
+	 * @param ListenerSlugContractInterface $contract Gates the corrected comparison.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly LoggerInterface $logger,
-		private readonly AutomationCompilerService $compiler,
-		private readonly ObjectSchemaSlugResolver $slugs,
-		private readonly ListenerSlugContract $contract,
+		private readonly AutomationCompilerServiceInterface $compiler,
+		private readonly ObjectSchemaSlugResolverInterface $slugs,
+		private readonly ListenerSlugContractInterface $contract,
 	) {
 	}//end __construct()
 
@@ -109,7 +109,7 @@ class AutomationCleanupListener implements IEventListener {
 		// the schema slug alone would delete artifacts for another app's rows.
 		if ($this->slugs->isBuildiqSchema(
 			entity: $entity,
-			schemaSlug: AutomationCompilerService::AUTOMATION_SCHEMA
+			schemaSlug: AutomationCompilerServiceInterface::AUTOMATION_SCHEMA
 		) === false
 		) {
 			return;

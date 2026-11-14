@@ -33,6 +33,9 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\ExportServiceInterface;
+use OCA\Buildiq\Kernel\Values\ExportContents;
+use OCA\Buildiq\Kernel\Values\ExportTarget;
 use OCP\Files\IAppData;
 use OCP\Files\NotFoundException;
 use Psr\Log\LoggerInterface;
@@ -69,7 +72,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/changes/archive/2026-06-14-openbuild-exporter/tasks.md#task-4.1
  */
-class ExportService {
+class ExportService implements ExportServiceInterface {
 
 	/**
 	 * Embedded template snapshot directory.

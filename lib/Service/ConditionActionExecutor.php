@@ -39,6 +39,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\ConditionActionExecutorInterface;
 use Throwable;
 
 /**
@@ -47,7 +48,7 @@ use Throwable;
  * @spec openspec/changes/archive/2026-06-14-business-rules-engine/tasks.md#4.1
  * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#5.2
  */
-class ConditionActionExecutor {
+class ConditionActionExecutor implements ConditionActionExecutorInterface {
 
 	/**
 	 * Action types that mutate external state and are skipped on dry-run.

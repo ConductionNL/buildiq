@@ -99,7 +99,7 @@ class CreateAppHandlerTest extends TestCase {
 		$this->logger = $this->createMock(originalClassName: LoggerInterface::class);
 
 		$container = $this->createMock(originalClassName: ContainerInterface::class);
-		$container->method('get')->with('OCA\Buildiq\Service\ApplicationCreationService')->willReturn($this->creation);
+		$container->method('get')->with('OCA\Buildiq\Kernel\Contracts\ApplicationCreationServiceInterface')->willReturn($this->creation);
 
 		$this->handler = new CreateAppHandler(
 			userSession: $this->session,

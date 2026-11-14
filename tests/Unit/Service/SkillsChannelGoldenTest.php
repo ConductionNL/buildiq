@@ -29,7 +29,7 @@ use OCA\Buildiq\Service\ConnectorRegisterAvailability;
 use OCA\Buildiq\Service\ContainerLocator;
 use OCA\Buildiq\Service\DataRegisterProvisioner;
 use OCA\Buildiq\Service\FlowChannelProvisioner;
-use OCA\Buildiq\Service\RepoSource;
+use OCA\Buildiq\Kernel\Values\RepoSource;
 use OCA\Buildiq\Service\SkillChannelDelegate;
 use OCA\Buildiq\Tests\Unit\Support\FakeSlugResolver;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
@@ -51,7 +51,7 @@ use RuntimeException;
  *
  * @covers \OCA\Buildiq\Service\AppChannelApplier
  * @covers \OCA\Buildiq\Service\SkillChannelDelegate
- * @uses   \OCA\Buildiq\Service\RepoSource
+ * @uses   \OCA\Buildiq\Kernel\Values\RepoSource
  * @uses   \OCA\Buildiq\Service\AgentChannelProvisioner
  * @uses   \OCA\Buildiq\Service\ChannelApplyReport
  * @uses   \OCA\Buildiq\Service\ConnectorRegisterAvailability

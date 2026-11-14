@@ -22,7 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Tests\Unit\Dashboard;
 
-use OCA\Buildiq\Dashboard\WidgetDescriptor;
+use OCA\Buildiq\Kernel\Values\WidgetDescriptor;
 use OCA\Buildiq\Service\AppVisibilityResolver;
 use OCA\Buildiq\Service\DashboardWidgetRegistrar;
 use OCA\Buildiq\Service\PublishedApplicationProvider;

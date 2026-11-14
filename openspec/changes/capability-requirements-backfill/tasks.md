@@ -20,7 +20,7 @@
 - [ ] **T18**: Check that the built behaviour of row `logic-running-case-keeps-version` meets REQ-BQCV-018 in `automation-designer`; add a test that asserts each scenario, and close any gap the scenarios name.
 - [ ] **T19**: Check that the built behaviour of row `form-digid-login` meets REQ-BQCV-019 in `external-form-provisioning`; add a test that asserts each scenario, and close any gap the scenarios name.
 - [ ] **T20**: Check that the built behaviour of row `form-usage-stats` meets REQ-BQCV-020 in `external-form-provisioning`; add a test that asserts each scenario, and close any gap the scenarios name.
-- [ ] **T21**: Check that the built behaviour of row `data-required-validation` meets REQ-BQCV-021 in `openbuild-schema-designer`; add a test that asserts each scenario, and close any gap the scenarios name.
+- [x] **T21**: Check that the built behaviour of row `data-required-validation` meets REQ-BQCV-021 in `openbuild-schema-designer`; add a test that asserts each scenario, and close any gap the scenarios name.
 - [ ] **T22**: Check that the built behaviour of row `data-import-rollback` meets REQ-BQCV-022 in `data-import-wizard`; add a test that asserts each scenario, and close any gap the scenarios name.
 - [ ] **T23**: Check that the built behaviour of row `data-schema-reuse` meets REQ-BQCV-023 in `page-designer-ui`; add a test that asserts each scenario, and close any gap the scenarios name.
 - [ ] **T24**: Check that the built behaviour of row `form-builder` meets REQ-BQCV-024 in `openbuild-page-designer`; add a test that asserts each scenario, and close any gap the scenarios name.

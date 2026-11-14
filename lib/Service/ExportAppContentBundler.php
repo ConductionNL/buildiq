@@ -28,7 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
-use OCA\Buildiq\Support\RepoDescriptor;
+use OCA\Buildiq\Kernel\Contracts\ExportAppContentBundlerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -51,7 +51,7 @@ use Psr\Log\LoggerInterface;
  *
  * @spec openspec/specs/openbuild-exporter/spec.md#requirement-companion-schemas-migrate-into-the-exported-app-s-own-namespace
  */
-class ExportAppContentBundler {
+class ExportAppContentBundler implements ExportAppContentBundlerInterface {
 	/**
 	 * Constructor.
 	 *

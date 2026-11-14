@@ -54,6 +54,9 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\AppChannelApplierInterface;
+use OCA\Buildiq\Kernel\Values\LocalApplicationRef;
+use OCA\Buildiq\Kernel\Values\RepoSource;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Exception\ObjectExistsException;
 use Psr\Log\LoggerInterface;
@@ -67,7 +70,7 @@ use Throwable;
  * @spec openspec/changes/apply-v2-channels/specs/app-channel-application/spec.md
  * @spec openspec/specs/app-channel-application/spec.md
  */
-class AppChannelApplier {
+class AppChannelApplier implements AppChannelApplierInterface {
 
 	/**
 	 * Connector schemas, matching AppRepoSerializer::CONNECTOR_KINDS.

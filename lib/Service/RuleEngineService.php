@@ -37,6 +37,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\RuleEngineServiceInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -46,19 +47,9 @@ use Throwable;
 /**
  * Runtime rule-evaluation orchestrator.
  */
-class RuleEngineService {
+class RuleEngineService implements RuleEngineServiceInterface {
 
-	/**
-	 * Shared Buildiq register slug.
-	 */
-	public const REGISTER_SLUG = 'buildiq';
-
-	/**
-	 * Schema slugs for the rules-engine objects.
-	 */
-	public const RULE_SET_SCHEMA = 'rule-set';
 	public const CONDITION_RULE_SCHEMA = 'condition-action-rule';
-	public const EXECUTION_LOG_SCHEMA = 'rule-execution-log';
 
 	/**
 	 * Soft evaluation timeout in milliseconds (design.md Decision 10).

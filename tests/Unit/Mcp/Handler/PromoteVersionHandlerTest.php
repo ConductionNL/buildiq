@@ -94,7 +94,7 @@ class PromoteVersionHandlerTest extends TestCase {
 		$this->logger = $this->createMock(originalClassName: LoggerInterface::class);
 
 		$container = $this->createMock(originalClassName: ContainerInterface::class);
-		$container->method('get')->with('OCA\Buildiq\Service\VersionPromotionService')->willReturn($this->promotion);
+		$container->method('get')->with('OCA\Buildiq\Kernel\Contracts\VersionPromotionServiceInterface')->willReturn($this->promotion);
 
 		$this->handler = new PromoteVersionHandler(
 			userSession: $session,

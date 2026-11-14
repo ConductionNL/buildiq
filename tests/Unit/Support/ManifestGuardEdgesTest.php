@@ -20,7 +20,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Tests\Unit\Support;
 
-use OCA\Buildiq\Support\ManifestDataBinding;
+use OCA\Buildiq\Service\ManifestDataBinding;
 use OCA\Buildiq\Support\ManifestRoute;
 use PHPUnit\Framework\TestCase;
 
@@ -28,7 +28,7 @@ use PHPUnit\Framework\TestCase;
  * Pins the overlong menu-target refusal and the data-register slug reader.
  *
  * @covers \OCA\Buildiq\Support\ManifestRoute
- * @covers \OCA\Buildiq\Support\ManifestDataBinding
+ * @covers \OCA\Buildiq\Service\ManifestDataBinding
  */
 class ManifestGuardEdgesTest extends TestCase {
 

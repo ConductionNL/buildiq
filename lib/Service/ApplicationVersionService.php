@@ -45,6 +45,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\ApplicationVersionServiceInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -65,45 +66,7 @@ use Throwable;
  *
  * @spec openspec/specs/application-versions/spec.md#requirement-cycle-prevention-on-the-promotesto-chain
  */
-class ApplicationVersionService {
-	/**
-	 * Shared register that hosts both Application and ApplicationVersion.
-	 */
-	public const REGISTER_SLUG = 'buildiq';
-
-	/**
-	 * Prefix of the PER-VERSION register the creation wizard provisions.
-	 *
-	 * SEPARATE FROM REGISTER_SLUG, AND DELIBERATELY STILL `openbuild-`.
-	 *
-	 * Until the app-id rename these were the same string, and several callers
-	 * built a per-version name as `REGISTER_SLUG . '-' . $slug`. Renaming
-	 * REGISTER_SLUG to `buildiq` silently changed what those callers emit,
-	 * because one constant was doing two jobs. The applicationVersion schema
-	 * pins this one with `"pattern": "^openbuild-[a-z0-9][a-z0-9-]*[a-z0-9]$"`,
-	 * so the renamed value is not merely inconsistent — it is REJECTED, and the
-	 * failure surfaces as "Property 'register' should match pattern … but
-	 * 'buildiq-…' does not" at the moment an ApplicationVersion is written.
-	 *
-	 * Naming the two apart is what stops the next rename from doing it again.
-	 * Moving the per-version registers as well is a separate decision: existing
-	 * ones are real, populated registers, and renaming them needs a migration
-	 * and a change to that schema pattern, neither of which belongs in an
-	 * app-slug rename.
-	 *
-	 * @var string
-	 */
-	public const VERSION_REGISTER_PREFIX = 'openbuild-';
-
-	/**
-	 * Schema slug of the parent Application object.
-	 */
-	public const APPLICATION_SCHEMA = 'built-app';
-
-	/**
-	 * Schema slug of the versioned-model ApplicationVersion object.
-	 */
-	public const APPLICATION_VERSION_SCHEMA = 'applicationVersion';
+class ApplicationVersionService implements ApplicationVersionServiceInterface {
 
 	/**
 	 * Hard cap on the `promotesTo` chain walk in {@see guardNoCycle()}.
@@ -502,39 +465,9 @@ class ApplicationVersionService {
 		// (x-openregister-lifecycle has no draft→archived edge), so a draft
 		// ex-production is demoted by the pointer move alone and left as a
 		// draft the maintainer can keep editing or delete.
-		$archived = null;
-		if ($previousProduction !== '' && $previousProduction !== $versionUuid) {
-			$previous = $this->objectService->find(
-				id: $previousProduction,
-				register: self::REGISTER_SLUG,
-				schema: self::APPLICATION_VERSION_SCHEMA
-			);
-			if ($previous !== null) {
-				$previousData = ObjectRecord::toArray(object: $previous);
-				if ((string)($previousData['status'] ?? '') === 'published') {
-					unset($previousData['@self']);
-					$previousData['status'] = 'archived';
-					$this->objectService->saveObject(
-						object: $previousData,
-						register: self::REGISTER_SLUG,
-						schema: self::APPLICATION_VERSION_SCHEMA,
-						uuid: $previousProduction
-					);
-					$archived = $previousProduction;
-				}
-			}
-		}//end if
+		$archived = $this->archivePreviousProduction(previousProduction: $previousProduction, versionUuid: $versionUuid);
 
-		$previousLabel = $previousProduction;
-		if ($previousProduction === '') {
-			$previousLabel = '(none)';
-		}
-
-		$archivedLabel = 'unchanged';
-		if ($archived !== null) {
-			$archivedLabel = 'archived';
-		}
-
+		[$previousLabel, $archivedLabel] = $this->releaseLabels(previousProduction: $previousProduction, archived: $archived);
 		$this->logger->info(
 			sprintf(
 				'Buildiq: released ApplicationVersion %s as production for Application %s (previous %s %s).',
@@ -551,6 +484,89 @@ class ApplicationVersionService {
 			'archived' => $archived,
 		];
 	}//end releaseVersion()
+
+	/**
+	 * Archive the previous production version when it is published and not the released one.
+	 *
+	 * Only a `published` version can transition to `archived`, so a draft
+	 * ex-production is left as a draft.
+	 *
+	 * @param string $previousProduction The previous production version uuid, or ''.
+	 * @param string $versionUuid        The version being released.
+	 *
+	 * @return string|null The archived version uuid, or null when none was archived.
+	 *
+	 * @spec openspec/specs/application-versions/spec.md
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
+	 */
+	private function archivePreviousProduction(string $previousProduction, string $versionUuid): ?string {
+		if ($previousProduction === '' || $previousProduction === $versionUuid) {
+			return null;
+		}
+
+		return $this->archiveIfPublished(versionUuid: $previousProduction);
+	}//end archivePreviousProduction()
+
+	/**
+	 * Archive a version when it is published.
+	 *
+	 * @param string $versionUuid The version to archive.
+	 *
+	 * @return string|null The archived version uuid, or null when it was not archived.
+	 *
+	 * @spec openspec/specs/application-versions/spec.md
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
+	 */
+	private function archiveIfPublished(string $versionUuid): ?string {
+		$previous = $this->objectService->find(
+			id: $versionUuid,
+			register: self::REGISTER_SLUG,
+			schema: self::APPLICATION_VERSION_SCHEMA
+		);
+		if ($previous === null) {
+			return null;
+		}
+
+		$previousData = ObjectRecord::toArray(object: $previous);
+		if ((string)($previousData['status'] ?? '') !== 'published') {
+			return null;
+		}
+
+		unset($previousData['@self']);
+		$previousData['status'] = 'archived';
+		$this->objectService->saveObject(
+			object: $previousData,
+			register: self::REGISTER_SLUG,
+			schema: self::APPLICATION_VERSION_SCHEMA,
+			uuid: $versionUuid
+		);
+
+		return $versionUuid;
+	}//end archiveIfPublished()
+
+	/**
+	 * The log labels of a release: the previous production and whether it was archived.
+	 *
+	 * @param string      $previousProduction The previous production version uuid, or ''.
+	 * @param string|null $archived           The archived version uuid, or null.
+	 *
+	 * @return array{0: string, 1: string}
+	 *
+	 * @spec openspec/specs/application-versions/spec.md
+	 */
+	private function releaseLabels(string $previousProduction, ?string $archived): array {
+		$previousLabel = $previousProduction;
+		if ($previousProduction === '') {
+			$previousLabel = '(none)';
+		}
+
+		$archivedLabel = 'unchanged';
+		if ($archived !== null) {
+			$archivedLabel = 'archived';
+		}
+
+		return [$previousLabel, $archivedLabel];
+	}//end releaseLabels()
 
 	/**
 	 * Delete an ApplicationVersion using the named strategy (spec REQ-OBV-108).
@@ -620,7 +636,24 @@ class ApplicationVersionService {
 			$effectiveStrategy = self::STRATEGY_KEEP_REGISTER;
 		}
 
-		switch ($effectiveStrategy) {
+		$this->applyRegisterStrategy(strategy: $effectiveStrategy, registerSlug: $registerSlug, versionUuid: $versionUuid);
+
+		$this->objectService->deleteObject(uuid: $versionUuid);
+	}//end deleteVersion()
+
+	/**
+	 * Apply a delete strategy to the version's register: drop it, flag it orphaned, or keep it.
+	 *
+	 * @param string $strategy     The effective strategy.
+	 * @param string $registerSlug The version's register slug.
+	 * @param string $versionUuid  The version being deleted.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/application-versions/spec.md
+	 */
+	private function applyRegisterStrategy(string $strategy, string $registerSlug, string $versionUuid): void {
+		switch ($strategy) {
 			case self::STRATEGY_DELETE_NOW:
 				$this->dropPerVersionRegister(registerSlug: $registerSlug, versionUuid: $versionUuid);
 				break;
@@ -638,9 +671,7 @@ class ApplicationVersionService {
 				);
 				break;
 		}//end switch
-
-		$this->objectService->deleteObject(uuid: $versionUuid);
-	}//end deleteVersion()
+	}//end applyRegisterStrategy()
 
 	/**
 	 * Reject an unknown deletion strategy.

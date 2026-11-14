@@ -30,7 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\BackgroundJob;
 
-use OCA\Buildiq\Service\RuleEngineService;
+use OCA\Buildiq\Kernel\Contracts\RuleEngineServiceInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -93,8 +93,8 @@ class RuleExecutionLogCleanup extends TimedJob {
 			$results = $this->objectService->findAll(
 				config: [
 					'filters' => [
-						'register' => RuleEngineService::REGISTER_SLUG,
-						'schema' => RuleEngineService::EXECUTION_LOG_SCHEMA,
+						'register' => RuleEngineServiceInterface::REGISTER_SLUG,
+						'schema' => RuleEngineServiceInterface::EXECUTION_LOG_SCHEMA,
 					],
 				]
 			);
@@ -108,31 +108,47 @@ class RuleExecutionLogCleanup extends TimedJob {
 
 		$purged = 0;
 		foreach ($results as $row) {
-			$data = ObjectRecord::serialised(object: $row);
-			$timestamp = (string)($data['timestamp'] ?? '');
-			if ($timestamp === '' || $timestamp >= $cutoff) {
-				continue;
-			}
-
-			$uuid = (string)($data['id'] ?? ($data['uuid'] ?? ''));
-			if ($uuid === '') {
-				continue;
-			}
-
-			try {
-				$this->objectService->deleteObject(uuid: $uuid);
-				++$purged;
-			} catch (Throwable $e) {
-				$this->logger->warning(
-					'Buildiq: failed to purge RuleExecutionLog record',
-					['uuid' => $uuid, 'exception' => $e->getMessage()]
-				);
-			}
-		}//end foreach
+			$purged += $this->purgeIfExpired(row: $row, cutoff: $cutoff);
+		}
 
 		if ($purged > 0) {
 			$this->logger->info('Buildiq cleanup: purged ' . $purged . ' expired rule-execution log(s)');
 		}
 
 	}//end run()
+
+	/**
+	 * Delete one log record older than the cutoff.
+	 *
+	 * @param mixed  $row    The log record.
+	 * @param string $cutoff The retention cutoff, as an ISO 8601 UTC timestamp.
+	 *
+	 * @return int 1 when the record was purged, 0 otherwise.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
+	 */
+	private function purgeIfExpired(mixed $row, string $cutoff): int {
+		$data = ObjectRecord::serialised(object: $row);
+		$timestamp = (string)($data['timestamp'] ?? '');
+		if ($timestamp === '' || $timestamp >= $cutoff) {
+			return 0;
+		}
+
+		$uuid = (string)($data['id'] ?? ($data['uuid'] ?? ''));
+		if ($uuid === '') {
+			return 0;
+		}
+
+		try {
+			$this->objectService->deleteObject(uuid: $uuid);
+			return 1;
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				'Buildiq: failed to purge RuleExecutionLog record',
+				['uuid' => $uuid, 'exception' => $e->getMessage()]
+			);
+		}
+
+		return 0;
+	}//end purgeIfExpired()
 }//end class

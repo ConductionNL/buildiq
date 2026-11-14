@@ -41,8 +41,8 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Repair;
 
 use Closure;
-use OCA\Buildiq\AppInfo\Application;
-use OCA\Buildiq\Service\ApplicationVersionService;
+use OCA\Buildiq\Kernel\AppIdentity;
+use OCA\Buildiq\Kernel\Contracts\ApplicationVersionServiceInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -152,26 +152,14 @@ class MigrateToVersionedModel implements IRepairStep {
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-26
 	 */
 	public function run(IOutput $output): void {
-		$state = $this->appConfig->getValueString(Application::APP_ID, self::STATE_KEY, '');
-		if ($state === self::STATE_DONE) {
-			$this->logger->debug('Buildiq: MigrateToVersionedModel already completed; skipping.');
-			$output->info('Migrated-to-versioned-model: previously completed, skipping.');
-			return;
-		}
-
-		if ($state === self::STATE_FAILED) {
-			$this->logger->debug('Buildiq: MigrateToVersionedModel previously failed under system context; skipping until re-armed.');
-			$output->info(
-				'Migrated-to-versioned-model: previously failed and needs operator attention;'
-				. ' skipping (re-arm via `occ config:app:delete buildiq ' . self::STATE_KEY . '`).'
-			);
+		if ($this->skipForRecordedState(output: $output) === true) {
 			return;
 		}
 
 		try {
 			if ($this->isAlreadyVersioned() === true) {
 				$output->info('Migrated-to-versioned-model: schema already in versioned shape, skipping');
-				$this->appConfig->setValueString(Application::APP_ID, self::STATE_KEY, self::STATE_DONE);
+				$this->appConfig->setValueString(AppIdentity::APP_ID, self::STATE_KEY, self::STATE_DONE);
 				return;
 			}
 		} catch (Throwable $e) {
@@ -192,10 +180,51 @@ class MigrateToVersionedModel implements IRepairStep {
 		$applications = $this->enumerateApplications();
 		if ($applications === []) {
 			$output->info('Migrated-to-versioned-model: no pre-migration Application rows found.');
-			$this->appConfig->setValueString(Application::APP_ID, self::STATE_KEY, self::STATE_DONE);
+			$this->appConfig->setValueString(AppIdentity::APP_ID, self::STATE_KEY, self::STATE_DONE);
 			return;
 		}
 
+		$state = $this->migrateAll(applications: $applications, output: $output);
+		$this->appConfig->setValueString(AppIdentity::APP_ID, self::STATE_KEY, $state);
+	}//end run()
+
+	/**
+	 * Whether a recorded done or failed state means this run is skipped (reported on the output).
+	 *
+	 * @param IOutput $output The repair output.
+	 *
+	 * @return bool
+	 */
+	private function skipForRecordedState(IOutput $output): bool {
+		$state = $this->appConfig->getValueString(AppIdentity::APP_ID, self::STATE_KEY, '');
+		if ($state === self::STATE_DONE) {
+			$this->logger->debug('Buildiq: MigrateToVersionedModel already completed; skipping.');
+			$output->info('Migrated-to-versioned-model: previously completed, skipping.');
+			return true;
+		}
+
+		if ($state === self::STATE_FAILED) {
+			$this->logger->debug('Buildiq: MigrateToVersionedModel previously failed under system context; skipping until re-armed.');
+			$output->info(
+				'Migrated-to-versioned-model: previously failed and needs operator attention;'
+				. ' skipping (re-arm via `occ config:app:delete buildiq ' . self::STATE_KEY . '`).'
+			);
+			return true;
+		}
+
+		return false;
+	}//end skipForRecordedState()
+
+	/**
+	 * Migrate every pre-migration Application row; the state to record is
+	 * failed when any row failed, done otherwise.
+	 *
+	 * @param array<int, array<string, mixed>> $applications The pre-migration rows.
+	 * @param IOutput                          $output       The repair output.
+	 *
+	 * @return string
+	 */
+	private function migrateAll(array $applications, IOutput $output): string {
 		$sawFailed = false;
 
 		foreach ($applications as $application) {
@@ -217,8 +246,8 @@ class MigrateToVersionedModel implements IRepairStep {
 			$state = self::STATE_FAILED;
 		}
 
-		$this->appConfig->setValueString(Application::APP_ID, self::STATE_KEY, $state);
-	}//end run()
+		return $state;
+	}//end migrateAll()
 
 	/**
 	 * Detect whether the schema is already in versioned shape.
@@ -286,11 +315,11 @@ class MigrateToVersionedModel implements IRepairStep {
 	private function enumerateApplications(): array {
 		try {
 			$registerId = $this->registerMapper->find(
-				ApplicationVersionService::REGISTER_SLUG,
+				ApplicationVersionServiceInterface::REGISTER_SLUG,
 				_multitenancy: false
 			)->getId();
 			$schemaId = $this->schemaMapper->find(
-				ApplicationVersionService::APPLICATION_SCHEMA,
+				ApplicationVersionServiceInterface::APPLICATION_SCHEMA,
 				_multitenancy: false
 			)->getId();
 		} catch (Throwable $e) {
@@ -350,47 +379,12 @@ class MigrateToVersionedModel implements IRepairStep {
 		}
 
 		// Per-version register — NOT the app's register slug. See
-		// ApplicationVersionService::VERSION_REGISTER_PREFIX.
-		$perAppRegisterSlug = ApplicationVersionService::VERSION_REGISTER_PREFIX . $slug;
+		// ApplicationVersionServiceInterface::VERSION_REGISTER_PREFIX.
+		$perAppRegisterSlug = ApplicationVersionServiceInterface::VERSION_REGISTER_PREFIX . $slug;
 
-		try {
-			$register = $this->registerMapper->find($perAppRegisterSlug, _multitenancy: false);
-		} catch (Throwable $e) {
-			// No per-app register to drop — proceed to delete the row.
-			$register = null;
-			$this->logger->debug(
-				'Buildiq: MigrateToVersionedModel: register ' . $perAppRegisterSlug . ' not found (' . $e->getMessage() . '); proceeding to row delete.'
-			);
+		if ($this->dropPerAppRegister(slug: $slug, output: $output) === false) {
+			return self::ROW_FAILED;
 		}
-
-		if ($register !== null) {
-			try {
-				$this->runElevated(
-					work: function () use ($register): void {
-						$this->registerService->delete(register: $register);
-					}
-				);
-			} catch (Throwable $e) {
-				$output->warning(
-					sprintf(
-						'Migrated-to-versioned-model: FAILED to drop register \'%s\''
-						. ' for Application \'%s\' (%s); Application row NOT deleted.',
-						$perAppRegisterSlug,
-						$slug,
-						$e->getMessage()
-					)
-				);
-				$this->logger->error(
-					'Buildiq: MigrateToVersionedModel: register-delete failed; preserving Application row',
-					[
-						'slug' => $slug,
-						'register' => $perAppRegisterSlug,
-						'exception' => $e->getMessage(),
-					]
-				);
-				return self::ROW_FAILED;
-			}//end try
-		}//end if
 
 		$applicationUuid = (string)($application['id'] ?? $application['uuid'] ?? '');
 		if ($applicationUuid === '') {
@@ -428,6 +422,61 @@ class MigrateToVersionedModel implements IRepairStep {
 		);
 		return self::ROW_OK;
 	}//end migrateOne()
+
+	/**
+	 * Drop the Application's per-version register when it exists.
+	 *
+	 * @param string  $slug   The Application slug.
+	 * @param IOutput $output The repair output.
+	 *
+	 * @return bool False when the register exists but could not be dropped.
+	 */
+	private function dropPerAppRegister(string $slug, IOutput $output): bool {
+		$perAppRegisterSlug = ApplicationVersionServiceInterface::VERSION_REGISTER_PREFIX . $slug;
+
+		try {
+			$register = $this->registerMapper->find($perAppRegisterSlug, _multitenancy: false);
+		} catch (Throwable $e) {
+			// No per-app register to drop — proceed to delete the row.
+			$this->logger->debug(
+				'Buildiq: MigrateToVersionedModel: register ' . $perAppRegisterSlug . ' not found (' . $e->getMessage() . '); proceeding to row delete.'
+			);
+			return true;
+		}
+
+		if ($register === null) {
+			return true;
+		}
+
+		try {
+			$this->runElevated(
+				work: function () use ($register): void {
+					$this->registerService->delete(register: $register);
+				}
+			);
+		} catch (Throwable $e) {
+			$output->warning(
+				sprintf(
+					'Migrated-to-versioned-model: FAILED to drop register \'%s\''
+					. ' for Application \'%s\' (%s); Application row NOT deleted.',
+					$perAppRegisterSlug,
+					$slug,
+					$e->getMessage()
+				)
+			);
+			$this->logger->error(
+				'Buildiq: MigrateToVersionedModel: register-delete failed; preserving Application row',
+				[
+					'slug' => $slug,
+					'register' => $perAppRegisterSlug,
+					'exception' => $e->getMessage(),
+				]
+			);
+			return false;
+		}//end try
+
+		return true;
+	}//end dropPerAppRegister()
 
 	/**
 	 * Run a unit of work under OpenRegister's system context.

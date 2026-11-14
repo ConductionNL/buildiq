@@ -34,7 +34,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Repair;
 
-use OCA\Buildiq\Service\TemplateSeedService;
+use OCA\Buildiq\Kernel\Contracts\TemplateSeedServiceInterface;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
 use RuntimeException;
@@ -54,12 +54,12 @@ class SeedApplicationTemplates implements IRepairStep {
 	/**
 	 * Constructor for SeedApplicationTemplates.
 	 *
-	 * @param TemplateSeedService $seedService The shared idempotent seeding service.
+	 * @param TemplateSeedServiceInterface $seedService The shared idempotent seeding service.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private TemplateSeedService $seedService,
+		private TemplateSeedServiceInterface $seedService,
 	) {
 	}//end __construct()
 

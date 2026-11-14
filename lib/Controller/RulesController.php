@@ -12,7 +12,7 @@
  *
  * All endpoints carry `#[NoAdminRequired]` per ADR-005: any authenticated user
  * may evaluate a RuleSet of their own organisation. Every read goes through
- * {@see RuleObjectReader}, which applies the schema's RBAC and the caller's
+ * {@see \OCA\Buildiq\Service\RuleObjectReader}, which applies the schema's RBAC and the caller's
  * organisation (REQ-BRE-007): a RuleSet held by another organisation resolves
  * to a 404, not a 403, so its existence does not leak. The `buildiq` register
  * itself is system-wide, so only its lookup runs without the organisation
@@ -44,10 +44,9 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Controller;
 
-use OCA\Buildiq\AppInfo\Application;
+use OCA\Buildiq\Kernel\AppIdentity;
+use OCA\Buildiq\Kernel\Contracts\RuleEngineServiceInterface;
 use OCA\Buildiq\Service\CallerContext;
-use OCA\Buildiq\Service\RuleEngineService;
-use OCA\Buildiq\Service\RuleObjectReader;
 use OCA\Buildiq\Service\RuleStorage;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -77,7 +76,7 @@ class RulesController extends Controller {
 	 *
 	 * @param IRequest $request The current HTTP request.
 	 * @param LoggerInterface $logger PSR logger.
-	 * @param RuleEngineService $ruleEngine The rule-evaluation orchestrator.
+	 * @param RuleEngineServiceInterface $ruleEngine The rule-evaluation orchestrator.
 	 * @param RuleStorage $storage The rule object reader, stored decision tables and rule set versioning.
 	 * @param CallerContext $caller The caller's session, group memberships and the shared permission matcher.
 	 *
@@ -86,11 +85,11 @@ class RulesController extends Controller {
 	public function __construct(
 		IRequest $request,
 		private readonly LoggerInterface $logger,
-		private readonly RuleEngineService $ruleEngine,
+		private readonly RuleEngineServiceInterface $ruleEngine,
 		private readonly RuleStorage $storage,
 		private readonly CallerContext $caller,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 
 	}//end __construct()
 
@@ -431,7 +430,7 @@ class RulesController extends Controller {
 	 * @return array<string,mixed>|null
 	 */
 	private function findRuleSet(string $slug): ?array {
-		$rows = $this->query(schema: RuleEngineService::RULE_SET_SCHEMA, filters: ['slug' => $slug], limit: 1);
+		$rows = $this->query(schema: RuleEngineServiceInterface::RULE_SET_SCHEMA, filters: ['slug' => $slug], limit: 1);
 		if ($rows === []) {
 			return null;
 		}

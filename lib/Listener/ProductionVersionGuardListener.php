@@ -39,9 +39,9 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Listener;
 
-use OCA\Buildiq\Service\ApplicationVersionService;
-use OCA\Buildiq\Service\ListenerSlugContract;
-use OCA\Buildiq\Service\ObjectSchemaSlugResolver;
+use OCA\Buildiq\Kernel\Contracts\ApplicationVersionServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\ListenerSlugContractInterface;
+use OCA\Buildiq\Kernel\Contracts\ObjectSchemaSlugResolverInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
@@ -62,17 +62,17 @@ class ProductionVersionGuardListener implements IEventListener {
 	 * Constructor.
 	 *
 	 * @param LoggerInterface $logger PSR logger for diagnostics
-	 * @param ApplicationVersionService $service The cross-row guard owner
-	 * @param ObjectSchemaSlugResolver $slugs Resolves the event's schema id to a slug
-	 * @param ListenerSlugContract $contract Gates the corrected comparison
+	 * @param ApplicationVersionServiceInterface $service The cross-row guard owner
+	 * @param ObjectSchemaSlugResolverInterface $slugs Resolves the event's schema id to a slug
+	 * @param ListenerSlugContractInterface $contract Gates the corrected comparison
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly LoggerInterface $logger,
-		private readonly ApplicationVersionService $service,
-		private readonly ObjectSchemaSlugResolver $slugs,
-		private readonly ListenerSlugContract $contract,
+		private readonly ApplicationVersionServiceInterface $service,
+		private readonly ObjectSchemaSlugResolverInterface $slugs,
+		private readonly ListenerSlugContractInterface $contract,
 	) {
 	}//end __construct()
 
@@ -92,39 +92,12 @@ class ProductionVersionGuardListener implements IEventListener {
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	public function handle(Event $event): void {
-		if ($event instanceof ObjectCreatingEvent) {
-			$entity = $event->getObject();
-		} elseif ($event instanceof ObjectUpdatingEvent) {
-			// OR's ObjectUpdatingEvent exposes the new object via getNewObject()
-			// (not getObject() — the two events have different APIs).
-			$entity = $event->getNewObject();
-		}
-
-		if (isset($entity) === false) {
+		$entity = $this->writtenEntity(event: $event);
+		if ($entity === null) {
 			return;
 		}
 
-		// GATED ON PURPOSE — read before flipping the flag.
-		//
-		// This guard has never once executed: extractSchemaSlug() returned the
-		// schema's numeric id and compared it to the slug 'application', so the
-		// `!==` was always true and this method always returned here. The
-		// comparison below is now correct, but making it correct CHANGES
-		// BEHAVIOUR: this is a fail-closed validation guard, so waking it
-		// starts REJECTING production-version writes that succeed today.
-		//
-		// Enabling it is therefore a rollout decision, not a bug fix, and it is
-		// deliberately off by default. Enable with:
-		// occ config:app:set buildiq listener_slug_contract --value=yes.
-		if ($this->contract->isEnabled() === false) {
-			return;
-		}
-
-		if ($this->slugs->isBuildiqSchema(
-			entity: $entity,
-			schemaSlug: ApplicationVersionService::APPLICATION_SCHEMA
-		) === false
-		) {
+		if ($this->isGuardedEntity(entity: $entity) === false) {
 			return;
 		}
 
@@ -142,6 +115,70 @@ class ProductionVersionGuardListener implements IEventListener {
 			return;
 		}
 
+		$this->guardOwnership(event: $event, applicationUuid: $applicationUuid, proposedVersion: $proposedVersion);
+	}//end handle()
+
+	/**
+	 * The object an ObjectCreatingEvent or ObjectUpdatingEvent is about to write, or null for any other event.
+	 *
+	 * @param Event $event The dispatched event.
+	 *
+	 * @return mixed
+	 */
+	private function writtenEntity(Event $event): mixed {
+		if ($event instanceof ObjectCreatingEvent) {
+			return $event->getObject();
+		}
+
+		if ($event instanceof ObjectUpdatingEvent) {
+			// OR's ObjectUpdatingEvent exposes the new object via getNewObject()
+			// (not getObject() — the two events have different APIs).
+			return $event->getNewObject();
+		}
+
+		return null;
+	}//end writtenEntity()
+
+	/**
+	 * Whether the guard is switched on and the entity is a Buildiq Application.
+	 *
+	 * @param mixed $entity The object being written.
+	 *
+	 * @return bool
+	 */
+	private function isGuardedEntity(mixed $entity): bool {
+		// GATED ON PURPOSE — read before flipping the flag.
+		//
+		// This guard has never once executed: extractSchemaSlug() returned the
+		// schema's numeric id and compared it to the slug 'application', so the
+		// `!==` was always true and this method always returned here. The
+		// comparison below is now correct, but making it correct CHANGES
+		// BEHAVIOUR: this is a fail-closed validation guard, so waking it
+		// starts REJECTING production-version writes that succeed today.
+		//
+		// Enabling it is therefore a rollout decision, not a bug fix, and it is
+		// deliberately off by default. Enable with:
+		// occ config:app:set buildiq listener_slug_contract --value=yes.
+		if ($this->contract->isEnabled() === false) {
+			return false;
+		}
+
+		return $this->slugs->isBuildiqSchema(
+			entity: $entity,
+			schemaSlug: ApplicationVersionServiceInterface::APPLICATION_SCHEMA
+		);
+	}//end isGuardedEntity()
+
+	/**
+	 * Run the ownership guard; a rejection stops the event with a 422 error.
+	 *
+	 * @param Event  $event           The dispatched event.
+	 * @param string $applicationUuid The Application uuid.
+	 * @param string $proposedVersion The proposed productionVersion uuid.
+	 *
+	 * @return void
+	 */
+	private function guardOwnership(Event $event, string $applicationUuid, string $proposedVersion): void {
 		try {
 			$this->service->guardProductionVersionOwnership(
 				applicationUuid: $applicationUuid,
@@ -168,7 +205,7 @@ class ProductionVersionGuardListener implements IEventListener {
 				]
 			);
 		}//end try
-	}//end handle()
+	}//end guardOwnership()
 
 	/**
 	 * Read the canonical UUID from the entity / object payload.

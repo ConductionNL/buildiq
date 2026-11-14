@@ -29,7 +29,7 @@ use OCA\Buildiq\Service\AppRepoSerializer;
 use OCA\Buildiq\Service\GitHubAppSyncService;
 use OCA\Buildiq\Service\GitHubCatalogService;
 use OCA\Buildiq\Service\RegisterStore;
-use OCA\Buildiq\Service\RepoSource;
+use OCA\Buildiq\Kernel\Values\RepoSource;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -46,8 +46,8 @@ use RuntimeException;
  *
  * @covers \OCA\Buildiq\Service\GitHubAppSyncService
  * @uses   \OCA\Buildiq\Service\GitHub\CredentialBrokerClient
- * @uses   \OCA\Buildiq\Service\LocalApplicationRef
- * @uses   \OCA\Buildiq\Service\RepoSource
+ * @uses   \OCA\Buildiq\Kernel\Values\LocalApplicationRef
+ * @uses   \OCA\Buildiq\Kernel\Values\RepoSource
  * @uses   \OCA\Buildiq\Support\ObjectRecord
  * @uses   \OCA\Buildiq\Service\AppRepoCodec
  * @uses   \OCA\Buildiq\Service\RegisterStore

@@ -41,6 +41,8 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\GitHubCatalogServiceInterface;
+use OCA\Buildiq\Kernel\Values\RepoSource;
 use OCA\Buildiq\Service\GitHub\ShortLivedCache;
 use OCP\Http\Client\IClientService;
 use OCP\ICacheFactory;
@@ -53,7 +55,7 @@ use Throwable;
  *
  * @spec openspec/changes/github-shop-catalogue/specs/github-shop-catalogue/spec.md
  */
-class GitHubCatalogService {
+class GitHubCatalogService implements GitHubCatalogServiceInterface {
 	/**
 	 * The fixed GitHub API host — compile-time constant, no SSRF surface.
 	 */
@@ -165,11 +167,6 @@ class GitHubCatalogService {
 	 * Outcome: GitHub rate-limited and no cached result was available.
 	 */
 	public const OUTCOME_RATE_LIMITED = 'github_rate_limited';
-
-	/**
-	 * Outcome: transport failure / non-2xx that is not a rate limit.
-	 */
-	public const OUTCOME_UNREACHABLE = 'github_unreachable';
 
 	/**
 	 * Search results, kept for {@see SEARCH_TTL} seconds.
@@ -285,7 +282,6 @@ class GitHubCatalogService {
 		return $payload;
 	}//end search()
 
-
 	/**
 	 * Query every accepted discovery topic and merge the hits.
 	 *
@@ -347,7 +343,6 @@ class GitHubCatalogService {
 			'rateLimited' => $rateLimited,
 		];
 	}//end collectTopicHits()
-
 
 	/**
 	 * Run one topic's repository search and return its usable items.
@@ -413,7 +408,6 @@ class GitHubCatalogService {
 			'rateLimited' => $result['rateLimited'],
 		];
 	}//end fetchTopic()
-
 
 	/**
 	 * Build the installable cards for the merged hits.

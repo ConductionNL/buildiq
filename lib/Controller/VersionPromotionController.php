@@ -39,14 +39,14 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Controller;
 
-use OCA\Buildiq\AppInfo\Application;
 use OCA\Buildiq\Exception\InsufficientPermissionException;
 use OCA\Buildiq\Exception\InvalidStrategyException;
 use OCA\Buildiq\Exception\NoPromoteTargetException;
 use OCA\Buildiq\Exception\PromotionFailedException;
 use OCA\Buildiq\Exception\VersionLockedException;
-use OCA\Buildiq\Service\PermissionResolver;
-use OCA\Buildiq\Service\VersionPromotionService;
+use OCA\Buildiq\Kernel\AppIdentity;
+use OCA\Buildiq\Kernel\Contracts\PermissionResolverInterface;
+use OCA\Buildiq\Kernel\Contracts\VersionPromotionServiceInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\AppFramework\Controller;
@@ -78,8 +78,8 @@ class VersionPromotionController extends Controller {
 	 * @param LoggerInterface $logger PSR logger
 	 * @param ObjectServiceInterface $objectService OR object surface (load source + parent)
 	 * @param IUserSession $userSession Current NC user session
-	 * @param VersionPromotionService $promotionService Imperative promotion flow owner
-	 * @param PermissionResolver $permissionResolver Shared permission-grammar resolver (H1 fix)
+	 * @param VersionPromotionServiceInterface $promotionService Imperative promotion flow owner
+	 * @param PermissionResolverInterface $permissionResolver Shared permission-grammar resolver (H1 fix)
 	 *
 	 * @return void
 	 */
@@ -88,10 +88,10 @@ class VersionPromotionController extends Controller {
 		private readonly LoggerInterface $logger,
 		private readonly ObjectServiceInterface $objectService,
 		private readonly IUserSession $userSession,
-		private readonly VersionPromotionService $promotionService,
-		private readonly PermissionResolver $permissionResolver,
+		private readonly VersionPromotionServiceInterface $promotionService,
+		private readonly PermissionResolverInterface $permissionResolver,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -173,35 +173,13 @@ class VersionPromotionController extends Controller {
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-67
 	 */
 	private function mapExceptionToResponse(Throwable $error): JSONResponse {
-		if ($error instanceof NoPromoteTargetException) {
-			$this->logger->info('Buildiq: promote rejected (no target): ' . $error->getMessage());
-			return $this->errorResponse(
-				code: $error->getErrorCode(),
-				detail: $error->getMessage(),
-				status: Http::STATUS_UNPROCESSABLE_ENTITY
-			);
-		}
-
-		if ($error instanceof InvalidStrategyException) {
-			$this->logger->info('Buildiq: promote rejected (invalid strategy): ' . $error->getMessage());
-			return $this->errorResponse(
-				code: $error->getErrorCode(),
-				detail: $error->getMessage(),
-				status: Http::STATUS_BAD_REQUEST
-			);
+		$rejection = $this->rejectionResponse(error: $error);
+		if ($rejection !== null) {
+			return $rejection;
 		}
 
 		if ($error instanceof VersionLockedException) {
 			return $this->buildLockedResponse(error: $error);
-		}
-
-		if ($error instanceof InsufficientPermissionException) {
-			$this->logger->info('Buildiq: promote rejected (rbac): ' . $error->getMessage());
-			return $this->errorResponse(
-				code: $error->getErrorCode(),
-				detail: $error->getMessage(),
-				status: Http::STATUS_FORBIDDEN
-			);
 		}
 
 		if ($error instanceof PromotionFailedException) {
@@ -226,6 +204,45 @@ class VersionPromotionController extends Controller {
 			status: Http::STATUS_INTERNAL_SERVER_ERROR
 		);
 	}//end mapExceptionToResponse()
+
+	/**
+	 * The response to a rejected promotion (no target, invalid strategy,
+	 * missing role), or null for any other error.
+	 *
+	 * @param Throwable $error The caught error.
+	 *
+	 * @return JSONResponse|null
+	 */
+	private function rejectionResponse(Throwable $error): JSONResponse|null {
+		if ($error instanceof NoPromoteTargetException) {
+			$this->logger->info('Buildiq: promote rejected (no target): ' . $error->getMessage());
+			return $this->errorResponse(
+				code: $error->getErrorCode(),
+				detail: $error->getMessage(),
+				status: Http::STATUS_UNPROCESSABLE_ENTITY
+			);
+		}
+
+		if ($error instanceof InvalidStrategyException) {
+			$this->logger->info('Buildiq: promote rejected (invalid strategy): ' . $error->getMessage());
+			return $this->errorResponse(
+				code: $error->getErrorCode(),
+				detail: $error->getMessage(),
+				status: Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		if ($error instanceof InsufficientPermissionException) {
+			$this->logger->info('Buildiq: promote rejected (rbac): ' . $error->getMessage());
+			return $this->errorResponse(
+				code: $error->getErrorCode(),
+				detail: $error->getMessage(),
+				status: Http::STATUS_FORBIDDEN
+			);
+		}
+
+		return null;
+	}//end rejectionResponse()
 
 	/**
 	 * Build the 409 response for a VersionLockedException with optional lock context.
@@ -270,8 +287,8 @@ class VersionPromotionController extends Controller {
 		try {
 			$entity = $this->objectService->find(
 				id: $uuid,
-				register: VersionPromotionService::REGISTER_SLUG,
-				schema: VersionPromotionService::APPLICATION_SCHEMA
+				register: VersionPromotionServiceInterface::REGISTER_SLUG,
+				schema: VersionPromotionServiceInterface::APPLICATION_SCHEMA
 			);
 		} catch (Throwable $e) {
 			$this->logger->debug(
@@ -304,8 +321,8 @@ class VersionPromotionController extends Controller {
 		try {
 			$entity = $this->objectService->find(
 				id: $uuid,
-				register: VersionPromotionService::REGISTER_SLUG,
-				schema: VersionPromotionService::APPLICATION_VERSION_SCHEMA
+				register: VersionPromotionServiceInterface::REGISTER_SLUG,
+				schema: VersionPromotionServiceInterface::APPLICATION_VERSION_SCHEMA
 			);
 		} catch (Throwable $e) {
 			$this->logger->debug(

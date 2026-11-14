@@ -30,9 +30,9 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Controller;
 
-use OCA\Buildiq\AppInfo\Application;
-use OCA\Buildiq\Service\GitHubCatalogService;
-use OCA\Buildiq\Service\GitHubFormCatalogService;
+use OCA\Buildiq\Kernel\AppIdentity;
+use OCA\Buildiq\Kernel\Contracts\GitHubCatalogServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\GitHubFormCatalogServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -55,7 +55,7 @@ class FormLibraryController extends Controller {
 	 * @param IRequest                 $request     The current HTTP request.
 	 * @param LoggerInterface          $logger      PSR logger.
 	 * @param IUserSession             $userSession Current NC user session.
-	 * @param GitHubFormCatalogService $formCatalog GitHub source of shared forms.
+	 * @param GitHubFormCatalogServiceInterface $formCatalog GitHub source of shared forms.
 	 *
 	 * @return void
 	 *
@@ -65,9 +65,9 @@ class FormLibraryController extends Controller {
 		IRequest $request,
 		private readonly LoggerInterface $logger,
 		private readonly IUserSession $userSession,
-		private readonly GitHubFormCatalogService $formCatalog,
+		private readonly GitHubFormCatalogServiceInterface $formCatalog,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -100,7 +100,7 @@ class FormLibraryController extends Controller {
 		} catch (Throwable $e) {
 			$this->logger->error('Buildiq shop: GitHub form search failed: ' . $e->getMessage());
 			return new JSONResponse(
-				data: ['outcome' => GitHubCatalogService::OUTCOME_UNREACHABLE, 'cards' => [], 'rateLimited' => false],
+				data: ['outcome' => GitHubCatalogServiceInterface::OUTCOME_UNREACHABLE, 'cards' => [], 'rateLimited' => false],
 				statusCode: Http::STATUS_OK
 			);
 		}

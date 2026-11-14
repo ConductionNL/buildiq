@@ -49,8 +49,8 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Listener;
 
-use OCA\Buildiq\Service\AutomationCompilerService;
-use OCA\Buildiq\Service\RuleActionDispatcher;
+use OCA\Buildiq\Kernel\Contracts\AutomationCompilerServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\RuleActionDispatcherInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Event\TaskSequenceCompletedEvent;
 use OCA\OpenRegister\Event\TaskTerminalEvent;
@@ -86,17 +86,17 @@ class ApprovalOutcomeListener implements IEventListener {
 	 *
 	 * @param ContainerInterface $container Resolves OpenRegister's object service at USE time —
 	 *                                      see LazyObjectService for why a listener cannot inject it.
-	 * @param AutomationCompilerService $compiler Reuses `mapActionToRuleAction()` — the SAME
+	 * @param AutomationCompilerServiceInterface $compiler Reuses `mapActionToRuleAction()` — the SAME
 	 *                                            action→typed-action mapping the rules backend uses.
-	 * @param RuleActionDispatcher $actionDispatcher Shared side-effect dispatcher (same one `RuleEngineService` wires).
+	 * @param RuleActionDispatcherInterface $actionDispatcher Shared side-effect dispatcher (same one `RuleEngineService` wires).
 	 * @param LoggerInterface $logger PSR logger.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly ContainerInterface $container,
-		private readonly AutomationCompilerService $compiler,
-		private readonly RuleActionDispatcher $actionDispatcher,
+		private readonly AutomationCompilerServiceInterface $compiler,
+		private readonly RuleActionDispatcherInterface $actionDispatcher,
 		private readonly LoggerInterface $logger,
 	) {
 		$this->objects = new LazyObjectService(container: $container);
@@ -333,8 +333,8 @@ class ApprovalOutcomeListener implements IEventListener {
 			$results = $this->objects->get()->findAll(
 				config: [
 					'filters' => [
-						'register' => AutomationCompilerService::REGISTER_SLUG,
-						'schema' => AutomationCompilerService::AUTOMATION_SCHEMA,
+						'register' => AutomationCompilerServiceInterface::REGISTER_SLUG,
+						'schema' => AutomationCompilerServiceInterface::AUTOMATION_SCHEMA,
 						'slug' => $slug,
 					],
 					'limit' => 1,

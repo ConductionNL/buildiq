@@ -1,7 +1,7 @@
 ## 0. Prerequisite (hard dependency)
 
-- [ ] 0.1 Confirm `@conduction/nextcloud-vue` `manifest-delta-merge-and-flex-columns` has landed in the consumed version — stable `widgetEntry.id`, `mergeManifestDelta`, `diffManifest`, `$op:"remove"`, `__order`, and `orphanedDeltaPaths` are all exported and documented. BLOCK all tasks below until confirmed.
-- [ ] 0.2 Pin the consumed nextcloud-vue version in Buildiq's `package.json` to the release that includes the foundation, and capture the canonical JS `mergeManifestDelta` unit-test fixtures for reuse as the PHP port's shared fixtures.
+- [x] 0.1 Confirm `@conduction/nextcloud-vue` `manifest-delta-merge-and-flex-columns` has landed in the consumed version — stable `widgetEntry.id`, `mergeManifestDelta`, `diffManifest`, `$op:"remove"`, `__order`, and `orphanedDeltaPaths` are all exported and documented. BLOCK all tasks below until confirmed.
+- [x] 0.2 Pin the consumed nextcloud-vue version in Buildiq's `package.json` to the release that includes the foundation, and capture the canonical JS `mergeManifestDelta` unit-test fixtures for reuse as the PHP port's shared fixtures.
 
 ## 1. Schema fields (additive, no migration)
 
@@ -11,10 +11,10 @@
 
 ## 2. PHP delta merge (port of the JS contract)
 
-- [ ] 2.1 Create a `ManifestDeltaMerger` service implementing `merge(array $base, array $delta): array` — plain-object recursion, `pages[]` keyed by `page.id`, `widgets[]` keyed by `widget.id`, `$op:"remove"` deletion, `__order` reordering, non-keyed arrays replace wholesale (matches JS util).
-- [ ] 2.2 Collect orphaned-delta paths (a delta key matching no base entry is skipped, never fatal) and return them alongside the merged manifest (e.g. `{ merged, orphanedPaths }`).
-- [ ] 2.3 Add unit tests for `ManifestDeltaMerger` using the fixtures captured in 0.2; assert byte-identical output to the JS `mergeManifestDelta` for each fixture (page/widget merge, remove, reorder, orphan).
-- [ ] 2.4 SPDX headers, full PHPDoc, and pass `composer check:strict` (PHPCS, PHPMD, Psalm, PHPStan) on the new service.
+- [x] 2.1 Create a `ManifestDeltaMerger` service implementing `merge(array $base, array $delta): array` — plain-object recursion, `pages[]` keyed by `page.id`, `widgets[]` keyed by `widget.id`, `$op:"remove"` deletion, `__order` reordering, non-keyed arrays replace wholesale (matches JS util).
+- [x] 2.2 Collect orphaned-delta paths (a delta key matching no base entry is skipped, never fatal) and return them alongside the merged manifest (e.g. `{ merged, orphanedPaths }`).
+- [x] 2.3 Add unit tests for `ManifestDeltaMerger` using the fixtures captured in 0.2; assert byte-identical output to the JS `mergeManifestDelta` for each fixture (page/widget merge, remove, reorder, orphan).
+- [x] 2.4 SPDX headers, full PHPDoc, and pass `composer check:strict` (PHPCS, PHPMD, Psalm, PHPStan) on the new service.
 
 ## 3. Base resolution
 
