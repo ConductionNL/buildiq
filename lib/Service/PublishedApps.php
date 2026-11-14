@@ -35,12 +35,14 @@ final class PublishedApps {
 	 *
 	 * @param PublishedApplicationProvider|null $applicationProvider Shared published-app read; null where the object service fallback applies.
 	 * @param AppVisibilityResolver|null $visibilityResolver Shared visibility check order; null takes the default.
+	 * @param AppOrganisationGuard|null $organisationGuard Hides another organisation's scoped app from the navigation; null hides every scoped app.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		public readonly ?PublishedApplicationProvider $applicationProvider = null,
 		public readonly ?AppVisibilityResolver $visibilityResolver = null,
+		public readonly ?AppOrganisationGuard $organisationGuard = null,
 	) {
 	}//end __construct()
 }//end class

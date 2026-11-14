@@ -27,6 +27,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Mcp\Handler;
 
 use OCA\Buildiq\Kernel\Contracts\PermissionResolverInterface;
+use OCA\Buildiq\Service\AppOrganisationGuard;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
@@ -181,6 +182,11 @@ abstract class AbstractToolHandler {
 
 		$app = $this->toArray(item: $apps[0]);
 
+		// Organisation scope before any role, admins included (REQ-BQOS-002).
+		if ($this->visibleToOrganisation(app: $app, caller: $this->userSession->getUser()) === false) {
+			return $this->errorResult(error: 'not_found', message: "No virtual app found for slug '{$appSlug}'.");
+		}
+
 		if ($this->callerHasWriteRole(app: $app, uid: $uid, allowAdminBypass: $allowAdminBypass) === true) {
 			// Record only a *genuine* admin bypass: an admin who would NOT pass
 			// without admin-group membership (no owner/editor role on this app).
@@ -281,6 +287,13 @@ abstract class AbstractToolHandler {
 			return $this->errorResult(error: 'forbidden', message: 'You must be signed in.');
 		}
 
+		// Organisation scope before any role (REQ-BQOS-002): another
+		// organisation's scoped app answers as an app that does not exist.
+		if ($this->visibleToOrganisation(app: $app, caller: $caller) === false) {
+			$slug = (string)($app['slug'] ?? '');
+			return $this->errorResult(error: 'not_found', message: "No published virtual app found for slug '{$slug}'.");
+		}
+
 		$permissions = ($app['permissions'] ?? []);
 		if (is_array($permissions) === false) {
 			$permissions = [];
@@ -296,6 +309,34 @@ abstract class AbstractToolHandler {
 		);
 
 	}//end requireAnyRoleOnApp()
+
+	/**
+	 * Whether the caller may see the Application at all, by its organisation scope.
+	 *
+	 * A shared app passes without a lookup; a scoped one needs the guard, resolved
+	 * lazily, to admit the caller, and an unresolvable guard fails closed.
+	 *
+	 * @param array<string, mixed> $app    The Application.
+	 * @param IUser|null           $caller The caller.
+	 *
+	 * @return bool True when the app is visible to the caller.
+	 *
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002
+	 */
+	protected function visibleToOrganisation(array $app, ?IUser $caller): bool {
+		if (AppOrganisationGuard::isShared(application: $app) === true) {
+			return true;
+		}
+
+		try {
+			$guard = $this->container->get(AppOrganisationGuard::class);
+		} catch (\Throwable $e) {
+			$this->logger->warning('Buildiq MCP: organisation guard unavailable; the scoped app is treated as not visible');
+			return false;
+		}
+
+		return ($guard instanceof AppOrganisationGuard) === true && $guard->canSee(application: $app, user: $caller) === true;
+	}//end visibleToOrganisation()
 
 	/**
 	 * Whether the caller holds ANY role on the Application.

@@ -121,4 +121,29 @@ final class RegisterFragmentMergeTest extends TestCase {
 		$this->assertSame(['a', 'b', 'c'], $merged['required']);
 		$this->assertSame('0.2.0', $merged['info']['version']);
 	}//end testListsConcatenateAndScalarsOverwrite()
+	/**
+	 * The organisation-scope fragment adds `organisationScope` to the shipped
+	 * Application schema without dropping a property it already declares.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-an-app-has-an-organisation-scope-req-bqos-001
+	 */
+	public function testOrganisationScopeFragmentExtendsTheApplicationSchema(): void {
+		$settings = dirname(__DIR__, 3) . '/lib/Settings';
+		$base = json_decode((string)file_get_contents($settings . '/openbuild_register.json'), true);
+		$fragment = json_decode((string)file_get_contents($settings . '/register.d/25-organisation-scope.json'), true);
+
+		$merged = $this->merge($base, $fragment);
+		$application = $merged['components']['schemas']['Application'];
+
+		$this->assertSame(['all', 'holder'], $application['properties']['organisationScope']['enum']);
+		$this->assertSame('0.7.0', $application['version']);
+		$this->assertSame('built-app', $application['slug']);
+		foreach (array_keys($base['components']['schemas']['Application']['properties']) as $property) {
+			$this->assertArrayHasKey($property, $application['properties']);
+		}
+
+		$this->assertNotContains('organisationScope', ($application['required'] ?? []), 'absent must stay allowed: absent means all');
+	}//end testOrganisationScopeFragmentExtendsTheApplicationSchema()
 }//end class

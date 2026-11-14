@@ -1,0 +1,18 @@
+{
+	"_comment": "ADR-037 register fragment, operate-organisation-scoped-apps. Application.organisationScope: `all` (every organisation sees the app) or `holder` (only members of the organisation OpenRegister stamped on the Application, and of its child organisations). Absent means `all`, so every app from before this fragment behaves as it did. AppOrganisationGuard enforces it at every door that resolves an app (REQ-BQOS-001, REQ-BQOS-002). The register version in openbuild_register.json is bumped so the import runs.",
+	"components": {
+		"schemas": {
+			"Application": {
+				"version": "0.7.0",
+				"properties": {
+					"organisationScope": {
+						"title": "Organisation scope",
+						"type": "string",
+						"enum": ["all", "holder"],
+						"description": "Who sees this app: all organisations, or only the organisation that holds it. Absent means all organisations."
+					}
+				}
+			}
+		}
+	}
+}

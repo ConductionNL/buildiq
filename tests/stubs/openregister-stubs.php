@@ -1518,6 +1518,54 @@ namespace OCA\OpenRegister\Db {
 		}//end class
 	}//end if
 
+	if (class_exists(Organisation::class, autoload: false) === false) {
+		/**
+		 * Stub Organisation — the uuid AppOrganisationGuard compares.
+		 */
+		class Organisation {
+			/**
+			 * Constructor.
+			 *
+			 * @param string|null $uuid The organisation uuid.
+			 */
+			public function __construct(private ?string $uuid = null) {
+			}//end __construct()
+
+			/**
+			 * @return string|null
+			 */
+			public function getUuid(): ?string {
+				return $this->uuid;
+			}//end getUuid()
+		}//end class
+	}//end if
+
+	if (class_exists(OrganisationMapper::class, autoload: false) === false) {
+		/**
+		 * Stub OrganisationMapper — the membership and hierarchy reads
+		 * AppOrganisationGuard makes, with the real mapper's signatures.
+		 */
+		class OrganisationMapper {
+			/**
+			 * @param string $userId The user.
+			 *
+			 * @return Organisation[]
+			 */
+			public function findByUserId(string $userId): array {
+				return [];
+			}//end findByUserId()
+
+			/**
+			 * @param string $organisationUuid The organisation.
+			 *
+			 * @return array<int, string> Parent uuids, direct parent first.
+			 */
+			public function findParentChain(string $organisationUuid): array {
+				return [];
+			}//end findParentChain()
+		}//end class
+	}//end if
+
 	if (class_exists(RegisterMapper::class, autoload: false) === false) {
 		/**
 		 * Stub RegisterMapper — `find`/`createFromArray`/`update` call surface.
