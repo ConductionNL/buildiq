@@ -5,7 +5,7 @@
  * Vitest spec for DetailPageEditor (buildiq#9 task 7.1).
  *
  * Covers:
- *  - validatedConfigKeys is exactly [register, schema, sidebar, sidebarProps]
+ *  - validatedConfigKeys is exactly [register, schema, sidebar, sidebarProps, headerActions, lifecycleActions]
  *  - update(register, ...) emits with `register` set and clears any stale schema
  *  - update(schema, ...) emits with `schema` set
  *  - setSidebarShape('none' | 'boolean' | 'object') drives sidebar shape transitions
@@ -54,12 +54,14 @@ function mountEditor(config = {}, propsOverrides = {}) {
 }
 
 describe('DetailPageEditor', () => {
-	it('validatedConfigKeys is [register, schema, sidebar, sidebarProps]', () => {
+	it('validatedConfigKeys covers the config keys this editor writes', () => {
 		expect(mountEditor().vm.validatedConfigKeys).toEqual([
 			'register',
 			'schema',
 			'sidebar',
 			'sidebarProps',
+			'headerActions',
+			'lifecycleActions',
 		])
 	})
 

@@ -384,7 +384,9 @@
 					"slug": "data"
 				}
 			],
+			"flows": [],
 			"pageType": "detail",
+			"pages": [],
 			"parentRoute": ""
 		},
 		"emits": [
@@ -802,7 +804,9 @@
 					"slug": "data"
 				}
 			],
+			"flows": [],
 			"pageType": "index",
+			"pages": [],
 			"parentRoute": ""
 		},
 		"emits": [

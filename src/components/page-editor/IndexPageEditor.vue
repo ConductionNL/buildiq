@@ -44,6 +44,8 @@
 			<legend>{{ t('buildiq', 'Actions') }}</legend>
 			<ActionBuilder
 				:modelValue="config.actions || []"
+				:pages="pages"
+				:flows="flows"
 				@update:modelValue="update('actions', $event)" />
 			<InlineFieldMark :error="markFor('actions')" />
 		</fieldset>
@@ -101,6 +103,18 @@ export default {
 		pageType: {
 			type: String,
 			default: 'index',
+		},
+
+		/** This app's pages, for a "go to a page" action. */
+		pages: {
+			type: Array,
+			default: () => [],
+		},
+
+		/** The app's declared flows (`{flow, label?}`), for a "start a flow" action. */
+		flows: {
+			type: Array,
+			default: () => [],
 		},
 	},
 
