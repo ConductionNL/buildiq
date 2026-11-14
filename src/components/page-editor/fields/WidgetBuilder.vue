@@ -7,35 +7,44 @@
 		<div
 			v-for="(widget, index) in localWidgets"
 			:key="index"
-			class="widget-builder__row">
-			<input
-				:value="widget.id || ''"
-				type="text"
-				class="widget-builder__field"
-				:placeholder="t('buildiq', 'Widget id')"
-				:aria-label="t('buildiq', 'Widget id')"
-				@input="updateField(index, 'id', $event.target.value)" />
-			<input
-				:value="widget.title || ''"
-				type="text"
-				class="widget-builder__field"
-				:placeholder="t('buildiq', 'Title')"
-				:aria-label="t('buildiq', 'Title')"
-				@input="updateField(index, 'title', $event.target.value)" />
-			<input
-				:value="widget.type || ''"
-				type="text"
-				class="widget-builder__field widget-builder__field--narrow"
-				:placeholder="t('buildiq', 'Type')"
-				:aria-label="t('buildiq', 'Type')"
-				@input="updateField(index, 'type', $event.target.value)" />
-			<button
-				type="button"
-				class="widget-builder__remove"
-				:title="t('buildiq', 'Remove widget')"
-				@click="removeWidget(index)">
-				✕
-			</button>
+			class="widget-builder__item">
+			<div class="widget-builder__row">
+				<input
+					:value="widget.id || ''"
+					type="text"
+					class="widget-builder__field"
+					:placeholder="t('buildiq', 'Widget id')"
+					:aria-label="t('buildiq', 'Widget id')"
+					@input="updateField(index, 'id', $event.target.value)" />
+				<input
+					:value="widget.title || ''"
+					type="text"
+					class="widget-builder__field"
+					:placeholder="t('buildiq', 'Title')"
+					:aria-label="t('buildiq', 'Title')"
+					@input="updateField(index, 'title', $event.target.value)" />
+				<input
+					:value="widget.type || ''"
+					type="text"
+					class="widget-builder__field widget-builder__field--narrow"
+					:placeholder="t('buildiq', 'Type')"
+					:aria-label="t('buildiq', 'Type')"
+					@input="updateField(index, 'type', $event.target.value)" />
+				<button
+					type="button"
+					class="widget-builder__remove"
+					:title="t('buildiq', 'Remove widget')"
+					@click="removeWidget(index)">
+					✕
+				</button>
+			</div>
+			<!-- A chart is configured with the library's own chart form, the one
+			     the dashboard's in-app editor uses (pages-chart-widget-authoring D1). -->
+			<CnChartWidgetForm
+				v-if="widget.type === 'chart'"
+				class="widget-builder__chart"
+				:editingWidget="chartFormInput(widget)"
+				@update:content="updateChart(index, $event)" />
 		</div>
 		<button type="button" class="widget-builder__add" @click="addWidget">
 			+ {{ t('buildiq', 'Add widget') }}
@@ -44,8 +53,15 @@
 </template>
 
 <script>
+import { CnChartWidgetForm } from '@conduction/nextcloud-vue'
+import { chartFormInput, widgetWithChartContent } from './chartWidget.js'
+
 export default {
 	name: 'WidgetBuilder',
+	components: {
+		CnChartWidgetForm,
+	},
+
 	props: {
 		modelValue: {
 			type: Array,
@@ -66,6 +82,22 @@ export default {
 	},
 
 	methods: {
+		chartFormInput,
+
+		/**
+		 * Write the chart form's content onto the widget: the chart type as
+		 * `props.chartKind`, the binding as `dataSource`, never a `content` key.
+		 *
+		 * @param {number} index - position of the chart widget in the `widgets` array.
+		 * @param {{ chartKind: string, dataSource: object }} content - the form's `update:content` payload.
+		 * @spec openspec/changes/pages-chart-widget-authoring/specs/page-chart-authoring/spec.md#requirement-the-chart-is-saved-in-the-shape-the-manifest-schema-allows-req-bqcw-002
+		 */
+		updateChart(index, content) {
+			const next = this.localWidgets.slice()
+			next[index] = widgetWithChartContent(next[index], content)
+			this.$emit('update:modelValue', next)
+		},
+
 		/**
 		 * Observed behaviour of `updateField` (retrofit annotation).
 		 *
@@ -115,6 +147,17 @@ export default {
 	display: flex;
 	flex-direction: column;
 	gap: 6px;
+}
+
+.widget-builder__item {
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+}
+
+.widget-builder__chart {
+	padding: 8px;
+	border-left: 2px solid var(--color-border);
 }
 
 .widget-builder__row {

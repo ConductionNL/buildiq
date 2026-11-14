@@ -44,7 +44,8 @@ use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Kernel\Contracts\ConnectionReporterInterface;
 use OCA\Buildiq\Kernel\Contracts\GitHubAppSyncServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\PermissionResolverInterface;
-use OCA\Buildiq\Service\GitHub\SyncRequestParams;
+use OCA\Buildiq\Kernel\Contracts\SyncRequestParamsInterface;
+use OCA\Buildiq\Service\HelperFactory;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -110,11 +111,13 @@ class GitHubSyncController extends Controller {
 		$owner = (string)($this->request->getParam('owner') ?? '');
 		$name = (string)($this->request->getParam('name') ?? '');
 		$org = (string)($this->request->getParam('org') ?? '');
-		if (preg_match(SyncRequestParams::OWNER_REPO_PATTERN, $owner) !== 1 || preg_match(SyncRequestParams::OWNER_REPO_PATTERN, $name) !== 1) {
+		if (preg_match(SyncRequestParamsInterface::OWNER_REPO_PATTERN, $owner) !== 1
+			|| preg_match(SyncRequestParamsInterface::OWNER_REPO_PATTERN, $name) !== 1
+		) {
 			return $this->error(code: 'invalid_repo', status: Http::STATUS_BAD_REQUEST);
 		}
 
-		if ($org !== '' && preg_match(SyncRequestParams::OWNER_REPO_PATTERN, $org) !== 1) {
+		if ($org !== '' && preg_match(SyncRequestParamsInterface::OWNER_REPO_PATTERN, $org) !== 1) {
 			return $this->error(code: 'invalid_org', status: Http::STATUS_BAD_REQUEST);
 		}
 
@@ -313,10 +316,10 @@ class GitHubSyncController extends Controller {
 	/**
 	 * This request's GitHub sync parameters.
 	 *
-	 * @return SyncRequestParams
+	 * @return SyncRequestParamsInterface
 	 */
-	private function params(): SyncRequestParams {
-		return new SyncRequestParams(request: $this->request);
+	private function params(): SyncRequestParamsInterface {
+		return (new HelperFactory())->syncRequestParams(request: $this->request);
 	}//end params()
 
 	/**

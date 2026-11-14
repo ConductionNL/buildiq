@@ -178,6 +178,41 @@ class DashboardControllerTest extends TestCase {
 		$this->assertSame('spectr', $published['builderSlug']);
 	}//end testBuilderSlashDelegatesToBuilder()
 
+	/**
+	 * run() serves the same runtime at the installable path, and tells the template to link the web app manifest.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-a-maker-makes-an-app-installable-req-bqom-001
+	 */
+	public function testRunServesTheRuntimeAndLinksTheManifest(): void {
+		$published = $this->captureInitialState();
+
+		$response = $this->controller->run('spectr');
+
+		$this->assertSame('builder', $response->getTemplateName());
+		$this->assertSame('spectr', $published['builderSlug']);
+		$this->assertSame(['webManifest' => true], $response->getParams());
+		$this->assertSame([], $this->controller->builder('spectr')->getParams(), 'the /builder runtime links no manifest');
+	}//end testRunServesTheRuntimeAndLinksTheManifest()
+
+	/**
+	 * The run routes are signed-in routes: no public run or manifest route exists.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-a-maker-makes-an-app-installable-req-bqom-001
+	 */
+	public function testTheRunRoutesAreNotPublic(): void {
+		$routes = require __DIR__ . '/../../../appinfo/routes.php';
+		$run = array_values(array_filter($routes['routes'], static fn (array $route): bool => str_starts_with($route['url'], '/run/')));
+
+		$this->assertSame(['/run/{slug}/', '/run/{slug}/manifest.webmanifest'], array_column($run, 'url'));
+		foreach ([[\OCA\Buildiq\Controller\DashboardController::class, 'run'], [\OCA\Buildiq\Controller\ApplicationsController::class, 'webManifest']] as [$class, $method]) {
+			$this->assertSame([], (new \ReflectionMethod($class, $method))->getAttributes(\OCP\AppFramework\Http\Attribute\PublicPage::class));
+		}
+	}//end testTheRunRoutesAreNotPublic()
+
 	// -------------------------------------------------------------------------
 	// builderPath() — generic virtual-app deep link (#100)
 	// -------------------------------------------------------------------------

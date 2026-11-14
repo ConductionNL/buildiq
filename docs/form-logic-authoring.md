@@ -131,6 +131,40 @@ blocking check that fails refuses the save with its explanation.
 > them, the form shows the fields as plain inputs; the server still
 > recomputes and checks on save.
 
+## Field types, files, tables and answers that fill other answers
+
+The designer's palette lists every field type it offers: text, number, yes
+or no, choice, long text, date, file and table of records. Drag a type onto
+the form and drop it where it should go, or drag a field's handle to move
+it. Without a mouse, pick a type in the palette and press Enter: the field
+is added at the end and gets focus, and **Move field up** / **Move field
+down** put it in place.
+
+A **file** field has its own settings under **Details**:
+
+- **Allowed file types**, written as `accept` (for example `.pdf,image/*`).
+- **Maximum size (MB)**, written as `maxSize` in bytes (10 MB is
+  `10485760`).
+- **Several files**, written as `multiple: true`.
+- **Camera**: off, back camera (`capture: "environment"`) or front camera
+  (`capture: "user"`). Off removes `capture`.
+
+A **table of records** field edits another schema's records inside the form,
+such as order lines on an order. Pick the child schema from the form's
+register; the designer then offers the child's fields that point back at the
+form's schema (`parentField`) and the columns to show (`columns`). A schema
+with no field pointing back is named as unusable and is not saved on the
+field. Saving a form whose table has no schema or no parent field lists it as
+a finding.
+
+**Fill in from another answer** writes a field's `assign` rules. Each rule
+is a condition on another field (the same operators as a condition) and a
+value: a fixed value, another answer (`@answer.<field>`) or a token such as
+`@me` or `@today`. The first rule whose condition holds fills the field; once
+the person types in it themselves, the rules stop. A rule may not read the
+field it fills: the designer refuses it, and a rule naming a field the form
+does not have is listed as a finding.
+
 ## The dangling-reference warning
 
 Deleting a field that's still referenced by another field's condition,
