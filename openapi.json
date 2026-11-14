@@ -2980,6 +2980,62 @@
                 }
             }
         },
+        "/journeys": {
+            "post": {
+                "operationId": "journey-designer-save",
+                "summary": "Save a journey",
+                "description": "Save a journey of the Journey Designer as a `journey` object in the buildiq register. Every write is judged first by the same check as `/journeys/check`; a journey with a refused write is answered 422 with the findings and not stored. A form step is stored with its `formId` reference only. Body: `{ journey }` (with `id` to update one). Answer: `{ id, journey }`. Needs a Nextcloud administrator: authoring a journey can write into any register.",
+                "tags": [
+                    "journey-designer"
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "journey": {
+                                        "description": "The journey: `id` (empty for a new one), `title`, `description` and `steps[]`."
+                                    }
+                                },
+                                "additionalProperties": false
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Problem422"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                }
+            }
+        },
         "/openapi.json": {
             "get": {
                 "operationId": "open-api-show",

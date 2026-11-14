@@ -79,6 +79,7 @@ import BuilderHostView from './views/BuilderHost.vue'
 // modelled on the DocuDesk dashboard pattern; mounted via the type:"custom"
 // Dashboard manifest page to avoid the dashboard-in-dashboard antipattern.
 import DashboardIndex from './views/DashboardIndex.vue'
+import JourneyDesignerView from './views/JourneyDesigner.vue'
 // ManifestLayersDetail — routed Manifest detail page (delta layers + per-layer
 // OR version history + rollback), reached from the app-detail Manifest widget
 // (layered-versioned-app-deltas).
@@ -229,6 +230,7 @@ export default {
 	// Custom page components — resolved by CnPageRenderer for type:"custom" pages.
 	SchemaDesignerView: page(SchemaDesignerView),
 	PageDesignerView: page(PageDesignerView),
+	JourneyDesignerView: page(JourneyDesignerView),
 	WalkthroughDesignerView: page(WalkthroughDesignerView),
 	BuilderHostView: page(BuilderHostView),
 	DashboardIndex: page(DashboardIndex),

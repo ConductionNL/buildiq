@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\Controller;
 
 use OCA\Buildiq\Controller\JourneyDesignerController;
+use OCA\Buildiq\Kernel\Contracts\JourneyStoreInterface;
 use OCA\Buildiq\Service\JourneyWritesCheck;
 use OCP\AppFramework\Http;
 use OCP\IGroupManager;
@@ -56,6 +57,13 @@ final class JourneyDesignerControllerTest extends TestCase {
 	 * @var LoggerInterface&MockObject
 	 */
 	private LoggerInterface $logger;
+
+	/**
+	 * The journey store double.
+	 *
+	 * @var JourneyStoreInterface&MockObject
+	 */
+	private JourneyStoreInterface $store;
 
 	/**
 	 * A Page Designer editor who is no administrator is refused, and the refusal names journey authoring.
@@ -150,6 +158,106 @@ final class JourneyDesignerControllerTest extends TestCase {
 	}//end testAFailureIsLoggedNotShown()
 
 	/**
+	 * A Page Designer editor who is no administrator cannot save a journey, and the refusal names journey authoring.
+	 *
+	 * @return void
+	 */
+	public function testSavingIsRefusedToAPageDesignerUserWhoIsNoAdmin(): void {
+		$controller = $this->controller(uid: 'editor', admin: false, journey: ['title' => 'J', 'steps' => []]);
+		$this->writes->expects($this->never())->method('findings');
+		$this->store->expects($this->never())->method('save');
+
+		$response = $controller->save();
+
+		self::assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+		self::assertSame(['error' => 'forbidden', 'message' => JourneyDesignerController::FORBIDDEN_DETAIL], $response->getData());
+		self::assertStringContainsString('Authoring a journey', $response->getData()['message']);
+	}//end testSavingIsRefusedToAPageDesignerUserWhoIsNoAdmin()
+
+	/**
+	 * Nobody signed in cannot save a journey.
+	 *
+	 * @return void
+	 */
+	public function testSavingAsksAnAnonymousCallerToSignIn(): void {
+		$controller = $this->controller(uid: null, admin: false, journey: ['steps' => []]);
+		$this->store->expects($this->never())->method('save');
+
+		self::assertSame(Http::STATUS_UNAUTHORIZED, $controller->save()->getStatus());
+	}//end testSavingAsksAnAnonymousCallerToSignIn()
+
+	/**
+	 * A journey with a refused write is not stored; the findings come back as a 422.
+	 *
+	 * @return void
+	 */
+	public function testAJourneyWithARefusedWriteIsNotStored(): void {
+		$journey    = ['title' => 'J', 'steps' => [['id' => 'a', 'type' => 'form', 'formId' => 'f', 'writes' => [['as' => 'org']]]]];
+		$finding    = ['step' => 'a', 'write' => 'org', 'property' => 'naam', 'code' => 'property-unknown', 'message' => 'x'];
+		$controller = $this->controller(uid: 'admin', admin: true, journey: $journey);
+		$this->writes->expects($this->once())->method('findings')->with($journey)->willReturn([$finding]);
+		$this->store->expects($this->never())->method('save');
+
+		$response = $controller->save();
+
+		self::assertSame(Http::STATUS_UNPROCESSABLE_ENTITY, $response->getStatus());
+		self::assertSame('journey_refused', $response->getData()['error']);
+		self::assertSame([$finding], $response->getData()['findings']);
+	}//end testAJourneyWithARefusedWriteIsNotStored()
+
+	/**
+	 * Save and check judge the writes with the same check, so they refuse the same journey alike.
+	 *
+	 * @return void
+	 */
+	public function testSaveAndCheckRefuseTheSameWriteAlike(): void {
+		$journey    = ['steps' => [['id' => 'a', 'writes' => [['as' => 'org']]]]];
+		$finding    = ['step' => 'a', 'write' => 'org', 'property' => 'naam', 'code' => 'property-unknown', 'message' => 'x'];
+		$controller = $this->controller(uid: 'admin', admin: true, journey: $journey);
+		$this->writes->expects($this->exactly(2))->method('findings')->with($journey)->willReturn([$finding]);
+
+		self::assertSame($controller->check()->getData()['findings'], $controller->save()->getData()['findings']);
+	}//end testSaveAndCheckRefuseTheSameWriteAlike()
+
+	/**
+	 * An administrator's journey without findings is stored and its id returned.
+	 *
+	 * @return void
+	 */
+	public function testAnAdministratorSavesAJourney(): void {
+		$journey    = ['title' => 'J', 'steps' => [['id' => 'r', 'type' => 'review']]];
+		$stored     = ['title' => 'J', 'description' => '', 'steps' => [['id' => 'r', 'type' => 'review']], 'id' => 'uuid-1'];
+		$controller = $this->controller(uid: 'admin', admin: true, journey: $journey);
+		$this->writes->method('findings')->willReturn([]);
+		$this->store->expects($this->once())->method('save')->with($journey)->willReturn($stored);
+
+		$response = $controller->save();
+
+		self::assertSame(Http::STATUS_OK, $response->getStatus());
+		self::assertSame(['id' => 'uuid-1', 'journey' => $stored], $response->getData());
+	}//end testAnAdministratorSavesAJourney()
+
+	/**
+	 * A save without a journey is a 400, and a failing store is logged and answered as a 500 without its cause.
+	 *
+	 * @return void
+	 */
+	public function testSavingRefusesAMissingJourneyAndHidesAFailure(): void {
+		$controller = $this->controller(uid: 'admin', admin: true, journey: null);
+		self::assertSame(Http::STATUS_BAD_REQUEST, $controller->save()->getStatus());
+
+		$controller = $this->controller(uid: 'admin', admin: true, journey: ['steps' => []]);
+		$this->writes->method('findings')->willReturn([]);
+		$this->store->method('save')->willThrowException(new RuntimeException('register store down'));
+		$this->logger->expects($this->once())->method('error')->with('Buildiq: saving a journey failed: register store down');
+
+		$response = $controller->save();
+
+		self::assertSame(Http::STATUS_INTERNAL_SERVER_ERROR, $response->getStatus());
+		self::assertStringNotContainsString('register store down', (string)json_encode($response->getData()));
+	}//end testSavingRefusesAMissingJourneyAndHidesAFailure()
+
+	/**
 	 * The controller for this caller and body.
 	 *
 	 * @param string|null $uid     The caller, or null when nobody is signed in.
@@ -176,6 +284,7 @@ final class JourneyDesignerControllerTest extends TestCase {
 
 		$this->writes = $this->createMock(JourneyWritesCheck::class);
 		$this->logger = $this->createMock(LoggerInterface::class);
+		$this->store  = $this->createMock(JourneyStoreInterface::class);
 
 		return new JourneyDesignerController(
 			request: $request,
@@ -183,6 +292,7 @@ final class JourneyDesignerControllerTest extends TestCase {
 			userSession: $session,
 			groupManager: $groups,
 			logger: $this->logger,
+			store: $this->store,
 		);
 	}//end controller()
 }//end class
