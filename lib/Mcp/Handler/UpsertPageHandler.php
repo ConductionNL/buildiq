@@ -117,7 +117,12 @@ class UpsertPageHandler extends AbstractToolHandler {
 
 		$saved = $this->saveVersionManifest(objectService: $this->objectService, version: $loaded['version'], manifest: $manifest);
 
-		return $this->upsertOutcome(replaced: $replaced) + [
+		$outcome = $this->upsertOutcome(replaced: $replaced);
+		if ($validation['codeNotice'] !== null) {
+			$outcome['notice'] = $validation['codeNotice'];
+		}
+
+		return $outcome + [
 			'page' => $newPage,
 			'pageCount' => count($pages),
 			'version' => $this->versionSummary(saved: $saved, versionSlug: $versionSlug),
@@ -178,7 +183,10 @@ class UpsertPageHandler extends AbstractToolHandler {
 			$config = [];
 		}
 
+		[$config, $codeNotice] = $this->withoutCode(config: $config);
+
 		return [
+			'codeNotice' => $codeNotice,
 			'appSlug' => $appSlug,
 			'versionSlug' => $versionSlug,
 			'pageId' => $pageId,

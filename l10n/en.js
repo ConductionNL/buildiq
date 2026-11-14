@@ -2183,7 +2183,10 @@ OC.L10N.register(
         "Window start": "Window start",
         "Include server bundle": "Include server bundle",
         "Failures": "Failures",
-        "Failed requests, 4xx and 5xx together. Derived by the server, never posted; summed by the request failure metric.": "Failed requests, 4xx and 5xx together. Derived by the server, never posted; summed by the request failure metric."
+        "Failed requests, 4xx and 5xx together. Derived by the server, never posted; summed by the request failure metric.": "Failed requests, 4xx and 5xx together. Derived by the server, never posted; summed by the request failure metric.",
+        "Code on pages": "Code on pages",
+        "Allow code on pages": "Allow code on pages",
+        "Lets app owners write their own HTML, CSS and JavaScript on a page, and computed columns and fields. The code runs in a sandbox with no network access. When off, code shows a placeholder and computed values stay empty.": "Lets app owners write their own HTML, CSS and JavaScript on a page, and computed columns and fields. The code runs in a sandbox with no network access. When off, code shows a placeholder and computed values stay empty."
     },
     "nplurals=2; plural=(n != 1);"
 )

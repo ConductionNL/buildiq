@@ -163,7 +163,7 @@ class AddWidgetHandler extends AbstractToolHandler {
 		$pageConfig = (array)($pages[$foundIdx]['config'] ?? []);
 		$widgetCount = count((array)($pageConfig['widgets'] ?? []));
 
-		return [
+		$result = [
 			'success' => true,
 			'added' => true,
 			'widget' => $widget,
@@ -171,6 +171,11 @@ class AddWidgetHandler extends AbstractToolHandler {
 			'widgetCount' => $widgetCount,
 			'version' => $this->versionSummary(saved: $saved, versionSlug: $versionSlug),
 		];
+		if ($validation['codeNotice'] !== null) {
+			$result['notice'] = $validation['codeNotice'];
+		}
+
+		return $result;
 	}//end addWidget()
 
 	/**
@@ -179,7 +184,7 @@ class AddWidgetHandler extends AbstractToolHandler {
 	 * @param array<string, mixed> $args Raw tool arguments.
 	 *
 	 * @return array{appSlug?: string, versionSlug?: string, pageId?: string, widgetType?: string,
-	 *               widgetConfig?: array, widgetId?: string, title?: string, error?: string}
+	 *               widgetConfig?: array, codeNotice?: string|null, widgetId?: string, title?: string, error?: string}
 	 */
 	private function validateArgs(array $args): array {
 		$appSlug = (string)($args['appSlug'] ?? '');
@@ -212,6 +217,8 @@ class AddWidgetHandler extends AbstractToolHandler {
 			$widgetConfig = [];
 		}
 
+		[$widgetConfig, $codeNotice] = $this->withoutCode(config: $widgetConfig);
+
 		$identityError = $this->validateIdentity(widgetId: $widgetId, title: $title);
 		if ($identityError !== null) {
 			return ['error' => $identityError];
@@ -223,6 +230,7 @@ class AddWidgetHandler extends AbstractToolHandler {
 			'pageId' => $pageId,
 			'widgetType' => $widgetType,
 			'widgetConfig' => $widgetConfig,
+			'codeNotice' => $codeNotice,
 			'widgetId' => $widgetId,
 			'title' => $title,
 		];

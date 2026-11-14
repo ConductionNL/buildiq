@@ -27,6 +27,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Mcp\Handler;
 
 use OCA\Buildiq\Kernel\Contracts\PermissionResolverInterface;
+use OCA\Buildiq\Service\PageCodeGuard;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
@@ -606,6 +607,26 @@ abstract class AbstractToolHandler {
 
 		return $this->checkManifestCaps(manifest: $manifest);
 	}//end appendCapError()
+
+	/**
+	 * A page or widget config from the copilot without code or expressions,
+	 * and the notice for the plan's review when any were left out
+	 * (pages-custom-code D6: the copilot and agents never write code).
+	 *
+	 * @param array<mixed> $config The config the tool was given.
+	 *
+	 * @return array{0: array<mixed>, 1: string|null}
+	 *
+	 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-only-owners-write-code-and-only-when-allowed-req-bqcc-005
+	 */
+	protected function withoutCode(array $config): array {
+		[$cleaned, $removed] = (new PageCodeGuard())->stripConfig(config: $config);
+		if ($removed === []) {
+			return [$cleaned, null];
+		}
+
+		return [$cleaned, 'Code and expressions were left out (' . implode(', ', $removed) . '): app owners write code on a page.'];
+	}//end withoutCode()
 
 	/**
 	 * The leading keys of a successful upsert result.
