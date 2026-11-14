@@ -40,7 +40,8 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Integration;
 
-use OCA\Buildiq\Service\RegistrationFormPresenter;
+use OCA\Buildiq\Kernel\Contracts\RegistrationFormPresenterInterface;
+use OCA\Buildiq\Service\HelperFactory;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\IAppConfig;
 use OCP\IUserSession;
@@ -74,12 +75,19 @@ final class RegistrationFormLeafProvider extends AppLocalLeafProvider {
 	private const SCHEMA_DRAFT = 'formDraft';
 
 	/**
+	 * The shape a form takes on its way out.
+	 *
+	 * @var RegistrationFormPresenterInterface
+	 */
+	private readonly RegistrationFormPresenterInterface $presenter;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ObjectServiceInterface $objectService OpenRegister's object service.
-	 * @param IAppConfig $appConfig App config, for the register slug.
-	 * @param IUserSession $userSession The calling user, who owns the drafts.
-	 * @param RegistrationFormPresenter $presenter The shape a form takes on its way out.
+	 * @param ObjectServiceInterface                  $objectService OpenRegister's object service.
+	 * @param IAppConfig                              $appConfig     App config, for the register slug.
+	 * @param IUserSession                            $userSession   The calling user, who owns the drafts.
+	 * @param RegistrationFormPresenterInterface|null $presenter     How a form is shaped on its way out; null: the default.
 	 *
 	 * @return void
 	 */
@@ -87,8 +95,9 @@ final class RegistrationFormLeafProvider extends AppLocalLeafProvider {
 		private readonly ObjectServiceInterface $objectService,
 		private readonly IAppConfig $appConfig,
 		private readonly IUserSession $userSession,
-		private readonly RegistrationFormPresenter $presenter = new RegistrationFormPresenter(),
+		?RegistrationFormPresenterInterface $presenter = null,
 	) {
+		$this->presenter = ($presenter ?? (new HelperFactory())->registrationFormPresenter());
 	}//end __construct()
 
 	/**

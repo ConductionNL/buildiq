@@ -64,6 +64,7 @@ use OCA\Buildiq\Kernel\Contracts\PageLayoutFrozenBaseInterface;
 use OCA\Buildiq\Kernel\Contracts\PageLayoutLayerStackInterface;
 use OCA\Buildiq\Kernel\Contracts\PageLayoutPresenterInterface;
 use OCA\Buildiq\Kernel\Contracts\PermissionResolverInterface;
+use OCA\Buildiq\Kernel\Contracts\PublishedApplicationProviderInterface;
 use OCA\Buildiq\Kernel\Contracts\RegistrationFormAuthoringServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\RegistrationFormTargetWarningsInterface;
 use OCA\Buildiq\Kernel\Contracts\RuleActionDispatcherInterface;
@@ -153,6 +154,7 @@ final class ContractBindings {
 		$context->registerServiceAlias(PageLayoutLayerStackInterface::class, PageLayoutLayerStack::class);
 		$context->registerServiceAlias(PageLayoutPresenterInterface::class, PageLayoutPresenter::class);
 		$context->registerServiceAlias(PermissionResolverInterface::class, PermissionResolver::class);
+		$context->registerServiceAlias(PublishedApplicationProviderInterface::class, PublishedApplicationProvider::class);
 		$context->registerServiceAlias(RegistrationFormAuthoringServiceInterface::class, RegistrationFormAuthoringService::class);
 		$context->registerServiceAlias(RegistrationFormTargetWarningsInterface::class, RegistrationFormTargetWarnings::class);
 		$context->registerServiceAlias(RuleActionDispatcherInterface::class, RuleActionDispatcher::class);
