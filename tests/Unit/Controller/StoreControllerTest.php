@@ -363,4 +363,41 @@ class StoreControllerTest extends TestCase {
 		self::assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
 
 	}//end testInstallMissingNameIsBadRequest()
+	/**
+	 * The search answer names the catalogue by its host only: no scheme, path
+	 * or token. A store that is not configured gets no `source` (REQ-BQRS-001, design D5).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/reuse-remote-store-section/specs/template-catalogue-ui/spec.md#requirement-the-app-store-shows-the-shared-catalogue-as-a-section-req-bqrs-001
+	 */
+	public function testTheSearchNamesTheCatalogueByItsHostOnly(): void {
+		$this->userSession->method('getUser')->willReturn($this->mockUser('alice'));
+		$this->request->method('getParam')->willReturn(null);
+		$appConfig = $this->createMock(\OCP\IAppConfig::class);
+		$appConfig->method('getValueString')->with('buildiq', 'registry_url', '')->willReturn('https://store.example.nl/x?token=y');
+		$this->storeService->method('search')->willReturnOnConsecutiveCalls(
+			['outcome' => GenericStoreService::OUTCOME_OK, 'cards' => []],
+			['outcome' => GenericStoreService::OUTCOME_NOT_CONFIGURED, 'cards' => []],
+			$this->throwException(new \RuntimeException('timeout talking to https://store.example.nl/x?token=y'))
+		);
+		$controller = new StoreController(
+			request: $this->request,
+			logger: $this->logger,
+			userSession: $this->userSession,
+			store: new StoreClient(storeService: $this->storeService, actionAuthorizer: $this->actionAuthorizer),
+			appsController: $this->appsController,
+			appConfig: $appConfig
+		);
+
+		$ok = $controller->search()->getData();
+		$notConfigured = $controller->search()->getData();
+		$unreachable = $controller->search()->getData();
+
+		self::assertSame('store.example.nl', $ok['source']);
+		self::assertArrayNotHasKey('source', $notConfigured);
+		self::assertSame(['outcome' => GenericStoreService::OUTCOME_UNREACHABLE, 'cards' => [], 'source' => 'store.example.nl'], $unreachable);
+		self::assertStringNotContainsString('token', json_encode([$ok, $unreachable]));
+	}//end testTheSearchNamesTheCatalogueByItsHostOnly()
+
 }//end class
