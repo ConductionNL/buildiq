@@ -2059,7 +2059,11 @@ OC.L10N.register(
         "Requests under 250 ms": "Requests under 250 ms",
         "Total load time (ms)": "Total load time (ms)",
         "Window start": "Window start",
-        "Include server bundle": "Include server bundle"
+        "Include server bundle": "Include server bundle",
+        "Panel icon": "Panel icon",
+        "Panel title": "Panel title",
+        "Show on the Nextcloud dashboard": "Show on the Nextcloud dashboard",
+        "The app icon": "The app icon"
     },
     "nplurals=2; plural=(n != 1);"
 )

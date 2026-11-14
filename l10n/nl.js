@@ -1644,7 +1644,11 @@ OC.L10N.register(
         "Requests under 250 ms": "Verzoeken onder 250 ms",
         "Total load time (ms)": "Totale laadtijd (ms)",
         "Window start": "Begin van het venster",
-        "Include server bundle": "Serverbundel meenemen"
+        "Include server bundle": "Serverbundel meenemen",
+        "Show on the Nextcloud dashboard": "Tonen op het Nextcloud-dashboard",
+        "Panel title": "Titel van het paneel",
+        "Panel icon": "Pictogram van het paneel",
+        "The app icon": "Het pictogram van de app"
     },
     "nplurals=2; plural=(n != 1);"
 )

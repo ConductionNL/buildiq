@@ -216,8 +216,50 @@
 							@input="updateNote(row.index, $event.target.value)" />
 					</label>
 
-					<!-- D8 leaves room here: the sibling change hangs a promote
-					     toggle off this row, so the controls are a list rather
+					<!-- publish-widgets-to-nc-dashboard: off for every existing
+					     widget, so opening and saving a page promotes nothing.
+					     Promoting gives the placement an id when it has none;
+					     demoting keeps it, so promoting again restores the same
+					     dashboard widget id. -->
+					<label class="widget-placement-panel__field widget-placement-panel__field--promote">
+						<input
+							type="checkbox"
+							:checked="isPromoted(row.entry)"
+							data-testid="placement-promote"
+							@change="setPromoted(row.index, $event.target.checked)" />
+						<span>{{ t('buildiq', 'Show on the Nextcloud dashboard') }}</span>
+					</label>
+					<template v-if="isPromoted(row.entry)">
+						<label class="widget-placement-panel__field">
+							<span>{{ t('buildiq', 'Panel title') }}</span>
+							<input
+								type="text"
+								class="widget-placement-panel__note"
+								:value="row.entry.ncDashboard.title || ''"
+								data-testid="placement-panel-title"
+								@input="updatePanel(row.index, 'title', $event.target.value)" />
+						</label>
+						<label class="widget-placement-panel__field">
+							<span>{{ t('buildiq', 'Panel icon') }}</span>
+							<select
+								class="widget-placement-panel__select"
+								:value="row.entry.ncDashboard.icon || ''"
+								data-testid="placement-panel-icon"
+								@change="updatePanel(row.index, 'icon', $event.target.value)">
+								<option value="">
+									{{ t('buildiq', 'The app icon') }}
+								</option>
+								<option
+									v-for="name in panelIcons"
+									:key="name"
+									:value="name">
+									{{ name }}
+								</option>
+							</select>
+						</label>
+					</template>
+
+					<!-- D8 leaves room here: the controls are a list rather
 					     than two hard-coded buttons. -->
 					<span class="widget-placement-panel__actions">
 						<button
@@ -326,6 +368,7 @@
 import {
 	CnAddWidgetModal,
 	CnWidgetGrid,
+	DASHBOARD_ICONS,
 	getWidgetTypeEntry,
 	listWidgetTypes,
 } from '@conduction/nextcloud-vue'
@@ -509,6 +552,16 @@ export default {
 			return this.page && Array.isArray(this.page.widgets)
 				? this.page.widgets
 				: []
+		},
+
+		/**
+		 * The icons a dashboard panel may take: the shared icon set.
+		 *
+		 * @return {string[]} the icon names.
+		 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/openbuild-page-designer/spec.md#requirement-promote-a-widget-to-the-nextcloud-dashboard-from-the-page-designer
+		 */
+		panelIcons() {
+			return Object.keys(DASHBOARD_ICONS)
 		},
 
 		/**
@@ -811,6 +864,74 @@ export default {
 		 */
 		updateGeometry(index, key, value) {
 			this.writeEntry(index, { [key]: value })
+		},
+
+		/**
+		 * Whether a placement is promoted to the Nextcloud dashboard.
+		 *
+		 * @param {object} entry - the placement.
+		 * @return {boolean} true when it carries an `ncDashboard` object.
+		 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/openbuild-page-designer/spec.md#requirement-promote-a-widget-to-the-nextcloud-dashboard-from-the-page-designer
+		 */
+		isPromoted(entry) {
+			return Boolean(entry && entry.ncDashboard && typeof entry.ncDashboard === 'object' && !Array.isArray(entry.ncDashboard))
+		},
+
+		/**
+		 * Promote or demote one placement. Promoting writes an empty
+		 * `ncDashboard` object and gives the placement a stable id when it has
+		 * none, because the schema requires one and the dashboard widget id is
+		 * derived from it. Demoting removes `ncDashboard` and keeps the id.
+		 *
+		 * @param {number} index - the placement's position in `widgets[]`.
+		 * @param {boolean} on - whether it is now promoted.
+		 * @return {void}
+		 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/openbuild-page-designer/spec.md#requirement-promote-a-widget-to-the-nextcloud-dashboard-from-the-page-designer
+		 */
+		setPromoted(index, on) {
+			const current = this.placements[index]
+			if (!current || this.isPromoted(current) === on) {
+				return
+			}
+			const entry = { ...current }
+			if (on) {
+				if (typeof entry.id !== 'string' || entry.id === '') {
+					const existingIds = new Set(this.placements.map((placement) => placement && placement.id).filter(Boolean))
+					entry.id = mintWidgetId(entry.widgetKey, existingIds)
+				}
+				entry.ncDashboard = {}
+			} else {
+				delete entry.ncDashboard
+			}
+			const next = this.placements.slice()
+			next[index] = entry
+			this.emitWidgets(next)
+		},
+
+		/**
+		 * Set or clear the panel title or icon of a promoted placement. An icon
+		 * outside the shared icon set is not written.
+		 *
+		 * @param {number} index - the placement's position in `widgets[]`.
+		 * @param {'title'|'icon'} key - the panel field.
+		 * @param {string} value - the new value; empty clears it.
+		 * @return {void}
+		 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/openbuild-page-designer/spec.md#requirement-promote-a-widget-to-the-nextcloud-dashboard-from-the-page-designer
+		 */
+		updatePanel(index, key, value) {
+			const current = this.placements[index]
+			if (!this.isPromoted(current) || (key === 'icon' && value !== '' && !this.panelIcons.includes(value))) {
+				return
+			}
+			const panel = { ...current.ncDashboard }
+			if (typeof value === 'string' && value.trim() !== '') {
+				panel[key] = value
+			} else {
+				delete panel[key]
+			}
+			const next = this.placements.slice()
+			next[index] = { ...current, ncDashboard: panel }
+			this.emitWidgets(next)
 		},
 
 		/**
@@ -1163,6 +1284,12 @@ export default {
 
 .widget-placement-panel__field--note {
 	flex: 1 1 200px;
+}
+
+.widget-placement-panel__field--promote {
+	flex-direction: row;
+	align-items: center;
+	gap: 6px;
 }
 
 .widget-placement-panel__number {
