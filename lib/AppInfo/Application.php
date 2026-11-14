@@ -28,14 +28,11 @@ use OCA\Buildiq\Capabilities;
 use OCA\Buildiq\Controller\ControllerRegistrar;
 use OCA\Buildiq\Integration\IntegrationRegistrar;
 use OCA\Buildiq\Kernel\AppIdentity;
-use OCA\Buildiq\Kernel\Contracts\ManifestResolverServiceInterface;
 use OCA\Buildiq\Lifecycle\LifecycleRegistrar;
-use OCA\Buildiq\Listener\BuiltAppDeepLinkListener;
 use OCA\Buildiq\Listener\ListenerRegistrar;
 use OCA\Buildiq\Mcp\McpRegistrar;
 use OCA\Buildiq\Middleware\MiddlewareRegistrar;
 use OCA\Buildiq\Repair\RepairRegistrar;
-use OCA\Buildiq\Service\PublishedApplicationProvider;
 use OCA\Buildiq\Service\ServiceRegistrar;
 use OCA\Buildiq\Settings\SettingsRegistrar;
 use OCA\OpenRegister\AppHost\Bootstrap;
@@ -83,6 +80,7 @@ class Application extends App implements IBootstrap {
 		$this->registerAppHostPlumbing(context: $context);
 		(new ServiceRegistrar())->registerDashboardServices(context: $context);
 		(new ControllerRegistrar())->registerConcreteControllers(context: $context);
+		(new ControllerRegistrar())->registerContractBindings(context: $context);
 		(new ServiceRegistrar())->registerSettingsService(context: $context);
 		(new RepairRegistrar())->registerSettingsRepairStep(context: $context);
 		(new ControllerRegistrar())->registerSettingsController(context: $context);
@@ -218,20 +216,7 @@ class Application extends App implements IBootstrap {
 	 * @spec openspec/changes/apps-unified-search-deep-links/tasks.md#task-2.2
 	 */
 	private function registerDeepLinkListener(IRegistrationContext $context): void {
-		$context->registerService(
-			BuiltAppDeepLinkListener::class,
-			static fn ($c): BuiltAppDeepLinkListener => new BuiltAppDeepLinkListener(
-				appId: self::APP_ID,
-				appManager: $c->get('OCP\\App\\IAppManager'),
-				logger: $c->get(LoggerInterface::class),
-				applications: $c->get(PublishedApplicationProvider::class),
-				manifestResolver: $c->get(ManifestResolverServiceInterface::class)
-			)
-		);
-		$context->registerEventListener(
-			'OCA\\OpenRegister\\Event\\DeepLinkRegistrationEvent',
-			BuiltAppDeepLinkListener::class
-		);
+		(new ListenerRegistrar())->registerDeepLinkListener(context: $context);
 	}//end registerDeepLinkListener()
 
 	/**

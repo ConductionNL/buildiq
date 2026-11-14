@@ -28,10 +28,10 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
-use OCA\Buildiq\Controller\ApplicationsController;
 use OCA\Buildiq\Exception\AppRepoParseException;
 use OCA\Buildiq\Kernel\Contracts\AppPackageImportServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\AppRepoParserInterface;
+use OCA\Buildiq\Kernel\Contracts\TemplateInstallSeamInterface;
 use OCP\AppFramework\Http;
 use ZipArchive;
 
@@ -93,14 +93,14 @@ class AppPackageImportService implements AppPackageImportServiceInterface {
 	/**
 	 * Constructor.
 	 *
-	 * @param AppRepoParserInterface $parser  Parses the package with the GitHub install's rules.
-	 * @param ApplicationsController $install The install seam GitHub installs and templates share.
+	 * @param AppRepoParserInterface       $parser  Parses the package with the GitHub install's rules.
+	 * @param TemplateInstallSeamInterface $install The install seam GitHub installs and templates share.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly AppRepoParserInterface $parser,
-		private readonly ApplicationsController $install,
+		private readonly TemplateInstallSeamInterface $install,
 	) {
 	}//end __construct()
 

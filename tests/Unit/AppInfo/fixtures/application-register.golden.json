@@ -22,6 +22,13 @@
     {
         "method": "registerServiceAlias",
         "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\AppCatalogueInterface",
+            "target": "OCA\\Buildiq\\Service\\AppCatalogue"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
             "alias": "OCA\\Buildiq\\Kernel\\Contracts\\AppChannelApplierInterface",
             "target": "OCA\\Buildiq\\Service\\AppChannelApplier"
         }
@@ -162,6 +169,13 @@
     {
         "method": "registerServiceAlias",
         "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\ExportArchiveStoreInterface",
+            "target": "OCA\\Buildiq\\Service\\ExportArchiveStore"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
             "alias": "OCA\\Buildiq\\Kernel\\Contracts\\ExportJobServiceInterface",
             "target": "OCA\\Buildiq\\Service\\ExportJobService"
         }
@@ -227,6 +241,13 @@
         "args": {
             "alias": "OCA\\Buildiq\\Kernel\\Contracts\\IconServiceInterface",
             "target": "OCA\\Buildiq\\Service\\IconService"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\JourneyWritesCheckInterface",
+            "target": "OCA\\Buildiq\\Service\\JourneyWritesCheck"
         }
     },
     {
@@ -451,6 +472,13 @@
         "args": {
             "name": "OCA\\Buildiq\\Controller\\PreferencesController",
             "factory": "factory:OCA\\Buildiq\\Controller\\PreferencesController"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\TemplateInstallSeamInterface",
+            "target": "OCA\\Buildiq\\Controller\\ApplicationsController"
         }
     },
     {

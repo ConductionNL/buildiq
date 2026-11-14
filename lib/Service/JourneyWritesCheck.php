@@ -34,12 +34,14 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\JourneyWritesCheckInterface;
+
 /**
  * Every finding on a journey's writes, each tagged with its step and write.
  *
  * @spec openspec/changes/journey-designer/specs/journey-designer/spec.md#requirement-write-mappings-must-be-validated-against-the-target-schema-at-author-time
  */
-class JourneyWritesCheck {
+class JourneyWritesCheck implements JourneyWritesCheckInterface {
 
 	/**
 	 * The id OpenRegister's submit path puts in place of a `{ "$write": "<as>" }` value before it validates.

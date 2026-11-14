@@ -26,7 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Command;
 
-use OCA\Buildiq\Service\AppCatalogue;
+use OCA\Buildiq\Kernel\Contracts\AppCatalogueInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Helper\Table;
@@ -43,12 +43,12 @@ class AppList extends Command {
 	/**
 	 * Constructor.
 	 *
-	 * @param AppCatalogue $catalogue Reads the apps and their versions.
+	 * @param AppCatalogueInterface $catalogue Reads the apps and their versions.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly AppCatalogue $catalogue,
+		private readonly AppCatalogueInterface $catalogue,
 	) {
 		parent::__construct();
 	}//end __construct()

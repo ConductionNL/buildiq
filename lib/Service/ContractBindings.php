@@ -21,6 +21,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\AppCatalogueInterface;
 use OCA\Buildiq\Kernel\Contracts\AppChannelApplierInterface;
 use OCA\Buildiq\Kernel\Contracts\AppHealthServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\AutomationRunRecorderInterface;
@@ -41,6 +42,7 @@ use OCA\Buildiq\Kernel\Contracts\CopilotServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\DemoDataServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\DocumentGenerationServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\ExportAppContentBundlerInterface;
+use OCA\Buildiq\Kernel\Contracts\ExportArchiveStoreInterface;
 use OCA\Buildiq\Kernel\Contracts\ExportJobServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\ExportServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\FormLiveBindingIndexInterface;
@@ -51,6 +53,7 @@ use OCA\Buildiq\Kernel\Contracts\GitHubFormCatalogServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\GitHubPushServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\GitHubShopSearchInterface;
 use OCA\Buildiq\Kernel\Contracts\IconServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\JourneyWritesCheckInterface;
 use OCA\Buildiq\Kernel\Contracts\LayoutDeltaServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\ListenerSlugContractInterface;
 use OCA\Buildiq\Kernel\Contracts\ManifestFormDestinationsInterface;
@@ -107,6 +110,7 @@ final class ContractBindings {
 	 * @spec openspec/specs/app-composition-bindings/spec.md
 	 */
 	public function register(IRegistrationContext $context): void {
+		$context->registerServiceAlias(AppCatalogueInterface::class, AppCatalogue::class);
 		$context->registerServiceAlias(AppChannelApplierInterface::class, AppChannelApplier::class);
 		$context->registerServiceAlias(AppHealthServiceInterface::class, AppHealthService::class);
 		$context->registerServiceAlias(AutomationRunRecorderInterface::class, AutomationRunRecorder::class);
@@ -127,6 +131,7 @@ final class ContractBindings {
 		$context->registerServiceAlias(DemoDataServiceInterface::class, DemoDataService::class);
 		$context->registerServiceAlias(DocumentGenerationServiceInterface::class, DocumentGenerationService::class);
 		$context->registerServiceAlias(ExportAppContentBundlerInterface::class, ExportAppContentBundler::class);
+		$context->registerServiceAlias(ExportArchiveStoreInterface::class, ExportArchiveStore::class);
 		$context->registerServiceAlias(ExportJobServiceInterface::class, ExportJobService::class);
 		$context->registerServiceAlias(ExportServiceInterface::class, ExportService::class);
 		$context->registerServiceAlias(FormLiveBindingIndexInterface::class, FormLiveBindingIndex::class);
@@ -137,6 +142,7 @@ final class ContractBindings {
 		$context->registerServiceAlias(GitHubPushServiceInterface::class, GitHubPushService::class);
 		$context->registerServiceAlias(GitHubShopSearchInterface::class, GitHubShopSearch::class);
 		$context->registerServiceAlias(IconServiceInterface::class, IconService::class);
+		$context->registerServiceAlias(JourneyWritesCheckInterface::class, JourneyWritesCheck::class);
 		$context->registerServiceAlias(LayoutDeltaServiceInterface::class, LayoutDeltaService::class);
 		$context->registerServiceAlias(ListenerSlugContractInterface::class, ListenerSlugContract::class);
 		$context->registerServiceAlias(ManifestFormDestinationsInterface::class, ManifestFormDestinations::class);

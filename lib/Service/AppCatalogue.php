@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\AppCatalogueInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 
@@ -39,7 +40,7 @@ use OCA\OpenRegister\Contract\ObjectServiceInterface;
  *
  * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-management-cli/spec.md#requirement-list-apps-from-the-command-line-req-bqic-004
  */
-class AppCatalogue {
+class AppCatalogue implements AppCatalogueInterface {
 
 	/**
 	 * The shared buildiq register.

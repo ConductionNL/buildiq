@@ -32,7 +32,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Controller;
 
-use OCA\Buildiq\Service\JourneyWritesCheck;
+use OCA\Buildiq\Kernel\Contracts\JourneyWritesCheckInterface;
 use OCA\Buildiq\Settings\AdminSettings;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -63,7 +63,7 @@ class JourneyDesignerController extends Controller {
 	 * Constructor.
 	 *
 	 * @param IRequest           $request      The request.
-	 * @param JourneyWritesCheck $writes       Judges the writes through OpenRegister's validator.
+	 * @param JourneyWritesCheckInterface $writes       Judges the writes through OpenRegister's validator.
 	 * @param IUserSession       $userSession  The caller.
 	 * @param IGroupManager      $groupManager Whether the caller is an administrator.
 	 * @param LoggerInterface    $logger       Logs a failure that is not a refusal.
@@ -72,7 +72,7 @@ class JourneyDesignerController extends Controller {
 	 */
 	public function __construct(
 		IRequest $request,
-		private readonly JourneyWritesCheck $writes,
+		private readonly JourneyWritesCheckInterface $writes,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 		private readonly LoggerInterface $logger,

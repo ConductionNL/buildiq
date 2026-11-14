@@ -27,7 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\BackgroundJob;
 
-use OCA\Buildiq\Service\ExportArchiveStore;
+use OCA\Buildiq\Kernel\Contracts\ExportArchiveStoreInterface;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
@@ -43,12 +43,12 @@ class CleanupExpiredExports extends TimedJob {
 	 *
 	 * @param ITimeFactory $time Time factory.
 	 * @param LoggerInterface $logger Logger.
-	 * @param ExportArchiveStore|null $archives The archives kept in app data (REQ-PLAT-010).
+	 * @param ExportArchiveStoreInterface|null $archives The archives kept in app data (REQ-PLAT-010).
 	 */
 	public function __construct(
 		ITimeFactory $time,
 		private LoggerInterface $logger,
-		private ?ExportArchiveStore $archives = null,
+		private ?ExportArchiveStoreInterface $archives = null,
 	) {
 		parent::__construct(time: $time);
 		$this->setInterval(seconds: 86400);
