@@ -29,7 +29,10 @@ By the end you will have added a field to a schema in your app. You will have pi
 
 3. The designer opens as one column of editors: the header fields first, then **Fields**, **Lifecycle**, **Relations**, **Access**, **Widgets**, **Aggregations**, **Calculations** and **Notifications**. The slug is locked once the schema exists. There is no JSON panel, you edit the schema through these editors.
 
-4. Click **Add field**. Fill in the **Name** and pick a **Type**: *string*, *number*, *integer*, *boolean*, *array*, *object* or *relation*. Flip **Required** on if the field must always have a value. Each field also takes a **Description**, a **Format** such as `email`, `uri` or `date`, a **Pattern**, a **Min length** and a **Max length**. Use the arrows to reorder fields.
+4. Click **Add field**. Fill in the **Name** and pick a **Type** by what the field holds: *Text*, *Long text*, *Number*, *Whole number*, *Yes or no*, *Date*, *Date and time*, *Choice*, *Several choices*, *File*, *Several files*, *User*, *Several users*, *Relation*, *List* or *Group*. Flip **Required** on if the field must always have a value. Each field also takes a **Description**; text fields take a **Pattern**, a **Min length** and a **Max length**. Use the arrows to reorder fields.
+   - A **Choice** takes its options in one of two ways. **Enter the options here** lists them in order, each with a value and an optional label. **Use a shared list** points the field at one of OpenRegister's shared lists (concept schemes), such as municipalities; its options are shown but not edited here, and an option added to the list later is offered without saving the schema again. A field uses one or the other, never both.
+   - A **User** field stores the Nextcloud user id; the published form shows a searchable list of users.
+   - A field saved earlier with a shape none of these names fits (for example text with the format `email`) opens with its technical type and keeps its **Format**.
 
    ![Field editor](/screenshots/tutorials/user/03-design-schema-03.png)
 

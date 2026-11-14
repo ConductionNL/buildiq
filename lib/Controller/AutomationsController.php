@@ -79,6 +79,7 @@ namespace OCA\Buildiq\Controller;
 use OCA\Buildiq\Exception\UnsupportedAutomationCombinationException;
 use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Kernel\Contracts\AutomationCompilerServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\AutomationRunRecorderInterface;
 use OCA\Buildiq\Kernel\Contracts\AutomationWriteServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\ConditionActionExecutorInterface;
 use OCA\Buildiq\Kernel\Contracts\PermissionResolverInterface;
@@ -95,6 +96,8 @@ use Throwable;
 
 /**
  * Controller serving the automation compile/enable/disable/dry-run/status API.
+ *
+ * @SuppressWarnings(PHPMD.TooManyPublicMethods) One public method per route of the automation API, the run log's two included.
  *
  * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#3.1
  */
@@ -115,6 +118,13 @@ class AutomationsController extends Controller {
 	 * @var array<int,string>
 	 */
 	private const PRODUCTION_ENABLE_ROLES = ['owners'];
+
+	/**
+	 * Runs per page by default, and the most one page or one summary call holds (logic-automation-run-log D3).
+	 */
+	private const RUNS_DEFAULT_LIMIT = 25;
+
+	private const RUNS_MAX_LIMIT = 100;
 
 	/**
 	 * Current user session.
@@ -139,6 +149,7 @@ class AutomationsController extends Controller {
 	 * @param ConditionActionExecutorInterface $conditionExecutor Rules engine executor (dry-run panel).
 	 * @param CallerContext $caller The caller's session, group memberships and the shared permission matcher.
 	 * @param AutomationWriteServiceInterface $writeService Create/update/delete write path.
+	 * @param AutomationRunRecorderInterface|null $runs The run log (logic-automation-run-log).
 	 *
 	 * @return void
 	 */
@@ -149,6 +160,7 @@ class AutomationsController extends Controller {
 		private readonly ConditionActionExecutorInterface $conditionExecutor,
 		CallerContext $caller,
 		private readonly AutomationWriteServiceInterface $writeService,
+		private readonly ?AutomationRunRecorderInterface $runs = null,
 	) {
 		$this->userSession = $caller->userSession;
 		$this->permissionResolver = $caller->permissionResolver;
@@ -404,6 +416,91 @@ class AutomationsController extends Controller {
 		);
 
 	}//end status()
+
+	/**
+	 * The runs of one automation, newest first, with its summary (design D3).
+	 *
+	 * The same authorization as status(): an editor or owner of the
+	 * automation's application. Filters: outcome, since, until, limit
+	 * (default 25, at most 100) and offset.
+	 *
+	 * @param string $uuid The Automation object uuid.
+	 *
+	 * @return JSONResponse {results, total, summary: {lastRunAt, lastOutcome, lastError}}
+	 *
+	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-a-maker-reads-the-runs-of-an-automation-they-may-edit-req-bqrl-002
+	 */
+	#[NoAdminRequired]
+	public function runs(string $uuid): JSONResponse {
+		return $this->withAutomation(
+			uuid: $uuid,
+			roles: self::WRITE_ROLES,
+			productionRoles: null,
+			action: function () use ($uuid): JSONResponse {
+				if ($this->runs === null) {
+					return $this->error(code: 'unavailable', detail: 'The run log is not available', status: Http::STATUS_SERVICE_UNAVAILABLE);
+				}
+
+				$filters = [];
+				foreach (['outcome', 'since', 'until'] as $key) {
+					$value = $this->request->getParam($key);
+					if (is_string($value) === true && $value !== '') {
+						$filters[$key] = $value;
+					}
+				}
+
+				$limit  = max(1, min(self::RUNS_MAX_LIMIT, (int)($this->request->getParam('limit') ?? self::RUNS_DEFAULT_LIMIT)));
+				$offset = max(0, (int)($this->request->getParam('offset') ?? 0));
+
+				return new JSONResponse(
+					data: $this->runs->runsOf(automationUuid: $uuid, filters: $filters, limit: $limit, offset: $offset),
+					statusCode: Http::STATUS_OK
+				);
+			}
+		);
+	}//end runs()
+
+	/**
+	 * The last run of each of several automations, for the list page (design D3).
+	 *
+	 * Every uuid goes through the same authorization as runs(); a uuid the
+	 * caller may not read, or that does not exist, is left out of the answer.
+	 *
+	 * @return JSONResponse {summaries: {uuid: {lastRunAt, lastOutcome, lastError}}}
+	 *
+	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-a-maker-reads-the-runs-of-an-automation-they-may-edit-req-bqrl-002
+	 */
+	#[NoAdminRequired]
+	public function runsSummary(): JSONResponse {
+		if ($this->userSession->getUser() === null) {
+			return $this->error(code: 'unauthenticated', detail: null, status: Http::STATUS_UNAUTHORIZED);
+		}
+
+		if ($this->runs === null) {
+			return $this->error(code: 'unavailable', detail: 'The run log is not available', status: Http::STATUS_SERVICE_UNAVAILABLE);
+		}
+
+		$uuids = array_slice(
+			array_values(array_unique(array_filter(array_map('trim', explode(',', (string)($this->request->getParam('uuids') ?? '')))))),
+			0,
+			self::RUNS_MAX_LIMIT
+		);
+
+		$summaries = [];
+		foreach ($uuids as $uuid) {
+			$answer = $this->withAutomation(
+				uuid: $uuid,
+				roles: self::WRITE_ROLES,
+				productionRoles: null,
+				action: fn (): JSONResponse => new JSONResponse(data: $this->runs->summaryOf(automationUuid: $uuid), statusCode: Http::STATUS_OK)
+			);
+			if ($answer->getStatus() === Http::STATUS_OK) {
+				$summaries[$uuid] = $answer->getData();
+			}
+		}
+
+		return new JSONResponse(data: ['summaries' => (object)$summaries], statusCode: Http::STATUS_OK);
+	}//end runsSummary()
 
 	/**
 	 * Shared load → RBAC → action pipeline for every route in this controller.

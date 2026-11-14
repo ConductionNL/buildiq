@@ -71,6 +71,18 @@ export function createObjectStore() {
 	})
 }
 
+// Record-grid page family (data-index-grid-and-saved-views) — symbols the
+// runtime `record-grid` page imports, so the runtime registry loads. Its own
+// spec mocks them with behaviour.
+export const CnDataMatrix = stub('CnDataMatrix')
+export class LockConflictError extends Error {}
+export function useObjectStore() {
+	return createObjectStore()()
+}
+export function useObjectLock() {
+	return { acquire: async () => {}, release: async () => {} }
+}
+
 // Manifest-renderer family — stubbed so App.vue / main.js transitive
 // imports load under the vitest pipeline. None of the current tests mount
 // these; they only need the symbols to exist.
@@ -99,7 +111,58 @@ export const CnTab = {
 		return h('div', { class: 'cntab-stub' }, this.$slots?.default?.())
 	},
 }
+/**
+ * `CnGraphCanvas` stand-in (data-model-diagram). The real canvas mounts Vue
+ * Flow, which needs a measured DOM jsdom cannot give. This renders each node
+ * the way Vue Flow wraps it — a `.vue-flow__node[data-id]` around the
+ * focusable `.cn-flow-node` — with the host's `#node` slot inside, each
+ * edge's `#edge-label` slot, and a click on a node as `node-select`. It keeps
+ * the props a host passes so a spec can assert on them.
+ */
+export const CnGraphCanvas = {
+	name: 'CnGraphCanvas',
+	props: {
+		nodes: { type: Array, required: true },
+		edges: { type: Array, required: true },
+		readOnly: { type: Boolean, default: false },
+		showMiniMap: { type: Boolean, default: false },
+	},
+	emits: ['node-select', 'node-activate', 'connect'],
+	render() {
+		const nodes = this.nodes.map((node) => h(
+			'div',
+			{
+				key: node.id,
+				class: 'vue-flow__node',
+				'data-id': node.id,
+				onClick: () => this.$emit('node-select', { node }),
+			},
+			[h(
+				'div',
+				{ class: 'cn-flow-node', tabindex: '0', role: 'button', 'aria-label': node.label },
+				this.$slots?.node?.({ node: { id: node.id, data: node.data, selected: false } }),
+			)],
+		))
+		const edges = this.edges.map((edge) => h(
+			'div',
+			{ key: edge.id, class: 'vue-flow__edge', 'data-source': edge.source, 'data-target': edge.target },
+			this.$slots?.['edge-label']?.({ edge: { id: edge.id, data: edge.data, selected: false } }),
+		))
+		return h('div', { class: 'cngraphcanvas-stub' }, [...nodes, ...edges])
+	},
+}
 export const CnPageRenderer = { name: 'CnPageRenderer', render: () => h('div') }
+// The chart form keeps its real props and event, so a spec can read what a
+// builder hands it and emit `update:content` the way the form does.
+export const CnChartWidgetForm = {
+	name: 'CnChartWidgetForm',
+	props: {
+		editingWidget: { type: Object, default: null },
+		value: { type: Object, default: null },
+	},
+	emits: ['update:content'],
+	render: () => h('div', { class: 'cnchartwidgetform-stub' }),
+}
 export const CnCard = {
 	name: 'CnCard',
 	props: [
@@ -487,6 +550,7 @@ export default {
 	CnTabs,
 	CnTab,
 	CnPageRenderer,
+	CnGraphCanvas,
 	defaultPageTypes,
 	registerIcons,
 	registerTranslations,
