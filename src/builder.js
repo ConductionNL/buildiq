@@ -344,6 +344,8 @@ function rebuildRoutes(router, manifest) {
  * @param {object} manifest The manifest the shell edits in place.
  * @param {{router: object, shellState: object}} shell The app's router and the shell's reactive state.
  * @return {() => Promise<void>} The `persistManifestDelta` handler.
+ *
+ * @spec openspec/specs/openbuild-page-designer/spec.md#REQ-OBPD-012
  */
 function manifestPersister(manifest, shell) {
 	const { router, shellState } = shell
@@ -403,6 +405,7 @@ function navSlots(manifest, router) {
 /**
  * Fetch the app manifest, build its router, and mount the standalone shell.
  *
+ * @spec openspec/changes/openbuild-connector-widget-runtime/specs/connector-widget-runtime/spec.md#requirement-req-cwr-001-single-runtime-registry-seam-for-every-virtual-app-host
  * @return {Promise<void>}
  */
 async function boot() {
@@ -473,6 +476,9 @@ async function boot() {
 		manifest,
 		permissions: runtimePermissions(manifest),
 		isLoading: false,
+		// The canonical runtime registry (REQ-CWR-001): without it every
+		// registry-only widget key (e.g. `connector-data`) renders as
+		// CnUnknownWidget on the published path.
 		registry: getRuntimeRegistry(),
 		pageTypes: { ...defaultPageTypes },
 		// App registers/schemas so the Edit-pages modal offers Register /

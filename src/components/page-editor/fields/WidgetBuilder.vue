@@ -38,6 +38,13 @@
 					✕
 				</button>
 			</div>
+			<!-- A chart is configured with the library's own chart form, the one
+			     the dashboard's in-app editor uses (pages-chart-widget-authoring D1). -->
+			<CnChartWidgetForm
+				v-if="widget.type === 'chart'"
+				class="widget-builder__chart"
+				:editingWidget="chartFormInput(widget)"
+				@update:content="updateChart(index, $event)" />
 			<!-- A connector widget binds its own data source with the same origin
 			     toggle, source picker and field mapper as a page (REQ-BQCB-003). -->
 			<DataSourceOriginToggle
@@ -62,12 +69,18 @@
 </template>
 
 <script>
+import { CnChartWidgetForm } from '@conduction/nextcloud-vue'
 import DataSourceOriginToggle from '../DataSourceOriginToggle.vue'
 import { CONNECTOR_WIDGET_TYPE } from '../../../services/connectorPages.js'
+import { chartFormInput, widgetWithChartContent } from './chartWidget.js'
 
 export default {
 	name: 'WidgetBuilder',
-	components: { DataSourceOriginToggle },
+	components: {
+		CnChartWidgetForm,
+		DataSourceOriginToggle,
+	},
+
 	props: {
 		modelValue: {
 			type: Array,
@@ -88,6 +101,22 @@ export default {
 	},
 
 	methods: {
+		chartFormInput,
+
+		/**
+		 * Write the chart form's content onto the widget: the chart type as
+		 * `props.chartKind`, the binding as `dataSource`, never a `content` key.
+		 *
+		 * @param {number} index - position of the chart widget in the `widgets` array.
+		 * @param {{ chartKind: string, dataSource: object }} content - the form's `update:content` payload.
+		 * @spec openspec/changes/pages-chart-widget-authoring/specs/page-chart-authoring/spec.md#requirement-the-chart-is-saved-in-the-shape-the-manifest-schema-allows-req-bqcw-002
+		 */
+		updateChart(index, content) {
+			const next = this.localWidgets.slice()
+			next[index] = widgetWithChartContent(next[index], content)
+			this.$emit('update:modelValue', next)
+		},
+
 		/**
 		 * Observed behaviour of `updateField` (retrofit annotation).
 		 *
@@ -212,6 +241,11 @@ export default {
 	display: flex;
 	flex-direction: column;
 	gap: 6px;
+}
+
+.widget-builder__chart {
+	padding: 8px;
+	border-left: 2px solid var(--color-border);
 }
 
 .widget-builder__binding {

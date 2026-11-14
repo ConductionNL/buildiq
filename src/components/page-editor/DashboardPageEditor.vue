@@ -19,6 +19,12 @@
 				:modelValue="config.widgets || []"
 				@update:modelValue="update('widgets', $event)"
 				@add:connectorWidget="placeConnectorWidget" />
+			<button
+				type="button"
+				class="dashboard-page-editor__add-chart"
+				@click="addChart">
+				+ {{ t('buildiq', 'Add chart') }}
+			</button>
 			<InlineFieldMark :error="markFor('widgets')" />
 		</fieldset>
 
@@ -39,6 +45,7 @@ import LayoutItemBuilder from './fields/LayoutItemBuilder.vue'
 import WidgetBuilder from './fields/WidgetBuilder.vue'
 import { pageEditorBaseMixin } from '../../mixins/pageEditorBase.js'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
+import { layoutWithItemFor, newChartWidget, nextChartId } from './fields/chartWidget.js'
 
 export default {
 	name: 'DashboardPageEditor',
@@ -130,6 +137,23 @@ export default {
 		},
 
 		/**
+		 * Add a chart widget with a unique id and, in the same change, a
+		 * layout item for it at the first free row, unless one already
+		 * references that id: a widget without a layout item is not drawn.
+		 *
+		 * @spec openspec/changes/pages-chart-widget-authoring/specs/page-chart-authoring/spec.md#requirement-a-new-chart-is-placed-on-the-page-req-bqcw-003
+		 */
+		addChart() {
+			const widgets = Array.isArray(this.config.widgets) ? this.config.widgets : []
+			const id = nextChartId(widgets)
+			this.$emit('update:config', {
+				...this.config,
+				widgets: [...widgets, newChartWidget(id)],
+				layout: layoutWithItemFor(this.config.layout, id),
+			})
+		},
+
+		/**
 		 * Persist a `dataSource` change from the origin toggle onto the
 		 * dashboard config (REQ-OCAS-002).
 		 *
@@ -149,7 +173,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../assets/editor-controls.scss' as c;
+
 .dashboard-page-editor {
 	display: flex;
 	flex-direction: column;
@@ -167,6 +193,12 @@ export default {
 	border: 1px solid var(--color-border);
 	border-radius: var(--border-radius);
 	padding: 8px;
+}
+
+.dashboard-page-editor__add-chart {
+	align-self: flex-start;
+	margin-top: 6px;
+	@include c.add-button;
 }
 
 .dashboard-page-editor__fieldset legend {

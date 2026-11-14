@@ -7,7 +7,7 @@ topbar: pet-store | /index.php/apps/buildiq/icons/pet-store.svg | Pet Store | br
 app: mounted=#content uses=2 mixins=t,n directives=tooltip root=BuildiqBuilderRoot
 shell: CnAppRoot keys=appId,appName,supportDialog,manifest,permissions,isLoading,registry,pageTypes,dataSourcesLoader,translate,diagnostics,persistManifestDelta,routerViewKey
 props: {"appId":"openbuild-pet-store","appName":"pet-store","supportDialog":false,"permissions":[],"isLoading":false,"dataSourcesLoader":"[fn]","translate":"[fn]","diagnostics":{"health":true},"persistManifestDelta":"[fn]","routerViewKey":0}
-registry: TrackLinkAction,connector-data,connector-list,docudesk-document-actions,my-approvals,procest-case-status pageTypes: {"index":"I","detail":"D"}
+registry: TrackLinkAction,connector-data,connector-list,docudesk-document-actions,my-approvals,procest-case-status,record-grid pageTypes: {"index":"I","detail":"D"}
 manifest: {"version":"1.0.0","menu":[],"pages":[]}
 translate: Hello {"a":1} | Plain
 slots: _ctx
@@ -43,7 +43,7 @@ topbar: Pet Store | /index.php/apps/buildiq/icons/.svg | Pet Store | brightness(
 app: mounted=#content uses=2 mixins=t,n directives=tooltip root=BuildiqBuilderRoot
 shell: CnAppRoot keys=appId,appName,supportDialog,manifest,permissions,isLoading,registry,pageTypes,dataSourcesLoader,translate,diagnostics,persistManifestDelta,routerViewKey
 props: {"appId":"openbuild-","appName":"Pet Store","supportDialog":true,"permissions":["read"],"isLoading":false,"dataSourcesLoader":"[fn]","translate":"[fn]","diagnostics":{"health":true},"persistManifestDelta":"[fn]","routerViewKey":0}
-registry: TrackLinkAction,connector-data,connector-list,docudesk-document-actions,my-approvals,procest-case-status pageTypes: {"index":"I","detail":"D"}
+registry: TrackLinkAction,connector-data,connector-list,docudesk-document-actions,my-approvals,procest-case-status,record-grid pageTypes: {"index":"I","detail":"D"}
 manifest: {"version":"1.0.0","name":"Pet Store","title":"Ignored","menu":[{"id":"m","route":"Home"}],"pages":[{"id":"Home","route":"/","type":"dashboard","config":{}},{"id":"List","route":"/list","type":"index","config":{"register":"r","showTitle":true}},{"id":"Item","route":"/list/:id","type":"detail","config":{"showTitle":false}}],"support":{"enabled":true},"runtime":{"user":{"permissions":["read"],"isOwner":true}}}
 translate: Hello {"a":1} | Plain
 slots: menu,_ctx
@@ -87,7 +87,7 @@ topbar: Buildiq | /old.svg | null |  | Open apps menu, currently in Buildiq
 app: mounted=#content uses=2 mixins=t,n directives=tooltip root=BuildiqBuilderRoot
 shell: CnAppRoot keys=appId,appName,supportDialog,manifest,permissions,isLoading,registry,pageTypes,dataSourcesLoader,translate,diagnostics,persistManifestDelta,routerViewKey
 props: {"appId":"openbuild-","appName":"","supportDialog":false,"permissions":[],"isLoading":false,"dataSourcesLoader":"[fn]","translate":"[fn]","diagnostics":{"health":true},"persistManifestDelta":"[fn]","routerViewKey":0}
-registry: TrackLinkAction,connector-data,connector-list,docudesk-document-actions,my-approvals,procest-case-status pageTypes: {"index":"I","detail":"D"}
+registry: TrackLinkAction,connector-data,connector-list,docudesk-document-actions,my-approvals,procest-case-status,record-grid pageTypes: {"index":"I","detail":"D"}
 manifest: {"version":"1.0.0","menu":[],"pages":[]}
 translate: Hello {"a":1} | Plain
 slots: _ctx
@@ -123,7 +123,7 @@ topbar: Pet Store | /index.php/apps/buildiq/icons/pet-store.svg | Pet Store | br
 app: mounted=#content uses=2 mixins=t,n directives=tooltip root=BuildiqBuilderRoot
 shell: CnAppRoot keys=appId,appName,supportDialog,manifest,permissions,isLoading,registry,pageTypes,dataSourcesLoader,translate,diagnostics,persistManifestDelta,routerViewKey
 props: {"appId":"openbuild-pet-store","appName":"Pet Store","supportDialog":true,"permissions":["read"],"isLoading":false,"dataSourcesLoader":"[fn]","translate":"[fn]","diagnostics":{"health":true},"persistManifestDelta":"[fn]","routerViewKey":0}
-registry: TrackLinkAction,connector-data,connector-list,docudesk-document-actions,my-approvals,procest-case-status pageTypes: {"index":"I","detail":"D"}
+registry: TrackLinkAction,connector-data,connector-list,docudesk-document-actions,my-approvals,procest-case-status,record-grid pageTypes: {"index":"I","detail":"D"}
 manifest: {"version":"1.0.0","name":"Pet Store","title":"Ignored","menu":[{"id":"m","route":"Home"}],"pages":[{"id":"Home","route":"/","type":"dashboard","config":{}},{"id":"List","route":"/list","type":"index","config":{"register":"r","showTitle":true}},{"id":"Item","route":"/list/:id","type":"detail","config":{"showTitle":false}}],"support":{"enabled":true},"runtime":{"user":{"permissions":["read"],"isOwner":true}}}
 translate: Hello {"a":1} | Plain
 slots: menu,_ctx
@@ -167,7 +167,7 @@ topbar: Nav | /index.php/apps/buildiq/icons/pet-store.svg | Pet Store | brightne
 app: mounted=#content uses=2 mixins=t,n directives=tooltip root=BuildiqBuilderRoot
 shell: CnAppRoot keys=appId,appName,supportDialog,manifest,permissions,isLoading,registry,pageTypes,dataSourcesLoader,translate,diagnostics,persistManifestDelta,routerViewKey
 props: {"appId":"openbuild-pet-store","appName":"Nav","supportDialog":false,"permissions":[],"isLoading":false,"dataSourcesLoader":"[fn]","translate":"[fn]","diagnostics":{"health":true},"persistManifestDelta":"[fn]","routerViewKey":0}
-registry: TrackLinkAction,connector-data,connector-list,docudesk-document-actions,my-approvals,procest-case-status pageTypes: {"index":"I","detail":"D"}
+registry: TrackLinkAction,connector-data,connector-list,docudesk-document-actions,my-approvals,procest-case-status,record-grid pageTypes: {"index":"I","detail":"D"}
 manifest: {"version":"1.0.0","name":"Nav","nav":{"primaryAction":{"label":"y"}},"pages":[{"id":"P","type":"custom","config":{}}],"runtime":{"user":{"isOwner":true,"permissions":[]}}}
 translate: Hello {"a":1} | Plain
 slots: menu,_ctx
@@ -207,7 +207,7 @@ topbar: pet-store | /index.php/apps/buildiq/icons/pet-store.svg | Pet Store | br
 app: mounted=#content uses=2 mixins=t,n directives=tooltip root=BuildiqBuilderRoot
 shell: CnAppRoot keys=appId,appName,supportDialog,manifest,permissions,isLoading,registry,pageTypes,dataSourcesLoader,translate,diagnostics,persistManifestDelta,routerViewKey
 props: {"appId":"openbuild-pet-store","appName":"pet-store","supportDialog":false,"permissions":[],"isLoading":false,"dataSourcesLoader":"[fn]","translate":"[fn]","diagnostics":{"health":true},"persistManifestDelta":"[fn]","routerViewKey":0}
-registry: TrackLinkAction,connector-data,connector-list,docudesk-document-actions,my-approvals,procest-case-status pageTypes: {"index":"I","detail":"D"}
+registry: TrackLinkAction,connector-data,connector-list,docudesk-document-actions,my-approvals,procest-case-status,record-grid pageTypes: {"index":"I","detail":"D"}
 manifest: {"version":"1.0.0","menu":[],"pages":[]}
 translate: Hello {"a":1} | Plain
 slots: _ctx
@@ -243,7 +243,7 @@ topbar: pet-store | /index.php/apps/buildiq/icons/pet-store.svg | Pet Store | br
 app: mounted=#content uses=2 mixins=t,n directives=tooltip root=BuildiqBuilderRoot
 shell: CnAppRoot keys=appId,appName,supportDialog,manifest,permissions,isLoading,registry,pageTypes,dataSourcesLoader,translate,diagnostics,persistManifestDelta,routerViewKey
 props: {"appId":"openbuild-pet-store","appName":"pet-store","supportDialog":false,"permissions":[],"isLoading":false,"dataSourcesLoader":"[fn]","translate":"[fn]","diagnostics":{"health":true},"persistManifestDelta":"[fn]","routerViewKey":0}
-registry: TrackLinkAction,connector-data,connector-list,docudesk-document-actions,my-approvals,procest-case-status pageTypes: {"index":"I","detail":"D"}
+registry: TrackLinkAction,connector-data,connector-list,docudesk-document-actions,my-approvals,procest-case-status,record-grid pageTypes: {"index":"I","detail":"D"}
 manifest: {"version":"1.0.0","menu":[],"pages":[]}
 translate: Hello {"a":1} | Plain
 slots: _ctx
@@ -279,7 +279,7 @@ topbar: pet-store | /index.php/apps/buildiq/icons/pet-store.svg | Pet Store | br
 app: mounted=#content uses=2 mixins=t,n directives=tooltip root=BuildiqBuilderRoot
 shell: CnAppRoot keys=appId,appName,supportDialog,manifest,permissions,isLoading,registry,pageTypes,dataSourcesLoader,translate,diagnostics,persistManifestDelta,routerViewKey
 props: {"appId":"openbuild-pet-store","appName":"pet-store","supportDialog":false,"permissions":[],"isLoading":false,"dataSourcesLoader":"[fn]","translate":"[fn]","diagnostics":{"health":true},"persistManifestDelta":"[fn]","routerViewKey":0}
-registry: TrackLinkAction,connector-data,connector-list,docudesk-document-actions,my-approvals,procest-case-status pageTypes: {"index":"I","detail":"D"}
+registry: TrackLinkAction,connector-data,connector-list,docudesk-document-actions,my-approvals,procest-case-status,record-grid pageTypes: {"index":"I","detail":"D"}
 manifest: {"version":"1.0.0","menu":[],"pages":[]}
 translate: Hello {"a":1} | Plain
 slots: _ctx
@@ -315,7 +315,7 @@ topbar: pet-store | /index.php/apps/buildiq/icons/pet-store.svg | Pet Store | br
 app: mounted=#content uses=2 mixins=t,n directives=tooltip root=BuildiqBuilderRoot
 shell: CnAppRoot keys=appId,appName,supportDialog,manifest,permissions,isLoading,registry,pageTypes,dataSourcesLoader,translate,diagnostics,persistManifestDelta,routerViewKey
 props: {"appId":"openbuild-pet-store","appName":"pet-store","supportDialog":false,"permissions":[],"isLoading":false,"dataSourcesLoader":"[fn]","translate":"[fn]","diagnostics":{"health":true},"persistManifestDelta":"[fn]","routerViewKey":0}
-registry: TrackLinkAction,connector-data,connector-list,docudesk-document-actions,my-approvals,procest-case-status pageTypes: {"index":"I","detail":"D"}
+registry: TrackLinkAction,connector-data,connector-list,docudesk-document-actions,my-approvals,procest-case-status,record-grid pageTypes: {"index":"I","detail":"D"}
 manifest: {"version":"1.0.0","menu":[],"pages":[]}
 translate: Hello {"a":1} | Plain
 slots: _ctx
@@ -351,7 +351,7 @@ topbar: Titled | /index.php/apps/buildiq/icons/pet-store.svg | Pet Store | brigh
 app: mounted=#content uses=2 mixins=t,n directives=tooltip root=BuildiqBuilderRoot
 shell: CnAppRoot keys=appId,appName,supportDialog,manifest,permissions,isLoading,registry,pageTypes,dataSourcesLoader,translate,diagnostics,persistManifestDelta,routerViewKey
 props: {"appId":"openbuild-pet-store","appName":"Titled","supportDialog":false,"permissions":[],"isLoading":false,"dataSourcesLoader":"[fn]","translate":"[fn]","diagnostics":{"health":true},"persistManifestDelta":"[fn]","routerViewKey":0}
-registry: TrackLinkAction,connector-data,connector-list,docudesk-document-actions,my-approvals,procest-case-status pageTypes: {"index":"I","detail":"D"}
+registry: TrackLinkAction,connector-data,connector-list,docudesk-document-actions,my-approvals,procest-case-status,record-grid pageTypes: {"index":"I","detail":"D"}
 manifest: {"version":"1.0.0","title":"Titled","menu":[],"pages":[{"id":"A","route":"/a","type":"index","primaryAction":{"label":"x"},"config":{"showTitle":true}}],"runtime":{"user":{}}}
 translate: Hello {"a":1} | Plain
 slots: _ctx
@@ -387,7 +387,7 @@ topbar: Gone | /index.php/apps/buildiq/icons/gone.svg | Gone | brightness(0) inv
 app: mounted=#content uses=2 mixins=t,n directives=tooltip root=BuildiqBuilderRoot
 shell: CnAppRoot keys=appId,appName,supportDialog,manifest,permissions,isLoading,registry,pageTypes,dataSourcesLoader,translate,diagnostics,persistManifestDelta,routerViewKey
 props: {"appId":"openbuild-gone","appName":"gone","supportDialog":false,"permissions":[],"isLoading":false,"dataSourcesLoader":"[fn]","translate":"[fn]","diagnostics":{"health":true},"persistManifestDelta":"[fn]","routerViewKey":0}
-registry: TrackLinkAction,connector-data,connector-list,docudesk-document-actions,my-approvals,procest-case-status pageTypes: {"index":"I","detail":"D"}
+registry: TrackLinkAction,connector-data,connector-list,docudesk-document-actions,my-approvals,procest-case-status,record-grid pageTypes: {"index":"I","detail":"D"}
 manifest: {"version":"1.0.0","menu":[],"pages":[]}
 translate: Hello {"a":1} | Plain
 slots: _ctx
@@ -423,7 +423,7 @@ topbar: Buildiq | /old.svg | null |  | Open apps menu, currently in Buildiq
 app: mounted=#content uses=2 mixins=t,n directives=tooltip root=BuildiqBuilderRoot
 shell: CnAppRoot keys=appId,appName,supportDialog,manifest,permissions,isLoading,registry,pageTypes,dataSourcesLoader,translate,diagnostics,persistManifestDelta,routerViewKey
 props: {"appId":"openbuild-","appName":"","supportDialog":false,"permissions":[],"isLoading":false,"dataSourcesLoader":"[fn]","translate":"[fn]","diagnostics":{"health":true},"persistManifestDelta":"[fn]","routerViewKey":0}
-registry: TrackLinkAction,connector-data,connector-list,docudesk-document-actions,my-approvals,procest-case-status pageTypes: {"index":"I","detail":"D"}
+registry: TrackLinkAction,connector-data,connector-list,docudesk-document-actions,my-approvals,procest-case-status,record-grid pageTypes: {"index":"I","detail":"D"}
 manifest: {"version":"1.0.0","menu":[],"pages":[]}
 translate: Hello {"a":1} | Plain
 slots: _ctx
@@ -459,7 +459,7 @@ topbar: Titled | /index.php/apps/buildiq/icons/pet-store.svg | Pet Store | brigh
 app: mounted=#content uses=2 mixins=t,n directives=tooltip root=BuildiqBuilderRoot
 shell: CnAppRoot keys=appId,appName,supportDialog,manifest,permissions,isLoading,registry,pageTypes,dataSourcesLoader,translate,diagnostics,persistManifestDelta,routerViewKey
 props: {"appId":"openbuild-pet-store","appName":"Titled","supportDialog":false,"permissions":[],"isLoading":false,"dataSourcesLoader":"[fn]","translate":"[fn]","diagnostics":{"health":true},"persistManifestDelta":"[fn]","routerViewKey":0}
-registry: TrackLinkAction,connector-data,connector-list,docudesk-document-actions,my-approvals,procest-case-status pageTypes: {"index":"I","detail":"D"}
+registry: TrackLinkAction,connector-data,connector-list,docudesk-document-actions,my-approvals,procest-case-status,record-grid pageTypes: {"index":"I","detail":"D"}
 manifest: {"version":"1.0.0","title":"Titled","menu":[],"pages":[{"id":"A","route":"/a","type":"index","primaryAction":{"label":"x"},"config":{"showTitle":true}}],"runtime":{"user":{}}}
 translate: Hello {"a":1} | Plain
 slots: _ctx
@@ -495,7 +495,7 @@ topbar: Pet Store | /index.php/apps/buildiq/icons/pet_store-x.svg | Pet Store X 
 app: mounted=#content uses=2 mixins=t,n directives=tooltip root=BuildiqBuilderRoot
 shell: CnAppRoot keys=appId,appName,supportDialog,manifest,permissions,isLoading,registry,pageTypes,dataSourcesLoader,translate,diagnostics,persistManifestDelta,routerViewKey
 props: {"appId":"openbuild-pet_store-x","appName":"Pet Store","supportDialog":true,"permissions":["read"],"isLoading":false,"dataSourcesLoader":"[fn]","translate":"[fn]","diagnostics":{"health":true},"persistManifestDelta":"[fn]","routerViewKey":0}
-registry: TrackLinkAction,connector-data,connector-list,docudesk-document-actions,my-approvals,procest-case-status pageTypes: {"index":"I","detail":"D"}
+registry: TrackLinkAction,connector-data,connector-list,docudesk-document-actions,my-approvals,procest-case-status,record-grid pageTypes: {"index":"I","detail":"D"}
 manifest: {"version":"1.0.0","name":"Pet Store","title":"Ignored","menu":[{"id":"m","route":"Home"}],"pages":[{"id":"Home","route":"/","type":"dashboard","config":{}},{"id":"List","route":"/list","type":"index","config":{"register":"r","showTitle":true}},{"id":"Item","route":"/list/:id","type":"detail","config":{"showTitle":false}}],"support":{"enabled":true},"runtime":{"user":{"permissions":["read"],"isOwner":true}}}
 translate: Hello {"a":1} | Plain
 slots: menu,_ctx
@@ -539,7 +539,7 @@ topbar: Titled | /index.php/apps/buildiq/icons/a.svg | A | brightness(0) invert(
 app: mounted=#content uses=2 mixins=t,n directives=tooltip root=BuildiqBuilderRoot
 shell: CnAppRoot keys=appId,appName,supportDialog,manifest,permissions,isLoading,registry,pageTypes,dataSourcesLoader,translate,diagnostics,persistManifestDelta,routerViewKey
 props: {"appId":"openbuild-a","appName":"Titled","supportDialog":false,"permissions":[],"isLoading":false,"dataSourcesLoader":"[fn]","translate":"[fn]","diagnostics":{"health":true},"persistManifestDelta":"[fn]","routerViewKey":0}
-registry: TrackLinkAction,connector-data,connector-list,docudesk-document-actions,my-approvals,procest-case-status pageTypes: {"index":"I","detail":"D"}
+registry: TrackLinkAction,connector-data,connector-list,docudesk-document-actions,my-approvals,procest-case-status,record-grid pageTypes: {"index":"I","detail":"D"}
 manifest: {"version":"1.0.0","title":"Titled","menu":[],"pages":[{"id":"A","route":"/a","type":"index","primaryAction":{"label":"x"},"config":{"showTitle":true}}],"runtime":{"user":{}}}
 translate: Hello {"a":1} | Plain
 slots: menu,_ctx
