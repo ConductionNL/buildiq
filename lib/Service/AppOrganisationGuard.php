@@ -34,6 +34,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use OCA\OpenRegister\Db\OrganisationMapper;
+use OCP\IAppConfig;
 use OCP\IUser;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -122,6 +123,56 @@ class AppOrganisationGuard {
 			return false;
 		}
 	}//end canSee()
+
+	/**
+	 * The scope a new app starts with: `holder` while OpenRegister's multitenancy
+	 * is on, `all` while it is off.
+	 *
+	 * @return string `holder` or `all`.
+	 *
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-an-app-has-an-organisation-scope-req-bqos-001
+	 */
+	public function defaultScope(): string {
+		if ($this->multitenancyOn() === true) {
+			return self::SCOPE_HOLDER;
+		}
+
+		return self::SCOPE_ALL;
+	}//end defaultScope()
+
+	/**
+	 * Whether OpenRegister's multitenancy is on.
+	 *
+	 * OpenRegister filters by organisation unless its `multitenancy` setting says
+	 * `enabled: false`; an absent or unreadable setting counts as on, as it does
+	 * for OpenRegister, so a new app is kept to its organisation when in doubt.
+	 *
+	 * @return bool True when multitenancy is on.
+	 *
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-an-app-has-an-organisation-scope-req-bqos-001
+	 */
+	public function multitenancyOn(): bool {
+		try {
+			$config = $this->container->get(IAppConfig::class);
+			$raw = '';
+			if ($config instanceof IAppConfig) {
+				$raw = $config->getValueString('openregister', 'multitenancy', '');
+			}
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				'AppOrganisationGuard: the multitenancy setting could not be read; it is treated as on',
+				['exception' => $e->getMessage()]
+			);
+			return true;
+		}
+
+		$settings = json_decode($raw, true);
+		if (is_array($settings) === false) {
+			return true;
+		}
+
+		return ($settings['enabled'] ?? true) !== false;
+	}//end multitenancyOn()
 
 	/**
 	 * The holder organisation OpenRegister stamped on the Application.

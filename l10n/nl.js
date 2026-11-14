@@ -2393,7 +2393,13 @@ OC.L10N.register(
         "The branch could not be started.": "De branch kon niet worden gestart.",
         "The merge could not be completed.": "Het samenvoegen kon niet worden voltooid.",
         "This merge changes schemas in a way that can break records already stored:": "Dit samenvoegen wijzigt schema's zo dat al opgeslagen gegevens kunnen breken:",
-        "Which side to keep": "Welke kant behouden"
+        "Which side to keep": "Welke kant behouden",
+        "This organisation only": "Alleen deze organisatie",
+        "Only members of the organisation that holds this app see it, open it and read its records. Rule sets and data registers stay shared.": "Alleen leden van de organisatie die deze app beheert, zien en openen de app en lezen de gegevens. Regelsets en dataregisters blijven gedeeld.",
+        "Every organisation will see this app. Its records stay with this organisation.": "Elke organisatie ziet deze app. De gegevens blijven bij deze organisatie.",
+        "Share with all organisations": "Delen met alle organisaties",
+        "Keep it to this organisation": "Bij deze organisatie houden",
+        "This slug is taken. Choose another.": "Deze slug is al in gebruik. Kies een andere."
     },
     "nplurals=2; plural=(n != 1);"
 )

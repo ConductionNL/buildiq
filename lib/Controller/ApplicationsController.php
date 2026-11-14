@@ -1235,6 +1235,26 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 	}//end resolveApplicationBySlug()
 
 	/**
+	 * The organisation scope an installed app starts with, as a payload fragment.
+	 *
+	 * The same default as an app made in the wizard: "This organisation only"
+	 * while multitenancy is on, held by the installer's active organisation,
+	 * which OpenRegister stamps on save (REQ-BQOS-005). Without the guard the
+	 * scope stays absent, which means all organisations.
+	 *
+	 * @return array<string, string> `['organisationScope' => ...]`, or [] without a guard.
+	 *
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-installs-land-in-the-installer-s-organisation-req-bqos-005
+	 */
+	private function newAppScope(): array {
+		if ($this->organisationGuard === null) {
+			return [];
+		}
+
+		return ['organisationScope' => $this->organisationGuard->defaultScope()];
+	}//end newAppScope()
+
+	/**
 	 * Whether the caller may see the Application at all, by its organisation scope.
 	 *
 	 * A shared app passes without a lookup; a scoped one needs the guard to admit
@@ -2460,7 +2480,7 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 						'editors' => [],
 						'viewers' => [],
 					],
-				],
+				] + $this->newAppScope(),
 				register: $ctx['register'],
 				schema: $ctx['applicationSchema']
 			);

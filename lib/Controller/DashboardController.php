@@ -32,6 +32,7 @@ namespace OCA\Buildiq\Controller;
 
 use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Kernel\Contracts\AppNavigationServiceInterface;
+use OCA\Buildiq\Service\AppOrganisationGuard;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
@@ -59,6 +60,7 @@ class DashboardController extends Controller {
 	 * @param IUserSession $userSession Current Nextcloud user session
 	 * @param IGroupManager $groupManager Group membership resolver
 	 * @param INavigationManager $navigationManager Top-bar navigation manager
+	 * @param AppOrganisationGuard|null $organisationGuard Tells the settings whether an app can be kept to its organisation
 	 *
 	 * @return void
 	 */
@@ -68,6 +70,7 @@ class DashboardController extends Controller {
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 		private readonly INavigationManager $navigationManager,
+		private readonly ?AppOrganisationGuard $organisationGuard=null,
 	) {
 		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
@@ -88,6 +91,12 @@ class DashboardController extends Controller {
 	#[NoCSRFRequired]
 	public function page(): TemplateResponse {
 		$this->publishCurrentUserGroups();
+		// The organisation scope is only offered while OpenRegister's
+		// multitenancy is on (REQ-BQOS-001).
+		$this->initialState->provideInitialState(
+			'organisationScopeAvailable',
+			$this->organisationGuard?->multitenancyOn() === true
+		);
 		return new TemplateResponse(AppIdentity::APP_ID, 'index');
 	}//end page()
 

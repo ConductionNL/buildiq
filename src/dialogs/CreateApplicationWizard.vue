@@ -82,14 +82,17 @@ const STEP_CHECKS = new Map([
 ])
 
 /**
- * The message of a failed create: the API's message or detail, else the
- * error's message, else a generic one.
+ * The message of a failed create: a taken slug in the user's language, else
+ * the API's message or detail, else the error's message, else a generic one.
  *
  * @param {object} data The error payload from the API.
  * @param {Error} [err] The original error, for a message fallback.
  * @return {string}
  */
 function createFailureMessage(data, err) {
+	if (data.code === 'app_slug_conflict') {
+		return t('buildiq', 'This slug is taken. Choose another.')
+	}
 	const message = data.message || data.detail || (err && err.message)
 	return message || t('buildiq', 'Failed to create the application.')
 }

@@ -25,6 +25,7 @@ namespace OCA\Buildiq\Tests\Unit\Service;
 use OCA\Buildiq\Service\AppOrganisationGuard;
 use OCA\OpenRegister\Db\Organisation;
 use OCA\OpenRegister\Db\OrganisationMapper;
+use OCP\IAppConfig;
 use OCP\IUser;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -139,6 +140,48 @@ class AppOrganisationGuardTest extends TestCase {
 		$broken = new AppOrganisationGuard($container, $logger);
 		$this->assertFalse($broken->canSee($this->app(scope: 'holder'), $this->user('noord-user')));
 	}//end testItFailsClosed()
+
+	/**
+	 * A new app is kept to its organisation unless OpenRegister's multitenancy is
+	 * switched off; an absent, unreadable or malformed setting counts as on.
+	 *
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-an-app-has-an-organisation-scope-req-bqos-001
+	 *
+	 * @return void
+	 */
+	public function testTheDefaultScopeFollowsOpenRegistersMultitenancy(): void {
+		$cases = [
+			'{"enabled":false}' => 'all',
+			'{"enabled":true}' => 'holder',
+			'{"defaultUserTenant":"x"}' => 'holder',
+			'' => 'holder',
+			'not json' => 'holder',
+		];
+		foreach ($cases as $raw => $expected) {
+			$config = $this->createMock(IAppConfig::class);
+			$config->method('getValueString')->with('openregister', 'multitenancy', '')->willReturn((string)$raw);
+			$container = $this->createMock(ContainerInterface::class);
+			$container->method('get')->with(IAppConfig::class)->willReturn($config);
+			$guard = new AppOrganisationGuard($container, $this->createMock(LoggerInterface::class));
+
+			self::assertSame($expected, $guard->defaultScope(), 'setting ' . var_export($raw, true));
+			self::assertSame($expected === 'holder', $guard->multitenancyOn());
+		}
+	}//end testTheDefaultScopeFollowsOpenRegistersMultitenancy()
+
+	/**
+	 * An unreadable setting counts as on, and is logged.
+	 *
+	 * @return void
+	 */
+	public function testAnUnreadableSettingKeepsNewAppsScoped(): void {
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willThrowException(new \RuntimeException('no config'));
+		$logger = $this->createMock(LoggerInterface::class);
+		$logger->expects(self::once())->method('warning');
+
+		self::assertSame('holder', (new AppOrganisationGuard($container, $logger))->defaultScope());
+	}//end testAnUnreadableSettingKeepsNewAppsScoped()
 
 	/**
 	 * The guard over a mapper with the given memberships and parent chains.
