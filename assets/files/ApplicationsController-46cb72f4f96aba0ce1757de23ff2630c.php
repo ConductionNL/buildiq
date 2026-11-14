@@ -248,31 +248,14 @@ class ApplicationsController extends Controller {
 			}
 
 			// No `?_version=` param: original production-manifest path (backwards-compat).
-			$resolved = $this->resolveApplicationBySlug(slug: $slug);
+			// RBAC enforcement per REQ-OBRBAC-002 / REQ-OBR-006 — deny-by-default
+			// before any branch that would emit the manifest payload.
+			$resolved = $this->resolvePermittedApplication(slug: $slug);
 			if ($resolved instanceof JSONResponse) {
 				return $resolved;
 			}
 
-			[$application, $applicationArray, $applicationUuid] = $resolved;
-
-			// RBAC enforcement per REQ-OBRBAC-002 / REQ-OBR-006 — deny-by-default
-			// before any branch that would emit the manifest payload (ADR-005,
-			// ADR-022 §Exceptions(1)). Returns 403 with a fixed error envelope
-			// when the caller has no role intersection and is not exercising
-			// the audited admin bypass declared in REQ-OBRBAC-006.
-			$applicationEntity = null;
-			if ($application instanceof ObjectEntity) {
-				$applicationEntity = $application;
-			}
-
-			$denial = $this->requirePermission(
-				application: $applicationEntity,
-				applicationArray: $applicationArray,
-				slug: $slug
-			);
-			if ($denial !== null) {
-				return $denial;
-			}
+			[, $applicationArray, $applicationUuid] = $resolved;
 
 			// Resolve the production manifest from the application's
 			// productionVersion. The versioned model (ADR-002) stores the
@@ -660,30 +643,15 @@ class ApplicationsController extends Controller {
 			// Same lookup as getManifest(), including the fallback for apps
 			// without a route index entry. This used to repeat the route-only
 			// lookup, so the Diff tab 404'd for every app without one.
-			$resolved = $this->resolveApplicationBySlug(slug: $slug);
+			// RBAC enforcement (C5 / REQ-OBRBAC-002): the same gate as getManifest().
+			// Both `from` and `to` blobs come from this Application, so a single
+			// gate on the resolved Application is sufficient.
+			$resolved = $this->resolvePermittedApplication(slug: $slug);
 			if ($resolved instanceof JSONResponse) {
 				return $resolved;
 			}
 
-			[$application, $applicationArray, $applicationUuid] = $resolved;
-
-			// RBAC enforcement (C5 / REQ-OBRBAC-002): deny-by-default before
-			// returning any manifest data. Mirrors the identical gate in getManifest().
-			// Both `from` and `to` blobs come from this Application, so a single
-			// requirePermission call on the resolved Application is sufficient.
-			$applicationEntity = null;
-			if ($application instanceof ObjectEntity) {
-				$applicationEntity = $application;
-			}
-
-			$denial = $this->requirePermission(
-				application: $applicationEntity,
-				applicationArray: $applicationArray,
-				slug: $slug
-			);
-			if ($denial !== null) {
-				return $denial;
-			}
+			[, $applicationArray, $applicationUuid] = $resolved;
 
 			$fromBlob = $this->resolveVersionBlob(token: $from, application: $applicationArray, applicationUuid: $applicationUuid);
 			if ($fromBlob === null) {
@@ -713,6 +681,36 @@ class ApplicationsController extends Controller {
 			);
 		}//end try
 	}//end diffVersions()
+
+	/**
+	 * Resolve a slug to its Application and run the role gate on it.
+	 *
+	 * Deny-by-default before any manifest data leaves the server (ADR-005,
+	 * ADR-022 §Exceptions(1)): the 404 of an unknown slug, or the fixed 403
+	 * envelope when the caller has no role intersection and is not exercising
+	 * the audited admin bypass declared in REQ-OBRBAC-006.
+	 *
+	 * @param string $slug The virtual-app slug from the URL
+	 *
+	 * @return JSONResponse|array{0: mixed, 1: array<string, mixed>, 2: string} The refusal, or the resolved tuple
+	 *
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-45
+	 */
+	private function resolvePermittedApplication(string $slug): JSONResponse|array {
+		$resolved = $this->resolveApplicationBySlug(slug: $slug);
+		if ($resolved instanceof JSONResponse) {
+			return $resolved;
+		}
+
+		[$application, $applicationArray] = $resolved;
+		$applicationEntity = null;
+		if ($application instanceof ObjectEntity) {
+			$applicationEntity = $application;
+		}
+
+		$denial = $this->requirePermission(application: $applicationEntity, applicationArray: $applicationArray, slug: $slug);
+		return ($denial ?? $resolved);
+	}//end resolvePermittedApplication()
 
 	/**
 	 * Resolve a `from`/`to` token to a `{ manifest, version, publishedAt }` blob.
@@ -1414,21 +1412,7 @@ class ApplicationsController extends Controller {
 			}
 		}
 
-		$runtime = ($manifest['runtime'] ?? []);
-		if (is_array($runtime) === false) {
-			$runtime = [];
-		}
-
-		$runtimeUser = ($runtime['user'] ?? []);
-		if (is_array($runtimeUser) === false) {
-			$runtimeUser = [];
-		}
-
-		$runtimeUser['isOwner'] = $isOwner;
-		$runtime['user'] = $runtimeUser;
-		$manifest['runtime'] = $runtime;
-
-		return $manifest;
+		return $this->withRuntimeUser(manifest: $manifest, fields: ['isOwner' => $isOwner]);
 	}//end injectOwnerSignal()
 
 	/**
@@ -1459,6 +1443,24 @@ class ApplicationsController extends Controller {
 			caller: $caller
 		);
 
+		return $this->withRuntimeUser(manifest: $manifest, fields: ['permissions' => $permissions]);
+	}//end injectPermissionsSignal()
+
+	/**
+	 * Set fields on the manifest's `runtime.user` block, keeping everything else.
+	 *
+	 * Additive-only: a missing or non-array `runtime` / `runtime.user` starts
+	 * empty, every other key stays where it is, and each field is overwritten
+	 * in place or appended when new.
+	 *
+	 * @param array<string, mixed> $manifest The manifest payload (mutated copy is returned).
+	 * @param array<string, mixed> $fields The `runtime.user` fields to set.
+	 *
+	 * @return array<string, mixed> The manifest with the fields set.
+	 *
+	 * @spec openspec/specs/openbuild-runtime/spec.md#requirement-the-runtime-must-inject-the-current-user-s-group-context
+	 */
+	private function withRuntimeUser(array $manifest, array $fields): array {
 		$runtime = ($manifest['runtime'] ?? []);
 		if (is_array($runtime) === false) {
 			$runtime = [];
@@ -1469,12 +1471,14 @@ class ApplicationsController extends Controller {
 			$runtimeUser = [];
 		}
 
-		$runtimeUser['permissions'] = $permissions;
+		foreach ($fields as $key => $value) {
+			$runtimeUser[$key] = $value;
+		}
+
 		$runtime['user'] = $runtimeUser;
 		$manifest['runtime'] = $runtime;
-
 		return $manifest;
-	}//end injectPermissionsSignal()
+	}//end withRuntimeUser()
 
 	/**
 	 * Enforce the per-Application RBAC permissions block.
@@ -1621,39 +1625,19 @@ class ApplicationsController extends Controller {
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-55
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-56
-	 * @spec openspec/changes/store-shows-built-in-templates/specs/template-catalogue-ui/spec.md
+	 * @spec openspec/specs/template-catalogue-ui/spec.md
 	 */
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 10, period: 3600)]
 	public function createFromTemplate(string $templateSlug): JSONResponse {
 		// 1. Auth + request validation.
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return $this->errorResponse(code: 'unauthenticated', status: Http::STATUS_UNAUTHORIZED);
+		$admitted = $this->admitClone(refusal: 'Cloning an app from a template requires Nextcloud admin privileges.');
+		if ($admitted instanceof JSONResponse) {
+			return $admitted;
 		}
 
+		[$user, $name, $newSlug] = $admitted;
 		$ownerUid = $user->getUID();
-
-		// Parity with ApplicationCreationController::wizard: cloning an app
-		// provisions an OpenRegister register (an admin-only operation in OR,
-		// issue #157), so this fan-out is admin-gated too. Without the gate a
-		// non-admin fails opaquely deep in provisioning; with it they get a
-		// clear 403, and the endpoint cannot be used as an unthrottled
-		// register/schema-sprawl amplifier (paired with the rate limit above).
-		if ($this->groupManager->isInGroup($ownerUid, self::ADMIN_GROUP) === false) {
-			return $this->errorResponse(
-				code: 'forbidden',
-				detail: 'Cloning an app from a template requires Nextcloud admin privileges.',
-				status: Http::STATUS_FORBIDDEN
-			);
-		}
-
-		$validation = $this->validateCloneRequest(body: $this->request->getParams());
-		if (isset($validation['error']) === true) {
-			return new JSONResponse(data: $validation['error'], statusCode: $validation['status']);
-		}
-
-		[$name, $newSlug] = $validation;
 
 		// 2. Resolve shared register + schemas.
 		$ctx = $this->resolveSharedContext();
@@ -1724,25 +1708,12 @@ class ApplicationsController extends Controller {
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 10, period: 3600)]
 	public function copy(string $slug): JSONResponse {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return $this->errorResponse(code: 'unauthenticated', status: Http::STATUS_UNAUTHORIZED);
+		$admitted = $this->admitClone(refusal: 'Copying an app requires Nextcloud admin privileges.');
+		if ($admitted instanceof JSONResponse) {
+			return $admitted;
 		}
 
-		if ($this->groupManager->isInGroup($user->getUID(), self::ADMIN_GROUP) === false) {
-			return $this->errorResponse(
-				code: 'forbidden',
-				detail: 'Copying an app requires Nextcloud admin privileges.',
-				status: Http::STATUS_FORBIDDEN
-			);
-		}
-
-		$validation = $this->validateCloneRequest(body: $this->request->getParams());
-		if (isset($validation['error']) === true) {
-			return new JSONResponse(data: $validation['error'], statusCode: $validation['status']);
-		}
-
-		[$name, $newSlug] = $validation;
+		[$user, $name, $newSlug] = $admitted;
 
 		$resolved = $this->resolveApplicationBySlug(slug: $slug);
 		if ($resolved instanceof JSONResponse) {
@@ -1848,7 +1819,7 @@ class ApplicationsController extends Controller {
 	 *
 	 * @return array{status:int,data:array<string,mixed>} 201 + app on success; 409/500/503 on failure.
 	 *
-	 * @spec openspec/changes/openbuild-remote-template-store/specs/openbuild-remote-template-store/spec.md
+	 * @spec openspec/specs/openbuild-remote-template-store/spec.md
 	 */
 	public function installFromTemplateArray(
 		array $template,
@@ -2125,7 +2096,7 @@ class ApplicationsController extends Controller {
 	 *                   caller nothing was created when something was.
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-55
-	 * @spec openspec/changes/store-shows-built-in-templates/specs/template-catalogue-ui/spec.md
+	 * @spec openspec/specs/template-catalogue-ui/spec.md
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function persistApplication(
@@ -2292,6 +2263,38 @@ class ApplicationsController extends Controller {
 
 		return [$name, $slug];
 	}//end validateCloneRequest()
+
+	/**
+	 * Admit a clone request: a signed-in admin with a valid name and slug.
+	 *
+	 * Parity with ApplicationCreationController::wizard: cloning an app
+	 * provisions an OpenRegister register (an admin-only operation in OR,
+	 * issue #157), so this fan-out is admin-gated too. Without the gate a
+	 * non-admin fails opaquely deep in provisioning; with it they get a
+	 * clear 403, and the endpoint cannot be used as an unthrottled
+	 * register/schema-sprawl amplifier (paired with the rate limit).
+	 *
+	 * @param string $refusal The 403 detail naming what the caller tried to do.
+	 *
+	 * @return JSONResponse|array{0: IUser, 1: string, 2: string} The refusal, or the caller, name and new slug.
+	 */
+	private function admitClone(string $refusal): JSONResponse|array {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return $this->errorResponse(code: 'unauthenticated', status: Http::STATUS_UNAUTHORIZED);
+		}
+
+		if ($this->groupManager->isInGroup($user->getUID(), self::ADMIN_GROUP) === false) {
+			return $this->errorResponse(code: 'forbidden', detail: $refusal, status: Http::STATUS_FORBIDDEN);
+		}
+
+		$validation = $this->validateCloneRequest(body: $this->request->getParams());
+		if (isset($validation['error']) === true) {
+			return new JSONResponse(data: $validation['error'], statusCode: $validation['status']);
+		}
+
+		return [$user, $validation[0], $validation[1]];
+	}//end admitClone()
 
 	/**
 	 * Extract companionSchemas array from a template record.
