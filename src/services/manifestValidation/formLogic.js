@@ -320,7 +320,112 @@ function validateFieldLogic(field, ctx) {
 	return [
 		...localVisibleWhenErrors(field.visibleWhen, ctx),
 		...fieldValidationErrors(field, ctx.fieldPath),
+		...childRecordsErrors(field, ctx.fieldPath),
+		...assignErrors(field, ctx),
 	]
+}
+
+/**
+ * A `child-records` field without the child schema or the child field that
+ * points back at the parent cannot save its rows.
+ *
+ * @param {object} field - the field entry.
+ * @param {string} fieldPath - the field pointer prefix.
+ * @return {string[]}
+ * @spec openspec/changes/forms-designer-file-camera-children-and-assign/specs/form-field-kinds/spec.md#requirement-a-maker-adds-a-table-of-child-records-req-bqfk-003
+ */
+function childRecordsErrors(field, fieldPath) {
+	if (field.type !== 'child-records') {
+		return []
+	}
+	const errors = []
+	if (typeof field.schema !== 'string' || field.schema.trim() === '') {
+		errors.push(`${fieldPath}/schema: buildiq.formLogic.error.child-records-schema-required`)
+	}
+	if (typeof field.parentField !== 'string' || field.parentField.trim() === '') {
+		errors.push(`${fieldPath}/parentField: buildiq.formLogic.error.child-records-parent-field-required`)
+	}
+	return errors
+}
+
+/** The prefix of an `assign` value that copies another answer. */
+const ANSWER_PREFIX = '@answer.'
+
+/**
+ * Errors of a field's `assign` rules: not a list, a condition or answer
+ * naming an unknown field, a rule reading the field it sets, or an operator
+ * outside the shared set.
+ *
+ * @param {object} field - the field entry.
+ * @param {{fieldPath: string, declaredKeys: Set<string>}} ctx - the field
+ *   pointer prefix and the declared field keys.
+ * @return {string[]}
+ * @spec openspec/changes/forms-designer-file-camera-children-and-assign/specs/form-field-kinds/spec.md#requirement-a-field-is-filled-in-from-another-answer-req-bqfk-004
+ */
+function assignErrors(field, ctx) {
+	if (field.assign === undefined) {
+		return []
+	}
+	const path = `${ctx.fieldPath}/assign`
+	if (!Array.isArray(field.assign)) {
+		return [`${path}: buildiq.formLogic.error.assign-not-array`]
+	}
+	return field.assign.flatMap((rule, index) =>
+		assignRuleErrors(rule, {
+			path: `${path}/${index}`,
+			declaredKeys: ctx.declaredKeys,
+			self: field.key,
+		}),
+	)
+}
+
+/**
+ * Errors of one `assign` rule.
+ *
+ * @param {unknown} rule - the rule.
+ * @param {{path: string, declaredKeys: Set<string>, self: string}} ctx - the
+ *   rule pointer, the declared keys and the key of the field it sets.
+ * @return {string[]}
+ */
+function assignRuleErrors(rule, ctx) {
+	if (!isPlainObject(rule)) {
+		return [`${ctx.path}: buildiq.formLogic.error.assign-rule-not-object`]
+	}
+	const errors = []
+	const when = rule.when
+	if (isPlainObject(when) && !when.endpoint && !when.source) {
+		errors.push(...assignReadErrors(when.field, `${ctx.path}/when/field`, ctx))
+		if (when.op !== undefined && !VISIBLE_WHEN_OPS.includes(when.op)) {
+			errors.push(`${ctx.path}/when/op: buildiq.formLogic.error.condition-op-not-allowed`)
+		}
+	}
+	if (typeof rule.value === 'string' && rule.value.startsWith(ANSWER_PREFIX)) {
+		const key = rule.value.slice(ANSWER_PREFIX.length).split('.')[0]
+		errors.push(...assignReadErrors(key, `${ctx.path}/value`, ctx))
+	}
+	return errors
+}
+
+/**
+ * Errors of one field an `assign` rule reads.
+ *
+ * @param {unknown} key - the read field key.
+ * @param {string} path - the pointer of the read.
+ * @param {{declaredKeys: Set<string>, self: string}} ctx - the declared keys
+ *   and the key of the field the rule sets.
+ * @return {string[]}
+ */
+function assignReadErrors(key, path, ctx) {
+	if (typeof key !== 'string' || key.trim() === '') {
+		return [`${path}: buildiq.formLogic.error.assign-field-required`]
+	}
+	if (key === ctx.self) {
+		return [`${path}: buildiq.formLogic.error.assign-reads-itself`]
+	}
+	if (!ctx.declaredKeys.has(key)) {
+		return [`${path}: buildiq.formLogic.error.dangling-assign-field`]
+	}
+	return []
 }
 
 /**

@@ -24,6 +24,9 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Listener;
 
+use OCA\Buildiq\Kernel\AppIdentity;
+use OCA\Buildiq\Kernel\Contracts\ManifestResolverServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\PublishedApplicationProviderInterface;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
@@ -33,6 +36,7 @@ use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCA\OpenRegister\Event\TaskSequenceCompletedEvent;
 use OCA\OpenRegister\Event\TaskTerminalEvent;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
+use Psr\Log\LoggerInterface;
 
 /**
  * Registers the event listeners this component owns.
@@ -245,6 +249,36 @@ final class ListenerRegistrar {
 			listener: DocumentGenerationListener::class
 		);
 	}//end registerDocumentListeners()
+
+	/**
+	 * Register the deep-link listener for buildiq's own schemas and the records of built apps.
+	 *
+	 * Called only inside the OpenRegister guard. The event and the listener's
+	 * parent class are named as strings here and resolved lazily, so an absent
+	 * OpenRegister never fatals: the event then simply never fires.
+	 *
+	 * @param IRegistrationContext $context The registration context
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/apps-unified-search-deep-links/tasks.md#task-2.2
+	 */
+	public function registerDeepLinkListener(IRegistrationContext $context): void {
+		$context->registerService(
+			BuiltAppDeepLinkListener::class,
+			static fn ($c): BuiltAppDeepLinkListener => new BuiltAppDeepLinkListener(
+				appId: AppIdentity::APP_ID,
+				appManager: $c->get('OCP\\App\\IAppManager'),
+				logger: $c->get(LoggerInterface::class),
+				applications: $c->get(PublishedApplicationProviderInterface::class),
+				manifestResolver: $c->get(ManifestResolverServiceInterface::class)
+			)
+		);
+		$context->registerEventListener(
+			'OCA\\OpenRegister\\Event\\DeepLinkRegistrationEvent',
+			BuiltAppDeepLinkListener::class
+		);
+	}//end registerDeepLinkListener()
 
 	/**
 	 * The object-lifecycle listeners that declare their register and schema
