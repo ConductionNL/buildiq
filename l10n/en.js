@@ -1,7 +1,3 @@
-/**
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
- * SPDX-License-Identifier: EUPL-1.2
- */
 OC.L10N.register(
     "buildiq",
     {
@@ -1192,6 +1188,25 @@ OC.L10N.register(
         "Version name (e.g. Production)": "Version name (e.g. Production)",
         "Version name must not be empty.": "Version name must not be empty.",
         "Version not found": "Version not found",
+        "{code} in {path}": "{code} in {path}",
+        "App archive": "App archive",
+        "Import app": "Import app",
+        "Import records": "Import records",
+        "Importing…": "Importing…",
+        "Lowercase letters, digits and hyphens. The app's address uses it.": "Lowercase letters, digits and hyphens. The app's address uses it.",
+        "Pick an app archive exported from buildiq. It becomes a new app that you own.": "Pick an app archive exported from buildiq. It becomes a new app that you own.",
+        "The archive could not be imported.": "The archive could not be imported.",
+        "The slug \"{slug}\" is already taken. Choose another slug.": "The slug \"{slug}\" is already taken. Choose another slug.",
+        "%n page": "%n page",
+        "%n pages": "%n pages",
+        "%n schema": "%n schema",
+        "%n schemas": "%n schemas",
+        "%n record": "%n record",
+        "%n records": "%n records",
+        "%n {schema} record imported": "%n {schema} record imported",
+        "%n {schema} records imported": "%n {schema} records imported",
+        "%n {schema} record failed to import": "%n {schema} record failed to import",
+        "%n {schema} records failed to import": "%n {schema} records failed to import",
         "Version presets": "Version presets",
         "Version selection": "Version selection",
         "Version to publish": "Version to publish",
@@ -2288,7 +2303,30 @@ OC.L10N.register(
         "Include server bundle": "Include server bundle",
         "Add external data widget": "Add external data widget",
         "Failures": "Failures",
-        "Failed requests, 4xx and 5xx together. Derived by the server, never posted; summed by the request failure metric.": "Failed requests, 4xx and 5xx together. Derived by the server, never posted; summed by the request failure metric."
+        "Failed requests, 4xx and 5xx together. Derived by the server, never posted; summed by the request failure metric.": "Failed requests, 4xx and 5xx together. Derived by the server, never posted; summed by the request failure metric.",
+        "Branch “{name}” started.": "Branch “{name}” started.",
+        "Branch name": "Branch name",
+        "Branch per version": "Branch per version",
+        "Field {name}": "Field {name}",
+        "Git branch: {branch}": "Git branch: {branch}",
+        "I understand, merge anyway": "I understand, merge anyway",
+        "Keep target": "Keep target",
+        "Menu item {name}": "Menu item {name}",
+        "Merge": "Merge",
+        "Merge “{name}” into another version": "Merge “{name}” into another version",
+        "Merge into": "Merge into",
+        "No conflicts. Everything changed on one side is taken.": "No conflicts. Everything changed on one side is taken.",
+        "Page {name}": "Page {name}",
+        "Preview again": "Preview again",
+        "Schema {name}": "Schema {name}",
+        "Setting {name}": "Setting {name}",
+        "Someone saved “{name}” after your preview. Preview the merge again.": "Someone saved “{name}” after your preview. Preview the merge again.",
+        "Start a branch": "Start a branch",
+        "Take branch": "Take branch",
+        "The branch could not be started.": "The branch could not be started.",
+        "The merge could not be completed.": "The merge could not be completed.",
+        "This merge changes schemas in a way that can break records already stored:": "This merge changes schemas in a way that can break records already stored:",
+        "Which side to keep": "Which side to keep"
     },
     "nplurals=2; plural=(n != 1);"
 )

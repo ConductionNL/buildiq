@@ -64,6 +64,18 @@
 								>{{ shortSha(status.lastPulledSha) }}</span
 							>
 						</p>
+						<!-- lifecycle-git-branches: each version pushes to its own branch. -->
+						<div v-if="versions.length" class="github-sync__branches" data-test="github-version-branches">
+							<span class="github-sync__label">{{
+								t('buildiq', 'Branch per version')
+							}}</span>
+							<ul class="github-sync__branch-list">
+								<li v-for="version in versions" :key="version.slug">
+									{{ version.name || version.slug }}:
+									<span class="github-sync__value--mono">{{ versionBranch(version) }}</span>
+								</li>
+							</ul>
+						</div>
 					</template>
 					<NcNoteCard v-else type="info">
 						{{
@@ -263,6 +275,25 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * The branch a version pushes to: its own, or the default branch for
+		 * production and for a version without one (lifecycle-git-branches).
+		 *
+		 * @return {function(object): string}
+		 * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-each-version-pushes-to-its-own-branch-req-bqgb-002
+		 */
+		versionBranch() {
+			const fallback = (this.status && this.status.githubDefaultBranch) || 'main'
+			const production = this.status && this.status.productionVersion
+			return (version) => {
+				const uuid = version.id || version.uuid
+				if (!version.githubBranch || (production && uuid === production)) {
+					return fallback
+				}
+				return version.githubBranch
+			}
+		},
+
 		/**
 		 * Whether the app is linked to a GitHub repository.
 		 *
@@ -653,5 +684,9 @@ export default {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 8px;
+}
+.github-sync__branch-list {
+	margin: 4px 0 0;
+	padding-inline-start: 16px;
 }
 </style>
