@@ -797,6 +797,84 @@ final class RuleEngineServiceTest extends TestCase {
 	}//end testOutOfScopeRuleSetResolvesNotFound()
 
 	/**
+	 * Answer rule sets to a search, recording each search's RBAC and organisation flags.
+	 *
+	 * @param array<int,array<string,mixed>> $ruleSets The rule sets stored.
+	 *
+	 * @return \ArrayObject<int,array{0:bool,1:bool}> The flags of every search, in order.
+	 */
+	private function storedRuleSets(array $ruleSets): \ArrayObject {
+		$flags = new \ArrayObject();
+		$this->objectService->method('searchObjects')->willReturnCallback(
+			function (array $query = [], bool $_rbac = true, bool $_multitenancy = true) use ($ruleSets, $flags): array {
+				$flags->append([$_rbac, $_multitenancy]);
+				if ($this->schemaSlugOf(query: $query) !== 'rule-set') {
+					return [];
+				}
+
+				return array_values(array_filter($ruleSets, static fn (array $row): bool => $row['slug'] === ($query['slug'] ?? null)));
+			}
+		);
+
+		return $flags;
+	}//end storedRuleSets()
+
+	/**
+	 * rules-evaluation-for-other-apps D1: an app listed in callableBy gets the active rule set, read as the system.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/rules-evaluation-for-other-apps/specs/rules-evaluation-for-other-apps/spec.md#requirement-another-app-evaluates-a-rule-set-through-a-typed-command-req-bqrx-002
+	 */
+	public function testAListedAppGetsTheActiveRuleSet(): void {
+		$parking = ['slug' => 'parkeren-soort-vergunning', 'status' => 'active', 'version' => '2', 'callableBy' => ['portaliq', 'pipelinq']];
+		$flags = $this->storedRuleSets(ruleSets: [$parking, ['slug' => 'parkeren-soort-vergunning', 'status' => 'draft', 'callableBy' => ['portaliq']]]);
+
+		$this->assertSame(['status' => 'ok', 'ruleSet' => $parking], $this->service->resolveForApp(app: 'portaliq', slug: 'parkeren-soort-vergunning'));
+		$this->assertSame([[false, false]], $flags->getArrayCopy(), 'the one read outside a person\'s scope, and a read only');
+		$this->objectService->expects($this->never())->method('saveObject');
+	}//end testAListedAppGetsTheActiveRuleSet()
+
+	/**
+	 * An app that is not listed, an empty app id, or a rule set without callableBy is not allowed.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/rules-evaluation-for-other-apps/specs/rules-evaluation-for-other-apps/spec.md#requirement-a-rule-set-names-the-apps-that-may-call-it-req-bqrx-001
+	 */
+	public function testAnAppThatIsNotListedIsNotAllowed(): void {
+		$this->storedRuleSets(ruleSets: [
+			['slug' => 'listed', 'status' => 'active', 'callableBy' => ['portaliq']],
+			['slug' => 'private', 'status' => 'active'],
+			['slug' => 'odd', 'status' => 'active', 'callableBy' => 'portaliq'],
+		]);
+
+		foreach ([['decidiq', 'listed'], ['', 'listed'], ['portaliq', 'private'], ['portaliq', 'odd']] as [$app, $slug]) {
+			$this->assertSame(['status' => 'not-allowed', 'ruleSet' => null], $this->service->resolveForApp(app: $app, slug: $slug), $app . ' on ' . $slug);
+		}
+	}//end testAnAppThatIsNotListedIsNotAllowed()
+
+	/**
+	 * No active rule set, two of them, or no slug: unknown, whoever asks.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/rules-evaluation-for-other-apps/specs/rules-evaluation-for-other-apps/spec.md#requirement-another-app-evaluates-a-rule-set-through-a-typed-command-req-bqrx-002
+	 */
+	public function testAnInactiveOrAmbiguousRuleSetIsUnknown(): void {
+		$this->storedRuleSets(ruleSets: [
+			['slug' => 'concept', 'status' => 'draft', 'callableBy' => ['portaliq']],
+			['slug' => 'archived', 'status' => 'archived', 'callableBy' => ['portaliq']],
+			['slug' => 'twice', 'status' => 'active', 'callableBy' => ['portaliq']],
+			['slug' => 'twice', 'status' => 'active', 'callableBy' => ['portaliq']],
+		]);
+
+		foreach (['concept', 'archived', 'twice', 'missing', ' '] as $slug) {
+			$this->assertSame(['status' => 'unknown-rule-set', 'ruleSet' => null], $this->service->resolveForApp(app: 'portaliq', slug: $slug), $slug);
+		}
+	}//end testAnInactiveOrAmbiguousRuleSetIsUnknown()
+
+	/**
 	 * REQ-BRE-007: a rule set held by another organisation is not found.
 	 *
 	 * The caller sits in organisation B; `loan-eligibility` and the `buildiq`
