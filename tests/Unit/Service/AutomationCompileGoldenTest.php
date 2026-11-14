@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Tests\Unit\Service;
 
+use OCA\Buildiq\Service\Automation\AutomationFlowBackend;
 use OCA\Buildiq\Service\AutomationCompilerService;
 use OCP\App\IAppManager;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -152,6 +153,19 @@ class AutomationCompileGoldenTest extends TestCase {
 	}//end cases()
 
 	/**
+	 * A flow backend whose app version has the register `openbuild-zaken-main`
+	 * and the schemas the cases write to (logic-automation-actions-that-run D4).
+	 *
+	 * @return AutomationFlowBackend
+	 */
+	private function flowBackend(): AutomationFlowBackend {
+		$backend = $this->createMock(AutomationFlowBackend::class);
+		$backend->method('scope')->willReturn(['register' => 'openbuild-zaken-main', 'schemas' => ['case', 'permit', 'task']]);
+
+		return $backend;
+	}//end flowBackend()
+
+	/**
 	 * Every case matches its recorded plan or refusal.
 	 *
 	 * @return void
@@ -166,6 +180,7 @@ class AutomationCompileGoldenTest extends TestCase {
 			$this->createMock(SchemaMapper::class),
 			$appManager,
 			new NullLogger(),
+			$this->flowBackend(),
 		);
 
 		$actual = [];

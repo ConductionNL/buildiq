@@ -360,6 +360,11 @@
 								},
 								"description": "Reserved for future OpenConnector-materialised artifacts (e.g. webhook call configs)."
 							},
+							"flowUuid": {
+								"title": "Flow UUID",
+								"type": "string",
+								"description": "The uuid of the OpenRegister flow `aut-<slug>` this automation compiled to: a manual trigger, or a record, webhook or rule step (logic-automation-actions-that-run). Absent for an automation without a flow. Disable switches that flow off; delete removes it and its Application.flows binding."
+							},
 							"compiledHash": {
 								"title": "Compiled Hash",
 								"type": "string",

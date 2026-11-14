@@ -1476,6 +1476,20 @@ namespace OCA\OpenRegister\Db {
 			 * @var array|null
 			 */
 			protected ?array $limits = null;
+
+			/**
+			 * Stub app column.
+			 *
+			 * @var string|null
+			 */
+			protected ?string $app = null;
+
+			/**
+			 * Stub lifecycleStatus column: the head's draft or published state.
+			 *
+			 * @var string|null
+			 */
+			protected ?string $lifecycleStatus = 'draft';
 		}//end class
 	}//end if
 
@@ -2735,7 +2749,44 @@ namespace OCA\OpenRegister\Service\Flow {
 			public function find(string $uuid): \OCA\OpenRegister\Db\Flow {
 				return new \OCA\OpenRegister\Db\Flow();
 			}//end find()
+
+			/**
+			 * Delete a flow by uuid.
+			 *
+			 * @param string $uuid The flow's uuid.
+			 *
+			 * @return void
+			 */
+			public function delete(string $uuid): void {
+			}//end delete()
 		}//end class
+	}//end if
+
+	if (interface_exists(FlowVersionServiceInterface::class, autoload: false) === false) {
+		/**
+		 * Stub FlowVersionServiceInterface: the publish and draft calls a flow
+		 * buildiq saves needs before its trigger is subscribed.
+		 */
+		interface FlowVersionServiceInterface {
+			/**
+			 * Publish the flow's head.
+			 *
+			 * @param \OCA\OpenRegister\Db\Flow $flow    The flow.
+			 * @param mixed                     $options The publish options.
+			 *
+			 * @return mixed The published version.
+			 */
+			public function publish(\OCA\OpenRegister\Db\Flow $flow, mixed $options = null): mixed;
+
+			/**
+			 * Copy the published graph into a new draft.
+			 *
+			 * @param \OCA\OpenRegister\Db\Flow $flow The flow.
+			 *
+			 * @return mixed The draft version.
+			 */
+			public function createDraft(\OCA\OpenRegister\Db\Flow $flow): mixed;
+		}//end interface
 	}//end if
 }
 

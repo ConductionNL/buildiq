@@ -113,6 +113,8 @@ namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Exception\UnsupportedAutomationCombinationException;
 use OCA\Buildiq\Kernel\Contracts\AutomationCompilerServiceInterface;
+use OCA\Buildiq\Service\Automation\AutomationFlowBackend;
+use OCA\Buildiq\Service\Automation\AutomationFlowBuilder;
 use OCA\Buildiq\Service\Automation\CompileInput;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
@@ -211,6 +213,10 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 	 * @param IAppManager $appManager Nextcloud app manager — asks whether an
 	 *                                optional integration app is installed.
 	 * @param LoggerInterface $logger PSR logger.
+	 * @param AutomationFlowBackend|null $flowBackend Saves, binds and removes the flow of an
+	 *                                                automation (logic-automation-actions-that-run D2);
+	 *                                                resolved from the container when null.
+	 * @param AutomationFlowBuilder|null $flowBuilder Builds that flow; a default one when null.
 	 *
 	 * @return void
 	 */
@@ -220,9 +226,29 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 		private readonly SchemaMapper $schemaMapper,
 		private readonly IAppManager $appManager,
 		private readonly LoggerInterface $logger,
+		private readonly ?AutomationFlowBackend $flowBackend = null,
+		private readonly ?AutomationFlowBuilder $flowBuilder = null,
 	) {
 
 	}//end __construct()
+
+	/**
+	 * The flow builder (logic-automation-actions-that-run D1-D6).
+	 *
+	 * @return AutomationFlowBuilder
+	 */
+	private function flowBuilder(): AutomationFlowBuilder {
+		return ($this->flowBuilder ?? new AutomationFlowBuilder(feel: new FeelToJsonLogic(parser: new FeelParser())));
+	}//end flowBuilder()
+
+	/**
+	 * The flow backend, resolved at use time like the task-engine collaborators.
+	 *
+	 * @return AutomationFlowBackend
+	 */
+	private function flowBackend(): AutomationFlowBackend {
+		return ($this->flowBackend ?? $this->container->get(AutomationFlowBackend::class));
+	}//end flowBackend()
 
 	/**
 	 * Return `$value` when it is an array, otherwise `$default`.
@@ -289,6 +315,13 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 	public function compile(array $automation): array {
 		$input = new CompileInput(automation: $automation);
 
+		// Logic-automation-actions-that-run D1: a manual trigger or any flow
+		// action compiles to ONE OpenRegister flow, refused by the builder when
+		// a trigger, step or condition cannot run in one.
+		if ($this->flowBuilder()->wantsFlow(input: $input) === true) {
+			return $this->compileFlowBackend(input: $input);
+		}
+
 		$this->assertMatrix(triggerType: $input->triggerType, condition: $input->condition, actions: $input->actions);
 		$this->assertGenerateDocumentActions(actions: $input->actions);
 
@@ -313,6 +346,63 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 		$plan['hash'] = $this->hashPlan(plan: $plan);
 		return $plan;
 	}//end compile()
+
+	/**
+	 * Compile an automation to its flow (logic-automation-actions-that-run D1-D6).
+	 *
+	 * The other backends stay empty, so applying the plan also removes the
+	 * artefacts an earlier compile of the same automation left on them.
+	 *
+	 * @param CompileInput $input The automation.
+	 *
+	 * @return array<string,mixed> The plan, with `flow` the flow document.
+	 *
+	 * @throws UnsupportedAutomationCombinationException When the shape cannot run in a flow.
+	 *
+	 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-declarative-primitives-or-one-openregister-flow-req-bqar-001
+	 */
+	private function compileFlowBackend(CompileInput $input): array {
+		// The register and schemas are read only when a node needs them, so a
+		// shape the builder refuses anyway is refused without any I/O.
+		$scope = ['register' => '', 'schemas' => []];
+		if ($this->flowNeedsScope(input: $input) === true) {
+			$scope = $this->flowBackend()->scope(versionUuid: (string)($input->automation['versionUuid'] ?? ''));
+		}
+
+		$plan = [
+			'notifications' => [],
+			'lifecycleActions' => [],
+			'schedules' => [],
+			'ruleSet' => null,
+			'conditionActionRule' => null,
+			'approvalChain' => null,
+			'flow' => $this->flowBuilder()->build(input: $input, register: $scope['register'], schemas: $scope['schemas']),
+		];
+
+		$plan['hash'] = $this->hashPlan(plan: $plan);
+		return $plan;
+	}//end compileFlowBackend()
+
+	/**
+	 * Whether the flow names the app's register: an object trigger or a record step.
+	 *
+	 * @param CompileInput $input The automation.
+	 *
+	 * @return bool
+	 */
+	private function flowNeedsScope(CompileInput $input): bool {
+		if (in_array($input->triggerType, ['object-created', 'object-updated', 'object-deleted'], true) === true) {
+			return true;
+		}
+
+		foreach ($input->actions as $action) {
+			if (is_array($action) === true && ($action['type'] ?? '') === 'object-op') {
+				return true;
+			}
+		}
+
+		return false;
+	}//end flowNeedsScope()
 
 	/**
 	 * Apply a compiled plan: idempotent upsert of every artifact, removing
@@ -366,6 +456,15 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 			'openconnectorObjects' => [],
 			'compiledHash' => (string)$plan['hash'],
 		];
+
+		$flowUuid = $this->applyFlow(
+			automation: $automation,
+			planned: $this->orNullArray(value: $plan['flow'] ?? null),
+			priorUuid: $this->orNullString(value: $priorProvenance['flowUuid'] ?? null)
+		);
+		if ($flowUuid !== null) {
+			$provenance['flowUuid'] = $flowUuid;
+		}
 
 		// `ruleSetSlug` and `approvalChainName` are declared `"type": "string"`
 		// in 40-automations.json even though both descriptions say "or null",
@@ -437,7 +536,42 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 			);
 		}
 
+		$flowUuid = ($provenance['flowUuid'] ?? null);
+		if (is_string($flowUuid) === true && $flowUuid !== '') {
+			$this->flowBackend()->remove(flowUuid: $flowUuid, versionUuid: (string)($automation['versionUuid'] ?? ''));
+		}
+
 	}//end remove()
+
+	/**
+	 * Save, enable or disable and bind the planned flow, removing the prior one
+	 * when the automation no longer compiles to a flow (D2).
+	 *
+	 * @param array<string,mixed> $automation The Automation object.
+	 * @param array<string,mixed>|null $planned The planned flow document, or null.
+	 * @param string|null $priorUuid The flow the last compile produced.
+	 *
+	 * @return string|null The flow uuid, or null without a flow.
+	 *
+	 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-declarative-primitives-or-one-openregister-flow-req-bqar-001
+	 */
+	private function applyFlow(array $automation, ?array $planned, ?string $priorUuid): ?string {
+		$versionUuid = (string)($automation['versionUuid'] ?? '');
+		if ($planned === null) {
+			if ($priorUuid !== null) {
+				$this->flowBackend()->remove(flowUuid: $priorUuid, versionUuid: $versionUuid);
+			}
+
+			return null;
+		}
+
+		return $this->flowBackend()->apply(
+			flow: $planned,
+			priorUuid: $priorUuid,
+			enabled: (bool)($automation['enabled'] ?? true),
+			versionUuid: $versionUuid
+		);
+	}//end applyFlow()
 
 	/**
 	 * Recompute drift: compare the live artifacts against the last-applied
@@ -477,6 +611,11 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 					name: ($provenance['approvalChainName'] ?? null)
 				),
 			];
+
+			$flowUuid = $this->orNullString(value: $provenance['flowUuid'] ?? null);
+			if ($flowUuid !== null) {
+				$live['flow'] = $this->flowBackend()->live(flowUuid: $flowUuid);
+			}
 		} catch (Throwable $e) {
 			// A fetch failure means live state cannot be confirmed —
 			// fail safe by reporting drift so the operator is prompted to
@@ -1104,6 +1243,12 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 			'conditionActionRule' => ($plan['conditionActionRule'] ?? null),
 			'approvalChain' => ($plan['approvalChain'] ?? null),
 		];
+
+		// Only a flow plan carries `flow`, so every other plan keeps the hash it
+		// had before flows existed and shows no drift after an upgrade.
+		if (array_key_exists('flow', $plan) === true) {
+			$hashable['flow'] = $plan['flow'];
+		}
 
 		return 'sha256:' . hash(algo: 'sha256', data: $this->canonicalise(value: $hashable));
 	}//end hashPlan()
