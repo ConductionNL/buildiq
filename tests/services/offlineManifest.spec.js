@@ -18,13 +18,15 @@ import {
 	withSyncQueuePage,
 } from '../../src/services/offlineManifest.js'
 
-const manifest = () => ({
+function manifest () {
+  return {
 	menu: [{ id: 'inspections', label: 'Inspections', route: 'inspections', order: 20 }],
 	pages: [
 		{ id: 'inspections', type: 'index', route: '/inspections' },
 		{ id: 'report', type: 'form', route: '/report' },
 	],
-})
+}
+}
 
 describe('normaliseTakeAlong', () => {
 	it('caps the limit at 500 and the lifetime at 72 hours', () => {
