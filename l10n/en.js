@@ -1,7 +1,3 @@
-/**
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
- * SPDX-License-Identifier: EUPL-1.2
- */
 OC.L10N.register(
     "buildiq",
     {
@@ -2059,7 +2055,49 @@ OC.L10N.register(
         "Requests under 250 ms": "Requests under 250 ms",
         "Total load time (ms)": "Total load time (ms)",
         "Window start": "Window start",
-        "Include server bundle": "Include server bundle"
+        "Include server bundle": "Include server bundle",
+        "1 for the plan call, 2 for the repair.": "1 for the plan call, 2 for the repair.",
+        "Added at": "Added at",
+        "Added by": "Added by",
+        "Answer": "Answer",
+        "Answer cut off": "Answer cut off",
+        "Attempt": "Attempt",
+        "Duration (ms)": "Duration (ms)",
+        "File name": "File name",
+        "Files attached to this agent that its plan prompt reads, in this order. The files are stored on the agent object, so only the people who may run the agent can read them.": "Files attached to this agent that its plan prompt reads, in this order. The files are stored on the agent object, so only the people who may run the agent can read them.",
+        "How long the call took.": "How long the call took.",
+        "Knowledge": "Knowledge",
+        "Knowledge used": "Knowledge used",
+        "Model steps": "Model steps",
+        "Model time (ms)": "Model time (ms)",
+        "One entry per language model call made for this turn, in order.": "One entry per language model call made for this turn, in order.",
+        "Prompt size": "Prompt size",
+        "Refusal": "Refusal",
+        "Started at": "Started at",
+        "Steps missing": "Steps missing",
+        "Task type": "Task type",
+        "The TaskProcessing task type of the call.": "The TaskProcessing task type of the call.",
+        "The knowledge files read into the prompt of this turn.": "The knowledge files read into the prompt of this turn.",
+        "The model's raw answer, capped at 20,000 characters.": "The model's raw answer, capped at 20,000 characters.",
+        "The name of the file attached to this agent object.": "The name of the file attached to this agent object.",
+        "The parse or validator message that led to a repair.": "The parse or validator message that led to a repair.",
+        "The prompt length in characters.": "The prompt length in characters.",
+        "The time spent in model calls for this turn.": "The time spent in model calls for this turn.",
+        "The user who added the file.": "The user who added the file.",
+        "True when the model steps of this turn could not be found (the plan's trace expired or was never kept). The run is kept without them, never with a guess.": "True when the model steps of this turn could not be found (the plan's trace expired or was never kept). The run is kept without them, never with a guess.",
+        "When the call started.": "When the call started.",
+        "When the file was added.": "When the file was added.",
+        "Whether the answer was longer than the cap.": "Whether the answer was longer than the cap.",
+        "Whether the call asked for the plan or repaired it.": "Whether the call asked for the plan or repaired it.",
+        "successful: the answer parsed into a plan; repair-needed: it did not and a repair followed; failed: the repair did not parse either; error: the model was not reached.": "successful: the answer parsed into a plan; repair-needed: it did not and a repair followed; failed: the repair did not parse either; error: the model was not reached.",
+        "Attempt {attempt}": "Attempt {attempt}",
+        "Attempt {attempt}, repair needed": "Attempt {attempt}, repair needed",
+        "Attempt {attempt}, no usable answer": "Attempt {attempt}, no usable answer",
+        "Attempt {attempt}, the model did not answer": "Attempt {attempt}, the model did not answer",
+        "Knowledge used: {files}": "Knowledge used: {files}",
+        "Model answer": "Model answer",
+        "{duration} ms": "{duration} ms",
+        "The model steps of this run were not kept: the plan was made too long before it was applied.": "The model steps of this run were not kept: the plan was made too long before it was applied."
     },
     "nplurals=2; plural=(n != 1);"
 )

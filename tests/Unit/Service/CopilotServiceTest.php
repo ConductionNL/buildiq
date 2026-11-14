@@ -1877,4 +1877,129 @@ class CopilotServiceTest extends TestCase {
 		$result = $this->makeService()->execute(plan: $plan, userId: 'anyone');
 		self::assertCount(1, $result['results']);
 	}//end testExecuteCreateAppOnlyRequiresNoExistingAppRole()
+	// -------------------------------------------------------------------
+	// plan() — model steps of an agent turn (ai-agents-knowledge-and-run-trace)
+	// -------------------------------------------------------------------
+
+	/**
+	 * A repaired plan keeps both model calls: the first with the parse error as its
+	 * refusal, the second successful, and the plan returns the trace id the run
+	 * will look them up by (REQ-BQAG-004).
+	 *
+	 * @return void
+	 */
+	public function testARepairedAgentPlanKeepsBothModelSteps(): void {
+		$this->wireTaskProcessingManager();
+		$this->taskManager->method('getAvailableTaskTypes')->willReturn([TextToText::ID => []]);
+		$this->wireAgent(agentId: 'agent-1');
+		$this->wireCaller(uid: 'alice');
+		$this->objectService->method('searchObjectsBySlug')->willReturn(
+			[
+				['id' => 'app-1', 'slug' => 'tool-library', 'permissions' => ['owners' => ['user:alice']]],
+			]
+		);
+
+		$nextId = 1;
+		$this->taskManager->method('scheduleTask')->willReturnCallback(
+			function (Task $task) use (&$nextId): void {
+				$task->setId($nextId++);
+			}
+		);
+		$broken = new Task(TextToText::ID, ['input' => 'x'], 'buildiq', 'alice');
+		$broken->setStatus(Task::STATUS_SUCCESSFUL);
+		$broken->setOutput(['output' => 'Sure! Here is your plan: {steps: oops']);
+		$valid = new Task(TextToText::ID, ['input' => 'x'], 'buildiq', 'alice');
+		$valid->setStatus(Task::STATUS_SUCCESSFUL);
+		$valid->setOutput(
+			[
+				'output' => json_encode(
+					[
+						'summary' => 'Add a page',
+						'steps' => [['tool' => 'buildiq.upsertPage', 'arguments' => ['appSlug' => 'tool-library', 'pageId' => 'a', 'title' => 'A', 'type' => 'index', 'route' => '/a']]],
+					]
+				),
+			]
+		);
+		$this->taskManager->method('getTask')->willReturnOnConsecutiveCalls($broken, $valid);
+
+		$kept = null;
+		$this->agentRunLogger->expects(self::once())->method('rememberTrace')
+			->willReturnCallback(
+				function (array $agent, string $userId, array $trace) use (&$kept): string {
+					self::assertSame('agent-1', $agent['id']);
+					self::assertSame('alice', $userId);
+					$kept = $trace;
+					return 'trace-1';
+				}
+			);
+		$this->agentRunLogger->expects(self::never())->method('log');
+
+		$result = $this->makeService()->plan(brief: 'x', appSlug: null, userId: 'alice', agentId: 'agent-1');
+
+		self::assertSame('trace-1', $result['traceId']);
+		self::assertSame(['plan', 'repair'], array_column($kept['modelSteps'], 'kind'));
+		self::assertSame([1, 2], array_column($kept['modelSteps'], 'attempt'));
+		self::assertSame(['repair-needed', 'successful'], array_column($kept['modelSteps'], 'status'));
+		self::assertNotSame('', $kept['modelSteps'][0]['refusal'], 'the parse error that caused the repair');
+		self::assertSame('', $kept['modelSteps'][1]['refusal']);
+		self::assertSame('Sure! Here is your plan: {steps: oops', $kept['modelSteps'][0]['output']);
+		self::assertSame('core:text2text', $kept['modelSteps'][0]['taskType']);
+		self::assertGreaterThan(0, $kept['modelSteps'][0]['promptChars']);
+		self::assertSame([], $kept['knowledgeUsed']);
+		self::assertSame(array_sum(array_column($kept['modelSteps'], 'durationMs')), $kept['durationMs']);
+	}//end testARepairedAgentPlanKeepsBothModelSteps()
+
+	/**
+	 * A plan rejected in the same request hands its steps to the run directly.
+	 *
+	 * @return void
+	 */
+	public function testARejectedAgentPlanLogsTheStepsInHand(): void {
+		$this->wireTaskProcessingManager();
+		$this->taskManager->method('getAvailableTaskTypes')->willReturn([TextToText::ID => []]);
+		$this->wireAgent(agentId: 'agent-1', agent: ['enabledTools' => ['buildiq.upsertPage']]);
+		$this->wireCaller(uid: 'alice');
+		$this->objectService->method('searchObjectsBySlug')->willReturn(
+			[
+				['id' => 'app-1', 'slug' => 'tool-library', 'permissions' => ['owners' => ['user:alice']]],
+			]
+		);
+		$this->wireSuccessfulLlmReply(
+			json_encode(['summary' => 'x', 'steps' => [['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'x', 'name' => 'X']]]])
+		);
+
+		$this->agentRunLogger->expects(self::never())->method('rememberTrace');
+		$this->agentRunLogger->expects(self::once())->method('log')
+			->with(
+				self::anything(),
+				'alice',
+				'x',
+				[],
+				[],
+				'plan-rejected',
+				null,
+				self::callback(static fn (array $trace): bool => array_column($trace['modelSteps'], 'status') === ['successful'])
+			);
+
+		$this->expectException(CopilotException::class);
+		$this->makeService()->plan(brief: 'x', appSlug: null, userId: 'alice', agentId: 'agent-1');
+	}//end testARejectedAgentPlanLogsTheStepsInHand()
+
+	/**
+	 * The bare copilot keeps no trace and returns no trace id.
+	 *
+	 * @return void
+	 */
+	public function testTheBareCopilotKeepsNoTrace(): void {
+		$this->wireTaskProcessingManager();
+		$this->taskManager->method('getAvailableTaskTypes')->willReturn([TextToText::ID => []]);
+		$this->wireSuccessfulLlmReply(
+			json_encode(['summary' => 'x', 'steps' => [['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']]]])
+		);
+		$this->agentRunLogger->expects(self::never())->method('rememberTrace');
+
+		$result = $this->makeService()->plan(brief: 'x', appSlug: null, userId: 'alice');
+
+		self::assertArrayNotHasKey('traceId', $result);
+	}//end testTheBareCopilotKeepsNoTrace()
 }//end class

@@ -106,4 +106,19 @@ describe('ApplicationDetailActions automations entry', () => {
 			query: { app: 'permit-tracker', version: 'production' },
 		})
 	})
+
+	it('offers Agents next to Automations and opens the Agents page on this app (REQ-BQAG-003)', async () => {
+		const wrapper = mountActions()
+		await wrapper.vm.$nextTick()
+
+		const ids = wrapper.vm.actionDescriptors.map((a) => a.id)
+		expect(ids.indexOf('app-agents')).toBe(ids.indexOf('app-automations') + 1)
+
+		wrapper.vm.actionDescriptors.find((a) => a.id === 'app-agents').onSelect()
+
+		expect(router.push).toHaveBeenCalledWith({
+			name: 'Agents',
+			query: { app: 'permit-tracker' },
+		})
+	})
 })
