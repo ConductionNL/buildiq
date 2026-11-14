@@ -1,7 +1,3 @@
-/**
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
- * SPDX-License-Identifier: EUPL-1.2
- */
 OC.L10N.register(
     "buildiq",
     {
@@ -2059,7 +2055,25 @@ OC.L10N.register(
         "Requests under 250 ms": "Requests under 250 ms",
         "Total load time (ms)": "Total load time (ms)",
         "Window start": "Window start",
-        "Include server bundle": "Include server bundle"
+        "Include server bundle": "Include server bundle",
+        "— default —": "— default —",
+        "Add link button": "Add link button",
+        "Add related list": "Add related list",
+        "Allow creating a new record from the picker": "Allow creating a new record from the picker",
+        "Button label": "Button label",
+        "Buttons that link an existing record to the open record.": "Buttons that link an existing record to the open record.",
+        "Columns (comma-separated; empty uses the schema list columns)": "Columns (comma-separated; empty uses the schema list columns)",
+        "Field on this record that stores the link": "Field on this record that stores the link",
+        "Field shown in the picker": "Field shown in the picker",
+        "Field that points at this record": "Field that points at this record",
+        "Lists of records that point at the open record.": "Lists of records that point at the open record.",
+        "Pick a register and a schema for this button.": "Pick a register and a schema for this button.",
+        "Pick a register and a schema for this list.": "Pick a register and a schema for this list.",
+        "Pick the field on this record that stores the link.": "Pick the field on this record that stores the link.",
+        "Related items": "Related items",
+        "Remove link button": "Remove link button",
+        "Remove related list": "Remove related list",
+        "Rows to show (1 to 50)": "Rows to show (1 to 50)"
     },
     "nplurals=2; plural=(n != 1);"
 )

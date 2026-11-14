@@ -1,7 +1,3 @@
-/**
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
- * SPDX-License-Identifier: EUPL-1.2
- */
 OC.L10N.register(
     "buildiq",
     {
@@ -1644,7 +1640,25 @@ OC.L10N.register(
         "Requests under 250 ms": "Verzoeken onder 250 ms",
         "Total load time (ms)": "Totale laadtijd (ms)",
         "Window start": "Begin van het venster",
-        "Include server bundle": "Serverbundel meenemen"
+        "Include server bundle": "Serverbundel meenemen",
+        "— default —": "— standaard —",
+        "Add link button": "Koppelknop toevoegen",
+        "Add related list": "Gerelateerde lijst toevoegen",
+        "Allow creating a new record from the picker": "Een nieuw record aanmaken vanuit de kiezer toestaan",
+        "Button label": "Knoptekst",
+        "Buttons that link an existing record to the open record.": "Knoppen die een bestaand record aan het geopende record koppelen.",
+        "Columns (comma-separated; empty uses the schema list columns)": "Kolommen (gescheiden door komma’s; leeg gebruikt de lijstkolommen van het schema)",
+        "Field on this record that stores the link": "Veld op dit record dat de koppeling bewaart",
+        "Field shown in the picker": "Veld dat in de kiezer wordt getoond",
+        "Field that points at this record": "Veld dat naar dit record verwijst",
+        "Lists of records that point at the open record.": "Lijsten met records die naar het geopende record verwijzen.",
+        "Pick a register and a schema for this button.": "Kies een register en een schema voor deze knop.",
+        "Pick a register and a schema for this list.": "Kies een register en een schema voor deze lijst.",
+        "Pick the field on this record that stores the link.": "Kies het veld op dit record dat de koppeling bewaart.",
+        "Related items": "Gerelateerde items",
+        "Remove link button": "Koppelknop verwijderen",
+        "Remove related list": "Gerelateerde lijst verwijderen",
+        "Rows to show (1 to 50)": "Aantal rijen (1 tot 50)"
     },
     "nplurals=2; plural=(n != 1);"
 )
