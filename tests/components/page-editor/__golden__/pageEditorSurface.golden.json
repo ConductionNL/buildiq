@@ -802,11 +802,13 @@
 					"slug": "data"
 				}
 			],
+			"manualOrder": false,
 			"pageType": "index",
 			"parentRoute": ""
 		},
 		"emits": [
-			"update:config"
+			"update:config",
+			"update:manualOrder"
 		],
 		"picker": [
 			[

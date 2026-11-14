@@ -297,3 +297,41 @@ describe('PageDesigner undo / redo / keydown', () => {
 		expect(redo).not.toHaveBeenCalled()
 	})
 })
+
+describe('PageDesigner — drag ordering on an index page (REQ-PEC-009)', () => {
+	function ctx(page) {
+		const emitted = []
+		const pages = [page, { id: 'other', type: 'detail' }]
+		return {
+			emitted,
+			selectedIndex: 0,
+			selectedPage: page,
+			pages,
+			manifest: { version: '1.0.0', pages },
+			emitManifest: (next) => emitted.push(next),
+			subEditorFor: PageDesigner.methods.subEditorFor,
+		}
+	}
+
+	it('writes manualOrder: true on the page, outside its config', () => {
+		const c = ctx({ id: 'taken', type: 'index', config: { columns: ['titel'] } })
+		PageDesigner.methods.onManualOrderUpdate.call(c, true)
+		expect(c.emitted[0].pages[0]).toEqual({ id: 'taken', type: 'index', config: { columns: ['titel'] }, manualOrder: true })
+		expect(c.emitted[0].pages[1]).toEqual({ id: 'other', type: 'detail' })
+	})
+
+	it('removes the key when switched off', () => {
+		const c = ctx({ id: 'taken', type: 'index', manualOrder: true })
+		PageDesigner.methods.onManualOrderUpdate.call(c, false)
+		expect(c.emitted[0].pages[0]).toEqual({ id: 'taken', type: 'index' })
+	})
+
+	it('hands the index editor the current switch and its handler only', () => {
+		const c = ctx({ id: 'taken', type: 'index', manualOrder: true })
+		c.onManualOrderUpdate = () => {}
+		const props = PageDesigner.methods.stubEditorProps.call(c, 'index')
+		expect(props.manualOrder).toBe(true)
+		expect(props['onUpdate:manualOrder']).toBe(c.onManualOrderUpdate)
+		expect(PageDesigner.methods.stubEditorProps.call(c, 'detail')).toEqual({})
+	})
+})

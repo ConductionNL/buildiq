@@ -20,6 +20,7 @@
  */
 
 import { translate as t } from '@nextcloud/l10n'
+import { indexViewMessages } from './indexViews.js'
 
 /**
  * One sentence per code the connector validator can emit, saying what is
@@ -30,6 +31,7 @@ import { translate as t } from '@nextcloud/l10n'
  */
 function messages() {
 	return {
+		...indexViewMessages(),
 		'buildiq.connector.error.invalid-shape': t(
 			'buildiq',
 			'The connector settings must be a block of keys and values.',
