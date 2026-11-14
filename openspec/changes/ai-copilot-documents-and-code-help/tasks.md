@@ -10,4 +10,4 @@
 - [x] **T08**: Declare `stories` on `Application` in a new fragment `lib/Settings/register.d/81-application-stories.json`, let `buildiq.createApp` accept it, and add `src/components/applicationDetail/widgets/StoriesWidget.vue` to the app detail dashboard (REQ-BQCH-007). Verify: PHPUnit on the register import accepting the property and on `CreateAppHandler` saving it; vitest `tests/components/applicationDetail/StoriesWidget.spec.js`.
 - [ ] **T09**: When OpenRegister publishes a text read for a file, accept PDF, Word and OpenDocument in D6 and extend the T06 tests (REQ-BQCH-005). Verify: PHPUnit case reading a `.docx` through the published read.
 - [x] **T10**: Strings and docs: English and Dutch for "Ask AI", the dialog, "Add a document", the type and size messages and "User stories" (`l10n/en.json`, `l10n/nl.json`), and a page in `docs/` on getting AI help in the rule and automation editors and on generating an app from a document.
-- [ ] **T11**: Run `openspec validate ai-copilot-documents-and-code-help --strict`.
+- [x] **T11**: Run `openspec validate ai-copilot-documents-and-code-help --strict`.
