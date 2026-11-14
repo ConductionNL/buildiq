@@ -114,24 +114,29 @@ class VersionMergeRunner {
 
 		$this->schemas->write(version: $request->target, schemas: $merged['schemas']);
 
-		return $this->saveTarget(request: $request, manifest: $merged['manifest'], source: $states['source']);
+		return $this->saveTarget(
+			request: $request,
+			changes: [
+				'manifest' => $merged['manifest'],
+				'branchBase' => $this->branches->baseOf(source: $request->source, snapshot: $states['source']),
+			]
+		);
 	}//end apply()
 
 	/**
 	 * Save the target's merged manifest and its new `branchBase`.
 	 *
-	 * @param VersionMergeRequest                                                $request  The merge.
-	 * @param array<string,mixed>                                                $manifest The neutral merged manifest.
-	 * @param array{manifest: array<string,mixed>, schemas: array<string,mixed>} $source   The source's neutral state.
+	 * @param VersionMergeRequest                                                   $request The merge.
+	 * @param array{manifest: array<string,mixed>, branchBase: array<string,mixed>} $changes The neutral merged manifest and the new `branchBase`.
 	 *
 	 * @return array<string,mixed>
 	 */
-	private function saveTarget(VersionMergeRequest $request, array $manifest, array $source): array {
+	private function saveTarget(VersionMergeRequest $request, array $changes): array {
 		$current = $request->target;
 		$next    = $current;
 		unset($next['@self']);
-		$next['manifest']   = $this->branches->state->restore(manifest: $manifest, version: $current);
-		$next['branchBase'] = $this->branches->baseOf(source: $request->source, snapshot: $source);
+		$next['manifest']   = $this->branches->state->restore(manifest: $changes['manifest'], version: $current);
+		$next['branchBase'] = $changes['branchBase'];
 		$uuid = (string)($current['id'] ?? $current['uuid'] ?? '');
 
 		return ObjectRecord::toArray(

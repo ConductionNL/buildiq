@@ -28,7 +28,6 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service\Branch;
 
 use OCA\Buildiq\Kernel\Contracts\ApplicationVersionServiceInterface;
-use OCA\Buildiq\Service\ApplicationVersionService;
 use OCA\Buildiq\Service\RegisterStore;
 use OCA\Buildiq\Support\ObjectRecord;
 
@@ -47,10 +46,10 @@ class VersionBranchService {
 	/**
 	 * Constructor.
 	 *
-	 * @param RegisterStore             $store    OpenRegister's object service and register mapper.
-	 * @param VersionSchemaWriter       $schemas  Writes the copied schemas into the branch register.
-	 * @param VersionState              $state    The neutral snapshot of the source.
-	 * @param ApplicationVersionService $versions Hashes the manifest and stamps the semver.
+	 * @param RegisterStore                      $store    OpenRegister's object service and register mapper.
+	 * @param VersionSchemaWriter                $schemas  Writes the copied schemas into the branch register.
+	 * @param VersionState                       $state    The neutral snapshot of the source.
+	 * @param ApplicationVersionServiceInterface $versions Hashes the manifest and stamps the semver.
 	 *
 	 * @return void
 	 */
@@ -58,7 +57,7 @@ class VersionBranchService {
 		private readonly RegisterStore $store,
 		private readonly VersionSchemaWriter $schemas,
 		public readonly VersionState $state,
-		public readonly ApplicationVersionService $versions,
+		public readonly ApplicationVersionServiceInterface $versions,
 	) {
 	}//end __construct()
 
@@ -85,8 +84,8 @@ class VersionBranchService {
 		$this->schemas->write(version: ['register' => $register], schemas: $snapshot['schemas']);
 		$manifest = $this->state->restore(manifest: $snapshot['manifest'], version: ['register' => $register]);
 
-		$branch  = ['slug' => $name, 'register' => $register, 'manifest' => $manifest];
-		$payload = $this->versions->onSave(current: null, next: $this->branchPayload(application: $application, source: $source, version: $branch));
+		$branch  = ['slug' => $name, 'register' => $register, 'manifest' => $manifest, 'scope' => ($source['scope'] ?? null)];
+		$payload = $this->versions->onSave(current: null, next: $this->branchPayload(application: $application, version: $branch));
 		$payload['branchBase'] = $this->baseOf(source: $source, snapshot: $snapshot);
 
 		return ObjectRecord::toArray(
@@ -125,13 +124,13 @@ class VersionBranchService {
 	/**
 	 * The new version's object data, before the save hook.
 	 *
-	 * @param array<string,mixed>                                                   $application The Application.
-	 * @param array<string,mixed>                                                   $source      The version branched from.
-	 * @param array{slug: string, register: string, manifest: mixed}                $version     The branch's slug, register and manifest.
+	 * @param array<string,mixed>                                                 $application The Application.
+	 * @param array{slug: string, register: string, manifest: mixed, scope: mixed} $version     The branch's slug, register, manifest
+	 *                                                                                         and the scope of the version branched from.
 	 *
 	 * @return array<string,mixed>
 	 */
-	private function branchPayload(array $application, array $source, array $version): array {
+	private function branchPayload(array $application, array $version): array {
 		$payload = [
 			'name' => $version['slug'],
 			'slug' => $version['slug'],
@@ -139,7 +138,7 @@ class VersionBranchService {
 			'manifest' => $version['manifest'],
 			'register' => $version['register'],
 			'status' => 'draft',
-			'scope' => ($source['scope'] ?? null),
+			'scope' => $version['scope'],
 		];
 		if (is_array($application['githubRepo'] ?? null) === true && (string)($application['githubRepo']['name'] ?? '') !== '') {
 			$payload['githubBranch'] = $version['slug'];

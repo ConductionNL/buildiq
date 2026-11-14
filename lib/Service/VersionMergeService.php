@@ -56,6 +56,25 @@ class VersionMergeService {
 	private const KEYED_LISTS = ['pages' => 'page', 'menu' => 'menu'];
 
 	/**
+	 * The three states of a merge, in the order their units are compared.
+	 */
+	private const SIDES = ['base', 'source', 'target'];
+
+	/**
+	 * Conflict unit to a side, for the merge in progress.
+	 *
+	 * @var array<string,string>
+	 */
+	private array $choices = [];
+
+	/**
+	 * The conflicts the merge in progress found.
+	 *
+	 * @var array<int,array<string,mixed>>
+	 */
+	private array $conflicts = [];
+
+	/**
 	 * The common base of two versions: the `branchBase` of whichever was branched from the other.
 	 *
 	 * @param array<string,mixed> $source The source version's object data (`slug`, optional `branchBase`).
@@ -106,7 +125,7 @@ class VersionMergeService {
 	 * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-merges-a-branch-and-picks-a-side-per-conflict-req-bqgb-003
 	 */
 	public function merge(array $base, array $source, array $target): array {
-		return $this->resolve(base: $base, source: $source, target: $target, choices: [], requireAll: false);
+		return $this->resolve(sides: ['base' => $base, 'source' => $source, 'target' => $target], choices: null);
 	}//end merge()
 
 	/**
@@ -125,40 +144,33 @@ class VersionMergeService {
 	 * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-merges-a-branch-and-picks-a-side-per-conflict-req-bqgb-003
 	 */
 	public function apply(array $base, array $source, array $target, array $choices): array {
-		return $this->resolve(base: $base, source: $source, target: $target, choices: $choices, requireAll: true);
+		return $this->resolve(sides: ['base' => $base, 'source' => $source, 'target' => $target], choices: $choices);
 	}//end apply()
 
 	/**
 	 * The merge itself.
 	 *
-	 * @param array<string,mixed>  $base       The common base.
-	 * @param array<string,mixed>  $source     The version merged in.
-	 * @param array<string,mixed>  $target     The version merged into.
-	 * @param array<string,string> $choices    Conflict unit to a side.
-	 * @param bool                 $requireAll Whether every conflict must have a choice.
+	 * @param array<string,array<string,mixed>> $sides   The `base`, `source` and `target` states.
+	 * @param array<string,string>|null         $choices Conflict unit to a side, every conflict needing one;
+	 *                                                   null leaves every conflict at the target's side.
 	 *
 	 * @return array{manifest: array<string,mixed>, schemas: array<string,mixed>, conflicts: array<int,array<string,mixed>>}
 	 *
-	 * @throws InvalidArgumentException When $requireAll and a conflict has no valid choice.
+	 * @throws InvalidArgumentException When $choices is given and a conflict has no valid choice.
 	 */
-	private function resolve(array $base, array $source, array $target, array $choices, bool $requireAll): array {
-		$conflicts = [];
-		$manifest = $this->mergeManifest(
-			base: (array)($base['manifest'] ?? []),
-			source: (array)($source['manifest'] ?? []),
-			target: (array)($target['manifest'] ?? []),
-			choices: $choices,
-			conflicts: $conflicts
-		);
-		$schemas = $this->mergeSchemas(
-			base: (array)($base['schemas'] ?? []),
-			source: (array)($source['schemas'] ?? []),
-			target: (array)($target['schemas'] ?? []),
-			choices: $choices,
-			conflicts: $conflicts
-		);
+	private function resolve(array $sides, ?array $choices): array {
+		$this->choices = ($choices ?? []);
+		$this->conflicts = [];
+		try {
+			$manifest = $this->mergeManifest(sides: $this->part(sides: $sides, part: 'manifest'));
+			$schemas = $this->mergeSchemas(sides: $this->part(sides: $sides, part: 'schemas'));
+			$conflicts = $this->conflicts;
+		} finally {
+			$this->choices = [];
+			$this->conflicts = [];
+		}
 
-		if ($requireAll === true) {
+		if ($choices !== null) {
 			$open = array_values(
 				array_filter(
 					$conflicts,
@@ -176,77 +188,75 @@ class VersionMergeService {
 	}//end resolve()
 
 	/**
+	 * One part (`manifest` or `schemas`) of each side, as an array.
+	 *
+	 * @param array<string,array<string,mixed>> $sides The `base`, `source` and `target` states.
+	 * @param string                            $part  The part to take.
+	 *
+	 * @return array<string,array<string,mixed>> That part per side.
+	 */
+	private function part(array $sides, string $part): array {
+		$parts = [];
+		foreach (self::SIDES as $side) {
+			$parts[$side] = (array)($sides[$side][$part] ?? []);
+		}
+
+		return $parts;
+	}//end part()
+
+	/**
 	 * Merge the manifests: keyed lists item by item, every other key whole.
 	 *
-	 * @param array<string,mixed>              $base      The base manifest.
-	 * @param array<string,mixed>              $source    The source manifest.
-	 * @param array<string,mixed>              $target    The target manifest.
-	 * @param array<string,string>             $choices   Conflict unit to a side.
-	 * @param array<int,array<string,mixed>>   $conflicts Collects the conflicts.
+	 * @param array<string,array<string,mixed>> $sides The base, source and target manifests.
 	 *
 	 * @return array<string,mixed> The merged manifest.
 	 */
-	private function mergeManifest(array $base, array $source, array $target, array $choices, array &$conflicts): array {
+	private function mergeManifest(array $sides): array {
 		$merged = [];
-		foreach ($this->orderedKeys(target: $target, source: $source, base: $base) as $key) {
-			if (isset(self::KEYED_LISTS[$key]) === true) {
-				$list = $this->mergeKeyedList(
-					kind: self::KEYED_LISTS[$key],
-					base: $this->byId(list: ($base[$key] ?? [])),
-					source: $this->byId(list: ($source[$key] ?? [])),
-					target: $this->byId(list: ($target[$key] ?? [])),
-					choices: $choices,
-					conflicts: $conflicts
-				);
-				if ($list !== [] || array_key_exists($key, $target) === true || array_key_exists($key, $source) === true) {
-					$merged[$key] = $list;
-				}
-
+		foreach ($this->orderedKeys(sides: $sides) as $key) {
+			if (isset(self::KEYED_LISTS[$key]) === false) {
+				$merged += $this->mergeUnit(unit: 'setting:' . $key, sides: $sides);
 				continue;
 			}
 
-			$this->mergeUnit(
-				unit: 'setting:' . $key,
-				kind: 'setting',
-				key: (string)$key,
-				base: $base,
-				source: $source,
-				target: $target,
-				choices: $choices,
-				conflicts: $conflicts,
-				into: $merged
-			);
-		}//end foreach
+			$list = $this->mergeKeyedList(kind: self::KEYED_LISTS[$key], sides: $this->listsById(sides: $sides, key: (string)$key));
+			if ($list !== [] || array_key_exists($key, $sides['target']) === true || array_key_exists($key, $sides['source']) === true) {
+				$merged[$key] = $list;
+			}
+		}
 
 		return $merged;
 	}//end mergeManifest()
 
 	/**
+	 * The list under $key on each side, keyed by item id.
+	 *
+	 * @param array<string,array<string,mixed>> $sides The base, source and target manifests.
+	 * @param string                            $key   The manifest key of the list.
+	 *
+	 * @return array<string,array<string,mixed>> The items by id per side.
+	 */
+	private function listsById(array $sides, string $key): array {
+		$lists = [];
+		foreach (self::SIDES as $side) {
+			$lists[$side] = $this->byId(list: ($sides[$side][$key] ?? []));
+		}
+
+		return $lists;
+	}//end listsById()
+
+	/**
 	 * Merge a list of items keyed by `id`, keeping the target's order and appending what the source added.
 	 *
-	 * @param string                         $kind      `page` or `menu`.
-	 * @param array<string,mixed>            $base      Base items by id.
-	 * @param array<string,mixed>            $source    Source items by id.
-	 * @param array<string,mixed>            $target    Target items by id.
-	 * @param array<string,string>           $choices   Conflict unit to a side.
-	 * @param array<int,array<string,mixed>> $conflicts Collects the conflicts.
+	 * @param string                            $kind  `page` or `menu`.
+	 * @param array<string,array<string,mixed>> $sides Base, source and target items by id.
 	 *
 	 * @return array<int,mixed> The merged list.
 	 */
-	private function mergeKeyedList(string $kind, array $base, array $source, array $target, array $choices, array &$conflicts): array {
+	private function mergeKeyedList(string $kind, array $sides): array {
 		$merged = [];
-		foreach ($this->orderedKeys(target: $target, source: $source, base: $base) as $id) {
-			$this->mergeUnit(
-				unit: $kind . ':' . $id,
-				kind: $kind,
-				key: (string)$id,
-				base: $base,
-				source: $source,
-				target: $target,
-				choices: $choices,
-				conflicts: $conflicts,
-				into: $merged
-			);
+		foreach ($this->orderedKeys(sides: $sides) as $id) {
+			$merged += $this->mergeUnit(unit: $kind . ':' . $id, sides: $sides);
 		}
 
 		return array_values($merged);
@@ -255,160 +265,136 @@ class VersionMergeService {
 	/**
 	 * Merge the schemas: each property by name, and the rest of each schema as one unit.
 	 *
-	 * @param array<string,mixed>            $base      Base schemas by slug.
-	 * @param array<string,mixed>            $source    Source schemas by slug.
-	 * @param array<string,mixed>            $target    Target schemas by slug.
-	 * @param array<string,string>           $choices   Conflict unit to a side.
-	 * @param array<int,array<string,mixed>> $conflicts Collects the conflicts.
+	 * @param array<string,array<string,mixed>> $sides Base, source and target schemas by slug.
 	 *
 	 * @return array<string,mixed> The merged schemas by slug.
 	 */
-	private function mergeSchemas(array $base, array $source, array $target, array $choices, array &$conflicts): array {
+	private function mergeSchemas(array $sides): array {
 		$merged = [];
-		foreach ($this->orderedKeys(target: $target, source: $source, base: $base) as $slug) {
-			$sides = [];
-			foreach (['base' => $base, 'source' => $source, 'target' => $target] as $side => $schemas) {
-				$sides[$side] = null;
-				if (array_key_exists($slug, $schemas) === true && is_array($schemas[$slug]) === true) {
-					$schema = $schemas[$slug];
-					$properties = [];
-					if (is_array($schema['properties'] ?? null) === true) {
-						$properties = $schema['properties'];
-					}
-
-					unset($schema['properties']);
-					$sides[$side] = ['meta' => $schema, 'properties' => $properties];
-				}
+		foreach ($this->orderedKeys(sides: $sides) as $slug) {
+			$split = [];
+			foreach (self::SIDES as $side) {
+				$split[$side] = $this->splitSchema(schemas: $sides[$side], slug: (string)$slug);
 			}
 
 			// Created or deleted on a side: the schema is one unit, so deleting it
 			// against a change to any of its properties is a conflict.
-			if (in_array(null, $sides, true) === true) {
-				$this->mergeUnit(
-					unit: 'schema:' . $slug,
-					kind: 'schema',
-					key: (string)$slug,
-					base: $base,
-					source: $source,
-					target: $target,
-					choices: $choices,
-					conflicts: $conflicts,
-					into: $merged
-				);
+			if (in_array(null, $split, true) === true) {
+				$merged += $this->mergeUnit(unit: 'schema:' . $slug, sides: $sides);
 				continue;
 			}
 
-			// Present on every side: its settings are one unit, each property another.
-			$meta = [];
-			$this->mergeUnit(
-				unit: 'schema:' . $slug,
-				kind: 'schema',
-				key: (string)$slug,
-				base: $this->column(sides: $sides['base'], part: 'meta', slug: (string)$slug),
-				source: $this->column(sides: $sides['source'], part: 'meta', slug: (string)$slug),
-				target: $this->column(sides: $sides['target'], part: 'meta', slug: (string)$slug),
-				choices: $choices,
-				conflicts: $conflicts,
-				into: $meta
-			);
-			if (array_key_exists($slug, $meta) === false) {
-				continue;
+			$schema = $this->mergeSchema(slug: (string)$slug, split: $split);
+			if ($schema !== null) {
+				$merged[$slug] = $schema;
 			}
-
-			$properties = [];
-			foreach ($this->orderedKeys(
-				target: $sides['target']['properties'],
-				source: $sides['source']['properties'],
-				base: $sides['base']['properties']
-			) as $name) {
-				$this->mergeUnit(
-					unit: 'property:' . $slug . '.' . $name,
-					kind: 'property',
-					key: $slug . '.' . $name,
-					base: $this->renamed(values: $sides['base']['properties'], from: (string)$name, to: $slug . '.' . $name),
-					source: $this->renamed(values: $sides['source']['properties'], from: (string)$name, to: $slug . '.' . $name),
-					target: $this->renamed(values: $sides['target']['properties'], from: (string)$name, to: $slug . '.' . $name),
-					choices: $choices,
-					conflicts: $conflicts,
-					into: $properties
-				);
-			}
-
-			$schema = $meta[$slug];
-			$schema['properties'] = [];
-			foreach ($properties as $qualified => $definition) {
-				$schema['properties'][substr((string)$qualified, strlen((string)$slug) + 1)] = $definition;
-			}
-
-			$merged[$slug] = $schema;
-		}//end foreach
+		}
 
 		return $merged;
 	}//end mergeSchemas()
 
 	/**
-	 * Merge one unit, present or absent on each side, into $into.
+	 * Merge one schema present on every side: its settings are one unit, each property another.
 	 *
-	 * @param string                         $unit      The unit id, e.g. `page:permits`.
-	 * @param string                         $kind      The unit kind.
-	 * @param string                         $key       The unit's key in the three maps.
-	 * @param array<string,mixed>            $base      Base map.
-	 * @param array<string,mixed>            $source    Source map.
-	 * @param array<string,mixed>            $target    Target map.
-	 * @param array<string,string>           $choices   Conflict unit to a side.
-	 * @param array<int,array<string,mixed>> $conflicts Collects the conflicts.
-	 * @param array<string,mixed>            $into      Receives the merged value under $key, or nothing when deleted.
+	 * @param string                                                           $slug  The schema slug.
+	 * @param array<string,array{meta: array<string,mixed>, properties: array}> $split Each side's settings and properties.
 	 *
-	 * @return void
+	 * @return array<string,mixed>|null The merged schema, or null when its settings were deleted.
 	 */
-	private function mergeUnit(
-		string $unit,
-		string $kind,
-		string $key,
-		array $base,
-		array $source,
-		array $target,
-		array $choices,
-		array &$conflicts,
-		array &$into
-	): void {
-		$inBase = array_key_exists($key, $base);
-		$inSource = array_key_exists($key, $source);
-		$inTarget = array_key_exists($key, $target);
-		$baseForm = $this->canonical(present: $inBase, value: ($base[$key] ?? null));
-		$sourceForm = $this->canonical(present: $inSource, value: ($source[$key] ?? null));
-		$targetForm = $this->canonical(present: $inTarget, value: ($target[$key] ?? null));
-
-		$takeSource = false;
-		if ($sourceForm === $targetForm || $sourceForm === $baseForm) {
-			// Same on both sides, or only the target changed it.
-			$takeSource = false;
-		} else if ($targetForm === $baseForm) {
-			// Only the source changed it.
-			$takeSource = true;
-		} else {
-			$conflicts[] = [
-				'unit' => $unit,
-				'kind' => $kind,
-				'key' => $key,
-				'base' => ($base[$key] ?? null),
-				'source' => ($source[$key] ?? null),
-				'target' => ($target[$key] ?? null),
-			];
-			$takeSource = (($choices[$unit] ?? null) === self::TAKE_SOURCE);
-		}
-
-		if ($takeSource === true) {
-			if ($inSource === true) {
-				$into[$key] = $source[$key];
+	private function mergeSchema(string $slug, array $split): ?array {
+		$meta = [];
+		$qualified = [];
+		foreach (self::SIDES as $side) {
+			$meta[$side] = [$slug => $split[$side]['meta']];
+			$qualified[$side] = [];
+			foreach ($split[$side]['properties'] as $name => $definition) {
+				$qualified[$side][$slug . '.' . $name] = $definition;
 			}
-
-			return;
 		}
 
-		if ($inTarget === true) {
-			$into[$key] = $target[$key];
+		$merged = $this->mergeUnit(unit: 'schema:' . $slug, sides: $meta);
+		if (array_key_exists($slug, $merged) === false) {
+			return null;
 		}
+
+		$schema = $merged[$slug];
+		$schema['properties'] = [];
+		foreach ($this->orderedKeys(sides: $qualified) as $name) {
+			foreach ($this->mergeUnit(unit: 'property:' . $name, sides: $qualified) as $definition) {
+				$schema['properties'][substr((string)$name, strlen($slug) + 1)] = $definition;
+			}
+		}
+
+		return $schema;
+	}//end mergeSchema()
+
+	/**
+	 * One side's schema split into its settings and its properties, or null when absent.
+	 *
+	 * @param array<string,mixed> $schemas The side's schemas by slug.
+	 * @param string              $slug    The schema slug.
+	 *
+	 * @return array{meta: array<string,mixed>, properties: array}|null The split schema.
+	 */
+	private function splitSchema(array $schemas, string $slug): ?array {
+		if (array_key_exists($slug, $schemas) === false || is_array($schemas[$slug]) === false) {
+			return null;
+		}
+
+		$schema = $schemas[$slug];
+		$properties = [];
+		if (is_array($schema['properties'] ?? null) === true) {
+			$properties = $schema['properties'];
+		}
+
+		unset($schema['properties']);
+		return ['meta' => $schema, 'properties' => $properties];
+	}//end splitSchema()
+
+	/**
+	 * Merge one unit, present or absent on each side.
+	 *
+	 * The unit id is `<kind>:<key>`, e.g. `page:permits`; $key is its key in the
+	 * three maps. A conflict is recorded in $this->conflicts and resolved by
+	 * $this->choices, the target's side when there is no choice.
+	 *
+	 * @param string                            $unit  The unit id.
+	 * @param array<string,array<string,mixed>> $sides The base, source and target maps.
+	 *
+	 * @return array<string,mixed> The merged value under its key, or empty when deleted.
+	 */
+	private function mergeUnit(string $unit, array $sides): array {
+		[$kind, $key] = explode(':', $unit, 2);
+		$forms = [];
+		foreach (self::SIDES as $side) {
+			$forms[$side] = $this->canonical(present: array_key_exists($key, $sides[$side]), value: ($sides[$side][$key] ?? null));
+		}
+
+		// Same on both sides, or only the target changed it: the target. Only the source changed it: the source.
+		$take = 'target';
+		if ($forms['source'] !== $forms['target'] && $forms['source'] !== $forms['base']) {
+			if ($forms['target'] === $forms['base']) {
+				$take = 'source';
+			} else {
+				$this->conflicts[] = [
+					'unit' => $unit,
+					'kind' => $kind,
+					'key' => $key,
+					'base' => ($sides['base'][$key] ?? null),
+					'source' => ($sides['source'][$key] ?? null),
+					'target' => ($sides['target'][$key] ?? null),
+				];
+				if (($this->choices[$unit] ?? null) === self::TAKE_SOURCE) {
+					$take = 'source';
+				}
+			}
+		}
+
+		if (array_key_exists($key, $sides[$take]) === false) {
+			return [];
+		}
+
+		return [$key => $sides[$take][$key]];
 	}//end mergeUnit()
 
 	/**
@@ -479,49 +465,18 @@ class VersionMergeService {
 	}//end byId()
 
 	/**
-	 * Every key of target, then source, then base, once.
+	 * Every key of the target, then the source, then the base map, once.
 	 *
-	 * @param array<string|int,mixed> $target The target map.
-	 * @param array<string|int,mixed> $source The source map.
-	 * @param array<string|int,mixed> $base   The base map.
+	 * @param array<string,array<string|int,mixed>> $sides The base, source and target maps.
 	 *
 	 * @return array<int,string|int> The keys in that order.
 	 */
-	private function orderedKeys(array $target, array $source, array $base): array {
-		return array_values(array_unique(array_merge(array_keys($target), array_keys($source), array_keys($base)), SORT_REGULAR));
+	private function orderedKeys(array $sides): array {
+		return array_values(
+			array_unique(
+				array_merge(array_keys($sides['target']), array_keys($sides['source']), array_keys($sides['base'])),
+				SORT_REGULAR
+			)
+		);
 	}//end orderedKeys()
-
-	/**
-	 * One part of a schema side as a one-key map, or empty when the schema is absent.
-	 *
-	 * @param array<string,mixed>|null $sides The split schema, or null.
-	 * @param string                   $part  `meta`.
-	 * @param string                   $slug  The schema slug.
-	 *
-	 * @return array<string,mixed> The map.
-	 */
-	private function column(?array $sides, string $part, string $slug): array {
-		if ($sides === null) {
-			return [];
-		}
-
-		return [$slug => $sides[$part]];
-	}//end column()
-
-	/**
-	 * A one-key map holding $values[$from] under $to, or empty when absent.
-	 *
-	 * @param array<string,mixed> $values The map.
-	 * @param string              $from   The key to read.
-	 * @param string              $to     The key to write.
-	 *
-	 * @return array<string,mixed> The map.
-	 */
-	private function renamed(array $values, string $from, string $to): array {
-		if (array_key_exists($from, $values) === false) {
-			return [];
-		}
-
-		return [$to => $values[$from]];
-	}//end renamed()
 }//end class
