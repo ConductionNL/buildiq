@@ -1,7 +1,3 @@
-/**
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
- * SPDX-License-Identifier: EUPL-1.2
- */
 OC.L10N.register(
     "buildiq",
     {
@@ -431,6 +427,8 @@ OC.L10N.register(
         "Input payload (JSON)": "Invoer-payload (JSON)",
         "Insights window": "Inzichtsvenster",
         "Install OpenRegister": "OpenRegister installeren",
+        "Integrator-only editor: edit the raw JSON manifest below. For a visual editor open \"Design pages\".": "Editor voor integrators: bewerk hieronder het ruwe JSON-manifest. Open voor een visuele editor \"Pagina's ontwerpen\".",
+        "Integrator-only editor: edit the raw JSON manifest below. The visual editor lives in a follow-on release (buildiq-page-editor).": "Editor voor integrators: bewerk hieronder het ruwe JSON-manifest. De visuele editor komt in een vervolg-release (buildiq-page-editor).",
         "Connect a database": "Een database koppelen",
         "No connected database to add. An administrator connects one in OpenRegister under Sources.": "Er is geen gekoppelde database om toe te voegen. Een beheerder koppelt er een in OpenRegister onder Bronnen.",
         "Connected database": "Gekoppelde database",
@@ -438,8 +436,6 @@ OC.L10N.register(
         "Edit button": "Knop Bewerken",
         "Delete button": "Knop Verwijderen",
         "This database is read only. Ask an administrator to allow writes.": "Deze database is alleen-lezen. Vraag een beheerder om schrijven toe te staan.",
-        "Integrator-only editor: edit the raw JSON manifest below. For a visual editor open \"Design pages\".": "Editor voor integrators: bewerk hieronder het ruwe JSON-manifest. Open voor een visuele editor \"Pagina's ontwerpen\".",
-        "Integrator-only editor: edit the raw JSON manifest below. The visual editor lives in a follow-on release (buildiq-page-editor).": "Editor voor integrators: bewerk hieronder het ruwe JSON-manifest. De visuele editor komt in een vervolg-release (buildiq-page-editor).",
         "Invalid manifest": "Ongeldig manifest",
         "Invalid route(s):": "Ongeldige route(s):",
         "Inverse-of (optional)": "Inverse-of (optioneel)",
@@ -711,15 +707,15 @@ OC.L10N.register(
         "Single": "Enkelvoudig",
         "Slot": "Slot",
         "Slug": "Slug",
+        "Slug (kebab-case, max 32 chars)": "Slug (kebab-case, max. 32 tekens)",
+        "Slug \\": "Slug \\",
+        "Slug must be kebab-case (lowercase letters, digits, hyphens) and start with a letter.": "Slug moet kebab-case zijn (kleine letters, cijfers, koppeltekens) en met een letter beginnen.",
         "Shared catalogue": "Gedeelde catalogus",
         "From {source}": "Uit {source}",
         "Search the catalogue": "Catalogus doorzoeken",
         "No templates in the catalogue match your search": "Geen sjablonen in de catalogus passen bij je zoekopdracht",
         "The shared catalogue could not be reached. Try again later.": "De gedeelde catalogus is niet bereikbaar. Probeer het later opnieuw.",
         "This template is no longer in the catalogue.": "Dit sjabloon staat niet meer in de catalogus.",
-        "Slug (kebab-case, max 32 chars)": "Slug (kebab-case, max. 32 tekens)",
-        "Slug \\": "Slug \\",
-        "Slug must be kebab-case (lowercase letters, digits, hyphens) and start with a letter.": "Slug moet kebab-case zijn (kleine letters, cijfers, koppeltekens) en met een letter beginnen.",
         "Source": "Bron",
         "Source (URL or registry key)": "Bron (URL of registersleutel)",
         "Source register:": "Bronregister:",
@@ -1868,10 +1864,28 @@ OC.L10N.register(
         "Total load time (ms)": "Totale laadtijd (ms)",
         "Window start": "Begin van het venster",
         "Include server bundle": "Serverbundel meenemen",
-        "Search": "Zoeken",
         "Add external data widget": "Widget met externe gegevens toevoegen",
         "Failures": "Fouten",
-        "Failed requests, 4xx and 5xx together. Derived by the server, never posted; summed by the request failure metric.": "Mislukte verzoeken, 4xx en 5xx samen. Afgeleid door de server, nooit meegestuurd; opgeteld door de metriek voor mislukte verzoeken."
+        "Failed requests, 4xx and 5xx together. Derived by the server, never posted; summed by the request failure metric.": "Mislukte verzoeken, 4xx en 5xx samen. Afgeleid door de server, nooit meegestuurd; opgeteld door de metriek voor mislukte verzoeken.",
+        "Reject": "Afwijzen",
+        "Accept": "Accepteren",
+        "Add a document": "Document toevoegen",
+        "Add document": "Document toevoegen",
+        "As {role} I want to {goal}": "Als {role} wil ik {goal}",
+        "As {role} I want to {goal}, so that {benefit}": "Als {role} wil ik {goal}, zodat {benefit}",
+        "Ask AI": "Vraag het de AI",
+        "Asking the AI": "De AI wordt gevraagd",
+        "Check the proposal before you accept it. Nothing is saved until you save the editor.": "Controleer het voorstel voordat je het accepteert. Er wordt niets opgeslagen tot je de editor opslaat.",
+        "Explain": "Uitleggen",
+        "Pick a requirements document": "Kies een document met eisen",
+        "Plain text (.txt) and Markdown (.md) documents of up to 60,000 characters can be read.": "Platte tekst (.txt) en Markdown (.md) tot 60.000 tekens kunnen worden gelezen.",
+        "Proposal": "Voorstel",
+        "Remove document": "Document verwijderen",
+        "The AI help failed.": "De AI-hulp is mislukt.",
+        "This app has no user stories.": "Deze app heeft geen user stories.",
+        "User stories": "User stories",
+        "What should it do?": "Wat moet het doen?",
+        "Write it": "Schrijf het"
     },
     "nplurals=2; plural=(n != 1);"
 )

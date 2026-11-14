@@ -1,7 +1,3 @@
-/**
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
- * SPDX-License-Identifier: EUPL-1.2
- */
 OC.L10N.register(
     "buildiq",
     {
@@ -515,6 +511,8 @@ OC.L10N.register(
         "id (optional)": "id (optional)",
         "Identifier": "Identifier",
         "Import": "Import",
+        "Import \"{file}\" as a new schema. OpenRegister infers the fields from the header row and writes the rows.": "Import \"{file}\" as a new schema. OpenRegister infers the fields from the header row and writes the rows.",
+        "Import \"{file}\" into the \"{schema}\" schema. OpenRegister parses the file and writes the rows.": "Import \"{file}\" into the \"{schema}\" schema. OpenRegister parses the file and writes the rows.",
         "Connect a database": "Connect a database",
         "No connected database to add. An administrator connects one in OpenRegister under Sources.": "No connected database to add. An administrator connects one in OpenRegister under Sources.",
         "Connected database": "Connected database",
@@ -522,8 +520,6 @@ OC.L10N.register(
         "Edit button": "Edit button",
         "Delete button": "Delete button",
         "This database is read only. Ask an administrator to allow writes.": "This database is read only. Ask an administrator to allow writes.",
-        "Import \"{file}\" as a new schema. OpenRegister infers the fields from the header row and writes the rows.": "Import \"{file}\" as a new schema. OpenRegister infers the fields from the header row and writes the rows.",
-        "Import \"{file}\" into the \"{schema}\" schema. OpenRegister parses the file and writes the rows.": "Import \"{file}\" into the \"{schema}\" schema. OpenRegister parses the file and writes the rows.",
         "Import complete": "Import complete",
         "Import data": "Import data",
         "Import failed.": "Import failed.",
@@ -862,14 +858,14 @@ OC.L10N.register(
         "Publishing is unavailable until a GitHub credential is configured. Pulling public repositories still works.": "Publishing is unavailable until a GitHub credential is configured. Pulling public repositories still works.",
         "Publishing is unavailable: the credential broker or its GitHub write rules are not enabled on this instance. Pulling public repositories still works.": "Publishing is unavailable: the credential broker or its GitHub write rules are not enabled on this instance. Pulling public repositories still works.",
         "Publishing…": "Publishing…",
+        "Pull": "Pull",
+        "Pull failed.": "Pull failed.",
         "Shared catalogue": "Shared catalogue",
         "From {source}": "From {source}",
         "Search the catalogue": "Search the catalogue",
         "No templates in the catalogue match your search": "No templates in the catalogue match your search",
         "The shared catalogue could not be reached. Try again later.": "The shared catalogue could not be reached. Try again later.",
         "This template is no longer in the catalogue.": "This template is no longer in the catalogue.",
-        "Pull": "Pull",
-        "Pull failed.": "Pull failed.",
         "Pulled a new draft version \"{name}\" from {ref}. Promote it via the version history when you are ready — your production version is unchanged.": "Pulled a new draft version \"{name}\" from {ref}. Promote it via the version history when you are ready — your production version is unchanged.",
         "Pulling…": "Pulling…",
         "Push to GitHub": "Push to GitHub",
@@ -1151,6 +1147,7 @@ OC.L10N.register(
         "Upload SVG": "Upload SVG",
         "Upload your own SVG": "Upload your own SVG",
         "Use case (one line)": "Use case (one line)",
+        "Use this template": "Use this template",
         "API": "API",
         "Base address": "Base address",
         "Download OpenAPI file": "Download OpenAPI file",
@@ -1162,7 +1159,6 @@ OC.L10N.register(
         "The pages of this version use no OpenRegister schema.": "The pages of this version use no OpenRegister schema.",
         "These pages read from a connector, not from an OpenRegister schema.": "These pages read from a connector, not from an OpenRegister schema.",
         "This app has no version to document yet.": "This app has no version to document yet.",
-        "Use this template": "Use this template",
         "User overrides": "User overrides",
         "User settings will appear here in a future update.": "User settings will appear here in a future update.",
         "users": "users",
@@ -2277,10 +2273,27 @@ OC.L10N.register(
         "Total load time (ms)": "Total load time (ms)",
         "Window start": "Window start",
         "Include server bundle": "Include server bundle",
-        "Search": "Search",
         "Add external data widget": "Add external data widget",
         "Failures": "Failures",
-        "Failed requests, 4xx and 5xx together. Derived by the server, never posted; summed by the request failure metric.": "Failed requests, 4xx and 5xx together. Derived by the server, never posted; summed by the request failure metric."
+        "Failed requests, 4xx and 5xx together. Derived by the server, never posted; summed by the request failure metric.": "Failed requests, 4xx and 5xx together. Derived by the server, never posted; summed by the request failure metric.",
+        "Accept": "Accept",
+        "Add a document": "Add a document",
+        "Add document": "Add document",
+        "As {role} I want to {goal}": "As {role} I want to {goal}",
+        "As {role} I want to {goal}, so that {benefit}": "As {role} I want to {goal}, so that {benefit}",
+        "Ask AI": "Ask AI",
+        "Asking the AI": "Asking the AI",
+        "Check the proposal before you accept it. Nothing is saved until you save the editor.": "Check the proposal before you accept it. Nothing is saved until you save the editor.",
+        "Explain": "Explain",
+        "Pick a requirements document": "Pick a requirements document",
+        "Plain text (.txt) and Markdown (.md) documents of up to 60,000 characters can be read.": "Plain text (.txt) and Markdown (.md) documents of up to 60,000 characters can be read.",
+        "Proposal": "Proposal",
+        "Remove document": "Remove document",
+        "The AI help failed.": "The AI help failed.",
+        "This app has no user stories.": "This app has no user stories.",
+        "User stories": "User stories",
+        "What should it do?": "What should it do?",
+        "Write it": "Write it"
     },
     "nplurals=2; plural=(n != 1);"
 )
