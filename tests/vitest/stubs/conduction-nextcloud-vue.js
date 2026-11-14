@@ -99,6 +99,46 @@ export const CnTab = {
 		return h('div', { class: 'cntab-stub' }, this.$slots?.default?.())
 	},
 }
+/**
+ * `CnGraphCanvas` stand-in (data-model-diagram). The real canvas mounts Vue
+ * Flow, which needs a measured DOM jsdom cannot give. This renders each node
+ * the way Vue Flow wraps it — a `.vue-flow__node[data-id]` around the
+ * focusable `.cn-flow-node` — with the host's `#node` slot inside, each
+ * edge's `#edge-label` slot, and a click on a node as `node-select`. It keeps
+ * the props a host passes so a spec can assert on them.
+ */
+export const CnGraphCanvas = {
+	name: 'CnGraphCanvas',
+	props: {
+		nodes: { type: Array, required: true },
+		edges: { type: Array, required: true },
+		readOnly: { type: Boolean, default: false },
+		showMiniMap: { type: Boolean, default: false },
+	},
+	emits: ['node-select', 'node-activate', 'connect'],
+	render() {
+		const nodes = this.nodes.map((node) => h(
+			'div',
+			{
+				key: node.id,
+				class: 'vue-flow__node',
+				'data-id': node.id,
+				onClick: () => this.$emit('node-select', { node }),
+			},
+			[h(
+				'div',
+				{ class: 'cn-flow-node', tabindex: '0', role: 'button', 'aria-label': node.label },
+				this.$slots?.node?.({ node: { id: node.id, data: node.data, selected: false } }),
+			)],
+		))
+		const edges = this.edges.map((edge) => h(
+			'div',
+			{ key: edge.id, class: 'vue-flow__edge', 'data-source': edge.source, 'data-target': edge.target },
+			this.$slots?.['edge-label']?.({ edge: { id: edge.id, data: edge.data, selected: false } }),
+		))
+		return h('div', { class: 'cngraphcanvas-stub' }, [...nodes, ...edges])
+	},
+}
 export const CnPageRenderer = { name: 'CnPageRenderer', render: () => h('div') }
 // The chart form keeps its real props and event, so a spec can read what a
 // builder hands it and emit `update:content` the way the form does.
@@ -490,6 +530,7 @@ export default {
 	CnTabs,
 	CnTab,
 	CnPageRenderer,
+	CnGraphCanvas,
 	defaultPageTypes,
 	registerIcons,
 	registerTranslations,
