@@ -29,7 +29,10 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\Controller;
 
 use OCA\Buildiq\Controller\ApplicationVersionsController;
+use OCA\Buildiq\Exception\ReleaseOverrideRefusedException;
+use OCA\Buildiq\Exception\ReleaseTestsFailedException;
 use OCA\Buildiq\Service\ApplicationVersionService;
+use OCA\Buildiq\Support\ReleaseOverride;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -201,6 +204,87 @@ class ApplicationVersionsControllerTest extends TestCase {
 		self::assertSame(Http::STATUS_OK, $response->getStatus());
 		self::assertSame('v-uuid', $response->getData()['productionVersion']);
 	}//end testReleaseOwnerReturns200()
+
+	/**
+	 * A failing test suite answers 422 with the stored run, so the release
+	 * dialog can list the failed checks (lifecycle-release-test-gate REQ-BQRT-004).
+	 *
+	 * @return void
+	 */
+	public function testReleaseWithFailingTestsReturns422WithTheReport(): void {
+		$this->wireOwnerRelease();
+		$run = ['id' => 'run-1', 'failed' => 1, 'report' => [['kind' => 'structure', 'name' => 'permits: column kvkNumber', 'outcome' => 'failed', 'message' => 'No such property.']]];
+		$this->versionService->method('releaseVersion')->willThrowException(new ReleaseTestsFailedException(run: $run));
+
+		$response = $this->controller->release('test23', 'draft-1');
+
+		self::assertSame(Http::STATUS_UNPROCESSABLE_ENTITY, $response->getStatus());
+		self::assertSame('release_tests_failed', $response->getData()['error']);
+		self::assertSame($run, $response->getData()['testRun']);
+	}//end testReleaseWithFailingTestsReturns422WithTheReport()
+
+	/**
+	 * The owner's "release anyway" reaches the service as an owner's override
+	 * with the reason from the body.
+	 *
+	 * @return void
+	 */
+	public function testReleaseHandsTheOwnersOverrideToTheService(): void {
+		$this->wireOwnerRelease();
+		$this->request->method('getParam')->willReturnCallback(
+			static fn (string $key, mixed $default = null): mixed => ($key === 'override' ? ['reason' => 'Column removed on purpose'] : $default)
+		);
+
+		$this->versionService->expects(self::once())
+			->method('releaseVersion')
+			->with(
+				'app-uuid',
+				'v-uuid',
+				self::callback(
+					static fn (?ReleaseOverride $override): bool => $override !== null
+						&& $override->reason === 'Column removed on purpose'
+						&& $override->userId === 'admin'
+						&& $override->byOwner === true
+				)
+			)
+			->willReturn(['productionVersion' => 'v-uuid', 'published' => 'v-uuid', 'archived' => null]);
+
+		$response = $this->controller->release('test23', 'draft-1');
+		self::assertSame(Http::STATUS_OK, $response->getStatus());
+	}//end testReleaseHandsTheOwnersOverrideToTheService()
+
+	/**
+	 * An override without a reason answers 400 with the refusal's code.
+	 *
+	 * @return void
+	 */
+	public function testReleaseOverrideWithoutAReasonReturns400(): void {
+		$this->wireOwnerRelease();
+		$this->versionService->method('releaseVersion')->willThrowException(
+			new ReleaseOverrideRefusedException(errorCode: ReleaseOverrideRefusedException::REASON_REQUIRED, message: 'Releasing past failing tests needs a reason.')
+		);
+
+		$response = $this->controller->release('test23', 'draft-1');
+
+		self::assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+		self::assertSame('release_override_reason_required', $response->getData()['error']);
+	}//end testReleaseOverrideWithoutAReasonReturns400()
+
+	/**
+	 * Wire `admin` as the owner of `test23`, with version `draft-1`.
+	 *
+	 * @return void
+	 */
+	private function wireOwnerRelease(): void {
+		$this->userSession->method('getUser')->willReturn($this->mockUser('admin'));
+		$this->groupManager->method('getUserGroups')->willReturn([]);
+
+		$app = ['id' => 'app-uuid', 'slug' => 'test23', 'permissions' => ['owners' => ['user:admin']]];
+		$version = ['id' => 'v-uuid', 'slug' => 'draft-1', 'application' => 'app-uuid', 'status' => 'draft'];
+		$this->objectService->method('searchObjects')->willReturnCallback(
+			static fn (array $query): array => (isset($query['slug']) === true ? [$app] : [$version])
+		);
+	}//end wireOwnerRelease()
 
 	/**
 	 * An absent OpenRegister register must be TRANSLATED, not propagated.

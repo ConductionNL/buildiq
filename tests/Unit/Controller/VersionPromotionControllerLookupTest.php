@@ -226,9 +226,12 @@ class VersionPromotionControllerLookupTest extends TestCase {
 	public function testThePostedStrategyReachesTheService(): void {
 		$source = ['id' => 'v-1', 'application' => 'app-1'];
 		$this->rows(application: ['id' => 'app-1', 'permissions' => ['editors' => ['user:olga']]], version: $source);
-		$this->request->method('getParam')->with('strategy', '')->willReturn('overwrite');
+		// The body names the strategy and no override (lifecycle-release-test-gate).
+		$this->request->method('getParam')->willReturnCallback(
+			static fn (string $key, mixed $default = null): mixed => ($key === 'strategy' ? 'overwrite' : $default)
+		);
 		$this->promotionService->expects($this->once())->method('promote')
-			->with($source, 'overwrite')
+			->with($source, 'overwrite', null)
 			->willReturn(['id' => 'v-target']);
 
 		$response = $this->controller()->promote('app-1', 'v-1');
