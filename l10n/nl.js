@@ -1644,7 +1644,11 @@ OC.L10N.register(
         "Requests under 250 ms": "Verzoeken onder 250 ms",
         "Total load time (ms)": "Totale laadtijd (ms)",
         "Window start": "Begin van het venster",
-        "Include server bundle": "Serverbundel meenemen"
+        "Include server bundle": "Serverbundel meenemen",
+        "Record history": "Recordgeschiedenis",
+        "Show record history": "Recordgeschiedenis tonen",
+        "Let users restore an earlier version": "Gebruikers een eerdere versie laten terugzetten",
+        "Only users who may edit a record can restore it. A restore is saved as a new version; records that point at it are not changed.": "Alleen gebruikers die een record mogen bewerken, kunnen het terugzetten. Terugzetten wordt opgeslagen als een nieuwe versie; records die ernaar verwijzen veranderen niet."
     },
     "nplurals=2; plural=(n != 1);"
 )
