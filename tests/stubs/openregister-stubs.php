@@ -3574,6 +3574,90 @@ namespace OCA\OpenRegister\AppHost {
 	}
 }
 
+namespace OCA\OpenRegister\AppHost\Listener {
+
+	if (class_exists(GenericDeepLinkRegistrationListener::class, autoload: false) === false) {
+		/**
+		 * Stub GenericDeepLinkRegistrationListener — mirrors the real AppHost
+		 * listener: `handle()` registers every entry of the overridable
+		 * `loadDeepLinks()` hook that names a register, schema and URL
+		 * template; the hook reads `deepLinks` from the app's src/manifest.json.
+		 *
+		 * @implements \OCP\EventDispatcher\IEventListener<\OCP\EventDispatcher\Event>
+		 */
+		class GenericDeepLinkRegistrationListener implements \OCP\EventDispatcher\IEventListener {
+			/**
+			 * @param string                   $appId      Leaf app id.
+			 * @param \OCP\App\IAppManager     $appManager App path resolution.
+			 * @param \Psr\Log\LoggerInterface $logger     PSR logger.
+			 */
+			public function __construct(
+				protected readonly string $appId,
+				protected readonly \OCP\App\IAppManager $appManager,
+				protected readonly \Psr\Log\LoggerInterface $logger,
+			) {
+			}//end __construct()
+
+			/**
+			 * @param \OCP\EventDispatcher\Event $event The dispatched event.
+			 *
+			 * @return void
+			 */
+			public function handle(\OCP\EventDispatcher\Event $event): void {
+				if ($event instanceof \OCA\OpenRegister\Event\DeepLinkRegistrationEvent === false) {
+					return;
+				}
+
+				foreach ($this->loadDeepLinks() as $link) {
+					$registerSlug = (string)($link['registerSlug'] ?? '');
+					$schemaSlug = (string)($link['schemaSlug'] ?? '');
+					$urlTemplate = (string)($link['urlTemplate'] ?? '');
+					if ($registerSlug === '' || $schemaSlug === '' || $urlTemplate === '') {
+						continue;
+					}
+
+					$displayName = ($link['displayName'] ?? null);
+					if (is_string($displayName) === false) {
+						$displayName = null;
+					}
+
+					$event->register(
+						appId: $this->appId,
+						registerSlug: $registerSlug,
+						schemaSlug: $schemaSlug,
+						urlTemplate: $urlTemplate,
+						icon: (string)($link['icon'] ?? ''),
+						displayName: $displayName
+					);
+				}//end foreach
+			}//end handle()
+
+			/**
+			 * @return array<int, array<string, mixed>>
+			 */
+			protected function loadDeepLinks(): array {
+				try {
+					$path = $this->appManager->getAppPath(appId: $this->appId) . '/src/manifest.json';
+				} catch (\Throwable $e) {
+					return [];
+				}
+
+				if (is_readable($path) === false) {
+					return [];
+				}
+
+				$manifest = json_decode((string)file_get_contents($path), associative: true);
+				$links = (is_array($manifest) === true) ? ($manifest['deepLinks'] ?? []) : [];
+				if (is_array($links) === false) {
+					return [];
+				}
+
+				return array_values(array_filter($links, 'is_array'));
+			}//end loadDeepLinks()
+		}//end class
+	}//end if
+}
+
 namespace OCA\OpenRegister\AppHost\Service {
 
 	if (class_exists(StoreDescriptor::class, autoload: false) === false) {

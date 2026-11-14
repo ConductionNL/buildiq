@@ -12,7 +12,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const listRuleSets = vi.fn()
 const ruleSetColumns = vi.fn()
-vi.mock('../../src/services/formLiveValues.js', () => ({
+vi.mock('../../src/services/formLiveValues.js', async (importOriginal) => ({
+	...(await importOriginal()),
 	listRuleSets: (...a) => listRuleSets(...a),
 	ruleSetColumns: (...a) => ruleSetColumns(...a),
 }))
