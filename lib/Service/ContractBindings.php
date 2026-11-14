@@ -30,6 +30,7 @@ use OCA\Buildiq\Kernel\Contracts\ApplicationInsightsServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\ApplicationVersionServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\AppNavigationServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\AppOverrideServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\AppPackageImportServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\AppRepoParserInterface;
 use OCA\Buildiq\Kernel\Contracts\AppVisibilityResolverInterface;
 use OCA\Buildiq\Kernel\Contracts\AutomationCompilerServiceInterface;
@@ -111,6 +112,7 @@ final class ContractBindings {
 		$context->registerServiceAlias(AutomationRunRecorderInterface::class, AutomationRunRecorder::class);
 		$context->registerServiceAlias(AppNavigationServiceInterface::class, AppNavigationService::class);
 		$context->registerServiceAlias(AppOverrideServiceInterface::class, AppOverrideService::class);
+		$context->registerServiceAlias(AppPackageImportServiceInterface::class, AppPackageImportService::class);
 		$context->registerServiceAlias(AppRepoParserInterface::class, AppRepoParser::class);
 		$context->registerServiceAlias(AppVisibilityResolverInterface::class, AppVisibilityResolver::class);
 		$context->registerServiceAlias(ApplicationCreationServiceInterface::class, ApplicationCreationService::class);

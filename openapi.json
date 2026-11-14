@@ -134,6 +134,10 @@
         {
             "name": "version-promotion",
             "description": "Controller exposing the promotion endpoint."
+        },
+        {
+            "name": "application-import",
+            "description": "Import an exported app archive as a new app."
         }
     ],
     "paths": {
@@ -636,6 +640,71 @@
                     },
                     "500": {
                         "$ref": "#/components/responses/Problem500"
+                    }
+                }
+            }
+        },
+        "/applications/import": {
+            "post": {
+                "operationId": "application-import-import",
+                "summary": "Import an exported app archive as a new app owned by the caller",
+                "description": "Import an exported app archive, uploaded as multipart field `archive`, as a new app owned by the caller. Only the package files are read; the archive's code is never run. Returns 201 with the app, 400 without an archive or with a bad slug, 401 when signed out, 409 when the slug is taken, 413 for an archive over the size or entry limits, 422 with the parser's code and the file at fault.",
+                "tags": [
+                    "application-import"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "archive": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "slug": {
+                                        "type": "string"
+                                    }
+                                },
+                                "required": [
+                                    "archive"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "The app was created.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Problem409"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Problem422"
                     }
                 }
             }
