@@ -11,4 +11,5 @@
 - [ ] **T07**: Render code and expressions in `src/components/page-editor/PreviewSandbox.vue` through the same sandbox, showing errors (REQ-BQCC-001, REQ-BQCC-002). Verify: a case in `tests/components/page-editor/PreviewSandbox.spec.js`.
 - [ ] **T08**: Playwright `tests/e2e/page-custom-code.spec.ts`: an owner adds a code widget and a computed column; a script request to the API is blocked; an editor is refused (REQ-BQCC-001, REQ-BQCC-002, REQ-BQCC-003, REQ-BQCC-005).
 - [ ] **T09**: Strings and docs: English and Dutch for the editors, the toggle, the setting and the refusals (`l10n/en.json`, `l10n/nl.json`), and a page in `docs/` on writing code for a page: what it can see, what it can ask, and who may write it.
+  - note: `docs/page-custom-code.md` and the en/nl strings for the setting are done; the editor strings follow T04, T05 and T07.
 - [ ] **T10**: Run `openspec validate pages-custom-code --strict`.
