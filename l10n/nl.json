@@ -1,5 +1,11 @@
 {
     "translations": {
+        "Installable": "Installeerbaar",
+        "Users can add this app to their phone or desktop from its run address. These set how it looks once installed.": "Gebruikers kunnen deze app vanaf het startadres op hun telefoon of computer zetten. Dit bepaalt hoe de geïnstalleerde app eruitziet.",
+        "Short name": "Korte naam",
+        "Shown under the icon. At most 12 characters; empty uses the app name.": "Staat onder het pictogram. Hoogstens 12 tekens; leeg gebruikt de naam van de app.",
+        "Theme colour": "Themakleur",
+        "Use the browser colour": "De kleur van de browser gebruiken",
         "Let apps work offline": "Apps offline laten werken",
         "Offline": "Offline",
         "When this is on, an app whose maker chose records or forms to take along keeps them on the device and syncs forms filled in offline. Off by default.": "Als dit aan staat, bewaart een app waarvan de maker records of formulieren heeft gekozen om mee te nemen die op het apparaat, en synchroniseert offline ingevulde formulieren later. Standaard uit.",

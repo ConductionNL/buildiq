@@ -61,6 +61,8 @@
 			:allowUserOverrides="!!(obApp && obApp.allowUserOverrides)"
 			:data-registers="(obApp && obApp.dataRegisters) || []"
 			:flows="(obApp && obApp.flows) || []"
+			:shortName="(obApp && obApp.shortName) || ''"
+			:themeColor="(obApp && obApp.themeColor) || ''"
 			:availableFlows="availableFlows"
 			:loadingFlows="loadingFlows"
 			:busy="publishing"
@@ -68,7 +70,8 @@
 			@setPublished="setPublished"
 			@update:allowOverrides="setAllowOverrides"
 			@update:dataRegisters="setDataRegisters"
-			@update:flows="setFlows" />
+			@update:flows="setFlows"
+			@update:installable="setInstallable" />
 		<DeleteAppDialog
 			:open="deleteOpen"
 			:appName="(obApp && (obApp.name || obApp.slug)) || ''"
@@ -1140,6 +1143,33 @@ export default {
 		 * @return {Promise<void>}
 		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
+		/**
+		 * Persist the Installable section: the installed app's short name and
+		 * theme colour, read by the run route's web app manifest. Owner-only.
+		 *
+		 * @param {{shortName: string, themeColor: string}} installable The section's values.
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T02
+		 */
+		async setInstallable(installable) {
+			if (this.obAppRole !== 'owner' || !this.obApp) {
+				return
+			}
+			const patch = {
+				shortName: String(installable?.shortName || ''),
+				themeColor: String(installable?.themeColor || ''),
+			}
+			if (patch.shortName === (this.obApp.shortName || '') && patch.themeColor === (this.obApp.themeColor || '')) {
+				return
+			}
+			this.error = ''
+			try {
+				await this.obPatchApp(patch)
+			} catch (e) {
+				this.error = `${t('buildiq', 'Failed to save settings')}: ${e.message || e}`
+			}
+		},
+
 		async setDataRegisters(dataRegisters) {
 			if (this.obAppRole !== 'owner' || !this.obApp) {
 				return

@@ -1,5 +1,11 @@
 {
     "translations": {
+        "Installable": "Installable",
+        "Users can add this app to their phone or desktop from its run address. These set how it looks once installed.": "Users can add this app to their phone or desktop from its run address. These set how it looks once installed.",
+        "Short name": "Short name",
+        "Shown under the icon. At most 12 characters; empty uses the app name.": "Shown under the icon. At most 12 characters; empty uses the app name.",
+        "Theme colour": "Theme colour",
+        "Use the browser colour": "Use the browser colour",
         "Let apps work offline": "Let apps work offline",
         "Offline": "Offline",
         "When this is on, an app whose maker chose records or forms to take along keeps them on the device and syncs forms filled in offline. Off by default.": "When this is on, an app whose maker chose records or forms to take along keeps them on the device and syncs forms filled in offline. Off by default.",

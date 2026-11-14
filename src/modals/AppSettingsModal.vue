@@ -151,6 +151,46 @@
 					}}
 				</p>
 			</div>
+			<div class="app-settings__row" data-test="app-settings-installable">
+				<h4 class="app-settings__subtitle">
+					{{ t('buildiq', 'Installable') }}
+				</h4>
+				<p class="app-settings__hint app-settings__hint--inline">
+					{{
+						t(
+							'buildiq',
+							'Users can add this app to their phone or desktop from its run address. These set how it looks once installed.',
+						)
+					}}
+				</p>
+				<NcTextField
+					:modelValue="installShortName"
+					:label="t('buildiq', 'Short name')"
+					:helperText="t('buildiq', 'Shown under the icon. At most 12 characters; empty uses the app name.')"
+					:maxlength="12"
+					:disabled="busy"
+					data-test="app-settings-short-name"
+					@update:modelValue="installShortName = $event"
+					@blur="emitInstallable" />
+				<label class="app-settings__label" for="app-settings-theme-color">
+					{{ t('buildiq', 'Theme colour') }}
+				</label>
+				<input
+					id="app-settings-theme-color"
+					class="app-settings__color"
+					type="color"
+					:value="installThemeColor || '#ffffff'"
+					:disabled="busy"
+					data-test="app-settings-theme-color"
+					@change="onThemeColor($event.target.value)">
+				<NcButton
+					v-if="installThemeColor"
+					variant="tertiary"
+					:disabled="busy"
+					@click="onThemeColor('')">
+					{{ t('buildiq', 'Use the browser colour') }}
+				</NcButton>
+			</div>
 		</div>
 	</NcModal>
 </template>
@@ -198,6 +238,10 @@ export default {
 		availableFlows: { type: Array, default: () => [] },
 		/** Whether the flow list is still being fetched. */
 		loadingFlows: { type: Boolean, default: false },
+		/** The installed app's short name (`Application.shortName`), '' for the app name. */
+		shortName: { type: String, default: '' },
+		/** The installed app's theme colour (`Application.themeColor`), '' for none. */
+		themeColor: { type: String, default: '' },
 		/** Whether an action is in flight (disables the switches). */
 		busy: { type: Boolean, default: false },
 	},
@@ -208,6 +252,7 @@ export default {
 		'update:allow-overrides',
 		'update:data-registers',
 		'update:flows',
+		'update:installable',
 	],
 
 	data() {
@@ -220,6 +265,9 @@ export default {
 			// again every time the modal opens (REQ-BQDB-001).
 			databases: [],
 			loadingDatabases: false,
+			// The Installable section's staged values (REQ-BQOM-001).
+			installShortName: this.shortName,
+			installThemeColor: this.themeColor,
 		}
 	},
 
@@ -287,6 +335,14 @@ export default {
 					this.loadDatabases()
 				}
 			},
+		},
+
+		shortName(next) {
+			this.installShortName = next
+		},
+
+		themeColor(next) {
+			this.installThemeColor = next
 		},
 
 		dataRegisters: {
@@ -423,6 +479,35 @@ export default {
 		 *
 		 * @return {void}
 		 */
+		/**
+		 * Take a picked theme colour ('' clears it) and save the section.
+		 *
+		 * @param {string} value A `#rrggbb` colour, or ''.
+		 * @return {void}
+		 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T02
+		 */
+		onThemeColor(value) {
+			this.installThemeColor = value
+			this.emitInstallable()
+		},
+
+		/**
+		 * Emit the Installable section as the Application patch it stands for:
+		 * a trimmed short name of at most 12 characters, and a theme colour
+		 * only when it is a six-digit hex colour.
+		 *
+		 * @return {void}
+		 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T02
+		 */
+		emitInstallable() {
+			const shortName = String(this.installShortName || '').trim().slice(0, 12)
+			const color = String(this.installThemeColor || '').trim()
+			this.$emit('update:installable', {
+				shortName,
+				themeColor: /^#[0-9a-fA-F]{6}$/.test(color) ? color.toLowerCase() : '',
+			})
+		},
+
 		emitRows() {
 			const cleaned = this.rows
 				.map((row) => ({
@@ -455,6 +540,18 @@ export default {
 	margin: 0;
 	font-size: 15px;
 	font-weight: 600;
+}
+
+.app-settings__label {
+	font-weight: 600;
+}
+
+.app-settings__color {
+	width: 64px;
+	min-height: 44px;
+	border: 2px solid var(--color-border-maxcontrast);
+	border-radius: var(--border-radius-large);
+	background: var(--color-main-background);
 }
 
 .app-settings__row {

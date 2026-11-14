@@ -152,6 +152,8 @@ describe('AppSettingsModal switches and flows', () => {
 
 	it('treats a data-registers value that is not a list as no rows', () => {
 		const wrapper = mountModal({ dataRegisters: null })
-		expect(wrapper.findAllComponents({ name: 'NcTextField' })).toHaveLength(0)
+		// The one text field left is the Installable section's short name.
+		expect(wrapper.findAll('.app-settings__data-register-row')).toHaveLength(0)
+		expect(wrapper.findAllComponents({ name: 'NcTextField' })).toHaveLength(1)
 	})
 })

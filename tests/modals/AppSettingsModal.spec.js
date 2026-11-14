@@ -150,3 +150,43 @@ describe('AppSettingsModal — Data registers section (data-registers-runtime ta
 		expect(last).toEqual([{ register: 'spectr' }])
 	})
 })
+
+describe('AppSettingsModal — Installable section (pages-installable-offline-and-mobile T02)', () => {
+	it('shows the stored short name and theme colour', () => {
+		const wrapper = mountModal({ shortName: 'Vergun', themeColor: '#1f6feb' })
+		const section = wrapper.find('[data-test="app-settings-installable"]')
+		expect(section.exists()).toBe(true)
+		expect(section.find('.nc-textfield-stub').element.value).toBe('Vergun')
+		expect(section.find('[data-test="app-settings-theme-color"]').element.value).toBe('#1f6feb')
+	})
+
+	it('emits a trimmed short name cut to 12 characters with the colour it holds', () => {
+		const wrapper = mountModal({ themeColor: '#1F6FEB' })
+		wrapper.vm.installShortName = '  Vergunningen aanvragen  '
+		wrapper.vm.emitInstallable()
+		expect(wrapper.emitted('update:installable')[0][0]).toEqual({ shortName: 'Vergunningen', themeColor: '#1f6feb' })
+	})
+
+	it('saves a picked colour, and sends no colour for one that is not six-digit hex', async () => {
+		const wrapper = mountModal({ shortName: 'Vergun' })
+		const input = wrapper.find('[data-test="app-settings-theme-color"]')
+		input.element.value = '#00aa55'
+		await input.trigger('change')
+		wrapper.vm.onThemeColor('red')
+		const emitted = wrapper.emitted('update:installable').map((call) => call[0])
+		expect(emitted).toEqual([
+			{ shortName: 'Vergun', themeColor: '#00aa55' },
+			{ shortName: 'Vergun', themeColor: '' },
+		])
+	})
+
+	it('offers "Use the browser colour" only while a colour is set, and clears it', async () => {
+		const wrapper = mountModal({ themeColor: '#123456' })
+		const clear = wrapper.findAll('button').filter((button) => button.text() === 'Use the browser colour')
+		expect(clear).toHaveLength(1)
+		await clear.at(0).trigger('click')
+		expect(wrapper.emitted('update:installable')[0][0]).toEqual({ shortName: '', themeColor: '' })
+		await wrapper.vm.$nextTick()
+		expect(wrapper.findAll('button').filter((button) => button.text() === 'Use the browser colour')).toHaveLength(0)
+	})
+})
