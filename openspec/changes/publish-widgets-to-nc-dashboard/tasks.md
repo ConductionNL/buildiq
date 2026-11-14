@@ -7,17 +7,17 @@ quietly stop appearing.
 
 ## 1. Library dependency and manifest schema
 
-- [ ] 1.1 Move `package-lock.json` onto the released `@conduction/nextcloud-vue` carrying `ncDashboard`, then verify `npm ls @conduction/nextcloud-vue` reports that version and `node_modules/@conduction/nextcloud-vue/src/schemas/app-manifest-v2.schema.json` contains `ncDashboard` under `$defs/widgetEntry`.
+- [x] 1.1 Move `package-lock.json` onto the released `@conduction/nextcloud-vue` carrying `ncDashboard`, then verify `npm ls @conduction/nextcloud-vue` reports that version and `node_modules/@conduction/nextcloud-vue/src/schemas/app-manifest-v2.schema.json` contains `ncDashboard` under `$defs/widgetEntry`.
 
-> Deferred: waits on a published `@conduction/nextcloud-vue` release carrying `ncDashboard` in `$defs/widgetEntry`. That schema change is in flight in `ConductionNL/nextcloud-vue` and does not exist in any release yet.
+> Done: the lockfile already resolves `@conduction/nextcloud-vue` 2.180.0 (`npm ls` reports it), whose `src/schemas/app-manifest-v2.schema.json` declares `ncDashboard` under `$defs/widgetEntry`, with the `id` requirement in its `allOf`. The declared range is `^2.180.0`, not `^3.2.0`.
 
 Acceptance criteria:
 - The declared range `^3.2.0` is left alone. The lockfile is what changes.
 - A stale lockfile fails task 1.2 rather than shipping a designer toggle that cannot save.
 
-- [ ] 1.2 Add a vitest manifest-validation spec running the installed schema over three fixtures, and verify it passes for a valid `ncDashboard` and fails for the two invalid ones.
+- [x] 1.2 Add a vitest manifest-validation spec running the installed schema over three fixtures, and verify it passes for a valid `ncDashboard` and fails for the two invalid ones.
 
-> Deferred: waits on a published `@conduction/nextcloud-vue` release carrying `ncDashboard` in `$defs/widgetEntry`. That schema change is in flight in `ConductionNL/nextcloud-vue` and does not exist in any release yet.
+> Done: `tests/manifest/ncDashboardManifest.spec.js` runs the installed schema's `widgetEntry` over the three fixtures.
 
 Acceptance criteria:
 - A placement with `ncDashboard` and a non-empty `id` validates.
@@ -117,9 +117,9 @@ Acceptance criteria:
 
 ## 8. Designer
 
-- [ ] 8.1 Add the per-widget promote control to the v2 widget placement editor delivered by `v2-widget-placement-editor`, revealing panel title and panel icon when on, auto-filling `id` on promote and keeping it on demote, and verify vitest specs for promote, demote and the untouched-page no-op.
+- [x] 8.1 Add the per-widget promote control to the v2 widget placement editor delivered by `v2-widget-placement-editor`, revealing panel title and panel icon when on, auto-filling `id` on promote and keeping it on demote, and verify vitest specs for promote, demote and the untouched-page no-op.
 
-> Deferred: needs both the published `ncDashboard` schema and the v2 placement editor from `v2-widget-placement-editor` (PR #894). There is no v2 editor for the toggle to live in yet, and hanging it off `WidgetBuilder.vue` would attach `ncDashboard` to the v1 `widgetDef` shape it does not belong to.
+> Done: `WidgetPlacementPanel.vue` (the v2 placement editor from #894) carries a per-row "Show on the Nextcloud dashboard" switch with panel title and panel icon (the library's `DASHBOARD_ICONS` set); specs in `tests/components/page-editor/WidgetPlacementPanel.spec.js`. The id is minted unique within the page, as every placement id there is; manifest-wide uniqueness stays with `validateManifestV2`.
 
 Acceptance criteria:
 - The control is off for every existing widget. Opening and saving a page promotes nothing.

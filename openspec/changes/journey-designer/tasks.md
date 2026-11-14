@@ -13,8 +13,8 @@
   - Reordering rewrites order with step contents unchanged
   - A reference to a deleted form is surfaced, not silently dropped — a journey quietly missing a step still runs and collects less than it should
   - Field authoring stays in the existing form editor; no field builder is duplicated here
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 2: Branch editor bound to the canonical operator set
 - **spec_ref**: `openspec/changes/journey-designer/specs/journey-designer/spec.md#requirement-branch-rules-must-be-authored-only-from-the-shared-operator-set`
@@ -23,8 +23,8 @@
   - The operator list is DERIVED from the canonical schema, so it cannot drift — asserted by comparing the offered list against the schema enum, not against a hardcoded expectation
   - A rule referencing a field first asked at a later step is refused, naming the field and the ordering
   - Rules are stored as `visibleWhen` predicates with no designer-local extension
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 3: Author-time validation of writes[]
 - **spec_ref**: `openspec/changes/journey-designer/specs/journey-designer/spec.md#requirement-write-mappings-must-be-validated-against-the-target-schema-at-author-time`
@@ -34,8 +34,8 @@
   - Author-time and run-time validation call the SAME validator, asserted by feeding one invalid mapping through both and comparing the rejections — a designer that validates differently is false confidence, not a safety net
   - A dependent write referencing a preceding write's id validates
   - Note (decision 179, `forms-are-valid-against-their-destination`): "the SAME validator" is OpenRegister's form destination validator (`POST /api/forms/validate`, openregister#4563), called through buildiq's `FormDestinationCheck`. A journey in draft saves with its findings; publishing needs zero (decision 189)
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 4: Authorisation and live preview
 - **spec_ref**: `openspec/changes/journey-designer/specs/journey-designer/spec.md#requirement-authoring-a-journey-must-be-separately-authorised`
@@ -45,5 +45,5 @@
   - The refusal is tested for real — a permission check that is never observed refusing is indistinguishable from no check
   - The preview mounts the REAL `CnJourney`; step sequence, fields, validation and branching match the portal render
   - Advancing a preview through a `writes[]` step creates NO object in any target register
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test

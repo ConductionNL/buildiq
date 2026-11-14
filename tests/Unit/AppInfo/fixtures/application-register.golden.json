@@ -246,6 +246,13 @@
     {
         "method": "registerServiceAlias",
         "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\JourneyStoreInterface",
+            "target": "OCA\\Buildiq\\Service\\JourneyStore"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
             "alias": "OCA\\Buildiq\\Kernel\\Contracts\\JourneyWritesCheckInterface",
             "target": "OCA\\Buildiq\\Service\\JourneyWritesCheck"
         }
