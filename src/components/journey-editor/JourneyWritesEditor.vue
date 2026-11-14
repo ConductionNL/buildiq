@@ -48,6 +48,75 @@
 					@input="update(index, { schema: $event.target.value })">
 			</div>
 
+			<div class="journey-writes__repeat">
+				<label>
+					<input
+						:checked="write.bundle === true"
+						type="checkbox"
+						data-testid="journey-write-bundle"
+						@change="setBundle(index, $event.target.checked)">
+					{{ t('buildiq', 'The parts hang under this write') }}
+				</label>
+				<select
+					:value="write.forEach || ''"
+					:aria-label="t('buildiq', 'Repeat this write')"
+					data-testid="journey-write-foreach"
+					@change="setForEach(index, $event.target.value)">
+					<option value="">
+						{{ t('buildiq', 'Write once') }}
+					</option>
+					<option v-for="list in listFields" :key="list.key" :value="list.key">
+						{{ t('buildiq', 'Once per item of {list}', { list: list.key }) }}
+					</option>
+				</select>
+			</div>
+
+			<div v-if="write.forEach" class="journey-writes__targets" data-testid="journey-write-targets">
+				<input
+					:value="write.targetBy || ''"
+					type="text"
+					:aria-label="t('buildiq', 'Item field that picks the target')"
+					:placeholder="t('buildiq', 'Item field that picks the target')"
+					data-testid="journey-write-target-by"
+					@input="update(index, { targetBy: $event.target.value })">
+				<div
+					v-for="target in targetRows(write)"
+					:key="`t${target.value}`"
+					class="journey-writes__row"
+					data-testid="journey-write-target">
+					<input
+						:value="target.value"
+						type="text"
+						:aria-label="t('buildiq', 'Product')"
+						:placeholder="t('buildiq', 'Product')"
+						@change="renameTarget(index, target.value, $event.target.value)">
+					<input
+						v-for="part in targetParts"
+						:key="part.key"
+						:value="target[part.key]"
+						type="text"
+						:aria-label="part.label"
+						:placeholder="part.label"
+						:data-testid="`journey-write-target-${part.key}`"
+						@input="setTarget(index, target.value, { [part.key]: $event.target.value })">
+					<button type="button" :aria-label="t('buildiq', 'Remove target')" @click="removeTarget(index, target.value)">
+						×
+					</button>
+					<p
+						v-if="flows !== null && creationFlowsOf(target).length === 0"
+						class="journey-writes__warning"
+						data-testid="journey-write-no-process">
+						{{ t('buildiq', 'This product starts no process.') }}
+					</p>
+					<p v-else-if="flows !== null" class="journey-writes__flows" data-testid="journey-write-flows">
+						{{ t('buildiq', 'Starts: {flows}', { flows: creationFlowsOf(target).map(flowName).join(', ') }) }}
+					</p>
+				</div>
+				<button type="button" data-testid="journey-write-add-target" @click="addTarget(index)">
+					{{ t('buildiq', 'Add a target') }}
+				</button>
+			</div>
+
 			<div
 				v-for="(row, r) in mappedFields(write)"
 				:key="`f${r}`"
@@ -61,6 +130,9 @@
 						{{ t('buildiq', '— field —') }}
 					</option>
 					<option v-for="field in fields" :key="field" :value="field">
+						{{ field }}
+					</option>
+					<option v-for="field in itemFieldsOf(write)" :key="field" :value="field">
 						{{ field }}
 					</option>
 				</select>
@@ -129,6 +201,8 @@
 </template>
 
 <script>
+import { creationFlowsFor } from '../../services/creationFlows.js'
+
 export default {
 	name: 'JourneyWritesEditor',
 
@@ -156,6 +230,18 @@ export default {
 			type: Array,
 			default: () => [],
 		},
+
+		/** The list answers asked so far, with their item fields: `[{ key, columns }]`. */
+		listFields: {
+			type: Array,
+			default: () => [],
+		},
+
+		/** OpenRegister's flows, or null while they are not read: no process warning then. */
+		flows: {
+			type: Array,
+			default: null,
+		},
 	},
 
 	emits: ['update:modelValue'],
@@ -169,9 +255,172 @@ export default {
 		localWrites() {
 			return Array.isArray(this.modelValue) ? this.modelValue : []
 		},
+
+		/**
+		 * The parts of one target, besides its product value.
+		 *
+		 * @return {Array<{key: string, label: string}>}
+		 */
+		targetParts() {
+			return [
+				{ key: 'register', label: t('buildiq', 'Register') },
+				{ key: 'schema', label: t('buildiq', 'Schema') },
+				{ key: 'typeValue', label: t('buildiq', 'Type value') },
+			]
+		},
 	},
 
 	methods: {
+		/**
+		 * The item fields a repeating write's mapping may read: `item.<key>`.
+		 *
+		 * @param {object} write - the write.
+		 * @return {Array<string>}
+		 * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-a-write-can-repeat-per-list-item-req-bqmp-001
+		 */
+		itemFieldsOf(write) {
+			const list = this.listFields.find((l) => l.key === (write && write.forEach))
+			return list ? list.columns.map((column) => `item.${column}`) : []
+		},
+
+		/**
+		 * Repeat a write over a list answer, or write it once again: a write
+		 * written once has no targets.
+		 *
+		 * @param {number} index - the write's position.
+		 * @param {string} key - the list answer, or '' to write once.
+		 * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-a-write-can-repeat-per-list-item-req-bqmp-001
+		 */
+		setForEach(index, key) {
+			if (key === '') {
+				const { forEach, targetBy, targets, ...once } = this.localWrites[index]
+				const writes = [...this.localWrites]
+				writes[index] = once
+				this.$emit('update:modelValue', writes)
+				return
+			}
+			this.update(index, { forEach: key, bundle: false })
+		},
+
+		/**
+		 * Mark the write the parts hang under; there is one, so marking it
+		 * unmarks any other.
+		 *
+		 * @param {number} index - the write's position.
+		 * @param {boolean} on - whether it is the bundle.
+		 * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-the-parts-can-hang-under-one-bundle-req-bqmp-003
+		 */
+		setBundle(index, on) {
+			this.$emit('update:modelValue', this.localWrites.map((write, i) => {
+				if (i === index) {
+					return { ...write, bundle: on }
+				}
+				return write.bundle === true && on ? { ...write, bundle: false } : write
+			}))
+		},
+
+		/**
+		 * A repeating write's targets as rows: `{ value, register, schema, typeValue }`.
+		 *
+		 * @param {object} write - the write.
+		 * @return {Array<object>}
+		 * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-each-item-goes-to-its-products-target-req-bqmp-002
+		 */
+		targetRows(write) {
+			const targets = write && write.targets && typeof write.targets === 'object' ? write.targets : {}
+			return Object.entries(targets).map(([value, target]) => ({
+				value,
+				register: String((target && target.register) || ''),
+				schema: String((target && target.schema) || ''),
+				typeValue: String((target && target.typeValue) || ''),
+			}))
+		},
+
+		/**
+		 * Emit the write with its targets replaced.
+		 *
+		 * @param {number} index - the write's position.
+		 * @param {object} targets - the targets by product value.
+		 */
+		setTargets(index, targets) {
+			this.update(index, { targets })
+		},
+
+		/**
+		 * Change one target.
+		 *
+		 * @param {number} index - the write's position.
+		 * @param {string} value - the product value.
+		 * @param {object} patch - `register`, `schema` or `typeValue`.
+		 * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-each-item-goes-to-its-products-target-req-bqmp-002
+		 */
+		setTarget(index, value, patch) {
+			const targets = { ...(this.localWrites[index].targets || {}) }
+			targets[value] = { ...(targets[value] || {}), ...patch }
+			this.setTargets(index, targets)
+		},
+
+		/**
+		 * Rename a target's product value, keeping its place.
+		 *
+		 * @param {number} index - the write's position.
+		 * @param {string} from - the old value.
+		 * @param {string} to - the new value.
+		 */
+		renameTarget(index, from, to) {
+			const targets = {}
+			for (const [value, target] of Object.entries(this.localWrites[index].targets || {})) {
+				targets[value === from ? to : value] = target
+			}
+			this.setTargets(index, targets)
+		},
+
+		/**
+		 * Add an empty target.
+		 *
+		 * @param {number} index - the write's position.
+		 */
+		addTarget(index) {
+			const targets = this.localWrites[index].targets || {}
+			let n = Object.keys(targets).length + 1
+			while (`product${n}` in targets) {
+				n++
+			}
+			this.setTargets(index, { ...targets, [`product${n}`]: { register: '', schema: '', typeValue: '' } })
+		},
+
+		/**
+		 * Remove a target.
+		 *
+		 * @param {number} index - the write's position.
+		 * @param {string} value - the product value.
+		 */
+		removeTarget(index, value) {
+			const { [value]: removed, ...targets } = this.localWrites[index].targets || {}
+			this.setTargets(index, targets)
+		},
+
+		/**
+		 * The flows that start when a record is created in the target.
+		 *
+		 * @param {object} target - the target row.
+		 * @return {Array<object>}
+		 * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-the-designer-says-whether-a-part-starts-a-process-req-bqmp-004
+		 */
+		creationFlowsOf(target) {
+			return creationFlowsFor(this.flows, target)
+		},
+
+		/**
+		 * A flow's name for the list.
+		 *
+		 * @param {object} flow - the flow.
+		 * @return {string}
+		 */
+		flowName(flow) {
+			return String(flow.name || flow.title || flow.id || '')
+		},
+
 		/**
 		 * A write's field mappings, or none.
 		 *
@@ -358,6 +607,24 @@ export default {
 
 .journey-writes__findings {
 	color: var(--color-error-text);
+}
+
+.journey-writes__repeat,
+.journey-writes__targets {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	margin-bottom: 8px;
+}
+
+.journey-writes__warning {
+	color: var(--color-warning-text);
+	width: 100%;
+}
+
+.journey-writes__flows {
+	color: var(--color-text-maxcontrast);
+	width: 100%;
 }
 
 .journey-writes__empty {
