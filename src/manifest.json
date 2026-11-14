@@ -1222,8 +1222,60 @@
 						"status"
 					]
 				}
+			},
+			{
+				"name": "app_requests_total",
+				"type": "counter",
+				"help": "Requests made by running built apps, from their health samples, per app and version",
+				"source": {
+					"kind": "objectSum",
+					"register": "buildiq",
+					"schema": "app-health-sample",
+					"field": "requests",
+					"groupBy": [
+						"applicationUuid",
+						"versionUuid"
+					]
+				}
+			},
+			{
+				"name": "app_request_failures_total",
+				"type": "counter",
+				"help": "Failed requests (4xx and 5xx) of running built apps, per app and version",
+				"source": {
+					"kind": "objectSum",
+					"register": "buildiq",
+					"schema": "app-health-sample",
+					"field": "failures",
+					"groupBy": [
+						"applicationUuid",
+						"versionUuid"
+					]
+				}
+			},
+			{
+				"name": "app_client_errors_total",
+				"type": "counter",
+				"help": "Client-side errors in running built apps, per app and version",
+				"source": {
+					"kind": "objectSum",
+					"register": "buildiq",
+					"schema": "app-health-sample",
+					"field": "clientErrors",
+					"groupBy": [
+						"applicationUuid",
+						"versionUuid"
+					]
+				}
 			}
 		]
 	},
-	"deepLinks": []
+	"deepLinks": [
+		{
+			"registerSlug": "buildiq",
+			"schemaSlug": "built-app",
+			"urlTemplate": "/apps/buildiq/applications/{uuid}",
+			"displayName": "App"
+		}
+	]
 }
