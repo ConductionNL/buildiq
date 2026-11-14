@@ -104,6 +104,84 @@
 			<InlineFieldMark :error="markFor('sidebarProps')" />
 		</fieldset>
 
+		<fieldset class="detail-page-editor__fieldset detail-page-editor__buttons">
+			<legend>{{ t('buildiq', 'Buttons') }}</legend>
+			<p class="detail-page-editor__note">
+				{{ t('buildiq', 'Buttons in the page header that act on the open record.') }}
+			</p>
+			<ActionBuilder
+				:modelValue="config.headerActions || []"
+				:pages="pages"
+				:flows="flows"
+				:fieldOptions="recordFields"
+				:lifecycleFields="[statusField]"
+				@update:modelValue="update('headerActions', $event.length > 0 ? $event : '')" />
+			<InlineFieldMark :error="markFor('headerActions')" />
+		</fieldset>
+
+		<fieldset class="detail-page-editor__fieldset detail-page-editor__status-buttons">
+			<legend>{{ t('buildiq', 'Status buttons') }}</legend>
+			<label class="detail-page-editor__inline">
+				<input
+					type="checkbox"
+					class="detail-page-editor__status-toggle"
+					:checked="Boolean(config.lifecycleActions)"
+					@change="setStatusButtons($event.target.checked)">
+				{{ t('buildiq', 'Show the status changes the lifecycle allows') }}
+			</label>
+			<template v-if="config.lifecycleActions">
+				<label class="detail-page-editor__inline">
+					{{ t('buildiq', 'Status field') }}
+					<input
+						:value="statusField"
+						type="text"
+						class="detail-page-editor__status-field"
+						:aria-label="t('buildiq', 'Status field')"
+						@input="updateLifecycle('field', $event.target.value || 'status')">
+				</label>
+				<p class="detail-page-editor__note">
+					{{ transitions.length === 0
+						? t('buildiq', 'Every change the lifecycle allows from the record\'s status is offered, as OpenRegister reports it.')
+						: t('buildiq', 'Only the changes listed here are offered, and only from the status they start from.') }}
+				</p>
+				<div
+					v-for="(transition, index) in transitions"
+					:key="index"
+					class="detail-page-editor__transition">
+					<input
+						:value="transition.action || ''"
+						type="text"
+						:placeholder="t('buildiq', 'Transition (e.g. approve)')"
+						:aria-label="t('buildiq', 'Transition (e.g. approve)')"
+						@input="updateTransition(index, 'action', $event.target.value)">
+					<input
+						:value="transition.label || ''"
+						type="text"
+						:placeholder="t('buildiq', 'Button label')"
+						:aria-label="t('buildiq', 'Button label')"
+						@input="updateTransition(index, 'label', $event.target.value)">
+					<input
+						:value="transition.confirm || ''"
+						type="text"
+						:placeholder="t('buildiq', 'Confirm question (optional)')"
+						:aria-label="t('buildiq', 'Confirm question (optional)')"
+						@input="updateTransition(index, 'confirm', $event.target.value)">
+					<button
+						type="button"
+						class="detail-page-editor__remove"
+						:title="t('buildiq', 'Remove status button')"
+						:aria-label="t('buildiq', 'Remove status button')"
+						@click="removeTransition(index)">
+						✕
+					</button>
+				</div>
+				<button type="button" class="detail-page-editor__add-transition" @click="addTransition">
+					+ {{ t('buildiq', 'List a status button') }}
+				</button>
+			</template>
+			<InlineFieldMark :error="markFor('lifecycleActions')" />
+		</fieldset>
+
 		<AppliesToPanel
 			:modelValue="config.pageLayout || {}"
 			:register="config.register || ''"
@@ -127,6 +205,7 @@
 </template>
 
 <script>
+import ActionBuilder from './fields/ActionBuilder.vue'
 import AppliesToPanel from './fields/AppliesToPanel.vue'
 import InlineFieldMark from './fields/InlineFieldMark.vue'
 import RegisterSchemaFields from './fields/RegisterSchemaFields.vue'
@@ -145,6 +224,7 @@ import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 export default {
 	name: 'DetailPageEditor',
 	components: {
+		ActionBuilder,
 		AppliesToPanel,
 		InlineFieldMark,
 		RegisterSchemaFields,
@@ -166,6 +246,18 @@ export default {
 			type: String,
 			default: 'detail',
 		},
+
+		/** This app's pages, for a "go to a page" button. */
+		pages: {
+			type: Array,
+			default: () => [],
+		},
+
+		/** The app's declared flows (`{flow, label?}`), for a "start a flow" button. */
+		flows: {
+			type: Array,
+			default: () => [],
+		},
 	},
 
 	setup: useEditorRegisterPicker,
@@ -177,7 +269,40 @@ export default {
 		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		validatedConfigKeys() {
-			return ['register', 'schema', 'sidebar', 'sidebarProps']
+			return ['register', 'schema', 'sidebar', 'sidebarProps', 'headerActions', 'lifecycleActions']
+		},
+
+		/**
+		 * The field the status buttons move (`config.lifecycleActions.field`, `status` by default).
+		 *
+		 * @spec openspec/changes/pages-action-buttons/specs/page-action-authoring/spec.md#requirement-status-buttons-follow-the-lifecycle-req-bqab-003
+		 */
+		statusField() {
+			const config = this.config.lifecycleActions
+			return (config && typeof config === 'object' && config.field) || 'status'
+		},
+
+		/**
+		 * The status buttons listed by hand; none means the live list.
+		 *
+		 * @spec openspec/changes/pages-action-buttons/specs/page-action-authoring/spec.md#requirement-status-buttons-follow-the-lifecycle-req-bqab-003
+		 */
+		transitions() {
+			const config = this.config.lifecycleActions
+			return (config && Array.isArray(config.transitions)) ? config.transitions : []
+		},
+
+		/**
+		 * The bound schema's fields, for a button's "show only when".
+		 *
+		 * @spec openspec/changes/pages-action-buttons/specs/page-action-authoring/spec.md#requirement-a-button-can-depend-on-the-record-req-bqab-005
+		 */
+		recordFields() {
+			const wanted = this.config.schema
+			const match = (this.schemas || []).find((entry) => entry
+				&& (entry.slug === wanted || String(entry.id) === String(wanted) || entry.uuid === wanted))
+			const keys = Object.keys((match && match.properties) || {})
+			return keys.length > 0 ? keys : [this.statusField]
 		},
 
 		/**
@@ -301,6 +426,71 @@ export default {
 				next.sidebarProps = { ...(next.sidebarProps || {}), tabs }
 			}
 			this.$emit('update:config', next)
+		},
+
+		/**
+		 * Switch status buttons on (`{field: 'status'}`, the live transitions)
+		 * or off.
+		 *
+		 * @param {boolean} on - Whether status buttons show.
+		 * @spec openspec/changes/pages-action-buttons/specs/page-action-authoring/spec.md#requirement-status-buttons-follow-the-lifecycle-req-bqab-003
+		 */
+		setStatusButtons(on) {
+			this.update('lifecycleActions', on ? { field: 'status' } : '')
+		},
+
+		/**
+		 * Write one key of `config.lifecycleActions`.
+		 *
+		 * @param {string} key - `field` or `transitions`.
+		 * @param {*} value - The value; an empty transitions list is removed.
+		 * @spec openspec/changes/pages-action-buttons/specs/page-action-authoring/spec.md#requirement-status-buttons-follow-the-lifecycle-req-bqab-003
+		 */
+		updateLifecycle(key, value) {
+			const next = { ...(this.config.lifecycleActions || { field: 'status' }) }
+			if (Array.isArray(value) && value.length === 0) {
+				delete next[key]
+			} else {
+				next[key] = value
+			}
+			this.update('lifecycleActions', next)
+		},
+
+		/**
+		 * Edit one listed status button.
+		 *
+		 * @param {number} index - Position of the transition.
+		 * @param {string} key - `action`, `label` or `confirm`.
+		 * @param {string} value - The new value; empty removes the key.
+		 */
+		updateTransition(index, key, value) {
+			const list = this.transitions.slice()
+			const current = { ...(list[index] || {}) }
+			if (value === '') {
+				delete current[key]
+			} else {
+				current[key] = value
+			}
+			list[index] = current
+			this.updateLifecycle('transitions', list)
+		},
+
+		/**
+		 * List one more status button.
+		 */
+		addTransition() {
+			this.updateLifecycle('transitions', [...this.transitions, { action: '', label: '' }])
+		},
+
+		/**
+		 * Drop one listed status button; with none left the live list applies again.
+		 *
+		 * @param {number} index - Position of the transition.
+		 */
+		removeTransition(index) {
+			const list = this.transitions.slice()
+			list.splice(index, 1)
+			this.updateLifecycle('transitions', list)
 		},
 	},
 }
