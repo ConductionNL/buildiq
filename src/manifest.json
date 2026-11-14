@@ -1225,5 +1225,12 @@
 			}
 		]
 	},
-	"deepLinks": []
+	"deepLinks": [
+		{
+			"registerSlug": "buildiq",
+			"schemaSlug": "built-app",
+			"urlTemplate": "/apps/buildiq/applications/{uuid}",
+			"displayName": "App"
+		}
+	]
 }
