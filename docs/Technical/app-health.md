@@ -32,3 +32,20 @@ A daily job deletes samples older than 30 days. An administrator can set
 ```
 occ config:app:set buildiq health_retention_days --value=60
 ```
+
+## Metrics for operators
+
+The same numbers are on buildiq's metrics endpoint, `GET /apps/buildiq/api/metrics`,
+which only answers to administrators. Three counters sum the stored samples per
+app and version (labels `applicationUuid` and `versionUuid`):
+
+| Metric | Sums |
+| --- | --- |
+| `buildiq_app_requests_total` | `requests` |
+| `buildiq_app_request_failures_total` | `failures`: the 4xx and 5xx failures together, which the server derives when it stores a sample |
+| `buildiq_app_client_errors_total` | `clientErrors` |
+
+They are declared as `objectSum` metrics in `src/manifest.json`
+(`observability.metrics`); OpenRegister's AppHost serves them, so buildiq has no
+metrics code of its own. Because samples older than the retention period are
+deleted, the totals cover that period, not all time.
