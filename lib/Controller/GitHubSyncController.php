@@ -226,6 +226,8 @@ class GitHubSyncController extends Controller {
 			data: [
 				'githubRepo' => ($application['githubRepo'] ?? null),
 				'githubDefaultBranch' => ($application['githubDefaultBranch'] ?? null),
+				// Production pushes to the default branch, every other version to its own (lifecycle-git-branches).
+				'productionVersion' => ($application['productionVersion'] ?? null),
 				'lastPushedSha' => $this->lastPushedSha(application: $application),
 				'lastPulledSha' => null,
 				'brokerCredentialAvailable' => $brokerAvailable,
