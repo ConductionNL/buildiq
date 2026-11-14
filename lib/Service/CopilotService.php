@@ -269,6 +269,27 @@ class CopilotService implements CopilotServiceInterface {
 	}//end plan()
 
 	/**
+	 * Resolve a virtual app by slug and require the caller to be one of its
+	 * owners or editors, with the same check and admin-bypass audit the plan
+	 * runs. The builder assist calls this before it schedules any text task.
+	 *
+	 * @param string $appSlug Target app slug.
+	 * @param string $userId  Acting user's UID.
+	 *
+	 * @return array<string, mixed> The Application record.
+	 *
+	 * @throws CopilotException (404 not_found, 422 unsupported_target, 403 forbidden).
+	 *
+	 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-builder-assist/spec.md#requirement-the-assist-writes-nothing-and-respects-app-access-req-bqch-004
+	 */
+	public function requireWritableApp(string $appSlug, string $userId): array {
+		$app = $this->requireExistingVirtualApp(appSlug: $appSlug);
+		$this->assertWriteRoleOnApp(app: $app, userId: $userId);
+
+		return $app;
+	}//end requireWritableApp()
+
+	/**
 	 * Core plan logic, wrapped by {@see plan()} so an agent-scoped failure
 	 * can be logged exactly once regardless of which validation layer rejects it.
 	 *
