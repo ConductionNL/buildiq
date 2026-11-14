@@ -41,7 +41,7 @@ import BackToVirtualApps, {
 import { registerScope, useRegisterPicker } from './composables/useRegisterPicker.js'
 import pinia from './pinia.js'
 import { registerDirectives } from './registerDirectives.js'
-import { runtimeRegistry } from './runtimeRegistry.js'
+import { getRuntimeRegistry } from './runtimeRegistry.js'
 import { fetchAppRegister } from './services/appRegister.js'
 import { startHealthReporting } from './services/healthReporting.js'
 import { normalizeManifestPages } from './services/manifestPageDefaults.js'
@@ -397,6 +397,7 @@ function navSlots(manifest, router) {
 /**
  * Fetch the app manifest, build its router, and mount the standalone shell.
  *
+ * @spec openspec/changes/openbuild-connector-widget-runtime/specs/connector-widget-runtime/spec.md#requirement-req-cwr-001-single-runtime-registry-seam-for-every-virtual-app-host
  * @return {Promise<void>}
  */
 async function boot() {
@@ -463,7 +464,10 @@ async function boot() {
 		manifest,
 		permissions: runtimePermissions(manifest),
 		isLoading: false,
-		registry: { ...runtimeRegistry },
+		// The canonical runtime registry (REQ-CWR-001): without it every
+		// registry-only widget key (e.g. `connector-data`) renders as
+		// CnUnknownWidget on the published path.
+		registry: getRuntimeRegistry(),
 		pageTypes: { ...defaultPageTypes },
 		// App registers/schemas so the Edit-pages modal offers Register /
 		// Schema / Columns dropdowns for index/detail pages. Re-run on every
