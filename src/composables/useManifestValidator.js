@@ -34,6 +34,7 @@ import { validateManifestConnectors } from '../services/manifestValidation/conne
 import { validateDocumentAttachments } from '../services/manifestValidation/documentAttachments.js'
 import { validateExternalForms } from '../services/manifestValidation/externalForms.js'
 import { validateFormLogic } from '../services/manifestValidation/formLogic.js'
+import { validatePageCodes } from '../services/manifestValidation/pageCodes.js'
 import { validateSchedules } from '../services/manifestValidation/schedules.js'
 import { validateWorkflowAttachments } from '../services/manifestValidation/workflowAttachments.js'
 
@@ -84,6 +85,7 @@ export function useManifestValidator() {
 					.concat(validateSchedules(manifest))
 					.concat(validateFormLogic(manifest))
 					.concat(validateExternalForms(manifest))
+					.concat(validatePageCodes(manifest))
 				errors.value = libErrors.concat(appErrors)
 			} catch (e) {
 				errors.value = [`validator threw: ${e && e.message ? e.message : e}`]

@@ -5,7 +5,7 @@
  * Vitest spec for DetailPageEditor (buildiq#9 task 7.1).
  *
  * Covers:
- *  - validatedConfigKeys is exactly [register, schema, sidebar, sidebarProps]
+ *  - validatedConfigKeys is exactly [register, schema, sidebar, sidebarProps, widgets]
  *  - update(register, ...) emits with `register` set and clears any stale schema
  *  - update(schema, ...) emits with `schema` set
  *  - setSidebarShape('none' | 'boolean' | 'object') drives sidebar shape transitions
@@ -54,12 +54,13 @@ function mountEditor(config = {}, propsOverrides = {}) {
 }
 
 describe('DetailPageEditor', () => {
-	it('validatedConfigKeys is [register, schema, sidebar, sidebarProps]', () => {
+	it('validatedConfigKeys is [register, schema, sidebar, sidebarProps, widgets]', () => {
 		expect(mountEditor().vm.validatedConfigKeys).toEqual([
 			'register',
 			'schema',
 			'sidebar',
 			'sidebarProps',
+			'widgets',
 		])
 	})
 
@@ -163,5 +164,15 @@ describe('DetailPageEditor', () => {
 		expect(mountEditor({ sidebar: { enabled: true } }).vm.sidebarShape).toBe(
 			'object',
 		)
+	})
+
+	// pages-qr-and-barcodes REQ-BQQR-003: the Codes section writes config.widgets.
+	it('the Codes section adds a QR code of the address and an emptied list deletes widgets', async () => {
+		const wrapper = mountEditor({ register: 'r', schema: 's' })
+		await wrapper.find('[data-testid="code-widget-add"]').trigger('click')
+		expect(wrapper.emitted('update:config')[0][0].widgets).toEqual([{ id: 'code-1', type: 'code', format: 'qr', source: 'address' }])
+
+		wrapper.vm.updateWidgets([])
+		expect(wrapper.emitted('update:config')[1][0]).not.toHaveProperty('widgets')
 	})
 })

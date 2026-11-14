@@ -2059,7 +2059,23 @@ OC.L10N.register(
         "Requests under 250 ms": "Requests under 250 ms",
         "Total load time (ms)": "Total load time (ms)",
         "Window start": "Window start",
-        "Include server bundle": "Include server bundle"
+        "Include server bundle": "Include server bundle",
+        "A field of the record": "A field of the record",
+        "Add code": "Add code",
+        "Choose a field": "Choose a field",
+        "Code format": "Code format",
+        "Code formats": "Code formats",
+        "Codes": "Codes",
+        "Field that holds the code": "Field that holds the code",
+        "Find a record by scanning its code": "Find a record by scanning its code",
+        "Open the matching record": "Open the matching record",
+        "QR code": "QR code",
+        "Remove code": "Remove code",
+        "Scan": "Scan",
+        "Show the matching records": "Show the matching records",
+        "The record's address in the app": "The record's address in the app",
+        "What the code holds": "What the code holds",
+        "When a code is scanned": "When a code is scanned"
     },
     "nplurals=2; plural=(n != 1);"
 )
