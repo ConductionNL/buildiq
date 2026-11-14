@@ -178,22 +178,50 @@ class DashboardController extends Controller {
 			return null;
 		}
 
+		$version = $this->productionVersionOf(applications: $applications, slug: $slug);
+		if ($version === null) {
+			return null;
+		}
+
+		return $this->deviceFeatures->policyFor(features: $this->deviceFeaturesOf(version: $version));
+	}//end deviceFeaturePolicy()
+
+	/**
+	 * The production version of the first published application with this slug that has one.
+	 *
+	 * @param array<mixed> $applications The published applications.
+	 * @param string       $slug         The virtual app slug.
+	 *
+	 * @return array<string,mixed>|null
+	 *
+	 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
+	 */
+	private function productionVersionOf(array $applications, string $slug): ?array {
 		foreach ($applications as $application) {
-			if (($application['slug'] ?? null) !== $slug || is_array($application['productionVersion'] ?? null) === false) {
-				continue;
+			if (($application['slug'] ?? null) === $slug && is_array($application['productionVersion'] ?? null) === true) {
+				return $application['productionVersion'];
 			}
-
-			$version  = $application['productionVersion'];
-			$features = $this->deviceFeatures->fromManifest(manifest: ($version['manifest'] ?? null));
-			if (array_key_exists('deviceFeatures', $version) === true) {
-				$features = $this->deviceFeatures->normalise(features: $version['deviceFeatures']);
-			}
-
-			return $this->deviceFeatures->policyFor(features: $features);
 		}
 
 		return null;
-	}//end deviceFeaturePolicy()
+	}//end productionVersionOf()
+
+	/**
+	 * The device features a version uses: its stored list, else derived from its manifest.
+	 *
+	 * @param array<string,mixed> $version The production version.
+	 *
+	 * @return array<int,string>
+	 *
+	 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
+	 */
+	private function deviceFeaturesOf(array $version): array {
+		if (array_key_exists('deviceFeatures', $version) === true) {
+			return $this->deviceFeatures->normalise(features: $version['deviceFeatures']);
+		}
+
+		return $this->deviceFeatures->fromManifest(manifest: ($version['manifest'] ?? null));
+	}//end deviceFeaturesOf()
 
 	/**
 	 * The installable runtime of a virtual app, under a path of its own.

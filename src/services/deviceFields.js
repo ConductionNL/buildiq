@@ -74,6 +74,13 @@ export function audioSecondsOf(field) {
 	return field?.maxSeconds === undefined ? AUDIO_DEFAULT_SECONDS : field.maxSeconds
 }
 
+/** The option checks of each device field type. */
+const OPTION_PROBLEMS = Object.freeze({
+	signature: signatureProblems,
+	audio: audioProblems,
+	location: locationProblems,
+})
+
 /**
  * The problem codes of one device field's options, empty when it is fine or not a device field.
  *
@@ -87,20 +94,28 @@ export function deviceFieldProblems(field, mode) {
 	if (!DEVICE_FIELD_TYPES.includes(type)) {
 		return []
 	}
-	const problems = []
-	if (mode === 'public' && NOT_ON_PUBLIC_FORMS.includes(type)) {
-		problems.push('device-field-on-public-form')
-	}
-	if (type === 'signature' && field.allowTyped === false && field.allowDrawn === false) {
-		problems.push('signature-without-mode')
-	}
-	if (type === 'audio') {
-		problems.push(...audioProblems(field))
-	}
-	if (type === 'location') {
-		problems.push(...locationProblems(field))
-	}
-	return problems
+	const placement = mode === 'public' && NOT_ON_PUBLIC_FORMS.includes(type) ? ['device-field-on-public-form'] : []
+	return [...placement, ...OPTION_PROBLEMS[type](field)]
+}
+
+/**
+ * The problems of a signature field's input modes.
+ *
+ * @param {object} field - the signature field.
+ * @return {Array<string>}
+ */
+function signatureProblems(field) {
+	return field.allowTyped === false && field.allowDrawn === false ? ['signature-without-mode'] : []
+}
+
+/**
+ * A string option trimmed, empty when it is not a string.
+ *
+ * @param {unknown} value - the option value.
+ * @return {string}
+ */
+function trimmed(value) {
+	return typeof value === 'string' ? value.trim() : ''
 }
 
 /**
@@ -124,8 +139,8 @@ function audioProblems(field) {
  * @return {Array<string>}
  */
 function locationProblems(field) {
-	const lat = typeof field.latField === 'string' ? field.latField.trim() : ''
-	const lng = typeof field.lngField === 'string' ? field.lngField.trim() : ''
+	const lat = trimmed(field.latField)
+	const lng = trimmed(field.lngField)
 	if (lat === '' || lng === '') {
 		return ['location-without-fields']
 	}
@@ -145,20 +160,30 @@ function locationProblems(field) {
 export function deviceFieldTargets(field) {
 	const type = field?.type
 	if (type === 'signature' || type === 'audio') {
-		const key = typeof field.key === 'string' ? field.key.trim() : ''
-		return key === '' ? {} : { [key]: { type: 'file' } }
+		return fileTarget(trimmed(field.key))
 	}
-	if (type !== 'location') {
-		return {}
-	}
-	const targets = {}
-	for (const option of ['latField', 'lngField', 'accuracyField']) {
-		const name = typeof field[option] === 'string' ? field[option].trim() : ''
-		if (name !== '') {
-			targets[name] = { type: 'number' }
-		}
-	}
-	return targets
+	return type === 'location' ? locationTargets(field) : {}
+}
+
+/**
+ * The `file` property a signature or audio field writes under its key.
+ *
+ * @param {string} key - the trimmed field key.
+ * @return {{[name: string]: {type: string}}}
+ */
+function fileTarget(key) {
+	return key === '' ? {} : { [key]: { type: 'file' } }
+}
+
+/**
+ * The `number` properties a location field writes.
+ *
+ * @param {object} field - the location field.
+ * @return {{[name: string]: {type: string}}}
+ */
+function locationTargets(field) {
+	const names = ['latField', 'lngField', 'accuracyField'].map((option) => trimmed(field[option])).filter((name) => name !== '')
+	return Object.fromEntries(names.map((name) => [name, { type: 'number' }]))
 }
 
 /**

@@ -62,6 +62,24 @@ class DeviceFeatures {
 	public const ALL = [self::CAMERA, self::GEOLOCATION, self::MICROPHONE];
 
 	/**
+	 * The feature each device form field type uses.
+	 *
+	 * @var array<string,string>
+	 */
+	private const FIELD_FEATURES = ['audio' => self::MICROPHONE, 'location' => self::GEOLOCATION];
+
+	/**
+	 * The FeaturePolicy method that allows the page itself to use each feature.
+	 *
+	 * @var array<string,string>
+	 */
+	private const POLICY_METHODS = [
+		self::CAMERA      => 'addAllowedCameraDomain',
+		self::GEOLOCATION => 'addAllowedGeoLocationDomain',
+		self::MICROPHONE  => 'addAllowedMicrophoneDomain',
+	];
+
+	/**
 	 * The device features a manifest uses, sorted and distinct.
 	 *
 	 * @param mixed $manifest The app manifest.
@@ -73,25 +91,7 @@ class DeviceFeatures {
 	public function fromManifest(mixed $manifest): array {
 		$features = [];
 		foreach ($this->pagesOf(manifest: $manifest) as $page) {
-			$config = ($page['config'] ?? null);
-			if (is_array($config) === false) {
-				continue;
-			}
-
-			if (($page['type'] ?? null) === 'map' && ($config['showUserLocation'] ?? false) === true) {
-				$features[] = self::GEOLOCATION;
-			}
-
-			foreach ((array)($config['fields'] ?? []) as $field) {
-				$type = ($field['type'] ?? null);
-				if (is_array($field) === true && $type === 'audio') {
-					$features[] = self::MICROPHONE;
-				}
-
-				if (is_array($field) === true && $type === 'location') {
-					$features[] = self::GEOLOCATION;
-				}
-			}
+			$features = array_merge($features, $this->featuresOfPage(page: $page));
 		}
 
 		return $this->normalise(features: $features);
@@ -130,20 +130,56 @@ class DeviceFeatures {
 		}
 
 		$policy = new FeaturePolicy();
-		if (in_array(self::CAMERA, $features, true) === true) {
-			$policy->addAllowedCameraDomain("'self'");
-		}
-
-		if (in_array(self::GEOLOCATION, $features, true) === true) {
-			$policy->addAllowedGeoLocationDomain("'self'");
-		}
-
-		if (in_array(self::MICROPHONE, $features, true) === true) {
-			$policy->addAllowedMicrophoneDomain("'self'");
+		foreach ($features as $feature) {
+			$policy->{self::POLICY_METHODS[$feature]}("'self'");
 		}
 
 		return $policy;
 	}//end policyFor()
+
+	/**
+	 * The features one page uses: a map showing the user's location, and its form's device fields.
+	 *
+	 * @param array<string,mixed> $page The page entry.
+	 *
+	 * @return array<int,string> Unsorted, possibly repeated.
+	 *
+	 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
+	 */
+	private function featuresOfPage(array $page): array {
+		$config = ($page['config'] ?? null);
+		if (is_array($config) === false) {
+			return [];
+		}
+
+		$features = [];
+		if (($page['type'] ?? null) === 'map' && ($config['showUserLocation'] ?? false) === true) {
+			$features[] = self::GEOLOCATION;
+		}
+
+		foreach ((array) ($config['fields'] ?? []) as $field) {
+			$features[] = $this->featureOfField(field: $field);
+		}
+
+		return array_values(array_filter($features, 'is_string'));
+	}//end featuresOfPage()
+
+	/**
+	 * The feature one form field uses, or null for none.
+	 *
+	 * @param mixed $field The field entry.
+	 *
+	 * @return string|null
+	 *
+	 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
+	 */
+	private function featureOfField(mixed $field): ?string {
+		if (is_array($field) === false || is_string($field['type'] ?? null) === false) {
+			return null;
+		}
+
+		return (self::FIELD_FEATURES[$field['type']] ?? null);
+	}//end featureOfField()
 
 	/**
 	 * The page entries of a manifest.

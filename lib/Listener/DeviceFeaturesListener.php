@@ -74,15 +74,8 @@ class DeviceFeaturesListener implements IEventListener {
 			return;
 		}
 
-		if ($event instanceof ObjectCreatingEvent) {
-			$entity = $event->getObject();
-		} else {
-			$entity = $event->getNewObject();
-		}
-
-		if ($this->slugs->registerSlug(entity: $entity) !== ObjectSchemaSlugResolverInterface::REGISTER_SLUG
-			|| $this->slugs->schemaSlug(entity: $entity) !== ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
-		) {
+		$entity = $this->entityOf(event: $event);
+		if ($this->isApplicationVersion(entity: $entity) === false) {
 			return;
 		}
 
@@ -95,4 +88,35 @@ class DeviceFeaturesListener implements IEventListener {
 			array_merge($event->getModifiedData(), ['deviceFeatures' => $this->features->fromManifest(manifest: $data['manifest'])])
 		);
 	}//end handle()
+
+	/**
+	 * The object a save event stores: the new object of an update.
+	 *
+	 * @param ObjectCreatingEvent|ObjectUpdatingEvent $event The save event.
+	 *
+	 * @return object
+	 *
+	 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
+	 */
+	private function entityOf(ObjectCreatingEvent|ObjectUpdatingEvent $event): object {
+		if ($event instanceof ObjectCreatingEvent) {
+			return $event->getObject();
+		}
+
+		return $event->getNewObject();
+	}//end entityOf()
+
+	/**
+	 * Whether an object is an ApplicationVersion in this app's register.
+	 *
+	 * @param object $entity The stored object.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
+	 */
+	private function isApplicationVersion(object $entity): bool {
+		return $this->slugs->registerSlug(entity: $entity) === ObjectSchemaSlugResolverInterface::REGISTER_SLUG
+			&& $this->slugs->schemaSlug(entity: $entity) === ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA;
+	}//end isApplicationVersion()
 }//end class
