@@ -59,6 +59,7 @@ use OCA\Buildiq\Kernel\Contracts\ApplicationVersionServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\ManifestResolverServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\PermissionResolverInterface;
 use OCA\Buildiq\Kernel\Contracts\TemplateInstallSeamInterface;
+use OCA\Buildiq\Service\AppOrganisationGuard;
 use OCA\Buildiq\Service\CallerContext;
 use OCA\Buildiq\Service\HelperFactory;
 use OCA\Buildiq\Kernel\Values\LocalApplicationRef;
@@ -152,6 +153,13 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 	private readonly PermissionResolverInterface $permissionResolver;
 
 	/**
+	 * Organisation scope guard; null hides every scoped app.
+	 *
+	 * @var AppOrganisationGuard|null
+	 */
+	private readonly ?AppOrganisationGuard $organisationGuard;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IRequest $request The current HTTP request
@@ -178,6 +186,7 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 		$this->userSession = $caller->userSession;
 		$this->groupManager = $caller->groupManager;
 		$this->permissionResolver = $caller->permissionResolver;
+		$this->organisationGuard = $caller->organisationGuard;
 		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
@@ -1211,8 +1220,39 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 			);
 		}
 
-		return [$application, ObjectRecord::toArray(object: $application), (string)$applicationUuid];
+		$applicationArray = ObjectRecord::toArray(object: $application);
+
+		// Organisation scope before any role: another organisation's scoped app
+		// answers exactly as an unknown slug does (REQ-BQOS-002).
+		if ($this->visibleToOrganisation(application: $applicationArray) === false) {
+			return new JSONResponse(
+				data: ['error' => 'not_found', 'message' => 'No virtual app found for slug ' . $slug],
+				statusCode: Http::STATUS_NOT_FOUND
+			);
+		}
+
+		return [$application, $applicationArray, (string)$applicationUuid];
 	}//end resolveApplicationBySlug()
+
+	/**
+	 * Whether the caller may see the Application at all, by its organisation scope.
+	 *
+	 * A shared app passes without a lookup; a scoped one needs the guard to admit
+	 * the caller, and a missing guard fails closed.
+	 *
+	 * @param array<string, mixed> $application The Application.
+	 *
+	 * @return bool True when the app is visible to the caller.
+	 *
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002
+	 */
+	private function visibleToOrganisation(array $application): bool {
+		if (AppOrganisationGuard::isShared(application: $application) === true) {
+			return true;
+		}
+
+		return $this->organisationGuard?->canSee(application: $application, user: $this->userSession->getUser()) === true;
+	}//end visibleToOrganisation()
 
 	/**
 	 * The BuiltAppRoute entry for a slug, or a stand-in built from the Application.
@@ -1424,6 +1464,11 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 		foreach ($results as $entry) {
 			$app = ObjectRecord::toArray(object: $entry);
 			if ($app === []) {
+				continue;
+			}
+
+			// Organisation scope before any role, admins included (REQ-BQOS-002).
+			if ($this->visibleToOrganisation(application: $app) === false) {
 				continue;
 			}
 

@@ -47,8 +47,26 @@ class AppOrganisationGuardCoverageTest extends TestCase {
 		'lib/Service/ManifestResolverService.php' => 'visibleToCaller(',
 		'lib/Service/AppNavigationService.php' => 'visibleToOrganisation(',
 		'lib/Mcp/Handler/AbstractToolHandler.php' => 'visibleToOrganisation(',
+		'lib/Controller/ApplicationsController.php' => 'visibleToOrganisation(',
 		'lib/Mcp/Handler/ListAppsHandler.php' => 'requireAnyRoleOnApp(',
 		'lib/Mcp/Handler/GetAppManifestHandler.php' => 'requireAnyRoleOnApp(',
+	];
+
+	/**
+	 * Files that name the Application schema but are no door for a user, so the
+	 * organisation scope does not apply: contracts that only declare the slug as
+	 * a constant, listener wiring that filters events by schema, the repair step
+	 * that runs during an upgrade, and the occ commands' catalogue, which the
+	 * instance administrator runs from the command line.
+	 *
+	 * @var array<int, string>
+	 */
+	private const NO_USER_DOOR = [
+		'lib/Kernel/Contracts/AppOverrideServiceInterface.php',
+		'lib/Kernel/Contracts/ApplicationVersionServiceInterface.php',
+		'lib/Listener/ListenerRegistrar.php',
+		'lib/Repair/PopulateApplicationPermissions.php',
+		'lib/Service/AppCatalogue.php',
 	];
 
 	/**
@@ -60,12 +78,7 @@ class AppOrganisationGuardCoverageTest extends TestCase {
 	 */
 	private const NOT_YET_REVIEWED = [
 		'lib/Controller/AgentsController.php',
-		'lib/Controller/ApplicationsController.php',
 		'lib/Controller/ExportsController.php',
-		'lib/Kernel/Contracts/AppOverrideServiceInterface.php',
-		'lib/Kernel/Contracts/ApplicationVersionServiceInterface.php',
-		'lib/Listener/ListenerRegistrar.php',
-		'lib/Repair/PopulateApplicationPermissions.php',
 		'lib/Service/ApplicationInsightsService.php',
 		'lib/Service/AutomationWriteService.php',
 		'lib/Service/CopilotService.php',
@@ -95,7 +108,7 @@ class AppOrganisationGuardCoverageTest extends TestCase {
 	 * @return void
 	 */
 	public function testNoNewReaderSkipsTheDecision(): void {
-		$known = array_merge(array_keys(self::GUARDED), self::NOT_YET_REVIEWED);
+		$known = array_merge(array_keys(self::GUARDED), self::NO_USER_DOOR, self::NOT_YET_REVIEWED);
 		$unknown = [];
 		foreach ($this->readers() as $path) {
 			if (in_array($path, $known, true) === false) {
