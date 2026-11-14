@@ -62,8 +62,7 @@ final class PageCodeGuard {
 	 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-only-owners-write-code-and-only-when-allowed-req-bqcc-005
 	 */
 	public function codeKeys(array $manifest): array {
-		$found = [];
-		$this->collect(value: $manifest, path: '', parentKey: '', found: $found);
+		$found = $this->collect(value: $manifest, at: ['path' => '', 'parent' => '']);
 		ksort($found);
 		return $found;
 	}//end codeKeys()
@@ -92,64 +91,63 @@ final class PageCodeGuard {
 	 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-only-owners-write-code-and-only-when-allowed-req-bqcc-005
 	 */
 	public function stripConfig(array $config): array {
-		$removed = [];
-		$cleaned = $this->strip(value: $config, path: 'config', parentKey: 'config', removed: $removed);
-		return [$cleaned, $removed];
+		return $this->strip(value: $config, at: ['path' => 'config', 'parent' => 'config']);
 	}//end stripConfig()
 
 	/**
-	 * Collect the code-bearing keys below a value.
+	 * The code-bearing keys below a value, by path.
 	 *
-	 * @param mixed                 $value     The value.
-	 * @param string                $path      Its path.
-	 * @param string                $parentKey The key it sits under.
-	 * @param array<string, string> $found     Collected so far.
+	 * @param mixed                               $value The value.
+	 * @param array{path: string, parent: string} $at    Its path and the key it sits under.
 	 *
-	 * @return void
+	 * @return array<string, string> Path to value.
 	 */
-	private function collect(mixed $value, string $path, string $parentKey, array &$found): void {
+	private function collect(mixed $value, array $at): array {
 		if (is_array($value) === false) {
-			return;
+			return [];
 		}
 
+		$found = [];
 		foreach ($value as $key => $child) {
-			$childPath = $path . '/' . $key;
-			if ($this->isCodeKey(key: $key, parentKey: $parentKey) === true) {
+			$childPath = $at['path'] . '/' . $key;
+			if ($this->isCodeKey(key: $key, parentKey: $at['parent']) === true) {
 				$found[$childPath] = (string)json_encode($child, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
 				continue;
 			}
 
-			$this->collect(value: $child, path: $childPath, parentKey: (string)$key, found: $found);
+			$found += $this->collect(value: $child, at: ['path' => $childPath, 'parent' => (string)$key]);
 		}
+
+		return $found;
 	}//end collect()
 
 	/**
-	 * A value without the code-bearing keys below it.
+	 * A value without the code-bearing keys below it, and the paths removed.
 	 *
-	 * @param mixed        $value     The value.
-	 * @param string       $path      Its path.
-	 * @param string       $parentKey The key it sits under.
-	 * @param list<string> $removed   The paths removed so far.
+	 * @param mixed                               $value The value.
+	 * @param array{path: string, parent: string} $at    Its path and the key it sits under.
 	 *
-	 * @return mixed
+	 * @return array{0: mixed, 1: list<string>}
 	 */
-	private function strip(mixed $value, string $path, string $parentKey, array &$removed): mixed {
+	private function strip(mixed $value, array $at): array {
 		if (is_array($value) === false) {
-			return $value;
+			return [$value, []];
 		}
 
+		$removed = [];
 		foreach ($value as $key => $child) {
-			$childPath = $path . '/' . $key;
-			if ($this->isCodeKey(key: $key, parentKey: $parentKey) === true) {
+			$childPath = $at['path'] . '/' . $key;
+			if ($this->isCodeKey(key: $key, parentKey: $at['parent']) === true) {
 				unset($value[$key]);
 				$removed[] = $childPath;
 				continue;
 			}
 
-			$value[$key] = $this->strip(value: $child, path: $childPath, parentKey: (string)$key, removed: $removed);
+			[$value[$key], $below] = $this->strip(value: $child, at: ['path' => $childPath, 'parent' => (string)$key]);
+			array_push($removed, ...$below);
 		}
 
-		return $value;
+		return [$value, $removed];
 	}//end strip()
 
 	/**

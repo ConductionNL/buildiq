@@ -447,9 +447,12 @@ class ApplicationsController extends Controller {
 			// Never let a manifest body inject/overwrite the permissions roster.
 			unset($manifest['permissions']);
 
-			$codeRefusal = $this->refuseCodeChange(slug: $slug, applicationArray: $applicationArray, manifest: $manifest);
-			if ($codeRefusal !== null) {
-				return $codeRefusal;
+			$storedManifest = $this->storedManifest(slug: $slug, applicationArray: $applicationArray);
+			if ($this->codeGuard->changesCode(before: $storedManifest, after: $manifest) === true) {
+				$codeRefusal = $this->refuseCodeChange(applicationArray: $applicationArray);
+				if ($codeRefusal !== null) {
+					return $codeRefusal;
+				}
 			}
 
 			return $this->writeManifest(applicationArray: $applicationArray, manifest: $manifest);
@@ -503,33 +506,40 @@ class ApplicationsController extends Controller {
 	}//end authorizeManifestWrite()
 
 	/**
-	 * Refuse a save that adds, changes or removes code unless an app owner makes
-	 * it and the instance allows code on pages (pages-custom-code D6).
-	 *
-	 * The stored manifest is read the way the manifest endpoint serves it, so a
-	 * save of what an editor loaded changes no code key. There is no admin
-	 * bypass: a Nextcloud administrator who is not an owner of the app cannot
-	 * write code into it.
+	 * The stored manifest, read the way the manifest endpoint serves it, so a
+	 * save of what an editor loaded changes no code key (pages-custom-code D6).
 	 *
 	 * @param string              $slug             The virtual-app slug.
 	 * @param array<string,mixed> $applicationArray The resolved Application.
-	 * @param array<mixed>        $manifest         The manifest being saved.
+	 *
+	 * @return array<mixed>|null The stored manifest, or null when there is none.
+	 *
+	 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-only-owners-write-code-and-only-when-allowed-req-bqcc-005
+	 */
+	private function storedManifest(string $slug, array $applicationArray): ?array {
+		$stored = $this->manifestResolver->resolve(appSlug: $slug, versionSlug: null, caller: $this->userSession->getUser());
+		if ($stored === null && is_array($applicationArray['manifest'] ?? null) === true) {
+			$stored = $applicationArray['manifest'];
+		}
+
+		return $stored;
+	}//end storedManifest()
+
+	/**
+	 * Refuse a save that adds, changes or removes code unless an app owner makes
+	 * it and the instance allows code on pages (pages-custom-code D6).
+	 *
+	 * Called only for a save that changes code. There is no admin bypass: a
+	 * Nextcloud administrator who is not an owner of the app cannot write code
+	 * into it.
+	 *
+	 * @param array<string,mixed> $applicationArray The resolved Application.
 	 *
 	 * @return JSONResponse|null The 403, or null when the save may proceed.
 	 *
 	 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-only-owners-write-code-and-only-when-allowed-req-bqcc-005
 	 */
-	private function refuseCodeChange(string $slug, array $applicationArray, array $manifest): JSONResponse|null {
-		$user   = $this->userSession->getUser();
-		$stored = $this->manifestResolver->resolve(appSlug: $slug, versionSlug: null, caller: $user);
-		if ($stored === null && is_array($applicationArray['manifest'] ?? null) === true) {
-			$stored = $applicationArray['manifest'];
-		}
-
-		if ($this->codeGuard->changesCode(before: $stored, after: $manifest) === false) {
-			return null;
-		}
-
+	private function refuseCodeChange(array $applicationArray): JSONResponse|null {
 		if ($this->appConfig?->getValueBool(AppIdentity::APP_ID, PageCodeGuard::SETTING, false) !== true) {
 			return new JSONResponse(
 				data: ['error' => 'forbidden', 'code' => 'buildiq.code.disabled', 'message' => 'Code on pages is switched off for this instance.'],
@@ -537,6 +547,7 @@ class ApplicationsController extends Controller {
 			);
 		}
 
+		$user    = $this->userSession->getUser();
 		$isOwner = ($user !== null && $this->permissionResolver->matchesCaller(
 			permissions: ($applicationArray['permissions'] ?? []),
 			caller: $user,
