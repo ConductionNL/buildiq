@@ -1644,7 +1644,14 @@ OC.L10N.register(
         "Requests under 250 ms": "Verzoeken onder 250 ms",
         "Total load time (ms)": "Totale laadtijd (ms)",
         "Window start": "Begin van het venster",
-        "Include server bundle": "Serverbundel meenemen"
+        "Include server bundle": "Serverbundel meenemen",
+        "Run on": "Uitvoeren bij",
+        "when a {schema} is created": "wanneer een {schema} wordt aangemaakt",
+        "when a {schema} is updated": "wanneer een {schema} wordt gewijzigd",
+        "when a {schema} is deleted": "wanneer een {schema} wordt verwijderd",
+        "from a {schema} record": "vanuit een {schema}-record",
+        "Not run yet": "Nog niet uitgevoerd",
+        "Last run: {status} {time}": "Laatst uitgevoerd: {status} {time}"
     },
     "nplurals=2; plural=(n != 1);"
 )

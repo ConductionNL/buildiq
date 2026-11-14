@@ -2059,7 +2059,14 @@ OC.L10N.register(
         "Requests under 250 ms": "Requests under 250 ms",
         "Total load time (ms)": "Total load time (ms)",
         "Window start": "Window start",
-        "Include server bundle": "Include server bundle"
+        "Include server bundle": "Include server bundle",
+        "Run on": "Run on",
+        "when a {schema} is created": "when a {schema} is created",
+        "when a {schema} is updated": "when a {schema} is updated",
+        "when a {schema} is deleted": "when a {schema} is deleted",
+        "from a {schema} record": "from a {schema} record",
+        "Not run yet": "Not run yet",
+        "Last run: {status} {time}": "Last run: {status} {time}"
     },
     "nplurals=2; plural=(n != 1);"
 )

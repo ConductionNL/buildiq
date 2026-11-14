@@ -36,6 +36,14 @@
 						flowState(flow)
 					}}</span>
 				</a>
+				<ul v-if="runOnLines(flow).length > 0" class="ob-flows-widget__run-on" :aria-label="t('buildiq', 'Run on')">
+					<li v-for="line in runOnLines(flow)" :key="line">
+						{{ line }}
+					</li>
+				</ul>
+				<p v-if="lastRunText(flow)" class="ob-flows-widget__last-run">
+					{{ lastRunText(flow) }}
+				</p>
 			</li>
 		</ul>
 		<p v-else class="ob-flows-widget__empty">
@@ -45,6 +53,7 @@
 </template>
 
 <script>
+import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 
 export default {
@@ -56,7 +65,117 @@ export default {
 		flows: { type: Array, default: () => [] },
 	},
 
+	data() {
+		return {
+			/** The last run per flow uuid: `{ status, created }`, or null when it never ran. */
+			lastRuns: {},
+		}
+	},
+
+	watch: {
+		flows: {
+			immediate: true,
+			handler() {
+				this.loadLastRuns()
+			},
+		},
+	},
+
 	methods: {
+		/**
+		 * The uuid of the flow a row stands for: a binding's `flow`, or a flow
+		 * record's own uuid or id.
+		 *
+		 * @param {object} flow The binding or flow record.
+		 *
+		 * @return {string} The uuid, '' when there is none.
+		 *
+		 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md
+		 */
+		flowUuid(flow) {
+			if (!flow) {
+				return ''
+			}
+			const ref = typeof flow.flow === 'string' ? flow.flow : ''
+			return String(ref || flow.uuid || flow.id || '')
+		},
+
+		/**
+		 * Where a bound flow runs, one line per `runOn` entry (REQ-BQSF-005).
+		 *
+		 * @param {object} flow The binding.
+		 *
+		 * @return {string[]} The lines.
+		 *
+		 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md
+		 */
+		runOnLines(flow) {
+			const entries = flow && Array.isArray(flow.runOn) ? flow.runOn : []
+			const events = {
+				'object.created': this.t('buildiq', 'when a {schema} is created'),
+				'object.updated': this.t('buildiq', 'when a {schema} is updated'),
+				'object.deleted': this.t('buildiq', 'when a {schema} is deleted'),
+			}
+			return entries
+				.filter((entry) => entry && typeof entry.schema === 'string' && entry.schema !== '')
+				.map((entry) => {
+					const template = entry.mode === 'from-record'
+						? this.t('buildiq', 'from a {schema} record')
+						: events[entry.event]
+					return template ? template.replace('{schema}', entry.schema) : ''
+				})
+				.filter((line) => line !== '')
+		},
+
+		/**
+		 * The status and time of a flow's last run, or that it has not run yet.
+		 *
+		 * @param {object} flow The binding.
+		 *
+		 * @return {string}
+		 *
+		 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md
+		 */
+		lastRunText(flow) {
+			const uuid = this.flowUuid(flow)
+			if (!Object.hasOwn(this.lastRuns, uuid)) {
+				return ''
+			}
+			const run = this.lastRuns[uuid]
+			if (!run) {
+				return this.t('buildiq', 'Not run yet')
+			}
+			const when = run.created ? new Date(run.created) : null
+			const time = when && !Number.isNaN(when.getTime()) ? when.toLocaleString() : ''
+			return this.t('buildiq', 'Last run: {status} {time}')
+				.replace('{status}', String(run.status || ''))
+				.replace('{time}', time)
+				.trim()
+		},
+
+		/**
+		 * Read the last run of every bound flow from OpenRegister's flow runs.
+		 * A flow whose runs cannot be read shows no last-run line rather than a guess.
+		 *
+		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md
+		 */
+		async loadLastRuns() {
+			const uuids = [...new Set((this.flows || []).map((flow) => this.flowUuid(flow)).filter(Boolean))]
+			const runs = {}
+			await Promise.all(uuids.map(async (uuid) => {
+				try {
+					const { data } = await axios.get(generateUrl('/apps/openregister/api/flow-runs'), { params: { flowId: uuid, limit: 1 } })
+					const first = Array.isArray(data?.results) ? data.results[0] : undefined
+					runs[uuid] = first ? { status: first.status, created: first.created } : null
+				} catch {
+					// Unreadable runs: the row shows no last-run line.
+				}
+			}))
+			this.lastRuns = runs
+		},
+
 		/**
 		 * A stable list key for a flow.
 		 *
@@ -70,7 +189,7 @@ export default {
 		 * @spec exclude presentational key helper on a display-only widget
 		 */
 		flowKey(flow) {
-			return String((flow && (flow.uuid || flow.id || flow.name)) || '')
+			return this.flowUuid(flow) || String((flow && flow.name) || '')
 		},
 
 		/**
@@ -83,7 +202,7 @@ export default {
 		 * @spec exclude presentational label helper on a display-only widget
 		 */
 		flowName(flow) {
-			return String((flow && (flow.name || flow.uuid)) || '—')
+			return String((flow && (flow.label || flow.name || this.flowUuid(flow))) || '—')
 		},
 
 		/**
@@ -124,7 +243,7 @@ export default {
 		 * @spec exclude deep-link hand-off to OpenRegister, no app-local behaviour
 		 */
 		flowUrl(flow) {
-			const uuid = flow && (flow.uuid || flow.id)
+			const uuid = this.flowUuid(flow)
 			if (!uuid) {
 				return null
 			}
@@ -194,6 +313,15 @@ export default {
 .ob-flows-widget__row-state {
 	color: var(--color-text-maxcontrast);
 	font-size: 13px;
+}
+
+.ob-flows-widget__run-on,
+.ob-flows-widget__last-run {
+	color: var(--color-text-maxcontrast);
+	font-size: 13px;
+	margin: 0 4px 4px;
+	padding: 0;
+	list-style: none;
 }
 
 .ob-flows-widget__empty {
