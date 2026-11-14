@@ -53,10 +53,16 @@ import {
 	useRegisterPicker,
 } from '../composables/useRegisterPicker.js'
 import placeholderManifest from '../manifests/placeholder.json'
-import { runtimeRegistry } from '../runtimeRegistry.js'
+import { getRuntimeRegistry } from '../runtimeRegistry.js'
 import { fetchAppRegister } from '../services/appRegister.js'
 import { mirrorVersionLoad } from '../utils/mirrorVersionLoad.js'
 
+/**
+ * Mounts a built app inside this Nextcloud through a nested CnAppRoot, so it
+ * shares the instance's users, files and apps (REQ-PLAT-008).
+ *
+ * @spec openspec/specs/platform-properties/spec.md#REQ-PLAT-008
+ */
 export default {
 	name: 'BuilderHost',
 	components: {
@@ -73,7 +79,9 @@ export default {
 			// manifests can resolve runtime widgets like `procest-case-status`
 			// (spec procest-workflow-attachments REQ-PWA-004) and
 			// `connector-data` (spec openconnector-api-sources REQ-OCAS-006).
-			runtimeRegistry,
+			// Sourced from the canonical accessor shared with the published
+			// entry `src/builder.js` (connector-widget-runtime REQ-CWR-001).
+			runtimeRegistry: getRuntimeRegistry(),
 		}
 	},
 

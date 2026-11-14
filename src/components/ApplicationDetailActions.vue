@@ -48,9 +48,11 @@
 			:slug="obApp.slug"
 			:isOwner="obAppRole === 'owner'"
 			@update:open="githubOpen = $event" />
-		<CnEditSupportModal
+		<SupportEditorModal
 			v-if="supportOpen"
+			:slug="obApp.slug"
 			:working="supportWorkingManifest"
+			@failed="onSupportFailed"
 			@close="onSupportClose" />
 		<AppSettingsModal
 			:open="settingsOpen"
@@ -106,7 +108,7 @@
 // The action cluster names its icons as STRINGS in the CnActionButtons
 // descriptors, resolved by CnIcon through the registry src/icons.js fills — so
 // this file imports no icon components of its own any more.
-import { CnActionButtons, CnEditSupportModal } from '@conduction/nextcloud-vue'
+import { CnActionButtons } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { defineAsyncComponent } from 'vue'
@@ -117,6 +119,7 @@ import CopyAppDialog from '../modals/CopyAppDialog.vue'
 import GitHubSyncModal from '../modals/GitHubSyncModal.vue'
 import PermissionHistoryModal from '../modals/PermissionHistoryModal.vue'
 import PermissionsModal from '../modals/PermissionsModal.vue'
+import SupportEditorModal from '../modals/SupportEditorModal.vue'
 import { openPromoteDialog, promoteDialog } from '../composables/usePromoteDialog.js'
 import { useRegisterPicker } from '../composables/useRegisterPicker.js'
 import { getCurrentUserGroups } from '../composables/useRole.js'
@@ -255,7 +258,7 @@ export default {
 		PermissionsModal,
 		PermissionHistoryModal,
 		AppSettingsModal,
-		CnEditSupportModal,
+		SupportEditorModal,
 		GitHubSyncModal,
 		DeleteAppDialog,
 		SaveAsTemplateDialog,
@@ -949,7 +952,7 @@ export default {
 		 *
 		 * @return {Promise<void>}
 		 *
-		 * @spec exclude opens an existing library editor on the resolved manifest
+		 * @spec openspec/changes/apps-support-note-editor-saves/specs/support-note/spec.md#requirement-the-support-editor-saves-the-note-to-the-apps-manifest-req-bqsn-001
 		 */
 		async openSupportEditor() {
 			if (!this.obApp || !this.obApp.slug) {
@@ -972,13 +975,28 @@ export default {
 		/**
 		 * Close the support-note editor and drop the working copy.
 		 *
+		 * Reached after a successful save or a cancel; a failed save keeps
+		 * the editor open (SupportEditorModal swallows that close).
+		 *
 		 * @return {void}
 		 *
-		 * @spec exclude closes a modal, no behaviour
+		 * @spec openspec/changes/apps-support-note-editor-saves/specs/support-note/spec.md#requirement-the-support-editor-saves-the-note-to-the-apps-manifest-req-bqsn-001
 		 */
 		onSupportClose() {
 			this.supportOpen = false
 			this.supportWorkingManifest = null
+		},
+
+		/**
+		 * Say why the support note was not saved; the editor and its working copy stay.
+		 *
+		 * @param {Error} e The rejected save.
+		 * @return {void}
+		 *
+		 * @spec openspec/changes/apps-support-note-editor-saves/specs/support-note/spec.md#requirement-a-failed-save-keeps-the-editor-open-req-bqsn-002
+		 */
+		onSupportFailed(e) {
+			this.error = t('buildiq', 'Could not save the support note: {reason}', { reason: String(failureDetail(e)) })
 		},
 
 		/**
