@@ -120,3 +120,43 @@ describe('FormFieldBuilder device fields', () => {
 		expect(wrapper.find('[data-testid="device-options-1"]').text()).not.toContain(message)
 	})
 })
+
+describe('FormFieldBuilder offers to add the property a device field writes', () => {
+	const schemas = [
+		{ id: 7, slug: 'oplevering', title: 'Oplevering', properties: { lat: { type: 'number' } } },
+	]
+
+	/**
+	 * Mount the builder bound to a schema.
+	 *
+	 * @param {Array<object>} fields - the fields.
+	 * @param {string} parentSchema - the target schema slug or id.
+	 * @return {object} the wrapper.
+	 */
+	function bound(fields, parentSchema = 'oplevering') {
+		return mount(FormFieldBuilder, {
+			props: { modelValue: fields, formMode: 'create', schemas, parentSchema },
+		})
+	}
+
+	it('asks for the missing file property of a signature', async () => {
+		const wrapper = bound([{ key: 'handtekening', type: 'signature' }])
+		expect(wrapper.find('[data-testid="device-missing-properties"]').exists()).toBe(true)
+		await wrapper.find('[data-testid="device-add-properties"]').trigger('click')
+		expect(wrapper.emitted('addProperties')).toEqual([
+			[{ schema: schemas[0], additions: { handtekening: { type: 'file' } } }],
+		])
+	})
+
+	it('asks only for the location property the schema lacks, found by id too', async () => {
+		const wrapper = bound([{ key: 'p', type: 'location', latField: 'lat', lngField: 'lng' }], '7')
+		await wrapper.find('[data-testid="device-add-properties"]').trigger('click')
+		expect(wrapper.emitted('addProperties')[0][0].additions).toEqual({ lng: { type: 'number' } })
+	})
+
+	it('offers nothing when the schema has the properties or is unknown', () => {
+		expect(bound([{ key: 'p', type: 'location', latField: 'lat', lngField: 'lat' }]).find('[data-testid="device-add-properties"]').exists()).toBe(false)
+		expect(bound([{ key: 'handtekening', type: 'signature' }], 'onbekend').find('[data-testid="device-add-properties"]').exists()).toBe(false)
+	})
+})
+

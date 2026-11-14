@@ -2203,7 +2203,11 @@ OC.L10N.register(
         "Show my position": "Show my position",
         "The latitude and the longitude need two different properties.": "The latitude and the longitude need two different properties.",
         "Too long to store with the record: at most {seconds} seconds fit.": "Too long to store with the record: at most {seconds} seconds fit.",
-        "file": "file"
+        "file": "file",
+        "{schema} has no property for this yet: {properties}.": "{schema} has no property for this yet: {properties}.",
+        "Add the property to {schema}": "Add the property to {schema}",
+        "Added {properties} to {schema}.": "Added {properties} to {schema}.",
+        "Could not add the property to {schema}: {reason}": "Could not add the property to {schema}: {reason}"
     },
     "nplurals=2; plural=(n != 1);"
 )

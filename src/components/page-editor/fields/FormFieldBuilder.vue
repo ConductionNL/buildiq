@@ -214,6 +214,27 @@
 						{{ t('buildiq', 'Let the user place a pin on a map instead') }}
 					</label>
 				</template>
+				<p
+					v-if="Object.keys(missingTargets(field)).length"
+					class="form-field-builder__hint"
+					data-testid="device-missing-properties">
+					{{
+						t('buildiq', '{schema} has no property for this yet: {properties}.', {
+							schema: targetSchemaEntry.title || targetSchemaEntry.slug || parentSchema,
+							properties: Object.keys(missingTargets(field)).join(', '),
+						})
+					}}
+					<button
+						type="button"
+						data-testid="device-add-properties"
+						@click="offerProperties(field)">
+						{{
+							t('buildiq', 'Add the property to {schema}', {
+								schema: targetSchemaEntry.title || targetSchemaEntry.slug || parentSchema,
+							})
+						}}
+					</button>
+				</p>
 				<InlineFieldMark
 					v-for="(problem, problemIndex) in deviceProblemMarks(field)"
 					:key="'device-' + problemIndex"
@@ -330,6 +351,7 @@ import {
 	deviceFieldProblems,
 	inlineCapOf,
 	longestAudioSeconds,
+	missingDeviceTargets,
 } from '../../../services/deviceFields.js'
 import {
 	FIELD_TYPES as BASE_FIELD_TYPES,
@@ -486,7 +508,7 @@ export default {
 		},
 	},
 
-	emits: ['update:modelValue'],
+	emits: ['update:modelValue', 'addProperties'],
 	data() {
 		return {
 			FIELD_TYPES,
@@ -501,6 +523,23 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * The schema the form saves into, from the register's list, or null
+		 * when it is not known (no schema picked, or the list not loaded).
+		 *
+		 * @return {?object}
+		 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-value-lands-in-a-matching-property-req-bqsa-002
+		 */
+		targetSchemaEntry() {
+			if (!this.parentSchema) {
+				return null
+			}
+			return (this.schemas || []).find(
+				(entry) => entry
+					&& (String(entry.slug) === this.parentSchema || String(entry.id) === this.parentSchema),
+			) || null
+		},
+
 		/**
 		 * Observed behaviour of `localFields` (retrofit annotation).
 		 *
@@ -869,6 +908,35 @@ export default {
 			}
 			const kilobytes = Math.ceil(audioClipBytes(seconds) / 1024)
 			return t('buildiq', 'A clip of {seconds} seconds takes about {size} KB.', { seconds, size: kilobytes })
+		},
+
+		/**
+		 * The properties a device field writes that its target schema lacks.
+		 * Empty while the schema is unknown: nothing is offered then.
+		 *
+		 * @param {object} field - the field entry.
+		 * @return {{[name: string]: {type: string}}}
+		 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-value-lands-in-a-matching-property-req-bqsa-002
+		 */
+		missingTargets(field) {
+			const schema = this.targetSchemaEntry
+			return schema ? missingDeviceTargets(field, schema.properties || {}) : {}
+		},
+
+		/**
+		 * Ask the page editor to add a device field's missing properties to
+		 * the target schema. The builder holds no network; the editor saves.
+		 *
+		 * @param {object} field - the field entry.
+		 * @return {void}
+		 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-value-lands-in-a-matching-property-req-bqsa-002
+		 */
+		offerProperties(field) {
+			const additions = this.missingTargets(field)
+			if (!this.targetSchemaEntry || Object.keys(additions).length === 0) {
+				return
+			}
+			this.$emit('addProperties', { schema: this.targetSchemaEntry, additions })
 		},
 
 		/**

@@ -98,6 +98,47 @@ final class ManifestFormDestinationsTest extends TestCase {
 	}//end testTheMappingTranslatesTypesAndCarriesTheFieldsOwnLimits()
 
 	/**
+	 * A signature and an audio clip land in a file property; a location field
+	 * is checked as the number properties it writes, reported on itself.
+	 *
+	 * @return void
+	 */
+	public function testDeviceFieldsAreCheckedAgainstThePropertiesTheyWrite(): void {
+		[$destinations] = $this->destinationsAnswering(findings: []);
+
+		$mapping = $destinations->mappingOf(
+			config: [
+				'fields' => [
+					['key' => 'handtekening', 'type' => 'signature', 'allowTyped' => false],
+					['key' => 'spraaknotitie', 'type' => 'audio', 'maxSeconds' => 60],
+					[
+						'key' => 'positie',
+						'type' => 'location',
+						'latField' => 'lat',
+						'lngField' => ' lng ',
+						'accuracyField' => 'nauwkeurigheid',
+					],
+					['key' => 'zonderVelden', 'type' => 'location', 'latField' => '', 'lngField' => null],
+				],
+			]
+		);
+
+		self::assertSame(
+			[
+				'fields' => [
+					['field' => 'handtekening', 'property' => 'handtekening', 'type' => 'file'],
+					['field' => 'spraaknotitie', 'property' => 'spraaknotitie', 'type' => 'file'],
+					['field' => 'positie', 'property' => 'lat', 'type' => 'number'],
+					['field' => 'positie', 'property' => 'lng', 'type' => 'number'],
+					['field' => 'positie', 'property' => 'nauwkeurigheid', 'type' => 'number'],
+				],
+				'fixed' => [],
+			],
+			$mapping
+		);
+	}//end testDeviceFieldsAreCheckedAgainstThePropertiesTheyWrite()
+
+	/**
 	 * A page published for anonymous visitors is checked with audience `public`.
 	 *
 	 * @return void

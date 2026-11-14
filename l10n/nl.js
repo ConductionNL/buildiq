@@ -1791,7 +1791,11 @@ OC.L10N.register(
         "Show my position": "Mijn locatie tonen",
         "The latitude and the longitude need two different properties.": "De breedtegraad en de lengtegraad hebben twee verschillende eigenschappen nodig.",
         "Too long to store with the record: at most {seconds} seconds fit.": "Te lang om bij het record op te slaan: er passen hooguit {seconds} seconden in.",
-        "file": "bestand"
+        "file": "bestand",
+        "{schema} has no property for this yet: {properties}.": "{schema} heeft hier nog geen eigenschap voor: {properties}.",
+        "Add the property to {schema}": "Voeg de eigenschap toe aan {schema}",
+        "Added {properties} to {schema}.": "{properties} toegevoegd aan {schema}.",
+        "Could not add the property to {schema}: {reason}": "Kon de eigenschap niet toevoegen aan {schema}: {reason}"
     },
     "nplurals=2; plural=(n != 1);"
 )

@@ -131,3 +131,53 @@ function locationProblems(field) {
 	}
 	return lat === lng ? ['location-same-fields'] : []
 }
+
+/**
+ * The target-schema properties a device field writes, with the type each
+ * needs: a `file` under the field's key for a signature or an audio clip, a
+ * `number` for each of a location field's latitude, longitude and optional
+ * accuracy properties. Empty for any other field.
+ *
+ * @param {object} field - the form field.
+ * @return {{[name: string]: {type: string}}}
+ * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-value-lands-in-a-matching-property-req-bqsa-002
+ */
+export function deviceFieldTargets(field) {
+	const type = field?.type
+	if (type === 'signature' || type === 'audio') {
+		const key = typeof field.key === 'string' ? field.key.trim() : ''
+		return key === '' ? {} : { [key]: { type: 'file' } }
+	}
+	if (type !== 'location') {
+		return {}
+	}
+	const targets = {}
+	for (const option of ['latField', 'lngField', 'accuracyField']) {
+		const name = typeof field[option] === 'string' ? field[option].trim() : ''
+		if (name !== '') {
+			targets[name] = { type: 'number' }
+		}
+	}
+	return targets
+}
+
+/**
+ * The target properties a device field writes that the schema does not have
+ * yet. A property that exists with another type is not offered: adding it
+ * would overwrite nothing, and the destination check names the mismatch.
+ *
+ * @param {object} field - the form field.
+ * @param {?object} properties - the target schema's properties; null when unknown.
+ * @return {{[name: string]: {type: string}}} the properties to add, empty when none or unknown.
+ * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-value-lands-in-a-matching-property-req-bqsa-002
+ */
+export function missingDeviceTargets(field, properties) {
+	if (!properties || typeof properties !== 'object') {
+		return {}
+	}
+	return Object.fromEntries(
+		Object.entries(deviceFieldTargets(field)).filter(
+			([name]) => !Object.hasOwn(properties, name),
+		),
+	)
+}

@@ -162,7 +162,15 @@
 				:schemas="schemas"
 				:parentSchema="targetSchema || ''"
 				showLogic
-				@update:modelValue="update('fields', $event)" />
+				@update:modelValue="update('fields', $event)"
+				@addProperties="addTargetProperties" />
+			<p
+				v-if="propertyNote"
+				class="form-page-editor__property-note"
+				data-testid="device-property-note"
+				role="status">
+				{{ propertyNote }}
+			</p>
 			<InlineFieldMark :error="markFor('fields')" />
 		</fieldset>
 
@@ -263,6 +271,7 @@ import { useRegisterPicker } from '../../composables/useRegisterPicker.js'
 import { pageEditorBaseMixin } from '../../mixins/pageEditorBase.js'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 import { findingsByField } from '../../services/formDestinationCheck.js'
+import { addSchemaProperties } from '../../services/formLibrary.js'
 
 // OpenRegister's object collection URL: POSTing the form's values here
 // creates an object in that register and schema.
@@ -343,6 +352,8 @@ export default {
 			pendingRegister: '',
 			registers: [],
 			schemas: [],
+			// What happened to the last "Add the property" (REQ-BQSA-002).
+			propertyNote: '',
 		}
 	},
 
@@ -537,6 +548,47 @@ export default {
 
 	methods: {
 		/**
+		 * Add the properties a device field writes to the schema the form
+		 * saves into, then put the stored schema back in the list so the
+		 * field builder sees them. Existing properties are never replaced.
+		 *
+		 * @param {{schema: object, additions: object}} request - from the field builder.
+		 * @param {object} [client] - axios-compatible client (tests inject one).
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-value-lands-in-a-matching-property-req-bqsa-002
+		 */
+		async addTargetProperties(request, client) {
+			const schema = request && request.schema
+			const additions = (request && request.additions) || {}
+			if (!schema || Object.keys(additions).length === 0) {
+				return
+			}
+			const name = schema.title || schema.slug || String(schema.id)
+			try {
+				const stored = await addSchemaProperties(schema, additions, client)
+				const merged = {
+					...schema,
+					...(stored && typeof stored === 'object' ? stored : {}),
+				}
+				if (!merged.properties) {
+					merged.properties = { ...(schema.properties || {}), ...additions }
+				}
+				this.schemas = this.schemas.map((entry) =>
+					entry === schema || (entry && String(entry.id) === String(schema.id)) ? merged : entry,
+				)
+				this.propertyNote = t('buildiq', 'Added {properties} to {schema}.', {
+					properties: Object.keys(additions).join(', '),
+					schema: name,
+				})
+			} catch (e) {
+				this.propertyNote = t('buildiq', 'Could not add the property to {schema}: {reason}', {
+					schema: name,
+					reason: (e && e.message) || '',
+				})
+			}
+		},
+
+		/**
 		 * Write one key on the page's `config` block. Only the named key is
 		 * touched, so config keys this editor does not surface round-trip
 		 * losslessly. The submit one-of is handled by `setSubmitHandler` /
@@ -690,6 +742,11 @@ export default {
 	flex-direction: column;
 	gap: 12px;
 	padding: 12px;
+}
+
+.form-page-editor__property-note {
+	color: var(--color-text-maxcontrast);
+	margin-block: 4px 8px;
 }
 
 .form-page-editor__title {
