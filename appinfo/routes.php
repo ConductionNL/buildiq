@@ -26,6 +26,8 @@ return \OCA\Buildiq\Middleware\Support\ApiPathAliases::withVersionedAliases(\OCA
         // defence in depth. The caller becomes the sole owner of the new Application.
         // Must precede the {slug} + collection routes so it does not shadow them.
         ['name' => 'applicationCreation#wizard', 'url' => '/api/applications/wizard', 'verb' => 'POST'],
+        // lifecycle-import-app-and-cli: an exported archive imported as a new app (REQ-BQIC-001).
+        ['name' => 'applicationImport#import', 'url' => '/api/applications/import', 'verb' => 'POST'],
 
         // First-time-setup contract (buildiq-first-time-setup, ADR-042) — the
         // fleet-wide CnSetupWizard endpoints. Admin-only via
@@ -249,7 +251,10 @@ return \OCA\Buildiq\Middleware\Support\ApiPathAliases::withVersionedAliases(\OCA
         ['name' => 'automations#enable',   'url' => '/api/automations/{uuid}/enable',   'verb' => 'POST', 'requirements' => ['uuid' => '[a-f0-9-]{8,}']],
         ['name' => 'automations#disable',  'url' => '/api/automations/{uuid}/disable',  'verb' => 'POST', 'requirements' => ['uuid' => '[a-f0-9-]{8,}']],
         ['name' => 'automations#dryRun',   'url' => '/api/automations/{uuid}/dry-run',  'verb' => 'POST', 'requirements' => ['uuid' => '[a-f0-9-]{8,}']],
+        // The run log (logic-automation-run-log D3): the summary route comes first so `runs` is never read as a uuid.
+        ['name' => 'automations#runsSummary', 'url' => '/api/automations/runs/summary', 'verb' => 'GET'],
         ['name' => 'automations#status',   'url' => '/api/automations/{uuid}/status',   'verb' => 'GET',  'requirements' => ['uuid' => '[a-f0-9-]{8,}']],
+        ['name' => 'automations#runs',     'url' => '/api/automations/{uuid}/runs',     'verb' => 'GET',  'requirements' => ['uuid' => '[a-f0-9-]{8,}']],
 
         // App-override store-and-serve (buildiq-inline-edit-persistence,
         // spec app-override-persistence). Per-instance shared manifest delta for
@@ -301,6 +306,8 @@ return \OCA\Buildiq\Middleware\Support\ApiPathAliases::withVersionedAliases(\OCA
         ['name' => 'registrationForm#target', 'url' => '/api/registration-forms/target', 'verb' => 'GET'],
         // Decision 179/189: the page designer checks its form pages against their destinations on save.
         ['name' => 'formDestination#check', 'url' => '/api/forms/destination-check', 'verb' => 'POST'],
+        // journey-designer: a journey's writes judged by OpenRegister's form destination validator; administrators only.
+        ['name' => 'journeyDesigner#check', 'url' => '/api/journeys/check', 'verb' => 'POST'],
 
         // Remote template store (buildiq-remote-template-store). Consume-only:
         // search proxies the configured remote OpenRegister catalogue server-side;

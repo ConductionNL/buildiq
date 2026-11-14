@@ -108,6 +108,28 @@ class ApplicationRegisterTest extends TestCase {
 	}//end testGuardedListenersFollowTheirEventClass()
 
 	/**
+	 * Exactly one deep-link listener is registered, and it is buildiq's own (REQ-OBDL-001).
+	 *
+	 * @return void
+	 */
+	public function testOneDeepLinkListenerIsRegistered(): void {
+		$this->runRegister();
+
+		$listeners = array_values(
+			array_filter(
+				$this->calls,
+				static fn (array $call): bool => $call['method'] === 'registerEventListener'
+					&& ($call['args']['event'] ?? null) === 'OCA\\OpenRegister\\Event\\DeepLinkRegistrationEvent'
+			)
+		);
+
+		self::assertSame(
+			expected: ['OCA\\Buildiq\\Listener\\BuiltAppDeepLinkListener'],
+			actual: array_column(array_column($listeners, 'args'), 'listener')
+		);
+	}//end testOneDeepLinkListenerIsRegistered()
+
+	/**
 	 * Run register() on an Application built without its container.
 	 *
 	 * @return void

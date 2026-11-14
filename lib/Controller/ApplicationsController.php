@@ -58,9 +58,9 @@ use OCA\Buildiq\Kernel\Contracts\AppChannelApplierInterface;
 use OCA\Buildiq\Kernel\Contracts\ApplicationVersionServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\ManifestResolverServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\PermissionResolverInterface;
-use OCA\Buildiq\Service\AppTemplateCapture;
+use OCA\Buildiq\Kernel\Contracts\TemplateInstallSeamInterface;
 use OCA\Buildiq\Service\CallerContext;
-use OCA\Buildiq\Service\CompanionSchemaCollector;
+use OCA\Buildiq\Service\HelperFactory;
 use OCA\Buildiq\Kernel\Values\LocalApplicationRef;
 use OCA\Buildiq\Service\RegisterStore;
 use OCA\Buildiq\Kernel\Values\RepoSource;
@@ -89,7 +89,7 @@ use Throwable;
 /**
  * Controller for the Buildiq manifest, list, diff and clone-from-template endpoints.
  */
-class ApplicationsController extends Controller {
+class ApplicationsController extends Controller implements TemplateInstallSeamInterface {
 	/**
 	 * Nextcloud admin group identifier used as the bypass anchor and the
 	 * fallback owner per design.md Decision 5 of buildiq-rbac.
@@ -2062,14 +2062,14 @@ class ApplicationsController extends Controller {
 
 		$manifest = ($version['manifest'] ?? ($application['manifest'] ?? []));
 		$appSlug = (string)($application['slug'] ?? '');
-		$collector = new CompanionSchemaCollector(
+		$collector = (new HelperFactory())->companionSchemaCollector(
 			registerMapper: $this->registerMapper,
 			schemaMapper: $this->schemaMapper,
 			logger: $this->logger
 		);
 		$schemas = $collector->collect(slug: $appSlug, versionRegister: trim((string)($version['register'] ?? '')));
 
-		return (new AppTemplateCapture())->capture(
+		return (new HelperFactory())->appTemplateCapture()->capture(
 			application: $application,
 			schemas: array_values($schemas),
 			manifest: (array)$manifest

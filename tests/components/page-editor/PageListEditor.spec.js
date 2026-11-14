@@ -20,6 +20,8 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import PageListEditor, {
+	GRID_CHOICE,
+	gridPageShape,
 	PAGE_TYPES,
 } from '../../../src/components/page-editor/PageListEditor.vue'
 // The shared stub mirrors vuedraggable v4 (`modelValue` + `#item` scoped
@@ -325,5 +327,39 @@ describe('PageListEditor', () => {
 			await wrapper.find('.page-list-editor__title').setValue('Concepts')
 			expect(wrapper.emitted('update:pages')[0][0][0].title).toBe('Concepts')
 		})
+	})
+})
+
+describe('PageListEditor — Grid choice (data-index-grid-and-saved-views T04)', () => {
+	it('adds a custom page with the record-grid component and an empty grid config', () => {
+		expect(gridPageShape()).toEqual({
+			type: 'custom',
+			component: 'record-grid',
+			config: { register: '', schema: '', columns: [], editable: [] },
+		})
+		const wrapper = mountEditor([{ id: 'home', route: '/', type: 'index', config: {} }])
+		wrapper.vm.startAdd()
+		wrapper.vm.addingType = GRID_CHOICE
+		wrapper.vm.addingTitle = 'Stock'
+		wrapper.vm.confirmAdd()
+		const pages = wrapper.emitted('update:pages').at(-1)[0]
+		expect(pages[1]).toEqual({
+			id: 'grid-page-2',
+			route: '/grid',
+			type: 'custom',
+			title: 'Stock',
+			component: 'record-grid',
+			config: { register: '', schema: '', columns: [], editable: [] },
+		})
+		expect(wrapper.emitted('select').at(-1)).toEqual([1])
+	})
+
+	it('offers Grid in the type picker without adding it to the page types', async () => {
+		expect(PAGE_TYPES).not.toContain('grid')
+		const wrapper = mountEditor([])
+		wrapper.vm.startAdd()
+		await wrapper.vm.$nextTick()
+		const values = wrapper.findAll('select.page-list-editor__select option').map((o) => o.element.value)
+		expect(values).toContain('grid')
 	})
 })

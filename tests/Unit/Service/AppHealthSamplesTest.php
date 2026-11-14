@@ -34,6 +34,20 @@ final class AppHealthSamplesTest extends TestCase {
 		self::assertSame(0, $kept[1]['loadMsSum']);
 	}//end testASampleKeepsOnlyCappedCountsAndAValidPageId()
 
+	/**
+	 * REQ-BQDM-007: the request failure metric sums one field, so the server
+	 * derives `failures` from the 4xx and 5xx counts and ignores a posted one.
+	 */
+	public function testFailuresAreDerivedNeverPosted(): void {
+		$kept = (new AppHealthSamples())->sanitise(pages: [
+			['pageId' => 'permits', 'requests' => 9, 'failures4xx' => 2, 'failures5xx' => 3, 'failures' => 9000],
+			['pageId' => 'clean', 'requests' => 4, 'failures' => 4],
+		]);
+
+		self::assertSame(5, $kept[0]['failures']);
+		self::assertSame(0, $kept[1]['failures']);
+	}//end testFailuresAreDerivedNeverPosted()
+
 	public function testAtMostFiftyPagesPerPost(): void {
 		$pages = array_map(static fn (int $i): array => ['pageId' => 'p' . $i, 'loads' => 1], range(1, 80));
 
