@@ -69,46 +69,114 @@ final class ModelStep {
 	public const TASK_TYPE = 'core:text2text';
 
 	/**
-	 * The record of one call.
+	 * The attempt number: 1 for the first call, 2 for the repair.
 	 *
-	 * @param int               $attempt   1 for the first call, 2 for the repair.
-	 * @param DateTimeImmutable $startedAt When the call started.
-	 * @param float             $seconds   How long it took, from microtime().
-	 * @param string            $status    One of the STATUS_ constants.
-	 * @param string            $prompt    The prompt sent.
-	 * @param string            $output    The raw answer.
-	 * @param string            $refusal   The parse or validator message, empty when none.
+	 * @var int
+	 */
+	private int $attempt;
+
+	/**
+	 * The prompt sent.
+	 *
+	 * @var string
+	 */
+	private string $prompt;
+
+	/**
+	 * When the call started.
+	 *
+	 * @var DateTimeImmutable
+	 */
+	private DateTimeImmutable $startedAt;
+
+	/**
+	 * microtime() at the start of the call.
+	 *
+	 * @var float
+	 */
+	private float $clock;
+
+	/**
+	 * Start the record of one call: the clock runs from here.
+	 *
+	 * @param int    $attempt 1 for the first call, 2 for the repair.
+	 * @param string $prompt  The prompt sent.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/ai-agents-knowledge-and-run-trace/specs/agent-workspace/spec.md#requirement-a-run-keeps-its-model-steps-req-bqag-004
+	 */
+	public function __construct(int $attempt, string $prompt) {
+		$this->attempt   = $attempt;
+		$this->prompt    = $prompt;
+		$this->startedAt = new DateTimeImmutable();
+		$this->clock     = microtime(true);
+	}//end __construct()
+
+	/**
+	 * The record of a call that did not reach the model or got no answer.
+	 *
+	 * @param string $message The provider error.
 	 *
 	 * @return array<string, mixed>
 	 *
 	 * @spec openspec/changes/ai-agents-knowledge-and-run-trace/specs/agent-workspace/spec.md#requirement-a-run-keeps-its-model-steps-req-bqag-004
 	 */
-	public static function record(
-		int $attempt,
-		DateTimeImmutable $startedAt,
-		float $seconds,
-		string $status,
-		string $prompt,
-		string $output,
-		string $refusal='',
-	): array {
-		$capped = mb_substr($output, 0, self::OUTPUT_CAP);
-		$kind   = 'repair';
-		if ($attempt === 1) {
+	public function error(string $message): array {
+		return $this->toArray(status: self::STATUS_ERROR, answer: ['', $message]);
+	}//end error()
+
+	/**
+	 * The record of an answered call, from the `[plan|null, rawOutput, parseError]`
+	 * result of the attempt.
+	 *
+	 * A parsed plan is `successful`; an unusable first answer is `repair-needed`
+	 * (a repair follows), an unusable second one `failed`.
+	 *
+	 * @param array{0: array<string, mixed>|null, 1: string, 2: string} $result The attempt's result.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/changes/ai-agents-knowledge-and-run-trace/specs/agent-workspace/spec.md#requirement-a-run-keeps-its-model-steps-req-bqag-004
+	 */
+	public function answered(array $result): array {
+		$status = self::STATUS_SUCCESSFUL;
+		if ($result[0] === null) {
+			$status = self::STATUS_FAILED;
+			if ($this->attempt === 1) {
+				$status = self::STATUS_REPAIR_NEEDED;
+			}
+		}
+
+		return $this->toArray(status: $status, answer: [(string)$result[1], (string)$result[2]]);
+	}//end answered()
+
+	/**
+	 * The record of the call, as a run keeps it.
+	 *
+	 * @param string                 $status One of the STATUS_ constants.
+	 * @param array{0: string, 1: string} $answer The raw answer and the parse or validator message.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function toArray(string $status, array $answer): array {
+		[$output, $refusal] = $answer;
+		$kind = 'repair';
+		if ($this->attempt === 1) {
 			$kind = 'plan';
 		}
 
 		return [
-			'attempt'         => $attempt,
+			'attempt'         => $this->attempt,
 			'kind'            => $kind,
-			'startedAt'       => $startedAt->format(DATE_ATOM),
-			'durationMs'      => max(0, (int)round($seconds * 1000)),
+			'startedAt'       => $this->startedAt->format(DATE_ATOM),
+			'durationMs'      => max(0, (int)round((microtime(true) - $this->clock) * 1000)),
 			'status'          => $status,
 			'taskType'        => self::TASK_TYPE,
-			'promptChars'     => mb_strlen($prompt),
-			'output'          => $capped,
+			'promptChars'     => mb_strlen($this->prompt),
+			'output'          => mb_substr($output, 0, self::OUTPUT_CAP),
 			'outputTruncated' => mb_strlen($output) > self::OUTPUT_CAP,
 			'refusal'         => $refusal,
 		];
-	}//end record()
+	}//end toArray()
 }//end class

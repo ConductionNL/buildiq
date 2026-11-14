@@ -110,19 +110,32 @@ class AgentRunLogger {
 		}
 
 		$traceId = bin2hex(random_bytes(16));
-		try {
-			$this->traceCache->set(
-				$this->traceKey(agentId: self::agentIdOf(agent: $agent), userId: $userId, traceId: $traceId),
-				json_encode($trace, JSON_THROW_ON_ERROR),
-				self::TRACE_TTL
-			);
-		} catch (Throwable $e) {
-			$this->logger->warning('Buildiq AgentRunLogger: could not keep the model steps of a plan: ' . $e->getMessage());
+		$owner   = self::traceOwner(agentId: self::agentIdOf(agent: $agent), userId: $userId);
+		if ($this->keepTrace(key: self::traceKey(owner: $owner, traceId: $traceId), trace: $trace) === false) {
 			return '';
 		}
 
 		return $traceId;
 	}//end rememberTrace()
+
+	/**
+	 * Write a plan's model steps to the cache for TRACE_TTL seconds.
+	 *
+	 * @param string               $key   The cache key.
+	 * @param array<string, mixed> $trace The model steps.
+	 *
+	 * @return bool False when they could not be kept.
+	 */
+	private function keepTrace(string $key, array $trace): bool {
+		try {
+			$this->traceCache?->set($key, json_encode($trace, JSON_THROW_ON_ERROR), self::TRACE_TTL);
+		} catch (Throwable $e) {
+			$this->logger->warning('Buildiq AgentRunLogger: could not keep the model steps of a plan: ' . $e->getMessage());
+			return false;
+		}
+
+		return true;
+	}//end keepTrace()
 
 
 	/**
@@ -159,7 +172,7 @@ class AgentRunLogger {
 		?array $trace = null,
 	): array {
 		$agentId = self::agentIdOf(agent: $agent);
-		$trace ??= $this->takeTrace(agentId: $agentId, userId: $userId, traceId: (string)$traceId);
+		$trace ??= $this->takeTrace(owner: self::traceOwner(agentId: $agentId, userId: $userId), traceId: (string)$traceId);
 
 		$payload = [
 			'agentId' => $agentId,
@@ -168,10 +181,7 @@ class AgentRunLogger {
 			'plan' => $plan,
 			'toolCalls' => array_values($toolCalls),
 			'outcome' => $outcome,
-			'modelSteps' => array_values((array)($trace['modelSteps'] ?? [])),
-			'knowledgeUsed' => array_values((array)($trace['knowledgeUsed'] ?? [])),
-			'durationMs' => (int)($trace['durationMs'] ?? 0),
-			'traceMissing' => $trace === null,
+			...self::traceFields(trace: $trace),
 			'createdAt' => (new DateTimeImmutable())->format(DATE_ATOM),
 		];
 
@@ -194,22 +204,38 @@ class AgentRunLogger {
 	}//end log()
 
 	/**
+	 * The trace fields of a run: its model steps, the knowledge it used, its
+	 * model time, and whether the steps were missing.
+	 *
+	 * @param array<string, mixed>|null $trace The model steps, or null when they are gone.
+	 *
+	 * @return array{modelSteps: array<int, mixed>, knowledgeUsed: array<int, mixed>, durationMs: int, traceMissing: bool}
+	 */
+	private static function traceFields(?array $trace): array {
+		return [
+			'modelSteps' => array_values((array)($trace['modelSteps'] ?? [])),
+			'knowledgeUsed' => array_values((array)($trace['knowledgeUsed'] ?? [])),
+			'durationMs' => (int)($trace['durationMs'] ?? 0),
+			'traceMissing' => $trace === null,
+		];
+	}//end traceFields()
+
+	/**
 	 * The cached model steps of a plan, removed from the cache, or null when they are gone.
 	 *
-	 * @param string $agentId The agent the run belongs to.
-	 * @param string $userId  The user writing the run.
+	 * @param string $owner   The agent and user the run belongs to, from traceOwner().
 	 * @param string $traceId The trace id the plan returned.
 	 *
 	 * @return array<string, mixed>|null
 	 *
 	 * @spec openspec/changes/ai-agents-knowledge-and-run-trace/specs/agent-workspace/spec.md#requirement-a-run-keeps-its-model-steps-req-bqag-004
 	 */
-	private function takeTrace(string $agentId, string $userId, string $traceId): ?array {
+	private function takeTrace(string $owner, string $traceId): ?array {
 		if ($this->traceCache === null || preg_match('/^[0-9a-f]{32}$/', $traceId) !== 1) {
 			return null;
 		}
 
-		$key = $this->traceKey(agentId: $agentId, userId: $userId, traceId: $traceId);
+		$key = self::traceKey(owner: $owner, traceId: $traceId);
 		$raw = $this->traceCache->get($key);
 		if (is_string($raw) === false) {
 			return null;
@@ -225,16 +251,27 @@ class AgentRunLogger {
 	}//end takeTrace()
 
 	/**
-	 * The cache key of a trace: agent, user and trace id together.
+	 * The owner part of a trace key: agent and user together.
 	 *
 	 * @param string $agentId The agent.
 	 * @param string $userId  The user.
+	 *
+	 * @return string
+	 */
+	private static function traceOwner(string $agentId, string $userId): string {
+		return $agentId . "\n" . $userId;
+	}//end traceOwner()
+
+	/**
+	 * The cache key of a trace: agent, user and trace id together.
+	 *
+	 * @param string $owner   The agent and user, from traceOwner().
 	 * @param string $traceId The trace id.
 	 *
 	 * @return string
 	 */
-	private function traceKey(string $agentId, string $userId, string $traceId): string {
-		return hash('sha256', $agentId . "\n" . $userId . "\n" . $traceId);
+	private static function traceKey(string $owner, string $traceId): string {
+		return hash('sha256', $owner . "\n" . $traceId);
 	}//end traceKey()
 
 	/**

@@ -29,7 +29,7 @@ use OCA\Buildiq\Service\Copilot\ModelStep;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Covers ModelStep::record().
+ * Covers ModelStep.
  */
 final class ModelStepTest extends TestCase {
 
@@ -39,33 +39,58 @@ final class ModelStepTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheRecordCarriesEveryField(): void {
-		$step = ModelStep::record(
-			attempt: 1,
-			startedAt: new DateTimeImmutable('2026-11-14T09:00:00+00:00'),
-			seconds: 1.2345,
-			status: ModelStep::STATUS_REPAIR_NEEDED,
-			prompt: 'Maak een formulier',
-			output: '{steps: oops',
-			refusal: 'Syntax error'
-		);
+		$before = new DateTimeImmutable('-1 second');
+		$step   = (new ModelStep(attempt: 1, prompt: 'Maak een formulier'))->answered(result: [null, '{steps: oops', 'Syntax error']);
 
 		$this->assertSame(
-			[
-				'attempt'         => 1,
-				'kind'            => 'plan',
-				'startedAt'       => '2026-11-14T09:00:00+00:00',
-				'durationMs'      => 1235,
-				'status'          => 'repair-needed',
-				'taskType'        => 'core:text2text',
-				'promptChars'     => 18,
-				'output'          => '{steps: oops',
-				'outputTruncated' => false,
-				'refusal'         => 'Syntax error',
-			],
-			$step
+			['attempt', 'kind', 'startedAt', 'durationMs', 'status', 'taskType', 'promptChars', 'output', 'outputTruncated', 'refusal'],
+			array_keys($step)
 		);
-		$this->assertSame('repair', ModelStep::record(attempt: 2, startedAt: new DateTimeImmutable(), seconds: 0.0, status: 'successful', prompt: '', output: '')['kind']);
+		$this->assertSame(1, $step['attempt']);
+		$this->assertSame('plan', $step['kind']);
+		$this->assertGreaterThanOrEqual($before, new DateTimeImmutable($step['startedAt']));
+		$this->assertIsInt($step['durationMs']);
+		$this->assertGreaterThanOrEqual(0, $step['durationMs']);
+		$this->assertSame('repair-needed', $step['status']);
+		$this->assertSame('core:text2text', $step['taskType']);
+		$this->assertSame(18, $step['promptChars']);
+		$this->assertSame('{steps: oops', $step['output']);
+		$this->assertFalse($step['outputTruncated']);
+		$this->assertSame('Syntax error', $step['refusal']);
 	}//end testTheRecordCarriesEveryField()
+
+	/**
+	 * The status follows the result and the attempt; the kind follows the attempt.
+	 *
+	 * @return void
+	 */
+	public function testTheStatusAndKindFollowTheAttempt(): void {
+		$parsed = (new ModelStep(attempt: 1, prompt: ''))->answered(result: [['steps' => []], '{}', '']);
+		$failed = (new ModelStep(attempt: 2, prompt: ''))->answered(result: [null, 'oops', 'Syntax error']);
+		$repair = (new ModelStep(attempt: 2, prompt: ''))->answered(result: [['steps' => []], '{}', '']);
+
+		$this->assertSame(ModelStep::STATUS_SUCCESSFUL, $parsed['status']);
+		$this->assertSame(ModelStep::STATUS_FAILED, $failed['status']);
+		$this->assertSame('repair', $failed['kind']);
+		$this->assertSame(ModelStep::STATUS_SUCCESSFUL, $repair['status']);
+		$this->assertSame('repair', $repair['kind']);
+	}//end testTheStatusAndKindFollowTheAttempt()
+
+	/**
+	 * A provider error keeps no answer and the error message as the refusal.
+	 *
+	 * @return void
+	 */
+	public function testAnErrorKeepsTheMessage(): void {
+		$step = (new ModelStep(attempt: 2, prompt: 'abc'))->error(message: 'Provider down');
+
+		$this->assertSame(ModelStep::STATUS_ERROR, $step['status']);
+		$this->assertSame('repair', $step['kind']);
+		$this->assertSame('', $step['output']);
+		$this->assertFalse($step['outputTruncated']);
+		$this->assertSame('Provider down', $step['refusal']);
+		$this->assertSame(3, $step['promptChars']);
+	}//end testAnErrorKeepsTheMessage()
 
 	/**
 	 * The raw answer is capped at 20,000 characters, counted as characters, not bytes.
@@ -74,11 +99,10 @@ final class ModelStepTest extends TestCase {
 	 */
 	public function testTheAnswerIsCappedAtTwentyThousandCharacters(): void {
 		$long = str_repeat('é', 20005);
-		$step = ModelStep::record(attempt: 1, startedAt: new DateTimeImmutable(), seconds: -1.0, status: 'successful', prompt: $long, output: $long);
+		$step = (new ModelStep(attempt: 1, prompt: $long))->answered(result: [['steps' => []], $long, '']);
 
 		$this->assertSame(20000, mb_strlen($step['output']));
 		$this->assertTrue($step['outputTruncated']);
 		$this->assertSame(20005, $step['promptChars']);
-		$this->assertSame(0, $step['durationMs'], 'a clock that went backwards is not a negative duration');
 	}//end testTheAnswerIsCappedAtTwentyThousandCharacters()
 }//end class

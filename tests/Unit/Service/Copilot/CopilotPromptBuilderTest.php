@@ -146,8 +146,9 @@ class CopilotPromptBuilderTest extends TestCase {
 			['fileName' => 'huisstijl-formulieren.md', 'text' => "Field labels are in sentence case.\n\n"],
 			['fileName' => 'tone.txt', 'text' => 'Write plainly.'],
 		];
-		$prompt = $builder->build(brief: 'Add a contact form', instructionsPrefix: 'Be concise.', knowledge: $knowledge);
-		$repair = $builder->buildRepairPrompt(brief: 'Add a contact form', previousOutput: 'oops', parseError: 'Syntax error', instructionsPrefix: 'Be concise.', knowledge: $knowledge);
+		$knowing = $builder->withKnowledge(knowledge: $knowledge);
+		$prompt = $knowing->build(brief: 'Add a contact form', instructionsPrefix: 'Be concise.');
+		$repair = $knowing->buildRepairPrompt(brief: 'Add a contact form', previousOutput: 'oops', parseError: 'Syntax error', instructionsPrefix: 'Be concise.');
 
 		foreach ([$prompt, $repair] as $text) {
 			$instructions = strpos($text, 'Be concise.');
@@ -171,7 +172,21 @@ class CopilotPromptBuilderTest extends TestCase {
 	public function testBuildOmitsKnowledgeSectionWithoutFiles(): void {
 		$builder = new CopilotPromptBuilder(toolProvider: $this->toolProvider);
 
-		self::assertStringNotContainsString('Agent knowledge', $builder->build(brief: 'x', knowledge: []));
-		self::assertSame($builder->build(brief: 'x'), $builder->build(brief: 'x', knowledge: null));
+		self::assertStringNotContainsString('Agent knowledge', $builder->withKnowledge(knowledge: [])->build(brief: 'x'));
+		self::assertSame($builder->build(brief: 'x'), $builder->withKnowledge(knowledge: null)->build(brief: 'x'));
 	}//end testBuildOmitsKnowledgeSectionWithoutFiles()
+
+	/**
+	 * withKnowledge() returns a copy and leaves the shared builder without knowledge.
+	 *
+	 * @return void
+	 */
+	public function testWithKnowledgeLeavesTheBuilderUnchanged(): void {
+		$builder = new CopilotPromptBuilder(toolProvider: $this->toolProvider);
+		$knowing = $builder->withKnowledge(knowledge: [['fileName' => 'tone.txt', 'text' => 'Write plainly.']]);
+
+		self::assertNotSame($builder, $knowing);
+		self::assertStringContainsString('--- tone.txt ---', $knowing->build(brief: 'x'));
+		self::assertStringNotContainsString('Agent knowledge', $builder->build(brief: 'x'));
+	}//end testWithKnowledgeLeavesTheBuilderUnchanged()
 }//end class
