@@ -28,6 +28,7 @@ return \OCA\Buildiq\Middleware\Support\ApiPathAliases::withVersionedAliases(\OCA
         ['name' => 'applicationCreation#wizard', 'url' => '/api/applications/wizard', 'verb' => 'POST'],
         // lifecycle-import-app-and-cli: an exported archive imported as a new app (REQ-BQIC-001).
         ['name' => 'applicationImport#import', 'url' => '/api/applications/import', 'verb' => 'POST'],
+        ['name' => 'applicationImport#preview', 'url' => '/api/applications/import/preview', 'verb' => 'POST'],
 
         // First-time-setup contract (buildiq-first-time-setup, ADR-042) — the
         // fleet-wide CnSetupWizard endpoints. Admin-only via
