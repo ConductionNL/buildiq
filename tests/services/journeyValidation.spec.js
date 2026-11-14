@@ -13,6 +13,7 @@ import {
 	BRANCH_OPERATORS,
 	branchFindings,
 	checkJourneyWrites,
+	fieldsAskedBy,
 	journeyFindings,
 	moveStep,
 	stepFindings,
@@ -176,5 +177,21 @@ describe('checkJourneyWrites', () => {
 		const client = { post: vi.fn().mockResolvedValue({ data: {} }) }
 
 		expect(await checkJourneyWrites(journey(), client)).toEqual({ accepted: true, findings: [] })
+	})
+})
+
+describe('fieldsAskedBy', () => {
+	const forms = { f1: { fields: [{ key: 'name' }], steps: [{ fields: [{ name: 'age' }] }] }, f2: { fields: [{ key: 'email' }, { key: 'name' }] } }
+	const journey = { steps: [{ id: 'a', type: 'form', formId: 'f1' }, { id: 'r', type: 'review' }, { id: 'b', type: 'form', formId: 'f2' }] }
+
+	it('gives the fields of the step and every form step before it, each once', () => {
+		expect(fieldsAskedBy(journey, forms, 0)).toEqual(['name', 'age'])
+		expect(fieldsAskedBy(journey, forms, 1)).toEqual(['name', 'age'])
+		expect(fieldsAskedBy(journey, forms, 2)).toEqual(['name', 'age', 'email'])
+	})
+
+	it('gives nothing for a missing form or journey', () => {
+		expect(fieldsAskedBy({ steps: [{ id: 'a', type: 'form', formId: 'gone' }] }, forms, 0)).toEqual([])
+		expect(fieldsAskedBy(null, forms, 3)).toEqual([])
 	})
 })
