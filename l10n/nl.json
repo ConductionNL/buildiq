@@ -1660,7 +1660,19 @@
         "Requests under 250 ms": "Verzoeken onder 250 ms",
         "Total load time (ms)": "Totale laadtijd (ms)",
         "Window start": "Begin van het venster",
-        "Include server bundle": "Serverbundel meenemen"
+        "Include server bundle": "Serverbundel meenemen",
+        "A form with a fee needs sign-in at level substantial or high. Choose that level above, or it cannot be saved.": "Een formulier met leges vraagt inloggen op niveau substantieel of hoog. Kies dat niveau hierboven, anders kan het niet worden opgeslagen.",
+        "After sending, the portal asks the filer to pay this amount before the application is complete.": "Na het versturen vraagt het portaal de indiener dit bedrag te betalen voordat de aanvraag compleet is.",
+        "Amount": "Bedrag",
+        "Currency": "Valuta",
+        "Fee on submit": "Leges bij versturen",
+        "Line the filer sees on the payment": "Omschrijving die de indiener bij de betaling ziet",
+        "The filer pays a fee after sending": "De indiener betaalt leges na het versturen",
+        "Fee on Submit": "Leges bij versturen",
+        "The ISO 4217 code of the currency. EUR when left empty.": "De ISO 4217-code van de valuta. EUR als het leeg blijft.",
+        "The fee the filer pays after sending the form: the portal shows \"Pay {amount} now\" and forwards to the payment provider (REQ-OBRF-010). Left empty, the form costs nothing. A form with a fee needs sign-in at level substantial or high; buildiq refuses to save it otherwise.": "De leges die de indiener na het versturen van het formulier betaalt: het portaal toont \"Betaal nu {amount}\" en stuurt door naar de betaalprovider (REQ-OBRF-010). Leeg betekent dat het formulier niets kost. Een formulier met leges vraagt inloggen op niveau substantieel of hoog; buildiq weigert het anders op te slaan.",
+        "The line the filer sees on the payment.": "De omschrijving die de indiener bij de betaling ziet.",
+        "What the filer pays, in the currency below. Greater than zero.": "Wat de indiener betaalt, in de valuta hieronder. Groter dan nul."
     },
     "plurals": null,
     "pluralForm": "nplurals=2; plural=(n != 1);"

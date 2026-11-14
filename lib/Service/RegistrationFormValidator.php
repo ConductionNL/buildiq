@@ -73,6 +73,7 @@ final class RegistrationFormValidator {
 	 * @throws InvalidArgumentException When a rule refuses the form.
 	 *
 	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004, REQ-OBRF-005, REQ-OBRF-007, REQ-OBRF-008)
+	 * @spec openspec/changes/forms-fee-on-submit/specs/registration-form-builder/spec.md (REQ-OBRF-010)
 	 */
 	public function validate(
 		array $form,
@@ -82,6 +83,7 @@ final class RegistrationFormValidator {
 		$this->assertName(form: $form);
 		$this->assertAudience(form: $form);
 		(new RegistrationFormSignInLevel())->assertValid(form: $form);
+		(new RegistrationFormFee())->assertValid(form: $form);
 		$this->assertSections(form: $form);
 		$this->assertChannel(form: $form, targetChannels: $targetChannels);
 		$this->assertNameIsFree(form: $form, existing: $existing);
