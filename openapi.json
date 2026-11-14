@@ -96,6 +96,10 @@
             "description": "Owner-gated controller for the GitHub link/push/pull/status endpoints."
         },
         {
+            "name": "journey-designer",
+            "description": "Checks a journey's writes against their destinations."
+        },
+        {
             "name": "open-api",
             "description": "The OpenAPI document that describes this API."
         },
@@ -2919,6 +2923,59 @@
                                 }
                             }
                         }
+                    }
+                }
+            }
+        },
+        "/journeys/check": {
+            "post": {
+                "operationId": "journey-designer-check",
+                "summary": "Every finding on a journey's writes",
+                "description": "Every finding on a journey's `writes[]`, each judged by OpenRegister's form destination validator. Body: `{ journey }`. Answer: `{ accepted, findings }`. Needs a Nextcloud administrator: authoring a journey can write into any register.",
+                "tags": [
+                    "journey-designer"
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "journey": {
+                                        "description": "The journey: `steps[]`, each with optional `writes[]`, and `audience`."
+                                    }
+                                },
+                                "additionalProperties": false
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
                     }
                 }
             }
