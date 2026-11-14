@@ -379,6 +379,20 @@
     {
         "method": "registerService",
         "args": {
+            "name": "OCA\\Buildiq\\Listener\\BuiltAppDeepLinkListener",
+            "factory": "factory:OCA\\Buildiq\\Listener\\BuiltAppDeepLinkListener"
+        }
+    },
+    {
+        "method": "registerEventListener",
+        "args": {
+            "event": "OCA\\OpenRegister\\Event\\DeepLinkRegistrationEvent",
+            "listener": "OCA\\Buildiq\\Listener\\BuiltAppDeepLinkListener"
+        }
+    },
+    {
+        "method": "registerService",
+        "args": {
             "name": "OCA\\Buildiq\\Service\\PublishedApplicationProvider",
             "factory": "factory:OCA\\Buildiq\\Service\\PublishedApplicationProvider"
         }
