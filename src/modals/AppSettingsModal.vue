@@ -133,7 +133,7 @@
 				<div data-test="app-settings-flow-picker">
 					<NcSelect
 						:modelValue="selectedFlows"
-						:options="availableFlows"
+						:options="flowOptions"
 						:multiple="true"
 						:disabled="busy || loadingFlows"
 						:loading="loadingFlows"
@@ -150,6 +150,57 @@
 						)
 					}}
 				</p>
+
+				<!-- "Run on" per bound flow (REQ-BQSF-001): where the flow
+				     runs, on the app version's schemas only. -->
+				<div
+					v-for="binding in boundFlows"
+					:key="binding.flow"
+					class="app-settings__run-on"
+					:data-test="'app-settings-run-on-' + binding.flow">
+					<h5 class="app-settings__run-on-title">
+						{{ t('buildiq', 'Run on: {flow}', { flow: flowLabel(binding) }) }}
+					</h5>
+					<p v-if="!runOnOf(binding).length" class="app-settings__hint app-settings__hint--inline">
+						{{ t('buildiq', 'Not wired yet. The flow only runs when something else starts it.') }}
+					</p>
+					<div
+						v-for="(entry, index) in runOnOf(binding)"
+						:key="index"
+						class="app-settings__run-on-row"
+						data-test="app-settings-run-on-row">
+						<NcSelect
+							:modelValue="schemaOption(entry.schema)"
+							:options="schemas"
+							:clearable="false"
+							:disabled="busy"
+							:inputLabel="t('buildiq', 'Schema')"
+							@update:modelValue="(option) => setRunOn(binding, index, option && option.value, runOnWhen(entry))" />
+						<NcSelect
+							:modelValue="whenOption(runOnWhen(entry))"
+							:options="whenOptions"
+							:clearable="false"
+							:disabled="busy"
+							:inputLabel="t('buildiq', 'When')"
+							@update:modelValue="(option) => setRunOn(binding, index, entry.schema, option && option.value)" />
+						<NcButton
+							variant="tertiary"
+							:disabled="busy"
+							data-test="app-settings-run-on-remove"
+							@click="removeRunOn(binding, index)">
+							{{ t('buildiq', 'Remove') }}
+						</NcButton>
+					</div>
+					<NcButton
+						:disabled="busy || !schemas.length"
+						data-test="app-settings-run-on-add"
+						@click="addRunOn(binding)">
+						{{ t('buildiq', 'Add where it runs') }}
+					</NcButton>
+					<p v-if="!schemas.length" class="app-settings__hint">
+						{{ t('buildiq', 'This app has no schemas yet, so the flow cannot run on its records.') }}
+					</p>
+				</div>
 			</div>
 		</div>
 	</NcModal>
@@ -162,6 +213,15 @@ import NcModal from '@nextcloud/vue/components/NcModal'
 import NcSelect from '@nextcloud/vue/components/NcSelect'
 import NcTextField from '@nextcloud/vue/components/NcTextField'
 import { fetchConnectedDatabases } from '../composables/useConnectedDatabases.js'
+import {
+	FROM_RECORD,
+	isWrapperBinding,
+	runOnEntry,
+	runOnWhen,
+	withPickedFlows,
+	withRunOn,
+	WRAPPER_PREFIX,
+} from '../utils/flowBindings.js'
 
 export default {
 	name: 'AppSettingsModal',
@@ -198,6 +258,11 @@ export default {
 		availableFlows: { type: Array, default: () => [] },
 		/** Whether the flow list is still being fetched. */
 		loadingFlows: { type: Boolean, default: false },
+		/**
+		 * The app version's schemas, as `{label, value}` options with the
+		 * slug as value: the only schemas a "Run on" entry may name.
+		 */
+		schemas: { type: Array, default: () => [] },
 		/** Whether an action is in flight (disables the switches). */
 		busy: { type: Boolean, default: false },
 	},
@@ -252,7 +317,7 @@ export default {
 		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
 		selectedFlows() {
-			return this.flows.map((binding) => {
+			return this.boundFlows.map((binding) => {
 				const known = this.availableFlows.find(
 					(option) => option.value === binding.flow,
 				)
@@ -268,6 +333,43 @@ export default {
 					}
 				)
 			})
+		},
+
+		/**
+		 * The flows the maker bound, without buildiq's own wrapper flows.
+		 *
+		 * @return {Array<object>} Bindings.
+		 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-bound-flow-declares-where-it-runs-req-bqsf-001
+		 */
+		boundFlows() {
+			return this.flows.filter((binding) => !isWrapperBinding(binding))
+		},
+
+		/**
+		 * The flows a maker may pick: every flow but buildiq's wrappers.
+		 *
+		 * @return {Array<{label: string, value: string}>} Options.
+		 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-bound-flow-declares-where-it-runs-req-bqsf-001
+		 */
+		flowOptions() {
+			return this.availableFlows.filter(
+				(option) => !String(option.label || '').startsWith(WRAPPER_PREFIX),
+			)
+		},
+
+		/**
+		 * The "when" choices of a "Run on" entry.
+		 *
+		 * @return {Array<{label: string, value: string}>} Options.
+		 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-bound-flow-declares-where-it-runs-req-bqsf-001
+		 */
+		whenOptions() {
+			return [
+				{ label: this.t('buildiq', 'Created'), value: 'object.created' },
+				{ label: this.t('buildiq', 'Updated'), value: 'object.updated' },
+				{ label: this.t('buildiq', 'Deleted'), value: 'object.deleted' },
+				{ label: this.t('buildiq', 'From a record'), value: FROM_RECORD },
+			]
 		},
 	},
 
@@ -350,13 +452,112 @@ export default {
 		 * @return {void}
 		 */
 		onFlowsPicked(picked) {
-			this.$emit(
-				'update:flows',
-				(picked || []).map((option) => ({
-					flow: option.value,
-					label: option.label,
-				})),
-			)
+			// A flow that stays picked keeps its binding as it was, `runOn`
+			// included, and buildiq's wrappers travel along untouched.
+			this.$emit('update:flows', withPickedFlows(this.flows, picked))
+		},
+
+		runOnWhen,
+
+		/**
+		 * A bound flow's `runOn` entries.
+		 *
+		 * @param {object} binding The binding.
+		 * @return {Array<object>} Entries.
+		 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-bound-flow-declares-where-it-runs-req-bqsf-001
+		 */
+		runOnOf(binding) {
+			return Array.isArray(binding.runOn) ? binding.runOn : []
+		},
+
+		/**
+		 * The name a bound flow is shown by.
+		 *
+		 * @param {object} binding The binding.
+		 * @return {string} The flow's name.
+		 */
+		flowLabel(binding) {
+			const known = this.availableFlows.find((option) => option.value === binding.flow)
+			return (known && known.label) || binding.label || binding.flow
+		},
+
+		/**
+		 * The picker option of a schema slug; an unknown slug is shown as itself.
+		 *
+		 * @param {string} slug The schema slug.
+		 * @return {?{label: string, value: string}} The option.
+		 */
+		schemaOption(slug) {
+			if (!slug) {
+				return null
+			}
+			return this.schemas.find((option) => option.value === slug) || { label: slug, value: slug }
+		},
+
+		/**
+		 * The picker option of a "when".
+		 *
+		 * @param {string} when The event or `from-record`.
+		 * @return {?{label: string, value: string}} The option.
+		 */
+		whenOption(when) {
+			return this.whenOptions.find((option) => option.value === when) || null
+		},
+
+		/**
+		 * Emit the bindings with one bound flow's entries replaced.
+		 *
+		 * @param {object} binding The binding.
+		 * @param {Array<object>} runOn Its new entries.
+		 * @return {void}
+		 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-bound-flow-declares-where-it-runs-req-bqsf-001
+		 */
+		emitRunOn(binding, runOn) {
+			this.$emit('update:flows', withRunOn(this.flows, binding.flow, runOn))
+		},
+
+		/**
+		 * Add an entry on the first schema, on updates.
+		 *
+		 * @param {object} binding The binding.
+		 * @return {void}
+		 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-bound-flow-declares-where-it-runs-req-bqsf-001
+		 */
+		addRunOn(binding) {
+			if (!this.schemas.length) {
+				return
+			}
+			this.emitRunOn(binding, [...this.runOnOf(binding), runOnEntry(this.schemas[0].value, 'object.updated')])
+		},
+
+		/**
+		 * Change one entry's schema or "when".
+		 *
+		 * @param {object} binding The binding.
+		 * @param {number} index The entry.
+		 * @param {string} schema The schema slug.
+		 * @param {string} when The event or `from-record`.
+		 * @return {void}
+		 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-bound-flow-declares-where-it-runs-req-bqsf-001
+		 */
+		setRunOn(binding, index, schema, when) {
+			if (!schema) {
+				return
+			}
+			const runOn = this.runOnOf(binding).map((entry, at) => (at === index ? runOnEntry(schema, when) : entry))
+			this.emitRunOn(binding, runOn)
+		},
+
+		/**
+		 * Remove one entry.
+		 *
+		 * @param {object} binding The binding.
+		 * @param {number} index The entry.
+		 * @return {void}
+		 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-bound-flow-declares-where-it-runs-req-bqsf-001
+		 */
+		removeRunOn(binding, index) {
+			this.emitRunOn(binding, this.runOnOf(binding).filter((entry, at) => at !== index))
 		},
 
 		/**
@@ -438,6 +639,26 @@ export default {
 </script>
 
 <style scoped>
+.app-settings__run-on {
+	margin-top: 12px;
+	padding: 8px 12px;
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius-large);
+}
+
+.app-settings__run-on-title {
+	margin: 0 0 8px;
+	font-weight: bold;
+}
+
+.app-settings__run-on-row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	align-items: flex-end;
+	margin-bottom: 8px;
+}
+
 .app-settings {
 	padding: 20px 24px 24px;
 	display: flex;
