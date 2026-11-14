@@ -2059,7 +2059,27 @@ OC.L10N.register(
         "Requests under 250 ms": "Requests under 250 ms",
         "Total load time (ms)": "Total load time (ms)",
         "Window start": "Window start",
-        "Include server bundle": "Include server bundle"
+        "Include server bundle": "Include server bundle",
+        "Add a schema in the list to see it in the diagram.": "Add a schema in the list to see it in the diagram.",
+        "and {count} more": "and {count} more",
+        "Data model": "Data model",
+        "Diagram": "Diagram",
+        "List": "List",
+        "many": "many",
+        "No relations": "No relations",
+        "Not found": "Not found",
+        "one": "one",
+        "One or many": "One or many",
+        "Open {schema}": "Open {schema}",
+        "Other register": "Other register",
+        "Relation": "Relation",
+        "Schema you may not read": "Schema you may not read",
+        "Schemas and their relations": "Schemas and their relations",
+        "Show schemas as": "Show schemas as",
+        "The data model could not be loaded": "The data model could not be loaded",
+        "This register has more than {count} schemas, so the boxes show their titles only. The table below lists every relation.": "This register has more than {count} schemas, so the boxes show their titles only. The table below lists every relation.",
+        "This register has no schemas yet": "This register has no schemas yet",
+        "This version ({register})": "This version ({register})"
     },
     "nplurals=2; plural=(n != 1);"
 )
