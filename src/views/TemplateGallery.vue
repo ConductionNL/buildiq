@@ -167,6 +167,14 @@
 				</template>
 			</section>
 
+			<!-- The remote catalogue an administrator configured, between the
+			     built-in templates and GitHub (reuse-remote-store-section). -->
+			<SharedCatalogueSection
+				ref="sharedCatalogue"
+				:category="templateCategory || ''"
+				:categoryLabel="categoryLabel"
+				@install="openStoreInstall" />
+
 			<h2 class="template-gallery__section-title">
 				{{ t('buildiq', 'Apps on GitHub') }}
 			</h2>
@@ -359,9 +367,12 @@
 			:template="cloneTarget"
 			:github="cloneMode === 'github'"
 			:githubRepo="cloneGithubRepo"
+			:remote="cloneMode === 'store'"
+			:remoteSlug="cloneMode === 'store' ? cloneTarget?.slug || '' : ''"
 			@close="cloneOpen = false"
 			@submit="onCloneSubmit"
-			@installed="onInstalled" />
+			@installed="onInstalled"
+			@stale="onStaleStoreTemplate" />
 	</div>
 </template>
 
@@ -378,6 +389,7 @@ import {
 	NcTextField,
 } from '@nextcloud/vue'
 import FormLibraryView from '../components/store/FormLibraryView.vue'
+import SharedCatalogueSection from '../components/store/SharedCatalogueSection.vue'
 import CloneTemplateDialog from '../modals/CloneTemplateDialog.vue'
 import {
 	blocksInCategory,
@@ -420,6 +432,7 @@ export default {
 		NcTextField,
 		CloneTemplateDialog,
 		FormLibraryView,
+		SharedCatalogueSection,
 	},
 
 	data() {
@@ -427,7 +440,8 @@ export default {
 			cloneOpen: false,
 			cloneTarget: null,
 			cloneGithubRepo: null,
-			// 'local' for a built-in template, 'github' for a GitHub app.
+			// 'local' for a built-in template, 'github' for a GitHub app,
+			// 'store' for a template of the shared catalogue.
 			cloneMode: 'github',
 			// Built-in templates (application-template records).
 			templates: [],
@@ -827,6 +841,34 @@ export default {
 			}
 			this.cloneGithubRepo = { owner: card.owner, repo: card.repo }
 			this.cloneOpen = true
+		},
+
+		/**
+		 * Open the clone dialog to install a shared-catalogue template, in store mode.
+		 *
+		 * @param {object} card The catalogue card.
+		 * @return {void}
+		 * @spec openspec/changes/reuse-remote-store-section/specs/template-catalogue-ui/spec.md#requirement-a-maker-installs-a-catalogue-template-req-bqrs-004
+		 */
+		openStoreInstall(card) {
+			this.cloneMode = 'store'
+			this.cloneGithubRepo = null
+			this.cloneTarget = {
+				title: card.title || card.slug,
+				slug: card.slug,
+				description: card.description,
+			}
+			this.cloneOpen = true
+		},
+
+		/**
+		 * A template that left the catalogue: read the section again.
+		 *
+		 * @return {void}
+		 * @spec openspec/changes/reuse-remote-store-section/specs/template-catalogue-ui/spec.md#requirement-a-maker-installs-a-catalogue-template-req-bqrs-004
+		 */
+		onStaleStoreTemplate() {
+			this.$refs.sharedCatalogue?.reload()
 		},
 
 		/**

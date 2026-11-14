@@ -536,7 +536,7 @@
 				"schema": "application-template",
 				"documentationUrl": "https://buildiq.conduction.nl"
 			},
-			"_note": "Templates renders the store-aware TemplateGallery view (buildiq-remote-template-store): when a registry is configured the remote store search is the primary surface with built-in templates secondary; with no registry it falls back to the built-in templates as today. Install clones via CloneTemplateDialog."
+			"_note": "Templates renders the TemplateGallery view: built-in templates first, then the shared catalogue section (reuse-remote-store-section, SharedCatalogueSection) when an administrator configured a remote catalogue, then apps on GitHub. With no catalogue the section is absent. Install opens CloneTemplateDialog: clone for a built-in template, store install for a catalogue template, GitHub install for a GitHub app."
 		},
 		{
 			"id": "SchemaDesignerList",
