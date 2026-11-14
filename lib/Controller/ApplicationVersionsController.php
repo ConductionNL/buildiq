@@ -48,7 +48,6 @@ use DateTimeInterface;
 use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Kernel\Contracts\ApplicationVersionServiceInterface;
 use OCA\Buildiq\Service\Branch\VersionBranchRefused;
-use OCA\Buildiq\Service\Branch\VersionBranchService;
 use OCA\Buildiq\Service\Branch\VersionMergeRequest;
 use OCA\Buildiq\Service\Branch\VersionMergeRunner;
 use OCA\Buildiq\Support\ObjectRecord;
@@ -132,8 +131,7 @@ class ApplicationVersionsController extends Controller {
 	 * @param IGroupManager $groupManager Group membership resolver
 	 * @param ApplicationVersionServiceInterface $versionService Owner of the imperative logic
 	 * @param AuditTrailMapper|null $auditTrailMapper Optional OR audit-trail writer (null until OR loaded)
-	 * @param VersionBranchService|null $branches Starts a branch (lifecycle-git-branches)
-	 * @param VersionMergeRunner|null $merges Previews and applies a merge (lifecycle-git-branches)
+	 * @param VersionMergeRunner|null $merges Starts a branch, previews and applies a merge (lifecycle-git-branches)
 	 *
 	 * @return void
 	 */
@@ -147,7 +145,6 @@ class ApplicationVersionsController extends Controller {
 		private readonly IGroupManager $groupManager,
 		private readonly ApplicationVersionServiceInterface $versionService,
 		private readonly ?AuditTrailMapper $auditTrailMapper = null,
-		private readonly ?VersionBranchService $branches = null,
 		private readonly ?VersionMergeRunner $merges = null,
 	) {
 		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
@@ -349,7 +346,7 @@ class ApplicationVersionsController extends Controller {
 	#[UserRateLimit(limit: 10, period: 60)]
 	public function branch(string $appSlug, string $versionSlug): JSONResponse {
 		$authError = $this->requireRole(slug: $appSlug, roles: self::WRITE_ROLES);
-		if ($authError !== null || $this->branches === null) {
+		if ($authError !== null || $this->merges === null) {
 			return $authError ?? $this->errorResponse(code: 'unavailable', status: Http::STATUS_SERVICE_UNAVAILABLE);
 		}
 
@@ -365,7 +362,7 @@ class ApplicationVersionsController extends Controller {
 		}
 
 		return $this->branchRun(
-			run: fn (): array => $this->branches->start(application: $application, source: $source, name: $name),
+			run: fn (): array => $this->merges->branches->start(application: $application, source: $source, name: $name),
 			status: Http::STATUS_CREATED
 		);
 	}//end branch()
@@ -421,14 +418,14 @@ class ApplicationVersionsController extends Controller {
 			return null;
 		}
 
-		$choices = $this->request->getParam('choices', []);
-
 		return new VersionMergeRequest(
 			source: $from,
 			target: $into,
-			choices: array_filter((array)$choices, 'is_string'),
-			targetHash: (string)$this->request->getParam('targetHash', ''),
-			acknowledgeBreaking: in_array($this->request->getParam('acknowledgeBreaking'), [true, 'true'], true)
+			resolution: [
+				'choices' => $this->request->getParam('choices', []),
+				'targetHash' => $this->request->getParam('targetHash', ''),
+				'acknowledgeBreaking' => $this->request->getParam('acknowledgeBreaking'),
+			]
 		);
 	}//end mergeRequest()
 

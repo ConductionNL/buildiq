@@ -36,20 +36,45 @@ final class VersionMergeRequest {
 	/**
 	 * Constructor.
 	 *
-	 * @param array<string,mixed>  $source              The version merged in.
-	 * @param array<string,mixed>  $target              The version merged into.
-	 * @param array<string,string> $choices             Conflict unit to `source` or `target`.
-	 * @param string               $targetHash          The target hash the preview returned.
-	 * @param bool                 $acknowledgeBreaking Whether a breaking schema change is confirmed.
+	 * @param array<string,mixed> $source     The version merged in.
+	 * @param array<string,mixed> $target     The version merged into.
+	 * @param array<string,mixed> $resolution For an apply: `choices` (conflict unit to `source` or
+	 *                                        `target`), the previewed `targetHash`, and
+	 *                                        `acknowledgeBreaking` for a breaking schema change.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		public readonly array $source,
 		public readonly array $target,
-		public readonly array $choices=[],
-		public readonly string $targetHash='',
-		public readonly bool $acknowledgeBreaking=false,
+		private readonly array $resolution=[],
 	) {
 	}//end __construct()
+
+	/**
+	 * The side chosen per conflict unit; only string choices count.
+	 *
+	 * @return array<string,string>
+	 */
+	public function choices(): array {
+		return array_filter((array)($this->resolution['choices'] ?? []), 'is_string');
+	}//end choices()
+
+	/**
+	 * The target hash the preview returned.
+	 *
+	 * @return string
+	 */
+	public function targetHash(): string {
+		return (string)($this->resolution['targetHash'] ?? '');
+	}//end targetHash()
+
+	/**
+	 * Whether the maker confirmed a breaking schema change.
+	 *
+	 * @return bool
+	 */
+	public function acknowledgeBreaking(): bool {
+		return in_array(($this->resolution['acknowledgeBreaking'] ?? false), [true, 'true'], true);
+	}//end acknowledgeBreaking()
 }//end class

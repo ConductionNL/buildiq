@@ -168,8 +168,7 @@ final class VersionMergeControllerTest extends TestCase {
 			userSession: $session,
 			groupManager: $groups,
 			versionService: $versions,
-			branches: $branches,
-			merges: new VersionMergeRunner(merger: new VersionMergeService(), state: $state, schemas: $writer, branches: $branches, versions: $versions, objects: $objects)
+			merges: new VersionMergeRunner(merger: new VersionMergeService(), schemas: $writer, branches: $branches, objects: $objects)
 		);
 	}//end controller()
 

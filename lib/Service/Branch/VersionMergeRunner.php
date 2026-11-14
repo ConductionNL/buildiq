@@ -32,7 +32,6 @@ namespace OCA\Buildiq\Service\Branch;
 
 use InvalidArgumentException;
 use OCA\Buildiq\Kernel\Contracts\ApplicationVersionServiceInterface;
-use OCA\Buildiq\Service\ApplicationVersionService;
 use OCA\Buildiq\Service\VersionMergeService;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
@@ -47,21 +46,17 @@ class VersionMergeRunner {
 	/**
 	 * Constructor.
 	 *
-	 * @param VersionMergeService       $merger   The three-way merge.
-	 * @param VersionState              $state    Reads and restores the neutral states.
-	 * @param VersionSchemaWriter       $schemas  Saves the merged schemas.
-	 * @param VersionBranchService      $branches Builds the target's new `branchBase`.
-	 * @param ApplicationVersionService $versions Hashes manifests and stamps the semver.
-	 * @param ObjectServiceInterface    $objects  Saves the target version.
+	 * @param VersionMergeService    $merger   The three-way merge.
+	 * @param VersionSchemaWriter    $schemas  Saves the merged schemas.
+	 * @param VersionBranchService   $branches Builds the new `branchBase`; holds the state reader and version service.
+	 * @param ObjectServiceInterface $objects  Saves the target version.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly VersionMergeService $merger,
-		private readonly VersionState $state,
 		private readonly VersionSchemaWriter $schemas,
-		private readonly VersionBranchService $branches,
-		private readonly ApplicationVersionService $versions,
+		public readonly VersionBranchService $branches,
 		private readonly ObjectServiceInterface $objects,
 	) {
 	}//end __construct()
@@ -102,18 +97,18 @@ class VersionMergeRunner {
 	 */
 	public function apply(array $application, VersionMergeRequest $request): array {
 		$states = $this->states(application: $application, request: $request);
-		if ($request->targetHash !== $this->hashOf(version: $request->target)) {
+		if ($request->targetHash() !== $this->hashOf(version: $request->target)) {
 			throw new VersionBranchRefused(errorCode: 'target_changed', detail: 'The target version changed after the preview. Preview the merge again.');
 		}
 
 		try {
-			$merged = $this->merger->apply(base: $states['base'], source: $states['source'], target: $states['target'], choices: $request->choices);
+			$merged = $this->merger->apply(base: $states['base'], source: $states['source'], target: $states['target'], choices: $request->choices());
 		} catch (InvalidArgumentException $e) {
 			throw new VersionBranchRefused(errorCode: 'unresolved_conflicts', detail: $e->getMessage());
 		}
 
 		$breaking = VersionSchemaWriter::breakingChanges(current: $states['target']['schemas'], merged: $merged['schemas']);
-		if ($breaking !== [] && $request->acknowledgeBreaking === false) {
+		if ($breaking !== [] && $request->acknowledgeBreaking() === false) {
 			throw new VersionBranchRefused(errorCode: 'breaking_change', detail: 'The merge makes a breaking schema change: ' . implode(' ', $breaking));
 		}
 
@@ -135,13 +130,13 @@ class VersionMergeRunner {
 		$current = $request->target;
 		$next    = $current;
 		unset($next['@self']);
-		$next['manifest']   = $this->state->restore(manifest: $manifest, version: $current);
+		$next['manifest']   = $this->branches->state->restore(manifest: $manifest, version: $current);
 		$next['branchBase'] = $this->branches->baseOf(source: $request->source, snapshot: $source);
 		$uuid = (string)($current['id'] ?? $current['uuid'] ?? '');
 
 		return ObjectRecord::toArray(
 			object: $this->objects->saveObject(
-				object: $this->versions->onSave(current: $current, next: $next),
+				object: $this->branches->versions->onSave(current: $current, next: $next),
 				register: ApplicationVersionServiceInterface::REGISTER_SLUG,
 				schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA,
 				uuid: $uuid
@@ -169,8 +164,8 @@ class VersionMergeRunner {
 
 		return [
 			'base' => $base,
-			'source' => $this->state->read(version: $request->source),
-			'target' => $this->state->read(version: $request->target),
+			'source' => $this->branches->state->read(version: $request->source),
+			'target' => $this->branches->state->read(version: $request->target),
 		];
 	}//end states()
 
@@ -212,6 +207,6 @@ class VersionMergeRunner {
 			$manifest = $version['manifest'];
 		}
 
-		return $this->versions->hashManifest(manifest: $manifest);
+		return $this->branches->versions->hashManifest(manifest: $manifest);
 	}//end hashOf()
 }//end class

@@ -57,8 +57,8 @@ class VersionBranchService {
 	public function __construct(
 		private readonly RegisterStore $store,
 		private readonly VersionSchemaWriter $schemas,
-		private readonly VersionState $state,
-		private readonly ApplicationVersionService $versions,
+		public readonly VersionState $state,
+		public readonly ApplicationVersionService $versions,
 	) {
 	}//end __construct()
 
