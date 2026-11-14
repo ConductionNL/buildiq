@@ -272,7 +272,25 @@
 				"x-openregister-demo-data": "One person's half-filled form, owner-only. A generated draft belongs to a user who does not exist, so nobody can ever open it.",
 				"slug": "formDraft",
 				"icon": "ContentSaveEditOutline",
-				"version": "0.1.0",
+				"version": "0.2.0",
+				"authorization": {
+					"create": [
+						"authenticated"
+					],
+					"read": [
+						{
+							"group": "authenticated",
+							"match": {
+								"userId": "$userId"
+							}
+						}
+					]
+				},
+				"x-openregister-archival": {
+					"retention": {
+						"default": "P30D"
+					}
+				},
 				"title": "Form Draft",
 				"description": "A half-filled registration form belonging to one person. Owner-only: the values are that person's own answers, often personal data, and nobody else has a reason to read them. Drafts are the one append the leaf allows, because they are buildiq's own data and nothing else's (ADR-066).",
 				"x-openregister-audit-trail": {

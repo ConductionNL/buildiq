@@ -263,6 +263,84 @@
       {
         "@self": {
           "register": "buildiq",
+          "schema": "registrationForm",
+          "slug": "form-dossiq-case-bouwvergunning"
+        },
+        "name": "bouwvergunning-aanvraag",
+        "audience": "client",
+        "isDefault": true,
+        "targetApp": "dossiq",
+        "register": "dossiq",
+        "schema": "case",
+        "typeProperty": "caseType",
+        "typeValue": "bouwvergunning",
+        "fields": [
+          {
+            "name": "initiatorType",
+            "label": "U vraagt aan als",
+            "type": "select",
+            "required": true,
+            "options": [
+              {
+                "value": "person",
+                "label": "Particulier"
+              },
+              {
+                "value": "company",
+                "label": "Bedrijf"
+              }
+            ]
+          },
+          {
+            "name": "initiatorDisplayName",
+            "label": "Naam van het bedrijf",
+            "type": "text",
+            "required": true,
+            "visibleWhen": {
+              "field": "initiatorType",
+              "op": "eq",
+              "value": "company"
+            }
+          },
+          {
+            "name": "title",
+            "label": "Wat wilt u bouwen?",
+            "type": "text",
+            "required": true
+          },
+          {
+            "name": "description",
+            "label": "Beschrijf het bouwwerk",
+            "type": "textarea"
+          }
+        ],
+        "steps": [
+          {
+            "id": "aanvrager",
+            "title": "Aanvrager",
+            "phase": "Aanvrager",
+            "fields": [
+              "initiatorType",
+              "initiatorDisplayName"
+            ]
+          },
+          {
+            "id": "bouwwerk",
+            "title": "Bouwwerk",
+            "phase": "Bouwwerk",
+            "fields": [
+              "title",
+              "description"
+            ]
+          }
+        ],
+        "formLogic": {},
+        "allowSaveForLater": true,
+        "status": "published"
+      },
+      {
+        "@self": {
+          "register": "buildiq",
           "schema": "pageLayout",
           "slug": "layout-dossiq-case-evenementenvergunning"
         },
