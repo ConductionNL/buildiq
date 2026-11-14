@@ -68,6 +68,11 @@
 						"default": true,
 						"description": "Whether the automation is active. Disabling recompiles with every artifact's own enabled switch off; artifacts stay in place (design.md Decision 5)."
 					},
+					"disabledReason": {
+						"title": "Disabled Reason",
+						"type": "string",
+						"description": "Why buildiq switched this automation off: the step it could not run, for example a record step on a lifecycle transition (logic-automation-actions-that-run D9). Shown on the automations page. Absent while the automation runs."
+					},
 					"trigger": {
 						"title": "Trigger",
 						"type": "object",
