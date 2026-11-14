@@ -30,8 +30,8 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Listener;
 
 use OCA\Buildiq\Kernel\Contracts\ApplicationVersionServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\DeviceFeaturesInterface;
 use OCA\Buildiq\Kernel\Contracts\ObjectSchemaSlugResolverInterface;
-use OCA\Buildiq\Service\DeviceFeatures;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
 use OCP\EventDispatcher\Event;
@@ -50,13 +50,13 @@ class DeviceFeaturesListener implements IEventListener {
 	 * Constructor
 	 *
 	 * @param ObjectSchemaSlugResolverInterface $slugs    Tells an ApplicationVersion apart.
-	 * @param DeviceFeatures                    $features Derives the features.
+	 * @param DeviceFeaturesInterface           $features Derives the features.
 	 *
 	 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
 	 */
 	public function __construct(
 		private readonly ObjectSchemaSlugResolverInterface $slugs,
-		private readonly DeviceFeatures $features,
+		private readonly DeviceFeaturesInterface $features,
 	) {
 	}//end __construct()
 

@@ -30,6 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\DeviceFeaturesInterface;
 use OCP\AppFramework\Http\FeaturePolicy;
 
 /**
@@ -37,7 +38,7 @@ use OCP\AppFramework\Http\FeaturePolicy;
  *
  * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
  */
-class DeviceFeatures {
+class DeviceFeatures implements DeviceFeaturesInterface {
 
 	/**
 	 * The microphone, for an audio form field.

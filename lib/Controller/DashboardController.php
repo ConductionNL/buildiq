@@ -32,8 +32,8 @@ namespace OCA\Buildiq\Controller;
 
 use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Kernel\Contracts\AppNavigationServiceInterface;
-use OCA\Buildiq\Service\DeviceFeatures;
-use OCA\Buildiq\Service\PublishedApplicationProvider;
+use OCA\Buildiq\Kernel\Contracts\DeviceFeaturesInterface;
+use OCA\Buildiq\Kernel\Contracts\PublishedApplicationProviderInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
@@ -62,8 +62,8 @@ class DashboardController extends Controller {
 	 * @param IUserSession $userSession Current Nextcloud user session
 	 * @param IGroupManager $groupManager Group membership resolver
 	 * @param INavigationManager $navigationManager Top-bar navigation manager
-	 * @param PublishedApplicationProvider|null $publishedApps The published apps, to read a served app's device features
-	 * @param DeviceFeatures|null $deviceFeatures Turns device features into the page's feature policy
+	 * @param PublishedApplicationProviderInterface|null $publishedApps The published apps, to read a served app's device features
+	 * @param DeviceFeaturesInterface|null $deviceFeatures Turns device features into the page's feature policy
 	 *
 	 * @return void
 	 */
@@ -73,8 +73,8 @@ class DashboardController extends Controller {
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 		private readonly INavigationManager $navigationManager,
-		private readonly ?PublishedApplicationProvider $publishedApps=null,
-		private readonly ?DeviceFeatures $deviceFeatures=null,
+		private readonly ?PublishedApplicationProviderInterface $publishedApps=null,
+		private readonly ?DeviceFeaturesInterface $deviceFeatures=null,
 	) {
 		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
