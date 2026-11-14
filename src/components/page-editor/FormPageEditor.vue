@@ -159,6 +159,8 @@
 				:modelValue="config.fields || []"
 				:findings="findingsPerField"
 				:formMode="config.mode || 'public'"
+				:schemas="schemas"
+				:parentSchema="targetSchema || ''"
 				showLogic
 				@update:modelValue="update('fields', $event)" />
 			<InlineFieldMark :error="markFor('fields')" />

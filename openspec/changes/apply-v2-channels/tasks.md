@@ -2,8 +2,8 @@
 
 ### 1. Report structure
 
-- [ ] Add `lib/Service/ChannelApplyReport.php` — per-channel counts (`declared`, `created`, `skipped`, `failed`, `truncated`), per-item outcomes with reasons, and a `needsCredentials` list
-- [ ] Enforce the balance identity `created + skipped + failed == declared` inside the report itself, throwing when it does not hold
+- [x] Add `lib/Service/ChannelApplyReport.php` — per-channel counts (`declared`, `created`, `skipped`, `failed`, `truncated`), per-item outcomes with reasons, and a `needsCredentials` list
+- [x] Enforce the balance identity `created + skipped + failed == declared` inside the report itself, throwing when it does not hold
 
 Acceptance criteria
 - A dropped item cannot be represented — constructing an unbalanced report fails
@@ -11,10 +11,10 @@ Acceptance criteria
 
 ### 2. Applier skeleton and both seams
 
-- [ ] Add `lib/Service/AppChannelApplier.php` with one entry point taking the parsed template plus repo coordinates
-- [ ] Call the applier from `GitHubAppSyncService::pull()` after the draft Version is saved, and surface the report in its return array
-- [ ] Call the applier from `ApplicationsController::installFromTemplateArray()`, and surface the report through `ShopController::githubInstall()`
-- [ ] Detect optional apps via `IAppManager` and skip the dependent channel with `openconnector-unavailable` / `hermiq-unavailable`, preserving the declared count
+- [x] Add `lib/Service/AppChannelApplier.php` with one entry point taking the parsed template plus repo coordinates
+- [x] Call the applier from `GitHubAppSyncService::pull()` after the draft Version is saved, and surface the report in its return array
+- [x] Call the applier from `ApplicationsController::installFromTemplateArray()`, and surface the report through `ShopController::githubInstall()`
+- [x] Detect optional apps via `IAppManager` and skip the dependent channel with `openconnector-unavailable` / `hermiq-unavailable`, preserving the declared count
 
 Acceptance criteria
 - A v1 template installs exactly as before, with a zero-declared report
@@ -22,8 +22,8 @@ Acceptance criteria
 
 ### 3. Data registers
 
-- [ ] Apply the `dataRegisters` channel: create absent registers and schemas, skip existing ones as `already-exists`, never mutate
-- [ ] Bound at `MAX_REGISTERS = 64` with truncation logged and counted
+- [x] Apply the `dataRegisters` channel: create absent registers and schemas, skip existing ones as `already-exists`, never mutate
+- [x] Bound at `MAX_REGISTERS = 64` with truncation logged and counted
 
 Acceptance criteria
 - An existing register keeps its schemas and shape untouched
@@ -31,10 +31,10 @@ Acceptance criteria
 
 ### 4. Connectors
 
-- [ ] Apply the four `CONNECTOR_KINDS` via `saveObject(uuid: <published uuid>, failIfExists: true)` so bindings resolve and a collision cannot overwrite
-- [ ] Record a collision as skipped with reason `already-exists`, and continue with the remaining connectors
-- [ ] Collect every unresolvable `credentialRef` into `needsCredentials`, naming the credential and the connector that needs it
-- [ ] Bound at `MAX_CONNECTORS_PER_KIND = 2048` with truncation logged and counted
+- [x] Apply the four `CONNECTOR_KINDS` via `saveObject(uuid: <published uuid>, failIfExists: true)` so bindings resolve and a collision cannot overwrite
+- [x] Record a collision as skipped with reason `already-exists`, and continue with the remaining connectors
+- [x] Collect every unresolvable `credentialRef` into `needsCredentials`, naming the credential and the connector that needs it
+- [x] Bound at `MAX_CONNECTORS_PER_KIND = 2048` with truncation logged and counted
 
 Acceptance criteria
 - The existing object is byte-identical after a colliding apply
@@ -42,8 +42,8 @@ Acceptance criteria
 
 ### 5. Skills and automations
 
-- [ ] Delegate the `skills` channel to hermiq bundle install by owner/repo/ref, carrying hermiq's installed and skipped counts into the report unmodified
-- [ ] Apply the `automations` channel with the same create-or-skip rules, bounded at `MAX_AUTOMATIONS = 512`
+- [x] Delegate the `skills` channel to hermiq bundle install by owner/repo/ref, carrying hermiq's installed and skipped counts into the report unmodified
+- [x] Apply the `automations` channel with the same create-or-skip rules, bounded at `MAX_AUTOMATIONS = 512`
 
 Acceptance criteria
 - Buildiq parses no skill frontmatter and places no aux files itself
@@ -51,7 +51,7 @@ Acceptance criteria
 
 ### 6. Tests
 
-- [ ] Unit-test the balance identity, collision skip, optional-dependency degradation, truncation reporting and credential collection, then mutation-check the collision test by removing `failIfExists` and confirming it fails
+- [x] Unit-test the balance identity, collision skip, optional-dependency degradation, truncation reporting and credential collection, then mutation-check the collision test by removing `failIfExists` and confirming it fails
 
 Acceptance criteria
 - Every new test is proven capable of failing before it is trusted
@@ -69,7 +69,7 @@ Acceptance criteria
 
 ### 8. Quality
 
-- [ ] Run phpstan explicitly with `vendor/` installed — the local gate suite silently skips it when `vendor/` is absent, so gate-green does not imply phpstan-green
+- [x] Run phpstan explicitly with `vendor/` installed — the local gate suite silently skips it when `vendor/` is absent, so gate-green does not imply phpstan-green
 - [ ] Run `composer check:strict` and the hydra gates, and open the PR
 
 Acceptance criteria
