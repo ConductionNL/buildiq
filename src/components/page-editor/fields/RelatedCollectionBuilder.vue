@@ -78,7 +78,7 @@ import { FieldSelect, InlineFieldMark, RegisterSchemaPicker } from './entryBuild
 /**
  * The filter token the detail page replaces with the open record's id.
  */
-export const OBJECT_ID_TOKEN = '@objectId'
+export const OBJECT_ID_PLACEHOLDER = '@objectId'
 
 /**
  * The row limit the detail page applies when an entry names none.
@@ -118,7 +118,7 @@ export default {
 		 */
 		linkFieldOf(entry) {
 			const filter = (entry && entry.filter) || {}
-			return Object.keys(filter).find((key) => filter[key] === OBJECT_ID_TOKEN) || ''
+			return Object.keys(filter).find((key) => filter[key] === OBJECT_ID_PLACEHOLDER) || ''
 		},
 
 		/**
@@ -172,12 +172,12 @@ export default {
 			const entry = this.localEntries[index] || {}
 			const filter = {}
 			Object.entries(entry.filter || {}).forEach(([key, value]) => {
-				if (value !== OBJECT_ID_TOKEN) {
+				if (value !== OBJECT_ID_PLACEHOLDER) {
 					filter[key] = value
 				}
 			})
 			if (field !== '') {
-				filter[field] = OBJECT_ID_TOKEN
+				filter[field] = OBJECT_ID_PLACEHOLDER
 			}
 			const { filter: _f, ...rest } = entry
 			this.replace(index, Object.keys(filter).length === 0 ? rest : { ...rest, filter })
