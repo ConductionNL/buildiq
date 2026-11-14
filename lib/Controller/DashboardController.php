@@ -32,6 +32,7 @@ namespace OCA\Buildiq\Controller;
 
 use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Kernel\Contracts\AppNavigationServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\SettingsServiceInterface;
 use OCA\Buildiq\Service\Icon\SvgRasteriser;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -61,6 +62,7 @@ class DashboardController extends Controller {
 	 * @param IGroupManager $groupManager Group membership resolver
 	 * @param INavigationManager $navigationManager Top-bar navigation manager
 	 * @param SvgRasteriser $rasteriser Whether the run page can offer a PNG touch icon
+	 * @param SettingsServiceInterface|null $settings Whether the instance lets apps work offline.
 	 *
 	 * @return void
 	 */
@@ -71,6 +73,7 @@ class DashboardController extends Controller {
 		private readonly IGroupManager $groupManager,
 		private readonly INavigationManager $navigationManager,
 		private readonly SvgRasteriser $rasteriser=new SvgRasteriser(),
+		private readonly ?SettingsServiceInterface $settings=null,
 	) {
 		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
@@ -91,6 +94,7 @@ class DashboardController extends Controller {
 	#[NoCSRFRequired]
 	public function page(): TemplateResponse {
 		$this->publishCurrentUserGroups();
+		$this->publishOfflineAllowed();
 		return new TemplateResponse(AppIdentity::APP_ID, 'index');
 	}//end page()
 
@@ -135,6 +139,7 @@ class DashboardController extends Controller {
 		// shows Buildiq's name and icon instead of the virtual app's.
 		$this->navigationManager->setActiveEntry(AppNavigationServiceInterface::ENTRY_ID_PREFIX . $slug);
 		$this->publishCurrentUserGroups();
+		$this->publishOfflineAllowed();
 		$this->initialState->provideInitialState('builderSlug', $slug);
 		$this->initialState->provideInitialState(
 			'builderVersion',
@@ -284,4 +289,27 @@ class DashboardController extends Controller {
 
 		$this->initialState->provideInitialState('currentUserGroups', $gids);
 	}//end publishCurrentUserGroups()
+
+	/**
+	 * Publish whether this instance lets apps work offline.
+	 *
+	 * The app settings show the maker's Offline section only when it is on,
+	 * and the runtime registers no worker while it is off (design D3). Off
+	 * when the setting cannot be read: nothing is kept on a device unless an
+	 * administrator said so.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-offline-is-the-administrators-choice-first-req-bqom-002
+	 */
+	private function publishOfflineAllowed(): void {
+		$allowed = false;
+		try {
+			$allowed = ($this->settings?->offlineAppsAllowed() === true);
+		} catch (\Throwable $e) {
+			$allowed = false;
+		}
+
+		$this->initialState->provideInitialState('offlineAppsAllowed', $allowed);
+	}//end publishOfflineAllowed()
 }//end class

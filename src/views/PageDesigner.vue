@@ -94,8 +94,11 @@
 						v-bind="stubEditorProps(selectedPage.type)"
 						:pageId="selectedPage.id || ''"
 						:runtimeExternalForms="externalForms"
+						:offlineAllowed="offlineAllowed"
+						:offlineForms="offlineFormIds"
 						@update:config="onConfigUpdate"
-						@update:runtimeExternalForms="onExternalFormsUpdate" />
+						@update:runtimeExternalForms="onExternalFormsUpdate"
+						@update:offlineForms="onOfflineFormsUpdate" />
 					<!-- v2-widget-placement-editor task 3.4: the placement
 					     editor for the page's uniform v2 widgets[] array. It
 					     sits beside WidgetSelectionPanel, which keeps "save as
@@ -222,6 +225,7 @@
 <script>
 import { defaultPageTypes, mergeManifestDelta } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
+import { loadState } from '@nextcloud/initial-state'
 import { translate as ncT } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcAppSidebar } from '@nextcloud/vue'
@@ -257,6 +261,7 @@ import registry from '../registry.js'
 import { versionRegister } from '../services/appRegister.js'
 import { findingsForPage } from '../services/formDestinationCheck.js'
 import { resolveValidationMessage as resolveMessage } from '../services/manifestValidation/connectorErrorMessages.js'
+import { offlineForms, withOffline } from '../services/offlineManifest.js'
 import { isEditableTarget } from '../utils/isEditableTarget.js'
 import { mirrorVersionLoad } from '../utils/mirrorVersionLoad.js'
 
@@ -389,6 +394,8 @@ export default {
 
 	data() {
 		return {
+			// Whether the instance lets apps work offline (REQ-BQOM-002).
+			offlineAllowed: loadState('buildiq', 'offlineAppsAllowed', false) === true,
 			// The live preview's error log; it stays in this tab.
 			debugLog: useDebugLog(),
 			selectedIndex: -1,
@@ -472,6 +479,16 @@ export default {
 		 * @return {Array<object>}
 		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-001
 		 */
+		/**
+		 * The manifest's offline form page ids (REQ-BQOM-003).
+		 *
+		 * @return {Array<string>}
+		 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T04
+		 */
+		offlineFormIds() {
+			return offlineForms(this.manifest)
+		},
+
 		externalForms() {
 			return Array.isArray(
 				this.manifest
@@ -1131,6 +1148,19 @@ export default {
 		 * @return {void}
 		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-001
 		 */
+		/**
+		 * Write the offline form page ids onto the manifest; the "Waiting to
+		 * sync" page follows them (REQ-BQOM-005).
+		 *
+		 * @param {Array<string>} forms The offline form page ids.
+		 * @return {void}
+		 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T04
+		 */
+		onOfflineFormsUpdate(forms) {
+			const current = (this.manifest && this.manifest.offline) || {}
+			this.emitManifest(withOffline(this.manifest, { takeAlong: current.takeAlong || [], forms }))
+		},
+
 		onExternalFormsUpdate(list) {
 			const next = { ...(this.manifest || {}) }
 			const runtime = { ...(next.runtime || {}) }

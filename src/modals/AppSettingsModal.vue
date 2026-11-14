@@ -191,6 +191,69 @@
 					{{ t('buildiq', 'Use the browser colour') }}
 				</NcButton>
 			</div>
+			<div
+				v-if="offlineAllowed"
+				class="app-settings__row"
+				data-test="app-settings-offline">
+				<h4 class="app-settings__subtitle">
+					{{ t('buildiq', 'Offline') }}
+				</h4>
+				<p class="app-settings__hint app-settings__hint--inline">
+					{{
+						t(
+							'buildiq',
+							'Records this app takes along to the device, for use without a connection. Form pages that work offline are switched on in the page designer.',
+						)
+					}}
+				</p>
+				<div
+					v-for="(row, index) in takeAlongRows"
+					:key="index"
+					class="app-settings__take-along"
+					data-test="app-settings-take-along-row">
+					<NcTextField
+						:modelValue="row.schema"
+						:label="t('buildiq', 'Schema')"
+						:disabled="busy"
+						@update:modelValue="row.schema = $event"
+						@blur="emitOffline" />
+					<NcTextField
+						:modelValue="row.filter"
+						:label="t('buildiq', 'Filter')"
+						:helperText="filterHelp"
+						:error="row.filterInvalid"
+						:disabled="busy"
+						@update:modelValue="row.filter = $event"
+						@blur="emitOffline" />
+					<NcTextField
+						type="number"
+						:modelValue="String(row.limit)"
+						:label="t('buildiq', 'At most this many records (up to 500)')"
+						:disabled="busy"
+						@update:modelValue="row.limit = $event"
+						@blur="emitOffline" />
+					<NcTextField
+						type="number"
+						:modelValue="String(row.ttlHours)"
+						:label="t('buildiq', 'Usable for this many hours (up to 72)')"
+						:disabled="busy"
+						@update:modelValue="row.ttlHours = $event"
+						@blur="emitOffline" />
+					<NcButton
+						variant="tertiary"
+						:disabled="busy"
+						:aria-label="t('buildiq', 'Remove')"
+						@click="removeTakeAlong(index)">
+						{{ t('buildiq', 'Remove') }}
+					</NcButton>
+				</div>
+				<NcButton
+					:disabled="busy"
+					data-test="app-settings-add-take-along"
+					@click="addTakeAlong">
+					{{ t('buildiq', 'Add records to take along') }}
+				</NcButton>
+			</div>
 		</div>
 	</NcModal>
 </template>
@@ -202,6 +265,7 @@ import NcModal from '@nextcloud/vue/components/NcModal'
 import NcSelect from '@nextcloud/vue/components/NcSelect'
 import NcTextField from '@nextcloud/vue/components/NcTextField'
 import { fetchConnectedDatabases } from '../composables/useConnectedDatabases.js'
+import { normaliseOffline, OFFLINE_LIMIT_DEFAULT, OFFLINE_TTL_DEFAULT } from '../services/offlineManifest.js'
 
 export default {
 	name: 'AppSettingsModal',
@@ -242,6 +306,10 @@ export default {
 		shortName: { type: String, default: '' },
 		/** The installed app's theme colour (`Application.themeColor`), '' for none. */
 		themeColor: { type: String, default: '' },
+		/** Whether the instance lets apps work offline; hides the Offline section when not. */
+		offlineAllowed: { type: Boolean, default: false },
+		/** The manifest's `offline` block (`{takeAlong, forms}`), or null. */
+		offline: { type: Object, default: null },
 		/** Whether an action is in flight (disables the switches). */
 		busy: { type: Boolean, default: false },
 	},
@@ -253,6 +321,7 @@ export default {
 		'update:data-registers',
 		'update:flows',
 		'update:installable',
+		'update:offline',
 	],
 
 	data() {
@@ -268,10 +337,22 @@ export default {
 			// The Installable section's staged values (REQ-BQOM-001).
 			installShortName: this.shortName,
 			installThemeColor: this.themeColor,
+			// The Offline section's staged take-along rows (REQ-BQOM-003).
+			takeAlongRows: this.toTakeAlongRows(this.offline),
 		}
 	},
 
 	computed: {
+		/**
+		 * The take-along filter's helper text.
+		 *
+		 * @return {string}
+		 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T04
+		 */
+		filterHelp() {
+			return t('buildiq', 'As JSON, for example {example}. Empty takes along every record up to the limit.', { example: '{"assignee": "@me"}' })
+		},
+
 		/**
 		 * The connected databases not bound yet, as picker options.
 		 *
@@ -343,6 +424,19 @@ export default {
 
 		themeColor(next) {
 			this.installThemeColor = next
+		},
+
+		offline: {
+			deep: true,
+			/**
+			 * Re-stage the take-along rows when the saved block changes.
+			 *
+			 * @param {object|null} next The new offline block.
+			 * @return {void}
+			 */
+			handler(next) {
+				this.takeAlongRows = this.toTakeAlongRows(next)
+			},
 		},
 
 		dataRegisters: {
@@ -508,6 +602,82 @@ export default {
 			})
 		},
 
+		/**
+		 * The offline block's take-along entries as editable rows, the filter as JSON text.
+		 *
+		 * @param {object|null} offline The offline block.
+		 * @return {Array<object>} Rows.
+		 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T04
+		 */
+		toTakeAlongRows(offline) {
+			const entries = (offline && Array.isArray(offline.takeAlong)) ? offline.takeAlong : []
+			return entries.map((entry) => ({
+				schema: String(entry.schema || ''),
+				filter: entry.filter && Object.keys(entry.filter).length ? JSON.stringify(entry.filter) : '',
+				filterInvalid: false,
+				limit: entry.limit ?? OFFLINE_LIMIT_DEFAULT,
+				ttlHours: entry.ttlHours ?? OFFLINE_TTL_DEFAULT,
+			}))
+		},
+
+		/**
+		 * Add an empty take-along row with the default limit and lifetime.
+		 *
+		 * @return {void}
+		 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T04
+		 */
+		addTakeAlong() {
+			this.takeAlongRows.push({ schema: '', filter: '', filterInvalid: false, limit: OFFLINE_LIMIT_DEFAULT, ttlHours: OFFLINE_TTL_DEFAULT })
+		},
+
+		/**
+		 * Remove one take-along row and save the section.
+		 *
+		 * @param {number} index The row.
+		 * @return {void}
+		 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T04
+		 */
+		removeTakeAlong(index) {
+			this.takeAlongRows.splice(index, 1)
+			this.emitOffline()
+		},
+
+		/**
+		 * Emit the Offline section as the manifest's offline block, capped.
+		 *
+		 * A filter that is not a JSON object marks its row and stops the save,
+		 * so a typo never takes along every record unasked. The form page ids
+		 * are kept from the saved block: they are switched in the page designer.
+		 *
+		 * @return {void}
+		 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T04
+		 */
+		emitOffline() {
+			let invalid = false
+			const takeAlong = this.takeAlongRows.map((row) => {
+				let filter = {}
+				const text = String(row.filter || '').trim()
+				row.filterInvalid = false
+				if (text !== '') {
+					try {
+						filter = JSON.parse(text)
+					} catch {
+						filter = null
+					}
+					if (!filter || typeof filter !== 'object' || Array.isArray(filter)) {
+						row.filterInvalid = true
+						invalid = true
+					}
+				}
+				return { schema: row.schema, filter, limit: row.limit, ttlHours: row.ttlHours }
+			})
+			if (invalid) {
+				return
+			}
+			const forms = (this.offline && Array.isArray(this.offline.forms)) ? this.offline.forms : []
+			this.$emit('update:offline', normaliseOffline({ takeAlong, forms }))
+		},
+
 		emitRows() {
 			const cleaned = this.rows
 				.map((row) => ({
@@ -544,6 +714,14 @@ export default {
 
 .app-settings__label {
 	font-weight: 600;
+}
+
+.app-settings__take-along {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+	gap: 8px;
+	align-items: end;
+	margin-bottom: 8px;
 }
 
 .app-settings__color {

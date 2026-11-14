@@ -655,6 +655,8 @@
 				}
 			],
 			"destinationFindings": [],
+			"offlineAllowed": false,
+			"offlineForms": [],
 			"pageId": "",
 			"pageType": "form",
 			"parentRoute": "",
@@ -662,6 +664,7 @@
 		},
 		"emits": [
 			"update:config",
+			"update:offlineForms",
 			"update:runtimeExternalForms"
 		],
 		"picker": [

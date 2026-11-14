@@ -305,4 +305,63 @@ class DashboardControllerTest extends TestCase {
 		$this->assertInstanceOf(TemplateResponse::class, $response);
 		$this->assertSame('index', $response->getTemplateName());
 	}//end testBuilderDesignerServesSpaIndexTemplateForSchemaDetail()
+
+	/**
+	 * The SPA and the runtime publish whether apps may work offline, read from the instance setting.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-offline-is-the-administrators-choice-first-req-bqom-002
+	 */
+	public function testTheOfflineSettingIsPublished(): void {
+		$published = $this->captureInitialState();
+		$settings = $this->createMock(\OCA\Buildiq\Kernel\Contracts\SettingsServiceInterface::class);
+		$settings->method('offlineAppsAllowed')->willReturn(true);
+		$rasteriser = $this->createMock(\OCA\Buildiq\Service\Icon\SvgRasteriser::class);
+		$controller = new DashboardController(
+			$this->request,
+			$this->initialState,
+			$this->userSession,
+			$this->groupManager,
+			$this->navigationManager,
+			$rasteriser,
+			$settings
+		);
+
+		$controller->page();
+		$this->assertTrue($published['offlineAppsAllowed']);
+
+		unset($published['offlineAppsAllowed']);
+		$controller->run('spectr');
+		$this->assertTrue($published['offlineAppsAllowed']);
+	}//end testTheOfflineSettingIsPublished()
+
+	/**
+	 * Without the settings service, or when it fails, offline is published as off.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-offline-is-the-administrators-choice-first-req-bqom-002
+	 */
+	public function testOfflineIsPublishedOffWhenTheSettingCannotBeRead(): void {
+		$published = $this->captureInitialState();
+
+		$this->controller->builder('spectr');
+		$this->assertFalse($published['offlineAppsAllowed']);
+
+		$settings = $this->createMock(\OCA\Buildiq\Kernel\Contracts\SettingsServiceInterface::class);
+		$settings->method('offlineAppsAllowed')->willThrowException(new \RuntimeException('config down'));
+		$controller = new DashboardController(
+			$this->request,
+			$this->initialState,
+			$this->userSession,
+			$this->groupManager,
+			$this->navigationManager,
+			$this->createMock(\OCA\Buildiq\Service\Icon\SvgRasteriser::class),
+			$settings
+		);
+		$published['offlineAppsAllowed'] = true;
+		$controller->page();
+		$this->assertFalse($published['offlineAppsAllowed']);
+	}//end testOfflineIsPublishedOffWhenTheSettingCannotBeRead()
 }//end class

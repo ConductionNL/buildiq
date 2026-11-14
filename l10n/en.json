@@ -2309,7 +2309,6 @@
         "Total load time (ms)": "Total load time (ms)",
         "Window start": "Window start",
         "Include server bundle": "Include server bundle",
-        "Search": "Search",
         "Add external data widget": "Add external data widget",
         "Failures": "Failures",
         "Failed requests, 4xx and 5xx together. Derived by the server, never posted; summed by the request failure metric.": "Failed requests, 4xx and 5xx together. Derived by the server, never posted; summed by the request failure metric.",
@@ -2335,7 +2334,16 @@
         "The branch could not be started.": "The branch could not be started.",
         "The merge could not be completed.": "The merge could not be completed.",
         "This merge changes schemas in a way that can break records already stored:": "This merge changes schemas in a way that can break records already stored:",
-        "Which side to keep": "Which side to keep"
+        "Which side to keep": "Which side to keep",
+        "Records this app takes along to the device, for use without a connection. Form pages that work offline are switched on in the page designer.": "Records this app takes along to the device, for use without a connection. Form pages that work offline are switched on in the page designer.",
+        "Filter": "Filter",
+        "As JSON, for example {example}. Empty takes along every record up to the limit.": "As JSON, for example {example}. Empty takes along every record up to the limit.",
+        "At most this many records (up to 500)": "At most this many records (up to 500)",
+        "Usable for this many hours (up to 72)": "Usable for this many hours (up to 72)",
+        "Add records to take along": "Add records to take along",
+        "Works offline": "Works offline",
+        "Submissions made without a connection wait on the device and are sent when it returns. The app gets a \"Waiting to sync\" page.": "Submissions made without a connection wait on the device and are sent when it returns. The app gets a \"Waiting to sync\" page.",
+        "Waiting to sync": "Waiting to sync"
     },
     "plurals": "",
     "pluralForm": "nplurals=2; plural=(n != 1);"

@@ -35,6 +35,7 @@ import { validateDocumentAttachments } from '../services/manifestValidation/docu
 import { validateExternalForms } from '../services/manifestValidation/externalForms.js'
 import { validateFormLogic } from '../services/manifestValidation/formLogic.js'
 import { validateLabels } from '../services/manifestValidation/labels.js'
+import { validateOffline } from '../services/manifestValidation/offline.js'
 import { validateSchedules } from '../services/manifestValidation/schedules.js'
 import { validateWorkflowAttachments } from '../services/manifestValidation/workflowAttachments.js'
 
@@ -87,6 +88,8 @@ export function useManifestValidator() {
 					.concat(validateExternalForms(manifest))
 					// An empty label on an action, widget or form field (REQ-PLAT-005).
 					.concat(validateLabels(manifest))
+					// The offline block, until the library schema carries it (REQ-BQOM-003).
+					.concat(validateOffline(manifest))
 				errors.value = libErrors.concat(appErrors)
 			} catch (e) {
 				errors.value = [`validator threw: ${e && e.message ? e.message : e}`]

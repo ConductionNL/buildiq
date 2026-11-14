@@ -65,13 +65,16 @@
 			:themeColor="(obApp && obApp.themeColor) || ''"
 			:availableFlows="availableFlows"
 			:loadingFlows="loadingFlows"
+			:offlineAllowed="offlineAllowed"
+			:offline="offlineBlock"
 			:busy="publishing"
 			@update:open="onSettingsOpen"
 			@setPublished="setPublished"
 			@update:allowOverrides="setAllowOverrides"
 			@update:dataRegisters="setDataRegisters"
 			@update:flows="setFlows"
-			@update:installable="setInstallable" />
+			@update:installable="setInstallable"
+			@update:offline="setOffline" />
 		<DeleteAppDialog
 			:open="deleteOpen"
 			:appName="(obApp && (obApp.name || obApp.slug)) || ''"
@@ -113,6 +116,7 @@
 // this file imports no icon components of its own any more.
 import { CnActionButtons } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
+import { loadState } from '@nextcloud/initial-state'
 import { generateUrl } from '@nextcloud/router'
 import { defineAsyncComponent } from 'vue'
 import DeleteAppDialog from '../dialogs/DeleteAppDialog.vue'
@@ -129,6 +133,7 @@ import { getCurrentUserGroups } from '../composables/useRole.js'
 import applicationContext from '../mixins/applicationContext.js'
 import { buildVersionedRoute } from '../router/helpers.js'
 import { fetchProductionRegister } from '../services/appRegister.js'
+import { withOffline } from '../services/offlineManifest.js'
 
 // Vue 3 requires `defineAsyncComponent()` around a lazy import. The bare
 // `() => import(…)` form is Vue 2 syntax: Vue 3 accepts a plain function as a
@@ -291,6 +296,10 @@ export default {
 			deleting: false,
 			githubOpen: false,
 			settingsOpen: false,
+			// Whether this instance lets apps work offline (REQ-BQOM-002), and
+			// the active version's offline block, read when the settings open.
+			offlineAllowed: loadState('buildiq', 'offlineAppsAllowed', false) === true,
+			offlineBlock: null,
 			// The support-note editor mutates a working manifest copy in place
 			// and emits `close`, so it needs its own copy to edit and a flag to
 			// mount it. Held here rather than in the modal so a cancel simply
@@ -1088,6 +1097,9 @@ export default {
 		 */
 		async onSettingsOpen(open) {
 			this.settingsOpen = open
+			if (open && this.offlineAllowed) {
+				this.loadOfflineBlock()
+			}
 			if (!open || this.availableFlows.length || this.loadingFlows) {
 				return
 			}
@@ -1165,6 +1177,54 @@ export default {
 			this.error = ''
 			try {
 				await this.obPatchApp(patch)
+			} catch (e) {
+				this.error = `${t('buildiq', 'Failed to save settings')}: ${e.message || e}`
+			}
+		},
+
+		/**
+		 * Read the active version's offline block for the settings' Offline section.
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T04
+		 */
+		async loadOfflineBlock() {
+			if (!this.obApp || !this.obApp.slug) {
+				return
+			}
+			try {
+				const { data } = await axios.get(
+					generateUrl(`/apps/buildiq/api/applications/${encodeURIComponent(this.obApp.slug)}/manifest`),
+				)
+				this.offlineBlock = (data && data.offline) || null
+			} catch (e) {
+				this.error = `${t('buildiq', 'Failed to load settings')}: ${e.message || e}`
+			}
+		},
+
+		/**
+		 * Save the Offline section into the active version's manifest.
+		 *
+		 * The manifest is read fresh and only its `offline` block (and the
+		 * "Waiting to sync" page that follows the offline forms) is replaced,
+		 * so edits made elsewhere since the settings opened are kept.
+		 * Owner and editor only, as the manifest endpoint itself checks.
+		 *
+		 * @param {object|null} offline The new offline block, or null for none.
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T04
+		 */
+		async setOffline(offline) {
+			if (!this.obApp || !this.obApp.slug || !this.offlineAllowed) {
+				return
+			}
+			this.error = ''
+			try {
+				const url = generateUrl(`/apps/buildiq/api/applications/${encodeURIComponent(this.obApp.slug)}/manifest`)
+				const { data } = await axios.get(url)
+				const manifest = withOffline(data || {}, offline)
+				await axios.put(url, { manifest })
+				this.offlineBlock = manifest.offline || null
 			} catch (e) {
 				this.error = `${t('buildiq', 'Failed to save settings')}: ${e.message || e}`
 			}

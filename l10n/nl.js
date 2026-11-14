@@ -2400,7 +2400,16 @@ OC.L10N.register(
         "The branch could not be started.": "De branch kon niet worden gestart.",
         "The merge could not be completed.": "Het samenvoegen kon niet worden voltooid.",
         "This merge changes schemas in a way that can break records already stored:": "Dit samenvoegen wijzigt schema's zo dat al opgeslagen gegevens kunnen breken:",
-        "Which side to keep": "Welke kant behouden"
+        "Which side to keep": "Welke kant behouden",
+        "Records this app takes along to the device, for use without a connection. Form pages that work offline are switched on in the page designer.": "Records die deze app meeneemt naar het apparaat, om zonder verbinding te gebruiken. Formulierpagina's die offline werken zet je aan in de pagina-ontwerper.",
+        "Filter": "Filter",
+        "As JSON, for example {example}. Empty takes along every record up to the limit.": "Als JSON, bijvoorbeeld {example}. Leeg neemt elk record mee tot het maximum.",
+        "At most this many records (up to 500)": "Hoogstens zoveel records (tot 500)",
+        "Usable for this many hours (up to 72)": "Zoveel uur bruikbaar (tot 72)",
+        "Add records to take along": "Records toevoegen om mee te nemen",
+        "Works offline": "Werkt offline",
+        "Submissions made without a connection wait on the device and are sent when it returns. The app gets a \"Waiting to sync\" page.": "Inzendingen zonder verbinding wachten op het apparaat en worden verstuurd zodra die terug is. De app krijgt een pagina \"Wacht op synchronisatie\".",
+        "Waiting to sync": "Wacht op synchronisatie"
     },
     "nplurals=2; plural=(n != 1);"
 )

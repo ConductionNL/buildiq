@@ -190,3 +190,59 @@ describe('AppSettingsModal — Installable section (pages-installable-offline-an
 		expect(wrapper.findAll('button').filter((button) => button.text() === 'Use the browser colour')).toHaveLength(0)
 	})
 })
+
+describe('AppSettingsModal — Offline section (pages-installable-offline-and-mobile T04)', () => {
+	const offline = {
+		takeAlong: [{ schema: 'inspection', filter: { assignee: '@me' }, limit: 50, ttlHours: 12 }],
+		forms: ['report'],
+	}
+
+	it('is hidden while the instance does not let apps work offline', () => {
+		const wrapper = mountModal({ offline })
+		expect(wrapper.find('[data-test="app-settings-offline"]').exists()).toBe(false)
+	})
+
+	it('shows one row per take-along, with the filter as JSON', () => {
+		const wrapper = mountModal({ offlineAllowed: true, offline })
+		const rows = wrapper.findAll('[data-test="app-settings-take-along-row"]')
+		expect(rows).toHaveLength(1)
+		const fields = rows.at(0).findAll('.nc-textfield-stub')
+		expect(fields.at(0).element.value).toBe('inspection')
+		expect(fields.at(1).element.value).toBe('{"assignee":"@me"}')
+		expect(fields.at(2).element.value).toBe('50')
+		expect(fields.at(3).element.value).toBe('12')
+	})
+
+	it('emits the block capped at 500 records and 72 hours, keeping the offline forms', () => {
+		const wrapper = mountModal({ offlineAllowed: true, offline })
+		wrapper.vm.takeAlongRows[0].limit = '900'
+		wrapper.vm.takeAlongRows[0].ttlHours = '100'
+		wrapper.vm.emitOffline()
+		expect(wrapper.emitted('update:offline')[0][0]).toEqual({
+			takeAlong: [{ schema: 'inspection', filter: { assignee: '@me' }, limit: 500, ttlHours: 72 }],
+			forms: ['report'],
+		})
+	})
+
+	it('adds a row with the defaults, and does not emit one without a schema', async () => {
+		const wrapper = mountModal({ offlineAllowed: true })
+		await wrapper.find('[data-test="app-settings-add-take-along"]').trigger('click')
+		expect(wrapper.vm.takeAlongRows).toEqual([{ schema: '', filter: '', filterInvalid: false, limit: 50, ttlHours: 24 }])
+		wrapper.vm.emitOffline()
+		expect(wrapper.emitted('update:offline')[0][0]).toBeNull()
+	})
+
+	it('marks a filter that is not a JSON object and saves nothing', () => {
+		const wrapper = mountModal({ offlineAllowed: true, offline })
+		wrapper.vm.takeAlongRows[0].filter = '["not", "an object"]'
+		wrapper.vm.emitOffline()
+		expect(wrapper.vm.takeAlongRows[0].filterInvalid).toBe(true)
+		expect(wrapper.emitted('update:offline')).toBeUndefined()
+	})
+
+	it('removes a row and saves the rest', () => {
+		const wrapper = mountModal({ offlineAllowed: true, offline })
+		wrapper.vm.removeTakeAlong(0)
+		expect(wrapper.emitted('update:offline')[0][0]).toEqual({ takeAlong: [], forms: ['report'] })
+	})
+})
