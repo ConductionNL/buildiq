@@ -52,6 +52,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Kernel\Contracts\ApplicationVersionServiceInterface;
+use OCA\Buildiq\Kernel\Values\VersionRegisterSlug;
 use OCA\Buildiq\Support\VersionBinding;
 
 /**
@@ -81,9 +82,10 @@ final class ManifestDataBinding {
 	 * @return string
 	 *
 	 * @spec openspec/specs/ai-copilot/spec.md
+	 * @SuppressWarnings(PHPMD.StaticAccess) VersionRegisterSlug::forVersion is a pure slug builder.
 	 */
 	public static function registerSlug(string $appSlug, string $versionSlug): string {
-		return ApplicationVersionServiceInterface::VERSION_REGISTER_PREFIX . $appSlug . '-' . $versionSlug;
+		return VersionRegisterSlug::forVersion(appSlug: $appSlug, versionSlug: $versionSlug);
 	}//end registerSlug()
 
 	/**

@@ -65,6 +65,7 @@ use Throwable;
  *
  * @spec openspec/specs/ai-copilot/spec.md
  * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
+ * @spec openspec/specs/platform-properties/spec.md#REQ-PLAT-002
  */
 class CopilotService implements CopilotServiceInterface {
 

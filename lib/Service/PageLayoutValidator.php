@@ -93,6 +93,7 @@ final class PageLayoutValidator {
 		$this->body->assertTabs(layout: $layout);
 		$this->body->assertWidgets(layout: $layout);
 		$this->body->assertUploadFields(layout: $layout);
+		$this->body->assertTaskPanel(layout: $layout);
 
 		return $this->unknownLeafWarnings(layout: $layout, knownLeafIds: $knownLeafIds);
 	}//end validate()

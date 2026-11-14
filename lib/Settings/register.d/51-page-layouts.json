@@ -429,6 +429,41 @@
 									]
 								},
 								"title": "Search Fields"
+							},
+							"panel": {
+								"type": "object",
+								"title": "Panel",
+								"description": "Where the consuming app shows the task list on a case of this type: beside the case's tabs, as a tab of its own, or not at all. `none` is a choice, not an absence: a layout without a panel falls back to the schema-wide layout, a layout with `none` shows no task list. Buildiq serves this and renders nothing itself.",
+								"properties": {
+									"placement": {
+										"type": "string",
+										"enum": [
+											"side",
+											"tab",
+											"none"
+										],
+										"example": "side",
+										"title": "Placement",
+										"description": "`side` beside the tabs, `tab` as a tab of its own, `none` no task list on this case type."
+									},
+									"tabs": {
+										"type": "array",
+										"items": {
+											"type": "string"
+										},
+										"title": "Tabs",
+										"description": "The ids of the tabs the side panel shows beside. Ids, never labels, so a relabelled tab keeps its panel; an id the layout does not declare is refused on save. Empty means every tab."
+									},
+									"collapsed": {
+										"type": "boolean",
+										"default": false,
+										"title": "Collapsed",
+										"description": "Whether the side panel starts folded."
+									}
+								},
+								"required": [
+									"placement"
+								]
 							}
 						},
 						"title": "Task List"
