@@ -1973,6 +1973,94 @@
                 }
             }
         },
+        "/applications/{slug}/manifest-base": {
+            "get": {
+                "operationId": "applications-get-manifest-base",
+                "summary": "The base a delta-mode version extends, for its editor.",
+                "description": "The base manifest a version with a baseRef extends, with that baseRef, for the page designer. Same gate as the manifest endpoint; `?_version=` of a version the caller may not open answers 404. A version without a baseRef answers {baseRef: null, base: null}. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "applications"
+                ],
+                "parameters": [
+                    {
+                        "name": "slug",
+                        "in": "path",
+                        "required": true,
+                        "description": "The virtual-app slug from the URL.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "_version",
+                        "in": "query",
+                        "required": false,
+                        "description": "The version.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "manifest",
+                        "in": "query",
+                        "required": false,
+                        "description": "The manifest.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "201": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Problem409"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/Problem503"
+                    }
+                }
+            }
+        },
         "/applications/{slug}/versions/diff": {
             "get": {
                 "operationId": "applications-diff-versions",

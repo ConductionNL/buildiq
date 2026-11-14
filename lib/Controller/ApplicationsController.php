@@ -270,6 +270,55 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 	}//end getManifest()
 
 	/**
+	 * The base a delta-mode version extends, for its editor (app-delta-override 5.1).
+	 *
+	 * The page designer of a version with a `baseRef` edits the base with the
+	 * delta merged over it and saves only the minimal delta, so it needs the
+	 * base itself, which the manifest endpoint never serves. The same gate as
+	 * getManifest() runs first; the version is then found by the manifest
+	 * endpoint's own rule, so `?_version=` of a version the caller may not open
+	 * answers 404. A version without a `baseRef` answers `{baseRef: null, base: null}`.
+	 *
+	 * @param string $slug The virtual app slug.
+	 *
+	 * @return JSONResponse `{baseRef, base}`, or 404.
+	 *
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-5.1
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function getManifestBase(string $slug): JSONResponse {
+		try {
+			$resolved = $this->resolvePermittedApplication(slug: $slug);
+			if ($resolved instanceof JSONResponse) {
+				return $resolved;
+			}
+
+			$base = $this->manifestResolver->resolveBaseForVersion(
+				appSlug: $slug,
+				versionSlug: $this->requestedVersionSlug(),
+				caller: $this->userSession->getUser()
+			);
+		} catch (Throwable $e) {
+			$correlationId = bin2hex(random_bytes(8));
+			$this->logger->error(
+				'Buildiq: getManifestBase failed for slug ' . $slug . ': ' . $e->getMessage(),
+				['exception' => $e, 'correlationId' => $correlationId, 'slug' => $slug]
+			);
+			return new JSONResponse(
+				data: ['error' => 'internal_error', 'message' => 'Failed to resolve the base manifest', 'correlationId' => $correlationId],
+				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+			);
+		}//end try
+
+		if ($base === null) {
+			return new JSONResponse(data: ['error' => 'not_found'], statusCode: Http::STATUS_NOT_FOUND);
+		}
+
+		return new JSONResponse(data: $base, statusCode: Http::STATUS_OK);
+	}//end getManifestBase()
+
+	/**
 	 * The web app manifest of a virtual app, for its installable runtime at `/run/{slug}/`.
 	 *
 	 * Signed-in only, and only to a user who may open the app: the same rule as

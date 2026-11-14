@@ -475,6 +475,50 @@ class ManifestResolverService implements ManifestResolverServiceInterface {
 	}//end resolveVersionManifest()
 
 	/**
+	 * The base a delta-mode version extends, for its editor: `{baseRef, base}`.
+	 *
+	 * The version is found through resolveVersionForCaller(), the manifest
+	 * endpoint's own rule, so a caller only learns the base of a version they
+	 * may open. A version without a `baseRef`, and a hybrid app's version
+	 * (whose base the browser reads), answer `{baseRef: null, base: null}`;
+	 * an unresolvable base answers its `baseRef` with `base: null`.
+	 *
+	 * @param string $appSlug The application slug.
+	 * @param string|null $versionSlug The version slug, null or empty for production.
+	 * @param IUser|null $caller The caller; null is refused.
+	 *
+	 * @return array{baseRef: array<string,mixed>|null, base: array<string,mixed>|null}|null Null when the caller may not open the version.
+	 *
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-5.1
+	 */
+	public function resolveBaseForVersion(string $appSlug, ?string $versionSlug, ?IUser $caller): ?array {
+		$ids = $this->resolveVersionForCaller(appSlug: $appSlug, versionSlug: $versionSlug, caller: $caller);
+		if ($ids === null) {
+			return null;
+		}
+
+		$version = $this->findVersionByUuid(uuid: $ids['versionUuid']);
+		if ($version === null) {
+			return null;
+		}
+
+		$baseRef = $version['baseRef'] ?? null;
+		$application = $this->findApplicationBySlug(appSlug: $appSlug) ?? [];
+		if (is_array($baseRef) === false || trim((string)($baseRef['kind'] ?? '')) === '' || ($application['appType'] ?? '') === 'hybrid') {
+			return ['baseRef' => null, 'base' => null];
+		}
+
+		$this->resolvingBases = [$appSlug];
+		try {
+			$base = $this->resolveBase(baseRef: $baseRef, caller: $caller);
+		} finally {
+			$this->resolvingBases = [];
+		}
+
+		return ['baseRef' => $baseRef, 'base' => $base];
+	}//end resolveBaseForVersion()
+
+	/**
 	 * What the last delta resolution noticed, for the editor and admin surfaces; never served.
 	 *
 	 * @return array{orphanedDeltaPaths: list<string>, unresolvedBase: array<string,mixed>|null, cycle: bool}

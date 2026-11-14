@@ -528,6 +528,66 @@ class ApplicationsControllerDiffVersionsTest extends TestCase {
 	}//end testADeltaModeVersionDiffsAsItsMergedManifest()
 
 	/**
+	 * A permitted caller gets the base a delta-mode version extends, for its editor.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-5.1
+	 */
+	public function testTheManifestBaseOfAPermittedAppIsServed(): void {
+		$this->resolvableApplication();
+		$this->objectService->method('find')->willReturn(
+			$this->buildEntity(['slug' => 'hello-world', 'permissions' => ['owners' => ['user:bob'], 'editors' => [], 'viewers' => []]])
+		);
+		$base = ['baseRef' => ['kind' => 'template', 'id' => 'crm'], 'base' => ['version' => '1.0.0', 'pages' => []]];
+		$this->resolverOverride = $this->createMock(ManifestResolverService::class);
+		$this->resolverOverride->expects(self::once())->method('resolveBaseForVersion')
+			->with('hello-world', null, self::isInstanceOf(IUser::class))
+			->willReturn($base);
+
+		$response = $this->controller()->getManifestBase(slug: 'hello-world');
+
+		self::assertSame(Http::STATUS_OK, $response->getStatus());
+		self::assertSame($base, $response->getData());
+	}//end testTheManifestBaseOfAPermittedAppIsServed()
+
+	/**
+	 * A version the caller may not open, and a caller without a role, get no base.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-5.1
+	 */
+	public function testNoBaseLeavesForAVersionTheCallerMayNotOpen(): void {
+		$this->resolvableApplication();
+		$this->objectService->method('find')->willReturn(
+			$this->buildEntity(['slug' => 'hello-world', 'permissions' => ['owners' => ['user:bob'], 'editors' => [], 'viewers' => []]])
+		);
+		$this->resolverOverride = $this->createMock(ManifestResolverService::class);
+		$this->resolverOverride->method('resolveBaseForVersion')->willReturn(null);
+
+		self::assertSame(Http::STATUS_NOT_FOUND, $this->controller()->getManifestBase(slug: 'hello-world')->getStatus());
+	}//end testNoBaseLeavesForAVersionTheCallerMayNotOpen()
+
+	/**
+	 * A caller outside the app's roles is refused before the base is looked up.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-5.1
+	 */
+	public function testTheRoleGateRunsBeforeTheBaseLookup(): void {
+		$this->resolvableApplication();
+		$this->objectService->method('find')->willReturn(
+			$this->buildEntity(['slug' => 'hello-world', 'permissions' => ['owners' => ['user:alice'], 'editors' => [], 'viewers' => []]])
+		);
+		$this->resolverOverride = $this->createMock(ManifestResolverService::class);
+		$this->resolverOverride->expects(self::never())->method('resolveBaseForVersion');
+
+		self::assertNotSame(Http::STATUS_OK, $this->controller()->getManifestBase(slug: 'hello-world')->getStatus());
+	}//end testTheRoleGateRunsBeforeTheBaseLookup()
+
+	/**
 	 * A manifest resolver whose versions serve their stored blob, as a legacy version does.
 	 *
 	 * @return ManifestResolverService

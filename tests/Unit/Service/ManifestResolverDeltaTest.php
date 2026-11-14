@@ -261,4 +261,41 @@ final class ManifestResolverDeltaTest extends TestCase {
 
 		$this->service()->resolveVersionManifest(version: ['baseRef' => ['kind' => 'template', 'id' => 'broken'], 'manifestDelta' => []], application: [], caller: null);
 	}
+
+	public function testTheEditorGetsTheBaseOfAVersionItMayOpen(): void {
+		$this->applications['derived'] = ['uuid' => 'uuid-derived', 'slug' => 'derived', 'productionVersion' => 'v-1'];
+		$this->objectService->method('find')->willReturn(self::entity(uuid: 'v-1', data: ['application' => 'uuid-derived', 'baseRef' => ['kind' => 'template', 'id' => 'crm'], 'manifestDelta' => []]));
+		$this->bases->method('template')->with('crm')->willReturn(self::base());
+		$caller = $this->createMock(\OCP\IUser::class);
+
+		$found = $this->service()->resolveBaseForVersion(appSlug: 'derived', versionSlug: null, caller: $caller);
+
+		$this->assertSame(['baseRef' => ['kind' => 'template', 'id' => 'crm'], 'base' => self::base()], $found);
+		$this->assertNull($this->service()->resolveBaseForVersion(appSlug: 'derived', versionSlug: null, caller: null), 'an anonymous caller gets nothing');
+	}
+
+	public function testAVersionWithoutABaseHasNoBaseForTheEditor(): void {
+		$this->applications['plain'] = ['uuid' => 'uuid-plain', 'slug' => 'plain', 'productionVersion' => 'v-2'];
+		$this->objectService->method('find')->willReturn(self::entity(uuid: 'v-2', data: ['manifest' => self::base()]));
+		$this->bases->expects($this->never())->method('template');
+
+		$found = $this->service()->resolveBaseForVersion(appSlug: 'plain', versionSlug: null, caller: $this->createMock(\OCP\IUser::class));
+
+		$this->assertSame(['baseRef' => null, 'base' => null], $found);
+	}
+
+	/**
+	 * An object entity as the store returns it.
+	 *
+	 * @param string $uuid The uuid.
+	 * @param array<string, mixed> $data The object data.
+	 *
+	 * @return \OCA\OpenRegister\Db\ObjectEntity
+	 */
+	private static function entity(string $uuid, array $data): \OCA\OpenRegister\Db\ObjectEntity {
+		$entity = new \OCA\OpenRegister\Db\ObjectEntity();
+		$entity->setUuid($uuid);
+		$entity->setObject($data);
+		return $entity;
+	}//end entity()
 }//end class

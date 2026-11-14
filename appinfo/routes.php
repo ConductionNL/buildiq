@@ -62,6 +62,8 @@ return \OCA\Buildiq\Middleware\Support\ApiPathAliases::withVersionedAliases(\OCA
         // Slug matches the kebab-case pattern declared in openbuild_register.json on the Application
         // and BuiltAppRoute schemas (^[a-z0-9][a-z0-9-]*[a-z0-9]$, min 2 max 48 chars).
         ['name' => 'applications#getManifest', 'url' => '/api/applications/{slug}/manifest', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        // App-delta-override 5.1: the base a delta-mode version extends, for its editor.
+        ['name' => 'applications#getManifestBase', 'url' => '/api/applications/{slug}/manifest-base', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
         // Symmetric write counterpart — the standalone runtime's in-app edit shell
         // (ADR-041) PUTs the full edited manifest here on Save. Owner/editor RBAC +

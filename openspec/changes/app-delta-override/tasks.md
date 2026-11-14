@@ -31,9 +31,10 @@
 
 ## 5. Editor: diff-on-save + preview + orphan surface
 
-- [ ] 5.1 In the manifest editor / `BuilderHost.vue`, load the resolved base for a delta-mode app and compute the minimal delta on save via the JS `diffManifest(base, edited)`; persist `{ baseRef, manifestDelta }` to the `ApplicationVersion` instead of a blob.
-- [ ] 5.2 Wire live preview through the JS `mergeManifestDelta(base, editedDelta)` so preview equals the server-resolved result.
-- [ ] 5.3 Surface orphaned-delta paths in the editor (and reuse the `settings-and-observability` admin surface) as a non-blocking warning; add the one new l10n string via the standard flow.
+- [x] 5.1 In the manifest editor / `BuilderHost.vue`, load the resolved base for a delta-mode app and compute the minimal delta on save via the JS `diffManifest(base, edited)`; persist `{ baseRef, manifestDelta }` to the `ApplicationVersion` instead of a blob.
+- [x] 5.2 Wire live preview through the JS `mergeManifestDelta(base, editedDelta)` so preview equals the server-resolved result.
+- [x] 5.3 Surface orphaned-delta paths in the editor (and reuse the `settings-and-observability` admin surface) as a non-blocking warning; add the one new l10n string via the standard flow.
+  - The page designer (`PageDesignerHost.vue`, `src/services/manifestDeltaEditing.js`) edits a delta-mode version as its base (from the new, gated `GET /api/applications/{slug}/manifest-base`, falling back to the stored blob like the server) with its delta merged over it by `mergeManifestDelta`, saves only `diffManifest(base, edited)` as `manifestDelta`, and shows the orphaned delta paths as a non-blocking warning (one new string, en and nl). A blob version and a hybrid app's version save as before. The admin observability surface for orphans is not built: `ManifestResolverService::diagnostics()` holds them server-side for it.
 
 ## 6. Backwards-compatibility
 
@@ -45,7 +46,8 @@
 - [ ] 7.1 Newman: extend `manifest-endpoint.spec` — legacy-blob app serves verbatim; delta-mode app serves a merged manifest; raw `baseRef`/`manifestDelta`/diagnostics absent from the response.
 - [x] 7.2 PHPUnit: `ManifestResolverService` base+delta resolution, legacy fallback, pinned-vs-live base, orphan skip + diagnostic collection, cycle/depth guard.
   - `ManifestResolverDeltaTest` (11), `ManifestBaseResolverTest` (6), `ApplicationsControllerDiffVersionsTest` (delta-mode diff).
-- [ ] 7.3 Frontend unit test: editor diff-on-save persists a minimal delta and preview equals merged base+delta.
+- [x] 7.3 Frontend unit test: editor diff-on-save persists a minimal delta and preview equals merged base+delta.
+  - `tests/services/manifestDeltaEditing.spec.js` (7), `tests/views/PageDesignerHost.delta.spec.js` (4); PHPUnit for the base endpoint in `ApplicationsControllerDiffVersionsTest` and `ManifestResolverDeltaTest`.
 
 ## 8. Verify
 

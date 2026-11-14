@@ -721,6 +721,7 @@
         "Version name (e.g. Production)": "Versienaam (bijv. Productie)",
         "Version name must not be empty.": "Versienaam mag niet leeg zijn.",
         "Version not found": "Versie niet gevonden",
+        "Some changes of this app no longer match its base app and are not shown: {paths}": "Sommige wijzigingen van deze app passen niet meer bij de basis-app en worden niet getoond: {paths}",
         "Version presets": "Versiepresets",
         "Version selection": "Versieselectie",
         "Versions are ordered top-to-bottom: upstream (e.g. Development) at top, downstream (e.g. Production) at bottom.": "Versies zijn van boven naar beneden geordend: upstream (bijv. Ontwikkeling) bovenaan, downstream (bijv. Productie) onderaan.",

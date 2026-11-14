@@ -1110,6 +1110,7 @@ OC.L10N.register(
         "Version name (e.g. Production)": "Version name (e.g. Production)",
         "Version name must not be empty.": "Version name must not be empty.",
         "Version not found": "Version not found",
+        "Some changes of this app no longer match its base app and are not shown: {paths}": "Some changes of this app no longer match its base app and are not shown: {paths}",
         "Version presets": "Version presets",
         "Version selection": "Version selection",
         "Version to publish": "Version to publish",

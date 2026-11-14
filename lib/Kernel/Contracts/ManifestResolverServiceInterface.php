@@ -187,4 +187,17 @@ interface ManifestResolverServiceInterface {
 	 * @spec openspec/changes/app-delta-override/tasks.md#task-4.2
 	 */
 	public function resolveVersionManifest(array $version, array $application, ?IUser $caller): ?array;
+
+	/**
+	 * The base a delta-mode version extends, for its editor: `{baseRef, base}`.
+	 *
+	 * @param string $appSlug The application slug.
+	 * @param string|null $versionSlug The version slug, null or empty for production.
+	 * @param IUser|null $caller The caller; null is refused.
+	 *
+	 * @return array{baseRef: array<string,mixed>|null, base: array<string,mixed>|null}|null Null when the caller may not open the version.
+	 *
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-5.1
+	 */
+	public function resolveBaseForVersion(string $appSlug, ?string $versionSlug, ?IUser $caller): ?array;
 }//end interface

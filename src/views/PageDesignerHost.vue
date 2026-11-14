@@ -76,6 +76,14 @@
 		<div v-if="error" class="page-designer-host__error">
 			{{ error }}
 		</div>
+		<!-- App-delta-override 5.3: changes of this delta-mode app that no longer
+		     match its base are skipped, not fatal; say so, never block. -->
+		<NcNoteCard
+			v-if="orphanedDeltaPaths.length > 0"
+			type="warning"
+			data-testid="page-designer-orphaned-delta">
+			{{ t('buildiq', 'Some changes of this app no longer match its base app and are not shown: {paths}', { paths: orphanedDeltaPaths.join(', ') }) }}
+		</NcNoteCard>
 
 		<!-- REQ-OBVR-009: version-not-found state — identical for both "doesn't exist" and "you can't see it" -->
 		<NcEmptyContent
@@ -165,7 +173,7 @@
 <script>
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
+import { NcButton, NcEmptyContent, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
 import CopilotPanel from '../components/copilot/CopilotPanel.vue'
 import DocumentAttachmentsSection from '../components/DocumentAttachmentsSection.vue'
 import SchedulesSection from '../components/SchedulesSection.vue'
@@ -178,6 +186,7 @@ import { useCopilot } from '../composables/useCopilot.js'
 import { useLivePreview } from '../composables/useLivePreview.js'
 import builtAppHost, { failureText } from '../mixins/builtAppHost.js'
 import { checkFormDestinations } from '../services/formDestinationCheck.js'
+import { deltaToSave, editableManifest, editingBase, fetchManifestBase, isDeltaMode } from '../services/manifestDeltaEditing.js'
 import {
 	reconcileConnectorDependency,
 	reconcileDocumentDependency,
@@ -210,6 +219,7 @@ export default {
 		NcButton,
 		NcEmptyContent,
 		NcLoadingIcon,
+		NcNoteCard,
 		PageDesigner,
 		WorkflowAttachmentsSection,
 		ThemeSection,
@@ -242,6 +252,11 @@ export default {
 			manifest: { ...EMPTY_MANIFEST },
 			toast: '',
 			error: '',
+			// App-delta-override: the base a delta-mode version is edited and
+			// diffed against (null for a blob version), and the delta paths that
+			// no longer match it.
+			deltaBase: null,
+			orphanedDeltaPaths: [],
 			// REQ-OBVR-004: reactive version state from useApplicationVersion.
 			applicationVersion: null,
 			versionLoading: false,
@@ -474,6 +489,41 @@ export default {
 	// along with the rest of this view when the designer is left.
 
 	methods: {
+		/**
+		 * Load the app as the shared host does, then, for a delta-mode version,
+		 * edit its base with its delta merged over it (app-delta-override D6).
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/app-delta-override/tasks.md#task-5.1
+		 */
+		async load() {
+			await builtAppHost.methods.load.call(this)
+			await this.seedDeltaManifest()
+		},
+
+		/**
+		 * Seed the editor from base + delta when the version is in delta mode;
+		 * a blob version keeps the manifest load() seeded.
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/app-delta-override/tasks.md#task-5.2
+		 */
+		async seedDeltaManifest() {
+			this.deltaBase = null
+			this.orphanedDeltaPaths = []
+			if (!this.application || !isDeltaMode(this.applicationVersion, this.application)) {
+				return
+			}
+			// A base that cannot be fetched falls back to the stored blob, as on the server.
+			const resolved = await fetchManifestBase(this.routeSlug, this.versionSlug || '')
+				.then((found) => found.base)
+				.catch(() => null)
+			this.deltaBase = editingBase(resolved, this.applicationVersion)
+			const editable = editableManifest(this.deltaBase, this.applicationVersion.manifestDelta)
+			this.manifest = JSON.parse(JSON.stringify(editable.manifest))
+			this.orphanedDeltaPaths = editable.orphanedDeltaPaths
+		},
+
 		/**
 		 * REQ-NTS-002 (design.md Decision 3, OQ-1): retarget the theme dialog's
 		 * live-preview toggle at the sandboxed live-preview-pane CnAppRoot
@@ -771,9 +821,12 @@ export default {
 			const url = generateUrl(
 				`/apps/openregister/api/objects/buildiq/applicationVersion/${versionUuid}`,
 			)
-			const { data } = await axios.patch(url, {
-				manifest: this.manifest,
-			})
+			// App-delta-override 5.1: a delta-mode version stores only what the
+			// edit changes on its base, never a blob.
+			const body = this.deltaBase
+				? { manifestDelta: deltaToSave(this.deltaBase, this.manifest) }
+				: { manifest: this.manifest }
+			const { data } = await axios.patch(url, body)
 			if (data && typeof data === 'object') {
 				this.applicationVersion = data
 			}
