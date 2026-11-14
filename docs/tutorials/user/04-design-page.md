@@ -31,6 +31,8 @@ By the end you will have added a page to your app, picked its type, attached a s
 
    ![Page editor for an index page](/screenshots/tutorials/user/04-design-page-03.png)
 
+   A *detail* page asks for the **Register** and **Schema** of the record it shows, then the **Sidebar**. With a sidebar set, the **Files** checkbox shows or hides the record's files tab; it is on by default. Under **Related items**, **+ Add related list** adds a list of records that point at the open record: give it a **Title**, pick the register and schema of those records and the **Field that points at this record**, for example the `client` field of a `requests` schema on a client page. **Columns** and **Rows to show** are optional. **+ Add link button** adds a button with which an app user links an existing record to the open one: pick the register and schema to choose from and the **Field on this record that stores the link**. A row that misses one of these shows a warning until it is filled in.
+
 4. In the **Menu** panel, click **+ Add menu entry**. Fill in the id, the label, the icon and the **route name**. The route name has to match the page id you just gave. Pick the section, *main* or *settings*. Leave the second select on its default unless the entry belongs under user settings. Use **⤵** to nest an entry under the one above it, and the drag handle to reorder.
 
    ![Menu builder](/screenshots/tutorials/user/04-design-page-04.png)
