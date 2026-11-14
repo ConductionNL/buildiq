@@ -2059,7 +2059,18 @@ OC.L10N.register(
         "Requests under 250 ms": "Requests under 250 ms",
         "Total load time (ms)": "Total load time (ms)",
         "Window start": "Window start",
-        "Include server bundle": "Include server bundle"
+        "Include server bundle": "Include server bundle",
+        "Value source": "Value source",
+        "Only for type string or object": "Only for type string or object",
+        "Typed in": "Typed in",
+        "From a registry": "From a registry",
+        "keyed on {identifier}": "keyed on {identifier}",
+        "Look it up every time": "Look it up every time",
+        "Use it as a starting value": "Use it as a starting value",
+        "Registry lookups need the integriq app.": "Registry lookups need the integriq app.",
+        "{label}, live": "{label}, live",
+        "{label}, starting value": "{label}, starting value",
+        "Format": "Format"
     },
     "nplurals=2; plural=(n != 1);"
 )

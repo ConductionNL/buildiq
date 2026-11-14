@@ -419,6 +419,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values falsy 
    "minItems": 0,
    "maxItems": 0
   },
+  "source": null,
   "_raw": {
    "format": "",
    "pattern": "",
@@ -452,6 +453,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values falsy 
    "minLength": 0,
    "maxLength": 0
   },
+  "source": null,
   "_raw": {
    "format": "",
    "pattern": "",
@@ -482,6 +484,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values falsy 
    "maximum": 0,
    "multipleOf": 0
   },
+  "source": null,
   "_raw": {
    "format": "",
    "pattern": "",
@@ -512,6 +515,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values falsy 
    "maximum": 0,
    "multipleOf": 0
   },
+  "source": null,
   "_raw": {
    "format": "",
    "pattern": "",
@@ -538,6 +542,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values falsy 
   "default": "x",
   "description": "d",
   "validation": {},
+  "source": null,
   "_raw": {
    "format": "",
    "pattern": "",
@@ -564,6 +569,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values falsy 
   "default": "x",
   "description": "d",
   "validation": {},
+  "source": null,
   "_raw": {
    "format": "",
    "pattern": "",
@@ -594,6 +600,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values falsy 
    "cardinality": "many",
    "inverseOf": "cases"
   },
+  "source": null,
   "_raw": {
    "format": "",
    "pattern": "",
@@ -625,6 +632,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values falsy 
   "default": "x",
   "description": "d",
   "validation": {},
+  "source": null,
   "_raw": {
    "format": "",
    "pattern": "",
@@ -651,6 +659,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values falsy 
   "default": "x",
   "description": "d",
   "validation": {},
+  "source": null,
   "_raw": {
    "format": "",
    "pattern": "",
@@ -677,6 +686,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values falsy 
   "default": "x",
   "description": "d",
   "validation": {},
+  "source": null,
   "_raw": {
    "format": "",
    "pattern": "",
@@ -706,6 +716,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values falsy 
    "minLength": 0,
    "maxLength": 0
   },
+  "source": null,
   "_raw": {
    "format": "",
    "pattern": "",
@@ -731,6 +742,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values falsy 
   "default": null,
   "description": "",
   "validation": {},
+  "source": null,
   "_raw": {}
  },
  {
@@ -740,6 +752,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values falsy 
   "default": null,
   "description": "",
   "validation": {},
+  "source": null,
   "_raw": {
    "x-openregister-relation": {}
   }
@@ -751,6 +764,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values falsy 
   "default": null,
   "description": "",
   "validation": {},
+  "source": null,
   "_raw": {
    "type": "array",
    "items": {}
@@ -763,6 +777,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values falsy 
   "default": null,
   "description": "",
   "validation": {},
+  "source": null,
   "_raw": {
    "type": "string",
    "items": {
@@ -952,6 +967,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values none 1
   "validation": {
    "itemsType": "integer"
   },
+  "source": null,
   "_raw": {
    "description": "d",
    "default": "x",
@@ -973,6 +989,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values none 1
   "default": "x",
   "description": "d",
   "validation": {},
+  "source": null,
   "_raw": {
    "description": "d",
    "default": "x",
@@ -990,6 +1007,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values none 1
   "default": "x",
   "description": "d",
   "validation": {},
+  "source": null,
   "_raw": {
    "description": "d",
    "default": "x",
@@ -1007,6 +1025,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values none 1
   "default": "x",
   "description": "d",
   "validation": {},
+  "source": null,
   "_raw": {
    "description": "d",
    "default": "x",
@@ -1024,6 +1043,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values none 1
   "default": "x",
   "description": "d",
   "validation": {},
+  "source": null,
   "_raw": {
    "description": "d",
    "default": "x",
@@ -1041,6 +1061,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values none 1
   "default": "x",
   "description": "d",
   "validation": {},
+  "source": null,
   "_raw": {
    "description": "d",
    "default": "x",
@@ -1062,6 +1083,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values none 1
    "cardinality": "many",
    "inverseOf": "cases"
   },
+  "source": null,
   "_raw": {
    "description": "d",
    "default": "x",
@@ -1084,6 +1106,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values none 1
   "default": "x",
   "description": "d",
   "validation": {},
+  "source": null,
   "_raw": {
    "description": "d",
    "default": "x",
@@ -1101,6 +1124,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values none 1
   "default": "x",
   "description": "d",
   "validation": {},
+  "source": null,
   "_raw": {
    "description": "d",
    "default": "x",
@@ -1118,6 +1142,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values none 1
   "default": "x",
   "description": "d",
   "validation": {},
+  "source": null,
   "_raw": {
    "description": "d",
    "default": "x",
@@ -1135,6 +1160,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values none 1
   "default": "x",
   "description": "d",
   "validation": {},
+  "source": null,
   "_raw": {
    "description": "d",
    "default": "x",
@@ -1151,6 +1177,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values none 1
   "default": null,
   "description": "",
   "validation": {},
+  "source": null,
   "_raw": {}
  },
  {
@@ -1160,6 +1187,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values none 1
   "default": null,
   "description": "",
   "validation": {},
+  "source": null,
   "_raw": {
    "x-openregister-relation": {}
   }
@@ -1171,6 +1199,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values none 1
   "default": null,
   "description": "",
   "validation": {},
+  "source": null,
   "_raw": {
    "type": "array",
    "items": {}
@@ -1183,6 +1212,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values none 1
   "default": null,
   "description": "",
   "validation": {},
+  "source": null,
   "_raw": {
    "type": "string",
    "items": {
@@ -1360,6 +1390,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values null 1
   "validation": {
    "itemsType": "integer"
   },
+  "source": null,
   "_raw": {
    "format": null,
    "pattern": null,
@@ -1390,6 +1421,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values null 1
   "default": "x",
   "description": "d",
   "validation": {},
+  "source": null,
   "_raw": {
    "format": null,
    "pattern": null,
@@ -1416,6 +1448,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values null 1
   "default": "x",
   "description": "d",
   "validation": {},
+  "source": null,
   "_raw": {
    "format": null,
    "pattern": null,
@@ -1442,6 +1475,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values null 1
   "default": "x",
   "description": "d",
   "validation": {},
+  "source": null,
   "_raw": {
    "format": null,
    "pattern": null,
@@ -1468,6 +1502,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values null 1
   "default": "x",
   "description": "d",
   "validation": {},
+  "source": null,
   "_raw": {
    "format": null,
    "pattern": null,
@@ -1494,6 +1529,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values null 1
   "default": "x",
   "description": "d",
   "validation": {},
+  "source": null,
   "_raw": {
    "format": null,
    "pattern": null,
@@ -1524,6 +1560,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values null 1
    "cardinality": "many",
    "inverseOf": "cases"
   },
+  "source": null,
   "_raw": {
    "format": null,
    "pattern": null,
@@ -1555,6 +1592,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values null 1
   "default": "x",
   "description": "d",
   "validation": {},
+  "source": null,
   "_raw": {
    "format": null,
    "pattern": null,
@@ -1581,6 +1619,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values null 1
   "default": "x",
   "description": "d",
   "validation": {},
+  "source": null,
   "_raw": {
    "format": null,
    "pattern": null,
@@ -1607,6 +1646,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values null 1
   "default": "x",
   "description": "d",
   "validation": {},
+  "source": null,
   "_raw": {
    "format": null,
    "pattern": null,
@@ -1633,6 +1673,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values null 1
   "default": "x",
   "description": "d",
   "validation": {},
+  "source": null,
   "_raw": {
    "format": null,
    "pattern": null,
@@ -1658,6 +1699,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values null 1
   "default": null,
   "description": "",
   "validation": {},
+  "source": null,
   "_raw": {}
  },
  {
@@ -1667,6 +1709,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values null 1
   "default": null,
   "description": "",
   "validation": {},
+  "source": null,
   "_raw": {
    "x-openregister-relation": {}
   }
@@ -1678,6 +1721,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values null 1
   "default": null,
   "description": "",
   "validation": {},
+  "source": null,
   "_raw": {
    "type": "array",
    "items": {}
@@ -1690,6 +1734,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values null 1
   "default": null,
   "description": "",
   "validation": {},
+  "source": null,
   "_raw": {
    "type": "string",
    "items": {
@@ -1869,6 +1914,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values set 1`
    "minItems": 0,
    "maxItems": 3
   },
+  "source": null,
   "_raw": {
    "format": "email",
    "pattern": "^a",
@@ -1904,6 +1950,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values set 1`
    "minLength": 1,
    "maxLength": 9
   },
+  "source": null,
   "_raw": {
    "format": "email",
    "pattern": "^a",
@@ -1934,6 +1981,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values set 1`
    "maximum": 2,
    "multipleOf": 0.5
   },
+  "source": null,
   "_raw": {
    "format": "email",
    "pattern": "^a",
@@ -1964,6 +2012,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values set 1`
    "maximum": 2,
    "multipleOf": 0.5
   },
+  "source": null,
   "_raw": {
    "format": "email",
    "pattern": "^a",
@@ -1990,6 +2039,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values set 1`
   "default": "x",
   "description": "d",
   "validation": {},
+  "source": null,
   "_raw": {
    "format": "email",
    "pattern": "^a",
@@ -2016,6 +2066,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values set 1`
   "default": "x",
   "description": "d",
   "validation": {},
+  "source": null,
   "_raw": {
    "format": "email",
    "pattern": "^a",
@@ -2046,6 +2097,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values set 1`
    "cardinality": "many",
    "inverseOf": "cases"
   },
+  "source": null,
   "_raw": {
    "format": "email",
    "pattern": "^a",
@@ -2077,6 +2129,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values set 1`
   "default": "x",
   "description": "d",
   "validation": {},
+  "source": null,
   "_raw": {
    "format": "email",
    "pattern": "^a",
@@ -2103,6 +2156,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values set 1`
   "default": "x",
   "description": "d",
   "validation": {},
+  "source": null,
   "_raw": {
    "format": "email",
    "pattern": "^a",
@@ -2129,6 +2183,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values set 1`
   "default": "x",
   "description": "d",
   "validation": {},
+  "source": null,
   "_raw": {
    "format": "email",
    "pattern": "^a",
@@ -2160,6 +2215,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values set 1`
    "minLength": 1,
    "maxLength": 9
   },
+  "source": null,
   "_raw": {
    "format": "email",
    "pattern": "^a",
@@ -2185,6 +2241,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values set 1`
   "default": null,
   "description": "",
   "validation": {},
+  "source": null,
   "_raw": {}
  },
  {
@@ -2194,6 +2251,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values set 1`
   "default": null,
   "description": "",
   "validation": {},
+  "source": null,
   "_raw": {
    "x-openregister-relation": {}
   }
@@ -2205,6 +2263,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values set 1`
   "default": null,
   "description": "",
   "validation": {},
+  "source": null,
   "_raw": {
    "type": "array",
    "items": {}
@@ -2217,6 +2276,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values set 1`
   "default": null,
   "description": "",
   "validation": {},
+  "source": null,
   "_raw": {
    "type": "string",
    "items": {

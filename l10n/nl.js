@@ -1644,7 +1644,18 @@ OC.L10N.register(
         "Requests under 250 ms": "Verzoeken onder 250 ms",
         "Total load time (ms)": "Totale laadtijd (ms)",
         "Window start": "Begin van het venster",
-        "Include server bundle": "Serverbundel meenemen"
+        "Include server bundle": "Serverbundel meenemen",
+        "Value source": "Waarde uit een register",
+        "Only for type string or object": "Alleen bij type string of object",
+        "Typed in": "Zelf ingevuld",
+        "From a registry": "Uit een register",
+        "keyed on {identifier}": "op basis van {identifier}",
+        "Look it up every time": "Elke keer opzoeken",
+        "Use it as a starting value": "Als beginwaarde gebruiken",
+        "Registry lookups need the integriq app.": "Opzoeken in een register vraagt de app integriq.",
+        "{label}, live": "{label}, actueel",
+        "{label}, starting value": "{label}, beginwaarde",
+        "Format": "Formaat"
     },
     "nplurals=2; plural=(n != 1);"
 )
