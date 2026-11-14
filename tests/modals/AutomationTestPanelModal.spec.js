@@ -95,4 +95,45 @@ describe('AutomationTestPanelModal', () => {
 			expect(wrapper.vm.approvalStateLabel).toBe(label)
 		}
 	})
+
+	describe('logic-approval-task-form: the fields an approval step asks for', () => {
+		const automation = {
+			id: 'auto-7',
+			actions: [
+				{ type: 'send-notification' },
+				{ type: 'approval', assigneeGroup: 'a', form: { fields: [{ field: 'bedrag', required: true }, { field: 'motivering' }] } },
+				{ type: 'approval', assigneeGroup: 'b' },
+				{ type: 'approval', assigneeGroup: 'c', form: { fields: [{ field: 'besluit' }] } },
+			],
+		}
+
+		it('names each approval step\'s fields, in their order, with a plural for the count', () => {
+			const spy = vi.spyOn(globalThis, 'n')
+			const wrapper = shallowMount(AutomationTestPanelModal, { props: { automation } })
+
+			expect(wrapper.vm.approvalFormLines).toEqual([
+				'asks for {count} fields: {fields}',
+				'asks for {count} field: {fields}',
+			])
+			expect(spy).toHaveBeenCalledWith('buildiq', 'asks for {count} field: {fields}', 'asks for {count} fields: {fields}', 2, { count: 2, fields: 'bedrag, motivering' })
+			expect(spy).toHaveBeenCalledWith('buildiq', 'asks for {count} field: {fields}', 'asks for {count} fields: {fields}', 1, { count: 1, fields: 'besluit' })
+			spy.mockRestore()
+		})
+
+		it('shows the lines with a matched dry run, and none without a form', async () => {
+			axios.post.mockResolvedValue({ data: { conditionMatched: true, actions: ['approval'] } })
+			const wrapper = shallowMount(AutomationTestPanelModal, {
+				props: { automation },
+				global: { stubs: { NcModal: { template: '<div><slot /></div>' } } },
+			})
+			await wrapper.vm.run()
+			await flushPromises()
+			const lines = wrapper.findAll('[data-testid="dry-run-approval-form"]')
+			expect(lines).toHaveLength(2)
+			expect(lines[0].isVisible()).toBe(true)
+
+			const plain = shallowMount(AutomationTestPanelModal, { props: { automation: { id: 'x', actions: [{ type: 'approval' }] } } })
+			expect(plain.vm.approvalFormLines).toEqual([])
+		})
+	})
 })
