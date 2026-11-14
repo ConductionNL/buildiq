@@ -46,6 +46,9 @@ use OCP\IUserSession;
  * Controller for the main Buildiq dashboard page.
  *
  * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-52
+ * @spec openspec/specs/platform-properties/spec.md#REQ-PLAT-003
+ * @spec openspec/specs/platform-properties/spec.md#REQ-PLAT-004
+ * @spec openspec/specs/platform-properties/spec.md#REQ-PLAT-012
  */
 class DashboardController extends Controller {
 	/**
