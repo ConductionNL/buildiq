@@ -27,6 +27,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\Service;
 
 use OCA\Buildiq\Service\AppNavigationService;
+use OCA\Buildiq\Service\AppOrganisationGuard;
 use OCA\Buildiq\Service\AppVisibilityResolver;
 use OCA\Buildiq\Service\CallerContext;
 use OCA\Buildiq\Service\PermissionResolver;
@@ -497,6 +498,73 @@ class AppNavigationServiceTest extends TestCase {
 		$this->assertArrayHasKey('order', $entry);
 		$this->assertArrayHasKey('enabled', $entry);
 	}//end testRegisteredClosureReturnsExpectedShape()
+
+	/**
+	 * REQ-BQOS-002: another organisation's scoped app is hidden from the
+	 * navigation even for a role holder; the caller's own scoped app and a
+	 * shared one stay; without a guard, scoped apps are hidden (fail closed).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002
+	 */
+	public function testTheNavigationHidesAnotherOrganisationsScopedApp(): void {
+		$apps = [
+			['slug' => 'shared', 'status' => 'published', 'permissions' => ['viewers' => ['group:*']]],
+			['slug' => 'ours', 'status' => 'published', 'organisationScope' => 'holder', 'permissions' => ['viewers' => ['group:*']]],
+			['slug' => 'theirs', 'status' => 'published', 'organisationScope' => 'holder', 'permissions' => ['viewers' => ['group:*']]],
+		];
+		$this->objectService->method('findAll')->willReturn($apps);
+
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('zuid-user');
+		$this->userSession->method('getUser')->willReturn($user);
+		$this->groupManager->method('getUserGroupIds')->willReturn([]);
+		$this->groupManager->method('isAdmin')->willReturn(false);
+
+		$guard = $this->createMock(AppOrganisationGuard::class);
+		$guard->method('canSee')->willReturnCallback(static fn (array $app): bool => $app['slug'] === 'ours');
+
+		$this->assertSame(['shared' => true, 'ours' => true, 'theirs' => false], $this->navVisibility(guard: $guard));
+		$this->assertSame(['shared' => true, 'ours' => false, 'theirs' => false], $this->navVisibility(guard: null));
+	}//end testTheNavigationHidesAnotherOrganisationsScopedApp()
+
+	/**
+	 * Which registered entries are enabled, by slug, for a service with the given guard.
+	 *
+	 * @param AppOrganisationGuard|null $guard The guard.
+	 *
+	 * @return array<string, bool> Enabled per slug.
+	 */
+	private function navVisibility(?AppOrganisationGuard $guard): array {
+		$service = new AppNavigationService(
+			objectService: $this->objectService,
+			urlGenerator: $this->urlGenerator,
+			caller: new CallerContext(
+				userSession: $this->userSession,
+				groupManager: $this->groupManager,
+				permissionResolver: $this->createMock(PermissionResolver::class)
+			),
+			appConfig: $this->appConfig,
+			logger: $this->logger,
+			published: new PublishedApps(organisationGuard: $guard),
+		);
+
+		$closures = [];
+		$nav = $this->createMock(INavigationManager::class);
+		$nav->method('add')->willReturnCallback(function ($callable) use (&$closures): void {
+			$closures[] = $callable;
+		});
+		$service->registerNavEntries($nav);
+
+		$visibility = [];
+		foreach ($closures as $closure) {
+			$entry = $closure();
+			$visibility[substr($entry['id'], strlen('openbuild-app-'))] = $entry['enabled'];
+		}
+
+		return $visibility;
+	}//end navVisibility()
 
 	/**
 	 * REQ-OBNAV-001 / #32-Fix-A: the nav entry `href` is generated via

@@ -2059,7 +2059,9 @@ OC.L10N.register(
         "Requests under 250 ms": "Requests under 250 ms",
         "Total load time (ms)": "Total load time (ms)",
         "Window start": "Window start",
-        "Include server bundle": "Include server bundle"
+        "Include server bundle": "Include server bundle",
+        "Organisation scope": "Organisation scope",
+        "Who sees this app: all organisations, or only the organisation that holds it. Absent means all organisations.": "Who sees this app: all organisations, or only the organisation that holds it. Absent means all organisations."
     },
     "nplurals=2; plural=(n != 1);"
 )

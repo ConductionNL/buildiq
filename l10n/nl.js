@@ -1644,7 +1644,9 @@ OC.L10N.register(
         "Requests under 250 ms": "Verzoeken onder 250 ms",
         "Total load time (ms)": "Totale laadtijd (ms)",
         "Window start": "Begin van het venster",
-        "Include server bundle": "Serverbundel meenemen"
+        "Include server bundle": "Serverbundel meenemen",
+        "Organisation scope": "Organisatiebereik",
+        "Who sees this app: all organisations, or only the organisation that holds it. Absent means all organisations.": "Wie deze app ziet: alle organisaties, of alleen de organisatie die hem beheert. Niet ingevuld betekent alle organisaties."
     },
     "nplurals=2; plural=(n != 1);"
 )

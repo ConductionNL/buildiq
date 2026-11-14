@@ -153,7 +153,8 @@ final class ServiceRegistrar {
 				logger: $c->get(LoggerInterface::class),
 				published: new PublishedApps(
 					applicationProvider: $c->get(PublishedApplicationProvider::class),
-					visibilityResolver: $c->get(AppVisibilityResolver::class)
+					visibilityResolver: $c->get(AppVisibilityResolver::class),
+					organisationGuard: $c->get(AppOrganisationGuard::class)
 				)
 			)
 		);
