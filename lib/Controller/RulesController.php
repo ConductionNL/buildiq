@@ -47,6 +47,7 @@ namespace OCA\Buildiq\Controller;
 use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Kernel\Contracts\RuleEngineServiceInterface;
 use OCA\Buildiq\Service\CallerContext;
+use OCA\Buildiq\Service\RuleSetColumns;
 use OCA\Buildiq\Service\RuleStorage;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -228,6 +229,54 @@ class RulesController extends Controller {
 	}//end outcomeStatus()
 
 	/**
+	 * The active rule sets another app may call, for that app's form designer to pick from.
+	 *
+	 * `GET /api/rules?callableBy={app}`: each rule set that lists the app in
+	 * `callableBy`, projected to slug, title, version, inputs and outputs. The
+	 * decision table itself is never returned (design D3).
+	 *
+	 * @return JSONResponse 200 with `results`, 400 without `callableBy`, 401 when not signed in.
+	 *
+	 * @spec openspec/changes/rules-evaluation-for-other-apps/specs/rules-evaluation-for-other-apps/spec.md#requirement-a-rule-set-names-the-apps-that-may-call-it-req-bqrx-001
+	 *
+	 * @no-admin-idor-exempt Authorization is delegated to OpenRegister: the list is read
+	 *   through RuleObjectReader::findScoped(), which searches with `_rbac: true` and
+	 *   `_multitenancy: true`, so only rule sets the caller may already see are listed,
+	 *   and only their slug, title, version and column names leave the server.
+	 */
+	#[NoAdminRequired]
+	public function index(): JSONResponse {
+		if ($this->caller->userSession->getUser() === null) {
+			return $this->error(code: 'unauthenticated', detail: null, status: Http::STATUS_UNAUTHORIZED);
+		}
+
+		$app = trim((string)$this->request->getParam('callableBy', ''));
+		if ($app === '') {
+			return $this->error(code: 'invalid_request', detail: 'callableBy is required', status: Http::STATUS_BAD_REQUEST);
+		}
+
+		$results = [];
+		foreach ($this->query(schema: RuleEngineServiceInterface::RULE_SET_SCHEMA, filters: ['status' => 'active'], limit: null) as $ruleSet) {
+			$callableBy = $ruleSet['callableBy'] ?? [];
+			if (($ruleSet['status'] ?? '') !== 'active' || is_array($callableBy) === false || in_array($app, $callableBy, true) === false) {
+				continue;
+			}
+
+			$columns = $this->decisionColumns(ruleSet: $ruleSet);
+			$results[] = [
+				'slug' => (string)($ruleSet['slug'] ?? ''),
+				'title' => (string)($ruleSet['name'] ?? ''),
+				'version' => (string)($ruleSet['version'] ?? ''),
+				'inputs' => $columns['inputs'],
+				'outputs' => $columns['outputs'],
+			];
+		}
+
+		return new JSONResponse(data: ['results' => $results], statusCode: Http::STATUS_OK);
+
+	}//end index()
+
+	/**
 	 * Return a RuleSet's metadata + active version for UI binding.
 	 *
 	 * @param string $ruleSetSlug The RuleSet slug.
@@ -345,28 +394,9 @@ class RulesController extends Controller {
 	 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-calculated-from-a-rule-set-req-bqlv-002
 	 */
 	private function decisionColumns(array $ruleSet): array {
-		$inputs = [];
-		$outputs = [];
 		$tables = $this->storage->tables->forRuleSet(ruleSet: $ruleSet);
-		$table = ($tables[0] ?? []);
 
-		foreach ((array)($table['inputColumns'] ?? []) as $column) {
-			if (is_array($column) === true && is_string($column['name'] ?? null) === true) {
-				$inputs[] = [
-					'name' => $column['name'],
-					'path' => (string)($column['expressionPath'] ?? $column['name']),
-					'type' => (string)($column['type'] ?? ''),
-				];
-			}
-		}
-
-		foreach ((array)($table['outputColumns'] ?? []) as $column) {
-			if (is_array($column) === true && is_string($column['name'] ?? null) === true) {
-				$outputs[] = ['name' => $column['name'], 'type' => (string)($column['type'] ?? '')];
-			}
-		}
-
-		return ['inputs' => $inputs, 'outputs' => $outputs];
+		return RuleSetColumns::fromTable(table: (array)($tables[0] ?? []));
 	}//end decisionColumns()
 
 	/**

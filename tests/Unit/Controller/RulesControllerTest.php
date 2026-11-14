@@ -548,6 +548,91 @@ final class RulesControllerTest extends TestCase {
 	}//end testSchemaListsTheDecisionTableInputsAndOutputs()
 
 	/**
+	 * REQ-BQRX-001: the list for portaliq holds the active rule sets that list it,
+	 * with their inputs and outputs and no rules; a rule set without callableBy stays private.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/rules-evaluation-for-other-apps/specs/rules-evaluation-for-other-apps/spec.md#requirement-a-rule-set-names-the-apps-that-may-call-it-req-bqrx-001
+	 */
+	public function testTheCallableListHoldsOnlyTheRuleSetsThatListTheApp(): void {
+		$this->authenticate();
+		$this->request->method('getParam')->willReturnCallback(
+			static fn (string $key, mixed $default = null): mixed => ($key === 'callableBy' ? 'portaliq' : $default)
+		);
+		$queries = [];
+		$this->objectService->method('searchObjects')->willReturnCallback(
+			static function (array $query, bool $_rbac = true, bool $_multitenancy = true) use (&$queries): array {
+				$queries[] = [$query['status'] ?? null, $_rbac, $_multitenancy];
+				return [
+					['slug' => 'parkeren-soort-vergunning', 'name' => 'Soort parkeervergunning', 'version' => '2', 'status' => 'active', 'callableBy' => ['portaliq']],
+					['slug' => 'private', 'name' => 'Private', 'version' => '1', 'status' => 'active'],
+					['slug' => 'for-decidiq', 'name' => 'Other', 'version' => '1', 'status' => 'active', 'callableBy' => ['decidiq']],
+					['slug' => 'concept', 'name' => 'Concept', 'version' => '1', 'status' => 'draft', 'callableBy' => ['portaliq']],
+				];
+			}
+		);
+		$this->store->method('find')->willReturnCallback(
+			static function (string $reference): array {
+				if ($reference !== 'buildiq.parkeren-soort-vergunning') {
+					throw new UnexpectedValueException('No decision table has the key or id "' . $reference . '".');
+				}
+
+				return [
+					'key' => 'buildiq.parkeren-soort-vergunning',
+					'name' => 'Soort parkeervergunning',
+					'hitPolicy' => 'FIRST',
+					'inputs' => [
+						['name' => 'woonplaats', 'type' => 'string', 'expressionPath' => 'woonplaats'],
+						['name' => 'auto', 'type' => 'boolean', 'expressionPath' => 'auto'],
+					],
+					'outputs' => [['name' => 'soortVergunning', 'type' => 'string']],
+					'rules' => [['id' => 'rule-0', 'inputEntries' => ['"Zuiddrecht"', 'true'], 'outputEntries' => ['bewoner']]],
+				];
+			}
+		);
+
+		$response = $this->controller()->index();
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertSame(
+			[
+				'results' => [
+					[
+						'slug' => 'parkeren-soort-vergunning',
+						'title' => 'Soort parkeervergunning',
+						'version' => '2',
+						'inputs' => [
+							['name' => 'woonplaats', 'path' => 'woonplaats', 'type' => 'string'],
+							['name' => 'auto', 'path' => 'auto', 'type' => 'boolean'],
+						],
+						'outputs' => [['name' => 'soortVergunning', 'type' => 'string']],
+					],
+				],
+			],
+			$response->getData()
+		);
+		$this->assertSame([['active', true, true]], $queries, 'read in the caller\'s own scope');
+	}//end testTheCallableListHoldsOnlyTheRuleSetsThatListTheApp()
+
+	/**
+	 * The list needs a signed-in user and an app to list for.
+	 *
+	 * @return void
+	 */
+	public function testTheCallableListNeedsAUserAndAnApp(): void {
+		$this->objectService->expects($this->never())->method('searchObjects');
+		$this->request->method('getParam')->willReturn('');
+
+		$this->assertSame(Http::STATUS_UNAUTHORIZED, $this->controller()->index()->getStatus());
+
+		$this->authenticate();
+		$response = $this->controller()->index();
+		$this->assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+		$this->assertSame(['error' => 'invalid_request', 'detail' => 'callableBy is required'], $response->getData());
+	}//end testTheCallableListNeedsAUserAndAnApp()
+
+	/**
 	 * REQ-BRE-007: the schema of a rule set held by another organisation is a
 	 * 404 for a caller in organisation B, as the spec's scenario says.
 	 *

@@ -89,6 +89,7 @@ class Application extends App implements IBootstrap {
 		(new ListenerRegistrar())->registerObjectGuardListeners(context: $context);
 		(new ListenerRegistrar())->registerApprovalListeners(context: $context);
 		(new ListenerRegistrar())->registerDocumentListeners(context: $context);
+		(new ListenerRegistrar())->registerRuleCommandListeners(context: $context);
 		$this->registerToolsAndCapabilities(context: $context);
 	}//end register()
 

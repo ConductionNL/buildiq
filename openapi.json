@@ -3338,6 +3338,48 @@
                 }
             }
         },
+        "/rules": {
+            "get": {
+                "operationId": "rules-index",
+                "summary": "List the active rule sets another app may call",
+                "description": "The active rule sets whose callableBy lists the app, projected to slug, title, version, inputs and outputs; the decision table is not returned (rules-evaluation-for-other-apps REQ-BQRX-001). Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "rules"
+                ],
+                "parameters": [
+                    {
+                        "name": "callableBy",
+                        "in": "query",
+                        "required": true,
+                        "description": "The app id to list the callable rule sets for.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                }
+            }
+        },
         "/rules/{ruleSetSlug}/decision-table": {
             "put": {
                 "operationId": "rules-save-decision-table",
