@@ -1,0 +1,61 @@
+{
+	"_comment": "ADR-037 register fragment: journeys (journey-designer, ADR-085 §6). Adds a NEW disjoint schema key `journey` to the shared `buildiq` register's components.schemas map; no existing schema is touched. A journey is the Journey Designer's ordered steps over form-library forms: a `form` step holds the `formId` of the form it references and never field definitions of its own; a step may carry `branch` rules (visibleWhen predicates) and `writes` (objects the submitted journey creates). Only administrators author journeys: buildiq's save route refuses anyone else, and the schema's create/update/delete authorization is admin as well.",
+	"components": {
+		"schemas": {
+			"journey": {
+				"x-schema-org": "schema:HowTo",
+				"slug": "journey",
+				"icon": "MapMarkerPath",
+				"version": "0.1.0",
+				"title": "Journey",
+				"description": "A journey authored in the Journey Designer: its ordered steps (forms from the form library, a review, a confirmation), the branch rules between them and the objects the submitted journey writes.",
+				"authorization": {
+					"read": [
+						"authenticated"
+					],
+					"create": [
+						"admin"
+					],
+					"update": [
+						"admin"
+					],
+					"delete": [
+						"admin"
+					]
+				},
+				"type": "object",
+				"required": [
+					"title",
+					"steps"
+				],
+				"properties": {
+					"uuid": {
+						"title": "UUID",
+						"type": "string",
+						"description": "OpenRegister-assigned unique identifier for this journey. Not supplied by the client on create."
+					},
+					"title": {
+						"title": "Title",
+						"type": "string",
+						"description": "The journey's name, shown above its steps.",
+						"minLength": 1,
+						"maxLength": 255
+					},
+					"description": {
+						"title": "Description",
+						"type": "string",
+						"description": "What the journey is for."
+					},
+					"steps": {
+						"title": "Steps",
+						"type": "array",
+						"description": "The ordered steps. Each is `{ id, type, title }` with `type` form, review or confirmation; a form step adds `formId` (the form-library form it references), optional `branch: [{ when, goto }]` and optional `writes: [{ as, register, schema, mapping }]`; a confirmation step adds `message`.",
+						"items": {
+							"type": "object"
+						}
+					}
+				}
+			}
+		}
+	}
+}

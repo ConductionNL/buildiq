@@ -103,6 +103,32 @@ function fieldKeysOf(form) {
 }
 
 /**
+ * The field keys a branch on the step at `index` may read: those of that
+ * form step and of every form step before it, first asked first. The branch
+ * editor offers these and no other field.
+ *
+ * @param {{steps?: Array<object>}} journey - the journey.
+ * @param {{[id: string]: object}} forms - the form objects by id.
+ * @param {number} index - the position of the step the branch is on.
+ * @return {Array<string>} The keys, each once.
+ * @spec openspec/changes/journey-designer/specs/journey-designer/spec.md#requirement-branch-rules-must-be-authored-only-from-the-shared-operator-set
+ */
+export function fieldsAskedBy(journey, forms, index) {
+	const keys = []
+	journeySteps(journey).slice(0, index + 1).forEach((step) => {
+		if (step.type !== 'form') {
+			return
+		}
+		for (const key of fieldKeysOf(forms && forms[String(step.formId || '')])) {
+			if (!keys.includes(key)) {
+				keys.push(key)
+			}
+		}
+	})
+	return keys
+}
+
+/**
  * Findings on the steps themselves: an unknown type, a form step without a
  * form, one whose form no longer exists, and one that carries its own field
  * definitions instead of a reference.
