@@ -272,4 +272,44 @@ final class SettingsServiceTest extends TestCase {
 			self::assertFalse($result['success']);
 		}
 	}//end testReloadConfigurationCallsImportWithForceTrue()
+
+	/**
+	 * REQ-BQOM-002 — "Let apps work offline" is off unless an admin switched it on, and is saved as a boolean.
+	 *
+	 * @return void
+	 */
+	public function testOfflineAppsAreOffByDefaultAndSavedAsABoolean(): void {
+		$stored = [];
+		$this->appConfig->method('getValueString')->willReturn('');
+		$this->appConfig->method('getValueBool')->willReturnCallback(
+			static function (string $app, string $key, bool $default = false) use (&$stored): bool {
+				return ($stored[$key] ?? $default);
+			}
+		);
+		$this->appConfig->method('setValueBool')->willReturnCallback(
+			static function (string $app, string $key, bool $value) use (&$stored): bool {
+				$stored[$key] = $value;
+				return true;
+			}
+		);
+		$this->appManager->method('isInstalled')->willReturn(false);
+		$this->userSession->method('getUser')->willReturn(null);
+
+		$service = $this->sut();
+		self::assertFalse($service->offlineAppsAllowed());
+		self::assertFalse($service->getSettings()['allow_offline_apps']);
+
+		$result = $service->updateSettings(['allow_offline_apps' => 'true']);
+		self::assertSame(['allow_offline_apps' => true], $stored);
+		self::assertTrue($result['allow_offline_apps']);
+		self::assertTrue($service->offlineAppsAllowed());
+
+		$service->updateSettings(['allow_offline_apps' => false]);
+		self::assertFalse($service->offlineAppsAllowed());
+
+		// A save that does not name the setting leaves it as it is.
+		$service->updateSettings(['allow_offline_apps' => true]);
+		$service->updateSettings(['register' => 'buildiq']);
+		self::assertTrue($service->offlineAppsAllowed());
+	}//end testOfflineAppsAreOffByDefaultAndSavedAsABoolean()
 }//end class

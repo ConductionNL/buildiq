@@ -309,4 +309,25 @@ class SettingsControllerWriteTest extends TestCase {
 		$this->assertSame(['error' => 'Unauthenticated.'], $response->getData());
 	}//end testLoadRejectsAnUnauthenticatedCallerAndReloadsNothing()
 
+	/**
+	 * REQ-BQOM-002 — an admin's "Let apps work offline" reaches the service as submitted.
+	 *
+	 * @return void
+	 */
+	public function testUpdatePassesTheOfflineSettingThrough(): void {
+		$submitted = ['allow_offline_apps' => true];
+
+		$this->signIn('alice');
+		$this->groupManager->method('isInGroup')->with('alice', 'admin')->willReturn(true);
+		$this->request->method('getParams')->willReturn($submitted);
+		$this->settingsService->expects($this->once())
+			->method('updateSettings')
+			->with($submitted)
+			->willReturn(['allow_offline_apps' => true]);
+
+		$response = $this->controller()->update();
+
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertTrue($response->getData()['config']['allow_offline_apps']);
+	}//end testUpdatePassesTheOfflineSettingThrough()
 }//end class

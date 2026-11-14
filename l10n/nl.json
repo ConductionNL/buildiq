@@ -1,5 +1,8 @@
 {
     "translations": {
+        "Let apps work offline": "Apps offline laten werken",
+        "Offline": "Offline",
+        "When this is on, an app whose maker chose records or forms to take along keeps them on the device and syncs forms filled in offline. Off by default.": "Als dit aan staat, bewaart een app waarvan de maker records of formulieren heeft gekozen om mee te nemen die op het apparaat, en synchroniseert offline ingevulde formulieren later. Standaard uit.",
         "Could not save the support note: {reason}": "Kon de supportnotitie niet opslaan: {reason}",
         "A custom page must document why a standard page type was not feasible.": "Een aangepaste pagina moet vastleggen waarom een standaard paginatype niet haalbaar was.",
         "Column": "Kolom",
