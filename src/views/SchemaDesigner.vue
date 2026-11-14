@@ -125,6 +125,7 @@
 				<FieldEditor
 					:fields="staged.fields"
 					:schemaSlugs="otherSchemaSlugs"
+					:schemaSlug="staged.slug || ''"
 					@update:fields="onFieldsChange" />
 
 				<LifecycleEditor
@@ -1009,7 +1010,7 @@ export default {
 		 * @return {object} Canonical schema body.
 		 */
 		composeSchemaBody(staged) {
-			const composed = fieldsToSchema(staged.fields)
+			const composed = fieldsToSchema(staged.fields, staged.slug)
 			const { required } = composed
 			// REQ-BQCF-001: property calculations ride on their property.
 			const { properties, order } = applyCalculations(

@@ -1660,7 +1660,17 @@
         "Requests under 250 ms": "Verzoeken onder 250 ms",
         "Total load time (ms)": "Totale laadtijd (ms)",
         "Window start": "Begin van het venster",
-        "Include server bundle": "Serverbundel meenemen"
+        "Include server bundle": "Serverbundel meenemen",
+        "Automatic number": "Automatisch nummer",
+        "Counter name": "Naam van de teller",
+        "Fields with the same counter name share one count.": "Velden met dezelfde tellernaam delen één telling.",
+        "Number format": "Nummerformaat",
+        "Use {year}, {month} and a counter such as {seq:4}.": "Gebruik {year}, {month} en een teller zoals {seq:4}.",
+        "Restart the counter each year": "De teller elk jaar opnieuw laten beginnen",
+        "Next number: {example}": "Volgend nummer: {example}",
+        "The format uses {placeholder}, which is not one of {seq}, {seq:n}, {year} or {month}.": "Het formaat gebruikt {placeholder}, dat is geen {seq}, {seq:n}, {year} of {month}.",
+        "The counter restarts each year, so the format needs {year}, or next year repeats this year's numbers.": "De teller begint elk jaar opnieuw, dus het formaat heeft {year} nodig, anders herhaalt volgend jaar de nummers van dit jaar.",
+        "The format needs a counter such as {seq:4}, or every record gets the same number.": "Het formaat heeft een teller nodig zoals {seq:4}, anders krijgt elk record hetzelfde nummer."
     },
     "plurals": null,
     "pluralForm": "nplurals=2; plural=(n != 1);"
