@@ -554,20 +554,72 @@ final class AutomationCompilerServiceTest extends TestCase {
 	}//end testADuplicateOrNamelessFormFieldIsRefused()
 
 	/**
-	 * logic-approval-task-form REQ-BQTF-002: a valid form is still refused while OpenRegister cannot carry it into the task.
+	 * logic-approval-task-form REQ-BQTF-002: with OpenRegister carrying it, a valid form compiles onto the chain position, in order, and into the hash.
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-the-form-is-compiled-into-the-approval-chain-or-refused-req-bqtf-002
 	 */
-	public function testAValidApprovalFormIsRefusedUntilOpenRegisterCarriesIt(): void {
+	public function testAValidApprovalFormCompilesOntoTheChainPosition(): void {
+		$this->assertTrue(class_exists('OCA\\OpenRegister\\Service\\Task\\ApprovalPositionForm'));
 		$this->klachtSchema();
 
-		$this->expectException(UnsupportedAutomationCombinationException::class);
-		$this->expectExceptionMessage('Approval forms need OpenRegister to carry a form into the task');
+		$plan = $this->compiler->compile(self::approvalWithForm(fields: [['field' => 'bedrag', 'required' => true], ['field' => 'motivering', 'required' => false]]));
+		$plain = $this->compiler->compile(self::approvalWithForm(fields: []));
 
-		$this->compiler->compile(self::approvalWithForm(fields: [['field' => 'bedrag', 'required' => true], ['field' => 'motivering', 'required' => false]]));
-	}//end testAValidApprovalFormIsRefusedUntilOpenRegisterCarriesIt()
+		$this->assertSame(
+			[
+				'name' => 'aut-klacht-ter-goedkeuring',
+				'schema' => 'klacht',
+				'assigneeGroup' => 'teamleiders',
+				'enabled' => true,
+				'form' => ['kind' => 'fields', 'fields' => [['field' => 'bedrag', 'required' => true], ['field' => 'motivering', 'required' => false]]],
+			],
+			$plan['approvalChain']
+		);
+		$this->assertNotSame($plain['hash'], $plan['hash']);
+	}//end testAValidApprovalFormCompilesOntoTheChainPosition()
+
+	/**
+	 * logic-approval-task-form REQ-BQTF-002: applying writes the form on the declared approver, and a form changed outside buildiq changes the live hash.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-the-form-is-compiled-into-the-approval-chain-or-refused-req-bqtf-002
+	 */
+	public function testTheAppliedChainCarriesTheFormAndAChangedFormShowsInTheLiveHash(): void {
+		$captured = [];
+		$schema = $this->schemaWithConfig([], $captured);
+		$schema->method('getId')->willReturn(42);
+		$schema->method('getProperties')->willReturn(['bedrag' => ['type' => 'number'], 'motivering' => ['type' => 'string']]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$automation = self::approvalWithForm(fields: [['field' => 'bedrag', 'required' => true], ['field' => 'motivering']]);
+
+		$plan = $this->compiler->compile($automation);
+		$provenance = $this->compiler->apply($automation, $plan, []);
+
+		$this->assertSame(
+			[
+				'approvers' => [[
+					'role' => 'teamleiders',
+					'form' => ['kind' => 'fields', 'fields' => [['field' => 'bedrag', 'required' => true], ['field' => 'motivering', 'required' => false]]],
+				]],
+				'enabled' => true,
+			],
+			$captured['x-openregister-approval-chains']['aut-klacht-ter-goedkeuring']
+		);
+
+		$before = $this->compiler->status($automation, $provenance)['liveHash'];
+		$this->assertSame($before, $this->compiler->status($automation, $provenance)['liveHash']);
+
+		$edited = $captured;
+		$edited['x-openregister-approval-chains']['aut-klacht-ter-goedkeuring']['approvers'][0]['form']['fields'] = [['field' => 'bedrag', 'required' => true]];
+		$schema->setConfiguration($edited);
+
+		$after = $this->compiler->status($automation, $provenance);
+		$this->assertTrue($after['drift']);
+		$this->assertNotSame($before, $after['liveHash']);
+	}//end testTheAppliedChainCarriesTheFormAndAChangedFormShowsInTheLiveHash()
 
 	/**
 	 * An empty field list is no form: the approval compiles as before, without reading the schema.

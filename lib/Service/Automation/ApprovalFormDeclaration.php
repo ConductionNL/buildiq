@@ -36,9 +36,9 @@ use OCA\Buildiq\Exception\UnsupportedAutomationCombinationException;
  * A field is refused, by name, when the trigger schema does not declare it,
  * marks it `readOnly`, hides it (`visible: false`), or makes it a relation or
  * an array: the task form renders scalar fields only. A declaration that
- * passes is still refused while OpenRegister does not carry a chain
- * position's form into the tasks it opens, so a maker never saves a form that
- * silently does nothing. An empty or absent list is no form.
+ * passes is still refused when the installed OpenRegister does not carry a
+ * chain position's form into the tasks it opens, so a maker never saves a
+ * form that silently does nothing. An empty or absent list is no form.
  *
  * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
  */
@@ -77,19 +77,41 @@ final class ApprovalFormDeclaration {
 	}//end fieldsOf()
 
 	/**
+	 * The chain position's `form` for an approval action, or null without fields:
+	 * `{kind: "fields", fields: [{field, required}]}` in the declared order, the
+	 * shape OpenRegister's approval position reads (REQ-BQTF-002).
+	 *
+	 * @param array<string,mixed> $action One approval action.
+	 *
+	 * @return array{kind:string,fields:list<array{field:string,required:bool}>}|null
+	 *
+	 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-the-form-is-compiled-into-the-approval-chain-or-refused-req-bqtf-002
+	 */
+	public static function chainForm(array $action): ?array {
+		$fields = self::fieldsOf(action: $action);
+		if ($fields === []) {
+			return null;
+		}
+
+		return ['kind' => 'fields', 'fields' => $fields];
+	}//end chainForm()
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string   $schemaSlug The trigger schema.
 	 * @param \Closure $properties Reads the trigger schema's properties, or null when it cannot; called only when a form is declared.
+	 * @param \Closure $carried    Whether OpenRegister carries a chain position's form into its tasks; called only when a form is declared.
 	 */
 	public function __construct(
 		private readonly string $schemaSlug,
 		private readonly \Closure $properties,
+		private readonly \Closure $carried,
 	) {
 	}//end __construct()
 
 	/**
-	 * Refuse an approval form the trigger schema cannot render, naming the field; then refuse any form at all.
+	 * Refuse an approval form the trigger schema cannot render, naming the field; then refuse any form OpenRegister cannot carry.
 	 *
 	 * @param array<int,mixed> $actions The automation's actions.
 	 *
@@ -122,7 +144,9 @@ final class ApprovalFormDeclaration {
 			$this->checkFields(fields: $fields, properties: $declared);
 		}
 
-		throw new UnsupportedAutomationCombinationException(message: self::NOT_CARRIED);
+		if (($this->carried)() !== true) {
+			throw new UnsupportedAutomationCombinationException(message: self::NOT_CARRIED);
+		}
 	}//end check()
 
 	/**
