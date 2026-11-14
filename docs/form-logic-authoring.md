@@ -141,6 +141,42 @@ the stale reference lives, so you can decide what to do — re-add the
 field, or edit the condition/step yourself. The reference stays in the
 manifest until you resolve it.
 
+## Filling a form from pasted text
+
+Under **Fill from pasted text** you can let the users of a form fill it
+from text they paste, such as an email or a letter. Switch it on, tick the
+fields the AI may fill, and optionally write a hint for the paste box. The
+page config then carries:
+
+```json
+"smartPaste": { "enabled": true, "fields": ["naam", "adres", "telefoon"], "hint": "Paste an email or letter" }
+```
+
+What the user gets:
+
+- A **Paste to fill** control. The AI proposes values for the ticked fields
+  only, and only for fields that are empty and visible; the other fields
+  stay as they are.
+- Every proposed value is marked as a suggestion, still passes the field's
+  own validation, and nothing is submitted until the user clicks Submit.
+
+The checks the designer runs:
+
+- Smart paste is only for signed-in forms. On a form in `public` mode (the
+  default when no mode is set) the switch stays off and says "Only
+  signed-in forms can use AI.", so no anonymous visitor ever reaches a
+  language model.
+- A ticked field must exist on the form. Delete a ticked field and the
+  fieldset is marked with the unknown key until you untick it.
+- Files, signatures and relations cannot be filled from text and are not
+  offered.
+- Switched on with no fields ticked is an error.
+
+The preview shows the control with a fixed sample answer, so you can see
+the behaviour without calling a model. In built apps the control appears
+once the form renderer and the AI fill service support it; until then the
+setting is saved but has no effect.
+
 ## See also
 
 - [Buildiq Runtime](./openbuild-runtime.md) — how a virtual app renders

@@ -2059,7 +2059,21 @@ OC.L10N.register(
         "Requests under 250 ms": "Requests under 250 ms",
         "Total load time (ms)": "Total load time (ms)",
         "Window start": "Window start",
-        "Include server bundle": "Include server bundle"
+        "Include server bundle": "Include server bundle",
+        "Fill from pasted text": "Fill from pasted text",
+        "Let users fill this form from pasted text": "Let users fill this form from pasted text",
+        "Only signed-in forms can use AI.": "Only signed-in forms can use AI.",
+        "Fields the AI may fill": "Fields the AI may fill",
+        "This form has no fields the AI can fill.": "This form has no fields the AI can fill.",
+        "Hint for users (optional)": "Hint for users (optional)",
+        "Paste an email or letter": "Paste an email or letter",
+        "Users check the proposed values before they submit; nothing is saved for them. Built apps show the control once the form renderer supports it.": "Users check the proposed values before they submit; nothing is saved for them. Built apps show the control once the form renderer supports it.",
+        "Paste to fill": "Paste to fill",
+        "Preview: a sample answer, no AI is called.": "Preview: a sample answer, no AI is called.",
+        "Suggestion": "Suggestion",
+        "The other fields stay empty, and nothing is submitted until the user clicks Submit.": "The other fields stay empty, and nothing is submitted until the user clicks Submit.",
+        "Yes": "Yes",
+        "Sample text from the pasted message": "Sample text from the pasted message"
     },
     "nplurals=2; plural=(n != 1);"
 )

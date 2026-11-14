@@ -25,6 +25,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { createApp, h, shallowReactive } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import { ROUTE_PATTERN } from './PageListEditor.vue'
+import SmartPastePreview from './SmartPastePreview.vue'
 import designerPinia from '../../pinia.js'
 import { registerDirectives } from '../../registerDirectives.js'
 
@@ -578,7 +579,15 @@ export default {
 		 * @return {object} the (unmounted) application.
 		 */
 		buildSandboxApp(state, router) {
-			const app = createApp({ render: () => h(CnAppRoot, state) })
+			// The "Paste to fill" control of a form with smart paste
+			// (ai-smart-paste-into-forms D5): the form renderer does not draw it
+			// yet, so the preview shows it with a sample answer above the app.
+			const app = createApp({
+				render: () => [
+					h(SmartPastePreview, { manifest: state.manifest }),
+					h(CnAppRoot, state),
+				],
+			})
 			app.mixin({ methods: { t, n } })
 			// A render error in the preview lands in the designer's error log, not only the console.
 			app.config.errorHandler = this.renderErrorHandler(router)
