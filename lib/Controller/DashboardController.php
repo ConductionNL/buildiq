@@ -32,9 +32,12 @@ namespace OCA\Buildiq\Controller;
 
 use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Kernel\Contracts\AppNavigationServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\ManifestResolverServiceInterface;
+use OCA\Buildiq\Service\DeviceFeatures;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
+use OCP\AppFramework\Http\FeaturePolicy;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Services\IInitialState;
 use OCP\IGroupManager;
@@ -59,6 +62,7 @@ class DashboardController extends Controller {
 	 * @param IUserSession $userSession Current Nextcloud user session
 	 * @param IGroupManager $groupManager Group membership resolver
 	 * @param INavigationManager $navigationManager Top-bar navigation manager
+	 * @param ManifestResolverServiceInterface|null $manifests Resolves the served version, for its device features
 	 *
 	 * @return void
 	 */
@@ -68,6 +72,7 @@ class DashboardController extends Controller {
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 		private readonly INavigationManager $navigationManager,
+		private readonly ?ManifestResolverServiceInterface $manifests = null,
 	) {
 		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
@@ -137,8 +142,43 @@ class DashboardController extends Controller {
 			'builderVersion',
 			(string)$this->request->getParam('_version', '')
 		);
-		return new TemplateResponse(AppIdentity::APP_ID, 'builder');
+		$response = new TemplateResponse(AppIdentity::APP_ID, 'builder');
+		$this->allowDeviceFeatures(response: $response, slug: $slug);
+
+		return $response;
 	}//end builder()
+
+	/**
+	 * Allow the camera for the page itself when the served version scans (REQ-BQQR-004).
+	 *
+	 * An app that uses no device feature keeps Nextcloud's default policy,
+	 * which refuses the camera. Only `'self'` is added, never another origin.
+	 *
+	 * @param TemplateResponse $response The built app's page.
+	 * @param string           $slug     The virtual app slug.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/pages-qr-and-barcodes/tasks.md#task-T05
+	 */
+	private function allowDeviceFeatures(TemplateResponse $response, string $slug): void {
+		if ($this->manifests === null) {
+			return;
+		}
+
+		$features = $this->manifests->deviceFeaturesForCaller(
+			appSlug: $slug,
+			versionSlug: (string)$this->request->getParam('_version', ''),
+			caller: $this->userSession->getUser()
+		);
+		if (DeviceFeatures::includes(features: $features, feature: DeviceFeatures::CAMERA) === false) {
+			return;
+		}
+
+		$policy = new FeaturePolicy();
+		$policy->addAllowedCameraDomain("'self'");
+		$response->setFeaturePolicy($policy);
+	}//end allowDeviceFeatures()
 
 	/**
 	 * The installable runtime of a virtual app, under a path of its own.

@@ -286,6 +286,40 @@ class ManifestResolverService implements ManifestResolverServiceInterface {
 	}//end resolveVersionForCaller()
 
 	/**
+	 * The device features of the version a signed-in caller runs, by the same rule as resolveVersionForCaller().
+	 *
+	 * @param string $appSlug The application slug.
+	 * @param string|null $versionSlug The version slug, null or empty for production.
+	 * @param IUser|null $caller The caller; null is refused.
+	 *
+	 * @return list<string>
+	 *
+	 * @spec openspec/changes/pages-qr-and-barcodes/tasks.md#task-T05
+	 */
+	public function deviceFeaturesForCaller(string $appSlug, ?string $versionSlug, ?IUser $caller): array {
+		$resolved = $this->resolveVersionForCaller(appSlug: $appSlug, versionSlug: $versionSlug, caller: $caller);
+		if ($resolved === null) {
+			return [];
+		}
+
+		$version = $this->findVersionByUuid(uuid: $resolved['versionUuid']);
+		if ($version === null) {
+			return [];
+		}
+
+		if (is_array($version['deviceFeatures'] ?? null) === true) {
+			return array_values(array_filter($version['deviceFeatures'], 'is_string'));
+		}
+
+		$manifest = $version['manifest'] ?? [];
+		if (is_object($manifest) === true) {
+			$manifest = json_decode((string)json_encode($manifest), true);
+		}
+
+		return DeviceFeatures::derive(manifest: (array)$manifest);
+	}//end deviceFeaturesForCaller()
+
+	/**
 	 * Look up the Application object by slug via OR's ObjectService.
 	 *
 	 * Uses searchObjects with register=openbuild, schema=application, slug={appSlug}.

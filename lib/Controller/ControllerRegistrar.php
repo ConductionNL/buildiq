@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Controller;
 
+use OCA\Buildiq\Kernel\Contracts\ManifestResolverServiceInterface;
 use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Kernel\Contracts\SettingsServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\TemplateInstallSeamInterface;
@@ -82,7 +83,8 @@ final class ControllerRegistrar {
 				initialState: $c->get('OCP\\AppFramework\\Services\\IInitialState'),
 				userSession: $c->get('OCP\\IUserSession'),
 				groupManager: $c->get('OCP\\IGroupManager'),
-				navigationManager: $c->get('OCP\\INavigationManager')
+				navigationManager: $c->get('OCP\\INavigationManager'),
+				manifests: $c->get(ManifestResolverServiceInterface::class)
 			)
 		);
 		$context->registerService(
