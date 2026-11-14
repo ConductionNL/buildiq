@@ -2059,7 +2059,17 @@ OC.L10N.register(
         "Requests under 250 ms": "Requests under 250 ms",
         "Total load time (ms)": "Total load time (ms)",
         "Window start": "Window start",
-        "Include server bundle": "Include server bundle"
+        "Include server bundle": "Include server bundle",
+        "Automatic number": "Automatic number",
+        "Counter name": "Counter name",
+        "Fields with the same counter name share one count.": "Fields with the same counter name share one count.",
+        "Number format": "Number format",
+        "Use {year}, {month} and a counter such as {seq:4}.": "Use {year}, {month} and a counter such as {seq:4}.",
+        "Restart the counter each year": "Restart the counter each year",
+        "Next number: {example}": "Next number: {example}",
+        "The format uses {placeholder}, which is not one of {seq}, {seq:n}, {year} or {month}.": "The format uses {placeholder}, which is not one of {seq}, {seq:n}, {year} or {month}.",
+        "The counter restarts each year, so the format needs {year}, or next year repeats this year's numbers.": "The counter restarts each year, so the format needs {year}, or next year repeats this year's numbers.",
+        "The format needs a counter such as {seq:4}, or every record gets the same number.": "The format needs a counter such as {seq:4}, or every record gets the same number."
     },
     "nplurals=2; plural=(n != 1);"
 )

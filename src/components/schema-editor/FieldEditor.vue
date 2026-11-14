@@ -139,6 +139,10 @@
 									toIntOrNull($event),
 								)
 							" />
+						<GeneratedNumberSettings
+							:modelValue="field.generated || null"
+							:schemaSlug="schemaSlug"
+							@update:modelValue="updateField(index, 'generated', $event)" />
 					</template>
 
 					<!-- number / integer -->
@@ -313,6 +317,13 @@ import ChevronUpIcon from 'vue-material-design-icons/ChevronUp.vue'
 import DeleteIcon from 'vue-material-design-icons/Delete.vue'
 import PlusIcon from 'vue-material-design-icons/Plus.vue'
 import DeleteFieldDialog from '../../modals/DeleteFieldDialog.vue'
+import GeneratedNumberSettings from './GeneratedNumberSettings.vue'
+import {
+	formatProblem,
+	GENERATED_KEY,
+	generatedFromProperty,
+	generatedKeyword,
+} from './generatedNumber.js'
 
 const FIELD_NAME_PATTERN = /^[a-zA-Z][a-zA-Z0-9_-]*$/
 
@@ -344,6 +355,7 @@ export default {
 		ChevronUpIcon,
 		DeleteFieldDialog,
 		DeleteIcon,
+		GeneratedNumberSettings,
 		NcButton,
 		NcCheckboxRadioSwitch,
 		NcSelect,
@@ -354,6 +366,8 @@ export default {
 	props: {
 		fields: { type: Array, default: () => [] },
 		schemaSlugs: { type: Array, default: () => [] },
+		/** The schema's own slug, the default counter name of an automatic number. */
+		schemaSlug: { type: String, default: '' },
 	},
 
 	emits: ['update:fields'],
@@ -753,10 +767,26 @@ function fieldFromProperty(name, prop, isRequired) {
 		default: prop.default != null ? prop.default : null,
 		description: prop.description || '',
 		validation: validationFromProperty(prop, type),
+		// REQ-OBSD-009: the automatic-number setting, only on a field that has one.
+		...generatedRow(prop),
 		// REQ-BQFT-004: the property as it was loaded, so a save writes back
 		// every key this editor does not own (enum, title, x- keys, ...).
 		_raw: JSON.parse(JSON.stringify(prop)),
 	}
+}
+
+/**
+ * The automatic-number part of a row: `{ generated }` when the property
+ * carries `x-openregister-generated`, else nothing, so other rows keep
+ * their shape.
+ *
+ * @param {object} prop The loaded property.
+ * @return {object} The part.
+ * @spec openspec/changes/data-generated-number-field/tasks.md#t02
+ */
+function generatedRow(prop) {
+	const generated = generatedFromProperty(prop)
+	return generated ? { generated } : {}
 }
 
 /**
@@ -842,6 +872,7 @@ const EDITOR_OWNED_KEYS = new Set([
 	'minItems',
 	'maxItems',
 	'x-openregister-relation',
+	GENERATED_KEY,
 ])
 
 /**
@@ -871,9 +902,10 @@ function withoutKeys(source, keys) {
  * `required` array + `x-property-order` array (to preserve user order).
  *
  * @param {Array} fields Editor field rows.
+ * @param {string} schemaSlug The schema's slug, the counter name of an automatic number that names none.
  * @return {{ properties: object, required: Array<string>, order: Array<string> }}
  */
-export function fieldsToSchema(fields) {
+export function fieldsToSchema(fields, schemaSlug = '') {
 	const properties = {}
 	const required = []
 	const order = []
@@ -882,7 +914,7 @@ export function fieldsToSchema(fields) {
 			continue
 		}
 		order.push(field.name)
-		const prop = propertyFromField(field)
+		const prop = propertyFromField(field, schemaSlug)
 		properties[field.name] = prop
 		if (field.required) {
 			required.push(field.name)
@@ -898,10 +930,11 @@ export function fieldsToSchema(fields) {
  * the editor's own keys (and a cleared one) still win (REQ-BQFT-004).
  *
  * @param {object} field Editor field row.
+ * @param {string} schemaSlug The schema's slug.
  * @return {object} The JSON Schema property.
  * @spec openspec/changes/data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-save-keeps-the-keys-the-designer-does-not-edit-req-bqft-004
  */
-function propertyFromField(field) {
+function propertyFromField(field, schemaSlug = '') {
 	const raw = loadedProperty(field)
 	const prop = baseProperty(field, raw)
 	const v = field.validation || {}
@@ -915,8 +948,39 @@ function propertyFromField(field) {
 	if (field.type === 'relation') {
 		prop['x-openregister-relation'] = relationFromField(raw, v)
 	}
+	const generated = generatedFromField(field, raw, schemaSlug)
+	if (generated) {
+		prop[GENERATED_KEY] = generated
+	}
 	copyKeys(prop, v, keysFor(field.type))
 	return prop
+}
+
+/**
+ * The `x-openregister-generated` keyword a row writes (REQ-OBSD-009): the
+ * row's setting when it is on and its format is one OpenRegister accepts;
+ * the keyword as it was loaded when the new format would be refused, so a
+ * refused format is never saved; nothing when the setting is off or the
+ * field is not text.
+ *
+ * @param {object} field Editor field row.
+ * @param {object} raw The property as it was loaded.
+ * @param {string} schemaSlug The schema's slug, the counter name when the row names none.
+ * @return {object|null} The keyword.
+ * @spec openspec/changes/data-generated-number-field/tasks.md#t02
+ */
+function generatedFromField(field, raw, schemaSlug) {
+	if (field.type !== 'string') {
+		return null
+	}
+	const keyword = generatedKeyword(field.generated, schemaSlug)
+	if (keyword === null) {
+		return null
+	}
+	if (formatProblem(keyword.format, keyword.resetOn) !== null) {
+		return raw[GENERATED_KEY] || null
+	}
+	return keyword
 }
 
 /**
