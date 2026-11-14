@@ -151,7 +151,7 @@ export default {
 		githubRepo: { type: Object, default: null },
 	},
 
-	emits: ['close', 'submit', 'installed'],
+	emits: ['close', 'submit', 'installed', 'stale'],
 	data() {
 		return {
 			localName: '',
@@ -421,6 +421,7 @@ export default {
 		 * @param {object} payload The new app `{name, slug}`.
 		 * @return {Promise<void>} Resolves once the request settles.
 		 * @spec openspec/specs/openbuild-remote-template-store/spec.md
+		 * @spec openspec/changes/reuse-remote-store-section/specs/template-catalogue-ui/spec.md#requirement-a-maker-installs-a-catalogue-template-req-bqrs-004
 		 */
 		async installRemote(payload) {
 			try {
@@ -432,6 +433,13 @@ export default {
 				this.$emit('installed', resp.data)
 				this.$emit('close')
 			} catch (e) {
+				if (e?.response?.status === 404 && e?.response?.data?.error === 'template_not_found') {
+					// The template left the catalogue since the section was read.
+					this.error = t('buildiq', 'This template is no longer in the catalogue.')
+					this.submitting = false
+					this.$emit('stale')
+					return
+				}
 				this.error = installFailureMessage(e)
 				this.submitting = false
 			}
