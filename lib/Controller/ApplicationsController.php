@@ -270,6 +270,66 @@ class ApplicationsController extends Controller {
 	}//end getManifest()
 
 	/**
+	 * The web app manifest of a virtual app, for its installable runtime at `/run/{slug}/`.
+	 *
+	 * Signed-in only, and only to a user who may open the app: the same rule as
+	 * {@see getManifest()}. Any refusal answers 404, so the route does not tell
+	 * a stranger which slugs exist. Every URL is relative to this manifest's
+	 * own address, `/run/{slug}/manifest.webmanifest`, so `start_url` and
+	 * `scope` are the run path whatever the instance's front controller.
+	 *
+	 * @param string $slug The virtual app slug.
+	 *
+	 * @return JSONResponse `application/manifest+json`.
+	 *
+	 * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-a-maker-makes-an-app-installable-req-bqom-001
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function webManifest(string $slug): JSONResponse {
+		try {
+			$resolved = $this->resolvePermittedApplication(slug: $slug);
+		} catch (Throwable $e) {
+			$this->logger->error('Buildiq: web manifest failed for slug ' . $slug . ': ' . $e->getMessage(), ['exception' => $e]);
+			$resolved = new JSONResponse([], Http::STATUS_INTERNAL_SERVER_ERROR);
+		}
+
+		if ($resolved instanceof JSONResponse) {
+			return new JSONResponse(['error' => 'not_found'], Http::STATUS_NOT_FOUND);
+		}
+
+		$application = $resolved[1];
+		$name = trim((string)($application['name'] ?? ''));
+		if ($name === '') {
+			$name = $slug;
+		}
+
+		$shortName = trim((string)($application['shortName'] ?? ''));
+		if ($shortName === '') {
+			$shortName = $name;
+		}
+
+		$manifest = [
+			'id' => './',
+			'name' => $name,
+			'short_name' => $shortName,
+			'start_url' => './',
+			'scope' => './',
+			'display' => 'standalone',
+			'icons' => [['src' => '../../icons/' . $slug . '.svg', 'type' => 'image/svg+xml', 'sizes' => 'any', 'purpose' => 'any']],
+		];
+		$themeColor = (string)($application['themeColor'] ?? '');
+		if (preg_match('/^#[0-9a-fA-F]{6}$/', $themeColor) === 1) {
+			$manifest['theme_color'] = $themeColor;
+		}
+
+		$response = new JSONResponse($manifest);
+		$response->addHeader('Content-Type', 'application/manifest+json; charset=utf-8');
+
+		return $response;
+	}//end webManifest()
+
+	/**
 	 * The `?_version=` query parameter, or null when it is absent or empty.
 	 *
 	 * @return string|null

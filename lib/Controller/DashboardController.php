@@ -138,6 +138,29 @@ class DashboardController extends Controller {
 	}//end builder()
 
 	/**
+	 * The installable runtime of a virtual app, under a path of its own.
+	 *
+	 * The same runtime as {@see builder()}, at `/run/{slug}/`, so a service
+	 * worker scoped to it controls this app's runtime and nothing else: not
+	 * the designer under `/builder/{slug}/pages` and not another app whose
+	 * slug starts the same (design D1). The page links its web app manifest.
+	 *
+	 * @param string $slug The virtual app slug (path param).
+	 *
+	 * @return TemplateResponse
+	 *
+	 * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-a-maker-makes-an-app-installable-req-bqom-001
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function run(string $slug): TemplateResponse {
+		$response = $this->builder(slug: $slug);
+		$response->setParams(['webManifest' => true]);
+
+		return $response;
+	}//end run()
+
+	/**
 	 * Trailing-slash alias of {@see builder()}.
 	 *
 	 * Browsers and pasted links often append a `/`, e.g.
