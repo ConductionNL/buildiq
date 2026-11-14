@@ -112,6 +112,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Exception\UnsupportedAutomationCombinationException;
+use OCA\Buildiq\Service\Automation\ApprovalFormDeclaration;
 use OCA\Buildiq\Kernel\Contracts\AutomationCompilerServiceInterface;
 use OCA\Buildiq\Service\Automation\CompileInput;
 use OCA\Buildiq\Support\ObjectRecord;
@@ -291,6 +292,15 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 
 		$this->assertMatrix(triggerType: $input->triggerType, condition: $input->condition, actions: $input->actions);
 		$this->assertGenerateDocumentActions(actions: $input->actions);
+		// Logic-approval-task-form D2/D3: the fields an approver fills in are
+		// checked against the trigger schema, and refused while OpenRegister
+		// cannot carry a form into the task it opens.
+		$schemaSlug = (string)($input->trigger['schema'] ?? '');
+		(new ApprovalFormDeclaration())->check(
+			actions: $input->actions,
+			schemaSlug: $schemaSlug,
+			properties: fn (): ?array => $this->loadSchema(slug: $schemaSlug)?->getProperties()
+		);
 
 		$plan = [
 			'notifications' => [],
