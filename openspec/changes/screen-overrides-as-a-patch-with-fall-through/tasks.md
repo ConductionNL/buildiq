@@ -13,7 +13,7 @@
 - [x] 2.3 Resolve the audience from the caller's own session, and refuse `group`, `team` and `user` for a caller with no account (REQ-OBSO-004)
 - [x] 2.4 Compare `baseFingerprint` against the normalised base, withhold on drift and serve the base (REQ-OBSO-002, REQ-OBSO-003)
 - [x] 2.5 Return `appliedLayers[]` and `withheld[]` beside the resolved layout (REQ-OBSO-006)
-- [ ] 2.6 Cache on the composing layers' ids and fingerprints
+- [x] 2.6 Cache on the composing layers' ids and fingerprints. `PageLayoutLeafProvider` folds the ordered stack once per key in the local cache (`buildiq-page-layout`, 300 s): every composing layer's id with a hash of its content, since a whole layout carries no fingerprint and an edit to it must not serve a stale fold. The host object stays out of the fold, so one fold serves every case of the type; a drifted override is flagged on the fold, not on each read (`PageLayoutFoldCacheTest`)
 - [x] 2.7 Add the `organisation` audience kind to `pageLayout` in `lib/Settings/openbuild_register.json`, resolve it from the caller's active OpenRegister organisation in `lib/Service/PageLayoutLayerStack.php`, and place it between the type layout and the group and team overrides; offer it in the "applies to" panel of `DetailPageEditor.vue` (REQ-OBSO-007). Verify: a PHPUnit case for two organisations and a team override in one of them
 
 ## 3. Editor
