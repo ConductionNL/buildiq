@@ -108,6 +108,7 @@ OC.L10N.register(
         "Add type, press Enter": "Add type, press Enter",
         "Add version": "Add version",
         "Add widget": "Add widget",
+        "Add chart": "Add chart",
         "Add your first schema to start designing the data model for this app.": "Add your first schema to start designing the data model for this app.",
         "Admin delta": "Admin delta",
         "Administrator bypass": "Administrator bypass",
