@@ -158,6 +158,8 @@
 			<FormFieldBuilder
 				:modelValue="config.fields || []"
 				:findings="findingsPerField"
+				:schemas="schemas"
+				:parentSchema="targetSchema || ''"
 				showLogic
 				@update:modelValue="update('fields', $event)" />
 			<InlineFieldMark :error="markFor('fields')" />
