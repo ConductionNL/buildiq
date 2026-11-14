@@ -148,6 +148,7 @@ class GitHubSyncControllerStatusTest extends TestCase {
 			'slug' => 'permit-tracker',
 			'githubRepo' => 'acme/permits',
 			'githubDefaultBranch' => 'main',
+			'productionVersion' => 'v-prod',
 			'lastPushedSha' => 'abc123',
 			'permissions' => ['viewers' => ['user:vera-viewer']],
 		]);
@@ -159,6 +160,7 @@ class GitHubSyncControllerStatusTest extends TestCase {
 		self::assertSame(Http::STATUS_OK, $response->getStatus());
 		self::assertSame('acme/permits', $body['githubRepo']);
 		self::assertSame('main', $body['githubDefaultBranch']);
+		self::assertSame('v-prod', $body['productionVersion']);
 		self::assertSame('abc123', $body['lastPushedSha']);
 		self::assertTrue($body['brokerCredentialAvailable']);
 		self::assertTrue($body['publishAvailable']);
