@@ -47,7 +47,7 @@ class VersionSchemaCarrier {
 	 *
 	 * @var array<int,string>
 	 */
-	private const CARRIED_SCHEMA_FIELDS = [
+	public const CARRIED_SCHEMA_FIELDS = [
 		'title',
 		'description',
 		'summary',
