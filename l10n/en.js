@@ -5,6 +5,16 @@
 OC.L10N.register(
     "buildiq",
     {
+        "Add a query table": "Add a query table",
+        "Only a single read-only query can run.": "Only a single read-only query can run.",
+        "Only an administrator can run a query.": "Only an administrator can run a query.",
+        "Query": "Query",
+        "Run preview": "Run preview",
+        "Save as table": "Save as table",
+        "Table name": "Table name",
+        "The first rows of the query, at most 50.": "The first rows of the query, at most 50.",
+        "The query could not be run. Try again later.": "The query could not be run. Try again later.",
+        "This database is no longer connected.": "This database is no longer connected.",
         "{table}: a list page and a detail page, with a menu entry": "{table}: a list page and a detail page, with a menu entry",
         "Choose a database": "Choose a database",
         "Loading tables…": "Loading tables…",
