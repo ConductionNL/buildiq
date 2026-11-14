@@ -1654,7 +1654,8 @@ OC.L10N.register(
         "The description of one or more registers could not be read.": "De beschrijving van een of meer registers kon niet worden gelezen.",
         "The pages of this version use no OpenRegister schema.": "De pagina's van deze versie gebruiken geen OpenRegister-schema.",
         "These pages read from a connector, not from an OpenRegister schema.": "Deze pagina's lezen uit een connector, niet uit een OpenRegister-schema.",
-        "This app has no version to document yet.": "Deze app heeft nog geen versie om te beschrijven."
+        "This app has no version to document yet.": "Deze app heeft nog geen versie om te beschrijven.",
+        "API": "API"
     },
     "nplurals=2; plural=(n != 1);"
 )
