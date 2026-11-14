@@ -17,7 +17,11 @@
 			<h3 class="ob-schemas-widget__title">
 				{{ t('buildiq', 'Schemas') }}
 			</h3>
-			<NcButton variant="tertiary" @click="addSchema">
+			<!-- data-walkthrough-id: spotlighted by the tour's `open-schemas` step. -->
+			<NcButton
+				variant="tertiary"
+				data-walkthrough-id="app-add-schema"
+				@click="addSchema">
 				{{ t('buildiq', '+ Add schema') }}
 			</NcButton>
 		</header>
@@ -54,6 +58,36 @@
 import NcButton from '@nextcloud/vue/components/NcButton'
 import { buildVersionedRoute } from '../../../router/helpers.js'
 
+/**
+ * The create-schema dialog opener registered globally on `window.buildiq`,
+ * or null when none is.
+ *
+ * @return {?(context: {appSlug: string, versionSlug: string}) => void} the opener.
+ */
+function registeredSchemaDialog() {
+	return typeof window !== 'undefined'
+		&& window.buildiq
+		&& typeof window.buildiq.openAddSchemaDialog === 'function'
+		? window.buildiq.openAddSchemaDialog
+		: null
+}
+
+/**
+ * Note in the debug console that no create-schema dialog is registered yet.
+ *
+ * @return {void}
+ */
+function logDeferredSchemaDialog() {
+	if (
+		typeof console !== 'undefined'
+		&& typeof console.debug === 'function'
+	) {
+		console.debug(
+			'buildiq: schema-create dialog not yet registered — deferred to schema-designer spec',
+		)
+	}
+}
+
 export default {
 	name: 'SchemasWidget',
 	components: { NcButton },
@@ -71,7 +105,7 @@ export default {
 		 *
 		 * @param {number|undefined} count Object count value.
 		 * @return {string}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-2
 		 */
 		formatCount(count) {
 			const n = Number(count || 0)
@@ -84,7 +118,7 @@ export default {
 		 *
 		 * @param {object} schema The schema row.
 		 * @return {void}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-2
 		 */
 		openSchema(schema) {
 			const id = schema.id || schema.uuid || schema.slug
@@ -106,27 +140,15 @@ export default {
 		 * scenario).
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-2
 		 */
 		addSchema() {
-			const opener =
-				typeof window !== 'undefined'
-				&& window.buildiq
-				&& typeof window.buildiq.openAddSchemaDialog === 'function'
-					? window.buildiq.openAddSchemaDialog
-					: null
+			const opener = registeredSchemaDialog()
 			if (opener) {
 				opener({ appSlug: this.appSlug, versionSlug: this.versionSlug })
 				return
 			}
-			if (
-				typeof console !== 'undefined'
-				&& typeof console.debug === 'function'
-			) {
-				console.debug(
-					'buildiq: schema-create dialog not yet registered — deferred to schema-designer spec',
-				)
-			}
+			logDeferredSchemaDialog()
 			this.$emit('addSchema', {
 				appSlug: this.appSlug,
 				versionSlug: this.versionSlug,

@@ -32,7 +32,7 @@ export const useObjectStore = defineStore('object', {
 		 *   (`/apps/openregister/api/schemas`); stored for consumers, not used by this
 		 *   store's own actions.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-frontend-foundation/tasks.md#task-3
 		 */
 		configure({ baseUrl, schemaBaseUrl }) {
 			this.baseUrl = baseUrl
@@ -53,7 +53,7 @@ export const useObjectStore = defineStore('object', {
 		 * @param {string} register - OpenRegister register slug, sent verbatim as the
 		 *   `register` query parameter of the objects request.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-frontend-foundation/tasks.md#task-3
 		 */
 		registerObjectType(type, schema, register) {
 			this.objectTypes[type] = { schema, register }
@@ -81,7 +81,7 @@ export const useObjectStore = defineStore('object', {
 		 * @return {Promise<object[]>} The register objects for `type`, or `[]` when the
 		 *   type is unregistered or the request failed.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-frontend-foundation/tasks.md#task-3
 		 */
 		async fetchObjects(type, params = {}) {
 			if (!this.objectTypes[type]) {

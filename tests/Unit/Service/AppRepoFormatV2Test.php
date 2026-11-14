@@ -35,6 +35,7 @@ use OCA\Buildiq\Exception\AppRepoParseException;
 use OCA\Buildiq\Service\AppRepoParser;
 use OCA\Buildiq\Service\AppRepoSerializer;
 use OCA\Buildiq\Service\TemplateRepoSerializer;
+use OCA\Buildiq\Tests\Unit\Support\FakeSlugResolver;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use PHPUnit\Framework\TestCase;
@@ -63,7 +64,8 @@ class AppRepoFormatV2Test extends TestCase {
 			$registerMapper,
 			$schemaMapper,
 			$logger,
-			new TemplateRepoSerializer($schemaMapper, $logger)
+			new TemplateRepoSerializer($schemaMapper, $logger),
+			new FakeSlugResolver(['integriq'])
 		);
 
 	}//end serializer()
@@ -355,4 +357,97 @@ class AppRepoFormatV2Test extends TestCase {
 		}
 
 	}//end testConnectorBindingIsUuidKeyedNotSlugKeyed()
+
+	/**
+	 * A bound data register is exported as schema definitions only: schemas
+	 * sorted by slug, a missing version shown as 0.1.0, a schema without a slug
+	 * or one that cannot be read left out; an unsafe, unresolvable or malformed
+	 * binding exports nothing.
+	 *
+	 * @return void
+	 */
+	public function testBoundDataRegistersExportTheirSchemaDefinitions(): void {
+		$register = new \OCA\OpenRegister\Db\Register();
+		$register->setTitle('CRM');
+		$register->setSchemas([11, 12, 13, 14]);
+		$registerMapper = $this->createMock(RegisterMapper::class);
+		$registerMapper->method('find')->willReturnCallback(
+			static function ($slug) use ($register) {
+				if ($slug === 'crm') {
+					return $register;
+				}
+
+				throw new \RuntimeException('no register');
+			}
+		);
+
+		$schema = static function (string $slug, string $title, string $version, array $required, array $properties): \OCA\OpenRegister\Db\Schema {
+			$entity = new \OCA\OpenRegister\Db\Schema();
+			$entity->setSlug($slug);
+			$entity->setTitle($title);
+			$entity->setDescription($title.' records');
+			$entity->setVersion($version);
+			$entity->setRequired($required);
+			$entity->setProperties($properties);
+			return $entity;
+		};
+		$schemas = [
+			11 => $schema('person', 'Person', '', ['name'], ['name' => ['type' => 'string']]),
+			12 => $schema('', 'Nameless', '1.0.0', [], []),
+			14 => $schema('account', 'Account', '2.1.0', [], ['iban' => ['type' => 'string']]),
+		];
+		$schemaMapper = $this->createMock(SchemaMapper::class);
+		$schemaMapper->method('find')->willReturnCallback(
+			static function ($id) use ($schemas) {
+				if (isset($schemas[$id]) === false) {
+					throw new \RuntimeException('no schema');
+				}
+
+				return $schemas[$id];
+			}
+		);
+		$logger = $this->createMock(LoggerInterface::class);
+		$serializer = new AppRepoSerializer($registerMapper, $schemaMapper, $logger, new TemplateRepoSerializer($schemaMapper, $logger), new FakeSlugResolver(['integriq']));
+
+		[$application, $version] = $this->app(
+			[
+				'dataRegisters' => [
+					['register' => 'crm', 'label' => 'Customers'],
+					['register' => 'gone'],
+					['register' => '../x'],
+					'crm',
+				],
+			]
+		);
+		$files = $serializer->serialize(application: $application, version: $version);
+
+		$this->assertSame(['data-registers/crm.json'], array_values(array_filter(array_keys($files), static fn (string $f): bool => str_starts_with($f, 'data-registers/'))));
+		// The encoder sorts keys, so the comparison ignores key order.
+		$this->assertEquals(
+			[
+				'slug' => 'crm',
+				'title' => 'CRM',
+				'label' => 'Customers',
+				'schemas' => [
+					'account' => ['slug' => 'account', 'title' => 'Account', 'description' => 'Account records', 'version' => '2.1.0', 'type' => 'object', 'required' => [], 'properties' => ['iban' => ['type' => 'string']]],
+					'person' => ['slug' => 'person', 'title' => 'Person', 'description' => 'Person records', 'version' => '0.1.0', 'type' => 'object', 'required' => ['name'], 'properties' => ['name' => ['type' => 'string']]],
+				],
+			],
+			json_decode($files['data-registers/crm.json'], true)
+		);
+		$this->assertSame(1, json_decode($files['openbuild-app.json'], true)['channels']['dataRegisters']);
+	}//end testBoundDataRegistersExportTheirSchemaDefinitions()
+
+	/**
+	 * Data-register bindings that are not a list export nothing.
+	 *
+	 * @return void
+	 */
+	public function testNonListDataRegisterBindingsExportNothing(): void {
+		[$application, $version] = $this->app(['dataRegisters' => 'crm']);
+
+		$files = $this->serializer()->serialize(application: $application, version: $version);
+
+		$this->assertSame(0, json_decode($files['openbuild-app.json'], true)['channels']['dataRegisters']);
+	}//end testNonListDataRegisterBindingsExportNothing()
 }//end class

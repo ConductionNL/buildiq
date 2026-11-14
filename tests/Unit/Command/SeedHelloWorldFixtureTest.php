@@ -45,6 +45,7 @@ use OCA\OpenRegister\Db\SchemaMapper;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Command\Command;
+use OCP\AppFramework\Db\DoesNotExistException;
 use Symfony\Component\Console\Tester\CommandTester;
 
 /**
@@ -66,6 +67,20 @@ class SeedHelloWorldFixtureTest extends TestCase {
 	 * @var array<int, array<string, mixed>>
 	 */
 	private array $saved = [];
+
+	/**
+	 * Every createFromArray() payload the register mapper received.
+	 *
+	 * @var array<int, array<string, mixed>>
+	 */
+	private array $createdRegisters = [];
+
+	/**
+	 * The schema lists handed to update(), one entry per call.
+	 *
+	 * @var array<int, array<int, mixed>>
+	 */
+	private array $updatedSchemaLists = [];
 
 	/**
 	 * The command under test, wired to the mocks.
@@ -97,17 +112,66 @@ class SeedHelloWorldFixtureTest extends TestCase {
 	 *                                       answer "present", so `execute()`
 	 *                                       short-circuits to the hybrid path.
 	 *
+	 * @param array<int, mixed>|null $versionRegisterSchemas Schema ids the
+	 *                                       `openbuild-hello-world` register
+	 *                                       lists, or null when that register
+	 *                                       does not exist.
+	 *
 	 * @return void
 	 */
-	private function wire(bool $helloWorldAlreadyPresent): void {
+	private function wire(bool $helloWorldAlreadyPresent, ?array $versionRegisterSchemas = null): void {
 		$this->saved = [];
+		$this->createdRegisters = [];
+		$this->updatedSchemaLists = [];
 		$this->objectService = $this->createMock(ObjectServiceInterface::class);
 		$registerMapper = $this->createMock(RegisterMapper::class);
 		$schemaMapper = $this->createMock(SchemaMapper::class);
 
 		$register = $this->createMock(Register::class);
 		$register->method('getId')->willReturn(1);
-		$registerMapper->method('find')->willReturn($register);
+
+		// The per-version register: a real list the command can read and
+		// extend, so the test sees the list it actually wrote.
+		$versionSchemas = ($versionRegisterSchemas ?? []);
+		$versionRegister = $this->createMock(Register::class);
+		$versionRegister->method('getSchemas')->willReturnCallback(
+			static function () use (&$versionSchemas): array {
+				return $versionSchemas;
+			}
+		);
+		$versionRegister->method('setSchemas')->willReturnCallback(
+			static function ($schemas) use (&$versionSchemas, $versionRegister) {
+				$versionSchemas = $schemas;
+				return $versionRegister;
+			}
+		);
+
+		$versionRegisterExists = ($versionRegisterSchemas !== null);
+		$registerMapper->method('find')->willReturnCallback(
+			static function (string|int $id) use ($register, $versionRegister, $versionRegisterExists) {
+				if ($id === 'openbuild-hello-world') {
+					if ($versionRegisterExists === false) {
+						throw new DoesNotExistException('no register');
+					}
+
+					return $versionRegister;
+				}
+
+				return $register;
+			}
+		);
+		$registerMapper->method('createFromArray')->willReturnCallback(
+			function (array $object) use ($versionRegister) {
+				$this->createdRegisters[] = $object;
+				return $versionRegister;
+			}
+		);
+		$registerMapper->method('update')->willReturnCallback(
+			function ($entity) use (&$versionSchemas) {
+				$this->updatedSchemaLists[] = $versionSchemas;
+				return $entity;
+			}
+		);
 
 		$schema = $this->createMock(Schema::class);
 		$schema->method('getId')->willReturn(2);
@@ -339,4 +403,118 @@ class SeedHelloWorldFixtureTest extends TestCase {
 
 		$this->assertNotSame($firstUuid, $secondUuid);
 	}//end testEachRunMintsADistinctApplicationUuid()
+	/**
+	 * A fresh seed creates the register its version names, and lists the
+	 * hello-message schema in it.
+	 *
+	 * Before this, the version pointed at `openbuild-hello-world` and nothing
+	 * created it, so the Schemas page for Hello World asked OpenRegister for a
+	 * register that did not exist and showed nothing.
+	 *
+	 * @return void
+	 */
+	public function testAFreshSeedCreatesTheVersionRegisterWithTheMessageSchema(): void {
+		$this->wire(helloWorldAlreadyPresent: false, versionRegisterSchemas: null);
+
+		$tester = new CommandTester($this->command);
+		$this->assertSame(Command::SUCCESS, $tester->execute([]));
+
+		$this->assertCount(1, $this->createdRegisters, 'exactly one register is created');
+		$this->assertSame('openbuild-hello-world', $this->createdRegisters[0]['slug']);
+
+		$version = array_values(
+			array_filter(
+				$this->saved,
+				static fn (array $call): bool => $call['schema'] === 'applicationVersion'
+					&& ($call['data']['application'] ?? null) !== null
+					&& ($call['data']['slug'] ?? null) === 'production'
+					&& isset($call['data']['baseRef']) === false
+			)
+		)[0]['data'];
+		$this->assertSame(
+			$this->createdRegisters[0]['slug'],
+			$version['register'],
+			'the register created is the one the version names'
+		);
+
+		// The schema mapper answers id 2 for every slug in this wiring.
+		$this->assertSame([[2]], $this->updatedSchemaLists, 'the hello-message schema is listed in the new register');
+	}//end testAFreshSeedCreatesTheVersionRegisterWithTheMessageSchema()
+
+	/**
+	 * An install that already has Hello World but no register gets one when
+	 * the seed runs again. That is how the dev instance, seeded before this
+	 * step existed, is repaired.
+	 *
+	 * @return void
+	 */
+	public function testReRunningOnAnExistingAppCreatesTheMissingRegister(): void {
+		$this->wire(helloWorldAlreadyPresent: true, versionRegisterSchemas: null);
+
+		$tester = new CommandTester($this->command);
+		$this->assertSame(Command::SUCCESS, $tester->execute([]));
+
+		$this->assertCount(1, $this->createdRegisters);
+		$this->assertSame('openbuild-hello-world', $this->createdRegisters[0]['slug']);
+		$this->assertSame([[2]], $this->updatedSchemaLists);
+	}//end testReRunningOnAnExistingAppCreatesTheMissingRegister()
+
+	/**
+	 * A register that already lists the schema is left alone: no create, no
+	 * update.
+	 *
+	 * @return void
+	 */
+	public function testAnExistingRegisterListingTheSchemaIsLeftAlone(): void {
+		$this->wire(helloWorldAlreadyPresent: true, versionRegisterSchemas: ['2']);
+
+		$tester = new CommandTester($this->command);
+		$this->assertSame(Command::SUCCESS, $tester->execute([]));
+
+		$this->assertSame([], $this->createdRegisters);
+		$this->assertSame([], $this->updatedSchemaLists);
+	}//end testAnExistingRegisterListingTheSchemaIsLeftAlone()
+
+	/**
+	 * An existing register that lacks the schema gets it added, and keeps
+	 * whatever it listed before.
+	 *
+	 * @return void
+	 */
+	public function testAnExistingRegisterWithoutTheSchemaGetsItAdded(): void {
+		$this->wire(helloWorldAlreadyPresent: true, versionRegisterSchemas: [7]);
+
+		(new CommandTester($this->command))->execute([]);
+
+		$this->assertSame([], $this->createdRegisters);
+		$this->assertSame([[7, 2]], $this->updatedSchemaLists);
+	}//end testAnExistingRegisterWithoutTheSchemaGetsItAdded()
+
+	/**
+	 * The Hello World card shows the Application description, so it reads as
+	 * text for a user, not as a note about the test harness.
+	 *
+	 * @return void
+	 */
+	public function testTheApplicationDescriptionIsUserFacingText(): void {
+		$this->wire(helloWorldAlreadyPresent: false);
+
+		(new CommandTester($this->command))->execute([]);
+
+		$descriptions = array_map(
+			static fn (array $call): string => (string)($call['data']['description'] ?? ''),
+			array_filter(
+				$this->saved,
+				static fn (array $call): bool => $call['schema'] === 'built-app'
+					&& ($call['data']['slug'] ?? null) === 'hello-world'
+			)
+		);
+
+		$this->assertNotEmpty($descriptions);
+		foreach ($descriptions as $description) {
+			$this->assertStringNotContainsStringIgnoringCase('e2e', $description);
+			$this->assertStringNotContainsStringIgnoringCase('fixture', $description);
+			$this->assertStringNotContainsString('—', $description);
+		}
+	}//end testTheApplicationDescriptionIsUserFacingText()
 }//end class

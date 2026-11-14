@@ -1,4 +1,8 @@
 /**
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ */
+/**
  * Shared e2e fixture: grant buildiq app roles to the RBAC fixture groups.
  *
  * The permission suites need a NON-owner who is nonetheless a member — an

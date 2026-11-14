@@ -34,6 +34,7 @@ namespace OCA\Buildiq\Tests\Unit\Service;
 
 use OCA\Buildiq\Exception\WizardCreationException;
 use OCA\Buildiq\Service\ApplicationCreationService;
+use OCA\Buildiq\Service\RegisterStore;
 use OCA\Buildiq\Service\SlugValidator;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Register;
@@ -110,10 +111,12 @@ class ApplicationCreationServiceTest extends TestCase {
 
 		$this->service = new ApplicationCreationService(
 			logger: $this->logger,
-			objectService: $this->objectService,
+			store: new RegisterStore(
+				objectService: $this->objectService,
+				registerMapper: $this->registerMapper,
+				schemaMapper: $this->schemaMapper
+			),
 			registerService: $this->registerService,
-			registerMapper: $this->registerMapper,
-			schemaMapper: $this->schemaMapper,
 			userSession: $this->userSession,
 			slugValidator: $this->slugValidator,
 		);
@@ -196,6 +199,36 @@ class ApplicationCreationServiceTest extends TestCase {
 		self::assertSame('openbuild-permit-flow-development', $result['pages'][1]['config']['register']);
 		self::assertSame('permit-flow-development-hello-message', $result['pages'][1]['config']['schema']);
 	}//end substituteVersionContextNamespacesSchemaSlugAlongsideRegister()
+
+	/**
+	 * A page on a register the Application declares in `dataRegisters` keeps
+	 * its schema slug, next to an own-register page that is still namespaced
+	 * (REQ-BQDB-004, buildiq#991).
+	 *
+	 * @test
+	 *
+	 * @return void
+	 */
+	public function substituteVersionContextLeavesADataRegisterPageAlone(): void {
+		$manifest = [
+			'pages' => [
+				['id' => 'Permits', 'config' => ['register' => 'permits-db', 'schema' => 'permits']],
+				['id' => 'Messages', 'config' => ['register' => '{registerSlug}', 'schema' => 'hello-message']],
+			],
+		];
+
+		$result = $this->service->substituteVersionContext(
+			manifest: $manifest,
+			registerSlug: 'openbuild-permit-flow-development',
+			schemaSlugPrefix: 'permit-flow-development-',
+			dataRegisters: ['permits-db']
+		);
+
+		self::assertSame('permits-db', $result['pages'][0]['config']['register']);
+		self::assertSame('permits', $result['pages'][0]['config']['schema']);
+		self::assertSame('openbuild-permit-flow-development', $result['pages'][1]['config']['register']);
+		self::assertSame('permit-flow-development-hello-message', $result['pages'][1]['config']['schema']);
+	}//end substituteVersionContextLeavesADataRegisterPageAlone()
 
 	/**
 	 * substituteVersionContext is idempotent: re-running with the same

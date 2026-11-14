@@ -63,6 +63,18 @@ const SELF_VIRTUAL_KEYS = [
 	'@self.locked',
 ]
 
+/**
+ * A typed column without its label, collapsed back to the string shorthand
+ * when only a (non-empty) key is left.
+ *
+ * @param {{key?: string, label?: string}} column - the typed column.
+ * @return {string|object} the key, or the column without `label`.
+ */
+function withoutLabel(column) {
+	const { label, ...rest } = column
+	return Object.keys(rest).length === 1 && rest.key ? rest.key : rest
+}
+
 export default {
 	name: 'ColumnBuilder',
 	props: {
@@ -88,7 +100,7 @@ export default {
 		/**
 		 * Observed behaviour of `localColumns` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		localColumns() {
 			return Array.isArray(this.modelValue) ? this.modelValue : []
@@ -97,7 +109,7 @@ export default {
 		/**
 		 * Observed behaviour of `schemaPropertyKeys` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		schemaPropertyKeys() {
 			return Object.keys(this.schemaProperties || {})
@@ -113,7 +125,7 @@ export default {
 		 *   the typed column object, which may name its key as `key` or as the alias `property`.
 		 * @return {string} the property key the row's `<select>` shows — a schema property
 		 *   name or an `@self.*` virtual key; `''` when the entry names neither.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		rowKey(col) {
 			if (typeof col === 'string') {
@@ -129,7 +141,7 @@ export default {
 		 *   the string shorthand carries no label by construction.
 		 * @return {string} the i18n label key shown in the row's label input, `''` when
 		 *   the column is unlabelled.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		rowLabel(col) {
 			if (typeof col === 'string') {
@@ -145,7 +157,7 @@ export default {
 		 * @param {string} value - the newly selected property key: a schema property
 		 *   name, an `@self.*` virtual key, or `''` for the placeholder option. A
 		 *   labelled column keeps its object shape; an unlabelled one stays a string.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		onKeyChange(index, value) {
 			const next = this.localColumns.slice()
@@ -166,7 +178,7 @@ export default {
 		 * @param {string} value - the new i18n label key. A non-empty label PROMOTES a
 		 *   string-shorthand column to `{ key, label }`; clearing it DEMOTES a
 		 *   key-only object back to the string shorthand.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		onLabelInput(index, value) {
 			const next = this.localColumns.slice()
@@ -176,9 +188,7 @@ export default {
 			if (value) {
 				next[index] = { key, label: value }
 			} else if (typeof existing === 'object' && existing) {
-				const { label, ...rest } = existing
-				next[index] =
-					Object.keys(rest).length === 1 && rest.key ? rest.key : rest
+				next[index] = withoutLabel(existing)
 			}
 			this.$emit('update:modelValue', next)
 		},
@@ -186,7 +196,7 @@ export default {
 		/**
 		 * Observed behaviour of `addColumn` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		addColumn() {
 			const next = this.localColumns.slice()
@@ -198,7 +208,7 @@ export default {
 		 * Observed behaviour of `removeColumn` (retrofit annotation).
 		 *
 		 * @param {number} index - position of the column to drop from the `columns` array.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		removeColumn(index) {
 			const next = this.localColumns.slice()
@@ -209,7 +219,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../../assets/editor-controls.scss' as c;
+
 .column-builder {
 	display: flex;
 	flex-direction: column;
@@ -218,36 +230,25 @@ export default {
 
 .column-builder__row {
 	display: flex;
+	flex-wrap: wrap;
 	gap: 6px;
 	align-items: center;
 }
 
 .column-builder__key,
 .column-builder__label {
-	flex: 1 1 auto;
-	padding: 4px 6px;
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-	background: var(--color-main-background);
-	color: var(--color-main-text);
+	/* Shrink with a narrow editor, and wrap before running out of it. */
+	flex: 1 1 120px;
+	min-width: 0;
+	@include c.control;
 }
 
 .column-builder__remove {
-	background: transparent;
-	border: 1px solid var(--color-border);
-	color: var(--color-error, var(--color-main-text));
-	padding: 4px 8px;
-	border-radius: var(--border-radius);
-	cursor: pointer;
+	@include c.danger-button;
 }
 
 .column-builder__add {
 	align-self: flex-start;
-	background: var(--color-primary-element-light);
-	border: 1px solid var(--color-border);
-	color: var(--color-main-text);
-	padding: 4px 10px;
-	border-radius: var(--border-radius);
-	cursor: pointer;
+	@include c.add-button;
 }
 </style>

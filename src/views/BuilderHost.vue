@@ -36,6 +36,7 @@
 			:key="cacheKey"
 			:appId="appId"
 			:aiCompanion="true"
+			:supportDialog="false"
 			:bundledManifest="placeholderManifest"
 			:registry="runtimeRegistry"
 			:data-sources-loader="dataSourcesLoader"
@@ -45,6 +46,7 @@
 
 <script>
 import { CnAppRoot } from '@conduction/nextcloud-vue'
+import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { useApplicationVersion } from '../composables/useApplicationVersion.js'
 import {
@@ -52,9 +54,17 @@ import {
 	useRegisterPicker,
 } from '../composables/useRegisterPicker.js'
 import placeholderManifest from '../manifests/placeholder.json'
-import { runtimeRegistry } from '../runtimeRegistry.js'
-import { registerSlugForApp } from '../store/schemas.js'
+import { getRuntimeRegistry } from '../runtimeRegistry.js'
+import { fetchAppRegister } from '../services/appRegister.js'
+import { normalizeConnectorPages } from '../services/connectorPages.js'
+import { mirrorVersionLoad } from '../utils/mirrorVersionLoad.js'
 
+/**
+ * Mounts a built app inside this Nextcloud through a nested CnAppRoot, so it
+ * shares the instance's users, files and apps (REQ-PLAT-008).
+ *
+ * @spec openspec/specs/platform-properties/spec.md#REQ-PLAT-008
+ */
 export default {
 	name: 'BuilderHost',
 	components: {
@@ -71,7 +81,9 @@ export default {
 			// manifests can resolve runtime widgets like `procest-case-status`
 			// (spec procest-workflow-attachments REQ-PWA-004) and
 			// `connector-data` (spec openconnector-api-sources REQ-OCAS-006).
-			runtimeRegistry,
+			// Sourced from the canonical accessor shared with the published
+			// entry `src/builder.js` (connector-widget-runtime REQ-CWR-001).
+			runtimeRegistry: getRuntimeRegistry(),
 		}
 	},
 
@@ -79,7 +91,7 @@ export default {
 		/**
 		 * Observed behaviour of `slug` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 */
 		slug() {
 			return this.$route.params.slug
@@ -90,7 +102,7 @@ export default {
 		 * Underscore-prefix to avoid colliding with user-defined `?version=` params.
 		 *
 		 * @return {string|undefined}
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 */
 		versionSlug() {
 			return this.$route.query._version || undefined
@@ -99,7 +111,7 @@ export default {
 		/**
 		 * Observed behaviour of `appId` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 */
 		appId() {
 			return `openbuild-${this.slug}`
@@ -109,7 +121,7 @@ export default {
 		 * Cache key forces CnAppRoot remount when slug OR version changes.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 */
 		cacheKey() {
 			return `${this.slug}:${this.versionSlug || 'default'}`
@@ -122,7 +134,7 @@ export default {
 		 * "you can't see it" cases — no auth cue exposed to the caller.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 */
 		versionNotFound() {
 			return (
@@ -135,7 +147,7 @@ export default {
 		/**
 		 * Observed behaviour of `placeholderManifest` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 */
 		placeholderManifest() {
 			return placeholderManifest
@@ -144,7 +156,7 @@ export default {
 		/**
 		 * Observed behaviour of `manifestOptions` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 */
 		manifestOptions() {
 			// Forward `?_version=` to the manifest endpoint so the server resolves
@@ -156,6 +168,10 @@ export default {
 				endpoint: this.versionSlug
 					? `${endpoint}?_version=${encodeURIComponent(this.versionSlug)}`
 					: endpoint,
+
+				// Rewrite connector-bound pages before the manifest reaches
+				// CnAppRoot, exactly as the published runtime does.
+				fetcher: this.fetchManifest,
 			}
 		},
 	},
@@ -164,7 +180,7 @@ export default {
 		/**
 		 * Observed behaviour of `slug` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 */
 		slug() {
 			this.resolveVersion()
@@ -173,7 +189,7 @@ export default {
 		/**
 		 * Observed behaviour of `versionSlug` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 */
 		versionSlug() {
 			this.resolveVersion()
@@ -183,7 +199,7 @@ export default {
 	/**
 	 * Observed behaviour of `created` (retrofit annotation).
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
+	 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 	 */
 	created() {
 		// REQ-OBVR-004: resolve the active ApplicationVersion on mount.
@@ -197,10 +213,29 @@ export default {
 	// with zero Buildiq-side wiring (theme-picker-consumes-nldesign).
 	methods: {
 		/**
+		 * The manifest fetcher the nested CnAppRoot loads through: the default
+		 * GET, with connector-bound pages rewritten for the renderer the same
+		 * way `builder.js` does (REQ-BQCB-001, REQ-BQCB-004). This host never
+		 * saves the manifest it renders, so the stored manifest keeps the
+		 * authored shape.
+		 *
+		 * @param {string} url - the manifest endpoint.
+		 * @return {Promise<object>} - the response, with `data` normalised.
+		 * @spec openspec/changes/integrations-connector-bound-pages/specs/connector-bound-page-runtime/spec.md#requirement-preview-and-published-app-render-the-same-pages-req-bqcb-004
+		 */
+		async fetchManifest(url) {
+			const response = await axios.get(url)
+			if (!response || !response.data || typeof response.data !== 'object') {
+				return response
+			}
+			return { ...response, data: normalizeConnectorPages(response.data) }
+		},
+
+		/**
 		 * Kick off useApplicationVersion and mirror reactive state into component data.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 */
 		resolveVersion() {
 			this.versionError = null
@@ -215,23 +250,7 @@ export default {
 			// manifest it receives changes, including a version switch.
 			// No data-source prefetch here: `dataSourcesLoader` reads the current
 			// manifest when an editor modal actually opens.
-			const unwatch = this.$watch(
-				() => applicationVersion.value,
-				(v) => {
-					this.applicationVersion = v
-				},
-			)
-			const unwatchLoading = this.$watch(
-				() => loading.value,
-				(v) => {
-					this.versionLoading = v
-					if (!v) {
-						unwatch()
-						unwatchLoading()
-						this.versionError = error.value
-					}
-				},
-			)
+			mirrorVersionLoad(this, { applicationVersion, loading, error })
 		},
 
 		/**
@@ -245,6 +264,7 @@ export default {
 		 * `useRegisterPicker` with builder.js so the two hosts cannot drift apart.
 		 *
 		 * @return {Promise<object>} - the `{ registers: [...] }` data-sources map.
+		 * @spec openspec/specs/version-routing-ui/spec.md#requirement-version-composables-resolve-active-version-and-manifest-history
 		 */
 		async dataSourcesLoader() {
 			const version = this.applicationVersion
@@ -253,7 +273,7 @@ export default {
 					? version.manifest
 					: null
 			const scope = registerScope(
-				registerSlugForApp(this.slug, this.versionSlug),
+				await fetchAppRegister(this.slug, this.versionSlug),
 				manifest,
 			)
 			return useRegisterPicker({ appSlug: this.slug }).fetchDataSources(scope)

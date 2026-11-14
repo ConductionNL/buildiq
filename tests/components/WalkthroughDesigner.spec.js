@@ -238,4 +238,40 @@ describe('WalkthroughDesigner — setup-block editing (REQ-WALK-OB-005)', () => 
 		// stub validateManifest returns no errors, so valid in either mode
 		expect(w.vm.valid).toBe(true)
 	})
+
+	// shallowMount's auto-stub for CnTabs renders no slots, so the CnTab
+	// children never mount and there is nothing to assert on. This stub renders
+	// them; CnTab stays auto-stubbed, which still carries its props.
+	const slotRenderingTabs = {
+		CnTabs: { template: '<div><slot name="nav-end" /><slot /></div>' },
+	}
+
+	function tabsOf(query) {
+		const w = shallowMount(WalkthroughDesigner, {
+			propsData: { manifest: baseManifest({ enabled: true, tours: [] }) },
+			mocks: { t: (app, str) => str, $route: { query: query || {} } },
+			stubs: slotRenderingTabs,
+		})
+		return w.findAllComponents({ name: 'CnTab' })
+	}
+
+	it('switches mode through a real tab strip, Walkthrough first', () => {
+		// The two modes used to be NcButtons in a bare `role="tablist"` div, so
+		// "Setup wizard" read as an action button sitting next to Save & preview
+		// and looked like it did nothing when clicked.
+		const tabs = tabsOf()
+		expect(tabs.length).toBe(2)
+		expect(tabs.map((tab) => tab.props('title'))).toEqual([
+			'Walkthrough',
+			'Setup wizard',
+		])
+		expect(tabs[0].props('active')).toBe(true)
+		expect(tabs[1].props('active')).toBe(false)
+	})
+
+	it('honours the ?mode=setup deep link in the tab selection', () => {
+		const tabs = tabsOf({ mode: 'setup' })
+		expect(tabs[0].props('active')).toBe(false)
+		expect(tabs[1].props('active')).toBe(true)
+	})
 })

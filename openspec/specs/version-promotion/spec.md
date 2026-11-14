@@ -156,31 +156,66 @@ that the client has obtained admin intent. On success the endpoint SHALL return
 
 ### Requirement: Schema diff handling deferred to OR
 
-The promotion endpoint SHALL invoke OR's schema-import / register-merge API for the
-target register with the source's schema set; OR's own breaking-change handling
-drives the outcome. The endpoint SHALL NOT implement an buildiq-side schema-diff,
-dry-run, or breaking-change preflight. If OR's API returns a failure response, the
-endpoint SHALL treat that as a promotion failure (REQ-OBVP-009) and the on-failure
-status flip applies.
+Every version owns its own copies of the app's schemas, named
+`{app}-{version}-{name}` in its own register `openbuild-{app}-{version}`. The
+promotion endpoint SHALL carry the source's schema set over to the target version's
+own schemas:
+
+- For each source schema named `{app}-{source}-{name}`, the target schema
+  `{app}-{target}-{name}` SHALL receive the source schema's definition (title,
+  description, properties, required fields, configuration and the other definition
+  fields). When no such target schema exists it SHALL be created.
+- A source schema that is not namespaced to the source version is shared and SHALL
+  be kept as is.
+- The target register SHALL list the target's own schemas, never the source's
+  namespaced schemas.
+- The manifest written onto the target SHALL have every `register` value equal to
+  the source register rewritten to the target register, and every `schema` value
+  naming a synced source schema (by slug or id) rewritten to its target counterpart.
+  Other values SHALL be left unchanged.
+
+OR's own breaking-change handling drives the outcome of each schema update. The
+endpoint SHALL NOT implement a buildiq-side schema-diff, dry-run, or breaking-change
+preflight. If OR fails a schema update or create, the endpoint SHALL treat that as a
+promotion failure (REQ-OBVP-009) and the on-failure status flip applies.
+
+@e2e exclude backend promotion wiring, covered by VersionPromotionServiceTest; the promote dialog flow has its own e2e scenario
 
 **ID:** REQ-OBVP-005
 
+#### Scenario: Promotion carries a new field to the target version's schema
+
+- **GIVEN** an app with versions development and production, each with its own
+  `{app}-{version}-order` schema
+- **AND** a field `priority` was added to the development schema
+- **WHEN** an owner promotes development to production
+- **THEN** the production schema `{app}-production-order` has the field `priority`
+- **AND** the production register lists `{app}-production-order`, not the
+  development schema
+
+#### Scenario: Promotion rewires the target manifest to the target register
+
+- **GIVEN** a development manifest whose pages read `openbuild-{app}-development`
+  and `{app}-development-order`
+- **WHEN** an owner promotes development to production
+- **THEN** the production manifest's pages read `openbuild-{app}-production` and
+  `{app}-production-order`
+- **AND** a page bound to another register keeps that register
+
 #### Scenario: OR's schema-import success continues the strategy step
 
-- **GIVEN** OR's schema-import API returns success for the target register
-- **WHEN** the promotion endpoint forwards the source's schema set
+- **GIVEN** OR accepts every target schema update or create
+- **WHEN** the promotion endpoint carries the schema set over
 - **THEN** the strategy step continues (delete / copy / no-op per strategy)
 - **AND** the manifest + semver writes proceed
 
 #### Scenario: OR's schema-import failure triggers on-failure flow
 
-- **GIVEN** OR's schema-import API returns a failure response (e.g. `400` with an
-  OR-side error payload)
-- **WHEN** the promotion endpoint forwards the source's schema set
+- **GIVEN** OR fails to update or create the target schema
+- **WHEN** the promotion endpoint carries the schema set over
 - **THEN** the promotion is treated as failed
 - **AND** the target's `status` flips to `archived` per REQ-OBVP-009
-- **AND** the endpoint returns `500 Internal Server Error` with OR's error payload
-  preserved in `message`
+- **AND** the endpoint returns `500 Internal Server Error`
 
 ### Requirement: OR object lock acquisition on target + 409 on contention
 
@@ -435,3 +470,56 @@ SHALL be unit-tested.
 
 - **WHEN** `defaultStrategyFor` is called with any valid `(Application, target)` pair
 - **THEN** the return value is never `"empty-start"`
+
+### Requirement: Promotion never reads or writes Application.dataRegisters
+
+`VersionPromotionService::promote()` and every private method it calls (`forwardSchemaSetToOR()`, `wipeTargetRegister()`, `copyRowsFromSource()`, `applyManifestAndSemver()`, `handlePromotionFailure()`) SHALL resolve their
+source and target register exclusively via `ApplicationVersion.register` (the
+per-version, app-owned register). None of these methods SHALL read, write, or
+otherwise reference the parent Application's `dataRegisters` property, under
+any of the three strategies (`start-with-source-data`,
+`migrate-existing-data`, `empty-start`). Promoting a version SHALL therefore
+neither copy, migrate, wipe, nor otherwise modify any row or schema in a
+register named in `Application.dataRegisters` — a shared data register bound
+to the app is invisible to the promotion flow in both directions.
+
+**ID:** REQ-OBVP-012
+
+#### Scenario: start-with-source-data leaves a bound data register untouched
+
+- **GIVEN** an Application whose `dataRegisters` includes
+  `{ "register": "spectr" }`, and a source ApplicationVersion whose
+  `promotesTo` target has 3 pre-existing rows in its own per-version register
+- **WHEN** an owner promotes with `strategy: "start-with-source-data"`
+- **THEN** the target's per-version register is wiped and repopulated from
+  the source's per-version register, exactly as REQ-OBVP-002 already
+  specifies
+- **AND** no read, write, lock, or delete operation is issued against the
+  `spectr` register at any point during the promotion
+
+#### Scenario: migrate-existing-data leaves a bound data register untouched
+
+- **GIVEN** the same Application as above, promoting with
+  `strategy: "migrate-existing-data"`
+- **WHEN** the promotion completes
+- **THEN** the target's per-version register schema set is aligned with the
+  source's, exactly as REQ-OBVP-003 already specifies
+- **AND** no operation of any kind touches the `spectr` register
+
+#### Scenario: empty-start leaves a bound data register untouched
+
+- **GIVEN** the same Application as above, promoting with
+  `strategy: "empty-start"`
+- **WHEN** the promotion completes
+- **THEN** the target's per-version register is wiped and left schema-only,
+  exactly as REQ-OBVP-004 already specifies
+- **AND** no operation of any kind touches the `spectr` register
+
+#### Scenario: A promotion failure does not archive or otherwise modify a bound data register
+
+- **GIVEN** an Application with a `dataRegisters` binding, whose promotion
+  fails mid-strategy (per REQ-OBVP-009)
+- **WHEN** `handlePromotionFailure()` flips the target ApplicationVersion's
+  `status` to `archived`
+- **THEN** only the target ApplicationVersion row is modified
+- **AND** the bound data register (and every object inside it) is unmodified

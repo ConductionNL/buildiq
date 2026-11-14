@@ -38,16 +38,16 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+ * @spec openspec/specs/ai-copilot/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\Buildiq\Controller;
 
-use OCA\Buildiq\AppInfo\Application;
 use OCA\Buildiq\Exception\CopilotException;
-use OCA\Buildiq\Service\CopilotService;
+use OCA\Buildiq\Kernel\AppIdentity;
+use OCA\Buildiq\Kernel\Contracts\CopilotServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -61,7 +61,7 @@ use Throwable;
 /**
  * Controller exposing the copilot health/plan/execute endpoints.
  *
- * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+ * @spec openspec/specs/ai-copilot/spec.md
  */
 class CopilotController extends Controller {
 	/**
@@ -69,7 +69,7 @@ class CopilotController extends Controller {
 	 *
 	 * @param IRequest $request The current HTTP request.
 	 * @param LoggerInterface $logger PSR logger for diagnostics.
-	 * @param CopilotService $copilotService Copilot orchestrator.
+	 * @param CopilotServiceInterface $copilotService Copilot orchestrator.
 	 * @param IUserSession $userSession Current Nextcloud user session.
 	 *
 	 * @return void
@@ -77,10 +77,10 @@ class CopilotController extends Controller {
 	public function __construct(
 		IRequest $request,
 		private readonly LoggerInterface $logger,
-		private readonly CopilotService $copilotService,
+		private readonly CopilotServiceInterface $copilotService,
 		private readonly IUserSession $userSession,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -88,7 +88,7 @@ class CopilotController extends Controller {
 	 *
 	 * @return JSONResponse 200 `{status: "ok"}` when available, 503 `{status, reason}` otherwise.
 	 *
-	 * @spec                 openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+	 * @spec                 openspec/specs/ai-copilot/spec.md
 	 * @no-admin-idor-exempt Server-wide TaskProcessing availability probe — takes no caller-supplied
 	 *                       object id and reads no per-object data; there is nothing to gate per-caller.
 	 */
@@ -108,13 +108,13 @@ class CopilotController extends Controller {
 	/**
 	 * POST /api/copilot/plan — turn a brief into a validated, reviewable plan.
 	 *
-	 * Body: `{ brief: string, appSlug?: string, agentId?: string }`. Performs
+	 * Body: `{ brief: string, appSlug?: string, agentId?: string, versionSlug?: string }`. Performs
 	 * zero builder writes (an agent-scoped rejected plan still writes one
 	 * `AgentRun` audit record — see `CopilotService::plan()`).
 	 *
 	 * @return JSONResponse 200 `{summary, steps, manifests}`, or an error envelope.
 	 *
-	 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+	 * @spec openspec/specs/ai-copilot/spec.md
 	 * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
 	 */
 	#[NoAdminRequired]
@@ -128,9 +128,16 @@ class CopilotController extends Controller {
 		$brief = (string)$this->request->getParam('brief', '');
 		$appSlug = $this->resolveOptionalString(raw: $this->request->getParam('appSlug', null));
 		$agentId = $this->resolveOptionalString(raw: $this->request->getParam('agentId', null));
+		$versionSlug = $this->resolveOptionalString(raw: $this->request->getParam('versionSlug', null));
 
 		try {
-			$result = $this->copilotService->plan(brief: $brief, appSlug: $appSlug, userId: $user->getUID(), agentId: $agentId);
+			$result = $this->copilotService->plan(
+				brief: $brief,
+				appSlug: $appSlug,
+				userId: $user->getUID(),
+				agentId: $agentId,
+				versionSlug: $versionSlug
+			);
 			return new JSONResponse(data: $result, statusCode: Http::STATUS_OK);
 		} catch (CopilotException $e) {
 			return $this->mapExceptionToResponse(error: $e);
@@ -153,7 +160,7 @@ class CopilotController extends Controller {
 	 *
 	 * @return JSONResponse 200 `{results}`, or an error envelope.
 	 *
-	 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+	 * @spec openspec/specs/ai-copilot/spec.md
 	 * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
 	 */
 	#[NoAdminRequired]

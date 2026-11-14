@@ -35,10 +35,38 @@
 					:checked="enabled"
 					type="checkbox"
 					@change="enabled = $event.target.checked" />
-				{{ t('buildiq', 'Allow anonymous submissions to this endpoint') }}
+				{{
+					t('buildiq', 'Open this form to people outside the organisation')
+				}}
 			</label>
 
 			<template v-if="enabled">
+				<label class="ob-external-form-access__field">
+					{{ t('buildiq', 'Sign-in required') }}
+					<select
+						:value="minTrust"
+						data-testid="external-form-sign-in-level"
+						@change="onMinTrustChange($event.target.value)">
+						<option value="">
+							{{ t('buildiq', 'No sign-in, anyone may fill it in') }}
+						</option>
+						<option value="low">
+							{{ t('buildiq', 'DigiD or eHerkenning, level low') }}
+						</option>
+						<option value="substantial">
+							{{
+								t(
+									'buildiq',
+									'DigiD or eHerkenning, level substantial',
+								)
+							}}
+						</option>
+						<option value="high">
+							{{ t('buildiq', 'DigiD or eHerkenning, level high') }}
+						</option>
+					</select>
+				</label>
+
 				<label class="ob-external-form-access__toggle">
 					<input
 						:checked="publicRead"
@@ -80,10 +108,23 @@
 
 			<NcNoteCard v-if="errorMessage" type="error">
 				{{ errorMessage }}
+				<ul v-if="findings.length" data-testid="external-form-findings">
+					<li v-for="(finding, i) in findings" :key="i">
+						{{ finding.message }}
+					</li>
+				</ul>
 			</NcNoteCard>
 
 			<div v-if="showUrls" class="ob-external-form-access__urls">
-				<p>
+				<p v-if="minTrust">
+					{{
+						t(
+							'buildiq',
+							'This form asks for a sign-in, so it is only open through the portal page. The anonymous submit address stays closed.',
+						)
+					}}
+				</p>
+				<p v-else>
 					<strong>{{ t('buildiq', 'Raw public submit URL') }}</strong
 					><br />
 					<code>{{ rawSubmitUrl }}</code>
@@ -121,7 +162,9 @@ import {
 	enablePublicCreate,
 	provisionPortalPage,
 	revokePublicCreate,
+	SIGN_IN_LEVELS,
 } from '../services/externalFormProvisioningService.js'
+import { checkFormDestinations } from '../services/formDestinationCheck.js'
 
 /**
  * Generate an `ef-<uuid>` bookkeeping id (design.md Decision 1). Falls back
@@ -135,6 +178,31 @@ function generateEntryId() {
 		return `ef-${crypto.randomUUID()}`
 	}
 	return `ef-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`
+}
+
+/**
+ * The readable reason of a failure, for the error message.
+ *
+ * @param {unknown} error - what was thrown or rejected.
+ * @return {string}
+ */
+function errorText(error) {
+	return (error && error.message) || String(error)
+}
+
+/**
+ * The portal page an entry links to after provisioning: none when Portaliq was unavailable.
+ *
+ * @param {object} portalResult - what the portal-page provisioning answered.
+ * @return {object|null}
+ */
+function portalPageOf(portalResult) {
+	return portalResult.unavailable
+		? null
+		: {
+				objectId: portalResult.objectId,
+				portalPath: portalResult.portalPath,
+			}
 }
 
 export default {
@@ -167,6 +235,19 @@ export default {
 			type: Object,
 			default: null,
 		},
+
+		// The form page's config: its fields are checked against the
+		// destination before anything is provisioned (decision 179).
+		formConfig: {
+			type: Object,
+			default: () => ({}),
+		},
+
+		// The app the form belongs to: the destination check is for its editors.
+		appSlug: {
+			type: String,
+			default: '',
+		},
 	},
 
 	emits: ['update:open', 'save'],
@@ -176,8 +257,16 @@ export default {
 			publicRead: false,
 			organisationScope: null,
 			trackLinkEnabled: false,
+			// '' for no sign-in, else one of SIGN_IN_LEVELS (buildiq#935).
+			minTrust: '',
+			// Whether the maker touched the level in this session. Until they
+			// do, a save asks the portal page to keep the level it stores, so
+			// a level raised in portaliq is not reset by a repeat save.
+			minTrustChanged: false,
 			saving: false,
 			errorMessage: '',
+			// Decision 179: the findings that stopped provisioning.
+			findings: [],
 			portalHint: false,
 			saved: false,
 			savedPortalUrl: '',
@@ -189,7 +278,7 @@ export default {
 		 * Whether a previously-enabled entry exists to offer the Disable action.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-005
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-005
 		 */
 		hadEnabledEntry() {
 			return !!(this.entry && this.entry.status === 'enabled')
@@ -200,7 +289,7 @@ export default {
 		 * into an external form/website (REQ-EFP-002).
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-002
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-002
 		 */
 		rawSubmitUrl() {
 			if (!this.register || !this.schema) {
@@ -218,7 +307,7 @@ export default {
 		 * The Portaliq portal URL, when provisioned.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-004
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-004
 		 */
 		portalUrl() {
 			if (this.savedPortalUrl) {
@@ -242,7 +331,7 @@ export default {
 		 * completed or an entry already exists (reopen case).
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-002
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-002
 		 */
 		showUrls() {
 			return this.enabled && (this.saved || this.hadEnabledEntry)
@@ -255,7 +344,7 @@ export default {
 		 *
 		 * @param {boolean} isOpen - the new `open` prop value.
 		 * @return {void}
-		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-002
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-002
 		 */
 		open(isOpen) {
 			if (isOpen) {
@@ -269,7 +358,7 @@ export default {
 		 * Seed the form from the current entry when (re)opening.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-002
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-002
 		 */
 		hydrate() {
 			this.errorMessage = ''
@@ -285,6 +374,64 @@ export default {
 				&& e.trackLinkAction
 				&& e.trackLinkAction.enabled
 			)
+			this.minTrust =
+				e && SIGN_IN_LEVELS.includes(e.minTrust) ? e.minTrust : ''
+			this.minTrustChanged = false
+		},
+
+		/**
+		 * The maker picked a sign-in level.
+		 *
+		 * @param {string} value - '' for none, or a level.
+		 * @return {void}
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-004
+		 */
+		onMinTrustChange(value) {
+			this.minTrust = SIGN_IN_LEVELS.includes(value) ? value : ''
+			this.minTrustChanged = true
+		},
+
+		/**
+		 * Whether the destination accepts this form, with zero findings.
+		 * Sets the error message and lists the findings when it does not.
+		 *
+		 * @param {boolean} anonymous - check for a public, signed-out audience.
+		 * @return {Promise<boolean>} true when there are no findings.
+		 * @spec openspec/changes/forms-are-valid-against-their-destination/specs/form-destination-authoring/spec.md#requirement-an-external-form-must-have-a-public-destination-and-spam-protection
+		 */
+		async destinationAccepts(anonymous) {
+			const pageId = this.pageId || 'external-form'
+			const manifest = {
+				pages: [
+					{
+						id: pageId,
+						type: 'form',
+						config: {
+							...(this.formConfig || {}),
+							destination: {
+								register: this.register,
+								schema: this.schema,
+							},
+						},
+					},
+				],
+
+				runtime: anonymous
+					? { externalForms: [{ pageId, status: 'enabled' }] }
+					: {},
+			}
+			const { findings } = await checkFormDestinations(manifest, this.appSlug)
+			this.findings = findings
+			if (findings.length === 0) {
+				return true
+			}
+			this.errorMessage = n(
+				'buildiq',
+				'External access is not switched on: where this form saves to refuses it on %n point. Fix it on the form first.',
+				'External access is not switched on: where this form saves to refuses it on %n points. Fix them on the form first.',
+				findings.length,
+			)
+			return false
 		},
 
 		/**
@@ -295,8 +442,8 @@ export default {
 		 * (design.md Decision 5 / OQ-2).
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-003
-		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-004
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-003
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-004
 		 */
 		async onSave() {
 			if (!this.register || !this.schema || this.saving) {
@@ -310,50 +457,145 @@ export default {
 					await this.onDisable()
 					return
 				}
-				await enablePublicCreate({
-					schema: this.schema,
-					publicRead: this.publicRead,
-				})
-				const existingObjectId =
-					this.entry
-					&& this.entry.portalPage
-					&& this.entry.portalPage.objectId
-				const portalResult = await provisionPortalPage({
-					register: this.register,
-					schema: this.schema,
-					objectId: existingObjectId || null,
-				})
-				this.portalHint = !!portalResult.unavailable
-				this.savedPortalUrl = portalResult.portalPath
-					? window.location.origin + generateUrl(portalResult.portalPath)
-					: ''
-				const next = {
-					id: (this.entry && this.entry.id) || generateEntryId(),
-					pageId: this.pageId,
-					register: this.register,
-					schema: this.schema,
-					status: 'enabled',
-					publicRead: this.publicRead,
-					organisationScope: this.organisationScope || null,
-					portalPage: portalResult.unavailable
-						? null
-						: {
-								objectId: portalResult.objectId,
-								portalPath: portalResult.portalPath,
-							},
-
-					trackLinkAction: { enabled: this.trackLinkEnabled },
+				if (await this.applyAccessGrant()) {
+					await this.provisionAndEmit()
 				}
-				this.saved = true
-				this.$emit('save', next)
 			} catch (e) {
 				this.errorMessage = t(
 					'buildiq',
 					'Could not provision external access: {error}',
-					{ error: (e && e.message) || String(e) },
+					{ error: errorText(e) },
 				)
 			} finally {
 				this.saving = false
+			}
+		},
+
+		/**
+		 * Settle the OpenRegister grant for the chosen audience. Spec "An
+		 * external form MUST have a public destination": the form goes on only
+		 * with zero findings, before and (for an anonymous form) after the grant.
+		 *
+		 * @return {Promise<boolean>} true when the portal page may be provisioned.
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-003
+		 */
+		async applyAccessGrant() {
+			if (!(await this.destinationAccepts(false))) {
+				return false
+			}
+			if (this.minTrust) {
+				await this.revokeAnonymousGrant()
+				return true
+			}
+			await enablePublicCreate({
+				schema: this.schema,
+				publicRead: this.publicRead,
+			})
+			// The grant is in; an anonymous form now needs a destination
+			// that lets a public visitor create.
+			return this.destinationAccepts(true)
+		},
+
+		/**
+		 * portaliq writes past OpenRegister's RBAC itself, so a public create
+		 * grant would only be a way around the sign-in. Take back the one an
+		 * anonymous save gave.
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-004
+		 */
+		async revokeAnonymousGrant() {
+			const grantedBefore =
+				this.hadEnabledEntry
+				&& !SIGN_IN_LEVELS.includes(this.entry.minTrust)
+			if (grantedBefore) {
+				await revokePublicCreate({
+					schema: this.schema,
+					removeRead: false,
+				})
+			}
+		},
+
+		/**
+		 * Provision (create/update) the Portaliq `portalPage` and emit the
+		 * enabled entry. A Portaliq outage leaves the entry without a portal page.
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-004
+		 */
+		async provisionAndEmit() {
+			const portalResult = await provisionPortalPage(this.portalPageRequest())
+			this.portalHint = !!portalResult.unavailable
+			this.savedPortalUrl = portalResult.portalPath
+				? window.location.origin + generateUrl(portalResult.portalPath)
+				: ''
+			const next = this.enabledEntry(portalResult)
+			this.saved = true
+			this.$emit('save', next)
+		},
+
+		/**
+		 * The portal-page request: the stored object is updated in place, and
+		 * the level is only sent when the maker changed it.
+		 *
+		 * @return {object}
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-004
+		 */
+		portalPageRequest() {
+			return {
+				register: this.register,
+				schema: this.schema,
+				objectId: this.linkedPortalObjectId() || null,
+				...(this.minTrustChanged
+					? { minTrust: this.minTrust || null }
+					: {}),
+			}
+		},
+
+		/**
+		 * The stored portal page's object id, when the entry has one.
+		 *
+		 * @return {string|null|undefined}
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-004
+		 */
+		linkedPortalObjectId() {
+			return this.entry
+				&& this.entry.portalPage
+				&& this.entry.portalPage.objectId
+		},
+
+		/**
+		 * The entry id: the stored one, or a fresh one for a first save.
+		 *
+		 * @return {string}
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-002
+		 */
+		entryId() {
+			return (this.entry && this.entry.id) || generateEntryId()
+		},
+
+		/**
+		 * The enabled entry after provisioning.
+		 *
+		 * @param {object} portalResult - what the portal-page provisioning answered.
+		 * @return {object}
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-004
+		 */
+		enabledEntry(portalResult) {
+			return {
+				id: this.entryId(),
+				pageId: this.pageId,
+				register: this.register,
+				schema: this.schema,
+				status: 'enabled',
+				publicRead: this.publicRead,
+				organisationScope: this.organisationScope || null,
+				minTrust: this.minTrust || null,
+				portalPage: portalPageOf(portalResult),
+				trackLinkAction: { enabled: this.trackLinkEnabled },
+				// Spam protection for the anonymous form: a field no person
+				// sees, which the submit refuses when it is filled.
+				honeypot: '_hp',
 			}
 		},
 
@@ -363,7 +605,7 @@ export default {
 		 * `portalPage` was ever linked.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-005
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-005
 		 */
 		async onDisable() {
 			if (!this.register || !this.schema) {
@@ -372,31 +614,8 @@ export default {
 			this.saving = true
 			this.errorMessage = ''
 			try {
-				const hadPublicRead = !!(this.entry && this.entry.publicRead)
-				await revokePublicCreate({
-					schema: this.schema,
-					removeRead: hadPublicRead,
-				})
-				const objectId =
-					this.entry
-					&& this.entry.portalPage
-					&& this.entry.portalPage.objectId
-				if (objectId) {
-					await draftPortalPage(objectId)
-				}
-				const next = {
-					id: (this.entry && this.entry.id) || generateEntryId(),
-					pageId: this.pageId,
-					register: this.register,
-					schema: this.schema,
-					status: 'disabled',
-					publicRead: false,
-					organisationScope:
-						(this.entry && this.entry.organisationScope) || null,
-
-					portalPage: (this.entry && this.entry.portalPage) || null,
-					trackLinkAction: { enabled: false },
-				}
+				await this.revokeAccess()
+				const next = this.disabledEntry()
 				this.enabled = false
 				this.saved = false
 				this.$emit('save', next)
@@ -404,10 +623,51 @@ export default {
 				this.errorMessage = t(
 					'buildiq',
 					'Could not disable external access: {error}',
-					{ error: (e && e.message) || String(e) },
+					{ error: errorText(e) },
 				)
 			} finally {
 				this.saving = false
+			}
+		},
+
+		/**
+		 * Take the public create (and, when it was given, read) grant back and
+		 * draft the linked portal page.
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-005
+		 */
+		async revokeAccess() {
+			const hadPublicRead = !!(this.entry && this.entry.publicRead)
+			await revokePublicCreate({
+				schema: this.schema,
+				removeRead: hadPublicRead,
+			})
+			const objectId = this.linkedPortalObjectId()
+			if (objectId) {
+				await draftPortalPage(objectId)
+			}
+		},
+
+		/**
+		 * The disabled entry: the portal page stays linked (drafted, not deleted).
+		 *
+		 * @return {object}
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-005
+		 */
+		disabledEntry() {
+			return {
+				id: this.entryId(),
+				pageId: this.pageId,
+				register: this.register,
+				schema: this.schema,
+				status: 'disabled',
+				publicRead: false,
+				organisationScope:
+					(this.entry && this.entry.organisationScope) || null,
+
+				portalPage: (this.entry && this.entry.portalPage) || null,
+				trackLinkAction: { enabled: false },
 			}
 		},
 
@@ -417,7 +677,7 @@ export default {
 		 *
 		 * @param {boolean} value - the new open state.
 		 * @return {void}
-		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-002
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-002
 		 */
 		onDialogOpenChange(value) {
 			if (!value) {
@@ -427,7 +687,7 @@ export default {
 
 		/**
 		 * @return {void}
-		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-002
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-002
 		 */
 		onClose() {
 			this.$emit('update:open', false)
@@ -452,6 +712,12 @@ export default {
 	display: flex;
 	gap: 8px;
 	align-items: center;
+}
+
+.ob-external-form-access__field {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
 }
 
 .ob-external-form-access__urls {

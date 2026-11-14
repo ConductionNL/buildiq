@@ -33,8 +33,12 @@
  */
 
 import { expect, test } from '@playwright/test'
+// The one place a target enters this suite, and the place the shared-instance
+// guard sits. This was a private `process.env.PLAYWRIGHT_BASE_URL ??
+// 'http://localhost:8080'` constant, so a run with nothing set wrote to the
+// shared dev instance. See tests/e2e/shared-instance.ts.
+import { E2E_BASE_URL as BASE } from '../support/baseUrl.ts'
 
-const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
 const LIVE = process.env.BUILDIQ_E2E_LIVE === '1'
 
 // @e2e application-creation-wizard::clicking-add-application-opens-the-wizard

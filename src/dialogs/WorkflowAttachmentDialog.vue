@@ -16,7 +16,7 @@
 		:name="
 			editing
 				? t('buildiq', 'Edit workflow attachment')
-				: t('buildiq', 'Attach a Procest case type')
+				: t('buildiq', 'Attach a Dossiq case type')
 		"
 		size="normal"
 		@update:open="$emit('update:open', $event)"
@@ -51,9 +51,13 @@
 					:inputLabel="t('buildiq', 'Link property')"
 					:options="linkPropertyOptions"
 					label="label" />
+				<!-- A link, not a handler: this goes to the schema designer.
+				     NcButton renders a RouterLink when given `to`, so it stays
+				     inside the SPA and keeps the button styling. -->
 				<NcButton
+					v-if="createLinkPropertyRoute"
 					variant="tertiary"
-					@click="$emit('create-link-property', selectedSchemaSlug)">
+					:to="createLinkPropertyRoute">
 					{{ t('buildiq', 'Create zaakUrl property') }}
 				</NcButton>
 			</div>
@@ -93,6 +97,7 @@
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcDialog, NcSelect, NcTextField } from '@nextcloud/vue'
+import { fleetAppPath } from '../services/fleetAppId.js'
 
 export default {
 	name: 'WorkflowAttachmentDialog',
@@ -128,7 +133,7 @@ export default {
 		},
 	},
 
-	emits: ['update:open', 'save', 'create-link-property'],
+	emits: ['update:open', 'save'],
 	data() {
 		return {
 			caseTypes: [],
@@ -143,12 +148,12 @@ export default {
 	},
 
 	computed: {
-		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
+		/** @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
 		editing() {
 			return !!this.attachment
 		},
 
-		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
+		/** @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
 		caseTypeOptions() {
 			return this.caseTypes.map((ct) => ({
 				label: ct.identificatie
@@ -159,7 +164,7 @@ export default {
 			}))
 		},
 
-		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
+		/** @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
 		schemaOptions() {
 			const exclude = this.editing ? [] : this.attachedSchemas
 			return this.schemas
@@ -167,12 +172,42 @@ export default {
 				.map((s) => ({ label: s.title || s.slug, slug: s.slug }))
 		},
 
-		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
+		/** @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
 		selectedSchemaSlug() {
 			return this.schemaOption ? this.schemaOption.slug : ''
 		},
 
-		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
+		/**
+		 * The schema-designer route that adds the `zaakUrl` link property, with
+		 * the target schema and the property to add pre-seeded; the designer
+		 * creates it with its own field validation (REQ-PWA-002).
+		 *
+		 * Null until a schema is picked, so the control does not render as a
+		 * link to nowhere.
+		 *
+		 * @return {object|null} A vue-router location, or null.
+		 * @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-002
+		 */
+		createLinkPropertyRoute() {
+			const appSlug =
+				this.$route && this.$route.params ? this.$route.params.slug : ''
+			if (!appSlug || !this.selectedSchemaSlug) {
+				return null
+			}
+			return {
+				name: 'SchemaDesignerList',
+				params: { slug: appSlug },
+				query: {
+					schema: this.selectedSchemaSlug,
+					addProperty: 'zaakUrl',
+					...(this.$route.query && this.$route.query._version
+						? { _version: this.$route.query._version }
+						: {}),
+				},
+			}
+		},
+
+		/** @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
 		linkPropertyOptions() {
 			const schema = this.schemas.find(
 				(s) => s.slug === this.selectedSchemaSlug,
@@ -190,7 +225,7 @@ export default {
 				.map((name) => ({ label: name, name }))
 		},
 
-		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
+		/** @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
 		canSave() {
 			return !!(
 				this.caseTypeOption
@@ -205,7 +240,7 @@ export default {
 		 * @param {boolean} isOpen - The dialog's new `open` state. Opening re-seeds the
 		 *   form from the attachment being edited and (when Procest is installed)
 		 *   refetches the selectable case types. Closing is not acted on.
-		 * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002
+		 * @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-002
 		 */
 		open(isOpen) {
 			if (isOpen) {
@@ -221,7 +256,7 @@ export default {
 		/**
 		 * Seed the form from an existing attachment when editing.
 		 *
-		 * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002
+		 * @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-002
 		 */
 		hydrate() {
 			this.error = ''
@@ -253,13 +288,13 @@ export default {
 		 * Load published case types from Procest's ZTC list endpoint.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002
+		 * @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-002
 		 */
 		async fetchCaseTypes() {
 			this.loadingCaseTypes = true
 			try {
 				const url = generateUrl(
-					'/apps/procest/api/zgw/catalogi/v1/zaaktypen',
+					fleetAppPath('dossiq', 'api/zgw/catalogi/v1/zaaktypen'),
 				)
 				const { data } = await axios.get(url)
 				const list = (data && (data.results || data)) || []
@@ -274,7 +309,7 @@ export default {
 		/**
 		 * Assemble + emit the workflow attachment entry.
 		 *
-		 * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002
+		 * @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-002
 		 */
 		onSave() {
 			if (!this.canSave) {
@@ -298,7 +333,7 @@ export default {
 			this.$emit('update:open', false)
 		},
 
-		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
+		/** @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
 		onClose() {
 			this.$emit('update:open', false)
 		},

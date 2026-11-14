@@ -36,6 +36,8 @@ use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectCreatedEvent;
 use OCA\OpenRegister\Event\ObjectTransitionedEvent;
 use OCA\OpenRegister\Event\ObjectUpdatedEvent;
+use OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef;
+use OCA\OpenRegister\Service\Lifecycle\TransitionMove;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -240,12 +242,8 @@ final class DocumentGenerationListenerTest extends TestCase {
 		$entity = $this->objectEntity('permit', 'object-uuid-9');
 		$event = new ObjectTransitionedEvent(
 			object: $entity,
-			action: 'approve',
-			from: 'draft',
-			to: 'approved',
-			userId: null,
-			register: 'buildiq',
-			schema: 'permit'
+			move: new TransitionMove(action: 'approve', from: 'draft', to: 'approved'),
+			scope: new RegisterSchemaRef(register: 'buildiq', schema: 'permit'),
 		);
 		$this->listener->handle($event);
 

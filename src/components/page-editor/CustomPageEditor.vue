@@ -73,39 +73,24 @@
 <script>
 import InlineFieldMark from './fields/InlineFieldMark.vue'
 import { useLivePreview } from '../../composables/useLivePreview.js'
+import { pageEditorBaseMixin } from '../../mixins/pageEditorBase.js'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 
 export default {
 	name: 'CustomPageEditor',
 	components: { InlineFieldMark },
-	mixins: [pageEditorValidationMixin],
+	mixins: [pageEditorBaseMixin, pageEditorValidationMixin],
 	props: {
-		config: {
-			type: Object,
-			default: () => ({}),
-		},
-
 		pageType: {
 			type: String,
 			default: 'custom',
 		},
-
-		appSlug: {
-			type: String,
-			default: '',
-		},
-
-		parentRoute: {
-			type: String,
-			default: '',
-		},
 	},
 
-	emits: ['update:config'],
 	/**
 	 * Observed behaviour of `setup` (retrofit annotation).
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
+	 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
 	 */
 	setup() {
 		// When chain spec #2's in-memory preview is wired AND it exposes a
@@ -126,7 +111,7 @@ export default {
 		/**
 		 * Observed behaviour of `validatedConfigKeys` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
 		 */
 		validatedConfigKeys() {
 			return ['component', 'props']
@@ -135,7 +120,7 @@ export default {
 		/**
 		 * Observed behaviour of `registryKeys` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
 		 */
 		registryKeys() {
 			const reg = this.preview && this.preview.componentRegistry
@@ -151,7 +136,7 @@ export default {
 		/**
 		 * Observed behaviour of `otherKeys` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
 		 */
 		otherKeys() {
 			return Object.keys(this.config || {}).filter(
@@ -169,7 +154,7 @@ export default {
 			 * caret and half-typed JSON survive their own keystrokes.
 			 *
 			 * @param {?object} val - the new `config.props` prop bag; `null`/`undefined` empties the textarea.
-			 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
+			 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
 			 */
 			handler(val) {
 				const fresh = this.stringifyProps(val)
@@ -187,7 +172,7 @@ export default {
 		 *
 		 * @param {?object} value - the `config.props` prop bag; `null`/`undefined` (or anything JSON.stringify chokes on, e.g. a cyclic object) yields an empty textarea rather than throwing.
 		 * @return {string} - the indented JSON, or `''`.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
 		 */
 		stringifyProps(value) {
 			if (value === undefined || value === null) {
@@ -207,7 +192,7 @@ export default {
 		 *
 		 * @param {string} key - the config key being written: `component` (the customComponents registry key) or `props`.
 		 * @param {string|object|undefined} value - the new value: the registry key from the text input, or the parsed prop bag from the JSON textarea. `''`, `null` and `undefined` delete the key — that is how an emptied textarea removes `props`.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
 		 */
 		update(key, value) {
 			const next = { ...this.config }
@@ -225,7 +210,7 @@ export default {
 		 * blank the live page; the last valid parse stays in the manifest.
 		 *
 		 * @param {string} value - the raw textarea contents. Blank/whitespace-only clears the error and removes `config.props` entirely.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-5
 		 */
 		onPropsInput(value) {
 			this.propsDraft = value
@@ -247,7 +232,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../assets/editor-controls.scss' as c;
+
 .custom-page-editor {
 	display: flex;
 	flex-direction: column;
@@ -262,12 +249,7 @@ export default {
 }
 
 .custom-page-editor__fieldset {
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-	padding: 8px;
-	display: flex;
-	flex-direction: column;
-	gap: 6px;
+	@include c.fieldset;
 }
 
 .custom-page-editor__fieldset legend {
@@ -284,11 +266,7 @@ export default {
 }
 
 .custom-page-editor__group-row input {
-	padding: 4px 6px;
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-	background: var(--color-main-background);
-	color: var(--color-main-text);
+	@include c.control;
 }
 
 .custom-page-editor__textarea {

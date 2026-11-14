@@ -448,3 +448,110 @@ export completes successfully having silently bundled zero agents.
 - **AND** the resolution MUST succeed identically regardless of what
   numeric ids those register and schema rows happen to have on the running
   instance
+
+### Requirement: Bound data registers' schema definitions are bundled into every export
+
+`ExportService::generateAppZip()` SHALL, for every `dataRegisters` binding the source Application declares, resolve the named register and write its schema definitions into the exported tree at `lib/Settings/data-registers/<register-slug>.schema.json` — one file per
+binding, containing JSON Schema definitions only. This file SHALL NOT be
+merged into the exported app's own `<app>_register.json` and SHALL NOT be
+referenced by any `<repair-step>` in the exported `appinfo/info.xml` — it is
+reference documentation of a register the exported app does not own,
+consuming the same non-ownership contract `Application.dataRegisters`
+already establishes for the running virtual app. An Application with no
+`dataRegisters` SHALL produce an export tree with no
+`lib/Settings/data-registers/` directory at all — this requirement is fully
+additive and has no effect on an export that predates it.
+
+#### Scenario: Export bundles schema defs for every declared binding
+
+- **GIVEN** a published Application whose `dataRegisters` is
+  `[{ "register": "spectr", "label": "Spectr market intelligence data" }]`
+- **WHEN** the Application is exported (either target: `zip` or `github`)
+- **THEN** the exported tree contains
+  `lib/Settings/data-registers/spectr.schema.json` holding the `spectr`
+  register's current schema definitions
+- **AND** `lib/Settings/spectr_register.json` (an app-owned-looking filename)
+  is NOT created — the file lives only under the dedicated
+  `data-registers/` subdirectory
+
+#### Scenario: Export with no bindings produces no data-registers directory
+
+- **GIVEN** a published Application whose `dataRegisters` is absent or `[]`
+- **WHEN** the Application is exported
+- **THEN** the exported tree contains no `lib/Settings/data-registers/`
+  directory
+
+### Requirement: Per-binding includeData toggle controls data-register row-data inclusion
+
+The `exportJob` schema SHALL gain an optional `dataRegisters` array property
+(items shaped `{ register: string, includeData: boolean }`, default `[]`),
+populated by `ExportJobService::queue()` from the submit request body —
+mirroring the existing `includeSeedData` field's role as export-flow state
+persisted on the async job record, not Application configuration. For each
+binding whose `includeData` is `true`, `ExportService::generateAppZip()`
+SHALL additionally write
+`lib/Settings/data-registers/<register-slug>.seed-data.json` containing that
+register's current row data as a reference fixture, alongside (never instead
+of) that binding's schema-definitions file. A binding omitted from the
+export request's `dataRegisters`, or present with `includeData: false`,
+SHALL produce its schema-definitions file only — no row data SHALL be
+written for it under any circumstance where `includeData` is not explicitly
+`true`.
+
+#### Scenario: includeData true bundles row data alongside the schema
+
+- **GIVEN** a published Application bound to `spectr`, exported with request
+  body `dataRegisters: [{ "register": "spectr", "includeData": true }]`
+- **WHEN** the export completes
+- **THEN** the exported tree contains both
+  `lib/Settings/data-registers/spectr.schema.json` and
+  `lib/Settings/data-registers/spectr.seed-data.json`
+- **AND** neither file is referenced by any `<repair-step>` in the exported
+  `appinfo/info.xml`
+
+#### Scenario: includeData omitted defaults to schema-defs-only
+
+- **GIVEN** the same Application, exported with a request body that omits
+  `dataRegisters` entirely
+- **WHEN** the export completes
+- **THEN** the exported tree contains
+  `lib/Settings/data-registers/spectr.schema.json`
+- **AND** it does NOT contain `lib/Settings/data-registers/spectr.seed-data.json`
+
+### Requirement: Export download authorization MUST read the persisted requester identity
+
+`ExportsController::isAuthorisedForJob` SHALL authorize a download against the
+requester identity actually persisted on the export-job record (`requestedBy`,
+falling back to `@self.owner`), not against a `submittedBy` key that is never
+written. The check MUST NOT rely on the accidental `@self.owner` fallback as its
+only path.
+
+#### Scenario: The persisted requester may download their export
+- **WHEN** the user recorded as the job's `requestedBy` requests the download
+- **THEN** the download is authorized
+
+#### Scenario: A stranger is denied
+- **WHEN** a different, non-admin user requests the same job's download
+- **THEN** the request is denied (404-masked), not silently allowed via a fallback
+
+### Requirement: Export submission enforces CSRF protection
+
+The export submission endpoint (`POST /apps/buildiq/api/applications/{slug}/exports`) SHALL enforce Nextcloud's CSRF protection: the controller method SHALL NOT carry `#[NoCSRFRequired]`, so a request without a valid `requesttoken` is rejected by the AppFramework middleware before the controller body runs. The download endpoint (`GET /api/exports/{uuid}/download`) SHALL remain CSRF-exempt (`#[NoCSRFRequired]`) because it must be reachable via plain browser navigation for the ZIP stream; it SHALL remain an idempotent GET guarded by per-job authorization with 404-masking.
+
+#### Scenario: Cross-site POST without a request token is rejected
+
+- **GIVEN** a user with a valid Nextcloud session and export rights on application `hello-world`
+- **WHEN** a POST to `/apps/buildiq/api/applications/hello-world/exports` arrives without a valid `requesttoken` header (e.g. a cross-site form/fetch riding the session cookie)
+- **THEN** the middleware SHALL reject the request before `ExportsController::submit` executes
+- **AND** no ExportJob SHALL be queued and no GitHub push SHALL occur
+
+#### Scenario: SPA submission with the request token succeeds unchanged
+
+- **WHEN** `ExportDialog.vue` submits the same POST through `@nextcloud/axios` (which sends the `requesttoken`)
+- **THEN** the request SHALL pass the CSRF check and behave exactly as before this change (202 Accepted with `{ uuid }`)
+
+#### Scenario: Download stays reachable by navigation
+
+- **WHEN** an authorised user opens `/apps/buildiq/api/exports/{uuid}/download` as a plain browser navigation (no `requesttoken`)
+- **THEN** the ZIP SHALL stream successfully for an authorised, unexpired job
+- **AND** an unauthorised caller SHALL still receive 404 (masked), regardless of CSRF exemption

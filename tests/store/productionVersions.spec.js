@@ -108,3 +108,64 @@ describe('productionVersions (REQ-OBR-007b)', () => {
 		warn.mockRestore()
 	})
 })
+
+describe('productionVersions reloads', () => {
+	beforeEach(() => {
+		resetProductionVersions()
+		get.mockReset()
+	})
+
+	it('reloads once for a uuid missing after the last load, never for a known or empty one', async () => {
+		get.mockResolvedValue({
+			data: { results: [{ productionVersion: 'v-1', productionVersionDetail: DETAIL }] },
+		})
+		await ensureProductionVersionsLoaded('v-9')
+		expect(get).toHaveBeenCalledTimes(1)
+		await ensureProductionVersionsLoaded('v-1')
+		await ensureProductionVersionsLoaded('')
+		await ensureProductionVersionsLoaded(7)
+		await ensureProductionVersionsLoaded()
+		expect(get).toHaveBeenCalledTimes(1)
+		await ensureProductionVersionsLoaded('v-9')
+		expect(get).toHaveBeenCalledTimes(2)
+		await ensureProductionVersionsLoaded('v-9')
+		expect(get).toHaveBeenCalledTimes(2)
+		await ensureProductionVersionsLoaded('v-8')
+		expect(get).toHaveBeenCalledTimes(3)
+	})
+
+	it('does not reload while the first load is still in flight', async () => {
+		let release
+		get.mockReturnValue(new Promise((resolve) => { release = resolve }))
+		const first = ensureProductionVersionsLoaded('v-9')
+		const second = ensureProductionVersionsLoaded('v-9')
+		expect(second).toBe(first)
+		release({ data: [] })
+		await first
+		expect(get).toHaveBeenCalledTimes(1)
+	})
+
+	it('tries again after a failure and resolves to the shared map', async () => {
+		const warn = vi.spyOn(console, 'warn').mockImplementation(() => {})
+		get.mockRejectedValueOnce(new Error('boom')).mockResolvedValueOnce({ data: null })
+		await ensureProductionVersionsLoaded()
+		await expect(ensureProductionVersionsLoaded()).resolves.toBe(productionVersions)
+		expect(get).toHaveBeenCalledTimes(2)
+		warn.mockRestore()
+	})
+
+	it('indexes only rows with a uuid string and an object detail', async () => {
+		get.mockResolvedValue({
+			data: [
+				null,
+				{ productionVersion: '', productionVersionDetail: DETAIL },
+				{ productionVersion: 5, productionVersionDetail: DETAIL },
+				{ productionVersion: 'v-2', productionVersionDetail: 'x' },
+				{ productionVersion: 'v-3' },
+				{ productionVersion: 'v-4', productionVersionDetail: [] },
+			],
+		})
+		await ensureProductionVersionsLoaded()
+		expect(Object.keys(productionVersions)).toEqual(['v-4'])
+	})
+})

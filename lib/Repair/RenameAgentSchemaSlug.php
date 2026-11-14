@@ -3,6 +3,9 @@
 /**
  * Buildiq RenameAgentSchemaSlug repair step.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Moves this app's agent schema slug from `agent` to `buildAgent` IN PLACE, before
  * InitializeSettings imports the register.
  *
@@ -34,9 +37,6 @@
  * @author    Conduction <info@conduction.nl>
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @version GIT: <git_id>
  *

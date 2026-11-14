@@ -1,4 +1,8 @@
 /**
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ */
+/**
  * Shared e2e helper: answer a `ConfirmActionDialog` ask.
  *
  * WHY THIS EXISTS — a test that was written against a browser primitive the

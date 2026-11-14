@@ -27,7 +27,11 @@ SHALL carry:
 
 - **id**: `buildiq-app-{slug}` (e.g. `buildiq-app-hello-world`).
 - **name**: the Application's `name` field value.
-- **href**: `/apps/buildiq/{slug}` (the virtual-app runtime URL).
+- **href**: the path produced by `IURLGenerator::linkToRoute('buildiq.dashboard.builder',
+  ['slug' => $slug])` — the virtual-app runtime URL for that slug. The href SHALL NOT be a
+  hand-built string; it SHALL always be generated through `IURLGenerator` so it resolves
+  correctly whether or not the target instance requires the `/index.php` front-controller
+  segment.
 - **icon**: the URL produced by `IURLGenerator::linkToRouteAbsolute('buildiq.icon.iconLight',
   ['slug' => $slug])` — pointing at the icon-serving endpoint (REQ-OBICON-002).
 - **order**: numeric value placing entries after buildiq's own static entry, sorted
@@ -43,7 +47,9 @@ DI container inside the `boot()` method.
 - **WHEN** the Nextcloud request cycle boots after an Application is transitioned to `published`
 - **AND** the signed-in user satisfies the visibility predicate for that Application
 - **THEN** `INavigationManager::getAll()` includes an entry with
-  `id = "buildiq-app-{slug}"`, `href = "/apps/buildiq/{slug}"`, and the app's name
+  `id = "buildiq-app-{slug}"`, `href` equal to
+  `IURLGenerator::linkToRoute('buildiq.dashboard.builder', ['slug' => slug])`, and the
+  app's name
 
 #### Scenario: Draft app does not appear in the top bar
 
@@ -54,6 +60,23 @@ DI container inside the `boot()` method.
 
 - **WHEN** an Application has `status: archived`
 - **THEN** no nav entry with `id = "buildiq-app-{slug}"` appears for any user
+
+#### Scenario: Nav entry href resolves on a front-controller-required instance
+
+- **WHEN** the target Nextcloud instance has no URL rewriting available (the front controller
+  `index.php` cannot be hidden from generated URLs)
+- **AND** a published Application's nav entry is registered
+- **THEN** the entry's `href` includes the `/index.php` segment, exactly as
+  `IURLGenerator::linkToRoute` would produce for that instance, and clicking the entry does
+  not 404
+
+#### Scenario: Nav entry href omits the front controller on a rewrite-enabled instance
+
+- **WHEN** the target Nextcloud instance has URL rewriting enabled (the front controller is
+  hidden from generated URLs)
+- **AND** a published Application's nav entry is registered
+- **THEN** the entry's `href` does NOT include an `/index.php` segment, matching what
+  `IURLGenerator::linkToRoute` produces for that instance
 
 ### Requirement: Nav entry gated by permissions RBAC
 

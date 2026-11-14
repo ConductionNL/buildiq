@@ -45,7 +45,7 @@
 			{{
 				t(
 					'buildiq',
-					'No Docudesk templates are attached yet. Attach one to let users generate a branded document from an object.',
+					'No Filinq templates are attached yet. Attach one to let users generate a branded document from an object.',
 				)
 			}}
 		</p>
@@ -103,6 +103,19 @@
 import { NcButton } from '@nextcloud/vue'
 import ConfirmActionDialog from '../dialogs/ConfirmActionDialog.vue'
 import DocumentTemplateAttachmentDialog from '../dialogs/DocumentTemplateAttachmentDialog.vue'
+import {
+	detailTabInjector,
+	runtimeListWriter,
+	upsertById,
+} from './runtimeAttachments.js'
+
+const writeDocuments = runtimeListWriter('documents')
+
+const addActionsTab = detailTabInjector({
+	id: 'docudesk-document-actions',
+	label: 'Documents',
+	component: 'docudesk-document-actions',
+})
 
 export default {
 	name: 'DocumentAttachmentsSection',
@@ -136,7 +149,7 @@ export default {
 	},
 
 	computed: {
-		/** @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002 */
+		/** @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-002 */
 		attachments() {
 			return (
 				(this.manifest
@@ -148,7 +161,7 @@ export default {
 	},
 
 	methods: {
-		/** @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002 */
+		/** @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-002 */
 		openAdd() {
 			if (!this.docudeskAvailable) {
 				return
@@ -165,7 +178,7 @@ export default {
 		 *   filenameTemplate?: string}} doc - The `runtime.documents[]` entry the user
 		 *   clicked. Passed to the dialog as-is to prefill it; the edit is written back
 		 *   through `onDialogSave`, matched on `id`.
-		 * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002
+		 * @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-002
 		 */
 		openEdit(doc) {
 			this.editingAttachment = doc
@@ -176,20 +189,13 @@ export default {
 		 * Persist an added/edited attachment into `runtime.documents[]`.
 		 *
 		 * @param {object} payload - `{ entry, addActionsTab }` from the dialog.
-		 * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002
+		 * @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-002
 		 */
 		onDialogSave(payload) {
 			const entry = payload.entry
-			const list = this.attachments.slice()
-			const idx = list.findIndex((doc) => doc.id === entry.id)
-			if (idx >= 0) {
-				list.splice(idx, 1, entry)
-			} else {
-				list.push(entry)
-			}
-			let next = this.withDocuments(list)
+			let next = writeDocuments(this.manifest, upsertById(this.attachments, entry))
 			if (payload.addActionsTab) {
-				next = this.injectActionsTab(next, entry)
+				next = addActionsTab(next, entry)
 			}
 			this.$emit('update:manifest', next)
 		},
@@ -198,7 +204,7 @@ export default {
 		 * Detach an attachment (previously generated documents are unaffected).
 		 *
 		 * @param {object} doc - the attachment to remove.
-		 * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002
+		 * @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-002
 		 */
 		detach(doc) {
 			this.pendingDetach = doc
@@ -212,7 +218,7 @@ export default {
 		 * cancelling or closing the dialog leaves the manifest untouched.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002
+		 * @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-002
 		 */
 		onConfirmDetach() {
 			const doc = this.pendingDetach
@@ -222,70 +228,7 @@ export default {
 				return
 			}
 			const list = this.attachments.filter((a) => a.id !== doc.id)
-			this.$emit('update:manifest', this.withDocuments(list))
-		},
-
-		/**
-		 * Return a manifest copy with the given documents list set (or the
-		 * `runtime.documents` key removed when empty so zero-attachment
-		 * manifests serialize byte-identically).
-		 *
-		 * @param {Array} list - the documents list.
-		 * @return {object}
-		 * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-001
-		 */
-		withDocuments(list) {
-			const next = { ...this.manifest }
-			const runtime = { ...(next.runtime || {}) }
-			if (list.length === 0) {
-				delete runtime.documents
-			} else {
-				runtime.documents = list
-			}
-			if (Object.keys(runtime).length === 0) {
-				delete next.runtime
-			} else {
-				next.runtime = runtime
-			}
-			return next
-		},
-
-		/**
-		 * Inject a `docudesk-document-actions` tab into the detail page that
-		 * targets the attachment's schema, if such a page exists and lacks one.
-		 *
-		 * @param {object} manifest - the manifest.
-		 * @param {object} entry - the attachment entry.
-		 * @return {object}
-		 * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002
-		 */
-		injectActionsTab(manifest, entry) {
-			const next = { ...manifest, pages: (manifest.pages || []).slice() }
-			next.pages = next.pages.map((page) => {
-				const cfg = page && page.config
-				const isDetail =
-					page
-					&& page.type === 'detail'
-					&& cfg
-					&& cfg.schema === entry.schema
-				if (!isDetail) {
-					return page
-				}
-				const sidebarProps = { ...(cfg.sidebarProps || {}) }
-				const tabs = (sidebarProps.tabs || []).slice()
-				if (
-					!tabs.some((t2) => t2.component === 'docudesk-document-actions')
-				) {
-					tabs.push({
-						id: 'docudesk-document-actions',
-						label: 'Documents',
-						component: 'docudesk-document-actions',
-					})
-				}
-				sidebarProps.tabs = tabs
-				return { ...page, config: { ...cfg, sidebarProps } }
-			})
-			return next
+			this.$emit('update:manifest', writeDocuments(this.manifest, list))
 		},
 	},
 }

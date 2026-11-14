@@ -36,15 +36,27 @@ icon / no-Live-chip refinement.
 The system SHALL expose
 `GET /index.php/apps/buildiq/api/applications/{slug}/manifest`
 backed by `ApplicationsController::getManifest`. The endpoint SHALL
-resolve `{slug}` to an `Application` via the `BuiltAppRoute` index,
-return the stored `manifest` JSON blob with `Content-Type:
-application/json`, and respond `200` on success or `404` when no
-matching published Application exists in the caller's organisation
-scope. The endpoint SHALL be registered via `appinfo/routes.php`
-(ADR-016) with `#[NoAdminRequired]` and a route-auth posture that
-treats it as authenticated-user-readable.
+resolve `{slug}` to an `Application` via the `BuiltAppRoute` index. When no
+`BuiltAppRoute` exists for the slug, the endpoint SHALL resolve the
+`Application` whose own `slug` equals `{slug}` exactly. It SHALL return the
+stored `manifest` JSON blob with `Content-Type: application/json`, and respond
+`200` on success or `404` when no matching Application exists in the caller's
+organisation scope. Role checks apply the same way on both lookups. The endpoint
+SHALL be registered via `appinfo/routes.php` (ADR-016) with `#[NoAdminRequired]`
+and a route-auth posture that treats it as authenticated-user-readable.
 
-@e2e exclude pure-backend REST endpoint — manifest fetch, 404 for unknown slug, and auth posture verified by Newman/manifest-endpoint.spec.ts; no separate UI surface
+Before the manifest is returned, the endpoint SHALL inject the
+Application's current, authoritative `name` field as the manifest's
+top-level `name`, overwriting (or supplying, when absent) whatever
+`name` value the stored manifest blob itself carries. This injection
+SHALL follow the same additive-projection pattern already used for
+`runtime.user.isOwner` (`injectOwnerSignal`): the Application entity's
+`name` is the single source of truth for display casing, so the
+runtime's top-bar rebrand never falls back to the raw slug because of
+manifest-blob drift (e.g. after the Application was renamed but its
+stored manifest `name` was not updated to match).
+
+@e2e exclude pure-backend REST endpoint; manifest fetch, 404 for unknown slug and auth posture are verified by Newman, in tests/integration/buildiq.postman_collection.json (Manifest endpoint folder) and tests/integration/buildiq-api-contract.postman_collection.json (2. Manifest). No separate UI surface
 
 **ID:** REQ-OBR-001
 
@@ -57,11 +69,31 @@ treats it as authenticated-user-readable.
 - **THEN** the response is `200 application/json` and the body is the
   exact `manifest` blob persisted on the Application
 
+#### Scenario: An app without a route entry still resolves
+
+- **GIVEN** an `Application` with `slug: hello-world` and no `BuiltAppRoute`
+- **WHEN** one of its owners requests its manifest
+- **THEN** the response is `200` with the production manifest
+
 #### Scenario: Unknown slug returns 404
 
 - **WHEN** an authenticated user requests the manifest for a slug
-  that has no matching `BuiltAppRoute`
+  that has no matching `BuiltAppRoute` and no matching `Application`
 - **THEN** the response is `404` with a JSON error body
+
+#### Scenario: Manifest name always reflects the Application's authoritative display name
+
+- **WHEN** an authenticated user requests the manifest for a published Application whose
+  `name` field is `"Pet Store"` but whose stored manifest blob has a `name` of `"pet-store"`
+  (or has no `name` field at all)
+- **THEN** the response body's top-level `name` is `"Pet Store"`, not `"pet-store"` and not
+  absent
+
+#### Scenario: Manifest name matches an already-consistent manifest blob
+
+- **WHEN** an authenticated user requests the manifest for a published Application whose
+  `name` field and stored manifest blob `name` are already identical
+- **THEN** the response body's top-level `name` is unchanged and equal to both
 
 ### Requirement: A published virtual app runs in its own standalone shell
 
@@ -952,3 +984,24 @@ by OpenRegister schema RBAC (`schema.authorization`).
 - **GIVEN** `medicalRecord.authorization.read = ["vets"]` in OpenRegister
 - **WHEN** a non-vet user requests medical objects directly
 - **THEN** OpenRegister returns no medical objects for that user
+
+### Requirement: Page widgets MUST be filterable by roles
+
+A widget on a page MAY declare `roles`, a list of principals that may see it. `ManifestResolverService::filterManifestForCaller` MUST remove every page widget whose `roles` the caller does not match from the response payload, server-side, wherever the page declares widgets: `widgets[]`, `config.widgets[]`, `config.sidebarTabs[].widgets[]`, and the page shapes in `pageTemplates[]` and `pageInstances[]`. Matching MUST follow the Nextcloud dashboard's check order (`AppVisibilityResolver`): `group:*` matches every signed-in user, `user:<uid>` matches that user, `group:<gid>` or a bare group id matches its members, and a Nextcloud admin matches any roles. A widget without `roles` MUST stay visible to every reader of the page. An unauthenticated caller MUST receive no widget that declares `roles`. A `config.layout[]` row or a tabs widget's `content.tabs[]` entry that names a removed widget MUST be removed with it. Admins and callers holding an owner or editor role on the Application MUST receive the manifest unfiltered.
+
+@e2e exclude server-side manifest filtering verified by ManifestWidgetRoleFilterTest and ManifestResolverServicePermissionFilterTest (testViewerOutsideWidgetRolesNeverReceivesTheWidget, testViewerInWidgetRolesReceivesTheWidget, testOwnerEditorAndAdminKeepEveryWidget); live E2E deferred, no deploy to the shared dev instance
+
+#### Scenario: A finance widget does not reach a vet
+
+- **GIVEN** a dashboard page with an open widget and a widget declaring `roles: ["finance"]`
+- **WHEN** a viewer in `vets`, not an owner, editor or admin, requests the manifest
+- **THEN** the finance widget is absent from the page in the response
+- **AND** its `config.layout[]` row and any tab naming it are absent too
+- **AND WHEN** a user in `finance` requests the manifest
+- **THEN** both widgets are present
+
+#### Scenario: Builders see every widget
+
+- **GIVEN** the same page
+- **WHEN** an owner, an editor or a Nextcloud admin requests the manifest
+- **THEN** both widgets are present, whatever their groups

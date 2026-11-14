@@ -129,40 +129,50 @@
 <script>
 import InlineFieldMark from './fields/InlineFieldMark.vue'
 import SettingsSectionBuilder from './fields/SettingsSectionBuilder.vue'
+import { pageEditorBaseMixin } from '../../mixins/pageEditorBase.js'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
+
+/**
+ * Whether a config value is blank: `''`, `null` or `undefined`.
+ *
+ * @param {string|Array<object>|null|undefined} value - the new value.
+ * @return {boolean}
+ */
+function isBlank(value) {
+	return value === '' || value === null || value === undefined
+}
+
+/**
+ * Whether a write deletes its config key: a blank value, or an empty list
+ * for `saveEndpoint`. An empty `sections` list is kept on purpose.
+ *
+ * @param {string} key - the config key being written.
+ * @param {string|Array<object>|null|undefined} value - the new value.
+ * @return {boolean}
+ */
+function deletesKey(key, value) {
+	return (
+		isBlank(value)
+		|| (Array.isArray(value) && value.length === 0 && key === 'saveEndpoint')
+	)
+}
 
 export default {
 	name: 'SettingsPageEditor',
 	components: { SettingsSectionBuilder, InlineFieldMark },
-	mixins: [pageEditorValidationMixin],
+	mixins: [pageEditorBaseMixin, pageEditorValidationMixin],
 	props: {
-		config: {
-			type: Object,
-			default: () => ({}),
-		},
-
 		pageType: {
 			type: String,
 			default: 'settings',
 		},
-
-		appSlug: {
-			type: String,
-			default: '',
-		},
-
-		parentRoute: {
-			type: String,
-			default: '',
-		},
 	},
 
-	emits: ['update:config'],
 	computed: {
 		/**
 		 * Observed behaviour of `validatedConfigKeys` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		validatedConfigKeys() {
 			return ['saveEndpoint', 'sections', 'tabs']
@@ -171,7 +181,7 @@ export default {
 		/**
 		 * Observed behaviour of `layoutShape` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		layoutShape() {
 			// `tabs` wins only when there is no `sections` array so a
@@ -188,7 +198,7 @@ export default {
 		/**
 		 * Observed behaviour of `tabs` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		tabs() {
 			return Array.isArray(this.config.tabs) ? this.config.tabs : []
@@ -205,18 +215,11 @@ export default {
 		 *
 		 * @param {string} key - the config key being written: `saveEndpoint` or `sections`.
 		 * @param {string|Array<object>} value - the new value: the free-text save endpoint, or the rebuilt section list from SettingsSectionBuilder. `''`, `null` and `undefined` delete the key.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		update(key, value) {
 			const next = { ...this.config }
-			if (
-				value === ''
-				|| value === null
-				|| value === undefined
-				|| (Array.isArray(value)
-					&& value.length === 0
-					&& key === 'saveEndpoint')
-			) {
+			if (deletesKey(key, value)) {
 				delete next[key]
 			} else {
 				next[key] = value
@@ -232,7 +235,7 @@ export default {
 		 * is dropped.
 		 *
 		 * @param {'sections'|'tabs'} shape - the radio's value: `tabs` drops `sections` and seeds `tabs: []`, anything else does the reverse.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		setLayoutShape(shape) {
 			const next = { ...this.config }
@@ -257,7 +260,7 @@ export default {
 		 * @param {number} index - position of the tab in `config.tabs`.
 		 * @param {string} key - the tab key being written: `id`, `label`, `icon` or `sections`.
 		 * @param {string|Array<object>} value - the new value: text from the tab's header inputs, or that tab's rebuilt section list from SettingsSectionBuilder. `''`, `null` and `undefined` delete the key.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		updateTabField(index, key, value) {
 			const next = { ...this.config }
@@ -276,7 +279,7 @@ export default {
 		/**
 		 * Observed behaviour of `addTab` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		addTab() {
 			const next = { ...this.config }
@@ -291,7 +294,7 @@ export default {
 		 * branch of the XOR rather than silently flipping to flat sections.
 		 *
 		 * @param {number} index - position of the tab to remove in `config.tabs`.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		removeTab(index) {
 			const next = { ...this.config }
@@ -304,7 +307,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../assets/editor-controls.scss' as c;
+
 .settings-page-editor {
 	display: flex;
 	flex-direction: column;
@@ -319,12 +324,7 @@ export default {
 }
 
 .settings-page-editor__fieldset {
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-	padding: 8px;
-	display: flex;
-	flex-direction: column;
-	gap: 6px;
+	@include c.fieldset;
 }
 
 .settings-page-editor__fieldset legend {
@@ -341,11 +341,7 @@ export default {
 }
 
 .settings-page-editor__group-row input {
-	padding: 4px 6px;
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-	background: var(--color-main-background);
-	color: var(--color-main-text);
+	@include c.control;
 }
 
 .settings-page-editor__shape {
@@ -378,11 +374,7 @@ export default {
 
 .settings-page-editor__field {
 	flex: 1 1 auto;
-	padding: 4px 6px;
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-	background: var(--color-main-background);
-	color: var(--color-main-text);
+	@include c.control;
 }
 
 .settings-page-editor__field--narrow {
@@ -390,22 +382,12 @@ export default {
 }
 
 .settings-page-editor__remove {
-	background: transparent;
-	border: 1px solid var(--color-border);
-	color: var(--color-error, var(--color-main-text));
-	padding: 4px 8px;
-	border-radius: var(--border-radius);
-	cursor: pointer;
+	@include c.danger-button;
 }
 
 .settings-page-editor__add {
 	align-self: flex-start;
-	background: var(--color-primary-element-light);
-	border: 1px solid var(--color-border);
-	color: var(--color-main-text);
-	padding: 4px 10px;
-	border-radius: var(--border-radius);
-	cursor: pointer;
+	@include c.add-button;
 }
 
 .settings-page-editor__hint {

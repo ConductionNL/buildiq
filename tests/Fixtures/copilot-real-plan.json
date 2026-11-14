@@ -1,0 +1,187 @@
+{
+	"_comment": "A trimmed copy of the plan the live copilot returned on 2026-09-18 for the brief \"A tool library where members borrow and return tools...\", keeping one step of every shape the full 16-step plan contained. The manifest it predicts is tests/Fixtures/copilot-real-plan-manifest.json, which tests/vitest/copilotRealPlan.spec.js runs through the canonical validator. Against development that manifest carried 15 errors in three classes: widgets with no id or title, a dashboard layout written as the string \"grid\", and a form page whose fields were bare names with nowhere to post.",
+	"steps": [
+		{
+			"tool": "buildiq.createApp",
+			"arguments": {
+				"slug": "tool-library",
+				"name": "Tool Library",
+				"description": "Lending library where members borrow and return tools, with tracking of active and overdue loans.",
+				"preset": "dev-prod"
+			}
+		},
+		{
+			"tool": "buildiq.upsertSchema",
+			"arguments": {
+				"appSlug": "tool-library",
+				"versionSlug": "development",
+				"slug": "tool",
+				"title": "Tool",
+				"description": "A tool item that members can borrow from the library.",
+				"properties": {
+					"name": {
+						"type": "string",
+						"title": "Name",
+						"maxLength": 120
+					}
+				},
+				"required": [
+					"name",
+					"status"
+				]
+			}
+		},
+		{
+			"tool": "buildiq.upsertPage",
+			"arguments": {
+				"appSlug": "tool-library",
+				"versionSlug": "development",
+				"pageId": "dashboard",
+				"title": "Dashboard",
+				"type": "dashboard",
+				"route": "/",
+				"config": {
+					"layout": "grid",
+					"widgets": []
+				}
+			}
+		},
+		{
+			"tool": "buildiq.addWidget",
+			"arguments": {
+				"appSlug": "tool-library",
+				"versionSlug": "development",
+				"pageId": "dashboard",
+				"widgetType": "stat",
+				"widgetConfig": {
+					"title": "Tools Out on Loan",
+					"register": "loan",
+					"schema": "loan",
+					"aggregate": "count",
+					"filter": {
+						"status": "out"
+					},
+					"icon": "hammer-wrench",
+					"color": "primary"
+				}
+			}
+		},
+		{
+			"tool": "buildiq.addWidget",
+			"arguments": {
+				"appSlug": "tool-library",
+				"versionSlug": "development",
+				"pageId": "dashboard",
+				"widgetType": "stat",
+				"widgetConfig": {
+					"title": "Overdue Loans",
+					"register": "loan",
+					"schema": "loan",
+					"aggregate": "count",
+					"filter": {
+						"status": "overdue"
+					},
+					"icon": "alert-circle-outline",
+					"color": "error"
+				}
+			}
+		},
+		{
+			"tool": "buildiq.addWidget",
+			"arguments": {
+				"appSlug": "tool-library",
+				"versionSlug": "development",
+				"pageId": "dashboard",
+				"widgetType": "table",
+				"widgetConfig": {
+					"title": "Active Loans",
+					"register": "loan",
+					"schema": "loan",
+					"filter": {
+						"status": "out"
+					},
+					"columns": [
+						"tool",
+						"member",
+						"borrowedOn",
+						"dueOn",
+						"status"
+					],
+					"limit": 10,
+					"sort": [
+						{
+							"field": "dueOn",
+							"direction": "asc"
+						}
+					]
+				}
+			}
+		},
+		{
+			"tool": "buildiq.upsertPage",
+			"arguments": {
+				"appSlug": "tool-library",
+				"versionSlug": "development",
+				"pageId": "tools",
+				"title": "Tools",
+				"type": "index",
+				"route": "/tools",
+				"config": {
+					"register": "tool",
+					"schema": "tool",
+					"columns": [
+						"name",
+						"category",
+						"assetTag",
+						"status",
+						"condition",
+						"location"
+					],
+					"searchFields": [
+						"name",
+						"assetTag",
+						"category"
+					]
+				}
+			}
+		},
+		{
+			"tool": "buildiq.upsertPage",
+			"arguments": {
+				"appSlug": "tool-library",
+				"versionSlug": "development",
+				"pageId": "loan-form",
+				"title": "Borrow / Return Tool",
+				"type": "form",
+				"route": "/loans/new",
+				"config": {
+					"register": "loan",
+					"schema": "loan",
+					"fields": [
+						"tool",
+						"member",
+						"borrowedOn",
+						"dueOn",
+						"returnedOn",
+						"status",
+						"notes"
+					],
+					"submitLabel": "Save Loan",
+					"successRoute": "loans"
+				}
+			}
+		},
+		{
+			"tool": "buildiq.upsertMenuItem",
+			"arguments": {
+				"appSlug": "tool-library",
+				"versionSlug": "development",
+				"id": "dashboard",
+				"label": "Dashboard",
+				"icon": "view-dashboard",
+				"route": "dashboard",
+				"order": 10
+			}
+		}
+	]
+}

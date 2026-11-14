@@ -27,8 +27,8 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-every-channel-path-is-validated-before-use
- * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-credential-values-never-leave-the-instance
+ * @spec openspec/specs/github-app-repo-format/spec.md#requirement-every-channel-path-is-validated-before-use
+ * @spec openspec/specs/github-app-repo-format/spec.md#requirement-credential-values-never-leave-the-instance
  */
 
 declare(strict_types=1);
@@ -38,7 +38,7 @@ namespace OCA\Buildiq\Service;
 /**
  * Path-safety and secret-redaction primitives for the v2 repo channels.
  *
- * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md
+ * @spec openspec/specs/github-app-repo-format/spec.md
  */
 class AppRepoPayloadSafety {
 
@@ -76,7 +76,7 @@ class AppRepoPayloadSafety {
 	 *
 	 * @return bool True when safe.
 	 *
-	 * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-every-channel-path-is-validated-before-use
+	 * @spec openspec/specs/github-app-repo-format/spec.md#requirement-every-channel-path-is-validated-before-use
 	 */
 	public function isSafeSlug(string $slug): bool {
 		return (preg_match('/^[a-z0-9][a-z0-9-]{0,62}[a-z0-9]$/', $slug) === 1);
@@ -93,7 +93,7 @@ class AppRepoPayloadSafety {
 	 *
 	 * @return bool True when well-formed.
 	 *
-	 * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-every-channel-path-is-validated-before-use
+	 * @spec openspec/specs/github-app-repo-format/spec.md#requirement-every-channel-path-is-validated-before-use
 	 */
 	public function isSafeUuid(string $uuid): bool {
 		return (preg_match('/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/', $uuid) === 1);
@@ -113,7 +113,7 @@ class AppRepoPayloadSafety {
 	 *
 	 * @return string The safe filename stem.
 	 *
-	 * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-every-channel-path-is-validated-before-use
+	 * @spec openspec/specs/github-app-repo-format/spec.md#requirement-every-channel-path-is-validated-before-use
 	 */
 	public function connectorFileName(array $binding, array $object, string $uuid): string {
 		foreach ([(string)($binding['slug'] ?? ''), (string)($object['slug'] ?? '')] as $candidate) {
@@ -138,7 +138,7 @@ class AppRepoPayloadSafety {
 	 *
 	 * @return array<string,mixed> The sanitised payload.
 	 *
-	 * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-credential-values-never-leave-the-instance
+	 * @spec openspec/specs/github-app-repo-format/spec.md#requirement-credential-values-never-leave-the-instance
 	 */
 	public function stripSecrets(array $data, int &$stripped): array {
 		$out = [];

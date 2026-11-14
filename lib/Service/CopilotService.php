@@ -30,7 +30,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+ * @spec openspec/specs/ai-copilot/spec.md
  */
 
 declare(strict_types=1);
@@ -38,35 +38,36 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Exception\CopilotException;
-use OCA\Buildiq\Mcp\BuildiqToolProvider;
+use OCA\Buildiq\Kernel\Contracts\BuildiqToolProviderInterface;
+use OCA\Buildiq\Kernel\Contracts\CopilotServiceInterface;
 use OCA\Buildiq\Service\Copilot\CopilotPlanValidator;
 use OCA\Buildiq\Service\Copilot\CopilotPromptBuilder;
+use OCA\Buildiq\Service\Copilot\CopilotTextTask;
+use OCA\Buildiq\Support\ManifestEntryList;
+use OCA\Buildiq\Support\ManifestPageShape;
+use OCA\Buildiq\Support\ManifestRoute;
+use OCA\Buildiq\Support\ManifestWidgetShape;
+use OCA\Buildiq\Support\ObjectRecord;
+use OCA\Buildiq\Support\WidgetSpec;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserManager;
-use OCP\TaskProcessing\Task;
-use OCP\TaskProcessing\TaskTypes\TextToText;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
-// NOTE: OCP\TaskProcessing\Task and OCP\TaskProcessing\TaskTypes\TextToText
-// ship only on NC 30+. A `use` import merely aliases the name — PHP does not
-// resolve/autoload it until the class is actually referenced — so importing
-// them here is safe even on NC 28/29; every call site that constructs or
-// references them is reached only after health()/assertAvailable() has
-// already confirmed `OCP\TaskProcessing\IManager` exists.
-use RuntimeException;
 use Throwable;
 
 /**
  * Prompt-to-app copilot orchestrator (REQ-OBAIC-001 through REQ-OBAIC-007).
  *
- * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+ * @spec openspec/specs/ai-copilot/spec.md
  * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
+ * @spec openspec/specs/platform-properties/spec.md#REQ-PLAT-002
  */
-class CopilotService {
+class CopilotService implements CopilotServiceInterface {
 
 	private const REGISTER_SLUG = 'buildiq';
 
@@ -88,20 +89,6 @@ class CopilotService {
 	private const TEXT_TO_TEXT_TASK_TYPE_ID = 'core:text2text';
 
 	/**
-	 * Hard timeout for the synchronous plan-call poll loop (design.md Decision 2).
-	 *
-	 * @var float
-	 */
-	private const LLM_TIMEOUT_SECONDS = 120.0;
-
-	/**
-	 * Poll interval while waiting for the TaskProcessing task to finish.
-	 *
-	 * @var int
-	 */
-	private const POLL_INTERVAL_MICROSECONDS = 500000;
-
-	/**
 	 * Roles that grant write access to an Application (mirrors AbstractToolHandler).
 	 *
 	 * @var array<int, string>
@@ -115,6 +102,19 @@ class CopilotService {
 	 * @var array<int, string>
 	 */
 	private const MANIFEST_MUTATING_TOOLS = ['buildiq.upsertPage', 'buildiq.addWidget', 'buildiq.upsertMenuItem'];
+
+	/**
+	 * Tools that write into one version of an app, and therefore take a
+	 * `versionSlug` argument.
+	 *
+	 * @var array<int, string>
+	 */
+	private const VERSION_SCOPED_TOOLS = [
+		'buildiq.upsertSchema',
+		'buildiq.upsertPage',
+		'buildiq.addWidget',
+		'buildiq.upsertMenuItem',
+	];
 
 	/**
 	 * Tools that require an existing-app RBAC check at execute time (every
@@ -132,6 +132,13 @@ class CopilotService {
 	];
 
 	/**
+	 * The text-to-text task seam shared with the builder assist.
+	 *
+	 * @var CopilotTextTask
+	 */
+	private readonly CopilotTextTask $textTask;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ContainerInterface $container DI container, used to lazily resolve
@@ -144,7 +151,7 @@ class CopilotService {
 	 * @param IUserManager $userManager Resolves a uid string to an `IUser` for RBAC.
 	 * @param IGroupManager $groupManager Group manager (admin bypass logging).
 	 * @param PermissionResolver $permissionResolver Shared permission-grammar resolver.
-	 * @param BuildiqToolProvider $toolProvider MCP dispatcher — the
+	 * @param BuildiqToolProviderInterface $toolProvider MCP dispatcher — the
 	 *                                          single execution path.
 	 * @param CopilotPlanValidator $planValidator Structural plan validator.
 	 * @param CopilotPromptBuilder $promptBuilder System-prompt builder.
@@ -153,6 +160,7 @@ class CopilotService {
 	 *                                       every agent-scoped plan/execute/discard
 	 *                                       turn.
 	 * @param AuditTrailMapper|null $auditTrailMapper Optional OR audit-trail writer for admin-bypass parity (L2).
+	 * @param CopilotTextTask|null $textTask The text-to-text task seam; built from the container and logger when not given.
 	 *
 	 * @return void
 	 */
@@ -163,13 +171,15 @@ class CopilotService {
 		private readonly IUserManager $userManager,
 		private readonly IGroupManager $groupManager,
 		private readonly PermissionResolver $permissionResolver,
-		private readonly BuildiqToolProvider $toolProvider,
+		private readonly BuildiqToolProviderInterface $toolProvider,
 		private readonly CopilotPlanValidator $planValidator,
 		private readonly CopilotPromptBuilder $promptBuilder,
 		private readonly ApplicationDeletionService $appDeletionService,
 		private readonly AgentRunLogger $agentRunLogger,
 		private readonly ?AuditTrailMapper $auditTrailMapper = null,
+		?CopilotTextTask $textTask = null,
 	) {
+		$this->textTask = ($textTask ?? new CopilotTextTask(container: $container, logger: $logger));
 	}//end __construct()
 
 	/**
@@ -177,7 +187,7 @@ class CopilotService {
 	 *
 	 * @return array{available: bool, reason?: string}
 	 *
-	 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+	 * @spec openspec/specs/ai-copilot/spec.md
 	 */
 	public function health(): array {
 		if (interface_exists('OCP\\TaskProcessing\\IManager') === false) {
@@ -218,15 +228,19 @@ class CopilotService {
 	 * @param string|null $agentId Optional `Agent` id narrowing the effective tool allow-list and
 	 *                             prefixing the agent's instructions onto the system prompt
 	 *                             (agent-workspace design.md Decision 1).
+	 * @param string|null $versionSlug The version the caller is editing. Named in the prompt, and
+	 *                                 filled in on any step that leaves `versionSlug` out, so a
+	 *                                 plan lands on the version the user is looking at rather
+	 *                                 than on the tools' `development` default.
 	 *
 	 * @return array{summary: string, steps: array<int, array<string, mixed>>, manifests: array<string, array{current: array, predicted: array}>}
 	 *
 	 * @throws CopilotException On unavailability, invalid input, RBAC denial, an unknown agent, or an unparsable/invalid plan.
 	 *
-	 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+	 * @spec openspec/specs/ai-copilot/spec.md
 	 * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
 	 */
-	public function plan(string $brief, ?string $appSlug, string $userId, ?string $agentId = null): array {
+	public function plan(string $brief, ?string $appSlug, string $userId, ?string $agentId = null, ?string $versionSlug = null): array {
 		$this->assertAvailable();
 		$this->assertValidBrief(brief: $brief);
 
@@ -237,7 +251,7 @@ class CopilotService {
 		}
 
 		try {
-			return $this->planWithinContext(brief: $brief, appSlug: $appSlug, userId: $userId, agent: $agent);
+			return $this->planWithinContext(brief: $brief, appSlug: $appSlug, userId: $userId, agent: $agent, versionSlug: $versionSlug);
 		} catch (CopilotException $e) {
 			if ($agent !== null) {
 				$this->agentRunLogger->log(
@@ -263,18 +277,20 @@ class CopilotService {
 	 *                             agent when `$agent` is non-null).
 	 * @param string $userId Acting user's UID.
 	 * @param array<string, mixed>|null $agent The resolved `Agent` record, or null for the bare copilot path.
+	 * @param string|null $versionSlug The version the caller is editing, or null.
 	 *
 	 * @return array{summary: string, steps: array<int, array<string, mixed>>, manifests: array<string, array{current: array, predicted: array}>}
 	 *
 	 * @throws CopilotException On RBAC denial or an unparsable/invalid/over-cap plan.
 	 */
-	private function planWithinContext(string $brief, ?string $appSlug, string $userId, ?array $agent): array {
+	private function planWithinContext(string $brief, ?string $appSlug, string $userId, ?array $agent, ?string $versionSlug = null): array {
 		$targetContext = null;
 		if ($appSlug !== null && $appSlug !== '') {
 			$app = $this->requireExistingVirtualApp(appSlug: $appSlug);
 			$this->assertWriteRoleOnApp(app: $app, userId: $userId);
 			$targetContext = [
 				'appSlug' => $appSlug,
+				'versionSlug' => ($versionSlug ?? ''),
 				'manifestSummary' => $this->summariseManifest(manifest: (array)($app['manifest'] ?? [])),
 			];
 		}
@@ -295,6 +311,9 @@ class CopilotService {
 			toolDescriptors: $effectiveDescriptors,
 			instructionsPrefix: $instructionsPrefix
 		);
+
+		$plan = $this->applyTargetVersion(plan: $plan, versionSlug: $versionSlug);
+		$plan = $this->normalisePlan(plan: $plan);
 
 		$violations = $this->planValidator->validate(plan: $plan, toolDescriptors: $effectiveDescriptors);
 		if ($violations !== []) {
@@ -355,6 +374,427 @@ class CopilotService {
 	}//end discard()
 
 	/**
+	 * Fill in the version the caller is editing on every step that left
+	 * `versionSlug` out.
+	 *
+	 * The builder tools default an absent `versionSlug` to `development`, which
+	 * is the right default for a misfired tool call and the wrong one for a
+	 * person editing `production` in the page designer: the plan applies, the
+	 * designer reloads, and nothing they can see has changed. Naming the
+	 * version in the prompt is not enough on its own, because a model that
+	 * omits the argument would silently fall back to that default.
+	 *
+	 * @param array<string, mixed> $plan Decoded plan `{summary, steps[]}`.
+	 * @param string|null $versionSlug The version the caller is editing, or null.
+	 *
+	 * @return array<string, mixed> The plan, with every step's target version settled.
+	 */
+	private function applyTargetVersion(array $plan, ?string $versionSlug): array {
+		if ($versionSlug === null || $versionSlug === '') {
+			return $plan;
+		}
+
+		$steps = (array)($plan['steps'] ?? []);
+		foreach ($steps as $index => $step) {
+			$tool = (string)($step['tool'] ?? '');
+			if (in_array(needle: $tool, haystack: self::VERSION_SCOPED_TOOLS, strict: true) === false) {
+				continue;
+			}
+
+			$args = (array)($step['arguments'] ?? []);
+			if (($args['versionSlug'] ?? '') !== '') {
+				continue;
+			}
+
+			$args['versionSlug'] = $versionSlug;
+			$steps[$index]['arguments'] = $args;
+		}
+
+		$plan['steps'] = $steps;
+
+		return $plan;
+	}//end applyTargetVersion()
+
+	/**
+	 * Bring every step's arguments into the shape the handlers accept, before
+	 * the plan is validated, predicted, reviewed or executed.
+	 *
+	 * Two things a reasonable model writes were accepted at review and then
+	 * refused or ignored at execute, which is the worst possible order:
+	 *
+	 *  - a page's `route` written as a bare id (`tools`), where the manifest
+	 *    wants a path. That is rooted here;
+	 *  - a page's `config.register` / `config.schema` (and a widget's, one
+	 *    level in) written as the short names the model asked `upsertSchema`
+	 *    for. `upsertSchema` namespaces what it creates, nothing rewrote the
+	 *    page, and the app came out with every list page empty.
+	 *
+	 * Normalising here rather than rejecting is the deliberate choice: the
+	 * review screen then shows the routes and bindings that will actually be
+	 * stored, so what the reader approves is what they get. What a model
+	 * cannot be normalised out of — a route naming a scheme or a host — stays
+	 * refused by the handler's own guard.
+	 *
+	 * A MENU ITEM's route is deliberately not touched: it names a route rather
+	 * than a path, the runtime names every route after its page id, and
+	 * `UpsertMenuItemHandler` now accepts both spellings. Rooting it was the
+	 * original refusal's mistake repeated one layer up.
+	 *
+	 * @param array<string, mixed> $plan Decoded plan `{summary, steps[]}`.
+	 *
+	 * @return array<string, mixed> The plan, with every step's arguments settled.
+	 *
+	 * @spec openspec/specs/ai-copilot/spec.md#requirement-an-approved-plan-executes-atomically-through-the-mcp-handler-layer
+	 */
+	private function normalisePlan(array $plan): array {
+		$steps = (array)($plan['steps'] ?? []);
+		$authoredSchemas = $this->authoredSchemaSlugs(steps: $steps);
+		$dataRegisters = $this->dataRegistersByApp(steps: $steps);
+
+		foreach ($steps as $index => $step) {
+			if (is_array($step) === false) {
+				continue;
+			}
+
+			$args = ($step['arguments'] ?? []);
+			if (is_array($args) === false) {
+				continue;
+			}
+
+			$steps[$index]['arguments'] = $this->normaliseStepArguments(
+				tool: (string)($step['tool'] ?? ''),
+				args: $args,
+				authoredSchemas: $authoredSchemas,
+				dataRegisters: $dataRegisters
+			);
+		}
+
+		$plan['steps'] = $steps;
+
+		return $plan;
+	}//end normalisePlan()
+
+	/**
+	 * The register slugs each existing target app binds in `dataRegisters`,
+	 * keyed by app slug.
+	 *
+	 * A page or widget on one of those registers reads shared data somebody
+	 * else owns, so the data binding must leave its register and schema alone
+	 * (REQ-BQDB-004). An app this plan creates binds none yet, so it is not
+	 * looked up.
+	 *
+	 * @param array<int, mixed> $steps The plan's steps.
+	 *
+	 * @return array<string, array<int, string>>
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ManifestDataBinding is a pure rule
+	 * with no collaborators and no state.
+	 *
+	 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generated-pages-keep-the-database-register-req-bqdb-004
+	 */
+	private function dataRegistersByApp(array $steps): array {
+		$created = $this->collectCreatedAppSlugs(steps: $steps);
+		$byApp = [];
+		foreach ($steps as $step) {
+			$appSlug = self::bindingStepAppSlug(step: $step);
+			if ($appSlug === '' || isset($byApp[$appSlug]) === true || isset($created[$appSlug]) === true) {
+				continue;
+			}
+
+			$app = $this->resolveApplicationBySlug(appSlug: $appSlug);
+			$byApp[$appSlug] = ManifestDataBinding::dataRegisterSlugs(bindings: ($app['dataRegisters'] ?? []));
+		}
+
+		return $byApp;
+	}//end dataRegistersByApp()
+
+	/**
+	 * The app slug of a step whose config the data binding rewrites, or ''.
+	 *
+	 * @param mixed $step One plan step.
+	 *
+	 * @return string
+	 */
+	private static function bindingStepAppSlug(mixed $step): string {
+		if (is_array($step) === false || in_array((string)($step['tool'] ?? ''), ['buildiq.upsertPage', 'buildiq.addWidget'], true) === false) {
+			return '';
+		}
+
+		$args = ($step['arguments'] ?? null);
+		if (is_array($args) === false) {
+			return '';
+		}
+
+		return (string)($args['appSlug'] ?? '');
+	}//end bindingStepAppSlug()
+
+	/**
+	 * The short schema slugs this plan authors, keyed by `appSlug@versionSlug`,
+	 * each carrying the property names that schema declares required.
+	 *
+	 * Only what the plan itself says, so nothing here is a guess about what
+	 * already exists on the instance.
+	 *
+	 * @param array<int, mixed> $steps The plan's steps.
+	 *
+	 * @return array<string, array<string, array{required: array<int, string>}>>
+	 */
+	private function authoredSchemaSlugs(array $steps): array {
+		$slugs = [];
+		foreach ($steps as $step) {
+			if (is_array($step) === false || (string)($step['tool'] ?? '') !== 'buildiq.upsertSchema') {
+				continue;
+			}
+
+			$args = (array)($step['arguments'] ?? []);
+			$slug = strtolower(trim((string)($args['slug'] ?? '')));
+			$appSlug = (string)($args['appSlug'] ?? '');
+			$versionSlug = (string)($args['versionSlug'] ?? 'development');
+			if ($slug === '' || $appSlug === '') {
+				continue;
+			}
+
+			if ($versionSlug === '') {
+				$versionSlug = 'development';
+			}
+
+			$slugs[$appSlug . '@' . $versionSlug][$slug] = ['required' => self::requiredNames(args: $args)];
+		}
+
+		return $slugs;
+	}//end authoredSchemaSlugs()
+
+	/**
+	 * The property names an `upsertSchema` step declares required.
+	 *
+	 * @param array<string, mixed> $args The step's arguments.
+	 *
+	 * @return array<int, string>
+	 */
+	private static function requiredNames(array $args): array {
+		$names = [];
+		foreach ((array)($args['required'] ?? []) as $name) {
+			if (is_string($name) === true && trim($name) !== '') {
+				$names[] = trim($name);
+			}
+		}
+
+		return $names;
+	}//end requiredNames()
+
+	/**
+	 * The version a step's write will land on.
+	 *
+	 * @param array<string, mixed> $args The step's arguments.
+	 *
+	 * @return string
+	 */
+	private static function targetVersionSlug(array $args): string {
+		// An absent versionSlug lands on `development` in every handler, so the
+		// binding has to name the same version the write will land on.
+		$versionSlug = (string)($args['versionSlug'] ?? 'development');
+		if ($versionSlug === '') {
+			return 'development';
+		}
+
+		return $versionSlug;
+	}//end targetVersionSlug()
+
+	/**
+	 * Turn a `submitHandler` that names one of the plan's own schemas into the
+	 * page's data binding.
+	 *
+	 * A form page must name exactly one place to post to. The model wrote
+	 * `"submitHandler": "loan"` on the live plan of 2026-09-18, and `loan` is
+	 * the schema it had just asked `upsertSchema` for, not a handler anyone
+	 * registered. The rendered page said so and posted nothing:
+	 * `CnFormPage: handler "loan" not registered`.
+	 *
+	 * Naming the schema on the page instead lets
+	 * {@see ManifestPageShape::withSubmitDestination()} point the form at the
+	 * collection it belongs to, which is what it already does for a form that
+	 * named no destination at all. Proven on the deployed instance: the same
+	 * page with its schema named posted 201 Created and the record appeared on
+	 * the app's own Loans page.
+	 *
+	 * Nothing happens unless the value matches a schema THIS PLAN creates, so
+	 * a genuine registered handler is never touched.
+	 *
+	 * @param array<string, mixed> $config The form page's config block.
+	 * @param array<string, array{required: array<int, string>}> $authored Short schema slugs this plan authors for this version.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function resolveSubmitHandler(array $config, array $authored): array {
+		$handler = $config['submitHandler'] ?? null;
+		if (is_string($handler) === false || trim($handler) === '') {
+			return $config;
+		}
+
+		if (isset($authored[strtolower(trim($handler))]) === false) {
+			return $config;
+		}
+
+		$schema = ($config['schema'] ?? null);
+		if (is_string($schema) === true && trim($schema) !== '') {
+			// The page already says which collection it belongs to, so the
+			// handler name adds nothing but the error the reader saw.
+			unset($config['submitHandler']);
+			return $config;
+		}
+
+		$config['schema'] = trim($handler);
+		unset($config['submitHandler']);
+
+		return $config;
+	}//end resolveSubmitHandler()
+
+	/**
+	 * Mark a form's fields required where the schema this plan authored says
+	 * they are.
+	 *
+	 * The two halves were written by different steps and never compared.
+	 * `upsertSchema` carries `required: ["member", "dueDate"]`, `upsertPage`
+	 * carries `fields[]`, and nothing carried the first into the second. The
+	 * form therefore rendered every field as optional, with no asterisk and no
+	 * client-side check, and OpenRegister rejected the submit with a 400 naming
+	 * a field the user was never told about. Measured on the live instance on
+	 * 2026-09-19 while filming the demo.
+	 *
+	 * A field whose `validation.required` the plan already set is left alone,
+	 * in either direction: the model saying `false` is a decision, not an
+	 * omission. Only the absent key is filled in.
+	 *
+	 * @param array<string, mixed> $config The form page's config block.
+	 * @param array<string, array{required: array<int, string>}> $authored Short schema slugs this plan authors for this version.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function withRequiredFields(array $config, array $authored): array {
+		$slug = strtolower(trim((string)($config['schema'] ?? '')));
+		$fields = ($config['fields'] ?? null);
+		if (is_array($fields) === false) {
+			return $config;
+		}
+
+		$required = (array)($authored[$slug]['required'] ?? []);
+		if ($required === []) {
+			return $config;
+		}
+
+		foreach ($fields as $index => $field) {
+			$validation = self::requiredValidation(field: $field, required: $required);
+			if ($validation !== null) {
+				$fields[$index]['validation'] = $validation;
+			}
+		}
+
+		$config['fields'] = $fields;
+
+		return $config;
+	}//end withRequiredFields()
+
+	/**
+	 * One field's validation block with `required` filled in, or null when
+	 * this field is not one the schema requires or already states its own.
+	 *
+	 * @param mixed $field One `fields[]` entry.
+	 * @param array<int, string> $required Property names the schema requires.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private static function requiredValidation(mixed $field, array $required): ?array {
+		if (is_array($field) === false || in_array((string)($field['key'] ?? ''), $required, true) === false) {
+			return null;
+		}
+
+		$validation = ($field['validation'] ?? []);
+		if (is_array($validation) === false || array_key_exists('required', $validation) === true) {
+			return null;
+		}
+
+		$validation['required'] = true;
+
+		return $validation;
+	}//end requiredValidation()
+
+	/**
+	 * Normalise one step's arguments. Split out of {@see normalisePlan()} to
+	 * keep both within the project's PHPMD complexity thresholds.
+	 *
+	 * @param string $tool The step's tool id.
+	 * @param array<string, mixed> $args The step's arguments.
+	 * @param array<string, array<string, array{required: array<int, string>}>> $authoredSchemas Short schema
+	 *                                                            slugs this plan authors, keyed by
+	 *                                                            `appSlug@versionSlug`.
+	 * @param array<string, array<int, string>> $dataRegisters Register slugs each target app binds in
+	 *                                                         `dataRegisters`, keyed by app slug.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ManifestRoute and
+	 * ManifestDataBinding are pure rules with no collaborators and no state.
+	 */
+	private function normaliseStepArguments(string $tool, array $args, array $authoredSchemas = [], array $dataRegisters = []): array {
+		$args = self::withRootedPageRoute(tool: $tool, args: $args);
+
+		$bindKey = match ($tool) {
+			'buildiq.upsertPage' => 'config',
+			'buildiq.addWidget' => 'widgetConfig',
+			default => '',
+		};
+
+		$config = ($args[$bindKey] ?? null);
+		if ($bindKey === '' || is_array($config) === false) {
+			return $args;
+		}
+
+		$appSlug = (string)($args['appSlug'] ?? '');
+		$versionSlug = self::targetVersionSlug(args: $args);
+
+		if ((string)($args['type'] ?? '') === 'form') {
+			$authored = (array)($authoredSchemas[$appSlug . '@' . $versionSlug] ?? []);
+			$config = $this->resolveSubmitHandler(config: $config, authored: $authored);
+			$config = self::withRequiredFields(config: $config, authored: $authored);
+		}
+
+		$args[$bindKey] = ManifestDataBinding::bindBlock(
+			config: $config,
+			appSlug: $appSlug,
+			versionSlug: $versionSlug,
+			dataRegisters: ($dataRegisters[$appSlug] ?? [])
+		);
+
+		return $args;
+	}//end normaliseStepArguments()
+
+	/**
+	 * Root a PAGE step's route, and leave every other step's alone.
+	 *
+	 * Only a page's route is a path. A menu item's route names a route, and the
+	 * runtime names routes after page ids, so rooting one would break exactly
+	 * the entries that were right: `borrow-tool` is a page id and resolves,
+	 * `/borrow-tool` is a path that page does not have.
+	 *
+	 * @param string $tool The step's tool id.
+	 * @param array<string, mixed> $args The step's arguments.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ManifestRoute is a pure rule with
+	 * no collaborators and no state.
+	 */
+	private static function withRootedPageRoute(string $tool, array $args): array {
+		if ($tool !== 'buildiq.upsertPage' || is_string(($args['route'] ?? null)) === false) {
+			return $args;
+		}
+
+		$args['route'] = ManifestRoute::normalise(route: $args['route']);
+
+		return $args;
+	}//end withRootedPageRoute()
+
+	/**
 	 * Predict the manifest impact of a plan without writing anything.
 	 *
 	 * Applies every manifest-mutating step (upsertPage, addWidget,
@@ -368,7 +808,7 @@ class CopilotService {
 	 *
 	 * @throws CopilotException (422 plan_invalid) When a predicted manifest exceeds a cap.
 	 *
-	 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+	 * @spec openspec/specs/ai-copilot/spec.md
 	 */
 	public function predictManifests(array $plan, ?string $appSlug): array {
 		$steps = (array)($plan['steps'] ?? []);
@@ -432,10 +872,15 @@ class CopilotService {
 	 *
 	 * @throws CopilotException On revalidation failure, an unknown agent, RBAC denial, or a mid-plan step failure.
 	 *
-	 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+	 * @spec openspec/specs/ai-copilot/spec.md
 	 * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
 	 */
 	public function execute(array $plan, string $userId, ?string $agentId = null, string $prompt = ''): array {
+		// The server never trusts the client's review, so it re-normalises for
+		// the same reason it re-validates: a plan posted straight at this
+		// endpoint gets the routes and data bindings the review screen showed.
+		$plan = $this->normalisePlan(plan: $plan);
+
 		$agent = $this->resolveAgentForExecute(plan: $plan, userId: $userId, prompt: $prompt, agentId: $agentId);
 
 		$steps = (array)($plan['steps'] ?? []);
@@ -568,7 +1013,7 @@ class CopilotService {
 
 			return ['results' => $results];
 		} catch (Throwable $e) {
-			$this->rollback(snapshots: $snapshots, createdAppUuid: $createdAppUuid, createdAppSlug: $createdAppSlug);
+			$rollback = $this->rollback(snapshots: $snapshots, createdAppUuid: $createdAppUuid, createdAppSlug: $createdAppSlug);
 
 			if ($agent !== null) {
 				$this->agentRunLogger->log(
@@ -582,7 +1027,10 @@ class CopilotService {
 			}
 
 			if ($e instanceof CopilotException) {
-				throw $e;
+				// The reader is told what the rollback removed and, when
+				// something resisted, exactly which resource is still there —
+				// the names come from the plan, so they are known, not guessed.
+				throw $e->withContext(extra: ['rollback' => $rollback]);
 			}
 
 			$this->logger->error('Buildiq Copilot: execute failed: ' . $e->getMessage(), ['exception' => $e]);
@@ -590,6 +1038,7 @@ class CopilotService {
 				errorCode: 'execution_failed',
 				message: 'Failed to execute the plan. See server logs for details.',
 				httpStatus: 422,
+				context: ['rollback' => $rollback],
 				previous: $e
 			);
 		}//end try
@@ -671,6 +1120,7 @@ class CopilotService {
 	 * @param string $appSlug Application slug.
 	 *
 	 * @return array<string, mixed>|null
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function resolveApplicationBySlug(string $appSlug): ?array {
 		$apps = $this->objectService->searchObjectsBySlug(
@@ -685,7 +1135,7 @@ class CopilotService {
 			return null;
 		}
 
-		return $this->toArray(item: $apps[0]);
+		return ObjectRecord::castArray(object: $apps[0]);
 	}//end resolveApplicationBySlug()
 
 	/**
@@ -699,6 +1149,7 @@ class CopilotService {
 	 * @return array<string, mixed>
 	 *
 	 * @throws CopilotException (404 not_found) When no such agent exists.
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function requireAgent(string $agentId): array {
 		try {
@@ -715,7 +1166,7 @@ class CopilotService {
 			);
 		}
 
-		return $this->toArray(item: $entity);
+		return ObjectRecord::castArray(object: $entity);
 	}//end requireAgent()
 
 	/**
@@ -816,41 +1267,56 @@ class CopilotService {
 			) === false;
 
 		if ($genuineBypass === true) {
-			$context = [
-				'event' => 'rbac.admin_bypass',
-				'actor' => $userId,
-				'appSlug' => (string)($app['slug'] ?? ''),
-				'channel' => 'copilot',
-			];
-
-			// Audit-trail parity with the HTTP/MCP paths (REQ-OBRBAC-007): record
-			// the bypass to the OR per-object audit trail when the mapper + app
-			// entity are available; fail soft to a PSR log otherwise
-			// (harden-rules-authz-and-audit-parity, L2).
-			$entity = null;
-			try {
-				$entity = $this->objectService->find((string)($app['uuid'] ?? ($app['id'] ?? '')));
-			} catch (\Throwable $e) {
-				$entity = null;
-			}
-
-			if ($this->auditTrailMapper !== null && $entity instanceof ObjectEntity) {
-				try {
-					$this->auditTrailMapper->createAuditTrailEntry(object: $entity, action: 'rbac.admin_bypass', context: $context);
-					$this->logger->info('Buildiq Copilot: rbac.admin_bypass', $context);
-					return;
-				} catch (\Throwable $e) {
-					$this->logger->critical(
-						'Buildiq Copilot: rbac.admin_bypass audit-trail write failed',
-						array_merge($context, ['exception' => $e->getMessage()])
-					);
-					return;
-				}
-			}//end if
-
-			$this->logger->info('Buildiq Copilot: rbac.admin_bypass', $context);
-		}//end if
+			$this->recordCopilotBypass(app: $app, userId: $userId);
+		}
 	}//end assertWriteRoleOnApp()
+
+	/**
+	 * Record a genuine admin bypass to the OpenRegister audit trail, or to the
+	 * log when the audit trail cannot take it.
+	 *
+	 * @param array<string, mixed> $app    Application data.
+	 * @param string               $userId Acting user's UID.
+	 *
+	 * @return void
+	 */
+	private function recordCopilotBypass(array $app, string $userId): void {
+		$context = [
+			'event' => 'rbac.admin_bypass',
+			'actor' => $userId,
+			'appSlug' => (string)($app['slug'] ?? ''),
+			'channel' => 'copilot',
+		];
+
+		// Audit-trail parity with the HTTP/MCP paths (REQ-OBRBAC-007): record
+		// the bypass to the OR per-object audit trail when the mapper + app
+		// entity are available; fail soft to a PSR log otherwise
+		// (harden-rules-authz-and-audit-parity, L2).
+		$entity = null;
+		try {
+			$entity = $this->objectService->find((string)($app['uuid'] ?? ($app['id'] ?? '')));
+		} catch (\Throwable $e) {
+			$entity = null;
+		}
+
+		if ($this->auditTrailMapper !== null && $entity instanceof ObjectEntity) {
+			try {
+				$this->auditTrailMapper->recordObjectEvent(
+					event: new ObjectAuditEvent(object: $entity, action: 'rbac.admin_bypass', context: $context)
+				);
+				$this->logger->info('Buildiq Copilot: rbac.admin_bypass', $context);
+				return;
+			} catch (\Throwable $e) {
+				$this->logger->critical(
+					'Buildiq Copilot: rbac.admin_bypass audit-trail write failed',
+					array_merge($context, ['exception' => $e->getMessage()])
+				);
+				return;
+			}
+		}//end if
+
+		$this->logger->info('Buildiq Copilot: rbac.admin_bypass', $context);
+	}//end recordCopilotBypass()
 
 	/**
 	 * Resolve `OCP\TaskProcessing\IManager` from the container, or null when unavailable.
@@ -858,11 +1324,7 @@ class CopilotService {
 	 * @return object|null
 	 */
 	private function resolveTaskProcessingManager(): ?object {
-		try {
-			return $this->container->get('OCP\\TaskProcessing\\IManager');
-		} catch (Throwable $e) {
-			return null;
-		}
+		return $this->textTask->manager();
 	}//end resolveTaskProcessingManager()
 
 	/**
@@ -939,9 +1401,19 @@ class CopilotService {
 	private function runPlanAttempt(object $manager, string $prompt, string $userId, ?string $appSlug = null): array {
 		try {
 			$raw = $this->runTextToTextTask(manager: $manager, prompt: $prompt, userId: $userId, appSlug: $appSlug);
+		} catch (CopilotException $e) {
+			// A provider/transport failure is NOT a parse failure: the model was
+			// never reached, so a repair round-trip would only wait a second time
+			// and then blame the user's wording. Surface it as-is.
+			throw $e;
 		} catch (Throwable $e) {
 			$this->logger->warning('Buildiq Copilot: LLM task failed: ' . $e->getMessage());
-			return [null, '', $e->getMessage()];
+			throw new CopilotException(
+				errorCode: 'provider_error',
+				message: 'The AI provider could not answer. Ask an administrator to check the AI settings.',
+				httpStatus: 502,
+				context: ['providerMessage' => $e->getMessage()]
+			);
 		}
 
 		$stripped = $this->stripCodeFences(text: $raw);
@@ -960,53 +1432,37 @@ class CopilotService {
 	}//end runPlanAttempt()
 
 	/**
-	 * Schedule a `TextToText` TaskProcessing task and poll to completion.
+	 * Run a `TextToText` TaskProcessing task and return its output text.
+	 *
+	 * A synchronous provider (the common case: every in-process NC provider
+	 * implements `ISynchronousProvider`) is run INLINE through
+	 * `IManager::runTask()`, which processes the task in this request. The
+	 * former `scheduleTask()` + poll path handed the work to the
+	 * `SynchronousBackgroundJob` instead, so the answer only arrived when
+	 * cron next ran that job: measured on this instance on 2026-09-18 a
+	 * scheduled task was still untouched after 6 minutes, while the poll loop
+	 * gave up at 120s and the panel then blamed the user's wording.
+	 *
+	 * An asynchronous (ExApp) provider still has to be scheduled and polled,
+	 * because nothing can run it in-process. That path keeps the 120s deadline
+	 * and now CANCELS the task it gave up on, so an abandoned request cannot
+	 * be picked up an hour later and billed to the provider.
 	 *
 	 * @param object $manager `OCP\TaskProcessing\IManager` instance.
 	 * @param string $prompt The prompt to send as task input.
 	 * @param string $userId Acting user's UID.
 	 * @param string|null $appSlug Optional target app slug, carried as the task's customId.
+	 * @param float|null $timeoutSeconds How long to wait for a worker, defaulting to
+	 *                                   {@see CopilotTextTask::TIMEOUT_SECONDS}. Only a test passes
+	 *                                   this, so the give-up path can be exercised
+	 *                                   without waiting two minutes for it.
 	 *
 	 * @return string The task's `output` text.
 	 *
-	 * @throws RuntimeException On task failure, cancellation, or timeout.
+	 * @throws CopilotException (502) On provider failure, cancellation, or timeout.
 	 */
-	private function runTextToTextTask(object $manager, string $prompt, string $userId, ?string $appSlug = null): string {
-		$task = new Task(
-			TextToText::ID,
-			['input' => $prompt],
-			'buildiq',
-			$userId,
-			$appSlug,
-		);
-
-		$manager->scheduleTask($task);
-		$taskId = $task->getId();
-		if ($taskId === null) {
-			throw new RuntimeException('TaskProcessing did not assign a task id.');
-		}
-
-		$deadline = microtime(as_float: true) + self::LLM_TIMEOUT_SECONDS;
-
-		while (true) {
-			$current = $manager->getTask($taskId);
-			$status = $current->getStatus();
-
-			if ($status === Task::STATUS_SUCCESSFUL) {
-				$output = $current->getOutput();
-				return (string)($output['output'] ?? '');
-			}
-
-			if ($status === Task::STATUS_FAILED || $status === Task::STATUS_CANCELLED) {
-				throw new RuntimeException('LLM task failed: ' . ((string)$current->getErrorMessage()));
-			}
-
-			if (microtime(as_float: true) > $deadline) {
-				throw new RuntimeException('LLM task timed out after ' . ((int)self::LLM_TIMEOUT_SECONDS) . 's.');
-			}
-
-			usleep(self::POLL_INTERVAL_MICROSECONDS);
-		}//end while
+	private function runTextToTextTask(object $manager, string $prompt, string $userId, ?string $appSlug = null, ?float $timeoutSeconds = null): string {
+		return $this->textTask->run(manager: $manager, prompt: $prompt, userId: $userId, appSlug: $appSlug, timeoutSeconds: $timeoutSeconds);
 	}//end runTextToTextTask()
 
 	/**
@@ -1096,6 +1552,7 @@ class CopilotService {
 	 * @param string $versionSlug ApplicationVersion slug.
 	 *
 	 * @return array<string, mixed>|null
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function loadRawVersion(string $appSlug, string $versionSlug): ?array {
 		$app = $this->resolveApplicationBySlug(appSlug: $appSlug);
@@ -1116,7 +1573,7 @@ class CopilotService {
 			return null;
 		}
 
-		return $this->toArray(item: $versions[0]);
+		return ObjectRecord::castArray(object: $versions[0]);
 	}//end loadRawVersion()
 
 	/**
@@ -1144,33 +1601,26 @@ class CopilotService {
 	 * @param array<string, mixed> $manifest Manifest to mutate (copy).
 	 *
 	 * @return array<string, mixed>
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ManifestPageShape is a pure shape
+	 * builder with no collaborators and no state.
 	 */
 	private function applyUpsertPage(array $args, array $manifest): array {
 		$pageId = (string)($args['pageId'] ?? '');
-		$newPage = [
+		// Shared with UpsertPageHandler so the page reviewed and the page
+		// stored are the same one.
+		$newPage = ManifestPageShape::normalise(page: [
 			'id' => $pageId,
 			'route' => (string)($args['route'] ?? ''),
 			'type' => (string)($args['type'] ?? ''),
 			'title' => (string)($args['title'] ?? ''),
 			'config' => (array)($args['config'] ?? []),
-		];
+		]);
 
-		$pages = (array)($manifest['pages'] ?? []);
-		$replaced = false;
-		$pageIdLc = strtolower($pageId);
-		foreach ($pages as $i => $existing) {
-			if (is_array($existing) === true && strtolower((string)($existing['id'] ?? '')) === $pageIdLc) {
-				$pages[$i] = $newPage;
-				$replaced = true;
-				break;
-			}
-		}
+		$pages = new ManifestEntryList(entries: (array)($manifest['pages'] ?? []));
+		$pages->upsert(entry: $newPage);
 
-		if ($replaced === false) {
-			$pages[] = $newPage;
-		}
-
-		$manifest['pages'] = array_values($pages);
+		$manifest['pages'] = array_values($pages->entries());
 		return $manifest;
 	}//end applyUpsertPage()
 
@@ -1181,6 +1631,9 @@ class CopilotService {
 	 * @param array<string, mixed> $manifest Manifest to mutate (copy).
 	 *
 	 * @return array<string, mixed>
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ManifestWidgetShape is a pure shape
+	 * builder with no collaborators and no state.
 	 */
 	private function applyAddWidget(array $args, array $manifest): array {
 		$pageId = (string)($args['pageId'] ?? '');
@@ -1192,11 +1645,18 @@ class CopilotService {
 				continue;
 			}
 
-			$pageConfig = (array)($page['config'] ?? []);
-			$widgets = (array)($pageConfig['widgets'] ?? []);
-			$widgets[] = ['type' => (string)($args['widgetType'] ?? ''), 'config' => (array)($args['widgetConfig'] ?? [])];
-			$pageConfig['widgets'] = $widgets;
-			$page['config'] = $pageConfig;
+			// Shared with AddWidgetHandler so the manifest shown on the review
+			// screen and the manifest that gets stored cannot disagree about
+			// the widget's id, title or placement.
+			[$page] = ManifestWidgetShape::appendTo(
+				page: $page,
+				spec: new WidgetSpec(
+					type: (string)($args['widgetType'] ?? ''),
+					config: (array)($args['widgetConfig'] ?? []),
+					id: (string)($args['widgetId'] ?? ''),
+					title: (string)($args['title'] ?? '')
+				)
+			);
 			$pages[$i] = $page;
 			break;
 		}
@@ -1223,22 +1683,10 @@ class CopilotService {
 			'order' => (int)($args['order'] ?? 100),
 		];
 
-		$menu = (array)($manifest['menu'] ?? []);
-		$replaced = false;
-		$idLc = strtolower($id);
-		foreach ($menu as $i => $existing) {
-			if (is_array($existing) === true && strtolower((string)($existing['id'] ?? '')) === $idLc) {
-				$menu[$i] = $newItem;
-				$replaced = true;
-				break;
-			}
-		}
+		$menu = new ManifestEntryList(entries: (array)($manifest['menu'] ?? []));
+		$menu->upsert(entry: $newItem);
 
-		if ($replaced === false) {
-			$menu[] = $newItem;
-		}
-
-		$manifest['menu'] = array_values($menu);
+		$manifest['menu'] = array_values($menu->entries());
 		return $manifest;
 	}//end applyUpsertMenuItem()
 
@@ -1418,9 +1866,12 @@ class CopilotService {
 	 * @param string|null $createdAppUuid Uuid of an app created by this plan, if any.
 	 * @param string|null $createdAppSlug Slug of an app created by this plan, if any.
 	 *
-	 * @return void
+	 * @return array{deletedApp: string, restoreFailures: array<int, string>, orphaned: array<int, string>}
+	 *         What the rollback removed, and what it could not.
 	 */
-	private function rollback(array $snapshots, ?string $createdAppUuid, ?string $createdAppSlug): void {
+	private function rollback(array $snapshots, ?string $createdAppUuid, ?string $createdAppSlug): array {
+		$report = ['deletedApp' => '', 'restoreFailures' => [], 'orphaned' => []];
+
 		foreach ($snapshots as $snapshot) {
 			$version = $snapshot['version'];
 			if ($version === null || $snapshot['manifest'] === null) {
@@ -1440,49 +1891,43 @@ class CopilotService {
 					uuid: $versionUuid,
 				);
 			} catch (Throwable $e) {
+				$target = $snapshot['appSlug'] . '@' . $snapshot['versionSlug'];
+				$report['restoreFailures'][] = $target;
 				$this->logger->error(
 					'Buildiq Copilot: rollback failed to restore manifest for '
-						. $snapshot['appSlug'] . '@' . $snapshot['versionSlug'] . ': ' . $e->getMessage()
+						. $target . ': ' . $e->getMessage()
 				);
 			}//end try
 		}//end foreach
 
 		if ($createdAppUuid === null || $createdAppUuid === '') {
-			return;
+			return $report;
 		}
 
 		try {
-			$this->appDeletionService->deleteApplication(
+			// Note deleteData: TRUE. Everything under a plan-created app was
+			// made by this same plan seconds ago: its per-version registers by
+			// `createApp`, the schemas inside them by `upsertSchema` — so there
+			// is no user data here to preserve, which is the only reason the
+			// flag defaults to false for the delete button in the UI. With it
+			// false the app row went and the registers and schemas stayed: a
+			// failed run left `openbuild-<slug>-development`,
+			// `openbuild-<slug>-production` and every schema behind with no app
+			// to reach them by, against a spec that says in as many words that
+			// a failed plan leaves no plan-created state behind.
+			$report['orphaned'] = $this->appDeletionService->deleteApplication(
 				appUuid: $createdAppUuid,
 				appSlug: (string)$createdAppSlug,
-				deleteData: false
+				deleteData: true
 			);
+			$report['deletedApp'] = (string)$createdAppSlug;
 		} catch (Throwable $e) {
+			$report['orphaned'][] = 'application ' . (string)$createdAppSlug;
 			$this->logger->error('Buildiq Copilot: rollback failed to delete created app ' . $createdAppUuid . ': ' . $e->getMessage());
 		}
+
+		return $report;
 	}//end rollback()
-
-	/**
-	 * Coerce an OR entity, array, or generic value into an associative array.
-	 *
-	 * @param mixed $item Value to coerce.
-	 *
-	 * @return array<string, mixed>
-	 */
-	private function toArray(mixed $item): array {
-		if (is_array($item) === true) {
-			return $item;
-		}
-
-		if (is_object($item) === true && method_exists($item, 'jsonSerialize') === true) {
-			$serialised = $item->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		return (array)$item;
-	}//end toArray()
 
 	/**
 	 * Extract a UUID from a normalised OR object array.

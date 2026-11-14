@@ -39,18 +39,18 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-8
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-12
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-15
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-8
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-12
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-15
  */
 
 declare(strict_types=1);
 
 namespace OCA\Buildiq\Controller;
 
-use OCA\Buildiq\AppInfo\Application;
 use OCA\Buildiq\Exception\WizardCreationException;
-use OCA\Buildiq\Service\ApplicationCreationService;
+use OCA\Buildiq\Kernel\AppIdentity;
+use OCA\Buildiq\Kernel\Contracts\ApplicationCreationServiceInterface;
 use OCA\Buildiq\Settings\AdminSettings;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -74,7 +74,7 @@ class ApplicationCreationController extends Controller {
 	 *
 	 * @param IRequest $request The current HTTP request
 	 * @param LoggerInterface $logger PSR logger for diagnostics
-	 * @param ApplicationCreationService $creationService Atomic creation orchestrator
+	 * @param ApplicationCreationServiceInterface $creationService Atomic creation orchestrator
 	 * @param IUserSession $userSession Current Nextcloud user session
 	 * @param IGroupManager $groupManager Group membership resolver
 	 *
@@ -83,11 +83,11 @@ class ApplicationCreationController extends Controller {
 	public function __construct(
 		IRequest $request,
 		private readonly LoggerInterface $logger,
-		private readonly ApplicationCreationService $creationService,
+		private readonly ApplicationCreationServiceInterface $creationService,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -101,9 +101,9 @@ class ApplicationCreationController extends Controller {
 	 *
 	 * @return JSONResponse
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-8
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-12
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-15
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-8
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-12
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-15
 	 */
 	#[AuthorizedAdminSetting(AdminSettings::class)]
 	#[UserRateLimit(limit: 10, period: 3600)]
@@ -139,25 +139,7 @@ class ApplicationCreationController extends Controller {
 				statusCode: Http::STATUS_CREATED
 			);
 		} catch (WizardCreationException $e) {
-			// Decide HTTP status based on whether this was a validation failure
-			// (failedAtStep=validate) or a mid-flight creation failure (500).
-			$httpStatus = Http::STATUS_INTERNAL_SERVER_ERROR;
-			if ($e->getFailedAtStep() === 'validate') {
-				$httpStatus = Http::STATUS_UNPROCESSABLE_ENTITY;
-			}
-
-			$body = [
-				'code' => $e->getErrorCode(),
-				'failedAtStep' => $e->getFailedAtStep(),
-				'message' => $e->getMessage(),
-				'rollbackStatus' => $e->getRollbackStatus(),
-			];
-
-			if ($e->getOrphanedResources() !== []) {
-				$body['orphanedResources'] = $e->getOrphanedResources();
-			}
-
-			return new JSONResponse(data: $body, statusCode: $httpStatus);
+			return $this->wizardFailure(exception: $e);
 		} catch (Throwable $e) {
 			$this->logger->error(
 				'Buildiq: ApplicationCreationController::wizard unhandled exception: ' . $e->getMessage(),
@@ -175,6 +157,36 @@ class ApplicationCreationController extends Controller {
 			);
 		}//end try
 	}//end wizard()
+
+	/**
+	 * The response to a wizard failure: 422 for a validation failure, 500 for a
+	 * mid-flight one, naming any resources the rollback could not remove.
+	 *
+	 * @param WizardCreationException $exception The wizard failure.
+	 *
+	 * @return JSONResponse
+	 */
+	private function wizardFailure(WizardCreationException $exception): JSONResponse {
+		// Decide HTTP status based on whether this was a validation failure
+		// (failedAtStep=validate) or a mid-flight creation failure (500).
+		$httpStatus = Http::STATUS_INTERNAL_SERVER_ERROR;
+		if ($exception->getFailedAtStep() === 'validate') {
+			$httpStatus = Http::STATUS_UNPROCESSABLE_ENTITY;
+		}
+
+		$body = [
+			'code' => $exception->getErrorCode(),
+			'failedAtStep' => $exception->getFailedAtStep(),
+			'message' => $exception->getMessage(),
+			'rollbackStatus' => $exception->getRollbackStatus(),
+		];
+
+		if ($exception->getOrphanedResources() !== []) {
+			$body['orphanedResources'] = $exception->getOrphanedResources();
+		}
+
+		return new JSONResponse(data: $body, statusCode: $httpStatus);
+	}//end wizardFailure()
 
 	/**
 	 * Read the JSON / form payload from the current request.

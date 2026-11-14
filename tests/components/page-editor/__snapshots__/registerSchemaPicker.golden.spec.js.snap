@@ -1,0 +1,221 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`DetailPageEditor register + schema picker > emits update:config on a register and a schema change 1`] = `
+[
+  [
+    {
+      "keep": 1,
+      "register": "r2",
+    },
+  ],
+  [
+    {
+      "keep": 1,
+      "register": "r1",
+      "schema": "s2",
+    },
+  ],
+  [
+    {
+      "keep": 1,
+    },
+  ],
+]
+`;
+
+exports[`DetailPageEditor register + schema picker > renders both selects with errors and no register 1`] = `
+[
+  "<label>Register <select aria-invalid="true" value="">
+    <option value="">— select register —</option>
+    <option value="r1">R1</option>
+    <option value="r2">r2</option>
+  </select><span class="inline-field-mark" role="alert"><span class="inline-field-mark__dot" aria-hidden="true">⚠</span><span class="inline-field-mark__text">register is wrong</span></span></label>",
+  "<label>Schema <select disabled="" aria-invalid="true" value="">
+    <option value="">— select schema —</option>
+  </select><span class="inline-field-mark" role="alert"><span class="inline-field-mark__dot" aria-hidden="true">⚠</span><span class="inline-field-mark__text">schema is wrong</span></span></label>",
+]
+`;
+
+exports[`DetailPageEditor register + schema picker > renders both selects without errors 1`] = `
+[
+  "<label>Register <select aria-invalid="false" value="r1">
+    <option value="">— select register —</option>
+    <option value="r1">R1</option>
+    <option value="r2">r2</option>
+  </select>
+  <!--v-if-->
+</label>",
+  "<label>Schema <select aria-invalid="false" value="s1">
+    <option value="">— select schema —</option>
+    <option value="s1">S1</option>
+    <option value="s2">s2</option>
+  </select>
+  <!--v-if-->
+</label>",
+]
+`;
+
+exports[`IndexPageEditor register + schema picker > emits update:config on a register and a schema change 1`] = `
+[
+  [
+    {
+      "keep": 1,
+      "register": "r2",
+    },
+  ],
+  [
+    {
+      "keep": 1,
+      "register": "r1",
+      "schema": "s2",
+    },
+  ],
+  [
+    {
+      "keep": 1,
+    },
+  ],
+]
+`;
+
+exports[`IndexPageEditor register + schema picker > renders both selects with errors and no register 1`] = `
+[
+  "<label>Register <select aria-invalid="true" value="">
+    <option value="">— select register —</option>
+    <option value="r1">R1</option>
+    <option value="r2">r2</option>
+  </select><span class="inline-field-mark" role="alert"><span class="inline-field-mark__dot" aria-hidden="true">⚠</span><span class="inline-field-mark__text">register is wrong</span></span></label>",
+  "<label>Schema <select disabled="" aria-invalid="true" value="">
+    <option value="">— select schema —</option>
+  </select><span class="inline-field-mark" role="alert"><span class="inline-field-mark__dot" aria-hidden="true">⚠</span><span class="inline-field-mark__text">schema is wrong</span></span></label>",
+]
+`;
+
+exports[`IndexPageEditor register + schema picker > renders both selects without errors 1`] = `
+[
+  "<label>Register <select aria-invalid="false" value="r1">
+    <option value="">— select register —</option>
+    <option value="r1">R1</option>
+    <option value="r2">r2</option>
+  </select>
+  <!--v-if-->
+</label>",
+  "<label>Schema <select aria-invalid="false" value="s1">
+    <option value="">— select schema —</option>
+    <option value="s1">S1</option>
+    <option value="s2">s2</option>
+  </select>
+  <!--v-if-->
+</label>",
+]
+`;
+
+exports[`LogsPageEditor register + schema picker > emits update:config on a register and a schema change 1`] = `
+[
+  [
+    {
+      "keep": 1,
+      "register": "r2",
+    },
+  ],
+  [
+    {
+      "keep": 1,
+      "register": "r1",
+      "schema": "s2",
+    },
+  ],
+  [
+    {
+      "keep": 1,
+    },
+  ],
+]
+`;
+
+exports[`LogsPageEditor register + schema picker > renders both selects with errors and no register 1`] = `
+[
+  "<label>Register <select aria-invalid="true" value="">
+    <option value="">— select register —</option>
+    <option value="r1">R1</option>
+    <option value="r2">r2</option>
+  </select><span class="inline-field-mark" role="alert"><span class="inline-field-mark__dot" aria-hidden="true">⚠</span><span class="inline-field-mark__text">register is wrong</span></span></label>",
+  "<label>Schema <select disabled="" aria-invalid="true" value="">
+    <option value="">— select schema —</option>
+  </select><span class="inline-field-mark" role="alert"><span class="inline-field-mark__dot" aria-hidden="true">⚠</span><span class="inline-field-mark__text">schema is wrong</span></span></label>",
+]
+`;
+
+exports[`LogsPageEditor register + schema picker > renders both selects without errors 1`] = `
+[
+  "<label>Register <select aria-invalid="false" value="r1">
+    <option value="">— select register —</option>
+    <option value="r1">R1</option>
+    <option value="r2">r2</option>
+  </select>
+  <!--v-if-->
+</label>",
+  "<label>Schema <select aria-invalid="false" value="s1">
+    <option value="">— select schema —</option>
+    <option value="s1">S1</option>
+    <option value="s2">s2</option>
+  </select>
+  <!--v-if-->
+</label>",
+]
+`;
+
+exports[`SearchPageEditor register + schema picker > emits update:config on a register and a schema change 1`] = `
+[
+  [
+    {
+      "keep": 1,
+      "register": "r2",
+    },
+  ],
+  [
+    {
+      "keep": 1,
+      "register": "r1",
+      "schema": "s2",
+    },
+  ],
+  [
+    {
+      "keep": 1,
+    },
+  ],
+]
+`;
+
+exports[`SearchPageEditor register + schema picker > renders both selects with errors and no register 1`] = `
+[
+  "<label class="search-page-editor__group-row">Register <select aria-invalid="true" value="">
+    <option value="">— select register —</option>
+    <option value="r1">R1</option>
+    <option value="r2">r2</option>
+  </select><span class="inline-field-mark" role="alert"><span class="inline-field-mark__dot" aria-hidden="true">⚠</span><span class="inline-field-mark__text">register is wrong</span></span></label>",
+  "<label class="search-page-editor__group-row">Schema <select disabled="" aria-invalid="true" value="">
+    <option value="">— select schema —</option>
+  </select><span class="inline-field-mark" role="alert"><span class="inline-field-mark__dot" aria-hidden="true">⚠</span><span class="inline-field-mark__text">schema is wrong</span></span></label>",
+]
+`;
+
+exports[`SearchPageEditor register + schema picker > renders both selects without errors 1`] = `
+[
+  "<label class="search-page-editor__group-row">Register <select aria-invalid="false" value="r1">
+    <option value="">— select register —</option>
+    <option value="r1">R1</option>
+    <option value="r2">r2</option>
+  </select>
+  <!--v-if-->
+</label>",
+  "<label class="search-page-editor__group-row">Schema <select aria-invalid="false" value="s1">
+    <option value="">— select schema —</option>
+    <option value="s1">S1</option>
+    <option value="s2">s2</option>
+  </select>
+  <!--v-if-->
+</label>",
+]
+`;

@@ -1,0 +1,35 @@
+{
+    "OCA\\Buildiq\\Service\\TemplateRepoSerializer::sortKeysRecursive": {
+        "scalar": "\"x\"",
+        "null": "null",
+        "int": "3",
+        "empty": "[]",
+        "list": "[3,1,2]",
+        "map": "{\"a\":2,\"b\":1,\"c\":{\"y\":[2,{\"p\":2,\"q\":1}],\"z\":1}}",
+        "mixedKeys": "{\"1\":\"one\",\"2\":\"two\",\"10\":\"ten\",\"a\":\"ay\",\"b\":\"bee\"}",
+        "gappedList": "[\"b\",\"a\"]",
+        "nestedLists": "[[{\"a\":2,\"b\":1}],[]]",
+        "unicode": "{\"Z\":3,\"_\":4,\"e\":2,\"\\u00e9\":1}"
+    },
+    "OCA\\Buildiq\\Service\\LayoutDeltaService::normalise": {
+        "scalar": "\"x\"",
+        "null": "null",
+        "int": "3",
+        "empty": "[]",
+        "list": "[3,1,2]",
+        "map": "{\"a\":2,\"b\":1,\"c\":{\"y\":[2,{\"p\":2,\"q\":1}],\"z\":1}}",
+        "mixedKeys": "{\"1\":\"one\",\"2\":\"two\",\"10\":\"ten\",\"a\":\"ay\",\"b\":\"bee\"}",
+        "gappedList": "[\"b\",\"a\"]",
+        "nestedLists": "[[{\"a\":2,\"b\":1}],[]]",
+        "unicode": "{\"Z\":3,\"_\":4,\"e\":2,\"\\u00e9\":1}"
+    },
+    "OCA\\Buildiq\\Service\\TemplateRepoSerializer::resolveCategory": {
+        "record": "Forms",
+        "paddedRecord": "Forms",
+        "blankRecord": "Case",
+        "manifestOnly": "Case",
+        "neither": "general",
+        "numeric": "5",
+        "nullRecord": "general"
+    }
+}

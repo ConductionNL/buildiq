@@ -36,16 +36,16 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/unify-apps-with-app-type/specs/app-override-persistence/spec.md
+ * @spec openspec/specs/app-override-persistence/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\Buildiq\Controller;
 
-use OCA\Buildiq\AppInfo\Application;
-use OCA\Buildiq\Service\AppOverrideService;
-use OCA\Buildiq\Service\PermissionResolver;
+use OCA\Buildiq\Kernel\AppIdentity;
+use OCA\Buildiq\Kernel\Contracts\AppOverrideServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\PermissionResolverInterface;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -60,7 +60,7 @@ use Throwable;
 /**
  * Controller for the fleet-app manifest-override store-and-serve endpoints.
  *
- * @spec openspec/changes/unify-apps-with-app-type/specs/app-override-persistence/spec.md
+ * @spec openspec/specs/app-override-persistence/spec.md
  */
 class AppOverrideController extends Controller {
 	/**
@@ -74,22 +74,22 @@ class AppOverrideController extends Controller {
 	 *
 	 * @param IRequest $request The current HTTP request.
 	 * @param LoggerInterface $logger PSR logger for diagnostics.
-	 * @param AppOverrideService $appOverrideService OR-backed override store.
+	 * @param AppOverrideServiceInterface $appOverrideService OR-backed override store.
 	 * @param IUserSession $userSession Current Nextcloud user session.
 	 * @param IAppManager $appManager Resolves Buildiq-access for a user.
-	 * @param PermissionResolver $permissionResolver Per-Application principal matcher (maintainer gate).
+	 * @param PermissionResolverInterface $permissionResolver Per-Application principal matcher (maintainer gate).
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		IRequest $request,
 		private readonly LoggerInterface $logger,
-		private readonly AppOverrideService $appOverrideService,
+		private readonly AppOverrideServiceInterface $appOverrideService,
 		private readonly IUserSession $userSession,
 		private readonly IAppManager $appManager,
-		private readonly PermissionResolver $permissionResolver,
+		private readonly PermissionResolverInterface $permissionResolver,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -112,7 +112,7 @@ class AppOverrideController extends Controller {
 	 *  so this is not an IDOR vector (design D1). Any authenticated user who can see
 	 *  the fleet app must be able to read its delta.
 	 *
-	 * @spec openspec/changes/unify-apps-with-app-type/specs/app-override-persistence/spec.md
+	 * @spec openspec/specs/app-override-persistence/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -132,11 +132,7 @@ class AppOverrideController extends Controller {
 		try {
 			$record = $this->loadDelta(appId: $appId, rawAdmin: $rawAdmin);
 		} catch (Throwable $e) {
-			$this->logger->error(
-				'Buildiq: AppOverride get failed for appId ' . $appId . ': ' . $e->getMessage(),
-				['exception' => $e]
-			);
-			return $this->error(code: 'internal_error', status: Http::STATUS_INTERNAL_SERVER_ERROR);
+			return $this->internalError(message: 'Buildiq: AppOverride get failed for appId ' . $appId, failure: $e);
 		}
 
 		if ($record === null) {
@@ -194,7 +190,7 @@ class AppOverrideController extends Controller {
 	 *
 	 * @return JSONResponse 200 with the caller's user-delta summary; 400/401 on rejection.
 	 *
-	 * @spec openspec/changes/layered-versioned-app-deltas/specs/application-delta-layers-ui/spec.md
+	 * @spec openspec/specs/application-delta-layers-ui/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -211,11 +207,7 @@ class AppOverrideController extends Controller {
 		try {
 			$record = $this->appOverrideService->getUserDelta(appId: $appId, uid: $user->getUID());
 		} catch (Throwable $e) {
-			$this->logger->error(
-				'Buildiq: user-delta get failed for appId ' . $appId . ': ' . $e->getMessage(),
-				['exception' => $e]
-			);
-			return $this->error(code: 'internal_error', status: Http::STATUS_INTERNAL_SERVER_ERROR);
+			return $this->internalError(message: 'Buildiq: user-delta get failed for appId ' . $appId, failure: $e);
 		}
 
 		return new JSONResponse(
@@ -243,34 +235,16 @@ class AppOverrideController extends Controller {
 	 *
 	 * @return JSONResponse 200 on success; 400/401/403/422 on rejection.
 	 *
-	 * @spec openspec/changes/layered-versioned-app-deltas/specs/application-delta-layers-ui/spec.md
+	 * @spec openspec/specs/application-delta-layers-ui/spec.md
 	 */
 	#[NoAdminRequired]
 	public function saveUser(string $appId): JSONResponse {
-		if ($this->isValidAppId(appId: $appId) === false) {
-			return $this->error(code: 'invalid_app_id', status: Http::STATUS_BAD_REQUEST);
-		}
-
-		$guard = $this->requireBuildiqAccess();
-		if ($guard !== null) {
-			return $guard;
+		$delta = $this->admitDeltaWrite(appId: $appId);
+		if ($delta instanceof JSONResponse) {
+			return $delta;
 		}
 
 		$uid = (string)$this->userSession->getUser()->getUID();
-
-		$delta = $this->readDeltaBody();
-		if ($delta === null) {
-			return $this->error(
-				code: 'invalid_delta',
-				status: Http::STATUS_UNPROCESSABLE_ENTITY,
-				detail: 'request body must be a keyed delta object'
-			);
-		}
-
-		$rejection = $this->validateDelta(delta: $delta);
-		if ($rejection !== null) {
-			return $rejection;
-		}
 
 		try {
 			$saved = $this->appOverrideService->upsertUserDelta(appId: $appId, delta: $delta, uid: $uid);
@@ -282,11 +256,7 @@ class AppOverrideController extends Controller {
 				detail: $e->getMessage()
 			);
 		} catch (Throwable $e) {
-			$this->logger->error(
-				'Buildiq: user-delta save failed for appId ' . $appId . ': ' . $e->getMessage(),
-				['exception' => $e]
-			);
-			return $this->error(code: 'internal_error', status: Http::STATUS_INTERNAL_SERVER_ERROR);
+			return $this->internalError(message: 'Buildiq: user-delta save failed for appId ' . $appId, failure: $e);
 		}
 
 		return new JSONResponse(
@@ -311,15 +281,11 @@ class AppOverrideController extends Controller {
 	 *
 	 * @return JSONResponse 200 on success; 400/401/403 on rejection.
 	 *
-	 * @spec openspec/changes/layered-versioned-app-deltas/specs/application-delta-layers-ui/spec.md
+	 * @spec openspec/specs/application-delta-layers-ui/spec.md
 	 */
 	#[NoAdminRequired]
 	public function clearUser(string $appId): JSONResponse {
-		if ($this->isValidAppId(appId: $appId) === false) {
-			return $this->error(code: 'invalid_app_id', status: Http::STATUS_BAD_REQUEST);
-		}
-
-		$guard = $this->requireBuildiqAccess();
+		$guard = $this->refuseWrite(appId: $appId);
 		if ($guard !== null) {
 			return $guard;
 		}
@@ -329,11 +295,7 @@ class AppOverrideController extends Controller {
 		try {
 			$this->appOverrideService->deleteUserDelta(appId: $appId, uid: $uid);
 		} catch (Throwable $e) {
-			$this->logger->error(
-				'Buildiq: user-delta clear failed for appId ' . $appId . ': ' . $e->getMessage(),
-				['exception' => $e]
-			);
-			return $this->error(code: 'internal_error', status: Http::STATUS_INTERNAL_SERVER_ERROR);
+			return $this->internalError(message: 'Buildiq: user-delta clear failed for appId ' . $appId, failure: $e);
 		}
 
 		return new JSONResponse(data: ['appId' => $appId, 'cleared' => true], statusCode: Http::STATUS_OK);
@@ -353,7 +315,7 @@ class AppOverrideController extends Controller {
 	 *
 	 * @return JSONResponse 200 with `{ appId, total, overrides: [...] }`; 400/401/403 on rejection.
 	 *
-	 * @spec openspec/changes/layered-versioned-app-deltas/specs/application-delta-layers-ui/spec.md
+	 * @spec openspec/specs/application-delta-layers-ui/spec.md
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -370,11 +332,7 @@ class AppOverrideController extends Controller {
 		try {
 			$overrides = $this->appOverrideService->listUserDeltas(appId: $appId);
 		} catch (Throwable $e) {
-			$this->logger->error(
-				'Buildiq: user-delta list failed for appId ' . $appId . ': ' . $e->getMessage(),
-				['exception' => $e]
-			);
-			return $this->error(code: 'internal_error', status: Http::STATUS_INTERNAL_SERVER_ERROR);
+			return $this->internalError(message: 'Buildiq: user-delta list failed for appId ' . $appId, failure: $e);
 		}
 
 		return new JSONResponse(
@@ -401,7 +359,7 @@ class AppOverrideController extends Controller {
 	 *
 	 * @return JSONResponse|null Null on allow; 401/403 JSONResponse on deny.
 	 *
-	 * @spec openspec/changes/layered-versioned-app-deltas/specs/application-delta-layers-ui/spec.md
+	 * @spec openspec/specs/application-delta-layers-ui/spec.md
 	 */
 	private function requireAppMaintainer(string $appId): ?JSONResponse {
 		$caller = $this->userSession->getUser();
@@ -450,36 +408,18 @@ class AppOverrideController extends Controller {
 	 *
 	 * @return JSONResponse 200 on success; 400/401/403/422 on rejection.
 	 *
-	 * @spec openspec/changes/unify-apps-with-app-type/specs/app-override-persistence/spec.md
+	 * @spec openspec/specs/app-override-persistence/spec.md
 	 */
 	#[NoAdminRequired]
 	public function save(string $appId): JSONResponse {
-		if ($this->isValidAppId(appId: $appId) === false) {
-			return $this->error(code: 'invalid_app_id', status: Http::STATUS_BAD_REQUEST);
-		}
-
-		$guard = $this->requireBuildiqAccess();
-		if ($guard !== null) {
-			return $guard;
+		$delta = $this->admitDeltaWrite(appId: $appId);
+		if ($delta instanceof JSONResponse) {
+			return $delta;
 		}
 
 		// The session user is guaranteed non-null here (the guard rejected
 		// anonymous callers above).
 		$uid = (string)$this->userSession->getUser()->getUID();
-
-		$delta = $this->readDeltaBody();
-		if ($delta === null) {
-			return $this->error(
-				code: 'invalid_delta',
-				status: Http::STATUS_UNPROCESSABLE_ENTITY,
-				detail: 'request body must be a keyed delta object'
-			);
-		}
-
-		$rejection = $this->validateDelta(delta: $delta);
-		if ($rejection !== null) {
-			return $rejection;
-		}
 
 		try {
 			$saved = $this->appOverrideService->upsert(
@@ -489,11 +429,7 @@ class AppOverrideController extends Controller {
 				updatedBy: $uid
 			);
 		} catch (Throwable $e) {
-			$this->logger->error(
-				'Buildiq: AppOverride save failed for appId ' . $appId . ': ' . $e->getMessage(),
-				['exception' => $e]
-			);
-			return $this->error(code: 'internal_error', status: Http::STATUS_INTERNAL_SERVER_ERROR);
+			return $this->internalError(message: 'Buildiq: AppOverride save failed for appId ' . $appId, failure: $e);
 		}
 
 		return new JSONResponse(
@@ -518,7 +454,7 @@ class AppOverrideController extends Controller {
 	 *
 	 * @return JSONResponse|null Null on pass; 422 JSONResponse on rejection.
 	 *
-	 * @spec openspec/changes/unify-apps-with-app-type/specs/app-override-persistence/spec.md
+	 * @spec openspec/specs/app-override-persistence/spec.md
 	 */
 	private function validateDelta(array $delta): ?JSONResponse {
 		$violations = $this->appOverrideService->validateDeltaShape(delta: $delta);
@@ -582,15 +518,11 @@ class AppOverrideController extends Controller {
 	 *
 	 * @return JSONResponse 200 on success; 400/401/403 on rejection.
 	 *
-	 * @spec openspec/changes/unify-apps-with-app-type/specs/app-override-persistence/spec.md
+	 * @spec openspec/specs/app-override-persistence/spec.md
 	 */
 	#[NoAdminRequired]
 	public function clear(string $appId): JSONResponse {
-		if ($this->isValidAppId(appId: $appId) === false) {
-			return $this->error(code: 'invalid_app_id', status: Http::STATUS_BAD_REQUEST);
-		}
-
-		$guard = $this->requireBuildiqAccess();
+		$guard = $this->refuseWrite(appId: $appId);
 		if ($guard !== null) {
 			return $guard;
 		}
@@ -598,11 +530,7 @@ class AppOverrideController extends Controller {
 		try {
 			$this->appOverrideService->delete(appId: $appId);
 		} catch (Throwable $e) {
-			$this->logger->error(
-				'Buildiq: AppOverride clear failed for appId ' . $appId . ': ' . $e->getMessage(),
-				['exception' => $e]
-			);
-			return $this->error(code: 'internal_error', status: Http::STATUS_INTERNAL_SERVER_ERROR);
+			return $this->internalError(message: 'Buildiq: AppOverride clear failed for appId ' . $appId, failure: $e);
 		}
 
 		return new JSONResponse(data: ['appId' => $appId, 'cleared' => true], statusCode: Http::STATUS_OK);
@@ -620,7 +548,7 @@ class AppOverrideController extends Controller {
 	 *
 	 * @return JSONResponse|null Null on allow; 401/403 JSONResponse on deny.
 	 *
-	 * @spec openspec/changes/unify-apps-with-app-type/specs/app-override-persistence/spec.md
+	 * @spec openspec/specs/app-override-persistence/spec.md
 	 */
 	private function requireBuildiqAccess(): ?JSONResponse {
 		$user = $this->userSession->getUser();
@@ -628,7 +556,7 @@ class AppOverrideController extends Controller {
 			return $this->error(code: 'unauthenticated', status: Http::STATUS_UNAUTHORIZED);
 		}
 
-		if ($this->appManager->isEnabledForUser(Application::APP_ID, $user) === false) {
+		if ($this->appManager->isEnabledForUser(AppIdentity::APP_ID, $user) === false) {
 			return $this->error(code: 'forbidden', status: Http::STATUS_FORBIDDEN);
 		}
 
@@ -670,6 +598,73 @@ class AppOverrideController extends Controller {
 	private function isValidAppId(string $appId): bool {
 		return preg_match(self::APP_ID_PATTERN, $appId) === 1;
 	}//end isValidAppId()
+
+	/**
+	 * Guard a write endpoint: a valid appId first, then Buildiq access.
+	 *
+	 * @param string $appId The kebab-case fleet-app id from the URL.
+	 *
+	 * @return JSONResponse|null Null on allow; 400/401/403 JSONResponse on deny.
+	 *
+	 * @spec openspec/specs/app-override-persistence/spec.md
+	 */
+	private function refuseWrite(string $appId): ?JSONResponse {
+		if ($this->isValidAppId(appId: $appId) === false) {
+			return $this->error(code: 'invalid_app_id', status: Http::STATUS_BAD_REQUEST);
+		}
+
+		return $this->requireBuildiqAccess();
+	}//end refuseWrite()
+
+	/**
+	 * Guard a delta write, then read and validate its body.
+	 *
+	 * @param string $appId The kebab-case fleet-app id from the URL.
+	 *
+	 * @return array<string, mixed>|JSONResponse The delta, or the 400/401/403/422 rejection.
+	 *
+	 * @spec openspec/specs/app-override-persistence/spec.md
+	 */
+	private function admitDeltaWrite(string $appId): array|JSONResponse {
+		$guard = $this->refuseWrite(appId: $appId);
+		if ($guard !== null) {
+			return $guard;
+		}
+
+		return $this->readValidDelta();
+	}//end admitDeltaWrite()
+
+	/**
+	 * Read the PUT body and run the delta guards on it.
+	 *
+	 * @return array<string, mixed>|JSONResponse The delta, or the 422 rejection.
+	 */
+	private function readValidDelta(): array|JSONResponse {
+		$delta = $this->readDeltaBody();
+		if ($delta === null) {
+			return $this->error(
+				code: 'invalid_delta',
+				status: Http::STATUS_UNPROCESSABLE_ENTITY,
+				detail: 'request body must be a keyed delta object'
+			);
+		}
+
+		return ($this->validateDelta(delta: $delta) ?? $delta);
+	}//end readValidDelta()
+
+	/**
+	 * Log a failed store call and answer it with a 500.
+	 *
+	 * @param string $message The log message; the failure's own message is appended.
+	 * @param Throwable $failure The caught failure.
+	 *
+	 * @return JSONResponse The 500 internal_error response.
+	 */
+	private function internalError(string $message, Throwable $failure): JSONResponse {
+		$this->logger->error($message . ': ' . $failure->getMessage(), ['exception' => $failure]);
+
+		return $this->error(code: 'internal_error', status: Http::STATUS_INTERNAL_SERVER_ERROR);
+	}//end internalError()
 
 	/**
 	 * Build a uniform error JSONResponse.

@@ -1,0 +1,171 @@
+[
+	{
+		"children": [
+			{
+				"href": "url:development",
+				"icon": "OpenInNew",
+				"id": "open-development",
+				"label": "label:development",
+				"target": "_blank"
+			},
+			{
+				"icon": "PencilRulerOutline",
+				"id": "edit-development",
+				"label": "buildiq:Edit label:development",
+				"onSelect": [
+					"editVersion([{\"slug\":\"development\"}])"
+				]
+			},
+			{
+				"href": "url:production",
+				"icon": "OpenInNew",
+				"id": "open-production",
+				"label": "label:production",
+				"target": "_blank"
+			},
+			{
+				"icon": "PencilRulerOutline",
+				"id": "edit-production",
+				"label": "buildiq:Edit label:production",
+				"onSelect": [
+					"editVersion([{\"slug\":\"production\"}])"
+				]
+			}
+		],
+		"childrenLabel": "buildiq:Open a version",
+		"href": "/builder/permit",
+		"icon": "OpenInNew",
+		"id": "open-app",
+		"label": "buildiq:Open app",
+		"target": "_blank",
+		"variant": "primary"
+	},
+	{
+		"icon": "CogOutline",
+		"id": "app-settings-action",
+		"label": "buildiq:Settings",
+		"onSelect": [
+			"onSettingsOpen([true])"
+		]
+	},
+	{
+		"icon": "PencilOutline",
+		"id": "app-edit-record",
+		"label": "buildiq:Edit",
+		"onSelect": [
+			"openEditForm()"
+		]
+	},
+	{
+		"icon": "ArrowUpBoldCircleOutline",
+		"id": "app-promote-development",
+		"label": "buildiq:Promote label:development",
+		"onSelect": [
+			"promoteVersion([{\"slug\":\"development\"}])"
+		]
+	},
+	{
+		"icon": "ArrowUpBoldCircleOutline",
+		"id": "app-promote-staging",
+		"label": "buildiq:Promote label:staging",
+		"onSelect": [
+			"promoteVersion([{\"slug\":\"staging\"}])"
+		]
+	},
+	{
+		"icon": "MapMarkerPath",
+		"id": "app-edit-setup",
+		"label": "buildiq:Setup wizard",
+		"onSelect": [
+			"openWalkthroughDesigner([\"setup\"])"
+		]
+	},
+	{
+		"icon": "MapMarkerPath",
+		"id": "app-edit-walkthrough",
+		"label": "buildiq:Walkthrough",
+		"onSelect": [
+			"openWalkthroughDesigner([\"walkthrough\"])"
+		]
+	},
+	{
+		"icon": "Sitemap",
+		"id": "app-automations",
+		"label": "buildiq:Automations",
+		"onSelect": [
+			"openAutomations([])"
+		]
+	},
+	{
+		"icon": "AccountMultipleOutline",
+		"id": "app-permissions",
+		"label": "buildiq:Manage permissions",
+		"onSelect": [
+			"permissionsOpen=true"
+		]
+	},
+	{
+		"icon": "ContentSaveOutline",
+		"id": "app-save-as-template",
+		"label": "buildiq:Save as template",
+		"onSelect": [
+			"openSaveAsTemplate([])"
+		]
+	},
+	{
+		"icon": "ContentCopy",
+		"id": "app-copy",
+		"label": "buildiq:Copy app",
+		"onSelect": [
+			"copyOpen=true"
+		]
+	},
+	{
+		"icon": "Github",
+		"id": "app-github",
+		"label": "buildiq:GitHub",
+		"onSelect": [
+			"githubOpen=true"
+		]
+	},
+	{
+		"icon": "History",
+		"id": "app-permission-history",
+		"label": "buildiq:Permission history",
+		"onSelect": [
+			"historyOpen=true"
+		]
+	},
+	{
+		"icon": "HeartOutline",
+		"id": "app-edit-support",
+		"label": "buildiq:Support & donation",
+		"onSelect": [
+			"openSupportEditor([])"
+		]
+	},
+	{
+		"icon": "TrayArrowDown",
+		"id": "app-export",
+		"label": "buildiq:Export",
+		"onSelect": [
+			"exportOpen=true"
+		]
+	},
+	{
+		"href": "https://buildiq.conduction.nl",
+		"icon": "HelpCircleOutline",
+		"id": "app-documentation",
+		"label": "buildiq:Documentation",
+		"target": "_blank"
+	},
+	{
+		"icon": "DeleteOutline",
+		"id": "app-delete",
+		"label": "buildiq:Delete",
+		"onSelect": [
+			"deleteOpen=true"
+		],
+		"variant": "error"
+	}
+]

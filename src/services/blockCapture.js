@@ -14,14 +14,15 @@
  * Everything here is pure (no I/O): the OR write happens in
  * `SaveBlockDialog.vue` via axios, mirroring `SaveAsTemplateDialog.vue`.
  *
- * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+ * @spec openspec/specs/component-blocks/spec.md
  */
 
 import {
 	deepClone,
-	deNamespaceSlug,
+	isSchemaRefEntry,
 	rewriteSchemaRefs,
 	SlugCollisionError,
+	slugRewritesOf,
 } from './templateCapture.js'
 
 export { SlugCollisionError }
@@ -46,28 +47,34 @@ export const BLOCK_CATEGORIES = ['display', 'layout', 'form', 'navigation', 'dat
  * @param {*} node - the fragment node (object / array / scalar).
  * @param {Set<string>} [acc] - accumulator (created fresh by default).
  * @return {Set<string>} the set of distinct schema slugs referenced.
- * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+ * @spec openspec/specs/component-blocks/spec.md
  */
 export function collectSchemaRefs(node, acc = new Set()) {
 	if (Array.isArray(node)) {
 		node.forEach((item) => collectSchemaRefs(item, acc))
 		return acc
 	}
-	if (node === null || typeof node !== 'object') {
-		return acc
+	if (node !== null && typeof node === 'object') {
+		collectEntryRefs(node, acc)
 	}
+	return acc
+}
+
+/**
+ * Collect the schema references of one object's properties into `acc`.
+ *
+ * @param {object} node - the fragment object.
+ * @param {Set<string>} acc - accumulator.
+ * @return {void}
+ */
+function collectEntryRefs(node, acc) {
 	for (const [key, value] of Object.entries(node)) {
-		if (
-			(key === 'schema' || key === 'relatedSchema')
-			&& typeof value === 'string'
-			&& value
-		) {
+		if (isSchemaRefEntry(key, value) && value) {
 			acc.add(value)
 		} else {
 			collectSchemaRefs(value, acc)
 		}
 	}
-	return acc
 }
 
 /**
@@ -80,7 +87,7 @@ export function collectSchemaRefs(node, acc = new Set()) {
  * @param {string} sectionId - a stable id for the section wrapper.
  * @param {Array<object>} widgets - the selected widgetEntry objects.
  * @return {{id: string, widgets: Array<object>}} the section fragment.
- * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+ * @spec openspec/specs/component-blocks/spec.md
  */
 export function buildSectionFragment(sectionId, widgets) {
 	return { id: sectionId, widgets: Array.isArray(widgets) ? widgets : [] }
@@ -102,49 +109,46 @@ export function buildSectionFragment(sectionId, widgets) {
  *   the `ComponentBlock` record plus a capture summary the dialog renders.
  * @throws {SlugCollisionError} when two referenced schemas de-namespace to
  *   the same canonical slug.
- * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+ * @spec openspec/specs/component-blocks/spec.md
  */
 export function captureBlock(fragment, appSlug, metadata) {
-	const sourceSlugs = [...collectSchemaRefs(fragment)]
-
-	const rewriteMap = {}
-	const canonicalToSource = {}
-	const summaryEntries = []
-	for (const sourceSlug of sourceSlugs) {
-		const { slug: canonical, shared } = deNamespaceSlug(sourceSlug, appSlug)
-		if (
-			Object.hasOwn(canonicalToSource, canonical)
-			&& canonicalToSource[canonical] !== sourceSlug
-		) {
-			throw new SlugCollisionError(canonical, [
-				canonicalToSource[canonical],
-				sourceSlug,
-			])
-		}
-		canonicalToSource[canonical] = sourceSlug
-		rewriteMap[sourceSlug] = canonical
-		summaryEntries.push({ sourceSlug, slug: canonical, shared })
-	}
-
-	const capturedFragment = rewriteSchemaRefs(deepClone(fragment || {}), rewriteMap)
-
-	const record = {
-		slug: metadata.slug,
-		name: metadata.name,
-		description: metadata.description || '',
-		category: metadata.category || '',
-		schemaDependencies: Object.values(rewriteMap),
-		sourceApplicationSlug: appSlug || '',
-		fragment: capturedFragment,
-	}
-	if (metadata.createdBy) {
-		record.createdBy = metadata.createdBy
-	}
+	const { rewriteMap, summaryEntries } = slugRewritesOf(
+		[...collectSchemaRefs(fragment)],
+		appSlug,
+	)
+	const record = blockRecord(metadata, {
+		appSlug,
+		rewriteMap,
+		fragment: rewriteSchemaRefs(deepClone(fragment || {}), rewriteMap),
+	})
 
 	return {
 		record,
 		summary: { schemaDependencies: summaryEntries },
 	}
+}
+
+/**
+ * The `ComponentBlock` record of a capture.
+ *
+ * @param {object} metadata - `{ slug, name, description, category, createdBy }`.
+ * @param {{appSlug: string, rewriteMap: Object<string, string>, fragment: object}} captured - the source app, the rewrite map and the rewritten fragment.
+ * @return {object} the record.
+ */
+function blockRecord(metadata, captured) {
+	const record = {
+		slug: metadata.slug,
+		name: metadata.name,
+		description: metadata.description || '',
+		category: metadata.category || '',
+		schemaDependencies: Object.values(captured.rewriteMap),
+		sourceApplicationSlug: captured.appSlug || '',
+		fragment: captured.fragment,
+	}
+	if (metadata.createdBy) {
+		record.createdBy = metadata.createdBy
+	}
+	return record
 }
 
 /**
@@ -154,7 +158,7 @@ export function captureBlock(fragment, appSlug, metadata) {
  *
  * @param {*} fragment - the fragment value.
  * @return {boolean} true when the fragment is a section wrapper.
- * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+ * @spec openspec/specs/component-blocks/spec.md
  */
 export function isSectionFragment(fragment) {
 	return !!(

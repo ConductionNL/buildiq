@@ -24,6 +24,7 @@
  * per tasks.md §7.
  */
 import { createObjectStore } from '@conduction/nextcloud-vue'
+import { generateUrl } from '@nextcloud/router'
 
 const STORE_ID = 'openbuild-schemas'
 
@@ -38,7 +39,11 @@ const STORE_ID = 'openbuild-schemas'
 // longer carrying the OR register name; we keep the per-version register
 // info on the type config under `slugs.registerSlug` for callers that
 // need to filter the collection.
-const SCHEMA_API_BASE_URL = '/apps/openregister'
+// Through generateUrl(), like every other OR base URL we hand the store
+// (see store.js): `_buildUrl` concatenates baseUrl verbatim, so a raw path
+// here drops the `/index.php` prefix that instances without URL rewriting
+// require, and every schema call 404s there.
+const SCHEMA_API_BASE_URL = generateUrl('/apps/openregister')
 
 const useSchemasStoreRaw = createObjectStore(STORE_ID, {
 	baseUrl: SCHEMA_API_BASE_URL,
@@ -69,7 +74,7 @@ const useSchemasStoreRaw = createObjectStore(STORE_ID, {
  * @param {string|undefined} [versionSlug] Optional version slug (e.g. `staging`).
  * @return {string} Register slug (e.g. `openbuild-hello-world-staging`).
  *
- * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+ * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
  */
 export function registerSlugForApp(appSlug, versionSlug) {
 	if (versionSlug && versionSlug !== '') {
@@ -93,7 +98,7 @@ export function registerSlugForApp(appSlug, versionSlug) {
  * @param {string|undefined} [versionSlug] Optional version slug.
  * @return {object} Pinia store instance.
  *
- * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+ * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
  */
 export function useSchemasStore(appSlug, versionSlug) {
 	const store = useSchemasStoreRaw()

@@ -11,7 +11,7 @@ import { mount } from '@vue/test-utils'
  *  - Soft capability checks (procest / nldesign / docudesk) flip the flags.
  *  - Computeds: routeSlug, versionSlug, appSchemas (array + map + none),
  *    versionNotFound, applicationUuid, builderUrl.
- *  - onManifestUpdate / onThemePreview / onCreateLinkProperty.
+ *  - onManifestUpdate / onThemePreview.
  *  - save(): guard, version PUT, application PUT, and the failure path.
  *  - onThemePreview retargets the in-flight manifest (no Buildiq-owned
  *    applier, theme-picker-consumes-nldesign REQ-NTS-002/003) and
@@ -23,8 +23,10 @@ import { ref } from 'vue'
 const axiosGetMock = vi.fn()
 const axiosPutMock = vi.fn()
 const axiosPatchMock = vi.fn()
+const axiosPostMock = vi.fn()
 vi.mock('@nextcloud/axios', () => ({
 	default: {
+		post: (...a) => axiosPostMock(...a),
 		get: (...a) => axiosGetMock(...a),
 		put: (...a) => axiosPutMock(...a),
 		patch: (...a) => axiosPatchMock(...a),
@@ -126,6 +128,11 @@ async function childStub(name) {
 	}
 }
 vi.mock('../../src/views/PageDesigner.vue', () => childStub('PageDesigner'))
+
+const navigateToMock = vi.fn()
+vi.mock('../../src/utils/navigate.js', () => ({
+	navigateTo: (...a) => navigateToMock(...a),
+}))
 vi.mock('../../src/components/WorkflowAttachmentsSection.vue', () =>
 	childStub('WorkflowAttachmentsSection'),
 )
@@ -165,6 +172,8 @@ function mountHost({
 
 describe('PageDesignerHost', () => {
 	beforeEach(() => {
+		axiosPostMock.mockReset()
+		axiosPostMock.mockResolvedValue({ data: { accepted: true, findings: [] } })
 		versionHolder = null
 		versionResolvesAsync = false
 		statusAvailable = true
@@ -392,35 +401,6 @@ describe('PageDesignerHost', () => {
 		expect(wrapper.vm.livePreviewAvailable).toBe(false)
 	})
 
-	it('onCreateLinkProperty deep-links to the schema designer (and no-ops on empty)', async () => {
-		const wrapper = mountHost({
-			slug: 'petstore',
-			appList: [{ slug: 'petstore' }],
-		})
-		await flush(wrapper)
-		// jsdom blocks real navigation, so swap window.location for a writable stub.
-		const original = window.location
-		Object.defineProperty(window, 'location', {
-			configurable: true,
-			writable: true,
-			value: { href: 'about:blank' },
-		})
-		try {
-			wrapper.vm.onCreateLinkProperty('')
-			expect(window.location.href).toBe('about:blank')
-			wrapper.vm.onCreateLinkProperty('pet')
-			expect(window.location.href).toBe(
-				'/apps/buildiq/builder/petstore/schemas?schema=pet&addProperty=zaakUrl',
-			)
-		} finally {
-			Object.defineProperty(window, 'location', {
-				configurable: true,
-				writable: true,
-				value: original,
-			})
-		}
-	})
-
 	it('save() is a no-op without an application or uuid', async () => {
 		const wrapper = mountHost({ appList: [{ slug: 'petstore' }] })
 		await flush(wrapper)
@@ -450,6 +430,50 @@ describe('PageDesignerHost', () => {
 		expect(wrapper.vm.toast).toBe('Pages saved.')
 	})
 
+	it('save() keeps the pages as a draft and hands the destination findings to the designer (decision 189)', async () => {
+		const finding = {
+			page: 'new',
+			pageIndex: 0,
+			field: 'x',
+			property: 'x',
+			code: 'property-unknown',
+			message: 'X',
+		}
+		axiosPostMock.mockResolvedValue({
+			data: { accepted: false, findings: [finding] },
+		})
+		const wrapper = mountHost({
+			version: null,
+			appList: [{ slug: 'petstore', '@self': { id: 'app-1' } }],
+		})
+		await flush(wrapper)
+		axiosPutMock.mockResolvedValueOnce({ data: { '@self': { id: 'app-1' } } })
+
+		const saved = await wrapper.vm.save()
+
+		expect(saved).toBe(true)
+		expect(axiosPostMock).toHaveBeenCalledWith(
+			'/apps/buildiq/api/forms/destination-check',
+			{ appSlug: expect.any(String), manifest: expect.any(Object) },
+		)
+		expect(wrapper.vm.destinationFindings).toEqual([finding])
+		expect(wrapper.vm.toast).not.toBe('Pages saved.')
+	})
+
+	it('save() says so when the forms could not be checked', async () => {
+		axiosPostMock.mockRejectedValue(new Error('down'))
+		const wrapper = mountHost({
+			version: null,
+			appList: [{ slug: 'petstore', '@self': { id: 'app-1' } }],
+		})
+		await flush(wrapper)
+		axiosPutMock.mockResolvedValueOnce({ data: { '@self': { id: 'app-1' } } })
+
+		await wrapper.vm.save()
+
+		expect(wrapper.vm.error).toContain('could not be checked')
+	})
+
 	it('save() falls back to the Application object PUT when there is no version', async () => {
 		const wrapper = mountHost({
 			version: null,
@@ -476,6 +500,71 @@ describe('PageDesignerHost', () => {
 		axiosPutMock.mockRejectedValueOnce(new Error('put failed'))
 		await wrapper.vm.save()
 		expect(wrapper.vm.error).toContain('Failed to save')
+	})
+
+	describe('Save & open preview', () => {
+		beforeEach(() => navigateToMock.mockReset())
+
+		it('saves, then opens the running app on the edited version', async () => {
+			const version = {
+				'@self': { id: 'ver-uuid' },
+				slug: 'development',
+				manifest: {},
+			}
+			const wrapper = mountHost({
+				version,
+				appList: [{ slug: 'petstore', '@self': { id: 'app-1' } }],
+			})
+			await flush(wrapper)
+			axiosPatchMock.mockResolvedValueOnce({ data: version })
+			// The designer's button emits `save-and-preview`; drive it through
+			// the rendered child, not by calling the handler directly, so the
+			// wiring itself is under test.
+			wrapper
+				.findComponent({ name: 'PageDesigner' })
+				.vm.$emit('save-and-preview')
+			await flush(wrapper)
+			await flush(wrapper)
+			expect(axiosPatchMock).toHaveBeenCalledTimes(1)
+			expect(navigateToMock).toHaveBeenCalledWith(
+				'/apps/buildiq/builder/petstore?_version=development',
+			)
+		})
+
+		it('stays on the designer when the save fails', async () => {
+			const wrapper = mountHost({
+				version: null,
+				appList: [{ slug: 'petstore', '@self': { id: 'app-1' } }],
+			})
+			await flush(wrapper)
+			axiosPutMock.mockRejectedValueOnce(new Error('put failed'))
+			wrapper
+				.findComponent({ name: 'PageDesigner' })
+				.vm.$emit('save-and-preview')
+			await flush(wrapper)
+			await flush(wrapper)
+			expect(wrapper.vm.error).toContain('Failed to save')
+			expect(navigateToMock).not.toHaveBeenCalled()
+		})
+
+		it('opens the plain runtime URL when no version is resolved', async () => {
+			const wrapper = mountHost({
+				version: null,
+				appList: [{ slug: 'petstore', '@self': { id: 'app-1' } }],
+			})
+			await flush(wrapper)
+			axiosPutMock.mockResolvedValueOnce({
+				data: { slug: 'petstore', '@self': { id: 'app-1' } },
+			})
+			wrapper
+				.findComponent({ name: 'PageDesigner' })
+				.vm.$emit('save-and-preview')
+			await flush(wrapper)
+			await flush(wrapper)
+			expect(navigateToMock).toHaveBeenCalledWith(
+				'/apps/buildiq/builder/petstore',
+			)
+		})
 	})
 
 	it('unmounts cleanly with no Buildiq-owned theme teardown call (REQ-NTS-003 — CnAppRoot tears itself down)', async () => {

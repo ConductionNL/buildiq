@@ -3,6 +3,9 @@
 /**
  * Resolve an OpenRegister ObjectEntity's register and schema SLUGS.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * OpenRegister object events carry the register and schema as **numeric ids**,
  * never as slugs. `ObjectEntity::$schema` is declared `?string` and typed as a
  * string, but `SaveObject` writes it as `(string) $schemaId` — so it holds
@@ -33,9 +36,6 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- *
  * @version GIT: <git-id>
  *
  * @link https://buildiq.nl
@@ -45,20 +45,14 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\ObjectSchemaSlugResolverInterface;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
  * Turns the register/schema ids an OpenRegister event carries into slugs.
  */
-class ObjectSchemaSlugResolver {
-
-	/**
-	 * The register slug buildiq's own objects live in.
-	 *
-	 * @var string
-	 */
-	public const REGISTER_SLUG = 'buildiq';
+class ObjectSchemaSlugResolver implements ObjectSchemaSlugResolverInterface {
 
 	/**
 	 * Resolved slugs keyed by "<mapperFqn>:<id>", for the request lifetime.

@@ -26,10 +26,13 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Mcp\Handler;
 
+use OCA\Buildiq\Support\ManifestEntryList;
+use OCA\Buildiq\Support\ManifestRoute;
+
 /**
  * Handles the buildiq.upsertMenuItem tool invocation.
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-42
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-42
  */
 class UpsertMenuItemHandler extends AbstractToolHandler {
 	/**
@@ -46,7 +49,6 @@ class UpsertMenuItemHandler extends AbstractToolHandler {
 		}
 
 		$appSlug = $validation['appSlug'];
-		$versionSlug = $validation['versionSlug'];
 		$id = $validation['id'];
 
 		$rbacError = $this->requireWriteRole(appSlug: $appSlug);
@@ -55,57 +57,7 @@ class UpsertMenuItemHandler extends AbstractToolHandler {
 		}
 
 		try {
-			// ADR-083 rule 1 / ADR-084: use the constructor-injected contract
-			// rather than reaching into the container by string name.
-			$objectService = $this->objectService;
-
-			$loaded = $this->loadVersion(objectService: $objectService, appSlug: $appSlug, versionSlug: $versionSlug);
-			if (isset($loaded['error']) === true) {
-				return $this->errorResult(error: $loaded['error'], message: $loaded['message']);
-			}
-
-			$version = $loaded['version'];
-			$manifest = (array)($version['manifest'] ?? []);
-			$menu = (array)($manifest['menu'] ?? []);
-
-			$newItem = [
-				'id' => $id,
-				'label' => $validation['label'],
-				'icon' => $validation['icon'],
-				'route' => $validation['route'],
-				'order' => $validation['order'],
-			];
-
-			[$menu, $replaced] = $this->upsertMenuItemInList(menu: $menu, itemId: $id, newItem: $newItem);
-
-			$manifest['menu'] = array_values($menu);
-
-			// H4: enforce menu-per-manifest (30) and total manifest size (256 KB).
-			// Cap is applied after upsert so updates to existing items always pass.
-			if ($replaced === false) {
-				$capError = $this->checkManifestCaps(manifest: $manifest);
-				if ($capError !== null) {
-					return $capError;
-				}
-			}
-
-			$saved = $this->saveVersionManifest(objectService: $objectService, version: $version, manifest: $manifest);
-
-			$action = 'created';
-			if ($replaced === true) {
-				$action = 'updated';
-			}
-
-			return [
-				'success' => true,
-				'action' => $action,
-				'menuItem' => $newItem,
-				'menuCount' => count($menu),
-				'version' => [
-					'uuid' => $this->extractUuid(item: $saved),
-					'slug' => (string)($saved['slug'] ?? $versionSlug),
-				],
-			];
+			return $this->upsertMenuItem(validation: $validation);
 		} catch (\Throwable $e) {
 			$this->logger->error(
 				'Buildiq MCP: upsertMenuItem failed',
@@ -117,11 +69,62 @@ class UpsertMenuItemHandler extends AbstractToolHandler {
 	}//end handle()
 
 	/**
+	 * Insert or replace the menu item and save the version manifest.
+	 *
+	 * @param array<string, mixed> $validation The validated tool arguments.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function upsertMenuItem(array $validation): array {
+		$appSlug = $validation['appSlug'];
+		$versionSlug = $validation['versionSlug'];
+		$id = $validation['id'];
+
+		$loaded = $this->loadManifestForEdit(appSlug: $appSlug, versionSlug: $versionSlug);
+		if (isset($loaded['isError']) === true) {
+			return $loaded;
+		}
+
+		$manifest = $loaded['manifest'];
+		$menu = (array)($manifest['menu'] ?? []);
+
+		$newItem = [
+			'id' => $id,
+			'label' => $validation['label'],
+			'icon' => $validation['icon'],
+			'route' => $validation['route'],
+			'order' => $validation['order'],
+		];
+
+		[$menu, $replaced] = $this->upsertMenuItemInList(menu: $menu, newItem: $newItem);
+
+		$manifest['menu'] = array_values($menu);
+
+		// H4: enforce menu-per-manifest (30) and total manifest size (256 KB).
+		// Cap is applied after upsert so updates to existing items always pass.
+		$capError = $this->appendCapError(manifest: $manifest, replaced: $replaced);
+		if ($capError !== null) {
+			return $capError;
+		}
+
+		$saved = $this->saveVersionManifest(objectService: $this->objectService, version: $loaded['version'], manifest: $manifest);
+
+		return $this->upsertOutcome(replaced: $replaced) + [
+			'menuItem' => $newItem,
+			'menuCount' => count($menu),
+			'version' => $this->versionSummary(saved: $saved, versionSlug: $versionSlug),
+		];
+	}//end upsertMenuItem()
+
+	/**
 	 * Validate and extract typed arguments for upsertMenuItem.
 	 *
 	 * @param array<string, mixed> $args Raw tool arguments.
 	 *
 	 * @return array{appSlug?: string, versionSlug?: string, id?: string, label?: string, icon?: string, route?: string, order?: int, error?: string}
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ManifestRoute is a pure rule with
+	 * no collaborators and no state.
 	 */
 	private function validateArgs(array $args): array {
 		$appSlug = (string)($args['appSlug'] ?? '');
@@ -129,7 +132,7 @@ class UpsertMenuItemHandler extends AbstractToolHandler {
 		$id = (string)($args['id'] ?? '');
 		$label = (string)($args['label'] ?? '');
 		$icon = (string)($args['icon'] ?? '');
-		$route = (string)($args['route'] ?? '');
+		$route = trim((string)($args['route'] ?? ''));
 		$order = 100;
 		if (isset($args['order']) === true) {
 			$order = (int)$args['order'];
@@ -151,11 +154,15 @@ class UpsertMenuItemHandler extends AbstractToolHandler {
 			return ['error' => 'route is required.'];
 		}
 
-		// Validate route to a safe path pattern (issue #167 — route injection guard).
-		if ($this->isValidRoute(route: $route) === false) {
+		// A menu item targets a route by NAME, and the runtime names every route
+		// after its page id, so a bare page id is the canonical value here and a
+		// path is accepted too. Only a scheme or a host is refused, which is what
+		// the injection guard in issue #167 was actually for.
+		if (ManifestRoute::isValidMenuTarget(route: $route) === false) {
 			return [
 				'error' => "Invalid route '{$route}'. "
-				. "Routes must start with '/' and contain only safe path characters.",
+				. 'A menu route is a page id, or a path starting with \'/\', '
+				. 'and may contain only safe path characters.',
 			];
 		}
 
@@ -172,29 +179,7 @@ class UpsertMenuItemHandler extends AbstractToolHandler {
 	}//end validateArgs()
 
 	/**
-	 * Validate a route value against a safe path pattern.
-	 *
-	 * Accepts paths that start with '/' and consist only of alphanumeric
-	 * characters, hyphens, underscores, dots, forward slashes, and route
-	 * parameter placeholders (:param or {param}). Rejects javascript: URIs,
-	 * protocol-relative paths, and other injection vectors (issue #167).
-	 *
-	 * @param string $route The candidate route string.
-	 *
-	 * @return bool
-	 */
-	private function isValidRoute(string $route): bool {
-		if (strlen($route) > 256) {
-			return false;
-		}
-
-		// Require the character after the leading '/' to be non-slash so that
-		// protocol-relative URLs (//host/path) are rejected.
-		return (bool)preg_match('#^/([a-zA-Z0-9_\-\.:\{][a-zA-Z0-9/_\-\.:\{\}]*)?$#', $route);
-	}//end isValidRoute()
-
-	/**
-	 * Upsert a menu item in the menu list using case-insensitive id matching.
+	 * Upsert a menu item in the menu list using case-insensitive id matching ({@see ManifestEntryList}).
 	 *
 	 * Uses the same case-insensitive strategy as UpsertPageHandler so that an
 	 * LLM can reliably target an existing item regardless of case variations
@@ -204,27 +189,14 @@ class UpsertMenuItemHandler extends AbstractToolHandler {
 	 * item was replaced (true) or a new item was appended (false).
 	 *
 	 * @param array<int, mixed> $menu Existing menu list from the manifest.
-	 * @param string $itemId The menu item id to look up (case-insensitive).
 	 * @param array<string, mixed> $newItem The menu item definition to insert or replace with.
 	 *
 	 * @return array{0: array, 1: bool}
 	 */
-	private function upsertMenuItemInList(array $menu, string $itemId, array $newItem): array {
-		$replaced = false;
-		$itemIdLc = strtolower($itemId);
+	private function upsertMenuItemInList(array $menu, array $newItem): array {
+		$list = new ManifestEntryList(entries: $menu);
+		$replaced = $list->upsert(entry: $newItem);
 
-		foreach ($menu as $i => $existing) {
-			if (is_array($existing) === true && strtolower((string)($existing['id'] ?? '')) === $itemIdLc) {
-				$menu[$i] = $newItem;
-				$replaced = true;
-				break;
-			}
-		}
-
-		if ($replaced === false) {
-			$menu[] = $newItem;
-		}
-
-		return [$menu, $replaced];
+		return [$list->entries(), $replaced];
 	}//end upsertMenuItemInList()
 }//end class

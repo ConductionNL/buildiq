@@ -62,7 +62,20 @@ Open the app, choose **Actions → GitHub**, pick a `github` credential, and sel
 4. Records the resulting `commitSha` and repository on the app.
 
 Re-publishing advances the branch on a new commit — it never force-pushes or
-rewrites history.
+rewrites history. When the branch moved on GitHub since your last pull, publish
+answers `push_conflict` instead of overwriting: pull first, review the draft,
+promote it, then publish again.
+
+When this instance cannot publish (OpenRegister's credential broker is missing,
+or you have no `github` credential), the **Publish** button is disabled with a
+hint saying what is missing. Pulling a public repository still works without a
+credential.
+
+Only an **owner** of the app may link, publish or pull; editors, viewers and
+Nextcloud admins who are not owners see the GitHub status but not the actions.
+
+This round-trip is separate from the code exporter (*Export to GitHub*), which
+still pushes a PHP app scaffold with its own token and is unchanged.
 
 ## Pulling changes back
 

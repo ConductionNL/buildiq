@@ -48,6 +48,42 @@ import NcButton from '@nextcloud/vue/components/NcButton'
 
 const ROLES = ['owners', 'editors', 'viewers']
 
+/**
+ * Whether a permission entry names a principal (a non-empty string).
+ *
+ * @param {string|number|null|undefined} entry A permission bucket entry.
+ * @return {boolean}
+ */
+function isPrincipal(entry) {
+	return typeof entry === 'string' && !!entry
+}
+
+/**
+ * The display label of a principal: without its `user:` or `group:` prefix.
+ *
+ * @param {string} entry The principal.
+ * @return {string}
+ */
+function principalLabel(entry) {
+	if (entry.startsWith('user:')) {
+		return entry.slice(5)
+	}
+	return entry.startsWith('group:') ? entry.slice(6) : entry
+}
+
+/**
+ * A principal as a widget row; anything that is not a `user:` is a group.
+ *
+ * @param {string} role The role bucket.
+ * @param {string} entry The principal.
+ * @return {{role: string, principal: string, label: string, isGroup: boolean}}
+ */
+function principalRow(role, entry) {
+	const isUser = entry.startsWith('user:')
+	const isGroup = entry.startsWith('group:') || !isUser
+	return { role, principal: entry, label: principalLabel(entry), isGroup }
+}
+
 export default {
 	name: 'GroupsWidget',
 	components: { NcButton },
@@ -62,7 +98,7 @@ export default {
 		 * Each row carries `{ role, principal, label, isGroup }`.
 		 *
 		 * @return {Array<object>}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-2
 		 */
 		rows() {
 			const permissions =
@@ -72,19 +108,9 @@ export default {
 				const bucket = Array.isArray(permissions[role])
 					? permissions[role]
 					: []
-				bucket.forEach((entry) => {
-					if (typeof entry !== 'string' || !entry) {
-						return
-					}
-					const isUser = entry.startsWith('user:')
-					const isGroup = entry.startsWith('group:') || !isUser
-					const label = isUser
-						? entry.slice(5)
-						: entry.startsWith('group:')
-							? entry.slice(6)
-							: entry
-					out.push({ role, principal: entry, label, isGroup })
-				})
+				bucket
+					.filter(isPrincipal)
+					.forEach((entry) => out.push(principalRow(role, entry)))
 			})
 			return out
 		},
@@ -96,7 +122,7 @@ export default {
 		 *
 		 * @param {string} role Role key.
 		 * @return {string}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-2
 		 */
 		roleLabel(role) {
 			if (role === 'owners') return t('buildiq', 'Owner')
@@ -109,7 +135,7 @@ export default {
 		 *
 		 * @param {object} row Row.
 		 * @return {string}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-2
 		 */
 		memberLabel(row) {
 			if (!row.isGroup) {
@@ -126,7 +152,7 @@ export default {
 		 * this to a route.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-2
 		 */
 		openEditor() {
 			this.$emit('open-permissions', this.application)

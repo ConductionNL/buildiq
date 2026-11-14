@@ -156,3 +156,56 @@ describe('manifestDependencies (document)', () => {
 		expect(m.dependencies).toEqual(['filinq'])
 	})
 })
+
+describe('manifestDependencies edges', () => {
+	it('detects connectors only where a page or widget names one', () => {
+		expect(hasConnectorBinding(null)).toBe(false)
+		expect(hasConnectorBinding({ pages: {} })).toBe(false)
+		expect(
+			hasConnectorBinding({
+				pages: [
+					null,
+					{},
+					{ config: { dataSource: {} } },
+					{ config: { dataSource: { connector: '' }, widgets: 'x' } },
+					{ config: { widgets: [null, {}, { dataSource: { connector: 0 } }] } },
+				],
+			}),
+		).toBe(false)
+		expect(
+			hasConnectorBinding({ pages: [{ config: { widgets: [{ dataSource: { connector: 'c' } }] } }] }),
+		).toBe(true)
+		expect(hasConnectorBinding({ pages: [{ config: { dataSource: { connector: 'c' } } }] })).toBe(
+			true,
+		)
+	})
+
+	it('creates the list and the marker, keeps an existing marker and never adds twice', () => {
+		const bare = { runtime: { workflows: [{}] } }
+		expect(reconcileWorkflowDependency(bare)).toBe(bare)
+		expect(bare.dependencies).toEqual(['procest'])
+		expect(bare._buildiqAutoDeps).toEqual(['procest'])
+		const marked = {
+			dependencies: [],
+			_buildiqAutoDeps: ['procest'],
+			runtime: { workflows: [{}] },
+		}
+		reconcileWorkflowDependency(marked)
+		expect(marked).toMatchObject({ dependencies: ['procest'], _buildiqAutoDeps: ['procest'] })
+		const listed = { dependencies: 'x', runtime: { documents: [{}] } }
+		reconcileDocumentDependency(listed)
+		expect(listed.dependencies).toEqual(['filinq'])
+	})
+
+	it('leaves a manifest without a dependency list or without the marker alone', () => {
+		expect(reconcileWorkflowDependency(null)).toBeNull()
+		const noList = { _buildiqAutoDeps: ['procest'] }
+		expect(reconcileWorkflowDependency(noList)).toEqual({ _buildiqAutoDeps: ['procest'] })
+		const other = { dependencies: ['procest', 'x'], _buildiqAutoDeps: ['x'] }
+		reconcileWorkflowDependency(other)
+		expect(other).toEqual({ dependencies: ['procest', 'x'], _buildiqAutoDeps: ['x'] })
+		const auto = { dependencies: ['procest', 'x'], _buildiqAutoDeps: ['procest', 'x'] }
+		reconcileWorkflowDependency(auto)
+		expect(auto).toEqual({ dependencies: ['x'], _buildiqAutoDeps: ['x'] })
+	})
+})

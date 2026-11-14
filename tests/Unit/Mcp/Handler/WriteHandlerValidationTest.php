@@ -39,6 +39,7 @@ use OCA\Buildiq\Mcp\BuildiqToolProvider;
 use OCA\Buildiq\Mcp\Handler\AbstractToolHandler;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -364,11 +365,20 @@ class WriteHandlerValidationTest extends TestCase {
 	}//end testUpsertPageRejectsJavascriptRoute()
 
 	/**
-	 * upsertPage rejects a route that does not start with '/'.
+	 * upsertPage roots a route written without a leading '/' instead of
+	 * refusing it.
+	 *
+	 * This test replaces testUpsertPageRejectsRelativeRoute, which asserted
+	 * the opposite. Refusing was the wrong half of the guard: a route that
+	 * names no scheme and no host is a path somebody left the slash off, and
+	 * the guard in issue #167 exists to stop `javascript:` and `//host`, both
+	 * of which are still refused by the tests either side of this one. What
+	 * refusing actually bought was a plan the review screen had already
+	 * approved failing on the click that approved it.
 	 *
 	 * @return void
 	 */
-	public function testUpsertPageRejectsRelativeRoute(): void {
+	public function testUpsertPageRootsARelativeRoute(): void {
 		$this->userSession->method('getUser')->willReturn($this->ownerUser);
 		$this->groupManager->method('isAdmin')->willReturn(false);
 		$this->groupManager->method('getUserGroups')->willReturn([]);
@@ -386,10 +396,49 @@ class WriteHandlerValidationTest extends TestCase {
 			'route' => 'home/dashboard',
 		]);
 
+		// Route was rooted; the call goes on to fail at not_found because no
+		// version is wired in this fixture, NOT at invalid_arguments.
 		$this->assertTrue($result['isError']);
-		$this->assertSame('invalid_arguments', $result['error']);
+		$this->assertNotSame('invalid_arguments', $result['error'], 'A bare path must be rooted, not refused');
+		$this->assertSame('not_found', $result['error']);
 
-	}//end testUpsertPageRejectsRelativeRoute()
+	}//end testUpsertPageRootsARelativeRoute()
+
+	/**
+	 * upsertMenuItem accepts a route written as the bare page id.
+	 *
+	 * Every menu item in the plan the live copilot returned on 2026-09-18 was
+	 * written this way, because this tool's own description asked for a route
+	 * that "should match a page id". The first of them ended the run with
+	 * "Invalid route 'overview'", and the description had been right: the
+	 * runtime names every route after its page id, so the page id is exactly
+	 * what a menu item should carry. The leading-slash rule was the page rule
+	 * copied onto the menu.
+	 *
+	 * @return void
+	 */
+	public function testUpsertMenuItemAcceptsABarePageId(): void {
+		$this->userSession->method('getUser')->willReturn($this->ownerUser);
+		$this->groupManager->method('isAdmin')->willReturn(false);
+		$this->groupManager->method('getUserGroups')->willReturn([]);
+
+		$objectService = $this->buildOwnerObjectService(uid: 'alice', appSlug: 'my-app');
+		$this->container->method('get')
+			->with('OCA\OpenRegister\Service\ObjectService')
+			->willReturn($objectService);
+
+		$result = $this->provider->invokeTool('buildiq.upsertMenuItem', [
+			'appSlug' => 'my-app',
+			'id' => 'overview',
+			'label' => 'Overview',
+			'route' => 'overview',
+		]);
+
+		$this->assertTrue($result['isError']);
+		$this->assertNotSame('invalid_arguments', $result['error'], 'A bare page id is what a menu item targets');
+		$this->assertSame('not_found', $result['error']);
+
+	}//end testUpsertMenuItemAcceptsABarePageId()
 
 	/**
 	 * upsertPage accepts a valid absolute route (RBAC gate then fails with not_found
@@ -746,8 +795,12 @@ class WriteHandlerValidationTest extends TestCase {
 		$entity = $this->createMock(ObjectEntity::class);
 
 		$auditMapper->expects($this->once())
-			->method('createAuditTrailEntry')
-			->with($entity, 'rbac.admin_bypass', $this->anything());
+			->method('recordObjectEvent')
+			->with(
+				$this->callback(
+					callback: static fn (ObjectAuditEvent $event): bool => $event->object === $entity && $event->action === 'rbac.admin_bypass'
+				)
+			);
 
 		$this->bypassHandler($auditMapper)->callRecordAdminBypass($entity, 'my-app', 'admin-user');
 
@@ -832,8 +885,12 @@ class WriteHandlerValidationTest extends TestCase {
 
 		$auditMapper = $this->createMock(AuditTrailMapper::class);
 		$auditMapper->expects($this->once())
-			->method('createAuditTrailEntry')
-			->with($entity, 'rbac.admin_bypass', $this->anything());
+			->method('recordObjectEvent')
+			->with(
+				$this->callback(
+					callback: static fn (ObjectAuditEvent $event): bool => $event->object === $entity && $event->action === 'rbac.admin_bypass'
+				)
+			);
 
 		$result = $this->writeRoleHandler($auditMapper, $renderedArray, $entity)->callRequireWriteRole('my-app');
 		$this->assertNull($result, 'admin bypass grants write access (null = authorised)');
@@ -858,7 +915,7 @@ class WriteHandlerValidationTest extends TestCase {
 		$entity = $this->createMock(ObjectEntity::class);
 
 		$auditMapper = $this->createMock(AuditTrailMapper::class);
-		$auditMapper->expects($this->never())->method('createAuditTrailEntry');
+		$auditMapper->expects($this->never())->method('recordObjectEvent');
 
 		$result = $this->writeRoleHandler($auditMapper, $app, $entity)->callRequireWriteRole('my-app');
 		$this->assertNull($result, 'owner is authorised (null), and no bypass is audited');

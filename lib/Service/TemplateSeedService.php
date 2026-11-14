@@ -38,6 +38,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\TemplateSeedServiceInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Db\DoesNotExistException;
@@ -49,7 +50,7 @@ use Throwable;
  *
  * @spec openspec/changes/openbuild-first-time-setup/tasks.md#task-11
  */
-class TemplateSeedService {
+class TemplateSeedService implements TemplateSeedServiceInterface {
 
 	/**
 	 * The four seeded template slugs (one fixture per slug).
@@ -122,22 +123,9 @@ class TemplateSeedService {
 		}
 
 		foreach (self::TEMPLATE_SLUGS as $slug) {
-			$fixturePath = $fixturesDir . '/' . $slug . '.json';
-			if (is_file($fixturePath) === false) {
-				$errors[] = 'Missing template fixture: ' . $fixturePath;
-				continue;
-			}
-
-			$raw = file_get_contents($fixturePath);
-			$data = json_decode($raw, true);
-			if (is_array($data) === false) {
-				$errors[] = 'Invalid JSON in template fixture: ' . $fixturePath;
-				continue;
-			}
-
-			$validationError = $this->validateFixture(data: $data, slug: $slug);
-			if ($validationError !== null) {
-				$errors[] = $validationError;
+			[$data, $fixtureError] = $this->loadFixture(fixturesDir: $fixturesDir, slug: $slug);
+			if ($fixtureError !== null) {
+				$errors[] = $fixtureError;
 				continue;
 			}
 
@@ -148,62 +136,22 @@ class TemplateSeedService {
 			$existing = $this->findBySlug(slug: $slug);
 			$existingUuid = null;
 			if ($existing !== null) {
-				if ($this->fixtureIsNewer(fixture: $data, stored: $existing) === false) {
-					++$skipped;
-					continue;
-				}
-
-				$existingUuid = (string)($existing['id'] ?? ($existing['uuid'] ?? ($existing['@self']['id'] ?? '')));
-				if ($existingUuid === '') {
-					// Cannot target the existing row for an in-place update;
-					// skip rather than risk creating a duplicate-slug row.
-					$this->logger->warning(
-						'Buildiq: cannot resolve uuid for existing template — skipping update',
-						['slug' => $slug]
-					);
+				$existingUuid = $this->updateTargetUuid(fixture: $data, existing: $existing, slug: $slug);
+				if ($existingUuid === null) {
 					++$skipped;
 					continue;
 				}
 			}
 
 			try {
-				// Runs as a system/anonymous or admin user which cannot satisfy
-				// the ApplicationTemplate schema's create:[admin] guard from the
-				// repair context — write in system context (OR RBAC +
-				// multitenancy bypassed), matching the repair step. Passing the
-				// existing uuid updates the stored row in place; omitting it
-				// (uuid null) creates a new row.
-				$this->objectService->saveObject(
-					object: $data,
-					register: 'buildiq',
-					schema: 'application-template',
-					uuid: $existingUuid,
-					_rbac: false,
-					_multitenancy: false
-				);
+				$this->saveTemplate(data: $data, uuid: $existingUuid);
 				if ($existing === null) {
 					++$seeded;
 				} else {
 					++$updated;
 				}
 			} catch (DoesNotExistException $e) {
-				// The buildiq register / application-template schema is not
-				// provisioned yet — the configuration import (InitializeSettings)
-				// has not completed on this pass (e.g. install ordering). Defer
-				// seeding rather than failing the install: a subsequent
-				// `occ maintenance:repair` (or the admin re-import) runs the
-				// seeding again once the register exists. Non-fatal by design.
-				//
-				// Returning (not `continue`) is deliberate: every slug targets
-				// the SAME hardcoded register+schema below, so a missing schema
-				// fails identically for all of them — deferring the whole batch
-				// is correct, and the `deferred` flag is how the caller knows to
-				// re-run rather than falsely reporting "seeding complete".
-				// NOTE: if fixtures ever target heterogeneous schemas (i.e. the
-				// register/schema is read per-fixture instead of hardcoded),
-				// revisit this — a per-slug `continue` that still surfaces
-				// `deferred` would then be needed so one missing schema does not
-				// hide seedable slugs.
+				// Not provisioned yet: defer the whole batch (see saveTemplate()).
 				$this->logger->warning(
 					'Buildiq: register/application-template schema not available yet — deferring template seeding',
 					['slug' => $slug, 'exception' => $e->getMessage()]
@@ -220,6 +168,101 @@ class TemplateSeedService {
 
 		return ['seeded' => $seeded, 'updated' => $updated, 'skipped' => $skipped, 'errors' => $errors];
 	}//end seed()
+
+	/**
+	 * Write one template row in system context.
+	 *
+	 * Seeding runs as a system/anonymous or admin user which cannot satisfy the
+	 * ApplicationTemplate schema's create:[admin] guard from the repair context,
+	 * so the write bypasses OpenRegister RBAC and multitenancy, matching the
+	 * repair step. Passing the existing uuid updates the stored row in place;
+	 * a null uuid creates a new row.
+	 *
+	 * A DoesNotExistException means the buildiq register / application-template
+	 * schema is not provisioned yet: the configuration import (InitializeSettings)
+	 * has not completed on this pass (e.g. install ordering). The caller defers
+	 * seeding rather than failing the install, and a later
+	 * `occ maintenance:repair` (or the admin re-import) seeds again. It returns
+	 * rather than continues on purpose: every slug targets the SAME hardcoded
+	 * register+schema, so a missing schema fails identically for all of them,
+	 * and the `deferred` flag tells the caller to re-run rather than report
+	 * "seeding complete". If fixtures ever target heterogeneous schemas, a
+	 * per-slug `continue` that still surfaces `deferred` would be needed.
+	 *
+	 * @param array<string,mixed> $data The fixture data.
+	 * @param string|null         $uuid The stored row to update, or null to create.
+	 *
+	 * @return void
+	 *
+	 * @throws DoesNotExistException When the register or schema is not provisioned yet.
+	 */
+	private function saveTemplate(array $data, ?string $uuid): void {
+		$this->objectService->saveObject(
+			object: $data,
+			register: 'buildiq',
+			schema: 'application-template',
+			uuid: $uuid,
+			_rbac: false,
+			_multitenancy: false
+		);
+	}//end saveTemplate()
+
+	/**
+	 * Read and validate one bundled fixture.
+	 *
+	 * @param string $fixturesDir The fixtures directory.
+	 * @param string $slug        The template slug.
+	 *
+	 * @return array{0: array<string,mixed>, 1: null}|array{0: null, 1: string} The fixture data, or the error that rejects it.
+	 */
+	private function loadFixture(string $fixturesDir, string $slug): array {
+		$fixturePath = $fixturesDir . '/' . $slug . '.json';
+		if (is_file($fixturePath) === false) {
+			return [null, 'Missing template fixture: ' . $fixturePath];
+		}
+
+		$raw = file_get_contents($fixturePath);
+		$data = json_decode($raw, true);
+		if (is_array($data) === false) {
+			return [null, 'Invalid JSON in template fixture: ' . $fixturePath];
+		}
+
+		$validationError = $this->validateFixture(data: $data, slug: $slug);
+		if ($validationError !== null) {
+			return [null, $validationError];
+		}
+
+		return [$data, null];
+	}//end loadFixture()
+
+	/**
+	 * The uuid of a stored template row the bundled fixture should overwrite in
+	 * place, or null when the row is left alone: the fixture is not newer (or
+	 * the row is admin-created), or the row's uuid cannot be resolved (logged;
+	 * skipping avoids creating a duplicate-slug row).
+	 *
+	 * @param array<string,mixed> $fixture  The bundled fixture.
+	 * @param array<string,mixed> $existing The stored row with the same slug.
+	 * @param string              $slug     The template slug.
+	 *
+	 * @return string|null The uuid to update, or null to skip.
+	 */
+	private function updateTargetUuid(array $fixture, array $existing, string $slug): ?string {
+		if ($this->fixtureIsNewer(fixture: $fixture, stored: $existing) === false) {
+			return null;
+		}
+
+		$existingUuid = (string)($existing['id'] ?? ($existing['uuid'] ?? ($existing['@self']['id'] ?? '')));
+		if ($existingUuid === '') {
+			$this->logger->warning(
+				'Buildiq: cannot resolve uuid for existing template — skipping update',
+				['slug' => $slug]
+			);
+			return null;
+		}
+
+		return $existingUuid;
+	}//end updateTargetUuid()
 
 	/**
 	 * Decide whether a bundled fixture should overwrite the stored template row.

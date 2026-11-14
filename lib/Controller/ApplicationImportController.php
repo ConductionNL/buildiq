@@ -1,0 +1,131 @@
+<?php
+
+/**
+ * ApplicationImportController
+ *
+ * Imports an app archive exported by buildiq as a new app the caller owns. The
+ * same gate as a GitHub install: any signed-in user may create an app they own
+ * from a package, and the route creates and reads no existing object.
+ *
+ * @category  Controller
+ * @package   OCA\Buildiq\Controller
+ * @author    Conduction b.v. <info@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @version   GIT: <git_id>
+ * @link      https://github.com/ConductionNL/buildiq
+ *
+ * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-a-maker-imports-an-exported-archive-as-a-new-app-req-bqic-001
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ */
+
+declare(strict_types=1);
+
+namespace OCA\Buildiq\Controller;
+
+use OCA\Buildiq\Kernel\Contracts\AppPackageImportServiceInterface;
+use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http;
+use OCP\AppFramework\Http\Attribute\NoAdminRequired;
+use OCP\AppFramework\Http\Attribute\UserRateLimit;
+use OCP\AppFramework\Http\JSONResponse;
+use OCP\IRequest;
+use OCP\IUserSession;
+
+/**
+ * The upload route of the app import.
+ *
+ * @category Controller
+ * @package  OCA\Buildiq\Controller
+ * @author   Conduction b.v. <info@conduction.nl>
+ * @license  EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ * @link     https://github.com/ConductionNL/buildiq
+ *
+ * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-a-maker-imports-an-exported-archive-as-a-new-app-req-bqic-001
+ */
+class ApplicationImportController extends Controller {
+
+	/**
+	 * The multipart field the archive is uploaded in.
+	 *
+	 * @var string
+	 */
+	public const UPLOAD_FIELD = 'archive';
+
+	/**
+	 * Constructor.
+	 *
+	 * @param string                           $appName     The app id.
+	 * @param IRequest                         $request     The request.
+	 * @param IUserSession                     $userSession Names the caller, who becomes the owner.
+	 * @param AppPackageImportServiceInterface $importer    Reads and installs the archive.
+	 *
+	 * @return void
+	 */
+	public function __construct(
+		string $appName,
+		IRequest $request,
+		private readonly IUserSession $userSession,
+		private readonly AppPackageImportServiceInterface $importer,
+	) {
+		parent::__construct(appName: $appName, request: $request);
+	}//end __construct()
+
+	/**
+	 * Import an uploaded archive as a new app owned by the caller.
+	 *
+	 * @return JSONResponse 201 with the app; 400 without an archive or with a bad slug,
+	 *                      401 signed out, 409 for a taken slug, 413 or 422 for a bad archive.
+	 *
+	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-a-maker-imports-an-exported-archive-as-a-new-app-req-bqic-001
+	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-the-archive-is-read-and-never-run-req-bqic-002
+	 */
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 10, period: 3600)]
+	public function import(): JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(data: ['error' => 'unauthenticated'], statusCode: Http::STATUS_UNAUTHORIZED);
+		}
+
+		$upload = $this->request->getUploadedFile(self::UPLOAD_FIELD);
+		$path = self::uploadedPath(upload: $upload);
+		if ($path === null) {
+			return new JSONResponse(
+				data: ['error' => 'archive_missing', 'detail' => 'Upload the exported archive in the "archive" field.'],
+				statusCode: Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		$result = $this->importer->import(
+			archivePath: $path,
+			name: (string)($this->request->getParam('name') ?? ''),
+			slug: (string)($this->request->getParam('slug') ?? ''),
+			ownerUid: $user->getUID()
+		);
+
+		return new JSONResponse(data: $result['data'], statusCode: $result['status']);
+	}//end import()
+
+	/**
+	 * The temporary path of a successful upload, or null.
+	 *
+	 * @param mixed $upload The `$_FILES` entry the request gives.
+	 *
+	 * @return string|null The path PHP stored the upload at.
+	 */
+	private static function uploadedPath(mixed $upload): ?string {
+		if (is_array($upload) === false || (int)($upload['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+			return null;
+		}
+
+		$path = ($upload['tmp_name'] ?? null);
+		if (is_string($path) === false || $path === '') {
+			return null;
+		}
+
+		return $path;
+	}//end uploadedPath()
+}//end class

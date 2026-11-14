@@ -10,43 +10,18 @@
 			{{ t('buildiq', 'Detail page') }}
 		</h3>
 		<div class="detail-page-editor__group">
-			<label>
-				{{ t('buildiq', 'Register') }}
-				<select
-					:value="config.register || ''"
-					:aria-invalid="isInvalid('register')"
-					@change="update('register', $event.target.value)">
-					<option value="">
-						{{ t('buildiq', '— select register —') }}
-					</option>
-					<option
-						v-for="r in registers"
-						:key="r.slug || r.id"
-						:value="r.slug">
-						{{ r.title || r.slug }}
-					</option>
-				</select>
-				<InlineFieldMark :error="markFor('register')" />
-			</label>
-			<label>
-				{{ t('buildiq', 'Schema') }}
-				<select
-					:value="config.schema || ''"
-					:disabled="!config.register"
-					:aria-invalid="isInvalid('schema')"
-					@change="update('schema', $event.target.value)">
-					<option value="">
-						{{ t('buildiq', '— select schema —') }}
-					</option>
-					<option
-						v-for="s in schemas"
-						:key="s.slug || s.id"
-						:value="s.slug">
-						{{ s.title || s.slug }}
-					</option>
-				</select>
-				<InlineFieldMark :error="markFor('schema')" />
-			</label>
+			<RegisterSchemaFields
+				:config="config"
+				:registers="registers"
+				:schemas="schemas"
+				:databaseRegisters="databaseRegisters"
+				@register="update('register', $event)"
+				@schema="update('schema', $event)" />
+			<WriteActionSwitches
+				:config="config"
+				:actions="writeActions"
+				:readOnly="databaseReadOnly"
+				@set="setWriteAction" />
 		</div>
 
 		<p v-if="!routeHasParam" class="detail-page-editor__warn" role="alert">
@@ -134,81 +109,102 @@
 				@update:modelValue="updateSidebarPropsTabs($event)" />
 			<InlineFieldMark :error="markFor('sidebarProps')" />
 		</fieldset>
+
+		<AppliesToPanel
+			:modelValue="config.pageLayout || {}"
+			:register="config.register || ''"
+			:schema="config.schema || ''"
+			:targetApp="appSlug"
+			@update:modelValue="update('pageLayout', $event)"
+			@saved="$refs.overrideList && $refs.overrideList.reload()" />
+
+		<ScreenOverrideList
+			ref="overrideList"
+			:register="config.register || ''"
+			:schema="config.schema || ''" />
+
+		<RegistrationFormList
+			:register="config.register || ''"
+			:schema="config.schema || ''"
+			:typeProperty="(config.pageLayout || {}).typeProperty || ''"
+			:typeValue="(config.pageLayout || {}).typeValue || ''"
+			:targetApp="appSlug" />
 	</div>
 </template>
 
 <script>
+import AppliesToPanel from './fields/AppliesToPanel.vue'
 import InlineFieldMark from './fields/InlineFieldMark.vue'
+import RegisterSchemaFields from './fields/RegisterSchemaFields.vue'
+import RegistrationFormList from './fields/RegistrationFormList.vue'
+import ScreenOverrideList from './fields/ScreenOverrideList.vue'
 import SidebarTabBuilder from './fields/SidebarTabBuilder.vue'
-import { useRegisterPicker } from '../../composables/useRegisterPicker.js'
+import WriteActionSwitches from './fields/WriteActionSwitches.vue'
+import { useEditorRegisterPicker } from '../../composables/useEditorRegisterPicker.js'
+import {
+	pageEditorBaseMixin,
+	pageEditorPickerMixin,
+	pageEditorRegisterPropsMixin,
+	pageEditorRegisterWatchMixin,
+} from '../../mixins/pageEditorBase.js'
+import { pageEditorDatabaseMixin } from '../../mixins/pageEditorDatabase.js'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 
 export default {
 	name: 'DetailPageEditor',
-	components: { SidebarTabBuilder, InlineFieldMark },
-	mixins: [pageEditorValidationMixin],
+	components: {
+		AppliesToPanel,
+		InlineFieldMark,
+		RegisterSchemaFields,
+		RegistrationFormList,
+		ScreenOverrideList,
+		SidebarTabBuilder,
+		WriteActionSwitches,
+	},
+
+	mixins: [
+		pageEditorBaseMixin,
+		pageEditorRegisterPropsMixin,
+		pageEditorValidationMixin,
+		pageEditorPickerMixin,
+		pageEditorRegisterWatchMixin,
+		pageEditorDatabaseMixin,
+	],
+
 	props: {
-		config: {
-			type: Object,
-			default: () => ({}),
-		},
-
-		parentRoute: {
-			type: String,
-			default: '',
-		},
-
-		// Current Application slug. Drives the hybrid register model so the
-		// register picker hoists `buildiq-{slug}` to the top of the list.
-		appSlug: {
-			type: String,
-			default: '',
-		},
-
-		// The Application's declared `dataRegisters` bindings, forwarded into
-		// useRegisterPicker so the register picker labels/hoists them.
-		dataRegisters: {
-			type: Array,
-			default: () => [],
-		},
-
 		pageType: {
 			type: String,
 			default: 'detail',
 		},
 	},
 
-	emits: ['update:config'],
-	/**
-	 * Build the register/schema picker for this editor. Options-API `data`
-	 * cannot see props at construction time, so the picker is created here
-	 * from the resolved props and exposed as `this.picker`.
-	 *
-	 * @param {{appSlug: string, dataRegisters: Array<{register: string, label?: string}>, config: object, pageType: string, parentRoute: string}} props - the resolved component props; only `appSlug` (hoists `buildiq-{slug}` in the register list) and `dataRegisters` (labels/hoists the Application's declared bindings) are read.
-	 * @return {{picker: object}} - bindings merged into the instance; `picker` exposes fetchRegisters/fetchSchemas.
-	 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
-	 * @spec openspec/changes/data-registers-runtime/tasks.md#task-2.1
-	 */
-	setup(props) {
-		const picker = useRegisterPicker({
-			appSlug: props.appSlug,
-			dataRegisters: props.dataRegisters,
-		})
-		return { picker }
-	},
-
-	data() {
-		return {
-			registers: [],
-			schemas: [],
-		}
-	},
+	setup: useEditorRegisterPicker,
 
 	computed: {
 		/**
+		 * The config key a read-only database switches off on a detail page.
+		 *
+		 * @return {string[]}
+		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-pages-follow-the-databases-write-setting-req-bqdb-002
+		 */
+		writeActionKeys() {
+			return ['showEditAction']
+		},
+
+		/**
+		 * The write action switch of a detail page.
+		 *
+		 * @return {Array<{key: string, label: string}>}
+		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-pages-follow-the-databases-write-setting-req-bqdb-002
+		 */
+		writeActions() {
+			return [{ key: 'showEditAction', label: this.t('buildiq', 'Edit button') }]
+		},
+
+		/**
 		 * Observed behaviour of `validatedConfigKeys` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		validatedConfigKeys() {
 			return ['register', 'schema', 'sidebar', 'sidebarProps']
@@ -217,7 +213,7 @@ export default {
 		/**
 		 * Observed behaviour of `routeParams` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		routeParams() {
 			const matches =
@@ -228,7 +224,7 @@ export default {
 		/**
 		 * Observed behaviour of `routeHasParam` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		routeHasParam() {
 			return this.routeParams.length > 0
@@ -237,7 +233,7 @@ export default {
 		/**
 		 * Observed behaviour of `sidebarShape` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		sidebarShape() {
 			const s = this.config.sidebar
@@ -251,30 +247,6 @@ export default {
 		},
 	},
 
-	watch: {
-		'config.register': {
-			immediate: true,
-			/**
-			 * Reload the schema dropdown whenever the bound register changes
-			 * (also fires immediately on mount for an already-bound page).
-			 *
-			 * @param {string} val - the newly selected register slug; empty when the binding was cleared, which empties the schema list instead of fetching.
-			 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
-			 */
-			handler(val) {
-				if (val) {
-					this.fetchSchemas(val)
-				} else {
-					this.schemas = []
-				}
-			},
-		},
-	},
-
-	async mounted() {
-		await this.fetchRegisters()
-	},
-
 	methods: {
 		/**
 		 * Write one key on the page's `config` block and emit the whole block
@@ -283,7 +255,7 @@ export default {
 		 *
 		 * @param {string} key - the config key being written: `register`, `schema`, or `sidebar` in its legacy boolean form. Writing `register` also drops `schema`, since a schema is only meaningful inside its register.
 		 * @param {string|boolean} value - the new value: a slug from a `<select>`, or the checkbox state for the boolean-shaped sidebar. An empty string or `null` deletes the key; `false` is stored, so `sidebar: false` survives as an explicit "off".
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		update(key, value) {
 			const next = { ...this.config }
@@ -304,7 +276,7 @@ export default {
 		 * object form's keys do not survive a trip through `boolean`/`none`.
 		 *
 		 * @param {'none'|'boolean'|'object'} shape - the radio's value: `none` deletes `sidebar`, `boolean` writes the legacy `true`, `object` seeds the preferred `{ enabled: true }`.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		setSidebarShape(shape) {
 			const next = { ...this.config }
@@ -324,7 +296,7 @@ export default {
 		 *
 		 * @param {string} key - the sidebar key being written: `enabled`, `show` or `tabs`.
 		 * @param {boolean|Array<object>} value - the checkbox state for `enabled`/`show`, or the rebuilt tab list from SidebarTabBuilder for `tabs`. Falsy values are stored, not deleted, so `enabled: false` is preserved as an explicit "off".
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		updateSidebarKey(key, value) {
 			const next = { ...this.config }
@@ -342,7 +314,7 @@ export default {
 		 * used this path round-trips byte-identically.
 		 *
 		 * @param {Array<{id: string, label: string, icon?: string, component?: string}>} tabs - the rebuilt tab list from SidebarTabBuilder; empty or missing means "no tabs".
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		updateSidebarPropsTabs(tabs) {
 			const next = { ...this.config }
@@ -360,31 +332,13 @@ export default {
 			}
 			this.$emit('update:config', next)
 		},
-
-		/**
-		 * Observed behaviour of `fetchRegisters` (retrofit annotation).
-		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
-		 */
-		async fetchRegisters() {
-			this.registers = await this.picker.fetchRegisters()
-		},
-
-		/**
-		 * Load the schemas of one register into the schema dropdown.
-		 *
-		 * @param {string} register - slug of the register to list schemas for, i.e. `config.register`.
-		 * @return {Promise<void>} - resolves once `this.schemas` holds the result (`[]` when the request fails).
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
-		 */
-		async fetchSchemas(register) {
-			this.schemas = await this.picker.fetchSchemas(register)
-		},
 	},
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../assets/editor-controls.scss' as c;
+
 .detail-page-editor {
 	display: flex;
 	flex-direction: column;
@@ -412,11 +366,7 @@ export default {
 }
 
 .detail-page-editor__group select {
-	padding: 4px 6px;
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-	background: var(--color-main-background);
-	color: var(--color-main-text);
+	@include c.control;
 }
 
 .detail-page-editor__fieldset {

@@ -1,0 +1,338 @@
+<?php
+
+/**
+ * ManifestDataBinding — point a copilot-authored page at the data it created.
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ *
+ * `upsertSchema` namespaces everything it makes: a schema the model calls
+ * `loan`, authored against app `tool-library` version `development`, is stored
+ * as `tool-library-development-loan` inside the register
+ * `openbuild-tool-library-development`. `upsertPage` and `addWidget` store
+ * `config.register` / `config.schema` exactly as the model wrote them, and the
+ * model writes the short name it asked for: `loan` / `loan`. Nothing rewrote
+ * them, so a plan that executed cleanly still produced an app whose list pages
+ * and KPI cards read from a register and a schema that do not exist. The app
+ * opened, the menu worked, and every page was empty.
+ *
+ * The wizard path solved the same problem in
+ * {@see \OCA\Buildiq\Service\ApplicationCreationService::substituteVersionContext()}
+ * (buildiq#75, added after KPI cards aggregated against a schema that was
+ * never there). This is that rule, applied to the copilot path, over the whole
+ * config block rather than just a page's top level: a dashboard's data binding
+ * lives on each widget's `content`, one level further in.
+ *
+ * WHAT IT DELIBERATELY LEAVES ALONE, mirroring
+ * {@see \OCA\Buildiq\Service\VersionSchemaCarrier::rewriteManifestWiring()}:
+ * a register slug that already carries the `openbuild-` prefix names a
+ * per-version register somebody chose on purpose, and a schema slug already
+ * carrying this version's prefix has been through here before. Both are
+ * returned untouched, so running this twice changes nothing the first run did.
+ * A block whose register is one the Application binds in `dataRegisters` is
+ * shared data somebody else owns: its register and the schema beside it are
+ * returned untouched too (REQ-BQDB-004).
+ *
+ * @category Support
+ * @package  OCA\Buildiq\Service
+ *
+ * @author    Conduction Development Team <dev@conduction.nl>
+ * @copyright 2026 Conduction B.V.
+ * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * @version GIT: <git-id>
+ *
+ * @link https://conduction.nl
+ *
+ * @spec openspec/specs/ai-copilot/spec.md#requirement-an-approved-plan-executes-atomically-through-the-mcp-handler-layer
+ */
+
+declare(strict_types=1);
+
+namespace OCA\Buildiq\Service;
+
+use OCA\Buildiq\Kernel\Contracts\ApplicationVersionServiceInterface;
+use OCA\Buildiq\Kernel\Values\VersionRegisterSlug;
+use OCA\Buildiq\Support\VersionBinding;
+
+/**
+ * Rewrites `register` / `schema` bindings onto a version's own data.
+ *
+ * @spec openspec/specs/ai-copilot/spec.md#requirement-an-approved-plan-executes-atomically-through-the-mcp-handler-layer
+ */
+final class ManifestDataBinding {
+
+	/**
+	 * The `{registerSlug}` token the manifest templates carry.
+	 *
+	 * @var string
+	 */
+	private const REGISTER_TOKEN = '{registerSlug}';
+
+	/**
+	 * The per-version register slug for an app version.
+	 *
+	 * Built from {@see ApplicationVersionServiceInterface::VERSION_REGISTER_PREFIX} so
+	 * the prefix is never typed out, the same way `UpsertSchemaHandler` and
+	 * `ApplicationCreationService` build it.
+	 *
+	 * @param string $appSlug The application slug.
+	 * @param string $versionSlug The version slug.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/specs/ai-copilot/spec.md
+	 * @SuppressWarnings(PHPMD.StaticAccess) VersionRegisterSlug::forVersion is a pure slug builder.
+	 */
+	public static function registerSlug(string $appSlug, string $versionSlug): string {
+		return VersionRegisterSlug::forVersion(appSlug: $appSlug, versionSlug: $versionSlug);
+	}//end registerSlug()
+
+	/**
+	 * The prefix `upsertSchema` namespaces a schema slug with.
+	 *
+	 * @param string $appSlug The application slug.
+	 * @param string $versionSlug The version slug.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/specs/ai-copilot/spec.md
+	 */
+	public static function schemaPrefix(string $appSlug, string $versionSlug): string {
+		return $appSlug . '-' . $versionSlug . '-';
+	}//end schemaPrefix()
+
+	/**
+	 * The register slugs an Application's `dataRegisters` bindings name.
+	 *
+	 * Each binding is `{register, label}`; anything else is skipped.
+	 *
+	 * @param mixed $bindings The Application's `dataRegisters` value.
+	 *
+	 * @return array<int, string>
+	 *
+	 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generated-pages-keep-the-database-register-req-bqdb-004
+	 */
+	public static function dataRegisterSlugs(mixed $bindings): array {
+		if (is_array($bindings) === false) {
+			return [];
+		}
+
+		$slugs = [];
+		foreach ($bindings as $binding) {
+			$register = null;
+			if (is_array($binding) === true) {
+				$register = ($binding['register'] ?? null);
+			}
+
+			if (is_string($register) === true && trim($register) !== '') {
+				$slugs[] = trim($register);
+			}
+		}
+
+		return array_values(array_unique($slugs));
+	}//end dataRegisterSlugs()
+
+	/**
+	 * Bind one whole config block: a page's `config`, or the `widgetConfig`
+	 * an `addWidget` step carries.
+	 *
+	 * On top of {@see bind()}, a block that names a `schema` but no `register`
+	 * gets this version's register filled in. That is a completion rather than
+	 * an invention: a copilot-authored schema exists nowhere but this version's
+	 * own register, so there is exactly one register the block could mean, and
+	 * a block naming a schema with no register renders nothing at all.
+	 *
+	 * @param array<string, mixed> $config The config block as the step carries it.
+	 * @param string $appSlug The application slug the step targets.
+	 * @param string $versionSlug The version slug the step targets.
+	 * @param array<int, string> $dataRegisters Register slugs the Application binds in `dataRegisters`.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/specs/ai-copilot/spec.md
+	 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generated-pages-keep-the-database-register-req-bqdb-004
+	 */
+	public static function bindBlock(array $config, string $appSlug, string $versionSlug, array $dataRegisters = []): array {
+		return self::bindBlockTo(
+			config: $config,
+			binding: new VersionBinding(appSlug: $appSlug, versionSlug: $versionSlug, dataRegisters: $dataRegisters)
+		);
+	}//end bindBlock()
+
+	/**
+	 * Bind one whole config block to a version (see {@see bindBlock()}).
+	 *
+	 * @param array<string, mixed> $config  The config block as the step carries it.
+	 * @param VersionBinding       $binding The version and the data registers it binds.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function bindBlockTo(array $config, VersionBinding $binding): array {
+		if ($binding->isComplete() === false) {
+			return $config;
+		}
+
+		$bound = self::bind(node: $config, binding: $binding);
+		if (is_array($bound) === false) {
+			return $config;
+		}
+
+		if (self::namesValue(block: $bound, key: 'schema') === true
+			&& self::namesValue(block: $bound, key: 'register') === false
+		) {
+			$bound['register'] = self::registerSlug(appSlug: $binding->appSlug, versionSlug: $binding->versionSlug);
+		}
+
+		return $bound;
+	}//end bindBlockTo()
+
+	/**
+	 * Whether a config block names a non-empty string under one key.
+	 *
+	 * @param array<string, mixed> $block The config block.
+	 * @param string $key The key to read.
+	 *
+	 * @return bool
+	 */
+	private static function namesValue(array $block, string $key): bool {
+		$value = ($block[$key] ?? null);
+
+		return (is_string($value) === true && trim($value) !== '');
+	}//end namesValue()
+
+	/**
+	 * Rewrite every `register` / `schema` binding in a config block.
+	 *
+	 * Walks the whole block, so a page's own `{register, schema}` pair and each
+	 * widget's `content.{register, schema}` are both reached. A level whose
+	 * register is a bound data register keeps its register and schema.
+	 *
+	 * @param mixed          $node    The config block, or any part of it.
+	 * @param VersionBinding $binding The version and the data registers it binds.
+	 *
+	 * @return mixed The block with its bindings pointed at this version's data.
+	 *
+	 * @spec openspec/specs/ai-copilot/spec.md
+	 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generated-pages-keep-the-database-register-req-bqdb-004
+	 */
+	public static function bind(mixed $node, VersionBinding $binding): mixed {
+		if (is_array($node) === false || $binding->isComplete() === false) {
+			return $node;
+		}
+
+		$onDataRegister = self::isOnDataRegister(block: $node, dataRegisters: $binding->dataRegisters);
+		foreach ($node as $key => $value) {
+			if (self::keepsEntry(onDataRegister: $onDataRegister, key: $key) === true) {
+				continue;
+			}
+
+			$node[$key] = self::bindEntry(key: $key, value: $value, binding: $binding);
+		}
+
+		return $node;
+	}//end bind()
+
+	/**
+	 * Whether an entry stays as written: the `register` and `schema` of a level
+	 * that sits on a bound data register.
+	 *
+	 * @param bool       $onDataRegister Whether the level's register is a bound data register.
+	 * @param int|string $key            The entry's key.
+	 *
+	 * @return bool
+	 */
+	private static function keepsEntry(bool $onDataRegister, int|string $key): bool {
+		return ($onDataRegister === true && ($key === 'register' || $key === 'schema'));
+	}//end keepsEntry()
+
+	/**
+	 * Bind one entry of a block: its `register`, its `schema`, or a nested level.
+	 *
+	 * @param int|string     $key     The entry's key.
+	 * @param mixed          $value   The entry's value.
+	 * @param VersionBinding $binding The version and the data registers it binds.
+	 *
+	 * @return mixed
+	 */
+	private static function bindEntry(int|string $key, mixed $value, VersionBinding $binding): mixed {
+		if ($key === 'register') {
+			return self::bindRegister(value: $value, binding: $binding);
+		}
+
+		if ($key === 'schema') {
+			return self::bindSchema(value: $value, binding: $binding);
+		}
+
+		return self::bind(node: $value, binding: $binding);
+	}//end bindEntry()
+
+	/**
+	 * Whether a block's `register` is one of the Application's data registers.
+	 *
+	 * @param array<array-key, mixed> $block The block, or any level of it.
+	 * @param array<int, string> $dataRegisters Register slugs the Application binds in `dataRegisters`.
+	 *
+	 * @return bool
+	 */
+	private static function isOnDataRegister(array $block, array $dataRegisters): bool {
+		$register = ($block['register'] ?? null);
+		if ($dataRegisters === [] || is_string($register) === false) {
+			return false;
+		}
+
+		return in_array(trim($register), $dataRegisters, true);
+	}//end isOnDataRegister()
+
+	/**
+	 * Point one `register` value at this version's own register.
+	 *
+	 * @param mixed          $value   The value as written.
+	 * @param VersionBinding $binding The version to bind to.
+	 *
+	 * @return mixed
+	 */
+	private static function bindRegister(mixed $value, VersionBinding $binding): mixed {
+		if (is_string($value) === false || trim($value) === '') {
+			return $value;
+		}
+
+		$slug = trim($value);
+		$target = self::registerSlug(appSlug: $binding->appSlug, versionSlug: $binding->versionSlug);
+		if ($slug === self::REGISTER_TOKEN) {
+			return $target;
+		}
+
+		// Already a per-version register: somebody named it on purpose.
+		if (str_starts_with($slug, ApplicationVersionServiceInterface::VERSION_REGISTER_PREFIX) === true) {
+			return $slug;
+		}
+
+		return $target;
+	}//end bindRegister()
+
+	/**
+	 * Point one `schema` value at this version's namespaced schema.
+	 *
+	 * A numeric value is an OpenRegister schema id, which is already
+	 * unambiguous, so it is left as it is.
+	 *
+	 * @param mixed          $value   The value as written.
+	 * @param VersionBinding $binding The version to bind to.
+	 *
+	 * @return mixed
+	 */
+	private static function bindSchema(mixed $value, VersionBinding $binding): mixed {
+		if (is_string($value) === false || trim($value) === '' || is_numeric($value) === true) {
+			return $value;
+		}
+
+		$slug = trim($value);
+		$prefix = self::schemaPrefix(appSlug: $binding->appSlug, versionSlug: $binding->versionSlug);
+		if (str_starts_with($slug, $prefix) === true) {
+			return $slug;
+		}
+
+		return $prefix . $slug;
+	}//end bindSchema()
+}//end class

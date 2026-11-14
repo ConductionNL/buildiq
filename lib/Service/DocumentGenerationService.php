@@ -3,6 +3,9 @@
 /**
  * Buildiq DocumentGenerationService
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Imperative half of the `generateDocument` automation action (design.md
  * Decision 1/2/3 of automation-document-action). On trigger fire, calls
  * Docudesk's EXISTING, already-integration-tested public route
@@ -57,9 +60,6 @@
  * {@see RuleActionDispatcher} (reuse, not a second notification path) and
  * MUST be paired with `attach` and/or `download-link`.
  *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
- *
  * @category Service
  * @package  OCA\Buildiq\Service
  *
@@ -71,18 +71,21 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/automation-document-action/tasks.md#2.1
- * @spec openspec/changes/automation-document-action/tasks.md#2.2
- * @spec openspec/changes/automation-document-action/tasks.md#2.3
- * @spec openspec/changes/automation-document-action/tasks.md#2.4
- * @spec openspec/changes/automation-document-action/tasks.md#2.5
- * @spec openspec/changes/automation-document-action/specs/automation-document-action/spec.md
+ * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#2.1
+ * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#2.2
+ * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#2.3
+ * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#2.4
+ * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#2.5
+ * @spec openspec/specs/automation-document-action/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\DocumentGenerationServiceInterface;
+use OCA\Buildiq\Service\Connection\ConnectionReporter;
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -91,6 +94,7 @@ use OCP\Files\AppData\IAppDataFactory;
 use OCP\Files\Folder;
 use OCP\Files\IRootFolder;
 use OCP\Http\Client\IClientService;
+use OCP\Http\Client\IResponse;
 use OCP\IURLGenerator;
 use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
@@ -100,9 +104,9 @@ use Throwable;
 /**
  * Owner-impersonated internal caller of Docudesk's pinned generate route.
  *
- * @spec openspec/changes/automation-document-action/tasks.md#2.1
+ * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#2.1
  */
-class DocumentGenerationService {
+class DocumentGenerationService implements DocumentGenerationServiceInterface {
 	/**
 	 * Shared Buildiq register slug (matches {@see AutomationCompilerService::REGISTER_SLUG}).
 	 */
@@ -114,11 +118,12 @@ class DocumentGenerationService {
 	private const APPLICATION_SCHEMA = 'built-app';
 
 	/**
-	 * NC route name for Docudesk's pinned generate route
+	 * Route name of the generate route, without its app id
 	 * (`OCA\Filinq\Controller\CorrespondenceController::generate()`,
-	 * `appinfo/routes.php` entry `correspondence#generate`).
+	 * `appinfo/routes.php` entry `correspondence#generate`). The app id in
+	 * front is resolved per instance, see {@see self::generateRoute()}.
 	 */
-	private const GENERATE_ROUTE = 'docudesk.correspondence.generate';
+	private const GENERATE_ROUTE_SUFFIX = 'correspondence.generate';
 
 	/**
 	 * Field the `attach` output mode writes `{ "ref": "<fileId>" }" to on
@@ -185,8 +190,11 @@ class DocumentGenerationService {
 	 *                                      optional NC-core token provider (see {@see
 	 *                                      self::TOKEN_PROVIDER_CLASS}).
 	 * @param LoggerInterface $logger PSR logger.
+	 * @param ConnectionReporter|null $connectionReporter Tells integriq what the Filinq call met, or nothing when absent.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md#requirement-req-biq-conn-003-buildiq-reports-what-its-connection-calls-met
 	 */
 	public function __construct(
 		private readonly ObjectServiceInterface $objectService,
@@ -201,6 +209,7 @@ class DocumentGenerationService {
 		private readonly IAppDataFactory $appDataFactory,
 		private readonly ContainerInterface $container,
 		private readonly LoggerInterface $logger,
+		private readonly ?ConnectionReporter $connectionReporter = null,
 	) {
 
 	}//end __construct()
@@ -218,94 +227,151 @@ class DocumentGenerationService {
 	 *
 	 * @return bool Whether generation succeeded.
 	 *
-	 * @spec openspec/changes/automation-document-action/tasks.md#2.1
-	 * @spec openspec/changes/automation-document-action/tasks.md#2.2
-	 * @spec openspec/changes/automation-document-action/specs/automation-document-action/spec.md
+	 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#2.1
+	 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#2.2
+	 * @spec openspec/specs/automation-document-action/spec.md
 	 */
 	public function generate(array $automation, array $action, string $schemaSlug, string $objectUuid): bool {
 		$templateId = (string)($action['templateId'] ?? '');
 		$outputModes = $this->normaliseOutputModes(raw: $action['output'] ?? null);
-		if ($templateId === '' || $outputModes === []) {
+		$run = new DocumentRun(templateId: $templateId, outputModes: $outputModes, schemaSlug: $schemaSlug, objectUuid: $objectUuid);
+		if ($this->isRunnable(run: $run) === false) {
+			return false;
+		}
+
+		$applicationUuid = $this->applicationUuidFor(automation: $automation);
+		if ($applicationUuid === null) {
+			return false;
+		}
+
+		return $this->runAsOwner(applicationUuid: $applicationUuid, run: $run);
+	}//end generate()
+
+	/**
+	 * Whether the action names a template and at least one valid output mode.
+	 *
+	 * @param DocumentRun $run The generation.
+	 *
+	 * @return bool False (after a warning) when the action config is invalid.
+	 */
+	private function isRunnable(DocumentRun $run): bool {
+		if ($run->templateId === '' || $run->outputModes === []) {
 			$this->logger->warning('Buildiq: DocumentGenerationService skipped — invalid generateDocument action config.');
 			return false;
 		}
 
+		return true;
+	}//end isRunnable()
+
+	/**
+	 * The uuid of the Application the automation belongs to.
+	 *
+	 * @param array<string,mixed> $automation The matching Automation object (needs `applicationSlug`).
+	 *
+	 * @return string|null Null (after a warning) when the Application cannot be resolved.
+	 */
+	private function applicationUuidFor(array $automation): ?string {
 		$applicationSlug = (string)($automation['applicationSlug'] ?? '');
 		$applicationUuid = $this->resolveApplicationUuid(slug: $applicationSlug);
 		if ($applicationUuid === null) {
 			$this->logger->warning(
 				'Buildiq: DocumentGenerationService could not resolve Application "' . $applicationSlug . '" — generation skipped.'
 			);
-			return false;
 		}
 
+		return $applicationUuid;
+	}//end applicationUuidFor()
+
+	/**
+	 * Run the generation as the owning Application's owner.
+	 *
+	 * @param string      $applicationUuid The owning Application's uuid.
+	 * @param DocumentRun $run             The generation.
+	 *
+	 * @return bool Whether generation succeeded.
+	 */
+	private function runAsOwner(string $applicationUuid, DocumentRun $run): bool {
 		try {
 			$result = $this->ownerImpersonator->runAsOwner(
 				objectId: $applicationUuid,
-				work: function () use ($templateId, $outputModes, $schemaSlug, $objectUuid): bool {
-					return $this->generateImpersonated(
-						templateId: $templateId,
-						outputModes: $outputModes,
-						schemaSlug: $schemaSlug,
-						objectUuid: $objectUuid
-					);
-				}
+				work: fn (): bool => $this->generateImpersonated(run: $run)
 			);
 		} catch (Throwable $e) {
 			$this->logger->error(
-				'Buildiq: DocumentGenerationService failed for object "' . $objectUuid . '": ' . $e->getMessage(),
+				'Buildiq: DocumentGenerationService failed for object "' . $run->objectUuid . '": ' . $e->getMessage(),
 				['exception' => $e]
 			);
 			return false;
 		}
 
 		return (bool)$result;
-	}//end generate()
+	}//end runAsOwner()
 
 	/**
 	 * The impersonated unit of work: call Docudesk, then dispatch every
 	 * configured output mode.
 	 *
-	 * @param string $templateId Docudesk template UUID.
-	 * @param array<int,string> $outputModes Validated, non-empty output modes.
-	 * @param string $schemaSlug The fired object's schema slug.
-	 * @param string $objectUuid The fired object's uuid.
+	 * @param DocumentRun $run The generation (validated, non-empty output modes).
 	 *
 	 * @return bool
 	 */
-	private function generateImpersonated(string $templateId, array $outputModes, string $schemaSlug, string $objectUuid): bool {
-		$dataRef = ['register' => self::REGISTER_SLUG, 'schema' => $schemaSlug, 'id' => $objectUuid];
-		$filename = 'document-' . $objectUuid . '.pdf';
+	private function generateImpersonated(DocumentRun $run): bool {
+		$dataRef = ['register' => self::REGISTER_SLUG, 'schema' => $run->schemaSlug, 'id' => $run->objectUuid];
 
-		$response = $this->callGenerate(templateId: $templateId, dataRefs: [$dataRef], filename: $filename);
+		$response = $this->callGenerate(templateId: $run->templateId, dataRefs: [$dataRef], filename: $run->filename());
 		if ($response === null) {
 			return false;
 		}
 
-		$fileRef = null;
-		$downloadLink = null;
+		$this->attachOutput(run: $run, response: $response);
+		$this->downloadLinkOutput(run: $run, response: $response);
 
-		if (in_array('attach', $outputModes, true) === true) {
-			$fileRef = $this->attachToFiles(filename: $filename, body: (string)$response['body']);
-			if ($fileRef !== null) {
-				$this->writeAttachmentReference(schemaSlug: $schemaSlug, objectUuid: $objectUuid, fileId: $fileRef);
-			}
+		if (in_array('notify', $run->outputModes, true) === true) {
+			$this->dispatchNotification(run: $run);
 		}
 
-		if (in_array('download-link', $outputModes, true) === true) {
-			$downloadLink = $this->writeDownloadLink(
-				filename: $filename,
-				body: (string)$response['body'],
-				contentType: (string)($response['contentType'] ?? 'application/octet-stream')
-			);
-		}
-
-		if (in_array('notify', $outputModes, true) === true) {
-			$this->dispatchNotification(objectUuid: $objectUuid, fileRef: $fileRef, downloadLink: $downloadLink);
-		}
-
-		return $fileRef !== null || $downloadLink !== null || in_array('notify', $outputModes, true) === true;
+		return $run->fileRef !== null || $run->downloadLink !== null || in_array('notify', $run->outputModes, true) === true;
 	}//end generateImpersonated()
+
+	/**
+	 * `attach` output mode, when configured: write the document to Files and
+	 * reference it on the object.
+	 *
+	 * @param DocumentRun                                         $run      The generation.
+	 * @param array{status:int,body:string,contentType:?string} $response Docudesk's answer.
+	 *
+	 * @return void
+	 */
+	private function attachOutput(DocumentRun $run, array $response): void {
+		if (in_array('attach', $run->outputModes, true) === false) {
+			return;
+		}
+
+		$run->fileRef = $this->attachToFiles(filename: $run->filename(), body: (string)$response['body']);
+		if ($run->fileRef !== null) {
+			$this->writeAttachmentReference(schemaSlug: $run->schemaSlug, objectUuid: $run->objectUuid, fileId: $run->fileRef);
+		}
+	}//end attachOutput()
+
+	/**
+	 * `download-link` output mode, when configured.
+	 *
+	 * @param DocumentRun                                         $run      The generation.
+	 * @param array{status:int,body:string,contentType:?string} $response Docudesk's answer.
+	 *
+	 * @return void
+	 */
+	private function downloadLinkOutput(DocumentRun $run, array $response): void {
+		if (in_array('download-link', $run->outputModes, true) === false) {
+			return;
+		}
+
+		$run->downloadLink = $this->writeDownloadLink(
+			filename: $run->filename(),
+			body: (string)$response['body'],
+			contentType: (string)($response['contentType'] ?? 'application/octet-stream')
+		);
+	}//end downloadLinkOutput()
 
 	/**
 	 * Validate + normalise the action's `output` field to a non-empty list
@@ -356,6 +422,7 @@ class DocumentGenerationService {
 	 * @param string $slug The Application slug.
 	 *
 	 * @return string|null
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function resolveApplicationUuid(string $slug): ?string {
 		if ($slug === '') {
@@ -381,7 +448,7 @@ class DocumentGenerationService {
 			return null;
 		}
 
-		$application = $this->normalise(object: $results[0]);
+		$application = ObjectRecord::toArray(object: $results[0]);
 		$uuid = (string)($application['id'] ?? $application['uuid'] ?? '');
 
 		if ($uuid === '') {
@@ -392,9 +459,44 @@ class DocumentGenerationService {
 	}//end resolveApplicationUuid()
 
 	/**
+	 * Resolve the generate route on this instance.
+	 *
+	 * The document app was renamed from docudesk to filinq, and its routes
+	 * are registered under whichever id the instance runs. Each candidate id
+	 * is tried newest first. Nextcloud's router answers '' for a route no
+	 * enabled app registers, and linkToRouteAbsolute() turns that into the
+	 * bare instance URL, so both mean "not this one".
+	 *
+	 * @return array{0: string, 1: string|null} The route name, and its URL or
+	 *                                          null when no candidate answers
+	 *                                          (the name is then the newest
+	 *                                          candidate, for the report).
+	 *
+	 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#2.1
+	 */
+	private function generateRoute(): array {
+		$candidates = FleetAppId::CANDIDATES['filinq'];
+		$root       = $this->urlGenerator->getAbsoluteURL('');
+		foreach ($candidates as $appId) {
+			$route = $appId . '.' . self::GENERATE_ROUTE_SUFFIX;
+			$url   = $this->urlGenerator->linkToRouteAbsolute($route);
+			if ($url !== '' && $url !== $root) {
+				return [$route, $url];
+			}
+		}
+
+		return [$candidates[0] . '.' . self::GENERATE_ROUTE_SUFFIX, null];
+
+	}//end generateRoute()
+
+	/**
 	 * The one internal HTTP call to Docudesk's pinned generate route, HTTP
 	 * Basic-authenticated with a single-use token minted for the currently
 	 * impersonated user (see class docblock "Transport detail").
+	 *
+	 * What the call met is reported to integriq's connection registry, at most
+	 * once an hour while it stays the same (adopt-connection-registry). The
+	 * report never changes the result.
 	 *
 	 * @param string $templateId Docudesk template UUID.
 	 * @param array<int,array<string,string>> $dataRefs Exactly one `{register,schema,id}` entry
@@ -403,8 +505,61 @@ class DocumentGenerationService {
 	 * @param string $filename Requested download filename.
 	 *
 	 * @return array{status:int,body:string,contentType:?string}|null Null on any failure.
+	 *
+	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md#requirement-req-biq-conn-003-buildiq-reports-what-its-connection-calls-met
 	 */
 	private function callGenerate(string $templateId, array $dataRefs, string $filename): ?array {
+		$credentials = $this->mintCallerToken();
+		if ($credentials === null) {
+			return null;
+		}
+
+		[$uid, $token, $provider] = $credentials;
+		[$route, $url] = $this->generateRoute();
+		if ($url === null) {
+			$this->invalidateToken(provider: $provider, token: $token);
+			$this->logger->error(
+				'Buildiq: DocumentGenerationService found no route "' . $route . '", so the document call is skipped. '
+				. 'Tried these app ids in order: ' . implode(', ', FleetAppId::CANDIDATES['filinq']) . '.'
+			);
+			$this->connectionReporter?->reportDocumentRouteMissing(route: $route);
+			return null;
+		}
+
+		try {
+			$response = $this->postGenerate(
+				url: $url,
+				auth: [$uid, $token],
+				json: [
+					'templateId' => $templateId,
+					'dataRefs' => $dataRefs,
+					'options' => ['format' => 'pdf'],
+					'filename' => $filename,
+				]
+			);
+		} finally {
+			// ALWAYS invalidate — the token is scoped to exactly this one
+			// call (class docblock "Transport detail"); a TEMPORARY_TOKEN
+			// (the only lifetime constant guaranteed present across the
+			// pinned `nextcloud/ocp` versions this app supports) would
+			// otherwise remain valid until its normal session-expiry.
+			$this->invalidateToken(provider: $provider, token: $token);
+		}//end try
+
+		if ($response === null) {
+			return null;
+		}
+
+		return $this->generateResult(response: $response);
+	}//end callGenerate()
+
+	/**
+	 * Mint a one-time internal token for the impersonated user, or null (logged)
+	 * when no user is active or no token can be minted.
+	 *
+	 * @return array{0: string, 1: string, 2: mixed}|null The uid, the token and its provider.
+	 */
+	private function mintCallerToken(): array|null {
 		$user = $this->userSession->getUser();
 		if ($user === null) {
 			$this->logger->warning('Buildiq: DocumentGenerationService has no impersonated user active — Docudesk call skipped.');
@@ -421,38 +576,47 @@ class DocumentGenerationService {
 		}
 
 		[$token, $provider] = $minted;
-		$url = $this->urlGenerator->linkToRouteAbsolute(self::GENERATE_ROUTE);
 
+		return [$uid, $token, $provider];
+	}//end mintCallerToken()
+
+	/**
+	 * POST the generate call; a transport failure is logged and reported, and answers null.
+	 *
+	 * @param string              $url  The generate route.
+	 * @param array{0: string, 1: string} $auth The uid and one-time token.
+	 * @param array<string,mixed> $json The request body.
+	 *
+	 * @return IResponse|null
+	 */
+	private function postGenerate(string $url, array $auth, array $json): IResponse|null {
 		try {
-			try {
-				$response = $this->httpClientService->newClient()->post(
-					$url,
-					[
-						'auth' => [$uid, $token],
-						'headers' => ['OCS-APIRequest' => 'true'],
-						'json' => [
-							'templateId' => $templateId,
-							'dataRefs' => $dataRefs,
-							'options' => ['format' => 'pdf'],
-							'filename' => $filename,
-						],
-						'timeout' => 30,
-					]
-				);
-			} catch (Throwable $e) {
-				$this->logger->error('Buildiq: DocumentGenerationService Docudesk call failed: ' . $e->getMessage(), ['exception' => $e]);
-				return null;
-			}
-		} finally {
-			// ALWAYS invalidate — the token is scoped to exactly this one
-			// call (class docblock "Transport detail"); a TEMPORARY_TOKEN
-			// (the only lifetime constant guaranteed present across the
-			// pinned `nextcloud/ocp` versions this app supports) would
-			// otherwise remain valid until its normal session-expiry.
-			$this->invalidateToken(provider: $provider, token: $token);
-		}//end try
+			return $this->httpClientService->newClient()->post(
+				$url,
+				[
+					'auth' => $auth,
+					'headers' => ['OCS-APIRequest' => 'true'],
+					'json' => $json,
+					'timeout' => 30,
+				]
+			);
+		} catch (Throwable $e) {
+			$this->logger->error('Buildiq: DocumentGenerationService Docudesk call failed: ' . $e->getMessage(), ['exception' => $e]);
+			$this->connectionReporter?->reportDocumentCall(httpStatus: $this->connectionReporter->httpStatusOf(exception: $e));
+			return null;
+		}
+	}//end postGenerate()
 
+	/**
+	 * The generate result of a response, or null (logged) on a non-2xx status.
+	 *
+	 * @param IResponse $response The Docudesk response.
+	 *
+	 * @return array{status: int, body: mixed, contentType: string}|null
+	 */
+	private function generateResult(IResponse $response): array|null {
 		$status = $response->getStatusCode();
+		$this->connectionReporter?->reportDocumentCall(httpStatus: $status);
 		if ($status < 200 || $status >= 300) {
 			$this->logger->warning('Buildiq: DocumentGenerationService Docudesk call returned status ' . $status . '.');
 			return null;
@@ -463,8 +627,7 @@ class DocumentGenerationService {
 			'body' => $response->getBody(),
 			'contentType' => $response->getHeader('Content-Type'),
 		];
-
-	}//end callGenerate()
+	}//end generateResult()
 
 	/**
 	 * Mint a short-lived Nextcloud login token for `$uid`, presented as HTTP
@@ -702,31 +865,22 @@ class DocumentGenerationService {
 	 * {@see RuleActionDispatcher} `send-notification` path (reuse, not a
 	 * second notification implementation).
 	 *
-	 * @param string $objectUuid The fired object's uuid (notification's `object` id).
-	 * @param string|null $fileRef The `attach`-mode file id, if any.
-	 * @param string|null $downloadLink The `download-link`-mode signed URL, if any.
+	 * @param DocumentRun $run The generation: its object, and the attach / download-link results.
 	 *
 	 * @return void
 	 */
-	private function dispatchNotification(string $objectUuid, ?string $fileRef, ?string $downloadLink): void {
+	private function dispatchNotification(DocumentRun $run): void {
 		$user = $this->userSession->getUser();
 		if ($user === null) {
 			return;
 		}
 
-		$subject = 'Your generated document is ready';
-		if ($downloadLink !== null) {
-			$subject = 'Your generated document is ready to download';
-		} elseif ($fileRef !== null) {
-			$subject = 'Your generated document has been attached';
-		}
-
 		($this->ruleActionDispatcher)(
 			'send-notification',
 			[
-				'subject' => $subject,
+				'subject' => $this->notificationSubject(run: $run),
 				'recipientUid' => $user->getUID(),
-				'objectId' => $objectUuid,
+				'objectId' => $run->objectUuid,
 			],
 			[]
 		);
@@ -734,31 +888,21 @@ class DocumentGenerationService {
 	}//end dispatchNotification()
 
 	/**
-	 * Coerce an OR result entry to a plain associative array.
+	 * The notification subject: a download link wins over an attachment.
 	 *
-	 * @param mixed $object The OR object/result entry.
+	 * @param DocumentRun $run The generation.
 	 *
-	 * @return array<string,mixed>
+	 * @return string
 	 */
-	private function normalise(mixed $object): array {
-		if (is_array($object) === true) {
-			return $object;
+	private function notificationSubject(DocumentRun $run): string {
+		if ($run->downloadLink !== null) {
+			return 'Your generated document is ready to download';
 		}
 
-		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-			$serialised = $object->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
+		if ($run->fileRef !== null) {
+			return 'Your generated document has been attached';
 		}
 
-		if (is_object($object) === true && method_exists($object, 'getObject') === true) {
-			$inner = $object->getObject();
-			if (is_array($inner) === true) {
-				return $inner;
-			}
-		}
-
-		return [];
-	}//end normalise()
+		return 'Your generated document is ready';
+	}//end notificationSubject()
 }//end class

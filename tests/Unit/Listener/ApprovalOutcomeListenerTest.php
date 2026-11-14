@@ -131,6 +131,39 @@ final class ApprovalOutcomeListenerTest extends TestCase {
 	}//end sequenceFor()
 
 	/**
+	 * Build the completion event OpenRegister dispatches for an approved sequence.
+	 *
+	 * @param TaskSequence $sequence The completed sequence.
+	 *
+	 * @return TaskSequenceCompletedEvent The event.
+	 */
+	private function completedEvent(TaskSequence $sequence): TaskSequenceCompletedEvent {
+		$finalTask = new Task();
+		$finalTask->setOutcome('approved');
+
+		return new TaskSequenceCompletedEvent(
+			sequence: $sequence,
+			finalTask: $finalTask,
+			decider: 'reviewer',
+			statusOnApprove: 'approved'
+		);
+	}//end completedEvent()
+
+	/**
+	 * Build the terminal event for a task that closed with the given outcome.
+	 *
+	 * @param Task        $task    The terminal task.
+	 * @param string|null $outcome The outcome the task closed with.
+	 *
+	 * @return TaskTerminalEvent The event.
+	 */
+	private function terminalEvent(Task $task, ?string $outcome): TaskTerminalEvent {
+		$task->setOutcome($outcome);
+
+		return new TaskTerminalEvent(task: $task);
+	}//end terminalEvent()
+
+	/**
 	 * Build a mock terminal Task, and the sequence lookup the listener does on it.
 	 *
 	 * The reject half only has the task, so it resolves the chain key by loading
@@ -160,7 +193,7 @@ final class ApprovalOutcomeListenerTest extends TestCase {
 	 */
 	public function testApprovedDispatchesOnApproveFollowUps(): void {
 		$chain = 'aut-route-permit-application-for-approval';
-		$event = new TaskSequenceCompletedEvent(sequence: $this->sequenceFor($chain, 'object-uuid-1'));
+		$event = $this->completedEvent(sequence: $this->sequenceFor(chainKey: $chain, objectUuid: 'object-uuid-1'));
 
 		$automation = [
 			'slug' => 'route-permit-application-for-approval',
@@ -205,7 +238,7 @@ final class ApprovalOutcomeListenerTest extends TestCase {
 	 */
 	public function testRejectedDispatchesOnRejectFollowUps(): void {
 		$chain = 'aut-route-permit-application-for-approval';
-		$event = new TaskTerminalEvent(task: $this->taskFor('object-uuid-1', $chain), outcome: 'rejected');
+		$event = $this->terminalEvent(task: $this->taskFor(objectUuid: 'object-uuid-1', chainKey: $chain), outcome: 'rejected');
 
 		$automation = [
 			'slug' => 'route-permit-application-for-approval',
@@ -246,7 +279,7 @@ final class ApprovalOutcomeListenerTest extends TestCase {
 	 */
 	public function testNonAutomationChainIsNoOp(): void {
 		$chain = 'hand-authored-chain';
-		$event = new TaskSequenceCompletedEvent(sequence: $this->sequenceFor($chain, 'object-uuid-1'));
+		$event = $this->completedEvent(sequence: $this->sequenceFor(chainKey: $chain, objectUuid: 'object-uuid-1'));
 
 		$this->objectService->expects($this->never())->method('findAll');
 		$this->dispatcher->expects($this->never())->method('__invoke');
@@ -263,7 +296,7 @@ final class ApprovalOutcomeListenerTest extends TestCase {
 	 */
 	public function testUnmatchedAutomationSlugIsNoOp(): void {
 		$chain = 'aut-does-not-exist';
-		$event = new TaskSequenceCompletedEvent(sequence: $this->sequenceFor($chain, 'object-uuid-1'));
+		$event = $this->completedEvent(sequence: $this->sequenceFor(chainKey: $chain, objectUuid: 'object-uuid-1'));
 
 		$this->objectService->method('findAll')->willReturn([]);
 
@@ -297,7 +330,7 @@ final class ApprovalOutcomeListenerTest extends TestCase {
 	 * @return void
 	 */
 	public function testApprovingTerminalTaskFiresNoRejectFollowUp(): void {
-		$event = new TaskTerminalEvent(
+		$event = $this->terminalEvent(
 			task: $this->taskFor('object-uuid-5'),
 			outcome: 'approved'
 		);
@@ -318,7 +351,7 @@ final class ApprovalOutcomeListenerTest extends TestCase {
 	 * @return void
 	 */
 	public function testTerminalTaskWithoutAnOutcomeFiresNothing(): void {
-		$event = new TaskTerminalEvent(task: $this->taskFor('object-uuid-6'), outcome: null);
+		$event = $this->terminalEvent(task: $this->taskFor(objectUuid: 'object-uuid-6'), outcome: null);
 
 		$this->dispatcher->expects($this->never())->method('__invoke');
 
@@ -345,7 +378,7 @@ final class ApprovalOutcomeListenerTest extends TestCase {
 
 		$this->dispatcher->expects($this->never())->method('__invoke');
 
-		$this->listener->handle(new TaskTerminalEvent(task: $task, outcome: 'rejected'));
+		$this->listener->handle($this->terminalEvent(task: $task, outcome: 'rejected'));
 
 		$this->addToAssertionCount(1);
 
@@ -364,7 +397,7 @@ final class ApprovalOutcomeListenerTest extends TestCase {
 
 		$this->dispatcher->expects($this->never())->method('__invoke');
 
-		$this->listener->handle(new TaskTerminalEvent(task: $task, outcome: 'rejected'));
+		$this->listener->handle($this->terminalEvent(task: $task, outcome: 'rejected'));
 
 		$this->addToAssertionCount(1);
 

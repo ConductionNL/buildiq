@@ -118,7 +118,7 @@ export default {
 		 * the would-be actions).
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/automation-approval-steps/tasks.md#5.2
+		 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#5.2
 		 */
 		approvalStateLabel() {
 			const labels = {

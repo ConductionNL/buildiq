@@ -24,8 +24,10 @@ namespace OCA\Buildiq\Tests\Unit\Controller;
 
 use OCA\Buildiq\Controller\ApplicationsController;
 use OCA\Buildiq\Service\AppChannelApplier;
+use OCA\Buildiq\Service\CallerContext;
 use OCA\Buildiq\Service\ManifestResolverService;
 use OCA\Buildiq\Service\PermissionResolver;
+use OCA\Buildiq\Service\RegisterStore;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -121,18 +123,22 @@ class ApplicationsControllerSaveManifestTest extends TestCase {
 		return new ApplicationsController(
 			request: $this->request,
 			logger: $this->createMock(LoggerInterface::class),
-			objectService: $this->objectService,
-			registerMapper: $this->registerMapper,
-			schemaMapper: $this->schemaMapper,
-			userSession: $this->userSession,
-			groupManager: $this->groupManager,
-			manifestResolver: $this->createMock(ManifestResolverService::class),
-			permissionResolver: new PermissionResolver(
-				$this->groupManager,
-				$this->createMock(LoggerInterface::class)
+			store: new RegisterStore(
+				objectService: $this->objectService,
+				registerMapper: $this->registerMapper,
+				schemaMapper: $this->schemaMapper,
+				auditTrailMapper: null
 			),
-			channelApplier: $this->createMock(AppChannelApplier::class),
-			auditTrailMapper: null
+			caller: new CallerContext(
+				userSession: $this->userSession,
+				groupManager: $this->groupManager,
+				permissionResolver: new PermissionResolver(
+					$this->groupManager,
+					$this->createMock(LoggerInterface::class)
+				)
+			),
+			manifestResolver: $this->createMock(ManifestResolverService::class),
+			channelApplier: $this->createMock(AppChannelApplier::class)
 		);
 
 	}//end controller()
@@ -316,5 +322,230 @@ class ApplicationsControllerSaveManifestTest extends TestCase {
 		);
 
 	}//end testSaveManifestRefusesAManifestWithNoPages()
+
+	/**
+	 * Wire the register, the route index and an Application owned by alice
+	 * with the given production version; find() answers further ids from $byId.
+	 *
+	 * @param mixed                              $productionVersion The Application's productionVersion, or null for none.
+	 * @param array<string,array<string,mixed>> $byId              Further objects find() returns, by id.
+	 *
+	 * @return void
+	 */
+	private function wireApplication(mixed $productionVersion, array $byId = []): void {
+		$register = new \OCA\OpenRegister\Db\Register();
+		$register->setId(1);
+		$this->registerMapper->method('find')->willReturn($register);
+
+		$schema = new \OCA\OpenRegister\Db\Schema();
+		$schema->setId(2);
+		$this->schemaMapper->method('find')->willReturn($schema);
+
+		$this->objectService->method('searchObjects')->willReturn(
+			[['id' => 'route-1', 'slug' => 'permit-tracker', 'applicationUuid' => 'app-uuid']]
+		);
+
+		$application = [
+			'id' => 'app-uuid',
+			'slug' => 'permit-tracker',
+			'permissions' => ['owners' => ['user:alice']],
+		];
+		if ($productionVersion !== null) {
+			$application['productionVersion'] = $productionVersion;
+		}
+
+		$byId['app-uuid'] = $application;
+		$entities = array_map(fn (array $payload): ObjectEntity => $this->buildEntity($payload), $byId);
+		$this->objectService->method('find')->willReturnCallback(
+			static fn (string|int $id): ?ObjectEntity => ($entities[$id] ?? null)
+		);
+
+	}//end wireApplication()
+
+	/**
+	 * Capture every saveObject() call as [object, register, schema].
+	 *
+	 * @return \ArrayObject<int,array{0:array<string,mixed>,1:mixed,2:mixed}>
+	 */
+	private function captureSaves(): \ArrayObject {
+		$saves = new \ArrayObject();
+		$this->objectService->method('saveObject')->willReturnCallback(
+			function (array $object, ?array $extend = [], string|int|null $register = null, string|int|null $schema = null) use ($saves): ObjectEntity {
+				$saves[] = [$object, $register, $schema];
+				return $this->buildEntity($object);
+			}
+		);
+
+		return $saves;
+
+	}//end captureSaves()
+
+	/**
+	 * A renderable manifest carrying a permissions block the caller must not be able to write.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function manifestBody(): array {
+		return [
+			'version' => '1.0.0',
+			'pages' => [['id' => 'home']],
+			'permissions' => ['owners' => ['user:mallory']],
+		];
+
+	}//end manifestBody()
+
+	/**
+	 * A production version referenced by uuid receives the manifest, without
+	 * the permissions block from the body.
+	 *
+	 * @return void
+	 */
+	public function testSaveManifestWritesOntoTheProductionVersion(): void {
+		$this->authenticate(uid: 'alice');
+		$this->wireApplication('ver-1', ['ver-1' => ['id' => 'ver-1', 'application' => 'app-uuid', 'manifest' => ['version' => '0.9.0']]]);
+		$this->request->method('getParam')->with('manifest')->willReturn($this->manifestBody());
+		$saves = $this->captureSaves();
+
+		$response = $this->controller()->saveManifest(slug: 'permit-tracker');
+
+		self::assertSame(Http::STATUS_OK, $response->getStatus());
+		self::assertSame(['status' => 'ok', 'target' => 'version'], $response->getData());
+		self::assertCount(1, $saves);
+		[$object, $register, $schema] = $saves[0];
+		self::assertSame('buildiq', $register);
+		self::assertSame('applicationVersion', $schema);
+		self::assertSame('ver-1', $object['id']);
+		self::assertSame(['version' => '1.0.0', 'pages' => [['id' => 'home']]], $object['manifest']);
+
+	}//end testSaveManifestWritesOntoTheProductionVersion()
+
+	/**
+	 * An embedded production version gets the manifest nested and the Application is saved.
+	 *
+	 * @return void
+	 */
+	public function testSaveManifestWritesIntoAnEmbeddedVersion(): void {
+		$this->authenticate(uid: 'alice');
+		$this->wireApplication(['slug' => 'v1', 'manifest' => ['version' => '0.9.0']]);
+		$this->request->method('getParam')->willReturn($this->manifestBody());
+		$saves = $this->captureSaves();
+
+		$response = $this->controller()->saveManifest(slug: 'permit-tracker');
+
+		self::assertSame(['status' => 'ok', 'target' => 'embedded'], $response->getData());
+		self::assertCount(1, $saves);
+		[$object, $register, $schema] = $saves[0];
+		self::assertSame(['buildiq', 'built-app'], [$register, $schema]);
+		self::assertSame('app-uuid', $object['id']);
+		self::assertSame('v1', $object['productionVersion']['slug']);
+		self::assertSame(['version' => '1.0.0', 'pages' => [['id' => 'home']]], $object['productionVersion']['manifest']);
+		self::assertSame(['owners' => ['user:alice']], $object['permissions']);
+		self::assertArrayNotHasKey('manifest', $object);
+
+	}//end testSaveManifestWritesIntoAnEmbeddedVersion()
+
+	/**
+	 * Without a usable production version — none, "draft", or a uuid that no
+	 * longer resolves — the Application-level manifest is written.
+	 *
+	 * @return void
+	 */
+	public function testSaveManifestFallsBackToTheApplication(): void {
+		foreach ([null, 'draft', '', 'ver-gone'] as $productionVersion) {
+			$this->setUp();
+			$this->authenticate(uid: 'alice');
+			$this->request->method('getParam')->willReturn($this->manifestBody());
+			$this->wireApplication($productionVersion);
+			$saves = $this->captureSaves();
+
+			$response = $this->controller()->saveManifest(slug: 'permit-tracker');
+
+			self::assertSame(['status' => 'ok', 'target' => 'application'], $response->getData(), var_export($productionVersion, true));
+			self::assertCount(1, $saves);
+			self::assertSame(['buildiq', 'built-app'], [$saves[0][1], $saves[0][2]]);
+			self::assertSame(['version' => '1.0.0', 'pages' => [['id' => 'home']]], $saves[0][0]['manifest']);
+		}
+
+	}//end testSaveManifestFallsBackToTheApplication()
+
+	/**
+	 * An admin without a role on the app may write (the bypass is recorded).
+	 *
+	 * @return void
+	 */
+	public function testSaveManifestLetsAnAdminWriteThroughTheBypass(): void {
+		$this->groupManager = $this->createMock(IGroupManager::class);
+		$this->groupManager->method('getUserGroups')->willReturn([]);
+		$this->groupManager->method('isAdmin')->willReturn(false);
+		$this->groupManager->method('isInGroup')->willReturnCallback(
+			static fn (string $uid, string $group): bool => $uid === 'root' && $group === 'admin'
+		);
+		$this->authenticate(uid: 'root');
+		$this->wireApplication(null);
+		$this->request->method('getParam')->willReturn($this->manifestBody());
+		$saves = $this->captureSaves();
+
+		$response = $this->controller()->saveManifest(slug: 'permit-tracker');
+
+		self::assertSame(Http::STATUS_OK, $response->getStatus());
+		self::assertCount(1, $saves);
+
+	}//end testSaveManifestLetsAnAdminWriteThroughTheBypass()
+
+	/**
+	 * An anonymous caller is refused before anything is written.
+	 *
+	 * @return void
+	 */
+	public function testSaveManifestRefusesAnAnonymousCaller(): void {
+		$this->userSession->method('getUser')->willReturn(null);
+		$this->wireApplication(null);
+		$this->objectService->expects(self::never())->method('saveObject');
+
+		$response = $this->controller()->saveManifest(slug: 'permit-tracker');
+
+		self::assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+		self::assertSame(['error' => 'forbidden', 'code' => 'buildiq.rbac.no_role'], $response->getData());
+
+	}//end testSaveManifestRefusesAnAnonymousCaller()
+
+	/**
+	 * A body without a manifest object is a 400.
+	 *
+	 * @return void
+	 */
+	public function testSaveManifestRefusesAMissingManifest(): void {
+		$this->authenticate(uid: 'alice');
+		$this->wireApplication(null);
+		$this->request->method('getParam')->willReturn('not-a-manifest');
+		$this->objectService->expects(self::never())->method('saveObject');
+
+		$response = $this->controller()->saveManifest(slug: 'permit-tracker');
+
+		self::assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
+		self::assertSame(['error' => 'bad_request', 'message' => 'Missing or invalid manifest'], $response->getData());
+
+	}//end testSaveManifestRefusesAMissingManifest()
+
+	/**
+	 * A failing write is a 500 with a correlation id.
+	 *
+	 * @return void
+	 */
+	public function testSaveManifestAnswersAFailingWriteWithA500(): void {
+		$this->authenticate(uid: 'alice');
+		$this->wireApplication(null);
+		$this->request->method('getParam')->willReturn($this->manifestBody());
+		$this->objectService->method('saveObject')->willThrowException(new \RuntimeException('disk full'));
+
+		$response = $this->controller()->saveManifest(slug: 'permit-tracker');
+
+		self::assertSame(Http::STATUS_INTERNAL_SERVER_ERROR, $response->getStatus());
+		$data = $response->getData();
+		self::assertSame('internal_error', $data['error']);
+		self::assertSame('Failed to save manifest', $data['message']);
+		self::assertMatchesRegularExpression('/^[0-9a-f]{16}$/', $data['correlationId']);
+
+	}//end testSaveManifestAnswersAFailingWriteWithA500()
 
 }//end class

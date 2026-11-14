@@ -9,22 +9,25 @@
  * the current form targets Procest's zaak detail by UUID. If Procest changes
  * its route, update only this module.
  *
- * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-005
+ * @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-005
  */
 import { generateUrl } from '@nextcloud/router'
+import { fleetAppPath } from './fleetAppId.js'
 
 /**
  * Build the deep link to a Procest case (zaak) detail view by UUID.
  *
  * @param {string} caseUuid - the Procest zaak UUID.
  * @return {string} - the same-origin URL into Procest, or '' when no UUID.
- * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-005
+ * @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-005
  */
 export function buildProcestCaseUrl(caseUuid) {
 	if (!caseUuid) {
 		return ''
 	}
-	return generateUrl(`/apps/procest/cases/${encodeURIComponent(caseUuid)}`)
+	return generateUrl(
+		fleetAppPath('dossiq', `cases/${encodeURIComponent(caseUuid)}`),
+	)
 }
 
 /**
@@ -33,7 +36,7 @@ export function buildProcestCaseUrl(caseUuid) {
  *
  * @param {string} reference - the value stored on the object's linkProperty.
  * @return {string} - the UUID, or '' when none can be parsed.
- * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-005
+ * @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-005
  */
 export function caseUuidFromReference(reference) {
 	if (typeof reference !== 'string' || reference === '') {

@@ -82,7 +82,7 @@ export default {
 		 * The object's OR register slug, read off the `@self` envelope.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-006
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-006
 		 */
 		register() {
 			return this.registerKeys[0] || ''
@@ -92,7 +92,7 @@ export default {
 		 * Every name this object's register can legitimately be known by.
 		 *
 		 * @return {Array<string>}
-		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-006
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-006
 		 */
 		registerKeys() {
 			return objectRegisterKeys(this.object, this.cnObjectContext)
@@ -102,7 +102,7 @@ export default {
 		 * The object's OR schema slug, read off the `@self` envelope.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-006
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-006
 		 */
 		schema() {
 			return this.schemaKeys[0] || ''
@@ -117,7 +117,7 @@ export default {
 		 * entry and this action never rendered. See src/utils/objectSchemaKeys.js.
 		 *
 		 * @return {Array<string>}
-		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-006
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-006
 		 */
 		schemaKeys() {
 			return objectSchemaKeys(this.object, this.cnObjectContext)
@@ -129,7 +129,7 @@ export default {
 		 * object's own envelope.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-006
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-006
 		 */
 		resolvedObjectId() {
 			return (
@@ -144,7 +144,7 @@ export default {
 		 * this object's `(register, schema)`.
 		 *
 		 * @return {?object}
-		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-006
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-006
 		 */
 		externalFormEntry() {
 			const list =
@@ -175,7 +175,7 @@ export default {
 		 * `trackLinkAction.enabled: true` — never rendered otherwise.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-006
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-006
 		 */
 		eligible() {
 			const entry = this.externalFormEntry
@@ -193,7 +193,7 @@ export default {
 		 * Mint the track-link for the currently viewed object.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-006
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-006
 		 */
 		async mint() {
 			if (this.minting) {
@@ -224,7 +224,7 @@ export default {
 		 * Copy the minted link to the clipboard.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-006
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-006
 		 */
 		copy() {
 			if (!this.link) {

@@ -27,6 +27,11 @@
  */
 
 import { expect, test } from '@playwright/test'
+// The one place a target enters this suite, and the place the shared-instance
+// guard sits. This was a private `process.env.PLAYWRIGHT_BASE_URL ??
+// 'http://localhost:8080'` constant, so a run with nothing set wrote to the
+// shared dev instance. See tests/e2e/shared-instance.ts.
+import { E2E_BASE_URL as BASE } from '../support/baseUrl.ts'
 // nc-vue's first-visit CnSupportDialog renders a full-viewport backdrop that
 // swallows clicks. It appears only sometimes (its "have I been seen" check is an
 // async round-trip), which made REQ-OBPDUI-003 intermittent: it passed on one
@@ -34,7 +39,6 @@ import { expect, test } from '@playwright/test'
 // target. Dismissing it is a precondition, not a weakened assertion.
 import { dismissFirstVisitOverlays } from '../support/overlays.ts'
 
-const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
 const LIVE = process.env.BUILDIQ_E2E_LIVE === '1'
 
 const PAGE_DESIGNER = (slug: string) => `${BASE}/apps/buildiq/builder/${slug}/pages`

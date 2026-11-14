@@ -53,8 +53,23 @@ import { CnAppRoot } from '@conduction/nextcloud-vue'
 import { translate as ncT } from '@nextcloud/l10n'
 import { generateUrl, imagePath } from '@nextcloud/router'
 import { NcAppContent, NcButton, NcEmptyContent } from '@nextcloud/vue'
+import { createConnectionHandlers } from './services/connectionRegistry.js'
 import { useSettingsStore } from './store/modules/settings.js'
 import { initializeStores } from './store/store.js'
+
+/**
+ * The component a v2 registry entry stands for: the `component` of a
+ * kind-tagged `{ kind, component }` entry, or the entry itself.
+ *
+ * @param {?(object|string)} entry - a registry entry (a component object, a
+ * component name, or a kind-tagged entry).
+ * @return {?(object|string)} the component.
+ */
+function registryComponent(entry) {
+	return entry && typeof entry === 'object' && 'component' in entry
+		? entry.component
+		: entry
+}
 
 export default {
 	name: 'App',
@@ -116,7 +131,7 @@ export default {
 		 * `actionsComponent`, `headerComponent`, `sidebarComponent` and
 		 * `type:"custom"` page components against `effectiveCustomComponents`
 		 * (= the `customComponents` prop, falling back to the injected
-		 * `cnCustomComponents`). In @conduction/nextcloud-vue 1.0.0-beta.107
+		 * `cnCustomComponents`). In `@conduction/nextcloud-vue` 1.0.0-beta.107
 		 * that resolver does NOT consult the v2 `cnRegistry` inject, so when an
 		 * app passes only `:registry` (and no `customComponents`), every
 		 * slot-override / custom-page name fails to resolve — the page renders
@@ -129,27 +144,37 @@ export default {
 		 * restores resolution for every slot/custom dispatch while keeping the
 		 * single v2 `registry` as the source of truth.
 		 *
-		 * @return {object} Map of registry key → Vue component.
+		 * @return {object} Map of registry key → Vue component, plus the
+		 *   `openIntegriqConnections` header-action handler.
+		 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md#requirement-req-biq-conn-004-an-admin-reads-the-connections-on-an-integrations-page
 		 */
 		flatRegistry() {
 			const out = {}
 			for (const [name, entry] of Object.entries(this.registry || {})) {
-				const component =
-					entry && typeof entry === 'object' && 'component' in entry
-						? entry.component
-						: entry
+				const component = registryComponent(entry)
 				if (component) {
 					out[name] = component
 				}
 			}
-			return out
+			// The Integrations page's Add integration header action
+			// (adopt-connection-registry). A FUNCTION, because it leaves the app
+			// for integriq's Connections overview and a header action's
+			// `navigate` only pushes a route inside this app. CnIndexPage
+			// resolves a handler name against this map, not `registry`.
+			return {
+				...out,
+				...createConnectionHandlers({
+					generateUrl,
+					assign: (url) => window.location.assign(url),
+				}),
+			}
 		},
 
 		/**
 		 * The current user's Nextcloud permission flags, passed to CnAppNav.
 		 *
 		 * @return {Array} Permission identifiers (empty when unavailable).
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 		 */
 		permissions() {
 			return window.OC?.currentUser?.permissions ?? []
@@ -160,7 +185,7 @@ export default {
 		 * "Install OpenRegister" button in the dependency-missing slot.
 		 *
 		 * @return {boolean} True for admins.
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 		 */
 		isAdmin() {
 			try {
@@ -176,7 +201,7 @@ export default {
 		 * Path to the white-on-transparent app icon for the empty state.
 		 *
 		 * @return {string} Image path.
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 		 */
 		appIcon() {
 			return imagePath('buildiq', 'app-dark.svg')
@@ -186,7 +211,7 @@ export default {
 		 * Deep link to OpenRegister's app-store entry.
 		 *
 		 * @return {string} Settings URL.
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 		 */
 		appStoreUrl() {
 			return generateUrl('/settings/apps/integration/openregister')
@@ -196,7 +221,7 @@ export default {
 	/**
 	 * Observed behaviour of `created` (retrofit annotation).
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
+	 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 	 */
 	async created() {
 		// Pinia stores still come up so the legacy views (settings store,
@@ -217,7 +242,7 @@ export default {
 		 *
 		 * @param {string} key Translation key.
 		 * @return {string} Translated string (or the key on miss).
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 		 */
 		translateForApp(key) {
 			return ncT('buildiq', key)

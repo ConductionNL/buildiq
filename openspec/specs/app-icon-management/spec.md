@@ -6,7 +6,7 @@ retrofit_extensions:
 
 # app-icon-management Specification
 
-**OpenSpec changes**: [harden-xss-dos-csrf](../../changes/harden-xss-dos-csrf/), [harden-rules-authz-and-audit-parity](../../changes/harden-rules-authz-and-audit-parity/)
+**OpenSpec changes**: [harden-xss-dos-csrf](../../changes/archive/2026-10-07-harden-xss-dos-csrf/) _(archived 2026-10-07)_, [harden-rules-authz-and-audit-parity](../../changes/harden-rules-authz-and-audit-parity/)
 
 ## Purpose
 
@@ -227,3 +227,39 @@ exception.
   `fetchAttachedFileStream` SHALL return `null` without invoking
   `FileService::getFile`, so the icon-serving endpoint cascades to
   the next fallback (Decision 2 chain in design.md)
+
+### Requirement: Icon endpoint documentation MUST match enforced behaviour
+
+The `IconController` docblock and `Cache-Control` rationale SHALL describe the
+authorization the endpoints actually enforce. Because the icon endpoints enforce
+session-only access (no per-app viewer check), the documentation MUST NOT claim
+the responses are "personalised to the caller's app access"; either the claimed
+per-app viewer check is added, or the rationale is corrected to state session-only
+enforcement.
+
+#### Scenario: The documented rationale is accurate
+- **WHEN** a developer reads the `IconController` docblock / `Cache-Control` note
+- **THEN** it states the actual enforcement (session-only) and does not assert an
+  access-scoped personalisation the code does not perform
+
+### Requirement: Author-supplied SVG icons MUST be sanitized before use
+
+The author-supplied SVG returned by `iconCatalogues.js::resolveAppIcon` SHALL be
+passed through `DOMPurify.sanitize(...)` with an SVG profile
+(`USE_PROFILES: { svg: true, svgFilters: true }`) before it is previewed and
+before it is persisted, so the value is safe on every path. `resolveAppIcon`
+currently returns the value verbatim when it begins with `<svg`, and that value
+is bound via `v-html` in the creation-wizard previews (`Step1Basics.vue`,
+`Step4Review.vue`); although these previews are self-only (the persisted icon is
+later served as an `<img>` under `IconController`'s `default-src 'none'` CSP),
+the value MUST be sanitized regardless.
+
+#### Scenario: Malicious SVG is sanitized before preview
+- **WHEN** an author supplies an SVG containing a `<script>` element or an event
+  handler attribute
+- **THEN** `resolveAppIcon` returns SVG with the script/handler removed, and the
+  preview renders no executable content
+
+#### Scenario: Valid SVG icon is preserved
+- **WHEN** an author supplies a well-formed decorative SVG
+- **THEN** the sanitized SVG renders identically as an icon

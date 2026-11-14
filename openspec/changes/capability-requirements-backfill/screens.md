@@ -1,0 +1,23 @@
+# Screens
+
+- BqDataImporteren https://identity.conduction.nl/screens/board?id=buildiq/BqDataImporteren
+- BqDataImporterenDoel https://identity.conduction.nl/screens/board?id=buildiq/BqDataImporterenDoel
+- BqApp https://identity.conduction.nl/screens/board?id=buildiq/BqApp (REQ-BQCV-030, the sample data card and confirmation)
+- BqAppInstellingen https://identity.conduction.nl/screens/board?id=buildiq/BqAppInstellingen
+- BqSchema https://identity.conduction.nl/screens/board?id=buildiq/BqSchema
+- BqExporteren https://identity.conduction.nl/screens/board?id=buildiq/BqExporteren
+- BqExport https://identity.conduction.nl/screens/board?id=buildiq/BqExport
+- BqVersiesExports https://identity.conduction.nl/screens/board?id=buildiq/BqVersiesExports
+- BqPaginaOntwerper https://identity.conduction.nl/screens/board?id=buildiq/BqPaginaOntwerper
+- BqPaginaToevoegen https://identity.conduction.nl/screens/board?id=buildiq/BqPaginaToevoegen
+- BqFormulierOntwerper https://identity.conduction.nl/screens/board?id=buildiq/BqFormulierOntwerper
+- BqRechtengeschiedenis https://identity.conduction.nl/screens/board?id=buildiq/BqRechtengeschiedenis
+- BqManifestlagen https://identity.conduction.nl/screens/board?id=buildiq/BqManifestlagen
+- BqTerugzetten https://identity.conduction.nl/screens/board?id=buildiq/BqTerugzetten
+- BqApps https://identity.conduction.nl/screens/board?id=buildiq/BqApps
+- BqBedrijfsregels https://identity.conduction.nl/screens/board?id=buildiq/BqBedrijfsregels
+- BqAutomatiseringen https://identity.conduction.nl/screens/board?id=buildiq/BqAutomatiseringen
+- BqAutomatiseringBewerken https://identity.conduction.nl/screens/board?id=buildiq/BqAutomatiseringBewerken
+- BqExterneToegang https://identity.conduction.nl/screens/board?id=buildiq/BqExterneToegang
+- BqNieuweAppControleren https://identity.conduction.nl/screens/board?id=buildiq/BqNieuweAppControleren (REQ-BQCV-030, the sample data switch)
+- BqAppInstellingenpagina https://identity.conduction.nl/screens/board?id=buildiq/BqAppInstellingenpagina (REQ-BQCV-011, the settings page as the users see it)

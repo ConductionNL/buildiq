@@ -31,13 +31,14 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/business-rules-engine/tasks.md#7.1
+ * @spec openspec/changes/archive/2026-06-14-business-rules-engine/tasks.md#7.1
  */
 
 declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -56,7 +57,7 @@ use Throwable;
  *     'notification_recipients' => string[],
  *   ]
  *
- * @spec openspec/changes/business-rules-engine/tasks.md#7.1
+ * @spec openspec/changes/archive/2026-06-14-business-rules-engine/tasks.md#7.1
  */
 class RuleImpactAnalysisService {
 
@@ -94,7 +95,7 @@ class RuleImpactAnalysisService {
 	 *
 	 * @return array{ruleSetId:string,windowDays:int,consumerApps:array<int,array{appId:string,callCount:int,lastCallAt:string}>,notification_recipients:string[]}
 	 *
-	 * @spec openspec/changes/business-rules-engine/tasks.md#7.1
+	 * @spec openspec/changes/archive/2026-06-14-business-rules-engine/tasks.md#7.1
 	 */
 	public function analyzeImpactOnActivation(string $ruleSetId, int $windowDays = self::WINDOW_DAYS): array {
 		$logs = $this->fetchLogs(ruleSetId: $ruleSetId, windowDays: $windowDays);
@@ -119,6 +120,7 @@ class RuleImpactAnalysisService {
 	 * @param int $windowDays Number of days to look back.
 	 *
 	 * @return array<int,array<string,mixed>>
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function fetchLogs(string $ruleSetId, int $windowDays): array {
 		$since = gmdate('Y-m-d\TH:i:s\Z', strtotime("-{$windowDays} days"));
@@ -143,7 +145,7 @@ class RuleImpactAnalysisService {
 
 		$logs = [];
 		foreach ($results as $row) {
-			$entry = $this->normalise(object: $row);
+			$entry = ObjectRecord::toArray(object: $row);
 			if ($entry === []) {
 				continue;
 			}
@@ -208,33 +210,4 @@ class RuleImpactAnalysisService {
 
 		return $apps;
 	}//end buildConsumerApps()
-
-	/**
-	 * Coerce an OR result entry to a plain array.
-	 *
-	 * @param mixed $object The OR object / result entry.
-	 *
-	 * @return array<string,mixed>
-	 */
-	private function normalise(mixed $object): array {
-		if (is_array($object) === true) {
-			return $object;
-		}
-
-		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-			$serialised = $object->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		if (is_object($object) === true && method_exists($object, 'getObject') === true) {
-			$inner = $object->getObject();
-			if (is_array($inner) === true) {
-				return $inner;
-			}
-		}
-
-		return [];
-	}//end normalise()
 }//end class

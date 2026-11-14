@@ -23,15 +23,15 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-52
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-52
  */
 
 declare(strict_types=1);
 
 namespace OCA\Buildiq\Controller;
 
-use OCA\Buildiq\AppInfo\Application;
-use OCA\Buildiq\Service\AppNavigationService;
+use OCA\Buildiq\Kernel\AppIdentity;
+use OCA\Buildiq\Kernel\Contracts\AppNavigationServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
@@ -45,7 +45,10 @@ use OCP\IUserSession;
 /**
  * Controller for the main Buildiq dashboard page.
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-52
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-52
+ * @spec openspec/specs/platform-properties/spec.md#REQ-PLAT-003
+ * @spec openspec/specs/platform-properties/spec.md#REQ-PLAT-004
+ * @spec openspec/specs/platform-properties/spec.md#REQ-PLAT-012
  */
 class DashboardController extends Controller {
 	/**
@@ -66,7 +69,7 @@ class DashboardController extends Controller {
 		private readonly IGroupManager $groupManager,
 		private readonly INavigationManager $navigationManager,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -79,13 +82,13 @@ class DashboardController extends Controller {
 	 *
 	 * @return TemplateResponse
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-52
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-52
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function page(): TemplateResponse {
 		$this->publishCurrentUserGroups();
-		return new TemplateResponse(Application::APP_ID, 'index');
+		return new TemplateResponse(AppIdentity::APP_ID, 'index');
 	}//end page()
 
 	/**
@@ -93,7 +96,7 @@ class DashboardController extends Controller {
 	 *
 	 * @return TemplateResponse
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-52
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-52
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -118,7 +121,7 @@ class DashboardController extends Controller {
 	 *
 	 * @return TemplateResponse
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-52
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-52
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -127,15 +130,38 @@ class DashboardController extends Controller {
 		// Application by AppNavigationService) as active — otherwise Nextcloud
 		// resolves the active entry from the URL's app id and the top bar
 		// shows Buildiq's name and icon instead of the virtual app's.
-		$this->navigationManager->setActiveEntry(AppNavigationService::ENTRY_ID_PREFIX . $slug);
+		$this->navigationManager->setActiveEntry(AppNavigationServiceInterface::ENTRY_ID_PREFIX . $slug);
 		$this->publishCurrentUserGroups();
 		$this->initialState->provideInitialState('builderSlug', $slug);
 		$this->initialState->provideInitialState(
 			'builderVersion',
 			(string)$this->request->getParam('_version', '')
 		);
-		return new TemplateResponse(Application::APP_ID, 'builder');
+		return new TemplateResponse(AppIdentity::APP_ID, 'builder');
 	}//end builder()
+
+	/**
+	 * The installable runtime of a virtual app, under a path of its own.
+	 *
+	 * The same runtime as {@see builder()}, at `/run/{slug}/`, so a service
+	 * worker scoped to it controls this app's runtime and nothing else: not
+	 * the designer under `/builder/{slug}/pages` and not another app whose
+	 * slug starts the same (design D1). The page links its web app manifest.
+	 *
+	 * @param string $slug The virtual app slug (path param).
+	 *
+	 * @return TemplateResponse
+	 *
+	 * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-a-maker-makes-an-app-installable-req-bqom-001
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function run(string $slug): TemplateResponse {
+		$response = $this->builder(slug: $slug);
+		$response->setParams(['webManifest' => true]);
+
+		return $response;
+	}//end run()
 
 	/**
 	 * Trailing-slash alias of {@see builder()}.
@@ -151,7 +177,7 @@ class DashboardController extends Controller {
 	 *
 	 * @return TemplateResponse
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-52
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-52
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -236,7 +262,7 @@ class DashboardController extends Controller {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-52
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-52
 	 */
 	private function publishCurrentUserGroups(): void {
 		$user = $this->userSession->getUser();

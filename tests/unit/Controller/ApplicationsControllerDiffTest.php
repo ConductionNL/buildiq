@@ -29,8 +29,10 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\Controller;
 
 use OCA\Buildiq\Controller\ApplicationsController;
+use OCA\Buildiq\Service\CallerContext;
 use OCA\Buildiq\Service\ManifestResolverService;
 use OCA\Buildiq\Service\PermissionResolver;
+use OCA\Buildiq\Service\RegisterStore;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -119,13 +121,17 @@ class ApplicationsControllerDiffTest extends TestCase {
 		$this->controller = new ApplicationsController(
 			request: $request,
 			logger: $this->logger,
-			objectService: $this->objectService,
-			registerMapper: $registerMapper,
-			schemaMapper: $schemaMapper,
-			userSession: $userSession,
-			groupManager: $groupManager,
+			store: new RegisterStore(
+				objectService: $this->objectService,
+				registerMapper: $registerMapper,
+				schemaMapper: $schemaMapper
+			),
+			caller: new CallerContext(
+				userSession: $userSession,
+				groupManager: $groupManager,
+				permissionResolver: $permissionResolver
+			),
 			manifestResolver: $this->createMock(ManifestResolverService::class),
-			permissionResolver: $permissionResolver,
 			channelApplier: $this->createMock(\OCA\Buildiq\Service\AppChannelApplier::class),
 		);
 	}//end setUp()
@@ -367,13 +373,17 @@ class ApplicationsControllerDiffTest extends TestCase {
 		$controller = new ApplicationsController(
 			request: $request,
 			logger: $this->createMock(LoggerInterface::class),
-			objectService: $objectService,
-			registerMapper: $registerMapper,
-			schemaMapper: $schemaMapper,
-			userSession: $outsiderSession,
-			groupManager: $noAdminGroupManager,
+			store: new RegisterStore(
+				objectService: $objectService,
+				registerMapper: $registerMapper,
+				schemaMapper: $schemaMapper
+			),
+			caller: new CallerContext(
+				userSession: $outsiderSession,
+				groupManager: $noAdminGroupManager,
+				permissionResolver: $noAdminPermissionResolver
+			),
 			manifestResolver: $this->createMock(ManifestResolverService::class),
-			permissionResolver: $noAdminPermissionResolver,
 			channelApplier: $this->createMock(\OCA\Buildiq\Service\AppChannelApplier::class),
 		);
 

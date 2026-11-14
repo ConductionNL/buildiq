@@ -23,7 +23,7 @@
 			{{
 				t(
 					'buildiq',
-					'No widget catalogue registered yet — widget IDs are free-text. The page editor (chain spec #5) will narrow this to a picker once it ships.',
+					'There is no list of widgets yet, so type the widget ID yourself.',
 				)
 			}}
 		</NcNoteCard>
@@ -90,7 +90,7 @@ export default {
 		/**
 		 * Emit the updated widgets array to the parent.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
 		 * @param {Array} next The next widgets array.
 		 * @return {void}
 		 */
@@ -101,7 +101,7 @@ export default {
 		/**
 		 * Append a new blank widget row.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
 		 * @return {void}
 		 */
 		addWidget() {
@@ -119,7 +119,7 @@ export default {
 		/**
 		 * Update a single field of a widget row.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
 		 * @param {number} index Row index.
 		 * @param {string} key Field key.
 		 * @param {*} value New value.
@@ -134,7 +134,7 @@ export default {
 		/**
 		 * Update a widget's config JSON, validating it parses.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
 		 * @param {number} index Row index.
 		 * @param {string} value Raw JSON string.
 		 * @return {void}
@@ -154,7 +154,7 @@ export default {
 		/**
 		 * Remove a widget row by index.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
 		 * @param {number} index Row index.
 		 * @return {void}
 		 */
@@ -213,7 +213,9 @@ export function editorToWidgets(widgets) {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../assets/editor-controls.scss' as c;
+
 .buildiq-widget-editor {
 	display: flex;
 	flex-direction: column;
@@ -238,12 +240,7 @@ export function editorToWidgets(widgets) {
 }
 
 .buildiq-widget-editor__rows {
-	list-style: none;
-	margin: 0;
-	padding: 0;
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
+	@include c.plain-list(8px);
 }
 
 .buildiq-widget-editor__row {

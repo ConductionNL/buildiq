@@ -25,10 +25,12 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Mcp\Handler;
 
+use OCA\Buildiq\Kernel\Contracts\ApplicationCreationServiceInterface;
+
 /**
  * Handles the buildiq.createApp tool invocation.
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-8
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-8
  */
 class CreateAppHandler extends AbstractToolHandler {
 
@@ -60,7 +62,7 @@ class CreateAppHandler extends AbstractToolHandler {
 		}
 
 		try {
-			$creationService = $this->container->get('OCA\Buildiq\Service\ApplicationCreationService');
+			$creationService = $this->container->get(ApplicationCreationServiceInterface::class);
 			$appUuid = $creationService->createApplication(
 				[
 					'slug' => $slug,

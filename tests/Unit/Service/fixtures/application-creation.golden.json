@@ -1,0 +1,4162 @@
+{
+    "success single": {
+        "result": "uuid-1",
+        "calls": [
+            {
+                "objectService.lockObject#1": {
+                    "identifier": "createApp:permit-tracker",
+                    "process": "buildiq.createApplication",
+                    "duration": 10,
+                    "advisory": true
+                }
+            },
+            {
+                "registerMapper.find#1": {
+                    "id": "buildiq",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "schemaMapper.find#1": {
+                    "id": "built-app",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "objectService.searchObjects#1": {
+                    "query": {
+                        "@self": {
+                            "register": 11,
+                            "schema": 101
+                        },
+                        "slug": "permit-tracker"
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false
+                }
+            },
+            {
+                "objectService.saveObject#1": {
+                    "object": {
+                        "slug": "permit-tracker",
+                        "name": "Permit tracker",
+                        "description": "Tracks permits",
+                        "permissions": {
+                            "owners": [
+                                "user:alice"
+                            ],
+                            "editors": [],
+                            "viewers": []
+                        }
+                    },
+                    "register": "buildiq",
+                    "schema": "built-app"
+                }
+            },
+            {
+                "objectService.saveObject#2": {
+                    "object": {
+                        "name": "Production",
+                        "slug": "production",
+                        "manifest": "sha1:ad16840c1c1eb9b365ff6acf6567454bed6dc7ef",
+                        "register": "openbuild-permit-tracker-production",
+                        "semver": "0.1.0",
+                        "status": "draft",
+                        "application": "uuid-1"
+                    },
+                    "register": "buildiq",
+                    "schema": "applicationVersion"
+                }
+            },
+            {
+                "registerMapper.createFromArray#1": {
+                    "object": {
+                        "slug": "openbuild-permit-tracker-production",
+                        "title": "Buildiq — permit-tracker (production)",
+                        "description": "Per-version schema namespace for Buildiq app `permit-tracker` version `production`.",
+                        "version": "0.1.0",
+                        "schemas": []
+                    }
+                }
+            },
+            {
+                "schemaMapper.createFromArray#1": {
+                    "object": {
+                        "slug": "permit-tracker-production-hello-message",
+                        "title": "Hello Message",
+                        "description": "Default message schema seeded into every wizard-provisioned per-version register.",
+                        "type": "object",
+                        "required": [
+                            "body"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "description": "Unique identifier."
+                            },
+                            "body": {
+                                "type": "string",
+                                "description": "Message body content."
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                "register-11.setSchemas": [
+                    101
+                ]
+            },
+            {
+                "registerMapper.update#1": {
+                    "entity": "OCA\\OpenRegister\\Db\\Register#11"
+                }
+            },
+            {
+                "objectService.saveObject#3": {
+                    "object": {
+                        "slug": "permit-tracker",
+                        "name": "Permit tracker",
+                        "description": "Tracks permits",
+                        "permissions": {
+                            "owners": [
+                                "user:alice"
+                            ],
+                            "editors": [],
+                            "viewers": []
+                        },
+                        "productionVersion": "uuid-2"
+                    },
+                    "register": "buildiq",
+                    "schema": "built-app",
+                    "uuid": "uuid-1"
+                }
+            },
+            {
+                "objectService.saveObject#4": {
+                    "object": {
+                        "slug": "permit-tracker",
+                        "applicationUuid": "uuid-1"
+                    },
+                    "register": "buildiq",
+                    "schema": "built-app-route"
+                }
+            },
+            {
+                "logger.info#1": {
+                    "message": "Buildiq: wizard successfully created Application permit-tracker (uuid: uuid-1) with 1 version(s)."
+                }
+            },
+            {
+                "objectService.unlockObject#1": {
+                    "identifier": "createApp:permit-tracker",
+                    "advisory": true
+                }
+            }
+        ]
+    },
+    "success dev-prod": {
+        "result": "uuid-1",
+        "calls": [
+            {
+                "objectService.lockObject#1": {
+                    "identifier": "createApp:permit-tracker",
+                    "process": "buildiq.createApplication",
+                    "duration": 10,
+                    "advisory": true
+                }
+            },
+            {
+                "registerMapper.find#1": {
+                    "id": "buildiq",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "schemaMapper.find#1": {
+                    "id": "built-app",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "objectService.searchObjects#1": {
+                    "query": {
+                        "@self": {
+                            "register": 11,
+                            "schema": 101
+                        },
+                        "slug": "permit-tracker"
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false
+                }
+            },
+            {
+                "objectService.saveObject#1": {
+                    "object": {
+                        "slug": "permit-tracker",
+                        "name": "Permit tracker",
+                        "description": "",
+                        "permissions": {
+                            "owners": [
+                                "user:alice"
+                            ],
+                            "editors": [],
+                            "viewers": []
+                        }
+                    },
+                    "register": "buildiq",
+                    "schema": "built-app"
+                }
+            },
+            {
+                "objectService.saveObject#2": {
+                    "object": {
+                        "name": "Development",
+                        "slug": "development",
+                        "manifest": "sha1:89493426cb2cfd85c5202a850fa4e08e565bd38c",
+                        "register": "openbuild-permit-tracker-development",
+                        "semver": "0.1.0",
+                        "status": "draft",
+                        "application": "uuid-1"
+                    },
+                    "register": "buildiq",
+                    "schema": "applicationVersion"
+                }
+            },
+            {
+                "registerMapper.createFromArray#1": {
+                    "object": {
+                        "slug": "openbuild-permit-tracker-development",
+                        "title": "Buildiq — permit-tracker (development)",
+                        "description": "Per-version schema namespace for Buildiq app `permit-tracker` version `development`.",
+                        "version": "0.1.0",
+                        "schemas": []
+                    }
+                }
+            },
+            {
+                "schemaMapper.createFromArray#1": {
+                    "object": {
+                        "slug": "permit-tracker-development-hello-message",
+                        "title": "Hello Message",
+                        "description": "Default message schema seeded into every wizard-provisioned per-version register.",
+                        "type": "object",
+                        "required": [
+                            "body"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "description": "Unique identifier."
+                            },
+                            "body": {
+                                "type": "string",
+                                "description": "Message body content."
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                "register-11.setSchemas": [
+                    101
+                ]
+            },
+            {
+                "registerMapper.update#1": {
+                    "entity": "OCA\\OpenRegister\\Db\\Register#11"
+                }
+            },
+            {
+                "objectService.saveObject#3": {
+                    "object": {
+                        "name": "Production",
+                        "slug": "production",
+                        "manifest": "sha1:ad16840c1c1eb9b365ff6acf6567454bed6dc7ef",
+                        "register": "openbuild-permit-tracker-production",
+                        "semver": "0.1.0",
+                        "status": "draft",
+                        "application": "uuid-1"
+                    },
+                    "register": "buildiq",
+                    "schema": "applicationVersion"
+                }
+            },
+            {
+                "registerMapper.createFromArray#2": {
+                    "object": {
+                        "slug": "openbuild-permit-tracker-production",
+                        "title": "Buildiq — permit-tracker (production)",
+                        "description": "Per-version schema namespace for Buildiq app `permit-tracker` version `production`.",
+                        "version": "0.1.0",
+                        "schemas": []
+                    }
+                }
+            },
+            {
+                "schemaMapper.createFromArray#2": {
+                    "object": {
+                        "slug": "permit-tracker-production-hello-message",
+                        "title": "Hello Message",
+                        "description": "Default message schema seeded into every wizard-provisioned per-version register.",
+                        "type": "object",
+                        "required": [
+                            "body"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "description": "Unique identifier."
+                            },
+                            "body": {
+                                "type": "string",
+                                "description": "Message body content."
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                "register-12.setSchemas": [
+                    102
+                ]
+            },
+            {
+                "registerMapper.update#2": {
+                    "entity": "OCA\\OpenRegister\\Db\\Register#12"
+                }
+            },
+            {
+                "objectService.saveObject#4": {
+                    "object": {
+                        "name": "Development",
+                        "slug": "development",
+                        "manifest": "sha1:89493426cb2cfd85c5202a850fa4e08e565bd38c",
+                        "register": "openbuild-permit-tracker-development",
+                        "semver": "0.1.0",
+                        "status": "draft",
+                        "application": "uuid-1",
+                        "promotesTo": "uuid-3"
+                    },
+                    "register": "buildiq",
+                    "schema": "applicationVersion",
+                    "uuid": "uuid-2"
+                }
+            },
+            {
+                "objectService.saveObject#5": {
+                    "object": {
+                        "slug": "permit-tracker",
+                        "name": "Permit tracker",
+                        "description": "",
+                        "permissions": {
+                            "owners": [
+                                "user:alice"
+                            ],
+                            "editors": [],
+                            "viewers": []
+                        },
+                        "productionVersion": "uuid-3"
+                    },
+                    "register": "buildiq",
+                    "schema": "built-app",
+                    "uuid": "uuid-1"
+                }
+            },
+            {
+                "objectService.saveObject#6": {
+                    "object": {
+                        "slug": "permit-tracker",
+                        "applicationUuid": "uuid-1"
+                    },
+                    "register": "buildiq",
+                    "schema": "built-app-route"
+                }
+            },
+            {
+                "logger.info#1": {
+                    "message": "Buildiq: wizard successfully created Application permit-tracker (uuid: uuid-1) with 2 version(s)."
+                }
+            },
+            {
+                "objectService.unlockObject#1": {
+                    "identifier": "createApp:permit-tracker",
+                    "advisory": true
+                }
+            }
+        ]
+    },
+    "success dev-staging-prod": {
+        "result": "uuid-1",
+        "calls": [
+            {
+                "objectService.lockObject#1": {
+                    "identifier": "createApp:permit-tracker",
+                    "process": "buildiq.createApplication",
+                    "duration": 10,
+                    "advisory": true
+                }
+            },
+            {
+                "registerMapper.find#1": {
+                    "id": "buildiq",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "schemaMapper.find#1": {
+                    "id": "built-app",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "objectService.searchObjects#1": {
+                    "query": {
+                        "@self": {
+                            "register": 11,
+                            "schema": 101
+                        },
+                        "slug": "permit-tracker"
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false
+                }
+            },
+            {
+                "objectService.saveObject#1": {
+                    "object": {
+                        "slug": "permit-tracker",
+                        "name": "Permit tracker",
+                        "description": "",
+                        "permissions": {
+                            "owners": [
+                                "user:alice"
+                            ],
+                            "editors": [],
+                            "viewers": []
+                        }
+                    },
+                    "register": "buildiq",
+                    "schema": "built-app"
+                }
+            },
+            {
+                "objectService.saveObject#2": {
+                    "object": {
+                        "name": "Development",
+                        "slug": "development",
+                        "manifest": "sha1:89493426cb2cfd85c5202a850fa4e08e565bd38c",
+                        "register": "openbuild-permit-tracker-development",
+                        "semver": "0.1.0",
+                        "status": "draft",
+                        "application": "uuid-1"
+                    },
+                    "register": "buildiq",
+                    "schema": "applicationVersion"
+                }
+            },
+            {
+                "registerMapper.createFromArray#1": {
+                    "object": {
+                        "slug": "openbuild-permit-tracker-development",
+                        "title": "Buildiq — permit-tracker (development)",
+                        "description": "Per-version schema namespace for Buildiq app `permit-tracker` version `development`.",
+                        "version": "0.1.0",
+                        "schemas": []
+                    }
+                }
+            },
+            {
+                "schemaMapper.createFromArray#1": {
+                    "object": {
+                        "slug": "permit-tracker-development-hello-message",
+                        "title": "Hello Message",
+                        "description": "Default message schema seeded into every wizard-provisioned per-version register.",
+                        "type": "object",
+                        "required": [
+                            "body"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "description": "Unique identifier."
+                            },
+                            "body": {
+                                "type": "string",
+                                "description": "Message body content."
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                "register-11.setSchemas": [
+                    101
+                ]
+            },
+            {
+                "registerMapper.update#1": {
+                    "entity": "OCA\\OpenRegister\\Db\\Register#11"
+                }
+            },
+            {
+                "objectService.saveObject#3": {
+                    "object": {
+                        "name": "Staging",
+                        "slug": "staging",
+                        "manifest": "sha1:a8420fec79541a400439908ee1d5cb121d915f22",
+                        "register": "openbuild-permit-tracker-staging",
+                        "semver": "0.1.0",
+                        "status": "draft",
+                        "application": "uuid-1"
+                    },
+                    "register": "buildiq",
+                    "schema": "applicationVersion"
+                }
+            },
+            {
+                "registerMapper.createFromArray#2": {
+                    "object": {
+                        "slug": "openbuild-permit-tracker-staging",
+                        "title": "Buildiq — permit-tracker (staging)",
+                        "description": "Per-version schema namespace for Buildiq app `permit-tracker` version `staging`.",
+                        "version": "0.1.0",
+                        "schemas": []
+                    }
+                }
+            },
+            {
+                "schemaMapper.createFromArray#2": {
+                    "object": {
+                        "slug": "permit-tracker-staging-hello-message",
+                        "title": "Hello Message",
+                        "description": "Default message schema seeded into every wizard-provisioned per-version register.",
+                        "type": "object",
+                        "required": [
+                            "body"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "description": "Unique identifier."
+                            },
+                            "body": {
+                                "type": "string",
+                                "description": "Message body content."
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                "register-12.setSchemas": [
+                    102
+                ]
+            },
+            {
+                "registerMapper.update#2": {
+                    "entity": "OCA\\OpenRegister\\Db\\Register#12"
+                }
+            },
+            {
+                "objectService.saveObject#4": {
+                    "object": {
+                        "name": "Production",
+                        "slug": "production",
+                        "manifest": "sha1:ad16840c1c1eb9b365ff6acf6567454bed6dc7ef",
+                        "register": "openbuild-permit-tracker-production",
+                        "semver": "0.1.0",
+                        "status": "draft",
+                        "application": "uuid-1"
+                    },
+                    "register": "buildiq",
+                    "schema": "applicationVersion"
+                }
+            },
+            {
+                "registerMapper.createFromArray#3": {
+                    "object": {
+                        "slug": "openbuild-permit-tracker-production",
+                        "title": "Buildiq — permit-tracker (production)",
+                        "description": "Per-version schema namespace for Buildiq app `permit-tracker` version `production`.",
+                        "version": "0.1.0",
+                        "schemas": []
+                    }
+                }
+            },
+            {
+                "schemaMapper.createFromArray#3": {
+                    "object": {
+                        "slug": "permit-tracker-production-hello-message",
+                        "title": "Hello Message",
+                        "description": "Default message schema seeded into every wizard-provisioned per-version register.",
+                        "type": "object",
+                        "required": [
+                            "body"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "description": "Unique identifier."
+                            },
+                            "body": {
+                                "type": "string",
+                                "description": "Message body content."
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                "register-13.setSchemas": [
+                    103
+                ]
+            },
+            {
+                "registerMapper.update#3": {
+                    "entity": "OCA\\OpenRegister\\Db\\Register#13"
+                }
+            },
+            {
+                "objectService.saveObject#5": {
+                    "object": {
+                        "name": "Development",
+                        "slug": "development",
+                        "manifest": "sha1:89493426cb2cfd85c5202a850fa4e08e565bd38c",
+                        "register": "openbuild-permit-tracker-development",
+                        "semver": "0.1.0",
+                        "status": "draft",
+                        "application": "uuid-1",
+                        "promotesTo": "uuid-3"
+                    },
+                    "register": "buildiq",
+                    "schema": "applicationVersion",
+                    "uuid": "uuid-2"
+                }
+            },
+            {
+                "objectService.saveObject#6": {
+                    "object": {
+                        "name": "Staging",
+                        "slug": "staging",
+                        "manifest": "sha1:a8420fec79541a400439908ee1d5cb121d915f22",
+                        "register": "openbuild-permit-tracker-staging",
+                        "semver": "0.1.0",
+                        "status": "draft",
+                        "application": "uuid-1",
+                        "promotesTo": "uuid-4"
+                    },
+                    "register": "buildiq",
+                    "schema": "applicationVersion",
+                    "uuid": "uuid-3"
+                }
+            },
+            {
+                "objectService.saveObject#7": {
+                    "object": {
+                        "slug": "permit-tracker",
+                        "name": "Permit tracker",
+                        "description": "",
+                        "permissions": {
+                            "owners": [
+                                "user:alice"
+                            ],
+                            "editors": [],
+                            "viewers": []
+                        },
+                        "productionVersion": "uuid-4"
+                    },
+                    "register": "buildiq",
+                    "schema": "built-app",
+                    "uuid": "uuid-1"
+                }
+            },
+            {
+                "objectService.saveObject#8": {
+                    "object": {
+                        "slug": "permit-tracker",
+                        "applicationUuid": "uuid-1"
+                    },
+                    "register": "buildiq",
+                    "schema": "built-app-route"
+                }
+            },
+            {
+                "logger.info#1": {
+                    "message": "Buildiq: wizard successfully created Application permit-tracker (uuid: uuid-1) with 3 version(s)."
+                }
+            },
+            {
+                "objectService.unlockObject#1": {
+                    "identifier": "createApp:permit-tracker",
+                    "advisory": true
+                }
+            }
+        ]
+    },
+    "success custom versions": {
+        "result": "uuid-1",
+        "calls": [
+            {
+                "objectService.lockObject#1": {
+                    "identifier": "createApp:custom-app",
+                    "process": "buildiq.createApplication",
+                    "duration": 10,
+                    "advisory": true
+                }
+            },
+            {
+                "registerMapper.find#1": {
+                    "id": "buildiq",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "schemaMapper.find#1": {
+                    "id": "built-app",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "objectService.searchObjects#1": {
+                    "query": {
+                        "@self": {
+                            "register": 11,
+                            "schema": 101
+                        },
+                        "slug": "custom-app"
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false
+                }
+            },
+            {
+                "objectService.saveObject#1": {
+                    "object": {
+                        "slug": "custom-app",
+                        "name": "Custom",
+                        "description": "",
+                        "permissions": {
+                            "owners": [
+                                "user:alice"
+                            ],
+                            "editors": [],
+                            "viewers": []
+                        }
+                    },
+                    "register": "buildiq",
+                    "schema": "built-app"
+                }
+            },
+            {
+                "objectService.saveObject#2": {
+                    "object": {
+                        "name": "Alpha",
+                        "slug": "alpha",
+                        "manifest": "sha1:9df6e1f696a3cb360c3a9d9909cc1caffa307a4f",
+                        "register": "openbuild-custom-app-alpha",
+                        "semver": "0.1.0",
+                        "status": "draft",
+                        "application": "uuid-1"
+                    },
+                    "register": "buildiq",
+                    "schema": "applicationVersion"
+                }
+            },
+            {
+                "registerMapper.createFromArray#1": {
+                    "object": {
+                        "slug": "openbuild-custom-app-alpha",
+                        "title": "Buildiq — custom-app (alpha)",
+                        "description": "Per-version schema namespace for Buildiq app `custom-app` version `alpha`.",
+                        "version": "0.1.0",
+                        "schemas": []
+                    }
+                }
+            },
+            {
+                "schemaMapper.createFromArray#1": {
+                    "object": {
+                        "slug": "custom-app-alpha-hello-message",
+                        "title": "Hello Message",
+                        "description": "Default message schema seeded into every wizard-provisioned per-version register.",
+                        "type": "object",
+                        "required": [
+                            "body"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "description": "Unique identifier."
+                            },
+                            "body": {
+                                "type": "string",
+                                "description": "Message body content."
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                "register-11.setSchemas": [
+                    101
+                ]
+            },
+            {
+                "registerMapper.update#1": {
+                    "entity": "OCA\\OpenRegister\\Db\\Register#11"
+                }
+            },
+            {
+                "objectService.saveObject#3": {
+                    "object": {
+                        "name": "Beta",
+                        "slug": "beta",
+                        "manifest": "sha1:d6149257f8d94c2ebd8331dbae7a130daf6734dc",
+                        "register": "openbuild-custom-app-beta",
+                        "semver": "0.1.0",
+                        "status": "draft",
+                        "application": "uuid-1"
+                    },
+                    "register": "buildiq",
+                    "schema": "applicationVersion"
+                }
+            },
+            {
+                "registerMapper.createFromArray#2": {
+                    "object": {
+                        "slug": "openbuild-custom-app-beta",
+                        "title": "Buildiq — custom-app (beta)",
+                        "description": "Per-version schema namespace for Buildiq app `custom-app` version `beta`.",
+                        "version": "0.1.0",
+                        "schemas": []
+                    }
+                }
+            },
+            {
+                "schemaMapper.createFromArray#2": {
+                    "object": {
+                        "slug": "custom-app-beta-hello-message",
+                        "title": "Hello Message",
+                        "description": "Default message schema seeded into every wizard-provisioned per-version register.",
+                        "type": "object",
+                        "required": [
+                            "body"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "description": "Unique identifier."
+                            },
+                            "body": {
+                                "type": "string",
+                                "description": "Message body content."
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                "register-12.setSchemas": [
+                    102
+                ]
+            },
+            {
+                "registerMapper.update#2": {
+                    "entity": "OCA\\OpenRegister\\Db\\Register#12"
+                }
+            },
+            {
+                "objectService.saveObject#4": {
+                    "object": {
+                        "name": "Alpha",
+                        "slug": "alpha",
+                        "manifest": "sha1:9df6e1f696a3cb360c3a9d9909cc1caffa307a4f",
+                        "register": "openbuild-custom-app-alpha",
+                        "semver": "0.1.0",
+                        "status": "draft",
+                        "application": "uuid-1",
+                        "promotesTo": "uuid-3"
+                    },
+                    "register": "buildiq",
+                    "schema": "applicationVersion",
+                    "uuid": "uuid-2"
+                }
+            },
+            {
+                "objectService.saveObject#5": {
+                    "object": {
+                        "slug": "custom-app",
+                        "name": "Custom",
+                        "description": "",
+                        "permissions": {
+                            "owners": [
+                                "user:alice"
+                            ],
+                            "editors": [],
+                            "viewers": []
+                        },
+                        "productionVersion": "uuid-3"
+                    },
+                    "register": "buildiq",
+                    "schema": "built-app",
+                    "uuid": "uuid-1"
+                }
+            },
+            {
+                "objectService.saveObject#6": {
+                    "object": {
+                        "slug": "custom-app",
+                        "applicationUuid": "uuid-1"
+                    },
+                    "register": "buildiq",
+                    "schema": "built-app-route"
+                }
+            },
+            {
+                "logger.info#1": {
+                    "message": "Buildiq: wizard successfully created Application custom-app (uuid: uuid-1) with 2 version(s)."
+                }
+            },
+            {
+                "objectService.unlockObject#1": {
+                    "identifier": "createApp:custom-app",
+                    "advisory": true
+                }
+            }
+        ]
+    },
+    "no user session": {
+        "result": "uuid-1",
+        "calls": [
+            {
+                "objectService.lockObject#1": {
+                    "identifier": "createApp:permit-tracker",
+                    "process": "buildiq.createApplication",
+                    "duration": 10,
+                    "advisory": true
+                }
+            },
+            {
+                "registerMapper.find#1": {
+                    "id": "buildiq",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "schemaMapper.find#1": {
+                    "id": "built-app",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "objectService.searchObjects#1": {
+                    "query": {
+                        "@self": {
+                            "register": 11,
+                            "schema": 101
+                        },
+                        "slug": "permit-tracker"
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false
+                }
+            },
+            {
+                "objectService.saveObject#1": {
+                    "object": {
+                        "slug": "permit-tracker",
+                        "name": "Permit tracker",
+                        "description": "Tracks permits",
+                        "permissions": {
+                            "owners": [
+                                "user:unknown"
+                            ],
+                            "editors": [],
+                            "viewers": []
+                        }
+                    },
+                    "register": "buildiq",
+                    "schema": "built-app"
+                }
+            },
+            {
+                "objectService.saveObject#2": {
+                    "object": {
+                        "name": "Production",
+                        "slug": "production",
+                        "manifest": "sha1:ad16840c1c1eb9b365ff6acf6567454bed6dc7ef",
+                        "register": "openbuild-permit-tracker-production",
+                        "semver": "0.1.0",
+                        "status": "draft",
+                        "application": "uuid-1"
+                    },
+                    "register": "buildiq",
+                    "schema": "applicationVersion"
+                }
+            },
+            {
+                "registerMapper.createFromArray#1": {
+                    "object": {
+                        "slug": "openbuild-permit-tracker-production",
+                        "title": "Buildiq — permit-tracker (production)",
+                        "description": "Per-version schema namespace for Buildiq app `permit-tracker` version `production`.",
+                        "version": "0.1.0",
+                        "schemas": []
+                    }
+                }
+            },
+            {
+                "schemaMapper.createFromArray#1": {
+                    "object": {
+                        "slug": "permit-tracker-production-hello-message",
+                        "title": "Hello Message",
+                        "description": "Default message schema seeded into every wizard-provisioned per-version register.",
+                        "type": "object",
+                        "required": [
+                            "body"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "description": "Unique identifier."
+                            },
+                            "body": {
+                                "type": "string",
+                                "description": "Message body content."
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                "register-11.setSchemas": [
+                    101
+                ]
+            },
+            {
+                "registerMapper.update#1": {
+                    "entity": "OCA\\OpenRegister\\Db\\Register#11"
+                }
+            },
+            {
+                "objectService.saveObject#3": {
+                    "object": {
+                        "slug": "permit-tracker",
+                        "name": "Permit tracker",
+                        "description": "Tracks permits",
+                        "permissions": {
+                            "owners": [
+                                "user:unknown"
+                            ],
+                            "editors": [],
+                            "viewers": []
+                        },
+                        "productionVersion": "uuid-2"
+                    },
+                    "register": "buildiq",
+                    "schema": "built-app",
+                    "uuid": "uuid-1"
+                }
+            },
+            {
+                "objectService.saveObject#4": {
+                    "object": {
+                        "slug": "permit-tracker",
+                        "applicationUuid": "uuid-1"
+                    },
+                    "register": "buildiq",
+                    "schema": "built-app-route"
+                }
+            },
+            {
+                "logger.info#1": {
+                    "message": "Buildiq: wizard successfully created Application permit-tracker (uuid: uuid-1) with 1 version(s)."
+                }
+            },
+            {
+                "objectService.unlockObject#1": {
+                    "identifier": "createApp:permit-tracker",
+                    "advisory": true
+                }
+            }
+        ]
+    },
+    "lock taken": {
+        "exception": {
+            "errorCode": "app_slug_conflict",
+            "failedAtStep": "validate",
+            "message": "An Application with slug \"permit-tracker\" is being created by another request.",
+            "rollbackStatus": "none",
+            "orphaned": [],
+            "previous": {
+                "class": "RuntimeException",
+                "message": "locked"
+            }
+        },
+        "calls": [
+            {
+                "objectService.lockObject#1": {
+                    "identifier": "createApp:permit-tracker",
+                    "process": "buildiq.createApplication",
+                    "duration": 10,
+                    "advisory": true
+                }
+            }
+        ]
+    },
+    "invalid slug": {
+        "exception": {
+            "errorCode": "validation_error",
+            "failedAtStep": "validate",
+            "message": "Slug must match `^(?!_)[a-z0-9][a-z0-9-]*[a-z0-9]$` — lowercase letters, digits, and hyphens only.",
+            "rollbackStatus": "none",
+            "orphaned": [],
+            "previous": null
+        },
+        "calls": [
+            {
+                "objectService.lockObject#1": {
+                    "identifier": "createApp:Not A Slug",
+                    "process": "buildiq.createApplication",
+                    "duration": 10,
+                    "advisory": true
+                }
+            },
+            {
+                "objectService.unlockObject#1": {
+                    "identifier": "createApp:Not A Slug",
+                    "advisory": true
+                }
+            }
+        ]
+    },
+    "empty slug": {
+        "exception": {
+            "errorCode": "validation_error",
+            "failedAtStep": "validate",
+            "message": "Application slug must not be empty.",
+            "rollbackStatus": "none",
+            "orphaned": [],
+            "previous": null
+        },
+        "calls": []
+    },
+    "slug already exists": {
+        "exception": {
+            "errorCode": "app_slug_conflict",
+            "failedAtStep": "validate",
+            "message": "An Application with slug \"permit-tracker\" already exists.",
+            "rollbackStatus": "none",
+            "orphaned": [],
+            "previous": null
+        },
+        "calls": [
+            {
+                "objectService.lockObject#1": {
+                    "identifier": "createApp:permit-tracker",
+                    "process": "buildiq.createApplication",
+                    "duration": 10,
+                    "advisory": true
+                }
+            },
+            {
+                "registerMapper.find#1": {
+                    "id": "buildiq",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "schemaMapper.find#1": {
+                    "id": "built-app",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "objectService.searchObjects#1": {
+                    "query": {
+                        "@self": {
+                            "register": 11,
+                            "schema": 101
+                        },
+                        "slug": "permit-tracker"
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false
+                }
+            },
+            {
+                "objectService.unlockObject#1": {
+                    "identifier": "createApp:permit-tracker",
+                    "advisory": true
+                }
+            }
+        ]
+    },
+    "slug check fails": {
+        "exception": {
+            "errorCode": "slug_check_failed",
+            "failedAtStep": "validate",
+            "message": "Could not verify slug uniqueness: db down",
+            "rollbackStatus": "none",
+            "orphaned": [],
+            "previous": {
+                "class": "RuntimeException",
+                "message": "db down"
+            }
+        },
+        "calls": [
+            {
+                "objectService.lockObject#1": {
+                    "identifier": "createApp:permit-tracker",
+                    "process": "buildiq.createApplication",
+                    "duration": 10,
+                    "advisory": true
+                }
+            },
+            {
+                "registerMapper.find#1": {
+                    "id": "buildiq",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "schemaMapper.find#1": {
+                    "id": "built-app",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "objectService.searchObjects#1": {
+                    "query": {
+                        "@self": {
+                            "register": 11,
+                            "schema": 101
+                        },
+                        "slug": "permit-tracker"
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false
+                }
+            },
+            {
+                "objectService.unlockObject#1": {
+                    "identifier": "createApp:permit-tracker",
+                    "advisory": true
+                }
+            }
+        ]
+    },
+    "app save duplicate": {
+        "exception": {
+            "errorCode": "app_slug_conflict",
+            "failedAtStep": "validate",
+            "message": "An Application with slug \"permit-tracker\" already exists.",
+            "rollbackStatus": "none",
+            "orphaned": [],
+            "previous": {
+                "class": "RuntimeException",
+                "message": "SQLSTATE: Duplicate entry"
+            }
+        },
+        "calls": [
+            {
+                "objectService.lockObject#1": {
+                    "identifier": "createApp:permit-tracker",
+                    "process": "buildiq.createApplication",
+                    "duration": 10,
+                    "advisory": true
+                }
+            },
+            {
+                "registerMapper.find#1": {
+                    "id": "buildiq",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "schemaMapper.find#1": {
+                    "id": "built-app",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "objectService.searchObjects#1": {
+                    "query": {
+                        "@self": {
+                            "register": 11,
+                            "schema": 101
+                        },
+                        "slug": "permit-tracker"
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false
+                }
+            },
+            {
+                "objectService.saveObject#1": {
+                    "object": {
+                        "slug": "permit-tracker",
+                        "name": "Permit tracker",
+                        "description": "Tracks permits",
+                        "permissions": {
+                            "owners": [
+                                "user:alice"
+                            ],
+                            "editors": [],
+                            "viewers": []
+                        }
+                    },
+                    "register": "buildiq",
+                    "schema": "built-app"
+                }
+            },
+            {
+                "objectService.unlockObject#1": {
+                    "identifier": "createApp:permit-tracker",
+                    "advisory": true
+                }
+            }
+        ]
+    },
+    "app save unique constraint": {
+        "exception": {
+            "errorCode": "app_slug_conflict",
+            "failedAtStep": "validate",
+            "message": "An Application with slug \"permit-tracker\" already exists.",
+            "rollbackStatus": "none",
+            "orphaned": [],
+            "previous": {
+                "class": "RuntimeException",
+                "message": "violates unique constraint"
+            }
+        },
+        "calls": [
+            {
+                "objectService.lockObject#1": {
+                    "identifier": "createApp:permit-tracker",
+                    "process": "buildiq.createApplication",
+                    "duration": 10,
+                    "advisory": true
+                }
+            },
+            {
+                "registerMapper.find#1": {
+                    "id": "buildiq",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "schemaMapper.find#1": {
+                    "id": "built-app",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "objectService.searchObjects#1": {
+                    "query": {
+                        "@self": {
+                            "register": 11,
+                            "schema": 101
+                        },
+                        "slug": "permit-tracker"
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false
+                }
+            },
+            {
+                "objectService.saveObject#1": {
+                    "object": {
+                        "slug": "permit-tracker",
+                        "name": "Permit tracker",
+                        "description": "Tracks permits",
+                        "permissions": {
+                            "owners": [
+                                "user:alice"
+                            ],
+                            "editors": [],
+                            "viewers": []
+                        }
+                    },
+                    "register": "buildiq",
+                    "schema": "built-app"
+                }
+            },
+            {
+                "objectService.unlockObject#1": {
+                    "identifier": "createApp:permit-tracker",
+                    "advisory": true
+                }
+            }
+        ]
+    },
+    "app save UNIQUE": {
+        "exception": {
+            "errorCode": "app_slug_conflict",
+            "failedAtStep": "validate",
+            "message": "An Application with slug \"permit-tracker\" already exists.",
+            "rollbackStatus": "none",
+            "orphaned": [],
+            "previous": {
+                "class": "RuntimeException",
+                "message": "UNIQUE failed"
+            }
+        },
+        "calls": [
+            {
+                "objectService.lockObject#1": {
+                    "identifier": "createApp:permit-tracker",
+                    "process": "buildiq.createApplication",
+                    "duration": 10,
+                    "advisory": true
+                }
+            },
+            {
+                "registerMapper.find#1": {
+                    "id": "buildiq",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "schemaMapper.find#1": {
+                    "id": "built-app",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "objectService.searchObjects#1": {
+                    "query": {
+                        "@self": {
+                            "register": 11,
+                            "schema": 101
+                        },
+                        "slug": "permit-tracker"
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false
+                }
+            },
+            {
+                "objectService.saveObject#1": {
+                    "object": {
+                        "slug": "permit-tracker",
+                        "name": "Permit tracker",
+                        "description": "Tracks permits",
+                        "permissions": {
+                            "owners": [
+                                "user:alice"
+                            ],
+                            "editors": [],
+                            "viewers": []
+                        }
+                    },
+                    "register": "buildiq",
+                    "schema": "built-app"
+                }
+            },
+            {
+                "objectService.unlockObject#1": {
+                    "identifier": "createApp:permit-tracker",
+                    "advisory": true
+                }
+            }
+        ]
+    },
+    "app save duplicate lower": {
+        "exception": {
+            "errorCode": "app_slug_conflict",
+            "failedAtStep": "validate",
+            "message": "An Application with slug \"permit-tracker\" already exists.",
+            "rollbackStatus": "none",
+            "orphaned": [],
+            "previous": {
+                "class": "RuntimeException",
+                "message": "duplicate key"
+            }
+        },
+        "calls": [
+            {
+                "objectService.lockObject#1": {
+                    "identifier": "createApp:permit-tracker",
+                    "process": "buildiq.createApplication",
+                    "duration": 10,
+                    "advisory": true
+                }
+            },
+            {
+                "registerMapper.find#1": {
+                    "id": "buildiq",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "schemaMapper.find#1": {
+                    "id": "built-app",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "objectService.searchObjects#1": {
+                    "query": {
+                        "@self": {
+                            "register": 11,
+                            "schema": 101
+                        },
+                        "slug": "permit-tracker"
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false
+                }
+            },
+            {
+                "objectService.saveObject#1": {
+                    "object": {
+                        "slug": "permit-tracker",
+                        "name": "Permit tracker",
+                        "description": "Tracks permits",
+                        "permissions": {
+                            "owners": [
+                                "user:alice"
+                            ],
+                            "editors": [],
+                            "viewers": []
+                        }
+                    },
+                    "register": "buildiq",
+                    "schema": "built-app"
+                }
+            },
+            {
+                "objectService.unlockObject#1": {
+                    "identifier": "createApp:permit-tracker",
+                    "advisory": true
+                }
+            }
+        ]
+    },
+    "app save other error": {
+        "exception": {
+            "errorCode": "wizard_rollback",
+            "failedAtStep": "create-application",
+            "message": "DB unavailable",
+            "rollbackStatus": "complete",
+            "orphaned": [],
+            "previous": {
+                "class": "RuntimeException",
+                "message": "DB unavailable"
+            }
+        },
+        "calls": [
+            {
+                "objectService.lockObject#1": {
+                    "identifier": "createApp:permit-tracker",
+                    "process": "buildiq.createApplication",
+                    "duration": 10,
+                    "advisory": true
+                }
+            },
+            {
+                "registerMapper.find#1": {
+                    "id": "buildiq",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "schemaMapper.find#1": {
+                    "id": "built-app",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "objectService.searchObjects#1": {
+                    "query": {
+                        "@self": {
+                            "register": 11,
+                            "schema": 101
+                        },
+                        "slug": "permit-tracker"
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false
+                }
+            },
+            {
+                "objectService.saveObject#1": {
+                    "object": {
+                        "slug": "permit-tracker",
+                        "name": "Permit tracker",
+                        "description": "Tracks permits",
+                        "permissions": {
+                            "owners": [
+                                "user:alice"
+                            ],
+                            "editors": [],
+                            "viewers": []
+                        }
+                    },
+                    "register": "buildiq",
+                    "schema": "built-app"
+                }
+            },
+            {
+                "logger.error#1": {
+                    "message": "Buildiq: wizard create-application failed for slug permit-tracker: DB unavailable",
+                    "context": {
+                        "exception": {
+                            "class": "RuntimeException",
+                            "message": "DB unavailable"
+                        }
+                    }
+                }
+            },
+            {
+                "objectService.unlockObject#1": {
+                    "identifier": "createApp:permit-tracker",
+                    "advisory": true
+                }
+            }
+        ]
+    },
+    "app save without uuid": {
+        "exception": {
+            "errorCode": "wizard_rollback",
+            "failedAtStep": "create-application",
+            "message": "Application record was not assigned a UUID by OR.",
+            "rollbackStatus": "complete",
+            "orphaned": [],
+            "previous": null
+        },
+        "calls": [
+            {
+                "objectService.lockObject#1": {
+                    "identifier": "createApp:permit-tracker",
+                    "process": "buildiq.createApplication",
+                    "duration": 10,
+                    "advisory": true
+                }
+            },
+            {
+                "registerMapper.find#1": {
+                    "id": "buildiq",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "schemaMapper.find#1": {
+                    "id": "built-app",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "objectService.searchObjects#1": {
+                    "query": {
+                        "@self": {
+                            "register": 11,
+                            "schema": 101
+                        },
+                        "slug": "permit-tracker"
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false
+                }
+            },
+            {
+                "objectService.saveObject#1": {
+                    "object": {
+                        "slug": "permit-tracker",
+                        "name": "Permit tracker",
+                        "description": "Tracks permits",
+                        "permissions": {
+                            "owners": [
+                                "user:alice"
+                            ],
+                            "editors": [],
+                            "viewers": []
+                        }
+                    },
+                    "register": "buildiq",
+                    "schema": "built-app"
+                }
+            },
+            {
+                "objectService.unlockObject#1": {
+                    "identifier": "createApp:permit-tracker",
+                    "advisory": true
+                }
+            }
+        ]
+    },
+    "second version save fails": {
+        "exception": {
+            "errorCode": "wizard_rollback",
+            "failedAtStep": "create-version-production",
+            "message": "version write failed",
+            "rollbackStatus": "complete",
+            "orphaned": [],
+            "previous": {
+                "class": "RuntimeException",
+                "message": "version write failed"
+            }
+        },
+        "calls": [
+            {
+                "objectService.lockObject#1": {
+                    "identifier": "createApp:permit-tracker",
+                    "process": "buildiq.createApplication",
+                    "duration": 10,
+                    "advisory": true
+                }
+            },
+            {
+                "registerMapper.find#1": {
+                    "id": "buildiq",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "schemaMapper.find#1": {
+                    "id": "built-app",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "objectService.searchObjects#1": {
+                    "query": {
+                        "@self": {
+                            "register": 11,
+                            "schema": 101
+                        },
+                        "slug": "permit-tracker"
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false
+                }
+            },
+            {
+                "objectService.saveObject#1": {
+                    "object": {
+                        "slug": "permit-tracker",
+                        "name": "Permit tracker",
+                        "description": "",
+                        "permissions": {
+                            "owners": [
+                                "user:alice"
+                            ],
+                            "editors": [],
+                            "viewers": []
+                        }
+                    },
+                    "register": "buildiq",
+                    "schema": "built-app"
+                }
+            },
+            {
+                "objectService.saveObject#2": {
+                    "object": {
+                        "name": "Development",
+                        "slug": "development",
+                        "manifest": "sha1:89493426cb2cfd85c5202a850fa4e08e565bd38c",
+                        "register": "openbuild-permit-tracker-development",
+                        "semver": "0.1.0",
+                        "status": "draft",
+                        "application": "uuid-1"
+                    },
+                    "register": "buildiq",
+                    "schema": "applicationVersion"
+                }
+            },
+            {
+                "registerMapper.createFromArray#1": {
+                    "object": {
+                        "slug": "openbuild-permit-tracker-development",
+                        "title": "Buildiq — permit-tracker (development)",
+                        "description": "Per-version schema namespace for Buildiq app `permit-tracker` version `development`.",
+                        "version": "0.1.0",
+                        "schemas": []
+                    }
+                }
+            },
+            {
+                "schemaMapper.createFromArray#1": {
+                    "object": {
+                        "slug": "permit-tracker-development-hello-message",
+                        "title": "Hello Message",
+                        "description": "Default message schema seeded into every wizard-provisioned per-version register.",
+                        "type": "object",
+                        "required": [
+                            "body"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "description": "Unique identifier."
+                            },
+                            "body": {
+                                "type": "string",
+                                "description": "Message body content."
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                "register-11.setSchemas": [
+                    101
+                ]
+            },
+            {
+                "registerMapper.update#1": {
+                    "entity": "OCA\\OpenRegister\\Db\\Register#11"
+                }
+            },
+            {
+                "objectService.saveObject#3": {
+                    "object": {
+                        "name": "Production",
+                        "slug": "production",
+                        "manifest": "sha1:ad16840c1c1eb9b365ff6acf6567454bed6dc7ef",
+                        "register": "openbuild-permit-tracker-production",
+                        "semver": "0.1.0",
+                        "status": "draft",
+                        "application": "uuid-1"
+                    },
+                    "register": "buildiq",
+                    "schema": "applicationVersion"
+                }
+            },
+            {
+                "logger.error#1": {
+                    "message": "Buildiq: wizard create-version failed for production: version write failed",
+                    "context": {
+                        "exception": {
+                            "class": "RuntimeException",
+                            "message": "version write failed"
+                        }
+                    }
+                }
+            },
+            {
+                "registerMapper.find#2": {
+                    "id": "openbuild-permit-tracker-development",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "registerService.delete#1": {
+                    "register": "OCA\\OpenRegister\\Db\\Register#12"
+                }
+            },
+            {
+                "objectService.deleteObject#1": {
+                    "uuid": "uuid-2"
+                }
+            },
+            {
+                "objectService.deleteObject#2": {
+                    "uuid": "uuid-1"
+                }
+            },
+            {
+                "objectService.unlockObject#1": {
+                    "identifier": "createApp:permit-tracker",
+                    "advisory": true
+                }
+            }
+        ]
+    },
+    "first register provision fails": {
+        "exception": {
+            "errorCode": "wizard_rollback",
+            "failedAtStep": "register-provision-development",
+            "message": "register failed",
+            "rollbackStatus": "complete",
+            "orphaned": [],
+            "previous": {
+                "class": "RuntimeException",
+                "message": "register failed"
+            }
+        },
+        "calls": [
+            {
+                "objectService.lockObject#1": {
+                    "identifier": "createApp:permit-tracker",
+                    "process": "buildiq.createApplication",
+                    "duration": 10,
+                    "advisory": true
+                }
+            },
+            {
+                "registerMapper.find#1": {
+                    "id": "buildiq",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "schemaMapper.find#1": {
+                    "id": "built-app",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "objectService.searchObjects#1": {
+                    "query": {
+                        "@self": {
+                            "register": 11,
+                            "schema": 101
+                        },
+                        "slug": "permit-tracker"
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false
+                }
+            },
+            {
+                "objectService.saveObject#1": {
+                    "object": {
+                        "slug": "permit-tracker",
+                        "name": "Permit tracker",
+                        "description": "",
+                        "permissions": {
+                            "owners": [
+                                "user:alice"
+                            ],
+                            "editors": [],
+                            "viewers": []
+                        }
+                    },
+                    "register": "buildiq",
+                    "schema": "built-app"
+                }
+            },
+            {
+                "objectService.saveObject#2": {
+                    "object": {
+                        "name": "Development",
+                        "slug": "development",
+                        "manifest": "sha1:89493426cb2cfd85c5202a850fa4e08e565bd38c",
+                        "register": "openbuild-permit-tracker-development",
+                        "semver": "0.1.0",
+                        "status": "draft",
+                        "application": "uuid-1"
+                    },
+                    "register": "buildiq",
+                    "schema": "applicationVersion"
+                }
+            },
+            {
+                "registerMapper.createFromArray#1": {
+                    "object": {
+                        "slug": "openbuild-permit-tracker-development",
+                        "title": "Buildiq — permit-tracker (development)",
+                        "description": "Per-version schema namespace for Buildiq app `permit-tracker` version `development`.",
+                        "version": "0.1.0",
+                        "schemas": []
+                    }
+                }
+            },
+            {
+                "logger.error#1": {
+                    "message": "Buildiq: wizard register-provision failed for openbuild-permit-tracker-development: register failed",
+                    "context": {
+                        "exception": {
+                            "class": "RuntimeException",
+                            "message": "register failed"
+                        }
+                    }
+                }
+            },
+            {
+                "registerMapper.find#2": {
+                    "id": "openbuild-permit-tracker-development",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "registerService.delete#1": {
+                    "register": "OCA\\OpenRegister\\Db\\Register#12"
+                }
+            },
+            {
+                "objectService.deleteObject#1": {
+                    "uuid": "uuid-2"
+                }
+            },
+            {
+                "objectService.deleteObject#2": {
+                    "uuid": "uuid-1"
+                }
+            },
+            {
+                "objectService.unlockObject#1": {
+                    "identifier": "createApp:permit-tracker",
+                    "advisory": true
+                }
+            }
+        ]
+    },
+    "second register provision fails": {
+        "exception": {
+            "errorCode": "wizard_rollback",
+            "failedAtStep": "register-provision-staging",
+            "message": "register failed",
+            "rollbackStatus": "complete",
+            "orphaned": [],
+            "previous": {
+                "class": "RuntimeException",
+                "message": "register failed"
+            }
+        },
+        "calls": [
+            {
+                "objectService.lockObject#1": {
+                    "identifier": "createApp:permit-tracker",
+                    "process": "buildiq.createApplication",
+                    "duration": 10,
+                    "advisory": true
+                }
+            },
+            {
+                "registerMapper.find#1": {
+                    "id": "buildiq",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "schemaMapper.find#1": {
+                    "id": "built-app",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "objectService.searchObjects#1": {
+                    "query": {
+                        "@self": {
+                            "register": 11,
+                            "schema": 101
+                        },
+                        "slug": "permit-tracker"
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false
+                }
+            },
+            {
+                "objectService.saveObject#1": {
+                    "object": {
+                        "slug": "permit-tracker",
+                        "name": "Permit tracker",
+                        "description": "",
+                        "permissions": {
+                            "owners": [
+                                "user:alice"
+                            ],
+                            "editors": [],
+                            "viewers": []
+                        }
+                    },
+                    "register": "buildiq",
+                    "schema": "built-app"
+                }
+            },
+            {
+                "objectService.saveObject#2": {
+                    "object": {
+                        "name": "Development",
+                        "slug": "development",
+                        "manifest": "sha1:89493426cb2cfd85c5202a850fa4e08e565bd38c",
+                        "register": "openbuild-permit-tracker-development",
+                        "semver": "0.1.0",
+                        "status": "draft",
+                        "application": "uuid-1"
+                    },
+                    "register": "buildiq",
+                    "schema": "applicationVersion"
+                }
+            },
+            {
+                "registerMapper.createFromArray#1": {
+                    "object": {
+                        "slug": "openbuild-permit-tracker-development",
+                        "title": "Buildiq — permit-tracker (development)",
+                        "description": "Per-version schema namespace for Buildiq app `permit-tracker` version `development`.",
+                        "version": "0.1.0",
+                        "schemas": []
+                    }
+                }
+            },
+            {
+                "schemaMapper.createFromArray#1": {
+                    "object": {
+                        "slug": "permit-tracker-development-hello-message",
+                        "title": "Hello Message",
+                        "description": "Default message schema seeded into every wizard-provisioned per-version register.",
+                        "type": "object",
+                        "required": [
+                            "body"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "description": "Unique identifier."
+                            },
+                            "body": {
+                                "type": "string",
+                                "description": "Message body content."
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                "register-11.setSchemas": [
+                    101
+                ]
+            },
+            {
+                "registerMapper.update#1": {
+                    "entity": "OCA\\OpenRegister\\Db\\Register#11"
+                }
+            },
+            {
+                "objectService.saveObject#3": {
+                    "object": {
+                        "name": "Staging",
+                        "slug": "staging",
+                        "manifest": "sha1:a8420fec79541a400439908ee1d5cb121d915f22",
+                        "register": "openbuild-permit-tracker-staging",
+                        "semver": "0.1.0",
+                        "status": "draft",
+                        "application": "uuid-1"
+                    },
+                    "register": "buildiq",
+                    "schema": "applicationVersion"
+                }
+            },
+            {
+                "registerMapper.createFromArray#2": {
+                    "object": {
+                        "slug": "openbuild-permit-tracker-staging",
+                        "title": "Buildiq — permit-tracker (staging)",
+                        "description": "Per-version schema namespace for Buildiq app `permit-tracker` version `staging`.",
+                        "version": "0.1.0",
+                        "schemas": []
+                    }
+                }
+            },
+            {
+                "logger.error#1": {
+                    "message": "Buildiq: wizard register-provision failed for openbuild-permit-tracker-staging: register failed",
+                    "context": {
+                        "exception": {
+                            "class": "RuntimeException",
+                            "message": "register failed"
+                        }
+                    }
+                }
+            },
+            {
+                "registerMapper.find#2": {
+                    "id": "openbuild-permit-tracker-staging",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "registerService.delete#1": {
+                    "register": "OCA\\OpenRegister\\Db\\Register#12"
+                }
+            },
+            {
+                "registerMapper.find#3": {
+                    "id": "openbuild-permit-tracker-development",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "registerService.delete#2": {
+                    "register": "OCA\\OpenRegister\\Db\\Register#13"
+                }
+            },
+            {
+                "objectService.deleteObject#1": {
+                    "uuid": "uuid-3"
+                }
+            },
+            {
+                "objectService.deleteObject#2": {
+                    "uuid": "uuid-2"
+                }
+            },
+            {
+                "objectService.deleteObject#3": {
+                    "uuid": "uuid-1"
+                }
+            },
+            {
+                "objectService.unlockObject#1": {
+                    "identifier": "createApp:permit-tracker",
+                    "advisory": true
+                }
+            }
+        ]
+    },
+    "first chain wiring fails": {
+        "exception": {
+            "errorCode": "wizard_rollback",
+            "failedAtStep": "wire-chain-development-to-staging",
+            "message": "wire failed",
+            "rollbackStatus": "complete",
+            "orphaned": [],
+            "previous": {
+                "class": "RuntimeException",
+                "message": "wire failed"
+            }
+        },
+        "calls": [
+            {
+                "objectService.lockObject#1": {
+                    "identifier": "createApp:permit-tracker",
+                    "process": "buildiq.createApplication",
+                    "duration": 10,
+                    "advisory": true
+                }
+            },
+            {
+                "registerMapper.find#1": {
+                    "id": "buildiq",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "schemaMapper.find#1": {
+                    "id": "built-app",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "objectService.searchObjects#1": {
+                    "query": {
+                        "@self": {
+                            "register": 11,
+                            "schema": 101
+                        },
+                        "slug": "permit-tracker"
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false
+                }
+            },
+            {
+                "objectService.saveObject#1": {
+                    "object": {
+                        "slug": "permit-tracker",
+                        "name": "Permit tracker",
+                        "description": "",
+                        "permissions": {
+                            "owners": [
+                                "user:alice"
+                            ],
+                            "editors": [],
+                            "viewers": []
+                        }
+                    },
+                    "register": "buildiq",
+                    "schema": "built-app"
+                }
+            },
+            {
+                "objectService.saveObject#2": {
+                    "object": {
+                        "name": "Development",
+                        "slug": "development",
+                        "manifest": "sha1:89493426cb2cfd85c5202a850fa4e08e565bd38c",
+                        "register": "openbuild-permit-tracker-development",
+                        "semver": "0.1.0",
+                        "status": "draft",
+                        "application": "uuid-1"
+                    },
+                    "register": "buildiq",
+                    "schema": "applicationVersion"
+                }
+            },
+            {
+                "registerMapper.createFromArray#1": {
+                    "object": {
+                        "slug": "openbuild-permit-tracker-development",
+                        "title": "Buildiq — permit-tracker (development)",
+                        "description": "Per-version schema namespace for Buildiq app `permit-tracker` version `development`.",
+                        "version": "0.1.0",
+                        "schemas": []
+                    }
+                }
+            },
+            {
+                "schemaMapper.createFromArray#1": {
+                    "object": {
+                        "slug": "permit-tracker-development-hello-message",
+                        "title": "Hello Message",
+                        "description": "Default message schema seeded into every wizard-provisioned per-version register.",
+                        "type": "object",
+                        "required": [
+                            "body"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "description": "Unique identifier."
+                            },
+                            "body": {
+                                "type": "string",
+                                "description": "Message body content."
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                "register-11.setSchemas": [
+                    101
+                ]
+            },
+            {
+                "registerMapper.update#1": {
+                    "entity": "OCA\\OpenRegister\\Db\\Register#11"
+                }
+            },
+            {
+                "objectService.saveObject#3": {
+                    "object": {
+                        "name": "Staging",
+                        "slug": "staging",
+                        "manifest": "sha1:a8420fec79541a400439908ee1d5cb121d915f22",
+                        "register": "openbuild-permit-tracker-staging",
+                        "semver": "0.1.0",
+                        "status": "draft",
+                        "application": "uuid-1"
+                    },
+                    "register": "buildiq",
+                    "schema": "applicationVersion"
+                }
+            },
+            {
+                "registerMapper.createFromArray#2": {
+                    "object": {
+                        "slug": "openbuild-permit-tracker-staging",
+                        "title": "Buildiq — permit-tracker (staging)",
+                        "description": "Per-version schema namespace for Buildiq app `permit-tracker` version `staging`.",
+                        "version": "0.1.0",
+                        "schemas": []
+                    }
+                }
+            },
+            {
+                "schemaMapper.createFromArray#2": {
+                    "object": {
+                        "slug": "permit-tracker-staging-hello-message",
+                        "title": "Hello Message",
+                        "description": "Default message schema seeded into every wizard-provisioned per-version register.",
+                        "type": "object",
+                        "required": [
+                            "body"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "description": "Unique identifier."
+                            },
+                            "body": {
+                                "type": "string",
+                                "description": "Message body content."
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                "register-12.setSchemas": [
+                    102
+                ]
+            },
+            {
+                "registerMapper.update#2": {
+                    "entity": "OCA\\OpenRegister\\Db\\Register#12"
+                }
+            },
+            {
+                "objectService.saveObject#4": {
+                    "object": {
+                        "name": "Production",
+                        "slug": "production",
+                        "manifest": "sha1:ad16840c1c1eb9b365ff6acf6567454bed6dc7ef",
+                        "register": "openbuild-permit-tracker-production",
+                        "semver": "0.1.0",
+                        "status": "draft",
+                        "application": "uuid-1"
+                    },
+                    "register": "buildiq",
+                    "schema": "applicationVersion"
+                }
+            },
+            {
+                "registerMapper.createFromArray#3": {
+                    "object": {
+                        "slug": "openbuild-permit-tracker-production",
+                        "title": "Buildiq — permit-tracker (production)",
+                        "description": "Per-version schema namespace for Buildiq app `permit-tracker` version `production`.",
+                        "version": "0.1.0",
+                        "schemas": []
+                    }
+                }
+            },
+            {
+                "schemaMapper.createFromArray#3": {
+                    "object": {
+                        "slug": "permit-tracker-production-hello-message",
+                        "title": "Hello Message",
+                        "description": "Default message schema seeded into every wizard-provisioned per-version register.",
+                        "type": "object",
+                        "required": [
+                            "body"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "description": "Unique identifier."
+                            },
+                            "body": {
+                                "type": "string",
+                                "description": "Message body content."
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                "register-13.setSchemas": [
+                    103
+                ]
+            },
+            {
+                "registerMapper.update#3": {
+                    "entity": "OCA\\OpenRegister\\Db\\Register#13"
+                }
+            },
+            {
+                "objectService.saveObject#5": {
+                    "object": {
+                        "name": "Development",
+                        "slug": "development",
+                        "manifest": "sha1:89493426cb2cfd85c5202a850fa4e08e565bd38c",
+                        "register": "openbuild-permit-tracker-development",
+                        "semver": "0.1.0",
+                        "status": "draft",
+                        "application": "uuid-1",
+                        "promotesTo": "uuid-3"
+                    },
+                    "register": "buildiq",
+                    "schema": "applicationVersion",
+                    "uuid": "uuid-2"
+                }
+            },
+            {
+                "logger.error#1": {
+                    "message": "Buildiq: wizard chain-wiring failed for development → staging: wire failed",
+                    "context": {
+                        "exception": {
+                            "class": "RuntimeException",
+                            "message": "wire failed"
+                        }
+                    }
+                }
+            },
+            {
+                "registerMapper.find#2": {
+                    "id": "openbuild-permit-tracker-production",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "registerService.delete#1": {
+                    "register": "OCA\\OpenRegister\\Db\\Register#12"
+                }
+            },
+            {
+                "registerMapper.find#3": {
+                    "id": "openbuild-permit-tracker-staging",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "registerService.delete#2": {
+                    "register": "OCA\\OpenRegister\\Db\\Register#13"
+                }
+            },
+            {
+                "registerMapper.find#4": {
+                    "id": "openbuild-permit-tracker-development",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "registerService.delete#3": {
+                    "register": "OCA\\OpenRegister\\Db\\Register#14"
+                }
+            },
+            {
+                "objectService.deleteObject#1": {
+                    "uuid": "uuid-4"
+                }
+            },
+            {
+                "objectService.deleteObject#2": {
+                    "uuid": "uuid-3"
+                }
+            },
+            {
+                "objectService.deleteObject#3": {
+                    "uuid": "uuid-2"
+                }
+            },
+            {
+                "objectService.deleteObject#4": {
+                    "uuid": "uuid-1"
+                }
+            },
+            {
+                "objectService.unlockObject#1": {
+                    "identifier": "createApp:permit-tracker",
+                    "advisory": true
+                }
+            }
+        ]
+    },
+    "chain wiring fails": {
+        "exception": {
+            "errorCode": "wizard_rollback",
+            "failedAtStep": "wire-chain-staging-to-production",
+            "message": "wire failed",
+            "rollbackStatus": "complete",
+            "orphaned": [],
+            "previous": {
+                "class": "RuntimeException",
+                "message": "wire failed"
+            }
+        },
+        "calls": [
+            {
+                "objectService.lockObject#1": {
+                    "identifier": "createApp:permit-tracker",
+                    "process": "buildiq.createApplication",
+                    "duration": 10,
+                    "advisory": true
+                }
+            },
+            {
+                "registerMapper.find#1": {
+                    "id": "buildiq",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "schemaMapper.find#1": {
+                    "id": "built-app",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "objectService.searchObjects#1": {
+                    "query": {
+                        "@self": {
+                            "register": 11,
+                            "schema": 101
+                        },
+                        "slug": "permit-tracker"
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false
+                }
+            },
+            {
+                "objectService.saveObject#1": {
+                    "object": {
+                        "slug": "permit-tracker",
+                        "name": "Permit tracker",
+                        "description": "",
+                        "permissions": {
+                            "owners": [
+                                "user:alice"
+                            ],
+                            "editors": [],
+                            "viewers": []
+                        }
+                    },
+                    "register": "buildiq",
+                    "schema": "built-app"
+                }
+            },
+            {
+                "objectService.saveObject#2": {
+                    "object": {
+                        "name": "Development",
+                        "slug": "development",
+                        "manifest": "sha1:89493426cb2cfd85c5202a850fa4e08e565bd38c",
+                        "register": "openbuild-permit-tracker-development",
+                        "semver": "0.1.0",
+                        "status": "draft",
+                        "application": "uuid-1"
+                    },
+                    "register": "buildiq",
+                    "schema": "applicationVersion"
+                }
+            },
+            {
+                "registerMapper.createFromArray#1": {
+                    "object": {
+                        "slug": "openbuild-permit-tracker-development",
+                        "title": "Buildiq — permit-tracker (development)",
+                        "description": "Per-version schema namespace for Buildiq app `permit-tracker` version `development`.",
+                        "version": "0.1.0",
+                        "schemas": []
+                    }
+                }
+            },
+            {
+                "schemaMapper.createFromArray#1": {
+                    "object": {
+                        "slug": "permit-tracker-development-hello-message",
+                        "title": "Hello Message",
+                        "description": "Default message schema seeded into every wizard-provisioned per-version register.",
+                        "type": "object",
+                        "required": [
+                            "body"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "description": "Unique identifier."
+                            },
+                            "body": {
+                                "type": "string",
+                                "description": "Message body content."
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                "register-11.setSchemas": [
+                    101
+                ]
+            },
+            {
+                "registerMapper.update#1": {
+                    "entity": "OCA\\OpenRegister\\Db\\Register#11"
+                }
+            },
+            {
+                "objectService.saveObject#3": {
+                    "object": {
+                        "name": "Staging",
+                        "slug": "staging",
+                        "manifest": "sha1:a8420fec79541a400439908ee1d5cb121d915f22",
+                        "register": "openbuild-permit-tracker-staging",
+                        "semver": "0.1.0",
+                        "status": "draft",
+                        "application": "uuid-1"
+                    },
+                    "register": "buildiq",
+                    "schema": "applicationVersion"
+                }
+            },
+            {
+                "registerMapper.createFromArray#2": {
+                    "object": {
+                        "slug": "openbuild-permit-tracker-staging",
+                        "title": "Buildiq — permit-tracker (staging)",
+                        "description": "Per-version schema namespace for Buildiq app `permit-tracker` version `staging`.",
+                        "version": "0.1.0",
+                        "schemas": []
+                    }
+                }
+            },
+            {
+                "schemaMapper.createFromArray#2": {
+                    "object": {
+                        "slug": "permit-tracker-staging-hello-message",
+                        "title": "Hello Message",
+                        "description": "Default message schema seeded into every wizard-provisioned per-version register.",
+                        "type": "object",
+                        "required": [
+                            "body"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "description": "Unique identifier."
+                            },
+                            "body": {
+                                "type": "string",
+                                "description": "Message body content."
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                "register-12.setSchemas": [
+                    102
+                ]
+            },
+            {
+                "registerMapper.update#2": {
+                    "entity": "OCA\\OpenRegister\\Db\\Register#12"
+                }
+            },
+            {
+                "objectService.saveObject#4": {
+                    "object": {
+                        "name": "Production",
+                        "slug": "production",
+                        "manifest": "sha1:ad16840c1c1eb9b365ff6acf6567454bed6dc7ef",
+                        "register": "openbuild-permit-tracker-production",
+                        "semver": "0.1.0",
+                        "status": "draft",
+                        "application": "uuid-1"
+                    },
+                    "register": "buildiq",
+                    "schema": "applicationVersion"
+                }
+            },
+            {
+                "registerMapper.createFromArray#3": {
+                    "object": {
+                        "slug": "openbuild-permit-tracker-production",
+                        "title": "Buildiq — permit-tracker (production)",
+                        "description": "Per-version schema namespace for Buildiq app `permit-tracker` version `production`.",
+                        "version": "0.1.0",
+                        "schemas": []
+                    }
+                }
+            },
+            {
+                "schemaMapper.createFromArray#3": {
+                    "object": {
+                        "slug": "permit-tracker-production-hello-message",
+                        "title": "Hello Message",
+                        "description": "Default message schema seeded into every wizard-provisioned per-version register.",
+                        "type": "object",
+                        "required": [
+                            "body"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "description": "Unique identifier."
+                            },
+                            "body": {
+                                "type": "string",
+                                "description": "Message body content."
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                "register-13.setSchemas": [
+                    103
+                ]
+            },
+            {
+                "registerMapper.update#3": {
+                    "entity": "OCA\\OpenRegister\\Db\\Register#13"
+                }
+            },
+            {
+                "objectService.saveObject#5": {
+                    "object": {
+                        "name": "Development",
+                        "slug": "development",
+                        "manifest": "sha1:89493426cb2cfd85c5202a850fa4e08e565bd38c",
+                        "register": "openbuild-permit-tracker-development",
+                        "semver": "0.1.0",
+                        "status": "draft",
+                        "application": "uuid-1",
+                        "promotesTo": "uuid-3"
+                    },
+                    "register": "buildiq",
+                    "schema": "applicationVersion",
+                    "uuid": "uuid-2"
+                }
+            },
+            {
+                "objectService.saveObject#6": {
+                    "object": {
+                        "name": "Staging",
+                        "slug": "staging",
+                        "manifest": "sha1:a8420fec79541a400439908ee1d5cb121d915f22",
+                        "register": "openbuild-permit-tracker-staging",
+                        "semver": "0.1.0",
+                        "status": "draft",
+                        "application": "uuid-1",
+                        "promotesTo": "uuid-4"
+                    },
+                    "register": "buildiq",
+                    "schema": "applicationVersion",
+                    "uuid": "uuid-3"
+                }
+            },
+            {
+                "logger.error#1": {
+                    "message": "Buildiq: wizard chain-wiring failed for staging → production: wire failed",
+                    "context": {
+                        "exception": {
+                            "class": "RuntimeException",
+                            "message": "wire failed"
+                        }
+                    }
+                }
+            },
+            {
+                "registerMapper.find#2": {
+                    "id": "openbuild-permit-tracker-production",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "registerService.delete#1": {
+                    "register": "OCA\\OpenRegister\\Db\\Register#12"
+                }
+            },
+            {
+                "registerMapper.find#3": {
+                    "id": "openbuild-permit-tracker-staging",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "registerService.delete#2": {
+                    "register": "OCA\\OpenRegister\\Db\\Register#13"
+                }
+            },
+            {
+                "registerMapper.find#4": {
+                    "id": "openbuild-permit-tracker-development",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "registerService.delete#3": {
+                    "register": "OCA\\OpenRegister\\Db\\Register#14"
+                }
+            },
+            {
+                "objectService.deleteObject#1": {
+                    "uuid": "uuid-4"
+                }
+            },
+            {
+                "objectService.deleteObject#2": {
+                    "uuid": "uuid-3"
+                }
+            },
+            {
+                "objectService.deleteObject#3": {
+                    "uuid": "uuid-2"
+                }
+            },
+            {
+                "objectService.deleteObject#4": {
+                    "uuid": "uuid-1"
+                }
+            },
+            {
+                "objectService.unlockObject#1": {
+                    "identifier": "createApp:permit-tracker",
+                    "advisory": true
+                }
+            }
+        ]
+    },
+    "production version fails": {
+        "exception": {
+            "errorCode": "wizard_rollback",
+            "failedAtStep": "set-production-version",
+            "message": "pointer failed",
+            "rollbackStatus": "complete",
+            "orphaned": [],
+            "previous": {
+                "class": "RuntimeException",
+                "message": "pointer failed"
+            }
+        },
+        "calls": [
+            {
+                "objectService.lockObject#1": {
+                    "identifier": "createApp:permit-tracker",
+                    "process": "buildiq.createApplication",
+                    "duration": 10,
+                    "advisory": true
+                }
+            },
+            {
+                "registerMapper.find#1": {
+                    "id": "buildiq",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "schemaMapper.find#1": {
+                    "id": "built-app",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "objectService.searchObjects#1": {
+                    "query": {
+                        "@self": {
+                            "register": 11,
+                            "schema": 101
+                        },
+                        "slug": "permit-tracker"
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false
+                }
+            },
+            {
+                "objectService.saveObject#1": {
+                    "object": {
+                        "slug": "permit-tracker",
+                        "name": "Permit tracker",
+                        "description": "",
+                        "permissions": {
+                            "owners": [
+                                "user:alice"
+                            ],
+                            "editors": [],
+                            "viewers": []
+                        }
+                    },
+                    "register": "buildiq",
+                    "schema": "built-app"
+                }
+            },
+            {
+                "objectService.saveObject#2": {
+                    "object": {
+                        "name": "Development",
+                        "slug": "development",
+                        "manifest": "sha1:89493426cb2cfd85c5202a850fa4e08e565bd38c",
+                        "register": "openbuild-permit-tracker-development",
+                        "semver": "0.1.0",
+                        "status": "draft",
+                        "application": "uuid-1"
+                    },
+                    "register": "buildiq",
+                    "schema": "applicationVersion"
+                }
+            },
+            {
+                "registerMapper.createFromArray#1": {
+                    "object": {
+                        "slug": "openbuild-permit-tracker-development",
+                        "title": "Buildiq — permit-tracker (development)",
+                        "description": "Per-version schema namespace for Buildiq app `permit-tracker` version `development`.",
+                        "version": "0.1.0",
+                        "schemas": []
+                    }
+                }
+            },
+            {
+                "schemaMapper.createFromArray#1": {
+                    "object": {
+                        "slug": "permit-tracker-development-hello-message",
+                        "title": "Hello Message",
+                        "description": "Default message schema seeded into every wizard-provisioned per-version register.",
+                        "type": "object",
+                        "required": [
+                            "body"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "description": "Unique identifier."
+                            },
+                            "body": {
+                                "type": "string",
+                                "description": "Message body content."
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                "register-11.setSchemas": [
+                    101
+                ]
+            },
+            {
+                "registerMapper.update#1": {
+                    "entity": "OCA\\OpenRegister\\Db\\Register#11"
+                }
+            },
+            {
+                "objectService.saveObject#3": {
+                    "object": {
+                        "name": "Production",
+                        "slug": "production",
+                        "manifest": "sha1:ad16840c1c1eb9b365ff6acf6567454bed6dc7ef",
+                        "register": "openbuild-permit-tracker-production",
+                        "semver": "0.1.0",
+                        "status": "draft",
+                        "application": "uuid-1"
+                    },
+                    "register": "buildiq",
+                    "schema": "applicationVersion"
+                }
+            },
+            {
+                "registerMapper.createFromArray#2": {
+                    "object": {
+                        "slug": "openbuild-permit-tracker-production",
+                        "title": "Buildiq — permit-tracker (production)",
+                        "description": "Per-version schema namespace for Buildiq app `permit-tracker` version `production`.",
+                        "version": "0.1.0",
+                        "schemas": []
+                    }
+                }
+            },
+            {
+                "schemaMapper.createFromArray#2": {
+                    "object": {
+                        "slug": "permit-tracker-production-hello-message",
+                        "title": "Hello Message",
+                        "description": "Default message schema seeded into every wizard-provisioned per-version register.",
+                        "type": "object",
+                        "required": [
+                            "body"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "description": "Unique identifier."
+                            },
+                            "body": {
+                                "type": "string",
+                                "description": "Message body content."
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                "register-12.setSchemas": [
+                    102
+                ]
+            },
+            {
+                "registerMapper.update#2": {
+                    "entity": "OCA\\OpenRegister\\Db\\Register#12"
+                }
+            },
+            {
+                "objectService.saveObject#4": {
+                    "object": {
+                        "name": "Development",
+                        "slug": "development",
+                        "manifest": "sha1:89493426cb2cfd85c5202a850fa4e08e565bd38c",
+                        "register": "openbuild-permit-tracker-development",
+                        "semver": "0.1.0",
+                        "status": "draft",
+                        "application": "uuid-1",
+                        "promotesTo": "uuid-3"
+                    },
+                    "register": "buildiq",
+                    "schema": "applicationVersion",
+                    "uuid": "uuid-2"
+                }
+            },
+            {
+                "objectService.saveObject#5": {
+                    "object": {
+                        "slug": "permit-tracker",
+                        "name": "Permit tracker",
+                        "description": "",
+                        "permissions": {
+                            "owners": [
+                                "user:alice"
+                            ],
+                            "editors": [],
+                            "viewers": []
+                        },
+                        "productionVersion": "uuid-3"
+                    },
+                    "register": "buildiq",
+                    "schema": "built-app",
+                    "uuid": "uuid-1"
+                }
+            },
+            {
+                "logger.error#1": {
+                    "message": "Buildiq: wizard set-productionVersion failed: pointer failed",
+                    "context": {
+                        "exception": {
+                            "class": "RuntimeException",
+                            "message": "pointer failed"
+                        }
+                    }
+                }
+            },
+            {
+                "registerMapper.find#2": {
+                    "id": "openbuild-permit-tracker-production",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "registerService.delete#1": {
+                    "register": "OCA\\OpenRegister\\Db\\Register#12"
+                }
+            },
+            {
+                "registerMapper.find#3": {
+                    "id": "openbuild-permit-tracker-development",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "registerService.delete#2": {
+                    "register": "OCA\\OpenRegister\\Db\\Register#13"
+                }
+            },
+            {
+                "objectService.deleteObject#1": {
+                    "uuid": "uuid-3"
+                }
+            },
+            {
+                "objectService.deleteObject#2": {
+                    "uuid": "uuid-2"
+                }
+            },
+            {
+                "objectService.deleteObject#3": {
+                    "uuid": "uuid-1"
+                }
+            },
+            {
+                "objectService.unlockObject#1": {
+                    "identifier": "createApp:permit-tracker",
+                    "advisory": true
+                }
+            }
+        ]
+    },
+    "route publish fails": {
+        "exception": {
+            "errorCode": "wizard_rollback",
+            "failedAtStep": "publish-route",
+            "message": "route failed",
+            "rollbackStatus": "complete",
+            "orphaned": [],
+            "previous": {
+                "class": "RuntimeException",
+                "message": "route failed"
+            }
+        },
+        "calls": [
+            {
+                "objectService.lockObject#1": {
+                    "identifier": "createApp:permit-tracker",
+                    "process": "buildiq.createApplication",
+                    "duration": 10,
+                    "advisory": true
+                }
+            },
+            {
+                "registerMapper.find#1": {
+                    "id": "buildiq",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "schemaMapper.find#1": {
+                    "id": "built-app",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "objectService.searchObjects#1": {
+                    "query": {
+                        "@self": {
+                            "register": 11,
+                            "schema": 101
+                        },
+                        "slug": "permit-tracker"
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false
+                }
+            },
+            {
+                "objectService.saveObject#1": {
+                    "object": {
+                        "slug": "permit-tracker",
+                        "name": "Permit tracker",
+                        "description": "",
+                        "permissions": {
+                            "owners": [
+                                "user:alice"
+                            ],
+                            "editors": [],
+                            "viewers": []
+                        }
+                    },
+                    "register": "buildiq",
+                    "schema": "built-app"
+                }
+            },
+            {
+                "objectService.saveObject#2": {
+                    "object": {
+                        "name": "Development",
+                        "slug": "development",
+                        "manifest": "sha1:89493426cb2cfd85c5202a850fa4e08e565bd38c",
+                        "register": "openbuild-permit-tracker-development",
+                        "semver": "0.1.0",
+                        "status": "draft",
+                        "application": "uuid-1"
+                    },
+                    "register": "buildiq",
+                    "schema": "applicationVersion"
+                }
+            },
+            {
+                "registerMapper.createFromArray#1": {
+                    "object": {
+                        "slug": "openbuild-permit-tracker-development",
+                        "title": "Buildiq — permit-tracker (development)",
+                        "description": "Per-version schema namespace for Buildiq app `permit-tracker` version `development`.",
+                        "version": "0.1.0",
+                        "schemas": []
+                    }
+                }
+            },
+            {
+                "schemaMapper.createFromArray#1": {
+                    "object": {
+                        "slug": "permit-tracker-development-hello-message",
+                        "title": "Hello Message",
+                        "description": "Default message schema seeded into every wizard-provisioned per-version register.",
+                        "type": "object",
+                        "required": [
+                            "body"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "description": "Unique identifier."
+                            },
+                            "body": {
+                                "type": "string",
+                                "description": "Message body content."
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                "register-11.setSchemas": [
+                    101
+                ]
+            },
+            {
+                "registerMapper.update#1": {
+                    "entity": "OCA\\OpenRegister\\Db\\Register#11"
+                }
+            },
+            {
+                "objectService.saveObject#3": {
+                    "object": {
+                        "name": "Production",
+                        "slug": "production",
+                        "manifest": "sha1:ad16840c1c1eb9b365ff6acf6567454bed6dc7ef",
+                        "register": "openbuild-permit-tracker-production",
+                        "semver": "0.1.0",
+                        "status": "draft",
+                        "application": "uuid-1"
+                    },
+                    "register": "buildiq",
+                    "schema": "applicationVersion"
+                }
+            },
+            {
+                "registerMapper.createFromArray#2": {
+                    "object": {
+                        "slug": "openbuild-permit-tracker-production",
+                        "title": "Buildiq — permit-tracker (production)",
+                        "description": "Per-version schema namespace for Buildiq app `permit-tracker` version `production`.",
+                        "version": "0.1.0",
+                        "schemas": []
+                    }
+                }
+            },
+            {
+                "schemaMapper.createFromArray#2": {
+                    "object": {
+                        "slug": "permit-tracker-production-hello-message",
+                        "title": "Hello Message",
+                        "description": "Default message schema seeded into every wizard-provisioned per-version register.",
+                        "type": "object",
+                        "required": [
+                            "body"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "description": "Unique identifier."
+                            },
+                            "body": {
+                                "type": "string",
+                                "description": "Message body content."
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                "register-12.setSchemas": [
+                    102
+                ]
+            },
+            {
+                "registerMapper.update#2": {
+                    "entity": "OCA\\OpenRegister\\Db\\Register#12"
+                }
+            },
+            {
+                "objectService.saveObject#4": {
+                    "object": {
+                        "name": "Development",
+                        "slug": "development",
+                        "manifest": "sha1:89493426cb2cfd85c5202a850fa4e08e565bd38c",
+                        "register": "openbuild-permit-tracker-development",
+                        "semver": "0.1.0",
+                        "status": "draft",
+                        "application": "uuid-1",
+                        "promotesTo": "uuid-3"
+                    },
+                    "register": "buildiq",
+                    "schema": "applicationVersion",
+                    "uuid": "uuid-2"
+                }
+            },
+            {
+                "objectService.saveObject#5": {
+                    "object": {
+                        "slug": "permit-tracker",
+                        "name": "Permit tracker",
+                        "description": "",
+                        "permissions": {
+                            "owners": [
+                                "user:alice"
+                            ],
+                            "editors": [],
+                            "viewers": []
+                        },
+                        "productionVersion": "uuid-3"
+                    },
+                    "register": "buildiq",
+                    "schema": "built-app",
+                    "uuid": "uuid-1"
+                }
+            },
+            {
+                "objectService.saveObject#6": {
+                    "object": {
+                        "slug": "permit-tracker",
+                        "applicationUuid": "uuid-1"
+                    },
+                    "register": "buildiq",
+                    "schema": "built-app-route"
+                }
+            },
+            {
+                "logger.error#1": {
+                    "message": "Buildiq: wizard built-app-route publish failed for slug permit-tracker: route failed",
+                    "context": {
+                        "exception": {
+                            "class": "RuntimeException",
+                            "message": "route failed"
+                        }
+                    }
+                }
+            },
+            {
+                "registerMapper.find#2": {
+                    "id": "openbuild-permit-tracker-production",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "registerService.delete#1": {
+                    "register": "OCA\\OpenRegister\\Db\\Register#12"
+                }
+            },
+            {
+                "registerMapper.find#3": {
+                    "id": "openbuild-permit-tracker-development",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "registerService.delete#2": {
+                    "register": "OCA\\OpenRegister\\Db\\Register#13"
+                }
+            },
+            {
+                "objectService.deleteObject#1": {
+                    "uuid": "uuid-3"
+                }
+            },
+            {
+                "objectService.deleteObject#2": {
+                    "uuid": "uuid-2"
+                }
+            },
+            {
+                "objectService.deleteObject#3": {
+                    "uuid": "uuid-1"
+                }
+            },
+            {
+                "objectService.unlockObject#1": {
+                    "identifier": "createApp:permit-tracker",
+                    "advisory": true
+                }
+            }
+        ]
+    },
+    "route without uuid": {
+        "result": "uuid-1",
+        "calls": [
+            {
+                "objectService.lockObject#1": {
+                    "identifier": "createApp:permit-tracker",
+                    "process": "buildiq.createApplication",
+                    "duration": 10,
+                    "advisory": true
+                }
+            },
+            {
+                "registerMapper.find#1": {
+                    "id": "buildiq",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "schemaMapper.find#1": {
+                    "id": "built-app",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "objectService.searchObjects#1": {
+                    "query": {
+                        "@self": {
+                            "register": 11,
+                            "schema": 101
+                        },
+                        "slug": "permit-tracker"
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false
+                }
+            },
+            {
+                "objectService.saveObject#1": {
+                    "object": {
+                        "slug": "permit-tracker",
+                        "name": "Permit tracker",
+                        "description": "Tracks permits",
+                        "permissions": {
+                            "owners": [
+                                "user:alice"
+                            ],
+                            "editors": [],
+                            "viewers": []
+                        }
+                    },
+                    "register": "buildiq",
+                    "schema": "built-app"
+                }
+            },
+            {
+                "objectService.saveObject#2": {
+                    "object": {
+                        "name": "Production",
+                        "slug": "production",
+                        "manifest": "sha1:ad16840c1c1eb9b365ff6acf6567454bed6dc7ef",
+                        "register": "openbuild-permit-tracker-production",
+                        "semver": "0.1.0",
+                        "status": "draft",
+                        "application": "uuid-1"
+                    },
+                    "register": "buildiq",
+                    "schema": "applicationVersion"
+                }
+            },
+            {
+                "registerMapper.createFromArray#1": {
+                    "object": {
+                        "slug": "openbuild-permit-tracker-production",
+                        "title": "Buildiq — permit-tracker (production)",
+                        "description": "Per-version schema namespace for Buildiq app `permit-tracker` version `production`.",
+                        "version": "0.1.0",
+                        "schemas": []
+                    }
+                }
+            },
+            {
+                "schemaMapper.createFromArray#1": {
+                    "object": {
+                        "slug": "permit-tracker-production-hello-message",
+                        "title": "Hello Message",
+                        "description": "Default message schema seeded into every wizard-provisioned per-version register.",
+                        "type": "object",
+                        "required": [
+                            "body"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "description": "Unique identifier."
+                            },
+                            "body": {
+                                "type": "string",
+                                "description": "Message body content."
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                "register-11.setSchemas": [
+                    101
+                ]
+            },
+            {
+                "registerMapper.update#1": {
+                    "entity": "OCA\\OpenRegister\\Db\\Register#11"
+                }
+            },
+            {
+                "objectService.saveObject#3": {
+                    "object": {
+                        "slug": "permit-tracker",
+                        "name": "Permit tracker",
+                        "description": "Tracks permits",
+                        "permissions": {
+                            "owners": [
+                                "user:alice"
+                            ],
+                            "editors": [],
+                            "viewers": []
+                        },
+                        "productionVersion": "uuid-2"
+                    },
+                    "register": "buildiq",
+                    "schema": "built-app",
+                    "uuid": "uuid-1"
+                }
+            },
+            {
+                "objectService.saveObject#4": {
+                    "object": {
+                        "slug": "permit-tracker",
+                        "applicationUuid": "uuid-1"
+                    },
+                    "register": "buildiq",
+                    "schema": "built-app-route"
+                }
+            },
+            {
+                "logger.info#1": {
+                    "message": "Buildiq: wizard successfully created Application permit-tracker (uuid: uuid-1) with 1 version(s)."
+                }
+            },
+            {
+                "objectService.unlockObject#1": {
+                    "identifier": "createApp:permit-tracker",
+                    "advisory": true
+                }
+            }
+        ]
+    },
+    "rollback with orphans": {
+        "exception": {
+            "errorCode": "wizard_rollback",
+            "failedAtStep": "publish-route",
+            "message": "route failed",
+            "rollbackStatus": "partial",
+            "orphaned": [
+                "openbuild-permit-tracker-development",
+                "version:uuid-3"
+            ],
+            "previous": {
+                "class": "RuntimeException",
+                "message": "route failed"
+            }
+        },
+        "calls": [
+            {
+                "objectService.lockObject#1": {
+                    "identifier": "createApp:permit-tracker",
+                    "process": "buildiq.createApplication",
+                    "duration": 10,
+                    "advisory": true
+                }
+            },
+            {
+                "registerMapper.find#1": {
+                    "id": "buildiq",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "schemaMapper.find#1": {
+                    "id": "built-app",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "objectService.searchObjects#1": {
+                    "query": {
+                        "@self": {
+                            "register": 11,
+                            "schema": 101
+                        },
+                        "slug": "permit-tracker"
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false
+                }
+            },
+            {
+                "objectService.saveObject#1": {
+                    "object": {
+                        "slug": "permit-tracker",
+                        "name": "Permit tracker",
+                        "description": "",
+                        "permissions": {
+                            "owners": [
+                                "user:alice"
+                            ],
+                            "editors": [],
+                            "viewers": []
+                        }
+                    },
+                    "register": "buildiq",
+                    "schema": "built-app"
+                }
+            },
+            {
+                "objectService.saveObject#2": {
+                    "object": {
+                        "name": "Development",
+                        "slug": "development",
+                        "manifest": "sha1:89493426cb2cfd85c5202a850fa4e08e565bd38c",
+                        "register": "openbuild-permit-tracker-development",
+                        "semver": "0.1.0",
+                        "status": "draft",
+                        "application": "uuid-1"
+                    },
+                    "register": "buildiq",
+                    "schema": "applicationVersion"
+                }
+            },
+            {
+                "registerMapper.createFromArray#1": {
+                    "object": {
+                        "slug": "openbuild-permit-tracker-development",
+                        "title": "Buildiq — permit-tracker (development)",
+                        "description": "Per-version schema namespace for Buildiq app `permit-tracker` version `development`.",
+                        "version": "0.1.0",
+                        "schemas": []
+                    }
+                }
+            },
+            {
+                "schemaMapper.createFromArray#1": {
+                    "object": {
+                        "slug": "permit-tracker-development-hello-message",
+                        "title": "Hello Message",
+                        "description": "Default message schema seeded into every wizard-provisioned per-version register.",
+                        "type": "object",
+                        "required": [
+                            "body"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "description": "Unique identifier."
+                            },
+                            "body": {
+                                "type": "string",
+                                "description": "Message body content."
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                "register-11.setSchemas": [
+                    101
+                ]
+            },
+            {
+                "registerMapper.update#1": {
+                    "entity": "OCA\\OpenRegister\\Db\\Register#11"
+                }
+            },
+            {
+                "objectService.saveObject#3": {
+                    "object": {
+                        "name": "Production",
+                        "slug": "production",
+                        "manifest": "sha1:ad16840c1c1eb9b365ff6acf6567454bed6dc7ef",
+                        "register": "openbuild-permit-tracker-production",
+                        "semver": "0.1.0",
+                        "status": "draft",
+                        "application": "uuid-1"
+                    },
+                    "register": "buildiq",
+                    "schema": "applicationVersion"
+                }
+            },
+            {
+                "registerMapper.createFromArray#2": {
+                    "object": {
+                        "slug": "openbuild-permit-tracker-production",
+                        "title": "Buildiq — permit-tracker (production)",
+                        "description": "Per-version schema namespace for Buildiq app `permit-tracker` version `production`.",
+                        "version": "0.1.0",
+                        "schemas": []
+                    }
+                }
+            },
+            {
+                "schemaMapper.createFromArray#2": {
+                    "object": {
+                        "slug": "permit-tracker-production-hello-message",
+                        "title": "Hello Message",
+                        "description": "Default message schema seeded into every wizard-provisioned per-version register.",
+                        "type": "object",
+                        "required": [
+                            "body"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "description": "Unique identifier."
+                            },
+                            "body": {
+                                "type": "string",
+                                "description": "Message body content."
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                "register-12.setSchemas": [
+                    102
+                ]
+            },
+            {
+                "registerMapper.update#2": {
+                    "entity": "OCA\\OpenRegister\\Db\\Register#12"
+                }
+            },
+            {
+                "objectService.saveObject#4": {
+                    "object": {
+                        "name": "Development",
+                        "slug": "development",
+                        "manifest": "sha1:89493426cb2cfd85c5202a850fa4e08e565bd38c",
+                        "register": "openbuild-permit-tracker-development",
+                        "semver": "0.1.0",
+                        "status": "draft",
+                        "application": "uuid-1",
+                        "promotesTo": "uuid-3"
+                    },
+                    "register": "buildiq",
+                    "schema": "applicationVersion",
+                    "uuid": "uuid-2"
+                }
+            },
+            {
+                "objectService.saveObject#5": {
+                    "object": {
+                        "slug": "permit-tracker",
+                        "name": "Permit tracker",
+                        "description": "",
+                        "permissions": {
+                            "owners": [
+                                "user:alice"
+                            ],
+                            "editors": [],
+                            "viewers": []
+                        },
+                        "productionVersion": "uuid-3"
+                    },
+                    "register": "buildiq",
+                    "schema": "built-app",
+                    "uuid": "uuid-1"
+                }
+            },
+            {
+                "objectService.saveObject#6": {
+                    "object": {
+                        "slug": "permit-tracker",
+                        "applicationUuid": "uuid-1"
+                    },
+                    "register": "buildiq",
+                    "schema": "built-app-route"
+                }
+            },
+            {
+                "logger.error#1": {
+                    "message": "Buildiq: wizard built-app-route publish failed for slug permit-tracker: route failed",
+                    "context": {
+                        "exception": {
+                            "class": "RuntimeException",
+                            "message": "route failed"
+                        }
+                    }
+                }
+            },
+            {
+                "registerMapper.find#2": {
+                    "id": "openbuild-permit-tracker-production",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "registerService.delete#1": {
+                    "register": "OCA\\OpenRegister\\Db\\Register#12"
+                }
+            },
+            {
+                "registerMapper.find#3": {
+                    "id": "openbuild-permit-tracker-development",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "registerService.delete#2": {
+                    "register": "OCA\\OpenRegister\\Db\\Register#13"
+                }
+            },
+            {
+                "logger.error#2": {
+                    "message": "Buildiq: wizard rollback failed to delete register openbuild-permit-tracker-development: delete failed",
+                    "context": {
+                        "exception": {
+                            "class": "RuntimeException",
+                            "message": "delete failed"
+                        }
+                    }
+                }
+            },
+            {
+                "objectService.deleteObject#1": {
+                    "uuid": "uuid-3"
+                }
+            },
+            {
+                "logger.error#3": {
+                    "message": "Buildiq: wizard rollback failed to delete ApplicationVersion uuid-3: delete failed",
+                    "context": {
+                        "exception": {
+                            "class": "RuntimeException",
+                            "message": "delete failed"
+                        }
+                    }
+                }
+            },
+            {
+                "objectService.deleteObject#2": {
+                    "uuid": "uuid-2"
+                }
+            },
+            {
+                "objectService.deleteObject#3": {
+                    "uuid": "uuid-1"
+                }
+            },
+            {
+                "objectService.unlockObject#1": {
+                    "identifier": "createApp:permit-tracker",
+                    "advisory": true
+                }
+            }
+        ]
+    },
+    "unlock fails after success": {
+        "result": "uuid-1",
+        "calls": [
+            {
+                "objectService.lockObject#1": {
+                    "identifier": "createApp:permit-tracker",
+                    "process": "buildiq.createApplication",
+                    "duration": 10,
+                    "advisory": true
+                }
+            },
+            {
+                "registerMapper.find#1": {
+                    "id": "buildiq",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "schemaMapper.find#1": {
+                    "id": "built-app",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "objectService.searchObjects#1": {
+                    "query": {
+                        "@self": {
+                            "register": 11,
+                            "schema": 101
+                        },
+                        "slug": "permit-tracker"
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false
+                }
+            },
+            {
+                "objectService.saveObject#1": {
+                    "object": {
+                        "slug": "permit-tracker",
+                        "name": "Permit tracker",
+                        "description": "Tracks permits",
+                        "permissions": {
+                            "owners": [
+                                "user:alice"
+                            ],
+                            "editors": [],
+                            "viewers": []
+                        }
+                    },
+                    "register": "buildiq",
+                    "schema": "built-app"
+                }
+            },
+            {
+                "objectService.saveObject#2": {
+                    "object": {
+                        "name": "Production",
+                        "slug": "production",
+                        "manifest": "sha1:ad16840c1c1eb9b365ff6acf6567454bed6dc7ef",
+                        "register": "openbuild-permit-tracker-production",
+                        "semver": "0.1.0",
+                        "status": "draft",
+                        "application": "uuid-1"
+                    },
+                    "register": "buildiq",
+                    "schema": "applicationVersion"
+                }
+            },
+            {
+                "registerMapper.createFromArray#1": {
+                    "object": {
+                        "slug": "openbuild-permit-tracker-production",
+                        "title": "Buildiq — permit-tracker (production)",
+                        "description": "Per-version schema namespace for Buildiq app `permit-tracker` version `production`.",
+                        "version": "0.1.0",
+                        "schemas": []
+                    }
+                }
+            },
+            {
+                "schemaMapper.createFromArray#1": {
+                    "object": {
+                        "slug": "permit-tracker-production-hello-message",
+                        "title": "Hello Message",
+                        "description": "Default message schema seeded into every wizard-provisioned per-version register.",
+                        "type": "object",
+                        "required": [
+                            "body"
+                        ],
+                        "properties": {
+                            "id": {
+                                "type": "string",
+                                "description": "Unique identifier."
+                            },
+                            "body": {
+                                "type": "string",
+                                "description": "Message body content."
+                            }
+                        }
+                    }
+                }
+            },
+            {
+                "register-11.setSchemas": [
+                    101
+                ]
+            },
+            {
+                "registerMapper.update#1": {
+                    "entity": "OCA\\OpenRegister\\Db\\Register#11"
+                }
+            },
+            {
+                "objectService.saveObject#3": {
+                    "object": {
+                        "slug": "permit-tracker",
+                        "name": "Permit tracker",
+                        "description": "Tracks permits",
+                        "permissions": {
+                            "owners": [
+                                "user:alice"
+                            ],
+                            "editors": [],
+                            "viewers": []
+                        },
+                        "productionVersion": "uuid-2"
+                    },
+                    "register": "buildiq",
+                    "schema": "built-app",
+                    "uuid": "uuid-1"
+                }
+            },
+            {
+                "objectService.saveObject#4": {
+                    "object": {
+                        "slug": "permit-tracker",
+                        "applicationUuid": "uuid-1"
+                    },
+                    "register": "buildiq",
+                    "schema": "built-app-route"
+                }
+            },
+            {
+                "logger.info#1": {
+                    "message": "Buildiq: wizard successfully created Application permit-tracker (uuid: uuid-1) with 1 version(s)."
+                }
+            },
+            {
+                "objectService.unlockObject#1": {
+                    "identifier": "createApp:permit-tracker",
+                    "advisory": true
+                }
+            },
+            {
+                "logger.warning#1": {
+                    "message": "Buildiq: failed to release slug lock createApp:permit-tracker",
+                    "context": {
+                        "exception": "unlock failed"
+                    }
+                }
+            }
+        ]
+    },
+    "unlock fails after failure": {
+        "exception": {
+            "errorCode": "wizard_rollback",
+            "failedAtStep": "create-application",
+            "message": "DB unavailable",
+            "rollbackStatus": "complete",
+            "orphaned": [],
+            "previous": {
+                "class": "RuntimeException",
+                "message": "DB unavailable"
+            }
+        },
+        "calls": [
+            {
+                "objectService.lockObject#1": {
+                    "identifier": "createApp:permit-tracker",
+                    "process": "buildiq.createApplication",
+                    "duration": 10,
+                    "advisory": true
+                }
+            },
+            {
+                "registerMapper.find#1": {
+                    "id": "buildiq",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "schemaMapper.find#1": {
+                    "id": "built-app",
+                    "_multitenancy": false
+                }
+            },
+            {
+                "objectService.searchObjects#1": {
+                    "query": {
+                        "@self": {
+                            "register": 11,
+                            "schema": 101
+                        },
+                        "slug": "permit-tracker"
+                    },
+                    "_rbac": false,
+                    "_multitenancy": false
+                }
+            },
+            {
+                "objectService.saveObject#1": {
+                    "object": {
+                        "slug": "permit-tracker",
+                        "name": "Permit tracker",
+                        "description": "Tracks permits",
+                        "permissions": {
+                            "owners": [
+                                "user:alice"
+                            ],
+                            "editors": [],
+                            "viewers": []
+                        }
+                    },
+                    "register": "buildiq",
+                    "schema": "built-app"
+                }
+            },
+            {
+                "logger.error#1": {
+                    "message": "Buildiq: wizard create-application failed for slug permit-tracker: DB unavailable",
+                    "context": {
+                        "exception": {
+                            "class": "RuntimeException",
+                            "message": "DB unavailable"
+                        }
+                    }
+                }
+            },
+            {
+                "objectService.unlockObject#1": {
+                    "identifier": "createApp:permit-tracker",
+                    "advisory": true
+                }
+            },
+            {
+                "logger.warning#1": {
+                    "message": "Buildiq: failed to release slug lock createApp:permit-tracker",
+                    "context": {
+                        "exception": "unlock failed"
+                    }
+                }
+            }
+        ]
+    }
+}

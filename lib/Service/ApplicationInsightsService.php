@@ -3,6 +3,9 @@
 /**
  * Buildiq ApplicationInsightsService
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Computes the four KPI scalars + activity timeline rendered by the
  * Application detail-page maintainer dashboard (spec
  * `buildiq-app-detail-overview`, capability `application-insights`).
@@ -15,7 +18,10 @@
  *     auto-granted.
  *   - Walk `manifest.pages[].config.{register,schema}` to derive the
  *     schema-set scoped to the version's per-version register
- *     (`buildiq-{appSlug}-{versionSlug}`).
+ *     (`openbuild-{appSlug}-{versionSlug}`, from
+ *     ApplicationVersionService::VERSION_REGISTER_PREFIX, which is frozen at
+ *     the old prefix on purpose and is what the applicationVersion schema
+ *     pattern accepts).
  *   - Fan out four KPI calls + one chart call to OpenRegister mappers /
  *     services and assemble the response payload.
  *
@@ -29,9 +35,6 @@
  * not yet landed, the Active-users KPI degrades to `0` rather than
  * 500-ing the whole endpoint.
  *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
- *
  * @category Service
  * @package  OCA\Buildiq\Service
  *
@@ -43,11 +46,11 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-16
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-17
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-18
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-19
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-20
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-16
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-17
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-18
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-19
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-20
  */
 
 declare(strict_types=1);
@@ -55,10 +58,11 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use DateTime;
+use OCA\Buildiq\Kernel\Contracts\ApplicationInsightsServiceInterface;
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
-use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\ICache;
 use OCP\ICacheFactory;
 use OCP\IUser;
@@ -70,13 +74,7 @@ use Throwable;
  *
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  */
-class ApplicationInsightsService {
-	/**
-	 * Allowed `window` query parameter values (REQ-OBAI-001).
-	 *
-	 * @var array<int, string>
-	 */
-	public const ALLOWED_WINDOWS = ['7d', '30d', '90d'];
+class ApplicationInsightsService implements ApplicationInsightsServiceInterface {
 
 	/**
 	 * How long a computed insights payload is memoised (seconds). The
@@ -120,32 +118,57 @@ class ApplicationInsightsService {
 	private const REGISTER_SLUG = 'buildiq';
 
 	/**
+	 * OR object surface
+	 *
+	 * @var ObjectServiceInterface
+	 */
+	private readonly ObjectServiceInterface $objectService;
+
+	/**
+	 * Register lookup (installed-app footprint for hybrid apps)
+	 *
+	 * @var RegisterMapper
+	 */
+	private readonly RegisterMapper $registerMapper;
+
+	/**
 	 * Constructor.
 	 *
 	 * Per ADR-022 — no app-local DB access; everything flows through
 	 * OpenRegister abstractions.
 	 *
-	 * @param ObjectServiceInterface $objectService OR object surface
+	 * @param RegisterStore $store OpenRegister's object service, register and schema mappers and audit trail.
 	 * @param AuditTrailMapper $auditTrailMapper Audit-trail aggregations (chart + actors + counts)
-	 * @param SchemaMapper $schemaMapper Schema slug-to-integer-ID resolver
-	 * @param RegisterMapper $registerMapper Register lookup (installed-app footprint for hybrid apps)
 	 * @param ICacheFactory $cacheFactory Distributed-cache factory (memoises computed payloads)
 	 * @param LoggerInterface $logger PSR logger
 	 * @param PermissionResolver|null $permissionResolver Shared role/group matcher (group-aware insights authz, L9)
+	 * @param VersionDataSourceResolver|null $dataSourceResolver Finds the (register, schema) pairs holding a version's data
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly ObjectServiceInterface $objectService,
+		RegisterStore $store,
 		private readonly AuditTrailMapper $auditTrailMapper,
-		private readonly SchemaMapper $schemaMapper,
-		private readonly RegisterMapper $registerMapper,
 		ICacheFactory $cacheFactory,
 		private readonly LoggerInterface $logger,
 		private readonly ?PermissionResolver $permissionResolver = null,
+		?VersionDataSourceResolver $dataSourceResolver = null,
 	) {
+		$this->objectService = $store->objectService;
+		$this->registerMapper = $store->registerMapper;
 		$this->cache = $cacheFactory->createDistributed('buildiq_insights');
+		$this->dataSources = ($dataSourceResolver ?? new VersionDataSourceResolver(
+			registerMapper: $this->registerMapper,
+			schemaMapper: $store->schemaMapper
+		));
 	}//end __construct()
+
+	/**
+	 * Finds the (register, schema) pairs holding a version's data.
+	 *
+	 * @var VersionDataSourceResolver
+	 */
+	private VersionDataSourceResolver $dataSources;
 
 	/**
 	 * Distributed cache for computed insights payloads.
@@ -172,7 +195,7 @@ class ApplicationInsightsService {
 	 *
 	 * @return array{0: array<string, mixed>, 1: array<string, mixed>}|null
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-17
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-17
 	 */
 	public function requireAuthorisedCaller(
 		string $appUuid,
@@ -214,6 +237,17 @@ class ApplicationInsightsService {
 	 * pre-validate at the controller layer; the defensive check here keeps
 	 * the service safe in isolation).
 	 *
+	 * The per-version register fallback takes its prefix from
+	 * {@see ApplicationVersionService::VERSION_REGISTER_PREFIX}. This method
+	 * used to type it as `sprintf('buildiq-%s-%s', ...)`, and that named a
+	 * register no instance can hold: every writer of a per-version register
+	 * uses the constant, which is `openbuild-` and is frozen there on purpose,
+	 * and the applicationVersion schema pins `"pattern": "^openbuild-..."` so a
+	 * `buildiq-` register is rejected at write time. The read then matched
+	 * nothing and the panel showed zero objects, zero files and zero audit
+	 * events, which is byte for byte what a real but empty version looks like.
+	 * {@see \OCA\Buildiq\Tests\Unit\Support\RegisterSlugPinTest} guards it now.
+	 *
 	 * @param string $appUuid Application UUID (path parameter).
 	 * @param string $versionUuid ApplicationVersion UUID (path parameter).
 	 * @param string $window Window string — one of `7d`, `30d`, `90d`.
@@ -221,9 +255,9 @@ class ApplicationInsightsService {
 	 *
 	 * @return array<string, mixed>|null Insights payload `{kpis, activity}` or null on 404.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-16
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-19
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-20
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-16
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-19
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-20
 	 */
 	public function computeInsights(
 		string $appUuid,
@@ -235,84 +269,148 @@ class ApplicationInsightsService {
 			return null;
 		}
 
+		return $this->guardedInsights(request: new InsightsRequest(appUuid: $appUuid, versionUuid: $versionUuid, window: $window), caller: $caller);
+	}//end computeInsights()
+
+	/**
+	 * The insights payload, null (after an error log) when computing it fails.
+	 *
+	 * @param InsightsRequest $request The Application, version and window.
+	 * @param IUser|null      $caller  The authenticated user, or null for unauthenticated.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private function guardedInsights(InsightsRequest $request, ?IUser $caller): ?array {
 		try {
-			$resolved = $this->requireAuthorisedCaller(
-				appUuid: $appUuid,
-				versionUuid: $versionUuid,
-				caller: $caller
-			);
-			if ($resolved === null) {
-				return null;
-			}
-
-			[$application, $version] = $resolved;
-
-			// These aggregations fan out across every schema/register of the
-			// (possibly very large) installed app — tens of seconds for a big
-			// hybrid app. The PAYLOAD is identical for all callers (RBAC is
-			// already enforced above), so memoise it in the distributed cache
-			// keyed by (app, version, window). First viewer pays the cost (the
-			// dashboard shows a spinner); everyone else gets it instantly until
-			// the short TTL lapses.
-			$cacheKey = sprintf('payload_%s_%s_%s', $appUuid, $versionUuid, $window);
-			$cached = $this->cache->get($cacheKey);
-			if (is_array($cached) === true) {
-				return $cached;
-			}
-
-			$appSlug = (string)($application['slug'] ?? '');
-			$hours = self::WINDOW_HOURS[$window];
-
-			// A hybrid app mirrors a live installed Nextcloud app — its KPIs
-			// should reflect that installed app's real footprint (objects /
-			// audit / files across the registers OpenRegister associates with
-			// the app via `register.application`), NOT the override version's
-			// per-version register (which is usually empty). See REQ unified-app.
-			$isHybrid = (($application['appType'] ?? 'virtual') === 'hybrid');
-			if ($isHybrid === true) {
-				$payload = $this->computeHybridInsights(appSlug: $appSlug, hours: $hours);
-				$this->cache->set($cacheKey, $payload, self::CACHE_TTL_SECONDS);
-				return $payload;
-			}
-
-			// Prefer the version's REAL register. Versions may share production's
-			// register (manifest-only versioning), so the
-			// `buildiq-{appSlug}-{versionSlug}` convention can name a register
-			// that does not exist (yielding empty KPIs). Fall back to the
-			// convention only when the version carries no register.
-			$versionSlug = (string)($version['slug'] ?? '');
-			$registerSlug = (string)($version['register'] ?? '');
-			if ($registerSlug === '') {
-				$registerSlug = sprintf('buildiq-%s-%s', $appSlug, $versionSlug);
-			}
-
-			$manifest = $this->extractManifest(version: $version);
-			$schemaSlugs = $this->deriveSchemaIds(manifest: $manifest, registerSlug: $registerSlug);
-			$schemaIds = $this->resolveSchemaSlugsToIntIds(schemaSlugs: $schemaSlugs);
-
-			$kpis = [
-				'activeUsers' => $this->safeDistinctActorCount(schemaIds: $schemaIds, hours: $hours),
-				'objectCount' => $this->countObjects(schemaIds: $schemaIds, registerSlug: $registerSlug),
-				'filesCount' => $this->countAttachedFiles(registerSlug: $registerSlug, schemaIds: $schemaIds),
-				'auditEventCount' => $this->countAuditEvents(schemaIds: $schemaIds, hours: $hours),
-			];
-
-			$activity = $this->buildActivityTimeline(schemaIds: $schemaIds, hours: $hours, registerSlug: $registerSlug);
-
-			$payload = [
-				'kpis' => $kpis,
-				'activity' => $activity,
-			];
-			$this->cache->set($cacheKey, $payload, self::CACHE_TTL_SECONDS);
-			return $payload;
+			return $this->authorisedInsights(request: $request, caller: $caller);
 		} catch (Throwable $e) {
 			$this->logger->error(
 				'Buildiq: ApplicationInsightsService::computeInsights failed: {message}',
 				['message' => $e->getMessage(), 'exception' => $e]
 			);
 			return null;
-		}//end try
-	}//end computeInsights()
+		}
+	}//end guardedInsights()
+
+	/**
+	 * The insights payload once the caller is authorised, from the cache when present.
+	 *
+	 * These aggregations fan out across every schema/register of the
+	 * (possibly very large) installed app — tens of seconds for a big hybrid
+	 * app. The PAYLOAD is identical for all callers (RBAC is already enforced
+	 * first), so it is memoised in the distributed cache keyed by (app,
+	 * version, window). First viewer pays the cost (the dashboard shows a
+	 * spinner); everyone else gets it instantly until the short TTL lapses.
+	 *
+	 * @param InsightsRequest $request The Application, version and window.
+	 * @param IUser|null      $caller  The authenticated user, or null for unauthenticated.
+	 *
+	 * @return array<string, mixed>|null Insights payload, or null on 404.
+	 */
+	private function authorisedInsights(InsightsRequest $request, ?IUser $caller): ?array {
+		$resolved = $this->requireAuthorisedCaller(appUuid: $request->appUuid, versionUuid: $request->versionUuid, caller: $caller);
+		if ($resolved === null) {
+			return null;
+		}
+
+		$cached = $this->cache->get($request->cacheKey());
+		if (is_array($cached) === true) {
+			return $cached;
+		}
+
+		$payload = $this->insightsPayload(resolved: $resolved, hours: self::WINDOW_HOURS[$request->window]);
+		$this->cache->set($request->cacheKey(), $payload, self::CACHE_TTL_SECONDS);
+		return $payload;
+	}//end authorisedInsights()
+
+	/**
+	 * Compute the payload for an authorised Application and version.
+	 *
+	 * A hybrid app mirrors a live installed Nextcloud app — its KPIs should
+	 * reflect that installed app's real footprint (objects / audit / files
+	 * across the registers OpenRegister associates with the app via
+	 * `register.application`), NOT the override version's per-version
+	 * register (which is usually empty). See REQ unified-app.
+	 *
+	 * @param array{0: array<string, mixed>, 1: array<string, mixed>} $resolved The Application and version.
+	 * @param int                                                     $hours    Window hours.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function insightsPayload(array $resolved, int $hours): array {
+		$application = $resolved[0];
+		if (($application['appType'] ?? 'virtual') === 'hybrid') {
+			return $this->computeHybridInsights(appSlug: (string)($application['slug'] ?? ''), hours: $hours);
+		}
+
+		return $this->computeVersionInsights(resolved: $resolved, hours: $hours);
+	}//end insightsPayload()
+
+	/**
+	 * Compute the payload of a virtual app's version from the data its pages read.
+	 *
+	 * @param array{0: array<string, mixed>, 1: array<string, mixed>} $resolved The Application and version.
+	 * @param int                                                     $hours    Window hours.
+	 *
+	 * @return array<string, mixed> Payload `{kpis, activity, schemaCounts}`.
+	 */
+	private function computeVersionInsights(array $resolved, int $hours): array {
+		$registerSlug = $this->versionRegisterSlug(application: $resolved[0], version: $resolved[1]);
+		[$objectCount, $schemaCounts, $schemaIds] = $this->countVersionData(version: $resolved[1], registerSlug: $registerSlug);
+
+		return [
+			'kpis' => [
+				'activeUsers' => $this->safeDistinctActorCount(schemaIds: $schemaIds, hours: $hours),
+				'objectCount' => $objectCount,
+				'filesCount' => $this->countAttachedFiles(registerSlug: $registerSlug, schemaIds: $schemaIds),
+				'auditEventCount' => $this->countAuditEvents(schemaIds: $schemaIds, hours: $hours),
+			],
+			'activity' => $this->buildActivityTimeline(schemaIds: $schemaIds, hours: $hours),
+			'schemaCounts' => $schemaCounts,
+		];
+	}//end computeVersionInsights()
+
+	/**
+	 * The register a version's data lives in.
+	 *
+	 * Prefer the version's REAL register; fall back to the per-version naming
+	 * convention only when the version carries none. The prefix comes from
+	 * ApplicationVersionService and is never typed here: see
+	 * {@see computeInsights()}'s docblock.
+	 *
+	 * @param array<string, mixed> $application The Application.
+	 * @param array<string, mixed> $version     The version.
+	 *
+	 * @return string
+	 */
+	private function versionRegisterSlug(array $application, array $version): string {
+		$registerSlug = (string)($version['register'] ?? '');
+		if ($registerSlug === '') {
+			$registerSlug = ApplicationVersionService::VERSION_REGISTER_PREFIX . (string)($application['slug'] ?? '')
+				. '-' . (string)($version['slug'] ?? '');
+		}
+
+		return $registerSlug;
+	}//end versionRegisterSlug()
+
+	/**
+	 * Count the data a version's pages read, plus its register's own schemas.
+	 *
+	 * @param array<string, mixed> $version      The version.
+	 * @param string               $registerSlug The version's register.
+	 *
+	 * @return array{0: int, 1: array<string, int>, 2: array<int, int>} Object count, count per schema, schema ids.
+	 */
+	private function countVersionData(array $version, string $registerSlug): array {
+		$manifest = $this->extractManifest(version: $version);
+		$sources = $this->dataSources->resolve(
+			manifest: $manifest,
+			registerSlug: $registerSlug,
+			pageSchemaRefs: $this->deriveSchemaIds(manifest: $manifest, registerSlug: $registerSlug)
+		);
+
+		return $this->countDataSources(sources: $sources);
+	}//end countVersionData()
 
 	/**
 	 * Compute insights for a hybrid app from its installed-app footprint.
@@ -328,7 +426,7 @@ class ApplicationInsightsService {
 	 *
 	 * @return array<string, mixed> Insights payload `{kpis, activity}`.
 	 *
-	 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+	 * @spec openspec/specs/unified-app-model/spec.md
 	 */
 	private function computeHybridInsights(string $appSlug, int $hours): array {
 		$registers = $this->resolveInstalledAppRegisters(appSlug: $appSlug);
@@ -384,7 +482,7 @@ class ApplicationInsightsService {
 	 *
 	 * @return array{0: int, 1: array<int, array{timestamp: string, eventCount: int}>}
 	 *
-	 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+	 * @spec openspec/specs/unified-app-model/spec.md
 	 */
 	private function auditByRegisters(array $registerIds, int $hours): array {
 		if (empty($registerIds) === true) {
@@ -439,7 +537,7 @@ class ApplicationInsightsService {
 	 *
 	 * @return array<int, array{registerId: int, schemaIds: array<int, int>}>
 	 *
-	 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+	 * @spec openspec/specs/unified-app-model/spec.md
 	 */
 	private function resolveInstalledAppRegisters(string $appSlug): array {
 		if ($appSlug === '') {
@@ -497,7 +595,7 @@ class ApplicationInsightsService {
 	 *
 	 * @return array<int, string> Unique schema IDs (string form — OR stores audit schema column as VARCHAR).
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-18
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-18
 	 */
 	public function deriveSchemaIds(?array $manifest, string $registerSlug): array {
 		if ($manifest === null) {
@@ -523,35 +621,29 @@ class ApplicationInsightsService {
 	}//end deriveSchemaIds()
 
 	/**
-	 * Resolve an array of schema slugs to their integer database IDs via
-	 * SchemaMapper::find(). Slugs that cannot be resolved (not found, OR
-	 * not available) are silently skipped so a single bad slug in the
-	 * manifest does not zero-out all KPIs.
+	 * Count the objects in each data source.
 	 *
-	 * @param array<int, string> $schemaSlugs Schema slugs from the manifest.
+	 * @param array<int, array{register: string, schemaId: int, schemaSlug: string}> $sources The data sources.
 	 *
-	 * @return array<int, int> Integer schema IDs suitable for AuditTrailMapper queries.
+	 * @return array{0: int, 1: array<string, int>, 2: array<int, int>} Total, count per schema id and slug, schema ids.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-18
+	 * @spec openspec/specs/application-insights/spec.md
 	 */
-	private function resolveSchemaSlugsToIntIds(array $schemaSlugs): array {
-		$intIds = [];
-		foreach ($schemaSlugs as $slug) {
-			try {
-				$intId = $this->schemaMapper->find($slug, _multitenancy: false)->getId();
-				if ($intId !== null) {
-					$intIds[] = (int)$intId;
-				}
-			} catch (Throwable $e) {
-				$this->logger->debug(
-					'Buildiq: could not resolve schema slug "{slug}" to integer ID: {message}',
-					['slug' => $slug, 'message' => $e->getMessage()]
-				);
+	private function countDataSources(array $sources): array {
+		$total = 0;
+		$perSchema = [];
+		$schemaIds = [];
+		foreach ($sources as $source) {
+			$schemaIds[$source['schemaId']] = true;
+			$count = $this->countObjects(schemaIds: [$source['schemaId']], registerSlug: $source['register']);
+			$total += $count;
+			foreach (array_filter([(string)$source['schemaId'], $source['schemaSlug']]) as $key) {
+				$perSchema[$key] = (($perSchema[$key] ?? 0) + $count);
 			}
-		}//end foreach
+		}
 
-		return array_values(array_unique($intIds));
-	}//end resolveSchemaSlugsToIntIds()
+		return [$total, $perSchema, array_keys($schemaIds)];
+	}//end countDataSources()
 
 	/**
 	 * Extract a schema ID from a manifest page entry IF the entry's
@@ -566,7 +658,7 @@ class ApplicationInsightsService {
 	 *
 	 * @return string|null The schema ID, or null when the page does not match.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-18
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-18
 	 */
 	private function extractSchemaIdForRegister(mixed $page, string $registerSlug): ?string {
 		if (is_array($page) === false) {
@@ -604,7 +696,7 @@ class ApplicationInsightsService {
 	 *
 	 * @return bool True when authorised, false otherwise.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-17
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-17
 	 */
 	private function isAuthorised(array $application, array $version, ?IUser $caller): bool {
 		if ($caller === null) {
@@ -701,6 +793,7 @@ class ApplicationInsightsService {
 	 * @param string $uuid Application UUID.
 	 *
 	 * @return array<string, mixed>|null
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function loadApplication(string $uuid): ?array {
 		try {
@@ -714,7 +807,7 @@ class ApplicationInsightsService {
 				return null;
 			}
 
-			return $this->normaliseObject(object: $entity);
+			return ObjectRecord::toArray(object: $entity);
 		} catch (Throwable $e) {
 			$this->logger->debug(
 				'Buildiq: ApplicationInsightsService::loadApplication failed for uuid={uuid}: {message}',
@@ -730,6 +823,7 @@ class ApplicationInsightsService {
 	 * @param string $uuid ApplicationVersion UUID.
 	 *
 	 * @return array<string, mixed>|null
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function loadVersion(string $uuid): ?array {
 		try {
@@ -743,7 +837,7 @@ class ApplicationInsightsService {
 				return null;
 			}
 
-			return $this->normaliseObject(object: $entity);
+			return ObjectRecord::toArray(object: $entity);
 		} catch (Throwable $e) {
 			$this->logger->debug(
 				'Buildiq: ApplicationInsightsService::loadVersion failed for uuid={uuid}: {message}',
@@ -828,7 +922,7 @@ class ApplicationInsightsService {
 	 *
 	 * @return int Distinct actor count, or 0 when the aggregation API is unavailable.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-19
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-19
 	 */
 	private function safeDistinctActorCount(array $schemaIds, int $hours): int {
 		if (empty($schemaIds) === true) {
@@ -866,7 +960,7 @@ class ApplicationInsightsService {
 	 *
 	 * @return int Total object count across the schema-set.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-19
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-19
 	 */
 	private function countObjects(array $schemaIds, string $registerSlug): int {
 		if (empty($schemaIds) === true) {
@@ -912,7 +1006,7 @@ class ApplicationInsightsService {
 	 *
 	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-19
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-19
 	 */
 	private function countAttachedFiles(string $registerSlug, array $schemaIds): int {
 		if (empty($schemaIds) === true) {
@@ -949,35 +1043,20 @@ class ApplicationInsightsService {
 	 * Audit-events KPI: total audit-trail rows scoped to the schema-set
 	 * within the window (REQ-OBAI-004).
 	 *
-	 * Uses `getActionChartData` summed across actions when a dedicated
-	 * `countByRegisterAndWindow` is unavailable on the OR floor (today
-	 * it is unavailable; this method becomes a one-liner when it lands).
+	 * Sums `getActionChartData` across actions, per schema.
 	 *
 	 * @param array<int, int> $schemaIds Integer schema IDs.
 	 * @param int $hours Window hours.
 	 *
 	 * @return int Audit-event count.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-19
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-19
 	 */
 	private function countAuditEvents(array $schemaIds, int $hours): int {
 		if (empty($schemaIds) === true) {
 			return 0;
 		}
 
-		if (method_exists($this->auditTrailMapper, 'countByRegisterAndWindow') === true) {
-			try {
-				return (int)$this->auditTrailMapper->countByRegisterAndWindow($schemaIds, $hours);
-			} catch (Throwable $e) {
-				$this->logger->debug(
-					'Buildiq: countByRegisterAndWindow failed: {message}',
-					['message' => $e->getMessage()]
-				);
-				return 0;
-			}
-		}
-
-		// Fallback: sum chart rows.
 		try {
 			$from = new DateTime(sprintf('-%d hours', $hours));
 			$till = new DateTime();
@@ -996,7 +1075,7 @@ class ApplicationInsightsService {
 			return $total;
 		} catch (Throwable $e) {
 			$this->logger->debug(
-				'Buildiq: audit-event fallback failed: {message}',
+				'Buildiq: audit-event count failed: {message}',
 				['message' => $e->getMessage()]
 			);
 			return 0;
@@ -1052,48 +1131,18 @@ class ApplicationInsightsService {
 	 *
 	 * @param array<int, int> $schemaIds Integer schema IDs.
 	 * @param int $hours Window hours.
-	 * @param string $registerSlug The register slug (reserved for future use).
 	 *
 	 * @return array<int, array{timestamp: string, eventCount: int}>
 	 *
-	 * @SuppressWarnings(PHPMD.UnusedFormalParameter)
-	 *
-	 * @psalm-suppress UnusedParam
-	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-20
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-20
 	 */
-	private function buildActivityTimeline(array $schemaIds, int $hours, string $registerSlug): array {
+	private function buildActivityTimeline(array $schemaIds, int $hours): array {
 		if (empty($schemaIds) === true) {
 			return [];
 		}
 
 		try {
-			$from = new DateTime(sprintf('-%d hours', $hours));
-			$till = new DateTime();
-
-			$merged = [];
-			foreach ($schemaIds as $schemaId) {
-				$chart = $this->auditTrailMapper->getActionChartData(
-					$from,
-					$till,
-					null,
-					$schemaId
-				);
-
-				$this->mergeChartIntoBuckets(chart: $chart, buckets: $merged);
-			}
-
-			ksort($merged);
-
-			$timeline = [];
-			foreach ($merged as $date => $count) {
-				$timeline[] = [
-					'timestamp' => sprintf('%sT00:00:00Z', $date),
-					'eventCount' => (int)$count,
-				];
-			}
-
-			return $timeline;
+			return $this->timelineOf(buckets: $this->auditBuckets(schemaIds: $schemaIds, hours: $hours));
 		} catch (Throwable $e) {
 			$this->logger->debug(
 				'Buildiq: buildActivityTimeline failed: {message}',
@@ -1102,6 +1151,54 @@ class ApplicationInsightsService {
 			return [];
 		}//end try
 	}//end buildActivityTimeline()
+
+	/**
+	 * Total audit events per date across the schemas.
+	 *
+	 * @param array<int, int> $schemaIds Integer schema IDs.
+	 * @param int $hours Window hours.
+	 *
+	 * @return array<string, int> Date string → total event count.
+	 */
+	private function auditBuckets(array $schemaIds, int $hours): array {
+		$from = new DateTime(sprintf('-%d hours', $hours));
+		$till = new DateTime();
+
+		$merged = [];
+		foreach ($schemaIds as $schemaId) {
+			$chart = $this->auditTrailMapper->getActionChartData(
+				$from,
+				$till,
+				null,
+				$schemaId
+			);
+
+			$this->mergeChartIntoBuckets(chart: $chart, buckets: $merged);
+		}
+
+		return $merged;
+	}//end auditBuckets()
+
+	/**
+	 * One timeline entry per date bucket, in date order.
+	 *
+	 * @param array<string, int> $buckets Date string → total event count.
+	 *
+	 * @return array<int, array{timestamp: string, eventCount: int}>
+	 */
+	private function timelineOf(array $buckets): array {
+		ksort($buckets);
+
+		$timeline = [];
+		foreach ($buckets as $date => $count) {
+			$timeline[] = [
+				'timestamp' => sprintf('%sT00:00:00Z', $date),
+				'eventCount' => (int)$count,
+			];
+		}
+
+		return $timeline;
+	}//end timelineOf()
 
 	/**
 	 * Merge one `getActionChartData` payload's series rows into the
@@ -1161,33 +1258,4 @@ class ApplicationInsightsService {
 			$buckets[$label] = ($buckets[$label] ?? 0) + (int)$count;
 		}
 	}//end mergeSeriesData()
-
-	/**
-	 * Coerce an OR result entry (ObjectEntity or array) to a plain assoc array.
-	 *
-	 * @param mixed $object The OR object/result entry.
-	 *
-	 * @return array<string, mixed>
-	 */
-	private function normaliseObject(mixed $object): array {
-		if (is_array($object) === true) {
-			return $object;
-		}
-
-		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-			$serialised = $object->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		if (is_object($object) === true && method_exists($object, 'getObject') === true) {
-			$inner = $object->getObject();
-			if (is_array($inner) === true) {
-				return $inner;
-			}
-		}
-
-		return [];
-	}//end normaliseObject()
 }//end class

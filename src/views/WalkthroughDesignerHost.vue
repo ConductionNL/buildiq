@@ -43,6 +43,7 @@ import { generateUrl } from '@nextcloud/router'
 import { NcEmptyContent, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
 import WalkthroughDesigner from '../components/walkthrough-editor/WalkthroughDesigner.vue'
 import { useApplicationVersion } from '../composables/useApplicationVersion.js'
+import builtAppHost, { failureText } from '../mixins/builtAppHost.js'
 
 const EMPTY_MANIFEST = {
 	version: '1.0.0',
@@ -51,10 +52,34 @@ const EMPTY_MANIFEST = {
 	walkthrough: { enabled: true, tours: [] },
 }
 
+/**
+ * The slug of an ApplicationVersion, from its own field or its `@self` block.
+ *
+ * @param {object|null} version The version.
+ * @return {string|undefined|null} The slug, or a falsy value without one.
+ */
+function versionSlugOf(version) {
+	return version && (version.slug || (version['@self'] && version['@self'].slug))
+}
+
+/**
+ * The version a versions-endpoint answer carries.
+ *
+ * @param {object|null} data The answer body.
+ * @return {object|null} The saved version, or null when the body is not an object.
+ */
+function savedVersionIn(data) {
+	return data && typeof data === 'object'
+		? data.version || data.data || data
+		: null
+}
+
 export default {
 	name: 'WalkthroughDesignerHost',
 
 	components: { NcEmptyContent, NcLoadingIcon, NcNoteCard, WalkthroughDesigner },
+
+	mixins: [builtAppHost],
 
 	data() {
 		return {
@@ -77,16 +102,6 @@ export default {
 		/** The optional version slug from `?_version=`. */
 		versionSlug() {
 			return this.$route.query._version || undefined
-		},
-
-		/** The Application object's OR uuid (persist fallback target). */
-		applicationUuid() {
-			const self = this.application && this.application['@self']
-			return (
-				(self && self.id)
-				|| (this.application && this.application.uuid)
-				|| ''
-			)
 		},
 	},
 
@@ -131,52 +146,13 @@ export default {
 		},
 
 		/**
-		 * Load the Application and seed the editor manifest from the resolved
-		 * version's manifest (falling back to the Application's manifest).
+		 * A fresh empty manifest, seeded when neither the version nor the
+		 * Application carries one.
 		 *
-		 * @return {Promise<void>}
-		 *
-		 * @spec openspec/specs/application-detail-ui/spec.md
+		 * @return {object}
 		 */
-		async load() {
-			this.loading = true
-			this.error = ''
-			this.toast = ''
-			try {
-				const url = generateUrl(
-					'/apps/openregister/api/objects/buildiq/built-app',
-				)
-				const { data } = await axios.get(url, { params: { _limit: 100 } })
-				const apps =
-					data && data.results
-						? data.results
-						: Array.isArray(data)
-							? data
-							: []
-				this.application =
-					apps.find((a) => a && a.slug === this.routeSlug) || null
-				const versionManifest =
-					this.applicationVersion
-					&& typeof this.applicationVersion.manifest === 'object'
-						? this.applicationVersion.manifest
-						: null
-				const seed =
-					versionManifest
-					|| (this.application
-					&& typeof this.application.manifest === 'object'
-						? this.application.manifest
-						: null)
-				this.manifest = seed
-					? JSON.parse(JSON.stringify(seed))
-					: { ...EMPTY_MANIFEST }
-			} catch (e) {
-				this.application = null
-				this.error = t('buildiq', 'Failed to load the app: {error}', {
-					error: (e && e.message) || String(e),
-				})
-			} finally {
-				this.loading = false
-			}
+		emptyManifest() {
+			return { ...EMPTY_MANIFEST }
 		},
 
 		/**
@@ -204,54 +180,59 @@ export default {
 			this.error = ''
 			this.toast = ''
 			try {
-				// Persist through buildiq's ApplicationVersionsController#update
-				// (PUT /api/applications/{slug}/versions/{versionSlug}) with just the
-				// manifest. The controller allowlists MUTABLE_FIELDS and passes the
-				// OR register/schema as parameters, so it avoids the raw-objects PUT
-				// failure where the schema-declared `register` data property collides
-				// with OpenRegister's reserved system field (a no-op round-trip PUT to
-				// /api/objects/.../applicationVersion 400s "register missing").
-				const version = this.applicationVersion
-				const versionSlug =
-					version
-					&& (version.slug || (version['@self'] && version['@self'].slug))
-				if (version && versionSlug && this.routeSlug) {
-					const url = generateUrl(
-						`/apps/buildiq/api/applications/${this.routeSlug}/versions/${versionSlug}`,
-					)
-					const { data } = await axios.put(url, {
-						manifest: this.manifest,
-					})
-					const saved =
-						data && typeof data === 'object'
-							? data.version || data.data || data
-							: null
-					if (saved && typeof saved === 'object')
-						this.applicationVersion = saved
-					this.toast = t('buildiq', 'Walkthrough saved.')
-					return
-				}
-				// Fallback for un-versioned apps: persist onto the Application object.
-				if (!this.applicationUuid) {
-					this.error = t('buildiq', 'No app to save to.')
-					return
-				}
-				const url = generateUrl(
-					`/apps/openregister/api/objects/buildiq/built-app/${this.applicationUuid}`,
-				)
-				const { data } = await axios.put(url, {
-					...this.application,
-					manifest: this.manifest,
-				})
-				if (data && typeof data === 'object') this.application = data
-				this.toast = t('buildiq', 'Walkthrough saved.')
+				await this.persistManifest()
 			} catch (e) {
 				this.error = t('buildiq', 'Failed to save: {error}', {
-					error: (e && e.message) || String(e),
+					error: failureText(e),
 				})
 			} finally {
 				this.saving = false
 			}
+		},
+
+		/**
+		 * Persist onto the active ApplicationVersion when one is resolved, else
+		 * onto the Application object, else say there is nothing to save to.
+		 *
+		 * @return {Promise<void>}
+		 */
+		async persistManifest() {
+			const versionSlug = versionSlugOf(this.applicationVersion)
+			if (versionSlug && this.routeSlug) {
+				await this.saveOntoVersion(versionSlug)
+				this.toast = t('buildiq', 'Walkthrough saved.')
+				return
+			}
+			// Fallback for un-versioned apps: persist onto the Application object.
+			if (!this.applicationUuid) {
+				this.error = t('buildiq', 'No app to save to.')
+				return
+			}
+			await this.saveOntoApplication()
+			this.toast = t('buildiq', 'Walkthrough saved.')
+		},
+
+		/**
+		 * Persist through buildiq's ApplicationVersionsController#update
+		 * (PUT /api/applications/{slug}/versions/{versionSlug}) with just the
+		 * manifest. The controller allowlists MUTABLE_FIELDS and passes the
+		 * OR register/schema as parameters, so it avoids the raw-objects PUT
+		 * failure where the schema-declared `register` data property collides
+		 * with OpenRegister's reserved system field (a no-op round-trip PUT to
+		 * /api/objects/.../applicationVersion 400s "register missing").
+		 *
+		 * @param {string} versionSlug The active version's slug.
+		 * @return {Promise<void>}
+		 */
+		async saveOntoVersion(versionSlug) {
+			const url = generateUrl(
+				`/apps/buildiq/api/applications/${this.routeSlug}/versions/${versionSlug}`,
+			)
+			const { data } = await axios.put(url, {
+				manifest: this.manifest,
+			})
+			const saved = savedVersionIn(data)
+			if (saved && typeof saved === 'object') this.applicationVersion = saved
 		},
 	},
 }

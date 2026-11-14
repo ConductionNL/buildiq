@@ -80,7 +80,7 @@ export default {
 		/**
 		 * Observed behaviour of `localItems` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		localItems() {
 			return Array.isArray(this.modelValue) ? this.modelValue : []
@@ -95,7 +95,7 @@ export default {
 		 * @param {'widgetId'|'gridX'|'gridY'|'gridWidth'|'gridHeight'} key - the layoutItem property to write.
 		 * @param {string|number} value - the `widgetId` text straight from the input,
 		 *   or the already-parsed grid integer forwarded by `updateNum`.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		updateField(index, key, value) {
 			const next = this.localItems.slice()
@@ -110,7 +110,7 @@ export default {
 		 * @param {'gridX'|'gridY'|'gridWidth'|'gridHeight'} key - which grid coordinate the number input edits.
 		 * @param {string} value - the number input's raw string; parsed as a base-10
 		 *   integer, with a cleared or non-numeric input stored as `0`.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		updateNum(index, key, value) {
 			const num = parseInt(value, 10)
@@ -120,7 +120,7 @@ export default {
 		/**
 		 * Observed behaviour of `addItem` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		addItem() {
 			const next = this.localItems.slice()
@@ -139,7 +139,7 @@ export default {
 		 * Observed behaviour of `removeItem` (retrofit annotation).
 		 *
 		 * @param {number} index - position of the layout item to drop from the `layout` array.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		removeItem(index) {
 			const next = this.localItems.slice()
@@ -150,7 +150,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../../assets/editor-controls.scss' as c;
+
 .layout-item-builder {
 	display: flex;
 	flex-direction: column;
@@ -166,11 +168,7 @@ export default {
 
 .layout-item-builder__field {
 	flex: 1 1 160px;
-	padding: 4px 6px;
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-	background: var(--color-main-background);
-	color: var(--color-main-text);
+	@include c.control;
 }
 
 .layout-item-builder__pair {
@@ -181,29 +179,15 @@ export default {
 
 .layout-item-builder__num {
 	width: 64px;
-	padding: 4px 6px;
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-	background: var(--color-main-background);
-	color: var(--color-main-text);
+	@include c.control;
 }
 
 .layout-item-builder__remove {
-	background: transparent;
-	border: 1px solid var(--color-border);
-	color: var(--color-error, var(--color-main-text));
-	padding: 4px 8px;
-	border-radius: var(--border-radius);
-	cursor: pointer;
+	@include c.danger-button;
 }
 
 .layout-item-builder__add {
 	align-self: flex-start;
-	background: var(--color-primary-element-light);
-	border: 1px solid var(--color-border);
-	color: var(--color-main-text);
-	padding: 4px 10px;
-	border-radius: var(--border-radius);
-	cursor: pointer;
+	@include c.add-button;
 }
 </style>

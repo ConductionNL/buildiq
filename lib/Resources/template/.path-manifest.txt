@@ -24,11 +24,13 @@ img/app.svg
 l10n/en.json
 l10n/nl.json
 lib/AppInfo/Application.php
+lib/AppInfo/OpenRegisterAutoloader.php
 lib/Controller/DashboardController.php
 lib/Controller/SettingsController.php
 lib/Listener/DeepLinkRegistrationListener.php
 lib/Repair/InitializeSettings.php
 lib/Sections/SettingsSection.php
+lib/Service/FlowSeedService.php
 lib/Service/SettingsService.php
 lib/Settings/AdminSettings.php
 lib/Settings/app_template_register.json
@@ -66,5 +68,6 @@ tests/bootstrap-unit.php
 tests/bootstrap.php
 tests/integration/README.md
 tests/integration/app-template.postman_collection.json
+tests/unit/AppInfo/OpenRegisterAutoloaderTest.php
 tests/unit/Controller/SettingsControllerTest.php
 webpack.config.js

@@ -1,0 +1,927 @@
+{
+    "ok / broker 1 / reporter 1 / q and credential": {
+        "status": 200,
+        "data": {
+            "outcome": "ok",
+            "cards": [
+                {
+                    "slug": "a"
+                }
+            ],
+            "brokerCredentialAvailable": true,
+            "brokerUsed": true,
+            "rateLimited": false
+        },
+        "calls": [
+            {
+                "search": {
+                    "query": "topic",
+                    "actingUserId": "alice",
+                    "credentialId": "cred-1"
+                }
+            },
+            "isBrokerAvailable",
+            {
+                "report": {
+                    "outcome": "ok",
+                    "brokerAvailable": true
+                }
+            },
+            "isBrokerAvailable"
+        ]
+    },
+    "ok / broker 1 / reporter 1 / no q, empty credential": {
+        "status": 200,
+        "data": {
+            "outcome": "ok",
+            "cards": [
+                {
+                    "slug": "a"
+                }
+            ],
+            "brokerCredentialAvailable": true,
+            "brokerUsed": true,
+            "rateLimited": false
+        },
+        "calls": [
+            {
+                "search": {
+                    "query": null,
+                    "actingUserId": "alice",
+                    "credentialId": null
+                }
+            },
+            "isBrokerAvailable",
+            {
+                "report": {
+                    "outcome": "ok",
+                    "brokerAvailable": true
+                }
+            },
+            "isBrokerAvailable"
+        ]
+    },
+    "ok / broker 1 / reporter 1 / array q, int credential": {
+        "status": 200,
+        "data": {
+            "outcome": "ok",
+            "cards": [
+                {
+                    "slug": "a"
+                }
+            ],
+            "brokerCredentialAvailable": true,
+            "brokerUsed": true,
+            "rateLimited": false
+        },
+        "calls": [
+            {
+                "search": {
+                    "query": null,
+                    "actingUserId": "alice",
+                    "credentialId": null
+                }
+            },
+            "isBrokerAvailable",
+            {
+                "report": {
+                    "outcome": "ok",
+                    "brokerAvailable": true
+                }
+            },
+            "isBrokerAvailable"
+        ]
+    },
+    "ok / broker 1 / reporter 0 / q and credential": {
+        "status": 200,
+        "data": {
+            "outcome": "ok",
+            "cards": [
+                {
+                    "slug": "a"
+                }
+            ],
+            "brokerCredentialAvailable": true,
+            "brokerUsed": true,
+            "rateLimited": false
+        },
+        "calls": [
+            {
+                "search": {
+                    "query": "topic",
+                    "actingUserId": "alice",
+                    "credentialId": "cred-1"
+                }
+            },
+            "isBrokerAvailable"
+        ]
+    },
+    "ok / broker 1 / reporter 0 / no q, empty credential": {
+        "status": 200,
+        "data": {
+            "outcome": "ok",
+            "cards": [
+                {
+                    "slug": "a"
+                }
+            ],
+            "brokerCredentialAvailable": true,
+            "brokerUsed": true,
+            "rateLimited": false
+        },
+        "calls": [
+            {
+                "search": {
+                    "query": null,
+                    "actingUserId": "alice",
+                    "credentialId": null
+                }
+            },
+            "isBrokerAvailable"
+        ]
+    },
+    "ok / broker 1 / reporter 0 / array q, int credential": {
+        "status": 200,
+        "data": {
+            "outcome": "ok",
+            "cards": [
+                {
+                    "slug": "a"
+                }
+            ],
+            "brokerCredentialAvailable": true,
+            "brokerUsed": true,
+            "rateLimited": false
+        },
+        "calls": [
+            {
+                "search": {
+                    "query": null,
+                    "actingUserId": "alice",
+                    "credentialId": null
+                }
+            },
+            "isBrokerAvailable"
+        ]
+    },
+    "ok / broker 0 / reporter 1 / q and credential": {
+        "status": 200,
+        "data": {
+            "outcome": "ok",
+            "cards": [
+                {
+                    "slug": "a"
+                }
+            ],
+            "brokerCredentialAvailable": false,
+            "brokerUsed": true,
+            "rateLimited": false
+        },
+        "calls": [
+            {
+                "search": {
+                    "query": "topic",
+                    "actingUserId": "alice",
+                    "credentialId": "cred-1"
+                }
+            },
+            "isBrokerAvailable",
+            {
+                "report": {
+                    "outcome": "ok",
+                    "brokerAvailable": false
+                }
+            },
+            "isBrokerAvailable"
+        ]
+    },
+    "ok / broker 0 / reporter 1 / no q, empty credential": {
+        "status": 200,
+        "data": {
+            "outcome": "ok",
+            "cards": [
+                {
+                    "slug": "a"
+                }
+            ],
+            "brokerCredentialAvailable": false,
+            "brokerUsed": true,
+            "rateLimited": false
+        },
+        "calls": [
+            {
+                "search": {
+                    "query": null,
+                    "actingUserId": "alice",
+                    "credentialId": null
+                }
+            },
+            "isBrokerAvailable",
+            {
+                "report": {
+                    "outcome": "ok",
+                    "brokerAvailable": false
+                }
+            },
+            "isBrokerAvailable"
+        ]
+    },
+    "ok / broker 0 / reporter 1 / array q, int credential": {
+        "status": 200,
+        "data": {
+            "outcome": "ok",
+            "cards": [
+                {
+                    "slug": "a"
+                }
+            ],
+            "brokerCredentialAvailable": false,
+            "brokerUsed": true,
+            "rateLimited": false
+        },
+        "calls": [
+            {
+                "search": {
+                    "query": null,
+                    "actingUserId": "alice",
+                    "credentialId": null
+                }
+            },
+            "isBrokerAvailable",
+            {
+                "report": {
+                    "outcome": "ok",
+                    "brokerAvailable": false
+                }
+            },
+            "isBrokerAvailable"
+        ]
+    },
+    "ok / broker 0 / reporter 0 / q and credential": {
+        "status": 200,
+        "data": {
+            "outcome": "ok",
+            "cards": [
+                {
+                    "slug": "a"
+                }
+            ],
+            "brokerCredentialAvailable": false,
+            "brokerUsed": true,
+            "rateLimited": false
+        },
+        "calls": [
+            {
+                "search": {
+                    "query": "topic",
+                    "actingUserId": "alice",
+                    "credentialId": "cred-1"
+                }
+            },
+            "isBrokerAvailable"
+        ]
+    },
+    "ok / broker 0 / reporter 0 / no q, empty credential": {
+        "status": 200,
+        "data": {
+            "outcome": "ok",
+            "cards": [
+                {
+                    "slug": "a"
+                }
+            ],
+            "brokerCredentialAvailable": false,
+            "brokerUsed": true,
+            "rateLimited": false
+        },
+        "calls": [
+            {
+                "search": {
+                    "query": null,
+                    "actingUserId": "alice",
+                    "credentialId": null
+                }
+            },
+            "isBrokerAvailable"
+        ]
+    },
+    "ok / broker 0 / reporter 0 / array q, int credential": {
+        "status": 200,
+        "data": {
+            "outcome": "ok",
+            "cards": [
+                {
+                    "slug": "a"
+                }
+            ],
+            "brokerCredentialAvailable": false,
+            "brokerUsed": true,
+            "rateLimited": false
+        },
+        "calls": [
+            {
+                "search": {
+                    "query": null,
+                    "actingUserId": "alice",
+                    "credentialId": null
+                }
+            },
+            "isBrokerAvailable"
+        ]
+    },
+    "rate limited / broker 1 / reporter 1 / q and credential": {
+        "status": 200,
+        "data": {
+            "outcome": "rate_limited",
+            "cards": [],
+            "brokerCredentialAvailable": true,
+            "brokerUsed": false,
+            "rateLimited": true
+        },
+        "calls": [
+            {
+                "search": {
+                    "query": "topic",
+                    "actingUserId": "alice",
+                    "credentialId": "cred-1"
+                }
+            },
+            "isBrokerAvailable",
+            {
+                "report": {
+                    "outcome": "rate_limited",
+                    "brokerAvailable": true
+                }
+            },
+            "isBrokerAvailable"
+        ]
+    },
+    "rate limited / broker 1 / reporter 1 / no q, empty credential": {
+        "status": 200,
+        "data": {
+            "outcome": "rate_limited",
+            "cards": [],
+            "brokerCredentialAvailable": true,
+            "brokerUsed": false,
+            "rateLimited": true
+        },
+        "calls": [
+            {
+                "search": {
+                    "query": null,
+                    "actingUserId": "alice",
+                    "credentialId": null
+                }
+            },
+            "isBrokerAvailable",
+            {
+                "report": {
+                    "outcome": "rate_limited",
+                    "brokerAvailable": true
+                }
+            },
+            "isBrokerAvailable"
+        ]
+    },
+    "rate limited / broker 1 / reporter 1 / array q, int credential": {
+        "status": 200,
+        "data": {
+            "outcome": "rate_limited",
+            "cards": [],
+            "brokerCredentialAvailable": true,
+            "brokerUsed": false,
+            "rateLimited": true
+        },
+        "calls": [
+            {
+                "search": {
+                    "query": null,
+                    "actingUserId": "alice",
+                    "credentialId": null
+                }
+            },
+            "isBrokerAvailable",
+            {
+                "report": {
+                    "outcome": "rate_limited",
+                    "brokerAvailable": true
+                }
+            },
+            "isBrokerAvailable"
+        ]
+    },
+    "rate limited / broker 1 / reporter 0 / q and credential": {
+        "status": 200,
+        "data": {
+            "outcome": "rate_limited",
+            "cards": [],
+            "brokerCredentialAvailable": true,
+            "brokerUsed": false,
+            "rateLimited": true
+        },
+        "calls": [
+            {
+                "search": {
+                    "query": "topic",
+                    "actingUserId": "alice",
+                    "credentialId": "cred-1"
+                }
+            },
+            "isBrokerAvailable"
+        ]
+    },
+    "rate limited / broker 1 / reporter 0 / no q, empty credential": {
+        "status": 200,
+        "data": {
+            "outcome": "rate_limited",
+            "cards": [],
+            "brokerCredentialAvailable": true,
+            "brokerUsed": false,
+            "rateLimited": true
+        },
+        "calls": [
+            {
+                "search": {
+                    "query": null,
+                    "actingUserId": "alice",
+                    "credentialId": null
+                }
+            },
+            "isBrokerAvailable"
+        ]
+    },
+    "rate limited / broker 1 / reporter 0 / array q, int credential": {
+        "status": 200,
+        "data": {
+            "outcome": "rate_limited",
+            "cards": [],
+            "brokerCredentialAvailable": true,
+            "brokerUsed": false,
+            "rateLimited": true
+        },
+        "calls": [
+            {
+                "search": {
+                    "query": null,
+                    "actingUserId": "alice",
+                    "credentialId": null
+                }
+            },
+            "isBrokerAvailable"
+        ]
+    },
+    "rate limited / broker 0 / reporter 1 / q and credential": {
+        "status": 200,
+        "data": {
+            "outcome": "rate_limited",
+            "cards": [],
+            "brokerCredentialAvailable": false,
+            "brokerUsed": false,
+            "rateLimited": true
+        },
+        "calls": [
+            {
+                "search": {
+                    "query": "topic",
+                    "actingUserId": "alice",
+                    "credentialId": "cred-1"
+                }
+            },
+            "isBrokerAvailable",
+            {
+                "report": {
+                    "outcome": "rate_limited",
+                    "brokerAvailable": false
+                }
+            },
+            "isBrokerAvailable"
+        ]
+    },
+    "rate limited / broker 0 / reporter 1 / no q, empty credential": {
+        "status": 200,
+        "data": {
+            "outcome": "rate_limited",
+            "cards": [],
+            "brokerCredentialAvailable": false,
+            "brokerUsed": false,
+            "rateLimited": true
+        },
+        "calls": [
+            {
+                "search": {
+                    "query": null,
+                    "actingUserId": "alice",
+                    "credentialId": null
+                }
+            },
+            "isBrokerAvailable",
+            {
+                "report": {
+                    "outcome": "rate_limited",
+                    "brokerAvailable": false
+                }
+            },
+            "isBrokerAvailable"
+        ]
+    },
+    "rate limited / broker 0 / reporter 1 / array q, int credential": {
+        "status": 200,
+        "data": {
+            "outcome": "rate_limited",
+            "cards": [],
+            "brokerCredentialAvailable": false,
+            "brokerUsed": false,
+            "rateLimited": true
+        },
+        "calls": [
+            {
+                "search": {
+                    "query": null,
+                    "actingUserId": "alice",
+                    "credentialId": null
+                }
+            },
+            "isBrokerAvailable",
+            {
+                "report": {
+                    "outcome": "rate_limited",
+                    "brokerAvailable": false
+                }
+            },
+            "isBrokerAvailable"
+        ]
+    },
+    "rate limited / broker 0 / reporter 0 / q and credential": {
+        "status": 200,
+        "data": {
+            "outcome": "rate_limited",
+            "cards": [],
+            "brokerCredentialAvailable": false,
+            "brokerUsed": false,
+            "rateLimited": true
+        },
+        "calls": [
+            {
+                "search": {
+                    "query": "topic",
+                    "actingUserId": "alice",
+                    "credentialId": "cred-1"
+                }
+            },
+            "isBrokerAvailable"
+        ]
+    },
+    "rate limited / broker 0 / reporter 0 / no q, empty credential": {
+        "status": 200,
+        "data": {
+            "outcome": "rate_limited",
+            "cards": [],
+            "brokerCredentialAvailable": false,
+            "brokerUsed": false,
+            "rateLimited": true
+        },
+        "calls": [
+            {
+                "search": {
+                    "query": null,
+                    "actingUserId": "alice",
+                    "credentialId": null
+                }
+            },
+            "isBrokerAvailable"
+        ]
+    },
+    "rate limited / broker 0 / reporter 0 / array q, int credential": {
+        "status": 200,
+        "data": {
+            "outcome": "rate_limited",
+            "cards": [],
+            "brokerCredentialAvailable": false,
+            "brokerUsed": false,
+            "rateLimited": true
+        },
+        "calls": [
+            {
+                "search": {
+                    "query": null,
+                    "actingUserId": "alice",
+                    "credentialId": null
+                }
+            },
+            "isBrokerAvailable"
+        ]
+    },
+    "throws / broker 1 / reporter 1 / q and credential": {
+        "status": 200,
+        "data": {
+            "outcome": "github_unreachable",
+            "cards": [],
+            "brokerCredentialAvailable": true,
+            "rateLimited": false
+        },
+        "calls": [
+            {
+                "search": {
+                    "query": "topic",
+                    "actingUserId": "alice",
+                    "credentialId": "cred-1"
+                }
+            },
+            {
+                "error": "Buildiq shop: GitHub search failed: github down"
+            },
+            "isBrokerAvailable",
+            {
+                "report": {
+                    "outcome": "github_unreachable",
+                    "brokerAvailable": true
+                }
+            },
+            "isBrokerAvailable"
+        ]
+    },
+    "throws / broker 1 / reporter 1 / no q, empty credential": {
+        "status": 200,
+        "data": {
+            "outcome": "github_unreachable",
+            "cards": [],
+            "brokerCredentialAvailable": true,
+            "rateLimited": false
+        },
+        "calls": [
+            {
+                "search": {
+                    "query": null,
+                    "actingUserId": "alice",
+                    "credentialId": null
+                }
+            },
+            {
+                "error": "Buildiq shop: GitHub search failed: github down"
+            },
+            "isBrokerAvailable",
+            {
+                "report": {
+                    "outcome": "github_unreachable",
+                    "brokerAvailable": true
+                }
+            },
+            "isBrokerAvailable"
+        ]
+    },
+    "throws / broker 1 / reporter 1 / array q, int credential": {
+        "status": 200,
+        "data": {
+            "outcome": "github_unreachable",
+            "cards": [],
+            "brokerCredentialAvailable": true,
+            "rateLimited": false
+        },
+        "calls": [
+            {
+                "search": {
+                    "query": null,
+                    "actingUserId": "alice",
+                    "credentialId": null
+                }
+            },
+            {
+                "error": "Buildiq shop: GitHub search failed: github down"
+            },
+            "isBrokerAvailable",
+            {
+                "report": {
+                    "outcome": "github_unreachable",
+                    "brokerAvailable": true
+                }
+            },
+            "isBrokerAvailable"
+        ]
+    },
+    "throws / broker 1 / reporter 0 / q and credential": {
+        "status": 200,
+        "data": {
+            "outcome": "github_unreachable",
+            "cards": [],
+            "brokerCredentialAvailable": true,
+            "rateLimited": false
+        },
+        "calls": [
+            {
+                "search": {
+                    "query": "topic",
+                    "actingUserId": "alice",
+                    "credentialId": "cred-1"
+                }
+            },
+            {
+                "error": "Buildiq shop: GitHub search failed: github down"
+            },
+            "isBrokerAvailable"
+        ]
+    },
+    "throws / broker 1 / reporter 0 / no q, empty credential": {
+        "status": 200,
+        "data": {
+            "outcome": "github_unreachable",
+            "cards": [],
+            "brokerCredentialAvailable": true,
+            "rateLimited": false
+        },
+        "calls": [
+            {
+                "search": {
+                    "query": null,
+                    "actingUserId": "alice",
+                    "credentialId": null
+                }
+            },
+            {
+                "error": "Buildiq shop: GitHub search failed: github down"
+            },
+            "isBrokerAvailable"
+        ]
+    },
+    "throws / broker 1 / reporter 0 / array q, int credential": {
+        "status": 200,
+        "data": {
+            "outcome": "github_unreachable",
+            "cards": [],
+            "brokerCredentialAvailable": true,
+            "rateLimited": false
+        },
+        "calls": [
+            {
+                "search": {
+                    "query": null,
+                    "actingUserId": "alice",
+                    "credentialId": null
+                }
+            },
+            {
+                "error": "Buildiq shop: GitHub search failed: github down"
+            },
+            "isBrokerAvailable"
+        ]
+    },
+    "throws / broker 0 / reporter 1 / q and credential": {
+        "status": 200,
+        "data": {
+            "outcome": "github_unreachable",
+            "cards": [],
+            "brokerCredentialAvailable": false,
+            "rateLimited": false
+        },
+        "calls": [
+            {
+                "search": {
+                    "query": "topic",
+                    "actingUserId": "alice",
+                    "credentialId": "cred-1"
+                }
+            },
+            {
+                "error": "Buildiq shop: GitHub search failed: github down"
+            },
+            "isBrokerAvailable",
+            {
+                "report": {
+                    "outcome": "github_unreachable",
+                    "brokerAvailable": false
+                }
+            },
+            "isBrokerAvailable"
+        ]
+    },
+    "throws / broker 0 / reporter 1 / no q, empty credential": {
+        "status": 200,
+        "data": {
+            "outcome": "github_unreachable",
+            "cards": [],
+            "brokerCredentialAvailable": false,
+            "rateLimited": false
+        },
+        "calls": [
+            {
+                "search": {
+                    "query": null,
+                    "actingUserId": "alice",
+                    "credentialId": null
+                }
+            },
+            {
+                "error": "Buildiq shop: GitHub search failed: github down"
+            },
+            "isBrokerAvailable",
+            {
+                "report": {
+                    "outcome": "github_unreachable",
+                    "brokerAvailable": false
+                }
+            },
+            "isBrokerAvailable"
+        ]
+    },
+    "throws / broker 0 / reporter 1 / array q, int credential": {
+        "status": 200,
+        "data": {
+            "outcome": "github_unreachable",
+            "cards": [],
+            "brokerCredentialAvailable": false,
+            "rateLimited": false
+        },
+        "calls": [
+            {
+                "search": {
+                    "query": null,
+                    "actingUserId": "alice",
+                    "credentialId": null
+                }
+            },
+            {
+                "error": "Buildiq shop: GitHub search failed: github down"
+            },
+            "isBrokerAvailable",
+            {
+                "report": {
+                    "outcome": "github_unreachable",
+                    "brokerAvailable": false
+                }
+            },
+            "isBrokerAvailable"
+        ]
+    },
+    "throws / broker 0 / reporter 0 / q and credential": {
+        "status": 200,
+        "data": {
+            "outcome": "github_unreachable",
+            "cards": [],
+            "brokerCredentialAvailable": false,
+            "rateLimited": false
+        },
+        "calls": [
+            {
+                "search": {
+                    "query": "topic",
+                    "actingUserId": "alice",
+                    "credentialId": "cred-1"
+                }
+            },
+            {
+                "error": "Buildiq shop: GitHub search failed: github down"
+            },
+            "isBrokerAvailable"
+        ]
+    },
+    "throws / broker 0 / reporter 0 / no q, empty credential": {
+        "status": 200,
+        "data": {
+            "outcome": "github_unreachable",
+            "cards": [],
+            "brokerCredentialAvailable": false,
+            "rateLimited": false
+        },
+        "calls": [
+            {
+                "search": {
+                    "query": null,
+                    "actingUserId": "alice",
+                    "credentialId": null
+                }
+            },
+            {
+                "error": "Buildiq shop: GitHub search failed: github down"
+            },
+            "isBrokerAvailable"
+        ]
+    },
+    "throws / broker 0 / reporter 0 / array q, int credential": {
+        "status": 200,
+        "data": {
+            "outcome": "github_unreachable",
+            "cards": [],
+            "brokerCredentialAvailable": false,
+            "rateLimited": false
+        },
+        "calls": [
+            {
+                "search": {
+                    "query": null,
+                    "actingUserId": "alice",
+                    "credentialId": null
+                }
+            },
+            {
+                "error": "Buildiq shop: GitHub search failed: github down"
+            },
+            "isBrokerAvailable"
+        ]
+    },
+    "anonymous": {
+        "status": 401,
+        "data": {
+            "error": "unauthenticated"
+        },
+        "calls": []
+    }
+}

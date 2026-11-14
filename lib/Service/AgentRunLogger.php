@@ -34,6 +34,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use DateTimeImmutable;
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -83,6 +84,7 @@ class AgentRunLogger {
 	 * @return array<string, mixed> The persisted `AgentRun` record (normalised), or an empty array on a swallowed failure.
 	 *
 	 * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/agent-workspace/spec.md
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	public function log(array $agent, string $userId, string $prompt, array $plan, array $toolCalls, string $outcome): array {
 		$agentId = (string)($agent['id'] ?? $agent['uuid'] ?? '');
@@ -104,7 +106,7 @@ class AgentRunLogger {
 				schema: self::AGENT_RUN_SCHEMA,
 			);
 
-			return $this->toArray(item: $created);
+			return ObjectRecord::castArray(object: $created);
 		} catch (Throwable $e) {
 			$this->logger->error(
 				'Buildiq AgentRunLogger: failed to persist AgentRun for agent ' . $agentId . ' (outcome ' . $outcome . '): ' . $e->getMessage(),
@@ -114,26 +116,4 @@ class AgentRunLogger {
 			return [];
 		}//end try
 	}//end log()
-
-	/**
-	 * Coerce an OR entity, array, or generic value into an associative array.
-	 *
-	 * @param mixed $item Value to coerce.
-	 *
-	 * @return array<string, mixed>
-	 */
-	private function toArray(mixed $item): array {
-		if (is_array($item) === true) {
-			return $item;
-		}
-
-		if (is_object($item) === true && method_exists($item, 'jsonSerialize') === true) {
-			$serialised = $item->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		return (array)$item;
-	}//end toArray()
 }//end class

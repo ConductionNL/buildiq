@@ -24,7 +24,14 @@
 			{{ error }}
 		</p>
 		<p v-else-if="!hasAnyContent" class="manifest-diff__empty">
-			{{ t('buildiq', 'Nothing to diff — publish the app first.') }}
+			{{
+				t('buildiq', 'Nothing to diff. Neither version has a manifest yet.')
+			}}
+		</p>
+		<p v-else-if="isIdentical" class="manifest-diff__empty">
+			{{
+				t('buildiq', 'No differences. Both versions have the same manifest.')
+			}}
 		</p>
 		<pre v-else class="manifest-diff__pane"><span
 			v-for="(part, idx) in diffParts"
@@ -73,13 +80,13 @@ export default {
 			default: null,
 		},
 
-		/** Label shown for `from` in static mode (ignored otherwise). */
+		/** Label shown for `from` (defaults: "Current" in static mode, the ref otherwise). */
 		fromLabelText: {
 			type: String,
 			default: '',
 		},
 
-		/** Label shown for `to` in static mode (ignored otherwise). */
+		/** Label shown for `to` (defaults: "Predicted" in static mode, the ref otherwise). */
 		toLabelText: {
 			type: String,
 			default: '',
@@ -101,7 +108,7 @@ export default {
 		 * manifest blobs instead of fetching stored versions by slug.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		isStaticMode() {
 			return this.fromManifest !== null || this.toManifest !== null
@@ -110,11 +117,14 @@ export default {
 		/**
 		 * Observed behaviour of `fromLabel` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 		 */
 		fromLabel() {
+			if (this.fromLabelText) {
+				return this.fromLabelText
+			}
 			if (this.isStaticMode) {
-				return this.fromLabelText || t('buildiq', 'Current')
+				return t('buildiq', 'Current')
 			}
 			return this.from === 'draft'
 				? t('buildiq', 'Current draft')
@@ -124,11 +134,14 @@ export default {
 		/**
 		 * Observed behaviour of `toLabel` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 		 */
 		toLabel() {
+			if (this.toLabelText) {
+				return this.toLabelText
+			}
 			if (this.isStaticMode) {
-				return this.toLabelText || t('buildiq', 'Predicted')
+				return t('buildiq', 'Predicted')
 			}
 			return this.to === 'draft'
 				? t('buildiq', 'Current draft')
@@ -145,9 +158,22 @@ export default {
 		},
 
 		/**
+		 * Whether both sides have content and the diff found no change.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/specs/openbuild-version-snapshots/spec.md
+		 */
+		isIdentical() {
+			return (
+				this.diffParts.length > 0
+				&& this.diffParts.every((part) => !part.added && !part.removed)
+			)
+		},
+
+		/**
 		 * Observed behaviour of `diffParts` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 		 */
 		diffParts() {
 			const fromSource = this.isStaticMode
@@ -169,7 +195,7 @@ export default {
 		/**
 		 * Observed behaviour of `from` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 		 */
 		from() {
 			this.fetch()
@@ -178,7 +204,7 @@ export default {
 		/**
 		 * Observed behaviour of `to` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 		 */
 		to() {
 			this.fetch()
@@ -187,7 +213,7 @@ export default {
 		/**
 		 * Observed behaviour of `slug` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 		 */
 		slug() {
 			this.fetch()
@@ -197,7 +223,7 @@ export default {
 	/**
 	 * Observed behaviour of `mounted` (retrofit annotation).
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
+	 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 	 */
 	mounted() {
 		if (this.isStaticMode) {
@@ -212,7 +238,7 @@ export default {
 		/**
 		 * Observed behaviour of `fetch` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 		 */
 		async fetch() {
 			if (this.isStaticMode || !this.slug || !this.to) {
@@ -221,21 +247,40 @@ export default {
 			this.loading = true
 			this.error = ''
 			try {
-				const url = generateUrl(
-					`/apps/buildiq/api/applications/${this.slug}/versions/diff`,
-				)
-				const { data } = await axios.get(url, {
-					params: { from: this.from, to: this.to },
-				})
-				this.fromBlob = data?.from || null
-				this.toBlob = data?.to || null
+				await this.loadDiff()
 			} catch (e) {
-				this.fromBlob = null
-				this.toBlob = null
-				this.error = `Diff failed: ${e.message || e}`
+				this.showDiffFailure(e)
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Fetch both sides of the diff; a missing side becomes null.
+		 *
+		 * @return {Promise<void>}
+		 */
+		async loadDiff() {
+			const url = generateUrl(
+				`/apps/buildiq/api/applications/${this.slug}/versions/diff`,
+			)
+			const { data } = await axios.get(url, {
+				params: { from: this.from, to: this.to },
+			})
+			this.fromBlob = data?.from || null
+			this.toBlob = data?.to || null
+		},
+
+		/**
+		 * Clear both sides and say why the diff could not be fetched.
+		 *
+		 * @param {Error|string} e - The rejected request.
+		 * @return {void}
+		 */
+		showDiffFailure(e) {
+			this.fromBlob = null
+			this.toBlob = null
+			this.error = `Diff failed: ${e.message || e}`
 		},
 
 		/**
@@ -248,7 +293,7 @@ export default {
 		 *   keys sorted, so the line diff reflects real content changes and not
 		 *   serialisation order.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 		 */
 		prettyManifest(value) {
 			if (value === null || value === undefined) {
@@ -269,7 +314,7 @@ export default {
 		 *   primitives pass through untouched.
 		 * @return {*} The value to serialise in place of `val`.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 		 */
 		sortReplacer(_key, val) {
 			if (val && typeof val === 'object' && !Array.isArray(val)) {
@@ -291,7 +336,7 @@ export default {
 		 * @return {string} The `manifest-diff__part` class list for that hunk, with the
 		 *   `--added` / `--removed` / `--unchanged` modifier that colours it.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-5
 		 */
 		partClass(part) {
 			if (part.added) {

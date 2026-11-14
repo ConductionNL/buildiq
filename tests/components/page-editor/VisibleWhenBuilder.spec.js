@@ -90,4 +90,33 @@ describe('VisibleWhenBuilder', () => {
 		const wrapper = mountBuilder(advanced)
 		expect(wrapper.text()).toContain('Advanced condition')
 	})
+	describe('value coercion', () => {
+		it.each([
+			['true', true],
+			['false', false],
+			['True', 'True'],
+			['42', 42],
+			['-1.5', -1.5],
+			['0', 0],
+			['', ''],
+			['   ', '   '],
+			[' 7 ', 7],
+			['12abc', '12abc'],
+			['NaN', 'NaN'],
+		])('writes %j as %j', (raw, value) => {
+			const wrapper = mountBuilder()
+			wrapper.vm.emitCondition('phone', 'eq', raw)
+			expect(wrapper.emitted('update:modelValue').at(-1)[0]).toEqual({ field: 'phone', value })
+		})
+
+		it('keeps a non-default op and drops an empty one', () => {
+			const wrapper = mountBuilder()
+			wrapper.vm.emitCondition('phone', 'gt', '1')
+			wrapper.vm.emitCondition('phone', '', '1')
+			expect(wrapper.emitted('update:modelValue').map((e) => e[0])).toEqual([
+				{ field: 'phone', value: 1, op: 'gt' },
+				{ field: 'phone', value: 1 },
+			])
+		})
+	})
 })

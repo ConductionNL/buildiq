@@ -26,6 +26,10 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Mcp\Handler;
 
+use OCA\Buildiq\Support\ManifestEntryList;
+use OCA\Buildiq\Support\ManifestPageShape;
+use OCA\Buildiq\Support\ManifestRoute;
+
 /**
  * Handles the buildiq.upsertPage tool invocation.
  */
@@ -39,6 +43,9 @@ class UpsertPageHandler extends AbstractToolHandler {
 	 * @param array<string, mixed> $args Tool arguments (appSlug, versionSlug, pageId, title, type, route, config).
 	 *
 	 * @return array<string, mixed>
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ManifestPageShape is a pure shape
+	 * builder with no collaborators and no state.
 	 */
 	public function handle(array $args): array {
 		$validation = $this->validateArgs(args: $args);
@@ -47,7 +54,6 @@ class UpsertPageHandler extends AbstractToolHandler {
 		}
 
 		$appSlug = $validation['appSlug'];
-		$versionSlug = $validation['versionSlug'];
 		$pageId = $validation['pageId'];
 
 		$rbacError = $this->requireWriteRole(appSlug: $appSlug);
@@ -56,57 +62,7 @@ class UpsertPageHandler extends AbstractToolHandler {
 		}
 
 		try {
-			// ADR-083 rule 1 / ADR-084: use the constructor-injected contract
-			// rather than reaching into the container by string name.
-			$objectService = $this->objectService;
-
-			$loaded = $this->loadVersion(objectService: $objectService, appSlug: $appSlug, versionSlug: $versionSlug);
-			if (isset($loaded['error']) === true) {
-				return $this->errorResult(error: $loaded['error'], message: $loaded['message']);
-			}
-
-			$version = $loaded['version'];
-			$manifest = (array)($version['manifest'] ?? []);
-			$pages = (array)($manifest['pages'] ?? []);
-
-			$newPage = [
-				'id' => $pageId,
-				'route' => $validation['route'],
-				'type' => $validation['type'],
-				'title' => $validation['title'],
-				'config' => $validation['config'],
-			];
-
-			[$pages, $replaced] = $this->upsertPageInList(pages: $pages, pageId: $pageId, newPage: $newPage);
-
-			$manifest['pages'] = array_values($pages);
-
-			// H4: enforce pages-per-manifest (100) and total manifest size (256 KB).
-			// Cap is applied after upsert so updates to existing pages always pass.
-			if ($replaced === false) {
-				$capError = $this->checkManifestCaps(manifest: $manifest);
-				if ($capError !== null) {
-					return $capError;
-				}
-			}
-
-			$saved = $this->saveVersionManifest(objectService: $objectService, version: $version, manifest: $manifest);
-
-			$action = 'created';
-			if ($replaced === true) {
-				$action = 'updated';
-			}
-
-			return [
-				'success' => true,
-				'action' => $action,
-				'page' => $newPage,
-				'pageCount' => count($pages),
-				'version' => [
-					'uuid' => $this->extractUuid(item: $saved),
-					'slug' => (string)($saved['slug'] ?? $versionSlug),
-				],
-			];
+			return $this->upsertPage(validation: $validation);
 		} catch (\Throwable $e) {
 			$this->logger->error(
 				'Buildiq MCP: upsertPage failed',
@@ -118,11 +74,65 @@ class UpsertPageHandler extends AbstractToolHandler {
 	}//end handle()
 
 	/**
+	 * Insert or replace the page and save the version manifest.
+	 *
+	 * @param array<string, mixed> $validation The validated tool arguments.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function upsertPage(array $validation): array {
+		$appSlug = $validation['appSlug'];
+		$versionSlug = $validation['versionSlug'];
+		$pageId = $validation['pageId'];
+
+		$loaded = $this->loadManifestForEdit(appSlug: $appSlug, versionSlug: $versionSlug);
+		if (isset($loaded['isError']) === true) {
+			return $loaded;
+		}
+
+		$manifest = $loaded['manifest'];
+		$pages = (array)($manifest['pages'] ?? []);
+
+		// Shared with CopilotService::applyUpsertPage() so the page reviewed
+		// and the page stored are the same one. See ManifestPageShape for
+		// the per-type fields the canonical validator insists on.
+		$newPage = ManifestPageShape::normalise(page: [
+			'id' => $pageId,
+			'route' => $validation['route'],
+			'type' => $validation['type'],
+			'title' => $validation['title'],
+			'config' => $validation['config'],
+		]);
+
+		[$pages, $replaced] = $this->upsertPageInList(pages: $pages, newPage: $newPage);
+
+		$manifest['pages'] = array_values($pages);
+
+		// H4: enforce pages-per-manifest (100) and total manifest size (256 KB).
+		// Cap is applied after upsert so updates to existing pages always pass.
+		$capError = $this->appendCapError(manifest: $manifest, replaced: $replaced);
+		if ($capError !== null) {
+			return $capError;
+		}
+
+		$saved = $this->saveVersionManifest(objectService: $this->objectService, version: $loaded['version'], manifest: $manifest);
+
+		return $this->upsertOutcome(replaced: $replaced) + [
+			'page' => $newPage,
+			'pageCount' => count($pages),
+			'version' => $this->versionSummary(saved: $saved, versionSlug: $versionSlug),
+		];
+	}//end upsertPage()
+
+	/**
 	 * Validate and extract typed arguments for upsertPage.
 	 *
 	 * @param array<string, mixed> $args Raw tool arguments.
 	 *
 	 * @return array<string, mixed>
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ManifestRoute is a pure rule with
+	 * no collaborators and no state.
 	 */
 	private function validateArgs(array $args): array {
 		$appSlug = (string)($args['appSlug'] ?? '');
@@ -130,7 +140,9 @@ class UpsertPageHandler extends AbstractToolHandler {
 		$pageId = (string)($args['pageId'] ?? '');
 		$title = (string)($args['title'] ?? '');
 		$type = (string)($args['type'] ?? '');
-		$route = (string)($args['route'] ?? '');
+		// A route written as a bare page id is rooted rather than refused;
+		// see ManifestRoute for the shapes that stay refused.
+		$route = ManifestRoute::normalise(route: (string)($args['route'] ?? ''));
 		$config = $args['config'] ?? [];
 
 		if ($appSlug === '' || $this->isValidSlug(candidate: $appSlug) === false) {
@@ -155,7 +167,7 @@ class UpsertPageHandler extends AbstractToolHandler {
 
 		// Validate route to a safe path pattern: must start with '/' and contain
 		// only path-safe characters (issue #167 — route injection guard).
-		if ($this->isValidRoute(route: $route) === false) {
+		if (ManifestRoute::isValid(route: $route) === false) {
 			return [
 				'error' => "Invalid route '{$route}'. "
 				. "Routes must start with '/' and contain only safe path characters.",
@@ -179,55 +191,20 @@ class UpsertPageHandler extends AbstractToolHandler {
 	}//end validateArgs()
 
 	/**
-	 * Validate a route value against a safe path pattern.
-	 *
-	 * Accepts paths that start with '/' and consist only of alphanumeric
-	 * characters, hyphens, underscores, dots, forward slashes, and route
-	 * parameter placeholders (:param or {param}). Rejects javascript: URIs,
-	 * protocol-relative paths, and other injection vectors (issue #167).
-	 *
-	 * @param string $route The candidate route string.
-	 *
-	 * @return bool
-	 */
-	private function isValidRoute(string $route): bool {
-		if (strlen($route) > 256) {
-			return false;
-		}
-
-		// Require the character after the leading '/' to be non-slash so that
-		// protocol-relative URLs (//host/path) are rejected.
-		return (bool)preg_match('#^/([a-zA-Z0-9_\-\.:\{][a-zA-Z0-9/_\-\.:\{\}]*)?$#', $route);
-	}//end isValidRoute()
-
-	/**
-	 * Upsert a page into the pages list using case-insensitive id matching.
+	 * Upsert a page into the pages list using case-insensitive id matching ({@see ManifestEntryList}).
 	 *
 	 * Returns the updated pages array and a boolean indicating whether an existing
 	 * page was replaced (true) or a new page was appended (false).
 	 *
 	 * @param array<int, mixed> $pages Existing pages list from the manifest.
-	 * @param string $pageId The page id to look up (case-insensitive).
 	 * @param array<string, mixed> $newPage The page definition to insert or replace with.
 	 *
 	 * @return array{0: array, 1: bool}
 	 */
-	private function upsertPageInList(array $pages, string $pageId, array $newPage): array {
-		$replaced = false;
-		$pageIdLc = strtolower($pageId);
+	private function upsertPageInList(array $pages, array $newPage): array {
+		$list = new ManifestEntryList(entries: $pages);
+		$replaced = $list->upsert(entry: $newPage);
 
-		foreach ($pages as $i => $existing) {
-			if (is_array($existing) === true && strtolower((string)($existing['id'] ?? '')) === $pageIdLc) {
-				$pages[$i] = $newPage;
-				$replaced = true;
-				break;
-			}
-		}
-
-		if ($replaced === false) {
-			$pages[] = $newPage;
-		}
-
-		return [$pages, $replaced];
+		return [$list->entries(), $replaced];
 	}//end upsertPageInList()
 }//end class

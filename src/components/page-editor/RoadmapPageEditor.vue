@@ -135,42 +135,25 @@
 
 <script>
 import InlineFieldMark from './fields/InlineFieldMark.vue'
+import { pageEditorBaseMixin } from '../../mixins/pageEditorBase.js'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 
 export default {
 	name: 'RoadmapPageEditor',
 	components: { InlineFieldMark },
-	mixins: [pageEditorValidationMixin],
+	mixins: [pageEditorBaseMixin, pageEditorValidationMixin],
 	props: {
-		config: {
-			type: Object,
-			default: () => ({}),
+		dataRegisters: {
+			type: Array,
+			default: () => [],
 		},
 
 		pageType: {
 			type: String,
 			default: 'roadmap',
 		},
-
-		appSlug: {
-			type: String,
-			default: '',
-		},
-
-		// Kept for contract uniformity with the other sub-editors; the
-		// roadmap page needs no register/schema picker.
-		dataRegisters: {
-			type: Array,
-			default: () => [],
-		},
-
-		parentRoute: {
-			type: String,
-			default: '',
-		},
 	},
 
-	emits: ['update:config'],
 	computed: {
 		validatedConfigKeys() {
 			return [
@@ -186,27 +169,6 @@ export default {
 	},
 
 	methods: {
-		/**
-		 * Lossless top-level `config` key update: clone, delete-on-empty,
-		 * touch only the edited key.
-		 *
-		 * @param {string} key - top-level config key.
-		 * @param {*} value - new value.
-		 */
-		update(key, value) {
-			const next = { ...this.config }
-			if (
-				value === ''
-				|| value === null
-				|| (Array.isArray(value) && value.length === 0)
-			) {
-				delete next[key]
-			} else {
-				next[key] = value
-			}
-			this.$emit('update:config', next)
-		},
-
 		/**
 		 * Update `forge.type`; unsetting it deletes the whole `forge` key
 		 * (an empty `{ baseUrl }` with no type is not a valid forge shape).
@@ -242,7 +204,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../assets/editor-controls.scss' as c;
+
 .roadmap-page-editor {
 	display: flex;
 	flex-direction: column;
@@ -257,12 +221,7 @@ export default {
 }
 
 .roadmap-page-editor__fieldset {
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-	padding: 8px;
-	display: flex;
-	flex-direction: column;
-	gap: 6px;
+	@include c.fieldset;
 }
 
 .roadmap-page-editor__fieldset legend {
@@ -280,11 +239,7 @@ export default {
 
 .roadmap-page-editor__group-row input,
 .roadmap-page-editor__group-row select {
-	padding: 4px 6px;
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-	background: var(--color-main-background);
-	color: var(--color-main-text);
+	@include c.control;
 }
 
 .roadmap-page-editor__inline {

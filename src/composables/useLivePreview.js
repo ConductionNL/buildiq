@@ -20,7 +20,7 @@ import { computed } from 'vue'
 /**
  * Observed behaviour of `useLivePreview` (retrofit annotation).
  *
- * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-1
+ * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-frontend-foundation/tasks.md#task-1
  */
 export function useLivePreview() {
 	// Spec #2 adds a second positional `manifestObject` parameter; arity

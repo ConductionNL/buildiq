@@ -3,6 +3,9 @@
 /**
  * Buildiq Export Job Service
  *
+ * SPDX-FileCopyrightText:  2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Orchestration helper between the HTTP controller and the OR-backed
  * ExportJob record + the imperative ExportService pipeline.
  *
@@ -23,20 +26,19 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-34
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-37
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-38
- *
- * @SPDX-License-Identifier: EUPL-1.2
- * @SPDX-FileCopyrightText:  2026 Conduction B.V. <info@conduction.nl>
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-34
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-37
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-38
  */
 
 declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\ExportJobServiceInterface;
+use OCA\Buildiq\Support\UuidV4;
 use OCP\BackgroundJob\IJobList;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -45,9 +47,9 @@ use RuntimeException;
 /**
  * Bridges the ExportsController to the OR ExportJob record + RunExportJob.
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
  */
-class ExportJobService {
+class ExportJobService implements ExportJobServiceInterface {
 	/**
 	 * OR register slug hosting the ExportJob schema (#104).
 	 */
@@ -66,6 +68,20 @@ class ExportJobService {
 	public const EXPORT_JOB_SCHEMA = 'export-job';
 
 	/**
+	 * Normalises the untrusted parts of a submit payload.
+	 *
+	 * @var ExportRequestSanitiser
+	 */
+	private ExportRequestSanitiser $sanitiser;
+
+	/**
+	 * Mints the UUIDs objects are created with.
+	 *
+	 * @var UuidV4
+	 */
+	private readonly UuidV4 $uuids;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ContainerInterface $container Container — used to lazily fetch OR
@@ -82,6 +98,8 @@ class ExportJobService {
 		private LoggerInterface $logger,
 		private JobOwnerImpersonator $jobOwnerImpersonator,
 	) {
+		$this->sanitiser = new ExportRequestSanitiser();
+		$this->uuids = new UuidV4();
 	}//end __construct()
 
 	/**
@@ -99,8 +117,8 @@ class ExportJobService {
 	 *
 	 * @throws \InvalidArgumentException When required fields are missing.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
-	 * @spec openspec/changes/data-registers-runtime/tasks.md#task-4.3
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
+	 * @spec openspec/changes/archive/2026-10-07-data-registers-runtime/tasks.md#task-4.3
 	 */
 	public function queue(
 		string $applicationSlug,
@@ -130,6 +148,8 @@ class ExportJobService {
 			'applicationSlug' => $applicationSlug,
 			'applicationUuid' => (string)($payload['applicationUuid'] ?? ''),
 			'applicationVersion' => (string)($payload['applicationVersion'] ?? ''),
+			// Which version row to export; the semver alone is shared by a draft and its production.
+			'applicationVersionSlug' => $this->sanitiser->slug(raw: $payload['applicationVersionSlug'] ?? ''),
 			'target' => $target,
 			'status' => 'queued',
 			'githubOrg' => $githubOrg,
@@ -139,8 +159,10 @@ class ExportJobService {
 			'githubCredentialId' => (string)($payload['githubCredentialId'] ?? ''),
 			'requestedBy' => (string)($requestedBy ?? ''),
 			'includeSeedData' => (bool)($payload['includeSeedData'] ?? false),
-			'dataRegisters' => $this->sanitiseDataRegisters(raw: $payload['dataRegisters'] ?? []),
-			'flows' => $this->sanitiseFlows(raw: $payload['flows'] ?? []),
+			// Only an own-server export carries the server bundle.
+			'includeServerBundle' => $target === 'server' && (bool)($payload['includeServerBundle'] ?? true),
+			'dataRegisters' => $this->sanitiser->dataRegisters(raw: $payload['dataRegisters'] ?? []),
+			'flows' => $this->sanitiser->flows(raw: $payload['flows'] ?? []),
 			'license' => (string)($payload['license'] ?? 'EUPL-1.2'),
 			'log' => [],
 		];
@@ -155,84 +177,32 @@ class ExportJobService {
 	}//end queue()
 
 	/**
-	 * Normalise the submit request's `dataRegisters` choice onto the shape
-	 * `{register: string, includeData: bool}` — mirrors the existing
-	 * `includeSeedData` boolean-cast pattern above. Malformed entries (not
-	 * an array, or missing/empty `register`) are dropped rather than
-	 * rejected — no existence validation of the referenced register is
-	 * performed here (matches the head spec's own Non-Goal for a dangling
-	 * `Application.dataRegisters[].register` slug).
+	 * Run a queued export now, in this request, instead of waiting for cron.
 	 *
-	 * @param mixed $raw The request payload's `dataRegisters` value.
+	 * The job is only run when it is still in the job list: that is the
+	 * claim. It is removed from the list before it runs, so cron cannot pick
+	 * it up a second time, and a job cron already took is not in the list.
 	 *
-	 * @return array<int,array{register:string,includeData:bool}>
+	 * @param string $jobUuid ExportJob UUID.
 	 *
-	 * @spec openspec/changes/data-registers-runtime/tasks.md#task-4.3
+	 * @return bool True when this call ran the job, false when it was no longer queued.
+	 *
+	 * @spec openspec/specs/openbuild-exporter/spec.md#requirement-export-is-asynchronous-via-nextcloud-s-ijob
 	 */
-	private function sanitiseDataRegisters(mixed $raw): array {
-		if (is_array($raw) === false) {
-			return [];
+	public function runNow(string $jobUuid): bool {
+		$argument = ['jobUuid' => $jobUuid];
+		if ($this->jobList->has(\OCA\Buildiq\BackgroundJob\RunExportJob::class, $argument) === false) {
+			return false;
 		}
 
-		$out = [];
-		foreach ($raw as $entry) {
-			if (is_array($entry) === false) {
-				continue;
-			}
+		// Take it off the list first, so cron cannot start it while it runs here.
+		$this->jobList->remove(\OCA\Buildiq\BackgroundJob\RunExportJob::class, $argument);
 
-			$register = (string)($entry['register'] ?? '');
-			if ($register === '') {
-				continue;
-			}
+		$job = $this->container->get(\OCA\Buildiq\BackgroundJob\RunExportJob::class);
+		$job->runFor(jobUuid: $jobUuid);
 
-			$out[] = [
-				'register' => $register,
-				'includeData' => (bool)($entry['includeData'] ?? false),
-			];
-		}
-
-		return $out;
-	}//end sanitiseDataRegisters()
-
-	/**
-	 * Normalise the submit request's `flows` choice.
-	 *
-	 * Mirrors `sanitiseDataRegisters()`: same defensive shape, because this is
-	 * the same untrusted request payload arriving by the same route.
-	 *
-	 * Only the UUID is kept. `label` is a builder-UI convenience and has no
-	 * meaning to the exporter, which resolves the flow and writes the flow's
-	 * own name into the bundle.
-	 *
-	 * No sibling `sanitiseAgents()` exists on purpose: agents carry
-	 * `applicationSlug` and are found by asking which agents point at the
-	 * application, so there is no agent choice in the payload to sanitise.
-	 *
-	 * @param mixed $raw The request payload's `flows` value.
-	 *
-	 * @return array<int, array{flow: string}> Normalised bindings.
-	 */
-	private function sanitiseFlows(mixed $raw): array {
-		if (is_array($raw) === false) {
-			return [];
-		}
-
-		$out = [];
-		foreach ($raw as $entry) {
-			if (is_array($entry) === false) {
-				continue;
-			}
-
-			$flow = trim((string)($entry['flow'] ?? ''));
-			if ($flow === '') {
-				continue;
-			}
-
-			$out[] = ['flow' => $flow];
-		}
-
-		return $out;
-	}//end sanitiseFlows()
+		return true;
+	}//end runNow()
 
 	/**
 	 * Persist the ExportJob record via OR (best-effort; falls back to a no-op
@@ -262,7 +232,7 @@ class ExportJobService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-37
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-37
 	 */
 	public function persistJob(array $job): void {
 		try {
@@ -344,7 +314,7 @@ class ExportJobService {
 	 * @return bool True when the transition fired, false when OR's
 	 *              lifecycle engine is not available (gap recorded).
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-38
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-38
 	 */
 	public function transitionJob(
 		string $jobUuid,
@@ -413,7 +383,7 @@ class ExportJobService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-37
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-37
 	 */
 	public function mergeJobFields(string $jobUuid, array $fields): void {
 		if ($fields === []) {
@@ -471,7 +441,7 @@ class ExportJobService {
 	 *
 	 * @return array{path:string,expired:bool}|null Resolution result.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
 	 */
 	public function resolveDownload(string $uuid): ?array {
 		// Look for the ZIP in the deterministic location.
@@ -502,7 +472,7 @@ class ExportJobService {
 	 *
 	 * @return array<string, mixed>|null Job data, or null on failure.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
 	 */
 	public function loadJob(string $jobUuid): ?array {
 		try {
@@ -520,18 +490,19 @@ class ExportJobService {
 				return null;
 			}
 
-			if (method_exists($object, 'getObject') === true) {
+			// Some OR versions return the array directly. Checked first:
+			// method_exists() throws a TypeError on an array.
+			if (is_array($object) === true) {
+				return $object;
+			}
+
+			if (is_object($object) === true && method_exists($object, 'getObject') === true) {
 				$data = $object->getObject() ?? [];
 				if (is_array($data) === true) {
 					return $data;
 				}
 
 				return null;
-			}
-
-			// Some OR versions return the array directly.
-			if (is_array($object) === true) {
-				return $object;
 			}
 
 			return null;
@@ -546,31 +517,13 @@ class ExportJobService {
 	/**
 	 * Generate a UUIDv4.
 	 *
-	 * Fixes #104: the previous implementation split the 32 hex digits into
-	 * eight 4-char groups (`str_split($hex, 4)`) but `vsprintf()` only
-	 * consumes the first FIVE of a format string's `%s` placeholders,
-	 * silently discarding the remaining three groups — the returned string
-	 * was five 4-char groups (20 hex digits) instead of the canonical
-	 * 8-4-4-4-12 (32 hex digits). The version/variant nibble-setting above
-	 * was already correct; only the grouping was malformed.
+	 * Delegates to {@see UuidV4}, which carries the #104 history.
 	 *
 	 * @return string UUIDv4 in canonical 8-4-4-4-12 form.
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-37
 	 */
 	public function uuid4(): string {
-		$data = random_bytes(16);
-		$data[6] = chr((ord($data[6]) & 0x0F) | 0x40);
-		$data[8] = chr((ord($data[8]) & 0x3F) | 0x80);
-		$hex = bin2hex($data);
-
-		return sprintf(
-			'%s-%s-%s-%s-%s',
-			substr($hex, 0, 8),
-			substr($hex, 8, 4),
-			substr($hex, 12, 4),
-			substr($hex, 16, 4),
-			substr($hex, 20, 12)
-		);
+		return $this->uuids->generate();
 	}//end uuid4()
 }//end class

@@ -3,6 +3,9 @@
 /**
  * Buildiq AgentChannelProvisioner
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Applies a published app repo's `agents/` channel: writes each published
  * agent at its published uuid, with the same create-or-skip rules as
  * connectors, but ALWAYS overwriting `applicationSlug` to the LOCAL
@@ -30,9 +33,6 @@
  * — the same class of bug `HybridMetadataLockListener`'s docblock warns
  * against for identity fields crossing a boundary they were not authored for.
  *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
- *
  * @category Service
  * @package  OCA\Buildiq\Service
  *
@@ -42,7 +42,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/app-repo-format-flow-agent-export/specs/app-channel-application/spec.md
+ * @spec openspec/specs/app-channel-application/spec.md
  */
 
 declare(strict_types=1);
@@ -57,7 +57,7 @@ use Throwable;
 /**
  * Applies the agents channel, tagging every agent with the local application's slug.
  *
- * @spec openspec/changes/app-repo-format-flow-agent-export/specs/app-channel-application/spec.md
+ * @spec openspec/specs/app-channel-application/spec.md
  */
 class AgentChannelProvisioner {
 
@@ -113,7 +113,7 @@ class AgentChannelProvisioner {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/app-repo-format-flow-agent-export/specs/app-channel-application/spec.md#requirement-published-agents-are-tagged-with-the-local-applications-slug
+	 * @spec openspec/specs/app-channel-application/spec.md#requirement-published-agents-are-tagged-with-the-local-applications-slug
 	 */
 	public function apply(array $agents, ?string $applicationSlug, ChannelApplyReport $report): void {
 		$report->declareChannel(channel: self::CHANNEL, declared: count($agents));

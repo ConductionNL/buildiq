@@ -35,7 +35,7 @@ use OCA\OpenRegister\AppHost\Settings\GenericAdminSettings;
 /**
  * AppHost-backed admin settings panel for Buildiq (ADR-040).
  *
- * @spec openspec/changes/adopt-apphost/specs/apphost-adoption/spec.md — Requirement: Boilerplate Adoption
+ * @spec openspec/changes/archive/2026-06-16-adopt-apphost/specs/apphost-adoption/spec.md — Requirement: Boilerplate Adoption
  */
 class AdminSettings extends GenericAdminSettings {
 }//end class

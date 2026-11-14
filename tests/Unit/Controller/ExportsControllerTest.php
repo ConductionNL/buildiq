@@ -29,6 +29,8 @@ namespace OCA\Buildiq\Tests\Unit\Controller;
 
 use OCA\Buildiq\Controller\ExportsController;
 use OCA\Buildiq\Service\ExportJobService;
+use OCA\Buildiq\Tests\Unit\Support\FakeSlugResolver;
+use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\DataDownloadResponse;
 use OCP\AppFramework\Http\JSONResponse;
@@ -189,7 +191,20 @@ final class ExportsControllerTest extends TestCase {
 				return $class === 'OCA\\OpenRegister\\Service\\ObjectService';
 			}
 		);
-		$this->container->method('get')->willReturn($objectService);
+		// The controller now asks the container for TWO things: the object
+		// service, and the register-slug resolver it uses to name this app's own
+		// register. Returning the object service for every `get()` made the
+		// resolver call throw, the authorization try/catch swallow it, and every
+		// authorised case 403. An instance carrying `buildiq` is the migrated one.
+		$this->container->method('get')->willReturnCallback(
+			static function (string $class) use ($objectService): object {
+				if ($class === RegisterSlugResolverInterface::class) {
+					return new FakeSlugResolver(present: ['buildiq']);
+				}
+
+				return $objectService;
+			}
+		);
 	}//end stubAuthorisedFallback()
 
 	/**
@@ -428,6 +443,44 @@ final class ExportsControllerTest extends TestCase {
 	}//end testDownloadReturnsZipForOwner()
 
 	/**
+	 * REQ-PLAT-010: when this server's staging copy is gone, the download reads
+	 * the archive kept in app data, so a request on another web server still
+	 * gets the file; with neither copy it stays a 404.
+	 *
+	 * @return void
+	 */
+	public function testDownloadReadsFromAppDataWhenTheLocalStagingIsGone(): void {
+		$this->stubAuthorisedFallback();
+		$this->exportJobService->method('resolveDownload')->willReturn(null);
+
+		$archives = $this->createMock(\OCA\Buildiq\Service\ExportArchiveStore::class);
+		$archives->method('read')->willReturnMap([['owned-uuid', 'PK from app data']]);
+
+		$controller = new ExportsController(
+			$this->request,
+			$this->exportJobService,
+			$this->userSession,
+			$this->container,
+			new NullLogger(),
+			$this->groupManager,
+			$archives,
+		);
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('alice');
+		$this->userSession->method('getUser')->willReturn($user);
+
+		$response = $controller->download('owned-uuid');
+		self::assertInstanceOf(DataDownloadResponse::class, $response);
+		self::assertSame(Http::STATUS_OK, $response->getStatus());
+		self::assertSame('PK from app data', $response->render());
+
+		$archivesEmpty = $this->createMock(\OCA\Buildiq\Service\ExportArchiveStore::class);
+		$archivesEmpty->method('read')->willReturn(null);
+		$none = new ExportsController($this->request, $this->exportJobService, $this->userSession, $this->container, new NullLogger(), $this->groupManager, $archivesEmpty);
+		self::assertSame(Http::STATUS_NOT_FOUND, $none->download('owned-uuid')->getStatus());
+	}//end testDownloadReadsFromAppDataWhenTheLocalStagingIsGone()
+
+	/**
 	 * L8 / #11-#4: when a job persisted `requestedBy` as an empty string (queued
 	 * without a resolvable requester), authorization MUST fall back to the OR
 	 * `@self.owner`. A plain `??` treats '' as present and never reaches the
@@ -482,7 +535,20 @@ final class ExportsControllerTest extends TestCase {
 				return $class === 'OCA\\OpenRegister\\Service\\ObjectService';
 			}
 		);
-		$this->container->method('get')->willReturn($objectService);
+		// The controller now asks the container for TWO things: the object
+		// service, and the register-slug resolver it uses to name this app's own
+		// register. Returning the object service for every `get()` made the
+		// resolver call throw, the authorization try/catch swallow it, and every
+		// authorised case 403. An instance carrying `buildiq` is the migrated one.
+		$this->container->method('get')->willReturnCallback(
+			static function (string $class) use ($objectService): object {
+				if ($class === RegisterSlugResolverInterface::class) {
+					return new FakeSlugResolver(present: ['buildiq']);
+				}
+
+				return $objectService;
+			}
+		);
 
 		$tmpZip = sys_get_temp_dir() . '/buildiq-controller-test-' . uniqid() . '.zip';
 		file_put_contents($tmpZip, 'PK fake zip bytes');
@@ -579,4 +645,78 @@ final class ExportsControllerTest extends TestCase {
 			message: 'download() must remain reachable by non-admin users (guarded by isAuthorisedForJob).'
 		);
 	}//end testSubmitDoesNotCarryNoCsrfRequiredWhileDownloadDoes()
+
+	/**
+	 * run() starts the owner's queued export right away.
+	 *
+	 * @return void
+	 */
+	public function testRunStartsTheQueuedExportForItsOwner(): void {
+		$this->stubAuthorisedFallback();
+		$this->exportJobService->expects(self::once())->method('runNow')->with('owned-uuid')->willReturn(true);
+
+		$response = $this->buildController()->run('owned-uuid');
+
+		self::assertSame(Http::STATUS_OK, $response->getStatus());
+		self::assertSame(['started' => true], $response->getData());
+	}//end testRunStartsTheQueuedExportForItsOwner()
+
+	/**
+	 * run() answers 409 when cron already took the job.
+	 *
+	 * @return void
+	 */
+	public function testRunReportsAJobThatWasAlreadyPickedUp(): void {
+		$this->stubAuthorisedFallback();
+		$this->exportJobService->method('runNow')->willReturn(false);
+
+		$response = $this->buildController()->run('owned-uuid');
+
+		self::assertSame(Http::STATUS_CONFLICT, $response->getStatus());
+	}//end testRunReportsAJobThatWasAlreadyPickedUp()
+
+	/**
+	 * run() never starts somebody else's job, and hides that it exists.
+	 *
+	 * @return void
+	 */
+	public function testRunRefusesAForeignJob(): void {
+		$this->container->method('has')->willReturn(false);
+		$this->exportJobService->expects(self::never())->method('runNow');
+
+		$response = $this->buildController()->run('foreign-uuid');
+
+		self::assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+	}//end testRunRefusesAForeignJob()
+
+	/**
+	 * REQ-BQSD-001: the export dialog reads the server's needs from the writer
+	 * that fills in the bundle.
+	 *
+	 * @return void
+	 */
+	public function testServerRequirementsAnswerFromTheBundleWriter(): void {
+		$appManager = $this->createMock(\OCP\App\IAppManager::class);
+		$appManager->method('getAppVersion')->willReturn('1.14.2');
+		$this->container->method('get')->willReturn(new \OCA\Buildiq\Service\ServerBundleWriter($appManager));
+
+		$response = $this->buildController()->serverRequirements();
+
+		self::assertSame(Http::STATUS_OK, $response->getStatus());
+		self::assertSame('1.14.2', $response->getData()['openregister']);
+		self::assertArrayHasKey('nextcloud', $response->getData());
+	}//end testServerRequirementsAnswerFromTheBundleWriter()
+
+	/**
+	 * REQ-BQSD-001: the own-server target is accepted.
+	 *
+	 * @return void
+	 */
+	public function testSubmitAcceptsTheServerTarget(): void {
+		$controller = $this->buildController();
+		$method = new \ReflectionMethod($controller, 'validateSubmitBody');
+
+		self::assertNull($method->invoke($controller, ['target' => 'server', 'applicationVersion' => '1.0.0']));
+		self::assertNotNull($method->invoke($controller, ['target' => 'ftp', 'applicationVersion' => '1.0.0']));
+	}//end testSubmitAcceptsTheServerTarget()
 }//end class

@@ -1,0 +1,74 @@
+{
+    "inputs": {
+        "none": [],
+        "selfId": {
+            "@self": {
+                "id": "s-id",
+                "uuid": "s-uuid"
+            },
+            "uuid": "d"
+        },
+        "selfUuid": {
+            "@self": {
+                "uuid": "s-uuid"
+            },
+            "uuid": "d"
+        },
+        "selfEmptyId": {
+            "@self": {
+                "id": "",
+                "uuid": "u"
+            },
+            "uuid": "d"
+        },
+        "selfIntId": {
+            "@self": {
+                "id": 5
+            },
+            "uuid": "d"
+        },
+        "selfNullId": {
+            "@self": {
+                "id": null,
+                "uuid": "su"
+            },
+            "uuid": "d"
+        },
+        "selfString": {
+            "@self": "x",
+            "uuid": "d"
+        },
+        "direct": {
+            "uuid": "d"
+        },
+        "directEmpty": {
+            "uuid": ""
+        },
+        "directInt": {
+            "uuid": 7
+        },
+        "selfEmptyArray": {
+            "@self": [],
+            "uuid": "d"
+        },
+        "onlySelfEmpty": {
+            "@self": {
+                "id": ""
+            }
+        }
+    },
+    "IconService::extractUuid": {
+        "none": null,
+        "selfId": "s-id",
+        "selfUuid": "s-uuid",
+        "selfEmptyId": "d",
+        "selfIntId": "d",
+        "selfNullId": "su",
+        "selfString": "d",
+        "direct": "d",
+        "directEmpty": null,
+        "directInt": null,
+        "selfEmptyArray": "d",
+        "onlySelfEmpty": null
+    }
+}

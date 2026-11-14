@@ -1,0 +1,5075 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`form logic steps golden > assignUnassignedFieldsToFinalStep writes every manifest as recorded 1`] = `
+[
+  {
+    "result": undefined,
+    "same": true,
+  },
+  {
+    "result": null,
+    "same": true,
+  },
+  {
+    "result": {},
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": "x",
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              {
+                "key": "b",
+              },
+            ],
+            "steps": [
+              {
+                "fields": [
+                  "a",
+                ],
+                "id": "s1",
+                "title": "A",
+              },
+              {
+                "fields": [
+                  "b",
+                  "a",
+                ],
+                "id": "s1",
+                "title": "B",
+              },
+              {
+                "fields": "b",
+                "id": "s1",
+                "title": "C",
+              },
+              {
+                "id": "s2",
+                "title": "D",
+              },
+              {
+                "fields": [],
+                "id": "s2",
+                "title": "E",
+              },
+            ],
+          },
+          "type": "form",
+        },
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              {
+                "key": "b",
+              },
+            ],
+            "steps": [
+              {
+                "fields": [
+                  "b",
+                ],
+                "title": "Only",
+              },
+              {
+                "fields": [
+                  "a",
+                ],
+              },
+            ],
+          },
+          "type": "form",
+        },
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              {
+                "key": "b",
+              },
+            ],
+            "steps": [
+              {
+                "fields": [
+                  "a",
+                ],
+                "id": "",
+                "title": "A",
+              },
+              {
+                "fields": [
+                  "b",
+                ],
+                "id": "",
+                "title": "B",
+              },
+            ],
+          },
+          "type": "form",
+        },
+      ],
+    },
+    "same": false,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": [],
+            "steps": [
+              {
+                "id": "s1",
+                "title": "Start",
+              },
+            ],
+          },
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": [],
+            "steps": [],
+          },
+          "id": "p",
+          "type": "form",
+        },
+        null,
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              null,
+              {
+                "key": 7,
+              },
+              {
+                "label": "x",
+              },
+              {
+                "key": "b",
+                "visibleWhen": {
+                  "field": "ghost",
+                },
+              },
+            ],
+          },
+          "id": "p",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": null,
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              null,
+              {
+                "key": 7,
+              },
+              {
+                "label": "x",
+              },
+              {
+                "key": "b",
+                "visibleWhen": {
+                  "field": "ghost",
+                },
+              },
+            ],
+            "steps": [
+              null,
+              {
+                "fields": [
+                  "a",
+                  "b",
+                ],
+                "id": "s2",
+              },
+            ],
+          },
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": false,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {},
+          "id": "p",
+          "type": "index",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "steps": [],
+          },
+          "id": "p",
+          "type": "index",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": [],
+            "steps": [
+              "text",
+            ],
+          },
+          "id": "p",
+          "type": "index",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              {
+                "key": "b",
+              },
+              {
+                "key": "c",
+              },
+            ],
+          },
+          "id": "p",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              null,
+              {
+                "key": 7,
+              },
+              {
+                "label": "x",
+              },
+              {
+                "key": "b",
+                "visibleWhen": {
+                  "field": "ghost",
+                },
+              },
+            ],
+            "steps": [],
+          },
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": [],
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": null,
+          "id": "p",
+        },
+        {
+          "config": [],
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": null,
+          "id": "p",
+          "type": "index",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": {
+            "fields": "fields",
+            "steps": [],
+          },
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "steps": "steps",
+          },
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              null,
+              {
+                "key": 7,
+              },
+              {
+                "label": "x",
+              },
+              {
+                "key": "b",
+                "visibleWhen": {
+                  "field": "ghost",
+                },
+              },
+            ],
+            "steps": [
+              {
+                "fields": [
+                  "ghost",
+                  "a",
+                  "b",
+                ],
+                "id": "",
+                "title": "",
+              },
+            ],
+          },
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": {
+            "fields": "fields",
+          },
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": false,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": [],
+            "steps": [
+              {
+                "fields": [
+                  3,
+                  null,
+                  "c",
+                ],
+                "title": "",
+              },
+              {
+                "fields": "a",
+                "id": "s1",
+                "title": 3,
+              },
+              "text",
+            ],
+          },
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              null,
+              {
+                "key": 7,
+              },
+              {
+                "label": "x",
+              },
+              {
+                "key": "b",
+                "visibleWhen": {
+                  "field": "ghost",
+                },
+              },
+            ],
+            "steps": [
+              null,
+              {
+                "fields": [
+                  3,
+                  null,
+                  "c",
+                ],
+                "id": "s2",
+                "title": 3,
+              },
+            ],
+          },
+          "id": "p",
+          "type": "index",
+        },
+        {
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              null,
+              {
+                "key": 7,
+              },
+              {
+                "label": "x",
+              },
+              {
+                "key": "b",
+                "visibleWhen": {
+                  "field": "ghost",
+                },
+              },
+            ],
+          },
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              null,
+              {
+                "key": 7,
+              },
+              {
+                "label": "x",
+              },
+              {
+                "key": "b",
+                "visibleWhen": {
+                  "field": "ghost",
+                },
+              },
+            ],
+          },
+          "id": "p",
+          "type": "index",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": [],
+            "steps": "steps",
+          },
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": [],
+          "id": "p",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": [],
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "steps": [
+              {
+                "fields": "a",
+                "id": "s2",
+                "title": 3,
+              },
+              {
+                "fields": [
+                  "a",
+                  "b",
+                ],
+                "id": 7,
+                "title": "",
+              },
+              "text",
+            ],
+          },
+          "id": "p",
+        },
+        {
+          "id": "p",
+        },
+        {
+          "config": null,
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "id": "p",
+          "type": "form",
+        },
+        null,
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": [],
+            "steps": [
+              null,
+              "text",
+            ],
+          },
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": [],
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": null,
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": "fields",
+            "steps": [
+              [
+                "x",
+              ],
+            ],
+          },
+          "id": "p",
+        },
+        null,
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": [],
+          "id": "p",
+          "type": "form",
+        },
+        null,
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "steps": [
+              [
+                "x",
+              ],
+            ],
+          },
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": null,
+          "id": "p",
+          "type": "form",
+        },
+        null,
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              null,
+              {
+                "key": 7,
+              },
+              {
+                "label": "x",
+              },
+              {
+                "key": "b",
+                "visibleWhen": {
+                  "field": "ghost",
+                },
+              },
+            ],
+            "steps": "steps",
+          },
+          "id": "p",
+          "type": "index",
+        },
+        {
+          "config": [],
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": [],
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": {
+            "fields": [],
+            "steps": [
+              "text",
+              {
+                "fields": [],
+                "id": "s2",
+                "title": 3,
+              },
+              "text",
+            ],
+          },
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "id": "p",
+          "type": "index",
+        },
+        {
+          "config": null,
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": [],
+          "id": "p",
+          "type": "index",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              {
+                "key": "b",
+              },
+              {
+                "key": "c",
+              },
+            ],
+            "steps": [],
+          },
+          "id": "p",
+        },
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              {
+                "key": "b",
+              },
+              {
+                "key": "c",
+              },
+            ],
+            "steps": "steps",
+          },
+          "id": "p",
+          "type": "index",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "steps": [],
+          },
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": null,
+          "id": "p",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": "fields",
+            "steps": [
+              [
+                "x",
+              ],
+              {
+                "fields": [],
+                "id": "s2",
+                "title": "  ",
+              },
+              null,
+            ],
+          },
+          "id": "p",
+        },
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              {
+                "key": "b",
+              },
+              {
+                "key": "c",
+              },
+            ],
+            "steps": [],
+          },
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": [],
+          },
+          "id": "p",
+        },
+        {
+          "config": null,
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "id": "p",
+          "type": "form",
+        },
+        null,
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": null,
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              {
+                "key": "b",
+              },
+              {
+                "key": "c",
+              },
+            ],
+            "steps": "steps",
+          },
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              null,
+              {
+                "key": 7,
+              },
+              {
+                "label": "x",
+              },
+              {
+                "key": "b",
+                "visibleWhen": {
+                  "field": "ghost",
+                },
+              },
+            ],
+            "steps": [
+              "text",
+              [
+                "x",
+              ],
+              {
+                "0": "t",
+                "1": "e",
+                "2": "x",
+                "3": "t",
+                "fields": [
+                  "a",
+                  "b",
+                ],
+              },
+            ],
+          },
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": [],
+          "id": "p",
+        },
+      ],
+    },
+    "same": false,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": [],
+          },
+          "id": "p",
+        },
+        null,
+        null,
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {},
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": [],
+          "id": "p",
+          "type": "index",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "id": "p",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": {
+            "fields": "fields",
+            "steps": [
+              {
+                "fields": [
+                  3,
+                  null,
+                  "c",
+                ],
+                "id": "",
+                "title": "Start",
+              },
+            ],
+          },
+          "id": "p",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": [],
+          "id": "p",
+        },
+        {
+          "config": {
+            "steps": [],
+          },
+          "id": "p",
+        },
+        {
+          "config": {
+            "fields": "fields",
+            "steps": [],
+          },
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": "fields",
+            "steps": [],
+          },
+          "id": "p",
+          "type": "index",
+        },
+        {
+          "config": [],
+          "id": "p",
+        },
+        {
+          "id": "p",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": [],
+            "steps": [
+              "text",
+              {
+                "fields": "a",
+                "id": "s1",
+                "title": "",
+              },
+            ],
+          },
+          "id": "p",
+        },
+        {
+          "config": {
+            "fields": [],
+            "steps": [
+              "text",
+            ],
+          },
+          "id": "p",
+          "type": "index",
+        },
+        {
+          "id": "p",
+          "type": "index",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              {
+                "key": "b",
+              },
+              {
+                "key": "c",
+              },
+            ],
+            "steps": [
+              null,
+              {
+                "fields": [
+                  "ghost",
+                  "a",
+                ],
+                "title": "",
+              },
+              {
+                "fields": [
+                  "b",
+                  "b",
+                ],
+                "title": "",
+              },
+            ],
+          },
+          "id": "p",
+        },
+        {
+          "config": null,
+          "id": "p",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": [],
+          "id": "p",
+          "type": "index",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": [],
+          },
+          "id": "p",
+          "type": "index",
+        },
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              null,
+              {
+                "key": 7,
+              },
+              {
+                "label": "x",
+              },
+              {
+                "key": "b",
+                "visibleWhen": {
+                  "field": "ghost",
+                },
+              },
+            ],
+            "steps": [
+              null,
+              [
+                "x",
+              ],
+              {
+                "0": "x",
+                "fields": [
+                  "a",
+                  "b",
+                ],
+              },
+            ],
+          },
+          "id": "p",
+          "type": "form",
+        },
+        null,
+      ],
+    },
+    "same": false,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": null,
+          "id": "p",
+        },
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              {
+                "key": "b",
+              },
+              {
+                "key": "c",
+              },
+            ],
+            "steps": [
+              {
+                "id": "s1",
+                "title": "",
+              },
+              {
+                "fields": "a",
+                "id": "s2",
+                "title": "Start",
+              },
+            ],
+          },
+          "id": "p",
+          "type": "index",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        null,
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              null,
+              {
+                "key": 7,
+              },
+              {
+                "label": "x",
+              },
+              {
+                "key": "b",
+                "visibleWhen": {
+                  "field": "ghost",
+                },
+              },
+            ],
+            "steps": [
+              {
+                "fields": "a",
+                "id": "s2",
+              },
+              {
+                "fields": [
+                  "a",
+                  "b",
+                ],
+              },
+            ],
+          },
+          "id": "p",
+          "type": "form",
+        },
+        null,
+      ],
+    },
+    "same": false,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              {
+                "key": "b",
+              },
+              {
+                "key": "c",
+              },
+            ],
+            "steps": [],
+          },
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "steps": [
+              {
+                "id": "s2",
+                "title": "",
+              },
+              {
+                "fields": "a",
+                "id": "s2",
+              },
+              {
+                "fields": [
+                  "ghost",
+                  "a",
+                ],
+                "id": "s1",
+                "title": "Start",
+              },
+            ],
+          },
+          "id": "p",
+        },
+        {
+          "config": null,
+          "id": "p",
+        },
+        {
+          "config": null,
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        null,
+        {
+          "config": null,
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": [],
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": null,
+          "id": "p",
+        },
+        {
+          "config": {
+            "fields": "fields",
+          },
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": "fields",
+            "steps": [],
+          },
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": null,
+          "id": "p",
+        },
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              null,
+              {
+                "key": 7,
+              },
+              {
+                "label": "x",
+              },
+              {
+                "key": "b",
+                "visibleWhen": {
+                  "field": "ghost",
+                },
+              },
+            ],
+            "steps": [
+              {
+                "fields": [],
+                "id": "s1",
+                "title": "Start",
+              },
+              {
+                "fields": [
+                  "b",
+                  "b",
+                ],
+                "id": 7,
+                "title": "",
+              },
+              {
+                "fields": [
+                  "a",
+                ],
+                "id": "s2",
+                "title": "Start",
+              },
+            ],
+          },
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": false,
+  },
+  {
+    "result": {
+      "pages": [
+        null,
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": [],
+            "steps": [
+              null,
+              {
+                "fields": [
+                  "a",
+                  "b",
+                ],
+                "id": "s1",
+                "title": "Start",
+              },
+              {
+                "fields": [
+                  "ghost",
+                  "a",
+                ],
+                "id": "s2",
+              },
+            ],
+          },
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": {
+            "fields": [],
+            "steps": [
+              null,
+            ],
+          },
+          "id": "p",
+          "type": "index",
+        },
+        {
+          "config": [],
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": [],
+            "steps": [],
+          },
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": null,
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": [],
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              null,
+              {
+                "key": 7,
+              },
+              {
+                "label": "x",
+              },
+              {
+                "key": "b",
+                "visibleWhen": {
+                  "field": "ghost",
+                },
+              },
+            ],
+            "steps": [],
+          },
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": null,
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              null,
+              {
+                "key": 7,
+              },
+              {
+                "label": "x",
+              },
+              {
+                "key": "b",
+                "visibleWhen": {
+                  "field": "ghost",
+                },
+              },
+            ],
+          },
+          "id": "p",
+          "type": "index",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": [],
+          "id": "p",
+          "type": "index",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": [],
+            "steps": [
+              null,
+              {
+                "fields": [
+                  3,
+                  null,
+                  "c",
+                ],
+                "id": "s1",
+                "title": "",
+              },
+            ],
+          },
+          "id": "p",
+          "type": "index",
+        },
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              null,
+              {
+                "key": 7,
+              },
+              {
+                "label": "x",
+              },
+              {
+                "key": "b",
+                "visibleWhen": {
+                  "field": "ghost",
+                },
+              },
+            ],
+            "steps": [],
+          },
+          "id": "p",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": "fields",
+            "steps": [],
+          },
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": null,
+          "id": "p",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": [],
+          "id": "p",
+          "type": "index",
+        },
+        {
+          "config": null,
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              null,
+              {
+                "key": 7,
+              },
+              {
+                "label": "x",
+              },
+              {
+                "key": "b",
+                "visibleWhen": {
+                  "field": "ghost",
+                },
+              },
+            ],
+            "steps": [
+              {
+                "fields": [
+                  "ghost",
+                  "a",
+                ],
+                "id": 7,
+                "title": 3,
+              },
+            ],
+          },
+          "id": "p",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              {
+                "key": "b",
+              },
+              {
+                "key": "c",
+              },
+            ],
+            "steps": [
+              {
+                "fields": "a",
+                "id": "",
+                "title": "Start",
+              },
+              null,
+              {
+                "fields": [
+                  "a",
+                  "b",
+                  "c",
+                ],
+              },
+            ],
+          },
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": null,
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": false,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": null,
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              {
+                "key": "b",
+              },
+              {
+                "key": "c",
+              },
+            ],
+            "steps": [
+              "text",
+              {
+                "fields": [
+                  "b",
+                  "b",
+                  "a",
+                  "c",
+                ],
+                "id": "s1",
+                "title": "Start",
+              },
+            ],
+          },
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": {
+            "steps": [
+              "text",
+            ],
+          },
+          "id": "p",
+          "type": "index",
+        },
+      ],
+    },
+    "same": false,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              {
+                "key": "b",
+              },
+              {
+                "key": "c",
+              },
+            ],
+            "steps": "steps",
+          },
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "id": "p",
+          "type": "index",
+        },
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              {
+                "key": "b",
+              },
+              {
+                "key": "c",
+              },
+            ],
+            "steps": [
+              "text",
+            ],
+          },
+          "id": "p",
+          "type": "index",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        null,
+        {
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": {
+            "fields": "fields",
+            "steps": [
+              {
+                "fields": [],
+                "title": "Start",
+              },
+            ],
+          },
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              {
+                "key": "b",
+              },
+              {
+                "key": "c",
+              },
+            ],
+            "steps": [
+              "text",
+              {
+                "fields": [
+                  "a",
+                  "b",
+                  "c",
+                ],
+                "id": "s2",
+                "title": "  ",
+              },
+            ],
+          },
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": false,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "steps": "steps",
+          },
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": {
+            "fields": "fields",
+            "steps": [
+              {
+                "fields": [
+                  "ghost",
+                  "a",
+                ],
+                "id": "s1",
+              },
+              [
+                "x",
+              ],
+            ],
+          },
+          "id": "p",
+        },
+        {
+          "config": null,
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        null,
+        {
+          "config": {
+            "fields": "fields",
+            "steps": [
+              null,
+              [
+                "x",
+              ],
+              {
+                "fields": [
+                  "b",
+                  "b",
+                ],
+                "id": "s1",
+                "title": "Start",
+              },
+            ],
+          },
+          "id": "p",
+          "type": "form",
+        },
+        null,
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": null,
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": [],
+            "steps": "steps",
+          },
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": {
+            "steps": "steps",
+          },
+          "id": "p",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": [],
+          "id": "p",
+          "type": "index",
+        },
+        {
+          "id": "p",
+          "type": "index",
+        },
+        {
+          "config": null,
+          "id": "p",
+          "type": "index",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "id": "p",
+          "type": "index",
+        },
+        {
+          "config": null,
+          "id": "p",
+          "type": "index",
+        },
+        {
+          "config": null,
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "steps": "steps",
+          },
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": null,
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": {
+            "fields": "fields",
+            "steps": "steps",
+          },
+          "id": "p",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              {
+                "key": "b",
+              },
+              {
+                "key": "c",
+              },
+            ],
+            "steps": [
+              {
+                "fields": [
+                  3,
+                  null,
+                  "c",
+                ],
+                "id": "s1",
+                "title": "Start",
+              },
+              {
+                "fields": [
+                  "ghost",
+                  "a",
+                ],
+                "id": "s1",
+                "title": "Start",
+              },
+              [
+                "x",
+              ],
+            ],
+          },
+          "id": "p",
+        },
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              {
+                "key": "b",
+              },
+              {
+                "key": "c",
+              },
+            ],
+            "steps": [
+              {
+                "fields": [
+                  3,
+                  null,
+                  "c",
+                ],
+                "id": 7,
+                "title": "  ",
+              },
+            ],
+          },
+          "id": "p",
+          "type": "index",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": "fields",
+            "steps": [
+              {
+                "fields": "a",
+                "id": 7,
+                "title": "  ",
+              },
+              {
+                "fields": [
+                  "b",
+                  "b",
+                ],
+                "id": 7,
+              },
+            ],
+          },
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              {
+                "key": "b",
+              },
+              {
+                "key": "c",
+              },
+            ],
+            "steps": [
+              {
+                "id": 7,
+                "title": "",
+              },
+            ],
+          },
+          "id": "p",
+          "type": "index",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "id": "p",
+          "type": "index",
+        },
+        {
+          "config": {
+            "fields": [],
+          },
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": [],
+          },
+          "id": "p",
+          "type": "index",
+        },
+        {
+          "config": [],
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": null,
+          "id": "p",
+          "type": "index",
+        },
+        {
+          "config": {
+            "fields": "fields",
+            "steps": [
+              null,
+              [
+                "x",
+              ],
+            ],
+          },
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {},
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              null,
+              {
+                "key": 7,
+              },
+              {
+                "label": "x",
+              },
+              {
+                "key": "b",
+                "visibleWhen": {
+                  "field": "ghost",
+                },
+              },
+            ],
+            "steps": [
+              {
+                "fields": [
+                  3,
+                  null,
+                  "c",
+                ],
+                "title": "  ",
+              },
+              [
+                "x",
+              ],
+              [
+                "x",
+              ],
+            ],
+          },
+          "id": "p",
+        },
+        {
+          "config": null,
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": [],
+            "steps": [
+              [
+                "x",
+              ],
+              {
+                "fields": [
+                  3,
+                  null,
+                  "c",
+                ],
+                "id": "s1",
+              },
+            ],
+          },
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              null,
+              {
+                "key": 7,
+              },
+              {
+                "label": "x",
+              },
+              {
+                "key": "b",
+                "visibleWhen": {
+                  "field": "ghost",
+                },
+              },
+            ],
+            "steps": [
+              {
+                "title": "",
+              },
+              {
+                "fields": [
+                  3,
+                  null,
+                  "c",
+                ],
+                "id": "",
+                "title": "  ",
+              },
+              {
+                "fields": [
+                  "a",
+                  "b",
+                ],
+              },
+            ],
+          },
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": false,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": "fields",
+            "steps": [],
+          },
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              {
+                "key": "b",
+              },
+              {
+                "key": "c",
+              },
+            ],
+            "steps": "steps",
+          },
+          "id": "p",
+          "type": "index",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": null,
+          "id": "p",
+          "type": "index",
+        },
+        {
+          "config": [],
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": null,
+          "id": "p",
+          "type": "form",
+        },
+        null,
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              null,
+              {
+                "key": 7,
+              },
+              {
+                "label": "x",
+              },
+              {
+                "key": "b",
+                "visibleWhen": {
+                  "field": "ghost",
+                },
+              },
+            ],
+            "steps": [
+              {
+                "fields": [
+                  3,
+                  null,
+                  "c",
+                ],
+                "id": "s1",
+              },
+              [
+                "x",
+              ],
+              {
+                "fields": [
+                  "a",
+                  "b",
+                ],
+                "id": "s1",
+                "title": "  ",
+              },
+            ],
+          },
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": false,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": "fields",
+            "steps": [
+              {
+                "fields": [],
+                "id": "",
+                "title": "  ",
+              },
+              [
+                "x",
+              ],
+              {
+                "title": "  ",
+              },
+            ],
+          },
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": [],
+            "steps": [
+              {
+                "fields": [
+                  3,
+                  null,
+                  "c",
+                ],
+                "id": 7,
+              },
+              [
+                "x",
+              ],
+            ],
+          },
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": [],
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": "fields",
+            "steps": [],
+          },
+          "id": "p",
+        },
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              {
+                "key": "b",
+              },
+              {
+                "key": "c",
+              },
+            ],
+            "steps": "steps",
+          },
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": [],
+          "id": "p",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": null,
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": null,
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {},
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": {
+            "fields": "fields",
+          },
+          "id": "p",
+          "type": "index",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": [],
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {},
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": null,
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              {
+                "key": "b",
+              },
+              {
+                "key": "c",
+              },
+            ],
+            "steps": [
+              "text",
+              {
+                "fields": [
+                  3,
+                  null,
+                  "c",
+                ],
+                "id": 7,
+                "title": "",
+              },
+              {
+                "fields": [
+                  "a",
+                  "b",
+                ],
+                "id": "",
+                "title": "  ",
+              },
+            ],
+          },
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": false,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "steps": [
+              {
+                "id": 7,
+                "title": "Start",
+              },
+            ],
+          },
+          "id": "p",
+        },
+        {
+          "id": "p",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {},
+          "id": "p",
+          "type": "index",
+        },
+        {
+          "config": null,
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              null,
+              {
+                "key": 7,
+              },
+              {
+                "label": "x",
+              },
+              {
+                "key": "b",
+                "visibleWhen": {
+                  "field": "ghost",
+                },
+              },
+            ],
+            "steps": [
+              null,
+              null,
+              null,
+            ],
+          },
+          "id": "p",
+          "type": "index",
+        },
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              null,
+              {
+                "key": 7,
+              },
+              {
+                "label": "x",
+              },
+              {
+                "key": "b",
+                "visibleWhen": {
+                  "field": "ghost",
+                },
+              },
+            ],
+            "steps": "steps",
+          },
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {},
+          "id": "p",
+        },
+        {
+          "config": null,
+          "id": "p",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": null,
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": [],
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": null,
+          "id": "p",
+          "type": "form",
+        },
+        null,
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": [],
+          "id": "p",
+          "type": "index",
+        },
+        {
+          "config": [],
+          "id": "p",
+          "type": "index",
+        },
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              {
+                "key": "b",
+              },
+              {
+                "key": "c",
+              },
+            ],
+            "steps": "steps",
+          },
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": {
+            "fields": [],
+            "steps": [
+              "text",
+              "text",
+            ],
+          },
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        null,
+        {
+          "config": {
+            "fields": "fields",
+            "steps": [
+              {
+                "fields": [],
+                "title": "Start",
+              },
+              [
+                "x",
+              ],
+              null,
+            ],
+          },
+          "id": "p",
+          "type": "index",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": {
+            "steps": "steps",
+          },
+          "id": "p",
+        },
+        {
+          "id": "p",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              null,
+              {
+                "key": 7,
+              },
+              {
+                "label": "x",
+              },
+              {
+                "key": "b",
+                "visibleWhen": {
+                  "field": "ghost",
+                },
+              },
+            ],
+            "steps": [
+              {
+                "fields": "a",
+                "id": "s1",
+                "title": "  ",
+              },
+              {
+                "fields": [
+                  3,
+                  null,
+                  "c",
+                ],
+                "id": "s2",
+                "title": "Start",
+              },
+              {
+                "fields": [
+                  "b",
+                  "b",
+                ],
+                "id": "s1",
+                "title": "Start",
+              },
+            ],
+          },
+          "id": "p",
+        },
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              null,
+              {
+                "key": 7,
+              },
+              {
+                "label": "x",
+              },
+              {
+                "key": "b",
+                "visibleWhen": {
+                  "field": "ghost",
+                },
+              },
+            ],
+          },
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": [],
+          "id": "p",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              {
+                "key": "b",
+              },
+              {
+                "key": "c",
+              },
+            ],
+            "steps": [
+              {
+                "fields": [
+                  "a",
+                  "b",
+                ],
+                "id": 7,
+                "title": "",
+              },
+            ],
+          },
+          "id": "p",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": "fields",
+            "steps": [
+              {
+                "fields": [],
+                "title": "",
+              },
+              {
+                "fields": "a",
+                "id": "s1",
+                "title": "",
+              },
+              [
+                "x",
+              ],
+            ],
+          },
+          "id": "p",
+          "type": "index",
+        },
+        {
+          "config": null,
+          "id": "p",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              {
+                "key": "b",
+              },
+              {
+                "key": "c",
+              },
+            ],
+          },
+          "id": "p",
+          "type": "index",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": [],
+            "steps": [
+              "text",
+              [
+                "x",
+              ],
+              "text",
+            ],
+          },
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": {
+            "steps": [],
+          },
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              {
+                "key": "b",
+              },
+              {
+                "key": "c",
+              },
+            ],
+            "steps": [
+              {
+                "fields": [
+                  "a",
+                  "b",
+                ],
+              },
+              {
+                "0": "t",
+                "1": "e",
+                "2": "x",
+                "3": "t",
+                "fields": [
+                  "c",
+                ],
+              },
+            ],
+          },
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": {
+            "fields": "fields",
+            "steps": "steps",
+          },
+          "id": "p",
+        },
+        {
+          "config": [],
+          "id": "p",
+          "type": "index",
+        },
+      ],
+    },
+    "same": false,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              null,
+              {
+                "key": 7,
+              },
+              {
+                "label": "x",
+              },
+              {
+                "key": "b",
+                "visibleWhen": {
+                  "field": "ghost",
+                },
+              },
+            ],
+            "steps": [
+              null,
+              {
+                "fields": [
+                  "b",
+                  "b",
+                ],
+                "id": 7,
+                "title": "  ",
+              },
+              {
+                "fields": [
+                  "a",
+                ],
+                "title": "  ",
+              },
+            ],
+          },
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": false,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "steps": [
+              {
+                "fields": "a",
+                "id": 7,
+                "title": "",
+              },
+              null,
+              null,
+            ],
+          },
+          "id": "p",
+        },
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              {
+                "key": "b",
+              },
+              {
+                "key": "c",
+              },
+            ],
+            "steps": [
+              [
+                "x",
+              ],
+              [
+                "x",
+              ],
+              null,
+            ],
+          },
+          "id": "p",
+          "type": "index",
+        },
+        {
+          "id": "p",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "id": "p",
+          "type": "index",
+        },
+        {
+          "config": {
+            "fields": "fields",
+            "steps": [
+              [
+                "x",
+              ],
+            ],
+          },
+          "id": "p",
+        },
+        {
+          "config": {
+            "fields": "fields",
+            "steps": [
+              {
+                "fields": [
+                  3,
+                  null,
+                  "c",
+                ],
+                "id": "s2",
+                "title": "  ",
+              },
+              {
+                "fields": [
+                  3,
+                  null,
+                  "c",
+                ],
+                "id": "s1",
+                "title": "  ",
+              },
+              [
+                "x",
+              ],
+            ],
+          },
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        null,
+        {
+          "config": [],
+          "id": "p",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              null,
+              {
+                "key": 7,
+              },
+              {
+                "label": "x",
+              },
+              {
+                "key": "b",
+                "visibleWhen": {
+                  "field": "ghost",
+                },
+              },
+            ],
+          },
+          "id": "p",
+          "type": "index",
+        },
+        null,
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              null,
+              {
+                "key": 7,
+              },
+              {
+                "label": "x",
+              },
+              {
+                "key": "b",
+                "visibleWhen": {
+                  "field": "ghost",
+                },
+              },
+            ],
+            "steps": [
+              {
+                "fields": [
+                  "b",
+                  "b",
+                ],
+                "id": 7,
+              },
+              null,
+              {
+                "0": "x",
+                "fields": [
+                  "a",
+                ],
+              },
+            ],
+          },
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": false,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": [],
+          "id": "p",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "steps": [
+              null,
+              [
+                "x",
+              ],
+            ],
+          },
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": {
+            "fields": [],
+            "steps": [
+              [
+                "x",
+              ],
+              {
+                "id": 7,
+                "title": "Start",
+              },
+              {
+                "fields": [
+                  "a",
+                  "b",
+                ],
+                "id": "s2",
+              },
+            ],
+          },
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": {
+            "fields": "fields",
+            "steps": [
+              {
+                "fields": [
+                  "a",
+                ],
+                "id": "s1",
+                "title": "Start",
+              },
+              "text",
+              {
+                "fields": "a",
+                "id": "s2",
+                "title": "",
+              },
+            ],
+          },
+          "id": "p",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {},
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": {
+            "steps": [],
+          },
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": null,
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": {},
+          "id": "p",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": null,
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": {
+            "steps": [
+              {
+                "fields": [
+                  "ghost",
+                  "a",
+                ],
+                "id": "s2",
+                "title": "Start",
+              },
+              [
+                "x",
+              ],
+              "text",
+            ],
+          },
+          "id": "p",
+          "type": "index",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              {
+                "key": "b",
+              },
+              {
+                "key": "c",
+              },
+            ],
+            "steps": "steps",
+          },
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              null,
+              {
+                "key": 7,
+              },
+              {
+                "label": "x",
+              },
+              {
+                "key": "b",
+                "visibleWhen": {
+                  "field": "ghost",
+                },
+              },
+            ],
+            "steps": [],
+          },
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": {
+            "fields": "fields",
+          },
+          "id": "p",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        null,
+        {
+          "config": null,
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": [],
+          "id": "p",
+          "type": "index",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": [],
+          "id": "p",
+        },
+        {
+          "config": {
+            "fields": [],
+            "steps": [],
+          },
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": [],
+          "id": "p",
+          "type": "index",
+        },
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              {
+                "key": "b",
+              },
+              {
+                "key": "c",
+              },
+            ],
+            "steps": [
+              [
+                "x",
+              ],
+              {
+                "0": "x",
+                "fields": [
+                  "a",
+                  "b",
+                  "c",
+                ],
+              },
+            ],
+          },
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": {
+            "fields": [],
+          },
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": false,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": [],
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": [],
+          "id": "p",
+          "type": "index",
+        },
+        {
+          "config": [],
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": null,
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": {
+            "fields": [],
+            "steps": [
+              {
+                "fields": [
+                  3,
+                  null,
+                  "c",
+                ],
+                "id": 7,
+                "title": "Start",
+              },
+              {
+                "fields": "a",
+                "id": "s2",
+              },
+              {
+                "fields": [
+                  "b",
+                  "b",
+                ],
+                "id": "s2",
+                "title": "  ",
+              },
+            ],
+          },
+          "id": "p",
+        },
+        {
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": "fields",
+            "steps": [
+              [
+                "x",
+              ],
+              null,
+              {
+                "id": "",
+              },
+            ],
+          },
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": [],
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": {
+            "fields": "fields",
+            "steps": [
+              [
+                "x",
+              ],
+            ],
+          },
+          "id": "p",
+        },
+        {
+          "config": {
+            "steps": "steps",
+          },
+          "id": "p",
+          "type": "index",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": null,
+          "id": "p",
+          "type": "index",
+        },
+        {
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": null,
+          "id": "p",
+          "type": "form",
+        },
+        null,
+        {
+          "config": {
+            "steps": "steps",
+          },
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        null,
+        {
+          "config": null,
+          "id": "p",
+          "type": "index",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              {
+                "key": "b",
+              },
+              {
+                "key": "c",
+              },
+            ],
+          },
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": {
+            "steps": [
+              "text",
+              null,
+              {
+                "fields": "a",
+                "id": "s1",
+              },
+            ],
+          },
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": [],
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": [],
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": {
+            "fields": [],
+            "steps": [],
+          },
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              null,
+              {
+                "key": 7,
+              },
+              {
+                "label": "x",
+              },
+              {
+                "key": "b",
+                "visibleWhen": {
+                  "field": "ghost",
+                },
+              },
+            ],
+            "steps": [],
+          },
+          "id": "p",
+          "type": "form",
+        },
+        null,
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              {
+                "key": "b",
+              },
+              {
+                "key": "c",
+              },
+            ],
+          },
+          "id": "p",
+          "type": "index",
+        },
+        {
+          "config": [],
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": [],
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": null,
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": [],
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": [],
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "id": "p",
+        },
+        {
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": null,
+          "id": "p",
+          "type": "index",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": [],
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": "fields",
+            "steps": [],
+          },
+          "id": "p",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "id": "p",
+          "type": "form",
+        },
+        null,
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": "fields",
+            "steps": "steps",
+          },
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": {
+            "steps": [
+              null,
+              null,
+              {
+                "fields": [],
+                "id": "s1",
+                "title": "Start",
+              },
+            ],
+          },
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": {
+            "fields": "fields",
+            "steps": "steps",
+          },
+          "id": "p",
+          "type": "index",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "steps": [
+              [
+                "x",
+              ],
+              "text",
+              {
+                "fields": [
+                  "a",
+                  "b",
+                ],
+                "id": "s2",
+              },
+            ],
+          },
+          "id": "p",
+          "type": "form",
+        },
+        null,
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": "fields",
+          },
+          "id": "p",
+        },
+        {
+          "config": [],
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": [],
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              {
+                "key": "b",
+              },
+              {
+                "key": "c",
+              },
+            ],
+            "steps": "steps",
+          },
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": {
+            "steps": [
+              {
+                "fields": [
+                  "ghost",
+                  "a",
+                ],
+                "id": 7,
+              },
+              {
+                "fields": [
+                  "a",
+                ],
+                "title": "  ",
+              },
+            ],
+          },
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": "fields",
+            "steps": [
+              {
+                "fields": [
+                  "a",
+                ],
+                "id": 7,
+                "title": "Start",
+              },
+              {
+                "fields": [
+                  "ghost",
+                  "a",
+                ],
+                "id": "s1",
+                "title": "",
+              },
+              "text",
+            ],
+          },
+          "id": "p",
+          "type": "index",
+        },
+        {
+          "config": [],
+          "id": "p",
+        },
+        {
+          "id": "p",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": [
+              {
+                "key": "a",
+              },
+              null,
+              {
+                "key": 7,
+              },
+              {
+                "label": "x",
+              },
+              {
+                "key": "b",
+                "visibleWhen": {
+                  "field": "ghost",
+                },
+              },
+            ],
+            "steps": "steps",
+          },
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "id": "p",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        null,
+        {
+          "config": [],
+          "id": "p",
+        },
+        {
+          "config": {
+            "steps": [
+              null,
+              null,
+            ],
+          },
+          "id": "p",
+          "type": "form",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": null,
+          "id": "p",
+          "type": "form",
+        },
+        {
+          "config": null,
+          "id": "p",
+        },
+      ],
+    },
+    "same": true,
+  },
+  {
+    "result": {
+      "pages": [
+        {
+          "config": {
+            "fields": [],
+            "steps": "steps",
+          },
+          "id": "p",
+          "type": "form",
+        },
+        null,
+      ],
+    },
+    "same": true,
+  },
+]
+`;
+
+exports[`form logic steps golden > validateFormLogic reports every manifest as recorded 1`] = `
+[
+  [],
+  [],
+  [],
+  [],
+  [],
+  [
+    "/pages/0/config/steps/1/id: buildiq.formLogic.error.duplicate-step-id",
+    "/pages/0/config/steps/2/fields: buildiq.formLogic.error.step-fields-not-array",
+    "/pages/0/config/steps/3/fields: buildiq.formLogic.error.step-fields-not-array",
+    "/pages/0/config/steps: buildiq.formLogic.error.duplicate-field-assignment(a)",
+    "/pages/1/config/steps/1: buildiq.formLogic.error.step-invalid-shape",
+  ],
+  [
+    "/pages/0/config/steps/0/fields: buildiq.formLogic.error.step-fields-not-array",
+  ],
+  [],
+  [],
+  [
+    "/pages/1/config/steps/0: buildiq.formLogic.error.step-invalid-shape",
+    "/pages/1/config/steps/1/title: buildiq.formLogic.error.step-title-required",
+    "/pages/1/config/fields/4/visibleWhen/field: buildiq.formLogic.error.dangling-condition-field",
+  ],
+  [],
+  [],
+  [],
+  [],
+  [
+    "/pages/0/config/fields/4/visibleWhen/field: buildiq.formLogic.error.dangling-condition-field",
+  ],
+  [],
+  [],
+  [],
+  [
+    "/pages/0/config/steps: buildiq.formLogic.error.steps-not-array",
+    "/pages/1/config/steps/0/title: buildiq.formLogic.error.step-title-required",
+    "/pages/1/config/steps/0/fields/0: buildiq.formLogic.error.dangling-step-field",
+    "/pages/1/config/fields/4/visibleWhen/field: buildiq.formLogic.error.dangling-condition-field",
+  ],
+  [
+    "/pages/0/config/steps/0/title: buildiq.formLogic.error.step-title-required",
+    "/pages/0/config/steps/0/fields/0: buildiq.formLogic.error.dangling-step-field",
+    "/pages/0/config/steps/0/fields/1: buildiq.formLogic.error.dangling-step-field",
+    "/pages/0/config/steps/0/fields/2: buildiq.formLogic.error.dangling-step-field",
+    "/pages/0/config/steps/1/title: buildiq.formLogic.error.step-title-required",
+    "/pages/0/config/steps/1/fields: buildiq.formLogic.error.step-fields-not-array",
+    "/pages/0/config/steps/2: buildiq.formLogic.error.step-invalid-shape",
+  ],
+  [],
+  [
+    "/pages/0/config/fields/4/visibleWhen/field: buildiq.formLogic.error.dangling-condition-field",
+  ],
+  [],
+  [
+    "/pages/0/config/steps: buildiq.formLogic.error.steps-not-array",
+  ],
+  [],
+  [],
+  [],
+  [],
+  [
+    "/pages/0/config/steps/0: buildiq.formLogic.error.step-invalid-shape",
+    "/pages/0/config/steps/1: buildiq.formLogic.error.step-invalid-shape",
+  ],
+  [],
+  [],
+  [],
+  [],
+  [
+    "/pages/0/config/steps/0: buildiq.formLogic.error.step-invalid-shape",
+  ],
+  [],
+  [],
+  [
+    "/pages/1/config/steps/0: buildiq.formLogic.error.step-invalid-shape",
+    "/pages/1/config/steps/1/title: buildiq.formLogic.error.step-title-required",
+    "/pages/1/config/steps/2: buildiq.formLogic.error.step-invalid-shape",
+  ],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [
+    "/pages/0/config/steps: buildiq.formLogic.error.steps-not-array",
+    "/pages/1/config/steps/0: buildiq.formLogic.error.step-invalid-shape",
+    "/pages/1/config/steps/1: buildiq.formLogic.error.step-invalid-shape",
+    "/pages/1/config/steps/2: buildiq.formLogic.error.step-invalid-shape",
+    "/pages/1/config/fields/4/visibleWhen/field: buildiq.formLogic.error.dangling-condition-field",
+  ],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [
+    "/pages/1/config/steps/0: buildiq.formLogic.error.step-invalid-shape",
+    "/pages/1/config/steps/1: buildiq.formLogic.error.step-invalid-shape",
+    "/pages/1/config/steps/2: buildiq.formLogic.error.step-invalid-shape",
+    "/pages/1/config/fields/4/visibleWhen/field: buildiq.formLogic.error.dangling-condition-field",
+  ],
+  [],
+  [
+    "/pages/1/config/steps/0/title: buildiq.formLogic.error.step-title-required",
+    "/pages/1/config/steps/0/fields: buildiq.formLogic.error.step-fields-not-array",
+    "/pages/1/config/steps/1: buildiq.formLogic.error.step-invalid-shape",
+    "/pages/1/config/fields/4/visibleWhen/field: buildiq.formLogic.error.dangling-condition-field",
+  ],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [
+    "/pages/1/config/steps/1/title: buildiq.formLogic.error.step-title-required",
+    "/pages/1/config/steps/2/fields: buildiq.formLogic.error.step-fields-not-array",
+    "/pages/1/config/steps: buildiq.formLogic.error.duplicate-field-assignment(b)",
+    "/pages/1/config/fields/4/visibleWhen/field: buildiq.formLogic.error.dangling-condition-field",
+  ],
+  [],
+  [
+    "/pages/0/config/steps/0: buildiq.formLogic.error.step-invalid-shape",
+    "/pages/0/config/steps/1/fields/0: buildiq.formLogic.error.dangling-step-field",
+    "/pages/0/config/steps/1/fields/1: buildiq.formLogic.error.dangling-step-field",
+    "/pages/0/config/steps/2/title: buildiq.formLogic.error.step-title-required",
+    "/pages/0/config/steps/2/fields/0: buildiq.formLogic.error.dangling-step-field",
+    "/pages/0/config/steps/2/fields/1: buildiq.formLogic.error.dangling-step-field",
+  ],
+  [],
+  [
+    "/pages/2/config/fields/4/visibleWhen/field: buildiq.formLogic.error.dangling-condition-field",
+  ],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [
+    "/pages/0/config/steps/0/fields: buildiq.formLogic.error.step-fields-not-array",
+    "/pages/0/config/steps/1: buildiq.formLogic.error.step-invalid-shape",
+    "/pages/0/config/steps/2: buildiq.formLogic.error.step-invalid-shape",
+  ],
+  [
+    "/pages/1/config/steps/0: buildiq.formLogic.error.step-invalid-shape",
+    "/pages/1/config/steps: buildiq.formLogic.error.duplicate-field-assignment(b)",
+  ],
+  [
+    "/pages/0/config/steps: buildiq.formLogic.error.steps-not-array",
+  ],
+  [],
+  [],
+  [
+    "/pages/0/config/steps/0: buildiq.formLogic.error.step-invalid-shape",
+    "/pages/0/config/steps/1/title: buildiq.formLogic.error.step-title-required",
+  ],
+  [
+    "/pages/0/config/steps: buildiq.formLogic.error.steps-not-array",
+  ],
+  [
+    "/pages/1/config/steps/0: buildiq.formLogic.error.step-invalid-shape",
+    "/pages/1/config/steps/1: buildiq.formLogic.error.step-invalid-shape",
+    "/pages/1/config/steps/2/fields/0: buildiq.formLogic.error.dangling-step-field",
+    "/pages/1/config/steps/2/fields/1: buildiq.formLogic.error.dangling-step-field",
+  ],
+  [],
+  [
+    "/pages/0/config/steps: buildiq.formLogic.error.steps-not-array",
+  ],
+  [],
+  [],
+  [
+    "/pages/0/config/steps: buildiq.formLogic.error.steps-not-array",
+  ],
+  [],
+  [
+    "/pages/0/config/steps/0/title: buildiq.formLogic.error.step-title-required",
+    "/pages/0/config/steps/0/fields: buildiq.formLogic.error.step-fields-not-array",
+    "/pages/0/config/steps/1/title: buildiq.formLogic.error.step-title-required",
+    "/pages/0/config/steps/1/fields/0: buildiq.formLogic.error.dangling-step-field",
+    "/pages/0/config/steps/1/fields/1: buildiq.formLogic.error.dangling-step-field",
+  ],
+  [],
+  [],
+  [],
+  [
+    "/pages/1/config/steps/0: buildiq.formLogic.error.step-invalid-shape",
+    "/pages/1/config/steps/1: buildiq.formLogic.error.step-invalid-shape",
+  ],
+  [],
+  [
+    "/pages/0/config/steps/0: buildiq.formLogic.error.step-invalid-shape",
+    "/pages/0/config/steps/1/title: buildiq.formLogic.error.step-title-required",
+    "/pages/0/config/steps/1/fields/0: buildiq.formLogic.error.dangling-step-field",
+    "/pages/0/config/steps/1/fields/1: buildiq.formLogic.error.dangling-step-field",
+    "/pages/0/config/steps/1/fields/2: buildiq.formLogic.error.dangling-step-field",
+    "/pages/1/config/steps/0/title: buildiq.formLogic.error.step-title-required",
+    "/pages/1/config/steps/0/fields: buildiq.formLogic.error.step-fields-not-array",
+    "/pages/1/config/steps/1/title: buildiq.formLogic.error.step-title-required",
+    "/pages/1/config/steps/1/fields/0: buildiq.formLogic.error.dangling-step-field",
+    "/pages/1/config/steps/1/fields/1: buildiq.formLogic.error.dangling-step-field",
+    "/pages/1/config/steps/1/fields/2: buildiq.formLogic.error.dangling-step-field",
+    "/pages/1/config/steps/2: buildiq.formLogic.error.step-invalid-shape",
+    "/pages/1/config/fields/4/visibleWhen/field: buildiq.formLogic.error.dangling-condition-field",
+  ],
+  [],
+  [],
+  [],
+  [
+    "/pages/2/config/steps/0/title: buildiq.formLogic.error.step-title-required",
+    "/pages/2/config/steps/0/fields/0: buildiq.formLogic.error.dangling-step-field",
+    "/pages/2/config/steps/0/fields/1: buildiq.formLogic.error.dangling-step-field",
+    "/pages/2/config/steps/0/fields/2: buildiq.formLogic.error.dangling-step-field",
+    "/pages/2/config/steps/1: buildiq.formLogic.error.step-invalid-shape",
+    "/pages/2/config/steps/2/title: buildiq.formLogic.error.step-title-required",
+    "/pages/2/config/steps/2/fields: buildiq.formLogic.error.step-fields-not-array",
+    "/pages/2/config/fields/4/visibleWhen/field: buildiq.formLogic.error.dangling-condition-field",
+  ],
+  [
+    "/pages/0/config/steps/0/title: buildiq.formLogic.error.step-title-required",
+    "/pages/0/config/steps/1: buildiq.formLogic.error.step-invalid-shape",
+    "/pages/0/config/steps/2/title: buildiq.formLogic.error.step-title-required",
+    "/pages/0/config/steps/2/fields: buildiq.formLogic.error.step-fields-not-array",
+  ],
+  [
+    "/pages/0/config/steps/0/title: buildiq.formLogic.error.step-title-required",
+    "/pages/0/config/steps/0/fields/0: buildiq.formLogic.error.dangling-step-field",
+    "/pages/0/config/steps/0/fields/1: buildiq.formLogic.error.dangling-step-field",
+    "/pages/0/config/steps/0/fields/2: buildiq.formLogic.error.dangling-step-field",
+    "/pages/0/config/steps/1: buildiq.formLogic.error.step-invalid-shape",
+  ],
+  [
+    "/pages/1/config/steps: buildiq.formLogic.error.steps-not-array",
+  ],
+  [],
+  [],
+  [],
+  [
+    "/pages/2/config/steps/0: buildiq.formLogic.error.step-invalid-shape",
+    "/pages/2/config/steps/1/title: buildiq.formLogic.error.step-title-required",
+    "/pages/2/config/steps/1/fields/0: buildiq.formLogic.error.dangling-step-field",
+    "/pages/2/config/steps/1/fields/1: buildiq.formLogic.error.dangling-step-field",
+    "/pages/2/config/steps/2/title: buildiq.formLogic.error.step-title-required",
+  ],
+  [],
+  [],
+  [
+    "/pages/1/config/steps: buildiq.formLogic.error.steps-not-array",
+    "/pages/1/config/fields/4/visibleWhen/field: buildiq.formLogic.error.dangling-condition-field",
+  ],
+  [],
+  [],
+  [],
+  [],
+  [
+    "/pages/2/config/steps: buildiq.formLogic.error.steps-not-array",
+  ],
+  [
+    "/pages/1/config/steps/0: buildiq.formLogic.error.step-invalid-shape",
+    "/pages/1/config/steps/1: buildiq.formLogic.error.step-invalid-shape",
+  ],
+  [],
+  [],
+  [
+    "/pages/1/config/fields/4/visibleWhen/field: buildiq.formLogic.error.dangling-condition-field",
+  ],
+  [],
+  [],
+  [],
+  [],
+  [
+    "/pages/0/config/steps/0: buildiq.formLogic.error.step-invalid-shape",
+    "/pages/0/config/steps/1: buildiq.formLogic.error.step-invalid-shape",
+    "/pages/0/config/steps/2: buildiq.formLogic.error.step-invalid-shape",
+  ],
+  [
+    "/pages/0/config/steps/0/title: buildiq.formLogic.error.step-title-required",
+    "/pages/0/config/steps/1: buildiq.formLogic.error.step-invalid-shape",
+  ],
+  [
+    "/pages/1/config/steps/0: buildiq.formLogic.error.step-invalid-shape",
+    "/pages/1/config/steps/1/title: buildiq.formLogic.error.step-title-required",
+    "/pages/1/config/steps/2/title: buildiq.formLogic.error.step-title-required",
+    "/pages/1/config/steps/2/fields: buildiq.formLogic.error.step-fields-not-array",
+    "/pages/1/config/steps: buildiq.formLogic.error.duplicate-field-assignment(b)",
+    "/pages/1/config/fields/4/visibleWhen/field: buildiq.formLogic.error.dangling-condition-field",
+  ],
+  [],
+  [
+    "/pages/2/config/steps/0/title: buildiq.formLogic.error.step-title-required",
+    "/pages/2/config/steps/0/fields/0: buildiq.formLogic.error.dangling-step-field",
+    "/pages/2/config/steps/0/fields/1: buildiq.formLogic.error.dangling-step-field",
+    "/pages/2/config/steps/0/fields/2: buildiq.formLogic.error.dangling-step-field",
+    "/pages/2/config/steps/1/title: buildiq.formLogic.error.step-title-required",
+    "/pages/2/config/steps/1/fields/0: buildiq.formLogic.error.dangling-step-field",
+    "/pages/2/config/steps/1/fields/1: buildiq.formLogic.error.dangling-step-field",
+    "/pages/2/config/steps/1/fields/2: buildiq.formLogic.error.dangling-step-field",
+    "/pages/2/config/steps/2: buildiq.formLogic.error.step-invalid-shape",
+  ],
+  [],
+  [],
+  [
+    "/pages/0/config/steps/0/title: buildiq.formLogic.error.step-title-required",
+    "/pages/0/config/steps/1: buildiq.formLogic.error.step-invalid-shape",
+    "/pages/0/config/steps/2: buildiq.formLogic.error.step-invalid-shape",
+    "/pages/0/config/steps: buildiq.formLogic.error.duplicate-field-assignment(b)",
+    "/pages/0/config/fields/4/visibleWhen/field: buildiq.formLogic.error.dangling-condition-field",
+  ],
+  [],
+  [
+    "/pages/0/config/steps/0: buildiq.formLogic.error.step-invalid-shape",
+    "/pages/0/config/steps/1: buildiq.formLogic.error.step-invalid-shape",
+    "/pages/1/config/steps/0: buildiq.formLogic.error.step-invalid-shape",
+    "/pages/1/config/steps/1/fields: buildiq.formLogic.error.step-fields-not-array",
+    "/pages/1/config/steps/2/title: buildiq.formLogic.error.step-title-required",
+    "/pages/1/config/steps/2/fields/0: buildiq.formLogic.error.dangling-step-field",
+    "/pages/1/config/steps/2/fields/1: buildiq.formLogic.error.dangling-step-field",
+  ],
+  [],
+  [],
+  [],
+  [
+    "/pages/1/config/steps: buildiq.formLogic.error.steps-not-array",
+  ],
+  [
+    "/pages/0/config/fields/4/visibleWhen/field: buildiq.formLogic.error.dangling-condition-field",
+  ],
+  [],
+  [],
+  [
+    "/pages/1/config/steps/0: buildiq.formLogic.error.step-invalid-shape",
+    "/pages/1/config/steps/1: buildiq.formLogic.error.step-invalid-shape",
+  ],
+  [],
+  [],
+  [
+    "/pages/0/config/steps/0: buildiq.formLogic.error.step-invalid-shape",
+    "/pages/0/config/steps/1: buildiq.formLogic.error.step-invalid-shape",
+    "/pages/0/config/steps/2/title: buildiq.formLogic.error.step-title-required",
+    "/pages/0/config/steps/2/fields: buildiq.formLogic.error.step-fields-not-array",
+  ],
+  [],
+  [],
+  [
+    "/pages/2/config/steps: buildiq.formLogic.error.steps-not-array",
+  ],
+  [],
+  [
+    "/pages/2/config/steps/0: buildiq.formLogic.error.step-invalid-shape",
+    "/pages/2/config/steps/1: buildiq.formLogic.error.step-invalid-shape",
+    "/pages/2/config/steps/2/title: buildiq.formLogic.error.step-title-required",
+    "/pages/2/config/steps/2/fields: buildiq.formLogic.error.step-fields-not-array",
+  ],
+  [],
+  [],
+  [
+    "/pages/1/config/fields/4/visibleWhen/field: buildiq.formLogic.error.dangling-condition-field",
+  ],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [],
+  [
+    "/pages/0/config/steps: buildiq.formLogic.error.steps-not-array",
+    "/pages/1/config/steps/0: buildiq.formLogic.error.step-invalid-shape",
+    "/pages/1/config/steps/1: buildiq.formLogic.error.step-invalid-shape",
+  ],
+  [
+    "/pages/0/config/steps/0: buildiq.formLogic.error.step-invalid-shape",
+    "/pages/0/config/steps/1: buildiq.formLogic.error.step-invalid-shape",
+    "/pages/0/config/steps/2/title: buildiq.formLogic.error.step-title-required",
+    "/pages/0/config/steps/2/fields/0: buildiq.formLogic.error.dangling-step-field",
+    "/pages/0/config/steps/2/fields/1: buildiq.formLogic.error.dangling-step-field",
+  ],
+  [],
+  [
+    "/pages/0/config/steps: buildiq.formLogic.error.steps-not-array",
+    "/pages/1/config/steps/0/title: buildiq.formLogic.error.step-title-required",
+    "/pages/1/config/steps/0/fields/0: buildiq.formLogic.error.dangling-step-field",
+    "/pages/1/config/steps/0/fields/1: buildiq.formLogic.error.dangling-step-field",
+    "/pages/1/config/steps/1/title: buildiq.formLogic.error.step-title-required",
+    "/pages/1/config/steps/1/fields/0: buildiq.formLogic.error.dangling-step-field",
+  ],
+  [],
+  [
+    "/pages/0/config/steps: buildiq.formLogic.error.steps-not-array",
+    "/pages/0/config/fields/4/visibleWhen/field: buildiq.formLogic.error.dangling-condition-field",
+  ],
+  [
+    "/pages/2/config/steps/0: buildiq.formLogic.error.step-invalid-shape",
+    "/pages/2/config/steps/1: buildiq.formLogic.error.step-invalid-shape",
+  ],
+  [],
+  [
+    "/pages/0/config/steps: buildiq.formLogic.error.steps-not-array",
+  ],
+]
+`;

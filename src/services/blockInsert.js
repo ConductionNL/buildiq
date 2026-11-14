@@ -11,7 +11,7 @@
  * splices the manifest itself, so `PageDesigner.vue`'s own delta-merge path
  * stays the single place manifest structure is written.
  *
- * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+ * @spec openspec/specs/component-blocks/spec.md
  */
 
 import { isSectionFragment } from './blockCapture.js'
@@ -29,7 +29,7 @@ export const UNRESOLVED_SCHEMA_PLACEHOLDER = '__needs-remap__'
  *
  * @param {object} fragment - a captured `ComponentBlock.fragment`.
  * @return {Array<object>} the widgetEntry objects (not yet cloned).
- * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+ * @spec openspec/specs/component-blocks/spec.md
  */
 export function fragmentWidgets(fragment) {
 	if (isSectionFragment(fragment)) {
@@ -47,7 +47,7 @@ export function fragmentWidgets(fragment) {
  * @param {string[]} schemaDependencies - the block's de-namespaced deps.
  * @param {string[]} targetSchemaSlugs - schema slugs present in the target app.
  * @return {string[]} the mismatched dependency slugs.
- * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+ * @spec openspec/specs/component-blocks/spec.md
  */
 export function computeSchemaMismatches(schemaDependencies, targetSchemaSlugs) {
 	const targetSet = new Set(
@@ -70,7 +70,7 @@ export function computeSchemaMismatches(schemaDependencies, targetSchemaSlugs) {
  *   updated in place with every id this call mints.
  * @return {string} a new id matching the widgetEntry id pattern
  *   (`^[a-z0-9]+(-[a-z0-9]+)*$`).
- * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+ * @spec openspec/specs/component-blocks/spec.md
  */
 export function mintWidgetId(baseId, existingIds) {
 	const ids = existingIds instanceof Set ? existingIds : new Set()
@@ -89,6 +89,48 @@ export function mintWidgetId(baseId, existingIds) {
 }
 
 /**
+ * Whether an object entry is a `schema` / `relatedSchema` reference to one of
+ * the unresolved slugs.
+ *
+ * @param {Array} entry - a `[key, value]` pair.
+ * @param {string[]} unresolvedSlugs - dependency slugs left unresolved.
+ * @return {boolean}
+ */
+function isUnresolvedRef(entry, unresolvedSlugs) {
+	const [key, value] = entry
+	return (
+		(key === 'schema' || key === 'relatedSchema')
+		&& typeof value === 'string'
+		&& unresolvedSlugs.includes(value)
+	)
+}
+
+/**
+ * Mark one object node: unresolved references become the placeholder (and
+ * the object is tagged `needsRemap`), every other value is marked in turn.
+ *
+ * @param {object} node - a non-null, non-array object.
+ * @param {string[]} unresolvedSlugs - dependency slugs left unresolved.
+ * @return {object} a NEW object.
+ */
+function markObject(node, unresolvedSlugs) {
+	const out = {}
+	let hit = false
+	for (const entry of Object.entries(node)) {
+		if (isUnresolvedRef(entry, unresolvedSlugs)) {
+			out[entry[0]] = UNRESOLVED_SCHEMA_PLACEHOLDER
+			hit = true
+		} else {
+			out[entry[0]] = markUnresolvedRefs(entry[1], unresolvedSlugs)
+		}
+	}
+	if (hit) {
+		out.needsRemap = true
+	}
+	return out
+}
+
+/**
  * Recursively rewrite any `schema` / `relatedSchema` value that appears in
  * `unresolvedSlugs` to the `UNRESOLVED_SCHEMA_PLACEHOLDER` sentinel and tag
  * the owning object with `needsRemap: true`, so the inserted fragment
@@ -98,7 +140,7 @@ export function mintWidgetId(baseId, existingIds) {
  * @param {*} node - the node to mark (object / array / scalar).
  * @param {string[]} unresolvedSlugs - dependency slugs left unresolved.
  * @return {*} a NEW node — never mutates the input.
- * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+ * @spec openspec/specs/component-blocks/spec.md
  */
 export function markUnresolvedRefs(node, unresolvedSlugs) {
 	if (!Array.isArray(unresolvedSlugs) || unresolvedSlugs.length === 0) {
@@ -110,24 +152,7 @@ export function markUnresolvedRefs(node, unresolvedSlugs) {
 	if (node === null || typeof node !== 'object') {
 		return node
 	}
-	const out = {}
-	let hit = false
-	for (const [key, value] of Object.entries(node)) {
-		if (
-			(key === 'schema' || key === 'relatedSchema')
-			&& typeof value === 'string'
-			&& unresolvedSlugs.includes(value)
-		) {
-			out[key] = UNRESOLVED_SCHEMA_PLACEHOLDER
-			hit = true
-			continue
-		}
-		out[key] = markUnresolvedRefs(value, unresolvedSlugs)
-	}
-	if (hit) {
-		out.needsRemap = true
-	}
-	return out
+	return markObject(node, unresolvedSlugs)
 }
 
 /**
@@ -154,7 +179,7 @@ export function markUnresolvedRefs(node, unresolvedSlugs) {
  *   current `widgets[]`, used only to avoid id collisions.
  * @return {Array<object>} the widgetEntry objects ready to merge onto the
  *   target page (via `mergeManifestDelta`).
- * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+ * @spec openspec/specs/component-blocks/spec.md
  */
 export function insertBlock(block, options = {}) {
 	const fragment = (block && block.fragment) || {}
@@ -192,7 +217,7 @@ export function insertBlock(block, options = {}) {
  *   `schemaDependencies` updated to the resolved target slugs (unresolved
  *   entries are kept as-is — still recorded, still visibly flagged in the
  *   fragment).
- * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+ * @spec openspec/specs/component-blocks/spec.md
  */
 export function remapBlockRecord(record, remapMap, unresolvedDependencies) {
 	const source = record || {}

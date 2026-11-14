@@ -47,7 +47,7 @@ export default {
 		/**
 		 * Confirm field removal.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
 		 * @return {void}
 		 */
 		onConfirm() {
@@ -57,7 +57,7 @@ export default {
 		/**
 		 * Cancel field removal.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
 		 * @return {void}
 		 */
 		onCancel() {
@@ -67,7 +67,7 @@ export default {
 		/**
 		 * Sync modal open state and emit cancel when closed.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
 		 * @param {boolean} value Open state.
 		 * @return {void}
 		 */

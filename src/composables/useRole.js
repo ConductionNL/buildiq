@@ -36,7 +36,7 @@ import { loadState } from '@nextcloud/initial-state'
  * the controller's 403 enforces server-side.
  *
  * @return {string[]} The caller's group IDs
- * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-2
+ * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-frontend-foundation/tasks.md#task-2
  */
 export function getCurrentUserGroups() {
 	try {
@@ -57,15 +57,7 @@ export function getCurrentUserGroups() {
 export function getCurrentUid() {
 	try {
 		if (typeof window !== 'undefined' && window.OC) {
-			if (typeof window.OC.getCurrentUser === 'function') {
-				const u = window.OC.getCurrentUser()
-				if (u && u.uid) {
-					return String(u.uid)
-				}
-			}
-			if (window.OC.currentUser) {
-				return String(window.OC.currentUser)
-			}
+			return uidFromOc(window.OC)
 		}
 	} catch (e) {
 		// Defensive: never throw from a pure role derivation.
@@ -74,46 +66,119 @@ export function getCurrentUid() {
 }
 
 /**
+ * The uid the global OC object names: `getCurrentUser().uid`, else
+ * `currentUser`.
+ *
+ * @param {object} oc The global OC object.
+ * @return {string} The uid, or ''.
+ */
+function uidFromOc(oc) {
+	const fromUser = currentUserUid(oc)
+	if (fromUser !== null) {
+		return fromUser
+	}
+	return oc.currentUser ? String(oc.currentUser) : ''
+}
+
+/**
+ * The uid `OC.getCurrentUser()` returns.
+ *
+ * @param {object} oc The global OC object.
+ * @return {?string} The uid, or null when it names none.
+ */
+function currentUserUid(oc) {
+	if (typeof oc.getCurrentUser !== 'function') {
+		return null
+	}
+	const u = oc.getCurrentUser()
+	return u && u.uid ? String(u.uid) : null
+}
+
+/** The permission buckets, strongest first, with the role each grants. */
+const ROLE_BUCKETS = Object.freeze([
+	['owners', 'owner'],
+	['editors', 'editor'],
+	['viewers', 'viewer'],
+])
+
+/**
+ * A predicate that tells whether a permission principal is the caller.
+ *
+ * Matches by group GID OR by the caller's own user principal. Permission
+ * buckets carry `user:<uid>`, `group:<gid>`, or a bare GID — the same grammar
+ * the backend PermissionResolver enforces. A group-only check silently denies
+ * a user-principal owner (e.g. owners: ['user:admin']) every role-gated action.
+ *
+ * @param {{groups: string[], uid: string}} caller The caller's groups and uid.
+ * @return {function(string): boolean} The predicate.
+ */
+function principalMatcher(caller) {
+	return (p) =>
+		caller.groups.includes(p)
+		|| (caller.uid !== '' && (p === `user:${caller.uid}` || p === caller.uid))
+}
+
+/**
+ * Whether a permission bucket names the caller.
+ *
+ * @param {unknown} bucket A permission bucket (a list of principals).
+ * @param {function(string): boolean} holds Tells whether a principal is the caller.
+ * @return {boolean}
+ */
+function holdsAny(bucket, holds) {
+	return Array.isArray(bucket) && bucket.some(holds)
+}
+
+/**
  * Compute the caller's effective role on the given Application.
  *
  * @param {Application | null | undefined} application The Application object
  * @param {string[]}                       [userGroups] Optional explicit group list (defaults to loadState)
  * @return {'owner'|'editor'|'viewer'|'none'} The caller's effective role
- * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-2
+ * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-frontend-foundation/tasks.md#task-2
  */
 export function useRole(application, userGroups) {
 	if (!application || typeof application !== 'object') {
 		return 'none'
 	}
-	const groups = Array.isArray(userGroups) ? userGroups : getCurrentUserGroups()
-	const uid = getCurrentUid()
-	if (groups.length === 0 && uid === '') {
+	const caller = callerOf(userGroups)
+	if (isAnonymous(caller)) {
 		return 'none'
 	}
-	const permissions = application.permissions || {}
-	// Match by group GID OR by the caller's own user principal. Permission
-	// buckets carry `user:<uid>`, `group:<gid>`, or a bare GID — the same
-	// grammar the backend PermissionResolver enforces. The previous group-only
-	// check silently denied a user-principal owner (e.g. owners: ['user:admin'])
-	// every role-gated action.
-	const intersects = (bucket) =>
-		Array.isArray(bucket)
-		&& bucket.some(
-			(p) =>
-				groups.includes(p)
-				|| (uid !== '' && (p === `user:${uid}` || p === uid)),
-		)
+	return roleIn(application.permissions || {}, principalMatcher(caller))
+}
 
-	if (intersects(permissions.owners)) {
-		return 'owner'
-	}
-	if (intersects(permissions.editors)) {
-		return 'editor'
-	}
-	if (intersects(permissions.viewers)) {
-		return 'viewer'
-	}
-	return 'none'
+/**
+ * The caller's groups (the explicit list, else initial state) and uid.
+ *
+ * @param {string[]} [userGroups] Optional explicit group list.
+ * @return {{groups: string[], uid: string}}
+ */
+function callerOf(userGroups) {
+	const groups = Array.isArray(userGroups) ? userGroups : getCurrentUserGroups()
+	return { groups, uid: getCurrentUid() }
+}
+
+/**
+ * Whether the caller has neither a group nor a uid.
+ *
+ * @param {{groups: string[], uid: string}} caller The caller.
+ * @return {boolean}
+ */
+function isAnonymous(caller) {
+	return caller.groups.length === 0 && caller.uid === ''
+}
+
+/**
+ * The strongest role whose bucket names the caller.
+ *
+ * @param {ApplicationPermissions} permissions The Application's permission block.
+ * @param {function(string): boolean} holds Tells whether a principal is the caller.
+ * @return {'owner'|'editor'|'viewer'|'none'}
+ */
+function roleIn(permissions, holds) {
+	const role = ROLE_BUCKETS.find(([bucket]) => holdsAny(permissions[bucket], holds))
+	return role ? role[1] : 'none'
 }
 
 /**
@@ -123,7 +188,7 @@ export function useRole(application, userGroups) {
  * @param {Application | null | undefined} application The Application object
  * @param {string[]}                       [userGroups] Optional explicit group list
  * @return {boolean} True when the caller has owner/editor/viewer
- * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-2
+ * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-frontend-foundation/tasks.md#task-2
  */
 export function hasAnyRole(application, userGroups) {
 	return useRole(application, userGroups) !== 'none'

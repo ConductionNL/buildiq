@@ -88,31 +88,49 @@ if (phpMatch === null) {
 const phpFloor = phpMatch[1]
 
 // The CI legs. Read from the ASSIGNMENT LINE only, never from the surrounding
-// comment: the comment above this input names `stable31` while explaining that
-// it was REMOVED, so a comment-blind grep reads a leg that does not exist.
+// comment: a comment can name a leg while explaining that it was REMOVED, so a
+// comment-blind grep reads a leg that does not exist.
+//
+// With no override the shared quality.yml DERIVES the matrix from info.xml
+// (stable<min> .. stable<max>), so the legs are that range — mirrored here so
+// the floor and PHP pins below still run.
 const workflow = read(WORKFLOW)
 const refsLine = workflow
 	.split('\n')
 	.map((line) => line.trim())
 	.find((line) => line.startsWith('nextcloud-test-refs:'))
 
+let refs
 if (refsLine === undefined) {
-	console.error(
-		'[check:nc-floor] No nextcloud-test-refs input found in ' + WORKFLOW + '.',
-	)
-	process.exit(2)
+	const maxMatch = ncMatches[0].match(/max-version\s*=\s*"(\d+)"/)
+	if (maxMatch === null) {
+		console.error(
+			'[check:nc-floor] No nextcloud-test-refs override and <nextcloud> carries no '
+				+ 'max-version, so the derived matrix cannot be computed: '
+				+ ncMatches[0],
+		)
+		process.exit(2)
+	}
+	refs = []
+	for (let major = floor; major <= Number(maxMatch[1]); major++) {
+		refs.push({ ref: 'stable' + major, major })
+	}
+} else {
+	refs = [...refsLine.matchAll(/stable(\d+)/g)].map((m) => ({
+		ref: 'stable' + m[1],
+		major: Number(m[1]),
+	}))
 }
-
-const refs = [...refsLine.matchAll(/stable(\d+)/g)].map((m) => ({
-	ref: 'stable' + m[1],
-	major: Number(m[1]),
-}))
 
 // Positive control on the INPUT. "I found nothing wrong" and "I read nothing"
 // are the same output otherwise.
 if (refs.length === 0) {
 	console.error(
-		'[check:nc-floor] Parsed ZERO nextcloud-test-refs out of ' + WORKFLOW + '.',
+		'[check:nc-floor] Resolved ZERO CI legs from '
+			+ WORKFLOW
+			+ ' / '
+			+ INFO
+			+ '.',
 	)
 	console.error('[check:nc-floor] That is a broken parser, not a clean result.')
 	process.exit(2)

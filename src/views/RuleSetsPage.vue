@@ -127,6 +127,7 @@ import { NcButton, NcEmptyContent, NcLoadingIcon, NcNoteCard } from '@nextcloud/
 import ConditionActionRuleEditor from '../dialogs/ConditionActionRuleEditor.vue'
 import DecisionTableEditor from '../dialogs/DecisionTableEditor.vue'
 import RuleSetTestSandbox from '../modals/RuleSetTestSandboxModal.vue'
+import { listResults } from '../utils/listResults.js'
 
 export default {
 	name: 'RuleSetsPage',
@@ -169,22 +170,12 @@ export default {
 					'/apps/openregister/api/objects/buildiq/rule-set',
 				)
 				const { data } = await axios.get(url)
-				this.ruleSets = this.extractResults(data)
+				this.ruleSets = listResults(data)
 			} catch (error) {
 				this.errorMessage = t('buildiq', 'Could not load rule sets.')
 			} finally {
 				this.loading = false
 			}
-		},
-
-		extractResults(data) {
-			if (Array.isArray(data)) {
-				return data
-			}
-			if (data && Array.isArray(data.results)) {
-				return data.results
-			}
-			return []
 		},
 
 		edit(ruleSet) {

@@ -1,101 +1,104 @@
 # Tutorial: Create a virtual app
 
-> **Audience**: Buildiq admins creating their first virtual app on a fresh install or alongside existing apps.
-> **Prereqs**: Buildiq + OpenRegister installed and enabled. Signed in as a Nextcloud user (admin or otherwise).
-> **Outcome**: A new virtual app named **Test App** with a `development → production` linear version chain, both versions seeded with an empty register and the default `hello-message` schema. Caller becomes the app's sole owner.
+> **Audience**: Buildiq admins creating their first virtual app.
+> **Prereqs**: Buildiq and OpenRegister installed and enabled. Signed in as a Nextcloud admin. Creating an app is admin-only, and capped at ten creations an hour.
+> **Outcome**: A new virtual app named **Test App** with a `development → production` version chain. Both versions get their own register, seeded with the default `hello-message` schema. You become the app's sole owner.
 
 ## 1. Open the wizard
 
-Navigate to **Virtual apps** in the Buildiq sidebar and click **Add application** (the blue secondary button in the actions bar).
+Open **Apps** in the Buildiq left navigation and click **Add app** in the actions bar.
 
-The wizard opens on Step 1 — *App basics*.
+The **Create app** dialog opens on step 1, *Basics*.
 
 ![Wizard step 1, empty form](./img/wizard-step1-empty.png)
 
-The dialog header shows a three-step indicator (1 → 2 → 3). Step 3 in this preset path is the Review screen; selecting the **Custom** preset later swaps in a chain composer as step 3 and pushes Review to step 4.
+The header shows three steps: **Basics**, **Preset** and **Review**. Picking the **Custom** preset later inserts a fourth, so Review becomes step 4.
 
-## 2. Step 1 — App basics
+## 2. Step 1, app basics
 
 Fill in:
 
-- **Name** (required) — the human-readable display label. e.g. *Test App*.
-- **Slug** — auto-derived from the name in `kebab-case`. Click the **Advanced** link if you want to override it manually (must match `^(?!_)[a-z0-9][a-z0-9-]*[a-z0-9]$`; leading underscores are reserved for buildiq system use).
-- **Description** (optional) — long-form text describing what the app does.
-- **App icon** (optional, both light + dark) — upload SVGs that will appear in the Nextcloud top bar once the app is published.
+- **Name** (required). The display label, for example *Test App*.
+- **Slug**. Derived from the name in `kebab-case` and shown under the field. Click **Advanced** to set it yourself. It must match `^(?!_)[a-z0-9][a-z0-9-]*[a-z0-9]$`. A leading underscore is reserved.
+- **Description** (optional). What the app is for.
+- **App icon** (optional). Pick from the **Material** or **OpenGemeenten** libraries, or choose **Upload your own SVG**. **Add a dark override** gives you a second icon for dark backgrounds.
+
+There is also a **Generate with AI** button. It drafts the whole app from a prompt instead of the three steps below. This tutorial takes the manual path.
 
 ![Wizard step 1 with Name and Slug filled](./img/wizard-step1-filled.png)
 
-When **Name** is valid, the **Next** button in the footer enables.
+**Next** enables as soon as **Name** is valid.
 
-## 3. Step 2 — Choose a version preset
+## 3. Step 2, choose a version preset
 
-Pick the shape of your version chain. ADR-002's linear-chain model uses these presets out of the box:
+Pick the shape of your version chain.
 
 | Preset | Chain | Best for |
 |--------|-------|----------|
-| **Single** | `production` | One-version apps with no staging environment. |
-| **Development + Production** | `development → production` | The common "I want a safe playground" case. |
+| **Single** | `production` | One version only. No staging environment. |
+| **Development + Production** | `development → production` | A safe playground for changes before they go live. |
 | **Development + Staging + Production** | `development → staging → production` | Classic three-tier pipeline for larger teams. |
-| **Custom** | Admin-defined chain | When your team's deployment vocabulary doesn't fit the canned options. |
+| **Custom** | Define your own chain | Name and order your versions however your team works. |
 
 ![Wizard step 2, four preset cards](./img/wizard-step2-presets.png)
 
-Selecting **Custom** swaps in step 3 with an add-row composer where you type each version's name and the slug auto-derives; rows are drag-reorderable; top-to-bottom is upstream-to-downstream.
+**Custom** adds a step where you type each version name. The slug derives itself, rows drag to reorder, and top to bottom is upstream to downstream.
 
-For this tutorial we select **Development + Production**.
+For this tutorial, pick **Development + Production**.
 
 ![Wizard step 2 with Development + Production selected](./img/wizard-step2-selected.png)
 
-## 4. Step 3 — Review and create
+## 4. Step 3, review and create
 
-The Review screen shows everything the wizard is about to provision:
+The **Review and create** screen shows what the wizard is about to provision:
 
-- **Name** and **slug** from step 1.
-- **Version chain** in arrow form (`development → production`).
-- **Production version** callout naming which version end users will see at the canonical `/apps/buildiq/{slug}` URL.
+- **Name** and **Slug** from step 1.
+- **Version chain**, in arrow form (`development → production`).
+- **Production version**: the one end users will land on.
 
 ![Wizard step 3, review and create](./img/wizard-step3-review.png)
 
-Click **Create** to submit. The backend then runs atomically:
+Click **Create**. The backend then runs as one transaction:
 
 1. Validate the whole payload.
-2. Create the `Application` record (caller becomes `owners` per RBAC).
-3. For each version in chain order: create the `ApplicationVersion` record + provision the per-version register `buildiq-{appSlug}-{versionSlug}` + install the default schema set with version-namespaced slugs.
-4. Wire each non-terminal version's `promotesTo` to the next downstream version's UUID.
-5. Set `Application.productionVersion` to the terminal version's UUID.
+2. Create the `Application` record. You become its sole owner.
+3. Per version, in chain order: create the `ApplicationVersion` record, provision the register `openbuild-{appSlug}-{versionSlug}`, and seed the default schema set with version-namespaced slugs.
+4. Point each non-terminal version's `promotesTo` at the next version downstream.
+5. Set `Application.productionVersion` to the terminal version.
 
-On any failure, all already-created objects roll back in reverse creation order. On success, the wizard closes and you land on the new app's detail page at `/apps/buildiq/applications/<uuid>`.
+Any failure rolls every created object back, in reverse order. On success the dialog closes and you land on the app's detail page at `/apps/buildiq/applications/<uuid>`.
 
 ![Application detail page after wizard create](./img/app-detail-after-create.png)
 
-The detail page renders:
-- The hero with status badge and **window toggle** (7d / 30d / 90d)
-- Four KPI cards: **Active users**, **Object count**, **Files**, **Audit events** — all at 0 for a fresh app
-- The **activity placeholder** ("No activity in the selected window") until the audit trail accumulates events
-- The **Register** widget showing the production version's per-version OR register (`buildiq-{appSlug}-production`) with `Schemas`, `Objects`, and `Files` counts
-- The **Schemas** widget listing the seeded `{appSlug}-production-hello-message` schema (or "No schemas yet in this version" until the wizard's schema seed runs)
-- The **+ Add schema** affordance to start designing
-- Returning to **Virtual apps** confirms the new app appears in the index card grid:
+The detail page shows:
+
+- The hero: name, description, type badge, status badge, your role badge, and the version pills. A star marks the production version.
+- Four numbers over a **7d / 30d / 90d** window: **Active users**, **Object count**, **Storage** and **Audit events**. All are zero on a fresh app. Each one deep-links into OpenRegister.
+- An activity graph, empty until the audit trail has something to draw.
+- **Manifest layers**: the base manifest, the shared admin delta, and your own per-user delta when the app allows one.
+- **Register**, naming this version's register and its schema count.
+- **Groups & users**, **Pages**, **Menu**, **Schemas** and **Flows**, each with an add or manage affordance.
+
+Go back to **Apps** and your new app is in the grid.
 
 ![Virtual apps index after wizard create](./img/index-after-wizard.png)
 
 ## 5. What you have now
 
 - One `Application` record with your slug.
-- Two `ApplicationVersion` records (`development`, `production`) chained linearly.
-- Two per-version OR registers (`buildiq-test-app-development`, `buildiq-test-app-production`).
-- Each register seeded with the `hello-message` schema (namespaced as `test-app-development-hello-message` and `test-app-production-hello-message` to satisfy OR's org-wide schema-slug uniqueness constraint).
+- Two `ApplicationVersion` records, `development` and `production`, chained in that order.
+- Two registers: `openbuild-test-app-development` and `openbuild-test-app-production`.
+- The `hello-message` schema in each, named `test-app-development-hello-message` and `test-app-production-hello-message`. Schema slugs are unique across the whole organisation, which is why they carry the prefix.
 
 ## What's next
 
-- **Schema design** — open the version's schema designer at `/builder/{slug}/schemas?_version=development` to model your domain.
-- **Page design** — open the page designer at `/builder/{slug}/pages?_version=development` to lay out your app's screens.
-- **Promote** — when development looks ready, use the Promote action on the version detail page to push your changes through to production. The promote dialog asks how to handle the target's existing data (start fresh from source / migrate-with-schema-changes / empty-start).
+- **Design your schemas** at `/apps/buildiq/builder/{slug}/schemas`. Add fields, states, transitions and access scopes.
+- **Design your pages** at `/apps/buildiq/builder/{slug}/pages`. Lay out screens and the menu, then use **Save & open preview**.
+- **Promote** when development is ready. See [Update a virtual app](./update-a-virtual-app.md).
 
 ## Troubleshooting
 
-- **"Add Item" button instead of "Add application"** — the manifest's `actionsComponent` must sit at page top-level (sibling to `id`/`route`/`type`/`title`), not nested inside `config`. The default CnIndexPage Add button is independent; suppress it with `config.showAdd: false` if needed.
-- **`[object Object]` in OR API URLs** — your local nc-vue version pre-dates the positional-arg fix in `CnIndexPage.registerObjectType`. Update nc-vue or copy the fix from `feature/buildiq-version-routing` / this branch.
-- **Schema uniqueness violation on create** — the org-wide schema-slug constraint requires per-app namespacing of seed schema slugs. The wizard applies `{appSlug}-{versionSlug}-` as a prefix; if you fork the wizard's seed list, keep the namespacing pattern.
-- **Hello World apps don't disappear after upgrade** — the green-field migration step's idempotency check is too eager. See Codeberg issue #69 (pre-migration, not migrated to GitHub).
-- **Icons return 404 from `/apps/buildiq/icons/{slug}.svg`** — see Codeberg issue #68 (pre-migration, not migrated to GitHub).
+- **Add app does nothing, or is missing**. Creating an app is admin-only. The endpoint refuses a non-admin before the controller runs, so the button has nothing to show for it.
+- **"Property 'register' should match pattern"**. A per-version register must be named `openbuild-{appSlug}-{versionSlug}`. The `openbuild-` prefix is pinned by the `applicationVersion` schema and did not move with the app rename. Do not rewrite it to `buildiq-`.
+- **Schema uniqueness violation on create**. Schema slugs are unique per organisation. The wizard prefixes every seed slug with `{appSlug}-{versionSlug}-`. If you fork the seed list, keep the prefix.
+- **The app appears but has no pages**. The wizard seeds schemas, not pages. Open the page designer and add the first one.

@@ -10,6 +10,16 @@
 			<h3 class="ob-pages-widget__title">
 				{{ t('buildiq', 'Pages') }}
 			</h3>
+			<!-- Mirrors SchemasWidget's header action: the rows only deep-link
+			     EXISTING pages, so an app with none had no way into the designer
+			     but the "Edit {version}" entry nested in the Open app menu.
+			     data-walkthrough-id: the tour's `open-page-designer` step. -->
+			<NcButton
+				variant="tertiary"
+				data-walkthrough-id="app-add-page"
+				@click="addPage">
+				{{ t('buildiq', '+ Add page') }}
+			</NcButton>
 		</header>
 		<ul v-if="pages && pages.length > 0" class="ob-pages-widget__list">
 			<li
@@ -38,24 +48,39 @@
 </template>
 
 <script>
+import NcButton from '@nextcloud/vue/components/NcButton'
 import { buildVersionedRoute } from '../../../router/helpers.js'
 
 export default {
 	name: 'PagesWidget',
+	components: { NcButton },
 	props: {
 		appSlug: { type: String, required: true },
 		versionSlug: { type: String, default: '' },
 		pages: { type: Array, default: () => [] },
 	},
 
+	emits: ['addPage'],
+
 	methods: {
+		/**
+		 * Ask the dashboard to open the page designer, mirroring `addSchema`.
+		 *
+		 * @return {void}
+		 *
+		 * @spec exclude emit-only affordance; REQ-OBADO-009 covers the rows, not Add
+		 */
+		addPage() {
+			this.$emit('addPage')
+		},
+
 		/**
 		 * Open the page designer for the clicked row, preserving `?_version=`
 		 * and passing `pageId` as a query param (REQ-OBADO-009).
 		 *
 		 * @param {object} page The manifest page entry.
 		 * @return {void}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-2
 		 */
 		openPage(page) {
 			if (!page || !page.id) {
@@ -82,6 +107,12 @@ export default {
 	border: 1px solid var(--color-border, #ddd);
 	border-radius: var(--border-radius-large, 8px);
 	background: var(--color-main-background, #fff);
+}
+
+.ob-pages-widget__header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
 }
 
 .ob-pages-widget__title {

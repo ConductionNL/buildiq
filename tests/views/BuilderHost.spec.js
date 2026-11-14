@@ -59,6 +59,7 @@ const CnAppRootStub = {
 	props: [
 		'appId',
 		'aiCompanion',
+		'supportDialog',
 		'bundledManifest',
 		'registry',
 		'dataSourcesLoader',
@@ -103,6 +104,13 @@ describe('BuilderHost (REQ-NTS-003 — CnAppRoot owns theme application, zero Bu
 			]),
 		)
 		expect(cnAppRoot.props()).not.toHaveProperty('theme')
+	})
+
+	it('turns off the first-open support note for the nested virtual app', async () => {
+		const wrapper = mountHost()
+		await wrapper.vm.$nextTick()
+		const cnAppRoot = wrapper.findComponent(CnAppRootStub)
+		expect(cnAppRoot.props('supportDialog')).toBe(false)
 	})
 
 	it('has no beforeDestroy theme-teardown call (component instance carries no appTheme)', async () => {

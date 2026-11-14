@@ -164,12 +164,12 @@ export default {
 	},
 
 	computed: {
-		/** @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-003 */
+		/** @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-003 */
 		itemsPath() {
 			return (this.binding && this.binding.itemsPath) || ''
 		},
 
-		/** @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-003 */
+		/** @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-003 */
 		fields() {
 			return (this.binding && this.binding.fields) || {}
 		},
@@ -179,7 +179,7 @@ export default {
 		 * under `itemsPath` when set, otherwise the sample root.
 		 *
 		 * @return {*}
-		 * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-003
+		 * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-003
 		 */
 		itemContext() {
 			if (!this.itemsPath) {
@@ -194,7 +194,7 @@ export default {
 		 * so leaf selectors are relative to a single item.
 		 *
 		 * @return {Array}
-		 * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-003
+		 * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-003
 		 */
 		treeNodes() {
 			const root = this.itemsPath ? this.itemContext : this.sample
@@ -211,7 +211,7 @@ export default {
 		 * The mapped field list with live sample values + dead-selector flags.
 		 *
 		 * @return {Array<{name: string, selector: string, sample: *, dead: boolean}>}
-		 * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-003
+		 * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-003
 		 */
 		fieldRows() {
 			const ctx = this.itemContext
@@ -232,7 +232,7 @@ export default {
 		/**
 		 * @param {object} node - tree node.
 		 * @return {string}
-		 * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-003
+		 * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-003
 		 */
 		nodeLabel(node) {
 			if (!node.path) {
@@ -248,7 +248,7 @@ export default {
 		 * is the sample root.
 		 *
 		 * @param {string} path - dot-path of the array node.
-		 * @spec openspec/changes/openconnector-api-sources/tasks.md#task-3.1
+		 * @spec openspec/changes/archive/2026-06-14-openconnector-api-sources/tasks.md#task-3.1
 		 */
 		setItemsPath(path) {
 			this.$emit('update:itemsPath', path)
@@ -260,7 +260,7 @@ export default {
 		 * path relative to the item context.
 		 *
 		 * @param {object} node - leaf tree node.
-		 * @spec openspec/changes/openconnector-api-sources/tasks.md#task-3.1
+		 * @spec openspec/changes/archive/2026-06-14-openconnector-api-sources/tasks.md#task-3.1
 		 */
 		addField(node) {
 			this.pendingNode = node
@@ -277,7 +277,7 @@ export default {
 		 *
 		 * @param {string} name - the entered display-field name.
 		 * @return {void}
-		 * @spec openspec/changes/openconnector-api-sources/tasks.md#task-3.1
+		 * @spec openspec/changes/archive/2026-06-14-openconnector-api-sources/tasks.md#task-3.1
 		 */
 		onPromptSubmit(name) {
 			const node = this.pendingNode
@@ -294,7 +294,7 @@ export default {
 		 * Remove a mapped field.
 		 *
 		 * @param {string} name - field name to remove.
-		 * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-003
+		 * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-003
 		 */
 		removeField(name) {
 			const next = { ...this.fields }

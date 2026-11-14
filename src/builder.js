@@ -15,6 +15,7 @@
 // only the bare /builder/{slug} runtime is served by this entry.
 
 import {
+	CnAppNav,
 	CnAppRoot,
 	CnPageRenderer,
 	defaultPageTypes,
@@ -33,13 +34,29 @@ import { generateUrl } from '@nextcloud/router'
 import { NcEmptyContent } from '@nextcloud/vue'
 import { createApp, h, reactive } from 'vue'
 import { createRouter, createWebHistory } from 'vue-router'
+import BackToVirtualApps, {
+	declaresPrimaryAction,
+	showBackToVirtualApps,
+} from './components/runtime/BackToVirtualApps.vue'
 import { registerScope, useRegisterPicker } from './composables/useRegisterPicker.js'
 import pinia from './pinia.js'
 import { registerDirectives } from './registerDirectives.js'
-import { runtimeRegistry } from './runtimeRegistry.js'
-import { registerSlugForApp } from './store/schemas.js'
+import { getRuntimeRegistry } from './runtimeRegistry.js'
+import { fetchAppRegister } from './services/appRegister.js'
+import {
+	normalizeConnectorPages,
+	restoreConnectorPages,
+} from './services/connectorPages.js'
+import { startHealthReporting } from './services/healthReporting.js'
+import { normalizeManifestPages } from './services/manifestPageDefaults.js'
+import { normalizeManifestRouting } from './services/manifestRouting.js'
+import { brandTopBar } from './services/topBarBrand.js'
+import { keepVersionQuery } from './services/versionQuery.js'
+import { virtualAppSupportDialog } from './utils/virtualAppSupportDialog.js'
 
 import '@conduction/nextcloud-vue/css/index.css'
+// Toast styles: without them every toast renders as bare text in a corner.
+import '@nextcloud/dialogs/style.css'
 // nc-vue's CnDashboardGrid/CnWidgetGrid no longer bundle gridstack's JS or
 // CSS (nc-vue#557) — it is a peerDependency now. A virtual app's manifest
 // can declare a type:"dashboard" page (this entry calls
@@ -105,7 +122,7 @@ const AppNotFound = {
 			name: t('buildiq', 'App not found'),
 			description: t(
 				'buildiq',
-				'This app could not be loaded — it may have been deleted, or it has no pages yet.',
+				'This app could not be loaded. It may have been deleted, or it has no pages yet.',
 			),
 		})
 	},
@@ -157,85 +174,6 @@ function translateForApp(key, vars) {
 	return t('buildiq', key, vars)
 }
 
-// Top-bar branding state. A single observer drives every (re-)apply so that the
-// early slug-based pass and the later manifest-name pass share one watcher.
-let topBarBrand = null
-
-/**
- * Rebrand the Nextcloud top-bar (app name + icon) to the virtual app's identity.
- *
- * The global top-bar is server-rendered chrome for the host `buildiq` app, so
- * there is no supported API to retitle it per virtual app. We patch the DOM
- * directly and keep it in sync with a MutationObserver, because Nextcloud's
- * app-menu is a Vue component that can re-render (resize, unified-search and
- * notification updates) and would otherwise reset our changes. `apply()` is
- * idempotent — it only writes when a value differs — so it never loops on its
- * own mutations.
- *
- * Call it twice: once early with a slug-humanised name (so the bar flips off
- * "Buildiq" before the manifest request resolves), then again with the real
- * `manifest.name` to correct it. The second call only updates the shared state
- * and re-applies; it does not create a second observer.
- *
- * The icon uses the app's own light icon (`/icons/{slug}.svg`) forced white with
- * a CSS filter, because the coloured header needs a monochrome white glyph and
- * apps rarely upload a dedicated white variant (the `-dark` endpoint falls back
- * to a generic cube, which is why we do NOT use it here).
- *
- * @param {string} appName The virtual app's display name.
- * @param {string} appSlug The virtual app's slug, used for its icon endpoint.
- */
-function brandTopBar(appName, appSlug) {
-	if (typeof document === 'undefined') {
-		return
-	}
-	const icon = generateUrl(`/apps/buildiq/icons/${appSlug}.svg`)
-	if (topBarBrand) {
-		// Refine an existing brand (e.g. slug-name → real manifest name).
-		if (appName) {
-			topBarBrand.name = appName
-		}
-		topBarBrand.icon = icon
-		topBarBrand.apply()
-		return
-	}
-	const state = { name: appName || appSlug, icon }
-	state.apply = () => {
-		const nameEl = document.querySelector('.app-menu__current-app-name')
-		if (nameEl && state.name && nameEl.textContent !== state.name) {
-			nameEl.textContent = state.name
-		}
-		const iconEl = document.querySelector('.app-menu__current-app-icon')
-		if (iconEl && iconEl.getAttribute('src') !== state.icon) {
-			iconEl.setAttribute('src', state.icon)
-			iconEl.setAttribute('alt', state.name || '')
-			// The header background is coloured; force any icon to white.
-			iconEl.style.filter = 'brightness(0) invert(1)'
-		}
-		const trigger = document.querySelector(
-			'[aria-label^="Open apps menu, currently in"]',
-		)
-		if (trigger && state.name) {
-			const label = t('buildiq', 'Open apps menu, currently in {app}', {
-				app: state.name,
-			})
-			if (trigger.getAttribute('aria-label') !== label) {
-				trigger.setAttribute('aria-label', label)
-			}
-		}
-	}
-	topBarBrand = state
-	state.apply()
-	const header = document.querySelector('header#header') || document.body
-	if (header) {
-		new MutationObserver(state.apply).observe(header, {
-			childList: true,
-			subtree: true,
-			characterData: true,
-		})
-	}
-}
-
 /**
  * Turn a slug into a human-readable title, e.g. `pet-store` → `Pet Store`. Used
  * for the early top-bar pass before the manifest (with the real name) loads.
@@ -252,60 +190,60 @@ function humaniseSlug(value) {
 }
 
 /**
- * Normalise a loaded manifest's pages for the standalone runtime, in place:
+ * The manifest endpoint URL, pinned to the previewed version when there is one.
  *
- * 1. `config` MUST be a plain object. An empty `config: {}` round-trips through
- *    PHP/JSON as `[]` (PHP can't tell an empty object from an empty list), and a
- *    page rendered with an array config silently loses its register/schema.
- * 2. Data pages (`index` / `detail`) default to `showTitle: true` so the app
- *    shows its page title inline — the standalone runtime renders the app as a
- *    real app, where a visible page header is expected (CnIndexPage's own
- *    default is `false`, which routes the title to an index sidebar that this
- *    runtime does not surface). An explicit `showTitle` is always respected.
+ * @return {string}
+ */
+function manifestUrl() {
+	const url = generateUrl(`/apps/buildiq/api/applications/${slug}/manifest`)
+	return versionSlug ? `${url}?_version=${encodeURIComponent(versionSlug)}` : url
+}
+
+/**
+ * Whether a manifest response is usable: an object with a pages list.
  *
- * @param {object} manifest The resolved manifest (mutated in place).
+ * @param {unknown} data The response body.
+ * @return {boolean}
+ */
+function isUsableManifest(data) {
+	return Boolean(data) && typeof data === 'object' && Array.isArray(data.pages)
+}
+
+/**
+ * The app's display name: its manifest name, title, or slug.
+ *
+ * @param {object} manifest The resolved manifest.
+ * @return {string}
+ */
+function appNameOf(manifest) {
+	return manifest.name || manifest.title || slug
+}
+
+/**
+ * Reflect the app's identity in the browser tab and the global NC top-bar.
+ *
+ * @param {object} manifest The resolved manifest.
  * @return {void}
  */
-function normalizeManifestPages(manifest) {
-	const pages = Array.isArray(manifest.pages) ? manifest.pages : []
-	for (const page of pages) {
-		if (!page || typeof page !== 'object') continue
-		if (
-			!page.config
-			|| typeof page.config !== 'object'
-			|| Array.isArray(page.config)
-		) {
-			page.config = {}
-		}
-		if (
-			(page.type === 'index' || page.type === 'detail')
-			&& page.config.showTitle === undefined
-		) {
-			page.config.showTitle = true
-		}
+function brandFromManifest(manifest) {
+	const appName = appNameOf(manifest)
+	if (appName) {
+		document.title = `${appName} – Nextcloud`
+		brandTopBar(appName, slug)
 	}
 }
 
 /**
- * Fetch the app manifest, build its router, and mount the standalone shell.
+ * Fetch the app manifest. A failed request yields an empty (but well-formed)
+ * manifest, so the shell renders with no pages.
  *
- * @return {Promise<void>}
+ * @return {Promise<object>}
  */
-async function boot() {
-	// Flip the top-bar off the host "Buildiq" identity immediately using the
-	// slug, so there's no visible "Buildiq" flash while the manifest (which
-	// carries the real display name) is still loading.
-	if (slug) {
-		brandTopBar(humaniseSlug(slug), slug)
-	}
+async function loadManifest() {
 	let manifest = { version: '1.0.0', menu: [], pages: [] }
 	try {
-		let url = generateUrl(`/apps/buildiq/api/applications/${slug}/manifest`)
-		if (versionSlug) {
-			url += `?_version=${encodeURIComponent(versionSlug)}`
-		}
-		const { data } = await axios.get(url)
-		if (data && typeof data === 'object' && Array.isArray(data.pages)) {
+		const { data } = await axios.get(manifestUrl())
+		if (isUsableManifest(data)) {
 			manifest = data
 		}
 		// runtime-group-scoped-access REQ-1/REQ-2: the server already computed
@@ -316,20 +254,179 @@ async function boot() {
 		// (empty for admins/owners/editors, who received the FULL manifest and
 		// so must see everything client-side too — CnAppNav treats an empty
 		// array as "show everything").
-		// Reflect the app's identity in the browser tab and the global NC top-bar.
-		const appName = manifest.name || manifest.title || slug
-		if (appName) {
-			document.title = `${appName} – Nextcloud`
-			brandTopBar(appName, slug)
-		}
+		brandFromManifest(manifest)
 	} catch (e) {
-		// Render an empty (but well-formed) shell; the app simply has no pages.
 		// eslint-disable-next-line no-console
 		console.error('[buildiq:builder] failed to load manifest for ' + slug, e)
 	}
+	return manifest
+}
+
+/**
+ * The page set of a manifest as one string, to tell whether a save changed it.
+ *
+ * @param {object} manifest The manifest.
+ * @return {string}
+ */
+function pageSignature(manifest) {
+	return Array.isArray(manifest.pages)
+		? manifest.pages.map((p) => `${p && p.id}:${p && p.route}`).join('|')
+		: ''
+}
+
+/**
+ * The permission set the server forwarded for the caller, or none.
+ *
+ * runtime-group-scoped-access REQ-1: forwarded to CnAppNav / CnPageRenderer's
+ * permission filter — client-side mirror of the server-side filtering already
+ * applied to `manifest.menu`/`pages`.
+ *
+ * @param {object} manifest The manifest.
+ * @return {Array<string>}
+ */
+function runtimePermissions(manifest) {
+	return (
+		(manifest.runtime
+			&& manifest.runtime.user
+			&& manifest.runtime.user.permissions)
+		|| []
+	)
+}
+
+/**
+ * Remove every named route from the router.
+ *
+ * @param {object} router The app's router.
+ * @return {void}
+ */
+function dropNamedRoutes(router) {
+	for (const record of router.getRoutes()) {
+		if (record.name && router.hasRoute(record.name)) {
+			router.removeRoute(record.name)
+		}
+	}
+}
+
+/**
+ * Rebuild the router in place from a saved manifest.
+ *
+ * vue-router 4 removed the `matcher` swap Vue Router 3 allowed, so every route
+ * we added (all are named — see CATCH_ALL_ROUTE) is dropped and re-added.
+ * Best-effort: the manifest is ALREADY persisted, so a router-build error (e.g.
+ * a duplicate route the user created) is logged and never rejects the save.
+ *
+ * @param {object} router The app's router.
+ * @param {object} manifest The saved manifest.
+ * @return {void}
+ */
+function rebuildRoutes(router, manifest) {
+	try {
+		dropNamedRoutes(router)
+		for (const record of routesFromManifest(manifest)) {
+			router.addRoute(record)
+		}
+	} catch (e) {
+		// eslint-disable-next-line no-console
+		console.warn(
+			'[buildiq:builder] router rebuild after save failed (edit is saved; reload to pick up new routes)',
+			e,
+		)
+	}
+}
+
+/**
+ * Persist in-app edits (pages / menu / settings / sidebar / actions) back to the
+ * app's manifest. CnAppRoot's useManifestEditor mutates THIS same `manifest`
+ * object in place while editing, so on Save the full current manifest is PUT to
+ * the app's save endpoint. Without a persist handler the editor computes a delta
+ * and discards it, so edits would vanish on refresh.
+ *
+ * @param {object} manifest The manifest the shell edits in place.
+ * @param {{router: object, shellState: object}} shell The app's router and the shell's reactive state.
+ * @return {() => Promise<void>} The `persistManifestDelta` handler.
+ *
+ * @spec openspec/specs/openbuild-page-designer/spec.md#REQ-OBPD-012
+ */
+function manifestPersister(manifest, shell) {
+	const { router, shellState } = shell
+	let lastPageSig = pageSignature(manifest)
+	return async () => {
+		const saveUrl = generateUrl(
+			`/apps/buildiq/api/applications/${slug}/manifest`,
+		)
+		// Store the pages as the maker authored them: a connector-bound page
+		// is rewritten for the renderer in memory only (REQ-BQCB-001).
+		await axios.put(saveUrl, { manifest: restoreConnectorPages(manifest) })
+		// Only touch the router when the PAGE SET actually changed — a
+		// menu / settings / sidebar / actions edit leaves routes intact.
+		const sig = pageSignature(manifest)
+		if (sig === lastPageSig) {
+			return
+		}
+		lastPageSig = sig
+		// Rebuild the router from the just-saved manifest so pages added
+		// or re-routed during this edit become navigable immediately.
+		rebuildRoutes(router, manifest)
+		// Remount the routed view AFTER the router rebuild so it mounts
+		// the added/removed page routes (see shellState / routerViewKey).
+		shellState.routerEpoch++
+	}
+}
+
+/**
+ * The navigation slots of the shell.
+ *
+ * The way back to Buildiq's app list, for the people building the app, at
+ * the top of the app's navigation. A slot, not a menu entry: the manifest
+ * never carries it, so an in-app save cannot store it. The navigation's
+ * top region belongs to the app's own primary action when the page on
+ * screen declares one, so the link steps aside there.
+ *
+ * @param {object} manifest The manifest.
+ * @param {object} router The app's router.
+ * @return {object}
+ */
+function navSlots(manifest, router) {
+	if (!showBackToVirtualApps({ versionSlug, manifest })) {
+		return {}
+	}
+	return {
+		menu: (navProps) =>
+			h(
+				CnAppNav,
+				navProps,
+				declaresPrimaryAction(manifest, router.currentRoute.value.name)
+					? {}
+					: { 'primary-action': () => h(BackToVirtualApps) },
+			),
+	}
+}
+
+/**
+ * Fetch the app manifest, build its router, and mount the standalone shell.
+ *
+ * @spec openspec/changes/openbuild-connector-widget-runtime/specs/connector-widget-runtime/spec.md#requirement-req-cwr-001-single-runtime-registry-seam-for-every-virtual-app-host
+ * @return {Promise<void>}
+ */
+async function boot() {
+	// Flip the top-bar off the host "Buildiq" identity immediately using the
+	// slug, so there's no visible "Buildiq" flash while the manifest (which
+	// carries the real display name) is still loading.
+	if (slug) {
+		brandTopBar(humaniseSlug(slug), slug)
+	}
+	const loaded = await loadManifest()
 
 	// Normalise pages (config-as-object guard + inline page titles for data pages).
-	normalizeManifestPages(manifest)
+	normalizeManifestPages(loaded)
+	// Name every page and point every menu entry at one, so a manifest written
+	// before page ids existed — or one whose menu carries paths — still opens
+	// with its navigation instead of an empty shell.
+	normalizeManifestRouting(loaded)
+	// Pages bound to an integriq endpoint become pages the renderer draws, in
+	// memory only; the persister restores the authored shape (REQ-BQCB-001).
+	// BuilderHost.vue runs the same normaliser for the preview (REQ-BQCB-004).
+	const manifest = normalizeConnectorPages(loaded)
 
 	// Registers/schemas (+ columns) for the in-app pages editor, passed to CnAppRoot
 	// as a LOADER rather than a pre-fetched snapshot. The modals re-invoke it every
@@ -338,15 +435,19 @@ async function boot() {
 	//
 	// It also stops the fetch happening at boot at all: this list is only ever read
 	// inside an editor modal, which most users never open.
-	const dataSourcesLoader = () =>
+	const dataSourcesLoader = async () =>
 		useRegisterPicker({ appSlug: slug }).fetchDataSources(
-			registerScope(registerSlugForApp(slug, versionSlug), manifest),
+			registerScope(await fetchAppRegister(slug, versionSlug), manifest),
 		)
 
 	const router = createRouter({
 		history: createWebHistory(generateUrl(`/apps/buildiq/builder/${slug}`)),
 		routes: routesFromManifest(manifest),
 	})
+	// A development preview stays on its version while you click through it.
+	keepVersionQuery(router, versionSlug)
+	// Counts of requests, failures and page loads for the app's health section.
+	const healthListener = startHealthReporting({ router, slug, versionSlug })
 
 	// Bumped AFTER a router rebuild that changed the PAGE SET, to remount the
 	// shell's <router-view> (via CnAppRoot's `routerViewKey`). Swapping route
@@ -357,11 +458,7 @@ async function boot() {
 	// only when pages actually change, so menu / settings / sidebar edits never
 	// disturb it.
 	const shellState = reactive({ routerEpoch: 0 })
-	const pageSignature = () =>
-		Array.isArray(manifest.pages)
-			? manifest.pages.map((p) => `${p && p.id}:${p && p.route}`).join('|')
-			: ''
-	let lastPageSig = pageSignature()
+	const persistManifestDelta = manifestPersister(manifest, { router, shellState })
 
 	// Static props for the shell. `routerViewKey` is deliberately NOT in here:
 	// props handed to createApp() are evaluated exactly once, so reading
@@ -372,78 +469,40 @@ async function boot() {
 		appId: `openbuild-${slug}`,
 		// The app's display name — drives the support dialog title etc.
 		// Without it CnAppRoot falls back to the appId ("buildiq-{slug}").
-		appName: manifest.name || manifest.title || slug,
+		appName: appNameOf(manifest),
+		// Buildiq's own support note does not belong on an app a user built.
+		// Off unless the app's author switched it on; see the helper.
+		supportDialog: virtualAppSupportDialog(manifest),
 		manifest,
-		// runtime-group-scoped-access REQ-1: forwarded to CnAppNav /
-		// CnPageRenderer's permission filter — client-side mirror of the
-		// server-side filtering already applied to `manifest.menu`/`pages`.
-		permissions:
-			(manifest.runtime
-				&& manifest.runtime.user
-				&& manifest.runtime.user.permissions)
-			|| [],
+		permissions: runtimePermissions(manifest),
 		isLoading: false,
-		registry: { ...runtimeRegistry },
+		// The canonical runtime registry (REQ-CWR-001): without it every
+		// registry-only widget key (e.g. `connector-data`) renders as
+		// CnUnknownWidget on the published path.
+		registry: getRuntimeRegistry(),
 		pageTypes: { ...defaultPageTypes },
 		// App registers/schemas so the Edit-pages modal offers Register /
 		// Schema / Columns dropdowns for index/detail pages. Re-run on every
 		// modal open, so schemas created after boot appear without a reload.
 		dataSourcesLoader,
 		translate: translateForApp,
-		// Persist in-app edits (pages / menu / settings / sidebar / actions)
-		// back to the app's manifest. CnAppRoot's useManifestEditor mutates
-		// THIS same `manifest` object in place while editing, so on Save we
-		// PUT the full current manifest to the app's save endpoint. Without
-		// a persist handler the editor computes a delta and discards it —
-		// edits would vanish on refresh.
-		persistManifestDelta: async () => {
-			const saveUrl = generateUrl(
-				`/apps/buildiq/api/applications/${slug}/manifest`,
-			)
-			await axios.put(saveUrl, { manifest })
-			// Only touch the router when the PAGE SET actually changed — a
-			// menu / settings / sidebar / actions edit leaves routes intact.
-			const sig = pageSignature()
-			if (sig === lastPageSig) {
-				return
-			}
-			lastPageSig = sig
-			// Rebuild the router from the just-saved manifest so pages added
-			// or re-routed during this edit become navigable immediately.
-			// Best-effort: the manifest is ALREADY persisted by the PUT above,
-			// so a router-build error here (e.g. a duplicate route the user
-			// created) must NOT reject the save — log and move on.
-			try {
-				// vue-router 4 removed the `matcher` swap Vue Router 3 allowed.
-				// Rebuild in place instead: drop every route we added (all are
-				// named — see CATCH_ALL_ROUTE) and re-add from the saved manifest.
-				for (const record of router.getRoutes()) {
-					if (record.name && router.hasRoute(record.name)) {
-						router.removeRoute(record.name)
-					}
-				}
-				for (const record of routesFromManifest(manifest)) {
-					router.addRoute(record)
-				}
-			} catch (e) {
-				// eslint-disable-next-line no-console
-				console.warn(
-					'[buildiq:builder] router rebuild after save failed (edit is saved; reload to pick up new routes)',
-					e,
-				)
-			}
-			// Remount the routed view AFTER the router rebuild so it mounts
-			// the added/removed page routes (see shellState / routerViewKey).
-			shellState.routerEpoch++
-		},
+		// nextcloud-vue's diagnostics channel feeds the health counts.
+		diagnostics: healthListener,
+		persistManifestDelta,
 	}
 
 	// A thin root whose render re-runs on `routerEpoch`, so bumping it remounts
 	// the routed view (CnAppRoot keys its <router-view> on `routerViewKey`).
+	const slots = navSlots(manifest, router)
+
 	const app = createApp({
 		name: 'BuildiqBuilderRoot',
 		render: () =>
-			h(CnAppRoot, { ...shellProps, routerViewKey: shellState.routerEpoch }),
+			h(
+				CnAppRoot,
+				{ ...shellProps, routerViewKey: shellState.routerEpoch },
+				slots,
+			),
 	})
 
 	app.mixin({ methods: { t, n } })

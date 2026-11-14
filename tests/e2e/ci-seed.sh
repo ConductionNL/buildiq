@@ -298,6 +298,11 @@ required = {
         'built-app', 'application-template', 'built-app-route',
         'hello-message', 'applicationVersion', 'export-job',
         # lib/Settings/register.d/10-business-rules.json
+        #
+        # `decision-table` is no longer buildiq's: decision 196 moved the schema
+        # to OpenRegister's decision-tables register. The next line tells gate
+        # 109 so, and gate 109 checks openregister's descriptors for it.
+        # hydra-gate-109 external: decision-table owner=openregister
         'rule-set', 'decision-table', 'condition-action-rule',
         'rule-execution-log', 'rule-test-case',
         # lib/Settings/register.d/40|60|70-*.json
@@ -501,17 +506,18 @@ if [ -f "${SERVER_DIR}/occ" ]; then
 	# evidence on every call and only then writes the completion key, so the
 	# key is an OUTPUT of that computation, never an input to it.
 	#
-	#   seed      done <- seedService->countSeeded() > 0   (occ seed, above)
 	#   store     done <- appconfig registry_url is set
-	#   demo-data done <- appconfig demo_dataset is set   (the CHOICE step)
-	#   load-demo-data
-	#             done <- appconfig demo_data_decided is set, or the chosen
-	#                     dataset is "none", because declining IS an answer
+	#   demo-data done <- appconfig demo_dataset or demo_data_decided is set
+	#                     (one cards step; each card loads itself, and
+	#                     declining IS an answer)
+	#
+	# Seeding the starter templates is an admin settings action now
+	# (wizard-dataset-card-load), not a wizard step; `occ seed` above covers it.
 	#
 	# Since nextcloud-vue 2.21 an OUTSTANDING OPTIONAL step is enough to open
 	# the wizard (nextcloud-vue#806 fixed it short-circuiting on `completed`),
-	# so `store` and `demo-data` being undone is what puts the dialog up — even
-	# though `completed` is true because the required `seed` step is done.
+	# so `store` and `demo-data` being undone is what puts the dialog up, even
+	# though `completed` is true because no step is required.
 	#
 	# `demo_data_decided` is the app's own "dealt with" flag, not "objects
 	# exist": its comment says re-offering the import every visit would make

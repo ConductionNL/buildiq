@@ -278,7 +278,7 @@ export default {
 		 * (spec ai-copilot REQ-OBAIC-001 — hidden entirely when unavailable).
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		copilotAvailable() {
 			return this.copilot.isAvailable.value
@@ -289,7 +289,7 @@ export default {
 		 * only once the health probe has resolved to unavailable.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		showAdminHint() {
 			const isAdmin = !!(
@@ -337,7 +337,7 @@ export default {
 		/**
 		 * Observed behaviour of `slugError` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-2
 		 */
 		slugError() {
 			if (!this.payload.slug) return null
@@ -348,7 +348,7 @@ export default {
 		/**
 		 * Observed behaviour of `isValid` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-2
 		 */
 		isValid() {
 			return (
@@ -370,7 +370,7 @@ export default {
 	 * per session by `useCopilot`, so re-entering this step is cheap.
 	 *
 	 * @return {void}
-	 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+	 * @spec openspec/specs/ai-copilot/spec.md
 	 */
 	created() {
 		this.copilot.checkHealth()
@@ -383,7 +383,7 @@ export default {
 		 *
 		 * @param {string} appSlug - the newly-created app's slug.
 		 * @return {void}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		onAiAppCreated(appSlug) {
 			this.$emit('ai-app-created', appSlug)
@@ -398,7 +398,7 @@ export default {
 		 * @param {InputEvent} event - Native `input` event from the app-name field;
 		 *   `event.target.value` is the new display name (e.g. `Hello World`).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-2
 		 */
 		onNameInput(event) {
 			const name = event.target.value
@@ -422,7 +422,7 @@ export default {
 		 *   `event.target.value` is emitted verbatim (validated elsewhere, not
 		 *   kebab-cased here).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-2
 		 */
 		onSlugInput(event) {
 			this.slugManuallyEdited = true
@@ -435,7 +435,7 @@ export default {
 		 * @param {InputEvent} event - Native `input` event from the description
 		 *   textarea; `event.target.value` is emitted as the payload's `description`.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-2
 		 */
 		onDescriptionInput(event) {
 			this.$emit('update:payload', { description: event.target.value })

@@ -136,9 +136,13 @@
 
 <script>
 import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
 import NcButton from '@nextcloud/vue/components/NcButton'
 import NcLoadingIcon from '@nextcloud/vue/components/NcLoadingIcon'
+import {
+	userDeltaState,
+	userOverridesUrl,
+	userOverrideUrl,
+} from '../../../services/userOverrides.js'
 
 export default {
 	name: 'ManifestWidget',
@@ -228,11 +232,7 @@ export default {
 		async loadOverrideCount() {
 			if (!this.appSlug) return
 			try {
-				const url = generateUrl(
-					'/apps/buildiq/api/app-overrides/{appId}/user-deltas',
-					{ appId: this.appSlug },
-				)
-				const { data } = await axios.get(url)
+				const { data } = await axios.get(userOverridesUrl(this.appSlug))
 				this.userOverrideCount =
 					data && typeof data.total === 'number' ? data.total : 0
 			} catch (e) {
@@ -252,19 +252,11 @@ export default {
 			this.userLoading = true
 			this.error = ''
 			try {
-				const url = generateUrl(
-					'/apps/buildiq/api/app-overrides/{appId}/user',
-					{ appId: this.appSlug },
-				)
-				const { data } = await axios.get(url)
-				this.userDelta = {
-					allowed: !!(data && data.allowed),
-					exists: !!(data && data.exists),
-					versionUuid: (data && data.versionUuid) || null,
-				}
+				const { data } = await axios.get(userOverrideUrl(this.appSlug))
+				this.userDelta = userDeltaState(data)
 			} catch (e) {
 				// Best-effort: a 401/403 just means no personal layer is available.
-				this.userDelta = { allowed: false, exists: false, versionUuid: null }
+				this.userDelta = userDeltaState(null)
 			} finally {
 				this.userLoading = false
 			}
@@ -282,11 +274,7 @@ export default {
 			this.creating = true
 			this.error = ''
 			try {
-				const url = generateUrl(
-					'/apps/buildiq/api/app-overrides/{appId}/user',
-					{ appId: this.appSlug },
-				)
-				await axios.put(url, {})
+				await axios.put(userOverrideUrl(this.appSlug), {})
 				await this.loadUserDelta()
 				this.$emit('changed')
 			} catch (e) {
@@ -310,11 +298,7 @@ export default {
 			if (!this.appSlug) return
 			this.error = ''
 			try {
-				const url = generateUrl(
-					'/apps/buildiq/api/app-overrides/{appId}/user',
-					{ appId: this.appSlug },
-				)
-				await axios.delete(url)
+				await axios.delete(userOverrideUrl(this.appSlug))
 				await this.loadUserDelta()
 				this.$emit('changed')
 			} catch (e) {

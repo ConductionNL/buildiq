@@ -147,3 +147,113 @@ describe('fetchDataSources — bounded fan-out', () => {
 		expect(schemaCalls).toHaveLength(REGISTERS.length)
 	})
 })
+
+describe('fetchDataSources — output shape', () => {
+	it('pins values, label fallbacks and columns', async () => {
+		global.fetch = vi.fn(async (url) => {
+			if (url.endsWith('/registers/r-id/schemas')) {
+				return {
+					ok: true,
+					json: async () => [
+						{ id: 's-id', properties: { a: {}, b: {} } },
+						{ slug: 's-slug', title: 'S' },
+						{ id: 7, slug: '', title: '' },
+					],
+				}
+			}
+			if (url.includes('/schemas')) {
+				return { ok: false, json: async () => ({}) }
+			}
+			return {
+				ok: true,
+				json: async () => ({ results: [{ id: 'r-id' }, { slug: 'r2', title: 'R2' }] }),
+			}
+		})
+		const { fetchDataSources } = useRegisterPicker()
+		expect(await fetchDataSources(['', 'r-id', null, 'r2'])).toEqual({
+			registers: [
+				{
+					value: 'r-id',
+					label: 'r-id',
+					schemas: [
+						{ value: 's-id', label: 's-id', columns: ['a', 'b'] },
+						{ value: 's-slug', label: 'S', columns: [] },
+						{ value: 7, label: 7, columns: [] },
+					],
+				},
+				{ value: 'r2', label: 'R2', schemas: [] },
+			],
+		})
+	})
+
+	it('answers no registers when the register list fails or is empty', async () => {
+		global.fetch = vi.fn(async () => ({ ok: false, json: async () => ({}) }))
+		expect(await useRegisterPicker().fetchDataSources()).toEqual({ registers: [] })
+		global.fetch = vi.fn(async () => ({ ok: true, json: async () => [] }))
+		expect(await useRegisterPicker().fetchDataSources(['x'])).toEqual({ registers: [] })
+	})
+
+	it('answers no registers in scope when the scope names none of them', async () => {
+		stubFetch()
+		expect(await useRegisterPicker().fetchDataSources(['nope'])).toEqual({
+			registers: [],
+		})
+	})
+})
+
+describe('fetchRegisters — ordering edges', () => {
+	/**
+	 * Answer the register list with these entries.
+	 *
+	 * @param {Array} list - the registers.
+	 * @return {void}
+	 */
+	function answer(list) {
+		global.fetch = vi.fn(async () => ({ ok: true, json: async () => ({ results: list }) }))
+	}
+
+	it('hoists the per-app register by id, keeps the rest in order', async () => {
+		answer([{ id: 'a' }, { id: 'b' }, { slug: 'c' }, { id: 'p' }])
+		const { fetchRegisters } = useRegisterPicker({ appRegister: 'p' })
+		expect((await fetchRegisters()).map((r) => r.slug || r.id)).toEqual(['p', 'a', 'b', 'c'])
+	})
+
+	it('keeps the first declaration of a binding, labels with ?? and skips empty bindings', async () => {
+		answer([
+			{ slug: 'x' },
+			{ id: 'y' },
+			{ slug: 'z' },
+			{ slug: 'w' },
+			{ slug: 'p' },
+		])
+		const { fetchRegisters } = useRegisterPicker({
+			appRegister: () => 'p',
+			dataRegisters: [
+				null,
+				{ register: 'z', label: '' },
+				{ register: 'y', label: null },
+				{ register: 'z', label: 'second' },
+				{ label: 'no register' },
+			],
+		})
+		expect(await fetchRegisters()).toEqual([
+			{ slug: 'p' },
+			{ slug: 'z', label: 'second' },
+			{ id: 'y', label: 'y' },
+			{ slug: 'x' },
+			{ slug: 'w' },
+		])
+	})
+
+	it('orders bindings without a per-app register, and returns [] for a non-list answer', async () => {
+		answer([{ slug: 'x' }, { slug: 'b' }, { slug: 'a' }])
+		const { fetchRegisters } = useRegisterPicker({
+			dataRegisters: [{ register: 'a' }, { register: 'b' }],
+		})
+		expect((await fetchRegisters()).map((r) => r.slug)).toEqual(['a', 'b', 'x'])
+		answer('nope')
+		expect(await fetchRegisters()).toEqual([])
+		global.fetch = vi.fn(async () => ({ ok: true, json: async () => null }))
+		expect(await fetchRegisters()).toEqual([])
+	})
+})

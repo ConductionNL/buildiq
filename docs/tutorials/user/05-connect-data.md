@@ -1,57 +1,62 @@
 ---
 sidebar_position: 5
 title: Connect a register or connector
-description: Point a page at an existing OpenRegister register, or pull data from an external system via OpenConnector.
+description: Point a page at an OpenRegister register, or read from an external system through an OpenConnector source.
 ---
 
 # Connect a register or connector
 
-A virtual app does not have to own its data. Buildiq pages can read from any OpenRegister register on the same Nextcloud, or from any **OpenConnector** source (HTTP API, database, file feed) the admin has wired up.
+An app does not have to own its data. A Buildiq page reads from any OpenRegister register on this Nextcloud. It can also read from an OpenConnector source: an HTTP API, a database or a file feed an admin has wired up.
 
 ## Goal
 
-By the end you will have re-pointed one of your pages at a different register (or at an external source through OpenConnector), and seen the page list rows from there.
+By the end you will have pointed one index page at a different register, or at an external source, and seen the live preview list rows from there.
 
 ## Prerequisites
 
-- A virtual app with at least one *index* page (see [Design a page](./04-design-page.md)).
-- The register or connector you want to read from exists on the Nextcloud. OpenConnector sources are managed under **Connector → Sources**; ask an admin if the source you need is not there yet.
+- An app with at least one index page (see [Design a page](./04-design-page.md)).
+- The register you want to read from exists on this Nextcloud.
+- For an external source: the source and its endpoint exist in the connector app. They live under **Connections → Sources** in Integriq, the app formerly called OpenConnector. Ask an admin if the source you need is not there yet.
 
 ## Steps
 
-1. Open the page designer at `/apps/buildiq/builder/\<slug\>/pages` and pick the *index* page you want to re-point.
+1. Open the page designer. Go to **Apps**, open your app, and click the page you want in the **Pages** card. Buildiq opens `/apps/buildiq/builder/{slug}/pages` with that page selected and keeps the version you were on.
 
    ![Page designer with the page selected](/screenshots/tutorials/user/05-connect-data-01.png)
 
-2. In the right-hand editor, find the **Data source** section. By default it is set to *Register* with the virtual app's own register selected.
+2. The editor panel on the right opens on **Index page**. Its first block is **Data source**, with two radio buttons: **OpenRegister** and **OpenConnector**. A new page starts on OpenRegister.
 
-   ![Data source — register mode](/screenshots/tutorials/user/05-connect-data-02.png)
+   ![Data source, register mode](/screenshots/tutorials/user/05-connect-data-02.png)
 
-3. To switch registers, pick a different **Register** and **Schema** from the dropdowns. The preview reloads against the new register; if the schema's columns do not match the columns the page was showing, Buildiq highlights the mismatch.
+3. To read from another register, pick a different **Register** and then a **Schema**. The schema list only fills once a register is chosen. Below them, **Columns** offers every property of the new schema plus the `@self.*` metadata fields, so rebuild the column list after a switch.
 
    ![Switched register](/screenshots/tutorials/user/05-connect-data-03.png)
 
-4. To read from an external source, switch the **Mode** dropdown to *Connector* and pick a **Source** from the second dropdown. OpenConnector sources mediate the call (auth, caching, rate-limit). Pick the **Endpoint** the index should hit.
+4. To read from an external source, choose **OpenConnector**. Pick a **Source**, then an **Endpoint** from that source. Buildiq never sees the credentials: the source mediates authentication, caching and rate limits.
 
    ![Connector source picked](/screenshots/tutorials/user/05-connect-data-04.png)
 
-5. Click **Save pages**. The page now reads from the connector source on every load. The preview pulls a small page of rows so you can confirm the shape matches.
+5. Click **Re-fetch sample** under the pickers. Buildiq pulls one sample payload, shows the list root it found, and lets you add fields with **Add field**. Each field maps a display name to a selector, and shows the sample value it resolves to.
+
+6. Click **Save pages**. The **Validation** panel must be empty first: a connector binding with no endpoint or no fields is listed there and the page renders nothing until you fix it.
 
    ![Page reading from connector](/screenshots/tutorials/user/05-connect-data-05.png)
 
 ## Verification
 
-The connection is good when: the preview lists rows in the right shape (columns populated, no error banner) and switching back to *Run preview* in the live shell shows the same data.
+The connection is good when the **Live preview** below the designer lists rows in the right shape, with columns filled and no error banner, and the **Validation** panel says "No validation errors."
 
 ## Common issues
 
 | Symptom | Fix |
 |---|---|
-| Preview is empty after switching | The connector source returned no rows for this endpoint — check the source under **Connector → Sources** and verify the endpoint URL. |
-| Columns show up as *undefined* | The source's response shape does not match the columns the page expects. Map the response in **Connector → Mappings**, or change the page's columns. |
-| *"Connector source not found"* | The source was deleted or renamed — pick a different source from the dropdown. |
+| **Source** and **Endpoint** are replaced by a plain text box | The connector app is not installed or not enabled here. You can still type an endpoint path, but Buildiq marks the binding unverified and cannot check it. |
+| "No OpenConnector endpoints are configured yet." | The connector app is present but holds no endpoints. Add one under **Connections → Sources** in Integriq first. |
+| "This source has no endpoints yet." | The source exists, the endpoint does not. Pick another source, or add the endpoint in Integriq. |
+| Validation lists `endpoint-required` or `fields-required` | The connector binding is half finished. Pick an endpoint, fetch a sample, and map at least one field. |
+| Switching back to OpenRegister asks to confirm | That is expected. "Switching to OpenRegister discards the OpenConnector mapping." Your field mapping is gone once you confirm. |
 
 ## Reference
 
-- [Design a page](./04-design-page.md) — the page you are re-pointing.
-- [Preview the running app](./06-preview-app.md) — see the data load in the live shell.
+- [Design a page](./04-design-page.md), the page you are repointing.
+- [Preview and run your app](./06-preview-app.md), see the data load in the running app.

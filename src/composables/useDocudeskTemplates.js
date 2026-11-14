@@ -8,8 +8,8 @@
  * fetch/render (spec "Template picker reuses the existing Docudesk-
  * template-list component" / "Template list is shared, not duplicated").
  *
- * @spec openspec/changes/automation-document-action/specs/automation-document-action/spec.md
- * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002
+ * @spec openspec/specs/automation-document-action/spec.md
+ * @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-002
  */
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
@@ -24,7 +24,7 @@ const TEMPLATES_URL = '/apps/filinq/api/templates'
  * @param {object} [opts] - options.
  * @param {Function} [opts.client] - axios-like client injection for tests.
  * @return {Promise<Array<object>>} - the raw template records.
- * @spec openspec/changes/automation-document-action/specs/automation-document-action/spec.md
+ * @spec openspec/specs/automation-document-action/spec.md
  */
 export async function fetchDocudeskTemplates(opts = {}) {
 	const client = (opts && opts.client) || axios
@@ -43,7 +43,7 @@ export async function fetchDocudeskTemplates(opts = {}) {
  *
  * @param {object} tpl - the raw template record.
  * @return {{label: string, uuid: string, name: string}}
- * @spec openspec/changes/automation-document-action/specs/automation-document-action/spec.md
+ * @spec openspec/specs/automation-document-action/spec.md
  */
 export function templateToOption(tpl) {
 	return {

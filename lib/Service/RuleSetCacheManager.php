@@ -24,7 +24,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/business-rules-engine/tasks.md#5.2
+ * @spec openspec/changes/archive/2026-06-14-business-rules-engine/tasks.md#5.2
  */
 
 declare(strict_types=1);

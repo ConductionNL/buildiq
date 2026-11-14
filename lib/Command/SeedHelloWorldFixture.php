@@ -25,11 +25,13 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Command;
 
-use OCA\Buildiq\Service\ApplicationVersionService;
+use OCA\Buildiq\Kernel\Contracts\ApplicationVersionServiceInterface;
+use OCA\Buildiq\Support\UuidV4;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCP\AppFramework\Db\DoesNotExistException;
 use stdClass;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -56,7 +58,7 @@ use Throwable;
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+ * @spec openspec/specs/unified-app-model/spec.md
  */
 class SeedHelloWorldFixture extends Command {
 	/**
@@ -64,14 +66,25 @@ class SeedHelloWorldFixture extends Command {
 	 *
 	 * Aliased to the canonical constant rather than re-declared: a second copy
 	 * of this string is exactly the shape of the bug it exists to prevent.
-	 * See ApplicationVersionService::VERSION_REGISTER_PREFIX for why it is
+	 * See ApplicationVersionServiceInterface::VERSION_REGISTER_PREFIX for why it is
 	 * separate from REGISTER_SLUG and why it stays `openbuild-`.
 	 *
 	 * @var string
 	 */
-	private const VERSION_REGISTER_PREFIX = ApplicationVersionService::VERSION_REGISTER_PREFIX;
+	private const VERSION_REGISTER_PREFIX = ApplicationVersionServiceInterface::VERSION_REGISTER_PREFIX;
 
 	private const SEED_SLUG = 'hello-world';
+
+	/**
+	 * The card text on the Hello World app. Users read it, so it describes
+	 * the app, not the test harness that seeds it.
+	 */
+	private const SEED_DESCRIPTION = 'Your first app: a list of messages, a detail page and a form, all built from one manifest.';
+
+	/**
+	 * Slug of the schema the Hello World pages and sample messages use.
+	 */
+	private const MESSAGE_SCHEMA = 'hello-message';
 
 	private const VERSION_SLUG = 'production';
 
@@ -122,6 +135,13 @@ class SeedHelloWorldFixture extends Command {
 	];
 
 	/**
+	 * Mints the UUIDs objects are created with.
+	 *
+	 * @var UuidV4
+	 */
+	private readonly UuidV4 $uuids;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ObjectServiceInterface $objectService OpenRegister object service.
@@ -134,6 +154,7 @@ class SeedHelloWorldFixture extends Command {
 		private readonly SchemaMapper $schemaMapper,
 	) {
 		parent::__construct();
+		$this->uuids = new UuidV4();
 	}//end __construct()
 
 	/**
@@ -156,10 +177,10 @@ class SeedHelloWorldFixture extends Command {
 	 *
 	 * @return int Command exit code.
 	 *
-	 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+	 * @spec openspec/specs/unified-app-model/spec.md
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
-		$register = ApplicationVersionService::REGISTER_SLUG;
+		$register = ApplicationVersionServiceInterface::REGISTER_SLUG;
 
 		try {
 			// Guard on the Application object (survives disable/enable), not just
@@ -168,6 +189,10 @@ class SeedHelloWorldFixture extends Command {
 			// 404 on the ambiguous slug.
 			if ($this->applicationExists(register: $register) === true || $this->routeExists(register: $register) === true) {
 				$output->writeln('<info>hello-world fixture already present — skipping the virtual app.</info>');
+				// Still ensure the register: installs seeded before this step
+				// existed have the app but no register, and re-running the seed
+				// is how they get one.
+				$this->ensureVersionRegister(output: $output);
 				$this->seedHybridExample(register: $register, output: $output);
 				return Command::SUCCESS;
 			}
@@ -175,11 +200,11 @@ class SeedHelloWorldFixture extends Command {
 			// 1. Application (no productionVersion yet — set after the version exists).
 			$application = $this->create(
 				register: $register,
-				schema: ApplicationVersionService::APPLICATION_SCHEMA,
+				schema: ApplicationVersionServiceInterface::APPLICATION_SCHEMA,
 				data: [
 					'slug' => self::SEED_SLUG,
 					'name' => 'Hello World',
-					'description' => 'Seeded e2e fixture — your first virtual app built from a JSON manifest.',
+					'description' => self::SEED_DESCRIPTION,
 					// Grant the admin user owner rights so automation ops
 					// (compile/enable/dry-run — WRITE_ROLES ['owners','editors'])
 					// are permitted. See SEED_PERMISSIONS.
@@ -191,7 +216,7 @@ class SeedHelloWorldFixture extends Command {
 			// 2. Published version carrying the manifest.
 			$version = $this->create(
 				register: $register,
-				schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA,
+				schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA,
 				data: [
 					'name' => self::SEMVER,
 					'slug' => self::VERSION_SLUG,
@@ -213,11 +238,11 @@ class SeedHelloWorldFixture extends Command {
 			// See the SEED_PERMISSIONS docblock for what that cost.
 			$this->create(
 				register: $register,
-				schema: ApplicationVersionService::APPLICATION_SCHEMA,
+				schema: ApplicationVersionServiceInterface::APPLICATION_SCHEMA,
 				data: [
 					'slug' => self::SEED_SLUG,
 					'name' => 'Hello World',
-					'description' => 'Seeded e2e fixture — your first virtual app built from a JSON manifest.',
+					'description' => self::SEED_DESCRIPTION,
 					'permissions' => self::SEED_PERMISSIONS,
 					'productionVersion' => $versionUuid,
 				],
@@ -239,6 +264,9 @@ class SeedHelloWorldFixture extends Command {
 				$this->create(register: $register, schema: 'hello-message', data: $message);
 			}
 
+			// 6. The per-version register the version above names.
+			$this->ensureVersionRegister(output: $output);
+
 			$output->writeln('<info>Seeded hello-world fixture (application ' . $applicationUuid . ').</info>');
 
 			// Also seed the hybrid example app (unify-apps-with-app-type).
@@ -249,6 +277,63 @@ class SeedHelloWorldFixture extends Command {
 			return Command::FAILURE;
 		}//end try
 	}//end execute()
+
+	/**
+	 * Make sure the per-version register the Hello World version names exists
+	 * and lists the `hello-message` schema.
+	 *
+	 * The version has always pointed at `openbuild-hello-world`, but nothing
+	 * created that register. Every per-app surface that resolves the app's
+	 * register (the Schemas page, `GET /api/registers/openbuild-hello-world/schemas`)
+	 * therefore answered 404, and Hello World showed no schemas at all. The
+	 * wizard provisions this register for every app it creates; the seed has
+	 * to do the same for the one app it writes by hand.
+	 *
+	 * The schema is SHARED with the `buildiq` register, not copied: the
+	 * manifest pages and the sample messages keep reading `buildiq`, so no
+	 * existing data moves. Re-running is a no-op once the register exists and
+	 * lists the schema.
+	 *
+	 * @param OutputInterface $output The command output.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/openbuild-schema-designer/spec.md
+	 */
+	private function ensureVersionRegister(OutputInterface $output): void {
+		$registerSlug = self::VERSION_REGISTER_PREFIX . self::SEED_SLUG;
+		$schemaId = $this->schemaMapper->find(self::MESSAGE_SCHEMA, _multitenancy: false)->getId();
+
+		try {
+			$register = $this->registerMapper->find($registerSlug, _multitenancy: false);
+		} catch (DoesNotExistException) {
+			$register = $this->registerMapper->createFromArray(
+				[
+					'slug' => $registerSlug,
+					'title' => 'Buildiq — ' . self::SEED_SLUG . ' (' . self::VERSION_SLUG . ')',
+					'description' => 'Per-version schema namespace for Buildiq app `' . self::SEED_SLUG . '`.',
+					'version' => '0.1.0',
+					'schemas' => [],
+				]
+			);
+			$output->writeln('<info>Created register ' . $registerSlug . '.</info>');
+		}
+
+		$schemas = $register->getSchemas();
+		if (is_array($schemas) === false) {
+			$schemas = [];
+		}
+
+		$listed = array_map(static fn ($id): string => (string)$id, $schemas);
+		if (in_array((string)$schemaId, $listed, true) === true) {
+			return;
+		}
+
+		$schemas[] = $schemaId;
+		$register->setSchemas(array_values($schemas));
+		$this->registerMapper->update($register);
+		$output->writeln('<info>Added the ' . self::MESSAGE_SCHEMA . ' schema to register ' . $registerSlug . '.</info>');
+	}//end ensureVersionRegister()
 
 	/**
 	 * Idempotently seed one HYBRID example app (unify-apps-with-app-type): a
@@ -264,7 +349,7 @@ class SeedHelloWorldFixture extends Command {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+	 * @spec openspec/specs/unified-app-model/spec.md
 	 */
 	private function seedHybridExample(string $register, OutputInterface $output): void {
 		if ($this->hybridExists(register: $register) === true) {
@@ -314,7 +399,7 @@ class SeedHelloWorldFixture extends Command {
 
 		$version = $this->create(
 			register: $register,
-			schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA,
+			schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA,
 			data: [
 				'name' => 'Production',
 				'slug' => self::VERSION_SLUG,
@@ -345,7 +430,7 @@ class SeedHelloWorldFixture extends Command {
 		// by construction rather than bypassed.
 		$this->create(
 			register: $register,
-			schema: ApplicationVersionService::APPLICATION_SCHEMA,
+			schema: ApplicationVersionServiceInterface::APPLICATION_SCHEMA,
 			data: [
 				'slug' => self::HYBRID_SLUG,
 				'name' => 'OpenCatalogi',
@@ -363,29 +448,16 @@ class SeedHelloWorldFixture extends Command {
 	/**
 	 * Generate a UUIDv4.
 	 *
-	 * Same implementation as ExportJobService::uuid4() — kept local because this
-	 * command must not take a service dependency for one identifier, and the
-	 * seeder needs the parent Application's UUID BEFORE the object exists (see
-	 * seedHybridExample()).
+	 * The seeder needs the parent Application's UUID BEFORE the object exists
+	 * (see seedHybridExample()). Minted by {@see UuidV4}, the generator
+	 * ExportJobService uses too, which needs no service dependency.
 	 *
 	 * @return string UUIDv4 in canonical 8-4-4-4-12 form.
 	 *
-	 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+	 * @spec openspec/specs/unified-app-model/spec.md
 	 */
 	private function uuid4(): string {
-		$data = random_bytes(16);
-		$data[6] = chr((ord($data[6]) & 0x0F) | 0x40);
-		$data[8] = chr((ord($data[8]) & 0x3F) | 0x80);
-		$hex = bin2hex($data);
-
-		return sprintf(
-			'%s-%s-%s-%s-%s',
-			substr($hex, 0, 8),
-			substr($hex, 8, 4),
-			substr($hex, 12, 4),
-			substr($hex, 16, 4),
-			substr($hex, 20, 12)
-		);
+		return $this->uuids->generate();
 	}//end uuid4()
 
 	/**
@@ -398,7 +470,7 @@ class SeedHelloWorldFixture extends Command {
 	private function hybridExists(string $register): bool {
 		$registerId = $this->registerMapper->find($register, _multitenancy: false)->getId();
 		$appSchema = $this->schemaMapper->find(
-			ApplicationVersionService::APPLICATION_SCHEMA,
+			ApplicationVersionServiceInterface::APPLICATION_SCHEMA,
 			_multitenancy: false
 		)->getId();
 		$apps = $this->objectService->searchObjects(
@@ -468,7 +540,7 @@ class SeedHelloWorldFixture extends Command {
 	 */
 	private function applicationExists(string $register): bool {
 		$registerId = $this->registerMapper->find($register, _multitenancy: false)->getId();
-		$appSchema = $this->schemaMapper->find(ApplicationVersionService::APPLICATION_SCHEMA, _multitenancy: false)->getId();
+		$appSchema = $this->schemaMapper->find(ApplicationVersionServiceInterface::APPLICATION_SCHEMA, _multitenancy: false)->getId();
 		$apps = $this->objectService->searchObjects(
 			['@self' => ['register' => $registerId, 'schema' => $appSchema], 'slug' => self::SEED_SLUG],
 			_rbac: false,
@@ -484,7 +556,7 @@ class SeedHelloWorldFixture extends Command {
 	 * @return array<string, mixed>
 	 */
 	private function buildManifest(): array {
-		$reg = ApplicationVersionService::REGISTER_SLUG;
+		$reg = ApplicationVersionServiceInterface::REGISTER_SLUG;
 		return [
 			'version' => self::SEMVER,
 			'dependencies' => ['openregister'],

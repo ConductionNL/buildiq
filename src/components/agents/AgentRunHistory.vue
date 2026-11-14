@@ -182,14 +182,11 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../assets/editor-controls.scss' as c;
+
 .agent-run-history__list {
-	list-style: none;
-	margin: 0;
-	padding: 0;
-	display: flex;
-	flex-direction: column;
-	gap: 12px;
+	@include c.plain-list(12px);
 }
 
 .agent-run-history__run {
@@ -235,12 +232,7 @@ export default {
 }
 
 .agent-run-history__tool-calls {
-	list-style: none;
-	margin: 0;
-	padding: 0;
-	display: flex;
-	flex-direction: column;
-	gap: 6px;
+	@include c.plain-list(6px);
 }
 
 .agent-run-history__tool-json {

@@ -21,10 +21,11 @@ import { generateUrl } from '@nextcloud/router'
  *  - Unresolved selectors yield `null` cells + one console warning per field
  *    per mount; never throws into the render path.
  *
- * @spec openspec/changes/openconnector-api-sources/tasks.md#task-4.1
+ * @spec openspec/changes/archive/2026-06-14-openconnector-api-sources/tasks.md#task-4.1
  */
 import { ref } from 'vue'
 import { cacheKey, readThrough, ttlToMs } from '../services/connectorCache.js'
+import { fleetAppPath } from '../services/fleetAppId.js'
 import { extractItems, projectFields } from '../services/selectors.js'
 
 /**
@@ -38,7 +39,7 @@ import { extractItems, projectFields } from '../services/selectors.js'
  * @return {{ loading: import('vue').Ref<boolean>, data: import('vue').Ref<*>,
  *   error: import('vue').Ref<?Error>, isStale: import('vue').Ref<boolean>,
  *   retry: Function, load: Function }}
- * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006
+ * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-006
  */
 export function useConnectorDataSource(opts = {}) {
 	const appId = opts.appId || ''
@@ -84,7 +85,7 @@ export function useConnectorDataSource(opts = {}) {
 		// endpointPath is validated builder-side to be scheme/host-free; the
 		// runtime call is always same-origin to OpenConnector.
 		const path = String(binding.endpointPath || '').replace(/^\/+/, '')
-		const url = generateUrl(`/apps/openconnector/api/endpoint/${path}`)
+		const url = generateUrl(fleetAppPath('integriq', `api/endpoint/${path}`))
 		const response = await client.get(url, {
 			params: binding.query || {},
 		})

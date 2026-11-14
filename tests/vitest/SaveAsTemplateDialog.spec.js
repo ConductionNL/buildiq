@@ -196,4 +196,59 @@ describe('SaveAsTemplateDialog.vue', () => {
 		expect(wrapper.vm.slugError).toBe('slug-taken')
 		expect(wrapper.vm.canSave).toBe(false)
 	})
+
+	it('falls back to the record uuid for the update-in-place url', async () => {
+		const existing = [{ slug: 'my-permits', isSeeded: false, version: '1.0.0', uuid: 'tpl uuid' }]
+		const wrapper = mountDialog({ existingTemplates: existing })
+		await wrapper.vm.$nextTick()
+		axiosMock.put.mockResolvedValueOnce({ data: {} })
+
+		await wrapper.vm.save()
+
+		expect(axiosMock.put.mock.calls[0][0]).toBe(
+			'/apps/openregister/api/objects/buildiq/application-template/tpl%20uuid',
+		)
+	})
+
+	it('offers the four template categories with their labels', () => {
+		const wrapper = mountDialog()
+
+		expect(wrapper.vm.categoryOptions.map((o) => o.label)).toEqual([
+			'Government services',
+			'Internal operations',
+			'Citizen engagement',
+			'Field work',
+		])
+		expect(wrapper.vm.categoryOption.id).toBe('government-services')
+	})
+
+	it('clears the collision message once the schemas no longer collide', async () => {
+		const wrapper = mountDialog({
+			schemas: [
+				{ slug: 'my-permits-tasks', title: 'Tasks', properties: {} },
+				{ slug: 'tasks', title: 'Shared', properties: {} },
+			],
+		})
+		expect(wrapper.vm.collisionError).toBe('my-permits-tasks, tasks')
+
+		await wrapper.setProps({ schemas })
+		expect(wrapper.vm.collisionError).toBe('')
+	})
+
+	it.each([
+		[{ response: { data: { detail: 'D', error: 'E' } }, message: 'M' }, 'D'],
+		[{ response: { data: { error: 'E' } }, message: 'M' }, 'E'],
+		[{ message: 'M' }, 'M'],
+		[{}, 'Saving the template failed.'],
+	])('reports a failed save as %j -> %s', async (error, expected) => {
+		const wrapper = mountDialog()
+		await wrapper.vm.$nextTick()
+		axiosMock.post.mockRejectedValueOnce(error)
+
+		await wrapper.vm.save()
+
+		expect(wrapper.vm.saveError).toBe(expected)
+		expect(wrapper.vm.saving).toBe(false)
+		expect(wrapper.emitted('saved')).toBeUndefined()
+	})
 })

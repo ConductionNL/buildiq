@@ -21,6 +21,9 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://conduction.nl
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -93,5 +96,44 @@ class DecisionTableEvaluator {
 	 * @return array{outputs: array<string, mixed>, matchedRuleIds: array<int, string>, hitPolicy: string}
 	 */
 	public function evaluate(array $decisionTable, array $inputs): array {
+	}
+}
+
+/**
+ * OpenRegister's reader of stored decision tables (openregister#4572).
+ */
+class DecisionTableStore {
+
+	/**
+	 * The register the tables live in.
+	 */
+	public const REGISTER = 'decision-tables';
+
+	/**
+	 * The schema of one table.
+	 */
+	public const SCHEMA = 'decision-table';
+
+	/**
+	 * The table a reference names.
+	 *
+	 * @param string $reference The table's key or uuid.
+	 *
+	 * @return array<string, mixed> The stored table.
+	 *
+	 * @throws \UnexpectedValueException When no table carries the reference.
+	 */
+	public function find(string $reference): array {
+	}
+
+	/**
+	 * Evaluate the table a reference names.
+	 *
+	 * @param string               $reference The table's key or uuid.
+	 * @param array<string, mixed> $inputs    Named input values.
+	 *
+	 * @return array{outputs: array<string, mixed>, matchedRuleIds: array<int, string>, hitPolicy: string, tableKey: string}
+	 */
+	public function evaluate(string $reference, array $inputs): array {
 	}
 }

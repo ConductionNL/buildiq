@@ -111,6 +111,109 @@ function nextKey() {
 	return `follow-up-${keyCounter}`
 }
 
+/**
+ * The editor's subject fields from a stored `subject`, '' for a missing one.
+ *
+ * @param {object|undefined} subject - the stored `{en, nl}` subject.
+ * @return {{subjectEn: string, subjectNl: string}}
+ */
+function subjectFields(subject) {
+	const s = subject || {}
+	return { subjectEn: s.en || '', subjectNl: s.nl || '' }
+}
+
+/**
+ * A stored JSON part as pretty-printed editor text; `{}` when missing.
+ *
+ * @param {object|undefined} value - the stored object.
+ * @return {string}
+ */
+function jsonText(value) {
+	return JSON.stringify(value || {}, null, 2)
+}
+
+/**
+ * Parse an editor JSON text; `{}` when empty or invalid.
+ *
+ * @param {string} text - the editor text.
+ * @return {object}
+ */
+function parseJsonText(text) {
+	try {
+		return JSON.parse(text || '{}')
+	} catch (e) {
+		return {}
+	}
+}
+
+/**
+ * The stored shape of a send-notification action.
+ *
+ * @param {object} item - the flat editor item.
+ * @return {object}
+ */
+function notificationRecord(item) {
+	return {
+		type: 'send-notification',
+		subject: { en: item.subjectEn, nl: item.subjectNl },
+	}
+}
+
+/**
+ * The stored shape of an object-op action.
+ *
+ * @param {object} item - the flat editor item.
+ * @return {object}
+ */
+function objectOpRecord(item) {
+	const fieldMapping = parseJsonText(item.fieldMappingText)
+	const objectOp = {
+		type: 'object-op',
+		operation: item.operation,
+		schema: item.schema,
+	}
+	// OpenRegister rejects `{}` (and `null`) for a nested array-item
+	// object property — "expects object but got empty ({})" — so an
+	// empty mapping must be OMITTED, not sent as an empty object.
+	if (Object.keys(fieldMapping).length > 0) {
+		objectOp.fieldMapping = fieldMapping
+	}
+	return objectOp
+}
+
+/**
+ * The stored shape of a webhook action (also every unknown type).
+ *
+ * @param {object} item - the flat editor item.
+ * @return {object}
+ */
+function webhookRecord(item) {
+	const payloadTemplate = parseJsonText(item.payloadTemplateText)
+	const webhook = { type: 'webhook', url: item.url }
+	// Same OpenRegister empty-nested-object rejection as fieldMapping above.
+	if (Object.keys(payloadTemplate).length > 0) {
+		webhook.payloadTemplate = payloadTemplate
+	}
+	return webhook
+}
+
+/** The record builder per action type; any other type is a webhook. */
+const ACTION_RECORD_BUILDERS = new Map([
+	['send-notification', notificationRecord],
+	['object-op', objectOpRecord],
+])
+
+/**
+ * Build the persisted action-record shape of one flat editor item.
+ *
+ * @param {object} item - the flat editor item.
+ * @return {object}
+ */
+function toActionRecord(item) {
+	const build = ACTION_RECORD_BUILDERS.get(item.type) || webhookRecord
+	return build(item)
+}
+
 export default {
 	name: 'AutomationActionListEditor',
 	components: { NcButton, NcSelect, NcTextArea, NcTextField },
@@ -178,21 +281,16 @@ export default {
 		 * @return {object}
 		 */
 		toEditorShape(action) {
-			const subject = action.subject || {}
+			const subject = subjectFields(action.subject)
 			return {
 				_key: nextKey(),
 				type: action.type || 'send-notification',
-				subjectEn: subject.en || '',
-				subjectNl: subject.nl || '',
+				...subject,
 				operation: action.operation || 'update',
 				schema: action.schema || '',
-				fieldMappingText: JSON.stringify(action.fieldMapping || {}, null, 2),
+				fieldMappingText: jsonText(action.fieldMapping),
 				url: action.url || '',
-				payloadTemplateText: JSON.stringify(
-					action.payloadTemplate || {},
-					null,
-					2,
-				),
+				payloadTemplateText: jsonText(action.payloadTemplate),
 			}
 		},
 
@@ -243,46 +341,7 @@ export default {
 		 * @return {Array}
 		 */
 		emittedValue() {
-			return this.items.map((item) => {
-				if (item.type === 'send-notification') {
-					return {
-						type: 'send-notification',
-						subject: { en: item.subjectEn, nl: item.subjectNl },
-					}
-				}
-				if (item.type === 'object-op') {
-					let fieldMapping = {}
-					try {
-						fieldMapping = JSON.parse(item.fieldMappingText || '{}')
-					} catch (e) {
-						fieldMapping = {}
-					}
-					const objectOp = {
-						type: 'object-op',
-						operation: item.operation,
-						schema: item.schema,
-					}
-					// OpenRegister rejects `{}` (and `null`) for a nested array-item
-					// object property — "expects object but got empty ({})" — so an
-					// empty mapping must be OMITTED, not sent as an empty object.
-					if (Object.keys(fieldMapping).length > 0) {
-						objectOp.fieldMapping = fieldMapping
-					}
-					return objectOp
-				}
-				let payloadTemplate = {}
-				try {
-					payloadTemplate = JSON.parse(item.payloadTemplateText || '{}')
-				} catch (e) {
-					payloadTemplate = {}
-				}
-				const webhook = { type: 'webhook', url: item.url }
-				// Same OpenRegister empty-nested-object rejection as fieldMapping above.
-				if (Object.keys(payloadTemplate).length > 0) {
-					webhook.payloadTemplate = payloadTemplate
-				}
-				return webhook
-			})
+			return this.items.map(toActionRecord)
 		},
 
 		emit() {

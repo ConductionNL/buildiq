@@ -6,13 +6,13 @@
   "category": "field-work",
   "screenshotUrl": "img/templates/incident-reporter.svg",
   "isSeeded": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "manifest": {
     "version": "1.0.0",
     "dependencies": ["openregister"],
     "menu": [
-      { "label": "Report", "route": "/report" },
-      { "label": "Incidents", "route": "/incidents" }
+      { "label": "Report", "route": "IncidentForm" },
+      { "label": "Incidents", "route": "Incidents" }
     ],
     "pages": [
       {

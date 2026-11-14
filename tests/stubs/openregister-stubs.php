@@ -3,6 +3,9 @@
 /**
  * OpenRegister test stubs.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Provides minimal class declarations for the OpenRegister types that
  * Buildiq's controllers, services, repair steps and listeners reference
  * by hard-typed constructor parameters or return types. These stubs are
@@ -30,9 +33,6 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://conduction.nl
- *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
  */
 
 declare(strict_types=1);
@@ -100,6 +100,211 @@ namespace OCA\OpenRegister\Contract {
 			public function getOwner(): ?string;
 		}//end interface
 	}
+
+}
+
+namespace OCA\OpenRegister\Kernel\Contracts {
+
+	// Autoload is ALLOWED here, as for the Contract interfaces above: in-container
+	// the real interface wins, and the Db stubs below implement it. Without that
+	// `implements`, a stub that took the class name breaks every real openregister
+	// service whose contract returns the interface (TaskService::assign() returns
+	// Task where TaskManagerInterface promises TaskInterface: a fatal at load).
+	// Each interface mirrors the real method list, so the stubs that implement it
+	// satisfy the same contract out-of-container as in-container.
+	if (interface_exists(TaskInterface::class) === false) {
+		/**
+		 * Stub TaskInterface, mirroring lib/Kernel/Contracts/TaskInterface.php.
+		 */
+		interface TaskInterface extends \JsonSerializable {
+
+			public const PERFORMER_USER = 'user';
+
+			public const PERFORMER_GROUP = 'group';
+
+			public const PERFORMER_AGENT = 'agent';
+
+			public const PERFORMER_WORKER = 'worker';
+
+			public const PERFORMER_EXTERNAL = 'external';
+
+			public const EXTERNAL_PARTY_PREFIX = 'party:';
+
+			public const PERFORMER_TYPES = [
+				self::PERFORMER_USER,
+				self::PERFORMER_GROUP,
+				self::PERFORMER_AGENT,
+				self::PERFORMER_WORKER,
+				self::PERFORMER_EXTERNAL,
+			];
+
+			public function isInTerminalState(): bool;
+
+			public function hydrate(array $object): self;
+
+			public function jsonSerialize(): array;
+		}//end interface
+	}//end if
+
+	if (interface_exists(RegisterInterface::class) === false) {
+		/**
+		 * Stub RegisterInterface, mirroring lib/Kernel/Contracts/RegisterInterface.php.
+		 */
+		interface RegisterInterface extends \JsonSerializable {
+
+			public function getSchemas(): array;
+
+			public function setSchemas($schemas): static;
+
+			public function addSchemaId(int $schemaId): bool;
+
+			public function getJsonFields(): array;
+
+			public function hydrate(array $object): static;
+
+			public function jsonSerialize(): array;
+
+			public function __toString(): string;
+
+			public function isManagedByConfiguration(array $configurations): bool;
+
+			public function getDefaultLanguage(): string;
+
+			public function hasLanguage(string $language): bool;
+
+			public function getConfiguration(): array;
+
+			public function setConfiguration(array|string|null $configuration): void;
+
+			public function isMagicMappingEnabledForSchema(int $schemaId, ?string $schemaSlug = null): bool;
+
+			public function isAutoCreateTableEnabledForSchema(int $schemaId, ?string $schemaSlug = null): bool;
+
+			public function enableMagicMappingForSchema(int $schemaId, bool $autoCreateTable = true, ?string $comment = null): static;
+
+			public function disableMagicMappingForSchema(int $schemaId): static;
+
+			public function getSchemasWithMagicMapping(): array;
+		}//end interface
+	}//end if
+
+	if (interface_exists(SchemaInterface::class) === false) {
+		/**
+		 * Stub SchemaInterface, mirroring lib/Kernel/Contracts/SchemaInterface.php.
+		 */
+		interface SchemaInterface extends \JsonSerializable {
+
+			public function getRequired(): array;
+
+			public function setRequired(array|string|null $required): void;
+
+			public function getProperties(): array;
+
+			public function hasPropertyAuthorization(): bool;
+
+			public function getPropertyAuthorization(string $propertyName): ?array;
+
+			public function getPropertiesWithAuthorization(): array;
+
+			public function hasWriteOnlyProperties(): bool;
+
+			public function getWriteOnlyProperties(): array;
+
+			public function hasWriteOnlyPaths(): bool;
+
+			public function getWriteOnlyPaths(): array;
+
+			public function hasEncryptedProperties(): bool;
+
+			public function getEncryptedProperties(): array;
+
+			public function getArchive(): array;
+
+			public function getJsonFields(): array;
+
+			public function validateAuthorization(): bool;
+
+			public function hasPermission(string $groupId, string $action, ?string $userId = null, ?string $userGroup = null, ?string $objectOwner = null, ?array $objectData = null, ?string $objectOrganisation = null, ?string $activeOrganisation = null): bool;
+
+			public function getAuthorizedGroups(string $action): array;
+
+			public function jsonSerialize(): array;
+
+			public function getSchemaObject(\OCP\IURLGenerator $urlGenerator): \stdClass;
+
+			public function setSlug(?string $slug): void;
+
+			public function getIcon(): ?string;
+
+			public function setIcon(?string $icon): void;
+
+			public function getUpsertKeys(): array;
+
+			public function getConfiguration(): ?array;
+
+			public function getCalendarProviderConfig(): ?array;
+
+			public function getObjectSource(): ?array;
+
+			public function getLenses(): array;
+
+			public function getListPresentation(): array;
+
+			public function getGeoInheritance(): array;
+
+			public function isContextChatIndexingEnabled(): bool;
+
+			public function setConfiguration($configuration): void;
+
+			public function consumeDroppedAnnotationKeys(): array;
+
+			public function getLinkRoles(): array;
+
+			public function getPartyKinds(): array;
+
+			public function getPartyAnnotation(): array;
+
+			public function getLinkedTypes(): array;
+
+			public function isSearchable(): bool;
+
+			public function setSearchable(bool $searchable): void;
+
+			public function isSmartPickerEnabled(): bool;
+
+			public function setSmartPickerEnabled(bool $smartPickerEnabled): void;
+
+			public function isAppendOnly(): bool;
+
+			public function hasArchivalAnnotation(): bool;
+
+			public function isArchivingEnabled(): bool;
+
+			public function notSuppliedReasons(): array;
+
+			public function __toString(): string;
+
+			public function getFacets(): ?array;
+
+			public function setFacets(array|string|null $facets): void;
+
+			public function regenerateFacetsFromProperties(): void;
+
+			public function getAllOf(): ?array;
+
+			public function setAllOf(?array $allOf): void;
+
+			public function getOneOf(): ?array;
+
+			public function setOneOf(?array $oneOf): void;
+
+			public function getAnyOf(): ?array;
+
+			public function setAnyOf(?array $anyOf): void;
+
+			public function isManagedByConfiguration(array $configurations): bool;
+		}//end interface
+	}//end if
 
 }
 
@@ -252,7 +457,7 @@ namespace OCA\OpenRegister\Db {
 		 * declarations here satisfy PHPUnit 10's MethodCannotBeConfiguredException.
 		 * `getSchemas()`/`setSchemas()` are real methods on the OR class.
 		 */
-		class Register extends \OCP\AppFramework\Db\Entity {
+		class Register extends \OCP\AppFramework\Db\Entity implements \OCA\OpenRegister\Kernel\Contracts\RegisterInterface {
 
 			/**
 			 * Stub slug column.
@@ -267,6 +472,27 @@ namespace OCA\OpenRegister\Db {
 			 * @var array<int, int>|null
 			 */
 			protected ?array $schemas = [];
+
+			/**
+			 * Stub title column.
+			 *
+			 * @var string|null
+			 */
+			protected ?string $title = null;
+
+			/**
+			 * Stub language list column.
+			 *
+			 * @var array<int, string>|null
+			 */
+			protected ?array $languages = null;
+
+			/**
+			 * Stub configuration column.
+			 *
+			 * @var array<string, mixed>|null
+			 */
+			protected ?array $configuration = null;
 
 			/**
 			 * Return the entity id.
@@ -302,6 +528,197 @@ namespace OCA\OpenRegister\Db {
 				$this->schemas = (array)$schemas;
 				return $this;
 			}//end setSchemas()
+
+			/**
+			 * Add a schema id when it is not listed yet.
+			 *
+			 * @param int $schemaId The schema id.
+			 *
+			 * @return bool True when the id was added.
+			 */
+			public function addSchemaId(int $schemaId): bool {
+				$schemas = $this->getSchemas();
+				if (in_array($schemaId, array_map('intval', $schemas), true) === true) {
+					return false;
+				}
+
+				$schemas[] = $schemaId;
+				$this->schemas = array_values($schemas);
+				return true;
+			}//end addSchemaId()
+
+			/**
+			 * @return array<int, string> The JSON-typed columns.
+			 */
+			public function getJsonFields(): array {
+				return ['schemas', 'languages', 'configuration'];
+			}//end getJsonFields()
+
+			/**
+			 * Hydrate the declared columns from an array.
+			 *
+			 * @param array<string, mixed> $object Data to hydrate from.
+			 *
+			 * @return static This register.
+			 */
+			public function hydrate(array $object): static {
+				foreach (['id', 'slug', 'title', 'schemas', 'languages', 'configuration'] as $field) {
+					if (array_key_exists($field, $object) === true) {
+						$this->$field = $object[$field];
+					}
+				}
+
+				return $this;
+			}//end hydrate()
+
+			/**
+			 * @return array<string, mixed> The declared columns.
+			 */
+			public function jsonSerialize(): array {
+				return [
+					'id'            => $this->id,
+					'slug'          => $this->slug,
+					'title'         => $this->title,
+					'schemas'       => $this->getSchemas(),
+					'languages'     => $this->languages,
+					'configuration' => $this->getConfiguration(),
+				];
+			}//end jsonSerialize()
+
+			/**
+			 * @return string The title, else the slug.
+			 */
+			public function __toString(): string {
+				return (string)($this->title ?? $this->slug ?? '');
+			}//end __toString()
+
+			/**
+			 * @param array<int, object> $configurations Configuration entities.
+			 *
+			 * @return bool Always false: the stub has no configuration link.
+			 */
+			public function isManagedByConfiguration(array $configurations): bool {
+				return false;
+			}//end isManagedByConfiguration()
+
+			/**
+			 * @return string The first language, `nl` by default.
+			 */
+			public function getDefaultLanguage(): string {
+				return ($this->languages[0] ?? 'nl');
+			}//end getDefaultLanguage()
+
+			/**
+			 * @param string $language The language code.
+			 *
+			 * @return bool Whether the register offers the language.
+			 */
+			public function hasLanguage(string $language): bool {
+				return in_array($language, ($this->languages ?? ['nl']), true);
+			}//end hasLanguage()
+
+			/**
+			 * @return array<string, mixed> The configuration.
+			 */
+			public function getConfiguration(): array {
+				return ($this->configuration ?? []);
+			}//end getConfiguration()
+
+			/**
+			 * @param array<string, mixed>|string|null $configuration An array or JSON string.
+			 *
+			 * @return void
+			 */
+			public function setConfiguration(array|string|null $configuration): void {
+				if (is_string($configuration) === true) {
+					$configuration = json_decode($configuration, true);
+				}
+
+				$this->configuration = is_array($configuration) === true ? $configuration : null;
+			}//end setConfiguration()
+
+			/**
+			 * @param int         $schemaId   The schema id.
+			 * @param string|null $schemaSlug The schema slug.
+			 *
+			 * @return bool Whether the schema's per-schema config enables magic mapping.
+			 */
+			public function isMagicMappingEnabledForSchema(int $schemaId, ?string $schemaSlug = null): bool {
+				return ($this->schemaConfig($schemaId, $schemaSlug)['magicMapping'] ?? false) === true;
+			}//end isMagicMappingEnabledForSchema()
+
+			/**
+			 * @param int         $schemaId   The schema id.
+			 * @param string|null $schemaSlug The schema slug.
+			 *
+			 * @return bool Whether the schema's per-schema config enables table creation.
+			 */
+			public function isAutoCreateTableEnabledForSchema(int $schemaId, ?string $schemaSlug = null): bool {
+				return ($this->schemaConfig($schemaId, $schemaSlug)['autoCreateTable'] ?? false) === true;
+			}//end isAutoCreateTableEnabledForSchema()
+
+			/**
+			 * @param int         $schemaId        The schema id.
+			 * @param bool        $autoCreateTable Whether to create the table.
+			 * @param string|null $comment         Optional note.
+			 *
+			 * @return static This register.
+			 */
+			public function enableMagicMappingForSchema(int $schemaId, bool $autoCreateTable = true, ?string $comment = null): static {
+				$config = $this->getConfiguration();
+				$config['schemas'][$schemaId] = array_filter(
+					['magicMapping' => true, 'autoCreateTable' => $autoCreateTable, 'comment' => $comment],
+					static fn ($value) => $value !== null
+				);
+				$this->configuration = $config;
+				return $this;
+			}//end enableMagicMappingForSchema()
+
+			/**
+			 * @param int $schemaId The schema id.
+			 *
+			 * @return static This register.
+			 */
+			public function disableMagicMappingForSchema(int $schemaId): static {
+				$config = $this->getConfiguration();
+				if (isset($config['schemas'][$schemaId]) === true) {
+					$config['schemas'][$schemaId]['magicMapping'] = false;
+					$this->configuration = $config;
+				}
+
+				return $this;
+			}//end disableMagicMappingForSchema()
+
+			/**
+			 * @return array<int, int> The schema ids with magic mapping on.
+			 */
+			public function getSchemasWithMagicMapping(): array {
+				$ids = [];
+				foreach (($this->getConfiguration()['schemas'] ?? []) as $schemaId => $schemaConfig) {
+					if (($schemaConfig['magicMapping'] ?? false) === true) {
+						$ids[] = (int)$schemaId;
+					}
+				}
+
+				return $ids;
+			}//end getSchemasWithMagicMapping()
+
+			/**
+			 * The per-schema configuration, by slug first, then by id.
+			 *
+			 * @param int         $schemaId   The schema id.
+			 * @param string|null $schemaSlug The schema slug.
+			 *
+			 * @return array<string, mixed> The schema's entry, or an empty array.
+			 */
+			private function schemaConfig(int $schemaId, ?string $schemaSlug): array {
+				$schemas = ($this->getConfiguration()['schemas'] ?? []);
+				if ($schemaSlug !== null && isset($schemas[$schemaSlug]) === true) {
+					return (array)$schemas[$schemaSlug];
+				}
+
+				return (array)($schemas[$schemaId] ?? []);
+			}//end schemaConfig()
 		}//end class
 	}//end if
 
@@ -318,7 +735,7 @@ namespace OCA\OpenRegister\Db {
 		 * ExportService::bundleDataRegisterSchemas(), which reads a bound
 		 * data register's schema definitions.
 		 */
-		class Schema extends \OCP\AppFramework\Db\Entity {
+		class Schema extends \OCP\AppFramework\Db\Entity implements \OCA\OpenRegister\Kernel\Contracts\SchemaInterface {
 
 			/**
 			 * Stub slug column.
@@ -372,6 +789,48 @@ namespace OCA\OpenRegister\Db {
 			 * @var array<string, mixed>|null
 			 */
 			protected ?array $configuration = null;
+
+			/**
+			 * Stub icon column.
+			 *
+			 * @var string|null
+			 */
+			protected ?string $icon = null;
+
+			/**
+			 * Stub facet configuration column.
+			 *
+			 * @var array<string, mixed>|null
+			 */
+			protected ?array $facets = null;
+
+			/**
+			 * Stub allOf composition column.
+			 *
+			 * @var array<int, mixed>|null
+			 */
+			protected ?array $allOf = null;
+
+			/**
+			 * Stub oneOf composition column.
+			 *
+			 * @var array<int, mixed>|null
+			 */
+			protected ?array $oneOf = null;
+
+			/**
+			 * Stub anyOf composition column.
+			 *
+			 * @var array<int, mixed>|null
+			 */
+			protected ?array $anyOf = null;
+
+			/**
+			 * Stub searchable flag column.
+			 *
+			 * @var bool
+			 */
+			protected bool $searchable = true;
 
 			/**
 			 * Return the entity id.
@@ -462,6 +921,462 @@ namespace OCA\OpenRegister\Db {
 			public function getVersion(): string {
 				return (string)($this->version ?? '');
 			}//end getVersion()
+
+			/**
+			 * @param array<int, string>|string|null $required A list or JSON string.
+			 *
+			 * @return void
+			 */
+			public function setRequired(array|string|null $required): void {
+				if (is_string($required) === true) {
+					$required = json_decode($required, true);
+				}
+
+				$this->required = is_array($required) === true ? $required : [];
+			}//end setRequired()
+
+			/**
+			 * @return bool Always false: the stub carries no property authorization.
+			 */
+			public function hasPropertyAuthorization(): bool {
+				return false;
+			}//end hasPropertyAuthorization()
+
+			/**
+			 * @param string $propertyName The property name.
+			 *
+			 * @return array<string, mixed>|null Always null.
+			 */
+			public function getPropertyAuthorization(string $propertyName): ?array {
+				return null;
+			}//end getPropertyAuthorization()
+
+			/**
+			 * @return array<string, mixed> Always empty.
+			 */
+			public function getPropertiesWithAuthorization(): array {
+				return [];
+			}//end getPropertiesWithAuthorization()
+
+			/**
+			 * @return bool Whether a property is marked writeOnly.
+			 */
+			public function hasWriteOnlyProperties(): bool {
+				return $this->getWriteOnlyProperties() !== [];
+			}//end hasWriteOnlyProperties()
+
+			/**
+			 * @return array<int, string> The writeOnly property names.
+			 */
+			public function getWriteOnlyProperties(): array {
+				return $this->propertyNamesWith('writeOnly');
+			}//end getWriteOnlyProperties()
+
+			/**
+			 * @return bool Whether a writeOnly path exists.
+			 */
+			public function hasWriteOnlyPaths(): bool {
+				return $this->hasWriteOnlyProperties();
+			}//end hasWriteOnlyPaths()
+
+			/**
+			 * @return array<int, string> The writeOnly paths (top level only in the stub).
+			 */
+			public function getWriteOnlyPaths(): array {
+				return $this->getWriteOnlyProperties();
+			}//end getWriteOnlyPaths()
+
+			/**
+			 * @return bool Whether a property is marked encrypted.
+			 */
+			public function hasEncryptedProperties(): bool {
+				return $this->getEncryptedProperties() !== [];
+			}//end hasEncryptedProperties()
+
+			/**
+			 * @return array<int, string> The encrypted property names.
+			 */
+			public function getEncryptedProperties(): array {
+				return $this->propertyNamesWith('encrypted');
+			}//end getEncryptedProperties()
+
+			/**
+			 * @return array<string, mixed> Always empty.
+			 */
+			public function getArchive(): array {
+				return [];
+			}//end getArchive()
+
+			/**
+			 * @return array<int, string> The JSON-typed columns.
+			 */
+			public function getJsonFields(): array {
+				return ['required', 'properties', 'configuration', 'facets', 'allOf', 'oneOf', 'anyOf'];
+			}//end getJsonFields()
+
+			/**
+			 * @return bool Always true: the stub has no authorization block to reject.
+			 */
+			public function validateAuthorization(): bool {
+				return true;
+			}//end validateAuthorization()
+
+			/**
+			 * @param string      $groupId            The group.
+			 * @param string      $action             The CRUD action.
+			 * @param string|null $userId             The user.
+			 * @param string|null $userGroup          The user's group.
+			 * @param string|null $objectOwner        The object owner.
+			 * @param array|null  $objectData         The object data.
+			 * @param string|null $objectOrganisation The object organisation.
+			 * @param string|null $activeOrganisation The active organisation.
+			 *
+			 * @return bool Always true: a schema without authorization is open.
+			 *
+			 * @SuppressWarnings(PHPMD.ExcessiveParameterList)
+			 */
+			public function hasPermission(
+				string $groupId,
+				string $action,
+				?string $userId = null,
+				?string $userGroup = null,
+				?string $objectOwner = null,
+				?array $objectData = null,
+				?string $objectOrganisation = null,
+				?string $activeOrganisation = null
+			): bool {
+				return true;
+			}//end hasPermission()
+
+			/**
+			 * @param string $action The CRUD action.
+			 *
+			 * @return array<int, string> Always empty.
+			 */
+			public function getAuthorizedGroups(string $action): array {
+				return [];
+			}//end getAuthorizedGroups()
+
+			/**
+			 * @return array<string, mixed> The declared columns.
+			 */
+			public function jsonSerialize(): array {
+				return [
+					'id'            => $this->id,
+					'slug'          => $this->slug,
+					'title'         => $this->title,
+					'description'   => $this->description,
+					'version'       => $this->version,
+					'icon'          => $this->icon,
+					'required'      => $this->getRequired(),
+					'properties'    => $this->getProperties(),
+					'configuration' => $this->configuration,
+				];
+			}//end jsonSerialize()
+
+			/**
+			 * @param \OCP\IURLGenerator $urlGenerator Unused by the stub.
+			 *
+			 * @return \stdClass The schema as a JSON Schema object.
+			 */
+			public function getSchemaObject(\OCP\IURLGenerator $urlGenerator): \stdClass {
+				return (object)[
+					'type'       => 'object',
+					'title'      => $this->title,
+					'required'   => $this->getRequired(),
+					'properties' => $this->getProperties(),
+				];
+			}//end getSchemaObject()
+
+			/**
+			 * @param string|null $slug The slug.
+			 *
+			 * @return void
+			 */
+			public function setSlug(?string $slug): void {
+				$this->slug = $slug;
+			}//end setSlug()
+
+			/**
+			 * @return string|null The icon.
+			 */
+			public function getIcon(): ?string {
+				return $this->icon;
+			}//end getIcon()
+
+			/**
+			 * @param string|null $icon The icon.
+			 *
+			 * @return void
+			 */
+			public function setIcon(?string $icon): void {
+				$this->icon = $icon;
+			}//end setIcon()
+
+			/**
+			 * @return array<int, string> The configured upsert keys.
+			 */
+			public function getUpsertKeys(): array {
+				return (array)($this->configuration['upsertKeys'] ?? []);
+			}//end getUpsertKeys()
+
+			/**
+			 * @return array<string, mixed>|null The calendar provider block.
+			 */
+			public function getCalendarProviderConfig(): ?array {
+				return $this->configBlock('calendarProvider');
+			}//end getCalendarProviderConfig()
+
+			/**
+			 * @return array<string, mixed>|null The object source block.
+			 */
+			public function getObjectSource(): ?array {
+				return $this->configBlock('objectSource');
+			}//end getObjectSource()
+
+			/**
+			 * @return array<int|string, mixed> The configured lenses.
+			 */
+			public function getLenses(): array {
+				return (array)($this->configuration['lenses'] ?? []);
+			}//end getLenses()
+
+			/**
+			 * @return array<string, mixed> The list presentation block.
+			 */
+			public function getListPresentation(): array {
+				return (array)($this->configuration['listPresentation'] ?? []);
+			}//end getListPresentation()
+
+			/**
+			 * @return array<string, mixed> The geo inheritance block.
+			 */
+			public function getGeoInheritance(): array {
+				return (array)($this->configuration['geoInheritance'] ?? []);
+			}//end getGeoInheritance()
+
+			/**
+			 * @return bool Whether Context Chat indexing is switched on.
+			 */
+			public function isContextChatIndexingEnabled(): bool {
+				return ($this->configuration['contextChatIndexing'] ?? false) === true;
+			}//end isContextChatIndexingEnabled()
+
+			/**
+			 * @return array<int, string> Always empty: the stub drops no annotation keys.
+			 */
+			public function consumeDroppedAnnotationKeys(): array {
+				return [];
+			}//end consumeDroppedAnnotationKeys()
+
+			/**
+			 * @return array<int|string, mixed> The configured link roles.
+			 */
+			public function getLinkRoles(): array {
+				return (array)($this->configuration['linkRoles'] ?? []);
+			}//end getLinkRoles()
+
+			/**
+			 * @return array<int|string, mixed> The configured party kinds.
+			 */
+			public function getPartyKinds(): array {
+				return (array)($this->configuration['partyKinds'] ?? []);
+			}//end getPartyKinds()
+
+			/**
+			 * @return array<string, mixed> The party annotation block.
+			 */
+			public function getPartyAnnotation(): array {
+				return (array)($this->configuration['party'] ?? []);
+			}//end getPartyAnnotation()
+
+			/**
+			 * @return array<int|string, mixed> The configured linked types.
+			 */
+			public function getLinkedTypes(): array {
+				return (array)($this->configuration['linkedTypes'] ?? []);
+			}//end getLinkedTypes()
+
+			/**
+			 * @return bool The searchable flag.
+			 */
+			public function isSearchable(): bool {
+				return $this->searchable;
+			}//end isSearchable()
+
+			/**
+			 * @param bool $searchable The searchable flag.
+			 *
+			 * @return void
+			 */
+			public function setSearchable(bool $searchable): void {
+				$this->searchable = $searchable;
+			}//end setSearchable()
+
+			/**
+			 * @return bool Whether the Smart Picker lists this schema.
+			 */
+			public function isSmartPickerEnabled(): bool {
+				return ($this->configuration['smartPicker'] ?? true) !== false;
+			}//end isSmartPickerEnabled()
+
+			/**
+			 * @param bool $smartPickerEnabled The Smart Picker flag.
+			 *
+			 * @return void
+			 */
+			public function setSmartPickerEnabled(bool $smartPickerEnabled): void {
+				$this->configuration = array_merge(($this->configuration ?? []), ['smartPicker' => $smartPickerEnabled]);
+			}//end setSmartPickerEnabled()
+
+			/**
+			 * @return bool Whether objects are append-only.
+			 */
+			public function isAppendOnly(): bool {
+				return ($this->configuration['appendOnly'] ?? false) === true;
+			}//end isAppendOnly()
+
+			/**
+			 * @return bool Always false: the stub has no archival annotation.
+			 */
+			public function hasArchivalAnnotation(): bool {
+				return false;
+			}//end hasArchivalAnnotation()
+
+			/**
+			 * @return bool Always false.
+			 */
+			public function isArchivingEnabled(): bool {
+				return false;
+			}//end isArchivingEnabled()
+
+			/**
+			 * @return array<int|string, mixed> Always empty.
+			 */
+			public function notSuppliedReasons(): array {
+				return [];
+			}//end notSuppliedReasons()
+
+			/**
+			 * @return string The title, else the slug.
+			 */
+			public function __toString(): string {
+				return (string)($this->title ?? $this->slug ?? '');
+			}//end __toString()
+
+			/**
+			 * @return array<string, mixed>|null The facet configuration.
+			 */
+			public function getFacets(): ?array {
+				return $this->facets;
+			}//end getFacets()
+
+			/**
+			 * @param array<string, mixed>|string|null $facets An array or JSON string.
+			 *
+			 * @return void
+			 */
+			public function setFacets(array|string|null $facets): void {
+				if (is_string($facets) === true) {
+					$facets = json_decode($facets, true);
+				}
+
+				$this->facets = is_array($facets) === true ? $facets : null;
+			}//end setFacets()
+
+			/**
+			 * @return void
+			 */
+			public function regenerateFacetsFromProperties(): void {
+				$this->facets = array_fill_keys(array_keys($this->getProperties()), []);
+			}//end regenerateFacetsFromProperties()
+
+			/**
+			 * @return array<int, mixed>|null The allOf composition.
+			 */
+			public function getAllOf(): ?array {
+				return $this->allOf;
+			}//end getAllOf()
+
+			/**
+			 * @param array<int, mixed>|null $allOf The allOf composition.
+			 *
+			 * @return void
+			 */
+			public function setAllOf(?array $allOf): void {
+				$this->allOf = $allOf;
+			}//end setAllOf()
+
+			/**
+			 * @return array<int, mixed>|null The oneOf composition.
+			 */
+			public function getOneOf(): ?array {
+				return $this->oneOf;
+			}//end getOneOf()
+
+			/**
+			 * @param array<int, mixed>|null $oneOf The oneOf composition.
+			 *
+			 * @return void
+			 */
+			public function setOneOf(?array $oneOf): void {
+				$this->oneOf = $oneOf;
+			}//end setOneOf()
+
+			/**
+			 * @return array<int, mixed>|null The anyOf composition.
+			 */
+			public function getAnyOf(): ?array {
+				return $this->anyOf;
+			}//end getAnyOf()
+
+			/**
+			 * @param array<int, mixed>|null $anyOf The anyOf composition.
+			 *
+			 * @return void
+			 */
+			public function setAnyOf(?array $anyOf): void {
+				$this->anyOf = $anyOf;
+			}//end setAnyOf()
+
+			/**
+			 * @param array<int, object> $configurations Configuration entities.
+			 *
+			 * @return bool Always false: the stub has no configuration link.
+			 */
+			public function isManagedByConfiguration(array $configurations): bool {
+				return false;
+			}//end isManagedByConfiguration()
+
+			/**
+			 * The property names whose definition sets a flag to true.
+			 *
+			 * @param string $flag The property keyword, e.g. `writeOnly`.
+			 *
+			 * @return array<int, string> The property names.
+			 */
+			private function propertyNamesWith(string $flag): array {
+				$names = [];
+				foreach ($this->getProperties() as $name => $definition) {
+					if (is_array($definition) === true && ($definition[$flag] ?? false) === true) {
+						$names[] = (string)$name;
+					}
+				}
+
+				return $names;
+			}//end propertyNamesWith()
+
+			/**
+			 * One array block of the configuration, or null.
+			 *
+			 * @param string $key The configuration key.
+			 *
+			 * @return array<string, mixed>|null The block.
+			 */
+			private function configBlock(string $key): ?array {
+				$block = ($this->configuration[$key] ?? null);
+				return is_array($block) === true ? $block : null;
+			}//end configBlock()
 		}//end class
 	}
 
@@ -707,6 +1622,20 @@ namespace OCA\OpenRegister\Db {
 			public function update(\OCP\AppFramework\Db\Entity $entity): \OCP\AppFramework\Db\Entity {
 				return $entity;
 			}//end update()
+
+			/**
+			 * Resolve schema slugs to ids (mirrors the real
+			 * SchemaMapper::findIdsBySlugs signature — used by
+			 * ApplicationDeletionService to compare a slug-referenced schema
+			 * against ids other registers hold).
+			 *
+			 * @param array<int, string> $slugs Schema slugs to resolve.
+			 *
+			 * @return array<string, array<int, string>> Lower-cased slug => matching ids.
+			 */
+			public function findIdsBySlugs(array $slugs): array {
+				return [];
+			}//end findIdsBySlugs()
 		}//end class
 	}//end if
 
@@ -727,13 +1656,15 @@ namespace OCA\OpenRegister\Db {
 		 */
 		class AuditTrailMapper {
 			/**
-			 * @param array<string, mixed> $context
+			 * Record a non-CRUD action on one object.
+			 *
+			 * @param \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent $event The object, action and context.
 			 *
 			 * @return AuditTrail
 			 */
-			public function createAuditTrailEntry(ObjectEntity $object, string $action, array $context = []): AuditTrail {
+			public function recordObjectEvent(\OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent $event): AuditTrail {
 				return new AuditTrail();
-			}//end createAuditTrailEntry()
+			}//end recordObjectEvent()
 
 			/**
 			 * @param array<int> $schemaIds Schema IDs to aggregate over.
@@ -911,7 +1842,7 @@ namespace OCA\OpenRegister\Db {
 		/**
 		 * Stub Task — the openregister #3302 replacement for ApprovalStep.
 		 */
-		class Task extends \OCP\AppFramework\Db\Entity {
+		class Task extends \OCP\AppFramework\Db\Entity implements \OCA\OpenRegister\Kernel\Contracts\TaskInterface {
 
 			/**
 			 * Stub object column.
@@ -926,6 +1857,60 @@ namespace OCA\OpenRegister\Db {
 			 * @var string|null
 			 */
 			protected ?string $sequenceUuid = null;
+
+			/**
+			 * Stub lifecycle state column.
+			 *
+			 * @var string|null
+			 */
+			protected ?string $state = null;
+
+			/**
+			 * Stub outcome column.
+			 *
+			 * @var string|null
+			 */
+			protected ?string $outcome = null;
+
+			/**
+			 * Whether the task will never move again.
+			 *
+			 * @return bool True for the terminal states of the real lifecycle.
+			 */
+			public function isInTerminalState(): bool {
+				return in_array($this->state, ['completed', 'terminated', 'disabled'], true);
+			}//end isInTerminalState()
+
+			/**
+			 * Hydrate the declared columns from an array.
+			 *
+			 * @param array<string, mixed> $object Data to hydrate from.
+			 *
+			 * @return self This task.
+			 */
+			public function hydrate(array $object): self {
+				foreach (['id', 'objectUuid', 'sequenceUuid', 'state'] as $field) {
+					if (array_key_exists($field, $object) === true) {
+						$this->$field = $object[$field];
+					}
+				}
+
+				return $this;
+			}//end hydrate()
+
+			/**
+			 * Serialise the declared columns.
+			 *
+			 * @return array<string, mixed> The task as plain data.
+			 */
+			public function jsonSerialize(): array {
+				return [
+					'id'           => $this->id,
+					'objectUuid'   => $this->objectUuid,
+					'sequenceUuid' => $this->sequenceUuid,
+					'state'        => $this->state,
+				];
+			}//end jsonSerialize()
 		}//end class
 	}//end if
 
@@ -1491,8 +2476,9 @@ namespace OCA\OpenRegister\Service {
 			 * Scheme-only SSRF guard for unit-test isolation.
 			 *
 			 * Mirrors the real SecurityService logic for scheme validation (rejects
-			 * non-http/https URLs with the same exception) but skips DNS resolution,
-			 * which fails for `.test` / `.example.test` hostnames used in fixtures.
+			 * non-http/https URLs with the same exception) and for a literal IP
+			 * host, but skips DNS resolution of a host name, which fails for
+			 * `.test` / `.example.test` hostnames used in fixtures.
 			 *
 			 * @param string $url The URL to guard.
 			 *
@@ -1511,7 +2497,19 @@ namespace OCA\OpenRegister\Service {
 					throw new \InvalidArgumentException('Only http and https URLs are allowed.');
 				}
 
-				// DNS resolution intentionally skipped in unit-test stub.
+				// A literal IP host is checked exactly as the real guard checks
+				// it, since that needs no DNS: loopback, private (RFC-1918 / ULA)
+				// and reserved or link-local ranges (cloud metadata) are refused.
+				// The real guard also refuses a bracketed IPv6 literal, because
+				// it cannot resolve it; the stub refuses it by its range instead.
+				$host = trim($parts['host'], '[]');
+				if (filter_var($host, FILTER_VALIDATE_IP) !== false
+					&& filter_var($host, FILTER_VALIDATE_IP, (FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) === false
+				) {
+					throw new \InvalidArgumentException('URL resolves to a non-public address and cannot be fetched.');
+				}
+
+				// DNS resolution of a host name is intentionally skipped in the unit-test stub.
 			}//end assertSafeFetchUrl()
 		}//end class
 	}//end if
@@ -1640,6 +2638,46 @@ namespace OCA\OpenRegister\Service\Task {
 		}//end class
 	}//end if
 
+	if (class_exists(ResolvedChain::class, autoload: false) === false) {
+		/**
+		 * Stub ResolvedChain: a compiled approval template and its resolved amount tier.
+		 */
+		final class ResolvedChain {
+
+			/**
+			 * @param array<string, mixed>                  $template      The compiled template.
+			 * @param array<int, array<string, mixed>>|null $tierPositions The resolved amount tier.
+			 */
+			public function __construct(
+				public readonly array $template,
+				public readonly ?array $tierPositions=null,
+			) {
+			}//end __construct()
+		}//end class
+	}//end if
+
+	if (class_exists(SequenceAnchor::class, autoload: false) === false) {
+		/**
+		 * Stub SequenceAnchor: the object an approval is about, who asked and its register.
+		 */
+		final class SequenceAnchor {
+
+			/**
+			 * @param string      $objectUuid  The object the approval is about.
+			 * @param string|null $requesterId Who asked.
+			 * @param int|null    $registerId  The anchor's register.
+			 * @param object|null $provenance  Optional flow provenance.
+			 */
+			public function __construct(
+				public readonly string $objectUuid,
+				public readonly ?string $requesterId=null,
+				public readonly ?int $registerId=null,
+				public readonly ?object $provenance=null,
+			) {
+			}//end __construct()
+		}//end class
+	}//end if
+
 	if (class_exists(TaskSequenceService::class, autoload: false) === false) {
 		/**
 		 * Stub TaskSequenceService — opens an ordered task sequence from a
@@ -1651,21 +2689,12 @@ namespace OCA\OpenRegister\Service\Task {
 			/**
 			 * Stub: provision a sequence from a compiled template.
 			 *
-			 * @param array<string, mixed>                  $template         The compiled template.
-			 * @param string                                $anchorObjectUuid The object the approval is about.
-			 * @param string|null                           $requesterId      Who attempted the transition.
-			 * @param array<int, array<string, mixed>>|null $tierPositions    The resolved amount tier.
-			 * @param int|null                              $registerId       The anchor's register.
+			 * @param ResolvedChain  $chain  The compiled template and the resolved amount tier.
+			 * @param SequenceAnchor $anchor The object the approval is about and who asked.
 			 *
 			 * @return object The provisioned sequence.
 			 */
-			public function provision(
-				array $template,
-				string $anchorObjectUuid,
-				?string $requesterId,
-				?array $tierPositions=null,
-				?int $registerId=null,
-			): object {
+			public function provision(ResolvedChain $chain, SequenceAnchor $anchor): object {
 				return new \stdClass();
 			}//end provision()
 		}//end class
@@ -1743,6 +2772,52 @@ namespace OCA\OpenRegister\Service\Credential {
 	}//end if
 }
 
+namespace OCA\OpenRegister\Service\Lifecycle {
+
+	if (class_exists(TransitionMove::class, autoload: false) === false) {
+		/**
+		 * Stub TransitionMove: the action and the states a transition moved between.
+		 */
+		final class TransitionMove {
+			public function __construct(
+				public readonly string $action,
+				public readonly string $from,
+				public readonly string $to,
+			) {
+			}//end __construct()
+		}//end class
+	}//end if
+
+	if (class_exists(TransitionActor::class, autoload: false) === false) {
+		/**
+		 * Stub TransitionActor: who made a transition.
+		 */
+		final class TransitionActor {
+			public function __construct(
+				public readonly ?string $userId = null,
+				public readonly bool $automatic = false,
+			) {
+			}//end __construct()
+		}//end class
+	}//end if
+}
+
+namespace OCA\OpenRegister\Kernel\Contracts {
+
+	if (class_exists(RegisterSchemaRef::class, autoload: false) === false) {
+		/**
+		 * Stub RegisterSchemaRef: a register and schema reference.
+		 */
+		final class RegisterSchemaRef {
+			public function __construct(
+				public readonly string|int $register,
+				public readonly string|int $schema,
+			) {
+			}//end __construct()
+		}//end class
+	}//end if
+}
+
 namespace OCA\OpenRegister\Event {
 
 	if (class_exists(ObjectTransitionedEvent::class, autoload: false) === false) {
@@ -1750,6 +2825,18 @@ namespace OCA\OpenRegister\Event {
 		 * Stub ObjectTransitionedEvent — accessors the listener calls.
 		 */
 		class ObjectTransitionedEvent extends \OCP\EventDispatcher\Event {
+			private string $action;
+
+			private string $from;
+
+			private string $to;
+
+			private ?string $userId;
+
+			private string $register;
+
+			private string $schema;
+
 			/**
 			 * Constructor mirrors the real event so `disableOriginalConstructor()`
 			 * is unnecessary but harmless when a test builds a mock against it.
@@ -1758,14 +2845,18 @@ namespace OCA\OpenRegister\Event {
 			 */
 			public function __construct(
 				private readonly \OCA\OpenRegister\Db\ObjectEntity $object,
-				private readonly string $action = '',
-				private readonly string $from = '',
-				private readonly string $to = '',
-				private readonly ?string $userId = null,
-				private readonly string $register = '',
-				private readonly string $schema = '',
+				\OCA\OpenRegister\Service\Lifecycle\TransitionMove $move,
+				\OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef $scope,
+				?\OCA\OpenRegister\Service\Lifecycle\TransitionActor $actor = null,
 			) {
 				parent::__construct();
+				$actor = $actor ?? new \OCA\OpenRegister\Service\Lifecycle\TransitionActor();
+				$this->action = $move->action;
+				$this->from = $move->from;
+				$this->to = $move->to;
+				$this->userId = $actor->userId;
+				$this->register = (string) $scope->register;
+				$this->schema = (string) $scope->schema;
 			}//end __construct()
 
 			/**
@@ -1863,6 +2954,27 @@ namespace OCA\OpenRegister\Event {
 			public function getErrors(): array {
 				return $this->errors;
 			}//end getErrors()
+			/**
+			 * @var array<string, mixed>
+			 */
+			private array $modifiedData = [];
+
+			/**
+			 * Mirrors openregister development: hooks hand back changed
+			 * fields, which MagicMapper merges into the object before it saves.
+			 *
+			 * @param array<string, mixed> $data
+			 */
+			public function setModifiedData(array $data): void {
+				$this->modifiedData = $data;
+			}//end setModifiedData()
+
+			/**
+			 * @return array<string, mixed>
+			 */
+			public function getModifiedData(): array {
+				return $this->modifiedData;
+			}//end getModifiedData()
 		}//end class
 	}//end if
 
@@ -1918,6 +3030,27 @@ namespace OCA\OpenRegister\Event {
 			public function getErrors(): array {
 				return $this->errors;
 			}//end getErrors()
+			/**
+			 * @var array<string, mixed>
+			 */
+			private array $modifiedData = [];
+
+			/**
+			 * Mirrors openregister development: hooks hand back changed
+			 * fields, which MagicMapper merges into the object before it saves.
+			 *
+			 * @param array<string, mixed> $data
+			 */
+			public function setModifiedData(array $data): void {
+				$this->modifiedData = $data;
+			}//end setModifiedData()
+
+			/**
+			 * @return array<string, mixed>
+			 */
+			public function getModifiedData(): array {
+				return $this->modifiedData;
+			}//end getModifiedData()
 		}//end class
 	}//end if
 
@@ -1944,15 +3077,22 @@ namespace OCA\OpenRegister\Event {
 
 	if (class_exists(DeepLinkRegistrationEvent::class, autoload: false) === false) {
 		/**
-		 * Stub DeepLinkRegistrationEvent — `register` call surface.
+		 * Stub DeepLinkRegistrationEvent — `register` call surface, with the
+		 * parameter names of the real OpenRegister method (callers pass them
+		 * by name).
 		 */
 		class DeepLinkRegistrationEvent extends \OCP\EventDispatcher\Event {
 			/**
-			 * @param array<string, mixed> $metadata
-			 *
 			 * @return void
 			 */
-			public function register(string $appId, string $route, string $label, array $metadata = []): void {
+			public function register(
+				string $appId,
+				string $registerSlug,
+				string $schemaSlug,
+				string $urlTemplate,
+				string $icon = '',
+				?string $displayName = null,
+			): void {
 			}//end register()
 		}//end class
 	}
@@ -2013,11 +3153,46 @@ namespace OCA\OpenRegister\Event {
 			/**
 			 * Constructor.
 			 *
-			 * @param \OCA\OpenRegister\Db\TaskSequence $sequence The completed sequence.
+			 * @param \OCA\OpenRegister\Db\TaskSequence $sequence        The completed sequence.
+			 * @param \OCA\OpenRegister\Db\Task         $finalTask       The task whose decision closed it.
+			 * @param string|null                       $decider         Who decided.
+			 * @param string                            $statusOnApprove The status the anchor moves to.
 			 */
-			public function __construct(private readonly \OCA\OpenRegister\Db\TaskSequence $sequence) {
+			public function __construct(
+				private readonly \OCA\OpenRegister\Db\TaskSequence $sequence,
+				private readonly \OCA\OpenRegister\Db\Task $finalTask,
+				private readonly ?string $decider,
+				private readonly string $statusOnApprove,
+			) {
 				parent::__construct();
 			}//end __construct()
+
+			/**
+			 * The task whose decision closed the sequence.
+			 *
+			 * @return \OCA\OpenRegister\Db\Task The task.
+			 */
+			public function getFinalTask(): \OCA\OpenRegister\Db\Task {
+				return $this->finalTask;
+			}//end getFinalTask()
+
+			/**
+			 * Who decided.
+			 *
+			 * @return string|null The decider.
+			 */
+			public function getDecider(): ?string {
+				return $this->decider;
+			}//end getDecider()
+
+			/**
+			 * The status the anchor moves to.
+			 *
+			 * @return string The status.
+			 */
+			public function getStatusOnApprove(): string {
+				return $this->statusOnApprove;
+			}//end getStatusOnApprove()
 
 			/**
 			 * The completed sequence.
@@ -2039,15 +3214,24 @@ namespace OCA\OpenRegister\Event {
 			/**
 			 * Constructor.
 			 *
-			 * @param \OCA\OpenRegister\Db\Task $task    The terminal task.
-			 * @param string|null                  $outcome The resolved outcome.
+			 * @param \OCA\OpenRegister\Db\Task $task      The terminal task.
+			 * @param bool                      $committed Whether the terminal write has committed.
 			 */
 			public function __construct(
 				private readonly \OCA\OpenRegister\Db\Task $task,
-				private readonly ?string $outcome=null,
+				private readonly bool $committed=true,
 			) {
 				parent::__construct();
 			}//end __construct()
+
+			/**
+			 * Whether the terminal write has committed.
+			 *
+			 * @return bool True after commit.
+			 */
+			public function isCommitted(): bool {
+				return $this->committed;
+			}//end isCommitted()
 
 			/**
 			 * The terminal task.
@@ -2059,12 +3243,12 @@ namespace OCA\OpenRegister\Event {
 			}//end getTask()
 
 			/**
-			 * The resolved outcome.
+			 * The terminal task's outcome.
 			 *
 			 * @return string|null The outcome.
 			 */
 			public function getOutcome(): ?string {
-				return $this->outcome;
+				return $this->task->getOutcome();
 			}//end getOutcome()
 		}//end class
 	}//end if
@@ -2341,14 +3525,31 @@ namespace OCA\OpenRegister\AppHost {
 			/**
 			 * No-op stub of the one-call registrar.
 			 *
-			 * @param mixed $context Registration context.
-			 * @param string $appId Leaf app id.
-			 * @param array<string, mixed> $options Options.
+			 * @param mixed        $context  Registration context.
+			 * @param LeafAdoption $adoption Leaf app id and its overrides.
 			 *
 			 * @return void
 			 */
-			public static function register($context, string $appId, array $options = []): void {
+			public static function register($context, LeafAdoption $adoption): void {
 			}
+		}
+	}
+
+	if (class_exists(LeafAdoption::class, autoload: false) === false) {
+		/**
+		 * Stub LeafAdoption: one leaf app's adoption request.
+		 */
+		final class LeafAdoption {
+
+			/**
+			 * @param string               $appId   Leaf app id.
+			 * @param array<string, mixed> $options Namespaces and feature switches.
+			 */
+			public function __construct(
+				public readonly string $appId,
+				private readonly array $options=[],
+			) {
+			}//end __construct()
 		}
 	}
 
@@ -2371,6 +3572,90 @@ namespace OCA\OpenRegister\AppHost {
 			}
 		}
 	}
+}
+
+namespace OCA\OpenRegister\AppHost\Listener {
+
+	if (class_exists(GenericDeepLinkRegistrationListener::class, autoload: false) === false) {
+		/**
+		 * Stub GenericDeepLinkRegistrationListener — mirrors the real AppHost
+		 * listener: `handle()` registers every entry of the overridable
+		 * `loadDeepLinks()` hook that names a register, schema and URL
+		 * template; the hook reads `deepLinks` from the app's src/manifest.json.
+		 *
+		 * @implements \OCP\EventDispatcher\IEventListener<\OCP\EventDispatcher\Event>
+		 */
+		class GenericDeepLinkRegistrationListener implements \OCP\EventDispatcher\IEventListener {
+			/**
+			 * @param string                   $appId      Leaf app id.
+			 * @param \OCP\App\IAppManager     $appManager App path resolution.
+			 * @param \Psr\Log\LoggerInterface $logger     PSR logger.
+			 */
+			public function __construct(
+				protected readonly string $appId,
+				protected readonly \OCP\App\IAppManager $appManager,
+				protected readonly \Psr\Log\LoggerInterface $logger,
+			) {
+			}//end __construct()
+
+			/**
+			 * @param \OCP\EventDispatcher\Event $event The dispatched event.
+			 *
+			 * @return void
+			 */
+			public function handle(\OCP\EventDispatcher\Event $event): void {
+				if ($event instanceof \OCA\OpenRegister\Event\DeepLinkRegistrationEvent === false) {
+					return;
+				}
+
+				foreach ($this->loadDeepLinks() as $link) {
+					$registerSlug = (string)($link['registerSlug'] ?? '');
+					$schemaSlug = (string)($link['schemaSlug'] ?? '');
+					$urlTemplate = (string)($link['urlTemplate'] ?? '');
+					if ($registerSlug === '' || $schemaSlug === '' || $urlTemplate === '') {
+						continue;
+					}
+
+					$displayName = ($link['displayName'] ?? null);
+					if (is_string($displayName) === false) {
+						$displayName = null;
+					}
+
+					$event->register(
+						appId: $this->appId,
+						registerSlug: $registerSlug,
+						schemaSlug: $schemaSlug,
+						urlTemplate: $urlTemplate,
+						icon: (string)($link['icon'] ?? ''),
+						displayName: $displayName
+					);
+				}//end foreach
+			}//end handle()
+
+			/**
+			 * @return array<int, array<string, mixed>>
+			 */
+			protected function loadDeepLinks(): array {
+				try {
+					$path = $this->appManager->getAppPath(appId: $this->appId) . '/src/manifest.json';
+				} catch (\Throwable $e) {
+					return [];
+				}
+
+				if (is_readable($path) === false) {
+					return [];
+				}
+
+				$manifest = json_decode((string)file_get_contents($path), associative: true);
+				$links = (is_array($manifest) === true) ? ($manifest['deepLinks'] ?? []) : [];
+				if (is_array($links) === false) {
+					return [];
+				}
+
+				return array_values(array_filter($links, 'is_array'));
+			}//end loadDeepLinks()
+		}//end class
+	}//end if
 }
 
 namespace OCA\OpenRegister\AppHost\Service {
@@ -2425,6 +3710,9 @@ namespace OCA\OpenRegister\AppHost\Service {
 
 			public const OUTCOME_INVALID = 'store_invalid_response';
 
+			/** Outcome: the descriptor or payload cannot be published. */
+			public const OUTCOME_NOT_PUBLISHABLE = 'not_publishable';
+
 			/**
 			 * Stub: whether a registry is configured.
 			 *
@@ -2460,6 +3748,40 @@ namespace OCA\OpenRegister\AppHost\Service {
 			public function resolve(StoreDescriptor $descriptor, string $slug): ?array {
 				return null;
 			}//end resolve()
+
+			/**
+			 * Publish one object of the descriptor's schema.
+			 *
+			 * @param StoreDescriptor      $descriptor The app's store descriptor.
+			 * @param array<string, mixed> $payload    The object to publish; carries `slug`.
+			 *
+			 * @return array{outcome: string, slug: string}
+			 */
+			public function publish(StoreDescriptor $descriptor, array $payload): array {
+				return ['outcome' => 'not_publishable', 'slug' => ''];
+			}//end publish()
+		}
+	}
+}
+
+namespace OCA\OpenRegister\AppHost\Store {
+
+	if (class_exists(StoreActionAuthorizer::class, autoload: false) === false) {
+		/**
+		 * Stub StoreActionAuthorizer: whether a user may publish to an app's store.
+		 */
+		class StoreActionAuthorizer {
+			/**
+			 * Whether the user may publish.
+			 *
+			 * @param \OCA\OpenRegister\AppHost\Service\StoreDescriptor $descriptor The app's store descriptor.
+			 * @param \OCP\IUser                                          $user       The signed-in user.
+			 *
+			 * @return bool
+			 */
+			public function canPublish(\OCA\OpenRegister\AppHost\Service\StoreDescriptor $descriptor, \OCP\IUser $user): bool {
+				return false;
+			}//end canPublish()
 		}
 	}
 }
@@ -2665,4 +3987,106 @@ namespace OCA\OpenRegister\Service\Dmn {
 			}
 		}
 	}
+	if (class_exists(DecisionTableStore::class, autoload: false) === false) {
+		/**
+		 * Stub DecisionTableStore: OpenRegister's reader of stored decision
+		 * tables (openregister#4572). Lookup and validation are proven in
+		 * openregister against the real class; buildiq's suite mocks this type
+		 * to prove its own mapping, so the signature is the part that matters.
+		 */
+		class DecisionTableStore {
+
+			/**
+			 * The register the tables live in.
+			 */
+			public const REGISTER = 'decision-tables';
+
+			/**
+			 * The schema of one table.
+			 */
+			public const SCHEMA = 'decision-table';
+
+			/**
+			 * @param string $reference The table's key or uuid.
+			 *
+			 * @return array<string, mixed> The stored table.
+			 *
+			 * @throws \UnexpectedValueException When no table carries the reference.
+			 */
+			public function find(string $reference): array {
+				throw new \UnexpectedValueException('No decision table has the key or id "' . $reference . '".');
+			}
+
+			/**
+			 * @param string               $reference The table's key or uuid.
+			 * @param array<string, mixed> $inputs    Named input values.
+			 *
+			 * @return array{outputs: array<string, mixed>, matchedRuleIds: array<int, string>, hitPolicy: string, tableKey: string}
+			 */
+			public function evaluate(string $reference, array $inputs): array {
+				return ['outputs' => [], 'matchedRuleIds' => [], 'hitPolicy' => 'UNIQUE', 'tableKey' => $reference];
+			}
+		}
+	}
+}
+
+namespace OCA\OpenRegister\Db\AuditTrail {
+
+	if (class_exists(NamedActor::class, autoload: false) === false) {
+		/**
+		 * Stub NamedActor: an explicit actor for an audit row.
+		 */
+		final class NamedActor {
+
+			/**
+			 * @param string|null $id   Actor id; null uses the session user.
+			 * @param string|null $name Actor display name.
+			 */
+			public function __construct(
+				public readonly ?string $id=null,
+				public readonly ?string $name=null,
+			) {
+			}//end __construct()
+		}//end class
+	}//end if
+
+	if (class_exists(ObjectAuditEventOptions::class, autoload: false) === false) {
+		/**
+		 * Stub ObjectAuditEventOptions: the explicit actor and address of an audit row.
+		 */
+		final class ObjectAuditEventOptions {
+
+			/**
+			 * @param NamedActor  $actor     The actor.
+			 * @param string|null $ipAddress The calling address.
+			 */
+			public function __construct(
+				public readonly NamedActor $actor=new NamedActor(),
+				public readonly ?string $ipAddress=null,
+			) {
+			}//end __construct()
+		}//end class
+	}//end if
+
+	if (class_exists(ObjectAuditEvent::class, autoload: false) === false) {
+		/**
+		 * Stub ObjectAuditEvent: one non-CRUD action on one object.
+		 */
+		final class ObjectAuditEvent {
+
+			/**
+			 * @param \OCA\OpenRegister\Db\ObjectEntity $object  The object.
+			 * @param string                            $action  The action.
+			 * @param array<string, mixed>              $context Additional context.
+			 * @param ObjectAuditEventOptions           $options Actor and address.
+			 */
+			public function __construct(
+				public readonly \OCA\OpenRegister\Db\ObjectEntity $object,
+				public readonly string $action,
+				public readonly array $context=[],
+				public readonly ObjectAuditEventOptions $options=new ObjectAuditEventOptions(),
+			) {
+			}//end __construct()
+		}//end class
+	}//end if
 }

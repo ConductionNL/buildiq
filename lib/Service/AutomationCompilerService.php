@@ -3,6 +3,9 @@
 /**
  * Buildiq AutomationCompilerService
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Compiles a stored `Automation` declarative object (design.md Decision 1 of
  * the automation-designer change) to Buildiq's EXISTING declarative
  * primitives, and nothing else (ADR-031 — no new imperative engine):
@@ -80,9 +83,6 @@
  * compiled artifact id/key carries the `aut-` prefix so hand-authored
  * entries are never touched.
  *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
- *
  * @category Service
  * @package  OCA\Buildiq\Service
  *
@@ -94,16 +94,16 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/automation-designer/tasks.md#2.1
- * @spec openspec/changes/automation-designer/tasks.md#2.2
+ * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#2.1
+ * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#2.2
  * @spec openspec/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-existing-declarative-primitives-req-autd-004
  * @spec openspec/specs/automation-designer/spec.md#requirement-an-automation-is-managed-as-one-unit-with-provenance-req-autd-005
- * @spec openspec/changes/automation-approval-steps/tasks.md#1.1
- * @spec openspec/changes/automation-approval-steps/tasks.md#1.2
+ * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#1.1
+ * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#1.2
  * @spec openspec/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-existing-declarative-primitives-req-autd-004
- * @spec openspec/changes/automation-document-action/tasks.md#1.1
- * @spec openspec/changes/automation-document-action/tasks.md#1.2
- * @spec openspec/changes/automation-document-action/tasks.md#1.3
+ * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#1.1
+ * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#1.2
+ * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#1.3
  * @spec openspec/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-existing-declarative-primitives-req-autd-004
  */
 
@@ -112,11 +112,14 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Exception\UnsupportedAutomationCombinationException;
+use OCA\Buildiq\Kernel\Contracts\AutomationCompilerServiceInterface;
+use OCA\Buildiq\Service\Automation\CompileInput;
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
-use Psr\Container\ContainerInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\App\IAppManager;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
@@ -124,18 +127,9 @@ use Throwable;
 /**
  * Pure compile() + I/O-performing apply()/remove()/status().
  *
- * @spec openspec/changes/automation-designer/tasks.md#2.1
+ * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#2.1
  */
-class AutomationCompilerService {
-	/**
-	 * Shared Buildiq register slug.
-	 */
-	public const REGISTER_SLUG = 'buildiq';
-
-	/**
-	 * Schema slug of the Automation object itself.
-	 */
-	public const AUTOMATION_SCHEMA = 'automation';
+class AutomationCompilerService implements AutomationCompilerServiceInterface {
 
 	/**
 	 * The v1 compilation matrix: trigger type → allowed action types.
@@ -170,6 +164,16 @@ class AutomationCompilerService {
 	 */
 	private const APPROVAL_CHAINS_KEY = 'x-openregister-approval-chains';
 
+	/**
+	 * Canonical id of the document app (`docudesk` renamed to `filinq`).
+	 *
+	 * Never compared against `IAppManager` directly: both ids are in the
+	 * field at once, so a literal answers false on half the fleet and the
+	 * compile fails claiming the app is absent when it is installed.
+	 * {@see FleetAppId} resolves which of the two this instance has.
+	 *
+	 * @var string
+	 */
 	private const DOCUDESK_APP_ID = 'filinq';
 
 	/**
@@ -279,19 +283,14 @@ class AutomationCompilerService {
 	 *
 	 * @throws UnsupportedAutomationCombinationException When the matrix (or condition placement) rejects the shape.
 	 *
-	 * @spec openspec/changes/automation-designer/tasks.md#2.1
+	 * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#2.1
 	 * @spec openspec/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-existing-declarative-primitives-req-autd-004
 	 */
 	public function compile(array $automation): array {
-		$slug = (string)($automation['slug'] ?? '');
-		$trigger = $this->orArray(value: $automation['trigger'] ?? null);
-		$triggerType = (string)($trigger['type'] ?? '');
-		$condition = $automation['condition'] ?? null;
-		$actions = array_values($this->orArray(value: $automation['actions'] ?? null));
-		$enabled = (bool)($automation['enabled'] ?? true);
+		$input = new CompileInput(automation: $automation);
 
-		$this->assertMatrix(triggerType: $triggerType, condition: $condition, actions: $actions);
-		$this->assertGenerateDocumentActions(actions: $actions);
+		$this->assertMatrix(triggerType: $input->triggerType, condition: $input->condition, actions: $input->actions);
+		$this->assertGenerateDocumentActions(actions: $input->actions);
 
 		$plan = [
 			'notifications' => [],
@@ -303,27 +302,13 @@ class AutomationCompilerService {
 		];
 
 		$dialectTriggers = ['object-created', 'object-updated', 'object-deleted', 'lifecycle-transition'];
-		if (in_array($triggerType, $dialectTriggers, true) === true) {
-			$this->compileDialectBackend(
-				slug: $slug,
-				trigger: $trigger,
-				triggerType: $triggerType,
-				actions: $actions,
-				enabled: $enabled,
-				plan: $plan
-			);
-		} elseif ($triggerType === 'schedule') {
-			$this->compileSchedulesBackend(slug: $slug, trigger: $trigger, actions: $actions, enabled: $enabled, plan: $plan);
-		} elseif ($triggerType === 'manual') {
-			$this->compileRulesBackend(
-				automation: $automation,
-				slug: $slug,
-				condition: $condition,
-				actions: $actions,
-				enabled: $enabled,
-				plan: $plan
-			);
-		}//end if
+		if (in_array($input->triggerType, $dialectTriggers, true) === true) {
+			$this->compileDialectBackend(input: $input, plan: $plan);
+		} elseif ($input->triggerType === 'schedule') {
+			$this->compileSchedulesBackend(input: $input, plan: $plan);
+		} elseif ($input->triggerType === 'manual') {
+			$this->compileRulesBackend(input: $input, plan: $plan);
+		}
 
 		$plan['hash'] = $this->hashPlan(plan: $plan);
 		return $plan;
@@ -339,7 +324,7 @@ class AutomationCompilerService {
 	 *
 	 * @return array<string,mixed> The new `provenance` block.
 	 *
-	 * @spec openspec/changes/automation-designer/tasks.md#2.2
+	 * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#2.2
 	 */
 	public function apply(array $automation, array $plan, array $priorProvenance = []): array {
 		$slug = (string)($automation['slug'] ?? '');
@@ -423,7 +408,7 @@ class AutomationCompilerService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/automation-designer/tasks.md#2.2
+	 * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#2.2
 	 * @spec openspec/specs/automation-designer/spec.md#requirement-an-automation-is-managed-as-one-unit-with-provenance-req-autd-005
 	 */
 	public function remove(array $automation, array $provenance): void {
@@ -463,7 +448,7 @@ class AutomationCompilerService {
 	 *
 	 * @return array{drift:bool,compiledHash:?string,liveHash:?string}
 	 *
-	 * @spec openspec/changes/automation-designer/tasks.md#2.2
+	 * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#2.2
 	 * @spec openspec/specs/automation-designer/spec.md#requirement-an-automation-is-managed-as-one-unit-with-provenance-req-autd-005
 	 */
 	public function status(array $automation, array $provenance): array {
@@ -525,7 +510,7 @@ class AutomationCompilerService {
 	 *
 	 * @return string One of `none|pending|approved|rejected`.
 	 *
-	 * @spec openspec/changes/automation-approval-steps/tasks.md#5.1
+	 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#5.1
 	 * @spec openspec/specs/automation-designer/spec.md#requirement-dry-run-test-panel-evaluates-an-automation-without-side-effects-req-autd-007
 	 */
 	public function approvalState(array $automation, array $provenance): string {
@@ -572,23 +557,17 @@ class AutomationCompilerService {
 	 * @return array<string, mixed>|null The declared chain, or null.
 	 */
 	private function resolveApprovalChainForState(string $schemaSlug, string $chainName): ?array {
-		$schema = $this->loadSchema(slug: $schemaSlug);
-		if ($schema === null) {
+		$declared = $this->declaredApprovalChains(schemaSlug: $schemaSlug);
+		if ($declared === null) {
 			return null;
 		}
 
-		$schemaId = $schema->getId();
-		if ($schemaId === null) {
-			return null;
-		}
-
-		$config = ($schema->getConfiguration() ?? []);
-		$chains = ($config[self::APPROVAL_CHAINS_KEY] ?? []);
+		[$schemaId, $chains] = $declared;
 		if (is_array($chains) === false || is_array(($chains[$chainName] ?? null)) === false) {
 			return null;
 		}
 
-		return ['name' => $chainName, 'schemaId' => (int)$schemaId];
+		return ['name' => $chainName, 'schemaId' => $schemaId];
 
 	}//end resolveApprovalChainForState()
 
@@ -644,8 +623,13 @@ class AutomationCompilerService {
 	 * @throws UnsupportedAutomationCombinationException On any invalid `generateDocument` config
 	 *                                                   or when Docudesk is absent.
 	 *
-	 * @spec openspec/changes/automation-document-action/tasks.md#1.2
-	 * @spec openspec/changes/automation-document-action/tasks.md#1.3
+	 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#1.2
+	 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#1.3
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) FleetAppId is a stateless
+	 *  resolver over a constant map, with no state to inject and nothing to
+	 *  substitute in a test. Injecting it would add a constructor argument
+	 *  to every consumer to no end.
 	 */
 	private function assertGenerateDocumentActions(array $actions): void {
 		$generateDocumentActions = array_values(
@@ -659,7 +643,7 @@ class AutomationCompilerService {
 			return;
 		}
 
-		if ($this->appManager->isEnabledForUser(self::DOCUDESK_APP_ID) === false) {
+		if (FleetAppId::isEnabledForUser(appManager: $this->appManager, canonical: self::DOCUDESK_APP_ID) === false) {
 			throw new UnsupportedAutomationCombinationException(
 				message: 'The "generateDocument" action requires the "' . self::DOCUDESK_APP_ID . '" app, '
 				. 'which is not installed or enabled on this instance.'
@@ -725,41 +709,23 @@ class AutomationCompilerService {
 	/**
 	 * Dialect backend: event/lifecycle-transition triggers.
 	 *
-	 * @param string $slug Automation slug.
-	 * @param array<string,mixed> $trigger Trigger block.
-	 * @param string $triggerType Trigger type.
-	 * @param array<int,mixed> $actions Action records.
-	 * @param bool $enabled Automation enabled flag.
+	 * @param CompileInput $input The automation being compiled.
 	 * @param array<string,mixed> $plan The plan being built (by reference).
 	 *
 	 * @return void
 	 */
-	private function compileDialectBackend(string $slug, array $trigger, string $triggerType, array $actions, bool $enabled, array &$plan): void {
-		$schema = (string)($trigger['schema'] ?? '');
-		$transition = (string)($trigger['transition'] ?? '');
-		$marker = 'aut-' . $slug;
+	private function compileDialectBackend(CompileInput $input, array &$plan): void {
 		$notifIndex = 0;
 
-		foreach ($actions as $action) {
+		foreach ($input->actions as $action) {
 			$type = (string)($action['type'] ?? '');
 
 			if ($type === 'send-notification') {
 				$notifIndex++;
-				$dialectTrigger = ['type' => $this->dialectEventType(triggerType: $triggerType)];
-				if ($triggerType === 'lifecycle-transition') {
-					$dialectTrigger = ['type' => 'transition', 'action' => $transition];
-				}
-
 				$plan['notifications'][] = [
-					'schema' => $schema,
-					'key' => 'aut-' . $slug . '-' . $notifIndex,
-					'entry' => [
-						'trigger' => $dialectTrigger,
-						'enabled' => $enabled,
-						'channels' => array_values((array)($action['channels'] ?? ['nc-notification'])),
-						'recipients' => array_values((array)($action['recipients'] ?? [])),
-						'subject' => (array)($action['subject'] ?? []),
-					],
+					'schema' => (string)($input->trigger['schema'] ?? ''),
+					'key' => 'aut-' . $input->slug . '-' . $notifIndex,
+					'entry' => $this->notificationEntry(input: $input, action: $action),
 				];
 				continue;
 			}
@@ -770,61 +736,95 @@ class AutomationCompilerService {
 				// the same automation would overwrite this entry, matching
 				// the "exactly one step per approval action" v1 scope.
 				$plan['approvalChain'] = [
-					'name' => $marker,
-					'schema' => $schema,
+					'name' => 'aut-' . $input->slug,
+					'schema' => (string)($input->trigger['schema'] ?? ''),
 					'assigneeGroup' => (string)($action['assigneeGroup'] ?? ''),
-					'enabled' => $enabled,
+					'enabled' => $input->enabled,
 				];
 				continue;
 			}
 
-			if ($type === 'generateDocument') {
-				// No compile-time plan entry (design.md Decision 2 of
-				// automation-document-action — Docudesk's generate route is
-				// stateless; already config-validated by
-				// {@see assertGenerateDocumentActions()}). The
-				// owner-impersonated Docudesk call happens at trigger-fire
-				// time in {@see \OCA\Buildiq\Listener\DocumentGenerationListener},
-				// reading the action straight off the stored `Automation`
-				// object — the compiler has nothing to provision or upsert.
-				continue;
+			// A `generateDocument` action has no compile-time plan entry
+			// (design.md Decision 2 of automation-document-action — Docudesk's
+			// generate route is stateless; already config-validated by
+			// {@see assertGenerateDocumentActions()}). The owner-impersonated
+			// Docudesk call happens at trigger-fire time in
+			// {@see \OCA\Buildiq\Listener\DocumentGenerationListener}, reading the
+			// action straight off the stored `Automation` object.
+			$lifecycleAction = $this->lifecycleActionEntry(input: $input, action: $action);
+			if ($lifecycleAction !== null) {
+				$plan['lifecycleActions'][] = $lifecycleAction;
 			}
-
-			if ($triggerType !== 'lifecycle-transition') {
-				// The matrix already blocked any other action type for
-				// object-* triggers — defensive no-op.
-				continue;
-			}
-
-			if ($type === 'object-op') {
-				$plan['lifecycleActions'][] = [
-					'schema' => $schema,
-					'transition' => $transition,
-					'marker' => $marker,
-					'action' => [
-						'type' => 'related-object-upsert',
-						'operation' => (string)($action['operation'] ?? 'create'),
-						'schema' => (string)($action['schema'] ?? ''),
-						'fieldMapping' => (array)($action['fieldMapping'] ?? []),
-						'marker' => $marker,
-					],
-				];
-			} elseif ($type === 'webhook') {
-				$plan['lifecycleActions'][] = [
-					'schema' => $schema,
-					'transition' => $transition,
-					'marker' => $marker,
-					'action' => [
-						'type' => 'webhook-dispatch',
-						'url' => (string)($action['url'] ?? ''),
-						'payloadTemplate' => (array)($action['payloadTemplate'] ?? []),
-						'marker' => $marker,
-					],
-				];
-			}//end if
 		}//end foreach
 
 	}//end compileDialectBackend()
+
+	/**
+	 * The notifications-dialect entry for one `send-notification` action.
+	 *
+	 * @param CompileInput $input The automation being compiled.
+	 * @param array<string,mixed> $action The action record.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function notificationEntry(CompileInput $input, array $action): array {
+		$dialectTrigger = ['type' => $this->dialectEventType(triggerType: $input->triggerType)];
+		if ($input->triggerType === 'lifecycle-transition') {
+			$dialectTrigger = ['type' => 'transition', 'action' => (string)($input->trigger['transition'] ?? '')];
+		}
+
+		return [
+			'trigger' => $dialectTrigger,
+			'enabled' => $input->enabled,
+			'channels' => array_values((array)($action['channels'] ?? ['nc-notification'])),
+			'recipients' => array_values((array)($action['recipients'] ?? [])),
+			'subject' => (array)($action['subject'] ?? []),
+		];
+	}//end notificationEntry()
+
+	/**
+	 * The lifecycle-dialect entry for one `object-op` or `webhook` action on a
+	 * `lifecycle-transition` trigger, or null for any other trigger or action
+	 * (the matrix already blocked those for object-* triggers).
+	 *
+	 * @param CompileInput $input The automation being compiled.
+	 * @param array<string,mixed> $action The action record.
+	 *
+	 * @return array<string,mixed>|null
+	 */
+	private function lifecycleActionEntry(CompileInput $input, array $action): ?array {
+		if ($input->triggerType !== 'lifecycle-transition') {
+			return null;
+		}
+
+		$type = (string)($action['type'] ?? '');
+		$marker = 'aut-' . $input->slug;
+		if ($type === 'object-op') {
+			$body = [
+				'type' => 'related-object-upsert',
+				'operation' => (string)($action['operation'] ?? 'create'),
+				'schema' => (string)($action['schema'] ?? ''),
+				'fieldMapping' => (array)($action['fieldMapping'] ?? []),
+				'marker' => $marker,
+			];
+		} elseif ($type === 'webhook') {
+			$body = [
+				'type' => 'webhook-dispatch',
+				'url' => (string)($action['url'] ?? ''),
+				'payloadTemplate' => (array)($action['payloadTemplate'] ?? []),
+				'marker' => $marker,
+			];
+		} else {
+			return null;
+		}
+
+		return [
+			'schema' => (string)($input->trigger['schema'] ?? ''),
+			'transition' => (string)($input->trigger['transition'] ?? ''),
+			'marker' => $marker,
+			'action' => $body,
+		];
+	}//end lifecycleActionEntry()
 
 	/**
 	 * Map an object-event trigger type to the notifications dialect's event
@@ -848,34 +848,31 @@ class AutomationCompilerService {
 	/**
 	 * Schedules backend: `schedule` trigger + `run-synchronization`.
 	 *
-	 * @param string $slug Automation slug.
-	 * @param array<string,mixed> $trigger Trigger block.
-	 * @param array<int,mixed> $actions Action records.
-	 * @param bool $enabled Automation enabled flag.
+	 * @param CompileInput $input The automation being compiled.
 	 * @param array<string,mixed> $plan The plan being built (by reference).
 	 *
 	 * @return void
 	 */
-	private function compileSchedulesBackend(string $slug, array $trigger, array $actions, bool $enabled, array &$plan): void {
+	private function compileSchedulesBackend(CompileInput $input, array &$plan): void {
 		$index = 0;
-		foreach ($actions as $action) {
+		foreach ($input->actions as $action) {
 			if ((string)($action['type'] ?? '') !== 'run-synchronization') {
 				continue;
 			}
 
 			$index++;
 			$entry = [
-				'id' => 'aut-' . $slug . '-' . $index,
-				'enabled' => $enabled,
+				'id' => 'aut-' . $input->slug . '-' . $index,
+				'enabled' => $input->enabled,
 				'action' => 'openconnector:synchronization',
 				'arguments' => ['synchronizationId' => (string)($action['synchronizationId'] ?? '')],
 			];
 
-			$cron = (string)($trigger['cron'] ?? '');
+			$cron = (string)($input->trigger['cron'] ?? '');
 			if ($cron !== '') {
 				$entry['cron'] = $cron;
 			} else {
-				$entry['interval'] = (int)($trigger['interval'] ?? 86400);
+				$entry['interval'] = (int)($input->trigger['interval'] ?? 86400);
 			}
 
 			$plan['schedules'][] = $entry;
@@ -886,22 +883,22 @@ class AutomationCompilerService {
 	/**
 	 * Rules backend: `manual` trigger.
 	 *
-	 * @param array<string,mixed> $automation The full Automation object (for slug/name/applicationSlug/uuid).
-	 * @param string $slug Automation slug.
-	 * @param mixed $condition Condition block (or null).
-	 * @param array<int,mixed> $actions Action records.
-	 * @param bool $enabled Automation enabled flag.
+	 * @param CompileInput $input The automation being compiled (the full object gives name, applicationSlug and uuid).
 	 * @param array<string,mixed> $plan The plan being built (by reference).
 	 *
 	 * @return void
 	 */
-	private function compileRulesBackend(array $automation, string $slug, mixed $condition, array $actions, bool $enabled, array &$plan): void {
+	private function compileRulesBackend(CompileInput $input, array &$plan): void {
+		$automation = $input->automation;
 		$ruleSetSlug = 'aut-' . $this->shortUuid(automation: $automation);
-		['condition' => $compiledCondition, 'actions' => $mappedActions] = $this->buildConditionAndActions(condition: $condition, actions: $actions);
+		['condition' => $compiledCondition, 'actions' => $mappedActions] = $this->buildConditionAndActions(
+			condition: $input->condition,
+			actions: $input->actions
+		);
 
 		$plan['ruleSet'] = [
 			'slug' => $ruleSetSlug,
-			'name' => (string)($automation['name'] ?? $slug),
+			'name' => (string)($automation['name'] ?? $input->slug),
 			'version' => '1.0.0',
 			'status' => 'active',
 			'ruleType' => 'condition-action',
@@ -910,10 +907,10 @@ class AutomationCompilerService {
 
 		$plan['conditionActionRule'] = [
 			'ruleSetId' => $ruleSetSlug,
-			'name' => (string)($automation['name'] ?? $slug),
+			'name' => (string)($automation['name'] ?? $input->slug),
 			'condition' => $compiledCondition,
 			'actions' => $mappedActions,
-			'active' => $enabled,
+			'active' => $input->enabled,
 		];
 
 	}//end compileRulesBackend()
@@ -931,7 +928,7 @@ class AutomationCompilerService {
 	 *
 	 * @return array<string,mixed> A synthetic ConditionActionRule-shaped record.
 	 *
-	 * @spec openspec/changes/automation-designer/tasks.md#3.1
+	 * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#3.1
 	 * @spec openspec/specs/automation-designer/spec.md#requirement-dry-run-test-panel-evaluates-an-automation-without-side-effects-req-autd-007
 	 */
 	public function compileDryRunRule(array $automation): array {
@@ -1004,7 +1001,7 @@ class AutomationCompilerService {
 	 *
 	 * @return array<string,mixed>
 	 *
-	 * @spec openspec/changes/automation-approval-steps/tasks.md#2.1
+	 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#2.1
 	 */
 	public function mapActionToRuleAction(array $action): array {
 		$type = (string)($action['type'] ?? '');
@@ -1173,16 +1170,12 @@ class AutomationCompilerService {
 		$schemas = array_unique(array_merge(array_keys($bySchema), array_keys($priorBySchema)));
 
 		foreach ($schemas as $schemaSlug) {
-			if ($schemaSlug === '') {
+			$target = $this->configuredSchema(slug: $schemaSlug);
+			if ($target === null) {
 				continue;
 			}
 
-			$schema = $this->loadSchema(slug: $schemaSlug);
-			if ($schema === null) {
-				continue;
-			}
-
-			$config = ($schema->getConfiguration() ?? []);
+			[$schema, $config] = $target;
 			$map = $this->orArray(value: $config['x-openregister-notifications'] ?? null);
 
 			$keepKeys = array_map(static fn (array $entry): string => (string)$entry['key'], ($bySchema[$schemaSlug] ?? []));
@@ -1233,16 +1226,12 @@ class AutomationCompilerService {
 
 		$result = [];
 		foreach ($schemas as $schemaSlug) {
-			if ($schemaSlug === '') {
+			$target = $this->configuredSchema(slug: $schemaSlug);
+			if ($target === null) {
 				continue;
 			}
 
-			$schema = $this->loadSchema(slug: $schemaSlug);
-			if ($schema === null) {
-				continue;
-			}
-
-			$config = ($schema->getConfiguration() ?? []);
+			[$schema, $config] = $target;
 			$lifecycle = $this->orNullArray(value: $config['x-openregister-lifecycle'] ?? null);
 			if ($lifecycle === null) {
 				continue;
@@ -1306,41 +1295,11 @@ class AutomationCompilerService {
 		$schedules = $this->orArray(value: $manifest['schedules'] ?? null);
 
 		$plannedIds = array_map(static fn (array $e): string => (string)$e['id'], $plannedEntries);
-
-		$schedules = array_values(
-			array_filter(
-				$schedules,
-				static function ($scheduleRow) use ($priorScheduleIds, $plannedIds): bool {
-					$id = '';
-					if (is_array($scheduleRow) === true) {
-						$id = (string)($scheduleRow['id'] ?? '');
-					}
-
-					return in_array($id, $priorScheduleIds, true) === false || in_array($id, $plannedIds, true) === true;
-				}
-			)
+		$schedules = $this->mergeScheduleEntries(
+			schedules: $schedules,
+			plannedEntries: $plannedEntries,
+			priorScheduleIds: $priorScheduleIds
 		);
-
-		foreach ($plannedEntries as $entry) {
-			$idx = null;
-			foreach ($schedules as $i => $scheduleRow) {
-				$rowId = null;
-				if (is_array($scheduleRow) === true) {
-					$rowId = ($scheduleRow['id'] ?? null);
-				}
-
-				if ($rowId === $entry['id']) {
-					$idx = $i;
-					break;
-				}
-			}
-
-			if ($idx !== null) {
-				$schedules[$idx] = $entry;
-			} else {
-				$schedules[] = $entry;
-			}
-		}
 
 		if ($schedules === []) {
 			unset($manifest['schedules']);
@@ -1360,6 +1319,70 @@ class AutomationCompilerService {
 
 		return $plannedIds;
 	}//end applySchedules()
+
+	/**
+	 * Merge planned schedule entries into a manifest's schedules list: drop every
+	 * prior-provenance id that is no longer planned, replace the row with the same
+	 * id as a planned entry, and append planned entries that are new. Rows that are
+	 * not this automation's are kept as they are, in their order.
+	 *
+	 * @param array<int|string,mixed>          $schedules        The manifest's current schedules rows.
+	 * @param array<int,array<string,mixed>>   $plannedEntries   Planned schedules entries.
+	 * @param array<int,string>                $priorScheduleIds Prior-provenance schedule ids.
+	 *
+	 * @return array<int,mixed> The merged rows.
+	 */
+	private function mergeScheduleEntries(array $schedules, array $plannedEntries, array $priorScheduleIds): array {
+		$plannedIds = array_map(static fn (array $e): string => (string)$e['id'], $plannedEntries);
+
+		$schedules = array_values(
+			array_filter(
+				$schedules,
+				static function ($scheduleRow) use ($priorScheduleIds, $plannedIds): bool {
+					$id = '';
+					if (is_array($scheduleRow) === true) {
+						$id = (string)($scheduleRow['id'] ?? '');
+					}
+
+					return in_array($id, $priorScheduleIds, true) === false || in_array($id, $plannedIds, true) === true;
+				}
+			)
+		);
+
+		foreach ($plannedEntries as $entry) {
+			$idx = $this->scheduleRowIndex(schedules: $schedules, id: $entry['id']);
+			if ($idx !== null) {
+				$schedules[$idx] = $entry;
+			} else {
+				$schedules[] = $entry;
+			}
+		}
+
+		return $schedules;
+	}//end mergeScheduleEntries()
+
+	/**
+	 * The index of the schedules row whose id is exactly the given id.
+	 *
+	 * @param array<int,mixed> $schedules The schedules rows.
+	 * @param mixed            $id        The planned entry's id.
+	 *
+	 * @return int|null The index, or null when no row carries it.
+	 */
+	private function scheduleRowIndex(array $schedules, mixed $id): ?int {
+		foreach ($schedules as $i => $scheduleRow) {
+			$rowId = null;
+			if (is_array($scheduleRow) === true) {
+				$rowId = ($scheduleRow['id'] ?? null);
+			}
+
+			if ($rowId === $id) {
+				return $i;
+			}
+		}
+
+		return null;
+	}//end scheduleRowIndex()
 
 	/**
 	 * Upsert the compiled RuleSet + ConditionActionRule (manual trigger), or
@@ -1471,8 +1494,8 @@ class AutomationCompilerService {
 	 *
 	 * @return string|null The applied `ApprovalChain` name, or null.
 	 *
-	 * @spec openspec/changes/automation-approval-steps/tasks.md#1.2
-	 * @spec openspec/changes/automation-approval-steps/tasks.md#1.4
+	 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#1.2
+	 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#1.4
 	 */
 	private function applyApprovalChain(?array $planned, ?string $priorName, string $fallbackSchemaSlug): ?string {
 		if ($planned === null) {
@@ -1652,16 +1675,16 @@ class AutomationCompilerService {
 		foreach ($keys as $k) {
 			$schemaSlug = (string)($k['schema'] ?? '');
 			$key = (string)($k['key'] ?? '');
-			if ($schemaSlug === '' || $key === '') {
+			if ($key === '') {
 				continue;
 			}
 
-			$schema = $this->loadSchema(slug: $schemaSlug);
-			if ($schema === null) {
+			$target = $this->configuredSchema(slug: $schemaSlug);
+			if ($target === null) {
 				continue;
 			}
 
-			$config = ($schema->getConfiguration() ?? []);
+			$config = $target[1];
 			$map = $this->orArray(value: $config['x-openregister-notifications'] ?? null);
 
 			$result[] = ['schema' => $schemaSlug, 'key' => $key, 'entry' => ($map[$key] ?? null)];
@@ -1684,16 +1707,16 @@ class AutomationCompilerService {
 		foreach ($marked as $m) {
 			$schemaSlug = (string)($m['schema'] ?? '');
 			$tName = (string)($m['transition'] ?? '');
-			if ($schemaSlug === '' || $tName === '') {
+			if ($tName === '') {
 				continue;
 			}
 
-			$schema = $this->loadSchema(slug: $schemaSlug);
-			if ($schema === null) {
+			$target = $this->configuredSchema(slug: $schemaSlug);
+			if ($target === null) {
 				continue;
 			}
 
-			$config = ($schema->getConfiguration() ?? []);
+			$config = $target[1];
 			$lifecycle = $this->orArray(value: $config['x-openregister-lifecycle'] ?? null);
 			$transitions = $this->orArray(value: $lifecycle['transitions'] ?? null);
 			$actions = $this->orArray(value: $transitions[$tName]['actions'] ?? null);
@@ -1812,18 +1835,12 @@ class AutomationCompilerService {
 			return null;
 		}
 
-		$schema = $this->loadSchema(slug: $schemaSlug);
-		if ($schema === null) {
+		$declared = $this->declaredApprovalChains(schemaSlug: $schemaSlug);
+		if ($declared === null) {
 			return null;
 		}
 
-		$schemaId = $schema->getId();
-		if ($schemaId === null) {
-			return null;
-		}
-
-		$config = ($schema->getConfiguration() ?? []);
-		$chains = ($config[self::APPROVAL_CHAINS_KEY] ?? []);
+		$chains = $declared[1];
 		$spec = null;
 		if (is_array($chains) === true) {
 			$spec = ($chains[$name] ?? null);
@@ -1971,11 +1988,57 @@ class AutomationCompilerService {
 	}//end loadSchema()
 
 	/**
+	 * A target schema and its configuration, by slug.
+	 *
+	 * An empty slug names no schema and is never looked up; a schema that
+	 * cannot be loaded is reported by {@see loadSchema()} and skipped.
+	 *
+	 * @param string $slug The schema slug.
+	 *
+	 * @return array{0: Schema, 1: array<string, mixed>}|null The schema and its configuration, or null.
+	 */
+	private function configuredSchema(string $slug): ?array {
+		if ($slug === '') {
+			return null;
+		}
+
+		$schema = $this->loadSchema(slug: $slug);
+		if ($schema === null) {
+			return null;
+		}
+
+		return [$schema, ($schema->getConfiguration() ?? [])];
+	}//end configuredSchema()
+
+	/**
+	 * The approval chains a schema declares, with the schema's id.
+	 *
+	 * @param string $schemaSlug The schema slug.
+	 *
+	 * @return array{0: int, 1: mixed}|null The schema id and its declared chains, or null when the schema or its id is missing.
+	 */
+	private function declaredApprovalChains(string $schemaSlug): ?array {
+		$schema = $this->loadSchema(slug: $schemaSlug);
+		if ($schema === null) {
+			return null;
+		}
+
+		$schemaId = $schema->getId();
+		if ($schemaId === null) {
+			return null;
+		}
+
+		$config = ($schema->getConfiguration() ?? []);
+		return [(int)$schemaId, ($config[self::APPROVAL_CHAINS_KEY] ?? [])];
+	}//end declaredApprovalChains()
+
+	/**
 	 * Load an ApplicationVersion by uuid.
 	 *
 	 * @param string $uuid The ApplicationVersion uuid.
 	 *
 	 * @return array<string,mixed>|null
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function loadApplicationVersion(string $uuid): ?array {
 		if ($uuid === '') {
@@ -1993,7 +2056,7 @@ class AutomationCompilerService {
 			return null;
 		}
 
-		return $this->normalise(object: $entity);
+		return ObjectRecord::toArray(object: $entity);
 	}//end loadApplicationVersion()
 
 	/**
@@ -2003,6 +2066,7 @@ class AutomationCompilerService {
 	 * @param array<string,mixed> $filters Equality filters.
 	 *
 	 * @return array<string,mixed>|null
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function findOneObject(string $schema, array $filters): ?array {
 		try {
@@ -2018,35 +2082,6 @@ class AutomationCompilerService {
 			return null;
 		}
 
-		return $this->normalise(object: $results[0]);
+		return ObjectRecord::toArray(object: $results[0]);
 	}//end findOneObject()
-
-	/**
-	 * Coerce an OR result entry to a plain associative array.
-	 *
-	 * @param mixed $object The OR object/result entry.
-	 *
-	 * @return array<string,mixed>
-	 */
-	private function normalise(mixed $object): array {
-		if (is_array($object) === true) {
-			return $object;
-		}
-
-		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-			$serialised = $object->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		if (is_object($object) === true && method_exists($object, 'getObject') === true) {
-			$inner = $object->getObject();
-			if (is_array($inner) === true) {
-				return $inner;
-			}
-		}
-
-		return [];
-	}//end normalise()
 }//end class

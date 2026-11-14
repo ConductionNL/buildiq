@@ -15,7 +15,7 @@
 	create-from-file) + a display-only first-rows sample for CSV; (4) confirm +
 	import; (5) result summary with Undo (rollback).
 
-	@spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.1
+	@spec openspec/changes/archive/2026-07-07-openbuild-data-import-wizard/tasks.md#2.1
 -->
 <template>
 	<NcDialog
@@ -76,11 +76,15 @@
 						"
 						label="label"
 						:disabled="!schemaOptions.length" />
+					<!-- A download is a link with `download`, not a click that
+					     assigns location: this way the browser handles it without
+					     navigating the wizard away. -->
 					<NcButton
-						v-if="selectedSchema"
+						v-if="templateUrl"
 						variant="tertiary"
 						class="ob-import-wizard__template-btn"
-						@click="downloadTemplate">
+						:href="templateUrl"
+						download>
 						<template #icon>
 							<DownloadIcon :size="20" />
 						</template>
@@ -335,8 +339,75 @@ import DownloadIcon from 'vue-material-design-icons/Download.vue'
 import UploadIcon from 'vue-material-design-icons/Upload.vue'
 import { useDataImport } from '../composables/useDataImport.js'
 
+/** OR import type by file extension. */
+const IMPORT_TYPES = new Map([
+	['xlsx', 'excel'],
+	['xls', 'excel'],
+	['csv', 'csv'],
+	['json', 'json'],
+])
+
+/**
+ * The lower-cased extension of a file name ('' without a name).
+ *
+ * @param {string|undefined} name The file name.
+ * @return {string}
+ */
+function fileExtension(name) {
+	return String(name || '')
+		.split('.')
+		.pop()
+		.toLowerCase()
+}
+
 const MAX_SAMPLE_ROWS = 5
 const LARGE_FILE_BYTES = 5 * 1024 * 1024
+
+/**
+ * The slug a schema carries in its `@self` envelope, if any.
+ *
+ * @param {object} schema The schema record.
+ * @return {string|undefined}
+ */
+function selfSlug(schema) {
+	return schema['@self'] && schema['@self'].slug
+}
+
+/**
+ * The option id of a schema: its slug (own or `@self`), id or uuid.
+ *
+ * @param {object} schema The schema record.
+ * @return {string}
+ */
+function schemaOptionId(schema) {
+	return String(
+		schema.slug || selfSlug(schema) || schema.id || schema.uuid || '',
+	)
+}
+
+/**
+ * The option label of a schema: its title, name, slug or id.
+ *
+ * @param {object} schema The schema record.
+ * @return {string}
+ */
+function schemaOptionLabel(schema) {
+	return String(schema.title || schema.name || schema.slug || schema.id || '')
+}
+
+/**
+ * A schema as a target option.
+ *
+ * @param {object} schema The schema record.
+ * @return {{id: string, label: string, type: object}}
+ */
+function toSchemaOption(schema) {
+	return {
+		id: schemaOptionId(schema),
+		label: schemaOptionLabel(schema),
+		type: schema,
+	}
+}
 
 export default {
 	name: 'ImportDataWizard',
@@ -400,6 +471,26 @@ export default {
 
 	computed: {
 		/**
+		 * The offline import template for the selected schema, as a download
+		 * href. Null until a schema is chosen, so the control does not render.
+		 *
+		 * @return {string|null} The template URL, or null.
+		 * @spec openspec/changes/archive/2026-07-07-openbuild-data-import-wizard/tasks.md#2.1
+		 */
+		templateUrl() {
+			if (!this.selectedSchema) {
+				return null
+			}
+			return (
+				this.importer.templateUrl({
+					registerId: this.registerId,
+					schema: this.selectedSchema.id,
+					format: 'xlsx',
+				}) || null
+			)
+		},
+
+		/**
 		 * The sample table's header cells — the CSV's own header line.
 		 *
 		 * `sampleRows` is filled only by `readCsvSample()`, and a CSV's first
@@ -408,7 +499,7 @@ export default {
 		 * with no `<th>` at all (WCAG 2.2 AA 1.3.1 Info and Relationships).
 		 *
 		 * @return {Array<string>} Header cells, empty when there is no sample.
-		 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.1
+		 * @spec openspec/changes/archive/2026-07-07-openbuild-data-import-wizard/tasks.md#2.1
 		 */
 		sampleHeader() {
 			return this.sampleRows.length > 0 ? this.sampleRows[0] : []
@@ -419,7 +510,7 @@ export default {
 		 *
 		 * @return {Array<Array<string>>} Data rows, empty when the sample is
 		 *                                header-only or absent.
-		 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.1
+		 * @spec openspec/changes/archive/2026-07-07-openbuild-data-import-wizard/tasks.md#2.1
 		 */
 		sampleBody() {
 			return this.sampleRows.slice(1)
@@ -429,7 +520,7 @@ export default {
 		 * Step-rail labels.
 		 *
 		 * @return {Array<{n: number, label: string}>}
-		 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.1
+		 * @spec openspec/changes/archive/2026-07-07-openbuild-data-import-wizard/tasks.md#2.1
 		 */
 		stepLabels() {
 			return [
@@ -447,21 +538,11 @@ export default {
 		 * bound `dataRegisters` never appear as targets.
 		 *
 		 * @return {Array<{id: string, label: string, type: object}>}
-		 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.1
+		 * @spec openspec/changes/archive/2026-07-07-openbuild-data-import-wizard/tasks.md#2.1
 		 */
 		schemaOptions() {
 			return (this.schemas || [])
-				.map((s) => ({
-					id: String(
-						s.slug
-							|| (s['@self'] && s['@self'].slug)
-							|| s.id
-							|| s.uuid
-							|| '',
-					),
-					label: String(s.title || s.name || s.slug || s.id || ''),
-					type: s,
-				}))
+				.map(toSchemaOption)
 				.filter((o) => o.id)
 		},
 
@@ -470,33 +551,20 @@ export default {
 		 * re-detects server-side).
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.1
+		 * @spec openspec/changes/archive/2026-07-07-openbuild-data-import-wizard/tasks.md#2.1
 		 */
 		detectedType() {
 			if (!this.file) {
 				return ''
 			}
-			const ext = String(this.file.name || '')
-				.split('.')
-				.pop()
-				.toLowerCase()
-			if (ext === 'xlsx' || ext === 'xls') {
-				return 'excel'
-			}
-			if (ext === 'csv') {
-				return 'csv'
-			}
-			if (ext === 'json') {
-				return 'json'
-			}
-			return ''
+			return IMPORT_TYPES.get(fileExtension(this.file.name)) || ''
 		},
 
 		/**
 		 * Human label for the detected file type.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.1
+		 * @spec openspec/changes/archive/2026-07-07-openbuild-data-import-wizard/tasks.md#2.1
 		 */
 		detectedTypeLabel() {
 			const map = {
@@ -511,7 +579,7 @@ export default {
 		 * Human-readable file size.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.1
+		 * @spec openspec/changes/archive/2026-07-07-openbuild-data-import-wizard/tasks.md#2.1
 		 */
 		humanSize() {
 			const b = this.file ? this.file.size : 0
@@ -528,7 +596,7 @@ export default {
 		 * Whether the chosen file exceeds the synchronous-import size hint.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.1
+		 * @spec openspec/changes/archive/2026-07-07-openbuild-data-import-wizard/tasks.md#2.1
 		 */
 		isLargeFile() {
 			return !!this.file && this.file.size > LARGE_FILE_BYTES
@@ -538,7 +606,7 @@ export default {
 		 * Confirmation-step summary text.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.1
+		 * @spec openspec/changes/archive/2026-07-07-openbuild-data-import-wizard/tasks.md#2.1
 		 */
 		confirmText() {
 			const fileName = this.file ? this.file.name : ''
@@ -561,7 +629,7 @@ export default {
 		 * Whether the current step's requirements are met to advance.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.1
+		 * @spec openspec/changes/archive/2026-07-07-openbuild-data-import-wizard/tasks.md#2.1
 		 */
 		canAdvance() {
 			if (this.step === 1) {
@@ -579,7 +647,7 @@ export default {
 		 * Clear any stale error when the target schema changes.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.1
+		 * @spec openspec/changes/archive/2026-07-07-openbuild-data-import-wizard/tasks.md#2.1
 		 */
 		selectedSchema() {
 			this.error = ''
@@ -590,7 +658,7 @@ export default {
 	 * Pre-select the schema the wizard was opened on (Schema Designer entry).
 	 *
 	 * @return {void}
-	 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.1
+	 * @spec openspec/changes/archive/2026-07-07-openbuild-data-import-wizard/tasks.md#2.1
 	 */
 	mounted() {
 		if (this.initialSchema) {
@@ -606,7 +674,7 @@ export default {
 		 * Open the native file picker.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.1
+		 * @spec openspec/changes/archive/2026-07-07-openbuild-data-import-wizard/tasks.md#2.1
 		 */
 		pickFile() {
 			if (this.$refs.fileInput) {
@@ -621,7 +689,7 @@ export default {
 		 *
 		 * @param {Event} evt The file input change event.
 		 * @return {void}
-		 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.1
+		 * @spec openspec/changes/archive/2026-07-07-openbuild-data-import-wizard/tasks.md#2.1
 		 */
 		onFileChosen(evt) {
 			const f = evt && evt.target && evt.target.files && evt.target.files[0]
@@ -636,7 +704,7 @@ export default {
 		 * existing-schema path, plus a display-only CSV sample.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.1
+		 * @spec openspec/changes/archive/2026-07-07-openbuild-data-import-wizard/tasks.md#2.1
 		 */
 		buildPreview() {
 			// Existing-schema target: show the schema's own fields as the
@@ -670,7 +738,7 @@ export default {
 		 * cells as the columns OR will create.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.1
+		 * @spec openspec/changes/archive/2026-07-07-openbuild-data-import-wizard/tasks.md#2.1
 		 */
 		readCsvSample() {
 			if (!this.file || typeof FileReader === 'undefined') {
@@ -704,7 +772,7 @@ export default {
 		 * Advance to the next step, building the preview when leaving upload.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.1
+		 * @spec openspec/changes/archive/2026-07-07-openbuild-data-import-wizard/tasks.md#2.1
 		 */
 		next() {
 			if (!this.canAdvance) {
@@ -720,7 +788,7 @@ export default {
 		 * Go back one step.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.1
+		 * @spec openspec/changes/archive/2026-07-07-openbuild-data-import-wizard/tasks.md#2.1
 		 */
 		back() {
 			if (this.step > 1) {
@@ -733,7 +801,7 @@ export default {
 		 * file bytes only; OR parses, infers, and writes.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.1
+		 * @spec openspec/changes/archive/2026-07-07-openbuild-data-import-wizard/tasks.md#2.1
 		 */
 		async runImport() {
 			this.importing = true
@@ -762,7 +830,7 @@ export default {
 		 * Undo the import via OpenRegister's rollback endpoint.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.1
+		 * @spec openspec/changes/archive/2026-07-07-openbuild-data-import-wizard/tasks.md#2.1
 		 */
 		async undo() {
 			if (!this.result.importJobId) {
@@ -788,31 +856,10 @@ export default {
 		},
 
 		/**
-		 * Download the offline import template for the selected schema.
-		 *
-		 * @param {string} [format] `xlsx` (default) or `csv`.
-		 * @return {void}
-		 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.1
-		 */
-		downloadTemplate(format = 'xlsx') {
-			if (!this.selectedSchema) {
-				return
-			}
-			const url = this.importer.templateUrl({
-				registerId: this.registerId,
-				schema: this.selectedSchema.id,
-				format,
-			})
-			if (url && typeof window !== 'undefined') {
-				window.location.href = url
-			}
-		},
-
-		/**
 		 * Download the per-row error report OR returned (base64 CSV).
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.1
+		 * @spec openspec/changes/archive/2026-07-07-openbuild-data-import-wizard/tasks.md#2.1
 		 */
 		downloadErrorCsv() {
 			if (!this.result.errorsCsv || typeof document === 'undefined') {
@@ -831,7 +878,7 @@ export default {
 		 *
 		 * @param {Error|object} e The rejected error/response.
 		 * @return {string}
-		 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.1
+		 * @spec openspec/changes/archive/2026-07-07-openbuild-data-import-wizard/tasks.md#2.1
 		 */
 		readError(e) {
 			const data = e && e.response && e.response.data
@@ -847,7 +894,7 @@ export default {
 		 * Close the wizard.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.1
+		 * @spec openspec/changes/archive/2026-07-07-openbuild-data-import-wizard/tasks.md#2.1
 		 */
 		onClose() {
 			this.$emit('close')

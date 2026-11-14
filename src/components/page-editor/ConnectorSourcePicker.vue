@@ -16,20 +16,42 @@
 	<div class="connector-source-picker">
 		<div v-if="appAvailable" class="connector-source-picker__live">
 			<NcSelect
+				class="connector-source-picker__source"
+				:modelValue="selectedSourceOption"
+				:options="sourceOptions"
+				:loading="loading"
+				:inputLabel="t('buildiq', 'Source')"
+				:placeholder="t('buildiq', 'Select a source')"
+				label="label"
+				@update:modelValue="onSelectSource" />
+			<NcSelect
+				class="connector-source-picker__endpoint"
 				:modelValue="selectedOption"
 				:options="endpointOptions"
 				:loading="loading"
-				:inputLabel="t('buildiq', 'OpenConnector endpoint')"
+				:inputLabel="t('buildiq', 'Endpoint')"
 				:placeholder="t('buildiq', 'Select an endpoint')"
 				label="label"
 				@update:modelValue="onSelect" />
 			<p v-if="error" class="connector-source-picker__error">
-				{{ t('buildiq', 'Could not load OpenConnector endpoints.') }}
+				{{
+					t(
+						'buildiq',
+						'Could not load the connector sources and endpoints.',
+					)
+				}}
 			</p>
 			<p
-				v-else-if="!loading && endpointOptions.length === 0"
+				v-else-if="!loading && endpoints.length === 0"
 				class="connector-source-picker__hint">
 				{{ t('buildiq', 'No OpenConnector endpoints are configured yet.') }}
+			</p>
+			<p
+				v-else-if="
+					!loading && selectedSourceId && endpointOptions.length === 0
+				"
+				class="connector-source-picker__hint">
+				{{ t('buildiq', 'This source has no endpoints yet.') }}
 			</p>
 		</div>
 
@@ -65,6 +87,127 @@ import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { NcSelect } from '@nextcloud/vue'
 import { useAppStatus } from '../../composables/useAppStatus.js'
+import { resolveFleetAppId } from '../../services/fleetAppId.js'
+
+/**
+ * The key an OpenRegister object is known by: its uuid, or its id.
+ *
+ * @param {object} row - an OpenRegister object.
+ * @return {string} the key, or ''.
+ */
+function objectKey(row) {
+	const self = (row && row['@self']) || {}
+	return String((row && (row.uuid || row.id)) || self.id || '')
+}
+
+/**
+ * Normalise an endpoint path the way the runtime calls it: no leading slash.
+ *
+ * @param {string} path - the stored endpoint path.
+ * @return {string} the path without leading slashes.
+ */
+function trimPath(path) {
+	return String(path || '').replace(/^\/+/, '')
+}
+
+/**
+ * The list a list response carries: its `results`, or the body itself.
+ *
+ * @param {object} response - an axios response.
+ * @return {Array|object|string} the list, before it is checked.
+ */
+function responseList(response) {
+	const data = response && response.data
+	return (data && (data.results || data)) || []
+}
+
+/**
+ * The rows of a list response, or none when it holds no array.
+ *
+ * @param {object} response - an axios response.
+ * @return {Array<object>} the rows.
+ */
+function responseRows(response) {
+	const list = responseList(response)
+	return Array.isArray(list) ? list : []
+}
+
+/**
+ * A source row as a picker source: name and id only. A source row also
+ * carries credentials, and none of that may reach the page (REQ-OCAS-004).
+ *
+ * @param {object} row - an OpenConnector source object.
+ * @return {{id: string, name: string}} the source.
+ */
+function toSource(row) {
+	return {
+		id: objectKey(row),
+		name: row.name || row.slug || objectKey(row),
+	}
+}
+
+/**
+ * The path an endpoint row is called on: its endpoint, path or slug.
+ *
+ * @param {object} row - an OpenConnector endpoint object.
+ * @return {string} the path without leading slashes.
+ */
+function endpointPathOf(row) {
+	return trimPath(row.endpoint || row.path || row.slug || '')
+}
+
+/**
+ * An endpoint row as a picker endpoint, named after its source.
+ *
+ * @param {object} row - an OpenConnector endpoint object.
+ * @param {Map<string, string>} nameById - source names by source id.
+ * @return {{path: string, sourceId: string, sourceName: string}} the endpoint.
+ */
+function toEndpoint(row, nameById) {
+	const sourceId = String(row.targetId || '')
+	return {
+		path: endpointPathOf(row),
+		sourceId,
+		sourceName: nameById.get(sourceId) || '',
+	}
+}
+
+/**
+ * The sources of a source response; rows without an id are dropped.
+ *
+ * @param {object} response - the source list response.
+ * @return {Array<{id: string, name: string}>} the sources.
+ */
+function sourceList(response) {
+	return responseRows(response)
+		.map(toSource)
+		.filter((source) => source.id)
+}
+
+/**
+ * The endpoints of an endpoint response, named after their sources; rows
+ * without a path are dropped.
+ *
+ * @param {object} response - the endpoint list response.
+ * @param {Array<{id: string, name: string}>} sources - the known sources.
+ * @return {Array<object>} the endpoints.
+ */
+function endpointList(response, sources) {
+	const nameById = new Map(sources.map((source) => [source.id, source.name]))
+	return responseRows(response)
+		.map((row) => toEndpoint(row, nameById))
+		.filter((e) => e.path)
+}
+
+/**
+ * The id of a picked option, or '' when the selection was cleared.
+ *
+ * @param {?object} option - the selected option.
+ * @return {string} the id.
+ */
+function optionId(option) {
+	return option && option.id ? option.id : ''
+}
 
 export default {
 	name: 'ConnectorSourcePicker',
@@ -81,16 +224,20 @@ export default {
 	/**
 	 * Soft capability check for OpenConnector (REQ-OCAS-005).
 	 *
-	 * @spec openspec/changes/openconnector-api-sources/tasks.md#task-2.2
+	 * @spec openspec/changes/archive/2026-06-14-openconnector-api-sources/tasks.md#task-2.2
 	 */
 	setup() {
-		const status = useAppStatus('openconnector')
+		const status = useAppStatus('integriq')
 		return { status }
 	},
 
 	data() {
 		return {
 			endpoints: [],
+			sources: [],
+			// The source the endpoint list is filtered by. Not stored in the
+			// manifest: it follows from the chosen endpoint.
+			pickedSourceId: '',
 			loading: false,
 			error: false,
 			manualPath: '',
@@ -103,7 +250,7 @@ export default {
 		 * async soft-check resolves so the live UI does not flash.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-005
+		 * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-005
 		 */
 		appAvailable() {
 			return !this.status.checked.value || this.status.available.value
@@ -114,28 +261,73 @@ export default {
 		 * ONLY (REQ-OCAS-004: never a credential).
 		 *
 		 * @return {Array<{label: string, path: string}>}
-		 * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-004
+		 * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-004
 		 */
 		endpointOptions() {
-			return this.endpoints.map((e) => ({
-				label: e.sourceName ? `${e.path} — ${e.sourceName}` : e.path,
-				path: e.path,
+			const sourceId = this.selectedSourceId
+			return this.endpoints
+				.filter((e) => !sourceId || e.sourceId === sourceId)
+				.map((e) => ({
+					label: e.sourceName ? `${e.path} (${e.sourceName})` : e.path,
+					path: e.path,
+				}))
+		},
+
+		/**
+		 * Source rows projected to NcSelect options, name only.
+		 *
+		 * @return {Array<{label: string, id: string}>}
+		 * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-004
+		 */
+		sourceOptions() {
+			return this.sources.map((source) => ({
+				label: source.name,
+				id: source.id,
 			}))
+		},
+
+		/**
+		 * The source the endpoint list is filtered by: the one picked, or the
+		 * source of the endpoint already bound.
+		 *
+		 * @return {string} source id, or ''.
+		 * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-002
+		 */
+		selectedSourceId() {
+			if (this.pickedSourceId) {
+				return this.pickedSourceId
+			}
+			const current = trimPath(this.binding && this.binding.endpointPath)
+			const bound = this.endpoints.find((e) => current && e.path === current)
+			return (bound && bound.sourceId) || ''
+		},
+
+		/**
+		 * The source option matching `selectedSourceId`, for NcSelect's value.
+		 *
+		 * @return {?object}
+		 * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-002
+		 */
+		selectedSourceOption() {
+			return (
+				this.sourceOptions.find((o) => o.id === this.selectedSourceId)
+				|| null
+			)
 		},
 
 		/**
 		 * The option matching the current binding, for NcSelect's value.
 		 *
 		 * @return {?object}
-		 * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-002
+		 * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-002
 		 */
 		selectedOption() {
-			const current = this.binding && this.binding.endpointPath
+			const current = trimPath(this.binding && this.binding.endpointPath)
 			return this.endpointOptions.find((o) => o.path === current) || null
 		},
 	},
 
-	/** @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-002 */
+	/** @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-002 */
 	async mounted() {
 		await this.status.check()
 		if (this.status.available.value) {
@@ -152,30 +344,73 @@ export default {
 		 * DOM or component state (REQ-OCAS-004).
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/openconnector-api-sources/tasks.md#task-2.1
+		 * @spec openspec/changes/archive/2026-06-14-openconnector-api-sources/tasks.md#task-2.1
 		 */
 		async fetchEndpoints() {
 			this.loading = true
 			this.error = false
 			try {
-				const url = generateUrl('/apps/openconnector/api/endpoints')
-				const { data } = await axios.get(url)
-				const list = (data && (data.results || data)) || []
-				this.endpoints = (Array.isArray(list) ? list : [])
-					.map((row) => ({
-						path: row.path || row.endpoint || row.slug || row.id || '',
-						sourceName:
-							row.sourceName
-							|| row.source
-							|| (row.sourceObject && row.sourceObject.name)
-							|| '',
-					}))
-					.filter((e) => e.path)
+				this.applyConnectorObjects(await this.fetchConnectorObjects())
 			} catch {
 				this.error = true
 				this.endpoints = []
+				this.sources = []
 			} finally {
 				this.loading = false
+			}
+		},
+
+		/**
+		 * Fetch the connector's sources and endpoints. The connector app keeps
+		 * them as OpenRegister objects in its own register; its old
+		 * `/api/endpoints` route no longer exists.
+		 *
+		 * @return {Promise<Array<object>>} the source and endpoint responses.
+		 */
+		fetchConnectorObjects() {
+			const register = resolveFleetAppId('integriq')
+			const base = `/apps/openregister/api/objects/${register}`
+			const params = { params: { _limit: 500 } }
+			return Promise.all([
+				axios.get(generateUrl(`${base}/source`), params),
+				axios.get(generateUrl(`${base}/endpoint`), params),
+			])
+		},
+
+		/**
+		 * Keep the credential-free sources and endpoints of the responses.
+		 *
+		 * @param {Array<object>} responses - the source and endpoint responses.
+		 * @return {void}
+		 */
+		applyConnectorObjects([sourcesResponse, endpointsResponse]) {
+			this.sources = sourceList(sourcesResponse)
+			this.endpoints = endpointList(endpointsResponse, this.sources)
+		},
+
+		/**
+		 * The endpoint the binding currently points at, if it is listed.
+		 *
+		 * @return {object|undefined} the bound endpoint.
+		 */
+		boundEndpoint() {
+			const current = trimPath(this.binding && this.binding.endpointPath)
+			return this.endpoints.find((e) => current && e.path === current)
+		},
+
+		/**
+		 * Pick the source whose endpoints are offered. An endpoint from another
+		 * source is unbound, since it no longer matches the choice.
+		 *
+		 * @param {?object} option - selected source option.
+		 * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-002
+		 */
+		onSelectSource(option) {
+			const id = optionId(option)
+			this.pickedSourceId = id
+			const bound = this.boundEndpoint()
+			if (bound && id && bound.sourceId !== id) {
+				this.$emit('update:endpointPath', '')
 			}
 		},
 
@@ -183,7 +418,7 @@ export default {
 		 * Handle endpoint selection from the live list.
 		 *
 		 * @param {?object} option - selected NcSelect option.
-		 * @spec openspec/changes/openconnector-api-sources/tasks.md#task-2.1
+		 * @spec openspec/changes/archive/2026-06-14-openconnector-api-sources/tasks.md#task-2.1
 		 */
 		onSelect(option) {
 			const path = option && option.path ? option.path : ''
@@ -199,7 +434,7 @@ export default {
 		 * same-origin per REQ-OCAS-004.
 		 *
 		 * @param {string} value - raw input.
-		 * @spec openspec/changes/openconnector-api-sources/tasks.md#task-2.2
+		 * @spec openspec/changes/archive/2026-06-14-openconnector-api-sources/tasks.md#task-2.2
 		 */
 		onManualInput(value) {
 			const cleaned = String(value || '')

@@ -1,12 +1,14 @@
 # docudesk-document-templates Specification
 
-**OpenSpec changes**: [automation-document-action](../../changes/archive/2026-07-24-automation-document-action/) _(archived 2026-07-24)_, [harden-xss-dos-csrf](../../changes/harden-xss-dos-csrf/)
+**OpenSpec changes**: [automation-document-action](../../changes/archive/2026-07-24-automation-document-action/) _(archived 2026-07-24)_, [harden-xss-dos-csrf](../../changes/archive/2026-10-07-harden-xss-dos-csrf/) _(archived 2026-10-07)_
 
 **Status**: in-progress
 
 ## Purpose
 TBD - created by archiving change docudesk-document-templates. Update Purpose after archive.
+
 ## Requirements
+
 ### Requirement: REQ-DDT-001 Document-attachment declaration in the v2 manifest
 
 The system SHALL support a `documents[]` array in the manifest v2 `runtime` block. Each entry SHALL carry:
@@ -179,3 +181,24 @@ Buildiq's Docudesk integration SHALL call exactly the following existing Docudes
   owner impersonated as the active NC session for that call
 - **AND** no `OCA\DocuDesk\*` class is imported or instantiated directly
 
+### Requirement: The document-template preview MUST be sanitized before render
+
+The document-template preview SHALL be sanitized before it is rendered: the
+`previewContent` bound via `v-html` in `DocumentTemplateAttachmentDialog.vue`
+MUST pass through `DOMPurify.sanitize(...)` (full HTML profile) — or be rendered
+in a sandboxed iframe — before it reaches the binding, and the app MUST NOT rely
+solely on the page CSP for this sink. The preview is the Docudesk endpoint's
+response (`data.html || data.content || data.preview`); because a document
+template can be authored by one user and previewed in another user's
+authenticated session, it is a cross-user (stored) XSS sink.
+
+#### Scenario: Injected script in a preview is neutralized
+- **WHEN** a document-template preview contains `<script>` or an inline event
+  handler (e.g. `onerror=`)
+- **THEN** the rendered output contains no executable script — the markup is
+  stripped/neutralized by sanitization before render
+
+#### Scenario: Benign preview markup renders unchanged
+- **WHEN** a preview contains ordinary formatting markup (headings, lists,
+  emphasis)
+- **THEN** the sanitized output preserves that formatting

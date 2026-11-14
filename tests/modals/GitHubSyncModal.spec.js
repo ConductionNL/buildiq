@@ -242,4 +242,77 @@ describe('GitHubSyncModal.vue', () => {
 		expect(wrapper.vm.error).toContain('manifest.json')
 		expect(wrapper.vm.pullResult).toBeNull()
 	})
+	describe('doPull branches', () => {
+		it('does nothing when the app is not linked', async () => {
+			const wrapper = await mountModal({ status: { githubRepo: null } })
+			await wrapper.vm.doPull()
+			expect(axiosMock.post).not.toHaveBeenCalled()
+		})
+
+		it('does nothing while a pull is already running', async () => {
+			const wrapper = await mountModal()
+			wrapper.vm.pulling = true
+			await wrapper.vm.doPull()
+			expect(axiosMock.post).not.toHaveBeenCalled()
+		})
+
+		it('sends the default branch and the chosen credential', async () => {
+			const wrapper = await mountModal({
+				status: { ...linkedStatus, githubDefaultBranch: 'trunk' },
+			})
+			wrapper.vm.selectedCredential = { id: 'cred-1', label: 'My GitHub' }
+			axiosMock.post.mockResolvedValueOnce({ data: { outcome: 'ok', versionUuid: 'v' } })
+			await wrapper.vm.doPull()
+			expect(axiosMock.post.mock.calls[0][1]).toEqual({
+				ref: 'trunk',
+				credentialId: 'cred-1',
+			})
+			expect(wrapper.vm.pulling).toBe(false)
+		})
+
+		it('falls back to main when the status names no default branch', async () => {
+			const wrapper = await mountModal({
+				status: { ...linkedStatus, githubDefaultBranch: '' },
+			})
+			axiosMock.post.mockResolvedValueOnce({ data: { outcome: 'ok' } })
+			await wrapper.vm.doPull()
+			expect(axiosMock.post.mock.calls[0][1]).toEqual({ ref: 'main' })
+			expect(wrapper.vm.pullResult).toEqual({ outcome: 'ok' })
+		})
+
+		it.each([
+			[{ outcome: 'conflict', detail: 'D', error: 'E' }, 'D'],
+			[{ outcome: 'conflict', error: 'E' }, 'E'],
+			[{ outcome: 'conflict' }, 'Pull failed.'],
+		])('reports a failed outcome %j as %s', async (data, message) => {
+			const wrapper = await mountModal()
+			axiosMock.post.mockResolvedValueOnce({ data })
+			await wrapper.vm.doPull()
+			expect(wrapper.vm.error).toBe(message)
+			expect(wrapper.vm.pullResult).toBeNull()
+			expect(wrapper.vm.pulling).toBe(false)
+		})
+
+		it('accepts a non-ok outcome that still created a version', async () => {
+			const wrapper = await mountModal()
+			const data = { outcome: 'partial', versionUuid: 'ver-3' }
+			axiosMock.post.mockResolvedValueOnce({ data })
+			await wrapper.vm.doPull()
+			expect(wrapper.vm.error).toBe('')
+			expect(wrapper.vm.pullResult).toEqual(data)
+		})
+
+		it.each([
+			[{ response: { data: { detail: 'D', error: 'E' } } }, 'D'],
+			[{ response: { data: { error: 'E', path: 'a.json' } } }, 'E (in a.json)'],
+			[{ message: 'network down' }, 'network down'],
+			[{}, 'Pull failed.'],
+		])('reports a request failure %j as %s', async (err, message) => {
+			const wrapper = await mountModal()
+			axiosMock.post.mockRejectedValueOnce(err)
+			await wrapper.vm.doPull()
+			expect(wrapper.vm.error).toBe(message)
+			expect(wrapper.vm.pulling).toBe(false)
+		})
+	})
 })

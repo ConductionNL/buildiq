@@ -20,6 +20,19 @@
 -->
 <template>
 	<div data-testid="copilot-panel" class="copilot-panel">
+		<div class="copilot-panel__header">
+			<h3 class="copilot-panel__heading">
+				{{ t('buildiq', 'AI copilot') }}
+			</h3>
+			<NcButton
+				v-if="closable"
+				variant="tertiary"
+				:aria-label="t('buildiq', 'Close the copilot')"
+				@click="$emit('close')">
+				{{ t('buildiq', 'Close') }}
+			</NcButton>
+		</div>
+
 		<div
 			v-if="agentId"
 			data-testid="copilot-acting-as"
@@ -32,7 +45,23 @@
 			>
 		</div>
 
+		<p v-if="versionSlug" class="copilot-panel__scope">
+			{{
+				t('buildiq', 'Changes go to the {version} version.', {
+					version: versionSlug,
+				})
+			}}
+		</p>
+
 		<div class="copilot-panel__messages">
+			<p v-if="messages.length === 0" class="copilot-panel__empty">
+				{{
+					t(
+						'buildiq',
+						'Ask for a page, a widget or a menu item. You review every change before it is applied.',
+					)
+				}}
+			</p>
 			<div
 				v-for="message in messages"
 				:key="message.id"
@@ -47,6 +76,9 @@
 					v-else-if="message.role === 'assistant' && message.plan"
 					:plan="message.plan"
 					:canApprove="isPendingProposal(message) ? canApprove : false"
+					:validationErrors="
+						isPendingProposal(message) ? validationErrors : []
+					"
 					:busy="isPendingProposal(message) && state === 'executing'"
 					@approve="onApprove(message)"
 					@discard="onDiscard(message)" />
@@ -54,9 +86,23 @@
 					v-else-if="message.role === 'assistant'"
 					class="copilot-panel__bubble copilot-panel__bubble--error">
 					{{ message.error }}
+					<span
+						v-if="message.errorDetail"
+						class="copilot-panel__bubble-detail">
+						{{ message.errorDetail }}
+					</span>
 				</p>
 			</div>
 		</div>
+
+		<p v-if="state === 'planning'" class="copilot-panel__waiting">
+			{{
+				t(
+					'buildiq',
+					'Asking the AI provider. This usually takes a few seconds.',
+				)
+			}}
+		</p>
 
 		<div class="copilot-panel__input-row">
 			<textarea
@@ -91,7 +137,7 @@
 <script>
 import { NcButton } from '@nextcloud/vue'
 import CopilotProposal from './CopilotProposal.vue'
-import { useCopilot } from '../../composables/useCopilot.js'
+import { uniqueValidatorMessages, useCopilot } from '../../composables/useCopilot.js'
 
 export default {
 	name: 'CopilotPanel',
@@ -137,9 +183,31 @@ export default {
 			type: Array,
 			default: () => [],
 		},
+
+		/**
+		 * Whether to offer a Close button in the panel header. True where the
+		 * panel is an overlay the user has to be able to dismiss (the page
+		 * designer's side rail); false where it is part of the page already
+		 * (the agent workspace tab).
+		 */
+		closable: {
+			type: Boolean,
+			default: false,
+		},
+
+		/**
+		 * The version of the app this panel writes to. Shown under the heading
+		 * and sent with every plan request, so a proposal lands on the version
+		 * the user is editing rather than on the builder tools' `development`
+		 * default.
+		 */
+		versionSlug: {
+			type: String,
+			default: '',
+		},
 	},
 
-	emits: ['executed'],
+	emits: ['executed', 'close'],
 
 	setup() {
 		return { copilot: useCopilot() }
@@ -159,7 +227,7 @@ export default {
 		 * The copilot state machine's current state.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		state() {
 			return this.copilot.state.value
@@ -170,10 +238,23 @@ export default {
 		 * canonical manifest v2 validator.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		canApprove() {
 			return this.copilot.canApprove.value
+		},
+
+		/**
+		 * The pending proposal's canonical-validator messages, flattened and
+		 * de-duplicated across the plan's predicted manifests. Passed to the
+		 * proposal card so a refusal names the field that failed rather than
+		 * leaving the reader to guess at their own wording.
+		 *
+		 * @return {Array<string>}
+		 * @spec openspec/specs/ai-copilot/spec.md
+		 */
+		validationErrors() {
+			return uniqueValidatorMessages(this.copilot.manifestErrors.value)
 		},
 
 		/**
@@ -184,7 +265,7 @@ export default {
 		 * exists at a time).
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		inputDisabled() {
 			return (
@@ -202,32 +283,19 @@ export default {
 		 *
 		 * @param {object} message - a message list entry.
 		 * @return {boolean}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		isPendingProposal(message) {
 			return message.id === this.pendingMessageId
 		},
 
 		/**
-		 * Send the draft as a new user turn and request a plan.
+		 * Add the assistant's answer to the last request: the plan to review, or the error.
 		 *
-		 * @return {Promise<void>}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @return {void}
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
-		async onSend() {
-			const text = this.draft.trim()
-			if (!text || this.inputDisabled) {
-				return
-			}
-			this.messages.push({ id: this.nextMessageId++, role: 'user', text })
-			this.draft = ''
-
-			await this.copilot.generatePlan(
-				text,
-				this.appSlug,
-				this.agentId || undefined,
-			)
-
+		appendPlanOutcome() {
 			const assistantId = this.nextMessageId++
 			if (this.copilot.state.value === 'review') {
 				this.pendingMessageId = assistantId
@@ -241,8 +309,33 @@ export default {
 					id: assistantId,
 					role: 'assistant',
 					error: this.copilot.errorMessage.value,
+					errorDetail: this.copilot.errorDetail.value,
 				})
 			}
+		},
+
+		/**
+		 * Send the draft as a new user turn and request a plan.
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/specs/ai-copilot/spec.md
+		 */
+		async onSend() {
+			const text = this.draft.trim()
+			if (!text || this.inputDisabled) {
+				return
+			}
+			this.messages.push({ id: this.nextMessageId++, role: 'user', text })
+			this.draft = ''
+
+			await this.copilot.generatePlan(
+				text,
+				this.appSlug,
+				this.agentId || undefined,
+				this.versionSlug || undefined,
+			)
+
+			this.appendPlanOutcome()
 		},
 
 		/**
@@ -250,7 +343,7 @@ export default {
 		 *
 		 * @param {object} message - the assistant message carrying the plan.
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		async onApprove(message) {
 			if (!this.isPendingProposal(message)) {
@@ -269,7 +362,7 @@ export default {
 		 *
 		 * @param {object} message - the assistant message carrying the plan.
 		 * @return {void}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		onDiscard(message) {
 			if (!this.isPendingProposal(message)) {
@@ -288,6 +381,40 @@ export default {
 	flex-direction: column;
 	height: 100%;
 	gap: 8px;
+}
+
+.copilot-panel__header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+}
+
+.copilot-panel__heading {
+	margin: 0;
+	font-size: 1.1em;
+}
+
+.copilot-panel__scope {
+	color: var(--color-text-maxcontrast);
+	margin: 0;
+	font-size: 0.9em;
+}
+
+.copilot-panel__empty {
+	color: var(--color-text-maxcontrast);
+	margin: 0;
+}
+
+.copilot-panel__waiting {
+	color: var(--color-text-maxcontrast);
+	margin: 0;
+}
+
+.copilot-panel__bubble-detail {
+	display: block;
+	color: var(--color-text-maxcontrast);
+	font-size: 0.9em;
 }
 
 .copilot-panel__messages {

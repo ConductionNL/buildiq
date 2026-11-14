@@ -34,6 +34,7 @@ import { validateManifestConnectors } from '../services/manifestValidation/conne
 import { validateDocumentAttachments } from '../services/manifestValidation/documentAttachments.js'
 import { validateExternalForms } from '../services/manifestValidation/externalForms.js'
 import { validateFormLogic } from '../services/manifestValidation/formLogic.js'
+import { validateLabels } from '../services/manifestValidation/labels.js'
 import { validateSchedules } from '../services/manifestValidation/schedules.js'
 import { validateWorkflowAttachments } from '../services/manifestValidation/workflowAttachments.js'
 
@@ -42,7 +43,7 @@ const DEBOUNCE_MS = 300
 /**
  * Observed behaviour of `useManifestValidator` (retrofit annotation).
  *
- * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-1
+ * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-frontend-foundation/tasks.md#task-1
  */
 export function useManifestValidator() {
 	const errors = ref([])
@@ -84,6 +85,8 @@ export function useManifestValidator() {
 					.concat(validateSchedules(manifest))
 					.concat(validateFormLogic(manifest))
 					.concat(validateExternalForms(manifest))
+					// An empty label on an action, widget or form field (REQ-PLAT-005).
+					.concat(validateLabels(manifest))
 				errors.value = libErrors.concat(appErrors)
 			} catch (e) {
 				errors.value = [`validator threw: ${e && e.message ? e.message : e}`]

@@ -67,12 +67,10 @@
 		</div>
 
 		<template #actions>
-			<NcButton @click="$emit('close')">
-				{{ t('buildiq', 'Cancel') }}
-			</NcButton>
-			<NcButton variant="primary" :disabled="saving" @click="save">
-				{{ saving ? t('buildiq', 'Saving…') : t('buildiq', 'Save') }}
-			</NcButton>
+			<SaveCancelActions
+				:saving="saving"
+				@cancel="$emit('close')"
+				@save="save" />
 		</template>
 	</NcDialog>
 </template>
@@ -89,6 +87,8 @@ import {
 	NcTextArea,
 	NcTextField,
 } from '@nextcloud/vue'
+import SaveCancelActions from '../components/SaveCancelActions.vue'
+import { saveRuleSetRecord } from './ruleSetRecords.js'
 
 export default {
 	name: 'ConditionActionRuleEditor',
@@ -100,6 +100,7 @@ export default {
 		NcSelect,
 		NcTextArea,
 		NcTextField,
+		SaveCancelActions,
 	},
 
 	props: {
@@ -170,10 +171,7 @@ export default {
 			this.saving = true
 			this.errorMessage = ''
 			try {
-				const ruleSetUrl = generateUrl(
-					'/apps/openregister/api/objects/buildiq/rule-set',
-				)
-				await axios.post(ruleSetUrl, {
+				await saveRuleSetRecord({
 					slug: this.staged.slug,
 					name: this.staged.name,
 					ruleType: 'condition-action',

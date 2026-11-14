@@ -1,0 +1,68 @@
+{
+	"_comment": "The exact page a widget-adding builder tool produces. Read from two sides on purpose: tests/Unit/Support/ManifestWidgetShapeTest.php asserts that OCA\\Buildiq\\Support\\ManifestWidgetShape builds this, and tests/vitest/copilotWidgetShape.spec.js runs the canonical validateManifest() over a manifest carrying it. Change the PHP shape and the first test fails; change this file to match and the second one says whether the new shape is still valid. Before this fixture existed the two tools wrote {type, config}, which no test compared with the validator at all.",
+	"page": {
+		"id": "overview",
+		"route": "/",
+		"type": "dashboard",
+		"title": "Overview",
+		"config": {
+			"widgets": [
+				{
+					"id": "tools-out-on-loan",
+					"title": "Tools out on loan",
+					"type": "stat",
+					"content": {
+						"register": "tool-library",
+						"schema": "loan",
+						"source": {
+							"register": "tool-library",
+							"schema": "loan"
+						}
+					}
+				},
+				{
+					"id": "loans-per-month",
+					"title": "Loans per month",
+					"type": "chart",
+					"content": {
+						"chartKind": "bar"
+					},
+					"props": {
+						"chartKind": "bar"
+					}
+				},
+				{
+					"id": "overdue",
+					"title": "Overdue",
+					"type": "stat"
+				}
+			],
+			"layout": [
+				{
+					"id": "tools-out-on-loan",
+					"widgetId": "tools-out-on-loan",
+					"gridX": 0,
+					"gridY": 0,
+					"gridWidth": 6,
+					"gridHeight": 2
+				},
+				{
+					"id": "loans-per-month",
+					"widgetId": "loans-per-month",
+					"gridX": 6,
+					"gridY": 0,
+					"gridWidth": 6,
+					"gridHeight": 2
+				},
+				{
+					"id": "overdue",
+					"widgetId": "overdue",
+					"gridX": 0,
+					"gridY": 2,
+					"gridWidth": 6,
+					"gridHeight": 2
+				}
+			]
+		}
+	}
+}

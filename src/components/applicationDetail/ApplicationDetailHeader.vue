@@ -19,12 +19,35 @@
 	and the insights window via the shared `useInsightsWindow` singleton (driven
 	by the toggle here).
 
-	@spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+	@spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 -->
 <template>
 	<div class="ob-detail-header">
+		<!-- Until the record arrives there is nothing true to show: no name,
+		     no status, no versions. A loading line instead of "Untitled
+		     application" and an empty pill row (the instance can take ten
+		     seconds to answer). -->
+		<section
+			v-if="!application"
+			class="ob-detail-header__loading"
+			role="status"
+			aria-live="polite">
+			<template v-if="error">
+				{{
+					t(
+						'buildiq',
+						'Could not load this app. Reload the page to try again.',
+					)
+				}}
+			</template>
+			<template v-else>
+				<NcLoadingIcon :size="20" />
+				{{ t('buildiq', 'Loading app…') }}
+			</template>
+		</section>
+
 		<!-- 1. Hero strip -->
-		<section class="ob-detail-header__hero">
+		<section v-else class="ob-detail-header__hero">
 			<img
 				v-if="iconUrl"
 				:src="iconUrl"
@@ -88,7 +111,7 @@
 		</section>
 
 		<!-- 2 + 3. Version pills and window toggle row -->
-		<section class="ob-detail-header__controls">
+		<section v-if="application" class="ob-detail-header__controls">
 			<div
 				class="ob-detail-header__pills"
 				role="tablist"
@@ -129,20 +152,106 @@
 					</button>
 				</div>
 			</div>
+			<p
+				v-if="promoteNotice"
+				class="ob-detail-header__promote-notice"
+				:class="{ 'ob-detail-header__promote-notice--error': promoteFailed }"
+				role="status">
+				{{ promoteNotice }}
+			</p>
 		</section>
+
+		<PromoteVersionDialog
+			v-if="promoteDialog.open && promoteDialog.sourceVersion && application"
+			:sourceVersion="promoteDialog.sourceVersion"
+			:targetVersion="promoteTarget"
+			:application="application"
+			@confirm="onPromoteConfirm"
+			@cancel="onPromoteCancel" />
 	</div>
 </template>
 
 <script>
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
+import NcLoadingIcon from '@nextcloud/vue/components/NcLoadingIcon'
 import OpenInNew from 'vue-material-design-icons/OpenInNew.vue'
-import { fetchApplicationRecord } from '../../composables/useApplicationRecord.js'
+import PromoteVersionDialog from '../../dialogs/PromoteVersionDialog.vue'
+import {
+	closePromoteDialog,
+	markPromoted,
+	openPromoteDialog,
+	promoteDialog,
+	versionUuidOf,
+} from '../../composables/usePromoteDialog.js'
+import { applicationVersionsMixin } from '../../mixins/applicationVersions.js'
 import { buildVersionedRoute } from '../../router/helpers.js'
+
+/**
+ * The permission buckets that give a role badge, highest first, with the
+ * badge each one shows.
+ */
+const ROLE_BADGES = [
+	['owners', () => t('buildiq', 'owner')],
+	['editors', () => t('buildiq', 'editor')],
+	['viewers', () => t('buildiq', 'viewer')],
+]
+
+/**
+ * Whether a permission bucket lists the user (as `user:<uid>` or bare).
+ *
+ * @param {Array<string>|string|undefined} bucket The bucket from the permissions block.
+ * @param {string} uid The user id.
+ * @return {boolean}
+ */
+function inBucket(bucket, uid) {
+	return (
+		Array.isArray(bucket)
+		&& bucket.some((p) => p === `user:${uid}` || p === uid)
+	)
+}
+
+/**
+ * The display names of a promotion's source and target versions.
+ *
+ * @param {object} source The version being promoted.
+ * @param {object|null} target The version it is promoted to.
+ * @return {{source: string, target: string}}
+ */
+function promotionNames(source, target) {
+	return {
+		source: source.name || source.slug,
+		target: (target && (target.name || target.slug)) || '',
+	}
+}
+
+/**
+ * The response body of a failed request, or `{}`.
+ *
+ * @param {Error|null} e The rejected request.
+ * @return {object}
+ */
+function responseData(e) {
+	return (e && e.response && e.response.data) || {}
+}
+
+/**
+ * Why a promotion failed: the server's message or detail, else the error
+ * message, else nothing.
+ *
+ * @param {Error|null} e The rejected request.
+ * @return {string}
+ */
+function promotionFailureReason(e) {
+	const data = responseData(e)
+	return data.message || data.detail || (e && e.message) || ''
+}
 
 export default {
 	name: 'ApplicationDetailHeader',
-	components: { OpenInNew },
+	components: { NcLoadingIcon, OpenInNew, PromoteVersionDialog },
+	mixins: [applicationVersionsMixin],
+
 	props: {
 		// CnDetailPage passes the resolved record as `object` per the
 		// manifest contract. We accept both `object` and a route-param
@@ -167,25 +276,36 @@ export default {
 			callerUid:
 				(typeof window !== 'undefined' && window.OC && window.OC.currentUser)
 				|| '',
+
+			// Shared with the Actions menu and the Version history tab, which
+			// open the same dialog (the header is the one that mounts it).
+			promoteDialog,
+			promoting: false,
+			promoteNotice: '',
+			promoteFailed: false,
 		}
 	},
 
 	computed: {
 		/**
-		 * App slug from the resolved Application record.
+		 * The version the open promotion dialog promotes into.
 		 *
-		 * @return {string}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 * @return {object|null}
+		 * @spec openspec/specs/version-promotion/spec.md
 		 */
-		appSlug() {
-			return (this.application && this.application.slug) || ''
+		promoteTarget() {
+			const source = this.promoteDialog.sourceVersion
+			if (!source || !source.promotesTo) {
+				return null
+			}
+			return this.versions.find((v) => v.uuid === source.promotesTo) || null
 		},
 
 		/**
 		 * Display name of the application.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		applicationName() {
 			return (
@@ -199,7 +319,7 @@ export default {
 		 * Application description.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		applicationDescription() {
 			return (this.application && this.application.description) || ''
@@ -237,7 +357,7 @@ export default {
 		 * as 'virtual' (legacy default), matching the schema.
 		 *
 		 * @return {string} 'virtual' | 'hybrid'
-		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+		 * @spec openspec/specs/unified-app-model/spec.md
 		 */
 		appTypeKey() {
 			return (this.application && this.application.appType) === 'hybrid'
@@ -249,7 +369,7 @@ export default {
 		 * Human-readable label for the app-type badge.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+		 * @spec openspec/specs/unified-app-model/spec.md
 		 */
 		appTypeLabel() {
 			return this.appTypeKey === 'hybrid'
@@ -262,7 +382,7 @@ export default {
 		 * read-only — it mirrors the installed Nextcloud app it customizes.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+		 * @spec openspec/specs/unified-app-model/spec.md
 		 */
 		isHybrid() {
 			return this.appTypeKey === 'hybrid'
@@ -272,7 +392,7 @@ export default {
 		 * URL of the app's icon SVG.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		iconUrl() {
 			if (!this.appSlug) return ''
@@ -287,7 +407,7 @@ export default {
 		 * `/apps/{slug}`. Empty for virtual apps (not installed NC apps).
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+		 * @spec openspec/specs/unified-app-model/spec.md
 		 */
 		installedAppUrl() {
 			if (this.isHybrid === false || !this.appSlug) return ''
@@ -295,64 +415,20 @@ export default {
 		},
 
 		/**
-		 * Production version UUID resolved from the Application record.
-		 *
-		 * @return {string|null}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
-		 */
-		productionVersionUuid() {
-			const pv = this.application && this.application.productionVersion
-			if (!pv) return null
-			if (typeof pv === 'string') return pv
-			return pv.uuid || pv.id || null
-		},
-
-		/**
-		 * Currently active version (selected, or production, or first).
-		 *
-		 * @return {object|null}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
-		 */
-		activeVersion() {
-			if (!this.selectedVersionUuid) {
-				return this.productionVersion || this.orderedVersions[0] || null
-			}
-			return (
-				this.orderedVersions.find((v) => v.uuid === this.selectedVersionUuid)
-				|| null
-			)
-		},
-
-		/**
 		 * Active version UUID.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		activeVersionUuid() {
 			return this.activeVersion ? this.activeVersion.uuid : ''
 		},
 
 		/**
-		 * The production version row (for the chain/star resolution).
-		 *
-		 * @return {object|null}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
-		 */
-		productionVersion() {
-			if (!this.productionVersionUuid) return null
-			return (
-				this.orderedVersions.find(
-					(v) => v.uuid === this.productionVersionUuid,
-				) || null
-			)
-		},
-
-		/**
 		 * Semver of the production version (badge in the hero).
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		productionSemver() {
 			return (this.productionVersion && this.productionVersion.semver) || ''
@@ -362,49 +438,17 @@ export default {
 		 * The caller's role on this application (owner / editor / viewer).
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		callerRole() {
 			const permissions =
 				(this.application && this.application.permissions) || {}
 			const uid = this.callerUid
 			if (!uid) return ''
-			const inBucket = (bucket) =>
-				Array.isArray(bucket)
-				&& bucket.some((p) => p === `user:${uid}` || p === uid)
-			if (inBucket(permissions.owners)) return t('buildiq', 'owner')
-			if (inBucket(permissions.editors)) return t('buildiq', 'editor')
-			if (inBucket(permissions.viewers)) return t('buildiq', 'viewer')
-			return ''
-		},
-
-		/**
-		 * Versions ordered along the promotesTo chain (most-upstream first).
-		 *
-		 * @return {Array<object>}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
-		 */
-		orderedVersions() {
-			const all = Array.isArray(this.versions) ? this.versions.slice() : []
-			if (all.length === 0) return []
-			const byUuid = new Map()
-			all.forEach((v) => byUuid.set(v.uuid, v))
-			const roots = all.filter(
-				(v) => !all.some((u) => u.promotesTo === v.uuid),
+			const badge = ROLE_BADGES.find(([bucket]) =>
+				inBucket(permissions[bucket], uid),
 			)
-			const ordered = []
-			const visited = new Set()
-			const walk = (v) => {
-				if (!v || visited.has(v.uuid)) return
-				visited.add(v.uuid)
-				ordered.push(v)
-				if (v.promotesTo) {
-					walk(byUuid.get(v.promotesTo))
-				}
-			}
-			roots.forEach((r) => walk(r))
-			all.forEach((v) => walk(v))
-			return ordered
+			return badge ? badge[1]() : ''
 		},
 
 		/**
@@ -412,7 +456,7 @@ export default {
 		 * versions are shown to editors/owners only.
 		 *
 		 * @return {Array<object>}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		visibleVersions() {
 			const uid = this.callerUid
@@ -433,52 +477,24 @@ export default {
 
 	watch: {
 		/**
-		 * Re-bind to a freshly resolved record and reload its versions.
-		 *
-		 * @param {object} next The new Application record.
-		 * @return {void}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
-		 */
-		object(next) {
-			if (next) {
-				this.application = next
-				this.loadVersions()
-			}
-		},
-
-		/**
 		 * Re-load when the route's objectId changes.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		objectId() {
 			this.refreshApplication()
 		},
 
-		'$route.query._version': function (newSlug) {
-			if (!newSlug) {
-				if (this.productionVersionUuid)
-					this.selectedVersionUuid = this.productionVersionUuid
-				return
-			}
-			const match = this.orderedVersions.find((v) => v.slug === newSlug)
-			if (match) this.selectedVersionUuid = match.uuid
-		},
-	},
-
-	/**
-	 * Fetch the Application + versions on mount.
-	 *
-	 * @return {void}
-	 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
-	 */
-	mounted() {
-		if (!this.application) {
-			this.refreshApplication()
-		} else {
+		/**
+		 * Reload the versions after a promotion started anywhere on the page.
+		 *
+		 * @return {void}
+		 * @spec openspec/specs/version-promotion/spec.md
+		 */
+		'promoteDialog.promotedAt': function () {
 			this.loadVersions()
-		}
+		},
 	},
 
 	methods: {
@@ -522,16 +538,12 @@ export default {
 		 *
 		 * @param {object} version The version row.
 		 * @return {void}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		selectVersion(version) {
 			if (!version || !version.slug) return
 			this.selectedVersionUuid = version.uuid
-			const route = buildVersionedRoute(
-				this.$route ? this.$route.name : 'VirtualAppDetail',
-				this.$route ? this.$route.params : {},
-				version.slug,
-			)
+			const route = this.versionRoute(version.slug)
 			if (this.$router) {
 				this.$router.replace(route).catch(() => {
 					/* ignore duplicate nav */
@@ -540,110 +552,152 @@ export default {
 		},
 
 		/**
-		 * Trigger a Promote affordance click — opens the registered
-		 * promotion dialog if available (REQ-OBADO-012).
+		 * The current route, re-aimed at a version.
+		 *
+		 * @param {string} slug The version slug.
+		 * @return {object}
+		 */
+		versionRoute(slug) {
+			const current = this.$route
+			return buildVersionedRoute(
+				current ? current.name : 'VirtualAppDetail',
+				current ? current.params : {},
+				slug,
+			)
+		},
+
+		/**
+		 * Open the promotion dialog for a pill's version (REQ-OBADO-012).
+		 *
+		 * This used to look for a `window.buildiq.openPromoteDialog` that
+		 * nothing registered, so the button did nothing and logged nothing
+		 * a user could see.
 		 *
 		 * @param {object} version The version row.
 		 * @return {void}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 * @spec openspec/specs/version-promotion/spec.md
 		 */
 		onPromoteClick(version) {
-			const opener =
-				typeof window !== 'undefined'
-				&& window.buildiq
-				&& typeof window.buildiq.openPromoteDialog === 'function'
-					? window.buildiq.openPromoteDialog
-					: null
-			if (opener) {
-				opener({ sourceVersion: version, application: this.application })
-				return
-			}
-			if (
-				typeof console !== 'undefined'
-				&& typeof console.debug === 'function'
-			) {
-				console.debug('buildiq: promote dialog not registered — deferred')
-			}
-			this.$emit('promote', {
+			this.promoteNotice = ''
+			openPromoteDialog({
 				sourceVersion: version,
 				application: this.application,
 			})
 		},
 
 		/**
-		 * Re-load the Application record by `objectId`.
+		 * Close the promotion dialog without promoting.
 		 *
-		 * @return {Promise<void>}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 * @return {void}
+		 * @spec openspec/specs/version-promotion/spec.md
 		 */
-		async refreshApplication() {
-			const uuid =
-				this.objectId
-				|| (this.$route && this.$route.params && this.$route.params.objectId)
-				|| ''
-			if (!uuid) return
+		onPromoteCancel() {
+			closePromoteDialog()
+		},
 
-			// Staleness token: if the uuid changes while a request is in flight
-			// (route change), the older response must not overwrite the newer
-			// record — latest-request-wins, not last-response-wins.
-			const seq = (this._appReqSeq || 0) + 1
-			this._appReqSeq = seq
-
+		/**
+		 * Promote the dialog's version with the chosen data strategy.
+		 *
+		 * @param {{strategy: string}} payload The dialog's choice.
+		 * @return {Promise<void>}
+		 * @spec openspec/specs/version-promotion/spec.md
+		 */
+		async onPromoteConfirm({ strategy }) {
+			const source = this.promoteDialog.sourceVersion
+			const sourceUuid = versionUuidOf(source)
+			if (!this.canPromote(source, sourceUuid)) return
+			const names = promotionNames(source, this.promoteTarget)
+			this.startPromotion(names)
 			try {
-				// Shared with ApplicationDetailDashboard so the two components —
-				// and this component's own three triggers — collapse onto ONE
-				// request instead of ten (#49).
-				const record = await fetchApplicationRecord(uuid)
-				if (seq !== this._appReqSeq) return // superseded — drop it
-				this.application = record
-				this.loadVersions()
+				await this.postPromotion(sourceUuid, strategy)
+				this.finishPromotion(names)
 			} catch (e) {
-				if (seq !== this._appReqSeq) return
-				this.error = e instanceof Error ? e : new Error(String(e))
+				this.failPromotion(names, e)
+			} finally {
+				this.promoting = false
 			}
 		},
 
 		/**
-		 * Load the version list for the current Application.
+		 * Whether a promotion of this source version can start: none is
+		 * running and both the app and the version have a UUID.
 		 *
-		 * @return {Promise<void>}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 * @param {object|null} source The version being promoted.
+		 * @param {string} sourceUuid Its UUID.
+		 * @return {boolean}
 		 */
-		async loadVersions() {
-			if (!this.appSlug) return
-			try {
-				const url = generateUrl(
-					`/apps/buildiq/api/applications/${encodeURIComponent(this.appSlug)}/versions`,
-				)
-				const { data } = await axios.get(url)
-				const list = Array.isArray(data)
-					? data
-					: data && Array.isArray(data.results)
-						? data.results
-						: []
-				this.versions = list.map((v) => ({
-					...v,
-					uuid: v.uuid || v.id || (v['@self'] && v['@self'].id) || null,
-				}))
+		canPromote(source, sourceUuid) {
+			return (
+				!this.promoting
+				&& !!source
+				&& !!versionUuidOf(this.application)
+				&& !!sourceUuid
+			)
+		},
 
-				const versionSlugFromRoute =
-					(this.$route && this.$route.query && this.$route.query._version)
-					|| ''
-				const match = versionSlugFromRoute
-					? this.orderedVersions.find(
-							(v) => v.slug === versionSlugFromRoute,
-						)
-					: null
-				if (match) {
-					this.selectedVersionUuid = match.uuid
-				} else if (this.productionVersionUuid) {
-					this.selectedVersionUuid = this.productionVersionUuid
-				} else if (this.orderedVersions[0]) {
-					this.selectedVersionUuid = this.orderedVersions[0].uuid
-				}
-			} catch (e) {
-				this.error = e instanceof Error ? e : new Error(String(e))
-			}
+		/**
+		 * Mark the promotion as running, show it and close the dialog.
+		 *
+		 * @param {{source: string, target: string}} names The version names.
+		 * @return {void}
+		 */
+		startPromotion(names) {
+			this.promoting = true
+			this.promoteFailed = false
+			this.promoteNotice = t(
+				'buildiq',
+				'Promoting {source} to {target}…',
+				names,
+			)
+			closePromoteDialog()
+		},
+
+		/**
+		 * POST the promotion of a version with the chosen data strategy.
+		 *
+		 * @param {string} sourceUuid The UUID of the version being promoted.
+		 * @param {string} strategy The chosen data strategy.
+		 * @return {Promise<void>}
+		 */
+		async postPromotion(sourceUuid, strategy) {
+			await axios.post(
+				generateUrl(
+					'/apps/buildiq/api/applications/{appUuid}/versions/{versionUuid}/promote',
+					{ appUuid: versionUuidOf(this.application), versionUuid: sourceUuid },
+				),
+				{ strategy },
+			)
+		},
+
+		/**
+		 * Show the promotion as done and reload the versions.
+		 *
+		 * @param {{source: string, target: string}} names The version names.
+		 * @return {void}
+		 */
+		finishPromotion(names) {
+			this.promoteNotice = t(
+				'buildiq',
+				'{source} is promoted to {target}.',
+				names,
+			)
+			markPromoted()
+		},
+
+		/**
+		 * Show why the promotion failed.
+		 *
+		 * @param {{source: string, target: string}} names The version names.
+		 * @param {Error|null} e The rejected request.
+		 * @return {void}
+		 */
+		failPromotion(names, e) {
+			this.promoteFailed = true
+			this.promoteNotice = t(
+				'buildiq',
+				'Could not promote {source}: {reason}',
+				{ ...names, reason: promotionFailureReason(e) },
+			)
 		},
 	},
 }
@@ -772,6 +826,31 @@ export default {
 	overflow: hidden;
 }
 
+/*
+ * Nextcloud's core stylesheet styles EVERY plain <button> — see
+ * `button:not(.button-vue, [class^="vs__"])` in core/css/inputs.scss, which
+ * sets `border-radius: var(--border-radius)` and, one nesting level deeper,
+ * `margin: 3px; margin-inline-start: 0`. Both land on these segments, and
+ * inside a pill-shaped `overflow: hidden` group that reads as exactly the
+ * reported damage: the parent's 999px curve shaves the corners off a child
+ * rounded to a different radius, while the 3px margin leaves a gap down each
+ * side.
+ *
+ * So the group's rounding is the ONLY rounding: square children, clipped by
+ * the parent. The active segment then fills its end of the pill cleanly.
+ *
+ * Specificity is load-bearing. NC's margin rule scores (0,2,1); a scoped
+ * `.ob-detail-header__pill` is only (0,2,0) and loses, which is why setting
+ * `margin: 0` on the segment classes alone did nothing. Adding the parent
+ * takes this to (0,3,0) and it wins on specificity rather than on
+ * `!important`.
+ */
+.ob-detail-header__pill-group > .ob-detail-header__pill,
+.ob-detail-header__pill-group > .ob-detail-header__pill-promote {
+	border-radius: 0;
+	margin: 0;
+}
+
 .ob-detail-header__pill {
 	padding: 6px 12px;
 	background: transparent;
@@ -794,28 +873,26 @@ export default {
 	cursor: pointer;
 }
 
+.ob-detail-header__loading {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	min-height: 64px;
+	color: var(--color-text-maxcontrast);
+}
+
+.ob-detail-header__promote-notice {
+	margin: 0;
+	font-size: 13px;
+	color: var(--color-text-maxcontrast);
+}
+
+.ob-detail-header__promote-notice--error {
+	color: var(--color-error-text, var(--color-error));
+}
+
 .ob-detail-header__pill-star {
 	font-weight: 700;
 	margin-right: 2px;
-}
-
-.ob-detail-header__window-toggle {
-	display: inline-flex;
-	border: 1px solid var(--color-border, #ddd);
-	border-radius: 999px;
-	overflow: hidden;
-}
-
-.ob-detail-header__window-btn {
-	padding: 6px 12px;
-	background: transparent;
-	border: 0;
-	cursor: pointer;
-	font-size: 13px;
-}
-
-.ob-detail-header__window-btn--active {
-	background: var(--color-primary-element, #4376fc);
-	color: var(--color-primary-element-text, #fff);
 }
 </style>

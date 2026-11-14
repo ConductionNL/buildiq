@@ -139,8 +139,6 @@
 </template>
 
 <script>
-import axios from '@nextcloud/axios'
-import { generateUrl } from '@nextcloud/router'
 import {
 	NcButton,
 	NcCheckboxRadioSwitch,
@@ -148,32 +146,18 @@ import {
 	NcSelect,
 	NcTextField,
 } from '@nextcloud/vue'
+import { fetchConnectorSynchronizations } from '../services/connectorSynchronizations.js'
 import {
 	isValidCron,
 	validateScheduleEntry,
 } from '../services/manifestValidation/schedules.js'
-
-/** Cadence presets that write an `interval` in seconds. */
-const INTERVAL_PRESETS = Object.freeze([
-	{ id: 'hourly', interval: 3600 },
-	{ id: 'daily', interval: 86400 },
-	{ id: 'weekly', interval: 604800 },
-	{ id: 'monthly', interval: 2592000 },
-])
-
-/**
- * Derive a kebab-case slug from a human label.
- *
- * @param {string} label - the human label.
- * @return {string}
- */
-function slugify(label) {
-	return String(label || '')
-		.toLowerCase()
-		.trim()
-		.replace(/[^a-z0-9]+/g, '-')
-		.replace(/^-+|-+$/g, '')
-}
+import { slugify } from '../utils/slugify.js'
+import {
+	cadenceById,
+	cadenceOptions,
+	presetById,
+	presetForInterval,
+} from './scheduleCadence.js'
 
 /**
  * Suffix `-2`, `-3`, … until the slug is unique against `taken`.
@@ -239,27 +223,17 @@ export default {
 	},
 
 	computed: {
-		/** @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-005 */
+		/** @spec openspec/specs/openbuild-schedules-authoring/spec.md#req-obsa-005 */
 		editing() {
 			return !!this.entry
 		},
 
-		/** @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-002 */
+		/** @spec openspec/specs/openbuild-schedules-authoring/spec.md#req-obsa-002 */
 		cadenceOptions() {
-			return [
-				{ id: 'hourly', label: t('buildiq', 'Hourly') },
-				{ id: 'daily', label: t('buildiq', 'Daily') },
-				{ id: 'weekly', label: t('buildiq', 'Weekly') },
-				{ id: 'monthly', label: t('buildiq', 'Monthly') },
-				{ id: 'custom-cron', label: t('buildiq', 'Custom (cron)') },
-				{
-					id: 'custom-interval',
-					label: t('buildiq', 'Custom interval (seconds)'),
-				},
-			]
+			return cadenceOptions()
 		},
 
-		/** @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-003 */
+		/** @spec openspec/specs/openbuild-schedules-authoring/spec.md#req-obsa-003 */
 		actionOptions() {
 			return [
 				{
@@ -269,22 +243,22 @@ export default {
 			]
 		},
 
-		/** @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-002 */
+		/** @spec openspec/specs/openbuild-schedules-authoring/spec.md#req-obsa-002 */
 		isCustomCron() {
 			return this.cadenceOption && this.cadenceOption.id === 'custom-cron'
 		},
 
-		/** @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-002 */
+		/** @spec openspec/specs/openbuild-schedules-authoring/spec.md#req-obsa-002 */
 		isCustomInterval() {
 			return this.cadenceOption && this.cadenceOption.id === 'custom-interval'
 		},
 
-		/** @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-002 */
+		/** @spec openspec/specs/openbuild-schedules-authoring/spec.md#req-obsa-002 */
 		cronValid() {
 			return isValidCron(this.cron)
 		},
 
-		/** @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-003 */
+		/** @spec openspec/specs/openbuild-schedules-authoring/spec.md#req-obsa-003 */
 		isSyncAction() {
 			return (
 				this.actionOption
@@ -292,12 +266,12 @@ export default {
 			)
 		},
 
-		/** @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-003 */
+		/** @spec openspec/specs/openbuild-schedules-authoring/spec.md#req-obsa-003 */
 		syncPickerAvailable() {
 			return !this.syncFetchFailed && this.syncOptions.length > 0
 		},
 
-		/** @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-004 */
+		/** @spec openspec/specs/openbuild-schedules-authoring/spec.md#req-obsa-004 */
 		derivedId() {
 			if (this.editing) {
 				return this.entry.id
@@ -311,7 +285,7 @@ export default {
 		 * one-of `interval`|`cron` invariant.
 		 *
 		 * @return {object}
-		 * @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-002
+		 * @spec openspec/specs/openbuild-schedules-authoring/spec.md#req-obsa-002
 		 */
 		candidateEntry() {
 			const entry = {
@@ -319,7 +293,7 @@ export default {
 				enabled: this.enabled,
 			}
 			const cadenceId = this.cadenceOption ? this.cadenceOption.id : null
-			const preset = INTERVAL_PRESETS.find((p) => p.id === cadenceId)
+			const preset = presetById(cadenceId)
 			if (preset) {
 				entry.interval = preset.interval
 			} else if (cadenceId === 'custom-cron') {
@@ -336,7 +310,7 @@ export default {
 			return entry
 		},
 
-		/** @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-006 */
+		/** @spec openspec/specs/openbuild-schedules-authoring/spec.md#req-obsa-006 */
 		valid() {
 			if (validateScheduleEntry(this.candidateEntry).length > 0) {
 				return false
@@ -352,7 +326,7 @@ export default {
 		 *   form from the schedule entry being edited and refetches the selectable
 		 *   synchronizations. Closing is not acted on, so the form is only ever reset
 		 *   on the way in.
-		 * @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-001
+		 * @spec openspec/specs/openbuild-schedules-authoring/spec.md#req-obsa-001
 		 */
 		open(isOpen) {
 			if (isOpen) {
@@ -367,7 +341,7 @@ export default {
 		 * Seed the form from an existing entry when editing, reverse-mapping
 		 * its cadence to a preset / custom-cron / custom-interval.
 		 *
-		 * @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-002
+		 * @spec openspec/specs/openbuild-schedules-authoring/spec.md#req-obsa-002
 		 */
 		hydrate() {
 			this.showValidation = false
@@ -391,20 +365,15 @@ export default {
 			this.cron = typeof e.cron === 'string' ? e.cron : ''
 			this.intervalSeconds = ''
 			if (typeof e.cron === 'string') {
-				this.cadenceOption = this.cadenceOptions.find(
-					(o) => o.id === 'custom-cron',
-				)
+				this.cadenceOption = cadenceById(this.cadenceOptions, 'custom-cron')
 			} else {
-				const preset = INTERVAL_PRESETS.find(
-					(p) => p.interval === e.interval,
-				)
+				const preset = presetForInterval(e.interval)
 				if (preset) {
-					this.cadenceOption = this.cadenceOptions.find(
-						(o) => o.id === preset.id,
-					)
+					this.cadenceOption = cadenceById(this.cadenceOptions, preset.id)
 				} else {
-					this.cadenceOption = this.cadenceOptions.find(
-						(o) => o.id === 'custom-interval',
+					this.cadenceOption = cadenceById(
+						this.cadenceOptions,
+						'custom-interval',
 					)
 					this.intervalSeconds =
 						e.interval !== undefined ? String(e.interval) : ''
@@ -421,7 +390,7 @@ export default {
 		 * Keep the label field and the auto-slug in sync.
 		 *
 		 * @param {string} value - the typed label.
-		 * @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-004
+		 * @spec openspec/specs/openbuild-schedules-authoring/spec.md#req-obsa-004
 		 */
 		onLabelInput(value) {
 			this.label = value
@@ -433,27 +402,13 @@ export default {
 		 * id field (mirrors ConnectorSourcePicker), preserving any stored id.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-003
+		 * @spec openspec/specs/openbuild-schedules-authoring/spec.md#req-obsa-003
 		 */
 		async fetchSynchronizations() {
 			this.syncLoading = true
 			this.syncFetchFailed = false
 			try {
-				const url = generateUrl(
-					'/apps/openregister/api/objects/openconnector/synchronization',
-				)
-				const { data } = await axios.get(url, { params: { limit: 500 } })
-				const list = Array.isArray(data && data.results)
-					? data.results
-					: Array.isArray(data)
-						? data
-						: []
-				this.syncOptions = list
-					.map((sync) => ({
-						id: String(sync.id || sync.uuid),
-						label: sync.name || sync.title || sync.id,
-					}))
-					.filter((o) => o.id && o.id !== 'undefined')
+				this.syncOptions = await fetchConnectorSynchronizations()
 				if (this.syncOptions.length === 0) {
 					this.syncFetchFailed = true
 				} else {
@@ -472,7 +427,7 @@ export default {
 		 * Handle a synchronization selection from the live picker.
 		 *
 		 * @param {?object} option - the selected NcSelect option.
-		 * @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-003
+		 * @spec openspec/specs/openbuild-schedules-authoring/spec.md#req-obsa-003
 		 */
 		onSyncSelect(option) {
 			this.syncId = option && option.id ? option.id : ''
@@ -481,7 +436,7 @@ export default {
 		/**
 		 * Assemble + emit the schedule entry (only when valid).
 		 *
-		 * @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-005
+		 * @spec openspec/specs/openbuild-schedules-authoring/spec.md#req-obsa-005
 		 */
 		onSave() {
 			this.showValidation = true
@@ -492,7 +447,7 @@ export default {
 			this.$emit('update:open', false)
 		},
 
-		/** @spec openspec/changes/schedules-editor/specs/openbuild-schedules-authoring/spec.md#req-obsa-001 */
+		/** @spec openspec/specs/openbuild-schedules-authoring/spec.md#req-obsa-001 */
 		onClose() {
 			this.$emit('update:open', false)
 		},

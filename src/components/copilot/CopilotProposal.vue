@@ -36,14 +36,24 @@
 			:fromLabelText="t('buildiq', 'Current')"
 			:toLabelText="t('buildiq', 'Predicted')" />
 
-		<p v-if="!canApprove" class="copilot-proposal__error" role="alert">
-			{{
-				t(
-					'buildiq',
-					'This proposal did not pass validation and cannot be applied.',
-				)
-			}}
-		</p>
+		<div v-if="!canApprove" class="copilot-proposal__error" role="alert">
+			<p>
+				{{
+					t(
+						'buildiq',
+						'This proposal did not pass validation and cannot be applied.',
+					)
+				}}
+			</p>
+			<ul
+				v-if="validationErrors.length"
+				class="copilot-proposal__error-list"
+				data-testid="copilot-proposal-validation-errors">
+				<li v-for="(line, idx) in validationErrors" :key="'ve-' + idx">
+					{{ line }}
+				</li>
+			</ul>
+		</div>
 
 		<div class="copilot-proposal__actions">
 			<NcButton
@@ -66,6 +76,9 @@
 <script>
 import { NcButton } from '@nextcloud/vue'
 import ManifestDiff from '../ManifestDiff.vue'
+
+/** The step arguments that summarise a step, in order of preference. */
+const STEP_DETAIL_KEYS = ['title', 'label', 'pageId', 'slug', 'appSlug']
 
 export default {
 	name: 'CopilotProposal',
@@ -90,6 +103,16 @@ export default {
 			type: Boolean,
 			default: false,
 		},
+
+		/**
+		 * Canonical-validator messages for this proposal, listed under the
+		 * refusal so the reader can see which field failed instead of only
+		 * that something did.
+		 */
+		validationErrors: {
+			type: Array,
+			default: () => [],
+		},
 	},
 
 	emits: ['approve', 'discard'],
@@ -100,18 +123,11 @@ export default {
 		 *
 		 * @param {{tool: string, arguments: object}} step - a plan step.
 		 * @return {string}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		stepDetail(step) {
 			const args = step.arguments || {}
-			return (
-				args.title
-				|| args.label
-				|| args.pageId
-				|| args.slug
-				|| args.appSlug
-				|| ''
-			)
+			return STEP_DETAIL_KEYS.map((key) => args[key]).find(Boolean) || ''
 		},
 	},
 }
@@ -145,6 +161,13 @@ export default {
 .copilot-proposal__error {
 	color: var(--color-error);
 	margin: 0;
+}
+
+.copilot-proposal__error-list {
+	margin: 0.5em 0 0;
+	padding-inline-start: 1.5em;
+	font-size: 0.9em;
+	overflow-wrap: anywhere;
 }
 
 .copilot-proposal__actions {

@@ -1,57 +1,64 @@
 ---
 sidebar_position: 9
 title: Publish to GitHub and install from the store
-description: Publish a virtual app to a GitHub repository, find it in the store's GitHub tab, and install it again on any instance — a full round-trip where the app lives in the repository.
+description: Publish an app to a GitHub repository, find it back in the store, and install it on any instance.
 ---
 
 # Publish to GitHub and install from the store
 
-Exporting gives you a ZIP you carry around. **Publishing to GitHub** puts the app in a repository the store can find: build it once, publish it, and anyone (including you, on another instance) can discover it in the store and install it. The app lives in the repository, independent of the instance that built it.
+Exporting gives you a ZIP to carry around. Publishing puts the app in a repository the store can find. Build it once, publish it, and anyone can install it again, including you on another instance. The app then lives in the repository, not in the instance that built it.
 
 ## Goal
 
-By the end you will have stored a GitHub credential, published your app to a public GitHub repository, found it in the store's GitHub tab, and installed it again as a new app.
+By the end you will have stored a GitHub credential, published your app to a repository, found it back in the store, and installed it as a new app.
 
 ## Prerequisites
 
-- A virtual app you own, with a released or draft version to publish.
-- A GitHub **fine-grained personal access token**, scoped to the repositories you want to publish to (or all of them), with exactly three repository permissions — **Administration: Read and write** (create the repo and set its topic), **Contents: Read and write** (push the app), and **Metadata: Read-only** (required). No issues, pull-requests, workflows, or account permissions are needed. You paste the token into Buildiq once; it is held in Doriath (Nextcloud's encrypted credential vault) and Buildiq never sees it again — the OpenRegister credential broker makes the GitHub calls for you.
+- An app you own, with a version to publish.
+- A GitHub fine-grained personal access token, scoped to the repositories you publish to. It needs exactly three repository permissions: **Administration: Read and write** to create the repository and set its topic, **Contents: Read and write** to push the app, and **Metadata: Read-only**, which GitHub requires. No issues, pull requests, workflow or account permissions.
+- A credential broker that is enabled on the instance. Buildiq never holds the token: it asks the broker to make each GitHub call. Without it, **Publish** stays disabled and says so.
 
-  ![GitHub fine-grained token permissions: Administration and Contents at Read and write, Metadata at Read-only](/screenshots/tutorials/user/09-publish-to-github-00-permissions.jpg)
+![GitHub fine-grained token permissions, Administration and Contents at read and write, Metadata at read-only](/screenshots/tutorials/user/09-publish-to-github-00-permissions.jpg)
+
+Read the steps below as the code's account of itself. Publishing has not been run end to end on a demo instance yet, because nobody has entered a token there. Get the three permissions right before you start, and the first run is the test.
 
 ## Steps
 
-1. Add a GitHub credential. Open the app's **user settings → Credentials**, click **Add credential**, choose the **GitHub** provider, paste your token, and allow **buildiq** to use it. The token is stored write-only — it is never shown or returned again.
+1. Store the token. In Buildiq's left navigation, open **Settings → Personal settings**, then the **Credentials** section. It names what this app uses, the GitHub permissions above included. Click **Add credential**, choose **GitHub**, give it a **Name** and paste the token into **Personal access token**. The token goes to the vault and is never shown again. Buildiq is allowed to use it from that moment, and you can change that later.
 
-2. Open your app, then **Actions → GitHub**. Pick your GitHub credential and click **Publish**. Buildiq creates a **public** repository, tags it with the `buildiq-app` topic, and commits the app — `openbuild-app.json`, `manifest.json`, and `schemas/` — in one clean commit. The token never reaches Buildiq; the broker makes the call and returns only the repository it created.
+2. Open your app, then **Actions → GitHub**. Pick your credential in **GitHub credential**. If the app already lives in a repository, use **Link repository** and give the owner and the repository name. If it does not, skip straight to publishing: publish creates the repository for you.
 
-   ![The GitHub panel: credential picker with Link repository, Publish, and Pull buttons](/screenshots/tutorials/user/09-publish-to-github-01.png)
+   ![The GitHub panel with its credential picker, Link repository, Publish and Pull](/screenshots/tutorials/user/09-publish-to-github-01.png)
 
-3. Go to **Store → GitHub**. The store searches GitHub for the `buildiq-app` topic and shows each published app as an installable card, built from its `openbuild-app.json`. Your app appears there — public apps with no credential at all; add your credential to also see your own private repositories.
+3. Click **Publish**. For an app with no repository yet, the dialog asks for a **Repository name** and, optionally, an organisation to create it under. Pick the **Version to publish**, then confirm. Buildiq creates the repository, tags it with the `openbuild-app` topic, and commits `openbuild-app.json`, `manifest.json` and `schemas/` in one clean commit. Publishing only ever adds a commit. It never overwrites history.
 
-   ![The store GitHub tab with a search box and an installable app card](/screenshots/tutorials/user/09-publish-to-github-02.png)
+4. Go to **Store**. Below the built-in templates sits **Apps on GitHub**, with a search box. The store searches GitHub for the discovery topic and builds one installable card per repository from its `openbuild-app.json`. Anonymous search sees public repositories; your credential raises the rate limit and reveals your private ones.
 
-4. Click **Install** on the card, give the new app a name and slug, and confirm. Buildiq parses the repository and clones it into a fresh local app through the same path as any template — so it is an ordinary editable app, not a locked import.
+   ![The store with its GitHub search box and an installable card](/screenshots/tutorials/user/09-publish-to-github-02.png)
 
-   ![The Install app from GitHub dialog with name and slug fields](/screenshots/tutorials/user/09-publish-to-github-03.png)
+5. Click **Install** on the card. Give the new app an **Application name** and a **Slug**, then confirm. Buildiq parses the repository and clones it through the same path as any template, so what you get is an ordinary editable app, not a locked import.
 
-5. To bring a change back later, use **Pull** in the same GitHub panel. Pull fetches the repository into a **new draft version** next to your production version — it never overwrites what is live. Review the draft and promote it through the normal version flow.
+   ![The install app from GitHub dialog with its name and slug fields](/screenshots/tutorials/user/09-publish-to-github-03.png)
+
+6. To bring a change back later, use **Pull** in the same GitHub panel. Pull lands the repository in a new draft version beside your production one. Review it, then promote it through the normal version flow.
 
 ## Verification
 
-The round-trip is good when: after publishing, the repository exists on GitHub with `openbuild-app.json`, `manifest.json`, and `schemas/`, and carries the `buildiq-app` topic. The strongest test: delete the app locally, search **Store → GitHub**, and install it again — you get the same app back, because it now lives in the repository.
+The round trip is good when the repository exists on GitHub with `openbuild-app.json`, `manifest.json` and `schemas/`, and carries the `openbuild-app` topic. The strongest test is the full circle: delete the app locally, search the store, and install it again. You get the same app back, because it now lives in the repository.
 
 ## Common issues
 
 | Symptom | Fix |
 |---|---|
-| **Publish** is disabled with a hint | No usable GitHub credential, or the OpenRegister broker/allow-rules are not available on this instance. Add a `github` credential in step 1; confirm OpenRegister is up to date (catalogue v1.2.0+). |
-| Published app does not appear in **Store → GitHub** | Anonymous search only sees **public** repositories, and GitHub's public index can lag a minute for a brand-new repo. Pass your credential (the tab uses it automatically when present) to see it immediately, including private repos. |
-| `push_conflict` on re-publish | The remote branch moved since you last synced. **Pull** first (it creates a draft), reconcile, then publish again — publish never force-overwrites. |
-| Install fails naming a file | The repository does not match the expected layout (`openbuild-app.json` + `manifest.json` + `schemas/`). The error names the offending file; fix it in the repo and re-install. |
+| **Publish** is disabled | Either no GitHub credential is selected, or the broker and its GitHub write rules are not enabled here. The hint under the picker says which. Pulling public repositories still works. |
+| "The credential broker denied this publish." | The token is stored but the broker will not use it this way. Check the credential's allowed apps and its scopes against the three permissions above. |
+| Your app is missing from the store | GitHub's public index lags a minute on a fresh repository, and anonymous search sees public repositories only. Add your credential and search again. |
+| "The remote branch moved ahead." | Somebody pushed since your last sync. Pull first, which creates a draft, reconcile there, then publish again. Publish never forces. |
+| "GitHub is rate-limiting this credential right now." | Wait and retry. Anonymous browsing hits the limit first, so a stored credential also helps here. |
+| The install fails naming a file | The repository does not match the expected layout. The error names the file. Fix it in the repository and install again. |
 
 ## Reference
 
-- [GitHub store](../../github-store.md) — the full reference: repo format, endpoints, and the credential-broker security model.
-- [Export your app](./08-export-app.md) — the ZIP export path, for moving an app without GitHub.
-- [Snapshot and roll back a version](./07-version-snapshots.md) — pull lands as a draft you promote.
+- [GitHub store](../../github-store.md), the repository format, the endpoints and the credential broker model.
+- [Export your app](./08-export-app.md), the ZIP route, for moving an app without GitHub.
+- [Compare and roll back a version](./07-version-snapshots.md), a pull lands as a draft you promote.

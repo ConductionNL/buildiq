@@ -153,50 +153,66 @@ testable in isolation and mirrors the shape of `ManifestResolverService`.
 
 ### Requirement: Schema-set walk over the version's manifest.pages[].config
 
-The system SHALL derive the schema-set for a version's insights aggregation by
-walking the version's `manifest.pages[].config.{register,schema}` entries
-server-side and unique-ing the resulting schema IDs. The walk SHALL:
+The system SHALL derive the data sources for a version's insights aggregation as
+`(register, schema)` pairs, server-side:
 
-1. Resolve the ApplicationVersion record and its `manifest` payload.
-2. Iterate `manifest.pages[]`. For each page entry, read `config.register` and
-   `config.schema`. Collect `(registerSlug, schemaId)` tuples; skip entries with
-   missing or null values.
-3. Filter to tuples where `registerSlug` equals
-   `buildiq-{appSlug}-{versionSlug}` (the version's own per-version register).
-   Tuples referencing other registers SHALL be ignored — the insights endpoint
-   scopes to the version's own register only.
-4. Unique by schema ID.
+1. Resolve the ApplicationVersion record, its `manifest` payload and its
+   `register`.
+2. When the version's register exists, the pairs SHALL be every schema that
+   register lists, plus every `manifest.pages[].config.schema` whose
+   `config.register` equals the version's register. Pages naming other
+   registers SHALL be ignored.
+3. When the version's register does not exist, the pairs SHALL be every page's
+   `(config.register, config.schema)`, skipping entries with a missing value.
+4. Pairs SHALL be unique by register and schema ID. Schemas that do not resolve
+   SHALL be skipped.
 
-The resulting schema-set drives all four KPI aggregations and the activity-chart
-call. An empty schema-set is a valid input — all four KPIs return `0` and
-`activity` is `[]`.
+The object count SHALL be the sum over the pairs, each counted in its own
+register. The schema IDs of the pairs drive the other KPIs and the activity
+chart. The payload SHALL carry `schemaCounts`, the object count per schema, keyed
+by schema ID and by schema slug. No pairs is a valid input: all four KPIs return
+`0` and `activity` is `[]`.
+
+@e2e exclude pure-backend aggregation, covered by ApplicationInsightsServiceTest; the KPI tiles have no scenario of their own
 
 **ID:** REQ-OBAI-003
 
 #### Scenario: Walk derives unique schema IDs from manifest.pages
 
-- **GIVEN** a manifest with three page entries:
-  `[{config:{register:"buildiq-hello-world-production", schema:"<nil>"}},
-   {config:{register:"buildiq-hello-world-production", schema:"<nil>"}},
-   {config:{register:"buildiq-hello-world-production", schema:"<nil>"}}]`
-  (the same schema referenced twice plus a distinct one)
+- **GIVEN** a manifest whose pages name the same schema twice and a second one,
+  all in the version's register
 - **WHEN** the service walks the manifest
 - **THEN** the resulting schema-set contains two unique schema IDs
 
 #### Scenario: Tuples referencing other registers are ignored
 
-- **GIVEN** a manifest page entry with
+- **GIVEN** the version's register exists
+- **AND** a manifest page entry with
   `config:{register:"some-other-register", schema:"<nil>"}`
 - **WHEN** the service walks the manifest
 - **THEN** the resulting schema-set does NOT include that schema
 
+#### Scenario: A schema without a page still counts
+
+- **GIVEN** the version's register lists a schema that no page names
+- **AND** that schema holds 2 objects in the version's register
+- **WHEN** the caller GETs the insights endpoint
+- **THEN** `objectCount` is `2`
+
+#### Scenario: A version without a register counts where its pages point
+
+- **GIVEN** the version's register does not exist
+- **AND** its pages read schema `hello-message` in register `buildiq`, which
+  holds 3 objects
+- **WHEN** the caller GETs the insights endpoint
+- **THEN** `objectCount` is `3`
+- **AND** `schemaCounts["hello-message"]` is `3`
+
 #### Scenario: Empty manifest pages yields zero KPIs and empty activity
 
-- **GIVEN** a manifest with `pages: []`
+- **GIVEN** a manifest with `pages: []` and a version register without schemas
 - **WHEN** the caller GETs the insights endpoint
-- **THEN** the response is
-  `{"kpis":{"activeUsers":0,"objectCount":0,"filesCount":0,"auditEventCount":0},
-  "activity":[]}`
+- **THEN** all four KPIs are `0` and `activity` is `[]`
 
 ### Requirement: KPI aggregations source
 
@@ -299,3 +315,20 @@ service; the controller itself is authenticated-only).
 
 - **WHEN** static-analysis reads `ApplicationInsightsController`
 - **THEN** the `getInsights` method is annotated with `#[NoAdminRequired]`
+
+### Requirement: The insights role check MUST honour group principals
+
+`ApplicationInsightsService::callerInAnyRole` SHALL authorize a caller who matches
+via a `group:` principal, not only `user:`/bare-uid — reusing
+`PermissionResolver::matchesCaller` so insights authorization is consistent with
+every other Buildiq guard. A caller authorized solely through group membership
+MUST NOT be wrongly denied.
+
+#### Scenario: A group-only-authorized caller gets insights
+- **WHEN** a caller is authorized for a version only via a `group:` principal
+- **THEN** the insights endpoint grants access
+
+#### Scenario: An unauthorized caller is still denied
+- **WHEN** a caller matches neither a user nor a group principal (and is not an
+  admin)
+- **THEN** the insights endpoint denies access (fail-closed)

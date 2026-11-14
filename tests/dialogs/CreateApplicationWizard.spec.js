@@ -22,6 +22,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import CreateApplicationWizard from '../../src/dialogs/CreateApplicationWizard.vue'
 
 vi.mock('@nextcloud/axios', () => ({ default: { post: vi.fn() } }))
+const { resolveAppIconMock } = vi.hoisted(() => ({
+	resolveAppIconMock: vi.fn(() => ''),
+}))
+vi.mock('../../src/utils/iconCatalogues.js', () => ({
+	resolveAppIcon: resolveAppIconMock,
+}))
 vi.mock('@nextcloud/router', async (importOriginal) => ({
 	...(await importOriginal()),
 	generateUrl: (url) => url,
@@ -197,5 +203,85 @@ describe('CreateApplicationWizard', () => {
 		w.vm.onClose()
 		expect(w.emitted('update:show')).toEqual([[false]])
 		expect(w.vm.presetSelected).toBe('')
+	})
+	describe('step, error and icon branches', () => {
+		it.each([
+			['basics', { _step1Valid: false }, 'Enter a name and a valid slug.'],
+			['preset', { _step2Valid: false }, 'Choose a version preset.'],
+			['custom', { _step3Valid: false }, 'Complete the custom version chain.'],
+			['basics', { _step2Valid: true }, 'Enter a name and a valid slug.'],
+			['other', { _step1Valid: false }, true],
+		])('validateStep(%j, %j) is %j', (stepId, data, expected) => {
+			expect(mountWizard().vm.validateStep(stepId, data)).toBe(expected)
+		})
+
+		it.each([
+			[{ message: 'M', detail: 'D' }, new Error('E'), 'M'],
+			[{ detail: 'D' }, new Error('E'), 'D'],
+			[{}, new Error('E'), 'E'],
+			[{}, undefined, 'Failed to create the application.'],
+			[{ orphanedResources: [] }, undefined, 'Failed to create the application.'],
+			[
+				{ message: 'M', orphanedResources: ['reg-a', 'schema-b'] },
+				undefined,
+				'M Some resources need manual cleanup: {list}',
+			],
+		])('reportError(%j) shows %j', (data, err, message) => {
+			const w = mountWizard()
+			const setError = vi.fn()
+			w.vm.$refs.wizard.setError = setError
+			w.vm.reportError(data, err)
+			expect(setError).toHaveBeenCalledWith(message)
+		})
+
+		it('reportError does nothing without a mounted wizard', () => {
+			const w = mountWizard({ show: false })
+			expect(() => w.vm.reportError({ message: 'M' })).not.toThrow()
+		})
+
+		it('uploadIcons attaches nothing when no icon resolves', async () => {
+			const w = mountWizard()
+			const attach = vi.spyOn(w.vm, 'attachIcon').mockResolvedValue()
+			resolveAppIconMock.mockReturnValue('')
+			await w.vm.uploadIcons('uuid-1', { iconValue: 'x' })
+			expect(attach).not.toHaveBeenCalled()
+		})
+
+		it('uploadIcons attaches the light and the dark icon, dark from the primary by default', async () => {
+			const w = mountWizard()
+			const attach = vi.spyOn(w.vm, 'attachIcon').mockResolvedValue()
+			resolveAppIconMock.mockImplementation((value, { dark }) => `${value}:${dark}`)
+			await w.vm.uploadIcons('uuid-1', { iconValue: 'cat' })
+			expect(resolveAppIconMock).toHaveBeenCalledWith('cat', { dark: false })
+			expect(resolveAppIconMock).toHaveBeenCalledWith('cat', { dark: true })
+			expect(attach.mock.calls).toEqual([
+				['uuid-1', 'icon', 'app-icon.svg', 'cat:false'],
+				['uuid-1', 'iconDark', 'app-icon-dark.svg', 'cat:true'],
+			])
+		})
+
+		it('uploadIcons uses the dark pick and skips an unresolved light icon', async () => {
+			const w = mountWizard()
+			const attach = vi.spyOn(w.vm, 'attachIcon').mockResolvedValue()
+			resolveAppIconMock.mockImplementation((value, { dark }) =>
+				dark ? `${value}:dark` : '',
+			)
+			await w.vm.uploadIcons('uuid-1', { iconValue: 'cat', iconDarkValue: 'dog' })
+			expect(attach.mock.calls).toEqual([
+				['uuid-1', 'iconDark', 'app-icon-dark.svg', 'dog:dark'],
+			])
+		})
+
+		it('uploadIcons logs a failed attach and stops', async () => {
+			const w = mountWizard()
+			const failure = new Error('down')
+			const attach = vi.spyOn(w.vm, 'attachIcon').mockRejectedValue(failure)
+			const logged = vi.spyOn(console, 'error').mockImplementation(() => {})
+			resolveAppIconMock.mockReturnValue('<svg/>')
+			await w.vm.uploadIcons('uuid-1', { iconValue: 'cat' })
+			expect(attach).toHaveBeenCalledTimes(1)
+			expect(logged).toHaveBeenCalledWith('Buildiq: failed to attach app icon', failure)
+			logged.mockRestore()
+		})
 	})
 })

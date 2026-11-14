@@ -23,8 +23,11 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\Controller;
 
 use OCA\Buildiq\Controller\SetupController;
+use OCA\Buildiq\Service\CallerContext;
 use OCA\Buildiq\Service\DemoDataService;
+use OCA\Buildiq\Service\PermissionResolver;
 use OCA\Buildiq\Service\SettingsService;
+use OCA\Buildiq\Service\SetupServices;
 use OCA\Buildiq\Service\TemplateSeedService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
@@ -165,18 +168,19 @@ class SetupControllerAuthPostureTest extends TestCase {
 		$groupManager->method('isAdmin')->willReturn($isAdmin);
 
 		return new SetupController(
-			$this->createMock(IRequest::class),
-			new NullLogger(),
-			$this->createMock(IAppConfig::class),
-			$userSession,
-			$groupManager,
-			// Positional: DemoDataService sits between $groupManager and
-			// $settings in the constructor (ADR-111 rule 4). Omitting it here
-			// silently shifted every later argument by one and PHPUnit reported
-			// it as a type error on $settings.
-			$this->createMock(DemoDataService::class),
-			$settings,
-			$seedService
+			request: $this->createMock(IRequest::class),
+			logger: new NullLogger(),
+			appConfig: $this->createMock(IAppConfig::class),
+			caller: new CallerContext(
+				userSession: $userSession,
+				groupManager: $groupManager,
+				permissionResolver: $this->createMock(PermissionResolver::class)
+			),
+			setup: new SetupServices(
+				demoDataService: $this->createMock(DemoDataService::class),
+				settings: $settings,
+				seedService: $seedService
+			)
 		);
 
 	}//end controller()

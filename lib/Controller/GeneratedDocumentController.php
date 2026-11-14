@@ -37,16 +37,16 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/automation-document-action/tasks.md#2.4
- * @spec openspec/changes/automation-document-action/specs/automation-document-action/spec.md
+ * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#2.4
+ * @spec openspec/specs/automation-document-action/spec.md
+ * @spec openspec/specs/platform-properties/spec.md#REQ-PLAT-003
  */
 
 declare(strict_types=1);
 
 namespace OCA\Buildiq\Controller;
 
-use OCA\Buildiq\AppInfo\Application;
-use OCA\Buildiq\Service\DocumentGenerationService;
+use OCA\Buildiq\Kernel\AppIdentity;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AnonRateLimit;
@@ -63,13 +63,13 @@ use Throwable;
 /**
  * Public (anonymous) download-link resolver for `generateDocument` output.
  *
- * @spec openspec/changes/automation-document-action/tasks.md#2.4
+ * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#2.4
  */
 class GeneratedDocumentController extends Controller {
 	/**
-	 * Appdata folder name (matches {@see DocumentGenerationService::APPDATA_FOLDER}).
+	 * Appdata folder name (matches {@see \OCA\Buildiq\Service\DocumentGenerationService::APPDATA_FOLDER}).
 	 *
-	 * @spec openspec/changes/automation-document-action/tasks.md#2.4
+	 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#2.4
 	 */
 	private const APPDATA_FOLDER = 'generated-documents';
 
@@ -87,7 +87,7 @@ class GeneratedDocumentController extends Controller {
 		private readonly IAppDataFactory $appDataFactory,
 		private readonly LoggerInterface $logger,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -102,7 +102,7 @@ class GeneratedDocumentController extends Controller {
 	 * @PublicPage
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/automation-document-action/tasks.md#2.4
+	 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#2.4
 	 */
 	#[PublicPage]
 	#[NoCSRFRequired]

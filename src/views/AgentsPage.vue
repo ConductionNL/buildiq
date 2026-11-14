@@ -67,9 +67,12 @@
 						<strong>{{ agent.name }}</strong>
 						<span class="agents-page__item-meta">
 							{{
-								t('buildiq', '{count} tool(s) enabled', {
-									count: (agent.enabledTools || []).length,
-								})
+								n(
+									'buildiq',
+									'%n tool enabled',
+									'%n tools enabled',
+									(agent.enabledTools || []).length,
+								)
 							}}
 						</span>
 					</button>
@@ -139,6 +142,8 @@ import {
 import AgentRunHistory from '../components/agents/AgentRunHistory.vue'
 import CopilotPanel from '../components/copilot/CopilotPanel.vue'
 import AgentEditDialog from '../dialogs/AgentEditDialog.vue'
+import { applicationPickerMixin } from '../mixins/applicationPicker.js'
+import { listResults } from '../utils/listResults.js'
 
 export default {
 	name: 'AgentsPage',
@@ -153,11 +158,11 @@ export default {
 		AgentEditDialog,
 	},
 
+	mixins: [applicationPickerMixin],
+
 	data() {
 		return {
 			loading: false,
-			loadingApplications: false,
-			applications: [],
 			selectedApp: null,
 			agents: [],
 			selectedAgent: null,
@@ -173,26 +178,6 @@ export default {
 	},
 
 	methods: {
-		/**
-		 * Load the caller's Applications for the picker.
-		 *
-		 * @return {Promise<void>}
-		 * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/agent-workspace/spec.md
-		 */
-		async fetchApplications() {
-			this.loadingApplications = true
-			this.errorMessage = ''
-			try {
-				const url = generateUrl('/apps/buildiq/api/applications')
-				const { data } = await axios.get(url)
-				this.applications = this.extractResults(data)
-			} catch (error) {
-				this.errorMessage = t('buildiq', 'Could not load applications.')
-			} finally {
-				this.loadingApplications = false
-			}
-		},
-
 		/**
 		 * Handle an application selection: reset the agent list + selection, fetch agents.
 		 *
@@ -223,7 +208,7 @@ export default {
 					'/apps/openregister/api/objects/buildiq/buildAgent',
 				)
 				const { data } = await axios.get(url)
-				const all = this.extractResults(data)
+				const all = listResults(data)
 				this.agents = all.filter(
 					(a) => a.applicationSlug === this.selectedApp.slug,
 				)
@@ -295,28 +280,13 @@ export default {
 				this.errorMessage = t('buildiq', 'Could not delete the agent.')
 			}
 		},
-
-		/**
-		 * Normalise an OpenRegister list response (bare array or `{results}` envelope).
-		 *
-		 * @param {Array|object} data - the raw response body.
-		 * @return {Array<object>}
-		 * @spec openspec/changes/archive/2026-07-24-agent-workspace/tasks.md#4-frontend
-		 */
-		extractResults(data) {
-			if (Array.isArray(data)) {
-				return data
-			}
-			if (data && Array.isArray(data.results)) {
-				return data.results
-			}
-			return []
-		},
 	},
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../assets/editor-controls.scss' as c;
+
 .agents-page {
 	display: flex;
 	flex-direction: column;
@@ -345,12 +315,7 @@ export default {
 }
 
 .agents-page__list {
-	list-style: none;
-	margin: 0;
-	padding: 0;
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
+	@include c.plain-list(8px);
 	flex: 0 0 280px;
 }
 

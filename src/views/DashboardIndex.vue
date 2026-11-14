@@ -13,7 +13,7 @@
 	Row 2: full-width Recent apps table.
 	Header: a "Create app" primary action opens the creation wizard.
 
-	@spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+	@spec openspec/specs/unified-app-model/spec.md
 -->
 <template>
 	<div class="ob-dashboard">
@@ -31,59 +31,35 @@
 
 			<!-- KPI: Apps (total) — clickable → Apps index -->
 			<template #widget-apps>
-				<div
-					class="ob-kpi-link"
-					role="button"
-					tabindex="0"
-					@click="goTo('VirtualApps')"
-					@keyup.enter="goTo('VirtualApps')">
-					<CnStatsBlock
-						horizontal
-						:icon="iconApps"
-						:title="t('buildiq', 'Apps')"
-						:count="counts.apps"
-						:countLabel="t('buildiq', 'apps')"
-						variant="primary"
-						showZeroCount />
-				</div>
+				<KpiLinkTile
+					:icon="iconApps"
+					:title="t('buildiq', 'Apps')"
+					:count="counts.apps"
+					:countLabel="t('buildiq', 'apps')"
+					variant="primary"
+					@open="goTo('VirtualApps')" />
 			</template>
 
 			<!-- KPI: Hybrid apps — clickable → Apps index -->
 			<template #widget-hybrid>
-				<div
-					class="ob-kpi-link"
-					role="button"
-					tabindex="0"
-					@click="goTo('VirtualApps')"
-					@keyup.enter="goTo('VirtualApps')">
-					<CnStatsBlock
-						horizontal
-						:icon="iconHybrid"
-						:title="t('buildiq', 'Hybrid apps')"
-						:count="counts.hybrid"
-						:countLabel="t('buildiq', 'hybrid')"
-						variant="default"
-						showZeroCount />
-				</div>
+				<KpiLinkTile
+					:icon="iconHybrid"
+					:title="t('buildiq', 'Hybrid apps')"
+					:count="counts.hybrid"
+					:countLabel="t('buildiq', 'hybrid')"
+					variant="default"
+					@open="goTo('VirtualApps')" />
 			</template>
 
 			<!-- KPI: Published versions — clickable → Apps index -->
 			<template #widget-versions>
-				<div
-					class="ob-kpi-link"
-					role="button"
-					tabindex="0"
-					@click="goTo('VirtualApps')"
-					@keyup.enter="goTo('VirtualApps')">
-					<CnStatsBlock
-						horizontal
-						:icon="iconVersions"
-						:title="t('buildiq', 'Published versions')"
-						:count="counts.versions"
-						:countLabel="t('buildiq', 'versions')"
-						variant="success"
-						showZeroCount />
-				</div>
+				<KpiLinkTile
+					:icon="iconVersions"
+					:title="t('buildiq', 'Published versions')"
+					:count="counts.versions"
+					:countLabel="t('buildiq', 'versions')"
+					variant="success"
+					@open="goTo('VirtualApps')" />
 			</template>
 
 			<!-- Recent apps table — edge-to-edge inside the widget card (the wrapper's
@@ -135,7 +111,6 @@
 import {
 	CnDashboardPage,
 	CnDataTable,
-	CnStatsBlock,
 } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
@@ -144,6 +119,7 @@ import History from 'vue-material-design-icons/History.vue'
 import PencilOutline from 'vue-material-design-icons/PencilOutline.vue'
 import PuzzleOutline from 'vue-material-design-icons/PuzzleOutline.vue'
 import ShapeOutline from 'vue-material-design-icons/ShapeOutline.vue'
+import KpiLinkTile from '../components/dashboard/KpiLinkTile.vue'
 import CreateApplicationWizard from '../dialogs/CreateApplicationWizard.vue'
 
 export default {
@@ -151,8 +127,8 @@ export default {
 
 	components: {
 		CnDashboardPage,
-		CnStatsBlock,
 		CnDataTable,
+		KpiLinkTile,
 		PencilOutline,
 		CreateApplicationWizard,
 		NcButton,
@@ -224,7 +200,7 @@ export default {
 		 * Widget definitions (id + title) for CnDashboardPage.
 		 *
 		 * @return {Array<{id: string, title: string}>}
-		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+		 * @spec openspec/specs/unified-app-model/spec.md
 		 */
 		widgetDefs() {
 			return [
@@ -239,7 +215,7 @@ export default {
 		 * Column definitions for the Recent apps table.
 		 *
 		 * @return {Array<{key: string, label: string}>}
-		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+		 * @spec openspec/specs/unified-app-model/spec.md
 		 */
 		recentColumns() {
 			return [
@@ -254,7 +230,7 @@ export default {
 	 * Load KPI counts + recent apps on mount.
 	 *
 	 * @return {void}
-	 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+	 * @spec openspec/specs/unified-app-model/spec.md
 	 */
 	async created() {
 		await this.loadDashboard()
@@ -265,7 +241,7 @@ export default {
 		 * Fetch the KPI counts + the recent-apps list from OpenRegister.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+		 * @spec openspec/specs/unified-app-model/spec.md
 		 */
 		async loadDashboard() {
 			this.loading = true
@@ -298,7 +274,7 @@ export default {
 		 * @param {string} applicationUuid The new application UUID (may be empty for hybrid).
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+		 * @spec openspec/specs/unified-app-model/spec.md
 		 */
 		onAppCreated(applicationUuid) {
 			this.showWizard = false
@@ -321,7 +297,7 @@ export default {
 		 * @param {object} [filter] Optional shorthand filter map (e.g. { appType: 'hybrid' }).
 		 *
 		 * @return {Promise<number>}
-		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+		 * @spec openspec/specs/unified-app-model/spec.md
 		 */
 		async fetchTotal(schema, filter = {}) {
 			const url = generateUrl(
@@ -341,7 +317,7 @@ export default {
 		 * @param {number} limit Max rows.
 		 *
 		 * @return {Promise<Array<object>>}
-		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+		 * @spec openspec/specs/unified-app-model/spec.md
 		 */
 		async fetchObjects(schema, limit) {
 			const url = generateUrl(
@@ -360,7 +336,7 @@ export default {
 		 * @param {string} name The route name.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+		 * @spec openspec/specs/unified-app-model/spec.md
 		 */
 		goTo(name) {
 			if (this.$router) {
