@@ -1,0 +1,58 @@
+{
+	"_comment": "ADR-037 register fragment: version branches (lifecycle-git-branches, REQ-BQGB-001). Adds two properties to the existing ApplicationVersion schema and bumps that schema's version; nothing else is touched. The fragment's own signature already makes OpenRegister re-import the register. `branchBase` is where a branch started (the source version, the hash of the manifest it copied, and a snapshot of that manifest and of the schemas copied) and is the common base of a three-way merge. `githubBranch` is the Git branch a linked app pushes this version to.",
+	"components": {
+		"schemas": {
+			"ApplicationVersion": {
+				"version": "0.5.0",
+				"properties": {
+					"branchBase": {
+						"title": "Branch Base",
+						"type": "object",
+						"description": "Set on a version started with \"Start a branch\": the version it was branched from and what it copied, so a merge has a common base. Moves to the source's state after each merge.",
+						"additionalProperties": false,
+						"required": [
+							"source",
+							"manifestHash",
+							"manifest",
+							"schemas"
+						],
+						"properties": {
+							"source": {
+								"title": "Source Version",
+								"type": "string",
+								"description": "Slug of the version this one was branched from.",
+								"pattern": "^[a-z0-9][a-z0-9-]*[a-z0-9]$",
+								"maxLength": 48
+							},
+							"manifestHash": {
+								"title": "Source Manifest Hash",
+								"type": "string",
+								"description": "SHA-256 of the source manifest in canonical form, as hashManifest() gives it.",
+								"pattern": "^[0-9a-f]{64}$"
+							},
+							"manifest": {
+								"title": "Manifest Snapshot",
+								"type": "object",
+								"description": "The source manifest as it was copied.",
+								"additionalProperties": true
+							},
+							"schemas": {
+								"title": "Schema Snapshot",
+								"type": "object",
+								"description": "The source register's schemas as they were copied, keyed by schema slug.",
+								"additionalProperties": true
+							}
+						}
+					},
+					"githubBranch": {
+						"title": "GitHub Branch",
+						"type": "string",
+						"description": "The Git branch this version is pushed to when the app is linked to GitHub. Empty for the production version, which pushes to the default branch.",
+						"pattern": "^[A-Za-z0-9._/-]{1,255}$",
+						"maxLength": 255
+					}
+				}
+			}
+		}
+	}
+}
