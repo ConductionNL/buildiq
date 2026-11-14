@@ -335,3 +335,58 @@ describe('CopilotGenerateDialog.vue — Add a document (ai-copilot-documents-and
 		expect(wrapper.find('[role="alert"]').text()).toBe('This document type cannot be read yet. Use a plain text (.txt) or Markdown (.md) file.')
 	})
 })
+
+describe('CopilotGenerateDialog.vue — User stories (ai-copilot-documents-and-code-help REQ-BQCH-006)', () => {
+	beforeEach(() => {
+		axiosGet.mockReset()
+		axiosPost.mockReset()
+		axiosGet.mockResolvedValue({ data: { status: 'ok' } })
+		clearCopilotHealthCache()
+	})
+
+	it('lists the stories first, each with the schemas and pages that serve it', async () => {
+		axiosPost.mockResolvedValueOnce({
+			data: {
+				summary: 'Garden permits',
+				stories: [
+					{ id: 's1', role: 'an applicant', goal: 'track my permit', servedBy: [1, 2, 3] },
+					{ id: 's2', role: 'a reviewer', goal: '', servedBy: [] },
+				],
+				steps: [
+					{ tool: 'buildiq.createApp', arguments: { slug: 'tuin', name: 'Tuin' } },
+					{ tool: 'buildiq.upsertSchema', arguments: { slug: 'aanvraag', title: 'Aanvraag' } },
+					{ tool: 'buildiq.upsertPage', arguments: { pageId: 'mine', title: 'Mijn aanvragen', type: 'index' } },
+					{ tool: 'buildiq.upsertMenuItem', arguments: { label: 'Mijn aanvragen' } },
+				],
+				manifests: {},
+			},
+		})
+		const wrapper = mount(CopilotGenerateDialog, { propsData: { open: true }, stubs })
+		await wrapper.find('[data-testid="copilot-brief-input"]').setValue('Garden permits')
+		await wrapper.vm.onGenerate()
+		await flush()
+		await wrapper.vm.$nextTick()
+
+		const groups = wrapper.findAll('.copilot-generate__group h3').map((h) => h.text())
+		expect(groups[0]).toBe('User stories')
+		const stories = wrapper.findAll('[data-testid="copilot-plan-story"]')
+		expect(stories).toHaveLength(1)
+		expect(wrapper.vm.stories).toEqual([{ text: 'As {role} I want to {goal}', servedBy: ['Aanvraag', 'Mijn aanvragen'] }])
+		expect(stories[0].findAll('.copilot-generate__served-by li').map((li) => li.text())).toEqual(['Aanvraag', 'Mijn aanvragen'])
+	})
+
+	it('shows no stories group for a plan without stories', async () => {
+		axiosPost.mockResolvedValueOnce({ data: { summary: 'x', steps: [{ tool: 'buildiq.createApp', arguments: { slug: 'x', name: 'X' } }], manifests: {} } })
+		const wrapper = mount(CopilotGenerateDialog, { propsData: { open: true }, stubs })
+		await wrapper.find('[data-testid="copilot-brief-input"]').setValue('x')
+		await wrapper.vm.onGenerate()
+		await flush()
+
+		expect(wrapper.find('[data-testid="copilot-plan-stories"]').exists()).toBe(false)
+	})
+
+	it('writes a story with a benefit as one sentence', () => {
+		const wrapper = mount(CopilotGenerateDialog, { propsData: { open: true }, stubs })
+		expect(wrapper.vm.storySentence({ role: 'r', goal: 'g', benefit: 'b' })).toBe('As {role} I want to {goal}, so that {benefit}')
+	})
+})

@@ -69,6 +69,10 @@ class CopilotPromptBuilder {
 
         {
           "summary": "one-sentence description of what will be built",
+          "stories": [
+            { "id": "s1", "role": "who", "goal": "what they want to do",
+              "benefit": "why, optional", "servedBy": [<step indexes>] }
+          ],
           "steps": [
             { "tool": "<tool id>", "arguments": { ... } }
           ]
@@ -97,6 +101,11 @@ class CopilotPromptBuilder {
         3. A FORM page says where it posts with config.schema, the same short
            slug. submitHandler is for a handler somebody registered in code, so
            putting a schema name in it gives a form that posts nowhere.
+        4. "stories" are the user stories the app serves, a handful at most:
+           "As a <role> I want to <goal> so that <benefit>". Every story has a
+           role and a goal. "servedBy" lists the 0-based indexes of the
+           upsertSchema and upsertPage steps that serve it, never any other
+           step.
 
 
         PROMPT;

@@ -2043,4 +2043,45 @@ class CopilotServiceTest extends TestCase {
 
 		$this->makeServiceWithDocuments([])->plan(brief: '', appSlug: null, userId: 'alice');
 	}//end testPlanStillRefusesAnEmptyBriefWithoutADocument()
+
+	/**
+	 * The plan answer carries the validated stories; a story pointing at a non-page step is 422.
+	 *
+	 * @return void
+	 */
+	public function testPlanCarriesItsStoriesAndRefusesABadOne(): void {
+		$this->wireTaskProcessingManager();
+		$this->taskManager->method('getAvailableTaskTypes')->willReturn([TextToText::ID => []]);
+		$story = ['id' => 's1', 'role' => 'a member', 'goal' => 'borrow a tool', 'servedBy' => [0]];
+		$this->wireSuccessfulLlmReply(
+			json_encode(
+				[
+					'summary' => 'A tool library',
+					'stories' => [$story],
+					'steps' => [['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']]],
+				]
+			)
+		);
+
+		try {
+			$this->makeService()->plan(brief: 'A tool library', appSlug: null, userId: 'alice');
+			self::fail('A story served by a createApp step must be refused.');
+		} catch (CopilotException $e) {
+			self::assertSame('plan_invalid', $e->getErrorCode());
+			self::assertSame('Story 0: servedBy 0 does not point at a schema or page step.', $e->getMessage());
+		}
+	}//end testPlanCarriesItsStoriesAndRefusesABadOne()
+
+	/**
+	 * A plan without stories answers an empty list.
+	 *
+	 * @return void
+	 */
+	public function testAPlanWithoutStoriesAnswersAnEmptyList(): void {
+		$this->wireTaskProcessingManager();
+		$this->taskManager->method('getAvailableTaskTypes')->willReturn([TextToText::ID => []]);
+		$this->wireSuccessfulLlmReply(json_encode(['summary' => 'x', 'steps' => [['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']]]]));
+
+		self::assertSame([], $this->makeService()->plan(brief: 'x', appSlug: null, userId: 'alice')['stories']);
+	}//end testAPlanWithoutStoriesAnswersAnEmptyList()
 }//end class

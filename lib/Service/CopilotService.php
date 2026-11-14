@@ -238,7 +238,8 @@ class CopilotService implements CopilotServiceInterface {
 	 * @param int|null $documentFileId Optional Files id of a requirements document, read as the user;
 	 *                                 with one, the typed brief may be empty.
 	 *
-	 * @return array{summary: string, steps: array<int, array<string, mixed>>, manifests: array<string, array{current: array, predicted: array}>,
+	 * @return array{summary: string, stories: array<int, array<string, mixed>>, steps: array<int, array<string, mixed>>,
+	 *               manifests: array<string, array{current: array, predicted: array}>,
 	 *               document?: array{fileId: int, name: string}}
 	 *
 	 * @throws CopilotException On unavailability, invalid input, RBAC denial, an unknown agent, an unreadable document, or an unparsable/invalid plan.
@@ -379,6 +380,7 @@ class CopilotService implements CopilotServiceInterface {
 
 		return [
 			'summary' => (string)($plan['summary'] ?? ''),
+			'stories' => array_values((array)($plan['stories'] ?? [])),
 			'steps' => (array)($plan['steps'] ?? []),
 			'manifests' => $manifests,
 		];

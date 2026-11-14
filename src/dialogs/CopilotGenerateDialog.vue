@@ -87,6 +87,26 @@
 						{{ plan && plan.summary }}
 					</p>
 
+					<div
+						v-if="stories.length"
+						class="copilot-generate__group"
+						data-testid="copilot-plan-stories">
+						<h3>{{ t('buildiq', 'User stories') }}</h3>
+						<ul>
+							<li
+								v-for="(story, idx) in stories"
+								:key="'story-' + idx"
+								data-testid="copilot-plan-story">
+								<span class="copilot-generate__story">{{ story.text }}</span>
+								<ul v-if="story.servedBy.length" class="copilot-generate__served-by">
+									<li v-for="(name, sIdx) in story.servedBy" :key="'served-' + idx + '-' + sIdx">
+										{{ name }}
+									</li>
+								</ul>
+							</li>
+						</ul>
+					</div>
+
 					<div v-if="schemaSteps.length" class="copilot-generate__group">
 						<h3>{{ t('buildiq', 'Schemas') }}</h3>
 						<ul>
@@ -349,6 +369,26 @@ export default {
 		},
 
 		/**
+		 * The plan's user stories as the review lists them: one sentence each,
+		 * with the names of the schemas and pages that serve it.
+		 *
+		 * @return {Array<{text: string, servedBy: Array<string>}>}
+		 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot/spec.md#requirement-the-plan-carries-user-stories-req-bqch-006
+		 */
+		stories() {
+			const stories = (this.plan && Array.isArray(this.plan.stories)) ? this.plan.stories : []
+			const steps = (this.plan && this.plan.steps) || []
+			return stories
+				.filter((story) => story && story.role && story.goal)
+				.map((story) => ({
+					text: this.storySentence(story),
+					servedBy: (Array.isArray(story.servedBy) ? story.servedBy : [])
+						.map((index) => this.stepName(steps[index]))
+						.filter(Boolean),
+				}))
+		},
+
+		/**
 		 * Proposed `upsertSchema` steps, for the "Schemas" review group.
 		 *
 		 * @return {Array<object>}
@@ -401,6 +441,38 @@ export default {
 		stepsByTool(tool) {
 			const steps = (this.plan && this.plan.steps) || []
 			return steps.filter((s) => s && s.tool === tool)
+		},
+
+		/**
+		 * One story as a sentence.
+		 *
+		 * @param {{role: string, goal: string, benefit?: string}} story - the story.
+		 * @return {string}
+		 */
+		storySentence(story) {
+			if (story.benefit) {
+				return t('buildiq', 'As {role} I want to {goal}, so that {benefit}', { role: story.role, goal: story.goal, benefit: story.benefit })
+			}
+			return t('buildiq', 'As {role} I want to {goal}', { role: story.role, goal: story.goal })
+		},
+
+		/**
+		 * The display name of a schema or page step, '' for any other step.
+		 *
+		 * @param {object|undefined} step - a plan step.
+		 * @return {string}
+		 */
+		stepName(step) {
+			if (!step || !step.arguments) {
+				return ''
+			}
+			if (step.tool === 'buildiq.upsertSchema') {
+				return step.arguments.title || step.arguments.slug || ''
+			}
+			if (step.tool === 'buildiq.upsertPage') {
+				return step.arguments.title || step.arguments.pageId || ''
+			}
+			return ''
 		},
 
 		/**
@@ -538,5 +610,9 @@ export default {
 .copilot-generate__document-name {
 	font-weight: 600;
 	color: var(--color-main-text);
+}
+
+.copilot-generate__served-by {
+	color: var(--color-text-maxcontrast);
 }
 </style>
