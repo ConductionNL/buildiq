@@ -57,7 +57,6 @@
     "@nextcloud/router": "^3.1.0",
     "@nextcloud/vue": "^9.13.1",
     "@vueuse/core": "^14.3.0",
-    "axe-core": "^4.10.0",
     "dexie": "^4.4.6",
     "diff": "^9.0.0",
     "dompurify": "^3.4.17",
@@ -97,7 +96,10 @@
     "qs": "6.16.1",
     "source-map-js": "1.2.2",
     "underscore": "^1.13.8",
-    "uuid": "^11.1.1"
+    "uuid": "^11.1.1",
+    "webdav": {
+      "minimatch": "^11.0.1"
+    }
   },
   "devDependencies": {
     "@babel/core": "^7.26.9",
@@ -113,6 +115,7 @@
     "@vitest/coverage-v8": "^5.0.0",
     "@vue/compiler-sfc": "^3.5.13",
     "@vue/test-utils": "^2.5.0",
+    "axe-core": "^4.10.0",
     "css-loader": "~7.1.5",
     "eslint": "^10.10.0",
     "eslint-config-prettier": "^10.1.8",

@@ -35,11 +35,12 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use InvalidArgumentException;
+use OCA\Buildiq\Kernel\Contracts\AppTemplateCaptureInterface;
 
 /**
  * De-namespaces an app's schemas and manifest into a template array.
  */
-class AppTemplateCapture {
+class AppTemplateCapture implements AppTemplateCaptureInterface {
 
 	/**
 	 * Capture an app into a template array: companion schemas and manifest,
