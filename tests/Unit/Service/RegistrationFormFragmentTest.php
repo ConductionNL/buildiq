@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Tests\Unit\Service;
 
+use Opis\JsonSchema\Validator;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -78,6 +79,7 @@ final class RegistrationFormFragmentTest extends TestCase {
 				'channel',
 				'isPublic',
 				'minTrust',
+				'fee',
 				'confirmationText',
 				'targetApp',
 				'register',
@@ -171,4 +173,27 @@ final class RegistrationFormFragmentTest extends TestCase {
 		self::assertSame(['low', 'substantial', 'high'], $property['enum']);
 		self::assertNotContains('minTrust', $this->schemas()['registrationForm']['required']);
 	}//end testTheSignInLevelIsPortaliqsValueSet()
+
+	/**
+	 * The fee is optional, and its declaration accepts a fee of 25 EUR and
+	 * refuses a negative or zero amount and a lower-case currency
+	 * (REQ-OBRF-010).
+	 *
+	 * @return void
+	 */
+	public function testTheFeeAcceptsAPositiveAmountAndRefusesANegativeOne(): void {
+		$form = $this->schemas()['registrationForm'];
+		self::assertNotContains('fee', $form['required']);
+
+		$schema = json_decode((string)json_encode($form['properties']['fee']));
+		$valid = static fn (array $fee): bool => (new Validator())->validate(json_decode((string)json_encode($fee)), $schema)->isValid();
+
+		self::assertTrue($valid(['amount' => 25, 'currency' => 'EUR', 'description' => 'Leges evenementenvergunning']));
+		self::assertTrue($valid(['amount' => 12.5]));
+		self::assertFalse($valid(['amount' => -25, 'currency' => 'EUR']));
+		self::assertFalse($valid(['amount' => 0]));
+		self::assertFalse($valid(['currency' => 'EUR']));
+		self::assertFalse($valid(['amount' => 25, 'currency' => 'eur']));
+		self::assertSame('EUR', $form['properties']['fee']['properties']['currency']['default']);
+	}//end testTheFeeAcceptsAPositiveAmountAndRefusesANegativeOne()
 }//end class

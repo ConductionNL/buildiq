@@ -2059,7 +2059,19 @@ OC.L10N.register(
         "Requests under 250 ms": "Requests under 250 ms",
         "Total load time (ms)": "Total load time (ms)",
         "Window start": "Window start",
-        "Include server bundle": "Include server bundle"
+        "Include server bundle": "Include server bundle",
+        "A form with a fee needs sign-in at level substantial or high. Choose that level above, or it cannot be saved.": "A form with a fee needs sign-in at level substantial or high. Choose that level above, or it cannot be saved.",
+        "After sending, the portal asks the filer to pay this amount before the application is complete.": "After sending, the portal asks the filer to pay this amount before the application is complete.",
+        "Amount": "Amount",
+        "Currency": "Currency",
+        "Fee on submit": "Fee on submit",
+        "Line the filer sees on the payment": "Line the filer sees on the payment",
+        "The filer pays a fee after sending": "The filer pays a fee after sending",
+        "Fee on Submit": "Fee on Submit",
+        "The ISO 4217 code of the currency. EUR when left empty.": "The ISO 4217 code of the currency. EUR when left empty.",
+        "The fee the filer pays after sending the form: the portal shows \"Pay {amount} now\" and forwards to the payment provider (REQ-OBRF-010). Left empty, the form costs nothing. A form with a fee needs sign-in at level substantial or high; buildiq refuses to save it otherwise.": "The fee the filer pays after sending the form: the portal shows \"Pay {amount} now\" and forwards to the payment provider (REQ-OBRF-010). Left empty, the form costs nothing. A form with a fee needs sign-in at level substantial or high; buildiq refuses to save it otherwise.",
+        "The line the filer sees on the payment.": "The line the filer sees on the payment.",
+        "What the filer pays, in the currency below. Greater than zero.": "What the filer pays, in the currency below. Greater than zero."
     },
     "nplurals=2; plural=(n != 1);"
 )

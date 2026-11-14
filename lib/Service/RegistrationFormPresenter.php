@@ -54,6 +54,7 @@ final class RegistrationFormPresenter {
 	 * @return array<string, mixed> The served form.
 	 *
 	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-005, REQ-OBRF-008)
+	 * @spec openspec/changes/forms-fee-on-submit/specs/registration-form-builder/spec.md (REQ-OBRF-010)
 	 */
 	public function serve(array $form): array {
 		$presets = $this->presetsOf(form: $form);
@@ -83,6 +84,7 @@ final class RegistrationFormPresenter {
 			'isDefault' => (($form['isDefault'] ?? false) === true),
 			'isPublic' => (($form['isPublic'] ?? false) === true),
 			'minTrust' => $this->signInLevel(form: $form),
+			'fee' => (new RegistrationFormFee())->served(form: $form),
 			'confirmationText' => (string)($form['confirmationText'] ?? ''),
 			'allowSaveForLater' => (($form['allowSaveForLater'] ?? false) === true),
 			'sections' => $sections,

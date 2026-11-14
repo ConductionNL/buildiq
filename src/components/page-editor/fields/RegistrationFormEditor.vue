@@ -189,6 +189,70 @@
 			</p>
 		</fieldset>
 
+		<fieldset class="form-editor__block" data-testid="registration-form-fee">
+			<legend>{{ t('buildiq', 'Fee on submit') }}</legend>
+
+			<label class="form-editor__inline">
+				<input
+					type="checkbox"
+					:checked="hasFee"
+					data-testid="registration-form-fee-switch"
+					@change="writeFeeOn($event.target.checked)" />
+				{{ t('buildiq', 'The filer pays a fee after sending') }}
+			</label>
+
+			<template v-if="hasFee">
+				<label class="form-editor__field">
+					{{ t('buildiq', 'Amount') }}
+					<input
+						type="number"
+						min="0.01"
+						step="0.01"
+						:value="modelValue.fee.amount ?? ''"
+						data-testid="registration-form-fee-amount"
+						@input="writeFee('amount', $event.target.value === '' ? null : Number($event.target.value))" />
+				</label>
+				<label class="form-editor__field">
+					{{ t('buildiq', 'Currency') }}
+					<input
+						type="text"
+						maxlength="3"
+						:value="modelValue.fee.currency || 'EUR'"
+						data-testid="registration-form-fee-currency"
+						@input="writeFee('currency', $event.target.value.trim().toUpperCase())" />
+				</label>
+				<label class="form-editor__field">
+					{{ t('buildiq', 'Line the filer sees on the payment') }}
+					<input
+						type="text"
+						:value="modelValue.fee.description || ''"
+						placeholder="Leges evenementenvergunning"
+						data-testid="registration-form-fee-description"
+						@input="writeFee('description', $event.target.value)" />
+				</label>
+				<p
+					v-if="feeNeedsSignIn"
+					class="form-editor__warn"
+					role="alert"
+					data-testid="registration-form-fee-sign-in">
+					{{
+						t(
+							'buildiq',
+							'A form with a fee needs sign-in at level substantial or high. Choose that level above, or it cannot be saved.',
+						)
+					}}
+				</p>
+				<p class="form-editor__hint">
+					{{
+						t(
+							'buildiq',
+							'After sending, the portal asks the filer to pay this amount before the application is complete.',
+						)
+					}}
+				</p>
+			</template>
+		</fieldset>
+
 		<FormLayoutBuilder
 			:sections="modelValue.sections || []"
 			:fields="modelValue.fields || []"
@@ -337,6 +401,28 @@ export default {
 		channelsUnknown() {
 			return (this.channels || []).length === 0
 		},
+
+		/**
+		 * Whether the form carries a fee.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/forms-fee-on-submit/specs/registration-form-builder/spec.md (REQ-OBRF-010)
+		 */
+		hasFee() {
+			const fee = this.modelValue.fee
+			return !!fee && typeof fee === 'object'
+		},
+
+		/**
+		 * Whether the fee cannot be saved for want of sign-in: the server
+		 * refuses a fee on a form below level substantial.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/forms-fee-on-submit/specs/registration-form-builder/spec.md (REQ-OBRF-010)
+		 */
+		feeNeedsSignIn() {
+			return this.hasFee && !['substantial', 'high'].includes(this.modelValue.minTrust)
+		},
 	},
 
 	methods: {
@@ -391,6 +477,41 @@ export default {
 				delete next.minTrust
 			}
 			this.$emit('update:modelValue', next)
+		},
+
+		/**
+		 * Switch the fee on or off. On starts a fee in euros with no amount
+		 * yet; off removes the key, since a form without a fee carries none.
+		 *
+		 * @param {boolean} checked - whether the filer pays.
+		 * @return {void}
+		 * @spec openspec/changes/forms-fee-on-submit/specs/registration-form-builder/spec.md (REQ-OBRF-010)
+		 */
+		writeFeeOn(checked) {
+			const next = { ...this.modelValue }
+			if (checked) {
+				next.fee = { currency: 'EUR', description: '', ...(this.modelValue.fee || {}) }
+			} else {
+				delete next.fee
+			}
+			this.$emit('update:modelValue', next)
+		},
+
+		/**
+		 * Write one part of the fee. An emptied amount is removed rather than
+		 * stored as zero, which the server refuses.
+		 *
+		 * @param {string} key - amount, currency or description.
+		 * @param {number|string|null} value - the new value.
+		 * @return {void}
+		 * @spec openspec/changes/forms-fee-on-submit/specs/registration-form-builder/spec.md (REQ-OBRF-010)
+		 */
+		writeFee(key, value) {
+			const fee = { ...(this.modelValue.fee || {}), [key]: value }
+			if (value === null || Number.isNaN(value)) {
+				delete fee[key]
+			}
+			this.$emit('update:modelValue', { ...this.modelValue, fee })
 		},
 	},
 }
