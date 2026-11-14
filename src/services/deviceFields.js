@@ -35,6 +35,7 @@ export const AUDIO_BYTES_PER_SECOND = 4000
  *
  * @param {number} seconds - the clip length.
  * @return {number} bytes.
+ * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-value-lands-in-a-matching-property-req-bqsa-002
  */
 export function audioClipBytes(seconds) {
 	return Math.ceil((seconds * AUDIO_BYTES_PER_SECOND * 4) / 3)
@@ -45,6 +46,7 @@ export function audioClipBytes(seconds) {
  *
  * @param {number} [cap] - the cap in bytes; the renderer's default when absent.
  * @return {number}
+ * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-value-lands-in-a-matching-property-req-bqsa-002
  */
 export function longestAudioSeconds(cap = INLINE_FILE_CAP) {
 	return Math.floor((cap * 3) / (4 * AUDIO_BYTES_PER_SECOND))
@@ -55,6 +57,7 @@ export function longestAudioSeconds(cap = INLINE_FILE_CAP) {
  *
  * @param {object} field - the form field.
  * @return {number}
+ * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-value-lands-in-a-matching-property-req-bqsa-002
  */
 export function inlineCapOf(field) {
 	return Number.isFinite(field?.maxSize) && field.maxSize > 0 ? field.maxSize : INLINE_FILE_CAP
@@ -65,6 +68,7 @@ export function inlineCapOf(field) {
  *
  * @param {object} field - the form field.
  * @return {number} the stored length; a malformed value is returned as stored.
+ * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-value-lands-in-a-matching-property-req-bqsa-002
  */
 export function audioSecondsOf(field) {
 	return field?.maxSeconds === undefined ? AUDIO_DEFAULT_SECONDS : field.maxSeconds
@@ -76,6 +80,7 @@ export function audioSecondsOf(field) {
  * @param {object} field - the form field.
  * @param {string} mode - the form's mode (`public`, `create`, `edit`).
  * @return {Array<string>} codes such as `audio-length-too-long`.
+ * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-value-lands-in-a-matching-property-req-bqsa-002
  */
 export function deviceFieldProblems(field, mode) {
 	const type = field?.type

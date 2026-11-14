@@ -516,6 +516,7 @@ export default {
 		 *
 		 * @param {object} field - the field entry.
 		 * @return {boolean}
+		 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-forms-offer-signature-audio-and-location-fields-req-bqsa-001
 		 */
 		isDeviceField(field) {
 			return !!field && DEVICE_FIELD_TYPES.includes(field.type)
@@ -526,6 +527,7 @@ export default {
 		 *
 		 * @param {object} field - the audio field.
 		 * @return {number} the stored length, as stored.
+		 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-forms-offer-signature-audio-and-location-fields-req-bqsa-001
 		 */
 		audioSeconds(field) {
 			return audioSecondsOf(field)
