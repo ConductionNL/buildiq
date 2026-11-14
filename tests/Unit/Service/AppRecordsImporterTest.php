@@ -27,10 +27,12 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use Closure;
 use OCA\OpenRegister\Kernel\Contracts\ObjectImporterInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ImportRequest;
 use OCP\IUser;
 use OCP\IUserManager;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -44,11 +46,29 @@ use RuntimeException;
 class AppRecordsImporterTest extends TestCase {
 
 	/**
-	 * OpenRegister's importer.
+	 * OpenRegister's importer: a fake in the ImportRequest form (`main`) or the named-parameter
+	 * form (`development` and earlier releases), whichever the test picks.
 	 *
-	 * @var ObjectImporterInterface&MockObject
+	 * Fakes rather than a mock of ObjectImporterInterface: which interface is loaded depends on
+	 * the OpenRegister installed beside the tests, and the importer must work against both.
+	 *
+	 * @var object
 	 */
-	private ObjectImporterInterface&MockObject $importer;
+	private object $importer;
+
+	/**
+	 * Every import call, as `[path, register, schema, user, objects]`.
+	 *
+	 * @var list<array{0:string,1:mixed,2:mixed,3:mixed,4:mixed}>
+	 */
+	private array $calls = [];
+
+	/**
+	 * What the fake importer answers, given `(path, register, schema, user)`.
+	 *
+	 * @var Closure
+	 */
+	private Closure $answer;
 
 	/**
 	 * The container the importer is resolved from.
@@ -99,10 +119,11 @@ class AppRecordsImporterTest extends TestCase {
 	 */
 	protected function setUp(): void {
 		parent::setUp();
-		$this->importer  = $this->createMock(ObjectImporterInterface::class);
+		$this->answer = static fn (): array => [];
+		$this->useImporter(form: 'request');
 		$this->container = $this->createMock(ContainerInterface::class);
 		$this->container->method('has')->willReturnCallback(static fn (string $id): bool => $id === ObjectImporterInterface::class);
-		$this->container->method('get')->willReturn($this->importer);
+		$this->container->method('get')->willReturnCallback(fn (): object => $this->importer);
 
 		$this->register = new Register();
 		$this->registers = $this->createMock(RegisterMapper::class);
@@ -147,6 +168,90 @@ class AppRecordsImporterTest extends TestCase {
 	}//end service()
 
 	/**
+	 * Install a fake importer of one form. Both record the call and hand it to `$this->answer`.
+	 *
+	 * @param string $form `request` for `importFromJson(ImportRequest)`, `named` for the named-parameter form.
+	 *
+	 * @return void
+	 */
+	private function useImporter(string $form): void {
+		$record = function (string $path, mixed $register, mixed $schema, mixed $user): array {
+			$this->calls[] = [$path, $register, $schema, $user, json_decode((string)file_get_contents($path), true)];
+			return ($this->answer)($path, $register, $schema, $user);
+		};
+
+		if ($form === 'request') {
+			$this->importer = new class($record) {
+				/**
+				 * @param Closure $record Records and answers the call.
+				 */
+				public function __construct(private readonly Closure $record) {
+				}
+
+				/**
+				 * @param ImportRequest $request        The import.
+				 * @param bool          $_rbac          Unused.
+				 * @param bool          $_multitenancy  Unused.
+				 *
+				 * @return array<string,mixed> The answer.
+				 */
+				public function importFromJson(ImportRequest $request, bool $_rbac = true, bool $_multitenancy = true): array {
+					return ($this->record)($request->filePath, $request->scope->register, $request->scope->schema, $request->scope->currentUser);
+				}
+			};
+			return;
+		}
+
+		$this->importer = new class($record) {
+			/**
+			 * @param Closure $record Records and answers the call.
+			 */
+			public function __construct(private readonly Closure $record) {
+			}
+
+			/**
+			 * The named-parameter form of OpenRegister before the ImportRequest contract.
+			 *
+			 * @param string     $filePath      The file.
+			 * @param mixed      $register      The register.
+			 * @param mixed      $schema        The schema.
+			 * @param bool       $validation    Unused.
+			 * @param bool       $events        Unused.
+			 * @param bool       $_rbac         Unused.
+			 * @param bool       $_multitenancy Unused.
+			 * @param bool       $publish       Unused.
+			 * @param IUser|null $currentUser   The user.
+			 *
+			 * @return array<string,mixed> The answer.
+			 */
+			public function importFromJson(
+				string $filePath,
+				mixed $register = null,
+				mixed $schema = null,
+				bool $validation = false,
+				bool $events = false,
+				bool $_rbac = true,
+				bool $_multitenancy = true,
+				bool $publish = false,
+				?IUser $currentUser = null,
+			): array {
+				return ($this->record)($filePath, $register, $schema, $currentUser);
+			}
+		};
+
+	}//end useImporter()
+
+	/**
+	 * Both forms of OpenRegister's import contract.
+	 *
+	 * @return array<string,array{0:string}>
+	 */
+	public static function forms(): array {
+		return ['ImportRequest form' => ['request'], 'named-parameter form' => ['named']];
+
+	}//end forms()
+
+	/**
 	 * The install result of the app `vergunningen`, owned by `sanne`.
 	 *
 	 * @param array<string,mixed> $override Fields to replace.
@@ -179,47 +284,46 @@ class AppRecordsImporterTest extends TestCase {
 	 * Forty permits arrive through OpenRegister's register import, into the new register and schema, as the owner,
 	 * from a JSON array file that is gone afterwards.
 	 *
+	 * @param string $form The import contract form (see forms()).
+	 *
 	 * @return void
 	 */
-	public function testFortyPermitsArriveThroughTheRegisterImport(): void {
-		$seen = [];
-		$this->importer->expects($this->once())->method('importFromJson')
-			->willReturnCallback(
-				function (ImportRequest $request) use (&$seen): array {
-					$seen['path'] = $request->filePath;
-					$seen['objects'] = json_decode((string)file_get_contents($request->filePath), true);
-					$this->assertSame($this->register, $request->scope->register);
-					$this->assertSame('permit', $request->scope->schema->getSlug());
-					$this->assertSame($this->owner, $request->scope->currentUser);
-					return ['JSON' => ['found' => 40, 'created' => array_fill(0, 40, []), 'updated' => [], 'errors' => []]];
-				}
-			);
+	#[DataProvider('forms')]
+	public function testFortyPermitsArriveThroughTheRegisterImport(string $form): void {
+		$this->useImporter(form: $form);
+		$this->answer = static fn (): array => ['JSON' => ['found' => 40, 'created' => array_fill(0, 40, []), 'updated' => [], 'errors' => []]];
 
 		$report = $this->service()->import(['data/permit.jsonl' => self::lines(40)], self::installed());
 
 		$this->assertSame(['imported' => 40, 'failed' => 0, 'schemas' => [['schema' => 'permit', 'imported' => 40, 'failed' => 0]]], $report);
-		$this->assertCount(40, $seen['objects']);
-		$this->assertSame(['name' => 'permit 40'], $seen['objects'][39]);
-		$this->assertFileDoesNotExist($seen['path']);
+		$this->assertCount(expectedCount: 1, haystack: $this->calls);
+		[$path, $register, $schema, $user, $objects] = $this->calls[0];
+		$this->assertSame(expected: $this->register, actual: $register);
+		$this->assertSame(expected: 'permit', actual: $schema->getSlug());
+		$this->assertSame(expected: $this->owner, actual: $user);
+		$this->assertCount(expectedCount: 40, haystack: $objects);
+		$this->assertSame(expected: ['name' => 'permit 40'], actual: $objects[39]);
+		$this->assertFileDoesNotExist(filename: $path);
 
 	}//end testFortyPermitsArriveThroughTheRegisterImport()
 
 	/**
 	 * One schema failing is reported with its count and does not stop the other schema's records.
 	 *
+	 * @param string $form The import contract form (see forms()).
+	 *
 	 * @return void
 	 */
-	public function testOneFailingSchemaDoesNotStopTheOthers(): void {
-		$this->importer->expects($this->exactly(2))->method('importFromJson')
-			->willReturnCallback(
-				static function (ImportRequest $request): array {
-					if ($request->scope->schema->getSlug() === 'permit') {
-						throw new RuntimeException('database gone');
-					}
+	#[DataProvider('forms')]
+	public function testOneFailingSchemaDoesNotStopTheOthers(string $form): void {
+		$this->useImporter(form: $form);
+		$this->answer = static function (string $path, mixed $register, mixed $schema): array {
+			if ($schema->getSlug() === 'permit') {
+				throw new RuntimeException('database gone');
+			}
 
-					return ['JSON' => ['created' => [[]], 'updated' => [[]], 'errors' => []]];
-				}
-			);
+			return ['JSON' => ['created' => [[]], 'updated' => [[]], 'errors' => []]];
+		};
 
 		$report = $this->service()->import(
 			['data/zaak.jsonl' => self::lines(2), 'data/permit.jsonl' => self::lines(3)],
@@ -237,6 +341,7 @@ class AppRecordsImporterTest extends TestCase {
 			],
 			$report
 		);
+		$this->assertCount(expectedCount: 2, haystack: $this->calls);
 
 	}//end testOneFailingSchemaDoesNotStopTheOthers()
 
@@ -246,7 +351,7 @@ class AppRecordsImporterTest extends TestCase {
 	 * @return void
 	 */
 	public function testRefusedRecordsCountAsFailed(): void {
-		$this->importer->method('importFromJson')->willReturn(['JSON' => ['created' => [[]], 'updated' => [], 'errors' => [[], []]]]);
+		$this->answer = static fn (): array => ['JSON' => ['created' => [[]], 'updated' => [], 'errors' => [[], []]]];
 
 		$report = $this->service()->import(['data/permit.jsonl' => self::lines(3)], self::installed());
 
@@ -261,11 +366,11 @@ class AppRecordsImporterTest extends TestCase {
 	 * @return void
 	 */
 	public function testAFileForAnUnknownSchemaFails(): void {
-		$this->importer->expects($this->never())->method('importFromJson');
-
 		$report = $this->service()->import(['data/other.jsonl' => self::lines(4)], self::installed());
 
 		$this->assertSame([['schema' => 'other', 'imported' => 0, 'failed' => 4, 'error' => 'unknown_schema']], $report['schemas']);
+
+		$this->assertSame(expected: [], actual: $this->calls, message: 'The importer was asked.');
 
 	}//end testAFileForAnUnknownSchemaFails()
 
@@ -275,11 +380,11 @@ class AppRecordsImporterTest extends TestCase {
 	 * @return void
 	 */
 	public function testABrokenLineFailsItsFile(): void {
-		$this->importer->expects($this->never())->method('importFromJson');
-
 		$report = $this->service()->import(['data/permit.jsonl' => "{\"name\":\"a\"}\n[1,2]\n\n{\"name\":\"c\"}\n"], self::installed());
 
 		$this->assertSame([['schema' => 'permit', 'imported' => 0, 'failed' => 3, 'error' => 'invalid_records']], $report['schemas']);
+
+		$this->assertSame(expected: [], actual: $this->calls, message: 'The importer was asked.');
 
 	}//end testABrokenLineFailsItsFile()
 
@@ -289,11 +394,11 @@ class AppRecordsImporterTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnEmptyFileImportsNothing(): void {
-		$this->importer->expects($this->never())->method('importFromJson');
-
 		$report = $this->service()->import(['data/permit.jsonl' => "\n\n"], self::installed());
 
 		$this->assertSame(['imported' => 0, 'failed' => 0, 'schemas' => [['schema' => 'permit', 'imported' => 0, 'failed' => 0]]], $report);
+
+		$this->assertSame(expected: [], actual: $this->calls, message: 'The importer was asked.');
 
 	}//end testAnEmptyFileImportsNothing()
 

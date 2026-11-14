@@ -38,6 +38,8 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ImportRequest;
 use OCA\OpenRegister\Kernel\Contracts\Value\ImportScope;
 use OCP\IUserManager;
 use Psr\Container\ContainerInterface;
+use ReflectionMethod;
+use ReflectionNamedType;
 use Throwable;
 
 /**
@@ -196,12 +198,7 @@ class AppRecordsImporter {
 
 		try {
 			file_put_contents($path, (string)json_encode($objects));
-			$result = $target['importer']->importFromJson(
-				request: new ImportRequest(
-					filePath: $path,
-					scope: new ImportScope(register: $target['register'], schema: $schema, currentUser: $target['user'])
-				)
-			);
+			$result = $this->callImport(importer: $target['importer'], path: $path, target: $target, schema: $schema);
 		} finally {
 			@unlink($path);
 		}
@@ -213,6 +210,57 @@ class AppRecordsImporter {
 
 		return $summary;
 	}//end write()
+
+	/**
+	 * Call OpenRegister's JSON import in the form the installed OpenRegister declares.
+	 *
+	 * OpenRegister `main` takes one ImportRequest; its `development` branch, and every
+	 * release before the ImportRequest contract, takes the file, register, schema and user
+	 * as named parameters. The form is read off the importer's own signature, so the same
+	 * buildiq works against both instead of failing every schema with `import_failed`.
+	 *
+	 * @param object              $importer OpenRegister's importer.
+	 * @param string              $path     The JSON array file.
+	 * @param array<string,mixed> $target   The register and user (see target()).
+	 * @param SchemaInterface     $schema   The schema the records belong to.
+	 *
+	 * @return mixed The import's result.
+	 *
+	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-records-come-along-only-when-asked-req-bqic-003
+	 */
+	private function callImport(object $importer, string $path, array $target, SchemaInterface $schema): mixed {
+		if (self::takesImportRequest(importer: $importer) === true) {
+			return $importer->importFromJson(
+				request: new ImportRequest(
+					filePath: $path,
+					scope: new ImportScope(register: $target['register'], schema: $schema, currentUser: $target['user'])
+				)
+			);
+		}
+
+		return $importer->importFromJson(
+			filePath: $path,
+			register: $target['register'],
+			schema: $schema,
+			currentUser: $target['user']
+		);
+	}//end callImport()
+
+	/**
+	 * Whether the importer's `importFromJson()` takes an ImportRequest as its first parameter.
+	 *
+	 * @param object $importer OpenRegister's importer.
+	 *
+	 * @return bool True for the ImportRequest form, false for the named-parameter form.
+	 *
+	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-records-come-along-only-when-asked-req-bqic-003
+	 */
+	private static function takesImportRequest(object $importer): bool {
+		$first = ((new ReflectionMethod($importer, 'importFromJson'))->getParameters()[0] ?? null);
+		$type  = $first?->getType();
+
+		return $type instanceof ReflectionNamedType && ltrim($type->getName(), '\\') === ImportRequest::class;
+	}//end takesImportRequest()
 
 	/**
 	 * Resolve where the records go: the importer, the new register, its schemas by slug and the owner.
