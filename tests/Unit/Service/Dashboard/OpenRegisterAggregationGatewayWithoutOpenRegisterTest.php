@@ -49,6 +49,12 @@ class OpenRegisterAggregationGatewayWithoutOpenRegisterTest extends TestCase {
 	 */
 	#[RunInSeparateProcess]
 	public function testWithoutOpenRegisterTheWidgetIsEmpty(): void {
+		// The bootstrap (tests/bootstrap-unit.php) puts a sibling OpenRegister checkout on the
+		// autoloader when one exists, and then the real runner is loadable.
+		// This process models an instance without OpenRegister, so take every
+		// OpenRegister path that holds the runner off the autoloader here; the
+		// separate process keeps that from reaching any other test.
+		$this->withoutOpenRegisterRunnerOnTheAutoloader();
 		$this->assertFalse(class_exists('OCA\\OpenRegister\\Service\\Aggregation\\AggregationRunner'), 'this process must not know the runner');
 
 		$container = $this->createMock(originalClassName: ContainerInterface::class);
@@ -64,4 +70,28 @@ class OpenRegisterAggregationGatewayWithoutOpenRegisterTest extends TestCase {
 
 		$this->assertNull($gateway->value(register: 'buildiq', schema: 'application', requestParams: ['metric' => 'count']));
 	}//end testWithoutOpenRegisterTheWidgetIsEmpty()
+
+	/**
+	 * Drop the OpenRegister PSR-4 paths that would autoload the aggregation runner.
+	 *
+	 * @return void
+	 */
+	private function withoutOpenRegisterRunnerOnTheAutoloader(): void {
+		foreach (\Composer\Autoload\ClassLoader::getRegisteredLoaders() as $loader) {
+			$paths = ($loader->getPrefixesPsr4()['OCA\\OpenRegister\\'] ?? null);
+			if ($paths === null) {
+				continue;
+			}
+
+			$loader->setPsr4(
+				'OCA\\OpenRegister\\',
+				array_values(
+					array_filter(
+						$paths,
+						static fn (string $path): bool => is_file($path . '/Service/Aggregation/AggregationRunner.php') === false
+					)
+				)
+			);
+		}
+	}//end withoutOpenRegisterRunnerOnTheAutoloader()
 }//end class
