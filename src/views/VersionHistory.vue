@@ -78,6 +78,25 @@
 						{{ t('buildiq', 'Promote') }}
 					</button>
 					<button
+						v-if="canEdit"
+						class="version-history__btn"
+						data-test="version-branch"
+						@click="askBranch(row)">
+						{{ t('buildiq', 'Start a branch') }}
+					</button>
+					<button
+						v-if="canEdit && mergeTargets(row).length"
+						class="version-history__btn"
+						data-test="version-merge"
+						@click="askMerge(row)">
+						{{ t('buildiq', 'Merge into') }}
+					</button>
+					<small
+						v-if="row.githubBranch"
+						class="version-history__branch">
+						{{ t('buildiq', 'Git branch: {branch}', { branch: row.githubBranch }) }}
+					</small>
+					<button
 						v-if="!isProduction(row)"
 						class="version-history__btn version-history__btn--danger"
 						@click="askRollback(row)">
@@ -87,6 +106,20 @@
 			</li>
 		</ul>
 
+		<PromptTextDialog
+			:open="branchSource !== null"
+			:name="t('buildiq', 'Start a branch')"
+			:label="t('buildiq', 'Branch name')"
+			:confirmLabel="t('buildiq', 'Start a branch')"
+			@update:open="branchSource = null"
+			@submit="startBranch" />
+		<MergeVersionDialog
+			:open="mergeSource !== null"
+			:appSlug="appSlug"
+			:source="mergeSource"
+			:targets="mergeSource ? mergeTargets(mergeSource) : []"
+			@update:open="mergeSource = null"
+			@merged="refresh" />
 		<RollbackConfirmModal
 			:open="rollbackOpen"
 			:version="rollbackTarget"
@@ -100,6 +133,8 @@
 import axios from '@nextcloud/axios'
 import { showError, showSuccess } from '@nextcloud/dialogs'
 import { generateUrl } from '@nextcloud/router'
+import MergeVersionDialog from '../dialogs/MergeVersionDialog.vue'
+import PromptTextDialog from '../dialogs/PromptTextDialog.vue'
 import RollbackConfirmModal from '../modals/RollbackConfirmModal.vue'
 import { openPromoteDialog, promoteDialog } from '../composables/usePromoteDialog.js'
 import { buildVersionedRoute } from '../router/helpers.js'
@@ -165,6 +200,8 @@ function releaseFailureMessage(e) {
 export default {
 	name: 'VersionHistory',
 	components: {
+		MergeVersionDialog,
+		PromptTextDialog,
 		RollbackConfirmModal,
 	},
 
@@ -208,6 +245,8 @@ export default {
 			releasing: '',
 			rollbackOpen: false,
 			rollbackTarget: null,
+			branchSource: null,
+			mergeSource: null,
 			promoteDialog,
 		}
 	},
@@ -488,6 +527,73 @@ export default {
 		},
 
 		/**
+		 * Ask for the name of a branch started from a version.
+		 *
+		 * @param {object} row The version row.
+		 * @return {void}
+		 *
+		 * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-starts-a-branch-from-a-version-req-bqgb-001
+		 */
+		askBranch(row) {
+			this.branchSource = row
+		},
+
+		/**
+		 * Start the branch: POST its name, tell the maker, and reload the list.
+		 *
+		 * @param {string} name The branch name the maker entered.
+		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-starts-a-branch-from-a-version-req-bqgb-001
+		 */
+		async startBranch(name) {
+			const source = this.branchSource
+			this.branchSource = null
+			if (!source || !this.appSlug) {
+				return
+			}
+			try {
+				await axios.post(
+					generateUrl('/apps/buildiq/api/applications/{slug}/versions/{versionSlug}/branch', {
+						slug: this.appSlug,
+						versionSlug: this.rowSlug(source),
+					}),
+					{ name: name.trim() },
+				)
+				showSuccess(t('buildiq', 'Branch “{name}” started.', { name: name.trim() }))
+				await this.refresh()
+			} catch (e) {
+				showError(responseDetailOf(e) || t('buildiq', 'The branch could not be started.'))
+			}
+		},
+
+		/**
+		 * Open the merge dialog for a version.
+		 *
+		 * @param {object} row The version row merged in.
+		 * @return {void}
+		 *
+		 * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-merges-a-branch-and-picks-a-side-per-conflict-req-bqgb-003
+		 */
+		askMerge(row) {
+			this.mergeSource = row
+		},
+
+		/**
+		 * The versions a version may merge into: the other drafts that are not production.
+		 *
+		 * @param {object} row The version merged in.
+		 * @return {Array<object>}
+		 */
+		mergeTargets(row) {
+			return this.versions.filter(
+				(other) => this.rowSlug(other) !== this.rowSlug(row)
+					&& this.rowStatus(other) === 'draft'
+					&& !this.isProduction(other),
+			)
+		},
+
+		/**
 		 * Release a draft version: set-as-production + publish + demote previous
 		 * production (owner only, server-enforced). Refreshes on success.
 		 *
@@ -691,6 +797,11 @@ export default {
 	background: var(--color-primary-element, #0082c9);
 	color: var(--color-primary-element-text, #fff);
 	border-color: var(--color-primary-element, #0082c9);
+}
+
+.version-history__branch {
+	align-self: center;
+	color: var(--color-text-maxcontrast);
 }
 
 .version-history__btn--danger {

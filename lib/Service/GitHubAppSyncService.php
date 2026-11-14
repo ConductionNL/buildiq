@@ -93,6 +93,12 @@ class GitHubAppSyncService implements GitHubAppSyncServiceInterface {
 	private const DISCOVERY_TOPIC = 'buildiq-app';
 
 	/**
+	 * The shape of a version's Git branch, as GitHubSyncController's REF_PATTERN
+	 * (lifecycle-git-branches); `..` is refused separately.
+	 */
+	private const BRANCH_PATTERN = '/^(?!.*\.\.)[A-Za-z0-9._\/-]{1,255}$/';
+
+	/**
 	 * OR object CRUD (load/save Application + versions).
 	 *
 	 * @var ObjectServiceInterface
@@ -240,9 +246,14 @@ class GitHubAppSyncService implements GitHubAppSyncServiceInterface {
 			return $repo;
 		}
 
-		$result = $this->commitFileMap(
-			commit: new FileCommit(repo: $this->foundRepo(found: $repo, access: $request->access), branch: $repo['branch'], files: $files)
-		);
+		$brokered = $this->foundRepo(found: $repo, access: $request->access);
+		$branch = $this->versionBranch(application: $application, version: $version, defaultBranch: $repo['branch']);
+		$missing = $this->ensureBranch(repo: $brokered, branch: $branch, defaultBranch: $repo['branch']);
+		if ($missing !== null) {
+			return ['outcome' => $missing];
+		}
+
+		$result = $this->commitFileMap(commit: new FileCommit(repo: $brokered, branch: $branch, files: $files));
 		if ($result['outcome'] !== self::OUTCOME_OK) {
 			return $result;
 		}
@@ -330,6 +341,65 @@ class GitHubAppSyncService implements GitHubAppSyncServiceInterface {
 			'branch' => $commit->branch,
 		];
 	}//end commitFileMap()
+
+	/**
+	 * The branch a version pushes to: its own `githubBranch`, or the default
+	 * branch for the production version and for a version without one.
+	 *
+	 * @param array<string,mixed> $application   The Application object.
+	 * @param array<string,mixed> $version       The version pushed.
+	 * @param string              $defaultBranch The repository's default branch.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-each-version-pushes-to-its-own-branch-req-bqgb-002
+	 */
+	private function versionBranch(array $application, array $version, string $defaultBranch): string {
+		$branch = trim((string)($version['githubBranch'] ?? ''));
+		$isProduction = $this->uuidOf(object: $version) === (string)($application['productionVersion'] ?? '');
+		if ($branch === '' || $isProduction === true || preg_match(self::BRANCH_PATTERN, $branch) !== 1) {
+			return $defaultBranch;
+		}
+
+		return $branch;
+	}//end versionBranch()
+
+	/**
+	 * Make a version branch that does not exist yet from the default branch head.
+	 *
+	 * @param BrokeredRepo $repo          The repository and access.
+	 * @param string       $branch        The version's branch.
+	 * @param string       $defaultBranch The repository's default branch.
+	 *
+	 * @return string|null Null when the branch is there (or is the default branch), else the failure outcome.
+	 *
+	 * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-each-version-pushes-to-its-own-branch-req-bqgb-002
+	 */
+	private function ensureBranch(BrokeredRepo $repo, string $branch, string $defaultBranch): ?string {
+		if ($branch === $defaultBranch || $this->resolveHead(repo: $repo, branch: $branch) !== null) {
+			return null;
+		}
+
+		$head = $this->resolveHead(repo: $repo, branch: $defaultBranch);
+		if ($head === null) {
+			// An empty repository: the first commit creates the branch itself.
+			return null;
+		}
+
+		$created = $this->brokerJson(
+			request: [
+				'method' => 'POST',
+				'path' => $repo->target->repoPath() . '/git/refs',
+				'body' => ['ref' => 'refs/heads/' . $branch, 'sha' => $head['commitSha']],
+			],
+			access: $repo->access
+		);
+		if ($created['ok'] === false) {
+			return $this->brokerFailureOutcome(result: $created);
+		}
+
+		return null;
+	}//end ensureBranch()
 
 	/**
 	 * Store the app's GitHub linkage (owner/name + resolved default branch).

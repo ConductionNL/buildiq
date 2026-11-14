@@ -121,4 +121,30 @@ final class RegisterFragmentMergeTest extends TestCase {
 		$this->assertSame(['a', 'b', 'c'], $merged['required']);
 		$this->assertSame('0.2.0', $merged['info']['version']);
 	}//end testListsConcatenateAndScalarsOverwrite()
+
+	/**
+	 * The shipped base with every shipped fragment, in filename order, gives
+	 * ApplicationVersion its branch properties and keeps what it had.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-starts-a-branch-from-a-version-req-bqgb-001
+	 */
+	public function testTheShippedFragmentsGiveAVersionItsBranchProperties(): void {
+		$settings = __DIR__ . '/../../../lib/Settings';
+		$merged = json_decode((string)file_get_contents($settings . '/openbuild_register.json'), true, 512, JSON_THROW_ON_ERROR);
+		$fragments = glob($settings . '/register.d/*.json');
+		sort($fragments);
+		foreach ($fragments as $fragment) {
+			$merged = $this->merge($merged, json_decode((string)file_get_contents($fragment), true, 512, JSON_THROW_ON_ERROR));
+		}
+
+		$version = $merged['components']['schemas']['ApplicationVersion'];
+		$this->assertSame('0.5.0', $version['version']);
+		$this->assertSame(['source', 'manifestHash', 'manifest', 'schemas'], $version['properties']['branchBase']['required']);
+		$this->assertSame('^[0-9a-f]{64}$', $version['properties']['branchBase']['properties']['manifestHash']['pattern']);
+		$this->assertSame('^[A-Za-z0-9._/-]{1,255}$', $version['properties']['githubBranch']['pattern']);
+		$this->assertSame('object', $version['properties']['manifest']['type'], 'The properties the schema had are kept.');
+		$this->assertSame('applicationVersion', $version['slug']);
+	}//end testTheShippedFragmentsGiveAVersionItsBranchProperties()
 }//end class
