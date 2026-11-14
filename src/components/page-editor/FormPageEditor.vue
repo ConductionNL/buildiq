@@ -163,6 +163,71 @@
 			<InlineFieldMark :error="markFor('fields')" />
 		</fieldset>
 
+		<!-- ai-smart-paste-into-forms REQ-BQSP-001: the maker lets users fill
+		     the form from pasted text, on the fields they pick. Never on a
+		     public form, so no anonymous caller reaches a language model. -->
+		<fieldset class="form-page-editor__fieldset" data-testid="form-smart-paste">
+			<legend>{{ t('buildiq', 'Fill from pasted text') }}</legend>
+			<label class="form-page-editor__inline">
+				<input
+					type="checkbox"
+					data-testid="smart-paste-enabled"
+					:checked="smartPasteOn"
+					:disabled="isPublicForm && !smartPasteOn"
+					:aria-invalid="isInvalid('smartPaste')"
+					@change="setSmartPasteEnabled($event.target.checked)" />
+				{{ t('buildiq', 'Let users fill this form from pasted text') }}
+			</label>
+			<p
+				v-if="isPublicForm"
+				class="form-page-editor__hint"
+				data-testid="smart-paste-public">
+				{{ t('buildiq', 'Only signed-in forms can use AI.') }}
+			</p>
+			<template v-if="smartPasteOn">
+				<div
+					class="form-page-editor__smart-paste-fields"
+					role="group"
+					:aria-label="t('buildiq', 'Fields the AI may fill')">
+					<span class="form-page-editor__group-label">
+						{{ t('buildiq', 'Fields the AI may fill') }}
+					</span>
+					<label
+						v-for="field in smartPasteCandidates"
+						:key="field.key"
+						class="form-page-editor__inline">
+						<input
+							type="checkbox"
+							:data-testid="'smart-paste-field-' + field.key"
+							:checked="smartPasteFields.includes(field.key)"
+							@change="toggleSmartPasteField(field.key, $event.target.checked)" />
+						{{ field.label || field.key }}
+					</label>
+					<p v-if="!smartPasteCandidates.length" class="form-page-editor__hint">
+						{{ t('buildiq', 'This form has no fields the AI can fill.') }}
+					</p>
+				</div>
+				<label class="form-page-editor__group-row">
+					{{ t('buildiq', 'Hint for users (optional)') }}
+					<input
+						type="text"
+						data-testid="smart-paste-hint"
+						:value="smartPaste.hint || ''"
+						:placeholder="t('buildiq', 'Paste an email or letter')"
+						@input="setSmartPasteHint($event.target.value)" />
+				</label>
+				<p class="form-page-editor__hint">
+					{{
+						t(
+							'buildiq',
+							'Users check the proposed values before they submit; nothing is saved for them. Built apps show the control once the form renderer supports it.',
+						)
+					}}
+				</p>
+			</template>
+			<InlineFieldMark :error="markFor('smartPaste')" />
+		</fieldset>
+
 		<fieldset class="form-page-editor__fieldset">
 			<legend>{{ t('buildiq', 'Eligibility check') }}</legend>
 			<EligibilityCheckBuilder
@@ -260,6 +325,7 @@ import { useRegisterPicker } from '../../composables/useRegisterPicker.js'
 import { pageEditorBaseMixin } from '../../mixins/pageEditorBase.js'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 import { findingsByField } from '../../services/formDestinationCheck.js'
+import { formMode, isSmartPasteFillable } from '../../services/manifestValidation/formLogic.js'
 
 // OpenRegister's object collection URL: POSTing the form's values here
 // creates an object in that register and schema.
@@ -452,6 +518,59 @@ export default {
 		},
 
 		/**
+		 * The form's `config.smartPaste`, or an empty setting.
+		 *
+		 * @return {{enabled?: boolean, fields?: Array<string>, hint?: string}}
+		 * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-a-maker-turns-on-smart-paste-for-chosen-fields-req-bqsp-001
+		 */
+		smartPaste() {
+			const value = this.config.smartPaste
+			return value && typeof value === 'object' && !Array.isArray(value) ? value : {}
+		},
+
+		/**
+		 * Whether smart paste is switched on.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-a-maker-turns-on-smart-paste-for-chosen-fields-req-bqsp-001
+		 */
+		smartPasteOn() {
+			return this.smartPaste.enabled === true
+		},
+
+		/**
+		 * The field keys smart paste may fill.
+		 *
+		 * @return {Array<string>}
+		 * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-a-maker-turns-on-smart-paste-for-chosen-fields-req-bqsp-001
+		 */
+		smartPasteFields() {
+			return Array.isArray(this.smartPaste.fields) ? this.smartPaste.fields : []
+		},
+
+		/**
+		 * The form's fields of a type the fill can set.
+		 *
+		 * @return {Array<object>}
+		 * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-a-maker-turns-on-smart-paste-for-chosen-fields-req-bqsp-001
+		 */
+		smartPasteCandidates() {
+			return (Array.isArray(this.config.fields) ? this.config.fields : []).filter(
+				(field) => isSmartPasteFillable(field),
+			)
+		},
+
+		/**
+		 * Whether the form renders in `public` mode, where smart paste is refused.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-smart-paste-is-validated-req-bqsp-002
+		 */
+		isPublicForm() {
+			return formMode(this.config) === 'public'
+		},
+
+		/**
 		 * Observed behaviour of `validatedConfigKeys` (retrofit annotation).
 		 * `steps` added by REQ-OBFEL-001 so `formLogic.js` / the canonical
 		 * validator's `/pages/<n>/config/steps` errors mark inline.
@@ -459,6 +578,7 @@ export default {
 		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 * @spec openspec/specs/form-editor-logic/spec.md#req-obfel-001
 		 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-form-can-check-eligibility-as-it-is-filled-in-req-bqlv-003
+		 * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-smart-paste-is-validated-req-bqsp-002
 		 */
 		validatedConfigKeys() {
 			return [
@@ -472,6 +592,7 @@ export default {
 				'initialValue',
 				'steps',
 				'eligibility',
+				'smartPaste',
 			]
 		},
 
@@ -551,6 +672,69 @@ export default {
 				next[key] = value
 			}
 			this.$emit('update:config', next)
+		},
+
+		/**
+		 * Write `config.smartPaste` with the given changes. An empty hint is dropped.
+		 *
+		 * @param {object} patch - the keys to change.
+		 * @return {void}
+		 * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-a-maker-turns-on-smart-paste-for-chosen-fields-req-bqsp-001
+		 */
+		writeSmartPaste(patch) {
+			const next = { ...this.smartPaste, ...patch }
+			if (next.hint === '') {
+				delete next.hint
+			}
+			this.update('smartPaste', next)
+		},
+
+		/**
+		 * Switch smart paste on or off. It cannot be switched on for a public form.
+		 *
+		 * @param {boolean} enabled - the switch's new state.
+		 * @return {void}
+		 * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-a-maker-turns-on-smart-paste-for-chosen-fields-req-bqsp-001
+		 */
+		setSmartPasteEnabled(enabled) {
+			if (enabled === true && this.isPublicForm) {
+				return
+			}
+			this.writeSmartPaste({ enabled: enabled === true, fields: this.smartPasteFields })
+		},
+
+		/**
+		 * Allow or disallow one field, keeping the form's field order.
+		 *
+		 * @param {string} key - the field key.
+		 * @param {boolean} allowed - whether the AI may fill it.
+		 * @return {void}
+		 * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-a-maker-turns-on-smart-paste-for-chosen-fields-req-bqsp-001
+		 */
+		toggleSmartPasteField(key, allowed) {
+			const chosen = new Set(this.smartPasteFields)
+			if (allowed) {
+				chosen.add(key)
+			} else {
+				chosen.delete(key)
+			}
+			const order = this.smartPasteCandidates.map((field) => field.key)
+			const fields = [
+				...order.filter((k) => chosen.has(k)),
+				...[...chosen].filter((k) => !order.includes(k)),
+			]
+			this.writeSmartPaste({ fields })
+		},
+
+		/**
+		 * Set the hint shown to users in the paste box.
+		 *
+		 * @param {string} hint - the hint, '' to remove it.
+		 * @return {void}
+		 * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-a-maker-turns-on-smart-paste-for-chosen-fields-req-bqsp-001
+		 */
+		setSmartPasteHint(hint) {
+			this.writeSmartPaste({ hint })
 		},
 
 		/**
@@ -735,6 +919,16 @@ export default {
 	color: var(--color-text-maxcontrast);
 	font-size: 13px;
 	margin: 0;
+}
+
+.form-page-editor__smart-paste-fields {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.form-page-editor__group-label {
+	font-size: 13px;
 }
 
 .form-page-editor__library {

@@ -1660,7 +1660,21 @@
         "Requests under 250 ms": "Verzoeken onder 250 ms",
         "Total load time (ms)": "Totale laadtijd (ms)",
         "Window start": "Begin van het venster",
-        "Include server bundle": "Serverbundel meenemen"
+        "Include server bundle": "Serverbundel meenemen",
+        "Fill from pasted text": "Invullen vanuit geplakte tekst",
+        "Let users fill this form from pasted text": "Gebruikers dit formulier laten invullen vanuit geplakte tekst",
+        "Only signed-in forms can use AI.": "Alleen formulieren voor ingelogde gebruikers kunnen AI gebruiken.",
+        "Fields the AI may fill": "Velden die de AI mag invullen",
+        "This form has no fields the AI can fill.": "Dit formulier heeft geen velden die de AI kan invullen.",
+        "Hint for users (optional)": "Hint voor gebruikers (optioneel)",
+        "Paste an email or letter": "Plak een e-mail of brief",
+        "Users check the proposed values before they submit; nothing is saved for them. Built apps show the control once the form renderer supports it.": "Gebruikers controleren de voorgestelde waarden voordat ze verzenden; er wordt niets voor hen opgeslagen. Gebouwde apps tonen de knop zodra de formulierweergave dit ondersteunt.",
+        "Paste to fill": "Plakken om in te vullen",
+        "Preview: a sample answer, no AI is called.": "Voorbeeld: een voorbeeldantwoord, er wordt geen AI aangeroepen.",
+        "Suggestion": "Suggestie",
+        "The other fields stay empty, and nothing is submitted until the user clicks Submit.": "De overige velden blijven leeg en er wordt niets verzonden tot de gebruiker op Verzenden klikt.",
+        "Yes": "Ja",
+        "Sample text from the pasted message": "Voorbeeldtekst uit het geplakte bericht"
     },
     "plurals": null,
     "pluralForm": "nplurals=2; plural=(n != 1);"

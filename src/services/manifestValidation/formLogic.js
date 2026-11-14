@@ -412,7 +412,109 @@ function formPageErrors(config, pathBase) {
 				declaredKeys,
 			}),
 		),
+		...smartPasteErrors(config, { pathBase, fieldList }),
 	]
+}
+
+/**
+ * Field types the fill cannot set: a file, a signature or a relation to
+ * another object is never proposed from pasted text.
+ */
+export const SMART_PASTE_UNFILLABLE_TYPES = Object.freeze([
+	'file',
+	'signature',
+	'relation',
+])
+
+/**
+ * The mode a form renders in: `config.mode`, else the renderer's default
+ * `public` (CnFormPage's `mode` prop default).
+ *
+ * @param {object} config - the form page config.
+ * @return {string}
+ * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-smart-paste-is-validated-req-bqsp-002
+ */
+export function formMode(config) {
+	return config && typeof config.mode === 'string' && config.mode !== ''
+		? config.mode
+		: 'public'
+}
+
+/**
+ * Whether a field's type can be filled from pasted text.
+ *
+ * @param {object} field - a `config.fields[]` entry.
+ * @return {boolean}
+ * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-smart-paste-is-validated-req-bqsp-002
+ */
+export function isSmartPasteFillable(field) {
+	return (
+		isPlainObject(field)
+		&& typeof field.key === 'string'
+		&& !SMART_PASTE_UNFILLABLE_TYPES.includes(field.type)
+	)
+}
+
+/**
+ * Errors of a form's `config.smartPaste` (REQ-BQSP-002): an unknown field
+ * key, a field of a type the fill cannot set, enabled with no fields, or
+ * enabled on a `public` form. Every pointer sits under
+ * `<pathBase>/smartPaste`, so the "Fill from pasted text" fieldset marks.
+ *
+ * @param {object} config - the form page config.
+ * @param {{pathBase: string, fieldList: Array}} ctx - the
+ *   `/pages/<n>/config` pointer prefix and the form's fields.
+ * @return {string[]}
+ * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-smart-paste-is-validated-req-bqsp-002
+ */
+function smartPasteErrors(config, ctx) {
+	const smartPaste = config.smartPaste
+	const path = `${ctx.pathBase}/smartPaste`
+	if (smartPaste === undefined) {
+		return []
+	}
+	if (!isPlainObject(smartPaste)) {
+		return [`${path}: buildiq.formLogic.error.smart-paste-invalid-shape`]
+	}
+	const errors = []
+	if (smartPaste.hint !== undefined && typeof smartPaste.hint !== 'string') {
+		errors.push(`${path}/hint: buildiq.formLogic.error.smart-paste-hint-not-string`)
+	}
+	if (smartPaste.fields !== undefined && !Array.isArray(smartPaste.fields)) {
+		errors.push(`${path}/fields: buildiq.formLogic.error.smart-paste-fields-not-array`)
+		return errors
+	}
+	const keys = Array.isArray(smartPaste.fields) ? smartPaste.fields : []
+	if (smartPaste.enabled === true) {
+		if (formMode(config) === 'public') {
+			errors.push(`${path}/enabled: buildiq.formLogic.error.smart-paste-public-form`)
+		}
+		if (keys.length === 0) {
+			errors.push(`${path}/fields: buildiq.formLogic.error.smart-paste-no-fields`)
+		}
+	}
+	keys.forEach((key, index) => {
+		errors.push(...smartPasteFieldErrors(key, { path: `${path}/fields/${index}`, fieldList: ctx.fieldList }))
+	})
+	return errors
+}
+
+/**
+ * The error of one `smartPaste.fields[]` entry, if any.
+ *
+ * @param {unknown} key - the listed field key.
+ * @param {{path: string, fieldList: Array}} ctx - the entry pointer and the form's fields.
+ * @return {string[]}
+ */
+function smartPasteFieldErrors(key, ctx) {
+	const field = ctx.fieldList.find((f) => isPlainObject(f) && f.key === key)
+	if (typeof key !== 'string' || !field) {
+		return [`${ctx.path}: buildiq.formLogic.error.smart-paste-unknown-field(${key})`]
+	}
+	if (!isSmartPasteFillable(field)) {
+		return [`${ctx.path}: buildiq.formLogic.error.smart-paste-unfillable-type(${key})`]
+	}
+	return []
 }
 
 /**
