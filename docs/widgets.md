@@ -147,6 +147,41 @@ search**, **Nextcloud widget**, **Spend analytics**, and **Interaction form**.
 Integrations registered by other apps also surface here as `integration`
 widgets. See the [integrator guide](./integrator-guide.md).
 
+## Binding a widget to an OpenConnector endpoint
+
+A published app (served at `/apps/buildiq/builder/{slug}`) can show data from
+an OpenConnector endpoint instead of an OpenRegister schema. There are exactly
+two ways to do that, and only these widgets can use them:
+
+| Widget | How it binds | Where in the manifest |
+| --- | --- | --- |
+| `connector-data` | a connector data source | the widget's `dataSource.connector` |
+| `object-table` | an endpoint source | `props.endpointSource` |
+| `chart` | an endpoint source with series mapping | `props.endpointSource` |
+| `stat`, `delta` | an endpoint source | `props.content.endpointSource` |
+| `workspace-filter` | an endpoint source for its options | `props.content.endpointSource` |
+| `stats-block` | **none** — each entry counts objects of a register and schema | `props.entries[]` |
+
+No other widget accepts an endpoint binding, and a widget takes one data
+binding: a register source or an endpoint, not both.
+
+**Which one to pick.** Use an endpoint source when the endpoint already returns
+rows in the shape the widget shows and you want that widget's own look. Use
+`connector-data` when the response has to be reshaped first (`itemsPath` plus
+`fields`), or when you need its per-binding cache time and its "keep showing
+the last good data when the endpoint fails" behaviour.
+
+**KPI strips.** A `stats-block` cannot be bound to an endpoint. That is a
+deliberate limit, not a bug: every entry in the strip is a count over one register and
+schema (`metric`, `field`, `filter`, `hideWhenZero`), so an endpoint would need
+its own response mapping per entry, which the manifest schema does not offer.
+For an endpoint-backed KPI, place separate `stat` or `delta` widgets with
+`props.content.endpointSource`. Support in `stats-block` itself is an item for
+the shared widget library, not something Buildiq patches locally.
+
+`connector-data` can't fill a dashboard page on its own as one full-width
+widget; place it next to another widget, or narrower than full width.
+
 ## Reference
 
 - [Build your app in-app](./tutorials/user/04-design-page.md) — add and configure widgets in context.

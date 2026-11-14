@@ -90,7 +90,7 @@ class GitHubAppSyncService implements GitHubAppSyncServiceInterface {
 	/**
 	 * The discovery topic set on a freshly created repo.
 	 */
-	private const DISCOVERY_TOPIC = 'openbuild-app';
+	private const DISCOVERY_TOPIC = 'buildiq-app';
 
 	/**
 	 * The shape of a version's Git branch, as GitHubSyncController's REF_PATTERN

@@ -412,6 +412,51 @@
 					{{ t('buildiq', 'Add search field') }}
 				</button>
 			</div>
+			<!-- Where the consuming app shows the task list on this case type
+			     (pages-task-panel-beside-case-tabs). Tabs are named by id, so a
+			     relabelled tab keeps its panel. -->
+			<fieldset class="layout-body__panel-placement">
+				<legend>{{ t('buildiq', 'Show the task list') }}</legend>
+				<label
+					v-for="option in panelPlacements"
+					:key="'placement-' + option.value"
+					class="layout-body__row">
+					<input
+						type="radio"
+						name="task-panel-placement"
+						:value="option.value"
+						:checked="(taskPanel.placement || '') === option.value"
+						@change="onPanelPlacement(option.value)" />
+					{{ option.label }}
+				</label>
+			</fieldset>
+			<fieldset
+				v-if="taskPanel.placement === 'side'"
+				class="layout-body__panel-tabs">
+				<legend>{{ t('buildiq', 'Beside these tabs') }}</legend>
+				<p v-if="!(taskPanel.tabs || []).length" class="layout-body__hint">
+					{{ t('buildiq', 'None ticked: beside every tab.') }}
+				</p>
+				<label
+					v-for="tab in tabs"
+					:key="'panel-' + tab.id"
+					class="layout-body__row">
+					<input
+						type="checkbox"
+						:value="tab.id"
+						:checked="(taskPanel.tabs || []).includes(tab.id)"
+						@change="onPanelTab(tab.id, $event.target.checked)" />
+					{{ tab.label || tab.id }}
+				</label>
+				<label class="layout-body__row">
+					<input
+						type="checkbox"
+						class="layout-body__panel-collapsed"
+						:checked="taskPanel.collapsed === true"
+						@change="onPanelCollapsed($event.target.checked)" />
+					{{ t('buildiq', 'Start folded') }}
+				</label>
+			</fieldset>
 		</fieldset>
 
 		<fieldset class="layout-body__section">
@@ -719,6 +764,31 @@ export default {
 		 */
 		taskList() {
 			return (this.modelValue && this.modelValue.taskList) || {}
+		},
+
+		/**
+		 * The task panel of this layout: where the task list sits.
+		 *
+		 * @spec openspec/changes/pages-task-panel-beside-case-tabs/specs/page-layout-task-panel/spec.md#requirement-a-layout-declares-where-the-task-panel-sits-req-bqtp-001
+		 * @return {object} the panel, or an empty object when none is declared.
+		 */
+		taskPanel() {
+			return this.taskList.panel || {}
+		},
+
+		/**
+		 * The placements a maker can pick, the schema-wide fall-back first.
+		 *
+		 * @spec openspec/changes/pages-task-panel-beside-case-tabs/specs/page-layout-task-panel/spec.md#requirement-a-layout-declares-where-the-task-panel-sits-req-bqtp-001
+		 * @return {Array<{value: string, label: string}>} the options.
+		 */
+		panelPlacements() {
+			return [
+				{ value: '', label: this.t('buildiq', 'As the schema-wide layout does') },
+				{ value: 'side', label: this.t('buildiq', 'Beside the tabs') },
+				{ value: 'tab', label: this.t('buildiq', 'As a tab of its own') },
+				{ value: 'none', label: this.t('buildiq', 'Not at all') },
+			]
 		},
 
 		/**
@@ -1104,6 +1174,75 @@ export default {
 		},
 
 		/**
+		 * Write the task panel. An empty placement removes the panel, so the
+		 * schema-wide layout's panel applies; `none` is kept as a choice.
+		 *
+		 * @spec openspec/changes/pages-task-panel-beside-case-tabs/specs/page-layout-task-panel/spec.md#requirement-a-layout-declares-where-the-task-panel-sits-req-bqtp-001
+		 * @param {object|null} panel The panel, or null to remove it.
+		 * @return {void}
+		 */
+		emitPanel(panel) {
+			const taskList = { ...this.taskList }
+			if (panel === null) {
+				delete taskList.panel
+			} else {
+				taskList.panel = panel
+			}
+			this.emitPatch({ taskList })
+		},
+
+		/**
+		 * Pick where the task list sits. Tabs are only kept for `side`.
+		 *
+		 * @spec openspec/changes/pages-task-panel-beside-case-tabs/specs/page-layout-task-panel/spec.md#requirement-a-layout-declares-where-the-task-panel-sits-req-bqtp-001
+		 * @param {string} placement `side`, `tab`, `none` or '' for none declared.
+		 * @return {void}
+		 */
+		onPanelPlacement(placement) {
+			if (placement === '') {
+				this.emitPanel(null)
+				return
+			}
+			const panel = { ...this.taskPanel, placement }
+			if (placement !== 'side') {
+				delete panel.tabs
+				delete panel.collapsed
+			}
+			this.emitPanel(panel)
+		},
+
+		/**
+		 * Tick or untick a tab the side panel shows beside, by id, in the
+		 * layout's tab order.
+		 *
+		 * @spec openspec/changes/pages-task-panel-beside-case-tabs/specs/page-layout-task-panel/spec.md#requirement-the-panel-names-tabs-the-layout-has-req-bqtp-002
+		 * @param {string} tabId The tab id.
+		 * @param {boolean} ticked Whether it is ticked.
+		 * @return {void}
+		 */
+		onPanelTab(tabId, ticked) {
+			const current = new Set(this.taskPanel.tabs || [])
+			if (ticked) {
+				current.add(tabId)
+			} else {
+				current.delete(tabId)
+			}
+			const tabs = this.tabs.map((tab) => tab.id).filter((id) => current.has(id))
+			this.emitPanel({ ...this.taskPanel, tabs })
+		},
+
+		/**
+		 * Whether the side panel starts folded.
+		 *
+		 * @spec openspec/changes/pages-task-panel-beside-case-tabs/specs/page-layout-task-panel/spec.md#requirement-a-layout-declares-where-the-task-panel-sits-req-bqtp-001
+		 * @param {boolean} collapsed Folded or not.
+		 * @return {void}
+		 */
+		onPanelCollapsed(collapsed) {
+			this.emitPanel({ ...this.taskPanel, collapsed })
+		},
+
+		/**
 		 * Add a task-list column.
 		 *
 		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md#requirement-a-case-type-declares-its-task-list-columns-and-search-fields-req-obpl-008
@@ -1238,6 +1377,18 @@ export default {
 </script>
 
 <style scoped>
+.layout-body__panel-placement,
+.layout-body__panel-tabs {
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius);
+	padding: 8px;
+}
+
+.layout-body__hint {
+	color: var(--color-text-maxcontrast);
+	margin: 0;
+}
+
 .layout-body__section {
 	margin-block-end: 12px;
 }
