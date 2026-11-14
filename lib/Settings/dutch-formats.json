@@ -1,0 +1,14 @@
+{
+    "_comment": "form-dutch-field-formats D3: the rule tables the PHP DutchFormatValidator and src/services/dutchFormats.js both read, so the server and the form cannot drift. Same rules as portaliq's DutchFormats. plateSideCodes are the RDW side codes 1 to 14 in order, L a letter and D a digit; from side code plateVowelFreeFrom on, a plate carries none of plateForbiddenLetters. ibanLengths: a known country must match its length; any other country is held to the general shape and the mod-97 check.",
+    "formats": ["bsn", "iban", "nl-licence-plate", "phone-nl", "phone-international", "postcode", "kvk", "kvk-branch"],
+    "plateSideCodes": ["LLDDDD", "DDDDLL", "DDLLDD", "LLDDLL", "LLLLDD", "DDLLLL", "DDLLLD", "DLLLDD", "LLDDDL", "LDDDLL", "LLLDDL", "LDDLLL", "DLLDDD", "DDDLLD"],
+    "plateVowelFreeFrom": 7,
+    "plateForbiddenLetters": "AEIOUCQ",
+    "postcodeForbiddenLetters": ["SA", "SD", "SS"],
+    "ibanLengths": {
+        "AD": 24, "AT": 20, "BE": 16, "BG": 22, "CH": 21, "CY": 28, "CZ": 24, "DE": 22, "DK": 18, "EE": 20,
+        "ES": 24, "FI": 18, "FR": 27, "GB": 22, "GI": 23, "GR": 27, "HR": 21, "HU": 28, "IE": 22, "IS": 26,
+        "IT": 27, "LI": 21, "LT": 20, "LU": 20, "LV": 21, "MC": 27, "MT": 31, "NL": 18, "NO": 15, "PL": 28,
+        "PT": 25, "RO": 24, "SE": 24, "SI": 19, "SK": 24, "SM": 27, "VA": 22
+    }
+}

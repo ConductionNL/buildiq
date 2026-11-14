@@ -98,8 +98,43 @@
 				<div class="buildiq-field-editor__validation">
 					<!-- text, long text, and a string no named type fits -->
 					<template v-if="hasTextSlots(field)">
-						<NcTextField
+						<!-- Form-dutch-field-formats T03: the JSON Schema formats, then the
+						     Dutch ones the form designer checks too; any other name stays
+						     possible through "Other…". -->
+						<label
 							v-if="field.type === 'string'"
+							class="buildiq-field-editor__format">
+							<span>{{ t('buildiq', 'Format (optional)') }}</span>
+							<select
+								data-testid="schema-field-format"
+								:value="formatChoice(field.validation.format)"
+								@change="onFormatChoice(index, $event.target.value)">
+								<option value="">
+									{{ t('buildiq', 'None') }}
+								</option>
+								<optgroup :label="t('buildiq', 'JSON Schema formats')">
+									<option
+										v-for="name in jsonSchemaFormats"
+										:key="name"
+										:value="name">
+										{{ name }}
+									</option>
+								</optgroup>
+								<optgroup :label="t('buildiq', 'Dutch formats')">
+									<option
+										v-for="option in dutchFormatOptions"
+										:key="option.id"
+										:value="option.id">
+										{{ option.label }}
+									</option>
+								</optgroup>
+								<option value="__other">
+									{{ t('buildiq', 'Other…') }}
+								</option>
+							</select>
+						</label>
+						<NcTextField
+							v-if="field.type === 'string' && (otherFormatRows.includes(index) || formatChoice(field.validation.format) === '__other')"
 							:modelValue="field.validation.format || ''"
 							:label="t('buildiq', 'Format (optional)')"
 							placeholder="email, uri, date, …"
@@ -434,6 +469,10 @@ import DeleteIcon from 'vue-material-design-icons/Delete.vue'
 import PlusIcon from 'vue-material-design-icons/Plus.vue'
 import DeleteFieldDialog from '../../modals/DeleteFieldDialog.vue'
 import { listConceptSchemes, listSchemeOptions } from '../../services/conceptSchemes.js'
+import { dutchFormatOptions, isDutchFormat } from '../../services/dutchFormats.js'
+
+// The JSON Schema string formats the schema field editor lists before the Dutch ones.
+const JSON_SCHEMA_FORMATS = ['email', 'uri', 'date', 'date-time', 'time', 'uuid', 'hostname', 'ipv4', 'ipv6']
 
 const FIELD_NAME_PATTERN = /^[a-zA-Z][a-zA-Z0-9_-]*$/
 
@@ -502,6 +541,9 @@ export default {
 	emits: ['update:fields'],
 	data() {
 		return {
+			// Form-dutch-field-formats T03: the rows where "Other…" was chosen.
+			otherFormatRows: [],
+			jsonSchemaFormats: JSON_SCHEMA_FORMATS,
 			removeDialogOpen: false,
 			pendingRemoveIndex: -1,
 			pendingRemoveName: '',
@@ -514,6 +556,15 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * The Dutch formats, labelled (form-dutch-field-formats T03).
+		 *
+		 * @return {Array<{id: string, label: string, hint: string}>}
+		 */
+		dutchFormatOptions() {
+			return dutchFormatOptions()
+		},
+
 		/**
 		 * Build the field-type picker options.
 		 *
@@ -982,6 +1033,38 @@ export default {
 		 * @param {*} value New value (empty clears the slot).
 		 * @return {void}
 		 */
+		/**
+		 * The option a stored format selects: '' for none, the format when it
+		 * is listed, '__other' for any other name.
+		 *
+		 * @param {string|undefined} format The stored format.
+		 * @return {string}
+		 * @spec openspec/changes/form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-the-form-designer-offers-dutch-formats-for-a-field-req-bqdf-001
+		 */
+		formatChoice(format) {
+			if (!format) {
+				return ''
+			}
+			return JSON_SCHEMA_FORMATS.includes(format) || isDutchFormat(format) ? format : '__other'
+		},
+
+		/**
+		 * Store the chosen format on the property, or open the free field for "Other…".
+		 *
+		 * @param {number} index Row index.
+		 * @param {string} choice The chosen option.
+		 * @return {void}
+		 * @spec openspec/changes/form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-the-form-designer-offers-dutch-formats-for-a-field-req-bqdf-001
+		 */
+		onFormatChoice(index, choice) {
+			this.otherFormatRows = this.otherFormatRows.filter((row) => row !== index)
+			if (choice === '__other') {
+				this.otherFormatRows = [...this.otherFormatRows, index]
+				return
+			}
+			this.updateValidation(index, 'format', choice)
+		},
+
 		updateValidation(index, key, value) {
 			const next = this.fields.slice()
 			const current = { ...next[index] }
@@ -1586,6 +1669,12 @@ function relationFromField(raw, v) {
 </script>
 
 <style scoped lang="scss">
+.buildiq-field-editor__format {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
 @use '../../assets/editor-controls.scss' as c;
 
 .buildiq-field-editor {

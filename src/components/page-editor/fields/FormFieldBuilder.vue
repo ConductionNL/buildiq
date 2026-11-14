@@ -186,7 +186,10 @@
 						:modelValue="field.validation || null"
 						:legacyRequired="!!field.required"
 						:legacyPattern="field.pattern || ''"
-						@update:modelValue="updateValidation(index, $event)" />
+						:format="field.format || ''"
+						:inheritedFormat="inheritedFormat(field)"
+						@update:modelValue="updateValidation(index, $event)"
+						@update:format="updateField(index, 'format', $event)" />
 				</div>
 				<div class="form-field-builder__section">
 					<span class="form-field-builder__section-label">{{
@@ -244,6 +247,7 @@ import FieldValidationBuilder from './FieldValidationBuilder.vue'
 import FileFieldSettings from './FileFieldSettings.vue'
 import InlineFieldMark from './InlineFieldMark.vue'
 import VisibleWhenBuilder from './VisibleWhenBuilder.vue'
+import { isDutchFormat } from '../../../services/dutchFormats.js'
 import {
 	FIELD_TYPES,
 	fieldTypeIcon,
@@ -435,6 +439,22 @@ export default {
 		 * @return {void}
 		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
+		/**
+		 * The Dutch format of the schema property a field is bound to, or ''
+		 * (form-dutch-field-formats D2): the form shows it and never drops it.
+		 *
+		 * @param {object} field The form field.
+		 * @return {string}
+		 * @spec openspec/changes/form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-the-form-designer-offers-dutch-formats-for-a-field-req-bqdf-001
+		 */
+		inheritedFormat(field) {
+			const schema = (this.schemas || []).find((entry) => entry && this.parentSchema
+				&& (entry.slug === this.parentSchema || String(entry.id) === String(this.parentSchema)))
+			const property = schema && schema.properties && field && field.key ? schema.properties[field.key] : null
+			const format = property && typeof property === 'object' ? property.format : ''
+			return isDutchFormat(format) ? format : ''
+		},
+
 		updateField(index, key, value) {
 			const next = this.localFields.slice()
 			const current = next[index] || {}

@@ -44,6 +44,7 @@ use OCA\Buildiq\Kernel\Contracts\ApplicationVersionServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\FormLiveBindingIndexInterface;
 use OCA\Buildiq\Kernel\Contracts\FormLiveValuesRecomputerInterface;
 use OCA\Buildiq\Kernel\Contracts\ObjectSchemaSlugResolverInterface;
+use OCA\Buildiq\Service\DutchFormatValidator;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
@@ -77,6 +78,7 @@ class FormLiveValuesListener implements IEventListener {
 	 * @param FormLiveBindingIndexInterface $index The live form index
 	 * @param FormLiveValuesRecomputerInterface $recomputer Evaluates on save
 	 * @param LoggerInterface $logger PSR logger
+	 * @param DutchFormatValidator|null $dutchFormats Checks the Dutch formats of form fields (form-dutch-field-formats T04)
 	 *
 	 * @return void
 	 */
@@ -85,6 +87,7 @@ class FormLiveValuesListener implements IEventListener {
 		private readonly FormLiveBindingIndexInterface $index,
 		private readonly FormLiveValuesRecomputerInterface $recomputer,
 		private readonly LoggerInterface $logger,
+		private readonly ?DutchFormatValidator $dutchFormats=null,
 	) {
 	}//end __construct()
 
@@ -158,6 +161,20 @@ class FormLiveValuesListener implements IEventListener {
 	 * @return void
 	 */
 	private function apply(ObjectCreatingEvent|ObjectUpdatingEvent $event, array $data, array $bindings): void {
+		// Form-dutch-field-formats T04: a Dutch format is checked, and its
+		// value normalised, before anything is calculated from it.
+		$checked = $this->checkDutchFormats(data: $data, bindings: $bindings);
+		if ($checked['refusal'] !== null) {
+			$event->stopPropagation();
+			$event->setErrors(['status' => 422, 'code' => 'invalid_format', 'message' => $checked['refusal'], 'field' => $checked['field']]);
+			return;
+		}
+
+		if ($checked['changes'] !== []) {
+			$data = array_merge($data, $checked['changes']);
+			$event->setModifiedData(array_merge($event->getModifiedData(), $checked['changes']));
+		}
+
 		$this->running = true;
 		try {
 			$outcome = $this->recomputer->recompute(object: $data, bindings: $bindings);
@@ -181,6 +198,47 @@ class FormLiveValuesListener implements IEventListener {
 			$event->setModifiedData(array_merge($event->getModifiedData(), $outcome['changes']));
 		}
 	}//end apply()
+
+	/**
+	 * Check every field with a Dutch format; the first failing one refuses the save.
+	 *
+	 * An empty value is not checked (whether it is required is another rule).
+	 * A valid value is stored normalised, a licence plate without dashes in
+	 * capitals and a postcode without its space.
+	 *
+	 * @param array<string,mixed> $data     The object about to be stored.
+	 * @param list<LiveBinding>   $bindings The live forms that write to it.
+	 *
+	 * @return array{refusal: string|null, field: string|null, changes: array<string,string>}
+	 *
+	 * @spec openspec/changes/form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-buildiqs-own-forms-check-the-dutch-formats-on-save-req-bqdf-002
+	 */
+	private function checkDutchFormats(array $data, array $bindings): array {
+		$changes = [];
+		foreach ($bindings as $binding) {
+			foreach ((array)($binding['formats'] ?? []) as $field => $format) {
+				$value = $data[$field] ?? null;
+				if ($this->dutchFormats === null || $this->dutchFormats->knows(format: (string)$format) === false) {
+					continue;
+				}
+
+				if (is_string($value) === false || trim($value) === '') {
+					continue;
+				}
+
+				$normalised = $this->dutchFormats->normalise(format: (string)$format, value: $value);
+				if ($normalised === null) {
+					return ['refusal' => $this->dutchFormats->message(format: (string)$format), 'field' => (string)$field, 'changes' => []];
+				}
+
+				if ($normalised !== $value) {
+					$changes[(string)$field] = $normalised;
+				}
+			}
+		}
+
+		return ['refusal' => null, 'field' => null, 'changes' => $changes];
+	}//end checkDutchFormats()
 
 	/**
 	 * Read an app version's manifest into the index. A failure is logged and

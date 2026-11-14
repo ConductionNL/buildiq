@@ -134,7 +134,10 @@ describe('FieldEditor rows', () => {
 	it('string inputs set format and pattern, parse lengths as integers, and blank removes the rule', () => {
 		const wrapper = mountEditor()
 
-		byLabel(wrapper, 'NcTextField', 'Format (optional)').vm.$emit('update:modelValue', '')
+		// The format is a select now (form-dutch-field-formats T03); "None" clears it.
+		const format = wrapper.find('[data-testid="schema-field-format"]')
+		format.element.value = ''
+		format.trigger('change')
 		byLabel(wrapper, 'NcTextField', 'Pattern (regex, optional)').vm.$emit('update:modelValue', '^[a-z]+$')
 		byLabel(wrapper, 'NcTextField', 'Min length').vm.$emit('update:modelValue', '7.9')
 		byLabel(wrapper, 'NcTextField', 'Max length').vm.$emit('update:modelValue', 'many')
@@ -252,5 +255,45 @@ describe('FieldEditor rows', () => {
 		await wrapper.vm.$nextTick()
 
 		expect(wrapper.findComponent({ name: 'DeleteFieldDialog' }).props('fieldName')).toBe('(unnamed)')
+	})
+
+	describe('the Format select (form-dutch-field-formats T03)', () => {
+		it('lists the JSON Schema formats, then the Dutch ones under their own group', () => {
+			const groups = mountEditor().find('[data-testid="schema-field-format"]').findAll('optgroup')
+
+			expect(groups.map((g) => g.attributes('label'))).toEqual(['JSON Schema formats', 'Dutch formats'])
+			expect(groups[1].findAll('option').map((o) => o.element.value)).toEqual(['bsn', 'iban', 'nl-licence-plate', 'phone-nl', 'phone-international', 'postcode', 'kvk', 'kvk-branch'])
+		})
+
+		it('stores a Dutch format as the property format', () => {
+			const wrapper = mountEditor()
+			const format = wrapper.find('[data-testid="schema-field-format"]')
+
+			format.element.value = 'iban'
+			format.trigger('change')
+
+			expect(emitted(wrapper, 0)[0].validation).toEqual({ format: 'iban', minLength: 2 })
+		})
+
+		it('shows a stored format that is not listed as Other, with its free field', () => {
+			const ctx = { otherFormatRows: [] }
+			const choice = FieldEditor.methods.formatChoice.bind(ctx)
+
+			expect(choice('bsn')).toBe('bsn')
+			expect(choice('email')).toBe('email')
+			expect(choice('x-custom')).toBe('__other')
+			expect(choice('')).toBe('')
+		})
+
+		it('opens the free field for Other without changing the stored format', async () => {
+			const wrapper = mountEditor()
+			const format = wrapper.find('[data-testid="schema-field-format"]')
+
+			format.element.value = '__other'
+			await format.trigger('change')
+
+			expect(wrapper.emitted('update:fields')).toBeUndefined()
+			expect(byLabel(wrapper, 'NcTextField', 'Format (optional)').exists()).toBe(true)
+		})
 	})
 })
