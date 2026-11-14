@@ -1023,6 +1023,189 @@
                 }
             }
         },
+        "/applications/{appSlug}/versions/{versionSlug}/branch": {
+            "post": {
+                "operationId": "application-versions-branch",
+                "summary": "Start a branch from a version",
+                "description": "Start a branch from a version: a new draft version named `name` with its own register, a copy of the source's schemas (no records) and manifest, a `branchBase` recording where it started and, when the app is linked to GitHub, a `githubBranch`. Owner or editor (lifecycle-git-branches REQ-BQGB-001). Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "application-versions"
+                ],
+                "parameters": [
+                    {
+                        "name": "appSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "Parent Application slug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "versionSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "The version branched from.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "name"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "pattern": "^[a-z0-9][a-z0-9-]{0,46}[a-z0-9]$",
+                                        "description": "The branch name, also the new version's slug."
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "The version was created.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Problem409"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Problem422"
+                    }
+                }
+            }
+        },
+        "/applications/{appSlug}/versions/{source}/merge/{target}": {
+            "post": {
+                "operationId": "application-versions-merge",
+                "summary": "Preview or apply the merge of a version into a draft version",
+                "description": "Merge `source` into the draft version `target`. With `preview: true` it returns the merged manifest and schemas, the conflicts, the breaking schema changes and the target's `targetHash`, and writes nothing. An apply sends `choices` (conflict unit to `source` or `target`), the previewed `targetHash` and, for a breaking schema change, `acknowledgeBreaking`; it is refused when the target is production or not a draft (422), when the target changed since the preview, a conflict has no side or a breaking change is not confirmed (409). Owner or editor (lifecycle-git-branches REQ-BQGB-003, REQ-BQGB-004). Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "application-versions"
+                ],
+                "parameters": [
+                    {
+                        "name": "appSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "Parent Application slug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "source",
+                        "in": "path",
+                        "required": true,
+                        "description": "The version merged in.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "target",
+                        "in": "path",
+                        "required": true,
+                        "description": "The draft version merged into.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "preview": {
+                                        "type": "boolean"
+                                    },
+                                    "choices": {
+                                        "type": "object",
+                                        "additionalProperties": {
+                                            "type": "string",
+                                            "enum": [
+                                                "source",
+                                                "target"
+                                            ]
+                                        }
+                                    },
+                                    "targetHash": {
+                                        "type": "string"
+                                    },
+                                    "acknowledgeBreaking": {
+                                        "type": "boolean"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Problem409"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Problem422"
+                    }
+                }
+            }
+        },
         "/applications/{appUuid}": {
             "delete": {
                 "operationId": "application-publish-destroy",
