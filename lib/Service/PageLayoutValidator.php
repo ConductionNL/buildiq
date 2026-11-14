@@ -71,7 +71,7 @@ final class PageLayoutValidator {
 	 *
 	 * @var array<int, string>
 	 */
-	public const AUDIENCE_KINDS = ['everyone', 'group', 'team', 'portal', 'user'];
+	public const AUDIENCE_KINDS = ['everyone', 'group', 'team', 'portal', 'user', 'organisation'];
 
 	/**
 	 * Validate a layout against the layouts already stored.
@@ -153,7 +153,7 @@ final class PageLayoutValidator {
 			);
 		}
 
-		if (in_array($kind, ['group', 'team', 'user'], true) === true && (string)($audience['ref'] ?? '') === '') {
+		if (in_array($kind, ['group', 'team', 'user', 'organisation'], true) === true && (string)($audience['ref'] ?? '') === '') {
 			// Without a ref this override would match nobody and be published,
 			// correct-looking, and never applied.
 			throw new InvalidArgumentException(

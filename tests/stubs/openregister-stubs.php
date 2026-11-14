@@ -1518,6 +1518,23 @@ namespace OCA\OpenRegister\Db {
 		}//end class
 	}//end if
 
+	if (class_exists(OrganisationMapper::class, autoload: false) === false) {
+		/**
+		 * Stub OrganisationMapper — the active-organisation read
+		 * PageLayoutLayerStack makes, with the real mapper's signature.
+		 */
+		class OrganisationMapper {
+			/**
+			 * @param string $userId The user.
+			 *
+			 * @return string|null The active organisation uuid.
+			 */
+			public function getActiveOrganisationUuidForUser(string $userId): ?string {
+				return null;
+			}//end getActiveOrganisationUuidForUser()
+		}//end class
+	}//end if
+
 	if (class_exists(RegisterMapper::class, autoload: false) === false) {
 		/**
 		 * Stub RegisterMapper — `find`/`createFromArray`/`update` call surface.

@@ -38,8 +38,11 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Kernel\Contracts\PageLayoutLayerStackInterface;
+use OCA\OpenRegister\Db\OrganisationMapper;
 use OCP\IGroupManager;
 use OCP\IUserSession;
+use Psr\Container\ContainerInterface;
+use Throwable;
 
 /**
  * Orders the layout layers that apply to a caller and an object.
@@ -52,12 +55,16 @@ final class PageLayoutLayerStack implements PageLayoutLayerStackInterface {
 	 *
 	 * @param IUserSession $userSession The calling user, whose audiences decide which overrides apply.
 	 * @param IGroupManager $groupManager The caller's group and team membership.
+	 * @param ContainerInterface|null $container Resolves OpenRegister's organisation mapper lazily, for the
+	 *                                           caller's active organisation; without it no organisation
+	 *                                           override applies.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
+		private readonly ?ContainerInterface $container = null,
 	) {
 	}//end __construct()
 
@@ -198,7 +205,9 @@ final class PageLayoutLayerStack implements PageLayoutLayerStackInterface {
 	 * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-005)
 	 */
 	private function rankedByAudience(array $overrides): array {
-		$rank = ['team' => 0, 'group' => 1, 'portal' => 2];
+		// The organisation override sits right after the type layout, so the
+		// team and group overrides patch the organisation's screen (REQ-OBSO-007).
+		$rank = ['organisation' => -1, 'team' => 0, 'group' => 1, 'portal' => 2];
 		if ($this->callerHasNoAccount() === true) {
 			$rank = ['portal' => 0, 'team' => 1, 'group' => 2];
 		}
@@ -303,12 +312,45 @@ final class PageLayoutLayerStack implements PageLayoutLayerStackInterface {
 			return ($user->getUID() === $ref);
 		}
 
+		if ($kind === 'organisation') {
+			return ($this->activeOrganisationOf(uid: $user->getUID()) === $ref);
+		}
+
 		// `team` and `group` both resolve against Nextcloud group membership
 		// until the fleet ships a team service of its own. Naming them
 		// separately keeps the fall-through order meaningful today and means the
 		// stored data does not have to change when it does.
 		return $this->groupManager->isInGroup($user->getUID(), $ref);
 	}//end callerIsIn()
+
+	/**
+	 * The caller's active OpenRegister organisation, or '' when it cannot be read.
+	 *
+	 * Only the active organisation counts: a member of two organisations gets
+	 * the screen of the one they are working in (REQ-OBSO-007).
+	 *
+	 * @param string $uid The caller.
+	 *
+	 * @return string The organisation uuid, or ''.
+	 *
+	 * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md#requirement-an-override-can-be-bound-to-an-organisation-req-obso-007
+	 */
+	private function activeOrganisationOf(string $uid): string {
+		if ($this->container === null) {
+			return '';
+		}
+
+		try {
+			$mapper = $this->container->get(OrganisationMapper::class);
+			if (($mapper instanceof OrganisationMapper) === false) {
+				return '';
+			}
+
+			return (string)($mapper->getActiveOrganisationUuidForUser($uid) ?? '');
+		} catch (Throwable $e) {
+			return '';
+		}
+	}//end activeOrganisationOf()
 
 	/**
 	 * Whether the caller is a visitor with no account.
