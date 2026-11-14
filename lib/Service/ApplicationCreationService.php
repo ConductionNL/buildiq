@@ -52,6 +52,7 @@ namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Exception\WizardCreationException;
 use OCA\Buildiq\Kernel\Contracts\ApplicationCreationServiceInterface;
+use OCA\Buildiq\Support\ApplicationStories;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Service\RegisterService;
 use OCP\IUserSession;
@@ -223,6 +224,7 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 			'name' => (string)($payload['name'] ?? ''),
 			'description' => (string)($payload['description'] ?? ''),
 			'versions' => $this->resolveVersionChain(payload: $payload),
+			'stories' => ApplicationStories::sanitise(stories: ($payload['stories'] ?? [])),
 		];
 
 		// ---- State tracker for rollback -------------------------------------
@@ -283,6 +285,9 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 			'description' => $plan['description'],
 			'permissions' => $permissions,
 		];
+		if (($plan['stories'] ?? []) !== []) {
+			$applicationPayload['stories'] = $plan['stories'];
+		}
 
 		try {
 			$created = $this->store->objectService->saveObject(
@@ -529,6 +534,9 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 				],
 				'productionVersion' => $terminalUuid,
 			];
+			if (($plan['stories'] ?? []) !== []) {
+				$fullPayload['stories'] = $plan['stories'];
+			}
 
 			$this->store->objectService->saveObject(
 				object: $fullPayload,

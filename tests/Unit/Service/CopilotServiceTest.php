@@ -2084,4 +2084,36 @@ class CopilotServiceTest extends TestCase {
 
 		self::assertSame([], $this->makeService()->plan(brief: 'x', appSlug: null, userId: 'alice')['stories']);
 	}//end testAPlanWithoutStoriesAnswersAnEmptyList()
+
+	/**
+	 * A plan's stories reach the createApp step with each servedBy index named, and the answer keeps them.
+	 *
+	 * @return void
+	 */
+	public function testTheCreateAppStepCarriesTheNamedStories(): void {
+		$this->wireTaskProcessingManager();
+		$this->taskManager->method('getAvailableTaskTypes')->willReturn([TextToText::ID => []]);
+		$story = ['id' => 's1', 'role' => 'a member', 'goal' => 'see the tools', 'servedBy' => [1]];
+		$this->wireSuccessfulLlmReply(
+			json_encode(
+				[
+					'summary' => 'A tool library',
+					'stories' => [$story],
+					'steps' => [
+						['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']],
+						['tool' => 'buildiq.upsertPage', 'arguments' => ['appSlug' => 'tool-library', 'pageId' => 'tools', 'title' => 'Tools', 'type' => 'index', 'route' => '/tools']],
+					],
+				]
+			)
+		);
+
+		$result = $this->makeService()->plan(brief: 'A tool library', appSlug: null, userId: 'alice');
+
+		self::assertSame([$story], $result['stories']);
+		self::assertSame(
+			[['id' => 's1', 'role' => 'a member', 'goal' => 'see the tools', 'servedBy' => [['kind' => 'page', 'id' => 'tools', 'title' => 'Tools']]]],
+			$result['steps'][0]['arguments']['stories']
+		);
+		self::assertArrayNotHasKey('stories', $result['steps'][1]['arguments']);
+	}//end testTheCreateAppStepCarriesTheNamedStories()
 }//end class

@@ -457,6 +457,70 @@ class ApplicationCreationServiceTest extends TestCase {
 	}//end createApplicationReturnUuidOnSinglePresetSuccess()
 
 	// -------------------------------------------------------------------------
+	// Stories (ai-copilot-documents-and-code-help REQ-BQCH-007)
+	// -------------------------------------------------------------------------
+
+	/**
+	 * The Application payloads saved during one creation.
+	 *
+	 * @param array<int, array<int, mixed>> $calls The saveObject calls.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function applicationPayloads(array $calls): array {
+		$payloads = [];
+		foreach ($calls as $args) {
+			if (($args[3] ?? null) === 'built-app' || ($args[3] ?? null) === \OCA\Buildiq\Service\ApplicationVersionService::APPLICATION_SCHEMA) {
+				$payloads[] = $args[0];
+			}
+		}
+
+		return $payloads;
+	}//end applicationPayloads()
+
+	/**
+	 * Both Application saves carry the sanitised stories, so the production pointer save does not drop them.
+	 *
+	 * @test
+	 *
+	 * @return void
+	 */
+	public function createApplicationKeepsItsStories(): void {
+		$calls = [];
+		$this->stubSuccessfulCreation(appUuid: 'app-uuid-001', versionUuids: ['production' => 'ver-uuid-001'], calls: $calls);
+		$story = ['id' => 's1', 'role' => ' an applicant ', 'goal' => 'track my permit', 'servedBy' => [['kind' => 'page', 'id' => 'mine', 'title' => 'Mijn aanvragen'], ['kind' => 'menu', 'id' => 'x']]];
+
+		$this->service->createApplication(['name' => 'Tuin', 'slug' => 'tuin', 'preset' => 'single', 'stories' => [$story, ['role' => 'no goal']]]);
+
+		$payloads = $this->applicationPayloads($calls);
+		self::assertCount(2, $payloads);
+		$expected = [['id' => 's1', 'role' => 'an applicant', 'goal' => 'track my permit', 'servedBy' => [['kind' => 'page', 'id' => 'mine', 'title' => 'Mijn aanvragen']]]];
+		foreach ($payloads as $payload) {
+			self::assertSame($expected, $payload['stories']);
+		}
+	}//end createApplicationKeepsItsStories()
+
+	/**
+	 * An app created without stories saves no stories key, exactly as before.
+	 *
+	 * @test
+	 *
+	 * @return void
+	 */
+	public function createApplicationWithoutStoriesSavesNoStoriesKey(): void {
+		$calls = [];
+		$this->stubSuccessfulCreation(appUuid: 'app-uuid-001', versionUuids: ['production' => 'ver-uuid-001'], calls: $calls);
+
+		$this->service->createApplication(['name' => 'Tuin', 'slug' => 'tuin', 'preset' => 'single']);
+
+		$payloads = $this->applicationPayloads($calls);
+		self::assertCount(2, $payloads);
+		foreach ($payloads as $payload) {
+			self::assertArrayNotHasKey('stories', $payload);
+		}
+	}//end createApplicationWithoutStoriesSavesNoStoriesKey()
+
+	// -------------------------------------------------------------------------
 	// Stubs
 	// -------------------------------------------------------------------------
 
@@ -469,10 +533,11 @@ class ApplicationCreationServiceTest extends TestCase {
 	 *
 	 * @param string $appUuid UUID to assign to the Application
 	 * @param array<string,string> $versionUuids Map of versionSlug → UUID
+	 * @param array<int, array<int, mixed>>|null $calls Receives every saveObject call's arguments
 	 *
 	 * @return void
 	 */
-	private function stubSuccessfulCreation(string $appUuid, array $versionUuids): void {
+	private function stubSuccessfulCreation(string $appUuid, array $versionUuids, ?array &$calls = null): void {
 		// Build the mock register. Register::getId() is now an explicit stub method
 		// (declared in tests/stubs/openregister-stubs.php) so use onlyMethods().
 		$mockRegister = $this->getMockBuilder(Register::class)
@@ -516,7 +581,8 @@ class ApplicationCreationServiceTest extends TestCase {
 
 		$callIndex = 0;
 		$this->objectService->method('saveObject')
-			->willReturnCallback(function () use ($callQueue, &$callIndex) {
+			->willReturnCallback(function (...$args) use ($callQueue, &$callIndex, &$calls) {
+				$calls[] = $args;
 				$result = $callQueue[$callIndex] ?? $callQueue[count($callQueue) - 1];
 				$callIndex++;
 				return $result;

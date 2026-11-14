@@ -44,6 +44,7 @@ use OCA\Buildiq\Service\Copilot\CopilotDocumentReader;
 use OCA\Buildiq\Service\Copilot\CopilotPlanValidator;
 use OCA\Buildiq\Service\Copilot\CopilotPromptBuilder;
 use OCA\Buildiq\Service\Copilot\CopilotTextTask;
+use OCA\Buildiq\Support\ApplicationStories;
 use OCA\Buildiq\Support\ManifestEntryList;
 use OCA\Buildiq\Support\ManifestPageShape;
 use OCA\Buildiq\Support\ManifestRoute;
@@ -377,6 +378,7 @@ class CopilotService implements CopilotServiceInterface {
 			$this->assertWithinMaxActionsPerRun(agent: $agent, plan: $plan);
 		}
 
+		$plan = $this->attachStoriesToCreateApp(plan: $plan);
 		$manifests = $this->predictManifests(plan: $plan, appSlug: $appSlug);
 
 		return [
@@ -386,6 +388,39 @@ class CopilotService implements CopilotServiceInterface {
 			'manifests' => $manifests,
 		];
 	}//end planWithinContext()
+
+	/**
+	 * Give the plan's `buildiq.createApp` step the plan's stories, with each
+	 * `servedBy` index named as the schema or page it points at, so the created
+	 * Application keeps them. A plan without stories or without a createApp
+	 * step is returned as it came.
+	 *
+	 * @param array<string, mixed> $plan The validated plan.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ApplicationStories is a pure conversion with no collaborators.
+	 *
+	 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot/spec.md#requirement-the-created-app-keeps-its-stories-req-bqch-007
+	 */
+	private function attachStoriesToCreateApp(array $plan): array {
+		$stories = (array)($plan['stories'] ?? []);
+		if ($stories === []) {
+			return $plan;
+		}
+
+		$steps = array_values((array)($plan['steps'] ?? []));
+		foreach ($steps as $index => $step) {
+			if (is_array($step) === true && ($step['tool'] ?? '') === 'buildiq.createApp') {
+				$steps[$index]['arguments'] = (array)($step['arguments'] ?? []);
+				$steps[$index]['arguments']['stories'] = ApplicationStories::fromPlan(stories: array_values($stories), steps: $steps);
+				$plan['steps'] = $steps;
+				return $plan;
+			}
+		}
+
+		return $plan;
+	}//end attachStoriesToCreateApp()
 
 	/**
 	 * Discard a reviewed proposal without executing it — still writes a transparent

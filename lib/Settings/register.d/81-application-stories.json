@@ -1,0 +1,87 @@
+{
+	"_comment": "ADR-037 register fragment (ai-copilot-documents-and-code-help D7, REQ-BQCH-007). Adds the optional stories array to the shared `buildiq` register's Application schema. An app created from a copilot plan keeps the user stories that plan proposed, each with the schemas and pages that serve it, so a colleague can read why a page exists. The plan's servedBy step indexes are turned into named references before the createApp step carries them (OCA\\Buildiq\\Support\\ApplicationStories). Absent on every Application created before this property existed and on every app created without a plan.",
+	"components": {
+		"schemas": {
+			"Application": {
+				"properties": {
+					"stories": {
+						"title": "User stories",
+						"type": "array",
+						"default": [],
+						"maxItems": 20,
+						"items": {
+							"type": "object",
+							"title": "User story",
+							"required": [
+								"role",
+								"goal"
+							],
+							"additionalProperties": false,
+							"properties": {
+								"id": {
+									"title": "Story id",
+									"type": "string",
+									"maxLength": 64
+								},
+								"role": {
+									"title": "Role",
+									"type": "string",
+									"minLength": 1,
+									"maxLength": 120,
+									"description": "Who wants it, e.g. `an applicant`."
+								},
+								"goal": {
+									"title": "Goal",
+									"type": "string",
+									"minLength": 1,
+									"maxLength": 300,
+									"description": "What they want to do, e.g. `track my permit`."
+								},
+								"benefit": {
+									"title": "Benefit",
+									"type": "string",
+									"maxLength": 300,
+									"description": "Why, optional."
+								},
+								"servedBy": {
+									"title": "Served by",
+									"type": "array",
+									"default": [],
+									"maxItems": 20,
+									"items": {
+										"type": "object",
+										"required": [
+											"kind",
+											"id"
+										],
+										"additionalProperties": false,
+										"properties": {
+											"kind": {
+												"type": "string",
+												"enum": [
+													"schema",
+													"page"
+												]
+											},
+											"id": {
+												"type": "string",
+												"maxLength": 64,
+												"description": "The schema slug or the page id."
+											},
+											"title": {
+												"type": "string",
+												"maxLength": 120
+											}
+										}
+									},
+									"description": "The schemas and pages the plan built for this story."
+								}
+							}
+						},
+						"description": "User stories this app serves, kept from the copilot plan it was created from."
+					}
+				}
+			}
+		}
+	}
+}
