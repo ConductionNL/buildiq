@@ -458,6 +458,8 @@
         "Import": "Import",
         "Import \"{file}\" as a new schema. OpenRegister infers the fields from the header row and writes the rows.": "Import \"{file}\" as a new schema. OpenRegister infers the fields from the header row and writes the rows.",
         "Import \"{file}\" into the \"{schema}\" schema. OpenRegister parses the file and writes the rows.": "Import \"{file}\" into the \"{schema}\" schema. OpenRegister parses the file and writes the rows.",
+        "Connect a database": "Connect a database",
+        "No connected database to add. An administrator connects one in OpenRegister under Sources.": "No connected database to add. An administrator connects one in OpenRegister under Sources.",
         "Import complete": "Import complete",
         "Import data": "Import data",
         "Import failed.": "Import failed.",

@@ -461,6 +461,8 @@ OC.L10N.register(
         "id (optional)": "id (optional)",
         "Identifier": "Identifier",
         "Import": "Import",
+        "Connect a database": "Connect a database",
+        "No connected database to add. An administrator connects one in OpenRegister under Sources.": "No connected database to add. An administrator connects one in OpenRegister under Sources.",
         "Import \"{file}\" as a new schema. OpenRegister infers the fields from the header row and writes the rows.": "Import \"{file}\" as a new schema. OpenRegister infers the fields from the header row and writes the rows.",
         "Import \"{file}\" into the \"{schema}\" schema. OpenRegister parses the file and writes the rows.": "Import \"{file}\" into the \"{schema}\" schema. OpenRegister parses the file and writes the rows.",
         "Import complete": "Import complete",
