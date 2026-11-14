@@ -93,6 +93,12 @@
 			@update:open="rollbackOpen = $event"
 			@confirm="onRollbackConfirmed"
 			@cancel="onRollbackCancelled" />
+		<ReleaseTestReportDialog
+			v-model:open="testReportOpen"
+			:run="testReport && testReport.run"
+			:canOverride="canRelease"
+			:busy="Boolean(releasing)"
+			@override="releaseAnyway" />
 	</div>
 </template>
 
@@ -100,6 +106,7 @@
 import axios from '@nextcloud/axios'
 import { showError, showSuccess } from '@nextcloud/dialogs'
 import { generateUrl } from '@nextcloud/router'
+import ReleaseTestReportDialog from '../dialogs/ReleaseTestReportDialog.vue'
 import RollbackConfirmModal from '../modals/RollbackConfirmModal.vue'
 import { openPromoteDialog, promoteDialog } from '../composables/usePromoteDialog.js'
 import { buildVersionedRoute } from '../router/helpers.js'
@@ -162,9 +169,25 @@ function releaseFailureMessage(e) {
 	return t('buildiq', 'Release failed') + (detail ? ': ' + detail : '')
 }
 
+/**
+ * The test run a release answered with when its tests failed
+ * (lifecycle-release-test-gate REQ-BQRT-004), or null for any other failure.
+ *
+ * @param {Error|null} e The failure.
+ * @return {object|null}
+ */
+export function failedTestRunOf(e) {
+	const data = e && e.response && e.response.data
+	if (e && e.response && e.response.status === 422 && data && data.error === 'release_tests_failed') {
+		return data.testRun || { report: [] }
+	}
+	return null
+}
+
 export default {
 	name: 'VersionHistory',
 	components: {
+		ReleaseTestReportDialog,
 		RollbackConfirmModal,
 	},
 
@@ -208,6 +231,8 @@ export default {
 			releasing: '',
 			rollbackOpen: false,
 			rollbackTarget: null,
+			testReportOpen: false,
+			testReport: null,
 			promoteDialog,
 		}
 	},
@@ -505,6 +530,50 @@ export default {
 			try {
 				await this.postRelease(row, versionSlug)
 			} catch (e) {
+				this.onReleaseFailed(e, row, versionSlug)
+			} finally {
+				this.releasing = ''
+			}
+		},
+
+		/**
+		 * Show why a release failed: the test report when the tests stopped it,
+		 * else the error.
+		 *
+		 * @param {Error} e The failure.
+		 * @param {object} row The version row.
+		 * @param {string} versionSlug The row's slug.
+		 * @return {void}
+		 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
+		 */
+		onReleaseFailed(e, row, versionSlug) {
+			const run = failedTestRunOf(e)
+			if (run) {
+				this.testReport = { run, row, versionSlug }
+				this.testReportOpen = true
+				return
+			}
+			showError(releaseFailureMessage(e))
+		},
+
+		/**
+		 * Release the stopped version anyway, with the owner's reason.
+		 *
+		 * @param {string} reason Why the failures are acceptable.
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
+		 */
+		async releaseAnyway(reason) {
+			if (!this.testReport || this.releasing) {
+				return
+			}
+			const { row, versionSlug } = this.testReport
+			this.releasing = this.rowUuid(row)
+			try {
+				await this.postRelease(row, versionSlug, { override: { reason } })
+				this.testReportOpen = false
+				this.testReport = null
+			} catch (e) {
 				showError(releaseFailureMessage(e))
 			} finally {
 				this.releasing = ''
@@ -516,14 +585,15 @@ export default {
 		 *
 		 * @param {object} row The version row.
 		 * @param {string} versionSlug The row's slug.
+		 * @param {object} body The request body: `{}`, or `{ override: { reason } }`.
 		 * @return {Promise<void>}
 		 */
-		async postRelease(row, versionSlug) {
+		async postRelease(row, versionSlug, body = {}) {
 			const url = generateUrl(
 				'/apps/buildiq/api/applications/{slug}/versions/{versionSlug}/release',
 				{ slug: this.appSlug, versionSlug },
 			)
-			await axios.post(url, {})
+			await axios.post(url, body)
 			showSuccess(
 				t('buildiq', '“{name}” is now the production version.', {
 					name: this.rowName(row),

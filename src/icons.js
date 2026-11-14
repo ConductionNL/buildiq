@@ -18,6 +18,7 @@ import ArrowUpBoldCircleOutline from 'vue-material-design-icons/ArrowUpBoldCircl
 import BookOpenVariantOutline from 'vue-material-design-icons/BookOpenVariantOutline.vue'
 import ChartBoxOutline from 'vue-material-design-icons/ChartBoxOutline.vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
+import ClipboardCheckOutline from 'vue-material-design-icons/ClipboardCheckOutline.vue'
 import ClipboardText from 'vue-material-design-icons/ClipboardText.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
@@ -48,44 +49,45 @@ import Sitemap from 'vue-material-design-icons/Sitemap.vue'
 import SourceBranch from 'vue-material-design-icons/SourceBranch.vue'
 import StoreOutline from 'vue-material-design-icons/StoreOutline.vue'
 import Table from 'vue-material-design-icons/Table.vue'
+import TestTube from 'vue-material-design-icons/TestTube.vue'
 import TrayArrowDown from 'vue-material-design-icons/TrayArrowDown.vue'
 import VectorPolylinePlus from 'vue-material-design-icons/VectorPolylinePlus.vue'
 import ViewDashboardOutline from 'vue-material-design-icons/ViewDashboardOutline.vue'
 import ViewGridOutline from 'vue-material-design-icons/ViewGridOutline.vue'
 
 export default {
-	// ApplicationDetailActions declares its whole action cluster as
-	// CnActionButtons descriptors, which name icons as STRINGS resolved by
-	// CnIcon — so every icon it names has to be registered here or it renders
-	// the help-circle fallback.
+	// ApplicationDetailActions declares its whole action cluster as,
+	// CnActionButtons descriptors, which name icons as STRINGS resolved by,
+	// CnIcon — so every icon it names has to be registered here or it renders,
+	// the help-circle fallback.,
 	AccountMultipleOutline,
-	CogOutline,
-	ContentCopy,
-	ContentSaveOutline,
-	DeleteOutline,
-	Github,
-	HeartOutline,
-	HelpCircleOutline,
-	OpenInNew,
-	PencilRulerOutline,
-	TrayArrowDown,
-	ArrowUpBoldCircleOutline,
 	AppsBox,
+	ArrowUpBoldCircleOutline,
 	BookOpenVariantOutline,
 	ChartBoxOutline,
 	CheckCircle,
+	ClipboardCheckOutline,
 	ClipboardText,
+	CogOutline,
+	ContentCopy,
 	ContentSaveEditOutline,
+	ContentSaveOutline,
 	DatabaseExportOutline,
+	DeleteOutline,
 	FileDocumentMultipleOutline,
 	Flash,
 	FormSelect,
+	Github,
+	HeartOutline,
+	HelpCircleOutline,
 	History,
 	ImageOutline,
 	MapMarkerPath,
 	MessageTextOutline,
+	OpenInNew,
 	PackageVariant,
 	PencilOutline,
+	PencilRulerOutline,
 	PowerPlugOutline,
 	PuzzleOutline,
 	Robot,
@@ -95,6 +97,8 @@ export default {
 	SourceBranch,
 	StoreOutline,
 	Table,
+	TestTube,
+	TrayArrowDown,
 	VectorPolylinePlus,
 	ViewDashboardOutline,
 	ViewGridOutline,

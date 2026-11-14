@@ -472,6 +472,13 @@
 						"order": 40
 					},
 					{
+						"id": "tests",
+						"label": "Tests",
+						"icon": "TestTube",
+						"component": "ApplicationTestsTab",
+						"order": 45
+					},
+					{
 						"id": "icons",
 						"label": "Icons",
 						"icon": "ImageOutline",
