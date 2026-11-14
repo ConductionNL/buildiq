@@ -128,8 +128,6 @@ final class AutomationFlowBuilder {
 	 * @throws UnsupportedAutomationCombinationException When a trigger, action or condition cannot run in a flow.
 	 *
 	 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-declarative-primitives-or-one-openregister-flow-req-bqar-001
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) RuleDecisionNodes is pure node construction with no collaborators.
 	 */
 	public function build(CompileInput $input, string $register, array $schemas, array $ruleSets = []): array {
 		$this->assertNoOwnBackend(input: $input);
@@ -140,10 +138,11 @@ final class AutomationFlowBuilder {
 			$nodes[] = $filter;
 		}
 
+		$decisions = new RuleDecisionNodes(register: $register, schema: (string)($input->trigger['schema'] ?? ''), ruleSets: $ruleSets);
 		foreach ($input->actions as $index => $action) {
 			$action = (array)$action;
 			if ((string)($action['type'] ?? '') === 'rule-decision') {
-				array_push($nodes, ...RuleDecisionNodes::build(action: $action, index: (int)$index, input: $input, register: $register, ruleSets: $ruleSets));
+				array_push($nodes, ...$decisions->build(action: $action, index: (int)$index));
 				continue;
 			}
 
@@ -331,6 +330,30 @@ final class AutomationFlowBuilder {
 	 * @throws UnsupportedAutomationCombinationException For a foreign schema, an unknown operation or an update without a match.
 	 */
 	private function recordConfig(array $action, string $register, array $schemas): array {
+		$config = [
+			'register' => $register,
+			'schema' => self::recordSchema(action: $action, schemas: $schemas),
+			'operation' => self::recordOperation(action: $action),
+			'fields' => self::templated(mapping: (array)($action['fieldMapping'] ?? [])),
+		];
+		if ($config['operation'] === 'update') {
+			$config['match'] = self::recordMatch(action: $action);
+		}
+
+		return $config;
+	}//end recordConfig()
+
+	/**
+	 * The schema a record step writes to, when it is one of the app's.
+	 *
+	 * @param array<string, mixed> $action  The action.
+	 * @param array<int, string>   $schemas The app's schemas.
+	 *
+	 * @return string
+	 *
+	 * @throws UnsupportedAutomationCombinationException For a foreign schema.
+	 */
+	private static function recordSchema(array $action, array $schemas): string {
 		$schema = (string)($action['schema'] ?? '');
 		if (in_array($schema, $schemas, true) === false) {
 			throw new UnsupportedAutomationCombinationException(
@@ -338,28 +361,44 @@ final class AutomationFlowBuilder {
 			);
 		}
 
+		return $schema;
+	}//end recordSchema()
+
+	/**
+	 * The operation of a record step: create (the default) or update.
+	 *
+	 * @param array<string, mixed> $action The action.
+	 *
+	 * @return string
+	 *
+	 * @throws UnsupportedAutomationCombinationException For an unknown operation.
+	 */
+	private static function recordOperation(array $action): string {
 		$operation = (string)($action['operation'] ?? 'create');
 		if (in_array($operation, ['create', 'update'], true) === false) {
 			throw new UnsupportedAutomationCombinationException(message: 'A record step can create or update a record, not "' . $operation . '".');
 		}
 
-		$config = [
-			'register' => $register,
-			'schema' => $schema,
-			'operation' => $operation,
-			'fields' => self::templated(mapping: (array)($action['fieldMapping'] ?? [])),
-		];
-		if ($operation === 'update') {
-			$match = (array)($action['match'] ?? []);
-			if ($match === []) {
-				throw new UnsupportedAutomationCombinationException(message: 'An update step must say which record it changes.');
-			}
+		return $operation;
+	}//end recordOperation()
 
-			$config['match'] = self::templated(mapping: $match);
+	/**
+	 * The templated fields that find the record an update step changes.
+	 *
+	 * @param array<string, mixed> $action The action.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @throws UnsupportedAutomationCombinationException For an update without a match.
+	 */
+	private static function recordMatch(array $action): array {
+		$match = (array)($action['match'] ?? []);
+		if ($match === []) {
+			throw new UnsupportedAutomationCombinationException(message: 'An update step must say which record it changes.');
 		}
 
-		return $config;
-	}//end recordConfig()
+		return self::templated(mapping: $match);
+	}//end recordMatch()
 
 	/**
 	 * The `openconnector.source-call` config of a webhook step (D5).
