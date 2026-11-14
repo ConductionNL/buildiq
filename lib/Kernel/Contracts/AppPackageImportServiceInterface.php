@@ -49,4 +49,16 @@ interface AppPackageImportServiceInterface {
 	 * @spec exclude declaration only, the behaviour and its spec live on AppPackageImportService::import()
 	 */
 	public function import(string $archivePath, string $name, string $slug, string $ownerUid): array;
+
+	/**
+	 * Import an exported app archive as a new app, and its records when asked.
+	 *
+	 * @param string              $archivePath Path of the uploaded or given archive.
+	 * @param array<string,mixed> $target      `name`, `slug`, `owner` (UID) and `records` (bool).
+	 *
+	 * @return array{status:int,data:array<string,mixed>} As import(); with records asked, `data.records` holds the per-schema report.
+	 *
+	 * @spec exclude declaration only, the behaviour and its spec live on AppPackageImportService::importWithRecords()
+	 */
+	public function importWithRecords(string $archivePath, array $target): array;
 }//end interface

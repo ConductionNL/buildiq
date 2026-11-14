@@ -99,15 +99,39 @@ class ApplicationImportController extends Controller {
 			);
 		}
 
-		$result = $this->importer->import(
+		$result = $this->importer->importWithRecords(
 			archivePath: $path,
-			name: (string)($this->request->getParam('name') ?? ''),
-			slug: (string)($this->request->getParam('slug') ?? ''),
-			ownerUid: $user->getUID()
+			target: [
+				'name' => (string)($this->request->getParam('name') ?? ''),
+				'slug' => (string)($this->request->getParam('slug') ?? ''),
+				'owner' => $user->getUID(),
+				'records' => self::isOn(value: $this->request->getParam('records')),
+			]
 		);
 
 		return new JSONResponse(data: $result['data'], statusCode: $result['status']);
 	}//end import()
+
+	/**
+	 * Whether a form flag is on: true, 1, "1", "true" or "on". Anything else, absent included, is off.
+	 *
+	 * @param mixed $value The submitted value.
+	 *
+	 * @return bool Whether it is on.
+	 *
+	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-records-come-along-only-when-asked-req-bqic-003
+	 */
+	private static function isOn(mixed $value): bool {
+		if (is_bool($value) === true) {
+			return $value;
+		}
+
+		if (is_scalar($value) === false) {
+			return false;
+		}
+
+		return in_array(strtolower(trim((string)$value)), ['1', 'true', 'on'], true);
+	}//end isOn()
 
 	/**
 	 * The temporary path of a successful upload, or null.

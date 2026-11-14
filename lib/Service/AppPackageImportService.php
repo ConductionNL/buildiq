@@ -95,12 +95,14 @@ class AppPackageImportService implements AppPackageImportServiceInterface {
 	 *
 	 * @param AppRepoParserInterface $parser  Parses the package with the GitHub install's rules.
 	 * @param ApplicationsController $install The install seam GitHub installs and templates share.
+	 * @param AppRecordsImporter     $records Writes the archive's records into the new app when asked.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly AppRepoParserInterface $parser,
 		private readonly ApplicationsController $install,
+		private readonly AppRecordsImporter $records,
 	) {
 	}//end __construct()
 
@@ -121,6 +123,27 @@ class AppPackageImportService implements AppPackageImportServiceInterface {
 	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-a-maker-imports-an-exported-archive-as-a-new-app-req-bqic-001
 	 */
 	public function import(string $archivePath, string $name, string $slug, string $ownerUid): array {
+		return $this->importWithRecords(
+			archivePath: $archivePath,
+			target: ['name' => $name, 'slug' => $slug, 'owner' => $ownerUid, 'records' => false]
+		);
+	}//end import()
+
+	/**
+	 * Import an exported app archive as a new app, and its records when asked.
+	 *
+	 * The records are written only after the app was created, schema by schema;
+	 * a schema that fails is reported under `records` and never undoes the app.
+	 *
+	 * @param string              $archivePath Path of the uploaded or given archive.
+	 * @param array<string,mixed> $target      `name` and `slug` (empty for the archive's own), `owner` (UID) and `records` (bool, default false).
+	 *
+	 * @return array{status:int,data:array<string,mixed>} As import(); on 201 with records asked, `data.records` holds the per-schema report.
+	 *
+	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-records-come-along-only-when-asked-req-bqic-003
+	 */
+	public function importWithRecords(string $archivePath, array $target): array {
+		$ownerUid = (string)($target['owner'] ?? '');
 		try {
 			$files = $this->readPackage(archivePath: $archivePath);
 			$template = $this->parser->parse(files: $this->packageFiles(files: $files));
@@ -128,7 +151,7 @@ class AppPackageImportService implements AppPackageImportServiceInterface {
 			return self::refusal(exception: $exception);
 		}
 
-		$slug = self::orDefault(value: $slug, default: (string)($template['slug'] ?? ''));
+		$slug = self::orDefault(value: (string)($target['slug'] ?? ''), default: (string)($template['slug'] ?? ''));
 		if (preg_match(AppRepoParser::SLUG_PATTERN, $slug) !== 1) {
 			return [
 				'status' => Http::STATUS_BAD_REQUEST,
@@ -136,13 +159,23 @@ class AppPackageImportService implements AppPackageImportServiceInterface {
 			];
 		}
 
-		return $this->install->installFromTemplateArray(
+		$result = $this->install->installFromTemplateArray(
 			template: $template,
-			name: self::orDefault(value: $name, default: (string)($template['title'] ?? $slug)),
+			name: self::orDefault(value: (string)($target['name'] ?? ''), default: (string)($template['title'] ?? $slug)),
 			newSlug: $slug,
 			ownerUid: $ownerUid
 		);
-	}//end import()
+
+		if (($target['records'] ?? false) !== true || $result['status'] !== Http::STATUS_CREATED) {
+			return $result;
+		}
+
+		$result['data']['records'] = $this->records->import(
+			files: $files,
+			installed: ((array)$result['data'] + ['owner' => $ownerUid])
+		);
+		return $result;
+	}//end importWithRecords()
 
 	/**
 	 * The package entries of an archive, read into memory after every entry is checked.

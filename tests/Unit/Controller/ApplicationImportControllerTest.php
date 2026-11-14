@@ -102,7 +102,7 @@ class ApplicationImportControllerTest extends TestCase {
 	 */
 	public function testSignedOutIsRefused(): void {
 		$this->session->method('getUser')->willReturn(null);
-		$this->importer->expects($this->never())->method('import');
+		$this->importer->expects($this->never())->method('importWithRecords');
 
 		$response = $this->controller()->import();
 
@@ -118,7 +118,7 @@ class ApplicationImportControllerTest extends TestCase {
 	 */
 	public function testAMissingUploadIsRefused(): void {
 		$this->signedIn();
-		$this->importer->expects($this->never())->method('import');
+		$this->importer->expects($this->never())->method('importWithRecords');
 		$this->request->method('getUploadedFile')->with('archive')->willReturnOnConsecutiveCalls(
 			null,
 			['error' => UPLOAD_ERR_PARTIAL, 'tmp_name' => '/tmp/x'],
@@ -142,7 +142,8 @@ class ApplicationImportControllerTest extends TestCase {
 		$this->signedIn();
 		$this->request->method('getUploadedFile')->willReturn(['error' => UPLOAD_ERR_OK, 'tmp_name' => '/tmp/php123']);
 		$this->request->method('getParam')->willReturnMap([['name', null, 'Vergunningen'], ['slug', null, 'vergunningen']]);
-		$this->importer->expects($this->exactly(2))->method('import')->with('/tmp/php123', 'Vergunningen', 'vergunningen', 'sanne')
+		$this->importer->expects($this->exactly(2))->method('importWithRecords')
+			->with('/tmp/php123', ['name' => 'Vergunningen', 'slug' => 'vergunningen', 'owner' => 'sanne', 'records' => false])
 			->willReturnOnConsecutiveCalls(
 				['status' => 201, 'data' => ['slug' => 'vergunningen']],
 				['status' => 409, 'data' => ['error' => 'slug_collision', 'detail' => 'vergunningen']]
@@ -157,4 +158,34 @@ class ApplicationImportControllerTest extends TestCase {
 		$this->assertSame('slug_collision', $taken->getData()['error']);
 
 	}//end testTheUploadIsImportedForTheCaller()
+	/**
+	 * "Import records" ticked in the form turns records on; any other value leaves them off.
+	 *
+	 * @return void
+	 */
+	public function testTheRecordsFlagIsReadFromTheForm(): void {
+		$this->signedIn();
+		$this->request->method('getUploadedFile')->willReturn(['error' => UPLOAD_ERR_OK, 'tmp_name' => '/tmp/php123']);
+		$values = ['true', 'off'];
+		$this->request->method('getParam')->willReturnCallback(
+			static function (string $key) use (&$values): mixed {
+				return ($key === 'records' ? array_shift($values) : null);
+			}
+		);
+		$seen = [];
+		$this->importer->expects($this->exactly(2))->method('importWithRecords')
+			->willReturnCallback(
+				static function (string $path, array $target) use (&$seen): array {
+					$seen[] = $target['records'];
+					return ['status' => 201, 'data' => ['slug' => 'vergunningen', 'records' => ['imported' => 40]]];
+				}
+			);
+
+		$response = $this->controller()->import();
+		$this->controller()->import();
+
+		$this->assertSame([true, false], $seen);
+		$this->assertSame(['imported' => 40], $response->getData()['records']);
+
+	}//end testTheRecordsFlagIsReadFromTheForm()
 }//end class
