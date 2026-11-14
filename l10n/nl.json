@@ -721,6 +721,35 @@
         "Version name (e.g. Production)": "Versienaam (bijv. Productie)",
         "Version name must not be empty.": "Versienaam mag niet leeg zijn.",
         "Version not found": "Versie niet gevonden",
+        "_%n page_::_%n pages_": [
+            "%n pagina",
+            "%n pagina's"
+        ],
+        "_%n schema_::_%n schemas_": [
+            "%n schema",
+            "%n schema's"
+        ],
+        "_%n record_::_%n records_": [
+            "%n record",
+            "%n records"
+        ],
+        "_%n {schema} record imported_::_%n {schema} records imported_": [
+            "%n {schema}-record geïmporteerd",
+            "%n {schema}-records geïmporteerd"
+        ],
+        "_%n {schema} record failed to import_::_%n {schema} records failed to import_": [
+            "%n {schema}-record kon niet worden geïmporteerd",
+            "%n {schema}-records konden niet worden geïmporteerd"
+        ],
+        "{code} in {path}": "{code} in {path}",
+        "App archive": "App-archief",
+        "Import app": "App importeren",
+        "Import records": "Records importeren",
+        "Importing…": "Bezig met importeren…",
+        "Lowercase letters, digits and hyphens. The app's address uses it.": "Kleine letters, cijfers en koppeltekens. Het adres van de app gebruikt deze.",
+        "Pick an app archive exported from buildiq. It becomes a new app that you own.": "Kies een app-archief dat uit buildiq is geëxporteerd. Het wordt een nieuwe app waarvan u de eigenaar bent.",
+        "The archive could not be imported.": "Het archief kon niet worden geïmporteerd.",
+        "The slug \"{slug}\" is already taken. Choose another slug.": "De slug \"{slug}\" is al in gebruik. Kies een andere slug.",
         "Version presets": "Versiepresets",
         "Version selection": "Versieselectie",
         "Versions are ordered top-to-bottom: upstream (e.g. Development) at top, downstream (e.g. Production) at bottom.": "Versies zijn van boven naar beneden geordend: upstream (bijv. Ontwikkeling) bovenaan, downstream (bijv. Productie) onderaan.",
@@ -1787,36 +1816,7 @@
         "Window start": "Begin van het venster",
         "Include server bundle": "Serverbundel meenemen",
         "Failures": "Fouten",
-        "Failed requests, 4xx and 5xx together. Derived by the server, never posted; summed by the request failure metric.": "Mislukte verzoeken, 4xx en 5xx samen. Afgeleid door de server, nooit meegestuurd; opgeteld door de metriek voor mislukte verzoeken.",
-        "{code} in {path}": "{code} in {path}",
-        "App archive": "App-archief",
-        "Import app": "App importeren",
-        "Import records": "Records importeren",
-        "Importing…": "Bezig met importeren…",
-        "Lowercase letters, digits and hyphens. The app's address uses it.": "Kleine letters, cijfers en koppeltekens. Het adres van de app gebruikt deze.",
-        "Pick an app archive exported from buildiq. It becomes a new app that you own.": "Kies een app-archief dat uit buildiq is geëxporteerd. Het wordt een nieuwe app waarvan u de eigenaar bent.",
-        "The archive could not be imported.": "Het archief kon niet worden geïmporteerd.",
-        "The slug \"{slug}\" is already taken. Choose another slug.": "De slug \"{slug}\" is al in gebruik. Kies een andere slug.",
-        "_%n page_::_%n pages_": [
-            "%n pagina",
-            "%n pagina's"
-        ],
-        "_%n schema_::_%n schemas_": [
-            "%n schema",
-            "%n schema's"
-        ],
-        "_%n record_::_%n records_": [
-            "%n record",
-            "%n records"
-        ],
-        "_%n {schema} record imported_::_%n {schema} records imported_": [
-            "%n {schema}-record geïmporteerd",
-            "%n {schema}-records geïmporteerd"
-        ],
-        "_%n {schema} record failed to import_::_%n {schema} records failed to import_": [
-            "%n {schema}-record kon niet worden geïmporteerd",
-            "%n {schema}-records konden niet worden geïmporteerd"
-        ]
+        "Failed requests, 4xx and 5xx together. Derived by the server, never posted; summed by the request failure metric.": "Mislukte verzoeken, 4xx en 5xx samen. Afgeleid door de server, nooit meegestuurd; opgeteld door de metriek voor mislukte verzoeken."
     },
     "plurals": null,
     "pluralForm": "nplurals=2; plural=(n != 1);"
