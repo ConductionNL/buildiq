@@ -46,6 +46,7 @@
 
 <script>
 import { CnAppRoot } from '@conduction/nextcloud-vue'
+import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { useApplicationVersion } from '../composables/useApplicationVersion.js'
 import {
@@ -55,6 +56,7 @@ import {
 import placeholderManifest from '../manifests/placeholder.json'
 import { getRuntimeRegistry } from '../runtimeRegistry.js'
 import { fetchAppRegister } from '../services/appRegister.js'
+import { normalizeConnectorPages } from '../services/connectorPages.js'
 import { mirrorVersionLoad } from '../utils/mirrorVersionLoad.js'
 
 /**
@@ -166,6 +168,10 @@ export default {
 				endpoint: this.versionSlug
 					? `${endpoint}?_version=${encodeURIComponent(this.versionSlug)}`
 					: endpoint,
+
+				// Rewrite connector-bound pages before the manifest reaches
+				// CnAppRoot, exactly as the published runtime does.
+				fetcher: this.fetchManifest,
 			}
 		},
 	},
@@ -206,6 +212,25 @@ export default {
 	// scoped-theme lifecycle (mount-apply/unmount-teardown) via `useScopedTheme`,
 	// with zero Buildiq-side wiring (theme-picker-consumes-nldesign).
 	methods: {
+		/**
+		 * The manifest fetcher the nested CnAppRoot loads through: the default
+		 * GET, with connector-bound pages rewritten for the renderer the same
+		 * way `builder.js` does (REQ-BQCB-001, REQ-BQCB-004). This host never
+		 * saves the manifest it renders, so the stored manifest keeps the
+		 * authored shape.
+		 *
+		 * @param {string} url - the manifest endpoint.
+		 * @return {Promise<object>} - the response, with `data` normalised.
+		 * @spec openspec/changes/integrations-connector-bound-pages/specs/connector-bound-page-runtime/spec.md#requirement-preview-and-published-app-render-the-same-pages-req-bqcb-004
+		 */
+		async fetchManifest(url) {
+			const response = await axios.get(url)
+			if (!response || !response.data || typeof response.data !== 'object') {
+				return response
+			}
+			return { ...response, data: normalizeConnectorPages(response.data) }
+		},
+
 		/**
 		 * Kick off useApplicationVersion and mirror reactive state into component data.
 		 *

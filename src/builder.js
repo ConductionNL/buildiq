@@ -43,6 +43,10 @@ import pinia from './pinia.js'
 import { registerDirectives } from './registerDirectives.js'
 import { getRuntimeRegistry } from './runtimeRegistry.js'
 import { fetchAppRegister } from './services/appRegister.js'
+import {
+	normalizeConnectorPages,
+	restoreConnectorPages,
+} from './services/connectorPages.js'
 import { startHealthReporting } from './services/healthReporting.js'
 import { normalizeManifestPages } from './services/manifestPageDefaults.js'
 import { normalizeManifestRouting } from './services/manifestRouting.js'
@@ -350,7 +354,9 @@ function manifestPersister(manifest, shell) {
 		const saveUrl = generateUrl(
 			`/apps/buildiq/api/applications/${slug}/manifest`,
 		)
-		await axios.put(saveUrl, { manifest })
+		// Store the pages as the maker authored them: a connector-bound page
+		// is rewritten for the renderer in memory only (REQ-BQCB-001).
+		await axios.put(saveUrl, { manifest: restoreConnectorPages(manifest) })
 		// Only touch the router when the PAGE SET actually changed — a
 		// menu / settings / sidebar / actions edit leaves routes intact.
 		const sig = pageSignature(manifest)
@@ -409,14 +415,18 @@ async function boot() {
 	if (slug) {
 		brandTopBar(humaniseSlug(slug), slug)
 	}
-	const manifest = await loadManifest()
+	const loaded = await loadManifest()
 
 	// Normalise pages (config-as-object guard + inline page titles for data pages).
-	normalizeManifestPages(manifest)
+	normalizeManifestPages(loaded)
 	// Name every page and point every menu entry at one, so a manifest written
 	// before page ids existed — or one whose menu carries paths — still opens
 	// with its navigation instead of an empty shell.
-	normalizeManifestRouting(manifest)
+	normalizeManifestRouting(loaded)
+	// Pages bound to an integriq endpoint become pages the renderer draws, in
+	// memory only; the persister restores the authored shape (REQ-BQCB-001).
+	// BuilderHost.vue runs the same normaliser for the preview (REQ-BQCB-004).
+	const manifest = normalizeConnectorPages(loaded)
 
 	// Registers/schemas (+ columns) for the in-app pages editor, passed to CnAppRoot
 	// as a LOADER rather than a pre-fetched snapshot. The modals re-invoke it every

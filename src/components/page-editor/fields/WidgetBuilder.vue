@@ -45,21 +45,40 @@
 				class="widget-builder__chart"
 				:editingWidget="chartFormInput(widget)"
 				@update:content="updateChart(index, $event)" />
+			<!-- A connector widget binds its own data source with the same origin
+			     toggle, source picker and field mapper as a page (REQ-BQCB-003). -->
+			<DataSourceOriginToggle
+				v-if="isConnectorWidget(widget)"
+				class="widget-builder__binding"
+				:data-source="connectorDataSource(widget)"
+				@update:dataSource="updateDataSource(index, $event)" />
 		</div>
-		<button type="button" class="widget-builder__add" @click="addWidget">
-			+ {{ t('buildiq', 'Add widget') }}
-		</button>
+		<div class="widget-builder__actions">
+			<button type="button" class="widget-builder__add" @click="addWidget">
+				+ {{ t('buildiq', 'Add widget') }}
+			</button>
+			<button
+				type="button"
+				class="widget-builder__add"
+				data-testid="widget-builder-add-connector"
+				@click="addConnectorWidget">
+				+ {{ t('buildiq', 'Add external data widget') }}
+			</button>
+		</div>
 	</div>
 </template>
 
 <script>
 import { CnChartWidgetForm } from '@conduction/nextcloud-vue'
+import DataSourceOriginToggle from '../DataSourceOriginToggle.vue'
+import { CONNECTOR_WIDGET_TYPE } from '../../../services/connectorPages.js'
 import { chartFormInput, widgetWithChartContent } from './chartWidget.js'
 
 export default {
 	name: 'WidgetBuilder',
 	components: {
 		CnChartWidgetForm,
+		DataSourceOriginToggle,
 	},
 
 	props: {
@@ -69,7 +88,7 @@ export default {
 		},
 	},
 
-	emits: ['update:modelValue'],
+	emits: ['update:modelValue', 'add:connectorWidget'],
 	computed: {
 		/**
 		 * Observed behaviour of `localWidgets` (retrofit annotation).
@@ -126,6 +145,75 @@ export default {
 		},
 
 		/**
+		 * Whether a widget definition is the `connector-data` widget.
+		 *
+		 * @param {object} widget - a widget definition.
+		 * @return {boolean}
+		 * @spec openspec/changes/integrations-connector-bound-pages/specs/connector-bound-page-runtime/spec.md#requirement-a-maker-can-place-a-connector-widget-on-a-dashboard-req-bqcb-003
+		 */
+		isConnectorWidget(widget) {
+			return Boolean(widget) && widget.type === CONNECTOR_WIDGET_TYPE
+		},
+
+		/**
+		 * The `dataSource` a connector widget is bound to (its `content`).
+		 *
+		 * @param {object} widget - a connector widget definition.
+		 * @return {object}
+		 * @spec openspec/changes/integrations-connector-bound-pages/specs/connector-bound-page-runtime/spec.md#requirement-a-maker-can-place-a-connector-widget-on-a-dashboard-req-bqcb-003
+		 */
+		connectorDataSource(widget) {
+			const content = widget && widget.content
+			return (content && content.dataSource) || {}
+		},
+
+		/**
+		 * Store a connector widget's data source in its `content`, keeping the
+		 * rest of its content.
+		 *
+		 * @param {number} index - position of the widget in the `widgets` array.
+		 * @param {object} dataSource - the data source the origin toggle emitted.
+		 * @spec openspec/changes/integrations-connector-bound-pages/specs/connector-bound-page-runtime/spec.md#requirement-a-maker-can-place-a-connector-widget-on-a-dashboard-req-bqcb-003
+		 */
+		updateDataSource(index, dataSource) {
+			const next = this.localWidgets.slice()
+			const current = next[index] || {}
+			const content = { ...(current.content || {}) }
+			if (!dataSource || Object.keys(dataSource).length === 0) {
+				delete content.dataSource
+			} else {
+				content.dataSource = dataSource
+			}
+			next[index] = { ...current, content }
+			this.$emit('update:modelValue', next)
+		},
+
+		/**
+		 * Offer a `connector-data` widget with an empty connector binding, so
+		 * the origin toggle opens on OpenConnector with its picker and mapper.
+		 * The parent adds it to `widgets` and places it on the grid in one
+		 * update (`add:connectorWidget`).
+		 *
+		 * @spec openspec/changes/integrations-connector-bound-pages/specs/connector-bound-page-runtime/spec.md#requirement-a-maker-can-place-a-connector-widget-on-a-dashboard-req-bqcb-003
+		 */
+		addConnectorWidget() {
+			const taken = new Set(this.localWidgets.map((w) => w && w.id))
+			let k = 1
+			while (taken.has(`connector-${k}`)) {
+				k++
+			}
+			const widget = {
+				id: `connector-${k}`,
+				title: '',
+				type: CONNECTOR_WIDGET_TYPE,
+				content: {
+					dataSource: { connector: { endpointPath: '', fields: {} } },
+				},
+			}
+			this.$emit('add:connectorWidget', widget)
+		},
+
+		/**
 		 * Observed behaviour of `removeWidget` (retrofit annotation).
 		 *
 		 * @param {number} index - position of the widget to drop from the `widgets` array.
@@ -158,6 +246,17 @@ export default {
 .widget-builder__chart {
 	padding: 8px;
 	border-left: 2px solid var(--color-border);
+}
+
+.widget-builder__binding {
+	padding-inline-start: 12px;
+	border-inline-start: 2px solid var(--color-border);
+}
+
+.widget-builder__actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
 }
 
 .widget-builder__row {

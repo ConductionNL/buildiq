@@ -1786,6 +1786,8 @@
         "Total load time (ms)": "Totale laadtijd (ms)",
         "Window start": "Begin van het venster",
         "Include server bundle": "Serverbundel meenemen",
+        "Search": "Zoeken",
+        "Add external data widget": "Widget met externe gegevens toevoegen",
         "Failures": "Fouten",
         "Failed requests, 4xx and 5xx together. Derived by the server, never posted; summed by the request failure metric.": "Mislukte verzoeken, 4xx en 5xx samen. Afgeleid door de server, nooit meegestuurd; opgeteld door de metriek voor mislukte verzoeken."
     },
