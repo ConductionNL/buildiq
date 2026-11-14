@@ -68,6 +68,14 @@ use Psr\Log\LoggerInterface;
 class ApplicationsControllerDiffVersionsTest extends TestCase {
 
 	/**
+	 * A resolver a test sets instead of the blob resolver.
+	 *
+	 * @var ManifestResolverService|null
+	 */
+	private ?ManifestResolverService $resolverOverride = null;
+
+
+	/**
 	 * Request mock.
 	 *
 	 * @var IRequest&MockObject
@@ -147,7 +155,7 @@ class ApplicationsControllerDiffVersionsTest extends TestCase {
 					$this->createMock(LoggerInterface::class)
 				)
 			),
-			manifestResolver: $this->createMock(ManifestResolverService::class),
+			manifestResolver: ($this->resolverOverride ?? $this->blobResolver()),
 			channelApplier: $this->createMock(AppChannelApplier::class)
 		);
 
@@ -457,4 +465,78 @@ class ApplicationsControllerDiffVersionsTest extends TestCase {
 		self::assertSame('0.2.0', $data['to']['semver']);
 	}//end testDiffVersionsAcceptsVersionSlugs()
 
+	/**
+	 * A delta-mode version is compared as the manifest it serves (app-delta-override 4.2).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-4.2
+	 */
+	public function testADeltaModeVersionDiffsAsItsMergedManifest(): void {
+		$this->resolvableApplication();
+
+		$this->objectService->method('find')->willReturn(
+			$this->buildEntity(
+				[
+					'slug' => 'hello-world',
+					'permissions' => ['owners' => ['user:bob'], 'editors' => [], 'viewers' => []],
+				]
+			)
+		);
+
+		$development = $this->buildEntity(['slug' => 'development', 'application' => 'app-uuid-1', 'semver' => '0.2.0', 'manifest' => [], 'baseRef' => ['kind' => 'template', 'id' => 'crm'], 'manifestDelta' => ['pages' => [['id' => 'home', 'title' => 'Start']]]]);
+		$production = $this->buildEntity(['slug' => 'production', 'application' => 'app-uuid-1', 'semver' => '0.1.0', 'manifest' => ['a' => 0]]);
+		$route = $this->buildEntity(['slug' => 'hello-world', 'applicationUuid' => 'app-uuid-1']);
+
+		// resolvableApplication() already stubbed searchObjects; a fresh mock
+		// lets this test answer the version searches too.
+		$application = $this->objectService->find('app-uuid-1');
+		$this->objectService = $this->createMock(ObjectServiceInterface::class);
+		// Like OpenRegister: a slug is not an object id, so that lookup throws.
+		$this->objectService->method('find')->willReturnCallback(
+			static function (string $id) use ($application) {
+				if ($id === 'app-uuid-1') {
+					return $application;
+				}
+
+				throw new \OCP\AppFramework\Db\DoesNotExistException('Object not found');
+			}
+		);
+		$this->objectService->method('searchObjects')->willReturnCallback(
+			static function (array $query) use ($development, $production, $route): array {
+				if (isset($query['application']) === false) {
+					return [$route];
+				}
+
+				// Answer with both, so the slug check in the controller matters.
+				return [$development, $production];
+			}
+		);
+
+		$merged = ['version' => '1.0.0', 'pages' => [['id' => 'home', 'title' => 'Start']]];
+		$this->resolverOverride = $this->createMock(ManifestResolverService::class);
+		$this->resolverOverride->method('resolveVersionManifest')->willReturnCallback(
+			static fn (array $version): ?array => isset($version['baseRef']) === true ? $merged : $version['manifest']
+		);
+
+		$response = $this->controller()->diffVersions(slug: 'hello-world', from: 'production', to: 'development');
+
+		self::assertSame(Http::STATUS_OK, $response->getStatus());
+		$data = $response->getData();
+		self::assertSame(['a' => 0], $data['from']['manifest']);
+		self::assertSame($merged, $data['to']['manifest'], 'the delta-mode version diffs as its merged manifest, never its raw delta');
+	}//end testADeltaModeVersionDiffsAsItsMergedManifest()
+
+	/**
+	 * A manifest resolver whose versions serve their stored blob, as a legacy version does.
+	 *
+	 * @return ManifestResolverService
+	 */
+	private function blobResolver(): ManifestResolverService {
+		$resolver = $this->createMock(ManifestResolverService::class);
+		$resolver->method('resolveVersionManifest')->willReturnCallback(
+			static fn (array $version): ?array => is_array($version['manifest'] ?? null) === true ? $version['manifest'] : null
+		);
+		return $resolver;
+	}//end blobResolver()
 }//end class

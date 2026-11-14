@@ -3,7 +3,7 @@
   "info": {
     "title": "OpenBuild Register",
     "description": "Citizen-developer app builder for Nextcloud: compose apps from registers, connectors, workflows, and documents without code.",
-    "version": "0.15.0"
+    "version": "0.16.0"
   },
   "x-openregister": {
     "type": "application",
@@ -505,7 +505,7 @@
         },
         "slug": "applicationVersion",
         "icon": "SourceBranch",
-        "version": "0.4.1",
+        "version": "0.5.0",
         "title": "Application Version",
         "description": "A deployable runtime for an Application (ADR-002). A VIRTUAL app's version carries a full `manifest` blob and owns its own per-version OpenRegister register so production and test data are physically isolated. A HYBRID app's version (unify-apps-with-app-type) instead carries a delta-only customization: `manifest` is an empty object `{}`, `baseRef.kind` is `fleet-app`, and `manifestDelta` holds the keyed structural diff served raw via GET /api/app-overrides/{appId} and merged client-side over the installed fleet app's bundled manifest (OpenBuild holds no fleet base). The admin-defined linear promotion chain reads via the optional `promotesTo` relation. Lifecycle (draft → published → archived) is per-version; the `draft → published` transition upserts the BuiltAppRoute slug index.",
         "authorization": {
@@ -549,34 +549,40 @@
           "manifest": {
             "title": "App Manifest",
             "type": "object",
-            "description": "JSON manifest blob conforming to @conduction/nextcloud-vue/src/schemas/app-manifest.schema.json (v1.4.0+). Per ADR-024, this is consumed by useAppManifest + CnAppRoot at runtime. Per ADR-002 the manifest now lives on ApplicationVersion (was on Application). For a HYBRID app's version this is an empty object `{}`: the customization lives in `manifestDelta` and is merged client-side over the installed fleet app's bundled manifest (unify-apps-with-app-type).",
+            "description": "JSON manifest blob conforming to @conduction/nextcloud-vue/src/schemas/app-manifest.schema.json (v1.4.0+). Per ADR-024, this is consumed by useAppManifest + CnAppRoot at runtime. Per ADR-002 the manifest now lives on ApplicationVersion (was on Application). For a HYBRID app's version this is an empty object `{}`: the customization lives in `manifestDelta` and is merged client-side over the installed fleet app's bundled manifest (unify-apps-with-app-type). A version with this blob and no `baseRef` serves the blob as its manifest, unchanged (the legacy and standalone form; app-delta-override). A version with a `baseRef` (other than a hybrid app's) serves its base with `manifestDelta` merged over it, and this blob is only the fallback base when that base cannot be resolved.",
             "additionalProperties": true
           },
           "manifestDelta": {
             "title": "Manifest Delta",
             "type": "object",
-            "description": "Keyed structural manifest delta (unify-apps-with-app-type), set ONLY on a HYBRID app's version. Produced by @conduction/nextcloud-vue's diffManifest and consumable by mergeManifestDelta (pages keyed by page.id, widgets by widget.id, the { \"$op\": \"remove\" } deletion marker, the optional `__order` reorder key). Served raw via GET /api/app-overrides/{appId} and merged CLIENT-SIDE over the fleet app's bundled manifest, because OpenBuild does not hold the fleet app's base. Absent on virtual apps (which carry a full `manifest`).",
+            "description": "Keyed structural manifest delta (unify-apps-with-app-type), set ONLY on a HYBRID app's version. Produced by @conduction/nextcloud-vue's diffManifest and consumable by mergeManifestDelta (pages keyed by page.id, widgets by widget.id, the { \"$op\": \"remove\" } deletion marker, the optional `__order` reorder key). Served raw via GET /api/app-overrides/{appId} and merged CLIENT-SIDE over the fleet app's bundled manifest, because OpenBuild does not hold the fleet app's base. Absent on virtual apps (which carry a full `manifest`). Also set on a DELTA-MODE version of a virtual app (app-delta-override): there `GET /api/applications/{slug}/manifest` merges it SERVER-SIDE (ManifestDeltaMerger, the PHP twin of mergeManifestDelta) over the base its `baseRef` names, and serves only the merged manifest.",
             "additionalProperties": true
           },
           "baseRef": {
             "title": "Base Reference",
             "type": "object",
-            "description": "Optional link to the base this version's delta extends (unify-apps-with-app-type / app-delta-override). For a HYBRID app's version `baseRef.kind` is `fleet-app` and `baseRef.id` is the installed Nextcloud app id. Lets base drift be diagnosed when a fleet app rebuilds and renames/removes a page the delta targeted.",
+            "description": "Optional link to the base this version's delta extends (unify-apps-with-app-type / app-delta-override). For a HYBRID app's version `baseRef.kind` is `fleet-app` and `baseRef.id` is the installed Nextcloud app id. Lets base drift be diagnosed when a fleet app rebuilds and renames/removes a page the delta targeted. For a delta-mode virtual app's version `baseRef.kind` is `template` (an ApplicationTemplate slug), `buildiq-app` (another built app's slug: its resolved production manifest, or the pinned `version`) or `fleet-app` (an installed app's bundled manifest). A buildiq-app chain is followed at most 5 apps deep and stops at a cycle.",
             "properties": {
               "kind": {
                 "title": "Base Kind",
                 "type": "string",
-                "description": "What kind of base the delta extends: `fleet-app` for a hybrid app's version."
+                "enum": ["template", "buildiq-app", "fleet-app"],
+                "description": "What kind of base the delta extends: `template`, `buildiq-app` or `fleet-app` (always `fleet-app` for a hybrid app's version)."
               },
               "id": {
                 "title": "Base Identifier",
                 "type": "string",
-                "description": "Identifier of the base: the installed Nextcloud app id for a hybrid app's version."
+                "description": "Identifier of the base: a template slug, a built app's slug, or an installed Nextcloud app id."
               },
               "manifestVersion": {
                 "title": "Base Manifest Version",
                 "type": "string",
                 "description": "Optional version of the bundled base manifest the delta was authored against."
+              },
+              "version": {
+                "title": "Pinned Base Version",
+                "type": "string",
+                "description": "Optional pin for a `buildiq-app` base: that app's version slug. Absent, the delta follows the base's live production version, so the derived app inherits its upgrades."
               }
             },
             "additionalProperties": false

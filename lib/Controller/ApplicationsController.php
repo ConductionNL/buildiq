@@ -1009,7 +1009,12 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 
 		$semver = ($versionArray['semver'] ?? ($versionArray['version'] ?? null));
 		return [
-			'manifest' => ($versionArray['manifest'] ?? null),
+			// App-delta-override: a delta-mode version diffs as its merged manifest, never as its raw delta.
+			'manifest' => $this->manifestResolver->resolveVersionManifest(
+				version: $versionArray,
+				application: $application,
+				caller: $this->userSession->getUser()
+			),
 			'version' => $semver,
 			'semver' => $semver,
 			'name' => ($versionArray['name'] ?? ($versionArray['slug'] ?? null)),

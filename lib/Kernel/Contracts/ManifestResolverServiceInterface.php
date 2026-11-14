@@ -172,4 +172,19 @@ interface ManifestResolverServiceInterface {
 	 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-the-server-scopes-and-bounds-samples-req-bqdm-005
 	 */
 	public function resolveVersionForCaller(string $appSlug, ?string $versionSlug, ?IUser $caller): ?array;
+
+	/**
+	 * The manifest an ApplicationVersion serves: its blob, or its base with its delta merged over it.
+	 *
+	 * @param array<string, mixed> $version The ApplicationVersion.
+	 * @param array<string, mixed> $application The Application it belongs to.
+	 * @param IUser|null $caller The caller.
+	 *
+	 * @return array<string, mixed>|null The manifest, or null when the version has none.
+	 *
+	 * @throws \OCA\Buildiq\Service\ManifestResolutionException When the merged manifest is not renderable.
+	 *
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-4.2
+	 */
+	public function resolveVersionManifest(array $version, array $application, ?IUser $caller): ?array;
 }//end interface

@@ -69,6 +69,8 @@ class ManifestResolverService implements ManifestResolverServiceInterface {
 	 * @param LoggerInterface $logger PSR logger for diagnostics
 	 * @param PermissionResolver $permissionResolver Shared principal-grammar resolver (H1/H2 fix)
 	 * @param ManifestWidgetRoleFilter $widgetRoleFilter Removes page widgets by `roles`
+	 * @param ManifestDeltaMerger $deltaMerger The keyed merge of a delta over its base (app-delta-override)
+	 * @param ManifestBaseResolver|null $baseResolver Reads template and fleet-app bases; null reads none
 	 *
 	 * @return void
 	 */
@@ -79,8 +81,31 @@ class ManifestResolverService implements ManifestResolverServiceInterface {
 		private readonly LoggerInterface $logger,
 		private readonly PermissionResolver $permissionResolver,
 		private readonly ManifestWidgetRoleFilter $widgetRoleFilter,
+		private readonly ManifestDeltaMerger $deltaMerger=new ManifestDeltaMerger(),
+		private readonly ?ManifestBaseResolver $baseResolver=null,
 	) {
 	}//end __construct()
+
+	/**
+	 * How many built apps a base chain may pass through before resolution stops.
+	 *
+	 * @var int
+	 */
+	public const MAX_BASE_DEPTH = 5;
+
+	/**
+	 * The built-app slugs whose base is being resolved, outermost first (cycle guard).
+	 *
+	 * @var list<string>
+	 */
+	private array $resolvingBases = [];
+
+	/**
+	 * What the last delta resolution noticed: orphaned delta paths, an unresolved base, a cycle.
+	 *
+	 * @var array{orphanedDeltaPaths: list<string>, unresolvedBase: array<string,mixed>|null, cycle: bool}
+	 */
+	private array $diagnostics = ['orphanedDeltaPaths' => [], 'unresolvedBase' => null, 'cycle' => false];
 
 	/**
 	 * Resolve an application slug (+ optional version slug) to the manifest payload.
@@ -121,11 +146,11 @@ class ManifestResolverService implements ManifestResolverServiceInterface {
 
 		// Step 2a — no versionSlug: return production manifest (accessible to all).
 		if ($versionSlug === null) {
-			return $this->resolveProductionManifest(application: $application, appSlug: $appSlug);
+			return $this->resolveProductionManifest(application: $application, appSlug: $appSlug, caller: $caller);
 		}
 
 		if ($versionSlug === '') {
-			return $this->resolveProductionManifest(application: $application, appSlug: $appSlug);
+			return $this->resolveProductionManifest(application: $application, appSlug: $appSlug, caller: $caller);
 		}
 
 		// Step 2b — named versionSlug: look up the ApplicationVersion.
@@ -147,8 +172,9 @@ class ManifestResolverService implements ManifestResolverServiceInterface {
 			return null;
 		}
 
-		// Step 4 — return the resolved ApplicationVersion's manifest payload.
-		$manifest = ($version['manifest'] ?? null);
+		// Step 4 — return the resolved ApplicationVersion's manifest payload:
+		// the blob itself, or its base with its delta merged over it (app-delta-override).
+		$manifest = $this->resolveVersionManifest(version: $version, application: $application, caller: $caller);
 		if (is_array($manifest) === false) {
 			$this->logger->warning(
 				'ManifestResolverService: ApplicationVersion has no manifest for app={appSlug} version={versionSlug}',
@@ -346,27 +372,27 @@ class ManifestResolverService implements ManifestResolverServiceInterface {
 	 *
 	 * @param array<string, mixed> $application The normalised Application data.
 	 * @param string $appSlug The app slug (for logging).
+	 * @param IUser|null $caller The caller, for a built-app base's own version gate.
 	 *
 	 * @return array<string, mixed>|null
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-70
 	 */
-	private function resolveProductionManifest(array $application, string $appSlug): ?array {
+	private function resolveProductionManifest(array $application, string $appSlug, ?IUser $caller=null): ?array {
 		$productionVersion = ($application['productionVersion'] ?? null);
 
 		// ProductionVersion is a UUID or embedded object.
+		$version = null;
 		if (is_string($productionVersion) === true && $productionVersion !== '') {
 			// UUID reference — fetch the ApplicationVersion.
 			$version = $this->findVersionByUuid(uuid: $productionVersion);
-			if ($version !== null) {
-				$manifest = ($version['manifest'] ?? null);
-				if (is_array($manifest) === true) {
-					return $manifest;
-				}
-			}
 		} elseif (is_array($productionVersion) === true) {
 			// Inline embedded object — use manifest directly.
-			$manifest = ($productionVersion['manifest'] ?? null);
+			$version = $productionVersion;
+		}
+
+		if ($version !== null) {
+			$manifest = $this->resolveVersionManifest(version: $version, application: $application, caller: $caller);
 			if (is_array($manifest) === true) {
 				return $manifest;
 			}
@@ -388,6 +414,177 @@ class ManifestResolverService implements ManifestResolverServiceInterface {
 		);
 		return null;
 	}//end resolveProductionManifest()
+
+	/**
+	 * The manifest an ApplicationVersion serves: its blob, or its base with its delta merged over it.
+	 *
+	 * A version without a `baseRef` serves its `manifest` blob unchanged (the
+	 * legacy branch, byte for byte). A hybrid app's version keeps its existing
+	 * contract too: its delta is merged in the browser over the installed fleet
+	 * app's manifest, so it is served as stored. Any other version with a
+	 * `baseRef` is resolved to its base (a template, another built app, or a
+	 * fleet app's bundled manifest) with `manifestDelta` merged over it by
+	 * ManifestDeltaMerger. A base that cannot be resolved falls back to the
+	 * stored blob as the base, so a derived app stays renderable; what was
+	 * skipped is kept in diagnostics(), never in the manifest.
+	 *
+	 * @param array<string, mixed> $version The ApplicationVersion.
+	 * @param array<string, mixed> $application The Application it belongs to.
+	 * @param IUser|null $caller The caller; a built-app base pinned to a version passes that app's own gate.
+	 *
+	 * @return array<string, mixed>|null The manifest, or null when the version has none.
+	 *
+	 * @throws ManifestResolutionException When the merged manifest is not a renderable manifest.
+	 *
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-4.1
+	 */
+	public function resolveVersionManifest(array $version, array $application, ?IUser $caller): ?array {
+		$blob = $version['manifest'] ?? null;
+		$baseRef = $version['baseRef'] ?? null;
+		if (is_array($baseRef) === false || trim((string)($baseRef['kind'] ?? '')) === '' || ($application['appType'] ?? '') === 'hybrid') {
+			if (is_array($blob) === true) {
+				return $blob;
+			}
+
+			return null;
+		}
+
+		$this->diagnostics = ['orphanedDeltaPaths' => [], 'unresolvedBase' => null, 'cycle' => false];
+		$base = $this->resolveBase(baseRef: $baseRef, caller: $caller);
+		if ($base === null) {
+			$this->diagnostics['unresolvedBase'] = $baseRef;
+			$this->logger->warning(
+				'ManifestResolverService: the base {kind}:{id} of a delta-mode version could not be resolved',
+				['kind' => (string)($baseRef['kind'] ?? ''), 'id' => (string)($baseRef['id'] ?? '')]
+			);
+			$base = [];
+			if (is_array($blob) === true) {
+				$base = $blob;
+			}
+		}
+
+		$delta = $version['manifestDelta'] ?? [];
+		if (is_array($delta) === false) {
+			$delta = [];
+		}
+
+		$merged = $this->deltaMerger->merge(base: $base, delta: $delta);
+		$this->diagnostics['orphanedDeltaPaths'] = $merged['orphanedDeltaPaths'];
+
+		return self::servedManifest(merged: $merged['manifest']);
+	}//end resolveVersionManifest()
+
+	/**
+	 * What the last delta resolution noticed, for the editor and admin surfaces; never served.
+	 *
+	 * @return array{orphanedDeltaPaths: list<string>, unresolvedBase: array<string,mixed>|null, cycle: bool}
+	 *
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-4.2
+	 */
+	public function diagnostics(): array {
+		return $this->diagnostics;
+	}//end diagnostics()
+
+	/**
+	 * The base manifest a `baseRef` names, or null when it cannot be resolved.
+	 *
+	 * @param array<string, mixed> $baseRef `{kind: template|buildiq-app|fleet-app, id, version?}`.
+	 * @param IUser|null $caller The caller.
+	 *
+	 * @return array<string, mixed>|null The base manifest.
+	 *
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-3.1
+	 */
+	private function resolveBase(array $baseRef, ?IUser $caller): ?array {
+		$id = trim((string)($baseRef['id'] ?? ''));
+		return match ((string)($baseRef['kind'] ?? '')) {
+			'template' => $this->baseResolver?->template(slug: $id),
+			'fleet-app' => $this->baseResolver?->fleetApp(appId: $id),
+			'buildiq-app' => $this->builtAppBase(slug: $id, versionSlug: self::pinnedVersion(baseRef: $baseRef), caller: $caller),
+			default => null,
+		};
+	}//end resolveBase()
+
+	/**
+	 * Another built app's resolved manifest as a base, with a depth cap and a cycle guard.
+	 *
+	 * The base is resolved through resolve(), so a pinned non-production
+	 * version passes the same gate as a direct request for it. A chain that
+	 * returns to an app already being resolved, or passes MAX_BASE_DEPTH
+	 * apps, stops there: that base is unresolved and the chain keeps the
+	 * deepest base that did resolve.
+	 *
+	 * @param string $slug The base app's slug.
+	 * @param string|null $versionSlug The pinned version, or null for its production version.
+	 * @param IUser|null $caller The caller.
+	 *
+	 * @return array<string, mixed>|null The base manifest.
+	 *
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-3.2
+	 */
+	private function builtAppBase(string $slug, ?string $versionSlug, ?IUser $caller): ?array {
+		if ($slug === '' || in_array($slug, $this->resolvingBases, true) === true || count($this->resolvingBases) >= self::MAX_BASE_DEPTH) {
+			$this->diagnostics['cycle'] = true;
+			$this->logger->warning(
+				'ManifestResolverService: the base chain stops at {slug} (cycle or deeper than {max})',
+				['slug' => $slug, 'max' => self::MAX_BASE_DEPTH]
+			);
+			return null;
+		}
+
+		$outer = $this->diagnostics;
+		$this->resolvingBases[] = $slug;
+		try {
+			$base = $this->resolve(appSlug: $slug, versionSlug: $versionSlug, caller: $caller);
+		} catch (ManifestResolutionException $e) {
+			// An unrenderable base is an unresolved base, not a broken derived app.
+			$base = null;
+		} finally {
+			array_pop($this->resolvingBases);
+			// The outer version's diagnostics are the ones reported; an inner cycle still counts.
+			$outer['cycle'] = ($outer['cycle'] === true || $this->diagnostics['cycle'] === true);
+			$this->diagnostics = $outer;
+		}
+
+		return $base;
+	}//end builtAppBase()
+
+	/**
+	 * The pinned base version of a `baseRef`, or null to follow the live base.
+	 *
+	 * @param array<string, mixed> $baseRef The base reference.
+	 *
+	 * @return string|null The version slug.
+	 */
+	private static function pinnedVersion(array $baseRef): ?string {
+		$version = trim((string)($baseRef['version'] ?? ''));
+		if ($version === '') {
+			return null;
+		}
+
+		return $version;
+	}//end pinnedVersion()
+
+	/**
+	 * The merged manifest as served: never a raw delta key, and renderable.
+	 *
+	 * @param mixed $merged The merge result.
+	 *
+	 * @return array<string, mixed> The manifest.
+	 *
+	 * @throws ManifestResolutionException When it lacks a string `version` or a `pages` array.
+	 *
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-4.3
+	 */
+	private static function servedManifest(mixed $merged): array {
+		if (is_array($merged) === false || is_string($merged['version'] ?? null) === false || is_array($merged['pages'] ?? null) === false) {
+			throw new ManifestResolutionException('The merged manifest is not renderable: it needs a string `version` and a `pages` array.');
+		}
+
+		unset($merged['baseRef'], $merged['manifestDelta'], $merged['orphanedDeltaPaths']);
+
+		return $merged;
+	}//end servedManifest()
 
 	/**
 	 * Look up an ApplicationVersion whose application relation matches the given

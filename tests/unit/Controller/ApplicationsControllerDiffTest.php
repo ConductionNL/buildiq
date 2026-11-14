@@ -131,7 +131,7 @@ class ApplicationsControllerDiffTest extends TestCase {
 				groupManager: $groupManager,
 				permissionResolver: $permissionResolver
 			),
-			manifestResolver: $this->createMock(ManifestResolverService::class),
+			manifestResolver: $this->blobResolver(),
 			channelApplier: $this->createMock(\OCA\Buildiq\Service\AppChannelApplier::class),
 		);
 	}//end setUp()
@@ -383,7 +383,7 @@ class ApplicationsControllerDiffTest extends TestCase {
 				groupManager: $noAdminGroupManager,
 				permissionResolver: $noAdminPermissionResolver
 			),
-			manifestResolver: $this->createMock(ManifestResolverService::class),
+			manifestResolver: $this->blobResolver(),
 			channelApplier: $this->createMock(\OCA\Buildiq\Service\AppChannelApplier::class),
 		);
 
@@ -393,4 +393,16 @@ class ApplicationsControllerDiffTest extends TestCase {
 		$data = $result->getData();
 		self::assertSame('buildiq.rbac.no_role', $data['code']);
 	}//end testDiffVersionsReturns403WhenCallerHasNoRole()
+	/**
+	 * A manifest resolver whose versions serve their stored blob, as a legacy version does.
+	 *
+	 * @return ManifestResolverService
+	 */
+	private function blobResolver(): ManifestResolverService {
+		$resolver = $this->createMock(ManifestResolverService::class);
+		$resolver->method('resolveVersionManifest')->willReturnCallback(
+			static fn (array $version): ?array => is_array($version['manifest'] ?? null) === true ? $version['manifest'] : null
+		);
+		return $resolver;
+	}//end blobResolver()
 }//end class
