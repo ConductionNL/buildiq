@@ -1,0 +1,716 @@
+[
+	{
+		"name": "empty delta keeps the base",
+		"base": {
+			"version": "1.0.0",
+			"pages": [
+				{
+					"id": "home",
+					"route": "/home"
+				}
+			]
+		},
+		"delta": {},
+		"expected": {
+			"manifest": {
+				"version": "1.0.0",
+				"pages": [
+					{
+						"id": "home",
+						"route": "/home"
+					}
+				]
+			},
+			"orphanedDeltaPaths": []
+		}
+	},
+	{
+		"name": "scalars and plain objects merge, delta wins",
+		"base": {
+			"version": "1.0.0",
+			"theme": {
+				"color": "blue",
+				"size": 2
+			}
+		},
+		"delta": {
+			"version": "1.1.0",
+			"theme": {
+				"color": "red"
+			}
+		},
+		"expected": {
+			"manifest": {
+				"version": "1.1.0",
+				"theme": {
+					"color": "red",
+					"size": 2
+				}
+			},
+			"orphanedDeltaPaths": []
+		}
+	},
+	{
+		"name": "a page is patched by id",
+		"base": {
+			"pages": [
+				{
+					"id": "home",
+					"route": "/home",
+					"title": "Home"
+				},
+				{
+					"id": "cases",
+					"route": "/cases",
+					"title": "Cases"
+				}
+			]
+		},
+		"delta": {
+			"pages": [
+				{
+					"id": "cases",
+					"title": "Zaken"
+				}
+			]
+		},
+		"expected": {
+			"manifest": {
+				"pages": [
+					{
+						"id": "home",
+						"route": "/home",
+						"title": "Home"
+					},
+					{
+						"id": "cases",
+						"route": "/cases",
+						"title": "Zaken"
+					}
+				]
+			},
+			"orphanedDeltaPaths": []
+		}
+	},
+	{
+		"name": "a new page is appended",
+		"base": {
+			"pages": [
+				{
+					"id": "home",
+					"route": "/home"
+				}
+			]
+		},
+		"delta": {
+			"pages": [
+				{
+					"id": "reports",
+					"route": "/reports",
+					"title": "Reports"
+				}
+			]
+		},
+		"expected": {
+			"manifest": {
+				"pages": [
+					{
+						"id": "home",
+						"route": "/home"
+					},
+					{
+						"id": "reports",
+						"route": "/reports",
+						"title": "Reports"
+					}
+				]
+			},
+			"orphanedDeltaPaths": []
+		}
+	},
+	{
+		"name": "a page is removed",
+		"base": {
+			"pages": [
+				{
+					"id": "home",
+					"route": "/home"
+				},
+				{
+					"id": "old",
+					"route": "/old"
+				}
+			]
+		},
+		"delta": {
+			"pages": [
+				{
+					"id": "old",
+					"$op": "remove"
+				}
+			]
+		},
+		"expected": {
+			"manifest": {
+				"pages": [
+					{
+						"id": "home",
+						"route": "/home"
+					}
+				]
+			},
+			"orphanedDeltaPaths": []
+		}
+	},
+	{
+		"name": "removing a missing page is an orphan",
+		"base": {
+			"pages": [
+				{
+					"id": "home",
+					"route": "/home"
+				}
+			]
+		},
+		"delta": {
+			"pages": [
+				{
+					"id": "gone",
+					"$op": "remove"
+				}
+			]
+		},
+		"expected": {
+			"manifest": {
+				"pages": [
+					{
+						"id": "home",
+						"route": "/home"
+					}
+				]
+			},
+			"orphanedDeltaPaths": [
+				"pages/gone"
+			]
+		}
+	},
+	{
+		"name": "widgets inside a page merge by id",
+		"base": {
+			"pages": [
+				{
+					"id": "dash",
+					"route": "/dash",
+					"config": {
+						"widgets": [
+							{
+								"id": "w1",
+								"title": "A"
+							},
+							{
+								"id": "w2",
+								"title": "B"
+							}
+						]
+					}
+				}
+			]
+		},
+		"delta": {
+			"pages": [
+				{
+					"id": "dash",
+					"config": {
+						"widgets": [
+							{
+								"id": "w2",
+								"title": "B2"
+							},
+							{
+								"id": "w3",
+								"title": "C"
+							},
+							{
+								"id": "w1",
+								"$op": "remove"
+							}
+						]
+					}
+				}
+			]
+		},
+		"expected": {
+			"manifest": {
+				"pages": [
+					{
+						"id": "dash",
+						"route": "/dash",
+						"config": {
+							"widgets": [
+								{
+									"id": "w2",
+									"title": "B2"
+								},
+								{
+									"id": "w3",
+									"title": "C"
+								}
+							]
+						}
+					}
+				]
+			},
+			"orphanedDeltaPaths": []
+		}
+	},
+	{
+		"name": "nested remove of a missing widget is an orphan with its path",
+		"base": {
+			"pages": [
+				{
+					"id": "dash",
+					"route": "/dash",
+					"config": {
+						"widgets": [
+							{
+								"id": "w1"
+							}
+						]
+					}
+				}
+			]
+		},
+		"delta": {
+			"pages": [
+				{
+					"id": "dash",
+					"config": {
+						"widgets": [
+							{
+								"id": "nope",
+								"$op": "remove"
+							}
+						]
+					}
+				}
+			]
+		},
+		"expected": {
+			"manifest": {
+				"pages": [
+					{
+						"id": "dash",
+						"route": "/dash",
+						"config": {
+							"widgets": [
+								{
+									"id": "w1"
+								}
+							]
+						}
+					}
+				]
+			},
+			"orphanedDeltaPaths": [
+				"pages/dash/config/widgets/nope"
+			]
+		}
+	},
+	{
+		"name": "__order reorders, unlisted entries follow",
+		"base": {
+			"pages": [
+				{
+					"id": "a",
+					"route": "/a"
+				},
+				{
+					"id": "b",
+					"route": "/b"
+				},
+				{
+					"id": "c",
+					"route": "/c"
+				}
+			]
+		},
+		"delta": {
+			"__order": {
+				"pages": [
+					"c",
+					"a"
+				]
+			}
+		},
+		"expected": {
+			"manifest": {
+				"pages": [
+					{
+						"id": "c",
+						"route": "/c"
+					},
+					{
+						"id": "a",
+						"route": "/a"
+					},
+					{
+						"id": "b",
+						"route": "/b"
+					}
+				]
+			},
+			"orphanedDeltaPaths": []
+		}
+	},
+	{
+		"name": "a nested __order inside a page entry applies",
+		"base": {
+			"pages": [
+				{
+					"id": "dash",
+					"route": "/dash",
+					"config": {
+						"widgets": [
+							{
+								"id": "w1"
+							},
+							{
+								"id": "w2"
+							}
+						],
+						"__unused": 1
+					}
+				}
+			]
+		},
+		"delta": {
+			"pages": [
+				{
+					"id": "dash",
+					"config": {
+						"__order": {
+							"widgets": [
+								"w2",
+								"w1"
+							]
+						}
+					}
+				}
+			]
+		},
+		"expected": {
+			"manifest": {
+				"pages": [
+					{
+						"id": "dash",
+						"route": "/dash",
+						"config": {
+							"widgets": [
+								{
+									"id": "w2"
+								},
+								{
+									"id": "w1"
+								}
+							],
+							"__unused": 1
+						}
+					}
+				]
+			},
+			"orphanedDeltaPaths": []
+		}
+	},
+	{
+		"name": "menu children merge by id",
+		"base": {
+			"menu": [
+				{
+					"id": "cases",
+					"label": "Cases",
+					"children": [
+						{
+							"id": "c1",
+							"label": "One"
+						}
+					]
+				}
+			]
+		},
+		"delta": {
+			"menu": [
+				{
+					"id": "cases",
+					"children": [
+						{
+							"id": "c2",
+							"label": "Two"
+						},
+						{
+							"id": "c1",
+							"label": "Een"
+						}
+					]
+				}
+			]
+		},
+		"expected": {
+			"manifest": {
+				"menu": [
+					{
+						"id": "cases",
+						"label": "Cases",
+						"children": [
+							{
+								"id": "c1",
+								"label": "Een"
+							},
+							{
+								"id": "c2",
+								"label": "Two"
+							}
+						]
+					}
+				]
+			},
+			"orphanedDeltaPaths": []
+		}
+	},
+	{
+		"name": "defaultSavedViews merge by slug",
+		"base": {
+			"pages": [
+				{
+					"id": "idx",
+					"route": "/idx",
+					"config": {
+						"defaultSavedViews": [
+							{
+								"slug": "open",
+								"name": "Open"
+							}
+						]
+					}
+				}
+			]
+		},
+		"delta": {
+			"pages": [
+				{
+					"id": "idx",
+					"config": {
+						"defaultSavedViews": [
+							{
+								"slug": "mine",
+								"name": "Mine"
+							}
+						]
+					}
+				}
+			]
+		},
+		"expected": {
+			"manifest": {
+				"pages": [
+					{
+						"id": "idx",
+						"route": "/idx",
+						"config": {
+							"defaultSavedViews": [
+								{
+									"slug": "open",
+									"name": "Open"
+								},
+								{
+									"slug": "mine",
+									"name": "Mine"
+								}
+							]
+						}
+					}
+				]
+			},
+			"orphanedDeltaPaths": []
+		}
+	},
+	{
+		"name": "non-keyed arrays are replaced wholesale",
+		"base": {
+			"tags": [
+				"a",
+				"b"
+			],
+			"pages": [
+				{
+					"id": "p",
+					"route": "/p",
+					"config": {
+						"columns": [
+							"x",
+							"y"
+						]
+					}
+				}
+			]
+		},
+		"delta": {
+			"tags": [
+				"c"
+			],
+			"pages": [
+				{
+					"id": "p",
+					"config": {
+						"columns": [
+							"z"
+						]
+					}
+				}
+			]
+		},
+		"expected": {
+			"manifest": {
+				"tags": [
+					"c"
+				],
+				"pages": [
+					{
+						"id": "p",
+						"route": "/p",
+						"config": {
+							"columns": [
+								"z"
+							]
+						}
+					}
+				]
+			},
+			"orphanedDeltaPaths": []
+		}
+	},
+	{
+		"name": "markers are stripped from an appended entry",
+		"base": {
+			"pages": [
+				{
+					"id": "home",
+					"route": "/home"
+				}
+			]
+		},
+		"delta": {
+			"pages": [
+				{
+					"id": "new",
+					"route": "/new",
+					"__order": {
+						"widgets": []
+					}
+				}
+			]
+		},
+		"expected": {
+			"manifest": {
+				"pages": [
+					{
+						"id": "home",
+						"route": "/home"
+					},
+					{
+						"id": "new",
+						"route": "/new"
+					}
+				]
+			},
+			"orphanedDeltaPaths": []
+		}
+	},
+	{
+		"name": "an object replaced by a scalar and a scalar by an object",
+		"base": {
+			"a": {
+				"x": 1
+			},
+			"b": 2
+		},
+		"delta": {
+			"a": "flat",
+			"b": {
+				"y": 3
+			}
+		},
+		"expected": {
+			"manifest": {
+				"a": "flat",
+				"b": {
+					"y": 3
+				}
+			},
+			"orphanedDeltaPaths": []
+		}
+	},
+	{
+		"name": "a keyed array over a missing base key is set as given",
+		"base": {
+			"version": "1"
+		},
+		"delta": {
+			"pages": [
+				{
+					"id": "home",
+					"route": "/home",
+					"$op": "remove"
+				}
+			]
+		},
+		"expected": {
+			"manifest": {
+				"version": "1",
+				"pages": [
+					{
+						"id": "home",
+						"route": "/home",
+						"$op": "remove"
+					}
+				]
+			},
+			"orphanedDeltaPaths": []
+		}
+	},
+	{
+		"name": "non-object entries in a keyed delta array are skipped",
+		"base": {
+			"pages": [
+				{
+					"id": "home",
+					"route": "/home"
+				}
+			]
+		},
+		"delta": {
+			"pages": [
+				"junk",
+				5,
+				{
+					"id": "next",
+					"route": "/next"
+				}
+			]
+		},
+		"expected": {
+			"manifest": {
+				"pages": [
+					{
+						"id": "home",
+						"route": "/home"
+					},
+					{
+						"id": "next",
+						"route": "/next"
+					}
+				]
+			},
+			"orphanedDeltaPaths": []
+		}
+	}
+]

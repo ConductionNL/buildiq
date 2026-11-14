@@ -444,11 +444,17 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values falsy 
  },
  {
   "name": "p_string",
-  "type": "string",
+  "type": "choice",
   "required": true,
   "default": "x",
   "description": "d",
   "validation": {
+   "options": [
+    {
+     "value": "a",
+     "label": ""
+    }
+   ],
    "minLength": 0,
    "maxLength": 0
   },
@@ -698,11 +704,17 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values falsy 
  },
  {
   "name": "p_undefined",
-  "type": "string",
+  "type": "choice",
   "required": false,
   "default": "x",
   "description": "d",
   "validation": {
+   "options": [
+    {
+     "value": "a",
+     "label": ""
+    }
+   ],
    "minLength": 0,
    "maxLength": 0
   },
@@ -726,7 +738,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values falsy 
  },
  {
   "name": "empty",
-  "type": "string",
+  "type": "text",
   "required": false,
   "default": null,
   "description": "",
@@ -758,7 +770,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values falsy 
  },
  {
   "name": "stringWithItems",
-  "type": "string",
+  "type": "text",
   "required": false,
   "default": null,
   "description": "",
@@ -792,15 +804,15 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values falsy 
    "maxItems": 0
   },
   "p_string": {
-   "enum": [
-    "a"
-   ],
    "x-extra": 1,
    "description": "d",
    "default": "x",
    "type": "string",
    "minLength": 0,
-   "maxLength": 0
+   "maxLength": 0,
+   "enum": [
+    "a"
+   ]
   },
   "p_number": {
    "enum": [
@@ -887,15 +899,15 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values falsy 
    "type": "string"
   },
   "p_undefined": {
-   "enum": [
-    "a"
-   ],
    "x-extra": 1,
    "description": "d",
    "default": "x",
    "type": "string",
    "minLength": 0,
-   "maxLength": 0
+   "maxLength": 0,
+   "enum": [
+    "a"
+   ]
   },
   "empty": {
    "type": "string"
@@ -968,11 +980,18 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values none 1
  },
  {
   "name": "p_string",
-  "type": "string",
+  "type": "choice",
   "required": true,
   "default": "x",
   "description": "d",
-  "validation": {},
+  "validation": {
+   "options": [
+    {
+     "value": "a",
+     "label": ""
+    }
+   ]
+  },
   "_raw": {
    "description": "d",
    "default": "x",
@@ -1130,11 +1149,18 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values none 1
  },
  {
   "name": "p_undefined",
-  "type": "string",
+  "type": "choice",
   "required": false,
   "default": "x",
   "description": "d",
-  "validation": {},
+  "validation": {
+   "options": [
+    {
+     "value": "a",
+     "label": ""
+    }
+   ]
+  },
   "_raw": {
    "description": "d",
    "default": "x",
@@ -1146,7 +1172,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values none 1
  },
  {
   "name": "empty",
-  "type": "string",
+  "type": "text",
   "required": false,
   "default": null,
   "description": "",
@@ -1178,7 +1204,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values none 1
  },
  {
   "name": "stringWithItems",
-  "type": "string",
+  "type": "text",
   "required": false,
   "default": null,
   "description": "",
@@ -1210,13 +1236,13 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values none 2
    }
   },
   "p_string": {
-   "enum": [
-    "a"
-   ],
    "x-extra": 1,
    "description": "d",
    "default": "x",
-   "type": "string"
+   "type": "string",
+   "enum": [
+    "a"
+   ]
   },
   "p_number": {
    "enum": [
@@ -1297,13 +1323,13 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values none 2
    "type": "string"
   },
   "p_undefined": {
-   "enum": [
-    "a"
-   ],
    "x-extra": 1,
    "description": "d",
    "default": "x",
-   "type": "string"
+   "type": "string",
+   "enum": [
+    "a"
+   ]
   },
   "empty": {
    "type": "string"
@@ -1385,11 +1411,18 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values null 1
  },
  {
   "name": "p_string",
-  "type": "string",
+  "type": "choice",
   "required": true,
   "default": "x",
   "description": "d",
-  "validation": {},
+  "validation": {
+   "options": [
+    {
+     "value": "a",
+     "label": ""
+    }
+   ]
+  },
   "_raw": {
    "format": null,
    "pattern": null,
@@ -1628,11 +1661,18 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values null 1
  },
  {
   "name": "p_undefined",
-  "type": "string",
+  "type": "choice",
   "required": false,
   "default": "x",
   "description": "d",
-  "validation": {},
+  "validation": {
+   "options": [
+    {
+     "value": "a",
+     "label": ""
+    }
+   ]
+  },
   "_raw": {
    "format": null,
    "pattern": null,
@@ -1653,7 +1693,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values null 1
  },
  {
   "name": "empty",
-  "type": "string",
+  "type": "text",
   "required": false,
   "default": null,
   "description": "",
@@ -1685,7 +1725,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values null 1
  },
  {
   "name": "stringWithItems",
-  "type": "string",
+  "type": "text",
   "required": false,
   "default": null,
   "description": "",
@@ -1717,13 +1757,13 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values null 2
    }
   },
   "p_string": {
-   "enum": [
-    "a"
-   ],
    "x-extra": 1,
    "description": "d",
    "default": "x",
-   "type": "string"
+   "type": "string",
+   "enum": [
+    "a"
+   ]
   },
   "p_number": {
    "enum": [
@@ -1804,13 +1844,13 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values null 2
    "type": "string"
   },
   "p_undefined": {
-   "enum": [
-    "a"
-   ],
    "x-extra": 1,
    "description": "d",
    "default": "x",
-   "type": "string"
+   "type": "string",
+   "enum": [
+    "a"
+   ]
   },
   "empty": {
    "type": "string"
@@ -1894,11 +1934,17 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values set 1`
  },
  {
   "name": "p_string",
-  "type": "string",
+  "type": "choice",
   "required": true,
   "default": "x",
   "description": "d",
   "validation": {
+   "options": [
+    {
+     "value": "a",
+     "label": ""
+    }
+   ],
    "format": "email",
    "pattern": "^a",
    "minLength": 1,
@@ -2150,11 +2196,17 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values set 1`
  },
  {
   "name": "p_undefined",
-  "type": "string",
+  "type": "choice",
   "required": false,
   "default": "x",
   "description": "d",
   "validation": {
+   "options": [
+    {
+     "value": "a",
+     "label": ""
+    }
+   ],
    "format": "email",
    "pattern": "^a",
    "minLength": 1,
@@ -2180,7 +2232,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values set 1`
  },
  {
   "name": "empty",
-  "type": "string",
+  "type": "text",
   "required": false,
   "default": null,
   "description": "",
@@ -2212,7 +2264,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values set 1`
  },
  {
   "name": "stringWithItems",
-  "type": "string",
+  "type": "text",
   "required": false,
   "default": null,
   "description": "",
@@ -2246,9 +2298,6 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values set 2`
    "maxItems": 3
   },
   "p_string": {
-   "enum": [
-    "a"
-   ],
    "x-extra": 1,
    "description": "d",
    "default": "x",
@@ -2256,7 +2305,10 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values set 2`
    "format": "email",
    "pattern": "^a",
    "minLength": 1,
-   "maxLength": 9
+   "maxLength": 9,
+   "enum": [
+    "a"
+   ]
   },
   "p_number": {
    "enum": [
@@ -2343,9 +2395,6 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values set 2`
    "type": "string"
   },
   "p_undefined": {
-   "enum": [
-    "a"
-   ],
    "x-extra": 1,
    "description": "d",
    "default": "x",
@@ -2353,7 +2402,10 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values set 2`
    "format": "email",
    "pattern": "^a",
    "minLength": 1,
-   "maxLength": 9
+   "maxLength": 9,
+   "enum": [
+    "a"
+   ]
   },
   "empty": {
    "type": "string"
