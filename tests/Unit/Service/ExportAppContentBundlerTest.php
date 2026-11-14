@@ -165,23 +165,22 @@ final class ExportAppContentBundlerTest extends TestCase {
 	}//end testExportedManifestsCarryNoCredentialSecret()
 
 	/**
-	 * The README only names a way to use the archive that exists (buildiq#992).
-	 *
-	 * Buildiq has no route, controller or button that takes an uploaded app
-	 * archive, so the README must not send the reader to one. Running the
-	 * archive as its own Nextcloud app is the path that works.
+	 * The README only names ways to use the archive that exist: the Applications page's "Import app" button, by its
+	 * label, and `occ buildiq:app:import`, next to running the archive as its own Nextcloud app.
 	 *
 	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-a-maker-imports-an-exported-archive-as-a-new-app-req-bqic-001
 	 */
-	public function testReadmeDoesNotPointAtAnImportButtonBuildiqLacks(): void {
+	public function testReadmeNamesTheImportButtonAndCommand(): void {
 		$this->bundleDevelopment(includeSeedData: false);
 
 		$readme = (string)file_get_contents($this->root . '/README.md');
-		self::assertStringNotContainsString('Import application', $readme);
-		self::assertStringNotContainsString('when you import this archive', $readme);
+		self::assertStringContainsString('choose "Import app" and pick this archive', $readme);
+		self::assertStringContainsString('`occ buildiq:app:import <archive> --owner=<uid>`', $readme);
+		self::assertStringContainsString('Add `--records` (or tick "Import records")', $readme);
 		self::assertStringContainsString('As its own app: run `composer install`', $readme);
-		self::assertStringContainsString('Buildiq cannot import this archive yet', $readme);
-	}//end testReadmeDoesNotPointAtAnImportButtonBuildiqLacks()
+		self::assertStringNotContainsString('Import application', $readme);
+		self::assertStringNotContainsString('cannot import this archive', $readme);
+	}//end testReadmeNamesTheImportButtonAndCommand()
 
 	/**
 	 * With seed data on, the records go in both layouts, stripped of their source identity.
