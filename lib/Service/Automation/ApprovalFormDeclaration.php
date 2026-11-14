@@ -77,11 +77,21 @@ final class ApprovalFormDeclaration {
 	}//end fieldsOf()
 
 	/**
+	 * Constructor.
+	 *
+	 * @param string   $schemaSlug The trigger schema.
+	 * @param \Closure $properties Reads the trigger schema's properties, or null when it cannot; called only when a form is declared.
+	 */
+	public function __construct(
+		private readonly string $schemaSlug,
+		private readonly \Closure $properties,
+	) {
+	}//end __construct()
+
+	/**
 	 * Refuse an approval form the trigger schema cannot render, naming the field; then refuse any form at all.
 	 *
-	 * @param array<int,mixed> $actions    The automation's actions.
-	 * @param string           $schemaSlug The trigger schema.
-	 * @param callable         $properties Reads the trigger schema's properties, or null when it cannot; called only when a form is declared.
+	 * @param array<int,mixed> $actions The automation's actions.
 	 *
 	 * @return void
 	 *
@@ -89,7 +99,7 @@ final class ApprovalFormDeclaration {
 	 *
 	 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-the-form-is-compiled-into-the-approval-chain-or-refused-req-bqtf-002
 	 */
-	public function check(array $actions, string $schemaSlug, callable $properties): void {
+	public function check(array $actions): void {
 		$forms = [];
 		foreach ($actions as $action) {
 			if (is_array($action) === true && ($action['type'] ?? '') === 'approval' && self::fieldsOf(action: $action) !== []) {
@@ -101,15 +111,15 @@ final class ApprovalFormDeclaration {
 			return;
 		}
 
-		$declared = $properties();
+		$declared = ($this->properties)();
 		if (is_array($declared) === false) {
 			throw new UnsupportedAutomationCombinationException(
-				message: 'The fields of the approval form cannot be checked: schema "' . $schemaSlug . '" could not be read.'
+				message: 'The fields of the approval form cannot be checked: schema "' . $this->schemaSlug . '" could not be read.'
 			);
 		}
 
 		foreach ($forms as $fields) {
-			$this->checkFields(fields: $fields, schemaSlug: $schemaSlug, properties: $declared);
+			$this->checkFields(fields: $fields, properties: $declared);
 		}
 
 		throw new UnsupportedAutomationCombinationException(message: self::NOT_CARRIED);
@@ -119,21 +129,20 @@ final class ApprovalFormDeclaration {
 	 * Refuse the first field of one form the schema cannot render.
 	 *
 	 * @param list<array{field:string,required:bool}> $fields     The declared fields.
-	 * @param string                                  $schemaSlug The trigger schema.
-	 * @param array<string,mixed>                     $properties Its properties.
+	 * @param array<string,mixed>                     $properties The trigger schema's properties.
 	 *
 	 * @return void
 	 *
 	 * @throws UnsupportedAutomationCombinationException Naming the field.
 	 */
-	private function checkFields(array $fields, string $schemaSlug, array $properties): void {
+	private function checkFields(array $fields, array $properties): void {
 		$seen = [];
 		foreach ($fields as $entry) {
 			$name = $entry['field'];
-			$reason = $this->refusal(name: $name, property: ($properties[$name] ?? null), seen: $seen);
+			$reason = self::listingRefusal(name: $name, seen: $seen) ?? self::refusal(property: ($properties[$name] ?? null));
 			if ($reason !== null) {
 				throw new UnsupportedAutomationCombinationException(
-					message: 'The approval form cannot ask for "' . $name . '": ' . $reason . ' in schema "' . $schemaSlug . '".'
+					message: 'The approval form cannot ask for "' . $name . '": ' . $reason . ' in schema "' . $this->schemaSlug . '".'
 				);
 			}
 
@@ -142,15 +151,14 @@ final class ApprovalFormDeclaration {
 	}//end checkFields()
 
 	/**
-	 * Why one field cannot be on the form, or null when it can.
+	 * Why a field cannot be listed: it has no name, or is listed twice; null when it can.
 	 *
-	 * @param string       $name     The field.
-	 * @param mixed        $property Its schema property, or null when undeclared.
-	 * @param list<string> $seen     The fields earlier in the list.
+	 * @param string       $name The field.
+	 * @param list<string> $seen The fields earlier in the list.
 	 *
 	 * @return string|null
 	 */
-	private function refusal(string $name, mixed $property, array $seen): ?string {
+	private static function listingRefusal(string $name, array $seen): ?string {
 		if ($name === '') {
 			return 'a field without a name is listed';
 		}
@@ -159,6 +167,17 @@ final class ApprovalFormDeclaration {
 			return 'it is listed twice';
 		}
 
+		return null;
+	}//end listingRefusal()
+
+	/**
+	 * Why a schema property cannot be on the form, or null when it can.
+	 *
+	 * @param mixed $property The schema property, or null when undeclared.
+	 *
+	 * @return string|null
+	 */
+	private static function refusal(mixed $property): ?string {
 		if (is_array($property) === false) {
 			return 'it is not a property';
 		}

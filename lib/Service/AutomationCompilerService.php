@@ -296,11 +296,10 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 		// checked against the trigger schema, and refused while OpenRegister
 		// cannot carry a form into the task it opens.
 		$schemaSlug = (string)($input->trigger['schema'] ?? '');
-		(new ApprovalFormDeclaration())->check(
-			actions: $input->actions,
+		(new ApprovalFormDeclaration(
 			schemaSlug: $schemaSlug,
 			properties: fn (): ?array => $this->loadSchema(slug: $schemaSlug)?->getProperties()
-		);
+		))->check(actions: $input->actions);
 
 		$plan = [
 			'notifications' => [],
