@@ -434,7 +434,8 @@ class BuildiqToolProvider implements IMcpToolProvider, BuildiqToolProviderInterf
 			$planNote = '';
 			if (isset($submitted['planId']) === true) {
 				$planNote = ' This call was submitted as plan ' . $submitted['planId']
-					. '; once an owner or editor of the app approves it in Buildiq, call again with the same arguments and planId.';
+					. '; once an owner or editor of the app approves it in Buildiq (the copilot panel, Plans from outside agents),'
+					. ' call again with the same arguments and planId.';
 			}
 
 			return [

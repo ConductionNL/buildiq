@@ -18,8 +18,10 @@
   - GIVEN an agent WHEN it submits a plan THEN nothing is written and a person with a write role can approve or reject it in buildiq
   - GIVEN a write call without an approved plan, or one that differs from the approved step WHEN it runs THEN it is refused
   - GIVEN `buildiq.promoteVersion` WHEN called THEN it follows the same rule
-- [ ] Implement
+- [x] Implement
+  - Server side in #1624 (`AgentPlanService`, `AgentPlanController`). The person's side: `src/components/copilot/AgentPlanReview.vue` in the copilot panel ("Plans from outside agents"): open a plan by the id the agent was given, read every step's tool and arguments, approve or reject; the server decides who may. The MCP refusal names where to approve it.
 - [x] Test
+  - Vitest `tests/components/copilot/AgentPlanReview.spec.js` (open, approve, reject, a decided plan, the forbidden, missing and already-decided refusals).
 
 ### Task 3: Confirm `exportJob.githubCredentialId` carries no secret, then declare the dialect on the four base schemas
 - **spec_ref**: `openspec/changes/openbuild-mcp-adoption/specs/buildiq-mcp-surface/spec.md#requirement-a-curated-read-only-dialect-on-five-schemas`
@@ -78,5 +80,5 @@
 - PHP verified the CI way in a container, against a baseline measured first — zero new failures
 - Scoped PHPCS clean on every touched `lib/` file; `python3 -m json.tool` after every JSON edit
 - `@spec` tags point at `openspec/specs/...`, never an archived change path (gate-46)
-- No new user-facing strings — i18n N/A
+- New user-facing strings (the plan review) in `l10n/en` and `l10n/nl`, `.json` and `.js`
 - `openspec validate` passes
