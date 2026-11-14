@@ -206,7 +206,10 @@ class FlowAndAgentExportBundler {
 		$targetDir = $rootDir . '/lib/Settings/flows';
 
 		foreach ($flows as $binding) {
-			if (is_array($binding) === false) {
+			// A wrapper is buildiq's own wiring of a `runOn` entry, rebuilt from
+			// the binding it serves wherever the app is installed. Exporting it
+			// would duplicate it beside the one the install builds (REQ-BQSF-002).
+			if (is_array($binding) === false || FlowBindingWrapperService::isWrapper(binding: $binding) === true) {
 				continue;
 			}
 
