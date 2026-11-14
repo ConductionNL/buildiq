@@ -172,4 +172,20 @@ interface ManifestResolverServiceInterface {
 	 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-the-server-scopes-and-bounds-samples-req-bqdm-005
 	 */
 	public function resolveVersionForCaller(string $appSlug, ?string $versionSlug, ?IUser $caller): ?array;
+
+	/**
+	 * The device features of the version a signed-in caller runs, by the same rule as resolveVersionForCaller().
+	 *
+	 * Reads the version's stored `deviceFeatures`; a version saved before they
+	 * were stored has them derived from its manifest.
+	 *
+	 * @param string $appSlug The application slug.
+	 * @param string|null $versionSlug The version slug, null or empty for production.
+	 * @param IUser|null $caller The caller; null is refused.
+	 *
+	 * @return list<string> The features, empty for an unknown app or version or a caller who may not open it.
+	 *
+	 * @spec openspec/changes/pages-qr-and-barcodes/tasks.md#task-T05
+	 */
+	public function deviceFeaturesForCaller(string $appSlug, ?string $versionSlug, ?IUser $caller): array;
 }//end interface

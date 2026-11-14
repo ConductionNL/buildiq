@@ -568,6 +568,20 @@
     {
         "method": "registerEventListener",
         "args": {
+            "event": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+            "listener": "OCA\\Buildiq\\Listener\\DeviceFeaturesListener"
+        }
+    },
+    {
+        "method": "registerEventListener",
+        "args": {
+            "event": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+            "listener": "OCA\\Buildiq\\Listener\\DeviceFeaturesListener"
+        }
+    },
+    {
+        "method": "registerEventListener",
+        "args": {
             "event": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
             "listener": "OCA\\Buildiq\\Listener\\AutomationApprovalTriggerListener"
         }

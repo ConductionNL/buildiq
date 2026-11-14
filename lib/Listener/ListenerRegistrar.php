@@ -118,6 +118,18 @@ final class ListenerRegistrar {
 			event: ObjectUpdatingEvent::class,
 			listener: FormLiveValuesListener::class
 		);
+
+		// Device features (pages-qr-and-barcodes REQ-BQQR-004): every
+		// ApplicationVersion save stamps the features its manifest uses, so the
+		// built app's pages allow the camera only where scanning is used.
+		$context->registerEventListener(
+			event: ObjectCreatingEvent::class,
+			listener: DeviceFeaturesListener::class
+		);
+		$context->registerEventListener(
+			event: ObjectUpdatingEvent::class,
+			listener: DeviceFeaturesListener::class
+		);
 	}//end registerObjectGuardListeners()
 
 	/**

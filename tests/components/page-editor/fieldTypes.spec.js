@@ -25,8 +25,8 @@ function optionValues(wrapper) {
 }
 
 describe('FIELD_TYPES', () => {
-	it('adds file and child-records to the six plain types', () => {
-		expect([...FIELD_TYPES]).toEqual(['string', 'number', 'boolean', 'select', 'textarea', 'date', 'file', 'child-records'])
+	it('adds file, child-records and scan to the six plain types', () => {
+		expect([...FIELD_TYPES]).toEqual(['string', 'number', 'boolean', 'select', 'textarea', 'date', 'file', 'child-records', 'scan'])
 	})
 
 	it('is offered identically by both form builders', () => {

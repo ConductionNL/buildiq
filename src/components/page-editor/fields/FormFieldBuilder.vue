@@ -73,11 +73,29 @@
 			<select
 				:value="field.type || 'string'"
 				class="form-field-builder__field form-field-builder__field--narrow"
-				@change="updateField(index, 'type', $event.target.value)">
+				@change="changeType(index, $event.target.value)">
 				<option v-for="type in FIELD_TYPES" :key="type" :value="type">
 					{{ type }}
 				</option>
 			</select>
+			<span
+				v-if="field.type === 'scan'"
+				class="form-field-builder__formats"
+				role="group"
+				:aria-label="t('buildiq', 'Code formats')"
+				data-testid="form-field-scan-formats">
+				<label
+					v-for="format in CODE_FORMAT_OPTIONS"
+					:key="format.value"
+					class="form-field-builder__inline">
+					<input
+						type="checkbox"
+						:value="format.value"
+						:checked="(field.formats || []).includes(format.value)"
+						@change="toggleFormat(index, format.value, $event.target.checked)" />
+					{{ format.value === 'qr' ? t('buildiq', 'QR code') : format.label }}
+				</label>
+			</span>
 
 			<template v-if="!showLogic">
 				<label class="form-field-builder__inline">
@@ -265,6 +283,16 @@ function remapIndices(order, indices) {
 }
 
 /**
+ * The code formats a `scan` field accepts (pages-qr-and-barcodes D2). Code 128
+ * and EAN-13 are names, not words, so they are not translated.
+ */
+const CODE_FORMAT_OPTIONS = [
+	{ value: 'qr', label: 'QR code' },
+	{ value: 'code128', label: 'Code 128' },
+	{ value: 'ean13', label: 'EAN-13' },
+]
+
+/**
  * Whether a `visibleWhen` condition points at a field of this form (not an
  * endpoint or a remote source), so its key can be checked for existence.
  *
@@ -378,6 +406,7 @@ export default {
 	data() {
 		return {
 			FIELD_TYPES,
+			CODE_FORMAT_OPTIONS,
 			expandedIndices: [],
 			// What is being dragged: { kind: 'type', type } or { kind: 'row', index }.
 			dragging: null,
@@ -421,6 +450,51 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Change a field's type. Choosing `scan` accepts every code format
+		 * unless formats were chosen before; any other type drops `formats`.
+		 *
+		 * @param {number} index - the field's row.
+		 * @param {string} type - the new type.
+		 * @spec openspec/changes/pages-qr-and-barcodes/specs/page-codes/spec.md#requirement-forms-can-fill-a-field-from-a-scan-req-bqqr-002
+		 */
+		changeType(index, type) {
+			const next = this.localFields.slice()
+			const { formats, ...rest } = next[index] || {}
+			next[index] = { ...rest, type }
+			if (type === 'scan') {
+				next[index].formats = Array.isArray(formats) && formats.length > 0
+					? formats
+					: CODE_FORMAT_OPTIONS.map((format) => format.value)
+			}
+			this.$emit('update:modelValue', next)
+		},
+
+		/**
+		 * Accept or drop one code format on a `scan` field, keeping the
+		 * formats in their listed order.
+		 *
+		 * @param {number} index - the field's row.
+		 * @param {string} format - `qr`, `code128` or `ean13`.
+		 * @param {boolean} checked - whether the format is now accepted.
+		 * @spec openspec/changes/pages-qr-and-barcodes/specs/page-codes/spec.md#requirement-forms-can-fill-a-field-from-a-scan-req-bqqr-002
+		 */
+		toggleFormat(index, format, checked) {
+			const next = this.localFields.slice()
+			const current = next[index] || {}
+			const chosen = new Set(Array.isArray(current.formats) ? current.formats : [])
+			if (checked) {
+				chosen.add(format)
+			} else {
+				chosen.delete(format)
+			}
+			next[index] = {
+				...current,
+				formats: CODE_FORMAT_OPTIONS.map((option) => option.value).filter((value) => chosen.has(value)),
+			}
+			this.$emit('update:modelValue', next)
+		},
+
 		/**
 		 * Observed behaviour of `updateField` (retrofit annotation).
 		 *

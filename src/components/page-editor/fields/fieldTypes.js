@@ -25,6 +25,8 @@ export const FIELD_TYPES = Object.freeze([
 	'date',
 	'file',
 	'child-records',
+	// pages-qr-and-barcodes REQ-BQQR-002: a field filled by scanning a code.
+	'scan',
 ])
 
 /** The palette's name and icon per field type. */
@@ -37,6 +39,7 @@ const TYPE_META = Object.freeze({
 	date: { label: () => t('buildiq', 'Date'), icon: '📅' },
 	file: { label: () => t('buildiq', 'File'), icon: '📎' },
 	'child-records': { label: () => t('buildiq', 'Table of records'), icon: '▦' },
+	scan: { label: () => t('buildiq', 'Scanned code'), icon: '⌗' },
 })
 
 /**

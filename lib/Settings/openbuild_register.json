@@ -546,6 +546,12 @@
             "maxLength": 48,
             "description": "URL-safe kebab-case slug for this version (e.g. `production`, `staging`, `development`)."
           },
+          "deviceFeatures": {
+            "title": "Device features",
+            "type": "array",
+            "items": {"type": "string", "enum": ["camera"]},
+            "description": "Browser features the built app's pages use, derived from the manifest on every save (pages-qr-and-barcodes REQ-BQQR-004): `camera` when an index page scans or a form has a scan field. The pages allow these for the page itself only; never set by hand."
+          },
           "manifest": {
             "title": "App Manifest",
             "type": "object",
