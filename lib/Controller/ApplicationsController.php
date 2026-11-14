@@ -59,6 +59,7 @@ use OCA\Buildiq\Kernel\Contracts\ApplicationVersionServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\ManifestResolverServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\PermissionResolverInterface;
 use OCA\Buildiq\Kernel\Contracts\TemplateInstallSeamInterface;
+use OCA\Buildiq\Service\Icon\SvgRasteriser;
 use OCA\Buildiq\Service\CallerContext;
 use OCA\Buildiq\Service\HelperFactory;
 use OCA\Buildiq\Kernel\Values\LocalApplicationRef;
@@ -160,6 +161,7 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 	 * @param CallerContext $caller The caller's session, group memberships and the shared permission matcher.
 	 * @param ManifestResolverServiceInterface $manifestResolver Version-aware manifest resolver (REQ-OBVR-002)
 	 * @param AppChannelApplierInterface $channelApplier Applies the v2 repo channels (apply-v2-channels)
+	 * @param SvgRasteriser $rasteriser Whether a PNG touch icon can be offered (pages-installable-offline-and-mobile T02)
 	 *
 	 * @return void
 	 */
@@ -170,6 +172,7 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 		CallerContext $caller,
 		private readonly ManifestResolverServiceInterface $manifestResolver,
 		private readonly AppChannelApplierInterface $channelApplier,
+		private readonly SvgRasteriser $rasteriser=new SvgRasteriser(),
 	) {
 		$this->objectService = $store->objectService;
 		$this->registerMapper = $store->registerMapper;
@@ -318,6 +321,12 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 			'display' => 'standalone',
 			'icons' => [['src' => '../../icons/' . $slug . '.svg', 'type' => 'image/svg+xml', 'sizes' => 'any', 'purpose' => 'any']],
 		];
+		// A PNG for platforms that ignore SVG icons, only when the server can
+		// make one (pages-installable-offline-and-mobile T02).
+		if ($this->rasteriser->available() === true) {
+			$size = SvgRasteriser::TOUCH_ICON_SIZE;
+			$manifest['icons'][] = ['src' => '../../icons/' . $slug . '-touch.png', 'type' => 'image/png', 'sizes' => $size . 'x' . $size, 'purpose' => 'any'];
+		}
 		$themeColor = (string)($application['themeColor'] ?? '');
 		if (preg_match('/^#[0-9a-fA-F]{6}$/', $themeColor) === 1) {
 			$manifest['theme_color'] = $themeColor;

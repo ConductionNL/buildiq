@@ -32,6 +32,7 @@ namespace OCA\Buildiq\Controller;
 
 use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Kernel\Contracts\AppNavigationServiceInterface;
+use OCA\Buildiq\Service\Icon\SvgRasteriser;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
@@ -59,6 +60,7 @@ class DashboardController extends Controller {
 	 * @param IUserSession $userSession Current Nextcloud user session
 	 * @param IGroupManager $groupManager Group membership resolver
 	 * @param INavigationManager $navigationManager Top-bar navigation manager
+	 * @param SvgRasteriser $rasteriser Whether the run page can offer a PNG touch icon
 	 *
 	 * @return void
 	 */
@@ -68,6 +70,7 @@ class DashboardController extends Controller {
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 		private readonly INavigationManager $navigationManager,
+		private readonly SvgRasteriser $rasteriser=new SvgRasteriser(),
 	) {
 		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
@@ -158,7 +161,9 @@ class DashboardController extends Controller {
 	#[NoCSRFRequired]
 	public function run(string $slug): TemplateResponse {
 		$response = $this->builder(slug: $slug);
-		$response->setParams(['webManifest' => true]);
+		// A PNG touch icon only when the server can rasterise the app's SVG
+		// icon; otherwise the page offers none and iOS shows a screenshot tile.
+		$response->setParams(['webManifest' => true, 'touchIcon' => $this->rasteriser->available(), 'slug' => $slug]);
 
 		return $response;
 	}//end run()

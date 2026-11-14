@@ -103,14 +103,29 @@ class DashboardControllerTest extends TestCase {
 
 		$this->request->method('getParam')->willReturn('');
 
-		$this->controller = new DashboardController(
+		$this->controller = $this->dashboard(rasterises: false);
+	}//end setUp()
+
+	/**
+	 * A DashboardController whose rasteriser can, or cannot, make a PNG.
+	 *
+	 * @param bool $rasterises Whether the server can rasterise SVG.
+	 *
+	 * @return DashboardController
+	 */
+	private function dashboard(bool $rasterises): DashboardController {
+		$rasteriser = $this->createMock(\OCA\Buildiq\Service\Icon\SvgRasteriser::class);
+		$rasteriser->method('available')->willReturn($rasterises);
+
+		return new DashboardController(
 			$this->request,
 			$this->initialState,
 			$this->userSession,
 			$this->groupManager,
-			$this->navigationManager
+			$this->navigationManager,
+			$rasteriser
 		);
-	}//end setUp()
+	}//end dashboard()
 
 	/**
 	 * Wire the initial-state mock to record every published key/value pair
@@ -192,9 +207,22 @@ class DashboardControllerTest extends TestCase {
 
 		$this->assertSame('builder', $response->getTemplateName());
 		$this->assertSame('spectr', $published['builderSlug']);
-		$this->assertSame(['webManifest' => true], $response->getParams());
+		$this->assertSame(['webManifest' => true, 'touchIcon' => false, 'slug' => 'spectr'], $response->getParams());
 		$this->assertSame([], $this->controller->builder('spectr')->getParams(), 'the /builder runtime links no manifest');
 	}//end testRunServesTheRuntimeAndLinksTheManifest()
+
+	/**
+	 * The run page offers the PNG touch icon only when the server can make one.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T02
+	 */
+	public function testRunOffersTheTouchIconWhenTheServerCanRasterise(): void {
+		$this->captureInitialState();
+
+		$this->assertSame(['webManifest' => true, 'touchIcon' => true, 'slug' => 'spectr'], $this->dashboard(rasterises: true)->run('spectr')->getParams());
+	}//end testRunOffersTheTouchIconWhenTheServerCanRasterise()
 
 	/**
 	 * The run routes are signed-in routes: no public run or manifest route exists.
