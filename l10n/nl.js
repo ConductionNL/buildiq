@@ -184,6 +184,7 @@ OC.L10N.register(
         "Add type, press Enter": "Type toevoegen, druk op Enter",
         "Add version": "Versie toevoegen",
         "Add widget": "Widget toevoegen",
+        "Add chart": "Grafiek toevoegen",
         "Add your first schema to start designing the data model for this app.": "Voeg het eerste schema toe om het datamodel voor deze app te ontwerpen.",
         "Administrator bypass": "Administrator-bypass",
         "Advanced": "Geavanceerd",

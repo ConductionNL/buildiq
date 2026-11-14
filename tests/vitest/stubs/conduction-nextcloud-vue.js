@@ -100,6 +100,17 @@ export const CnTab = {
 	},
 }
 export const CnPageRenderer = { name: 'CnPageRenderer', render: () => h('div') }
+// The chart form keeps its real props and event, so a spec can read what a
+// builder hands it and emit `update:content` the way the form does.
+export const CnChartWidgetForm = {
+	name: 'CnChartWidgetForm',
+	props: {
+		editingWidget: { type: Object, default: null },
+		value: { type: Object, default: null },
+	},
+	emits: ['update:content'],
+	render: () => h('div', { class: 'cnchartwidgetform-stub' }),
+}
 export const CnCard = {
 	name: 'CnCard',
 	props: [
