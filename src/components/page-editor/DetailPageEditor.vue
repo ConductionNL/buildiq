@@ -14,8 +14,14 @@
 				:config="config"
 				:registers="registers"
 				:schemas="schemas"
+				:databaseRegisters="databaseRegisters"
 				@register="update('register', $event)"
 				@schema="update('schema', $event)" />
+			<WriteActionSwitches
+				:config="config"
+				:actions="writeActions"
+				:readOnly="databaseReadOnly"
+				@set="setWriteAction" />
 		</div>
 
 		<p v-if="!routeHasParam" class="detail-page-editor__warn" role="alert">
@@ -133,6 +139,7 @@ import RegisterSchemaFields from './fields/RegisterSchemaFields.vue'
 import RegistrationFormList from './fields/RegistrationFormList.vue'
 import ScreenOverrideList from './fields/ScreenOverrideList.vue'
 import SidebarTabBuilder from './fields/SidebarTabBuilder.vue'
+import WriteActionSwitches from './fields/WriteActionSwitches.vue'
 import { useEditorRegisterPicker } from '../../composables/useEditorRegisterPicker.js'
 import {
 	pageEditorBaseMixin,
@@ -140,6 +147,7 @@ import {
 	pageEditorRegisterPropsMixin,
 	pageEditorRegisterWatchMixin,
 } from '../../mixins/pageEditorBase.js'
+import { pageEditorDatabaseMixin } from '../../mixins/pageEditorDatabase.js'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 
 export default {
@@ -151,6 +159,7 @@ export default {
 		RegistrationFormList,
 		ScreenOverrideList,
 		SidebarTabBuilder,
+		WriteActionSwitches,
 	},
 
 	mixins: [
@@ -159,6 +168,7 @@ export default {
 		pageEditorValidationMixin,
 		pageEditorPickerMixin,
 		pageEditorRegisterWatchMixin,
+		pageEditorDatabaseMixin,
 	],
 
 	props: {
@@ -171,6 +181,26 @@ export default {
 	setup: useEditorRegisterPicker,
 
 	computed: {
+		/**
+		 * The config key a read-only database switches off on a detail page.
+		 *
+		 * @return {string[]}
+		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-pages-follow-the-databases-write-setting-req-bqdb-002
+		 */
+		writeActionKeys() {
+			return ['showEditAction']
+		},
+
+		/**
+		 * The write action switch of a detail page.
+		 *
+		 * @return {Array<{key: string, label: string}>}
+		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-pages-follow-the-databases-write-setting-req-bqdb-002
+		 */
+		writeActions() {
+			return [{ key: 'showEditAction', label: this.t('buildiq', 'Edit button') }]
+		},
+
 		/**
 		 * Observed behaviour of `validatedConfigKeys` (retrofit annotation).
 		 *

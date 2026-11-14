@@ -24,6 +24,9 @@
 // Runtime widget — renders an OpenConnector-bound data source for a manifest
 // page/widget that declares `dataSource.connector` (REQ-OCAS-006).
 import ConnectorDataView from './components/runtime/ConnectorDataView.vue'
+// Runtime page — the list page a connector-bound index page renders as
+// (integrations-connector-bound-pages, REQ-BQCB-002).
+import ConnectorListPage from './components/runtime/ConnectorListPage.vue'
 // Runtime surface — generate-and-download buttons for the Docudesk document
 // templates attached to the current object's schema (sidebar tab / detail
 // action group `docudesk-document-actions`, REQ-DDT-004).
@@ -113,6 +116,14 @@ export const runtimeRegistry = {
 	'procest-case-status': tab(ProcestCaseStatusPanel),
 	// Manifest widgetKey "connector-data" for a connector-bound page/widget.
 	'connector-data': widget(ConnectorDataView, ['body', 'sidebar']),
+	// @custom-widget-ratchet exclude integrations-connector-bound-pages: the
+	// page an index page bound to an integriq endpoint renders as. No built-in
+	// page type reads `dataSource.connector` (CnIndexPage binds register and
+	// schema only), so no built-in fits (ADR-049 Decision 1).
+	'connector-list': page(
+		ConnectorListPage,
+		'No built-in page type can bind a connector: CnIndexPage reads register and schema only, never dataSource.connector.',
+	),
 	// Sidebar-tab / detail action group for Docudesk document generation.
 	'docudesk-document-actions': tab(DocumentActions),
 	// @custom-widget-ratchet exclude automation-approval-steps: "My approvals"
@@ -149,6 +160,7 @@ export const runtimeRegistry = {
  * on the published and the preview path.
  *
  * @spec openspec/changes/openbuild-connector-widget-runtime/specs/connector-widget-runtime/spec.md#requirement-req-cwr-001-single-runtime-registry-seam-for-every-virtual-app-host
+ * @spec openspec/changes/integrations-connector-bound-pages/specs/connector-bound-page-runtime/spec.md#requirement-preview-and-published-app-render-the-same-pages-req-bqcb-004
  * @return {object} the full runtime registry, keyed by widget key.
  */
 export function getRuntimeRegistry() {

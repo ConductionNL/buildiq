@@ -26,6 +26,19 @@ When an OpenBuilt app needs to talk to a system outside Nextcloud — pull suppl
 
 A built app declares its integrations in the manifest; the connector source rows live in OpenConnector. When the manifest points at `integrations.xwiki`, OpenConnector exposes the matching live XWiki space through OpenBuilt's integration sidebar.
 
+### Binding a page to an external API
+
+A page can show records from an external API instead of a register:
+
+1. In the page designer, open an **index** or **dashboard** page and set its **Data source** to OpenConnector.
+2. Pick the endpoint in the source picker. The endpoint is served by integriq; the credentials for the external system stay there and never reach the built app.
+3. In the field mapper, pick the list in the sample response and map the fields you want to show.
+4. Publish.
+
+The published app shows an index page bound this way as a list of the endpoint's records, with one column per mapped field and a search box that filters the loaded rows. A dashboard bound this way shows the same list as a widget on top of its grid. To add an external list to a dashboard next to other widgets, use **Add external data widget** in the dashboard's widget list and bind that widget the same way.
+
+The list shows a loading state, an error with **Retry** when the endpoint fails, a notice when it shows a cached response after a failed refresh, and an empty state when the endpoint returns no records. The preview in the builder and the published app render the page the same way. The page designer keeps showing the page as you authored it.
+
 ## Procest — business workflows
 
 Decisions, intakes, multi-step approvals — the state machine *between* the data lives in [Procest](https://procest.conduction.nl). OpenBuilt + Procest is the pattern for permit-tracking style apps: OpenBuilt owns the application form and the manifest; Procest owns the *how* of moving an application from intake through decision.
