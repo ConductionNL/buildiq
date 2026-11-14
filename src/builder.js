@@ -340,6 +340,8 @@ function rebuildRoutes(router, manifest) {
  * @param {object} manifest The manifest the shell edits in place.
  * @param {{router: object, shellState: object}} shell The app's router and the shell's reactive state.
  * @return {() => Promise<void>} The `persistManifestDelta` handler.
+ *
+ * @spec openspec/specs/openbuild-page-designer/spec.md#REQ-OBPD-012
  */
 function manifestPersister(manifest, shell) {
 	const { router, shellState } = shell
