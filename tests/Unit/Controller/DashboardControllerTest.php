@@ -29,6 +29,8 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\Controller;
 
 use OCA\Buildiq\Controller\DashboardController;
+use OCA\Buildiq\Kernel\Contracts\ManifestResolverServiceInterface;
+use OCA\Buildiq\Service\EmbedOrigins;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Services\IInitialState;
 use OCP\IGroupManager;
@@ -108,7 +110,9 @@ class DashboardControllerTest extends TestCase {
 			$this->initialState,
 			$this->userSession,
 			$this->groupManager,
-			$this->navigationManager
+			$this->navigationManager,
+			$this->createMock(ManifestResolverServiceInterface::class),
+			new EmbedOrigins()
 		);
 	}//end setUp()
 

@@ -92,7 +92,8 @@ describe('AppSettingsModal switches and flows', () => {
 
 	it('disables every control while busy', () => {
 		const wrapper = mountModal({ busy: true, dataRegisters: [{ register: 'r' }] })
-		expect(wrapper.findAll('.switch').map((s) => s.attributes('data-disabled'))).toEqual(['true', 'true'])
+		// Published, per-user customisation and embedding (apps-embed-in-other-sites).
+		expect(wrapper.findAll('.switch').map((s) => s.attributes('data-disabled'))).toEqual(['true', 'true', 'true'])
 		expect(wrapper.findAll('button').every((b) => b.attributes('disabled') !== undefined)).toBe(true)
 		expect(wrapper.find('.select').attributes('data-disabled')).toBe('true')
 	})

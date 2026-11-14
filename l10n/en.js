@@ -2059,7 +2059,24 @@ OC.L10N.register(
         "Requests under 250 ms": "Requests under 250 ms",
         "Total load time (ms)": "Total load time (ms)",
         "Window start": "Window start",
-        "Include server bundle": "Include server bundle"
+        "Include server bundle": "Include server bundle",
+        "A site is a scheme and a host only, without a path.": "A site is a scheme and a host only, without a path.",
+        "A site must start with https://.": "A site must start with https://.",
+        "A wildcard is not allowed: list each site separately.": "A wildcard is not allowed: list each site separately.",
+        "Add site": "Add site",
+        "Allow other sites to show this app": "Allow other sites to show this app",
+        "Allowed site, e.g. https://intranet.example.nl": "Allowed site, e.g. https://intranet.example.nl",
+        "Copied": "Copied",
+        "Copy snippet": "Copy snippet",
+        "Embed": "Embed",
+        "Only people who can already sign in to Nextcloud can use the embedded app; embedding never makes it public. It works on sites that share this Nextcloud's site, such as an intranet on a sibling subdomain.": "Only people who can already sign in to Nextcloud can use the embedded app; embedding never makes it public. It works on sites that share this Nextcloud's site, such as an intranet on a sibling subdomain.",
+        "Remove site": "Remove site",
+        "Sign in to Nextcloud (opens in a new tab)": "Sign in to Nextcloud (opens in a new tab)",
+        "Sign in to use this app": "Sign in to use this app",
+        "Snippet to paste into the other site": "Snippet to paste into the other site",
+        "The whole app": "The whole app",
+        "This is not a valid site address.": "This is not a valid site address.",
+        "What to embed": "What to embed"
     },
     "nplurals=2; plural=(n != 1);"
 )
