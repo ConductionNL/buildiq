@@ -41,6 +41,27 @@
 			<InlineFieldMark :error="markFor('columns')" />
 		</fieldset>
 
+		<fieldset class="index-page-editor__fieldset" data-testid="index-page-search">
+			<legend>{{ t('buildiq', 'Search') }}</legend>
+			<label class="index-page-editor__inline">
+				<input
+					type="checkbox"
+					data-testid="index-page-inline-search"
+					:checked="config.inlineSearch === true"
+					@change="onInlineSearchToggle($event.target.checked)" />
+				{{ t('buildiq', 'Show the search box above the list') }}
+			</label>
+			<label>
+				{{ t('buildiq', 'Search placeholder') }}
+				<input
+					type="text"
+					data-testid="index-page-search-placeholder"
+					:value="config.searchPlaceholder || ''"
+					:placeholder="t('buildiq', 'Search permits')"
+					@input="update('searchPlaceholder', $event.target.value)" />
+			</label>
+		</fieldset>
+
 		<fieldset class="index-page-editor__fieldset">
 			<legend>{{ t('buildiq', 'Actions') }}</legend>
 			<WriteActionSwitches
@@ -256,6 +277,24 @@ export default {
 				const current =
 					(typeof next.sidebar === 'object' && next.sidebar) || {}
 				next.sidebar = { ...current, enabled: true }
+			}
+			this.$emit('update:config', next)
+		},
+
+		/**
+		 * Show the list's search box above the table instead of in the
+		 * sidebar. Off deletes `config.inlineSearch`, the library default.
+		 *
+		 * @param {boolean} enabled - the checkbox's new state.
+		 * @return {void}
+		 * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer/spec.md#requirement-a-list-page-searches-its-records-by-keyword-req-bqcv-005
+		 */
+		onInlineSearchToggle(enabled) {
+			const next = { ...this.config }
+			if (enabled) {
+				next.inlineSearch = true
+			} else {
+				delete next.inlineSearch
 			}
 			this.$emit('update:config', next)
 		},
