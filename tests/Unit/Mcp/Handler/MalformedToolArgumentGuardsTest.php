@@ -309,7 +309,7 @@ class MalformedToolArgumentGuardsTest extends TestCase {
 	public function testAddWidgetDropsANonArrayWidgetConfig(mixed $value): void {
 		$this->wireVersion(manifest: $this->dashboardManifest());
 
-		$result = $this->provider->invokeTool('buildiq.addWidget', [
+		$result = $this->provider->invokeApprovedTool('buildiq.addWidget', [
 			'appSlug' => 'my-app',
 			'pageId' => 'home',
 			'widgetType' => 'stat',
@@ -343,7 +343,7 @@ class MalformedToolArgumentGuardsTest extends TestCase {
 		$this->wireVersion(manifest: $this->dashboardManifest());
 		$this->objectService->expects(self::never())->method('saveObject');
 
-		$result = $this->provider->invokeTool('buildiq.addWidget', [
+		$result = $this->provider->invokeApprovedTool('buildiq.addWidget', [
 			'appSlug' => 'my-app',
 			'pageId' => 'home',
 			'widgetType' => 'not-a-widget',

@@ -36,6 +36,10 @@
     ],
     "tags": [
         {
+            "name": "agent-plans",
+            "description": "Controller letting an owner or editor read, approve or reject an outside agent's builder plan."
+        },
+        {
             "name": "agents",
             "description": "Controller serving the Agent run-history read surface."
         },
@@ -137,6 +141,156 @@
         }
     ],
     "paths": {
+        "/agent-plans/{id}": {
+            "get": {
+                "operationId": "agent-plan-show",
+                "summary": "GET /api/agent-plans/{id} — read an outside agent's builder plan",
+                "description": "GET /api/agent-plans/{id} — read the steps an outside MCP agent asked to run for one app, its status and who submitted and decided it. Only an owner or editor of the plan's app (an admin when the plan creates its app) may call it; admin power does not stand in for the role. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "agent-plans"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "description": "The agent plan uuid.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                }
+            }
+        },
+        "/agent-plans/{id}/approve": {
+            "post": {
+                "operationId": "agent-plan-approve",
+                "summary": "POST /api/agent-plans/{id}/approve — approve a pending agent plan",
+                "description": "POST /api/agent-plans/{id}/approve — approve a pending plan. Each approved step may then be used once by a matching builder write over MCP, as the user who submitted the plan. Only an owner or editor of the plan's app (an admin when the plan creates its app) may call it; admin power does not stand in for the role. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "agent-plans"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "description": "The agent plan uuid.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Problem409"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                }
+            }
+        },
+        "/agent-plans/{id}/reject": {
+            "post": {
+                "operationId": "agent-plan-reject",
+                "summary": "POST /api/agent-plans/{id}/reject — reject a pending agent plan",
+                "description": "POST /api/agent-plans/{id}/reject — reject a pending plan; none of its steps can run. Only an owner or editor of the plan's app (an admin when the plan creates its app) may call it; admin power does not stand in for the role. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "agent-plans"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "description": "The agent plan uuid.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Problem409"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                }
+            }
+        },
         "/agents/{uuid}/runs": {
             "get": {
                 "operationId": "agents-runs",

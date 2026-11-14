@@ -5,6 +5,26 @@
 			"Automation": {
 				"x-schema-org": "schema:Action",
 				"slug": "automation",
+				"x-openregister-mcp": {
+					"enabled": true,
+					"tools": {
+						"search": {
+							"description": "Find the automations of Buildiq apps: the trigger and action rules that run on their own. Filter by applicationSlug, enabled or trigger, to see what runs automatically on an app.",
+							"scope": "read",
+							"readOnlyHint": true,
+							"filters": [
+								"applicationSlug",
+								"enabled",
+								"trigger"
+							]
+						},
+						"get": {
+							"description": "Read one automation by id: its trigger, condition and actions, and whether it is enabled.",
+							"scope": "read",
+							"readOnlyHint": true
+						}
+					}
+				},
 				"icon": "VectorPolylinePlus",
 				"version": "1.0.0",
 				"title": "Automation",

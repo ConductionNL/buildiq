@@ -341,6 +341,14 @@ return \OCA\Buildiq\Middleware\Support\ApiPathAliases::withVersionedAliases(\OCA
         ['name' => 'copilot#execute', 'url' => '/api/copilot/execute', 'verb' => 'POST'],
         ['name' => 'copilot#discard', 'url' => '/api/copilot/discard', 'verb' => 'POST'],
 
+        // Outside-agent builder plans (openbuild-mcp-adoption). An MCP write
+        // without an approved plan is stored as a pending plan; an owner or
+        // editor of the app reads and decides it here. The role check lives in
+        // AgentPlanService (per object), CSRF stays required.
+        ['name' => 'agentPlan#show',    'url' => '/api/agent-plans/{id}',         'verb' => 'GET',  'requirements' => ['id' => '[0-9a-fA-F-]{36}']],
+        ['name' => 'agentPlan#approve', 'url' => '/api/agent-plans/{id}/approve', 'verb' => 'POST', 'requirements' => ['id' => '[0-9a-fA-F-]{36}']],
+        ['name' => 'agentPlan#reject',  'url' => '/api/agent-plans/{id}/reject',  'verb' => 'POST', 'requirements' => ['id' => '[0-9a-fA-F-]{36}']],
+
         // Agent run-history (spec `agent-workspace`). #[NoAdminRequired] with a
         // per-object owners/editors guard enforced inside AgentsController —
         // AgentRun rows are NEVER served through the generic OpenRegister REST

@@ -57,4 +57,17 @@ interface BuildiqToolProviderInterface {
 	 * @spec openspec/specs/ai-copilot/spec.md
 	 */
 	public function invokeTool(string $toolId, array $arguments): array;
+
+	/**
+	 * Dispatch a step of a plan the calling user approved in Buildiq itself
+	 * (the AI Copilot's execute), without the outside-agent plan check.
+	 *
+	 * @param string $toolId Fully qualified tool id.
+	 * @param array<string, mixed> $arguments The step's arguments.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/changes/openbuild-mcp-adoption/specs/ai-copilot/spec.md#requirement-an-approved-plan-executes-atomically-through-the-mcp-handler-layer
+	 */
+	public function invokeApprovedTool(string $toolId, array $arguments): array;
 }//end interface
