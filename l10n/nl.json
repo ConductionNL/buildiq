@@ -817,6 +817,7 @@
         "Attempt {attempt}, the model did not answer": "Poging {attempt}, het model gaf geen antwoord",
         "Knowledge used: {files}": "Gebruikte kennis: {files}",
         "Model answer": "Antwoord van het model",
+        "{duration} ms": "{duration} ms",
         "The model steps of this run were not kept: the plan was made too long before it was applied.": "De modelstappen van deze run zijn niet bewaard: het plan werd te lang voor het toepassen gemaakt.",
         "Upload SVG": "SVG uploaden",
         "Upload failed — please try again": "Uploaden mislukt — probeer opnieuw",
