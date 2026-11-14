@@ -125,6 +125,8 @@
 				<FieldEditor
 					:fields="staged.fields"
 					:schemaSlugs="otherSchemaSlugs"
+					:propertySources="propertySources"
+					:sourceRefusals="sourceRefusals"
 					@update:fields="onFieldsChange" />
 
 				<LifecycleEditor
@@ -246,6 +248,10 @@ import {
 	calculationsFromProperties,
 	refusalsByProperty,
 } from '../services/calculations.js'
+import {
+	listPropertySources,
+	sourceRefusalsByField,
+} from '../services/propertySources.js'
 import { describeBreakingChanges } from '../services/schemaChanges.js'
 import { registerSlugForApp, useSchemasStore } from '../store/schemas.js'
 import { isEditableTarget } from '../utils/isEditableTarget.js'
@@ -307,6 +313,10 @@ export default {
 			saveError: '',
 			// Save refusals of property calculations, by calculation name (REQ-BQCF-004).
 			calculationRefusals: {},
+			// Save refusals of registry-source declarations, by field name (REQ-BQRF-003).
+			sourceRefusals: {},
+			// The registry providers integriq publishes, fetched once per session (design D2).
+			propertySources: { loaded: false, available: false, results: [] },
 			staged: null,
 			persisted: null,
 			// REQ-OBVR-004: reactive version state resolved by useApplicationVersion.
@@ -745,6 +755,7 @@ export default {
 		const versionReady = this.resolveVersion()
 		this.loadApplicationRecord()
 		this.loadInstanceGroups()
+		this.loadPropertySources()
 		// Load the SELECTED SCHEMA FIRST, then the list: the detail is what the
 		// user is looking at, and it needs no version to resolve.
 		if (this.schemaId) {
@@ -766,6 +777,19 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Load the registry providers integriq publishes, once per designer
+		 * session. Without integriq the list is unavailable and existing
+		 * declarations are kept as they are (REQ-BQRF-002).
+		 *
+		 * @spec openspec/changes/data-registry-backed-field-option/specs/schema-designer-ui/spec.md#requirement-an-existing-declaration-survives-a-session-without-integriq-req-bqrf-002
+		 * @return {Promise<void>}
+		 */
+		async loadPropertySources() {
+			const list = await listPropertySources()
+			this.propertySources = { loaded: true, ...list }
+		},
+
 		/**
 		 * Load the instance's groups for the Access group picker.
 		 *
@@ -1468,6 +1492,7 @@ export default {
 			this.saving = true
 			this.saveError = ''
 			this.calculationRefusals = {}
+			this.sourceRefusals = {}
 			try {
 				const body = this.writeBody(this.staged, acknowledgeBreaking)
 				// `saveObject` switches to PUT when `id` is present, and the
@@ -1502,6 +1527,11 @@ export default {
 					this.calculationRefusals = refusalsByProperty(
 						err && typeof err === 'object' ? err.fields : null,
 						Object.keys(this.staged.propertyCalculations || {}),
+					)
+					// REQ-BQRF-003: a refused registry source shows on its own field.
+					this.sourceRefusals = sourceRefusalsByField(
+						err,
+						(this.staged.fields || []).map((field) => field.name),
 					)
 					return
 				}
