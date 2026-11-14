@@ -1,6 +1,7 @@
 OC.L10N.register(
     "buildiq",
     {
+        "Could not save the support note: {reason}": "Kon de supportnotitie niet opslaan: {reason}",
         "A custom page must document why a standard page type was not feasible.": "Een aangepaste pagina moet vastleggen waarom een standaard paginatype niet haalbaar was.",
         "Column": "Kolom",
         "Declare this page as custom, with this component:": "Declareer deze pagina als aangepast, met deze component:",
