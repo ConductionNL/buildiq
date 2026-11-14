@@ -105,6 +105,12 @@
                   "type": "string",
                   "format": "date-time",
                   "description": "When the file was added."
+                },
+                "characters": {
+                  "title": "Characters",
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "The file's length in characters, counted against the 40,000 character knowledge budget."
                 }
               },
               "required": [

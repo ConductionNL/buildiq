@@ -1,7 +1,3 @@
-/**
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
- * SPDX-License-Identifier: EUPL-1.2
- */
 OC.L10N.register(
     "buildiq",
     {
@@ -1774,6 +1770,15 @@ OC.L10N.register(
         "Files attached to this agent that its plan prompt reads, in this order. The files are stored on the agent object, so only the people who may run the agent can read them.": "Bestanden bij deze agent die de planprompt leest, in deze volgorde. De bestanden staan bij het agentobject, zodat alleen wie de agent mag gebruiken ze kan lezen.",
         "How long the call took.": "Hoe lang de aanroep duurde.",
         "Knowledge": "Kennis",
+        "{count} characters": "{count} tekens",
+        "{file} has {size} characters, but only {room} characters of room are left.": "{file} heeft {size} tekens, maar er is nog maar ruimte voor {room} tekens.",
+        "{file} is already in this agent's knowledge.": "{file} staat al in de kennis van deze agent.",
+        "Add knowledge file": "Kennisbestand toevoegen",
+        "Only text (.txt) and Markdown (.md) files can be added as knowledge.": "Alleen tekstbestanden (.txt) en Markdown-bestanden (.md) kunnen als kennis worden toegevoegd.",
+        "Remove {file}": "{file} verwijderen",
+        "Text and Markdown files this agent reads before it plans. {room} characters of room left.": "Tekst- en Markdown-bestanden die deze agent leest voordat hij een plan maakt. Nog ruimte voor {room} tekens.",
+        "Characters": "Tekens",
+        "The file's length in characters, counted against the 40,000 character knowledge budget.": "De lengte van het bestand in tekens, die meetelt voor het kennisbudget van 40.000 tekens.",
         "Knowledge used": "Gebruikte kennis",
         "Model steps": "Modelstappen",
         "Model time (ms)": "Modeltijd (ms)",
