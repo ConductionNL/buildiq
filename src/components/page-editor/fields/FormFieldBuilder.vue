@@ -244,10 +244,10 @@ import FieldAssignBuilder from './FieldAssignBuilder.vue'
 import FieldCalculationBuilder from './FieldCalculationBuilder.vue'
 import FieldDefaultBuilder from './FieldDefaultBuilder.vue'
 import FieldValidationBuilder from './FieldValidationBuilder.vue'
-import { isDutchFormat } from '../../../services/dutchFormats.js'
 import FileFieldSettings from './FileFieldSettings.vue'
 import InlineFieldMark from './InlineFieldMark.vue'
 import VisibleWhenBuilder from './VisibleWhenBuilder.vue'
+import { isDutchFormat } from '../../../services/dutchFormats.js'
 import {
 	FIELD_TYPES,
 	fieldTypeIcon,

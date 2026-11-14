@@ -96,6 +96,28 @@ keys on that field are replaced. Fields you never touch keep their flat
 keys exactly as they were; this is opt-in, per field, never a bulk
 rewrite of the whole form.
 
+### Dutch formats
+
+Next to the pattern, the Validation block has a **Format** select with eight
+Dutch formats: BSN (the eleven test), IBAN (the check digits), licence plate
+(with or without dashes), phone number (Dutch, ten digits starting with 0 or
++31), phone number (international, + and the country code), postcode
+(1234 AB), KvK number (eight digits) and branch number (twelve digits). The
+choice is stored on the field as `format` with the names portaliq uses:
+`bsn`, `iban`, `nl-licence-plate`, `phone-nl`, `phone-international`,
+`postcode`, `kvk` and `kvk-branch`.
+
+- A field checks either a format or a pattern: choosing a format clears the
+  pattern and disables it, with "The format already checks this field."
+- A form field on a schema property that has a Dutch format shows that
+  format, disabled, with "Comes from the schema". The schema field editor
+  lists the same eight under **Dutch formats**, after the JSON Schema ones.
+- The server checks the value when a published app form saves (the form
+  save listener), with the rules in `lib/Settings/dutch-formats.json`, the
+  same file the browser-side check in `src/services/dutchFormats.js` reads.
+  A value that fails is refused with the format's message; a licence plate
+  is stored without dashes in capitals and a postcode without its space.
+
 ## Prefilled, calculated and checked while it is filled in
 
 A form can fill in what is already known, work out what follows from the
