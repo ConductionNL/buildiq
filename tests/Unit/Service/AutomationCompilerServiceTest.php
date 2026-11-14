@@ -30,6 +30,7 @@ namespace OCA\Buildiq\Tests\Unit\Service;
 use OCA\Buildiq\Exception\UnsupportedAutomationCombinationException;
 use OCA\Buildiq\Service\Automation\AutomationFlowBackend;
 use OCA\Buildiq\Service\Automation\AutomationFlowBuilder;
+use OCA\Buildiq\Service\Automation\AutomationRuleSets;
 use OCA\Buildiq\Service\AutomationCompilerService;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -1233,4 +1234,42 @@ final class AutomationCompilerServiceTest extends TestCase {
 		$this->assertTrue($this->compiler->status($automation, $provenance)['drift']);
 
 	}//end testStatusReadsTheLiveFlow()
+	/**
+	 * REQ-BQAR-005: a rule decision compiles through the rule set the backend
+	 * resolves, and provenance names the version the flow runs.
+	 *
+	 * @return void
+	 */
+	public function testRuleDecisionRecordsTheRuleSetVersion(): void {
+		$ruleSets = $this->createMock(AutomationRuleSets::class);
+		$ruleSets->expects($this->once())->method('ruleSets')->with(['leges-categorie'])->willReturn(
+			['leges-categorie' => ['ruleType' => 'decision-table', 'version' => '1.0.1', 'tableRef' => 'buildiq.leges-categorie', 'outputs' => ['categorie']]]
+		);
+		$this->flowBackend->method('apply')->willReturn('flow-9');
+		$compiler = new AutomationCompilerService(
+			$this->container,
+			$this->objectService,
+			$this->schemaMapper,
+			$this->appManager,
+			new NullLogger(),
+			$this->flowBackend,
+			null,
+			$ruleSets,
+		);
+		$automation = [
+			'id' => 'auto-9',
+			'slug' => 'leges',
+			'versionUuid' => 'version-3',
+			'trigger' => ['type' => 'object-created', 'schema' => 'claim'],
+			'actions' => [['type' => 'rule-decision', 'ruleSetSlug' => 'leges-categorie', 'outputField' => 'categorie']],
+		];
+
+		$plan = $compiler->compile($automation);
+		$provenance = $compiler->apply($automation, $plan, []);
+
+		$this->assertSame('openregister.decision-table', $plan['flow']['nodes'][1]['type']);
+		$this->assertSame([['slug' => 'leges-categorie', 'version' => '1.0.1']], $provenance['ruleSetVersions']);
+		$this->assertSame('flow-9', $provenance['flowUuid']);
+
+	}//end testRuleDecisionRecordsTheRuleSetVersion()
 }//end class

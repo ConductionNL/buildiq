@@ -41,6 +41,9 @@ use Throwable;
  * @uses   \OCA\Buildiq\Service\Automation\CompileInput
  * @uses   \OCA\Buildiq\Exception\UnsupportedAutomationCombinationException
  * @uses   \OCA\Buildiq\Service\FleetAppId
+ * @uses   \OCA\Buildiq\Service\Automation\AutomationFlowBuilder
+ * @uses   \OCA\Buildiq\Service\FeelToJsonLogic
+ * @uses   \OCA\Buildiq\Service\FeelParser
  */
 class AutomationCompileGoldenTest extends TestCase {
 

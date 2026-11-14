@@ -117,17 +117,21 @@ final class AutomationFlowBuilder {
 	/**
 	 * The flow document of an automation.
 	 *
-	 * @param CompileInput       $input    The automation.
-	 * @param string             $register The app version's register slug.
-	 * @param array<int, string> $schemas  The app version's schema slugs.
+	 * @param CompileInput                        $input    The automation.
+	 * @param string                              $register The app version's register slug.
+	 * @param array<int, string>                  $schemas  The app version's schema slugs.
+	 * @param array<string, array<string, mixed>> $ruleSets The rule sets the rule-decision steps name, by slug:
+	 *                                                      `ruleType`, `tableRef`, `outputs` (D7).
 	 *
 	 * @return array{name: string, nodes: list<array<string, mixed>>, edges: list<array<string, mixed>>}
 	 *
 	 * @throws UnsupportedAutomationCombinationException When a trigger, action or condition cannot run in a flow.
 	 *
 	 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-declarative-primitives-or-one-openregister-flow-req-bqar-001
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) RuleDecisionNodes is pure node construction with no collaborators.
 	 */
-	public function build(CompileInput $input, string $register, array $schemas): array {
+	public function build(CompileInput $input, string $register, array $schemas, array $ruleSets = []): array {
 		$this->assertNoOwnBackend(input: $input);
 		$nodes = [$this->triggerNode(input: $input, register: $register)];
 
@@ -137,7 +141,13 @@ final class AutomationFlowBuilder {
 		}
 
 		foreach ($input->actions as $index => $action) {
-			$nodes[] = $this->actionNode(action: (array)$action, index: (int)$index, register: $register, schemas: $schemas);
+			$action = (array)$action;
+			if ((string)($action['type'] ?? '') === 'rule-decision') {
+				array_push($nodes, ...RuleDecisionNodes::build(action: $action, index: (int)$index, input: $input, register: $register, ruleSets: $ruleSets));
+				continue;
+			}
+
+			$nodes[] = $this->actionNode(action: $action, index: (int)$index, register: $register, schemas: $schemas);
 		}
 
 		$edges = [];
@@ -264,6 +274,32 @@ final class AutomationFlowBuilder {
 			default => throw new UnsupportedAutomationCombinationException(message: 'A "' . $type . '" step cannot run in a flow yet.'),
 		};
 	}//end actionNode()
+
+	/**
+	 * The rule set slugs the rule-decision steps of an automation name (D7).
+	 *
+	 * @param CompileInput $input The automation.
+	 *
+	 * @return list<string>
+	 *
+	 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-step-decides-with-a-rule-set-req-bqar-005
+	 */
+	public function ruleSetSlugs(CompileInput $input): array {
+		$slugs = [];
+		foreach ($input->actions as $action) {
+			if (is_array($action) === true && ($action['type'] ?? '') === 'rule-decision') {
+				$slug = trim((string)($action['ruleSetSlug'] ?? ''));
+				if ($slug !== '' && in_array($slug, $slugs, true) === false) {
+					$slugs[] = $slug;
+				}
+			}
+		}
+
+		sort($slugs);
+
+		return $slugs;
+	}//end ruleSetSlugs()
+
 
 	/**
 	 * The `openregister.send-notification` config of a notification step.

@@ -115,6 +115,7 @@ use OCA\Buildiq\Exception\UnsupportedAutomationCombinationException;
 use OCA\Buildiq\Kernel\Contracts\AutomationCompilerServiceInterface;
 use OCA\Buildiq\Service\Automation\AutomationFlowBackend;
 use OCA\Buildiq\Service\Automation\AutomationFlowBuilder;
+use OCA\Buildiq\Service\Automation\AutomationRuleSets;
 use OCA\Buildiq\Service\Automation\CompileInput;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
@@ -217,6 +218,8 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 	 *                                                automation (logic-automation-actions-that-run D2);
 	 *                                                resolved from the container when null.
 	 * @param AutomationFlowBuilder|null $flowBuilder Builds that flow; a default one when null.
+	 * @param AutomationRuleSets|null $ruleSets Resolves the rule sets of rule-decision steps;
+	 *                                          resolved from the container when null.
 	 *
 	 * @return void
 	 */
@@ -228,6 +231,7 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 		private readonly LoggerInterface $logger,
 		private readonly ?AutomationFlowBackend $flowBackend = null,
 		private readonly ?AutomationFlowBuilder $flowBuilder = null,
+		private readonly ?AutomationRuleSets $ruleSets = null,
 	) {
 
 	}//end __construct()
@@ -376,10 +380,26 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 			'ruleSet' => null,
 			'conditionActionRule' => null,
 			'approvalChain' => null,
-			'flow' => $this->flowBuilder()->build(input: $input, register: $scope['register'], schemas: $scope['schemas']),
+			'flow' => [],
 		];
 
+		$ruleSets = [];
+		$slugs = $this->flowBuilder()->ruleSetSlugs(input: $input);
+		if ($slugs !== []) {
+			$ruleSets = ($this->ruleSets ?? $this->container->get(AutomationRuleSets::class))->ruleSets(slugs: $slugs);
+		}
+
+		$plan['flow'] = $this->flowBuilder()->build(input: $input, register: $scope['register'], schemas: $scope['schemas'], ruleSets: $ruleSets);
 		$plan['hash'] = $this->hashPlan(plan: $plan);
+
+		// D7: which version of each rule set the flow runs, for provenance. Not
+		// hashed: the table is referenced, not copied, so a new version changes
+		// what runs without changing the flow.
+		$plan['ruleSetVersions'] = [];
+		foreach ($slugs as $slug) {
+			$plan['ruleSetVersions'][] = ['slug' => $slug, 'version' => (string)($ruleSets[$slug]['version'] ?? '')];
+		}
+
 		return $plan;
 	}//end compileFlowBackend()
 
@@ -464,6 +484,10 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 		);
 		if ($flowUuid !== null) {
 			$provenance['flowUuid'] = $flowUuid;
+		}
+
+		if (($plan['ruleSetVersions'] ?? []) !== []) {
+			$provenance['ruleSetVersions'] = $plan['ruleSetVersions'];
 		}
 
 		// `ruleSetSlug` and `approvalChainName` are declared `"type": "string"`

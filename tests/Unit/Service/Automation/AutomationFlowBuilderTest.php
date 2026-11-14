@@ -41,6 +41,7 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\Buildiq\Service\Automation\CompileInput
  * @uses \OCA\Buildiq\Service\FeelToJsonLogic
  * @uses \OCA\Buildiq\Service\FeelParser
+ * @uses \OCA\Buildiq\Service\Automation\RuleDecisionNodes
  * @uses \OCA\Buildiq\Exception\UnsupportedAutomationCombinationException
  */
 final class AutomationFlowBuilderTest extends TestCase {
@@ -218,4 +219,102 @@ final class AutomationFlowBuilderTest extends TestCase {
 			json_encode($this->builder()->build($input, 'reg', ['inspectie', 'permit']))
 		);
 	}//end testRecompilingIsIdentical()
+	/**
+	 * The resolved rule sets the rule-decision cases use.
+	 *
+	 * @return array<string, array<string, mixed>>
+	 */
+	private static function ruleSets(): array {
+		return [
+			'leges-categorie' => ['ruleType' => 'decision-table', 'version' => '1.0.0', 'tableRef' => 'buildiq.leges-categorie', 'outputs' => ['categorie']],
+			'two-out' => ['ruleType' => 'decision-table', 'version' => '1.0.0', 'tableRef' => 'buildiq.two-out', 'outputs' => ['a', 'b']],
+			'checks' => ['ruleType' => 'condition-action', 'version' => '1.0.0', 'tableRef' => '', 'outputs' => []],
+			'empty' => ['ruleType' => 'decision-table', 'version' => '1.0.0', 'tableRef' => '', 'outputs' => []],
+		];
+	}//end ruleSets()
+
+	/**
+	 * REQ-BQAR-005: "Decide with a rule set" on aanvraag created runs the
+	 * stored table and writes its decision onto the same record.
+	 *
+	 * @return void
+	 */
+	public function testARuleDecisionRunsTheTableAndWritesTheOutcome(): void {
+		$action = ['type' => 'rule-decision', 'ruleSetSlug' => 'leges-categorie', 'inputMapping' => ['type' => 'soort', 'oppervlakte' => 'm2'], 'outputField' => 'categorie'];
+		$input = self::input(['type' => 'object-created', 'schema' => 'aanvraag'], [$action]);
+
+		self::assertTrue($this->builder()->wantsFlow($input));
+		self::assertSame(['leges-categorie'], $this->builder()->ruleSetSlugs($input));
+
+		$flow = $this->builder()->build($input, 'openbuild-leges-main', ['aanvraag'], self::ruleSets());
+
+		self::assertSame(
+			[
+				[
+					'id' => 'step-1',
+					'type' => 'openregister.decision-table',
+					'config' => [
+						'tableRef' => 'buildiq.leges-categorie',
+						'inputMapping' => ['oppervlakte' => 'm2', 'type' => 'soort'],
+						'outputMapping' => ['categorie' => 'categorie'],
+					],
+				],
+				[
+					'id' => 'step-1-write',
+					'type' => 'openregister.object-write',
+					'config' => [
+						'register' => 'openbuild-leges-main',
+						'schema' => 'aanvraag',
+						'operation' => 'update',
+						'match' => ['uuid' => '{{json.uuid}}'],
+						'fields' => ['categorie' => '{{json.categorie}}'],
+					],
+				],
+			],
+			array_slice($flow['nodes'], 1)
+		);
+		self::assertSame(['trigger', 'step-1', 'step-1-write'], array_column($flow['nodes'], 'id'));
+		self::assertCount(2, $flow['edges']);
+	}//end testARuleDecisionRunsTheTableAndWritesTheOutcome()
+
+	/**
+	 * REQ-BQAR-005: a condition-action rule set, a missing one, one without a
+	 * table, an unclear output and a trigger without a schema are refused.
+	 *
+	 * @return void
+	 */
+	public function testARuleDecisionRefusesWhatItCannotRun(): void {
+		$cases = [
+			'The rule set "checks" is not a decision table; a step can only decide with a decision table.' => ['ruleSetSlug' => 'checks', 'outputField' => 'x'],
+			'Pick a rule set for the rule decision step.' => ['ruleSetSlug' => 'gone', 'outputField' => 'x'],
+			'The rule set "empty" has no decision table to run.' => ['ruleSetSlug' => 'empty', 'outputField' => 'x'],
+			'The rule set "two-out" decides 2 outputs; say which field each one is written to.' => ['ruleSetSlug' => 'two-out', 'outputField' => 'x'],
+			'Pick the field the rule decision is written to.' => ['ruleSetSlug' => 'leges-categorie'],
+		];
+		foreach ($cases as $message => $action) {
+			try {
+				$this->builder()->build(self::input(['type' => 'object-created', 'schema' => 'aanvraag'], [['type' => 'rule-decision'] + $action]), 'r', ['aanvraag'], self::ruleSets());
+				self::fail('Expected a refusal: ' . $message);
+			} catch (UnsupportedAutomationCombinationException $e) {
+				self::assertSame($message, $e->getMessage());
+			}
+		}
+
+		$this->expectException(UnsupportedAutomationCombinationException::class);
+		$this->expectExceptionMessage('A rule decision writes onto the record that started the automation, so its trigger must name a schema.');
+		$this->builder()->build(self::input(['type' => 'manual'], [['type' => 'rule-decision', 'ruleSetSlug' => 'leges-categorie', 'outputField' => 'c']]), 'r', [], self::ruleSets());
+	}//end testARuleDecisionRefusesWhatItCannotRun()
+
+	/**
+	 * An explicit output mapping names each output's field.
+	 *
+	 * @return void
+	 */
+	public function testARuleDecisionWithAnOutputMapping(): void {
+		$action = ['type' => 'rule-decision', 'ruleSetSlug' => 'two-out', 'outputMapping' => ['b' => 'fieldB', 'a' => 'fieldA']];
+		$flow = $this->builder()->build(self::input(['type' => 'object-updated', 'schema' => 'aanvraag'], [$action]), 'r', ['aanvraag'], self::ruleSets());
+
+		self::assertSame(['a' => 'fieldA', 'b' => 'fieldB'], $flow['nodes'][1]['config']['outputMapping']);
+		self::assertSame(['fieldA' => '{{json.fieldA}}', 'fieldB' => '{{json.fieldB}}'], $flow['nodes'][2]['config']['fields']);
+	}//end testARuleDecisionWithAnOutputMapping()
 }//end class
