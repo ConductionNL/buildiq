@@ -31,6 +31,7 @@
 - [x] 4.4 Playwright `tests/e2e/screen-override-drift.spec.ts` for the re-cut of a drifted override — the spec ships and asserts that the answer carries appliedLayers and withheld over the wire, and that a caller with no account never gets an internal screen; the re-cut itself waits on the editor in section 3
 - [x] 4.5 Register-import test that the lifecycle and notification dialects import, per the notification-dialect gate
 - [ ] 4.6 Dutch and English strings for the panel, the state and the notification; docs with screenshots
+  - 2026-11-14: the Dutch strings of the "applies to" panel are in `l10n/nl.json` and `l10n/nl.js` (English was already complete). Open: the docs with screenshots, which need a running instance.
 
 ## 5. Consumers
 
