@@ -57,6 +57,8 @@
 			:appName="(obApp && (obApp.name || obApp.slug)) || ''"
 			:isPublished="(obApp && obApp.status) === 'published'"
 			:allowUserOverrides="!!(obApp && obApp.allowUserOverrides)"
+			:appSlug="(obApp && obApp.slug) || ''"
+			:embed="(obApp && obApp.embed) || null"
 			:data-registers="(obApp && obApp.dataRegisters) || []"
 			:flows="(obApp && obApp.flows) || []"
 			:availableFlows="availableFlows"
@@ -65,6 +67,7 @@
 			@update:open="onSettingsOpen"
 			@setPublished="setPublished"
 			@update:allowOverrides="setAllowOverrides"
+			@update:embed="setEmbed"
 			@update:dataRegisters="setDataRegisters"
 			@update:flows="setFlows" />
 		<DeleteAppDialog
@@ -909,6 +912,27 @@ export default {
 			this.error = ''
 			try {
 				await this.obPatchApp({ allowUserOverrides: allow })
+			} catch (e) {
+				this.error = `${t('buildiq', 'Failed to save settings')}: ${e.message || e}`
+			}
+		},
+
+		/**
+		 * Persist the app's embedding setting (apps-embed-in-other-sites):
+		 * owners only, like the other app settings.
+		 *
+		 * @param {{enabled: boolean, origins: string[]}} embed The setting.
+		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/changes/apps-embed-in-other-sites/specs/app-embedding/spec.md#requirement-a-maker-switches-embedding-on-and-lists-the-allowed-sites-req-bqem-001
+		 */
+		async setEmbed(embed) {
+			if (this.obAppRole !== 'owner' || !this.obApp) {
+				return
+			}
+			this.error = ''
+			try {
+				await this.obPatchApp({ embed })
 			} catch (e) {
 				this.error = `${t('buildiq', 'Failed to save settings')}: ${e.message || e}`
 			}

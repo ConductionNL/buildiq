@@ -1644,7 +1644,24 @@ OC.L10N.register(
         "Requests under 250 ms": "Verzoeken onder 250 ms",
         "Total load time (ms)": "Totale laadtijd (ms)",
         "Window start": "Begin van het venster",
-        "Include server bundle": "Serverbundel meenemen"
+        "Include server bundle": "Serverbundel meenemen",
+        "A site is a scheme and a host only, without a path.": "Een site is alleen een schema en een host, zonder pad.",
+        "A site must start with https://.": "Een site moet met https:// beginnen.",
+        "A wildcard is not allowed: list each site separately.": "Een jokerteken is niet toegestaan: noem elke site afzonderlijk.",
+        "Add site": "Site toevoegen",
+        "Allow other sites to show this app": "Andere sites deze app laten tonen",
+        "Allowed site, e.g. https://intranet.example.nl": "Toegestane site, bijv. https://intranet.example.nl",
+        "Copied": "Gekopieerd",
+        "Copy snippet": "Fragment kopiëren",
+        "Embed": "Insluiten",
+        "Only people who can already sign in to Nextcloud can use the embedded app; embedding never makes it public. It works on sites that share this Nextcloud's site, such as an intranet on a sibling subdomain.": "Alleen mensen die al bij Nextcloud kunnen inloggen, kunnen de ingesloten app gebruiken; insluiten maakt de app nooit openbaar. Het werkt op sites die dezelfde site delen als deze Nextcloud, zoals een intranet op een zusterdomein.",
+        "Remove site": "Site verwijderen",
+        "Sign in to Nextcloud (opens in a new tab)": "Inloggen bij Nextcloud (opent in een nieuw tabblad)",
+        "Sign in to use this app": "Log in om deze app te gebruiken",
+        "Snippet to paste into the other site": "Fragment om in de andere site te plakken",
+        "The whole app": "De hele app",
+        "This is not a valid site address.": "Dit is geen geldig siteadres.",
+        "What to embed": "Wat insluiten"
     },
     "nplurals=2; plural=(n != 1);"
 )

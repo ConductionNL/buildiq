@@ -48,6 +48,7 @@ import { normalizeManifestPages } from './services/manifestPageDefaults.js'
 import { normalizeManifestRouting } from './services/manifestRouting.js'
 import { brandTopBar } from './services/topBarBrand.js'
 import { keepVersionQuery } from './services/versionQuery.js'
+import { embedSlots, needsSignIn, signInNotice } from './utils/appEmbed.js'
 import { virtualAppSupportDialog } from './utils/virtualAppSupportDialog.js'
 
 import '@conduction/nextcloud-vue/css/index.css'
@@ -83,6 +84,9 @@ try {
 
 const slug = loadState('buildiq', 'builderSlug', '')
 const versionSlug = loadState('buildiq', 'builderVersion', '')
+// apps-embed-in-other-sites: the server answered `?embed=1` for an app with
+// embedding on, so the page sits in another site's frame.
+const embedded = loadState('buildiq', 'builderEmbed', false) === true
 
 // Best-effort l10n load — boot must not depend on it (see main.js).
 try {
@@ -252,10 +256,35 @@ async function loadManifest() {
 		// array as "show everything").
 		brandFromManifest(manifest)
 	} catch (e) {
+		// A frame on another site carries no Nextcloud session: say how to
+		// sign in instead of showing an empty app (REQ-BQEM-003).
+		if (needsSignIn(embedded, e)) {
+			manifest.signInRequired = true
+			return manifest
+		}
 		// eslint-disable-next-line no-console
 		console.error('[buildiq:builder] failed to load manifest for ' + slug, e)
 	}
 	return manifest
+}
+
+/**
+ * Mount the sign-in notice of an embedded app without a session: a link that
+ * opens Nextcloud in a new tab, never a login form inside the frame.
+ *
+ * @return {void}
+ *
+ * @spec openspec/changes/apps-embed-in-other-sites/specs/app-embedding/spec.md#requirement-the-frame-never-asks-for-a-password-req-bqem-003
+ */
+function mountSignInNotice() {
+	const notice = signInNotice(window.location.href)
+	createApp({
+		name: 'BuildiqEmbedSignIn',
+		render: () =>
+			h(NcEmptyContent, { name: notice.text }, {
+				action: () => h('a', { href: notice.href, target: notice.target, rel: notice.rel, class: 'button primary' }, notice.link),
+			}),
+	}).mount('#content')
 }
 
 /**
@@ -407,6 +436,10 @@ async function boot() {
 		brandTopBar(humaniseSlug(slug), slug)
 	}
 	const manifest = await loadManifest()
+	if (manifest.signInRequired === true) {
+		mountSignInNotice()
+		return
+	}
 
 	// Normalise pages (config-as-object guard + inline page titles for data pages).
 	normalizeManifestPages(manifest)
@@ -477,7 +510,8 @@ async function boot() {
 
 	// A thin root whose render re-runs on `routerEpoch`, so bumping it remounts
 	// the routed view (CnAppRoot keys its <router-view> on `routerViewKey`).
-	const slots = navSlots(manifest, router)
+	// Embedded: no app navigation, so an embedded page shows only that page.
+	const slots = embedSlots(embedded, navSlots(manifest, router))
 
 	const app = createApp({
 		name: 'BuildiqBuilderRoot',
