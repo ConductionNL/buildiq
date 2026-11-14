@@ -323,6 +323,13 @@
     {
         "method": "registerServiceAlias",
         "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\PublishedApplicationProviderInterface",
+            "target": "OCA\\Buildiq\\Service\\PublishedApplicationProvider"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
             "alias": "OCA\\Buildiq\\Kernel\\Contracts\\RegistrationFormAuthoringServiceInterface",
             "target": "OCA\\Buildiq\\Service\\RegistrationFormAuthoringService"
         }
