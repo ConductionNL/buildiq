@@ -6,7 +6,7 @@
 				"x-schema-org": "schema:Action",
 				"slug": "automation",
 				"icon": "VectorPolylinePlus",
-				"version": "1.0.0",
+				"version": "1.1.0",
 				"title": "Automation",
 				"description": "A single trigger→condition→actions declarative automation, compiled on demand to Buildiq's existing declarative primitives (notifications dialect, lifecycle actions, schedules, rules engine). One automation is managed as one unit: list/edit/enable/disable/dry-run/delete.",
 				"authorization": {
@@ -243,6 +243,33 @@
 									"title": "Assignee Group",
 									"type": "string",
 									"description": "approval: Nextcloud group id the compiled ApprovalChain's single step is assigned to (group-only in v1. OR's ApprovalStep.role has no per-user primitive)."
+								},
+								"form": {
+									"title": "Approval form",
+									"type": "object",
+									"description": "approval: the fields the approver fills in before approving, in order (logic-approval-task-form). Each is a scalar property of the trigger schema that is neither read-only nor hidden; the compiler refuses any other, naming it. Empty or absent: the approver only approves or rejects.",
+									"properties": {
+										"fields": {
+											"type": "array",
+											"items": {
+												"type": "object",
+												"properties": {
+													"field": {
+														"type": "string",
+														"description": "A property of the trigger schema."
+													},
+													"required": {
+														"type": "boolean",
+														"default": false,
+														"description": "Whether the approver must fill it in."
+													}
+												},
+												"required": [
+													"field"
+												]
+											}
+										}
+									}
 								},
 								"onApprove": {
 									"title": "On Approve",

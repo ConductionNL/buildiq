@@ -112,6 +112,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Exception\UnsupportedAutomationCombinationException;
+use OCA\Buildiq\Service\Automation\ApprovalFormDeclaration;
 use OCA\Buildiq\Kernel\Contracts\AutomationCompilerServiceInterface;
 use OCA\Buildiq\Service\Automation\CompileInput;
 use OCA\Buildiq\Support\ObjectRecord;
@@ -163,6 +164,16 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 	 * @var string
 	 */
 	private const APPROVAL_CHAINS_KEY = 'x-openregister-approval-chains';
+
+	/**
+	 * OpenRegister's reader of an approval position's form: present when
+	 * OpenRegister carries a position's form into the tasks it opens
+	 * (approval-position-task-form). Named as a string so this class loads
+	 * without OpenRegister.
+	 *
+	 * @var string
+	 */
+	private const APPROVAL_POSITION_FORM_CLASS = 'OCA\\OpenRegister\\Service\\Task\\ApprovalPositionForm';
 
 	/**
 	 * Canonical id of the document app (`docudesk` renamed to `filinq`).
@@ -291,6 +302,15 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 
 		$this->assertMatrix(triggerType: $input->triggerType, condition: $input->condition, actions: $input->actions);
 		$this->assertGenerateDocumentActions(actions: $input->actions);
+		// Logic-approval-task-form D2/D3: the fields an approver fills in are
+		// checked against the trigger schema, and refused when the installed
+		// OpenRegister cannot carry a form into the task it opens.
+		$schemaSlug = (string)($input->trigger['schema'] ?? '');
+		(new ApprovalFormDeclaration(
+			schemaSlug: $schemaSlug,
+			properties: fn (): ?array => $this->loadSchema(slug: $schemaSlug)?->getProperties(),
+			carried: static fn (): bool => class_exists(self::APPROVAL_POSITION_FORM_CLASS)
+		))->check(actions: $input->actions);
 
 		$plan = [
 			'notifications' => [],
@@ -741,6 +761,13 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 					'assigneeGroup' => (string)($action['assigneeGroup'] ?? ''),
 					'enabled' => $input->enabled,
 				];
+				// Logic-approval-task-form D3: the form rides on the chain's
+				// single position, and so in the compiled hash.
+				$form = ApprovalFormDeclaration::chainForm(action: $action);
+				if ($form !== null) {
+					$plan['approvalChain']['form'] = $form;
+				}
+
 				continue;
 			}
 
@@ -1523,7 +1550,7 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 		$payload = [
 			'name' => (string)$planned['name'],
 			'schemaId' => (int)$schemaId,
-			'steps' => [['order' => 1, 'role' => (string)($planned['assigneeGroup'] ?? '')]],
+			'steps' => [self::approvalStep(planned: $planned)],
 			'enabled' => (bool)($planned['enabled'] ?? true),
 		];
 
@@ -1532,6 +1559,43 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 
 		return $payload['name'];
 	}//end applyApprovalChain()
+
+	/**
+	 * The chain's single step for a planned approval: its group, and its form when it has one.
+	 *
+	 * @param array<string,mixed> $planned The planned approval chain.
+	 *
+	 * @return array<string,mixed> `{order, role}` plus `form`.
+	 *
+	 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-the-form-is-compiled-into-the-approval-chain-or-refused-req-bqtf-002
+	 */
+	private static function approvalStep(array $planned): array {
+		$step = ['order' => 1, 'role' => (string)($planned['assigneeGroup'] ?? '')];
+		if (is_array($planned['form'] ?? null) === true) {
+			$step['form'] = $planned['form'];
+		}
+
+		return $step;
+	}//end approvalStep()
+
+	/**
+	 * The declared `approvers` entry for one step: its role, and its form when it has one.
+	 *
+	 * @param string              $role The step's group.
+	 * @param array<string,mixed> $step The step.
+	 *
+	 * @return array<string,mixed> `{role}` plus `form`.
+	 *
+	 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-the-form-is-compiled-into-the-approval-chain-or-refused-req-bqtf-002
+	 */
+	private static function approverEntry(string $role, array $step): array {
+		$entry = ['role' => $role];
+		if (is_array($step['form'] ?? null) === true) {
+			$entry['form'] = $step['form'];
+		}
+
+		return $entry;
+	}//end approverEntry()
 
 	/**
 	 * Find-then-create/update the `ApprovalChain` row for one compiled plan.
@@ -1560,7 +1624,7 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 		foreach ((array)($payload['steps'] ?? []) as $step) {
 			$role = trim((string)($step['role'] ?? ''));
 			if ($role !== '') {
-				$approvers[] = ['role' => $role];
+				$approvers[] = self::approverEntry(role: $role, step: (array)$step);
 			}
 		}
 
@@ -1863,11 +1927,22 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 			}
 		}
 
-		return [
+		$live = [
 			'name' => $name,
 			'steps' => $steps,
 			'enabled' => (bool)($spec['enabled'] ?? true),
 		];
+		// Logic-approval-task-form D3: the position's form, read back in the
+		// compiled shape, so a form changed outside buildiq shows as drift.
+		$first = ($spec['approvers'][0] ?? null);
+		if (is_array($first) === true && is_array($first['form'] ?? null) === true) {
+			$live['form'] = $first['form'];
+			if (($first['form']['kind'] ?? null) === 'fields') {
+				$live['form'] = (ApprovalFormDeclaration::chainForm(action: ['form' => $first['form']]) ?? ['kind' => 'fields', 'fields' => []]);
+			}
+		}
+
+		return $live;
 
 	}//end fetchLiveApprovalChain()
 

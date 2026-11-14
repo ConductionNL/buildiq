@@ -540,6 +540,22 @@
         "Remove entry": "Item verwijderen",
         "Remove failed — please try again": "Verwijderen mislukt — probeer opnieuw",
         "Remove field": "Veld verwijderen",
+        "Fields the approver fills in": "Velden die de goedkeurder invult",
+        "Leave empty: the approver only approves or rejects.": "Leeg laten: de goedkeurder kiest alleen goedkeuren of afwijzen.",
+        "_asks for {count} field: {fields}_::_asks for {count} fields: {fields}_": [
+            "vraagt {count} veld: {fields}",
+            "vraagt {count} velden: {fields}"
+        ],
+        "asks for {count} field: {fields}": "vraagt {count} veld: {fields}",
+        "asks for {count} fields: {fields}": "vraagt {count} velden: {fields}",
+        "_{count} field to fill in_::_{count} fields to fill in_": [
+            "{count} veld in te vullen",
+            "{count} velden in te vullen"
+        ],
+        "{count} field to fill in": "{count} veld in te vullen",
+        "{count} fields to fill in": "{count} velden in te vullen",
+        "The form of this approval could not be loaded.": "Het formulier van deze goedkeuring kon niet worden geladen.",
+        "The form of this approval cannot be filled in.": "Het formulier van deze goedkeuring kan niet worden ingevuld.",
         "Remove layout item": "Lay-out-item verwijderen",
         "Remove page": "Pagina verwijderen",
         "Remove section": "Sectie verwijderen",
