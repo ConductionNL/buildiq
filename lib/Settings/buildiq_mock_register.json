@@ -263,84 +263,6 @@
       {
         "@self": {
           "register": "buildiq",
-          "schema": "registrationForm",
-          "slug": "form-dossiq-case-bouwvergunning"
-        },
-        "name": "bouwvergunning-aanvraag",
-        "audience": "client",
-        "isDefault": true,
-        "targetApp": "dossiq",
-        "register": "dossiq",
-        "schema": "case",
-        "typeProperty": "caseType",
-        "typeValue": "bouwvergunning",
-        "fields": [
-          {
-            "name": "initiatorType",
-            "label": "U vraagt aan als",
-            "type": "select",
-            "required": true,
-            "options": [
-              {
-                "value": "person",
-                "label": "Particulier"
-              },
-              {
-                "value": "company",
-                "label": "Bedrijf"
-              }
-            ]
-          },
-          {
-            "name": "initiatorDisplayName",
-            "label": "Naam van het bedrijf",
-            "type": "text",
-            "required": true,
-            "visibleWhen": {
-              "field": "initiatorType",
-              "op": "eq",
-              "value": "company"
-            }
-          },
-          {
-            "name": "title",
-            "label": "Wat wilt u bouwen?",
-            "type": "text",
-            "required": true
-          },
-          {
-            "name": "description",
-            "label": "Beschrijf het bouwwerk",
-            "type": "textarea"
-          }
-        ],
-        "steps": [
-          {
-            "id": "aanvrager",
-            "title": "Aanvrager",
-            "phase": "Aanvrager",
-            "fields": [
-              "initiatorType",
-              "initiatorDisplayName"
-            ]
-          },
-          {
-            "id": "bouwwerk",
-            "title": "Bouwwerk",
-            "phase": "Bouwwerk",
-            "fields": [
-              "title",
-              "description"
-            ]
-          }
-        ],
-        "formLogic": {},
-        "allowSaveForLater": true,
-        "status": "published"
-      },
-      {
-        "@self": {
-          "register": "buildiq",
           "schema": "pageLayout",
           "slug": "layout-dossiq-case-evenementenvergunning"
         },
@@ -419,12 +341,51 @@
         ],
         "fields": [
           {
+            "name": "initiatorType",
+            "label": "U vraagt aan als",
+            "type": "select",
+            "required": true,
+            "options": [
+              {
+                "value": "person",
+                "label": "Particulier"
+              },
+              {
+                "value": "company",
+                "label": "Bedrijf"
+              }
+            ],
+            "section": "uw-gegevens",
+            "order": 1
+          },
+          {
+            "name": "initiatorDisplayName",
+            "label": "Naam van het bedrijf",
+            "type": "text",
+            "required": true,
+            "visibleWhen": {
+              "field": "initiatorType",
+              "op": "eq",
+              "value": "company"
+            },
+            "section": "uw-gegevens",
+            "order": 2
+          },
+          {
             "name": "applicantRole",
             "label": "Rol van de aanvrager",
             "type": "select",
             "required": true,
             "section": "uw-gegevens",
             "order": 10
+          },
+          {
+            "name": "intakeChannel",
+            "label": "Kanaal",
+            "type": "select",
+            "required": true,
+            "section": "uw-gegevens",
+            "order": 20
           },
           {
             "name": "title",
@@ -441,14 +402,6 @@
             "required": false,
             "section": "het-bouwplan",
             "order": 20
-          },
-          {
-            "name": "intakeChannel",
-            "label": "Kanaal",
-            "type": "select",
-            "required": true,
-            "section": "uw-gegevens",
-            "order": 20
           }
         ],
         "presets": [
@@ -459,7 +412,30 @@
           }
         ],
         "allowSaveForLater": true,
-        "status": "published"
+        "status": "published",
+        "steps": [
+          {
+            "id": "aanvrager",
+            "title": "Aanvrager",
+            "phase": "Aanvrager",
+            "fields": [
+              "initiatorType",
+              "initiatorDisplayName",
+              "applicantRole",
+              "intakeChannel"
+            ]
+          },
+          {
+            "id": "bouwwerk",
+            "title": "Bouwwerk",
+            "phase": "Bouwwerk",
+            "fields": [
+              "title",
+              "description"
+            ]
+          }
+        ],
+        "formLogic": {}
       },
       {
         "@self": {

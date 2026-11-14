@@ -169,8 +169,9 @@ final class RegistrationFormFragmentTest extends TestCase {
 	}//end testADraftIsOwnerOnlyAndExpiresAfterThirtyDays()
 
 	/**
-	 * The demo data seeds one published form for the dossiq bouwvergunning case
-	 * type, with two phases and one visibleWhen rule over a field it asks.
+	 * The demo data's published client form for the dossiq bouwvergunning case
+	 * type (one per audience, forms-per-case-type) has two phases and one
+	 * visibleWhen rule over a field it asks.
 	 *
 	 * @return void
 	 *
@@ -183,6 +184,7 @@ final class RegistrationFormFragmentTest extends TestCase {
 				$demo['components']['objects'],
 				static fn (array $object): bool => ($object['@self']['schema'] ?? '') === 'registrationForm'
 					&& ($object['typeValue'] ?? '') === 'bouwvergunning'
+					&& ($object['audience'] ?? '') === 'client'
 			)
 		);
 
