@@ -2059,7 +2059,11 @@ OC.L10N.register(
         "Requests under 250 ms": "Requests under 250 ms",
         "Total load time (ms)": "Total load time (ms)",
         "Window start": "Window start",
-        "Include server bundle": "Include server bundle"
+        "Include server bundle": "Include server bundle",
+        "Record history": "Record history",
+        "Show record history": "Show record history",
+        "Let users restore an earlier version": "Let users restore an earlier version",
+        "Only users who may edit a record can restore it. A restore is saved as a new version; records that point at it are not changed.": "Only users who may edit a record can restore it. A restore is saved as a new version; records that point at it are not changed."
     },
     "nplurals=2; plural=(n != 1);"
 )

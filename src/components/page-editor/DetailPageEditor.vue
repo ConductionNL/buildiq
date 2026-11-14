@@ -95,6 +95,35 @@
 		</fieldset>
 
 		<fieldset class="detail-page-editor__fieldset">
+			<legend>{{ t('buildiq', 'Record history') }}</legend>
+			<label class="detail-page-editor__inline">
+				<input
+					type="checkbox"
+					data-testid="record-history-show"
+					:checked="showHistory"
+					@change="setShowHistory($event.target.checked)" />
+				{{ t('buildiq', 'Show record history') }}
+			</label>
+			<label class="detail-page-editor__inline">
+				<input
+					type="checkbox"
+					data-testid="record-history-restore"
+					:checked="allowRestore"
+					:disabled="!showHistory"
+					@change="setAllowRestore($event.target.checked)" />
+				{{ t('buildiq', 'Let users restore an earlier version') }}
+			</label>
+			<p class="detail-page-editor__note">
+				{{
+					t(
+						'buildiq',
+						'Only users who may edit a record can restore it. A restore is saved as a new version; records that point at it are not changed.',
+					)
+				}}
+			</p>
+		</fieldset>
+
+		<fieldset class="detail-page-editor__fieldset">
 			<legend>
 				{{ t('buildiq', 'sidebarProps.tabs (alternate path)') }}
 			</legend>
@@ -141,6 +170,39 @@ import {
 	pageEditorRegisterWatchMixin,
 } from '../../mixins/pageEditorBase.js'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
+
+/**
+ * The stable id of the record-history tab, so the section finds it again.
+ */
+const HISTORY_TAB_ID = 'history'
+
+/**
+ * A new record-history tab: one audit widget, restore as given.
+ *
+ * @param {boolean} allowRestore - whether app users may restore an earlier version.
+ * @return {object} The tab.
+ */
+function historyTabFor(allowRestore) {
+	return {
+		id: HISTORY_TAB_ID,
+		label: 'History',
+		icon: 'History',
+		widgets: [{ type: 'audit', props: { allowRestore } }],
+	}
+}
+
+/**
+ * The audit widget of a tab, or null.
+ *
+ * @param {object|null} tab - the tab.
+ * @return {object|null} The widget.
+ */
+function auditWidget(tab) {
+	if (!tab || !Array.isArray(tab.widgets)) {
+		return null
+	}
+	return tab.widgets.find((w) => w && w.type === 'audit') || null
+}
 
 export default {
 	name: 'DetailPageEditor',
@@ -205,6 +267,41 @@ export default {
 		 *
 		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
+		/**
+		 * The page's record-history tab: the sidebar tab with the stable id
+		 * `history`, or null when the page has none.
+		 *
+		 * @return {object|null} The tab.
+		 * @spec openspec/changes/data-restore-record-version/specs/record-history-restore/spec.md
+		 */
+		historyTab() {
+			const sidebar = this.config.sidebar
+			const tabs = (sidebar && typeof sidebar === 'object' && Array.isArray(sidebar.tabs)) ? sidebar.tabs : []
+			return tabs.find((tab) => tab && tab.id === HISTORY_TAB_ID) || null
+		},
+
+		/**
+		 * Whether the page shows its record history.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/data-restore-record-version/specs/record-history-restore/spec.md
+		 */
+		showHistory() {
+			return this.historyTab !== null
+		},
+
+		/**
+		 * Whether app users may restore an earlier version: the `allowRestore`
+		 * prop of the history tab's audit widget, off unless set to true.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/data-restore-record-version/specs/record-history-restore/spec.md
+		 */
+		allowRestore() {
+			const widget = auditWidget(this.historyTab)
+			return Boolean(widget && widget.props && widget.props.allowRestore === true)
+		},
+
 		sidebarShape() {
 			const s = this.config.sidebar
 			if (s === undefined) {
@@ -275,6 +372,58 @@ export default {
 			}
 			next.sidebar = { ...current, [key]: value }
 			this.$emit('update:config', next)
+		},
+
+		/**
+		 * Add or remove the record-history tab. Adding it switches an unset or
+		 * boolean sidebar to its object shape and starts with restore off;
+		 * removing it leaves every other tab as it was.
+		 *
+		 * @param {boolean} on - whether the page shows its record history.
+		 * @spec openspec/changes/data-restore-record-version/specs/record-history-restore/spec.md
+		 */
+		setShowHistory(on) {
+			const sidebar = this.config.sidebar
+			const tabs = (sidebar && typeof sidebar === 'object' && Array.isArray(sidebar.tabs)) ? sidebar.tabs : []
+			const others = tabs.filter((tab) => !(tab && tab.id === HISTORY_TAB_ID))
+			if (on === true) {
+				if (this.showHistory) {
+					return
+				}
+				this.updateSidebarKey('tabs', [...others, historyTabFor(false)])
+				return
+			}
+			if (!this.showHistory) {
+				return
+			}
+			this.updateSidebarKey('tabs', others)
+		},
+
+		/**
+		 * Turn restoring on or off on the history tab's audit widget, keeping
+		 * the tab's other keys and widgets.
+		 *
+		 * @param {boolean} on - whether app users may restore an earlier version.
+		 * @spec openspec/changes/data-restore-record-version/specs/record-history-restore/spec.md
+		 */
+		setAllowRestore(on) {
+			if (!this.showHistory) {
+				return
+			}
+			const tabs = this.config.sidebar.tabs.map((tab) => {
+				if (!(tab && tab.id === HISTORY_TAB_ID)) {
+					return tab
+				}
+				const widgets = Array.isArray(tab.widgets) ? tab.widgets : []
+				const hasAudit = widgets.some((w) => w && w.type === 'audit')
+				const nextWidgets = hasAudit
+					? widgets.map((w) => (w && w.type === 'audit')
+						? { ...w, props: { ...(w.props || {}), allowRestore: on === true } }
+						: w)
+					: [...widgets, { type: 'audit', props: { allowRestore: on === true } }]
+				return { ...tab, widgets: nextWidgets }
+			})
+			this.updateSidebarKey('tabs', tabs)
 		},
 
 		/**

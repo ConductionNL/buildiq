@@ -26,6 +26,7 @@ vi.mock('../../../src/composables/useRegisterPicker.js', () => ({
 }))
 
 import DetailPageEditor from '../../../src/components/page-editor/DetailPageEditor.vue'
+import SidebarTabBuilder from '../../../src/components/page-editor/fields/SidebarTabBuilder.vue'
 
 function mountEditor(config = {}, propsOverrides = {}) {
 	return mount(DetailPageEditor, {
@@ -163,5 +164,93 @@ describe('DetailPageEditor', () => {
 		expect(mountEditor({ sidebar: { enabled: true } }).vm.sidebarShape).toBe(
 			'object',
 		)
+	})
+})
+
+describe('DetailPageEditor record history (data-restore-record-version)', () => {
+	const lastConfig = (wrapper) => wrapper.emitted('update:config').slice(-1)[0][0]
+
+	it('turning history on for a page whose sidebar was unset adds the history tab with restore off', async () => {
+		const wrapper = mountEditor({})
+		expect(wrapper.vm.showHistory).toBe(false)
+		await wrapper.find('[data-testid="record-history-show"]').setChecked(true)
+		expect(lastConfig(wrapper).sidebar).toEqual({
+			enabled: true,
+			tabs: [{ id: 'history', label: 'History', icon: 'History', widgets: [{ type: 'audit', props: { allowRestore: false } }] }],
+		})
+	})
+
+	it('the restore switch is disabled while history is off', () => {
+		const wrapper = mountEditor({})
+		expect(wrapper.find('[data-testid="record-history-restore"]').attributes('disabled')).toBeDefined()
+	})
+
+	it('turning history on keeps the existing tabs', async () => {
+		const wrapper = mountEditor({ sidebar: { enabled: true, tabs: [{ id: 'notes', label: 'Notes' }] } })
+		wrapper.vm.setShowHistory(true)
+		await wrapper.vm.$nextTick()
+		const tabs = lastConfig(wrapper).sidebar.tabs
+		expect(tabs.map((tab) => tab.id)).toEqual(['notes', 'history'])
+	})
+
+	it('turning history off removes only the history tab', async () => {
+		const history = { id: 'history', label: 'History', widgets: [{ type: 'audit', props: { allowRestore: true } }] }
+		const wrapper = mountEditor({ sidebar: { enabled: true, tabs: [{ id: 'notes' }, history] } })
+		expect(wrapper.vm.showHistory).toBe(true)
+		expect(wrapper.vm.allowRestore).toBe(true)
+		await wrapper.find('[data-testid="record-history-show"]').setChecked(false)
+		expect(lastConfig(wrapper).sidebar.tabs).toEqual([{ id: 'notes' }])
+	})
+
+	it('turning restore on sets allowRestore on the audit widget and keeps the rest of the tab', async () => {
+		const history = { id: 'history', label: 'Geschiedenis', icon: 'History', widgets: [{ type: 'audit', props: { allowRestore: false, pageSize: 20 } }] }
+		const wrapper = mountEditor({ sidebar: { enabled: true, show: false, tabs: [history] } })
+		expect(wrapper.vm.allowRestore).toBe(false)
+		await wrapper.find('[data-testid="record-history-restore"]').setChecked(true)
+		const next = lastConfig(wrapper).sidebar
+		expect(next.show).toBe(false)
+		expect(next.tabs).toEqual([{ ...history, widgets: [{ type: 'audit', props: { allowRestore: true, pageSize: 20 } }] }])
+	})
+
+	it('turning restore on a history tab without an audit widget adds one', async () => {
+		const wrapper = mountEditor({ sidebar: { tabs: [{ id: 'history', label: 'History' }] } })
+		wrapper.vm.setAllowRestore(true)
+		await wrapper.vm.$nextTick()
+		expect(lastConfig(wrapper).sidebar.tabs[0].widgets).toEqual([{ type: 'audit', props: { allowRestore: true } }])
+	})
+
+	it('restore cannot be turned on without the history tab', async () => {
+		const wrapper = mountEditor({ sidebar: { enabled: true } })
+		wrapper.vm.setAllowRestore(true)
+		await wrapper.vm.$nextTick()
+		expect(wrapper.emitted('update:config')).toBeFalsy()
+	})
+
+	it('editing another tab in the tab builder leaves the history tab and its allowRestore as they were', async () => {
+		const history = { id: 'history', label: 'History', icon: 'History', widgets: [{ type: 'audit', props: { allowRestore: true } }] }
+		const wrapper = mount(DetailPageEditor, {
+			propsData: {
+				config: { sidebar: { enabled: true, tabs: [{ id: 'notes', label: 'Notes' }, history] } },
+				parentRoute: '/messages/:id',
+				appSlug: 'hello-world',
+				pageType: 'detail',
+			},
+			stubs: { InlineFieldMark: { template: '<span />' } },
+			mocks: {
+				$validator: {
+					register: vi.fn(),
+					unregister: vi.fn(),
+					errorsForPathPrefix: () => ({ errors: [], warnings: [] }),
+					summaryForPathPrefix: () => null,
+				},
+			},
+		})
+		const builder = wrapper.findAllComponents(SidebarTabBuilder).at(0)
+		builder.vm.updateField(0, 'label', 'Comments')
+		await wrapper.vm.$nextTick()
+		const tabs = lastConfig(wrapper).sidebar.tabs
+		expect(tabs[0]).toEqual({ id: 'notes', label: 'Comments' })
+		expect(tabs[1]).toEqual(history)
+		expect(tabs[1].widgets[0].props.allowRestore).toBe(true)
 	})
 })
