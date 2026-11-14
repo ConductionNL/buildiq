@@ -70,6 +70,13 @@ export default {
 			type: String,
 			default: '',
 		},
+
+		// Optional search term: only rows with a mapped field containing it
+		// (case-insensitive) are shown. Set by the connector list page.
+		search: {
+			type: String,
+			default: '',
+		},
 	},
 
 	/**
@@ -101,8 +108,31 @@ export default {
 		},
 
 		/** @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-006 */
-		rows() {
+		allRows() {
 			return this.resolver.data.value || []
+		},
+
+		/**
+		 * The loaded rows, filtered on the mapped fields by `search`.
+		 *
+		 * @return {Array<object>}
+		 * @spec openspec/changes/integrations-connector-bound-pages/specs/connector-bound-page-runtime/spec.md#requirement-the-list-page-shows-every-state-of-the-fetch-req-bqcb-002
+		 */
+		rows() {
+			const term = String(this.search || '').trim().toLowerCase()
+			if (term === '') {
+				return this.allRows
+			}
+			return this.allRows.filter((row) =>
+				this.columns.some((col) => {
+					const value = row[col]
+					return (
+						value !== null
+						&& value !== undefined
+						&& String(value).toLowerCase().includes(term)
+					)
+				}),
+			)
 		},
 
 		/** @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-006 */
