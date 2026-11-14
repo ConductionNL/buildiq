@@ -486,6 +486,13 @@
 						"order": 60
 					},
 					{
+						"id": "api",
+						"label": "API",
+						"icon": "Api",
+						"component": "ApplicationApiTab",
+						"order": 65
+					},
+					{
 						"id": "audit",
 						"label": "History",
 						"icon": "History",

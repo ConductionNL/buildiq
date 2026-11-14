@@ -13,6 +13,7 @@
 // vue-material-design-icons.
 
 import AccountMultipleOutline from 'vue-material-design-icons/AccountMultipleOutline.vue'
+import Api from 'vue-material-design-icons/Api.vue'
 import AppsBox from 'vue-material-design-icons/AppsBox.vue'
 import ArrowUpBoldCircleOutline from 'vue-material-design-icons/ArrowUpBoldCircleOutline.vue'
 import BookOpenVariantOutline from 'vue-material-design-icons/BookOpenVariantOutline.vue'
@@ -70,6 +71,7 @@ export default {
 	PencilRulerOutline,
 	TrayArrowDown,
 	ArrowUpBoldCircleOutline,
+	Api,
 	AppsBox,
 	BookOpenVariantOutline,
 	ChartBoxOutline,
