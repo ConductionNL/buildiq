@@ -49,6 +49,7 @@ interface CopilotServiceInterface {
 	 * @param string $userId Acting user's UID.
 	 * @param string $prompt The user's natural-language brief for this turn.
 	 * @param array<string, mixed> $plan The plan `{summary, steps[]}` that was reviewed and discarded.
+	 * @param string|null $traceId The trace id the plan returned, so the run keeps its model steps (REQ-BQAG-004).
 	 *
 	 * @return array<string, mixed> The persisted `AgentRun` record.
 	 *
@@ -56,7 +57,7 @@ interface CopilotServiceInterface {
 	 *
 	 * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/agent-workspace/spec.md
 	 */
-	public function discard(string $agentId, string $userId, string $prompt, array $plan): array;
+	public function discard(string $agentId, string $userId, string $prompt, array $plan, ?string $traceId = null): array;
 
 	/**
 	 * Execute an approved plan atomically through the MCP handler layer.
@@ -77,6 +78,7 @@ interface CopilotServiceInterface {
 	 * @param string $prompt The original user brief for this turn, echoed back so the
 	 *                       resulting `AgentRun` record carries it. Ignored when
 	 *                       `$agentId` is null.
+	 * @param string|null $traceId The trace id the plan returned, so the run keeps its model steps (REQ-BQAG-004).
 	 *
 	 * @return array{results: array<int, array<string, mixed>>}
 	 *
@@ -85,7 +87,7 @@ interface CopilotServiceInterface {
 	 * @spec openspec/specs/ai-copilot/spec.md
 	 * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
 	 */
-	public function execute(array $plan, string $userId, ?string $agentId = null, string $prompt = ''): array;
+	public function execute(array $plan, string $userId, ?string $agentId = null, string $prompt = '', ?string $traceId = null): array;
 
 	/**
 	 * Probe copilot availability.

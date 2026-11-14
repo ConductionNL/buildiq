@@ -6,7 +6,7 @@
         "x-schema-org": "schema:SoftwareApplication",
         "slug": "buildAgent",
         "icon": "RobotOutline",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "title": "Agent",
         "description": "A named, reusable, tool-scoped AI configuration for one Application: free-text instructions prefixed onto the copilot system prompt, an explicit subset of the eight BuildiqToolProvider tools it may invoke, and a per-run action cap. Never a wider capability surface than the bare copilot (agent-workspace design.md Goals).",
         "authorization": {
@@ -83,6 +83,42 @@
             "maximum": 50,
             "default": 10,
             "description": "Blast-radius cap independent of the global manifest caps (design.md Decision 4). A plan whose step count exceeds this value is rejected with 422 naming `max_actions_per_run`, the same rejection shape an over-cap manifest plan already uses."
+          },
+          "knowledge": {
+            "title": "Knowledge",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "fileName": {
+                  "title": "File name",
+                  "type": "string",
+                  "description": "The name of the file attached to this agent object."
+                },
+                "addedBy": {
+                  "title": "Added by",
+                  "type": "string",
+                  "description": "The user who added the file."
+                },
+                "addedAt": {
+                  "title": "Added at",
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "When the file was added."
+                },
+                "characters": {
+                  "title": "Characters",
+                  "type": "integer",
+                  "minimum": 0,
+                  "description": "The file's length in characters, counted against the 40,000 character knowledge budget."
+                }
+              },
+              "required": [
+                "fileName"
+              ]
+            },
+            "default": [],
+            "description": "Files attached to this agent that its plan prompt reads, in this order. The files are stored on the agent object, so only the people who may run the agent can read them."
           }
         }
       },
@@ -91,7 +127,7 @@
         "x-openregister-demo-data": "Written by AgentRunLogger. A generated row is a transcript of an agent run nobody issued, including tool calls that were never made.",
         "slug": "agent-run",
         "icon": "History",
-        "version": "1.0.0",
+        "version": "1.1.0",
         "title": "Agent Run",
         "description": "One transparently-logged plan+execute (or plan+discard) interaction issued with an agentId (agent-workspace design.md Decision 2): the prompt, the returned plan, every tool call's arguments and result, and the final outcome. Written by `AgentRunLogger`, a thin wrapper around CopilotService's plan/execute/discard paths. Never a summarised or redacted view of what actually ran.",
         "authorization": {
@@ -180,6 +216,100 @@
             "type": "string",
             "format": "date-time",
             "description": "ISO-8601 timestamp this run record was written."
+          },
+          "modelSteps": {
+            "title": "Model steps",
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "attempt": {
+                  "title": "Attempt",
+                  "type": "integer",
+                  "description": "1 for the plan call, 2 for the repair."
+                },
+                "kind": {
+                  "title": "Kind",
+                  "type": "string",
+                  "enum": [
+                    "plan",
+                    "repair"
+                  ],
+                  "description": "Whether the call asked for the plan or repaired it."
+                },
+                "startedAt": {
+                  "title": "Started at",
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "When the call started."
+                },
+                "durationMs": {
+                  "title": "Duration (ms)",
+                  "type": "integer",
+                  "description": "How long the call took."
+                },
+                "status": {
+                  "title": "Status",
+                  "type": "string",
+                  "enum": [
+                    "successful",
+                    "repair-needed",
+                    "failed",
+                    "error"
+                  ],
+                  "description": "successful: the answer parsed into a plan; repair-needed: it did not and a repair followed; failed: the repair did not parse either; error: the model was not reached."
+                },
+                "taskType": {
+                  "title": "Task type",
+                  "type": "string",
+                  "description": "The TaskProcessing task type of the call."
+                },
+                "promptChars": {
+                  "title": "Prompt size",
+                  "type": "integer",
+                  "description": "The prompt length in characters."
+                },
+                "output": {
+                  "title": "Answer",
+                  "type": "string",
+                  "maxLength": 20000,
+                  "description": "The model's raw answer, capped at 20,000 characters."
+                },
+                "outputTruncated": {
+                  "title": "Answer cut off",
+                  "type": "boolean",
+                  "description": "Whether the answer was longer than the cap."
+                },
+                "refusal": {
+                  "title": "Refusal",
+                  "type": "string",
+                  "description": "The parse or validator message that led to a repair."
+                }
+              }
+            },
+            "default": [],
+            "description": "One entry per language model call made for this turn, in order."
+          },
+          "knowledgeUsed": {
+            "title": "Knowledge used",
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "default": [],
+            "description": "The knowledge files read into the prompt of this turn."
+          },
+          "durationMs": {
+            "title": "Model time (ms)",
+            "type": "integer",
+            "default": 0,
+            "description": "The time spent in model calls for this turn."
+          },
+          "traceMissing": {
+            "title": "Steps missing",
+            "type": "boolean",
+            "default": false,
+            "description": "True when the model steps of this turn could not be found (the plan's trace expired or was never kept). The run is kept without them, never with a guess."
           }
         }
       }
