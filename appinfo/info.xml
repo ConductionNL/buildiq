@@ -306,6 +306,10 @@ Vrij en open source onder de EUPL-1.2-licentie.
     <commands>
         <command>OCA\Buildiq\Command\SeedHelloWorldFixture</command>
         <command>OCA\Buildiq\Command\PublishTemplates</command>
+        <command>OCA\Buildiq\Command\AppList</command>
+        <command>OCA\Buildiq\Command\AppExport</command>
+        <command>OCA\Buildiq\Command\AppImport</command>
+        <command>OCA\Buildiq\Command\AppDelete</command>
     </commands>
 
     <settings>

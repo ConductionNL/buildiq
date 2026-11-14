@@ -50,6 +50,13 @@
     {
         "method": "registerServiceAlias",
         "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\AppPackageImportServiceInterface",
+            "target": "OCA\\Buildiq\\Service\\AppPackageImportService"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
             "alias": "OCA\\Buildiq\\Kernel\\Contracts\\AppRepoParserInterface",
             "target": "OCA\\Buildiq\\Service\\AppRepoParser"
         }
