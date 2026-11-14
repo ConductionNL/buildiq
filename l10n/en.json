@@ -1442,6 +1442,14 @@
         ],
         "asks for {count} field: {fields}": "asks for {count} field: {fields}",
         "asks for {count} fields: {fields}": "asks for {count} fields: {fields}",
+        "_{count} field to fill in_::_{count} fields to fill in_": [
+            "{count} field to fill in",
+            "{count} fields to fill in"
+        ],
+        "{count} field to fill in": "{count} field to fill in",
+        "{count} fields to fill in": "{count} fields to fill in",
+        "The form of this approval could not be loaded.": "The form of this approval could not be loaded.",
+        "The form of this approval cannot be filled in.": "The form of this approval cannot be filled in.",
         "Attach to object": "Attach to object",
         "Bindings reference {count} schema(s).": "Bindings reference {count} schema(s).",
         "Block name": "Block name",
