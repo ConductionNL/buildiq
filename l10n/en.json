@@ -1,5 +1,18 @@
 {
     "translations": {
+        "Visibility expression": "Visibility expression",
+        "For example: values.wantsContact === true": "For example: values.wantsContact === true",
+        "Stop using an expression": "Stop using an expression",
+        "Write an expression instead": "Write an expression instead",
+        "Column name": "Column name",
+        "Show a property instead": "Show a property instead",
+        "Compute this column with an expression": "Compute this column with an expression",
+        "For example: row.aantal * row.prijs": "For example: row.aantal * row.prijs",
+        "Column expression": "Column expression",
+        "Stop computing the value": "Stop computing the value",
+        "Compute the value with an expression": "Compute the value with an expression",
+        "Default value expression": "Default value expression",
+        "For example: user.displayName": "For example: user.displayName",
         "Could not save the support note: {reason}": "Could not save the support note: {reason}",
         "Load example data?": "Load example data?",
         "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Pick \"None\" on a production install.": "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Pick \"None\" on a production install.",

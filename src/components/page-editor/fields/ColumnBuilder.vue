@@ -4,6 +4,12 @@
   - typed-object shape AND the legacy string shorthand. Surfaces
   - `@self.*` virtual columns when bound to a schema.
   - Used by IndexPageEditor and LogsPageEditor (REQ-OBPD-004).
+  -
+  - The per-row "fx" toggle (pages-custom-code REQ-BQCC-002) turns a column
+  - into a computed one: `{ key, label?, expression }`, where `key` names the
+  - column and `expression` is JavaScript over `row`, `user` and `route` that
+  - the sandbox evaluates. Only an app owner may save it with "Allow code on
+  - pages" on; the server refuses anyone else.
   -->
 <template>
 	<div class="column-builder">
@@ -11,7 +17,16 @@
 			v-for="(col, index) in localColumns"
 			:key="index"
 			class="column-builder__row">
+			<input
+				v-if="isComputed(col)"
+				:value="rowKey(col)"
+				type="text"
+				class="column-builder__key"
+				:placeholder="t('buildiq', 'Column name')"
+				:aria-label="t('buildiq', 'Column name')"
+				@input="onKeyChange(index, $event.target.value)" />
 			<select
+				v-else
 				:value="rowKey(col)"
 				class="column-builder__key"
 				@change="onKeyChange(index, $event.target.value)">
@@ -41,11 +56,29 @@
 				@input="onLabelInput(index, $event.target.value)" />
 			<button
 				type="button"
+				class="column-builder__fx"
+				:class="{ 'column-builder__fx--on': isComputed(col) }"
+				:aria-pressed="isComputed(col) ? 'true' : 'false'"
+				:title="isComputed(col) ? t('buildiq', 'Show a property instead') : t('buildiq', 'Compute this column with an expression')"
+				@click="toggleExpression(index)">
+				fx
+			</button>
+			<button
+				type="button"
 				class="column-builder__remove"
 				:title="t('buildiq', 'Remove column')"
 				@click="removeColumn(index)">
 				✕
 			</button>
+			<textarea
+				v-if="isComputed(col)"
+				:value="col.expression"
+				class="column-builder__expression"
+				rows="2"
+				spellcheck="false"
+				:placeholder="t('buildiq', 'For example: row.aantal * row.prijs')"
+				:aria-label="t('buildiq', 'Column expression')"
+				@input="onExpressionInput(index, $event.target.value)" />
 		</div>
 		<button type="button" class="column-builder__add" @click="addColumn">
 			+ {{ t('buildiq', 'Add column') }}
@@ -186,10 +219,56 @@ export default {
 			// Promote string shorthand to typed object once a label is added.
 			const key = this.rowKey(existing)
 			if (value) {
-				next[index] = { key, label: value }
+				next[index] = this.isComputed(existing) ? { key, label: value, expression: existing.expression } : { key, label: value }
 			} else if (typeof existing === 'object' && existing) {
 				next[index] = withoutLabel(existing)
 			}
+			this.$emit('update:modelValue', next)
+		},
+
+		/**
+		 * Whether a column is computed by an fx expression (REQ-BQCC-002).
+		 *
+		 * @param {string|object} col - one entry of `config.columns`.
+		 * @return {boolean}
+		 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-an-owner-writes-expressions-for-columns-and-form-fields-req-bqcc-002
+		 */
+		isComputed(col) {
+			return !!col && typeof col === 'object' && typeof col.expression === 'string'
+		},
+
+		/**
+		 * Switch a column between a property and an fx expression. On, it keeps
+		 * its key and label and starts with an empty expression; off, it drops
+		 * the expression and collapses to the string shorthand when only a key
+		 * is left.
+		 *
+		 * @param {number} index - position of the column.
+		 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-an-owner-writes-expressions-for-columns-and-form-fields-req-bqcc-002
+		 */
+		toggleExpression(index) {
+			const next = this.localColumns.slice()
+			const existing = next[index]
+			if (this.isComputed(existing)) {
+				const { expression, ...rest } = existing
+				next[index] = rest.label ? rest : (rest.key || '')
+			} else {
+				const column = typeof existing === 'object' && existing ? { ...existing } : { key: this.rowKey(existing) }
+				next[index] = { ...column, expression: '' }
+			}
+			this.$emit('update:modelValue', next)
+		},
+
+		/**
+		 * Write a computed column's expression.
+		 *
+		 * @param {number} index - position of the column.
+		 * @param {string} value - the typed expression.
+		 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-an-owner-writes-expressions-for-columns-and-form-fields-req-bqcc-002
+		 */
+		onExpressionInput(index, value) {
+			const next = this.localColumns.slice()
+			next[index] = { ...next[index], expression: value }
 			this.$emit('update:modelValue', next)
 		},
 
@@ -245,6 +324,22 @@ export default {
 
 .column-builder__remove {
 	@include c.danger-button;
+}
+
+.column-builder__fx {
+	font-style: italic;
+	font-weight: bold;
+	@include c.ghost-button;
+}
+
+.column-builder__fx--on {
+	color: var(--color-primary-element);
+}
+
+.column-builder__expression {
+	flex: 1 1 100%;
+	font-family: var(--font-face-monospace, monospace);
+	@include c.control;
 }
 
 .column-builder__add {

@@ -1,5 +1,18 @@
 {
     "translations": {
+        "Visibility expression": "Expressie voor zichtbaarheid",
+        "For example: values.wantsContact === true": "Bijvoorbeeld: values.wantsContact === true",
+        "Stop using an expression": "Geen expressie meer gebruiken",
+        "Write an expression instead": "Schrijf in plaats daarvan een expressie",
+        "Column name": "Kolomnaam",
+        "Show a property instead": "Toon in plaats daarvan een eigenschap",
+        "Compute this column with an expression": "Bereken deze kolom met een expressie",
+        "For example: row.aantal * row.prijs": "Bijvoorbeeld: row.aantal * row.prijs",
+        "Column expression": "Expressie van de kolom",
+        "Stop computing the value": "De waarde niet meer berekenen",
+        "Compute the value with an expression": "Bereken de waarde met een expressie",
+        "Default value expression": "Expressie voor de beginwaarde",
+        "For example: user.displayName": "Bijvoorbeeld: user.displayName",
         "Could not save the support note: {reason}": "Kon de supportnotitie niet opslaan: {reason}",
         "A custom page must document why a standard page type was not feasible.": "Een aangepaste pagina moet vastleggen waarom een standaard paginatype niet haalbaar was.",
         "Column": "Kolom",

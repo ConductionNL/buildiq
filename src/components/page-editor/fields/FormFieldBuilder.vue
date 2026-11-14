@@ -197,6 +197,26 @@
 							field.default === undefined ? null : field.default
 						"
 						@update:modelValue="updateLive(index, 'default', $event)" />
+					<div class="form-field-builder__fx-default">
+						<button
+							type="button"
+							class="form-field-builder__fx"
+							:class="{ 'form-field-builder__fx--on': hasExpressionDefault(field) }"
+							:aria-pressed="hasExpressionDefault(field) ? 'true' : 'false'"
+							:title="hasExpressionDefault(field) ? t('buildiq', 'Stop computing the value') : t('buildiq', 'Compute the value with an expression')"
+							@click="toggleExpressionDefault(index, field)">
+							fx
+						</button>
+						<textarea
+							v-if="hasExpressionDefault(field)"
+							class="form-field-builder__expression"
+							rows="2"
+							spellcheck="false"
+							:aria-label="t('buildiq', 'Default value expression')"
+							:placeholder="t('buildiq', 'For example: user.displayName')"
+							:value="field.expressionDefault"
+							@input="updateLive(index, 'expressionDefault', $event.target.value)" />
+					</div>
 				</div>
 				<div class="form-field-builder__section">
 					<span class="form-field-builder__section-label">{{
@@ -498,11 +518,36 @@ export default {
 		},
 
 		/**
+		 * Whether a field's default is an fx expression (pages-custom-code REQ-BQCC-002).
+		 *
+		 * @param {object} field - the field entry.
+		 * @return {boolean}
+		 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-an-owner-writes-expressions-for-columns-and-form-fields-req-bqcc-002
+		 */
+		hasExpressionDefault(field) {
+			return !!field && typeof field.expressionDefault === 'string'
+		},
+
+		/**
+		 * Switch a field's default to an fx expression (`expressionDefault`,
+		 * JavaScript over `values`, `user` and `route`), or back. Its `default`
+		 * is left as it is.
+		 *
+		 * @param {number} index - the field index.
+		 * @param {object} field - the field entry.
+		 * @return {void}
+		 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-an-owner-writes-expressions-for-columns-and-form-fields-req-bqcc-002
+		 */
+		toggleExpressionDefault(index, field) {
+			this.updateLive(index, 'expressionDefault', this.hasExpressionDefault(field) ? null : '')
+		},
+
+		/**
 		 * Write (or delete, on `null`) one field's `default` or `calculate`
 		 * (REQ-BQLV-001, REQ-BQLV-002). Unknown sibling keys survive.
 		 *
 		 * @param {number} index - the field index.
-		 * @param {'default'|'calculate'} key - the key to write.
+		 * @param {'default'|'calculate'|'expressionDefault'} key - the key to write.
 		 * @param {*} value - the next value, or `null` to clear.
 		 * @return {void}
 		 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-prefilled-from-the-user-or-the-record-req-bqlv-001
@@ -913,5 +958,31 @@ export default {
 	font-weight: 600;
 	color: var(--color-text-maxcontrast);
 	text-transform: uppercase;
+}
+.form-field-builder__fx-default {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	align-items: flex-start;
+	margin-top: 6px;
+}
+
+.form-field-builder__fx {
+	font-style: italic;
+	font-weight: bold;
+	background: none;
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius);
+	color: var(--color-main-text);
+	cursor: pointer;
+}
+
+.form-field-builder__fx--on {
+	color: var(--color-primary-element);
+}
+
+.form-field-builder__expression {
+	flex: 1 1 100%;
+	font-family: var(--font-face-monospace, monospace);
 }
 </style>

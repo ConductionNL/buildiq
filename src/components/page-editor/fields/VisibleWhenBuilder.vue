@@ -13,6 +13,12 @@
   - coerces `"true"` / `"false"` / numeric literals to boolean / number on
   - write so ordering ops (`gt`/`gte`/`lt`/`lte`) behave against numbers.
   -
+  - The "fx" toggle (pages-custom-code REQ-BQCC-002) switches to an
+  - expression: `{ expression }`, JavaScript over `values`, `user` and `route`
+  - that the sandbox evaluates. Switching fx off again clears the condition.
+  - Only an app owner may save it with "Allow code on pages" on; the server
+  - refuses anyone else.
+  -
   - A `visibleWhen` carrying `endpoint` or `source` (the advanced modes) is
   - rendered as a read-only summary and NEVER rewritten — Raw-JSON-authored
   - advanced conditions round-trip byte-for-byte through this component.
@@ -22,6 +28,24 @@
 		<p v-if="isAdvanced" class="visible-when-builder__advanced">
 			{{ t('buildiq', 'Advanced condition — edit in Raw JSON') }}
 		</p>
+		<template v-else-if="isExpression">
+			<textarea
+				class="visible-when-builder__expression"
+				rows="2"
+				spellcheck="false"
+				:aria-label="t('buildiq', 'Visibility expression')"
+				:placeholder="t('buildiq', 'For example: values.wantsContact === true')"
+				:value="modelValue.expression"
+				@input="onExpressionInput($event.target.value)" />
+			<button
+				type="button"
+				class="visible-when-builder__fx visible-when-builder__fx--on"
+				aria-pressed="true"
+				:title="t('buildiq', 'Stop using an expression')"
+				@click="clear">
+				fx
+			</button>
+		</template>
 		<template v-else>
 			<select
 				class="visible-when-builder__select"
@@ -60,6 +84,14 @@
 				:title="t('buildiq', 'Clear condition')"
 				@click="clear">
 				{{ t('buildiq', 'Clear') }}
+			</button>
+			<button
+				type="button"
+				class="visible-when-builder__fx"
+				aria-pressed="false"
+				:title="t('buildiq', 'Write an expression instead')"
+				@click="startExpression">
+				fx
 			</button>
 		</template>
 	</div>
@@ -134,6 +166,19 @@ export default {
 		},
 
 		/**
+		 * Whether the current `visibleWhen` is an fx expression (REQ-BQCC-002).
+		 *
+		 * @return {boolean}
+		 */
+		isExpression() {
+			return !!(
+				!this.isAdvanced
+				&& this.modelValue
+				&& typeof this.modelValue.expression === 'string'
+			)
+		},
+
+		/**
 		 * The currently-picked sibling field key, or '' (no condition).
 		 *
 		 * @return {string}
@@ -141,6 +186,7 @@ export default {
 		currentField() {
 			if (
 				this.isAdvanced
+				|| this.isExpression
 				|| !this.modelValue
 				|| typeof this.modelValue.field !== 'string'
 			) {
@@ -209,6 +255,25 @@ export default {
 		},
 
 		/**
+		 * Switch to an fx expression, starting empty (REQ-BQCC-002).
+		 *
+		 * @return {void}
+		 */
+		startExpression() {
+			this.$emit('update:modelValue', { expression: '' })
+		},
+
+		/**
+		 * Write the typed expression as `visibleWhen.expression`.
+		 *
+		 * @param {string} value - the typed expression.
+		 * @return {void}
+		 */
+		onExpressionInput(value) {
+			this.$emit('update:modelValue', { expression: value })
+		},
+
+		/**
 		 * Clear the condition entirely.
 		 *
 		 * @return {void}
@@ -247,7 +312,23 @@ export default {
 	flex: 0 0 90px;
 }
 
-.visible-when-builder__clear {
+.visible-when-builder__clear,
+.visible-when-builder__fx {
 	@include c.ghost-button;
+}
+
+.visible-when-builder__fx {
+	font-style: italic;
+	font-weight: bold;
+}
+
+.visible-when-builder__fx--on {
+	color: var(--color-primary-element);
+}
+
+.visible-when-builder__expression {
+	flex: 1 1 100%;
+	font-family: var(--font-face-monospace, monospace);
+	@include c.control;
 }
 </style>
