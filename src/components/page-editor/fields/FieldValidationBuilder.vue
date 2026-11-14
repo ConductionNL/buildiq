@@ -43,13 +43,44 @@
 			:aria-label="t('buildiq', 'Maximum')"
 			:value="maxDisplay"
 			@input="onMaxInput($event.target.value)" />
+		<!-- Form-dutch-field-formats D1/D2: a Dutch format checks the field the
+		     same way here and on the portal; with one set, no pattern. -->
+		<label class="field-validation-builder__format">
+			<span>{{ t('buildiq', 'Format') }}</span>
+			<select
+				class="field-validation-builder__field"
+				data-testid="field-validation-format"
+				:value="formatDisplay"
+				:disabled="!!inheritedFormat"
+				:aria-describedby="formatHint ? formatHintId : undefined"
+				@change="onFormatChange($event.target.value)">
+				<option value="">
+					{{ t('buildiq', 'None') }}
+				</option>
+				<option
+					v-for="option in formatOptions"
+					:key="option.id"
+					:value="option.id">
+					{{ option.label }}
+				</option>
+			</select>
+		</label>
+		<span
+			v-if="formatHint"
+			:id="formatHintId"
+			class="field-validation-builder__hint"
+			data-testid="field-validation-format-hint">
+			{{ formatHint }}
+		</span>
 		<input
 			type="text"
 			class="field-validation-builder__field"
-			:placeholder="t('buildiq', 'Pattern (regex)')"
+			data-testid="field-validation-pattern"
+			:placeholder="formatDisplay ? t('buildiq', 'The format already checks this field.') : t('buildiq', 'Pattern (regex)')"
 			:aria-label="t('buildiq', 'Pattern')"
 			:aria-invalid="patternError"
-			:value="patternDisplayValue"
+			:disabled="!!formatDisplay"
+			:value="formatDisplay ? '' : patternDisplayValue"
 			@input="onPatternInput($event.target.value)" />
 		<input
 			type="text"
@@ -68,6 +99,10 @@
 </template>
 
 <script>
+import { dutchFormatOptions, isDutchFormat } from '../../../services/dutchFormats.js'
+
+let hintCounter = 0
+
 /**
  * Copy an object without its `undefined` entries, keeping key order.
  *
@@ -112,11 +147,26 @@ export default {
 			type: String,
 			default: '',
 		},
+
+		// The field's own Dutch `format` (form-dutch-field-formats D1), '' for none.
+		format: {
+			type: String,
+			default: '',
+		},
+
+		// The Dutch format of the schema property the field is bound to (D2):
+		// shown, and not changeable here.
+		inheritedFormat: {
+			type: String,
+			default: '',
+		},
 	},
 
-	emits: ['update:modelValue'],
+	emits: ['update:modelValue', 'update:format'],
 	data() {
+		hintCounter += 1
 		return {
+			formatHintId: `field-validation-format-hint-${hintCounter}`,
 			// Live-typed pattern buffer — kept separate from `modelValue` so
 			// an invalid, not-yet-committed pattern still displays (and marks
 			// invalid) without ever being written (REQ-OBFEL-003).
@@ -125,6 +175,42 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * The Dutch formats, labelled.
+		 *
+		 * @return {Array<{id: string, label: string, hint: string}>}
+		 * @spec openspec/changes/form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-the-form-designer-offers-dutch-formats-for-a-field-req-bqdf-001
+		 */
+		formatOptions() {
+			return dutchFormatOptions()
+		},
+
+		/**
+		 * The format in force: the schema's, else the field's own Dutch format.
+		 *
+		 * @return {string}
+		 * @spec openspec/changes/form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-the-form-designer-offers-dutch-formats-for-a-field-req-bqdf-001
+		 */
+		formatDisplay() {
+			if (isDutchFormat(this.inheritedFormat)) {
+				return this.inheritedFormat
+			}
+			return isDutchFormat(this.format) ? this.format : ''
+		},
+
+		/**
+		 * The line under the select: where an inherited format comes from, or the format's hint.
+		 *
+		 * @return {string}
+		 */
+		formatHint() {
+			if (isDutchFormat(this.inheritedFormat)) {
+				return this.t('buildiq', 'Comes from the schema')
+			}
+			const option = this.formatOptions.find((entry) => entry.id === this.formatDisplay)
+			return option ? option.hint : ''
+		},
+
 		/**
 		 * `required`, prefilled from the legacy flat key when no structured
 		 * `validation` object exists yet.
@@ -275,7 +361,30 @@ export default {
 		 * @param {string} value - the typed pattern.
 		 * @return {void}
 		 */
+		/**
+		 * Set or clear the field's Dutch format. Setting one drops a pattern,
+		 * because a field is checked by one or the other (REQ-BQDF-001).
+		 *
+		 * @param {string} value The format, or '' for none.
+		 * @return {void}
+		 * @spec openspec/changes/form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-the-form-designer-offers-dutch-formats-for-a-field-req-bqdf-001
+		 */
+		onFormatChange(value) {
+			if (this.inheritedFormat) {
+				return
+			}
+			const format = isDutchFormat(value) ? value : ''
+			this.$emit('update:format', format)
+			if (format !== '' && this.patternDisplayValue !== '') {
+				this.patternDraft = null
+				this.commit({ pattern: '' })
+			}
+		},
+
 		onPatternInput(value) {
+			if (this.formatDisplay) {
+				return
+			}
 			this.patternDraft = value
 			if (value !== '') {
 				try {
@@ -313,6 +422,19 @@ export default {
 
 .field-validation-builder__field--narrow {
 	flex: 0 0 80px;
+}
+
+.field-validation-builder__format {
+	display: inline-flex;
+	gap: 4px;
+	align-items: center;
+	flex: 1 1 180px;
+}
+
+.field-validation-builder__hint {
+	flex-basis: 100%;
+	font-size: 11px;
+	color: var(--color-text-maxcontrast);
 }
 
 .field-validation-builder__pattern-error {
