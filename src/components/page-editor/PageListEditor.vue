@@ -24,6 +24,11 @@
 				<option v-for="type in PAGE_TYPES" :key="type" :value="type">
 					{{ type }}
 				</option>
+				<!-- Not a page type: a `custom` page with the record-grid
+				     component, so the closed page-type enum stays as it is. -->
+				<option :value="GRID_CHOICE">
+					{{ t('buildiq', 'Grid (edit records in place)') }}
+				</option>
 			</select>
 			<input
 				v-model="addingTitle"
@@ -177,6 +182,28 @@ export const PAGE_TYPES = [
 	'wiki',
 ]
 
+/**
+ * The "Grid" choice of the add-page form. It is not a page type: it writes a
+ * `custom` page whose `component` is the runtime `record-grid` page, with the
+ * register, schema, columns and editable columns in `config` (CnPageRenderer
+ * hands a custom page's `config` to its component as props).
+ */
+export const GRID_CHOICE = 'grid'
+
+/**
+ * The page a "Grid" choice adds, without its id, route and title.
+ *
+ * @return {{type: string, component: string, config: object}}
+ * @spec openspec/changes/data-index-grid-and-saved-views/tasks.md#t04
+ */
+export function gridPageShape() {
+	return {
+		type: 'custom',
+		component: 'record-grid',
+		config: { register: '', schema: '', columns: [], editable: [] },
+	}
+}
+
 export const ROUTE_PATTERN =
 	/^\/$|^(\/[A-Za-z0-9_-]+|\/:[A-Za-z_][A-Za-z0-9_]*(\(.*\))?)+$/
 
@@ -269,6 +296,7 @@ export default {
 	data() {
 		return {
 			PAGE_TYPES,
+			GRID_CHOICE,
 			addingType: null,
 			addingTitle: '',
 			addingId: '',
@@ -386,13 +414,26 @@ export default {
 
 		/**
 		 * The page the add form describes: a unique id and route, the typed or
-		 * default title, and a copy of the type's default config.
+		 * default title, and a copy of the type's default config. The "Grid"
+		 * choice adds a `custom` page with the `record-grid` component.
 		 *
 		 * @param {Array<object>} pages - the pages it joins.
 		 * @return {{id: string, route: string, type: string, title: string, config: object}}
+		 * @spec openspec/changes/data-index-grid-and-saved-views/tasks.md#t04
 		 */
 		newPage(pages) {
 			const type = this.addingType
+			if (type === GRID_CHOICE) {
+				const shape = gridPageShape()
+				return {
+					id: this.newPageId(pages),
+					route: this.newPageRoute(pages),
+					type: shape.type,
+					title: this.addingTitle.trim() || t('buildiq', 'Grid'),
+					component: shape.component,
+					config: shape.config,
+				}
+			}
 			return {
 				id: this.newPageId(pages),
 				route: this.newPageRoute(pages),

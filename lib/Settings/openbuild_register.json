@@ -29,6 +29,7 @@
           "application-template",
           "applicationVersion",
           "automation",
+          "automation-run",
           "built-app-route",
           "component-block",
           "condition-action-rule",
