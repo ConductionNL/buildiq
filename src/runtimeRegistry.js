@@ -1,7 +1,13 @@
 // SPDX-License-Identifier: EUPL-1.2
 /**
- * Runtime registry — components that BUILT (virtual) apps resolve at runtime,
- * passed as the `registry` prop to the NESTED CnAppRoot in BuilderHost.
+ * Runtime registry — components that BUILT (virtual) apps resolve at runtime.
+ *
+ * Every host that mounts a virtual app's CnAppRoot — the published standalone
+ * entry `src/builder.js` and the preview host `src/views/BuilderHost.vue` —
+ * MUST pass `getRuntimeRegistry()` as CnAppRoot's `registry` prop. A host that
+ * omits it renders every registry-only widget key (e.g. `connector-data`) as
+ * CnUnknownWidget with nothing but a console warning
+ * (connector-widget-runtime REQ-CWR-001).
  *
  * Kept separate from the shell `registry.js` (which the manifest test guards
  * as "every entry referenced by buildiq's own manifest") because these
@@ -104,4 +110,22 @@ export const runtimeRegistry = {
 	// Detail-page `config.actionsComponent: "TrackLinkAction"` — mint a
 	// "track your case" link (external-form-provisioning REQ-EFP-006).
 	TrackLinkAction: actions(TrackLinkAction),
+}
+
+/**
+ * The canonical runtime registry every virtual-app host passes as its
+ * CnAppRoot `registry` prop.
+ *
+ * Returns a fresh shallow copy on each call so a host can never mutate the
+ * shared entries into a host-specific variant; the entries themselves are the
+ * same objects, so every host resolves the same widget keys to the same
+ * components. Hosts must use this instead of importing `runtimeRegistry` and
+ * wiring it by hand, so the set of keys a virtual app can render is identical
+ * on the published and the preview path.
+ *
+ * @spec openspec/changes/openbuild-connector-widget-runtime/specs/connector-widget-runtime/spec.md#requirement-req-cwr-001-single-runtime-registry-seam-for-every-virtual-app-host
+ * @return {object} the full runtime registry, keyed by widget key.
+ */
+export function getRuntimeRegistry() {
+	return { ...runtimeRegistry }
 }

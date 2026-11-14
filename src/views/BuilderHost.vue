@@ -53,7 +53,7 @@ import {
 	useRegisterPicker,
 } from '../composables/useRegisterPicker.js'
 import placeholderManifest from '../manifests/placeholder.json'
-import { runtimeRegistry } from '../runtimeRegistry.js'
+import { getRuntimeRegistry } from '../runtimeRegistry.js'
 import { fetchAppRegister } from '../services/appRegister.js'
 import { mirrorVersionLoad } from '../utils/mirrorVersionLoad.js'
 
@@ -73,7 +73,9 @@ export default {
 			// manifests can resolve runtime widgets like `procest-case-status`
 			// (spec procest-workflow-attachments REQ-PWA-004) and
 			// `connector-data` (spec openconnector-api-sources REQ-OCAS-006).
-			runtimeRegistry,
+			// Sourced from the canonical accessor shared with the published
+			// entry `src/builder.js` (connector-widget-runtime REQ-CWR-001).
+			runtimeRegistry: getRuntimeRegistry(),
 		}
 	},
 
