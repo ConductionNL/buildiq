@@ -56,6 +56,7 @@ use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Service\RegisterService;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
+use InvalidArgumentException;
 use Throwable;
 
 /**
@@ -112,6 +113,8 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 	 * @param RegisterService $registerService OpenRegister register-level service
 	 * @param IUserSession $userSession Current Nextcloud user session
 	 * @param SlugValidator $slugValidator Slug validation helper
+	 * @param ConnectedDatabaseReader|null $databases Reads a connected database register for "Start from a database".
+	 * @param DatabaseManifestBuilder|null $databaseManifests Builds the pages of an app made from a connected database.
 	 *
 	 * @return void
 	 */
@@ -121,6 +124,8 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 		private readonly RegisterService $registerService,
 		private readonly IUserSession $userSession,
 		private readonly SlugValidator $slugValidator,
+		private readonly ?ConnectedDatabaseReader $databases = null,
+		private readonly ?DatabaseManifestBuilder $databaseManifests = null,
 	) {
 	}//end __construct()
 
@@ -217,12 +222,13 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 	 */
 	private function runCreation(array $payload): string {
 		// ---- Step 1: Validate -----------------------------------------------
-		$this->validatePayload(payload: $payload);
+		$database = $this->validatePayload(payload: $payload);
 		$plan = [
 			'slug' => (string)($payload['slug'] ?? ''),
 			'name' => (string)($payload['name'] ?? ''),
 			'description' => (string)($payload['description'] ?? ''),
 			'versions' => $this->resolveVersionChain(payload: $payload),
+			'database' => $database,
 		];
 
 		// ---- State tracker for rollback -------------------------------------
@@ -283,6 +289,13 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 			'description' => $plan['description'],
 			'permissions' => $permissions,
 		];
+		if ($plan['database'] !== null) {
+			// REQ-BQDB-003: the database is bound as a data register; whether it
+			// takes writes is read from OpenRegister each time, never stored here.
+			$applicationPayload['dataRegisters'] = [
+				['register' => $plan['database']['register'], 'label' => $plan['database']['label']],
+			];
+		}
 
 		try {
 			$created = $this->store->objectService->saveObject(
@@ -338,8 +351,12 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 	 * @throws WizardCreationException On any failure (with rollback)
 	 */
 	private function createVersions(array $plan, array &$state): void {
-		$defaultManifest = $this->loadWizardFixture(fixture: ['name' => 'manifest', 'shape' => 'object']);
+		$defaultManifest = $this->versionManifest(plan: $plan, state: $state);
 		$defaultSchemas = $this->loadWizardFixture(fixture: ['name' => 'schemas', 'shape' => 'array']);
+		$dataRegisters = [];
+		if ($plan['database'] !== null) {
+			$dataRegisters[] = $plan['database']['register'];
+		}
 
 		foreach ($plan['versions'] as $versionDef) {
 			$versionSlug = (string)($versionDef['slug'] ?? '');
@@ -352,12 +369,43 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 				'registerSlug' => ApplicationVersionService::VERSION_REGISTER_PREFIX . $plan['slug'] . '-' . $versionSlug,
 				'manifest' => $defaultManifest,
 				'schemas' => $defaultSchemas,
+				'dataRegisters' => $dataRegisters,
 			];
 
 			$this->createVersionRecord(version: $version, state: $state);
 			$this->provisionVersionRegister(version: $version, state: $state);
 		}
 	}//end createVersions()
+
+	/**
+	 * The manifest every version starts from: the database's pages for "Start
+	 * from a database", else the default manifest.
+	 *
+	 * @param array<string,mixed> $plan The validated plan (`database` is null or the read database).
+	 * @param array<string,mixed> $state Creation state tracker, for the rollback when the build fails
+	 *
+	 * @return array<string,mixed> The manifest
+	 *
+	 * @throws WizardCreationException When the database's pages cannot be built (with rollback)
+	 *
+	 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
+	 */
+	private function versionManifest(array $plan, array $state): array {
+		if ($plan['database'] === null) {
+			return $this->loadWizardFixture(fixture: ['name' => 'manifest', 'shape' => 'object']);
+		}
+
+		$builder = ($this->databaseManifests ?? new DatabaseManifestBuilder());
+		try {
+			return $builder->build(
+				register: $plan['database']['register'],
+				schemas: $plan['database']['schemas'],
+				writable: $plan['database']['writable']
+			);
+		} catch (Throwable $e) {
+			$this->rollbackAndThrow(state: $state, failedAtStep: 'build-database-manifest', cause: $e);
+		}
+	}//end versionManifest()
 
 	/**
 	 * 3a: create one ApplicationVersion and track it for rollback and chain wiring.
@@ -376,7 +424,8 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 		$versionManifest = $this->substituteVersionContext(
 			manifest: $version['manifest'],
 			registerSlug: $registerSlug,
-			schemaSlugPrefix: $version['appSlug'] . '-' . $versionSlug . '-'
+			schemaSlugPrefix: $version['appSlug'] . '-' . $versionSlug . '-',
+			dataRegisters: ($version['dataRegisters'] ?? [])
 		);
 
 		$versionPayload = [
@@ -589,14 +638,16 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 	 *
 	 * @param array<string,mixed> $payload The wizard POST payload
 	 *
-	 * @return void
+	 * @return array{register: string, label: string, writable: bool, schemas: list<array<string, mixed>>}|null
+	 *         The connected database to build from (`fromDatabase`), or null for the default path
 	 *
 	 * @throws WizardCreationException With failedAtStep=validate on any failure
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-10
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-11
+	 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
 	 */
-	private function validatePayload(array $payload): void {
+	private function validatePayload(array $payload): ?array {
 		$appSlug = (string)($payload['slug'] ?? '');
 		$appName = (string)($payload['name'] ?? '');
 
@@ -641,7 +692,60 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 
 		// Check app slug uniqueness across existing Applications.
 		$this->assertAppSlugFree(appSlug: $appSlug);
+
+		return $this->validateDatabase(payload: $payload);
 	}//end validatePayload()
+
+	/**
+	 * Check a `fromDatabase` block (`{register, schemas[]}`) against the live register.
+	 *
+	 * @param array<string,mixed> $payload The wizard POST payload
+	 *
+	 * @return array{register: string, label: string, writable: bool, schemas: list<array<string, mixed>>}|null
+	 *         The database to build from, or null for the default path
+	 *
+	 * @throws WizardCreationException With failedAtStep=validate when the block is malformed, or the
+	 *                                 register is not a connected database the caller can read
+	 *
+	 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
+	 */
+	private function validateDatabase(array $payload): ?array {
+		if (array_key_exists('fromDatabase', $payload) === false || $payload['fromDatabase'] === null) {
+			return null;
+		}
+
+		$block = $payload['fromDatabase'];
+		$tables = ($block['schemas'] ?? null);
+		if (is_array($block) === false || is_string($block['register'] ?? null) === false || is_array($tables) === false) {
+			throw new WizardCreationException(
+				errorCode: 'validation_error',
+				failedAtStep: 'validate',
+				message: 'fromDatabase needs a register and a list of tables.',
+				rollbackStatus: 'none'
+			);
+		}
+
+		if ($this->databases === null) {
+			throw new WizardCreationException(
+				errorCode: 'validation_error',
+				failedAtStep: 'validate',
+				message: 'Connected databases cannot be read on this instance.',
+				rollbackStatus: 'none'
+			);
+		}
+
+		try {
+			return $this->databases->read(register: $block['register'], tables: array_values(array_filter($tables, 'is_string')));
+		} catch (InvalidArgumentException $e) {
+			throw new WizardCreationException(
+				errorCode: 'validation_error',
+				failedAtStep: 'validate',
+				message: $e->getMessage(),
+				rollbackStatus: 'none',
+				previous: $e
+			);
+		}
+	}//end validateDatabase()
 
 	/**
 	 * Refuse an app slug that an existing Application already uses.

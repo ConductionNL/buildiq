@@ -34,6 +34,8 @@ namespace OCA\Buildiq\Tests\Unit\Service;
 
 use OCA\Buildiq\Exception\WizardCreationException;
 use OCA\Buildiq\Service\ApplicationCreationService;
+use OCA\Buildiq\Service\ConnectedDatabaseReader;
+use OCA\Buildiq\Service\DatabaseManifestBuilder;
 use OCA\Buildiq\Service\RegisterStore;
 use OCA\Buildiq\Service\SlugValidator;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
@@ -41,6 +43,8 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Db\Source;
+use OCA\OpenRegister\Db\SourceMapperInterface;
 use OCA\OpenRegister\Service\RegisterService;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -455,6 +459,204 @@ class ApplicationCreationServiceTest extends TestCase {
 
 		self::assertSame('app-uuid-001', $uuid);
 	}//end createApplicationReturnUuidOnSinglePresetSuccess()
+
+	// -------------------------------------------------------------------------
+	// Start from a database (REQ-BQDB-003)
+	// -------------------------------------------------------------------------
+
+	/**
+	 * The service with a connected-database reader over these mappers.
+	 *
+	 * @param SourceMapperInterface&MockObject $sources The source mapper.
+	 *
+	 * @return ApplicationCreationService
+	 */
+	private function serviceWithDatabases(SourceMapperInterface&MockObject $sources): ApplicationCreationService {
+		return new ApplicationCreationService(
+			logger: $this->logger,
+			store: new RegisterStore(
+				objectService: $this->objectService,
+				registerMapper: $this->registerMapper,
+				schemaMapper: $this->schemaMapper
+			),
+			registerService: $this->registerService,
+			userSession: $this->userSession,
+			slugValidator: $this->slugValidator,
+			databases: new ConnectedDatabaseReader(registers: $this->registerMapper, schemas: $this->schemaMapper, sources: $sources),
+			databaseManifests: new DatabaseManifestBuilder(),
+		);
+	}//end serviceWithDatabases()
+
+	/**
+	 * Register `permits-db` on source 7 holding table `permits` (schema 11); any other register is the version register.
+	 *
+	 * @return void
+	 */
+	private function givenPermitsDatabase(): void {
+		$database = new Register();
+		$database->setSlug('permits-db');
+		$database->setTitle('Permits database');
+		$database->setSchemas([11]);
+		$database->setSource('7');
+
+		$versionRegister = new Register();
+		$this->registerMapper->method('find')->willReturnCallback(
+			static fn (string|int $id): Register => ($id === 'permits-db') ? $database : $versionRegister
+		);
+		$this->registerMapper->method('createFromArray')->willReturn($versionRegister);
+
+		$permits = new Schema();
+		$permits->setSlug('permits');
+		$permits->setTitle('Permits');
+		$permits->setProperties(['number' => ['type' => 'string'], 'status' => ['type' => 'string']]);
+		$this->schemaMapper->method('find')->willReturn($permits);
+		$this->schemaMapper->method('createFromArray')->willReturn(new Schema());
+	}//end givenPermitsDatabase()
+
+	/**
+	 * A database source with the given type and write setting.
+	 *
+	 * @param string $type     The source type.
+	 * @param bool   $writable Whether it takes writes.
+	 *
+	 * @return SourceMapperInterface&MockObject
+	 */
+	private function sourcesWith(string $type, bool $writable): SourceMapperInterface&MockObject {
+		$source = new Source();
+		$source->setType($type);
+		$source->setAuthConfig(['writable' => $writable]);
+		$sources = $this->createMock(SourceMapperInterface::class);
+		$sources->method('findForSystem')->with('7')->willReturn($source);
+		return $sources;
+	}//end sourcesWith()
+
+	/**
+	 * A good fromDatabase payload binds the database and makes its pages on every version, unprefixed.
+	 *
+	 * @test
+	 *
+	 * @return void
+	 */
+	public function createApplicationFromADatabaseBindsItAndMakesItsPages(): void {
+		$this->givenPermitsDatabase();
+		$saved = [];
+		$this->objectService->method('saveObject')->willReturnCallback(
+			function (array $object, ...$rest) use (&$saved): \OCA\OpenRegister\Db\ObjectEntity {
+				$saved[] = $object;
+				$entity = $this->createMock(\OCA\OpenRegister\Db\ObjectEntity::class);
+				$entity->method('jsonSerialize')->willReturn(['id' => 'uuid-' . count($saved), 'uuid' => 'uuid-' . count($saved)]);
+				return $entity;
+			}
+		);
+
+		$uuid = $this->serviceWithDatabases(sources: $this->sourcesWith(type: 'database', writable: false))->createApplication([
+			'name' => 'Vergunningen',
+			'slug' => 'vergunningen',
+			'preset' => 'dev-prod',
+			'fromDatabase' => ['register' => 'permits-db', 'schemas' => ['permits']],
+		]);
+
+		self::assertSame('uuid-1', $uuid);
+		self::assertSame([['register' => 'permits-db', 'label' => 'Permits database']], $saved[0]['dataRegisters']);
+
+		$versions = array_values(array_filter($saved, static fn (array $object): bool => isset($object['manifest']) === true));
+		self::assertCount(2, array_unique(array_column($versions, 'slug')));
+		foreach ($versions as $version) {
+			$pages = $version['manifest']['pages'];
+			self::assertSame(['PermitsIndex', 'PermitsDetail'], array_column($pages, 'id'));
+			self::assertSame('permits-db', $pages[0]['config']['register']);
+			self::assertSame('permits', $pages[0]['config']['schema']);
+			self::assertFalse($pages[0]['config']['showAdd']);
+			self::assertSame('Permits', $version['manifest']['menu'][0]['label']);
+		}
+	}//end createApplicationFromADatabaseBindsItAndMakesItsPages()
+
+	/**
+	 * An unknown register is refused at validation, before anything is saved.
+	 *
+	 * @test
+	 *
+	 * @return void
+	 */
+	public function createApplicationFromAnUnknownRegisterCreatesNothing(): void {
+		$this->registerMapper->method('find')->willReturnCallback(
+			static function (string|int $id): Register {
+				if ($id === 'publications') {
+					throw new RuntimeException('Register not found');
+				}
+
+				return new Register();
+			}
+		);
+		$this->objectService->expects(self::never())->method('saveObject');
+
+		try {
+			$this->serviceWithDatabases(sources: $this->createMock(SourceMapperInterface::class))->createApplication([
+				'name' => 'Vergunningen',
+				'slug' => 'vergunningen',
+				'preset' => 'single',
+				'fromDatabase' => ['register' => 'publications', 'schemas' => ['permits']],
+			]);
+			self::fail('Expected a WizardCreationException.');
+		} catch (WizardCreationException $e) {
+			self::assertSame('validate', $e->getFailedAtStep());
+			self::assertSame('The register "publications" does not exist or cannot be read.', $e->getMessage());
+		}
+	}//end createApplicationFromAnUnknownRegisterCreatesNothing()
+
+	/**
+	 * A register that no database backs is refused by name, before anything is saved.
+	 *
+	 * @test
+	 *
+	 * @return void
+	 */
+	public function createApplicationFromARegisterThatIsNoDatabaseCreatesNothing(): void {
+		$this->givenPermitsDatabase();
+		$this->objectService->expects(self::never())->method('saveObject');
+
+		try {
+			$this->serviceWithDatabases(sources: $this->sourcesWith(type: 'api', writable: true))->createApplication([
+				'name' => 'Vergunningen',
+				'slug' => 'vergunningen',
+				'preset' => 'single',
+				'fromDatabase' => ['register' => 'permits-db', 'schemas' => ['permits']],
+			]);
+			self::fail('Expected a WizardCreationException.');
+		} catch (WizardCreationException $e) {
+			self::assertSame('validate', $e->getFailedAtStep());
+			self::assertSame('The register "permits-db" is not a connected database.', $e->getMessage());
+		}
+	}//end createApplicationFromARegisterThatIsNoDatabaseCreatesNothing()
+
+	/**
+	 * A malformed fromDatabase block is refused, and without a reader the path is refused too.
+	 *
+	 * @test
+	 *
+	 * @return void
+	 */
+	public function createApplicationRefusesAMalformedOrUnreadableDatabaseBlock(): void {
+		$this->objectService->expects(self::never())->method('saveObject');
+		$payload = ['name' => 'Vergunningen', 'slug' => 'vergunningen', 'preset' => 'single'];
+
+		$messages = [];
+		foreach ([
+			[$this->serviceWithDatabases(sources: $this->createMock(SourceMapperInterface::class)), ['register' => 'permits-db']],
+			[$this->service, ['register' => 'permits-db', 'schemas' => ['permits']]],
+		] as [$service, $block]) {
+			try {
+				$service->createApplication($payload + ['fromDatabase' => $block]);
+			} catch (WizardCreationException $e) {
+				$messages[] = $e->getMessage();
+			}
+		}
+
+		self::assertSame(
+			['fromDatabase needs a register and a list of tables.', 'Connected databases cannot be read on this instance.'],
+			$messages
+		);
+	}//end createApplicationRefusesAMalformedOrUnreadableDatabaseBlock()
 
 	// -------------------------------------------------------------------------
 	// Stubs
