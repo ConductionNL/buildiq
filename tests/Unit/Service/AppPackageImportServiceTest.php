@@ -27,6 +27,7 @@ namespace OCA\Buildiq\Tests\Unit\Service;
 
 use OCA\Buildiq\Controller\ApplicationsController;
 use OCA\Buildiq\Service\AppPackageImportService;
+use OCA\Buildiq\Service\AppRecordsImporter;
 use OCA\Buildiq\Service\AppRepoParser;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -50,6 +51,13 @@ class AppPackageImportServiceTest extends TestCase {
 	private ApplicationsController&MockObject $install;
 
 	/**
+	 * The records importer mock.
+	 *
+	 * @var AppRecordsImporter&MockObject
+	 */
+	private AppRecordsImporter&MockObject $records;
+
+	/**
 	 * The archives written by this test, removed afterwards.
 	 *
 	 * @var array<int,string>
@@ -64,6 +72,7 @@ class AppPackageImportServiceTest extends TestCase {
 	protected function setUp(): void {
 		parent::setUp();
 		$this->install = $this->createMock(ApplicationsController::class);
+		$this->records = $this->createMock(AppRecordsImporter::class);
 
 	}//end setUp()
 
@@ -87,7 +96,7 @@ class AppPackageImportServiceTest extends TestCase {
 	 * @return AppPackageImportService The service.
 	 */
 	private function service(): AppPackageImportService {
-		return new AppPackageImportService(new AppRepoParser(), $this->install);
+		return new AppPackageImportService(new AppRepoParser(), $this->install, $this->records);
 
 	}//end service()
 
@@ -278,4 +287,113 @@ class AppPackageImportServiceTest extends TestCase {
 		}
 
 	}//end testOnlyPackagePathsAreRead()
+	/**
+	 * Without the records flag the app arrives empty: the records importer is never asked.
+	 *
+	 * @return void
+	 */
+	public function testRecordsStayBehindUnlessAsked(): void {
+		$archive = $this->archive(self::package(['data/permit.jsonl' => "{\"name\":\"a\"}\n"]));
+		$this->install->method('installFromTemplateArray')->willReturn(['status' => 201, 'data' => ['slug' => 'vergunningen', 'register' => 'vergunningen']]);
+		$this->records->expects($this->never())->method('import');
+
+		$result = $this->service()->importWithRecords($archive, ['owner' => 'sanne']);
+
+		$this->assertSame(201, $result['status']);
+		$this->assertArrayNotHasKey('records', $result['data']);
+
+	}//end testRecordsStayBehindUnlessAsked()
+
+	/**
+	 * With the records flag the archive's entries and the install result, with the owner, go to the records importer,
+	 * and its report comes back under `records`.
+	 *
+	 * @return void
+	 */
+	public function testRecordsComeAlongWhenAsked(): void {
+		$archive = $this->archive(self::package(['data/permit.jsonl' => "{\"name\":\"a\"}\n"]));
+		$installed = ['slug' => 'vergunningen', 'register' => 'vergunningen', 'companionSchemas' => [7]];
+		$this->install->method('installFromTemplateArray')->willReturn(['status' => 201, 'data' => $installed]);
+		$report = ['imported' => 1, 'failed' => 0, 'schemas' => [['schema' => 'permit', 'imported' => 1, 'failed' => 0]]];
+		$this->records->expects($this->once())->method('import')
+			->willReturnCallback(
+				function (array $files, array $given) use ($installed, $report): array {
+					$this->assertSame("{\"name\":\"a\"}\n", $files['data/permit.jsonl']);
+					$this->assertSame($installed + ['owner' => 'sanne'], $given);
+					return $report;
+				}
+			);
+
+		$result = $this->service()->importWithRecords($archive, ['owner' => 'sanne', 'records' => true, 'slug' => 'vergunningen']);
+
+		$this->assertSame(201, $result['status']);
+		$this->assertSame($report, $result['data']['records']);
+
+	}//end testRecordsComeAlongWhenAsked()
+
+	/**
+	 * A refused install (a taken slug) writes no records, even when they were asked.
+	 *
+	 * @return void
+	 */
+	public function testARefusedInstallWritesNoRecords(): void {
+		$archive = $this->archive(self::package(['data/permit.jsonl' => "{\"name\":\"a\"}\n"]));
+		$taken = ['status' => 409, 'data' => ['error' => 'slug_taken']];
+		$this->install->method('installFromTemplateArray')->willReturn($taken);
+		$this->records->expects($this->never())->method('import');
+
+		$this->assertSame($taken, $this->service()->importWithRecords($archive, ['owner' => 'sanne', 'records' => true]));
+
+	}//end testARefusedInstallWritesNoRecords()
+
+	/**
+	 * Only a real true turns records on: a truthy string from a caller is not enough.
+	 *
+	 * @return void
+	 */
+	public function testOnlyTrueTurnsRecordsOn(): void {
+		$archive = $this->archive(self::package(['data/permit.jsonl' => "{\"name\":\"a\"}\n"]));
+		$this->install->method('installFromTemplateArray')->willReturn(['status' => 201, 'data' => ['slug' => 'vergunningen']]);
+		$this->records->expects($this->never())->method('import');
+
+		$this->assertSame(201, $this->service()->importWithRecords($archive, ['owner' => 'sanne', 'records' => '1'])['status']);
+
+	}//end testOnlyTrueTurnsRecordsOn()
+	/**
+	 * The preview names the app and counts its pages, schemas and records, and installs nothing.
+	 *
+	 * @return void
+	 */
+	public function testThePreviewCountsWithoutInstalling(): void {
+		$archive = $this->archive(self::package(['data/permit.jsonl' => "{\"name\":\"a\"}\n\n{\"name\":\"b\"}\n", 'data/notes.txt' => 'x']));
+		$this->install->expects($this->never())->method('installFromTemplateArray');
+		$this->records->expects($this->never())->method('import');
+
+		$result = $this->service()->preview($archive);
+
+		$this->assertSame(200, $result['status']);
+		$this->assertSame('Vergunningen', $result['data']['name']);
+		$this->assertSame('vergunningen', $result['data']['slug']);
+		$this->assertSame(1, $result['data']['schemas']);
+		$this->assertSame(2, $result['data']['records']);
+		$this->assertSame(['permit' => 2], $result['data']['recordsBySchema']);
+		$this->assertSame(0, $result['data']['pages']);
+
+	}//end testThePreviewCountsWithoutInstalling()
+
+	/**
+	 * A package the import would refuse is refused by the preview with the same code and path.
+	 *
+	 * @return void
+	 */
+	public function testThePreviewRefusesWhatTheImportRefuses(): void {
+		$archive = $this->archive(self::package(['schemas/permit.json' => '{not json']));
+
+		$preview = $this->service()->preview($archive);
+		$import = $this->service()->import($archive, '', '', 'sanne');
+
+		$this->assertSame($import, $preview);
+		$this->assertSame(422, $preview['status']);
+
+	}//end testThePreviewRefusesWhatTheImportRefuses()
 }//end class
