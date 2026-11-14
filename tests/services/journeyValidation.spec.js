@@ -15,6 +15,7 @@ import {
 	checkJourneyWrites,
 	journeyFindings,
 	moveStep,
+	repeatFindings,
 	stepFindings,
 	storedFormStep,
 	writeOrderFindings,
@@ -157,6 +158,98 @@ describe('write order', () => {
 			{ step: 'one', code: 'write-unknown', write: 'org', property: 'organisation' },
 			{ step: 'two', code: 'write-as-duplicate', write: 'org' },
 		])
+	})
+})
+
+describe('repeating writes (forms-multi-product-request)', () => {
+	const productForms = {
+		'form-products': {
+			fields: [
+				{
+					key: 'producten',
+					widget: 'sub-objects',
+					type: 'array',
+					items: { properties: { product: { enum: ['parkeervergunning', 'afvalcontainer'] } } },
+				},
+				{ key: 'naam' },
+			],
+		},
+		'form-contact': { fields: [{ key: 'email' }] },
+	}
+
+	/**
+	 * A journey asking contact then products, with the given write on the given step.
+	 *
+	 * @param {object} write - the write.
+	 * @param {string} [on] - the step that makes it.
+	 * @return {object} The journey.
+	 */
+	function multi(write, on = 'products') {
+		const steps = [
+			{ id: 'contact', type: 'form', formId: 'form-contact' },
+			{ id: 'products', type: 'form', formId: 'form-products' },
+			{ id: 'review', type: 'review' },
+		]
+		steps.find((step) => step.id === on).writes = [write]
+		return { steps }
+	}
+
+	const repeating = {
+		as: 'aanvraag',
+		forEach: 'producten',
+		targetBy: 'product',
+		targets: {
+			parkeervergunning: { register: 'loket', schema: 'zaak', typeValue: 'PV' },
+			afvalcontainer: { register: 'loket', schema: 'zaak', typeValue: 'AC' },
+		},
+	}
+
+	it('accepts a write repeating over the product list with a target for every product', () => {
+		expect(repeatFindings(multi(repeating), productForms)).toEqual([])
+		expect(repeatFindings(multi(repeating, 'review'), productForms)).toEqual([])
+	})
+
+	it('names the product that has no target', () => {
+		const write = { ...repeating, targets: { parkeervergunning: repeating.targets.parkeervergunning } }
+
+		expect(repeatFindings(multi(write), productForms)).toEqual([
+			{ step: 'products', write: 'aanvraag', code: 'write-target-missing', product: 'afvalcontainer' },
+		])
+	})
+
+	it('refuses repeating over an answer asked after the write, or not a list, or unknown', () => {
+		expect(repeatFindings(multi(repeating, 'contact'), productForms)).toEqual([
+			{ step: 'contact', write: 'aanvraag', code: 'write-foreach-later', answer: 'producten' },
+		])
+		expect(repeatFindings(multi({ as: 'a', forEach: 'naam' }), productForms)).toEqual([
+			{ step: 'products', write: 'a', code: 'write-foreach-not-list', answer: 'naam' },
+		])
+		expect(repeatFindings(multi({ as: 'a', forEach: 'kinderen' }), productForms)).toEqual([
+			{ step: 'products', write: 'a', code: 'write-foreach-unknown', answer: 'kinderen' },
+		])
+	})
+
+	it('refuses targets on a write that does not repeat, targets without targetBy, and a repeating bundle', () => {
+		expect(repeatFindings(multi({ as: 'a', targets: {} }), productForms).map((f) => f.code)).toEqual(['write-targets-without-foreach'])
+		expect(repeatFindings(multi({ ...repeating, targetBy: '' }), productForms).map((f) => f.code)).toEqual(['write-target-by-missing'])
+		expect(repeatFindings(multi({ ...repeating, bundle: true }), productForms).map((f) => f.code)).toEqual(['write-bundle-repeats'])
+	})
+
+	it('reads the product values from the column options too', () => {
+		const forms = {
+			...productForms,
+			'form-products': { fields: [{ key: 'producten', widget: 'sub-objects', columns: [{ key: 'product', options: [{ value: 'parkeervergunning' }, 'ontheffing'] }] }] },
+		}
+
+		expect(repeatFindings(multi(repeating), forms)).toEqual([
+			{ step: 'products', write: 'aanvraag', code: 'write-target-missing', product: 'ontheffing' },
+		])
+	})
+
+	it('is part of every finding the designer makes', () => {
+		const write = { ...repeating, targets: {} }
+
+		expect(journeyFindings(multi(write), productForms).map((f) => f.code)).toEqual(['write-target-missing', 'write-target-missing'])
 	})
 })
 

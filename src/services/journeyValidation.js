@@ -249,6 +249,130 @@ export function writeOrderFindings(journey) {
 }
 
 /**
+ * The fields a form asks, its sub-steps included.
+ *
+ * @param {object|undefined} form - the form object.
+ * @return {Array<object>} The field definitions.
+ */
+function fieldsOf(form) {
+	if (!form) {
+		return []
+	}
+	const fields = Array.isArray(form.fields) ? [...form.fields] : []
+	for (const sub of Array.isArray(form.steps) ? form.steps : []) {
+		fields.push(...(sub && Array.isArray(sub.fields) ? sub.fields : []))
+	}
+	return fields.filter((field) => field && typeof field === 'object')
+}
+
+/**
+ * Whether a field collects a list of items: an array, or the sub-objects widget
+ * of the product list (forms-multi-product-request D4).
+ *
+ * @param {object} field - the field definition.
+ * @return {boolean}
+ */
+function isListField(field) {
+	return field.type === 'array' || field.widget === 'sub-objects'
+}
+
+/**
+ * The values an item field of a list field can hold, or null when the list does
+ * not say: the enum of its item schema, or the options of its column.
+ *
+ * @param {object} field - the list field.
+ * @param {string} itemField - the item field, usually `product`.
+ * @return {Array<string>|null} The values.
+ */
+function itemValuesOf(field, itemField) {
+	const property = field.items && field.items.properties && field.items.properties[itemField]
+	if (property && Array.isArray(property.enum)) {
+		return property.enum.map(String)
+	}
+	const column = (Array.isArray(field.columns) ? field.columns : []).find((col) => col && (col.key || col.name) === itemField)
+	if (column && Array.isArray(column.options)) {
+		return column.options.map((option) => String(option && typeof option === 'object' ? option.value ?? option.id : option))
+	}
+	return null
+}
+
+/**
+ * Findings on the writes that repeat per list item (forms-multi-product-request):
+ * `forEach` names a list answer asked at or before the write's step, `targetBy`
+ * and `targets` only on a repeating write, every value the list can hold has a
+ * target, and a bundle is written once. Whether the mapping fits every target
+ * schema is the server's question (`checkJourneyWrites`).
+ *
+ * @param {{steps?: Array<object>}} journey - the journey.
+ * @param {{[id: string]: object}} forms - the form objects by id.
+ * @return {Array<object>} The findings.
+ * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-a-write-can-repeat-per-list-item-req-bqmp-001
+ * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-each-item-goes-to-its-products-target-req-bqmp-002
+ */
+export function repeatFindings(journey, forms) {
+	const steps = journeySteps(journey)
+	const askedAt = new Map()
+	steps.forEach((step, index) => {
+		const form = step.type === 'form' && forms ? forms[String(step.formId || '')] : null
+		for (const field of fieldsOf(form)) {
+			const key = String(field.key || field.name || '')
+			if (key !== '' && !askedAt.has(key)) {
+				askedAt.set(key, { index, field })
+			}
+		}
+	})
+
+	const findings = []
+	steps.forEach((step, index) => {
+		const id = String(step.id || '')
+		for (const write of Array.isArray(step.writes) ? step.writes : []) {
+			if (!write || typeof write !== 'object') {
+				continue
+			}
+			const as = String(write.as || '')
+			const forEach = typeof write.forEach === 'string' ? write.forEach.trim() : ''
+			const hasTargets = write.targets !== undefined || write.targetBy !== undefined
+			if (forEach === '') {
+				if (hasTargets) {
+					findings.push({ step: id, write: as, code: 'write-targets-without-foreach' })
+				}
+				continue
+			}
+			if (write.bundle === true) {
+				findings.push({ step: id, write: as, code: 'write-bundle-repeats' })
+			}
+			const asked = askedAt.get(forEach)
+			if (!asked) {
+				findings.push({ step: id, write: as, code: 'write-foreach-unknown', answer: forEach })
+				continue
+			}
+			if (asked.index > index) {
+				findings.push({ step: id, write: as, code: 'write-foreach-later', answer: forEach })
+			}
+			if (!isListField(asked.field)) {
+				findings.push({ step: id, write: as, code: 'write-foreach-not-list', answer: forEach })
+				continue
+			}
+			if (write.targets === undefined) {
+				continue
+			}
+			const targetBy = String(write.targetBy || '')
+			if (targetBy === '') {
+				findings.push({ step: id, write: as, code: 'write-target-by-missing' })
+				continue
+			}
+			const targets = write.targets && typeof write.targets === 'object' && !Array.isArray(write.targets) ? write.targets : {}
+			for (const value of itemValuesOf(asked.field, targetBy) || []) {
+				if (!targets[value]) {
+					findings.push({ step: id, write: as, code: 'write-target-missing', product: value })
+				}
+			}
+		}
+	})
+	return findings
+}
+
+/**
  * Every finding the designer can make without the server.
  *
  * @param {{steps?: Array<object>}} journey - the journey.
@@ -257,7 +381,12 @@ export function writeOrderFindings(journey) {
  * @spec openspec/changes/journey-designer/specs/journey-designer/spec.md
  */
 export function journeyFindings(journey, forms) {
-	return [...stepFindings(journey, forms), ...branchFindings(journey, forms), ...writeOrderFindings(journey)]
+	return [
+		...stepFindings(journey, forms),
+		...branchFindings(journey, forms),
+		...writeOrderFindings(journey),
+		...repeatFindings(journey, forms),
+	]
 }
 
 /**
