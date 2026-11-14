@@ -42,7 +42,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Controller;
 
 use InvalidArgumentException;
-use OCA\Buildiq\Service\PageLayoutAuthoringService;
+use OCA\Buildiq\Kernel\Contracts\PageLayoutAuthoringServiceInterface;
 use OCA\Buildiq\Settings\AdminSettings;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -70,7 +70,7 @@ class PageLayoutController extends Controller {
 	 * Constructor.
 	 *
 	 * @param IRequest $request The current request.
-	 * @param PageLayoutAuthoringService $authoring The save path.
+	 * @param PageLayoutAuthoringServiceInterface $authoring The save path.
 	 * @param IUserSession $userSession The calling user.
 	 * @param IGroupManager $groupManager Resolves admin membership.
 	 * @param LoggerInterface $logger Logger.
@@ -79,7 +79,7 @@ class PageLayoutController extends Controller {
 	 */
 	public function __construct(
 		IRequest $request,
-		private readonly PageLayoutAuthoringService $authoring,
+		private readonly PageLayoutAuthoringServiceInterface $authoring,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 		private readonly LoggerInterface $logger,

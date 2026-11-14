@@ -38,10 +38,11 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Exception\CopilotException;
-use OCA\Buildiq\Mcp\BuildiqToolProvider;
+use OCA\Buildiq\Kernel\Contracts\BuildiqToolProviderInterface;
+use OCA\Buildiq\Kernel\Contracts\CopilotServiceInterface;
 use OCA\Buildiq\Service\Copilot\CopilotPlanValidator;
 use OCA\Buildiq\Service\Copilot\CopilotPromptBuilder;
-use OCA\Buildiq\Support\ManifestDataBinding;
+use OCA\Buildiq\Service\Copilot\CopilotTextTask;
 use OCA\Buildiq\Support\ManifestEntryList;
 use OCA\Buildiq\Support\ManifestPageShape;
 use OCA\Buildiq\Support\ManifestRoute;
@@ -49,22 +50,14 @@ use OCA\Buildiq\Support\ManifestWidgetShape;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\Buildiq\Support\WidgetSpec;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
-use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
+use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserManager;
-use OCP\TaskProcessing\Task;
-use OCP\TaskProcessing\TaskTypes\TextToText;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
-// NOTE: OCP\TaskProcessing\Task and OCP\TaskProcessing\TaskTypes\TextToText
-// ship only on NC 30+. A `use` import merely aliases the name — PHP does not
-// resolve/autoload it until the class is actually referenced — so importing
-// them here is safe even on NC 28/29; every call site that constructs or
-// references them is reached only after health()/assertAvailable() has
-// already confirmed `OCP\TaskProcessing\IManager` exists.
 use Throwable;
 
 /**
@@ -73,7 +66,7 @@ use Throwable;
  * @spec openspec/specs/ai-copilot/spec.md
  * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
  */
-class CopilotService {
+class CopilotService implements CopilotServiceInterface {
 
 	private const REGISTER_SLUG = 'buildiq';
 
@@ -93,20 +86,6 @@ class CopilotService {
 	 * @var string
 	 */
 	private const TEXT_TO_TEXT_TASK_TYPE_ID = 'core:text2text';
-
-	/**
-	 * Hard timeout for the synchronous plan-call poll loop (design.md Decision 2).
-	 *
-	 * @var float
-	 */
-	private const LLM_TIMEOUT_SECONDS = 120.0;
-
-	/**
-	 * Poll interval while waiting for the TaskProcessing task to finish.
-	 *
-	 * @var int
-	 */
-	private const POLL_INTERVAL_MICROSECONDS = 500000;
 
 	/**
 	 * Roles that grant write access to an Application (mirrors AbstractToolHandler).
@@ -152,6 +131,13 @@ class CopilotService {
 	];
 
 	/**
+	 * The text-to-text task seam shared with the builder assist.
+	 *
+	 * @var CopilotTextTask
+	 */
+	private readonly CopilotTextTask $textTask;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ContainerInterface $container DI container, used to lazily resolve
@@ -164,7 +150,7 @@ class CopilotService {
 	 * @param IUserManager $userManager Resolves a uid string to an `IUser` for RBAC.
 	 * @param IGroupManager $groupManager Group manager (admin bypass logging).
 	 * @param PermissionResolver $permissionResolver Shared permission-grammar resolver.
-	 * @param BuildiqToolProvider $toolProvider MCP dispatcher — the
+	 * @param BuildiqToolProviderInterface $toolProvider MCP dispatcher — the
 	 *                                          single execution path.
 	 * @param CopilotPlanValidator $planValidator Structural plan validator.
 	 * @param CopilotPromptBuilder $promptBuilder System-prompt builder.
@@ -173,6 +159,7 @@ class CopilotService {
 	 *                                       every agent-scoped plan/execute/discard
 	 *                                       turn.
 	 * @param AuditTrailMapper|null $auditTrailMapper Optional OR audit-trail writer for admin-bypass parity (L2).
+	 * @param CopilotTextTask|null $textTask The text-to-text task seam; built from the container and logger when not given.
 	 *
 	 * @return void
 	 */
@@ -183,13 +170,15 @@ class CopilotService {
 		private readonly IUserManager $userManager,
 		private readonly IGroupManager $groupManager,
 		private readonly PermissionResolver $permissionResolver,
-		private readonly BuildiqToolProvider $toolProvider,
+		private readonly BuildiqToolProviderInterface $toolProvider,
 		private readonly CopilotPlanValidator $planValidator,
 		private readonly CopilotPromptBuilder $promptBuilder,
 		private readonly ApplicationDeletionService $appDeletionService,
 		private readonly AgentRunLogger $agentRunLogger,
 		private readonly ?AuditTrailMapper $auditTrailMapper = null,
+		?CopilotTextTask $textTask = null,
 	) {
+		$this->textTask = ($textTask ?? new CopilotTextTask(container: $container, logger: $logger));
 	}//end __construct()
 
 	/**
@@ -1277,43 +1266,56 @@ class CopilotService {
 			) === false;
 
 		if ($genuineBypass === true) {
-			$context = [
-				'event' => 'rbac.admin_bypass',
-				'actor' => $userId,
-				'appSlug' => (string)($app['slug'] ?? ''),
-				'channel' => 'copilot',
-			];
-
-			// Audit-trail parity with the HTTP/MCP paths (REQ-OBRBAC-007): record
-			// the bypass to the OR per-object audit trail when the mapper + app
-			// entity are available; fail soft to a PSR log otherwise
-			// (harden-rules-authz-and-audit-parity, L2).
-			$entity = null;
-			try {
-				$entity = $this->objectService->find((string)($app['uuid'] ?? ($app['id'] ?? '')));
-			} catch (\Throwable $e) {
-				$entity = null;
-			}
-
-			if ($this->auditTrailMapper !== null && $entity instanceof ObjectEntity) {
-				try {
-					$this->auditTrailMapper->recordObjectEvent(
-						event: new ObjectAuditEvent(object: $entity, action: 'rbac.admin_bypass', context: $context)
-					);
-					$this->logger->info('Buildiq Copilot: rbac.admin_bypass', $context);
-					return;
-				} catch (\Throwable $e) {
-					$this->logger->critical(
-						'Buildiq Copilot: rbac.admin_bypass audit-trail write failed',
-						array_merge($context, ['exception' => $e->getMessage()])
-					);
-					return;
-				}
-			}//end if
-
-			$this->logger->info('Buildiq Copilot: rbac.admin_bypass', $context);
-		}//end if
+			$this->recordCopilotBypass(app: $app, userId: $userId);
+		}
 	}//end assertWriteRoleOnApp()
+
+	/**
+	 * Record a genuine admin bypass to the OpenRegister audit trail, or to the
+	 * log when the audit trail cannot take it.
+	 *
+	 * @param array<string, mixed> $app    Application data.
+	 * @param string               $userId Acting user's UID.
+	 *
+	 * @return void
+	 */
+	private function recordCopilotBypass(array $app, string $userId): void {
+		$context = [
+			'event' => 'rbac.admin_bypass',
+			'actor' => $userId,
+			'appSlug' => (string)($app['slug'] ?? ''),
+			'channel' => 'copilot',
+		];
+
+		// Audit-trail parity with the HTTP/MCP paths (REQ-OBRBAC-007): record
+		// the bypass to the OR per-object audit trail when the mapper + app
+		// entity are available; fail soft to a PSR log otherwise
+		// (harden-rules-authz-and-audit-parity, L2).
+		$entity = null;
+		try {
+			$entity = $this->objectService->find((string)($app['uuid'] ?? ($app['id'] ?? '')));
+		} catch (\Throwable $e) {
+			$entity = null;
+		}
+
+		if ($this->auditTrailMapper !== null && $entity instanceof ObjectEntity) {
+			try {
+				$this->auditTrailMapper->recordObjectEvent(
+					event: new ObjectAuditEvent(object: $entity, action: 'rbac.admin_bypass', context: $context)
+				);
+				$this->logger->info('Buildiq Copilot: rbac.admin_bypass', $context);
+				return;
+			} catch (\Throwable $e) {
+				$this->logger->critical(
+					'Buildiq Copilot: rbac.admin_bypass audit-trail write failed',
+					array_merge($context, ['exception' => $e->getMessage()])
+				);
+				return;
+			}
+		}//end if
+
+		$this->logger->info('Buildiq Copilot: rbac.admin_bypass', $context);
+	}//end recordCopilotBypass()
 
 	/**
 	 * Resolve `OCP\TaskProcessing\IManager` from the container, or null when unavailable.
@@ -1321,11 +1323,7 @@ class CopilotService {
 	 * @return object|null
 	 */
 	private function resolveTaskProcessingManager(): ?object {
-		try {
-			return $this->container->get('OCP\\TaskProcessing\\IManager');
-		} catch (Throwable $e) {
-			return null;
-		}
+		return $this->textTask->manager();
 	}//end resolveTaskProcessingManager()
 
 	/**
@@ -1454,7 +1452,7 @@ class CopilotService {
 	 * @param string $userId Acting user's UID.
 	 * @param string|null $appSlug Optional target app slug, carried as the task's customId.
 	 * @param float|null $timeoutSeconds How long to wait for a worker, defaulting to
-	 *                                   {@see LLM_TIMEOUT_SECONDS}. Only a test passes
+	 *                                   {@see CopilotTextTask::TIMEOUT_SECONDS}. Only a test passes
 	 *                                   this, so the give-up path can be exercised
 	 *                                   without waiting two minutes for it.
 	 *
@@ -1463,128 +1461,8 @@ class CopilotService {
 	 * @throws CopilotException (502) On provider failure, cancellation, or timeout.
 	 */
 	private function runTextToTextTask(object $manager, string $prompt, string $userId, ?string $appSlug = null, ?float $timeoutSeconds = null): string {
-		$task = new Task(
-			TextToText::ID,
-			['input' => $prompt],
-			'buildiq',
-			$userId,
-			$appSlug,
-		);
-
-		if ($this->preferredProviderRunsInline(manager: $manager) === true) {
-			return $this->readTaskOutput(task: $manager->runTask($task));
-		}
-
-		$manager->scheduleTask($task);
-		$taskId = $task->getId();
-		if ($taskId === null) {
-			throw $this->providerError(message: 'The AI provider did not accept the request.', detail: 'TaskProcessing did not assign a task id.');
-		}
-
-		$budget = ($timeoutSeconds ?? self::LLM_TIMEOUT_SECONDS);
-		$deadline = microtime(as_float: true) + $budget;
-
-		while (true) {
-			$current = $manager->getTask($taskId);
-			$status = $current->getStatus();
-
-			if ($status === Task::STATUS_SUCCESSFUL || $status === Task::STATUS_FAILED || $status === Task::STATUS_CANCELLED) {
-				return $this->readTaskOutput(task: $current);
-			}
-
-			if (microtime(as_float: true) > $deadline) {
-				$this->cancelAbandonedTask(manager: $manager, taskId: $taskId);
-				throw $this->providerError(
-					message: 'No AI worker picked up the request in time. Ask an administrator to check the AI settings.',
-					detail: 'TaskProcessing task ' . $taskId . ' was still waiting after ' . ((int)$budget) . 's.'
-				);
-			}
-
-			usleep(self::POLL_INTERVAL_MICROSECONDS);
-		}//end while
+		return $this->textTask->run(manager: $manager, prompt: $prompt, userId: $userId, appSlug: $appSlug, timeoutSeconds: $timeoutSeconds);
 	}//end runTextToTextTask()
-
-	/**
-	 * Whether the preferred provider for `core:text2text` can run in this
-	 * request (`ISynchronousProvider`), rather than needing a worker.
-	 *
-	 * @param object $manager `OCP\TaskProcessing\IManager` instance.
-	 *
-	 * @return boolean
-	 */
-	private function preferredProviderRunsInline(object $manager): bool {
-		if (interface_exists('OCP\\TaskProcessing\\ISynchronousProvider') === false || method_exists($manager, 'runTask') === false) {
-			return false;
-		}
-
-		try {
-			$provider = $manager->getPreferredProvider(self::TEXT_TO_TEXT_TASK_TYPE_ID);
-		} catch (Throwable $e) {
-			$this->logger->warning('Buildiq Copilot: could not resolve the preferred text2text provider: ' . $e->getMessage());
-			return false;
-		}
-
-		return $provider instanceof \OCP\TaskProcessing\ISynchronousProvider;
-	}//end preferredProviderRunsInline()
-
-	/**
-	 * Read a finished task's output, turning a failed one into a provider error
-	 * that carries the provider's own message (e.g. "Chat provider is not
-	 * configured"), so the panel never reports a missing provider as bad wording.
-	 *
-	 * @param Task $task The finished task.
-	 *
-	 * @return string The task's `output` text.
-	 *
-	 * @throws CopilotException (502) When the task did not succeed.
-	 */
-	private function readTaskOutput(Task $task): string {
-		if ($task->getStatus() === Task::STATUS_SUCCESSFUL) {
-			$output = $task->getOutput();
-			return (string)($output['output'] ?? '');
-		}
-
-		throw $this->providerError(
-			message: 'The AI provider could not answer. Ask an administrator to check the AI settings.',
-			detail: (string)$task->getErrorMessage()
-		);
-	}//end readTaskOutput()
-
-	/**
-	 * Cancel a task this request has stopped waiting for. Best effort: a failed
-	 * cancel must never replace the timeout the caller is about to report.
-	 *
-	 * @param object $manager `OCP\TaskProcessing\IManager` instance.
-	 * @param integer $taskId The abandoned task's id.
-	 *
-	 * @return void
-	 */
-	private function cancelAbandonedTask(object $manager, int $taskId): void {
-		try {
-			$manager->cancelTask($taskId);
-		} catch (Throwable $e) {
-			$this->logger->warning('Buildiq Copilot: could not cancel abandoned task ' . $taskId . ': ' . $e->getMessage());
-		}
-	}//end cancelAbandonedTask()
-
-	/**
-	 * Build the 502 envelope for a provider-side failure.
-	 *
-	 * @param string $message User-facing message.
-	 * @param string $detail The provider's own message, carried for the panel's detail line.
-	 *
-	 * @return CopilotException
-	 */
-	private function providerError(string $message, string $detail): CopilotException {
-		$this->logger->warning('Buildiq Copilot: provider error: ' . $detail);
-
-		return new CopilotException(
-			errorCode: 'provider_error',
-			message: $message,
-			httpStatus: 502,
-			context: ['providerMessage' => $detail]
-		);
-	}//end providerError()
 
 	/**
 	 * Strip ```json ... ``` / ``` ... ``` code fences from an LLM response, if present.

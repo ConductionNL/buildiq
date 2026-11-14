@@ -61,7 +61,7 @@ use RuntimeException;
  * @uses \OCA\Buildiq\Service\AppRepoPayloadSafety
  * @uses \OCA\Buildiq\Service\CompanionSchemaCollector
  * @uses \OCA\Buildiq\Service\TemplateRepoSerializer
- * @uses \OCA\Buildiq\Support\RepoDescriptor
+ * @uses \OCA\Buildiq\Service\RepoDescriptor
  * @uses \OCA\Buildiq\Tests\Unit\Support\FakeSlugResolver
  * @uses \OCA\Buildiq\Service\ConnectorExportRun
  */

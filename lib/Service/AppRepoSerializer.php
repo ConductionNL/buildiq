@@ -38,7 +38,6 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
-use OCA\Buildiq\Support\RepoDescriptor;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -327,47 +326,59 @@ class AppRepoSerializer {
 				continue;
 			}
 
-			$schemas = [];
-			foreach ((array)$register->getSchemas() as $schemaId) {
-				try {
-					$schema = $this->schemaMapper->find($schemaId, _multitenancy: false);
-				} catch (Throwable $e) {
-					continue;
-				}
-
-				$schemaSlug = $schema->getSlug();
-				if ($schemaSlug === '') {
-					continue;
-				}
-
-				$schemaVersion = (string)$schema->getVersion();
-				if ($schemaVersion === '') {
-					$schemaVersion = '0.1.0';
-				}
-
-				$schemas[$schemaSlug] = [
-					'slug' => $schemaSlug,
-					'title' => (string)$schema->getTitle(),
-					'description' => (string)$schema->getDescription(),
-					'version' => $schemaVersion,
-					'type' => 'object',
-					'required' => array_values((array)$schema->getRequired()),
-					'properties' => (array)$schema->getProperties(),
-				];
-			}//end foreach
-
-			ksort($schemas);
-
 			$out[$registerSlug] = [
 				'slug' => $registerSlug,
 				'title' => (string)$register->getTitle(),
 				'label' => (string)($binding['label'] ?? ''),
-				'schemas' => $schemas,
+				'schemas' => $this->registerSchemaDefinitions(schemaIds: (array)$register->getSchemas()),
 			];
 		}//end foreach
 
 		return $out;
 	}//end collectDataRegisters()
+
+	/**
+	 * The schema definitions of a register's schemas, keyed and sorted by slug.
+	 * A schema that cannot be read, or has no slug, is left out.
+	 *
+	 * @param array<int|string,mixed> $schemaIds The register's schema ids.
+	 *
+	 * @return array<string,array<string,mixed>> Schema definitions keyed by slug.
+	 */
+	private function registerSchemaDefinitions(array $schemaIds): array {
+		$schemas = [];
+		foreach ($schemaIds as $schemaId) {
+			try {
+				$schema = $this->schemaMapper->find($schemaId, _multitenancy: false);
+			} catch (Throwable $e) {
+				continue;
+			}
+
+			$schemaSlug = $schema->getSlug();
+			if ($schemaSlug === '') {
+				continue;
+			}
+
+			$schemaVersion = (string)$schema->getVersion();
+			if ($schemaVersion === '') {
+				$schemaVersion = '0.1.0';
+			}
+
+			$schemas[$schemaSlug] = [
+				'slug' => $schemaSlug,
+				'title' => (string)$schema->getTitle(),
+				'description' => (string)$schema->getDescription(),
+				'version' => $schemaVersion,
+				'type' => 'object',
+				'required' => array_values((array)$schema->getRequired()),
+				'properties' => (array)$schema->getProperties(),
+			];
+		}//end foreach
+
+		ksort($schemas);
+
+		return $schemas;
+	}//end registerSchemaDefinitions()
 
 	/**
 	 * Collect the OpenConnector configuration this application EXPLICITLY declares.

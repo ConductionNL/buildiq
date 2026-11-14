@@ -67,6 +67,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use DateTime;
+use OCA\Buildiq\Kernel\Contracts\RuleActionDispatcherInterface;
 use OCA\Buildiq\Service\Connection\ConnectionReporter;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
@@ -86,7 +87,7 @@ use Throwable;
  *   OpenRegister objects, the HTTP client and its egress guard, the rule engine), and
  *   the egress guard ADR-067 requires on the webhook is what tipped the count over.
  */
-class RuleActionDispatcher {
+class RuleActionDispatcher implements RuleActionDispatcherInterface {
 	/**
 	 * App identifier stamped on every created NC notification.
 	 */

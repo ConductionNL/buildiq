@@ -47,6 +47,7 @@ namespace OCA\Buildiq\Service;
 
 use InvalidArgumentException;
 use OCA\Buildiq\Exception\FormDestinationRefusedException;
+use OCA\Buildiq\Kernel\Contracts\RegistrationFormAuthoringServiceInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\IAppConfig;
 
@@ -55,7 +56,7 @@ use OCP\IAppConfig;
  *
  * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004)
  */
-class RegistrationFormAuthoringService {
+class RegistrationFormAuthoringService implements RegistrationFormAuthoringServiceInterface {
 	/**
 	 * The schema holding registration forms, equal to the leaf provider's.
 	 *

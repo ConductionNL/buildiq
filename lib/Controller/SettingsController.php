@@ -24,8 +24,8 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Controller;
 
-use OCA\Buildiq\AppInfo\Application;
-use OCA\Buildiq\Service\SettingsService;
+use OCA\Buildiq\Kernel\AppIdentity;
+use OCA\Buildiq\Kernel\Contracts\SettingsServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -48,7 +48,7 @@ class SettingsController extends Controller {
 	 * Constructor for the SettingsController.
 	 *
 	 * @param IRequest $request The request object.
-	 * @param SettingsService $settingsService The settings service.
+	 * @param SettingsServiceInterface $settingsService The settings service.
 	 * @param IUserSession $userSession Current user session.
 	 * @param IGroupManager $groupManager Group membership resolver for admin guard.
 	 *
@@ -56,11 +56,11 @@ class SettingsController extends Controller {
 	 */
 	public function __construct(
 		IRequest $request,
-		private SettingsService $settingsService,
+		private SettingsServiceInterface $settingsService,
 		private IUserSession $userSession,
 		private IGroupManager $groupManager,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**

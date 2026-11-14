@@ -45,6 +45,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\ManifestFormDestinationsInterface;
 use OCA\Buildiq\Support\ManifestPageShape;
 
 /**
@@ -52,7 +53,7 @@ use OCA\Buildiq\Support\ManifestPageShape;
  *
  * @spec openspec/changes/forms-are-valid-against-their-destination/specs/form-destination-authoring/spec.md#requirement-every-buildiq-form-must-be-valid-against-its-destination-before-it-is-published
  */
-class ManifestFormDestinations {
+class ManifestFormDestinations implements ManifestFormDestinationsInterface {
 	/**
 	 * Buildiq form field types in the validator's vocabulary.
 	 *

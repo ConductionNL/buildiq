@@ -22,8 +22,8 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Tests\Unit\Service\Dashboard;
 
-use OCA\Buildiq\Dashboard\WidgetApplication;
-use OCA\Buildiq\Dashboard\WidgetDescriptor;
+use OCA\Buildiq\Kernel\Values\WidgetApplication;
+use OCA\Buildiq\Kernel\Values\WidgetDescriptor;
 use OCA\Buildiq\Service\Dashboard\AggregationGateway;
 use OCA\Buildiq\Service\Dashboard\WidgetItemProjector;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
@@ -37,8 +37,8 @@ use Psr\Log\LoggerInterface;
  * Edge cases of WidgetItemProjector.
  *
  * @covers \OCA\Buildiq\Service\Dashboard\WidgetItemProjector
- * @uses   \OCA\Buildiq\Dashboard\WidgetDescriptor
- * @uses   \OCA\Buildiq\Dashboard\WidgetApplication
+ * @uses   \OCA\Buildiq\Kernel\Values\WidgetDescriptor
+ * @uses   \OCA\Buildiq\Kernel\Values\WidgetApplication
  * @uses   \OCA\Buildiq\Support\ObjectRecord
  */
 final class WidgetItemProjectorEdgeTest extends TestCase {

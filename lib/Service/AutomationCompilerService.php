@@ -112,14 +112,14 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Exception\UnsupportedAutomationCombinationException;
+use OCA\Buildiq\Kernel\Contracts\AutomationCompilerServiceInterface;
 use OCA\Buildiq\Service\Automation\CompileInput;
-use OCA\Buildiq\Support\FleetAppId;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
-use Psr\Container\ContainerInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\App\IAppManager;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
@@ -129,16 +129,7 @@ use Throwable;
  *
  * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#2.1
  */
-class AutomationCompilerService {
-	/**
-	 * Shared Buildiq register slug.
-	 */
-	public const REGISTER_SLUG = 'buildiq';
-
-	/**
-	 * Schema slug of the Automation object itself.
-	 */
-	public const AUTOMATION_SCHEMA = 'automation';
+class AutomationCompilerService implements AutomationCompilerServiceInterface {
 
 	/**
 	 * The v1 compilation matrix: trigger type → allowed action types.
@@ -1304,12 +1295,10 @@ class AutomationCompilerService {
 		$schedules = $this->orArray(value: $manifest['schedules'] ?? null);
 
 		$plannedIds = array_map(static fn (array $e): string => (string)$e['id'], $plannedEntries);
-
-		$schedules = $this->mergeSchedules(
+		$schedules = $this->mergeScheduleEntries(
 			schedules: $schedules,
 			plannedEntries: $plannedEntries,
-			priorScheduleIds: $priorScheduleIds,
-			plannedIds: $plannedIds
+			priorScheduleIds: $priorScheduleIds
 		);
 
 		if ($schedules === []) {
@@ -1332,18 +1321,20 @@ class AutomationCompilerService {
 	}//end applySchedules()
 
 	/**
-	 * Drop the prior-provenance schedules no longer planned, then replace each
-	 * planned entry's namesake in place or append it. Rows of other origin,
-	 * including ones without an id, are kept as they are.
+	 * Merge planned schedule entries into a manifest's schedules list: drop every
+	 * prior-provenance id that is no longer planned, replace the row with the same
+	 * id as a planned entry, and append planned entries that are new. Rows that are
+	 * not this automation's are kept as they are, in their order.
 	 *
-	 * @param array<int,mixed>               $schedules        The manifest's schedules.
-	 * @param array<int,array<string,mixed>> $plannedEntries   Planned schedules entries.
-	 * @param array<int,string>              $priorScheduleIds Prior-provenance schedule ids.
-	 * @param array<int,string>              $plannedIds       The planned entries' ids.
+	 * @param array<int|string,mixed>          $schedules        The manifest's current schedules rows.
+	 * @param array<int,array<string,mixed>>   $plannedEntries   Planned schedules entries.
+	 * @param array<int,string>                $priorScheduleIds Prior-provenance schedule ids.
 	 *
-	 * @return array<int,mixed> The merged schedules.
+	 * @return array<int,mixed> The merged rows.
 	 */
-	private function mergeSchedules(array $schedules, array $plannedEntries, array $priorScheduleIds, array $plannedIds): array {
+	private function mergeScheduleEntries(array $schedules, array $plannedEntries, array $priorScheduleIds): array {
+		$plannedIds = array_map(static fn (array $e): string => (string)$e['id'], $plannedEntries);
+
 		$schedules = array_values(
 			array_filter(
 				$schedules,
@@ -1359,7 +1350,7 @@ class AutomationCompilerService {
 		);
 
 		foreach ($plannedEntries as $entry) {
-			$idx = $this->scheduleIndex(schedules: $schedules, id: $entry['id']);
+			$idx = $this->scheduleRowIndex(schedules: $schedules, id: $entry['id']);
 			if ($idx !== null) {
 				$schedules[$idx] = $entry;
 			} else {
@@ -1368,17 +1359,17 @@ class AutomationCompilerService {
 		}
 
 		return $schedules;
-	}//end mergeSchedules()
+	}//end mergeScheduleEntries()
 
 	/**
-	 * The index of the first schedule row carrying this id, or null.
+	 * The index of the schedules row whose id is exactly the given id.
 	 *
-	 * @param array<int,mixed> $schedules The schedules.
-	 * @param mixed            $id        The id, compared strictly.
+	 * @param array<int,mixed> $schedules The schedules rows.
+	 * @param mixed            $id        The planned entry's id.
 	 *
-	 * @return int|null
+	 * @return int|null The index, or null when no row carries it.
 	 */
-	private function scheduleIndex(array $schedules, mixed $id): ?int {
+	private function scheduleRowIndex(array $schedules, mixed $id): ?int {
 		foreach ($schedules as $i => $scheduleRow) {
 			$rowId = null;
 			if (is_array($scheduleRow) === true) {
@@ -1391,7 +1382,7 @@ class AutomationCompilerService {
 		}
 
 		return null;
-	}//end scheduleIndex()
+	}//end scheduleRowIndex()
 
 	/**
 	 * Upsert the compiled RuleSet + ConditionActionRule (manual trigger), or

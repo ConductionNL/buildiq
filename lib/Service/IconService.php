@@ -37,6 +37,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\IconServiceInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -50,7 +51,7 @@ use Psr\Log\LoggerInterface;
  * Returns a stream (resource) + MIME type; callers are responsible for
  * closing the stream after it has been consumed.
  */
-class IconService {
+class IconService implements IconServiceInterface {
 	/**
 	 * Register slug that hosts Application objects.
 	 */

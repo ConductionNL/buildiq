@@ -29,14 +29,14 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\BackgroundJob;
 
-use OCA\Buildiq\Service\ExportAppContentBundler;
-use OCA\Buildiq\Service\ExportJobService;
-use OCA\Buildiq\Service\ExportContents;
-use OCA\Buildiq\Service\ExportService;
-use OCA\Buildiq\Service\ExportTarget;
-use OCA\Buildiq\Service\GitHub\BrokerAccess;
-use OCA\Buildiq\Service\GitHub\PushTarget;
-use OCA\Buildiq\Service\GitHubPushService;
+use OCA\Buildiq\Kernel\Contracts\ExportAppContentBundlerInterface;
+use OCA\Buildiq\Kernel\Contracts\ExportJobServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\ExportServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\GitHubPushServiceInterface;
+use OCA\Buildiq\Kernel\Values\ExportContents;
+use OCA\Buildiq\Kernel\Values\ExportTarget;
+use OCA\Buildiq\Kernel\Values\BrokerAccess;
+use OCA\Buildiq\Kernel\Values\PushTarget;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\QueuedJob;
 use Psr\Log\LoggerInterface;
@@ -52,20 +52,20 @@ class RunExportJob extends QueuedJob {
 	 * Constructor.
 	 *
 	 * @param ITimeFactory $time Time factory (Nextcloud-injectable).
-	 * @param ExportService $exportService File-generation pipeline.
-	 * @param ExportJobService $exportJobService Job orchestration helper.
-	 * @param GitHubPushService $githubPushService GitHub delivery target.
+	 * @param ExportServiceInterface $exportService File-generation pipeline.
+	 * @param ExportJobServiceInterface $exportJobService Job orchestration helper.
+	 * @param GitHubPushServiceInterface $githubPushService GitHub delivery target.
 	 * @param LoggerInterface $logger Logger.
-	 * @param ExportAppContentBundler|null $contentBundler Finds the application and version the job names.
+	 * @param ExportAppContentBundlerInterface|null $contentBundler Finds the application and version the job names.
 	 *                                                     Null exports the bare scaffold.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private ExportService $exportService,
-		private ExportJobService $exportJobService,
-		private GitHubPushService $githubPushService,
+		private ExportServiceInterface $exportService,
+		private ExportJobServiceInterface $exportJobService,
+		private GitHubPushServiceInterface $githubPushService,
 		private LoggerInterface $logger,
-		private ?ExportAppContentBundler $contentBundler = null,
+		private ?ExportAppContentBundlerInterface $contentBundler = null,
 	) {
 		parent::__construct(time: $time);
 	}//end __construct()
@@ -199,15 +199,8 @@ class RunExportJob extends QueuedJob {
 		$applicationSlug = (string)($job['applicationSlug'] ?? 'exported-app');
 		$license = (string)($job['license'] ?? 'EUPL-1.2');
 
-		$dataRegisters = [];
-		if (is_array($job['dataRegisters'] ?? null) === true) {
-			$dataRegisters = $job['dataRegisters'];
-		}
-
-		$flows = [];
-		if (is_array($job['flows'] ?? null) === true) {
-			$flows = $job['flows'];
-		}
+		$dataRegisters = $this->listField(job: $job, key: 'dataRegisters');
+		$flows = $this->listField(job: $job, key: 'flows');
 
 		if ($applicationUuid === '') {
 			throw new RuntimeException(
@@ -262,6 +255,22 @@ class RunExportJob extends QueuedJob {
 		$this->exportJobService->transitionJob(jobUuid: $jobUuid, action: 'succeed', extraFields: $extra);
 		$this->logger->info('Buildiq export succeeded', ['jobUuid' => $jobUuid]);
 	}//end executePipeline()
+
+	/**
+	 * An array field of the job record, or [] when it is absent or not an array.
+	 *
+	 * @param array<string, mixed> $job The ExportJob record.
+	 * @param string               $key The field name.
+	 *
+	 * @return array<mixed>
+	 */
+	private function listField(array $job, string $key): array {
+		if (is_array($job[$key] ?? null) === true) {
+			return $job[$key];
+		}
+
+		return [];
+	}//end listField()
 
 	/**
 	 * Find the application and version the job names.

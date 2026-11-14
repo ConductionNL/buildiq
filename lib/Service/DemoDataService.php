@@ -40,7 +40,8 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
-use OCA\Buildiq\AppInfo\Application;
+use OCA\Buildiq\Kernel\AppIdentity;
+use OCA\Buildiq\Kernel\Contracts\DemoDataServiceInterface;
 use OCP\App\IAppManager;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -51,7 +52,7 @@ use RuntimeException;
  *
  * @spec openspec/changes/openbuild-first-time-setup/specs/openbuild-first-time-setup/spec.md
  */
-class DemoDataService {
+class DemoDataService implements DemoDataServiceInterface {
 	/**
 	 * App-relative path to the generated mock descriptor.
 	 *
@@ -69,7 +70,7 @@ class DemoDataService {
 	 *
 	 * @var string
 	 */
-	private const CONFIG_APP_ID = Application::APP_ID . '.demo';
+	private const CONFIG_APP_ID = AppIdentity::APP_ID . '.demo';
 
 	/**
 	 * Constructor.
@@ -97,24 +98,6 @@ class DemoDataService {
 	public function isAvailable(): bool {
 		return is_file($this->descriptorPath()) === true;
 	}//end isAvailable()
-
-	/**
-	 * The answer that means "plant nothing".
-	 *
-	 * 🔴 NOT THE ABSENCE OF AN ANSWER. An operator who declines has FINISHED the
-	 * step; a step that can never be marked done reopens the wizard over every
-	 * page (nextcloud-vue#806).
-	 *
-	 * @var string
-	 */
-	public const NONE_DATASET = 'none';
-
-	/**
-	 * The id of the dataset this app ships.
-	 *
-	 * @var string
-	 */
-	public const DEMO_DATASET = 'demo';
 
 	/**
 	 * Every answer the wizard's choice step may offer, declining included.
@@ -228,30 +211,13 @@ class DemoDataService {
 	 * @spec openspec/changes/openbuild-first-time-setup/specs/openbuild-first-time-setup/spec.md
 	 */
 	public function install(): array {
-		$path = $this->descriptorPath();
-		if (is_file($path) === false) {
-			throw new RuntimeException('No demo dataset ships with this app (' . self::DESCRIPTOR . ' not found).');
-		}
-
-		$raw = file_get_contents($path);
-		if ($raw === false) {
-			throw new RuntimeException('The demo dataset could not be read: ' . $path);
-		}
-
-		$data = json_decode($raw, true);
-		if (is_array($data) === false) {
-			throw new RuntimeException('The demo dataset is not valid JSON: ' . $path);
-		}
+		$data = $this->readDescriptor();
 
 		// The number ASKED FOR comes from the file; the number that LANDED comes
 		// from the importer. They differ whenever OpenRegister skips an object
 		// whose schema it cannot resolve, and that gap is exactly the condition
 		// an operator must be able to see.
-		$declared = 0;
-		$components = ($data['components'] ?? []);
-		if (is_array($components) === true && is_array(($components['objects'] ?? null)) === true) {
-			$declared = count($components['objects']);
-		}
+		$declared = $this->declaredObjectCount(data: $data);
 
 		// 🔴 REFUSED BEFORE ANYTHING IS WRITTEN, NOT FILTERED. See
 		// `schemasThatCarryNoDemoData()`.
@@ -267,7 +233,7 @@ class DemoDataService {
 		$result = $this->configurationService()->importFromApp(
 			appId: self::CONFIG_APP_ID,
 			data: $data,
-			version: $this->appManager->getAppVersion(Application::APP_ID),
+			version: $this->appManager->getAppVersion(AppIdentity::APP_ID),
 			force: true
 		);
 
@@ -299,11 +265,54 @@ class DemoDataService {
 			. $imported['skipped'] . ' skipped), '
 			. $imported['registers'] . ' register(s), '
 			. $imported['schemas'] . ' schema(s).',
-			['app' => Application::APP_ID]
+			['app' => AppIdentity::APP_ID]
 		);
 
 		return $imported;
 	}//end install()
+
+	/**
+	 * The demo dataset descriptor, decoded.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @throws RuntimeException When the descriptor is missing, unreadable or not JSON.
+	 */
+	private function readDescriptor(): array {
+		$path = $this->descriptorPath();
+		if (is_file($path) === false) {
+			throw new RuntimeException('No demo dataset ships with this app (' . self::DESCRIPTOR . ' not found).');
+		}
+
+		$raw = file_get_contents($path);
+		if ($raw === false) {
+			throw new RuntimeException('The demo dataset could not be read: ' . $path);
+		}
+
+		$data = json_decode($raw, true);
+		if (is_array($data) === false) {
+			throw new RuntimeException('The demo dataset is not valid JSON: ' . $path);
+		}
+
+		return $data;
+	}//end readDescriptor()
+
+	/**
+	 * The number of objects the dataset declares.
+	 *
+	 * @param array<string, mixed> $data The decoded dataset.
+	 *
+	 * @return int
+	 */
+	private function declaredObjectCount(array $data): int {
+		$declared = 0;
+		$components = ($data['components'] ?? []);
+		if (is_array($components) === true && is_array(($components['objects'] ?? null)) === true) {
+			$declared = count($components['objects']);
+		}
+
+		return $declared;
+	}//end declaredObjectCount()
 
 	/**
 	 * The schemas this app writes about itself, by slug and by definition key.
@@ -368,7 +377,7 @@ class DemoDataService {
 	 * @spec exclude Demo-import guard; ADR-111 has no per-app behavioural spec.
 	 */
 	private function descriptorPaths(): array {
-		$settings = $this->appManager->getAppPath(Application::APP_ID) . '/lib/Settings';
+		$settings = $this->appManager->getAppPath(AppIdentity::APP_ID) . '/lib/Settings';
 
 		$base = glob($settings . '/*.json');
 		if ($base === false) {
@@ -460,7 +469,7 @@ class DemoDataService {
 	 * @return string The path.
 	 */
 	private function descriptorPath(): string {
-		return $this->appManager->getAppPath(Application::APP_ID) . self::DESCRIPTOR;
+		return $this->appManager->getAppPath(AppIdentity::APP_ID) . self::DESCRIPTOR;
 	}//end descriptorPath()
 
 	/**

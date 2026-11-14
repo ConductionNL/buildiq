@@ -25,7 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Command;
 
-use OCA\Buildiq\Service\ApplicationVersionService;
+use OCA\Buildiq\Kernel\Contracts\ApplicationVersionServiceInterface;
 use OCA\Buildiq\Support\UuidV4;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
@@ -66,12 +66,12 @@ class SeedHelloWorldFixture extends Command {
 	 *
 	 * Aliased to the canonical constant rather than re-declared: a second copy
 	 * of this string is exactly the shape of the bug it exists to prevent.
-	 * See ApplicationVersionService::VERSION_REGISTER_PREFIX for why it is
+	 * See ApplicationVersionServiceInterface::VERSION_REGISTER_PREFIX for why it is
 	 * separate from REGISTER_SLUG and why it stays `openbuild-`.
 	 *
 	 * @var string
 	 */
-	private const VERSION_REGISTER_PREFIX = ApplicationVersionService::VERSION_REGISTER_PREFIX;
+	private const VERSION_REGISTER_PREFIX = ApplicationVersionServiceInterface::VERSION_REGISTER_PREFIX;
 
 	private const SEED_SLUG = 'hello-world';
 
@@ -180,7 +180,7 @@ class SeedHelloWorldFixture extends Command {
 	 * @spec openspec/specs/unified-app-model/spec.md
 	 */
 	protected function execute(InputInterface $input, OutputInterface $output): int {
-		$register = ApplicationVersionService::REGISTER_SLUG;
+		$register = ApplicationVersionServiceInterface::REGISTER_SLUG;
 
 		try {
 			// Guard on the Application object (survives disable/enable), not just
@@ -200,7 +200,7 @@ class SeedHelloWorldFixture extends Command {
 			// 1. Application (no productionVersion yet — set after the version exists).
 			$application = $this->create(
 				register: $register,
-				schema: ApplicationVersionService::APPLICATION_SCHEMA,
+				schema: ApplicationVersionServiceInterface::APPLICATION_SCHEMA,
 				data: [
 					'slug' => self::SEED_SLUG,
 					'name' => 'Hello World',
@@ -216,7 +216,7 @@ class SeedHelloWorldFixture extends Command {
 			// 2. Published version carrying the manifest.
 			$version = $this->create(
 				register: $register,
-				schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA,
+				schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA,
 				data: [
 					'name' => self::SEMVER,
 					'slug' => self::VERSION_SLUG,
@@ -238,7 +238,7 @@ class SeedHelloWorldFixture extends Command {
 			// See the SEED_PERMISSIONS docblock for what that cost.
 			$this->create(
 				register: $register,
-				schema: ApplicationVersionService::APPLICATION_SCHEMA,
+				schema: ApplicationVersionServiceInterface::APPLICATION_SCHEMA,
 				data: [
 					'slug' => self::SEED_SLUG,
 					'name' => 'Hello World',
@@ -399,7 +399,7 @@ class SeedHelloWorldFixture extends Command {
 
 		$version = $this->create(
 			register: $register,
-			schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA,
+			schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA,
 			data: [
 				'name' => 'Production',
 				'slug' => self::VERSION_SLUG,
@@ -430,7 +430,7 @@ class SeedHelloWorldFixture extends Command {
 		// by construction rather than bypassed.
 		$this->create(
 			register: $register,
-			schema: ApplicationVersionService::APPLICATION_SCHEMA,
+			schema: ApplicationVersionServiceInterface::APPLICATION_SCHEMA,
 			data: [
 				'slug' => self::HYBRID_SLUG,
 				'name' => 'OpenCatalogi',
@@ -470,7 +470,7 @@ class SeedHelloWorldFixture extends Command {
 	private function hybridExists(string $register): bool {
 		$registerId = $this->registerMapper->find($register, _multitenancy: false)->getId();
 		$appSchema = $this->schemaMapper->find(
-			ApplicationVersionService::APPLICATION_SCHEMA,
+			ApplicationVersionServiceInterface::APPLICATION_SCHEMA,
 			_multitenancy: false
 		)->getId();
 		$apps = $this->objectService->searchObjects(
@@ -540,7 +540,7 @@ class SeedHelloWorldFixture extends Command {
 	 */
 	private function applicationExists(string $register): bool {
 		$registerId = $this->registerMapper->find($register, _multitenancy: false)->getId();
-		$appSchema = $this->schemaMapper->find(ApplicationVersionService::APPLICATION_SCHEMA, _multitenancy: false)->getId();
+		$appSchema = $this->schemaMapper->find(ApplicationVersionServiceInterface::APPLICATION_SCHEMA, _multitenancy: false)->getId();
 		$apps = $this->objectService->searchObjects(
 			['@self' => ['register' => $registerId, 'schema' => $appSchema], 'slug' => self::SEED_SLUG],
 			_rbac: false,
@@ -556,7 +556,7 @@ class SeedHelloWorldFixture extends Command {
 	 * @return array<string, mixed>
 	 */
 	private function buildManifest(): array {
-		$reg = ApplicationVersionService::REGISTER_SLUG;
+		$reg = ApplicationVersionServiceInterface::REGISTER_SLUG;
 		return [
 			'version' => self::SEMVER,
 			'dependencies' => ['openregister'],

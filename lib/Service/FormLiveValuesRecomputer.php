@@ -33,16 +33,18 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\FormLiveBindingIndexInterface;
+use OCA\Buildiq\Kernel\Contracts\FormLiveValuesRecomputerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
  * Recomputes calculated fields and enforces blocking checks for a save.
  *
- * @psalm-import-type LiveBinding from FormLiveBindingIndex
- * @phpstan-import-type LiveBinding from FormLiveBindingIndex
+ * @psalm-import-type LiveBinding from FormLiveBindingIndexInterface
+ * @phpstan-import-type LiveBinding from FormLiveBindingIndexInterface
  */
-class FormLiveValuesRecomputer {
+class FormLiveValuesRecomputer implements FormLiveValuesRecomputerInterface {
 
 	/**
 	 * Constructor.

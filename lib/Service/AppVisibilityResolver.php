@@ -40,6 +40,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\AppVisibilityResolverInterface;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -47,7 +48,7 @@ use OCP\IUserSession;
 /**
  * Shared per-user visibility check for published virtual-app surfaces.
  */
-class AppVisibilityResolver {
+class AppVisibilityResolver implements AppVisibilityResolverInterface {
 	/**
 	 * Group:* sentinel. When present in any role array, the surface is
 	 * visible to all signed-in users (REQ-OBNAV-003).

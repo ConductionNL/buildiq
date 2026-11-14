@@ -29,8 +29,9 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Dashboard;
 
-use OCA\Buildiq\Service\AppVisibilityResolver;
-use OCA\Buildiq\Service\Dashboard\WidgetItemProjector;
+use OCA\Buildiq\Kernel\Contracts\AppVisibilityResolverInterface;
+use OCA\Buildiq\Kernel\Contracts\WidgetItemProjectorInterface;
+use OCA\Buildiq\Kernel\Values\WidgetDescriptor;
 use OCP\AppFramework\Services\IInitialState;
 use OCP\IGroupManager;
 use OCP\IURLGenerator;
@@ -53,8 +54,8 @@ final class VirtualAppWidgetContext {
 	 * @param IURLGenerator $urlGenerator URL generator.
 	 * @param IUserSession $userSession User session.
 	 * @param IGroupManager $groupManager Group manager.
-	 * @param AppVisibilityResolver $visibility Shared per-user visibility check order.
-	 * @param WidgetItemProjector $projector Server-side item projection.
+	 * @param AppVisibilityResolverInterface $visibility Shared per-user visibility check order.
+	 * @param WidgetItemProjectorInterface $projector Server-side item projection.
 	 * @param IInitialState $initialState Initial state for the browser entry.
 	 *
 	 * @return void
@@ -63,8 +64,8 @@ final class VirtualAppWidgetContext {
 		public readonly IURLGenerator $urlGenerator,
 		public readonly IUserSession $userSession,
 		public readonly IGroupManager $groupManager,
-		public readonly AppVisibilityResolver $visibility,
-		public readonly WidgetItemProjector $projector,
+		public readonly AppVisibilityResolverInterface $visibility,
+		public readonly WidgetItemProjectorInterface $projector,
 		public readonly IInitialState $initialState,
 	) {
 	}//end __construct()

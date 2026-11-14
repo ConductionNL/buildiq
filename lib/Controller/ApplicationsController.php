@@ -53,23 +53,23 @@ namespace OCA\Buildiq\Controller;
 use DateTimeImmutable;
 use DateTimeInterface;
 use InvalidArgumentException;
-use OCA\Buildiq\AppInfo\Application;
-use OCA\Buildiq\Service\AppChannelApplier;
-use OCA\Buildiq\Service\ApplicationVersionService;
+use OCA\Buildiq\Kernel\AppIdentity;
+use OCA\Buildiq\Kernel\Contracts\AppChannelApplierInterface;
+use OCA\Buildiq\Kernel\Contracts\ApplicationVersionServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\ManifestResolverServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\PermissionResolverInterface;
 use OCA\Buildiq\Service\AppTemplateCapture;
 use OCA\Buildiq\Service\CallerContext;
 use OCA\Buildiq\Service\CompanionSchemaCollector;
-use OCA\Buildiq\Service\LocalApplicationRef;
-use OCA\Buildiq\Service\ManifestResolverService;
-use OCA\Buildiq\Service\PermissionResolver;
+use OCA\Buildiq\Kernel\Values\LocalApplicationRef;
 use OCA\Buildiq\Service\RegisterStore;
-use OCA\Buildiq\Service\RepoSource;
+use OCA\Buildiq\Kernel\Values\RepoSource;
 use OCA\Buildiq\Service\TemplateInstall;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
-use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
+use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -147,9 +147,9 @@ class ApplicationsController extends Controller {
 	/**
 	 * Shared permission-grammar resolver (H1/H2 fix)
 	 *
-	 * @var PermissionResolver
+	 * @var PermissionResolverInterface
 	 */
-	private readonly PermissionResolver $permissionResolver;
+	private readonly PermissionResolverInterface $permissionResolver;
 
 	/**
 	 * Constructor.
@@ -158,8 +158,8 @@ class ApplicationsController extends Controller {
 	 * @param LoggerInterface $logger PSR logger for diagnostics
 	 * @param RegisterStore $store OpenRegister's object service, register and schema mappers and audit trail.
 	 * @param CallerContext $caller The caller's session, group memberships and the shared permission matcher.
-	 * @param ManifestResolverService $manifestResolver Version-aware manifest resolver (REQ-OBVR-002)
-	 * @param AppChannelApplier $channelApplier Applies the v2 repo channels (apply-v2-channels)
+	 * @param ManifestResolverServiceInterface $manifestResolver Version-aware manifest resolver (REQ-OBVR-002)
+	 * @param AppChannelApplierInterface $channelApplier Applies the v2 repo channels (apply-v2-channels)
 	 *
 	 * @return void
 	 */
@@ -168,8 +168,8 @@ class ApplicationsController extends Controller {
 		private readonly LoggerInterface $logger,
 		RegisterStore $store,
 		CallerContext $caller,
-		private readonly ManifestResolverService $manifestResolver,
-		private readonly AppChannelApplier $channelApplier,
+		private readonly ManifestResolverServiceInterface $manifestResolver,
+		private readonly AppChannelApplierInterface $channelApplier,
 	) {
 		$this->objectService = $store->objectService;
 		$this->registerMapper = $store->registerMapper;
@@ -178,7 +178,7 @@ class ApplicationsController extends Controller {
 		$this->userSession = $caller->userSession;
 		$this->groupManager = $caller->groupManager;
 		$this->permissionResolver = $caller->permissionResolver;
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -230,14 +230,7 @@ class ApplicationsController extends Controller {
 	#[NoCSRFRequired]
 	public function getManifest(string $slug): JSONResponse {
 		try {
-			// REQ-OBVR-001: read the `?_version=` query parameter.
-			// The param name uses a leading underscore to avoid colliding with any
-			// user-defined `?version=` params in citizen-developer apps. Null when absent.
-			$versionSlugRaw = $this->request->getParam('_version');
-			$versionSlug = null;
-			if ($versionSlugRaw !== null && $versionSlugRaw !== '') {
-				$versionSlug = $versionSlugRaw;
-			}
+			$versionSlug = $this->requestedVersionSlug();
 
 			// When `?_version=` is present, delegate to ManifestResolverService which
 			// performs the two-step lookup (Application → ApplicationVersion) and RBAC
@@ -255,86 +248,7 @@ class ApplicationsController extends Controller {
 				return $resolved;
 			}
 
-			[, $applicationArray, $applicationUuid] = $resolved;
-
-			// Resolve the production manifest from the application's
-			// productionVersion. The versioned model (ADR-002) stores the
-			// manifest on the ApplicationVersion, not on the Application, so
-			// reading `applicationArray['manifest']` directly returns null for
-			// every app. ManifestResolverService resolves productionVersion →
-			// version.manifest and itself falls back to a legacy
-			// application-level `manifest` field; the direct read is kept as a
-			// last-resort fallback for safety.
-			$manifest = $this->manifestResolver->resolve(
-				appSlug: $slug,
-				versionSlug: null,
-				caller: $this->userSession->getUser()
-			);
-			if ($manifest === null) {
-				$manifest = ($applicationArray['manifest'] ?? null);
-			}
-
-			if ($manifest === null) {
-				$this->logger->warning('Buildiq: Application ' . $applicationUuid . ' has no resolvable manifest');
-				return new JSONResponse(
-					data: ['error' => 'no_manifest', 'message' => 'Application has no manifest'],
-					statusCode: Http::STATUS_NOT_FOUND
-				);
-			}
-
-			// Strip the `permissions` block (and any other owning-user PII) from
-			// the public manifest response (issue #165). The caller's own role was
-			// already verified by requirePermission above; they do not need the
-			// full owners/editors/viewers roster to render the app. Before the
-			// block is stripped, project a read-only `runtime.user.isOwner`
-			// signal (admin-settings-owner-gating) computed from that same
-			// `permissions` block, so the frontend can gate the admin-settings
-			// surface without ever seeing the raw owners/editors/viewers roster.
-			if (is_array($manifest) === true) {
-				$manifest = $this->injectOwnerSignal(
-					manifest: $manifest,
-					applicationArray: $applicationArray,
-					caller: $this->userSession->getUser()
-				);
-				// Project the Application's authoritative display `name` onto the
-				// manifest so the /builder/{slug} runtime top-bar always shows the
-				// cased name, not the raw slug. The stored manifest blob's own
-				// `name` can be absent or stale (it is not re-synced when the
-				// Application is renamed), so the Application entity's `name` is the
-				// single source of truth. Additive projection, same pattern as
-				// injectOwnerSignal above; only overwrite when the Application
-				// actually carries a non-empty name.
-				$authoritativeName = (string)($applicationArray['name'] ?? '');
-				if ($authoritativeName !== '') {
-					$manifest['name'] = $authoritativeName;
-				}
-
-				// Group-scoped runtime access (spec runtime-group-scoped-access
-				// REQ-2): strip menu/page entries the caller's `permission` set
-				// does not satisfy BEFORE the response leaves the server — the
-				// authoritative server-side gate, not just client-side hiding.
-				// MUST run before `permissions` is stripped below: the filter
-				// reads `applicationArray['permissions']` for the owner/editor
-				// write-role bypass.
-				$manifest = $this->manifestResolver->filterManifestForCaller(
-					manifest: $manifest,
-					application: $applicationArray,
-					caller: $this->userSession->getUser()
-				);
-				// Client-side mirror (design.md Decision 4, defense in depth):
-				// hand the runtime host the same permission set the server
-				// just enforced, ready to forward to CnAppRoot's `permissions`
-				// prop — no client-side group/role derivation needed.
-				$manifest = $this->injectPermissionsSignal(
-					manifest: $manifest,
-					applicationArray: $applicationArray,
-					caller: $this->userSession->getUser()
-				);
-				unset($manifest['permissions']);
-			}//end if
-
-			// Return the manifest UNWRAPPED — useAppManifest expects the bare object.
-			return new JSONResponse(data: $manifest, statusCode: Http::STATUS_OK);
+			return $this->productionManifestResponse(slug: $slug, resolved: $resolved);
 		} catch (Throwable $e) {
 			// Generate a correlation ID so the client and server logs share an
 			// identifier — operators can grep `correlationId=<id>` in app.log
@@ -354,6 +268,137 @@ class ApplicationsController extends Controller {
 			);
 		}//end try
 	}//end getManifest()
+
+	/**
+	 * The `?_version=` query parameter, or null when it is absent or empty.
+	 *
+	 * @return string|null
+	 *
+	 * @spec openspec/specs/version-routing/spec.md
+	 */
+	private function requestedVersionSlug(): string|null {
+		// REQ-OBVR-001: read the `?_version=` query parameter.
+		// The param name uses a leading underscore to avoid colliding with any
+		// user-defined `?version=` params in citizen-developer apps. Null when absent.
+		$versionSlugRaw = $this->request->getParam('_version');
+		$versionSlug = null;
+		if ($versionSlugRaw !== null && $versionSlugRaw !== '') {
+			$versionSlug = $versionSlugRaw;
+		}
+
+		return $versionSlug;
+	}//end requestedVersionSlug()
+
+	/**
+	 * The production manifest response of a permitted Application.
+	 *
+	 * @param string                                             $slug     The app slug from the URL.
+	 * @param array{0: mixed, 1: array<string,mixed>, 2: string} $resolved The permitted Application.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @spec openspec/specs/openbuild-runtime/spec.md
+	 */
+	private function productionManifestResponse(string $slug, array $resolved): JSONResponse {
+		[, $applicationArray, $applicationUuid] = $resolved;
+
+		// Resolve the production manifest from the application's
+		// productionVersion. The versioned model (ADR-002) stores the
+		// manifest on the ApplicationVersion, not on the Application, so
+		// reading `applicationArray['manifest']` directly returns null for
+		// every app. ManifestResolverService resolves productionVersion →
+		// version.manifest and itself falls back to a legacy
+		// application-level `manifest` field; the direct read is kept as a
+		// last-resort fallback for safety.
+		$manifest = $this->manifestResolver->resolve(
+			appSlug: $slug,
+			versionSlug: null,
+			caller: $this->userSession->getUser()
+		);
+		if ($manifest === null) {
+			$manifest = ($applicationArray['manifest'] ?? null);
+		}
+
+		if ($manifest === null) {
+			$this->logger->warning('Buildiq: Application ' . $applicationUuid . ' has no resolvable manifest');
+			return new JSONResponse(
+				data: ['error' => 'no_manifest', 'message' => 'Application has no manifest'],
+				statusCode: Http::STATUS_NOT_FOUND
+			);
+		}
+
+		// Strip the `permissions` block (and any other owning-user PII) from
+		// the public manifest response (issue #165). The caller's own role was
+		// already verified by requirePermission above; they do not need the
+		// full owners/editors/viewers roster to render the app. Before the
+		// block is stripped, project a read-only `runtime.user.isOwner`
+		// signal (admin-settings-owner-gating) computed from that same
+		// `permissions` block, so the frontend can gate the admin-settings
+		// surface without ever seeing the raw owners/editors/viewers roster.
+		if (is_array($manifest) === true) {
+			$manifest = $this->projectManifestForCaller(manifest: $manifest, applicationArray: $applicationArray);
+		}
+
+		// Return the manifest UNWRAPPED — useAppManifest expects the bare object.
+		return new JSONResponse(data: $manifest, statusCode: Http::STATUS_OK);
+	}//end productionManifestResponse()
+
+	/**
+	 * The manifest as the caller may see it: owner and permission signals added,
+	 * the Application's display name projected, entries the caller may not reach
+	 * filtered out, and the permissions roster removed.
+	 *
+	 * @param array<string,mixed> $manifest         The resolved manifest.
+	 * @param array<string,mixed> $applicationArray The Application.
+	 *
+	 * @return array<string,mixed>
+	 *
+	 * @spec openspec/specs/openbuild-runtime/spec.md
+	 */
+	private function projectManifestForCaller(array $manifest, array $applicationArray): array {
+			$manifest = $this->injectOwnerSignal(
+				manifest: $manifest,
+				applicationArray: $applicationArray,
+				caller: $this->userSession->getUser()
+			);
+			// Project the Application's authoritative display `name` onto the
+			// manifest so the /builder/{slug} runtime top-bar always shows the
+			// cased name, not the raw slug. The stored manifest blob's own
+			// `name` can be absent or stale (it is not re-synced when the
+			// Application is renamed), so the Application entity's `name` is the
+			// single source of truth. Additive projection, same pattern as
+			// injectOwnerSignal above; only overwrite when the Application
+			// actually carries a non-empty name.
+			$authoritativeName = (string)($applicationArray['name'] ?? '');
+			if ($authoritativeName !== '') {
+				$manifest['name'] = $authoritativeName;
+			}
+
+			// Group-scoped runtime access (spec runtime-group-scoped-access
+			// REQ-2): strip menu/page entries the caller's `permission` set
+			// does not satisfy BEFORE the response leaves the server — the
+			// authoritative server-side gate, not just client-side hiding.
+			// MUST run before `permissions` is stripped below: the filter
+			// reads `applicationArray['permissions']` for the owner/editor
+			// write-role bypass.
+			$manifest = $this->manifestResolver->filterManifestForCaller(
+				manifest: $manifest,
+				application: $applicationArray,
+				caller: $this->userSession->getUser()
+			);
+			// Client-side mirror (design.md Decision 4, defense in depth):
+			// hand the runtime host the same permission set the server
+			// just enforced, ready to forward to CnAppRoot's `permissions`
+			// prop — no client-side group/role derivation needed.
+			$manifest = $this->injectPermissionsSignal(
+				manifest: $manifest,
+				applicationArray: $applicationArray,
+				caller: $this->userSession->getUser()
+			);
+			unset($manifest['permissions']);
+
+		return $manifest;
+	}//end projectManifestForCaller()
 
 	/**
 	 * Persist an in-app manifest edit (pages / menu / settings / sidebar / actions).
@@ -383,44 +428,20 @@ class ApplicationsController extends Controller {
 
 			[$application, $applicationArray] = $resolved;
 
-			$refusal = $this->refuseManifestWriter(application: $application, applicationArray: $applicationArray, slug: $slug);
-			if ($refusal !== null) {
-				return $refusal;
+			$denied = $this->authorizeManifestWrite(slug: $slug, resolved: $resolved);
+			if ($denied !== null) {
+				return $denied;
 			}
 
-			$manifest = $this->request->getParam('manifest');
-			if (is_array($manifest) === false) {
-				return new JSONResponse(
-					data: ['error' => 'bad_request', 'message' => 'Missing or invalid manifest'],
-					statusCode: Http::STATUS_BAD_REQUEST
-				);
-			}
-
-			// A manifest the runtime cannot render must not be persisted.
-			//
-			// The Design tab already refuses to save one (REQ-OBPD-009 puts the
-			// guarantee in the client: the Save button is disabled and a tooltip
-			// states why), but the guarantee stopped at the browser — an API
-			// caller could PUT `{version, menu}` with no `pages` and get a 200,
-			// leaving the app with a manifest that renders nothing. Nothing on
-			// the read path repairs that.
-			//
-			// These are the SAME two rules the GitHub-import path has always
-			// enforced in AppRepoParser::validateManifest() — a string `version`
-			// and an array `pages`. Applying them here makes one endpoint agree
-			// with the other rather than inventing a new contract.
-			$manifestError = $this->manifestShapeError(manifest: $manifest);
-			if ($manifestError !== null) {
-				return new JSONResponse(
-					data: ['error' => 'manifest_invalid', 'message' => $manifestError],
-					statusCode: Http::STATUS_BAD_REQUEST
-				);
+			$manifest = $this->readManifestBody();
+			if ($manifest instanceof JSONResponse) {
+				return $manifest;
 			}
 
 			// Never let a manifest body inject/overwrite the permissions roster.
 			unset($manifest['permissions']);
 
-			return $this->persistManifest(applicationArray: $applicationArray, manifest: $manifest);
+			return $this->writeManifest(applicationArray: $applicationArray, manifest: $manifest);
 		} catch (Throwable $e) {
 			$correlationId = bin2hex(random_bytes(8));
 			$this->logger->error(
@@ -435,20 +456,17 @@ class ApplicationsController extends Controller {
 	}//end saveManifest()
 
 	/**
-	 * The refusal for a caller who may not write this app's manifest, or null.
+	 * Refuse a manifest write without owner/editor role; NC admins get an audited bypass.
 	 *
-	 * Write requires owner/editor (NOT viewer); an NC admin without a role gets
-	 * an audited bypass.
+	 * @param string            $slug     The virtual-app slug.
+	 * @param array{0: mixed, 1: array<string,mixed>} $resolved The resolved Application entity and its array.
 	 *
-	 * @param mixed               $application      The Application as found.
-	 * @param array<string,mixed> $applicationArray The Application as an array.
-	 * @param string              $slug             The virtual-app slug.
-	 *
-	 * @return JSONResponse|null 403 when refused, null when the caller may write.
+	 * @return JSONResponse|null The 403 response, or null when the write may proceed.
 	 *
 	 * @spec openspec/specs/openbuild-rbac/spec.md
 	 */
-	private function refuseManifestWriter(mixed $application, array $applicationArray, string $slug): ?JSONResponse {
+	private function authorizeManifestWrite(string $slug, array $resolved): JSONResponse|null {
+		[$application, $applicationArray] = $resolved;
 		$user = $this->userSession->getUser();
 		if ($user === null) {
 			return new JSONResponse(
@@ -458,13 +476,7 @@ class ApplicationsController extends Controller {
 		}
 
 		// Write requires owner/editor (NOT viewer). NC admins get an audited bypass.
-		$hasWrite = $this->permissionResolver->matchesCaller(
-			permissions: ($applicationArray['permissions'] ?? []),
-			caller: $user,
-			userGroups: $this->permissionResolver->resolveUserGroups($user),
-			allowAdminBypass: false,
-			roles: ['owners', 'editors']
-		);
+		$hasWrite = $this->callerCanEditManifest(applicationArray: $applicationArray, user: $user);
 		if ($hasWrite === false && $this->groupManager->isInGroup($user->getUID(), self::ADMIN_GROUP) === false) {
 			return new JSONResponse(
 				data: ['error' => 'forbidden', 'code' => 'buildiq.rbac.no_role'],
@@ -473,32 +485,109 @@ class ApplicationsController extends Controller {
 		}
 
 		if ($hasWrite === false) {
-			$bypassApplication = null;
-			if ($application instanceof ObjectEntity) {
-				$bypassApplication = $application;
-			}
-
-			$this->recordAdminBypass(
-				application: $bypassApplication,
-				slug: $slug,
-				actor: $user->getUID()
-			);
+			$this->recordManifestBypass(application: $application, slug: $slug, actor: $user->getUID());
 		}
 
 		return null;
-	}//end refuseManifestWriter()
+	}//end authorizeManifestWrite()
 
 	/**
-	 * Write a validated manifest where the read path finds it.
+	 * Whether the caller is an owner or editor of the Application.
 	 *
-	 * @param array<string,mixed> $applicationArray The Application as an array.
-	 * @param array<string,mixed> $manifest         The manifest, permissions stripped.
+	 * @param array<string,mixed> $applicationArray The resolved Application as an array.
+	 * @param IUser               $user             The caller.
 	 *
-	 * @return JSONResponse 200 naming the target written.
+	 * @return bool
 	 *
+	 * @spec openspec/specs/openbuild-rbac/spec.md
+	 */
+	private function callerCanEditManifest(array $applicationArray, IUser $user): bool {
+		return $this->permissionResolver->matchesCaller(
+			permissions: ($applicationArray['permissions'] ?? []),
+			caller: $user,
+			userGroups: $this->permissionResolver->resolveUserGroups($user),
+			allowAdminBypass: false,
+			roles: ['owners', 'editors']
+		);
+	}//end callerCanEditManifest()
+
+	/**
+	 * Record the audited admin bypass of a manifest write.
+	 *
+	 * @param mixed  $application The resolved Application entity.
+	 * @param string $slug        The virtual-app slug.
+	 * @param string $actor       The admin's user id.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/openbuild-rbac/spec.md
+	 */
+	private function recordManifestBypass(mixed $application, string $slug, string $actor): void {
+		$bypassApplication = null;
+		if ($application instanceof ObjectEntity) {
+			$bypassApplication = $application;
+		}
+
+		$this->recordAdminBypass(
+			application: $bypassApplication,
+			slug: $slug,
+			actor: $actor
+		);
+	}//end recordManifestBypass()
+
+	/**
+	 * Read the manifest from the request and refuse one the runtime cannot render.
+	 *
+	 * @return array<string,mixed>|JSONResponse The manifest, or the 400 response.
+	 *
+	 * @spec openspec/specs/openbuild-page-designer/spec.md
+	 */
+	private function readManifestBody(): array|JSONResponse {
+		$manifest = $this->request->getParam('manifest');
+		if (is_array($manifest) === false) {
+			return new JSONResponse(
+				data: ['error' => 'bad_request', 'message' => 'Missing or invalid manifest'],
+				statusCode: Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		// A manifest the runtime cannot render must not be persisted.
+		//
+		// The Design tab already refuses to save one (REQ-OBPD-009 puts the
+		// guarantee in the client: the Save button is disabled and a tooltip
+		// states why), but the guarantee stopped at the browser — an API
+		// caller could PUT `{version, menu}` with no `pages` and get a 200,
+		// leaving the app with a manifest that renders nothing. Nothing on
+		// the read path repairs that.
+		//
+		// These are the SAME two rules the GitHub-import path has always
+		// enforced in AppRepoParser::validateManifest() — a string `version`
+		// and an array `pages`. Applying them here makes one endpoint agree
+		// with the other rather than inventing a new contract.
+		$manifestError = $this->manifestShapeError(manifest: $manifest);
+		if ($manifestError !== null) {
+			return new JSONResponse(
+				data: ['error' => 'manifest_invalid', 'message' => $manifestError],
+				statusCode: Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		return $manifest;
+	}//end readManifestBody()
+
+	/**
+	 * Write the manifest where the read path reads it: the production version,
+	 * the embedded version, or the legacy Application.
+	 *
+	 * @param array<string,mixed> $applicationArray The resolved Application as an array.
+	 * @param array<string,mixed> $manifest         The manifest to persist.
+	 *
+	 * @return JSONResponse The 200 response naming the write target.
+	 *
+	 * @spec openspec/specs/openbuild-rbac/spec.md
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
-	private function persistManifest(array $applicationArray, array $manifest): JSONResponse {
+	private function writeManifest(array $applicationArray, array $manifest): JSONResponse {
 		// Versioned model: write onto the production ApplicationVersion when one
 		// is resolvable; fall back to the Application object for legacy apps.
 		// Mirror ManifestResolverService::resolveProductionManifest's read
@@ -512,21 +601,10 @@ class ApplicationsController extends Controller {
 		// uuid comes from the already-RBAC'd Application, so no cross-app check
 		// is needed (and the version's app-link field is `application`, not
 		// `applicationUuid`).
-		if (is_string($productionVersion) === true && $productionVersion !== '' && $productionVersion !== 'draft') {
-			$versionEntity = $this->objectService->find(
-				id: $productionVersion,
-				register: 'buildiq',
-				schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
-			);
-			if ($versionEntity !== null) {
-				$versionArray = ObjectRecord::toArray(object: $versionEntity);
-				$versionArray['manifest'] = $manifest;
-				$this->objectService->saveObject(
-					object: $versionArray,
-					register: 'buildiq',
-					schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
-				);
-				return new JSONResponse(data: ['status' => 'ok', 'target' => 'version'], statusCode: Http::STATUS_OK);
+		if ($this->isVersionReference(productionVersion: $productionVersion) === true) {
+			$written = $this->writeVersionManifest(versionUuid: $productionVersion, manifest: $manifest);
+			if ($written !== null) {
+				return $written;
 			}
 		}
 
@@ -550,7 +628,54 @@ class ApplicationsController extends Controller {
 			schema: 'built-app'
 		);
 		return new JSONResponse(data: ['status' => 'ok', 'target' => 'application'], statusCode: Http::STATUS_OK);
-	}//end persistManifest()
+	}//end writeManifest()
+
+	/**
+	 * Whether a productionVersion value references an ApplicationVersion by uuid.
+	 *
+	 * @param mixed $productionVersion The Application's productionVersion value.
+	 *
+	 * @return bool
+	 *
+	 * @phpstan-assert-if-true string $productionVersion
+	 * @psalm-assert-if-true string $productionVersion
+	 *
+	 * @spec openspec/specs/openbuild-rbac/spec.md
+	 */
+	private function isVersionReference(mixed $productionVersion): bool {
+		return is_string($productionVersion) === true && $productionVersion !== '' && $productionVersion !== 'draft';
+	}//end isVersionReference()
+
+	/**
+	 * Write the manifest onto the referenced ApplicationVersion.
+	 *
+	 * @param string              $versionUuid The ApplicationVersion uuid.
+	 * @param array<string,mixed> $manifest    The manifest to persist.
+	 *
+	 * @return JSONResponse|null The 200 response, or null when the version is not found.
+	 *
+	 * @spec openspec/specs/openbuild-rbac/spec.md
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
+	 */
+	private function writeVersionManifest(string $versionUuid, array $manifest): ?JSONResponse {
+		$versionEntity = $this->objectService->find(
+			id: $versionUuid,
+			register: 'buildiq',
+			schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
+		);
+		if ($versionEntity !== null) {
+			$versionArray = ObjectRecord::toArray(object: $versionEntity);
+			$versionArray['manifest'] = $manifest;
+			$this->objectService->saveObject(
+				object: $versionArray,
+				register: 'buildiq',
+				schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
+			);
+			return new JSONResponse(data: ['status' => 'ok', 'target' => 'version'], statusCode: Http::STATUS_OK);
+		}
+
+		return null;
+	}//end writeVersionManifest()
 
 	/**
 	 * Return why a manifest cannot be rendered, or null when its shape is sound.
@@ -875,7 +1000,7 @@ class ApplicationsController extends Controller {
 			$version = $this->objectService->find(
 				id: $token,
 				register: 'buildiq',
-				schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
+				schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
 			);
 		} catch (Throwable $e) {
 			$version = null;
@@ -921,8 +1046,8 @@ class ApplicationsController extends Controller {
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function findVersionBySlugForDiff(string $slug, string $applicationUuid): mixed {
-		$registerId = $this->registerMapper->find(ApplicationVersionService::REGISTER_SLUG, _multitenancy: false)->getId();
-		$schemaId = $this->schemaMapper->find(ApplicationVersionService::APPLICATION_VERSION_SCHEMA, _multitenancy: false)->getId();
+		$registerId = $this->registerMapper->find(ApplicationVersionServiceInterface::REGISTER_SLUG, _multitenancy: false)->getId();
+		$schemaId = $this->schemaMapper->find(ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA, _multitenancy: false)->getId();
 
 		$results = $this->objectService->searchObjects(
 			query: [
@@ -978,7 +1103,7 @@ class ApplicationsController extends Controller {
 		// caller with a framework 500 and a stack trace rather than a
 		// translated error. Translated below, cause logged.
 		try {
-			$registerId = $this->registerMapper->find(ApplicationVersionService::REGISTER_SLUG, _multitenancy: false)->getId();
+			$registerId = $this->registerMapper->find(ApplicationVersionServiceInterface::REGISTER_SLUG, _multitenancy: false)->getId();
 			$routeSchema = $this->schemaMapper->find('built-app-route', _multitenancy: false)->getId();
 		} catch (Throwable $e) {
 			$this->logger->error(
@@ -1087,7 +1212,7 @@ class ApplicationsController extends Controller {
 	 */
 	private function findApplicationUuidBySlug(string $slug, mixed $registerId): ?string {
 		try {
-			$appSchema = $this->schemaMapper->find(ApplicationVersionService::APPLICATION_SCHEMA, _multitenancy: false)->getId();
+			$appSchema = $this->schemaMapper->find(ApplicationVersionServiceInterface::APPLICATION_SCHEMA, _multitenancy: false)->getId();
 		} catch (Throwable $e) {
 			return null;
 		}
@@ -1153,7 +1278,7 @@ class ApplicationsController extends Controller {
 				);
 			}
 
-			$registerId = $this->registerMapper->find(ApplicationVersionService::REGISTER_SLUG, _multitenancy: false)->getId();
+			$registerId = $this->registerMapper->find(ApplicationVersionServiceInterface::REGISTER_SLUG, _multitenancy: false)->getId();
 			$appSchema = $this->schemaMapper->find('built-app', _multitenancy: false)->getId();
 
 			// Fetch all Applications scoped to the buildiq register +
@@ -1325,6 +1450,32 @@ class ApplicationsController extends Controller {
 	 */
 	private function attachProductionVersionDetail(array $applications): array {
 		// Nothing to resolve — skip the query entirely.
+		$wanted = $this->wantedProductionVersions(applications: $applications);
+		if ($wanted === []) {
+			return $applications;
+		}
+
+		$rows = $this->allVersionRows();
+		if ($rows === null) {
+			return $applications;
+		}
+
+		return $this->withVersionDetail(
+			applications: $applications,
+			byUuid: $this->indexVersionCards(rows: $rows, wanted: $wanted)
+		);
+	}//end attachProductionVersionDetail()
+
+	/**
+	 * The production version uuids the Applications reference, as a set.
+	 *
+	 * @param array<array<string,mixed>> $applications The Applications.
+	 *
+	 * @return array<string,true>
+	 *
+	 * @spec openspec/specs/openbuild-runtime/spec.md#req-obr-007b
+	 */
+	private function wantedProductionVersions(array $applications): array {
 		$wanted = [];
 		foreach ($applications as $app) {
 			$uuid = ($app['productionVersion'] ?? null);
@@ -1333,17 +1484,24 @@ class ApplicationsController extends Controller {
 			}
 		}
 
-		if ($wanted === []) {
-			return $applications;
-		}
+		return $wanted;
+	}//end wantedProductionVersions()
 
+	/**
+	 * Every ApplicationVersion row, or null when they cannot be read (logged).
+	 *
+	 * @return array<mixed>|null
+	 *
+	 * @spec openspec/specs/openbuild-runtime/spec.md#req-obr-007b
+	 */
+	private function allVersionRows(): array|null {
 		try {
 			$registerId = $this->registerMapper->find(
-				ApplicationVersionService::REGISTER_SLUG,
+				ApplicationVersionServiceInterface::REGISTER_SLUG,
 				_multitenancy: false
 			)->getId();
 			$schemaId = $this->schemaMapper->find(
-				ApplicationVersionService::APPLICATION_VERSION_SCHEMA,
+				ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA,
 				_multitenancy: false
 			)->getId();
 
@@ -1365,13 +1523,28 @@ class ApplicationsController extends Controller {
 				. 'cards will fall back to their placeholder status/version: ' . $e->getMessage(),
 				['exception' => $e]
 			);
-			return $applications;
+			return null;
 		}//end try
 
 		if (is_array($rows) === false) {
-			return $applications;
+			return null;
 		}
 
+		return $rows;
+	}//end allVersionRows()
+
+	/**
+	 * The card fields of the wanted versions, by uuid.
+	 *
+	 * @param array<mixed>       $rows   The ApplicationVersion rows.
+	 * @param array<string,true> $wanted The wanted version uuids.
+	 *
+	 * @return array<string,array<string,mixed>>
+	 *
+	 * @spec openspec/specs/openbuild-runtime/spec.md#req-obr-007b
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
+	 */
+	private function indexVersionCards(array $rows, array $wanted): array {
 		$byUuid = [];
 		foreach ($rows as $row) {
 			$version = ObjectRecord::toArray(object: $row);
@@ -1393,6 +1566,20 @@ class ApplicationsController extends Controller {
 			];
 		}
 
+		return $byUuid;
+	}//end indexVersionCards()
+
+	/**
+	 * Add `productionVersionDetail` to each Application whose production version resolved.
+	 *
+	 * @param array<array<string,mixed>>        $applications The Applications.
+	 * @param array<string,array<string,mixed>> $byUuid       The version cards by uuid.
+	 *
+	 * @return array<array<string,mixed>>
+	 *
+	 * @spec openspec/specs/openbuild-runtime/spec.md#req-obr-007b
+	 */
+	private function withVersionDetail(array $applications, array $byUuid): array {
 		foreach ($applications as $index => $app) {
 			$uuid = ($app['productionVersion'] ?? null);
 			if (is_string($uuid) === true && isset($byUuid[$uuid]) === true) {
@@ -1401,7 +1588,7 @@ class ApplicationsController extends Controller {
 		}
 
 		return $applications;
-	}//end attachProductionVersionDetail()
+	}//end withVersionDetail()
 
 	/**
 	 * Project a read-only owner flag onto the manifest's `runtime.user` context.
@@ -1808,7 +1995,7 @@ class ApplicationsController extends Controller {
 				object: $this->objectService->find(
 					id: $versionId,
 					register: 'buildiq',
-					schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
+					schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
 				)
 			);
 		}
@@ -2034,7 +2221,7 @@ class ApplicationsController extends Controller {
 	private function resolveSharedContext(): ?array {
 		try {
 			return [
-				'register' => $this->registerMapper->find(ApplicationVersionService::REGISTER_SLUG, _multitenancy: false)->getId(),
+				'register' => $this->registerMapper->find(ApplicationVersionServiceInterface::REGISTER_SLUG, _multitenancy: false)->getId(),
 				'templateSchema' => $this->schemaMapper->find('application-template', _multitenancy: false)->getId(),
 				'applicationSchema' => $this->schemaMapper->find('built-app', _multitenancy: false)->getId(),
 			];
@@ -2235,8 +2422,8 @@ class ApplicationsController extends Controller {
 
 			$createdVersion = $this->objectService->saveObject(
 				object: $versionPayload,
-				register: ApplicationVersionService::REGISTER_SLUG,
-				schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
+				register: ApplicationVersionServiceInterface::REGISTER_SLUG,
+				schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
 			);
 			$versionData = ObjectRecord::toArray(object: $createdVersion);
 			$versionUuid = (string)($versionData['uuid'] ?? $versionData['id'] ?? '');
@@ -2260,8 +2447,8 @@ class ApplicationsController extends Controller {
 
 			$this->objectService->saveObject(
 				object: $application,
-				register: ApplicationVersionService::REGISTER_SLUG,
-				schema: ApplicationVersionService::APPLICATION_SCHEMA,
+				register: ApplicationVersionServiceInterface::REGISTER_SLUG,
+				schema: ApplicationVersionServiceInterface::APPLICATION_SCHEMA,
 				uuid: $appUuid
 			);
 		} catch (Throwable $e) {
@@ -2400,8 +2587,8 @@ class ApplicationsController extends Controller {
 		// belongs to the caller; otherwise fall back to the
 		// owner-namespaced form.
 		// Prefix from the constant, never typed: see
-		// ApplicationVersionService::VERSION_REGISTER_PREFIX.
-		$legacyRegisterSlug = ApplicationVersionService::VERSION_REGISTER_PREFIX . $newSlug;
+		// ApplicationVersionServiceInterface::VERSION_REGISTER_PREFIX.
+		$legacyRegisterSlug = ApplicationVersionServiceInterface::VERSION_REGISTER_PREFIX . $newSlug;
 
 		try {
 			$existing = $this->registerMapper->find($legacyRegisterSlug, _multitenancy: false);
@@ -2413,7 +2600,7 @@ class ApplicationsController extends Controller {
 
 			// Different user owns the org-wide slug — namespace ours.
 			return $this->findOrCreateRegister(
-				slug: ApplicationVersionService::VERSION_REGISTER_PREFIX . $ownerUid . '-' . $newSlug,
+				slug: ApplicationVersionServiceInterface::VERSION_REGISTER_PREFIX . $ownerUid . '-' . $newSlug,
 				appSlug: $newSlug,
 				ownerUid: $ownerUid,
 			);

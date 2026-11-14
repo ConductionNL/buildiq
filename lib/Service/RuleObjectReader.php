@@ -41,6 +41,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\RuleObjectReaderInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -53,7 +54,7 @@ use Throwable;
  *
  * @spec openspec/specs/business-rules-engine/spec.md#requirement-req-bre-007-per-tenant-isolation-and-multitenancy
  */
-class RuleObjectReader {
+class RuleObjectReader implements RuleObjectReaderInterface {
 
 	/**
 	 * Resolved `[registerId, schemaId]` per schema slug, or null when the

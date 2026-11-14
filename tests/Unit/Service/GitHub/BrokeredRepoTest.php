@@ -16,17 +16,17 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Tests\Unit\Service\GitHub;
 
-use OCA\Buildiq\Service\GitHub\BrokerAccess;
-use OCA\Buildiq\Service\GitHub\BrokeredRepo;
-use OCA\Buildiq\Service\GitHub\PushTarget;
+use OCA\Buildiq\Kernel\Values\BrokerAccess;
+use OCA\Buildiq\Kernel\Values\BrokeredRepo;
+use OCA\Buildiq\Kernel\Values\PushTarget;
 use PHPUnit\Framework\TestCase;
 
 /**
  * ownedBy() and named() return a new repository; the original and the access stay as they were.
  *
- * @covers \OCA\Buildiq\Service\GitHub\BrokeredRepo
- * @uses   \OCA\Buildiq\Service\GitHub\PushTarget
- * @uses   \OCA\Buildiq\Service\GitHub\BrokerAccess
+ * @covers \OCA\Buildiq\Kernel\Values\BrokeredRepo
+ * @uses   \OCA\Buildiq\Kernel\Values\PushTarget
+ * @uses   \OCA\Buildiq\Kernel\Values\BrokerAccess
  */
 class BrokeredRepoTest extends TestCase {
 	/**

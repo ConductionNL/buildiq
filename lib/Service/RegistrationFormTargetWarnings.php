@@ -50,12 +50,14 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\RegistrationFormTargetWarningsInterface;
+
 /**
  * Maps a registration form onto its destination and returns OpenRegister's findings.
  *
  * @spec openspec/changes/forms-are-valid-against-their-destination/specs/form-destination-authoring/spec.md#requirement-a-registration-forms-presets-are-checked-against-its-destination
  */
-final class RegistrationFormTargetWarnings {
+final class RegistrationFormTargetWarnings implements RegistrationFormTargetWarningsInterface {
 	/**
 	 * Findings a field that declares no options or bounds of its own cannot earn.
 	 *

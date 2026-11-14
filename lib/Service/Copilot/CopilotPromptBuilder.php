@@ -31,7 +31,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service\Copilot;
 
-use OCA\Buildiq\Mcp\BuildiqToolProvider;
+use OCA\Buildiq\Kernel\Contracts\BuildiqToolProviderInterface;
 use stdClass;
 
 /**
@@ -43,13 +43,13 @@ class CopilotPromptBuilder {
 	/**
 	 * Constructor.
 	 *
-	 * @param BuildiqToolProvider $toolProvider Source of the tool catalogue
+	 * @param BuildiqToolProviderInterface $toolProvider Source of the tool catalogue
 	 *                                          (`getToolDescriptors()`).
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly BuildiqToolProvider $toolProvider,
+		private readonly BuildiqToolProviderInterface $toolProvider,
 	) {
 	}//end __construct()
 

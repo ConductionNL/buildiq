@@ -45,6 +45,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\LayoutDeltaServiceInterface;
 use OCA\Buildiq\Support\CanonicalJson;
 
 /**
@@ -52,7 +53,7 @@ use OCA\Buildiq\Support\CanonicalJson;
  *
  * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-001)
  */
-final class LayoutDeltaService {
+final class LayoutDeltaService implements LayoutDeltaServiceInterface {
 	/**
 	 * Constructor.
 	 *

@@ -35,12 +35,14 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\PageLayoutFrozenBaseInterface;
+
 /**
  * Picks the layers an override's frozen base is composed from.
  *
  * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-002)
  */
-final class PageLayoutFrozenBase {
+final class PageLayoutFrozenBase implements PageLayoutFrozenBaseInterface {
 	/**
 	 * Constructor.
 	 *

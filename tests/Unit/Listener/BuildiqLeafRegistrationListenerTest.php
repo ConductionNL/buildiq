@@ -37,7 +37,7 @@ namespace OCA\Buildiq\Tests\Unit\Listener;
 
 use OCA\Buildiq\Integration\PageLayoutLeafProvider;
 use OCA\Buildiq\Integration\RegistrationFormLeafProvider;
-use OCA\Buildiq\Listener\BuildiqLeafRegistrationListener;
+use OCA\Buildiq\Integration\BuildiqLeafRegistrationListener;
 use OCA\Buildiq\Service\LayoutDeltaService;
 use OCA\Buildiq\Service\PageLayoutFrozenBase;
 use OCA\Buildiq\Service\PageLayoutLayerStack;
@@ -65,7 +65,7 @@ use Psr\Log\NullLogger;
  * runs the same tests with `--coverage-clover` and every matrix cell goes red.
  * Reproduced with pcov: exit 0 without coverage, exit 1 with it, same 1277 tests.
  *
- * @covers \OCA\Buildiq\Listener\BuildiqLeafRegistrationListener
+ * @covers \OCA\Buildiq\Integration\BuildiqLeafRegistrationListener
  *
  * @uses \OCA\Buildiq\Integration\PageLayoutLeafProvider
  * @uses \OCA\Buildiq\Integration\RegistrationFormLeafProvider

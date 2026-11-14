@@ -38,8 +38,8 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Controller;
 
-use OCA\Buildiq\AppInfo\Application;
-use OCA\Buildiq\Service\ApplicationInsightsService;
+use OCA\Buildiq\Kernel\AppIdentity;
+use OCA\Buildiq\Kernel\Contracts\ApplicationInsightsServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -56,16 +56,16 @@ class ApplicationInsightsController extends Controller {
 	 *
 	 * @param IRequest $request The current HTTP request
 	 * @param IUserSession $userSession Current NC user session
-	 * @param ApplicationInsightsService $service Insights aggregation owner
+	 * @param ApplicationInsightsServiceInterface $service Insights aggregation owner
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		IRequest $request,
 		private readonly IUserSession $userSession,
-		private readonly ApplicationInsightsService $service,
+		private readonly ApplicationInsightsServiceInterface $service,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -92,7 +92,7 @@ class ApplicationInsightsController extends Controller {
 	#[NoAdminRequired]
 	public function getInsights(string $appUuid, string $versionUuid): JSONResponse {
 		$window = (string)$this->request->getParam('window', '');
-		if (in_array($window, ApplicationInsightsService::ALLOWED_WINDOWS, true) === false) {
+		if (in_array($window, ApplicationInsightsServiceInterface::ALLOWED_WINDOWS, true) === false) {
 			return new JSONResponse(
 				data: [
 					'status' => Http::STATUS_BAD_REQUEST,

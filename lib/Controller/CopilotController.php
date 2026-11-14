@@ -45,9 +45,9 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Controller;
 
-use OCA\Buildiq\AppInfo\Application;
 use OCA\Buildiq\Exception\CopilotException;
-use OCA\Buildiq\Service\CopilotService;
+use OCA\Buildiq\Kernel\AppIdentity;
+use OCA\Buildiq\Kernel\Contracts\CopilotServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -69,7 +69,7 @@ class CopilotController extends Controller {
 	 *
 	 * @param IRequest $request The current HTTP request.
 	 * @param LoggerInterface $logger PSR logger for diagnostics.
-	 * @param CopilotService $copilotService Copilot orchestrator.
+	 * @param CopilotServiceInterface $copilotService Copilot orchestrator.
 	 * @param IUserSession $userSession Current Nextcloud user session.
 	 *
 	 * @return void
@@ -77,10 +77,10 @@ class CopilotController extends Controller {
 	public function __construct(
 		IRequest $request,
 		private readonly LoggerInterface $logger,
-		private readonly CopilotService $copilotService,
+		private readonly CopilotServiceInterface $copilotService,
 		private readonly IUserSession $userSession,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**

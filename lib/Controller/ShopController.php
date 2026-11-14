@@ -39,12 +39,12 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Controller;
 
-use OCA\Buildiq\AppInfo\Application;
 use OCA\Buildiq\Exception\AppRepoParseException;
-use OCA\Buildiq\Service\AppRepoParser;
-use OCA\Buildiq\Service\GitHubCatalogService;
-use OCA\Buildiq\Service\GitHubShopSearch;
-use OCA\Buildiq\Service\RepoSource;
+use OCA\Buildiq\Kernel\AppIdentity;
+use OCA\Buildiq\Kernel\Contracts\AppRepoParserInterface;
+use OCA\Buildiq\Kernel\Contracts\GitHubCatalogServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\GitHubShopSearchInterface;
+use OCA\Buildiq\Kernel\Values\RepoSource;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -80,10 +80,10 @@ class ShopController extends Controller {
 	 *
 	 * @param IRequest $request The current HTTP request.
 	 * @param IUserSession $userSession Current NC user session.
-	 * @param GitHubCatalogService $catalogService Fixed-host GitHub source.
-	 * @param AppRepoParser $repoParser Strict repo-file-map parser (change 1).
+	 * @param GitHubCatalogServiceInterface $catalogService Fixed-host GitHub source.
+	 * @param AppRepoParserInterface $repoParser Strict repo-file-map parser (change 1).
 	 * @param ApplicationsController $appsController Shared clone/install seam.
-	 * @param GitHubShopSearch $shopSearch Shapes the GitHub search's answer and reports its outcome.
+	 * @param GitHubShopSearchInterface $shopSearch Shapes the GitHub search's answer and reports its outcome.
 	 *
 	 * @return void
 	 *
@@ -92,12 +92,12 @@ class ShopController extends Controller {
 	public function __construct(
 		IRequest $request,
 		private readonly IUserSession $userSession,
-		private readonly GitHubCatalogService $catalogService,
-		private readonly AppRepoParser $repoParser,
+		private readonly GitHubCatalogServiceInterface $catalogService,
+		private readonly AppRepoParserInterface $repoParser,
 		private readonly ApplicationsController $appsController,
-		private readonly GitHubShopSearch $shopSearch,
+		private readonly GitHubShopSearchInterface $shopSearch,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -283,7 +283,7 @@ class ShopController extends Controller {
 	private function fetchTemplate(RepoSource $source, string $actingUserId): array|JSONResponse {
 		$files = $this->catalogService->fetchRepoFiles(source: $source, actingUserId: $actingUserId);
 		if ($files === []) {
-			return $this->error(code: GitHubCatalogService::OUTCOME_UNREACHABLE, status: Http::STATUS_NOT_FOUND);
+			return $this->error(code: GitHubCatalogServiceInterface::OUTCOME_UNREACHABLE, status: Http::STATUS_NOT_FOUND);
 		}
 
 		try {

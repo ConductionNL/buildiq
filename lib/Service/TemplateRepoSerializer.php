@@ -35,7 +35,6 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Support\CanonicalJson;
-use OCA\Buildiq\Support\RepoDescriptor;
 use OCA\OpenRegister\Db\SchemaMapper;
 use Psr\Log\LoggerInterface;
 use Throwable;

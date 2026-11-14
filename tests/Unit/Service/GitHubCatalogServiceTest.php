@@ -38,7 +38,7 @@ namespace OCA\Buildiq\Tests\Unit\Service;
 
 use OCA\Buildiq\Service\GitHubCatalogService;
 use OCA\Buildiq\Service\GitHubFormCatalogService;
-use OCA\Buildiq\Service\RepoSource;
+use OCA\Buildiq\Kernel\Values\RepoSource;
 use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
 use OCP\Http\Client\IResponse;

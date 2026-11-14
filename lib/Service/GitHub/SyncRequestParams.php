@@ -25,6 +25,10 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service\GitHub;
 
+use OCA\Buildiq\Kernel\Values\AppPushRequest;
+use OCA\Buildiq\Kernel\Values\BrokerAccess;
+use OCA\Buildiq\Kernel\Values\BrokeredRepo;
+use OCA\Buildiq\Kernel\Values\PushTarget;
 use OCP\IRequest;
 
 /**
