@@ -6,4 +6,4 @@
 - [x] **T04**: Add "Use a shared list": a picker over OpenRegister concept schemes that writes `conceptScheme` and removes `enum`, showing the scheme's options read-only (REQ-BQFT-002). Verify: vitest with a mocked scheme list; PHPUnit is not needed, OpenRegister validates.
 - [ ] **T05**: Add the user and several-users types writing `referenceType: nextcloud-user` (REQ-BQFT-003). Verify: vitest; Playwright `tests/e2e/schema-designer-field-types.spec.ts` creates a schema with a date, a choice and a user field, publishes an app with a form on it, and picks a user in the published form.
 - [x] **T06**: English and Dutch strings for every type name and the choice editor; update `docs/` on modelling data.
-- [ ] **T07**: Run `openspec validate data-field-types-and-choice-lists --strict`.
+- [x] **T07**: Run `openspec validate data-field-types-and-choice-lists --strict`. — valid (OpenSpec CLI via npx)
