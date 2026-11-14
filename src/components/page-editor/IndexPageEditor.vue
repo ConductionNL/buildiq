@@ -63,6 +63,30 @@
 				:modelValue="(config.sidebar && config.sidebar.columnGroups) || []"
 				@update:modelValue="updateSidebar('columnGroups', $event)" />
 		</fieldset>
+
+		<fieldset class="index-page-editor__fieldset">
+			<legend>{{ t('buildiq', 'Saved views') }}</legend>
+			<label class="index-page-editor__inline">
+				<input
+					type="checkbox"
+					:checked="config.allowSavedViews === true"
+					@change="onSavedViewsToggle($event.target.checked)" />
+				{{ t('buildiq', 'Let app users save their own views') }}
+			</label>
+			<p class="index-page-editor__hint">
+				{{
+					t(
+						'buildiq',
+						'Views for everyone: every app user of this page finds these in the views list.',
+					)
+				}}
+			</p>
+			<SavedViewsBuilder
+				:modelValue="config.defaultSavedViews || []"
+				:schemaProperties="schemaProperties"
+				@update:modelValue="update('defaultSavedViews', $event)" />
+			<InlineFieldMark :error="markFor('defaultSavedViews')" />
+		</fieldset>
 	</div>
 </template>
 
@@ -72,6 +96,7 @@ import ActionBuilder from './fields/ActionBuilder.vue'
 import ColumnBuilder from './fields/ColumnBuilder.vue'
 import InlineFieldMark from './fields/InlineFieldMark.vue'
 import RegisterSchemaFields from './fields/RegisterSchemaFields.vue'
+import SavedViewsBuilder from './fields/SavedViewsBuilder.vue'
 import SidebarSectionBuilder from './fields/SidebarSectionBuilder.vue'
 import { useEditorRegisterPicker } from '../../composables/useEditorRegisterPicker.js'
 import {
@@ -89,6 +114,7 @@ export default {
 		InlineFieldMark,
 		RegisterSchemaFields,
 		DataSourceOriginToggle,
+		SavedViewsBuilder,
 	},
 
 	mixins: [
@@ -120,6 +146,7 @@ export default {
 				'columns',
 				'actions',
 				'sidebar',
+				'defaultSavedViews',
 			]
 		},
 
@@ -195,6 +222,26 @@ export default {
 				const current =
 					(typeof next.sidebar === 'object' && next.sidebar) || {}
 				next.sidebar = { ...current, enabled: true }
+			}
+			this.$emit('update:config', next)
+		},
+
+		/**
+		 * Let app users save their own views on this page, or not. Off
+		 * deletes `config.allowSavedViews` rather than storing `false`, which
+		 * nextcloud-vue reads as "turn the Views tab off" and so would also
+		 * hide the views the maker defined for everyone.
+		 *
+		 * @param {boolean} enabled - the switch's new state.
+		 * @return {void}
+		 * @spec openspec/changes/data-index-grid-and-saved-views/tasks.md#t05
+		 */
+		onSavedViewsToggle(enabled) {
+			const next = { ...this.config }
+			if (enabled) {
+				next.allowSavedViews = true
+			} else {
+				delete next.allowSavedViews
 			}
 			this.$emit('update:config', next)
 		},
@@ -330,6 +377,12 @@ export default {
 .index-page-editor__fieldset legend {
 	padding: 0 6px;
 	font-weight: 600;
+	font-size: 13px;
+}
+
+.index-page-editor__hint {
+	margin: 0 0 6px;
+	color: var(--color-text-maxcontrast);
 	font-size: 13px;
 }
 
