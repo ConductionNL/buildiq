@@ -62,6 +62,7 @@ use OCA\Buildiq\Service\AppTemplateCapture;
 use OCA\Buildiq\Service\CallerContext;
 use OCA\Buildiq\Service\CompanionSchemaCollector;
 use OCA\Buildiq\Kernel\Values\LocalApplicationRef;
+use OCA\Buildiq\Service\PageCodeGuard;
 use OCA\Buildiq\Service\RegisterStore;
 use OCA\Buildiq\Kernel\Values\RepoSource;
 use OCA\Buildiq\Service\TemplateInstall;
@@ -79,6 +80,7 @@ use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\UserRateLimit;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
@@ -160,6 +162,8 @@ class ApplicationsController extends Controller {
 	 * @param CallerContext $caller The caller's session, group memberships and the shared permission matcher.
 	 * @param ManifestResolverServiceInterface $manifestResolver Version-aware manifest resolver (REQ-OBVR-002)
 	 * @param AppChannelApplierInterface $channelApplier Applies the v2 repo channels (apply-v2-channels)
+	 * @param IAppConfig|null $appConfig Reads the instance setting "Allow code on pages"; without it code stays refused
+	 * @param PageCodeGuard $codeGuard Finds the code-bearing keys of a manifest (pages-custom-code D6)
 	 *
 	 * @return void
 	 */
@@ -170,6 +174,8 @@ class ApplicationsController extends Controller {
 		CallerContext $caller,
 		private readonly ManifestResolverServiceInterface $manifestResolver,
 		private readonly AppChannelApplierInterface $channelApplier,
+		private readonly ?IAppConfig $appConfig = null,
+		private readonly PageCodeGuard $codeGuard = new PageCodeGuard(),
 	) {
 		$this->objectService = $store->objectService;
 		$this->registerMapper = $store->registerMapper;
@@ -441,6 +447,11 @@ class ApplicationsController extends Controller {
 			// Never let a manifest body inject/overwrite the permissions roster.
 			unset($manifest['permissions']);
 
+			$codeRefusal = $this->refuseCodeChange(slug: $slug, applicationArray: $applicationArray, manifest: $manifest);
+			if ($codeRefusal !== null) {
+				return $codeRefusal;
+			}
+
 			return $this->writeManifest(applicationArray: $applicationArray, manifest: $manifest);
 		} catch (Throwable $e) {
 			$correlationId = bin2hex(random_bytes(8));
@@ -490,6 +501,58 @@ class ApplicationsController extends Controller {
 
 		return null;
 	}//end authorizeManifestWrite()
+
+	/**
+	 * Refuse a save that adds, changes or removes code unless an app owner makes
+	 * it and the instance allows code on pages (pages-custom-code D6).
+	 *
+	 * The stored manifest is read the way the manifest endpoint serves it, so a
+	 * save of what an editor loaded changes no code key. There is no admin
+	 * bypass: a Nextcloud administrator who is not an owner of the app cannot
+	 * write code into it.
+	 *
+	 * @param string              $slug             The virtual-app slug.
+	 * @param array<string,mixed> $applicationArray The resolved Application.
+	 * @param array<mixed>        $manifest         The manifest being saved.
+	 *
+	 * @return JSONResponse|null The 403, or null when the save may proceed.
+	 *
+	 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-only-owners-write-code-and-only-when-allowed-req-bqcc-005
+	 */
+	private function refuseCodeChange(string $slug, array $applicationArray, array $manifest): JSONResponse|null {
+		$user   = $this->userSession->getUser();
+		$stored = $this->manifestResolver->resolve(appSlug: $slug, versionSlug: null, caller: $user);
+		if ($stored === null && is_array($applicationArray['manifest'] ?? null) === true) {
+			$stored = $applicationArray['manifest'];
+		}
+
+		if ($this->codeGuard->changesCode(before: $stored, after: $manifest) === false) {
+			return null;
+		}
+
+		if ($this->appConfig?->getValueBool(AppIdentity::APP_ID, PageCodeGuard::SETTING, false) !== true) {
+			return new JSONResponse(
+				data: ['error' => 'forbidden', 'code' => 'buildiq.code.disabled', 'message' => 'Code on pages is switched off for this instance.'],
+				statusCode: Http::STATUS_FORBIDDEN
+			);
+		}
+
+		$isOwner = ($user !== null && $this->permissionResolver->matchesCaller(
+			permissions: ($applicationArray['permissions'] ?? []),
+			caller: $user,
+			userGroups: $this->permissionResolver->resolveUserGroups($user),
+			allowAdminBypass: false,
+			roles: ['owners']
+		) === true);
+		if ($isOwner === false) {
+			return new JSONResponse(
+				data: ['error' => 'forbidden', 'code' => 'buildiq.code.owners_only', 'message' => 'Only app owners can add code to a page.'],
+				statusCode: Http::STATUS_FORBIDDEN
+			);
+		}
+
+		return null;
+	}//end refuseCodeChange()
 
 	/**
 	 * Whether the caller is an owner or editor of the Application.

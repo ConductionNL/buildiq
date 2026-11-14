@@ -230,6 +230,35 @@ class UpsertPageHandlerTest extends TestCase {
 	}//end testAppendsANewEntryUnderTheLock()
 
 	/**
+	 * The copilot never writes code: a page config with code and an expression is stored without them, and the result says so (pages-custom-code D6).
+	 *
+	 * @return void
+	 */
+	public function testCodeIsLeftOutOfACopilotPage(): void {
+		$this->arrange(permissions: ['owners' => ['user:alice']], entries: []);
+		$captured = null;
+		$this->captureSave(captured: $captured);
+		$args = $this->args();
+		$args['config'] = [
+			'schema' => 'case',
+			'code' => ['html' => '<p>x</p>', 'js' => 'fetch()'],
+			'columns' => [['key' => 'title'], ['key' => 'age', 'expression' => 'row.age * 2']],
+		];
+
+		$result = $this->handler->handle(args: $args);
+
+		self::assertTrue(condition: $result['success']);
+		$stored = $captured['manifest']['pages'][0]['config'];
+		self::assertArrayNotHasKey(key: 'code', array: $stored);
+		self::assertSame(expected: [['key' => 'title'], ['key' => 'age']], actual: $stored['columns']);
+		self::assertSame(expected: 'case', actual: $stored['schema']);
+		self::assertSame(
+			expected: 'Code and expressions were left out (config/code, config/columns/1/expression): app owners write code on a page.',
+			actual: $result['notice']
+		);
+	}//end testCodeIsLeftOutOfACopilotPage()
+
+	/**
 	 * An entry with the same id in another case is replaced, not duplicated.
 	 *
 	 * @return void
