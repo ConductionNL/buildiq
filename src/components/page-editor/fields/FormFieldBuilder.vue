@@ -89,6 +89,83 @@
 				class="form-field-builder__finding"
 				:error="{ hasError: true, message: finding.message }" />
 
+			<!-- REQ-BQSA-001: the options of a signature, audio or location field. -->
+			<div
+				v-if="isDeviceField(field)"
+				class="form-field-builder__device"
+				:data-testid="'device-options-' + index">
+				<template v-if="field.type === 'signature'">
+					<label class="form-field-builder__inline">
+						<input
+							type="checkbox"
+							data-testid="signature-allow-drawn"
+							:checked="field.allowDrawn !== false"
+							@change="updateOption(index, 'allowDrawn', $event.target.checked)" />
+						{{ t('buildiq', 'Allow drawing') }}
+					</label>
+					<label class="form-field-builder__inline">
+						<input
+							type="checkbox"
+							data-testid="signature-allow-typed"
+							:checked="field.allowTyped !== false"
+							@change="updateOption(index, 'allowTyped', $event.target.checked)" />
+						{{ t('buildiq', 'Allow typing a name') }}
+					</label>
+				</template>
+				<template v-else-if="field.type === 'audio'">
+					<label class="form-field-builder__inline">
+						{{ t('buildiq', 'Maximum length (seconds)') }}
+						<input
+							type="number"
+							data-testid="audio-max-seconds"
+							class="form-field-builder__field form-field-builder__field--narrow"
+							:min="AUDIO_MIN_SECONDS"
+							:max="AUDIO_MAX_SECONDS"
+							:value="audioSeconds(field)"
+							@input="updateOption(index, 'maxSeconds', Number.parseInt($event.target.value, 10))" />
+					</label>
+					<span class="form-field-builder__hint" data-testid="audio-size">{{ audioSizeHint(field) }}</span>
+				</template>
+				<template v-else-if="field.type === 'location'">
+					<input
+						:value="field.latField || ''"
+						type="text"
+						data-testid="location-lat-field"
+						class="form-field-builder__field form-field-builder__field--narrow"
+						:placeholder="t('buildiq', 'Latitude property')"
+						:aria-label="t('buildiq', 'Latitude property')"
+						@input="updateOption(index, 'latField', $event.target.value.trim() || null)" />
+					<input
+						:value="field.lngField || ''"
+						type="text"
+						data-testid="location-lng-field"
+						class="form-field-builder__field form-field-builder__field--narrow"
+						:placeholder="t('buildiq', 'Longitude property')"
+						:aria-label="t('buildiq', 'Longitude property')"
+						@input="updateOption(index, 'lngField', $event.target.value.trim() || null)" />
+					<input
+						:value="field.accuracyField || ''"
+						type="text"
+						data-testid="location-accuracy-field"
+						class="form-field-builder__field form-field-builder__field--narrow"
+						:placeholder="t('buildiq', 'Accuracy property (optional)')"
+						:aria-label="t('buildiq', 'Accuracy property (optional)')"
+						@input="updateOption(index, 'accuracyField', $event.target.value.trim() || null)" />
+					<label class="form-field-builder__inline">
+						<input
+							type="checkbox"
+							data-testid="location-allow-map-pick"
+							:checked="field.allowMapPick !== false"
+							@change="updateOption(index, 'allowMapPick', $event.target.checked ? null : false)" />
+						{{ t('buildiq', 'Let the user place a pin on a map instead') }}
+					</label>
+				</template>
+				<InlineFieldMark
+					v-for="(problem, problemIndex) in deviceProblemMarks(field)"
+					:key="'device-' + problemIndex"
+					:error="{ hasError: true, message: problem }" />
+			</div>
+
 			<div
 				v-if="showLogic && isExpanded(index)"
 				class="form-field-builder__details">
@@ -147,8 +224,29 @@ import FieldDefaultBuilder from './FieldDefaultBuilder.vue'
 import FieldValidationBuilder from './FieldValidationBuilder.vue'
 import InlineFieldMark from './InlineFieldMark.vue'
 import VisibleWhenBuilder from './VisibleWhenBuilder.vue'
+import {
+	AUDIO_MAX_SECONDS,
+	AUDIO_MIN_SECONDS,
+	audioClipBytes,
+	audioSecondsOf,
+	DEVICE_FIELD_TYPES,
+	deviceFieldProblems,
+	inlineCapOf,
+	longestAudioSeconds,
+} from '../../../services/deviceFields.js'
 
-const FIELD_TYPES = ['string', 'number', 'boolean', 'select', 'textarea', 'date']
+const FIELD_TYPES = ['string', 'number', 'boolean', 'select', 'textarea', 'date', ...DEVICE_FIELD_TYPES]
+
+/**
+ * The maker-facing sentence of each device field problem (REQ-BQSA-002, REQ-BQSA-004).
+ */
+const DEVICE_PROBLEM_TEXT = {
+	'device-field-on-public-form': () => t('buildiq', 'A public form cannot use the microphone or the position: public forms belong to the portal.'),
+	'signature-without-mode': () => t('buildiq', 'Allow drawing, typing or both.'),
+	'audio-length-out-of-range': () => t('buildiq', 'Choose a length from {min} to {max} seconds.', { min: AUDIO_MIN_SECONDS, max: AUDIO_MAX_SECONDS }),
+	'location-without-fields': () => t('buildiq', 'Name the latitude and the longitude property.'),
+	'location-same-fields': () => t('buildiq', 'The latitude and the longitude need two different properties.'),
+}
 
 /**
  * Whether a `visibleWhen` condition points at a field of this form (not an
@@ -238,12 +336,21 @@ export default {
 			type: Object,
 			default: () => ({}),
 		},
+
+		// REQ-BQSA-004: the form's mode, so a device field a public form may
+		// not use is marked while the maker edits. Empty outside form pages.
+		formMode: {
+			type: String,
+			default: '',
+		},
 	},
 
 	emits: ['update:modelValue'],
 	data() {
 		return {
 			FIELD_TYPES,
+			AUDIO_MIN_SECONDS,
+			AUDIO_MAX_SECONDS,
 			expandedIndices: [],
 		}
 	},
@@ -380,6 +487,83 @@ export default {
 			const next = this.localFields.slice()
 			next.push({ key: '', label: '', type: 'string' })
 			this.$emit('update:modelValue', next)
+		},
+
+		/**
+		 * Write one device field option as given (a `false` is kept, unlike
+		 * updateField), or delete it on `null` / `NaN`.
+		 *
+		 * @param {number} index - the field index.
+		 * @param {string} key - the option key.
+		 * @param {boolean|number|string|null} value - the value, or null to delete.
+		 * @return {void}
+		 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-forms-offer-signature-audio-and-location-fields-req-bqsa-001
+		 */
+		updateOption(index, key, value) {
+			const next = this.localFields.slice()
+			const current = { ...next[index] }
+			if (value === null || Number.isNaN(value)) {
+				delete current[key]
+			} else {
+				current[key] = value
+			}
+			next[index] = current
+			this.$emit('update:modelValue', next)
+		},
+
+		/**
+		 * Whether a field uses a device: signature, audio or location.
+		 *
+		 * @param {object} field - the field entry.
+		 * @return {boolean}
+		 */
+		isDeviceField(field) {
+			return !!field && DEVICE_FIELD_TYPES.includes(field.type)
+		},
+
+		/**
+		 * The audio length shown in the builder, the default when unset.
+		 *
+		 * @param {object} field - the audio field.
+		 * @return {number} the stored length, as stored.
+		 */
+		audioSeconds(field) {
+			return audioSecondsOf(field)
+		},
+
+		/**
+		 * The size a clip of the chosen length takes, or the longest length
+		 * that fits when it passes the inline file cap (REQ-BQSA-002).
+		 *
+		 * @param {object} field - the audio field.
+		 * @return {string}
+		 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-value-lands-in-a-matching-property-req-bqsa-002
+		 */
+		audioSizeHint(field) {
+			const seconds = audioSecondsOf(field)
+			if (!Number.isInteger(seconds)) {
+				return ''
+			}
+			const longest = longestAudioSeconds(inlineCapOf(field))
+			if (seconds > longest) {
+				return t('buildiq', 'Too long to store with the record: at most {seconds} seconds fit.', { seconds: longest })
+			}
+			const kilobytes = Math.ceil(audioClipBytes(seconds) / 1024)
+			return t('buildiq', 'A clip of {seconds} seconds takes about {size} KB.', { seconds, size: kilobytes })
+		},
+
+		/**
+		 * The maker-facing problems of a device field's options, in this form's mode.
+		 * The too-long length is told by audioSizeHint instead.
+		 *
+		 * @param {object} field - the field entry.
+		 * @return {Array<string>}
+		 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
+		 */
+		deviceProblemMarks(field) {
+			return deviceFieldProblems(field, this.formMode)
+				.filter((code) => Object.hasOwn(DEVICE_PROBLEM_TEXT, code))
+				.map((code) => DEVICE_PROBLEM_TEXT[code]())
 		},
 
 		/**
@@ -520,6 +704,20 @@ export default {
 	display: inline-flex;
 	gap: 4px;
 	align-items: center;
+}
+
+.form-field-builder__device {
+	flex-basis: 100%;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	align-items: center;
+	padding-inline-start: 8px;
+}
+
+.form-field-builder__hint {
+	font-size: 12px;
+	color: var(--color-text-maxcontrast);
 }
 
 .form-field-builder__summary {

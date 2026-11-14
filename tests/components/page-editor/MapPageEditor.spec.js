@@ -202,3 +202,25 @@ describe('MapPageEditor', () => {
 		expect(next.markers.clustering).toBe(true)
 	})
 })
+
+describe('MapPageEditor user position (forms-signature-audio-and-location, REQ-BQSA-003)', () => {
+	it('writes showUserLocation and centerOnUser, and drops them when unticked', async () => {
+		const wrapper = mountEditor({ zoom: 12, height: '400px' })
+
+		await wrapper.find('[data-testid="map-show-user-location"]').setValue(true)
+		expect(wrapper.emitted('update:config')[0][0]).toEqual({ zoom: 12, height: '400px', showUserLocation: true })
+
+		await wrapper.find('[data-testid="map-center-on-user"]').setValue(true)
+		expect(wrapper.emitted('update:config')[1][0]).toEqual({ zoom: 12, height: '400px', centerOnUser: true })
+	})
+
+	it('shows the stored choices and unticking removes the key', async () => {
+		const wrapper = mountEditor({ showUserLocation: true, centerOnUser: true })
+
+		expect(wrapper.find('[data-testid="map-show-user-location"]').element.checked).toBe(true)
+		expect(wrapper.find('[data-testid="map-center-on-user"]').element.checked).toBe(true)
+
+		await wrapper.find('[data-testid="map-show-user-location"]').setValue(false)
+		expect(wrapper.emitted('update:config')[0][0]).toEqual({ centerOnUser: true })
+	})
+})

@@ -2059,7 +2059,24 @@ OC.L10N.register(
         "Requests under 250 ms": "Requests under 250 ms",
         "Total load time (ms)": "Total load time (ms)",
         "Window start": "Window start",
-        "Include server bundle": "Include server bundle"
+        "Include server bundle": "Include server bundle",
+        "A clip of {seconds} seconds takes about {size} KB.": "A clip of {seconds} seconds takes about {size} KB.",
+        "A public form cannot use the microphone or the position: public forms belong to the portal.": "A public form cannot use the microphone or the position: public forms belong to the portal.",
+        "Accuracy property (optional)": "Accuracy property (optional)",
+        "Allow drawing": "Allow drawing",
+        "Allow drawing, typing or both.": "Allow drawing, typing or both.",
+        "Allow typing a name": "Allow typing a name",
+        "Center on my position when the page opens": "Center on my position when the page opens",
+        "Choose a length from {min} to {max} seconds.": "Choose a length from {min} to {max} seconds.",
+        "Latitude property": "Latitude property",
+        "Let the user place a pin on a map instead": "Let the user place a pin on a map instead",
+        "Longitude property": "Longitude property",
+        "Maximum length (seconds)": "Maximum length (seconds)",
+        "Name the latitude and the longitude property.": "Name the latitude and the longitude property.",
+        "Show my position": "Show my position",
+        "The latitude and the longitude need two different properties.": "The latitude and the longitude need two different properties.",
+        "Too long to store with the record: at most {seconds} seconds fit.": "Too long to store with the record: at most {seconds} seconds fit.",
+        "file": "file"
     },
     "nplurals=2; plural=(n != 1);"
 )

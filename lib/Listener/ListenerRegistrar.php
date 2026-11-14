@@ -114,6 +114,17 @@ final class ListenerRegistrar {
 			event: ObjectUpdatingEvent::class,
 			listener: FormLiveValuesListener::class
 		);
+		// Device features (forms-signature-audio-and-location, REQ-BQSA-004):
+		// every ApplicationVersion save stores the browser devices its manifest
+		// uses, which the page serving the app allows and nothing else.
+		$context->registerEventListener(
+			event: ObjectCreatingEvent::class,
+			listener: DeviceFeaturesListener::class
+		);
+		$context->registerEventListener(
+			event: ObjectUpdatingEvent::class,
+			listener: DeviceFeaturesListener::class
+		);
 	}//end registerObjectGuardListeners()
 
 	/**

@@ -324,6 +324,9 @@ const SUPPORTED_TYPES = [
 	'array',
 	'object',
 	'relation',
+	// A file property: a signature or an audio clip from a form lands in one
+	// (forms-signature-audio-and-location, REQ-BQSA-002).
+	'file',
 ]
 const ITEMS_TYPES = ['string', 'number', 'integer', 'boolean', 'object']
 const CARDINALITIES = ['one', 'many']
@@ -734,6 +737,7 @@ const PROPERTY_TYPES = {
 	array: 'array',
 	object: 'object',
 	relation: 'string',
+	file: 'file',
 }
 
 /**

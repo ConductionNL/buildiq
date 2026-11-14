@@ -360,3 +360,19 @@ describe('FieldEditor', () => {
 		})
 	})
 })
+
+describe('FieldEditor file properties (forms-signature-audio-and-location, REQ-BQSA-002)', () => {
+	it('offers the file type and writes it as an OpenRegister file property that loads back', () => {
+		const wrapper = mount(FieldEditor, {
+			propsData: { fields: [], schemaSlugs: [] },
+			stubs,
+		})
+		expect(wrapper.vm.typeOptions.map((option) => option.value)).toContain('file')
+
+		const fields = schemaToFields({ properties: { handtekening: { type: 'file', description: 'Signature' } } })
+		expect(fields[0].type).toBe('file')
+		const { properties } = fieldsToSchema(fields)
+		expect(properties.handtekening.type).toBe('file')
+		expect(properties.handtekening.description).toBe('Signature')
+	})
+})

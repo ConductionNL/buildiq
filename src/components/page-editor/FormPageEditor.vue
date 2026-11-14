@@ -158,6 +158,7 @@
 			<FormFieldBuilder
 				:modelValue="config.fields || []"
 				:findings="findingsPerField"
+				:formMode="config.mode || 'public'"
 				showLogic
 				@update:modelValue="update('fields', $event)" />
 			<InlineFieldMark :error="markFor('fields')" />
