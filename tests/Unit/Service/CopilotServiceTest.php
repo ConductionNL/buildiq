@@ -28,6 +28,7 @@ use OCA\Buildiq\Exception\CopilotException;
 use OCA\Buildiq\Mcp\BuildiqToolProvider;
 use OCA\Buildiq\Service\AgentRunLogger;
 use OCA\Buildiq\Service\ApplicationDeletionService;
+use OCA\Buildiq\Service\Copilot\AgentKnowledgeReader;
 use OCA\Buildiq\Service\Copilot\CopilotPlanValidator;
 use OCA\Buildiq\Service\Copilot\CopilotPromptBuilder;
 use OCA\Buildiq\Service\CopilotService;
@@ -2002,4 +2003,128 @@ class CopilotServiceTest extends TestCase {
 
 		self::assertArrayNotHasKey('traceId', $result);
 	}//end testTheBareCopilotKeepsNoTrace()
+
+	// -------------------------------------------------------------------
+	// plan() — an agent's knowledge (ai-agents-knowledge-and-run-trace)
+	// -------------------------------------------------------------------
+
+	/**
+	 * Build the SUT with a given knowledge reader.
+	 *
+	 * @param AgentKnowledgeReader $reader The knowledge reader.
+	 *
+	 * @return CopilotService
+	 */
+	private function makeServiceWithKnowledge(AgentKnowledgeReader $reader): CopilotService {
+		return new CopilotService(
+			container: $this->container,
+			logger: $this->createMock(LoggerInterface::class),
+			objectService: $this->objectService,
+			userManager: $this->userManager,
+			groupManager: $this->groupManager,
+			permissionResolver: new PermissionResolver(groupManager: $this->groupManager, logger: $this->createMock(LoggerInterface::class)),
+			toolProvider: $this->toolProvider,
+			planValidator: new CopilotPlanValidator(),
+			promptBuilder: new CopilotPromptBuilder(toolProvider: $this->toolProvider),
+			appDeletionService: $this->deletionService,
+			agentRunLogger: $this->agentRunLogger,
+			knowledgeReader: $reader,
+		);
+	}//end makeServiceWithKnowledge()
+
+	/**
+	 * An agent's plan prompt carries its knowledge after its instructions and
+	 * before the brief, and the trace names the files used (REQ-BQAG-002).
+	 *
+	 * @return void
+	 */
+	public function testAnAgentPlanReadsItsKnowledgeAfterItsInstructions(): void {
+		$this->wireTaskProcessingManager();
+		$this->taskManager->method('getAvailableTaskTypes')->willReturn([TextToText::ID => []]);
+		$this->wireAgent(agentId: 'agent-1', agent: ['knowledge' => [['fileName' => 'huisstijl-formulieren.md']]]);
+		$this->wireCaller(uid: 'alice');
+		$this->objectService->method('searchObjectsBySlug')->willReturn(
+			[
+				['id' => 'app-1', 'slug' => 'tool-library', 'permissions' => ['owners' => ['user:alice']]],
+			]
+		);
+
+		$prompts = [];
+		$nextId = 1;
+		$this->taskManager->method('scheduleTask')->willReturnCallback(
+			function (Task $task) use (&$nextId, &$prompts): void {
+				$prompts[] = (string)($task->getInput()['input'] ?? '');
+				$task->setId($nextId++);
+			}
+		);
+		$done = new Task(TextToText::ID, ['input' => 'x'], 'buildiq', 'alice');
+		$done->setStatus(Task::STATUS_SUCCESSFUL);
+		$done->setOutput(
+			[
+				'output' => json_encode(
+					[
+						'summary' => 'Add a page',
+						'steps' => [['tool' => 'buildiq.upsertPage', 'arguments' => ['appSlug' => 'tool-library', 'pageId' => 'a', 'title' => 'A', 'type' => 'index', 'route' => '/a']]],
+					]
+				),
+			]
+		);
+		$this->taskManager->method('getTask')->willReturn($done);
+
+		$reader = $this->createMock(AgentKnowledgeReader::class);
+		$reader->expects(self::once())->method('read')
+			->with(self::callback(static fn (array $agent): bool => ($agent['id'] ?? null) === 'agent-1'))
+			->willReturn([['fileName' => 'huisstijl-formulieren.md', 'text' => 'Field labels are in sentence case.']]);
+
+		$kept = null;
+		$this->agentRunLogger->method('rememberTrace')->willReturnCallback(
+			function (array $agent, string $userId, array $trace) use (&$kept): string {
+				$kept = $trace;
+				return 'trace-1';
+			}
+		);
+
+		$this->makeServiceWithKnowledge(reader: $reader)->plan(brief: 'Add a contact form', appSlug: null, userId: 'alice', agentId: 'agent-1');
+
+		self::assertCount(1, $prompts);
+		$prompt = $prompts[0];
+		$instructions = strpos($prompt, 'Be helpful.');
+		$knowledge = strpos($prompt, "--- huisstijl-formulieren.md ---\nField labels are in sentence case.");
+		$brief = strpos($prompt, "User brief:\nAdd a contact form");
+		self::assertIsInt($instructions);
+		self::assertIsInt($knowledge);
+		self::assertIsInt($brief);
+		self::assertTrue($instructions < $knowledge && $knowledge < $brief, 'instructions, then knowledge, then the brief');
+		self::assertSame(['huisstijl-formulieren.md'], $kept['knowledgeUsed']);
+	}//end testAnAgentPlanReadsItsKnowledgeAfterItsInstructions()
+
+	/**
+	 * A caller without owner or editor access to the agent's app gets no plan,
+	 * and the agent's knowledge is never read for them (REQ-BQAG-002).
+	 *
+	 * @return void
+	 */
+	public function testACallerWithoutAppAccessGetsNoPlanAndNoKnowledge(): void {
+		$this->wireTaskProcessingManager();
+		$this->taskManager->method('getAvailableTaskTypes')->willReturn([TextToText::ID => []]);
+		$this->wireAgent(agentId: 'agent-1', agent: ['knowledge' => [['fileName' => 'huisstijl-formulieren.md']]]);
+		$this->wireCaller(uid: 'bob');
+		$this->objectService->method('searchObjectsBySlug')->willReturn(
+			[
+				['id' => 'app-1', 'slug' => 'tool-library', 'permissions' => ['owners' => ['user:alice'], 'viewers' => ['user:bob']]],
+			]
+		);
+		$this->taskManager->expects(self::never())->method('scheduleTask');
+
+		$reader = $this->createMock(AgentKnowledgeReader::class);
+		$reader->expects(self::never())->method('read');
+
+		try {
+			$this->makeServiceWithKnowledge(reader: $reader)->plan(brief: 'x', appSlug: null, userId: 'bob', agentId: 'agent-1');
+			self::fail('A viewer must get no plan.');
+		} catch (CopilotException $e) {
+			self::assertSame('forbidden', $e->getErrorCode());
+			self::assertSame(403, $e->getHttpStatus());
+		}
+	}//end testACallerWithoutAppAccessGetsNoPlanAndNoKnowledge()
 }//end class

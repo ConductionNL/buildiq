@@ -133,4 +133,45 @@ class CopilotPromptBuilderTest extends TestCase {
 		self::assertStringNotContainsString('buildiq.createApp', $prompt);
 		self::assertStringContainsString('Be concise.', $prompt);
 	}//end testBuildRepairPromptHonoursNarrowingAndInstructions()
+
+	/**
+	 * Knowledge files follow the instructions, in the order given, before the
+	 * output contract and the brief (REQ-BQAG-002).
+	 *
+	 * @return void
+	 */
+	public function testBuildPlacesKnowledgeAfterTheInstructionsInOrder(): void {
+		$builder = new CopilotPromptBuilder(toolProvider: $this->toolProvider);
+		$knowledge = [
+			['fileName' => 'huisstijl-formulieren.md', 'text' => "Field labels are in sentence case.\n\n"],
+			['fileName' => 'tone.txt', 'text' => 'Write plainly.'],
+		];
+		$prompt = $builder->build(brief: 'Add a contact form', instructionsPrefix: 'Be concise.', knowledge: $knowledge);
+		$repair = $builder->buildRepairPrompt(brief: 'Add a contact form', previousOutput: 'oops', parseError: 'Syntax error', instructionsPrefix: 'Be concise.', knowledge: $knowledge);
+
+		foreach ([$prompt, $repair] as $text) {
+			$instructions = strpos($text, 'Be concise.');
+			$first = strpos($text, "--- huisstijl-formulieren.md ---\nField labels are in sentence case.\n--- tone.txt ---");
+			$second = strpos($text, "--- tone.txt ---\nWrite plainly.\n--- end of knowledge ---");
+			$contract = strpos($text, 'You are the Buildiq copilot.');
+			$brief = strpos($text, "User brief:\nAdd a contact form");
+
+			self::assertIsInt($instructions);
+			self::assertIsInt($first);
+			self::assertIsInt($second);
+			self::assertTrue($instructions < $first && $first < $second && $second < $contract && $contract < $brief, 'instructions, knowledge in order, contract, brief');
+		}
+	}//end testBuildPlacesKnowledgeAfterTheInstructionsInOrder()
+
+	/**
+	 * Without knowledge the prompt carries no knowledge section.
+	 *
+	 * @return void
+	 */
+	public function testBuildOmitsKnowledgeSectionWithoutFiles(): void {
+		$builder = new CopilotPromptBuilder(toolProvider: $this->toolProvider);
+
+		self::assertStringNotContainsString('Agent knowledge', $builder->build(brief: 'x', knowledge: []));
+		self::assertSame($builder->build(brief: 'x'), $builder->build(brief: 'x', knowledge: null));
+	}//end testBuildOmitsKnowledgeSectionWithoutFiles()
 }//end class

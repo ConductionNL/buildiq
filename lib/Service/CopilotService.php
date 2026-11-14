@@ -41,6 +41,7 @@ use DateTimeImmutable;
 use OCA\Buildiq\Exception\CopilotException;
 use OCA\Buildiq\Kernel\Contracts\BuildiqToolProviderInterface;
 use OCA\Buildiq\Kernel\Contracts\CopilotServiceInterface;
+use OCA\Buildiq\Service\Copilot\AgentKnowledgeReader;
 use OCA\Buildiq\Service\Copilot\CopilotPlanValidator;
 use OCA\Buildiq\Service\Copilot\CopilotPromptBuilder;
 use OCA\Buildiq\Service\Copilot\CopilotTextTask;
@@ -148,6 +149,20 @@ class CopilotService implements CopilotServiceInterface {
 	private readonly CopilotTextTask $textTask;
 
 	/**
+	 * Reads an agent's knowledge files into its plan prompt (REQ-BQAG-002).
+	 *
+	 * @var AgentKnowledgeReader
+	 */
+	private readonly AgentKnowledgeReader $knowledgeReader;
+
+	/**
+	 * The knowledge file names the plan request just made put in its prompt.
+	 *
+	 * @var array<int, string>
+	 */
+	private array $knowledgeUsed = [];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ContainerInterface $container DI container, used to lazily resolve
@@ -170,6 +185,7 @@ class CopilotService implements CopilotServiceInterface {
 	 *                                       turn.
 	 * @param AuditTrailMapper|null $auditTrailMapper Optional OR audit-trail writer for admin-bypass parity (L2).
 	 * @param CopilotTextTask|null $textTask The text-to-text task seam; built from the container and logger when not given.
+	 * @param AgentKnowledgeReader|null $knowledgeReader Reads an agent's knowledge files; built from the container and logger when not given.
 	 *
 	 * @return void
 	 */
@@ -187,8 +203,10 @@ class CopilotService implements CopilotServiceInterface {
 		private readonly AgentRunLogger $agentRunLogger,
 		private readonly ?AuditTrailMapper $auditTrailMapper = null,
 		?CopilotTextTask $textTask = null,
+		?AgentKnowledgeReader $knowledgeReader = null,
 	) {
 		$this->textTask = ($textTask ?? new CopilotTextTask(container: $container, logger: $logger));
+		$this->knowledgeReader = ($knowledgeReader ?? new AgentKnowledgeReader(container: $container, logger: $logger));
 	}//end __construct()
 
 	/**
@@ -260,6 +278,7 @@ class CopilotService implements CopilotServiceInterface {
 		}
 
 		$this->modelSteps = [];
+		$this->knowledgeUsed = [];
 		try {
 			$result = $this->planWithinContext(brief: $brief, appSlug: $appSlug, userId: $userId, agent: $agent, versionSlug: $versionSlug);
 		} catch (CopilotException $e) {
@@ -296,7 +315,7 @@ class CopilotService implements CopilotServiceInterface {
 	private function currentTrace(): array {
 		return [
 			'modelSteps' => $this->modelSteps,
-			'knowledgeUsed' => [],
+			'knowledgeUsed' => $this->knowledgeUsed,
 			'durationMs' => array_sum(array_column($this->modelSteps, 'durationMs')),
 		];
 	}//end currentTrace()
@@ -330,10 +349,14 @@ class CopilotService implements CopilotServiceInterface {
 
 		$effectiveDescriptors = $this->toolProvider->getToolDescriptors();
 		$instructionsPrefix = null;
+		$knowledge = [];
 		if ($agent !== null) {
 			$agentEnabledTools = (array)($agent['enabledTools'] ?? []);
 			$effectiveDescriptors = $this->narrowDescriptors(descriptors: $effectiveDescriptors, enabledTools: $agentEnabledTools);
 			$instructionsPrefix = (string)($agent['instructions'] ?? '');
+			// REQ-BQAG-002: read only after the caller's role on the agent's app is confirmed above.
+			$knowledge = $this->knowledgeReader->read(agent: $agent);
+			$this->knowledgeUsed = array_column($knowledge, 'fileName');
 		}
 
 		$plan = $this->requestPlanFromLlm(
@@ -342,7 +365,8 @@ class CopilotService implements CopilotServiceInterface {
 			userId: $userId,
 			targetContext: $targetContext,
 			toolDescriptors: $effectiveDescriptors,
-			instructionsPrefix: $instructionsPrefix
+			instructionsPrefix: $instructionsPrefix,
+			knowledge: $knowledge
 		);
 
 		$plan = $this->applyTargetVersion(plan: $plan, versionSlug: $versionSlug);
@@ -1402,6 +1426,7 @@ class CopilotService implements CopilotServiceInterface {
 	 *                                                               design.md Decision 1) — defaults to the full
 	 *                                                               catalogue when null.
 	 * @param string|null $instructionsPrefix Optional agent instructions prefixed onto the prompt.
+	 * @param array<int, array{fileName: string, text: string}> $knowledge The agent's knowledge files, after the instructions.
 	 *
 	 * @return array<string, mixed> Decoded plan.
 	 *
@@ -1414,6 +1439,7 @@ class CopilotService implements CopilotServiceInterface {
 		?array $targetContext,
 		?array $toolDescriptors = null,
 		?string $instructionsPrefix = null,
+		array $knowledge = [],
 	): array {
 		$manager = $this->resolveTaskProcessingManager();
 		if ($manager === null) {
@@ -1424,7 +1450,8 @@ class CopilotService implements CopilotServiceInterface {
 			brief: $brief,
 			targetContext: $targetContext,
 			toolDescriptors: $toolDescriptors,
-			instructionsPrefix: $instructionsPrefix
+			instructionsPrefix: $instructionsPrefix,
+			knowledge: $knowledge
 		);
 		[$plan, $raw, $parseError] = $this->recordedPlanAttempt(manager: $manager, prompt: $prompt, userId: $userId, appSlug: $appSlug, attempt: 1);
 		if ($plan !== null) {
@@ -1438,7 +1465,8 @@ class CopilotService implements CopilotServiceInterface {
 			parseError: $parseError,
 			targetContext: $targetContext,
 			toolDescriptors: $toolDescriptors,
-			instructionsPrefix: $instructionsPrefix
+			instructionsPrefix: $instructionsPrefix,
+			knowledge: $knowledge
 		);
 		[$plan, , $parseError] = $this->recordedPlanAttempt(manager: $manager, prompt: $repairPrompt, userId: $userId, appSlug: $appSlug, attempt: 2);
 		if ($plan !== null) {
