@@ -96,6 +96,10 @@
             "description": "Owner-gated controller for the GitHub link/push/pull/status endpoints."
         },
         {
+            "name": "journey-designer",
+            "description": "Checks a journey's writes against their destinations."
+        },
+        {
             "name": "open-api",
             "description": "The OpenAPI document that describes this API."
         },
@@ -134,6 +138,10 @@
         {
             "name": "version-promotion",
             "description": "Controller exposing the promotion endpoint."
+        },
+        {
+            "name": "application-import",
+            "description": "Import an exported app archive as a new app."
         }
     ],
     "paths": {
@@ -636,6 +644,71 @@
                     },
                     "500": {
                         "$ref": "#/components/responses/Problem500"
+                    }
+                }
+            }
+        },
+        "/applications/import": {
+            "post": {
+                "operationId": "application-import-import",
+                "summary": "Import an exported app archive as a new app owned by the caller",
+                "description": "Import an exported app archive, uploaded as multipart field `archive`, as a new app owned by the caller. Only the package files are read; the archive's code is never run. Returns 201 with the app, 400 without an archive or with a bad slug, 401 when signed out, 409 when the slug is taken, 413 for an archive over the size or entry limits, 422 with the parser's code and the file at fault.",
+                "tags": [
+                    "application-import"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "archive": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "slug": {
+                                        "type": "string"
+                                    }
+                                },
+                                "required": [
+                                    "archive"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "The app was created.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "additionalProperties": true
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Problem409"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Problem422"
                     }
                 }
             }
@@ -2850,6 +2923,59 @@
                                 }
                             }
                         }
+                    }
+                }
+            }
+        },
+        "/journeys/check": {
+            "post": {
+                "operationId": "journey-designer-check",
+                "summary": "Every finding on a journey's writes",
+                "description": "Every finding on a journey's `writes[]`, each judged by OpenRegister's form destination validator. Body: `{ journey }`. Answer: `{ accepted, findings }`. Needs a Nextcloud administrator: authoring a journey can write into any register.",
+                "tags": [
+                    "journey-designer"
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "journey": {
+                                        "description": "The journey: `steps[]`, each with optional `writes[]`, and `audience`."
+                                    }
+                                },
+                                "additionalProperties": false
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
                     }
                 }
             }

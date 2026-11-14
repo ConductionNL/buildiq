@@ -249,8 +249,7 @@
 <script>
 import InlineFieldMark from './InlineFieldMark.vue'
 import { toKebabCase } from '../../../utils/slugPattern.js'
-
-const FIELD_TYPES = ['string', 'number', 'boolean', 'select', 'textarea', 'date']
+import { FIELD_TYPES } from './fieldTypes.js'
 
 /**
  * Whether a section's reference still follows its heading: it is the one

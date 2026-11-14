@@ -26,6 +26,8 @@ return \OCA\Buildiq\Middleware\Support\ApiPathAliases::withVersionedAliases(\OCA
         // defence in depth. The caller becomes the sole owner of the new Application.
         // Must precede the {slug} + collection routes so it does not shadow them.
         ['name' => 'applicationCreation#wizard', 'url' => '/api/applications/wizard', 'verb' => 'POST'],
+        // lifecycle-import-app-and-cli: an exported archive imported as a new app (REQ-BQIC-001).
+        ['name' => 'applicationImport#import', 'url' => '/api/applications/import', 'verb' => 'POST'],
 
         // First-time-setup contract (buildiq-first-time-setup, ADR-042) — the
         // fleet-wide CnSetupWizard endpoints. Admin-only via
@@ -138,6 +140,11 @@ return \OCA\Buildiq\Middleware\Support\ApiPathAliases::withVersionedAliases(\OCA
         // do. MUST use a DISTINCT route name (dashboard#builderSlash, a thin alias of
         // builder()) — the AppHost Routes::standard() guard throws on duplicate names.
         ['name' => 'dashboard#builderSlash', 'url' => '/builder/{slug}/', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        // pages-installable-offline-and-mobile D1/D2: the installable runtime has a
+        // path of its own, so a service worker scoped to it controls one app's
+        // runtime and nothing else; its web app manifest is signed-in only.
+        ['name' => 'dashboard#run', 'url' => '/run/{slug}/', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        ['name' => 'applications#webManifest', 'url' => '/run/{slug}/manifest.webmanifest', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
         // Reserved Buildiq designer sub-paths (buildiq-deep-links #100 fix).
         // `pages`, `schemas`, `schemas/{schemaId}` and `walkthrough` are
@@ -299,6 +306,8 @@ return \OCA\Buildiq\Middleware\Support\ApiPathAliases::withVersionedAliases(\OCA
         ['name' => 'registrationForm#target', 'url' => '/api/registration-forms/target', 'verb' => 'GET'],
         // Decision 179/189: the page designer checks its form pages against their destinations on save.
         ['name' => 'formDestination#check', 'url' => '/api/forms/destination-check', 'verb' => 'POST'],
+        // journey-designer: a journey's writes judged by OpenRegister's form destination validator; administrators only.
+        ['name' => 'journeyDesigner#check', 'url' => '/api/journeys/check', 'verb' => 'POST'],
 
         // Remote template store (buildiq-remote-template-store). Consume-only:
         // search proxies the configured remote OpenRegister catalogue server-side;
