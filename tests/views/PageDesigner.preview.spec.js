@@ -150,6 +150,7 @@ vi.mock('../../src/components/page-editor/PreviewSandbox.vue', async () => {
 				'customComponents',
 				'pageTypes',
 				'translate',
+				'language',
 				'permissions',
 			],
 			render() {
@@ -270,5 +271,71 @@ describe('PageDesigner live-preview pane (REQ-OBPD-008)', () => {
 		// rendering the sandbox must not push a NEW manifest state upward.
 		const emissions = wrapper.emitted('update:manifest') || []
 		expect(emissions).toHaveLength(0)
+	})
+})
+
+// experience-multilingual-apps (REQ-BQML-004): the preview's language switch.
+describe('PageDesigner preview language switch (REQ-BQML-004)', () => {
+	const translated = {
+		pages: [{ id: 'permits', type: 'index', title: 'Vergunningen', config: {} }],
+		menu: [{ label: 'Vergunningen', route: 'permits' }],
+		i18n: {
+			sourceLanguage: 'nl',
+			languages: ['en'],
+			labels: { en: { Vergunningen: 'Permits' } },
+		},
+	}
+
+	beforeEach(() => {
+		validatorErrorsRef.value = []
+		previewAvailableRef.value = true
+		previewPropsMock.mockReset()
+		previewPropsMock.mockImplementation((slug, manifest) => ({
+			appId: `openbuild-preview-${slug}`,
+			manifest,
+			key: 'k',
+		}))
+		axiosGetMock.mockReset()
+		axiosGetMock.mockResolvedValue({ data: { results: [] } })
+	})
+
+	it('offers the written language and the translated ones, plus the maker\'s own', async () => {
+		const wrapper = mountDesigner(translated, 'vergunningen')
+		await wrapper.vm.$nextTick()
+
+		const options = wrapper.findAll('[data-test="preview-language"] option')
+		expect(options.map((o) => o.element.value)).toEqual(['', 'nl', 'en'])
+		expect(wrapper.findComponent({ name: 'PreviewSandbox' }).props('language')).toBe('')
+	})
+
+	it('hands the picked language to the sandbox and leaves the designer alone', async () => {
+		const wrapper = mountDesigner(translated, 'vergunningen')
+		await wrapper.vm.$nextTick()
+
+		await wrapper.find('[data-test="preview-language"]').setValue('en')
+
+		expect(wrapper.findComponent({ name: 'PreviewSandbox' }).props('language')).toBe('en')
+		expect(wrapper.emitted('update:manifest') || []).toHaveLength(0)
+	})
+
+	it('shows no switch for an app offered in one language', async () => {
+		const wrapper = mountDesigner({ pages: [], menu: [] }, 'hello-world')
+		await wrapper.vm.$nextTick()
+
+		expect(wrapper.find('[data-test="preview-language"]').exists()).toBe(false)
+	})
+
+	it('opens the Translations view from the toolbar and writes edits through the designer', async () => {
+		const wrapper = mountDesigner(translated, 'vergunningen')
+		await wrapper.vm.$nextTick()
+		expect(wrapper.findComponent({ name: 'TranslationsView' }).exists()).toBe(false)
+
+		await wrapper.find('[data-test="open-translations"]').trigger('click')
+		const view = wrapper.findComponent({ name: 'TranslationsView' })
+		expect(view.exists()).toBe(true)
+
+		const next = { ...translated, i18n: { ...translated.i18n, labels: { en: {} } } }
+		view.vm.$emit('update:manifest', next)
+		expect(wrapper.emitted('update:manifest').at(-1)).toEqual([next])
 	})
 })

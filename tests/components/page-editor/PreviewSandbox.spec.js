@@ -419,4 +419,17 @@ describe('PreviewSandbox', () => {
 		wrapper.unmount()
 		expect(host.childNodes.length).toBe(0)
 	})
+
+	// experience-multilingual-apps (REQ-BQML-004): the preview's language
+	// reaches CnAppRoot, which looks each label up in the manifest for it.
+	it('forwards the picked language to the shell and follows a change', async () => {
+		const wrapper = mountSandbox()
+		expect(wrapper.vm.rootProps.language).toBe('')
+
+		await wrapper.setProps({ language: 'en' })
+
+		expect(wrapper.vm.rootProps.language).toBe('en')
+		expect(wrapper.vm._sandboxState.language).toBe('en')
+		wrapper.unmount()
+	})
 })

@@ -43,6 +43,7 @@ import pinia from './pinia.js'
 import { registerDirectives } from './registerDirectives.js'
 import { getRuntimeRegistry } from './runtimeRegistry.js'
 import { fetchAppRegister } from './services/appRegister.js'
+import { createAppTranslate } from './services/appTranslate.js'
 import { startHealthReporting } from './services/healthReporting.js'
 import { normalizeManifestPages } from './services/manifestPageDefaults.js'
 import { normalizeManifestRouting } from './services/manifestRouting.js'
@@ -156,18 +157,6 @@ function routesFromManifest(manifest) {
 	const home = pages[0].route || '/'
 	routes.push({ name: CATCH_ALL_ROUTE, path: '/:catchAll(.*)', redirect: home })
 	return routes
-}
-
-/**
- * Translate manifest label keys. Virtual-app manifests usually carry plain
- * strings; t() returns them unchanged when no translation is registered.
- *
- * @param {string} key The label or i18n key.
- * @param {object} [vars] Interpolation vars.
- * @return {string}
- */
-function translateForApp(key, vars) {
-	return t('buildiq', key, vars)
 }
 
 /**
@@ -475,7 +464,13 @@ async function boot() {
 		// Schema / Columns dropdowns for index/detail pages. Re-run on every
 		// modal open, so schemas created after boot appear without a reload.
 		dataSourcesLoader,
-		translate: translateForApp,
+		// The renderer looks a label up in the manifest's own translations
+		// first; this answers the rest. A maker's own label is answered as
+		// written rather than from buildiq's catalogue (REQ-BQML-003).
+		translate: createAppTranslate(
+			() => manifest,
+			(key, vars) => t('buildiq', key, vars),
+		),
 		// nextcloud-vue's diagnostics channel feeds the health counts.
 		diagnostics: healthListener,
 		persistManifestDelta,
