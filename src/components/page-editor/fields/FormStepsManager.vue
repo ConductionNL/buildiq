@@ -34,7 +34,9 @@
 				class="form-steps-manager__pool-key"
 				>{{ key }}</span
 			>
-			<p v-if="localSteps.length" class="form-steps-manager__pool-note">
+			<p
+				v-if="localSteps.length && !leavesUnassigned"
+				class="form-steps-manager__pool-note">
 				{{
 					t(
 						'buildiq',
@@ -96,6 +98,15 @@
 					✕
 				</button>
 			</div>
+			<input
+				v-if="withPhase"
+				:value="step.phase || ''"
+				type="text"
+				class="form-steps-manager__field form-steps-manager__phase"
+				:placeholder="t('buildiq', 'Phase, shown as the group heading')"
+				:aria-label="t('buildiq', 'Phase')"
+				data-testid="form-step-phase"
+				@input="updatePhase(index, $event.target.value)" />
 			<input
 				:value="step.description || ''"
 				type="text"
@@ -208,6 +219,20 @@ export default {
 		fields: {
 			type: Array,
 			default: () => [],
+		},
+
+		// Show a phase label per step (a registration form groups its steps
+		// per phase). Off for a plain form page, whose steps carry no phase.
+		withPhase: {
+			type: Boolean,
+			default: false,
+		},
+
+		// Set by a caller that does NOT fold unassigned fields into the last
+		// step on save (FormPageEditor does), so the note does not promise it.
+		leavesUnassigned: {
+			type: Boolean,
+			default: false,
 		},
 	},
 
@@ -343,6 +368,27 @@ export default {
 		updateStepField(index, key, value) {
 			const next = this.localSteps.slice()
 			next[index] = { ...next[index], [key]: value }
+			this.emitSteps(next)
+		},
+
+		/**
+		 * Write a step's phase label. An empty label removes the key, so a
+		 * step without a phase is stored the way it was before it had one.
+		 *
+		 * @param {number} index - the step index.
+		 * @param {string} value - the new phase label.
+		 * @return {void}
+		 * @spec openspec/changes/registration-form-builder
+		 */
+		updatePhase(index, value) {
+			const next = this.localSteps.slice()
+			const updated = { ...next[index] }
+			if (value.trim() === '') {
+				delete updated.phase
+			} else {
+				updated.phase = value
+			}
+			next[index] = updated
 			this.emitSteps(next)
 		},
 
@@ -530,7 +576,8 @@ export default {
 	flex: 0 0 140px;
 }
 
-.form-steps-manager__description {
+.form-steps-manager__description,
+.form-steps-manager__phase {
 	width: 100%;
 }
 

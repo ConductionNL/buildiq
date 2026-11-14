@@ -11,7 +11,11 @@
 
 ## 2. Builder
 
-- [ ] 2.1 Mount `FormPageEditor.vue` for a `registrationForm` with the applies-to panel and a phase label per step (REQ-OBRF-002)
+- [x] 2.1 Mount `FormPageEditor.vue` for a `registrationForm` with the applies-to panel and a phase label per step (REQ-OBRF-002)
+      The registration form already has its own editor, `RegistrationFormEditor.vue` (from `forms-per-case-type`),
+      so it reuses the form page sub-editor's parts rather than `FormPageEditor.vue` itself: an "Applies to" block
+      naming the bound app/register/schema and type value, `FormStepsManager.vue` with a phase label per step
+      (`withPhase`), a `VisibleWhenBuilder` rule per question and the save-for-later switch.
 - [x] 2.2 Validate field names against the target schema on save; warn, do not block
       `RegistrationFormAuthoringService::save()` returns the findings; a draft saves with them. Publishing needs zero findings (decision 189, later than this task).
 
