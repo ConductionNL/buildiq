@@ -11,6 +11,8 @@
  * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#3.1
  */
 
+import { storedForm } from './approvalFormFields.js'
+
 /**
  * Parse a JSON text into an object with at least one key, or null.
  *
@@ -63,6 +65,23 @@ function withOptionalObject(target, property) {
 	return target
 }
 
+/**
+ * An approval action with its `form` when it asks the approver for fields;
+ * without fields no `form` is stored (logic-approval-task-form, design D1).
+ *
+ * @param {object} target - the persisted approval action.
+ * @param {Array|undefined} fields - the editor's field rows.
+ * @return {object}
+ * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
+ */
+function withForm(target, fields) {
+	const form = storedForm(fields)
+	if (form !== null) {
+		target.form = form
+	}
+	return target
+}
+
 const BUILDERS = Object.freeze({
 	'send-notification': (action) => ({
 		type: 'send-notification',
@@ -78,12 +97,12 @@ const BUILDERS = Object.freeze({
 		{ type: 'object-op', operation: action.operation, schema: action.schema },
 		{ key: 'fieldMapping', text: action.fieldMappingText },
 	),
-	approval: (action) => ({
+	approval: (action) => withForm({
 		type: 'approval',
 		assigneeGroup: action.assigneeGroup,
 		onApprove: listOrEmpty(action.onApprove),
 		onReject: listOrEmpty(action.onReject),
-	}),
+	}, action.formFields),
 	generateDocument: (action) => ({
 		type: 'generateDocument',
 		templateId: action.templateId,

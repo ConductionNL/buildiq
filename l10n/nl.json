@@ -540,6 +540,8 @@
         "Remove entry": "Item verwijderen",
         "Remove failed — please try again": "Verwijderen mislukt — probeer opnieuw",
         "Remove field": "Veld verwijderen",
+        "Fields the approver fills in": "Velden die de goedkeurder invult",
+        "Leave empty: the approver only approves or rejects.": "Leeg laten: de goedkeurder kiest alleen goedkeuren of afwijzen.",
         "Remove layout item": "Lay-out-item verwijderen",
         "Remove page": "Pagina verwijderen",
         "Remove section": "Sectie verwijderen",

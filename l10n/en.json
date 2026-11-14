@@ -1434,6 +1434,8 @@
         "Arguments & result": "Arguments & result",
         "Assignee group": "Assignee group",
         "Assignee group id": "Assignee group id",
+        "Fields the approver fills in": "Fields the approver fills in",
+        "Leave empty: the approver only approves or rejects.": "Leave empty: the approver only approves or rejects.",
         "Attach to object": "Attach to object",
         "Bindings reference {count} schema(s).": "Bindings reference {count} schema(s).",
         "Block name": "Block name",
