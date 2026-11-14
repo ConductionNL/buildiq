@@ -47,6 +47,10 @@ use DateTimeImmutable;
 use DateTimeInterface;
 use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Kernel\Contracts\ApplicationVersionServiceInterface;
+use OCA\Buildiq\Service\Branch\VersionBranchRefused;
+use OCA\Buildiq\Service\Branch\VersionBranchService;
+use OCA\Buildiq\Service\Branch\VersionMergeRequest;
+use OCA\Buildiq\Service\Branch\VersionMergeRunner;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
@@ -128,6 +132,8 @@ class ApplicationVersionsController extends Controller {
 	 * @param IGroupManager $groupManager Group membership resolver
 	 * @param ApplicationVersionServiceInterface $versionService Owner of the imperative logic
 	 * @param AuditTrailMapper|null $auditTrailMapper Optional OR audit-trail writer (null until OR loaded)
+	 * @param VersionBranchService|null $branches Starts a branch (lifecycle-git-branches)
+	 * @param VersionMergeRunner|null $merges Previews and applies a merge (lifecycle-git-branches)
 	 *
 	 * @return void
 	 */
@@ -141,6 +147,8 @@ class ApplicationVersionsController extends Controller {
 		private readonly IGroupManager $groupManager,
 		private readonly ApplicationVersionServiceInterface $versionService,
 		private readonly ?AuditTrailMapper $auditTrailMapper = null,
+		private readonly ?VersionBranchService $branches = null,
+		private readonly ?VersionMergeRunner $merges = null,
 	) {
 		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
@@ -325,6 +333,127 @@ class ApplicationVersionsController extends Controller {
 			);
 		}
 	}//end guardCreatePromotesTo()
+
+	/**
+	 * Start a branch from a version: a new draft version with its own copy of
+	 * the source's manifest and schemas (lifecycle-git-branches, REQ-BQGB-001).
+	 *
+	 * @param string $appSlug     Parent Application slug
+	 * @param string $versionSlug The version branched from
+	 *
+	 * @return JSONResponse 201 with the new version, or an error envelope
+	 *
+	 * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-starts-a-branch-from-a-version-req-bqgb-001
+	 */
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 10, period: 60)]
+	public function branch(string $appSlug, string $versionSlug): JSONResponse {
+		$authError = $this->requireRole(slug: $appSlug, roles: self::WRITE_ROLES);
+		if ($authError !== null || $this->branches === null) {
+			return $authError ?? $this->errorResponse(code: 'unavailable', status: Http::STATUS_SERVICE_UNAVAILABLE);
+		}
+
+		$application = $this->loadApplication(slug: $appSlug);
+		$source      = $this->findVersionRowBySlug(application: (array)$application, versionSlug: $versionSlug);
+		if ($application === null || $source === null) {
+			return $this->errorResponse(code: 'not_found', detail: $versionSlug, status: Http::STATUS_NOT_FOUND);
+		}
+
+		$name = trim((string)$this->request->getParam('name', ''));
+		if ($this->findVersionRowBySlug(application: $application, versionSlug: $name) !== null) {
+			return $this->errorResponse(code: 'name_taken', detail: 'A version named "' . $name . '" already exists.', status: Http::STATUS_CONFLICT);
+		}
+
+		return $this->branchRun(
+			run: fn (): array => $this->branches->start(application: $application, source: $source, name: $name),
+			status: Http::STATUS_CREATED
+		);
+	}//end branch()
+
+	/**
+	 * Preview or apply the merge of one version into a draft version
+	 * (lifecycle-git-branches, REQ-BQGB-003 / REQ-BQGB-004). `preview: true`
+	 * writes nothing; an apply sends `choices`, the previewed `targetHash` and,
+	 * for a breaking schema change, `acknowledgeBreaking`.
+	 *
+	 * @param string $appSlug Parent Application slug
+	 * @param string $source  The version merged in
+	 * @param string $target  The version merged into
+	 *
+	 * @return JSONResponse 200 with the preview or the saved target, 409/422 when refused
+	 *
+	 * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-merge-only-writes-a-draft-that-has-not-moved-req-bqgb-004
+	 */
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 30, period: 60)]
+	public function merge(string $appSlug, string $source, string $target): JSONResponse {
+		$authError = $this->requireRole(slug: $appSlug, roles: self::WRITE_ROLES);
+		if ($authError !== null || $this->merges === null) {
+			return $authError ?? $this->errorResponse(code: 'unavailable', status: Http::STATUS_SERVICE_UNAVAILABLE);
+		}
+
+		$application = $this->loadApplication(slug: $appSlug);
+		$request     = $this->mergeRequest(application: (array)$application, source: $source, target: $target);
+		if ($application === null || $request === null) {
+			return $this->errorResponse(code: 'not_found', detail: $source . ' / ' . $target, status: Http::STATUS_NOT_FOUND);
+		}
+
+		if ($this->request->getParam('preview') === true || $this->request->getParam('preview') === 'true') {
+			return $this->branchRun(run: fn (): array => $this->merges->preview(application: $application, request: $request), status: Http::STATUS_OK);
+		}
+
+		return $this->branchRun(run: fn (): array => $this->merges->apply(application: $application, request: $request), status: Http::STATUS_OK);
+	}//end merge()
+
+	/**
+	 * The merge request of two versions of the Application, or null when either is missing.
+	 *
+	 * @param array<string,mixed> $application The Application.
+	 * @param string              $source      The source version slug.
+	 * @param string              $target      The target version slug.
+	 *
+	 * @return VersionMergeRequest|null
+	 */
+	private function mergeRequest(array $application, string $source, string $target): ?VersionMergeRequest {
+		$from = $this->findVersionRowBySlug(application: $application, versionSlug: $source);
+		$into = $this->findVersionRowBySlug(application: $application, versionSlug: $target);
+		if ($from === null || $into === null || $source === $target) {
+			return null;
+		}
+
+		$choices = $this->request->getParam('choices', []);
+
+		return new VersionMergeRequest(
+			source: $from,
+			target: $into,
+			choices: array_filter((array)$choices, 'is_string'),
+			targetHash: (string)$this->request->getParam('targetHash', ''),
+			acknowledgeBreaking: in_array($this->request->getParam('acknowledgeBreaking'), [true, 'true'], true)
+		);
+	}//end mergeRequest()
+
+	/**
+	 * Run a branch or merge step, answering a refusal with its own code and status.
+	 *
+	 * @param callable(): array<string,mixed> $run    The step.
+	 * @param int                             $status The status of a success.
+	 *
+	 * @return JSONResponse
+	 */
+	private function branchRun(callable $run, int $status): JSONResponse {
+		try {
+			return new JSONResponse(data: $run(), statusCode: $status);
+		} catch (VersionBranchRefused $e) {
+			return $this->errorResponse(code: $e->errorCode, detail: $e->getMessage(), status: $e->status);
+		} catch (Throwable $e) {
+			$this->logger->error('Buildiq: version branch or merge failed: ' . $e->getMessage(), ['exception' => $e]);
+			return $this->errorResponse(
+				code: 'branch_failed',
+				detail: 'The branch or merge could not be completed.',
+				status: Http::STATUS_UNPROCESSABLE_ENTITY
+			);
+		}
+	}//end branchRun()
 
 	/**
 	 * Update an ApplicationVersion (spec REQ-OBV-103 / REQ-OBV-104 / REQ-OBV-107).

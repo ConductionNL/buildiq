@@ -68,7 +68,8 @@ class VersionMergeService {
 	 * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-merges-a-branch-and-picks-a-side-per-conflict-req-bqgb-003
 	 */
 	public function baseFor(array $source, array $target): array {
-		foreach ([[$source, $target], [$target, $source]] as [$branch, $origin]) {
+		// The target's base first: a merge moves the target's base, so it is the latest one.
+		foreach ([[$target, $source], [$source, $target]] as [$branch, $origin]) {
 			$base = ($branch['branchBase'] ?? null);
 			if (is_array($base) === true
 				&& ($base['source'] ?? null) === ($origin['slug'] ?? null)
