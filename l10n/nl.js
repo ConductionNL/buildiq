@@ -1644,7 +1644,10 @@ OC.L10N.register(
         "Requests under 250 ms": "Verzoeken onder 250 ms",
         "Total load time (ms)": "Totale laadtijd (ms)",
         "Window start": "Begin van het venster",
-        "Include server bundle": "Serverbundel meenemen"
+        "Include server bundle": "Serverbundel meenemen",
+        "Code on pages": "Code op pagina's",
+        "Allow code on pages": "Code op pagina's toestaan",
+        "Lets app owners write their own HTML, CSS and JavaScript on a page, and computed columns and fields. The code runs in a sandbox with no network access. When off, code shows a placeholder and computed values stay empty.": "Laat app-eigenaren hun eigen HTML, CSS en JavaScript op een pagina schrijven, en berekende kolommen en velden. De code draait in een afgeschermde omgeving zonder netwerktoegang. Staat dit uit, dan toont code een tijdelijke aanduiding en blijven berekende waarden leeg."
     },
     "nplurals=2; plural=(n != 1);"
 )
