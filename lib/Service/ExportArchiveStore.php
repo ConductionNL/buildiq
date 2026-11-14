@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\ExportArchiveStoreInterface;
 use OCP\Files\IAppData;
 use OCP\Files\NotFoundException;
 use OCP\Files\SimpleFS\ISimpleFolder;
@@ -39,7 +40,7 @@ use Throwable;
  *
  * @spec openspec/specs/platform-properties/spec.md#REQ-PLAT-010
  */
-class ExportArchiveStore {
+class ExportArchiveStore implements ExportArchiveStoreInterface {
 	/**
 	 * The app-data folder the archives live in.
 	 */

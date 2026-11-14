@@ -33,9 +33,9 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Controller;
 
 use OCA\Buildiq\Kernel\AppIdentity;
+use OCA\Buildiq\Kernel\Contracts\ExportArchiveStoreInterface;
 use OCA\Buildiq\Kernel\Contracts\ExportJobServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\ServerBundleWriterInterface;
-use OCA\Buildiq\Service\ExportArchiveStore;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCP\AppFramework\Controller;
@@ -81,7 +81,7 @@ class ExportsController extends Controller {
 	 * @param ContainerInterface $container Container for optional OR services.
 	 * @param LoggerInterface $logger Logger.
 	 * @param IGroupManager $groupManager Group membership resolver (RBAC, issue #158).
-	 * @param ExportArchiveStore|null $archives The archives kept in app data, for a download on another server (REQ-PLAT-010).
+	 * @param ExportArchiveStoreInterface|null $archives The archives kept in app data, for a download on another server (REQ-PLAT-010).
 	 */
 	public function __construct(
 		IRequest $request,
@@ -90,7 +90,7 @@ class ExportsController extends Controller {
 		private ContainerInterface $container,
 		private LoggerInterface $logger,
 		private IGroupManager $groupManager,
-		private ?ExportArchiveStore $archives = null,
+		private ?ExportArchiveStoreInterface $archives = null,
 	) {
 		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
