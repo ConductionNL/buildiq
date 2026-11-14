@@ -402,6 +402,7 @@ class ExportService implements ExportServiceInterface {
 	 * @return string Local path to the ZIP file.
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
+	 * @spec openspec/specs/platform-properties/spec.md#REQ-PLAT-010
 	 */
 	private function packageZip(string $sourceDir, string $jobUuid): string {
 		$exportRoot = $this->getOrCreateAppDataDir(name: 'exports');
@@ -416,6 +417,12 @@ class ExportService implements ExportServiceInterface {
 		}
 
 		$this->treeFiles->zipTree(sourceDir: $sourceDir, zipPath: $zipPath);
+
+		// The finished archive also goes into app data, so a download served
+		// by another web server finds it (REQ-PLAT-010). Constructed rather
+		// than injected, like ExportTreeFiles: it needs only the app data this
+		// class already holds.
+		(new ExportArchiveStore(appData: $this->appData, logger: $this->logger))->store(jobUuid: $jobUuid, localZip: $zipPath);
 
 		// The archive's ENTRIES carry the deterministic timestamp, which is what
 		// makes two exports of the same tree byte-identical. The .zip file's own
