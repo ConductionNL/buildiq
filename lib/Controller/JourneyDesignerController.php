@@ -4,7 +4,8 @@
  * Buildiq JourneyDesignerController
  *
  * The server half of the Journey Designer (journey-designer, ADR-085 §6):
- *   - POST /api/journeys/check — every finding on a journey's `writes[]`.
+ *   - POST /api/journeys/check — every finding on a journey's `writes[]`;
+ *   - POST /api/journeys — save a journey, refused while a write is refused.
  *
  * ITS OWN AUTHORISATION
  * ---------------------
@@ -32,6 +33,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Controller;
 
+use OCA\Buildiq\Kernel\Contracts\JourneyStoreInterface;
 use OCA\Buildiq\Kernel\Contracts\JourneyWritesCheckInterface;
 use OCA\Buildiq\Settings\AdminSettings;
 use OCP\AppFramework\Controller;
@@ -67,6 +69,7 @@ class JourneyDesignerController extends Controller {
 	 * @param IUserSession       $userSession  The caller.
 	 * @param IGroupManager      $groupManager Whether the caller is an administrator.
 	 * @param LoggerInterface    $logger       Logs a failure that is not a refusal.
+	 * @param JourneyStoreInterface $store     Stores a journey that passed every check.
 	 *
 	 * @spec openspec/changes/journey-designer/specs/journey-designer/spec.md#requirement-authoring-a-journey-must-be-separately-authorised
 	 */
@@ -76,6 +79,7 @@ class JourneyDesignerController extends Controller {
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 		private readonly LoggerInterface $logger,
+		private readonly JourneyStoreInterface $store,
 	) {
 		parent::__construct(appName: 'buildiq', request: $request);
 	}//end __construct()
@@ -111,4 +115,46 @@ class JourneyDesignerController extends Controller {
 
 		return new JSONResponse(['accepted' => ($findings === []), 'findings' => $findings], Http::STATUS_OK);
 	}//end check()
+
+	/**
+	 * Save a journey. Its writes are judged first by the same check as
+	 * `check()`, which is the validator the submit path uses; a journey with
+	 * a refused write is not stored.
+	 *
+	 * @return JSONResponse `{id, journey}`; 400 without a journey, 401 or 403 for a caller who may not author journeys, 422 with the findings.
+	 *
+	 * @spec openspec/changes/journey-designer/specs/journey-designer/spec.md#requirement-authoring-a-journey-must-be-separately-authorised
+	 */
+	#[AuthorizedAdminSetting(AdminSettings::class)]
+	public function save(): JSONResponse {
+		$guard   = new AdminAuthoringGuard(userSession: $this->userSession, groupManager: $this->groupManager);
+		$refusal = $guard->refuseNonAdmin(forbiddenDetail: self::FORBIDDEN_DETAIL);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		$journey = $this->request->getParam('journey');
+		if (is_array($journey) === false) {
+			return new JSONResponse(
+				['error' => 'invalid_journey', 'message' => 'The body has to carry the journey to save.'],
+				Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		try {
+			$findings = $this->writes->findings(journey: $journey);
+			if ($findings !== []) {
+				return new JSONResponse(
+					['error' => 'journey_refused', 'message' => 'A write of the journey does not fit its destination.', 'findings' => $findings],
+					Http::STATUS_UNPROCESSABLE_ENTITY
+				);
+			}
+
+			$stored = $this->store->save(journey: $journey);
+		} catch (Throwable $e) {
+			return (new UnexpectedFailureAnswer(logger: $this->logger))->answer(what: 'saving a journey', e: $e);
+		}
+
+		return new JSONResponse(['id' => $stored['id'], 'journey' => $stored], Http::STATUS_OK);
+	}//end save()
 }//end class

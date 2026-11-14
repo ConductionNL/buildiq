@@ -53,6 +53,7 @@ use OCA\Buildiq\Kernel\Contracts\GitHubFormCatalogServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\GitHubPushServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\GitHubShopSearchInterface;
 use OCA\Buildiq\Kernel\Contracts\IconServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\JourneyStoreInterface;
 use OCA\Buildiq\Kernel\Contracts\JourneyWritesCheckInterface;
 use OCA\Buildiq\Kernel\Contracts\LayoutDeltaServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\ListenerSlugContractInterface;
@@ -143,6 +144,7 @@ final class ContractBindings {
 		$context->registerServiceAlias(GitHubPushServiceInterface::class, GitHubPushService::class);
 		$context->registerServiceAlias(GitHubShopSearchInterface::class, GitHubShopSearch::class);
 		$context->registerServiceAlias(IconServiceInterface::class, IconService::class);
+		$context->registerServiceAlias(JourneyStoreInterface::class, JourneyStore::class);
 		$context->registerServiceAlias(JourneyWritesCheckInterface::class, JourneyWritesCheck::class);
 		$context->registerServiceAlias(LayoutDeltaServiceInterface::class, LayoutDeltaService::class);
 		$context->registerServiceAlias(ListenerSlugContractInterface::class, ListenerSlugContract::class);
