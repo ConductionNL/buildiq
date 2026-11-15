@@ -174,10 +174,33 @@ export default {
 	},
 
 	mounted() {
-		this.fetchApplications()
+		this.openFromQuery()
 	},
 
 	methods: {
+		/**
+		 * Load the applications and preselect the one `?app=` names, when the
+		 * caller can see it (REQ-BQAG-003). The app detail page links here
+		 * with that query, so its agents are listed straight away.
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/ai-agents-knowledge-and-run-trace/specs/agent-workspace/spec.md#requirement-the-app-detail-page-leads-to-its-agents-req-bqag-003
+		 */
+		async openFromQuery() {
+			await this.fetchApplications()
+			const query = (this.$route && this.$route.query) || {}
+			const appSlug = String(query.app || '')
+			if (!appSlug) {
+				return
+			}
+			const app = this.applications.find((a) => a.slug === appSlug)
+			if (!app) {
+				return
+			}
+			this.selectedApp = app
+			this.onAppChange()
+		},
+
 		/**
 		 * Handle an application selection: reset the agent list + selection, fetch agents.
 		 *

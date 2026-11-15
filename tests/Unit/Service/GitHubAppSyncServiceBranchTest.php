@@ -58,6 +58,7 @@ use Psr\Log\NullLogger;
  * @uses   \OCA\Buildiq\Kernel\Values\BrokerAccess
  * @uses   \OCA\Buildiq\Kernel\Values\BrokeredRepo
  * @uses   \OCA\Buildiq\Kernel\Values\PushTarget
+ * @uses   \OCA\Buildiq\Service\GitHub\TokenScrubber
  *
  * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-each-version-pushes-to-its-own-branch-req-bqgb-002
  */

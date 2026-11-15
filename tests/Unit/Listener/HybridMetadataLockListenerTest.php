@@ -32,6 +32,7 @@ namespace OCA\Buildiq\Tests\Unit\Listener;
 use OCA\Buildiq\Listener\HybridMetadataLockListener;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
+use OCP\EventDispatcher\Event;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -260,6 +261,38 @@ class HybridMetadataLockListenerTest extends TestCase {
 		self::assertFalse($event->isPropagationStopped());
 
 	}//end testIgnoresWhenNoOldObject()
+
+	/**
+	 * A partial update of a hybrid app that omits the locked fields is allowed.
+	 *
+	 * @return void
+	 */
+	public function testAllowsPartialUpdateWithoutLockedFieldsOnHybrid(): void {
+		$event = $this->updateEvent(
+			old: ['appType' => 'hybrid', 'slug' => 'opencatalogi', 'name' => 'OpenCatalogi', 'allowUserOverrides' => false],
+			new: ['allowUserOverrides' => true]
+		);
+
+		$this->listener->handle($event);
+
+		self::assertFalse(condition: $event->isPropagationStopped());
+		self::assertSame(expected: [], actual: $event->getErrors());
+
+	}//end testAllowsPartialUpdateWithoutLockedFieldsOnHybrid()
+
+	/**
+	 * An event other than ObjectUpdatingEvent is ignored.
+	 *
+	 * @return void
+	 */
+	public function testIgnoresOtherEvents(): void {
+		$event = new Event();
+
+		$this->listener->handle(event: $event);
+
+		self::assertFalse(condition: $event->isPropagationStopped());
+
+	}//end testIgnoresOtherEvents()
 
 	/**
 	 * Build an ObjectUpdatingEvent from old/new payloads.

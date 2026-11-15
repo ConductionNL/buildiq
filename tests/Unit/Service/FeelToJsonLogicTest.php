@@ -39,6 +39,7 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\Buildiq\Service\FeelToJsonLogic
  * @uses   \OCA\Buildiq\Service\FeelParser
  * @uses   \OCA\Buildiq\Service\ExpressionEvaluator
+ * @uses   \OCA\Buildiq\Service\FeelLexer
  */
 final class FeelToJsonLogicTest extends TestCase {
 
