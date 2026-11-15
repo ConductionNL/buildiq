@@ -68,7 +68,8 @@ class AppImport extends Command {
 			->addArgument('file', InputArgument::REQUIRED, 'The archive to import.')
 			->addOption('owner', null, InputOption::VALUE_REQUIRED, 'The UID of the user who will own the new app (required).')
 			->addOption('slug', null, InputOption::VALUE_REQUIRED, 'The new app\'s slug (default: the archive\'s own slug).')
-			->addOption('name', null, InputOption::VALUE_REQUIRED, 'The new app\'s name (default: the archive\'s own name).');
+			->addOption('name', null, InputOption::VALUE_REQUIRED, 'The new app\'s name (default: the archive\'s own name).')
+			->addOption('records', null, InputOption::VALUE_NONE, 'Also import the records the archive carries in data/.');
 	}//end configure()
 
 	/**
@@ -99,11 +100,14 @@ class AppImport extends Command {
 			return Command::INVALID;
 		}
 
-		$result = $this->importer->import(
+		$result = $this->importer->importWithRecords(
 			archivePath: $file,
-			name: (string)$input->getOption('name'),
-			slug: (string)$input->getOption('slug'),
-			ownerUid: $owner
+			target: [
+				'name' => (string)$input->getOption('name'),
+				'slug' => (string)$input->getOption('slug'),
+				'owner' => $owner,
+				'records' => ($input->getOption('records') === true),
+			]
 		);
 
 		return self::report(result: $result, owner: $owner, output: $output);
@@ -130,6 +134,7 @@ class AppImport extends Command {
 				$output->writeln('<comment>Warning: ' . $warning . '</comment>');
 			}
 
+			self::reportRecords(records: (array)($data['records'] ?? []), output: $output);
 			return Command::SUCCESS;
 		}
 
@@ -145,4 +150,28 @@ class AppImport extends Command {
 		$output->writeln('<error>' . $line . '</error>');
 		return Command::FAILURE;
 	}//end report()
+
+	/**
+	 * Print one line per schema of an import with records: what arrived, and what did not and why.
+	 *
+	 * A schema that failed does not fail the command: the app was imported.
+	 *
+	 * @param array<string,mixed> $records The records report (empty when records were not asked).
+	 * @param OutputInterface     $output  The command output.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-records-come-along-only-when-asked-req-bqic-003
+	 */
+	private static function reportRecords(array $records, OutputInterface $output): void {
+		foreach ((array)($records['schemas'] ?? []) as $line) {
+			$schema = (string)($line['schema'] ?? '');
+			$output->writeln('<info>' . (int)($line['imported'] ?? 0) . ' ' . $schema . ' records imported.</info>');
+			if ((int)($line['failed'] ?? 0) > 0) {
+				$output->writeln(
+					'<comment>' . (int)$line['failed'] . ' ' . $schema . ' records failed: ' . (string)($line['error'] ?? 'error') . '.</comment>'
+				);
+			}
+		}
+	}//end reportRecords()
 }//end class

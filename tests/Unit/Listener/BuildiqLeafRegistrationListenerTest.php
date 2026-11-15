@@ -55,7 +55,7 @@ use Psr\Log\NullLogger;
 /**
  * `BuildiqLeafRegistrationListener`.
  *
- * The five `@uses` below are not decoration. `phpunit.xml` sets
+ * The `@uses` below are not decoration. `phpunit.xml` sets
  * `beStrictAboutCoverageMetadata="true"` next to `failOnRisky="true"`, so under
  * a coverage run a test that carries `@covers` and executes any class outside
  * that list is RISKY, and one risky test is exit 1 for the whole suite. This
@@ -73,6 +73,7 @@ use Psr\Log\NullLogger;
  * @uses \OCA\Buildiq\Service\PageLayoutFrozenBase
  * @uses \OCA\Buildiq\Service\PageLayoutLayerStack
  * @uses   \OCA\Buildiq\Service\PageLayoutParts
+ * @uses   \OCA\Buildiq\Service\HelperFactory
  */
 class BuildiqLeafRegistrationListenerTest extends TestCase {
 
