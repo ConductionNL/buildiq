@@ -84,6 +84,15 @@
 						{{ triggerSummary(automation) }} ·
 						{{ actionSummary(automation) }}
 					</span>
+					<!-- logic-automation-actions-that-run REQ-BQAR-007: why the
+					     upgrade disabled it, as the compiler refused it. -->
+					<span
+						v-if="disabledReasonFor(automation)"
+						class="automations-page__disabled-reason"
+						data-testid="disabled-reason">
+						<strong>{{ t('buildiq', 'Disabled') }}</strong>
+						{{ disabledReasonFor(automation) }}
+					</span>
 					<span
 						v-if="driftFor(automation.id)"
 						class="automations-page__drift-badge"
@@ -588,6 +597,24 @@ export default {
 		},
 
 		/**
+		 * Why a disabled automation is off, as recorded when it could not be
+		 * compiled; empty for an enabled one or one without a reason.
+		 *
+		 * @param {object} automation - the automation row.
+		 * @return {string} The reason, or ''.
+		 *
+		 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-stuck-automations-are-moved-or-disabled-with-a-reason-req-bqar-007
+		 */
+		disabledReasonFor(automation) {
+			if (!automation || automation.enabled !== false) {
+				return ''
+			}
+			return typeof automation.disabledReason === 'string'
+				? automation.disabledReason.trim()
+				: ''
+		},
+
+		/**
 		 * Enable or disable an automation (spec REQ-AUTD-006).
 		 *
 		 * @param {object} automation - the automation row.
@@ -757,6 +784,11 @@ export default {
 	display: flex;
 	align-items: center;
 	gap: 8px;
+}
+
+.automations-page__disabled-reason {
+	color: var(--color-text-maxcontrast);
+	font-size: 0.85em;
 }
 
 .automations-page__drift-badge {
