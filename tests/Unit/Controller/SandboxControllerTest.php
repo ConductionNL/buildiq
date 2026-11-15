@@ -161,6 +161,11 @@ final class SandboxControllerTest extends TestCase {
 			"default-src 'none';base-uri 'none';manifest-src 'self';script-src 'unsafe-inline';style-src  'unsafe-inline';img-src data:;frame-ancestors 'self';form-action 'none'",
 			self::policy(response: $response)
 		);
+		// The response itself enforces the sandbox, also when opened outside the iframe.
+		self::assertSame(
+			"default-src 'none';base-uri 'none';manifest-src 'self';script-src 'unsafe-inline';style-src  'unsafe-inline';img-src data:;frame-ancestors 'self';form-action 'none';sandbox allow-scripts",
+			$headers['Content-Security-Policy']
+		);
 	}//end testACodePageIsServedUnderTheStrictPolicy()
 
 	/**
@@ -248,5 +253,26 @@ final class SandboxControllerTest extends TestCase {
 		self::assertStringContainsString('new Function', $response->getData());
 		self::assertStringContainsString("script-src 'unsafe-inline' 'unsafe-eval';", $policy);
 		self::assertStringNotContainsString('connect-src', $policy);
+
+		$headers = (new \ReflectionProperty(\OCP\AppFramework\Http\Response::class, 'headers'))->getValue($response);
+		self::assertStringEndsWith(';sandbox allow-scripts', $headers['Content-Security-Policy']);
+		self::assertStringNotContainsString('allow-same-origin', $headers['Content-Security-Policy']);
 	}//end testTheEvaluatorMayEvalButNotConnect()
+
+	/**
+	 * Every document, refusals included, carries the sandbox directive in the policy it sends.
+	 *
+	 * @return void
+	 */
+	public function testEveryDocumentIsSandboxedByItsOwnPolicy(): void {
+		$this->session = $this->createMock(IUserSession::class);
+		$this->session->method('getUser')->willReturn(null);
+		$refused = $this->sut()->code(slug: 'permits', version: 'production', codeId: 'calc');
+
+		$headers = (new \ReflectionProperty(\OCP\AppFramework\Http\Response::class, 'headers'))->getValue($refused);
+		self::assertSame(401, $refused->getStatus());
+		self::assertStringEndsWith(';sandbox allow-scripts', $headers['Content-Security-Policy']);
+		self::assertSame('sandbox allow-scripts', SandboxController::sandboxedPolicy(policy: ''));
+		self::assertSame("default-src 'none';sandbox allow-scripts", SandboxController::sandboxedPolicy(policy: "default-src 'none';"));
+	}//end testEveryDocumentIsSandboxedByItsOwnPolicy()
 }//end class

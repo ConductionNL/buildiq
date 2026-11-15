@@ -334,6 +334,31 @@ JS;
 		$policy->addAllowedFormActionDomain(domain: "'none'");
 		$response->setContentSecurityPolicy(csp: $policy);
 
+		// The response enforces the sandbox itself, also when the route is
+		// opened directly instead of in the embedding iframe: scripts run in an
+		// opaque origin, so they reach no cookie, storage or same-origin API
+		// (REQ-BQCC-003). An added header wins over the policy object's in
+		// Response::getHeaders(), so the directive survives.
+		$response->addHeader(name: 'Content-Security-Policy', value: self::sandboxedPolicy(policy: $policy->buildPolicy()));
+
 		return $response;
 	}//end document()
+
+	/**
+	 * A built policy with the sandbox directive added: scripts only, no same origin.
+	 *
+	 * @param string $policy The built policy.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-maker-code-runs-only-in-the-sandbox-req-bqcc-003
+	 */
+	public static function sandboxedPolicy(string $policy): string {
+		$policy = rtrim(trim($policy), ';');
+		if ($policy === '') {
+			return 'sandbox allow-scripts';
+		}
+
+		return $policy . ';sandbox allow-scripts';
+	}//end sandboxedPolicy()
 }//end class
