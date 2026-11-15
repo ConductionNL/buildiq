@@ -2466,7 +2466,20 @@ OC.L10N.register(
         "The branch could not be started.": "De branch kon niet worden gestart.",
         "The merge could not be completed.": "Het samenvoegen kon niet worden voltooid.",
         "This merge changes schemas in a way that can break records already stored:": "Dit samenvoegen wijzigt schema's zo dat al opgeslagen gegevens kunnen breken:",
-        "Which side to keep": "Welke kant behouden"
+        "Which side to keep": "Welke kant behouden",
+        "What the page shows": "Wat de pagina toont",
+        "Registered component": "Geregistreerd component",
+        "Write your own": "Zelf schrijven",
+        "Your code": "Je code",
+        "The code runs in a sandbox with no network access. Only app owners may save it, and only when an administrator allows code on pages.": "De code draait in een afgeschermde omgeving zonder netwerktoegang. Alleen app-eigenaren mogen hem opslaan, en alleen als een beheerder code op pagina's toestaat.",
+        "What the page hands in": "Wat de pagina doorgeeft",
+        "HTML": "HTML",
+        "CSS": "CSS",
+        "JavaScript": "JavaScript",
+        "The current record (detail pages)": "Het huidige record (detailpagina's)",
+        "The rows of the page’s register and schema, with its filters": "De rijen van het register en schema van de pagina, met de filters",
+        "The route parameters": "De routeparameters",
+        "The signed-in user’s id and name": "Id en naam van de ingelogde gebruiker"
     },
     "nplurals=2; plural=(n != 1);"
 )

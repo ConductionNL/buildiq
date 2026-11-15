@@ -2392,7 +2392,20 @@ OC.L10N.register(
         "The branch could not be started.": "The branch could not be started.",
         "The merge could not be completed.": "The merge could not be completed.",
         "This merge changes schemas in a way that can break records already stored:": "This merge changes schemas in a way that can break records already stored:",
-        "Which side to keep": "Which side to keep"
+        "Which side to keep": "Which side to keep",
+        "What the page shows": "What the page shows",
+        "Registered component": "Registered component",
+        "Write your own": "Write your own",
+        "Your code": "Your code",
+        "The code runs in a sandbox with no network access. Only app owners may save it, and only when an administrator allows code on pages.": "The code runs in a sandbox with no network access. Only app owners may save it, and only when an administrator allows code on pages.",
+        "What the page hands in": "What the page hands in",
+        "HTML": "HTML",
+        "CSS": "CSS",
+        "JavaScript": "JavaScript",
+        "The current record (detail pages)": "The current record (detail pages)",
+        "The rows of the page’s register and schema, with its filters": "The rows of the page’s register and schema, with its filters",
+        "The route parameters": "The route parameters",
+        "The signed-in user’s id and name": "The signed-in user’s id and name"
     },
     "nplurals=2; plural=(n != 1);"
 )
