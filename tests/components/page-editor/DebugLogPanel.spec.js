@@ -67,4 +67,48 @@ describe('DebugLogPanel', () => {
 		await wrapper.find('[data-testid="debug-log-reload"]').trigger('click')
 		expect(wrapper.emitted('reload')).toHaveLength(1)
 	})
+	describe('describe', () => {
+		/**
+		 * Mount the panel with an interpolating `t`.
+		 *
+		 * @return {import('@vue/test-utils').Wrapper}
+		 */
+		function mountPanel() {
+			return mount(DebugLogPanel, {
+				propsData: { entries: [], pageTitles: {} },
+				mocks: {
+					t: (app, key, vars = {}) =>
+						key.replace(/\{(\w+)\}/g, (_, k) => String(vars[k])),
+				},
+			})
+		}
+
+		it.each([
+			[{ kind: 'request', status: 0 }, 'The request did not complete'],
+			[{ kind: 'request', status: 404 }, 'The server answered 404'],
+			[
+				{ kind: 'binding', problem: 'missing-schema', schema: 's' },
+				'Schema s does not exist',
+			],
+			[
+				{ kind: 'binding', problem: 'missing-register', register: 'r' },
+				'Register r does not exist',
+			],
+			[
+				{ kind: 'binding', problem: 'missing-property', property: 'p', schema: 's' },
+				'p is not a field of schema s',
+			],
+			[
+				{ kind: 'unknown-component', component: 'CnFoo' },
+				'Unknown component CnFoo',
+			],
+			[
+				{ kind: 'render-error', component: 'CnBar', what: 'boom' },
+				'CnBar failed to draw: boom',
+			],
+			[{ kind: 'other', component: 'CnBaz', what: 'x' }, 'CnBaz failed to draw: x'],
+		])('describes %j as %j', (entry, sentence) => {
+			expect(mountPanel().vm.describe(entry)).toBe(sentence)
+		})
+	})
 })

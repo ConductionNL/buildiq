@@ -3,6 +3,9 @@
 /**
  * Buildiq Export Job Service
  *
+ * SPDX-FileCopyrightText:  2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Orchestration helper between the HTTP controller and the OR-backed
  * ExportJob record + the imperative ExportService pipeline.
  *
@@ -23,20 +26,19 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-34
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-37
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-38
- *
- * @SPDX-License-Identifier: EUPL-1.2
- * @SPDX-FileCopyrightText:  2026 Conduction B.V. <info@conduction.nl>
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-34
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-37
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-38
  */
 
 declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\ExportJobServiceInterface;
+use OCA\Buildiq\Support\UuidV4;
 use OCP\BackgroundJob\IJobList;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -45,9 +47,9 @@ use RuntimeException;
 /**
  * Bridges the ExportsController to the OR ExportJob record + RunExportJob.
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
  */
-class ExportJobService {
+class ExportJobService implements ExportJobServiceInterface {
 	/**
 	 * OR register slug hosting the ExportJob schema (#104).
 	 */
@@ -73,6 +75,13 @@ class ExportJobService {
 	private ExportRequestSanitiser $sanitiser;
 
 	/**
+	 * Mints the UUIDs objects are created with.
+	 *
+	 * @var UuidV4
+	 */
+	private readonly UuidV4 $uuids;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ContainerInterface $container Container — used to lazily fetch OR
@@ -90,6 +99,7 @@ class ExportJobService {
 		private JobOwnerImpersonator $jobOwnerImpersonator,
 	) {
 		$this->sanitiser = new ExportRequestSanitiser();
+		$this->uuids = new UuidV4();
 	}//end __construct()
 
 	/**
@@ -107,8 +117,8 @@ class ExportJobService {
 	 *
 	 * @throws \InvalidArgumentException When required fields are missing.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
-	 * @spec openspec/changes/data-registers-runtime/tasks.md#task-4.3
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
+	 * @spec openspec/changes/archive/2026-10-07-data-registers-runtime/tasks.md#task-4.3
 	 */
 	public function queue(
 		string $applicationSlug,
@@ -222,7 +232,7 @@ class ExportJobService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-37
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-37
 	 */
 	public function persistJob(array $job): void {
 		try {
@@ -304,7 +314,7 @@ class ExportJobService {
 	 * @return bool True when the transition fired, false when OR's
 	 *              lifecycle engine is not available (gap recorded).
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-38
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-38
 	 */
 	public function transitionJob(
 		string $jobUuid,
@@ -373,7 +383,7 @@ class ExportJobService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-37
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-37
 	 */
 	public function mergeJobFields(string $jobUuid, array $fields): void {
 		if ($fields === []) {
@@ -431,7 +441,7 @@ class ExportJobService {
 	 *
 	 * @return array{path:string,expired:bool}|null Resolution result.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
 	 */
 	public function resolveDownload(string $uuid): ?array {
 		// Look for the ZIP in the deterministic location.
@@ -462,7 +472,7 @@ class ExportJobService {
 	 *
 	 * @return array<string, mixed>|null Job data, or null on failure.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
 	 */
 	public function loadJob(string $jobUuid): ?array {
 		try {
@@ -480,18 +490,19 @@ class ExportJobService {
 				return null;
 			}
 
-			if (method_exists($object, 'getObject') === true) {
+			// Some OR versions return the array directly. Checked first:
+			// method_exists() throws a TypeError on an array.
+			if (is_array($object) === true) {
+				return $object;
+			}
+
+			if (is_object($object) === true && method_exists($object, 'getObject') === true) {
 				$data = $object->getObject() ?? [];
 				if (is_array($data) === true) {
 					return $data;
 				}
 
 				return null;
-			}
-
-			// Some OR versions return the array directly.
-			if (is_array($object) === true) {
-				return $object;
 			}
 
 			return null;
@@ -506,31 +517,13 @@ class ExportJobService {
 	/**
 	 * Generate a UUIDv4.
 	 *
-	 * Fixes #104: the previous implementation split the 32 hex digits into
-	 * eight 4-char groups (`str_split($hex, 4)`) but `vsprintf()` only
-	 * consumes the first FIVE of a format string's `%s` placeholders,
-	 * silently discarding the remaining three groups — the returned string
-	 * was five 4-char groups (20 hex digits) instead of the canonical
-	 * 8-4-4-4-12 (32 hex digits). The version/variant nibble-setting above
-	 * was already correct; only the grouping was malformed.
+	 * Delegates to {@see UuidV4}, which carries the #104 history.
 	 *
 	 * @return string UUIDv4 in canonical 8-4-4-4-12 form.
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-37
 	 */
 	public function uuid4(): string {
-		$data = random_bytes(16);
-		$data[6] = chr((ord($data[6]) & 0x0F) | 0x40);
-		$data[8] = chr((ord($data[8]) & 0x3F) | 0x80);
-		$hex = bin2hex($data);
-
-		return sprintf(
-			'%s-%s-%s-%s-%s',
-			substr($hex, 0, 8),
-			substr($hex, 8, 4),
-			substr($hex, 12, 4),
-			substr($hex, 16, 4),
-			substr($hex, 20, 12)
-		);
+		return $this->uuids->generate();
 	}//end uuid4()
 }//end class

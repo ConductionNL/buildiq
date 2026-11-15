@@ -31,9 +31,9 @@ namespace OCA\Buildiq\Tests\Integration;
 
 use OCA\Buildiq\Service\DataRegisterExportBundler;
 use OCA\Buildiq\Service\ExportBundlers;
-use OCA\Buildiq\Service\ExportContents;
+use OCA\Buildiq\Kernel\Values\ExportContents;
 use OCA\Buildiq\Service\ExportService;
-use OCA\Buildiq\Service\ExportTarget;
+use OCA\Buildiq\Kernel\Values\ExportTarget;
 use OCA\Buildiq\Service\PlaceholderResolver;
 use OCA\Buildiq\Service\RegisterRowReader;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;

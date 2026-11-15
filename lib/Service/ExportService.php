@@ -21,9 +21,9 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-40
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-41
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-40
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-41
  *
  * @SPDX-License-Identifier: EUPL-1.2
  * @SPDX-FileCopyrightText:  2026 Conduction B.V. <info@conduction.nl>
@@ -33,6 +33,9 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\ExportServiceInterface;
+use OCA\Buildiq\Kernel\Values\ExportContents;
+use OCA\Buildiq\Kernel\Values\ExportTarget;
 use OCP\Files\IAppData;
 use OCP\Files\NotFoundException;
 use Psr\Log\LoggerInterface;
@@ -67,9 +70,9 @@ use Psr\Log\LoggerInterface;
  *   - GitHub PAT NEVER passes through this class. It is fetched from
  *     ICredentialsManager by RunExportJob and handed to GitHubPushService.
  *
- * @spec openspec/changes/openbuild-exporter/tasks.md#task-4.1
+ * @spec openspec/changes/archive/2026-06-14-openbuild-exporter/tasks.md#task-4.1
  */
-class ExportService {
+class ExportService implements ExportServiceInterface {
 
 	/**
 	 * Embedded template snapshot directory.
@@ -152,8 +155,8 @@ class ExportService {
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flag mirrors the export job's includeServerBundle field.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-40
-	 * @spec openspec/changes/data-registers-runtime/tasks.md#task-4.2
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-40
+	 * @spec openspec/changes/archive/2026-10-07-data-registers-runtime/tasks.md#task-4.2
 	 */
 	public function generateAppZip(
 		ExportTarget $target,
@@ -239,8 +242,8 @@ class ExportService {
 	 *
 	 * @return array<int, array{kind: string, ref: string, reason: string}> Skips, empty when everything resolved.
 	 *
-	 * @spec openspec/changes/openbuild-exports-flows-and-agents/specs/app-export-completeness/spec.md#requirement-an-unresolvable-binding-must-be-reported-not-silently-dropped
-	 * @spec openspec/changes/openbuild-exports-flows-and-agents/specs/app-composition-bindings/spec.md#requirement-a-dangling-binding-must-reach-the-operator
+	 * @spec openspec/specs/app-export-completeness/spec.md#requirement-an-unresolvable-binding-must-be-reported-not-silently-dropped
+	 * @spec openspec/specs/app-composition-bindings/spec.md#requirement-a-dangling-binding-must-reach-the-operator
 	 */
 	public function lastSkipped(): array {
 		return $this->lastSkipped;
@@ -265,48 +268,69 @@ class ExportService {
 	 * NOT because a test needs to reach it. See the follow-up issue.
 	 *
 	 * @param array<string,mixed> $context Placeholder context: appId, appNamespace, appName, appVersion, authorName, authorEmail, license.
-	 * @param array<int,mixed> $dataRegisters Optional bound data-register schemas to bundle.
-	 * @param array<int,mixed> $flows `Application.flows` bindings, bundled only when non-empty.
-	 *                                Default `[]`.
-	 * @param string $applicationSlug Slug of the application whose agents to collect. Default `''`.
+	 * @param ScaffoldOptions $options The bound data registers, flows and agent-owner slug to bundle; none by default.
 	 *
 	 * @return array<string,string> Ordered `path => contents` map of the resolved scaffold.
 	 *
 	 * @spec openspec/changes/github-app-sync/specs/github-app-sync/spec.md
 	 */
-	public function buildScaffoldMap(array $context, array $dataRegisters = [], array $flows = [], string $applicationSlug = ''): array {
+	public function buildScaffoldMap(array $context, ScaffoldOptions $options = new ScaffoldOptions()): array {
 		$jobUuid = 'scaffold-' . ((string)($context['appId'] ?? 'app')) . '-' . uniqid();
 		$scratch = $this->prepareScratchDir(jobUuid: $jobUuid);
 
 		try {
 			$this->copyTemplate(source: $this->templateRoot, dest: $scratch);
 			$this->resolvePlaceholders(rootDir: $scratch, context: $context);
-			if ($dataRegisters !== []) {
-				$this->bundleDataRegisterSchemas(rootDir: $scratch, dataRegisters: $dataRegisters);
-			}
+			$this->bundleScaffoldChannels(rootDir: $scratch, options: $options);
 
-			if ($flows !== [] || $applicationSlug !== '') {
-				$this->lastSkipped = $this->bundlers->flowAndAgentBundler->bundle(
-					rootDir: $scratch,
-					flows: $flows,
-					applicationSlug: $applicationSlug
-				);
-			}
-
-			$map = [];
-			foreach ($this->treeFiles->listFilesSorted(baseDir: $scratch) as $relative) {
-				$contents = file_get_contents($scratch . '/' . $relative);
-				if ($contents !== false) {
-					$map[$relative] = $contents;
-				}
-			}
-
-			return $map;
+			return $this->scaffoldFiles(rootDir: $scratch);
 		} finally {
 			$this->treeFiles->removeTree(dir: $scratch);
 		}//end try
 
 	}//end buildScaffoldMap()
+
+	/**
+	 * Bundle the scaffold's optional channels: the bound data registers, and the
+	 * flows and agents when there are flows or an agent owner.
+	 *
+	 * @param string          $rootDir Scratch directory (scaffold tree root).
+	 * @param ScaffoldOptions $options What to bundle.
+	 *
+	 * @return void
+	 */
+	private function bundleScaffoldChannels(string $rootDir, ScaffoldOptions $options): void {
+		if ($options->dataRegisters !== []) {
+			$this->bundleDataRegisterSchemas(rootDir: $rootDir, dataRegisters: $options->dataRegisters);
+		}
+
+		if ($options->flows !== [] || $options->applicationSlug !== '') {
+			$this->lastSkipped = $this->bundlers->flowAndAgentBundler->bundle(
+				rootDir: $rootDir,
+				flows: $options->flows,
+				applicationSlug: $options->applicationSlug
+			);
+		}
+	}//end bundleScaffoldChannels()
+
+	/**
+	 * Every file of a scaffold tree, keyed by its relative path, in sorted order.
+	 *
+	 * @param string $rootDir Scratch directory (scaffold tree root).
+	 *
+	 * @return array<string,string> Ordered `path => contents` map.
+	 */
+	private function scaffoldFiles(string $rootDir): array {
+		$map = [];
+		foreach ($this->treeFiles->listFilesSorted(baseDir: $rootDir) as $relative) {
+			$contents = file_get_contents($rootDir . '/' . $relative);
+			if ($contents !== false) {
+				$map[$relative] = $contents;
+			}
+		}
+
+		return $map;
+	}//end scaffoldFiles()
 
 	/**
 	 * Bundle every `dataRegisters` binding's schema definitions (always) and
@@ -327,7 +351,7 @@ class ExportService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/data-registers-runtime/tasks.md#task-4.2
+	 * @spec openspec/changes/archive/2026-10-07-data-registers-runtime/tasks.md#task-4.2
 	 */
 	private function bundleDataRegisterSchemas(string $rootDir, array $dataRegisters): void {
 		$this->bundlers->dataRegisterBundler->bundle(rootDir: $rootDir, dataRegisters: $dataRegisters);
@@ -345,7 +369,7 @@ class ExportService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/data-registers-runtime/tasks.md#task-4.2
+	 * @spec openspec/changes/archive/2026-10-07-data-registers-runtime/tasks.md#task-4.2
 	 */
 	private function pinDataRegisterFileTimestamps(string $rootDir): void {
 		$targetDir = $rootDir . '/lib/Settings/data-registers';
@@ -377,7 +401,8 @@ class ExportService {
 	 *
 	 * @return string Local path to the ZIP file.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
+	 * @spec openspec/specs/platform-properties/spec.md#REQ-PLAT-010
 	 */
 	private function packageZip(string $sourceDir, string $jobUuid): string {
 		$exportRoot = $this->getOrCreateAppDataDir(name: 'exports');
@@ -392,6 +417,12 @@ class ExportService {
 		}
 
 		$this->treeFiles->zipTree(sourceDir: $sourceDir, zipPath: $zipPath);
+
+		// The finished archive also goes into app data, so a download served
+		// by another web server finds it (REQ-PLAT-010). Constructed rather
+		// than injected, like ExportTreeFiles: it needs only the app data this
+		// class already holds.
+		(new ExportArchiveStore(appData: $this->appData, logger: $this->logger))->store(jobUuid: $jobUuid, localZip: $zipPath);
 
 		// The archive's ENTRIES carry the deterministic timestamp, which is what
 		// makes two exports of the same tree byte-identical. The .zip file's own
@@ -421,7 +452,7 @@ class ExportService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-40
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-40
 	 */
 	private function resolvePlaceholders(string $rootDir, array $context): void {
 		$stringContext = [];
@@ -479,7 +510,7 @@ class ExportService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-40
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-40
 	 */
 	private function copyTemplate(string $source, string $dest): void {
 		$this->treeFiles->requireDirectory(dir: $source, label: 'Template snapshot');
@@ -528,7 +559,7 @@ class ExportService {
 	 *
 	 * @return string Absolute path to the scratch tree directory.
 	 *
-	 * @spec openspec/changes/openbuild-exporter/tasks.md#task-6.2
+	 * @spec openspec/changes/archive/2026-06-14-openbuild-exporter/tasks.md#task-6.2
 	 */
 	public function scratchTreeDir(string $jobUuid): string {
 		return $this->getOrCreateAppDataDir(name: 'work') . '/' . $jobUuid;
@@ -555,7 +586,7 @@ class ExportService {
 	 *
 	 * @return string Absolute local path.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
 	 */
 	private function getOrCreateAppDataDir(string $name): string {
 		// Best-effort: make sure the IAppData folder exists so any

@@ -97,6 +97,14 @@
 		]
 	},
 	{
+		"icon": "RobotOutline",
+		"id": "app-agents",
+		"label": "buildiq:Agents",
+		"onSelect": [
+			"openAgents([])"
+		]
+	},
+	{
 		"icon": "AccountMultipleOutline",
 		"id": "app-permissions",
 		"label": "buildiq:Manage permissions",

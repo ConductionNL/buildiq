@@ -13,6 +13,9 @@
  * @version GIT: <git-id>
  *
  * @link https://conduction.nl
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -33,6 +36,7 @@ use PHPUnit\Framework\TestCase;
  * @covers \OCA\Buildiq\Service\DecisionTableEvaluator
  * @uses   \OCA\Buildiq\Service\ExpressionEvaluator
  * @uses   \OCA\Buildiq\Service\FeelParser
+ * @uses \OCA\Buildiq\Service\FeelLexer
  */
 class DecisionTableSharedShapeGoldenTest extends TestCase {
 

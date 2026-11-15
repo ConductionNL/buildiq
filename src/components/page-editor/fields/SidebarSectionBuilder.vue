@@ -62,7 +62,7 @@ export default {
 		/**
 		 * Observed behaviour of `localSections` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		localSections() {
 			return Array.isArray(this.modelValue) ? this.modelValue : []
@@ -78,7 +78,7 @@ export default {
 		 * @param {string|string[]} value - the input's new text for `id`/`label`, or
 		 *   the already-split column-key list forwarded by `updateColumns`. Written
 		 *   verbatim, so emptied inputs keep the key with an empty value.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		updateField(index, key, value) {
 			const next = this.localSections.slice()
@@ -93,7 +93,7 @@ export default {
 		 * @param {number} index - position of the section whose `columns` list is replaced.
 		 * @param {string} value - the raw comma-separated column-key text typed by the
 		 *   author; split on commas, trimmed, and blank entries dropped before storing.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		updateColumns(index, value) {
 			const cols = value
@@ -106,7 +106,7 @@ export default {
 		/**
 		 * Observed behaviour of `addSection` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		addSection() {
 			const next = this.localSections.slice()
@@ -118,7 +118,7 @@ export default {
 		 * Observed behaviour of `removeSection` (retrofit annotation).
 		 *
 		 * @param {number} index - position of the section to drop from the `columnGroups` array.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		removeSection(index) {
 			const next = this.localSections.slice()

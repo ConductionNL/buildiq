@@ -3,6 +3,9 @@
 /**
  * Page Layout Leaf Provider
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * `buildiq-page-layout`. A consuming app asks: what should this object's detail
  * page show. Buildiq answers with at most ONE layout, and the app merges it
  * over its own manifest config.
@@ -38,22 +41,19 @@
  *
  * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-003, REQ-OBPL-006)
  * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-007, REQ-OBPL-008, REQ-OBPL-009)
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
 
 namespace OCA\Buildiq\Integration;
 
-use OCA\Buildiq\Service\LayoutDeltaService;
-use OCA\Buildiq\Service\PageLayoutFrozenBase;
-use OCA\Buildiq\Service\PageLayoutLayerStack;
+use OCA\Buildiq\Kernel\Contracts\LayoutDeltaServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\PageLayoutFrozenBaseInterface;
+use OCA\Buildiq\Kernel\Contracts\PageLayoutLayerStackInterface;
+use OCA\Buildiq\Kernel\Contracts\PageLayoutLeafProviderInterface;
+use OCA\Buildiq\Kernel\Contracts\PageLayoutPresenterInterface;
 use OCA\Buildiq\Service\PageLayoutParts;
-use OCA\Buildiq\Service\PageLayoutPresenter;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
-use OCA\OpenRegister\Service\Integration\IntegrationProvider;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -63,7 +63,7 @@ use RuntimeException;
  *
  * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-003)
  */
-final class PageLayoutLeafProvider implements IntegrationProvider {
+final class PageLayoutLeafProvider extends AppLocalLeafProvider implements PageLayoutLeafProviderInterface {
 	/**
 	 * The leaf id, equal on both halves so gate-24 can pair them.
 	 *
@@ -81,30 +81,30 @@ final class PageLayoutLeafProvider implements IntegrationProvider {
 	/**
 	 * The keyed-delta merge and the base fingerprint.
 	 *
-	 * @var LayoutDeltaService
+	 * @var LayoutDeltaServiceInterface
 	 */
-	private readonly LayoutDeltaService $deltas;
+	private readonly LayoutDeltaServiceInterface $deltas;
 
 	/**
 	 * Which layers apply to this caller and this object, and in which order.
 	 *
-	 * @var PageLayoutLayerStack
+	 * @var PageLayoutLayerStackInterface
 	 */
-	private readonly PageLayoutLayerStack $layers;
+	private readonly PageLayoutLayerStackInterface $layers;
 
 	/**
 	 * Which layers an override's base is frozen from.
 	 *
-	 * @var PageLayoutFrozenBase
+	 * @var PageLayoutFrozenBaseInterface
 	 */
-	private readonly PageLayoutFrozenBase $frozenBase;
+	private readonly PageLayoutFrozenBaseInterface $frozenBase;
 
 	/**
 	 * The shape a resolved layout takes on its way out.
 	 *
-	 * @var PageLayoutPresenter
+	 * @var PageLayoutPresenterInterface
 	 */
-	private readonly PageLayoutPresenter $presenter;
+	private readonly PageLayoutPresenterInterface $presenter;
 
 	/**
 	 * Constructor.
@@ -163,61 +163,6 @@ final class PageLayoutLeafProvider implements IntegrationProvider {
 	public function getGroup(): string {
 		return 'Design';
 	}//end getGroup()
-
-	/**
-	 * The app that must be installed for this leaf to answer.
-	 *
-	 * @return string The app id.
-	 */
-	public function getRequiredApp(): string {
-		return 'buildiq';
-	}//end getRequiredApp()
-
-	/**
-	 * Layouts live in buildiq's own register.
-	 *
-	 * @return string The storage strategy.
-	 */
-	public function getStorageStrategy(): string {
-		return 'app-local';
-	}//end getStorageStrategy()
-
-	/**
-	 * No OpenConnector source.
-	 *
-	 * @return string|null The source.
-	 */
-	public function getOpenConnectorSource(): ?string {
-		return null;
-	}//end getOpenConnectorSource()
-
-	/**
-	 * The leaf answers whenever buildiq is installed.
-	 *
-	 * @return bool True.
-	 */
-	public function isEnabled(): bool {
-		return true;
-	}//end isEnabled()
-
-	/**
-	 * Reading a layout needs no right of its own; it is page furniture, and the
-	 * object's own permissions still decide what the page can show.
-	 *
-	 * @return string|null Null.
-	 */
-	public function requiresPermission(): ?string {
-		return null;
-	}//end requiresPermission()
-
-	/**
-	 * The leaf needs no credentials of its own.
-	 *
-	 * @return array<string, mixed> The requirements.
-	 */
-	public function authRequirements(): array {
-		return [];
-	}//end authRequirements()
 
 	/**
 	 * The one layout that applies to this host object, or nothing.

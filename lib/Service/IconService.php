@@ -27,16 +27,17 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-1
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-2
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-3
- * @spec openspec/changes/retrofit-2026-05-24-app-icon-management-uuid/tasks.md#task-1
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-1
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-2
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-3
+ * @spec openspec/changes/archive/retrofit-2026-05-24-app-icon-management-uuid/tasks.md#task-1
  */
 
 declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\IconServiceInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -50,7 +51,7 @@ use Psr\Log\LoggerInterface;
  * Returns a stream (resource) + MIME type; callers are responsible for
  * closing the stream after it has been consumed.
  */
-class IconService {
+class IconService implements IconServiceInterface {
 	/**
 	 * Register slug that hosts Application objects.
 	 */
@@ -144,8 +145,8 @@ class IconService {
 	 *                                                        no filesystem fallback
 	 *                                                        exists (practically never).
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-2
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-3
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-2
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-3
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	public function getIconStream(string $slug, bool $dark): array {
@@ -176,7 +177,7 @@ class IconService {
 	 * @return mixed The Application entity, or null when OR is unavailable or the
 	 *               slug matches no Application.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-1
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-1
 	 */
 	private function fetchApplicationEntity(string $slug): mixed {
 		try {
@@ -214,7 +215,7 @@ class IconService {
 	 *
 	 * @return array{stream: resource|null, mimeType: string}
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-2
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-2
 	 */
 	private function resolveIconLight(?array $application, mixed $entity = null): array {
 		if ($application !== null) {
@@ -247,7 +248,7 @@ class IconService {
 	 *
 	 * @return array{stream: resource|null, mimeType: string}
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-3
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-3
 	 */
 	private function resolveIconDark(?array $application, mixed $entity = null): array {
 		if ($application !== null) {

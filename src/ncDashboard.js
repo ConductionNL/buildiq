@@ -64,10 +64,38 @@ export function resolveWidgetComponent(descriptor, registry = runtimeRegistry) {
 	if (!key) {
 		return null
 	}
-	const override = registry && registry[key]
-	if (override) {
-		return override.component || override
-	}
+	const override = registryEntry(registry, key)
+	return override ? overrideComponent(override) : catalogRenderer(key)
+}
+
+/**
+ * The consumer registry entry for a widget key, if any.
+ *
+ * @param {?object} registry The consumer registry.
+ * @param {string} key The widget key.
+ * @return {object|undefined} The entry, or a falsy value without one.
+ */
+function registryEntry(registry, key) {
+	return registry && registry[key]
+}
+
+/**
+ * The component a consumer registry entry holds: its `component`, or itself.
+ *
+ * @param {object} override The registry entry.
+ * @return {object} The component.
+ */
+function overrideComponent(override) {
+	return override.component || override
+}
+
+/**
+ * The renderer the library's built-in catalog holds for a widget key.
+ *
+ * @param {string} key The widget key.
+ * @return {object|null} The renderer, or null when the catalog has none.
+ */
+function catalogRenderer(key) {
 	const entry = getWidgetTypeEntry(key)
 	return (entry && entry.renderer) || null
 }
@@ -133,20 +161,38 @@ export function registerNcDashboardWidgets(descriptors, dashboard) {
 
 	let registered = 0
 	for (const descriptor of descriptors) {
-		if (!descriptor || !descriptor.id) {
-			continue
+		if (hasWidgetId(descriptor)) {
+			dashboard.register(descriptor.id, (el) => mountWidget(el, descriptor))
+			registered++
 		}
-		dashboard.register(descriptor.id, (el) => {
-			const app = createApp(createNcDashboardWidget(descriptor))
-			app.mixin({ methods: { t, n } })
-			app.use(pinia)
-			registerDirectives(app)
-			app.mount(el)
-		})
-		registered++
 	}
 
 	return registered
+}
+
+/**
+ * Whether a descriptor carries the id Nextcloud registers it under.
+ *
+ * @param {?object} descriptor A promoted widget descriptor.
+ * @return {boolean}
+ */
+function hasWidgetId(descriptor) {
+	return Boolean(descriptor && descriptor.id)
+}
+
+/**
+ * Mount one promoted widget into the panel element Nextcloud hands over.
+ *
+ * @param {Element} el The panel's content element.
+ * @param {object} descriptor A promoted widget descriptor.
+ * @return {void}
+ */
+function mountWidget(el, descriptor) {
+	const app = createApp(createNcDashboardWidget(descriptor))
+	app.mixin({ methods: { t, n } })
+	app.use(pinia)
+	registerDirectives(app)
+	app.mount(el)
 }
 
 // Boot. Guarded so importing this module in a test does not need a dashboard.

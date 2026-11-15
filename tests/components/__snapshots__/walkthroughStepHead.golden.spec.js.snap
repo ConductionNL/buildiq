@@ -1,0 +1,91 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`WalkthroughDesigner step header rows > emits the manifest of every control 1`] = `
+[
+  {
+    "setup": [
+      "a",
+      "b",
+    ],
+    "tour": [
+      "s1",
+      "renamed",
+      "s3",
+    ],
+  },
+  {
+    "setup": [
+      "a",
+      "b",
+    ],
+    "tour": [
+      "s2",
+      "s1",
+      "s3",
+    ],
+  },
+  {
+    "setup": [
+      "a",
+      "b",
+    ],
+    "tour": [
+      "s1",
+      "s3",
+      "s2",
+    ],
+  },
+  {
+    "setup": [
+      "a",
+      "b",
+    ],
+    "tour": [
+      "s1",
+      "s3",
+    ],
+  },
+  {
+    "setup": [
+      "renamed",
+      "b",
+    ],
+    "tour": [
+      "s1",
+      "s2",
+      "s3",
+    ],
+  },
+  {
+    "setup": [
+      "b",
+      "a",
+    ],
+    "tour": [
+      "s1",
+      "s2",
+      "s3",
+    ],
+  },
+  {
+    "setup": [
+      "b",
+    ],
+    "tour": [
+      "s1",
+      "s2",
+      "s3",
+    ],
+  },
+]
+`;
+
+exports[`WalkthroughDesigner step header rows > renders the tour and setup step headers 1`] = `
+[
+  "<div class="wt-designer__step-head"><span class="wt-designer__step-num">1</span><input aria-label="Step id" value="s1"><button data-variant="tertiary" disabled="" aria-label="Move up"><span aria-hidden="true" class="material-design-icon arrow-up-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="20" height="20" viewBox="0 0 24 24"><path d="M13,20H11V8L5.5,13.5L4.08,12.08L12,4.16L19.92,12.08L18.5,13.5L13,8V20Z"><!--v-if--></path></svg></span></button><button data-variant="tertiary" aria-label="Move down"><span aria-hidden="true" class="material-design-icon arrow-down-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="20" height="20" viewBox="0 0 24 24"><path d="M11,4H13V16L18.5,10.5L19.92,11.92L12,19.84L4.08,11.92L5.5,10.5L11,16V4Z"><!--v-if--></path></svg></span></button><button data-variant="tertiary" aria-label="Delete step"><span aria-hidden="true" class="material-design-icon delete-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="20" height="20" viewBox="0 0 24 24"><path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"><!--v-if--></path></svg></span></button></div>",
+  "<div class="wt-designer__step-head"><span class="wt-designer__step-num">2</span><input aria-label="Step id" value="s2"><button data-variant="tertiary" aria-label="Move up"><span aria-hidden="true" class="material-design-icon arrow-up-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="20" height="20" viewBox="0 0 24 24"><path d="M13,20H11V8L5.5,13.5L4.08,12.08L12,4.16L19.92,12.08L18.5,13.5L13,8V20Z"><!--v-if--></path></svg></span></button><button data-variant="tertiary" aria-label="Move down"><span aria-hidden="true" class="material-design-icon arrow-down-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="20" height="20" viewBox="0 0 24 24"><path d="M11,4H13V16L18.5,10.5L19.92,11.92L12,19.84L4.08,11.92L5.5,10.5L11,16V4Z"><!--v-if--></path></svg></span></button><button data-variant="tertiary" aria-label="Delete step"><span aria-hidden="true" class="material-design-icon delete-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="20" height="20" viewBox="0 0 24 24"><path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"><!--v-if--></path></svg></span></button></div>",
+  "<div class="wt-designer__step-head"><span class="wt-designer__step-num">3</span><input aria-label="Step id" value="s3"><button data-variant="tertiary" aria-label="Move up"><span aria-hidden="true" class="material-design-icon arrow-up-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="20" height="20" viewBox="0 0 24 24"><path d="M13,20H11V8L5.5,13.5L4.08,12.08L12,4.16L19.92,12.08L18.5,13.5L13,8V20Z"><!--v-if--></path></svg></span></button><button data-variant="tertiary" disabled="" aria-label="Move down"><span aria-hidden="true" class="material-design-icon arrow-down-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="20" height="20" viewBox="0 0 24 24"><path d="M11,4H13V16L18.5,10.5L19.92,11.92L12,19.84L4.08,11.92L5.5,10.5L11,16V4Z"><!--v-if--></path></svg></span></button><button data-variant="tertiary" aria-label="Delete step"><span aria-hidden="true" class="material-design-icon delete-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="20" height="20" viewBox="0 0 24 24"><path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"><!--v-if--></path></svg></span></button></div>",
+  "<div class="wt-designer__step-head"><span class="wt-designer__step-num">1</span><input aria-label="Step id" value="a"><button data-variant="tertiary" disabled="" aria-label="Move up"><span aria-hidden="true" class="material-design-icon arrow-up-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="20" height="20" viewBox="0 0 24 24"><path d="M13,20H11V8L5.5,13.5L4.08,12.08L12,4.16L19.92,12.08L18.5,13.5L13,8V20Z"><!--v-if--></path></svg></span></button><button data-variant="tertiary" aria-label="Move down"><span aria-hidden="true" class="material-design-icon arrow-down-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="20" height="20" viewBox="0 0 24 24"><path d="M11,4H13V16L18.5,10.5L19.92,11.92L12,19.84L4.08,11.92L5.5,10.5L11,16V4Z"><!--v-if--></path></svg></span></button><button data-variant="tertiary" aria-label="Delete step"><span aria-hidden="true" class="material-design-icon delete-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="20" height="20" viewBox="0 0 24 24"><path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"><!--v-if--></path></svg></span></button></div>",
+  "<div class="wt-designer__step-head"><span class="wt-designer__step-num">2</span><input aria-label="Step id" value="b"><button data-variant="tertiary" aria-label="Move up"><span aria-hidden="true" class="material-design-icon arrow-up-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="20" height="20" viewBox="0 0 24 24"><path d="M13,20H11V8L5.5,13.5L4.08,12.08L12,4.16L19.92,12.08L18.5,13.5L13,8V20Z"><!--v-if--></path></svg></span></button><button data-variant="tertiary" disabled="" aria-label="Move down"><span aria-hidden="true" class="material-design-icon arrow-down-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="20" height="20" viewBox="0 0 24 24"><path d="M11,4H13V16L18.5,10.5L19.92,11.92L12,19.84L4.08,11.92L5.5,10.5L11,16V4Z"><!--v-if--></path></svg></span></button><button data-variant="tertiary" aria-label="Delete step"><span aria-hidden="true" class="material-design-icon delete-icon" role="img"><svg fill="currentColor" class="material-design-icon__svg" width="20" height="20" viewBox="0 0 24 24"><path d="M19,4H15.5L14.5,3H9.5L8.5,4H5V6H19M6,19A2,2 0 0,0 8,21H16A2,2 0 0,0 18,19V7H6V19Z"><!--v-if--></path></svg></span></button></div>",
+]
+`;

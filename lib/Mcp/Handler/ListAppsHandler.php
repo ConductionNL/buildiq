@@ -52,50 +52,61 @@ class ListAppsHandler extends AbstractToolHandler {
 		}
 
 		try {
-			// ADR-083 rule 1 / ADR-084: use the constructor-injected contract
-			// rather than reaching into the container by string name.
-			$objectService = $this->objectService;
-
-			$filters = [];
-			if ($validation['statusFilter'] !== 'any') {
-				$filters['status'] = $validation['statusFilter'];
-			}
-
-			$rawApps = $objectService->searchObjectsBySlug(self::REGISTER_SLUG, 'built-app', $filters, _rbac: true, _multitenancy: false);
-			if (is_array(value: $rawApps) === false) {
-				$rawApps = [];
-			}
-
-			// C1 fix: filter to apps the caller has at least one role on before
-			// applying the count cap, so the cap is against authorised results only.
-			$rawApps = array_values(
-				array_filter(
-					$rawApps,
-					function (mixed $raw): bool {
-						$app = $this->toArray(item: $raw);
-						return $this->requireAnyRoleOnApp(app: $app) === null;
-					}
-				)
-			);
-
-			$rawApps = array_slice(array: $rawApps, offset: 0, length: min($validation['limit'], self::ITEMS_CAP));
-
-			$apps = [];
-			$sources = [];
-			foreach ($rawApps as $raw) {
-				$app = $this->toArray(item: $raw);
-				$mapped = $this->mapApplication(raw: $app);
-				$apps[] = $mapped;
-				$sources[] = $this->sourceDescriptor(uuid: $mapped['uuid'], slug: $mapped['slug'], label: $mapped['name']);
-			}
-
-			return ['success' => true, 'apps' => $apps, 'sources' => $sources];
+			return $this->listApps(validation: $validation);
 		} catch (\Throwable $e) {
 			$this->logger->error('Buildiq MCP: listApps failed', ['exception' => $e->getMessage()]);
 			return $this->errorResult(error: 'internal_error', message: 'Failed to retrieve virtual apps.');
 		}//end try
 
 	}//end handle()
+
+	/**
+	 * List the virtual apps the caller holds a role on, capped at the requested limit.
+	 *
+	 * @param array<string, mixed> $validation The validated tool arguments.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function listApps(array $validation): array {
+		// ADR-083 rule 1 / ADR-084: use the constructor-injected contract
+		// rather than reaching into the container by string name.
+		$objectService = $this->objectService;
+
+		$filters = [];
+		if ($validation['statusFilter'] !== 'any') {
+			$filters['status'] = $validation['statusFilter'];
+		}
+
+		$rawApps = $objectService->searchObjectsBySlug(self::REGISTER_SLUG, 'built-app', $filters, _rbac: true, _multitenancy: false);
+		if (is_array(value: $rawApps) === false) {
+			$rawApps = [];
+		}
+
+		// C1 fix: filter to apps the caller has at least one role on before
+		// applying the count cap, so the cap is against authorised results only.
+		$rawApps = array_values(
+			array_filter(
+				$rawApps,
+				function (mixed $raw): bool {
+					$app = $this->toArray(item: $raw);
+					return $this->requireAnyRoleOnApp(app: $app) === null;
+				}
+			)
+		);
+
+		$rawApps = array_slice(array: $rawApps, offset: 0, length: min($validation['limit'], self::ITEMS_CAP));
+
+		$apps = [];
+		$sources = [];
+		foreach ($rawApps as $raw) {
+			$app = $this->toArray(item: $raw);
+			$mapped = $this->mapApplication(raw: $app);
+			$apps[] = $mapped;
+			$sources[] = $this->sourceDescriptor(uuid: $mapped['uuid'], slug: $mapped['slug'], label: $mapped['name']);
+		}
+
+		return ['success' => true, 'apps' => $apps, 'sources' => $sources];
+	}//end listApps()
 
 	/**
 	 * Validate and normalise arguments for the listApps tool.

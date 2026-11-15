@@ -41,10 +41,16 @@ import BackToVirtualApps, {
 import { registerScope, useRegisterPicker } from './composables/useRegisterPicker.js'
 import pinia from './pinia.js'
 import { registerDirectives } from './registerDirectives.js'
-import { runtimeRegistry } from './runtimeRegistry.js'
+import { getRuntimeRegistry } from './runtimeRegistry.js'
 import { fetchAppRegister } from './services/appRegister.js'
+import {
+	normalizeConnectorPages,
+	restoreConnectorPages,
+} from './services/connectorPages.js'
 import { startHealthReporting } from './services/healthReporting.js'
+import { normalizeManifestPages } from './services/manifestPageDefaults.js'
 import { normalizeManifestRouting } from './services/manifestRouting.js'
+import { brandTopBar } from './services/topBarBrand.js'
 import { keepVersionQuery } from './services/versionQuery.js'
 import { virtualAppSupportDialog } from './utils/virtualAppSupportDialog.js'
 
@@ -168,85 +174,6 @@ function translateForApp(key, vars) {
 	return t('buildiq', key, vars)
 }
 
-// Top-bar branding state. A single observer drives every (re-)apply so that the
-// early slug-based pass and the later manifest-name pass share one watcher.
-let topBarBrand = null
-
-/**
- * Rebrand the Nextcloud top-bar (app name + icon) to the virtual app's identity.
- *
- * The global top-bar is server-rendered chrome for the host `buildiq` app, so
- * there is no supported API to retitle it per virtual app. We patch the DOM
- * directly and keep it in sync with a MutationObserver, because Nextcloud's
- * app-menu is a Vue component that can re-render (resize, unified-search and
- * notification updates) and would otherwise reset our changes. `apply()` is
- * idempotent — it only writes when a value differs — so it never loops on its
- * own mutations.
- *
- * Call it twice: once early with a slug-humanised name (so the bar flips off
- * "Buildiq" before the manifest request resolves), then again with the real
- * `manifest.name` to correct it. The second call only updates the shared state
- * and re-applies; it does not create a second observer.
- *
- * The icon uses the app's own light icon (`/icons/{slug}.svg`) forced white with
- * a CSS filter, because the coloured header needs a monochrome white glyph and
- * apps rarely upload a dedicated white variant (the `-dark` endpoint falls back
- * to a generic cube, which is why we do NOT use it here).
- *
- * @param {string} appName The virtual app's display name.
- * @param {string} appSlug The virtual app's slug, used for its icon endpoint.
- */
-function brandTopBar(appName, appSlug) {
-	if (typeof document === 'undefined') {
-		return
-	}
-	const icon = generateUrl(`/apps/buildiq/icons/${appSlug}.svg`)
-	if (topBarBrand) {
-		// Refine an existing brand (e.g. slug-name → real manifest name).
-		if (appName) {
-			topBarBrand.name = appName
-		}
-		topBarBrand.icon = icon
-		topBarBrand.apply()
-		return
-	}
-	const state = { name: appName || appSlug, icon }
-	state.apply = () => {
-		const nameEl = document.querySelector('.app-menu__current-app-name')
-		if (nameEl && state.name && nameEl.textContent !== state.name) {
-			nameEl.textContent = state.name
-		}
-		const iconEl = document.querySelector('.app-menu__current-app-icon')
-		if (iconEl && iconEl.getAttribute('src') !== state.icon) {
-			iconEl.setAttribute('src', state.icon)
-			iconEl.setAttribute('alt', state.name || '')
-			// The header background is coloured; force any icon to white.
-			iconEl.style.filter = 'brightness(0) invert(1)'
-		}
-		const trigger = document.querySelector(
-			'[aria-label^="Open apps menu, currently in"]',
-		)
-		if (trigger && state.name) {
-			const label = t('buildiq', 'Open apps menu, currently in {app}', {
-				app: state.name,
-			})
-			if (trigger.getAttribute('aria-label') !== label) {
-				trigger.setAttribute('aria-label', label)
-			}
-		}
-	}
-	topBarBrand = state
-	state.apply()
-	const header = document.querySelector('header#header') || document.body
-	if (header) {
-		new MutationObserver(state.apply).observe(header, {
-			childList: true,
-			subtree: true,
-			characterData: true,
-		})
-	}
-}
-
 /**
  * Turn a slug into a human-readable title, e.g. `pet-store` → `Pet Store`. Used
  * for the early top-bar pass before the manifest (with the real name) loads.
@@ -260,41 +187,6 @@ function humaniseSlug(value) {
 		.filter(Boolean)
 		.map((w) => w.charAt(0).toUpperCase() + w.slice(1))
 		.join(' ')
-}
-
-/**
- * Normalise a loaded manifest's pages for the standalone runtime, in place:
- *
- * 1. `config` MUST be a plain object. An empty `config: {}` round-trips through
- *    PHP/JSON as `[]` (PHP can't tell an empty object from an empty list), and a
- *    page rendered with an array config silently loses its register/schema.
- * 2. Data pages (`index` / `detail`) default to `showTitle: true` so the app
- *    shows its page title inline — the standalone runtime renders the app as a
- *    real app, where a visible page header is expected (CnIndexPage's own
- *    default is `false`, which routes the title to an index sidebar that this
- *    runtime does not surface). An explicit `showTitle` is always respected.
- *
- * @param {object} manifest The resolved manifest (mutated in place).
- * @return {void}
- */
-function normalizeManifestPages(manifest) {
-	const pages = Array.isArray(manifest.pages) ? manifest.pages : []
-	for (const page of pages) {
-		if (!page || typeof page !== 'object') continue
-		if (
-			!page.config
-			|| typeof page.config !== 'object'
-			|| Array.isArray(page.config)
-		) {
-			page.config = {}
-		}
-		if (
-			(page.type === 'index' || page.type === 'detail')
-			&& page.config.showTitle === undefined
-		) {
-			page.config.showTitle = true
-		}
-	}
 }
 
 /**
@@ -452,6 +344,8 @@ function rebuildRoutes(router, manifest) {
  * @param {object} manifest The manifest the shell edits in place.
  * @param {{router: object, shellState: object}} shell The app's router and the shell's reactive state.
  * @return {() => Promise<void>} The `persistManifestDelta` handler.
+ *
+ * @spec openspec/specs/openbuild-page-designer/spec.md#REQ-OBPD-012
  */
 function manifestPersister(manifest, shell) {
 	const { router, shellState } = shell
@@ -460,7 +354,9 @@ function manifestPersister(manifest, shell) {
 		const saveUrl = generateUrl(
 			`/apps/buildiq/api/applications/${slug}/manifest`,
 		)
-		await axios.put(saveUrl, { manifest })
+		// Store the pages as the maker authored them: a connector-bound page
+		// is rewritten for the renderer in memory only (REQ-BQCB-001).
+		await axios.put(saveUrl, { manifest: restoreConnectorPages(manifest) })
 		// Only touch the router when the PAGE SET actually changed — a
 		// menu / settings / sidebar / actions edit leaves routes intact.
 		const sig = pageSignature(manifest)
@@ -509,6 +405,7 @@ function navSlots(manifest, router) {
 /**
  * Fetch the app manifest, build its router, and mount the standalone shell.
  *
+ * @spec openspec/changes/openbuild-connector-widget-runtime/specs/connector-widget-runtime/spec.md#requirement-req-cwr-001-single-runtime-registry-seam-for-every-virtual-app-host
  * @return {Promise<void>}
  */
 async function boot() {
@@ -518,14 +415,18 @@ async function boot() {
 	if (slug) {
 		brandTopBar(humaniseSlug(slug), slug)
 	}
-	const manifest = await loadManifest()
+	const loaded = await loadManifest()
 
 	// Normalise pages (config-as-object guard + inline page titles for data pages).
-	normalizeManifestPages(manifest)
+	normalizeManifestPages(loaded)
 	// Name every page and point every menu entry at one, so a manifest written
 	// before page ids existed — or one whose menu carries paths — still opens
 	// with its navigation instead of an empty shell.
-	normalizeManifestRouting(manifest)
+	normalizeManifestRouting(loaded)
+	// Pages bound to an integriq endpoint become pages the renderer draws, in
+	// memory only; the persister restores the authored shape (REQ-BQCB-001).
+	// BuilderHost.vue runs the same normaliser for the preview (REQ-BQCB-004).
+	const manifest = normalizeConnectorPages(loaded)
 
 	// Registers/schemas (+ columns) for the in-app pages editor, passed to CnAppRoot
 	// as a LOADER rather than a pre-fetched snapshot. The modals re-invoke it every
@@ -575,7 +476,10 @@ async function boot() {
 		manifest,
 		permissions: runtimePermissions(manifest),
 		isLoading: false,
-		registry: { ...runtimeRegistry },
+		// The canonical runtime registry (REQ-CWR-001): without it every
+		// registry-only widget key (e.g. `connector-data`) renders as
+		// CnUnknownWidget on the published path.
+		registry: getRuntimeRegistry(),
 		pageTypes: { ...defaultPageTypes },
 		// App registers/schemas so the Edit-pages modal offers Register /
 		// Schema / Columns dropdowns for index/detail pages. Re-run on every

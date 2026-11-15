@@ -172,4 +172,52 @@ describe('ManifestWidget', () => {
 		)
 		expect(wrapper.emitted('changed')).toBeTruthy()
 	})
+
+	it('reads the override count from user-deltas, and hides it on a failure', async () => {
+		axiosGetMock.mockImplementation((url) => Promise.resolve({
+			data: url.endsWith('/user-deltas') ? { total: 4 } : { allowed: true, exists: true, versionUuid: 'v1' },
+		}))
+		const wrapper = shallowMount(ManifestWidget, {
+			propsData: { appSlug: 'opencatalogi', isHybrid: true, allowUserOverrides: true },
+			stubs,
+		})
+		await flush(wrapper)
+		expect(axiosGetMock).toHaveBeenCalledWith('/apps/buildiq/api/app-overrides/opencatalogi/user-deltas')
+		expect(wrapper.vm.userOverrideCount).toBe(4)
+		expect(wrapper.vm.userDelta).toEqual({ allowed: true, exists: true, versionUuid: 'v1' })
+
+		axiosGetMock.mockResolvedValue({ data: { total: 'x' } })
+		await wrapper.vm.loadOverrideCount()
+		expect(wrapper.vm.userOverrideCount).toBe(0)
+
+		axiosGetMock.mockRejectedValue(new Error('403'))
+		await wrapper.vm.loadOverrideCount()
+		expect(wrapper.vm.userOverrideCount).toBe(null)
+		await wrapper.vm.loadUserDelta()
+		expect(wrapper.vm.userDelta).toEqual({ allowed: false, exists: false, versionUuid: null })
+		expect(wrapper.vm.userLoading).toBe(false)
+	})
+
+	it('DELETEs the delta on reset, and reports a failed create or reset', async () => {
+		axiosGetMock.mockResolvedValue({ data: { allowed: true, exists: true, versionUuid: 'v1' } })
+		axiosDeleteMock.mockResolvedValueOnce({ data: {} })
+		const wrapper = shallowMount(ManifestWidget, {
+			propsData: { appSlug: 'opencatalogi', isHybrid: true, allowUserOverrides: true },
+			stubs,
+		})
+		await flush(wrapper)
+		await wrapper.vm.resetOverride()
+		expect(axiosDeleteMock).toHaveBeenCalledWith('/apps/buildiq/api/app-overrides/opencatalogi/user')
+		expect(wrapper.emitted('changed')).toHaveLength(1)
+
+		axiosDeleteMock.mockRejectedValueOnce({ response: { data: { detail: 'locked' } } })
+		await wrapper.vm.resetOverride()
+		expect(wrapper.vm.error).toBe('Could not reset your override: locked')
+
+		axiosPutMock.mockRejectedValueOnce(new Error('nope'))
+		await wrapper.vm.createOverride()
+		expect(wrapper.vm.error).toBe('Could not create your override')
+		expect(wrapper.vm.creating).toBe(false)
+		expect(wrapper.emitted('changed')).toHaveLength(1)
+	})
 })

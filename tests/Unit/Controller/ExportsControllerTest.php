@@ -443,6 +443,44 @@ final class ExportsControllerTest extends TestCase {
 	}//end testDownloadReturnsZipForOwner()
 
 	/**
+	 * REQ-PLAT-010: when this server's staging copy is gone, the download reads
+	 * the archive kept in app data, so a request on another web server still
+	 * gets the file; with neither copy it stays a 404.
+	 *
+	 * @return void
+	 */
+	public function testDownloadReadsFromAppDataWhenTheLocalStagingIsGone(): void {
+		$this->stubAuthorisedFallback();
+		$this->exportJobService->method('resolveDownload')->willReturn(null);
+
+		$archives = $this->createMock(\OCA\Buildiq\Service\ExportArchiveStore::class);
+		$archives->method('read')->willReturnMap([['owned-uuid', 'PK from app data']]);
+
+		$controller = new ExportsController(
+			$this->request,
+			$this->exportJobService,
+			$this->userSession,
+			$this->container,
+			new NullLogger(),
+			$this->groupManager,
+			$archives,
+		);
+		$user = $this->createMock(IUser::class);
+		$user->method('getUID')->willReturn('alice');
+		$this->userSession->method('getUser')->willReturn($user);
+
+		$response = $controller->download('owned-uuid');
+		self::assertInstanceOf(DataDownloadResponse::class, $response);
+		self::assertSame(Http::STATUS_OK, $response->getStatus());
+		self::assertSame('PK from app data', $response->render());
+
+		$archivesEmpty = $this->createMock(\OCA\Buildiq\Service\ExportArchiveStore::class);
+		$archivesEmpty->method('read')->willReturn(null);
+		$none = new ExportsController($this->request, $this->exportJobService, $this->userSession, $this->container, new NullLogger(), $this->groupManager, $archivesEmpty);
+		self::assertSame(Http::STATUS_NOT_FOUND, $none->download('owned-uuid')->getStatus());
+	}//end testDownloadReadsFromAppDataWhenTheLocalStagingIsGone()
+
+	/**
 	 * L8 / #11-#4: when a job persisted `requestedBy` as an empty string (queued
 	 * without a resolvable requester), authorization MUST fall back to the OR
 	 * `@self.owner`. A plain `??` treats '' as present and never reaches the

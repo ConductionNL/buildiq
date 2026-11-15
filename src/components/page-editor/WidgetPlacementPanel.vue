@@ -216,8 +216,50 @@
 							@input="updateNote(row.index, $event.target.value)" />
 					</label>
 
-					<!-- D8 leaves room here: the sibling change hangs a promote
-					     toggle off this row, so the controls are a list rather
+					<!-- publish-widgets-to-nc-dashboard: off for every existing
+					     widget, so opening and saving a page promotes nothing.
+					     Promoting gives the placement an id when it has none;
+					     demoting keeps it, so promoting again restores the same
+					     dashboard widget id. -->
+					<label class="widget-placement-panel__field widget-placement-panel__field--promote">
+						<input
+							type="checkbox"
+							:checked="isPromoted(row.entry)"
+							data-testid="placement-promote"
+							@change="setPromoted(row.index, $event.target.checked)" />
+						<span>{{ t('buildiq', 'Show on the Nextcloud dashboard') }}</span>
+					</label>
+					<template v-if="isPromoted(row.entry)">
+						<label class="widget-placement-panel__field">
+							<span>{{ t('buildiq', 'Panel title') }}</span>
+							<input
+								type="text"
+								class="widget-placement-panel__note"
+								:value="row.entry.ncDashboard.title || ''"
+								data-testid="placement-panel-title"
+								@input="updatePanel(row.index, 'title', $event.target.value)" />
+						</label>
+						<label class="widget-placement-panel__field">
+							<span>{{ t('buildiq', 'Panel icon') }}</span>
+							<select
+								class="widget-placement-panel__select"
+								:value="row.entry.ncDashboard.icon || ''"
+								data-testid="placement-panel-icon"
+								@change="updatePanel(row.index, 'icon', $event.target.value)">
+								<option value="">
+									{{ t('buildiq', 'The app icon') }}
+								</option>
+								<option
+									v-for="name in panelIcons"
+									:key="name"
+									:value="name">
+									{{ name }}
+								</option>
+							</select>
+						</label>
+					</template>
+
+					<!-- D8 leaves room here: the controls are a list rather
 					     than two hard-coded buttons. -->
 					<span class="widget-placement-panel__actions">
 						<button
@@ -326,6 +368,7 @@
 import {
 	CnAddWidgetModal,
 	CnWidgetGrid,
+	DASHBOARD_ICONS,
 	getWidgetTypeEntry,
 	listWidgetTypes,
 } from '@conduction/nextcloud-vue'
@@ -344,6 +387,132 @@ import {
 	slotOffersRow,
 	slotOffersSpan,
 } from '../../services/slotGeometry.js'
+
+/**
+ * The page's own config object, or null when it has none (or a non-object).
+ *
+ * @param {object|null} page - the page under edit.
+ * @return {?object} the config.
+ */
+function pageConfigOf(page) {
+	return page && page.config && typeof page.config === 'object'
+		? page.config
+		: null
+}
+
+/**
+ * The `<prefix>:<id>` slot of every declared tab or section that has an id;
+ * null for the entries that have none.
+ *
+ * @param {Array<object>|undefined} entries - `config.tabs` or `config.sections`.
+ * @param {string} prefix - `'tab'` or `'section'`.
+ * @return {Array<?string>} the slot names.
+ */
+function declaredIdSlots(entries, prefix) {
+	if (!Array.isArray(entries)) {
+		return []
+	}
+	return entries.map((entry) => (entry && entry.id ? `${prefix}:${entry.id}` : null))
+}
+
+/**
+ * The grid entry that stands for a placement: the same object first, then the
+ * one with its id (how the grid itself keys an item).
+ *
+ * @param {Array<object>} emitted - the entries the grid emitted.
+ * @param {object} entry - the placement.
+ * @return {?object} the matching entry, if any.
+ */
+function matchEmittedEntry(emitted, entry) {
+	return (
+		emitted.find((candidate) => candidate === entry)
+		|| (entry.id
+			? emitted.find((candidate) => candidate && candidate.id === entry.id)
+			: null)
+	)
+}
+
+/**
+ * A copy of a placement carrying the grid geometry of another entry.
+ *
+ * @param {object} entry - the placement.
+ * @param {object} moved - the entry holding the new geometry.
+ * @return {object} the placement with the new geometry.
+ */
+function withGridGeometry(entry, moved) {
+	return {
+		...entry,
+		gridX: moved.gridX,
+		gridY: moved.gridY,
+		gridWidth: moved.gridWidth,
+		gridHeight: moved.gridHeight,
+	}
+}
+
+/**
+ * One object part (`content` or `chrome`) of the modal's payload, or `{}`.
+ *
+ * @param {object|null} payload - the modal's submit payload.
+ * @param {string} key - `'content'` or `'chrome'`.
+ * @return {object} the part.
+ */
+function payloadObject(payload, key) {
+	return payload && payload[key] && typeof payload[key] === 'object'
+		? payload[key]
+		: {}
+}
+
+/**
+ * Write the chrome's custom title, title visibility and custom icon onto the
+ * props, each only when the author set it.
+ *
+ * @param {object} props - the props being built.
+ * @param {object} chrome - the modal's chrome.
+ * @return {void}
+ */
+function applyChromeLabels(props, chrome) {
+	if (chrome.customTitle) {
+		props.title = chrome.customTitle
+	}
+	if (typeof chrome.showTitle === 'boolean') {
+		props.showTitle = chrome.showTitle
+	}
+	if (chrome.customIcon) {
+		props.icon = chrome.customIcon
+	}
+}
+
+/**
+ * Write the chrome's background colour into the props' style config, keeping
+ * the rest of that config.
+ *
+ * @param {object} props - the props being built.
+ * @param {object} chrome - the modal's chrome.
+ * @return {void}
+ */
+function applyChromeBackground(props, chrome) {
+	if (chrome.backgroundColor) {
+		props.styleConfig = {
+			...(props.styleConfig || {}),
+			backgroundColor: chrome.backgroundColor,
+		}
+	}
+}
+
+/**
+ * Store the props on an entry, or drop the key when there are none.
+ *
+ * @param {object} entry - the placement.
+ * @param {object} props - the built props.
+ * @return {void}
+ */
+function setOrDropProps(entry, props) {
+	if (Object.keys(props).length > 0) {
+		entry.props = props
+	} else {
+		delete entry.props
+	}
+}
 
 export default {
 	name: 'WidgetPlacementPanel',
@@ -377,7 +546,7 @@ export default {
 		 * The page's placements, always an array.
 		 *
 		 * @return {Array<object>} the page's `widgets[]`.
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		placements() {
 			return this.page && Array.isArray(this.page.widgets)
@@ -386,12 +555,22 @@ export default {
 		},
 
 		/**
+		 * The icons a dashboard panel may take: the shared icon set.
+		 *
+		 * @return {string[]} the icon names.
+		 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/openbuild-page-designer/spec.md#requirement-promote-a-widget-to-the-nextcloud-dashboard-from-the-page-designer
+		 */
+		panelIcons() {
+			return Object.keys(DASHBOARD_ICONS)
+		},
+
+		/**
 		 * The body-slot placements, handed to the editable grid. Kept as a
 		 * computed so the array identity is stable between renders: the grid
 		 * initialises GridStack on mount, not on every prop write.
 		 *
 		 * @return {Array<object>} the body placements, in page order.
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		bodyPlacements() {
 			return this.placements.filter((entry) => entry && entry.slot === 'body')
@@ -404,7 +583,7 @@ export default {
 		 *
 		 * @return {Array<{slot: string, rows: Array<{index: number, entry: object}>}>}
 		 *   the groups in display order.
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		groups() {
 			const bySlot = new Map([['body', []]])
@@ -444,25 +623,14 @@ export default {
 		 * says nothing about why.
 		 *
 		 * @return {string[]} the offerable slot names.
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		slotOptions() {
 			const options = [...SLOT_DISPLAY_ORDER]
-			const config =
-				this.page && this.page.config && typeof this.page.config === 'object'
-					? this.page.config
-					: {}
+			const config = pageConfigOf(this.page) || {}
 			const declared = [
-				...(Array.isArray(config.tabs)
-					? config.tabs.map((tab) =>
-							tab && tab.id ? `tab:${tab.id}` : null,
-						)
-					: []),
-				...(Array.isArray(config.sections)
-					? config.sections.map((section) =>
-							section && section.id ? `section:${section.id}` : null,
-						)
-					: []),
+				...declaredIdSlots(config.tabs, 'tab'),
+				...declaredIdSlots(config.sections, 'section'),
 				...this.placements.map((entry) => (entry ? entry.slot : null)),
 			]
 			for (const slot of declared) {
@@ -477,7 +645,7 @@ export default {
 		 * The surface the page represents, for the modal's type picker.
 		 *
 		 * @return {string} `'detail-page'` or `'app-dashboard'`.
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		widgetSurface() {
 			return widgetSurfaceForPageType(this.page ? this.page.type : '')
@@ -491,7 +659,7 @@ export default {
 		 * which is the failure this reports.
 		 *
 		 * @return {string[]} the offerable widget type keys.
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		offerableTypes() {
 			return listWidgetTypes(this.widgetSurface)
@@ -501,7 +669,7 @@ export default {
 		 * Whether the catalogue has nothing to offer on this surface.
 		 *
 		 * @return {boolean} true when the type picker would be empty.
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		catalogueIsEmpty() {
 			return this.offerableTypes.length === 0
@@ -512,7 +680,7 @@ export default {
 		 * null.
 		 *
 		 * @return {string|null} the offending key.
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		disguisedWidgetKey() {
 			return customPageInDisguiseKey(this.page)
@@ -522,7 +690,7 @@ export default {
 		 * Whether this page demands a note on every placement.
 		 *
 		 * @return {boolean} true on a `custom` page.
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		noteIsRequired() {
 			return pageRequiresPlacementNote(this.page)
@@ -534,7 +702,7 @@ export default {
 		 * owns its own confirm button and has no note field to block.
 		 *
 		 * @return {boolean} true when the add action is available.
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		canAdd() {
 			if (this.catalogueIsEmpty) {
@@ -548,7 +716,7 @@ export default {
 		 * `CnAddWidgetModal` reads. Null while the modal is open for an add.
 		 *
 		 * @return {?{type: string, content: object}} the modal's edit seed.
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		editingWidget() {
 			if (this.editingIndex < 0) {
@@ -573,13 +741,10 @@ export default {
 		 * dashboards.
 		 *
 		 * @return {?{register: string, schema: string}} the object context.
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		dataContext() {
-			const config =
-				this.page && this.page.config && typeof this.page.config === 'object'
-					? this.page.config
-					: null
+			const config = pageConfigOf(this.page)
 			if (!config || !config.register || !config.schema) {
 				return null
 			}
@@ -593,7 +758,7 @@ export default {
 		 *
 		 * @param {string} slot - the slot name.
 		 * @return {string} the label shown to the author.
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		slotLabel(slot) {
 			const labels = {
@@ -612,7 +777,7 @@ export default {
 		 *
 		 * @param {object} entry - the placement.
 		 * @return {string} the row label.
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		displayName(entry) {
 			const key = entry && entry.widgetKey ? entry.widgetKey : ''
@@ -625,7 +790,7 @@ export default {
 		 *
 		 * @param {string} slot - the placement's slot.
 		 * @return {boolean} true when `gridY` is the author's to set.
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		offersRow(slot) {
 			return slotOffersRow(slot)
@@ -636,7 +801,7 @@ export default {
 		 *
 		 * @param {string} slot - the placement's slot.
 		 * @return {boolean} true when `gridX` and `gridWidth` are the author's.
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		offersSpan(slot) {
 			return slotOffersSpan(slot, this.page)
@@ -647,7 +812,7 @@ export default {
 		 *
 		 * @param {string} slot - the placement's slot.
 		 * @return {number} the effective column count.
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		columnsFor(slot) {
 			return columnsForSlot(slot, this.page)
@@ -660,7 +825,7 @@ export default {
 		 * @param {number} index - the placement's position in `widgets[]`.
 		 * @param {object} changed - the keys being written.
 		 * @return {void}
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		writeEntry(index, changed) {
 			const current = this.placements[index]
@@ -680,7 +845,7 @@ export default {
 		 * @param {number} index - the placement's position in `widgets[]`.
 		 * @param {string} slot - the target slot.
 		 * @return {void}
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		updateSlot(index, slot) {
 			this.writeEntry(index, { slot })
@@ -695,10 +860,78 @@ export default {
 		 * @param {'gridX'|'gridY'|'gridWidth'|'gridHeight'} key - the coordinate.
 		 * @param {string} value - the number input's raw value.
 		 * @return {void}
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		updateGeometry(index, key, value) {
 			this.writeEntry(index, { [key]: value })
+		},
+
+		/**
+		 * Whether a placement is promoted to the Nextcloud dashboard.
+		 *
+		 * @param {object} entry - the placement.
+		 * @return {boolean} true when it carries an `ncDashboard` object.
+		 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/openbuild-page-designer/spec.md#requirement-promote-a-widget-to-the-nextcloud-dashboard-from-the-page-designer
+		 */
+		isPromoted(entry) {
+			return Boolean(entry && entry.ncDashboard && typeof entry.ncDashboard === 'object' && !Array.isArray(entry.ncDashboard))
+		},
+
+		/**
+		 * Promote or demote one placement. Promoting writes an empty
+		 * `ncDashboard` object and gives the placement a stable id when it has
+		 * none, because the schema requires one and the dashboard widget id is
+		 * derived from it. Demoting removes `ncDashboard` and keeps the id.
+		 *
+		 * @param {number} index - the placement's position in `widgets[]`.
+		 * @param {boolean} on - whether it is now promoted.
+		 * @return {void}
+		 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/openbuild-page-designer/spec.md#requirement-promote-a-widget-to-the-nextcloud-dashboard-from-the-page-designer
+		 */
+		setPromoted(index, on) {
+			const current = this.placements[index]
+			if (!current || this.isPromoted(current) === on) {
+				return
+			}
+			const entry = { ...current }
+			if (on) {
+				if (typeof entry.id !== 'string' || entry.id === '') {
+					const existingIds = new Set(this.placements.map((placement) => placement && placement.id).filter(Boolean))
+					entry.id = mintWidgetId(entry.widgetKey, existingIds)
+				}
+				entry.ncDashboard = {}
+			} else {
+				delete entry.ncDashboard
+			}
+			const next = this.placements.slice()
+			next[index] = entry
+			this.emitWidgets(next)
+		},
+
+		/**
+		 * Set or clear the panel title or icon of a promoted placement. An icon
+		 * outside the shared icon set is not written.
+		 *
+		 * @param {number} index - the placement's position in `widgets[]`.
+		 * @param {'title'|'icon'} key - the panel field.
+		 * @param {string} value - the new value; empty clears it.
+		 * @return {void}
+		 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/openbuild-page-designer/spec.md#requirement-promote-a-widget-to-the-nextcloud-dashboard-from-the-page-designer
+		 */
+		updatePanel(index, key, value) {
+			const current = this.placements[index]
+			if (!this.isPromoted(current) || (key === 'icon' && value !== '' && !this.panelIcons.includes(value))) {
+				return
+			}
+			const panel = { ...current.ncDashboard }
+			if (typeof value === 'string' && value.trim() !== '') {
+				panel[key] = value
+			} else {
+				delete panel[key]
+			}
+			const next = this.placements.slice()
+			next[index] = { ...current, ncDashboard: panel }
+			this.emitWidgets(next)
 		},
 
 		/**
@@ -709,7 +942,7 @@ export default {
 		 * @param {number} index - the placement's position in `widgets[]`.
 		 * @param {string} value - the note text.
 		 * @return {void}
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		updateNote(index, value) {
 			const current = this.placements[index]
@@ -734,7 +967,7 @@ export default {
 		 * @param {number} index - the placement's current position.
 		 * @param {number} offset - `-1` to move up, `1` to move down.
 		 * @return {void}
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		move(index, offset) {
 			const target = index + offset
@@ -753,7 +986,7 @@ export default {
 		 *
 		 * @param {number} index - the placement's position in `widgets[]`.
 		 * @return {void}
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		remove(index) {
 			if (!this.placements[index]) {
@@ -776,7 +1009,7 @@ export default {
 		 *
 		 * @param {Array<object>} payload - the entries the grid emitted.
 		 * @return {void}
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		onLayoutChange(payload) {
 			const emitted = Array.isArray(payload) ? payload : []
@@ -790,25 +1023,10 @@ export default {
 				// id, which is how the grid itself keys an item. Then body order,
 				// which is the grid's own index fallback.
 				const moved =
-					emitted.find((candidate) => candidate === entry)
-					|| (entry.id
-						? emitted.find(
-								(candidate) =>
-									candidate && candidate.id === entry.id,
-							)
-						: null)
+					matchEmittedEntry(emitted, entry)
 					|| emitted[bodyIndex]
 					|| entry
-				return applySlotRules(
-					{
-						...entry,
-						gridX: moved.gridX,
-						gridY: moved.gridY,
-						gridWidth: moved.gridWidth,
-						gridHeight: moved.gridHeight,
-					},
-					this.page,
-				)
+				return applySlotRules(withGridGeometry(entry, moved), this.page)
 			})
 			this.emitWidgets(next)
 		},
@@ -817,7 +1035,7 @@ export default {
 		 * Open the type picker for a new placement in the pending slot.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		openAdd() {
 			if (!this.canAdd) {
@@ -832,7 +1050,7 @@ export default {
 		 *
 		 * @param {number} index - the placement's position in `widgets[]`.
 		 * @return {void}
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		openEdit(index) {
 			if (!this.placements[index]) {
@@ -846,7 +1064,7 @@ export default {
 		 * Close the type picker without writing anything.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		closeModal() {
 			this.modalOpen = false
@@ -869,33 +1087,14 @@ export default {
 		 * @param {object} payload - the modal's submit payload.
 		 * @param {object|null} existingProps - the placement's current props.
 		 * @return {object} the merged props.
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		buildProps(payload, existingProps) {
-			const content =
-				payload && payload.content && typeof payload.content === 'object'
-					? payload.content
-					: {}
-			const chrome =
-				payload && payload.chrome && typeof payload.chrome === 'object'
-					? payload.chrome
-					: {}
+			const content = payloadObject(payload, 'content')
+			const chrome = payloadObject(payload, 'chrome')
 			const props = { ...(existingProps || {}), ...content }
-			if (chrome.customTitle) {
-				props.title = chrome.customTitle
-			}
-			if (typeof chrome.showTitle === 'boolean') {
-				props.showTitle = chrome.showTitle
-			}
-			if (chrome.customIcon) {
-				props.icon = chrome.customIcon
-			}
-			if (chrome.backgroundColor) {
-				props.styleConfig = {
-					...(props.styleConfig || {}),
-					backgroundColor: chrome.backgroundColor,
-				}
-			}
+			applyChromeLabels(props, chrome)
+			applyChromeBackground(props, chrome)
 			return props
 		},
 
@@ -912,7 +1111,7 @@ export default {
 		 * @param {{type: string, content: object, chrome: object}} payload - the
 		 *   modal's submit payload.
 		 * @return {void}
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		onModalSubmit(payload) {
 			if (!payload || !payload.type) {
@@ -921,43 +1120,73 @@ export default {
 			}
 
 			if (this.editingIndex >= 0) {
-				const current = this.placements[this.editingIndex]
-				if (current) {
-					const props = this.buildProps(payload, current.props)
-					const entry = { ...current, widgetKey: payload.type }
-					if (Object.keys(props).length > 0) {
-						entry.props = props
-					} else {
-						delete entry.props
-					}
-					const next = this.placements.slice()
-					next[this.editingIndex] = applySlotRules(entry, this.page)
-					this.emitWidgets(next)
-				}
+				this.applyEdit(payload)
 				this.closeModal()
 				return
 			}
 
-			const slot = isValidSlot(this.pendingSlot) ? this.pendingSlot : 'body'
-			const existingIds = new Set(
-				this.placements.map((entry) => entry && entry.id).filter(Boolean),
-			)
-			const entry = {
-				id: mintWidgetId(payload.type, existingIds),
-				widgetKey: payload.type,
-				...defaultGeometryFor(slot, this.page, this.placements),
+			this.addPlacement(payload)
+			this.closeModal()
+		},
+
+		/**
+		 * Write the modal's payload onto the placement being edited, keeping its
+		 * id; nothing when that placement is gone.
+		 *
+		 * @param {{type: string, content: object, chrome: object}} payload - the
+		 *   modal's submit payload.
+		 * @return {void}
+		 */
+		applyEdit(payload) {
+			const current = this.placements[this.editingIndex]
+			if (!current) {
+				return
 			}
-			const props = this.buildProps(payload, null)
-			if (Object.keys(props).length > 0) {
-				entry.props = props
-			}
+			const props = this.buildProps(payload, current.props)
+			const entry = { ...current, widgetKey: payload.type }
+			setOrDropProps(entry, props)
+			const next = this.placements.slice()
+			next[this.editingIndex] = applySlotRules(entry, this.page)
+			this.emitWidgets(next)
+		},
+
+		/**
+		 * Append the modal's payload as a new placement in the pending slot, with
+		 * the placement note when the page needs one.
+		 *
+		 * @param {{type: string, content: object, chrome: object}} payload - the
+		 *   modal's submit payload.
+		 * @return {void}
+		 */
+		addPlacement(payload) {
+			const entry = this.newPlacementFor(payload)
+			setOrDropProps(entry, this.buildProps(payload, null))
 			if (this.noteIsRequired && this.pendingNote.trim() !== '') {
 				entry._note = this.pendingNote
 			}
 
 			this.emitWidgets([...this.placements, applySlotRules(entry, this.page)])
 			this.pendingNote = ''
-			this.closeModal()
+		},
+
+		/**
+		 * A new placement of the payload's type in the pending slot (body when the
+		 * pending slot is not valid), with a freshly minted id and the slot's
+		 * default geometry.
+		 *
+		 * @param {{type: string}} payload - the modal's submit payload.
+		 * @return {object} the new entry, without props.
+		 */
+		newPlacementFor(payload) {
+			const slot = isValidSlot(this.pendingSlot) ? this.pendingSlot : 'body'
+			const existingIds = new Set(
+				this.placements.map((entry) => entry && entry.id).filter(Boolean),
+			)
+			return {
+				id: mintWidgetId(payload.type, existingIds),
+				widgetKey: payload.type,
+				...defaultGeometryFor(slot, this.page, this.placements),
+			}
 		},
 
 		/**
@@ -966,7 +1195,7 @@ export default {
 		 *
 		 * @param {Array<object>} widgets - the complete replacement array.
 		 * @return {void}
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		emitWidgets(widgets) {
 			this.$emit('update:widgets', widgets)
@@ -1055,6 +1284,12 @@ export default {
 
 .widget-placement-panel__field--note {
 	flex: 1 1 200px;
+}
+
+.widget-placement-panel__field--promote {
+	flex-direction: row;
+	align-items: center;
+	gap: 6px;
 }
 
 .widget-placement-panel__number {

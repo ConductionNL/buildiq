@@ -38,6 +38,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\StoredDecisionTablesInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\Dmn\DecisionTableStore;
 use Psr\Log\LoggerInterface;
@@ -50,12 +51,7 @@ use UnexpectedValueException;
  *
  * @spec openspec/changes/decision-tables-live-in-openregister/specs/business-rules-engine/spec.md
  */
-class StoredDecisionTables {
-
-	/**
-	 * The prefix of every key this app writes.
-	 */
-	public const KEY_PREFIX = 'buildiq.';
+class StoredDecisionTables implements StoredDecisionTablesInterface {
 
 	/**
 	 * Constructor.

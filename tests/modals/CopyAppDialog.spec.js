@@ -140,6 +140,47 @@ describe('CopyAppDialog (REQ-BQCP-001)', () => {
 	})
 })
 
+describe('CopyAppDialog submit branches', () => {
+	it('does not send while a copy is running', async () => {
+		const wrapper = mountDialog()
+		wrapper.vm.submitting = true
+		await wrapper.vm.submit()
+		expect(postMock).not.toHaveBeenCalled()
+	})
+
+	it('sends the trimmed name and encodes the source slug', async () => {
+		postMock.mockResolvedValue({ data: { uuid: 'n' } })
+		const wrapper = mount(CopyAppDialog, {
+			props: { open: true, application: { slug: 'a b', name: 'X' } },
+			global: { stubs },
+		})
+		wrapper.vm.onNameInput('  Copy  ')
+		wrapper.vm.onSlugInput('copy-x')
+		await wrapper.vm.submit()
+		expect(postMock).toHaveBeenCalledWith(
+			'/apps/buildiq/api/applications/a%20b/copy',
+			{ name: 'Copy', slug: 'copy-x' },
+		)
+		expect(wrapper.vm.submitting).toBe(false)
+		expect(wrapper.vm.error).toBe('')
+	})
+
+	it.each([
+		[{ response: { status: 403 } }, 'Only an administrator who owns or edits this app can copy it.'],
+		[{ response: { status: 429 } }, 'You copied or cloned several apps in a short time. Try again later.'],
+		[{ response: { status: 500 } }, 'The app could not be copied. Try again later.'],
+		[new Error('network'), 'The app could not be copied. Try again later.'],
+		[null, 'The app could not be copied. Try again later.'],
+	])('explains the refusal %j', async (err, message) => {
+		postMock.mockRejectedValue(err)
+		const wrapper = mountDialog()
+		await wrapper.vm.submit()
+		expect(wrapper.vm.error).toBe(message)
+		expect(wrapper.vm.submitting).toBe(false)
+		expect(wrapper.emitted('copied')).toBeUndefined()
+	})
+})
+
 describe('Copy app in the app detail actions', () => {
 	const application = {
 		'@self': { id: 'app-uuid' },

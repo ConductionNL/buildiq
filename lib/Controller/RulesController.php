@@ -12,7 +12,7 @@
  *
  * All endpoints carry `#[NoAdminRequired]` per ADR-005: any authenticated user
  * may evaluate a RuleSet of their own organisation. Every read goes through
- * {@see RuleObjectReader}, which applies the schema's RBAC and the caller's
+ * {@see \OCA\Buildiq\Service\RuleObjectReader}, which applies the schema's RBAC and the caller's
  * organisation (REQ-BRE-007): a RuleSet held by another organisation resolves
  * to a 404, not a 403, so its existence does not leak. The `buildiq` register
  * itself is system-wide, so only its lookup runs without the organisation
@@ -36,18 +36,17 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/business-rules-engine/tasks.md#9.1
- * @spec openspec/changes/business-rules-engine/tasks.md#9.2
+ * @spec openspec/changes/archive/2026-06-14-business-rules-engine/tasks.md#9.1
+ * @spec openspec/changes/archive/2026-06-14-business-rules-engine/tasks.md#9.2
  */
 
 declare(strict_types=1);
 
 namespace OCA\Buildiq\Controller;
 
-use OCA\Buildiq\AppInfo\Application;
+use OCA\Buildiq\Kernel\AppIdentity;
+use OCA\Buildiq\Kernel\Contracts\RuleEngineServiceInterface;
 use OCA\Buildiq\Service\CallerContext;
-use OCA\Buildiq\Service\RuleEngineService;
-use OCA\Buildiq\Service\RuleObjectReader;
 use OCA\Buildiq\Service\RuleStorage;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -77,7 +76,7 @@ class RulesController extends Controller {
 	 *
 	 * @param IRequest $request The current HTTP request.
 	 * @param LoggerInterface $logger PSR logger.
-	 * @param RuleEngineService $ruleEngine The rule-evaluation orchestrator.
+	 * @param RuleEngineServiceInterface $ruleEngine The rule-evaluation orchestrator.
 	 * @param RuleStorage $storage The rule object reader, stored decision tables and rule set versioning.
 	 * @param CallerContext $caller The caller's session, group memberships and the shared permission matcher.
 	 *
@@ -86,11 +85,11 @@ class RulesController extends Controller {
 	public function __construct(
 		IRequest $request,
 		private readonly LoggerInterface $logger,
-		private readonly RuleEngineService $ruleEngine,
+		private readonly RuleEngineServiceInterface $ruleEngine,
 		private readonly RuleStorage $storage,
 		private readonly CallerContext $caller,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 
 	}//end __construct()
 
@@ -105,7 +104,7 @@ class RulesController extends Controller {
 	 *
 	 * @return JSONResponse 200 with the result, 404 on miss, 408 on timeout, 422 on bad input.
 	 *
-	 * @spec openspec/changes/business-rules-engine/tasks.md#9.1
+	 * @spec openspec/changes/archive/2026-06-14-business-rules-engine/tasks.md#9.1
 	 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-live-evaluation-leaves-no-log-trail-req-bqlv-004
 	 *
 	 * @no-admin-idor-exempt Authorization is delegated to OpenRegister: every read here
@@ -122,12 +121,35 @@ class RulesController extends Controller {
 		}
 
 		$params = $this->request->getParams();
-		$payload = ($params['payload'] ?? []);
+		$refusal = $this->payloadRefusal(payload: ($params['payload'] ?? []));
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		try {
+			$outcome = $this->engineOutcome(ruleSetSlug: $ruleSetSlug, params: $params);
+		} catch (Throwable $e) {
+			return $this->evaluationFailure(ruleSetSlug: $ruleSetSlug, error: $e);
+		}
+
+		return new JSONResponse(data: $outcome, statusCode: $this->outcomeStatus(outcome: $outcome));
+	}//end evaluate()
+
+	/**
+	 * Refuse a payload that is not an object or exceeds the maximum size.
+	 *
+	 * The size check is the DoS guard: an oversized payload is rejected before
+	 * evaluation or logging.
+	 *
+	 * @param mixed $payload The request's `payload` parameter.
+	 *
+	 * @return JSONResponse|null The 422/413 refusal, or null when the payload is acceptable.
+	 */
+	private function payloadRefusal(mixed $payload): ?JSONResponse {
 		if (is_array($payload) === false) {
 			return $this->error(code: 'invalid_payload', detail: 'payload must be an object', status: Http::STATUS_UNPROCESSABLE_ENTITY);
 		}
 
-		// DoS guard: reject an oversized payload before evaluation or logging.
 		$encoded = json_encode($payload);
 		if ($encoded === false || strlen($encoded) > self::MAX_PAYLOAD_BYTES) {
 			return $this->error(
@@ -137,48 +159,73 @@ class RulesController extends Controller {
 			);
 		}
 
+		return null;
+	}//end payloadRefusal()
+
+	/**
+	 * Run the engine for an accepted request: dry-run flag, pinned version and
+	 * preview mode come from the request, PII is always masked.
+	 *
+	 * @param string $ruleSetSlug The RuleSet slug.
+	 * @param array<string,mixed> $params The request parameters, payload already accepted.
+	 *
+	 * @return array<string,mixed> The engine outcome.
+	 *
+	 * @throws Throwable When the engine fails; a 404 code means the RuleSet is missing.
+	 */
+	private function engineOutcome(string $ruleSetSlug, array $params): array {
 		$dryRun = (bool)($params['dryRun'] ?? false);
 		$version = null;
 		if (isset($params['version']) === true) {
 			$version = (string)$params['version'];
 		}
 
-		try {
-			$outcome = $this->ruleEngine->evaluate(
-				ruleSetSlug: $ruleSetSlug,
-				payload: $payload,
-				version: $version,
-				dryRun: $dryRun,
-				maskPii: true,
-				preview: (($params['mode'] ?? null) === 'preview')
-			);
-		} catch (Throwable $e) {
-			if ($e->getCode() === 404) {
-				return $this->error(code: 'not_found', detail: 'RuleSet ' . $ruleSetSlug . ' not found', status: Http::STATUS_NOT_FOUND);
-			}
+		return $this->ruleEngine->evaluate(
+			ruleSetSlug: $ruleSetSlug,
+			payload: (array)($params['payload'] ?? []),
+			version: $version,
+			dryRun: $dryRun,
+			maskPii: true,
+			preview: (($params['mode'] ?? null) === 'preview')
+		);
+	}//end engineOutcome()
 
-			$this->logger->error(
-				'Buildiq: rule evaluation failed for ' . $ruleSetSlug,
-				['exception' => $e->getMessage()]
-			);
-			return $this->error(code: 'evaluation_failed', detail: 'Rule evaluation failed', status: Http::STATUS_UNPROCESSABLE_ENTITY);
-		}//end try
+	/**
+	 * Answer an engine failure: 404 for a missing RuleSet, otherwise log and 422.
+	 *
+	 * @param string $ruleSetSlug The RuleSet slug.
+	 * @param Throwable $error The engine failure.
+	 *
+	 * @return JSONResponse The uniform error envelope.
+	 */
+	private function evaluationFailure(string $ruleSetSlug, Throwable $error): JSONResponse {
+		if ($error->getCode() === 404) {
+			return $this->error(code: 'not_found', detail: 'RuleSet ' . $ruleSetSlug . ' not found', status: Http::STATUS_NOT_FOUND);
+		}
 
-		$hasTimeout = false;
+		$this->logger->error(
+			'Buildiq: rule evaluation failed for ' . $ruleSetSlug,
+			['exception' => $error->getMessage()]
+		);
+		return $this->error(code: 'evaluation_failed', detail: 'Rule evaluation failed', status: Http::STATUS_UNPROCESSABLE_ENTITY);
+	}//end evaluationFailure()
+
+	/**
+	 * The HTTP status for an engine outcome: 408 when any error reports a timeout.
+	 *
+	 * @param array<string,mixed> $outcome The engine outcome.
+	 *
+	 * @return int 200 or 408.
+	 */
+	private function outcomeStatus(array $outcome): int {
 		foreach ($outcome['errors'] as $fout) {
 			if (str_contains($fout, 'timeout') === true) {
-				$hasTimeout = true;
-				break;
+				return Http::STATUS_REQUEST_TIMEOUT;
 			}
 		}
 
-		$status = Http::STATUS_OK;
-		if ($hasTimeout === true) {
-			$status = Http::STATUS_REQUEST_TIMEOUT;
-		}
-
-		return new JSONResponse(data: $outcome, statusCode: $status);
-	}//end evaluate()
+		return Http::STATUS_OK;
+	}//end outcomeStatus()
 
 	/**
 	 * Return a RuleSet's metadata + active version for UI binding.
@@ -187,7 +234,7 @@ class RulesController extends Controller {
 	 *
 	 * @return JSONResponse 200 with the schema metadata, or 404.
 	 *
-	 * @spec openspec/changes/business-rules-engine/tasks.md#9.1
+	 * @spec openspec/changes/archive/2026-06-14-business-rules-engine/tasks.md#9.1
 	 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-calculated-from-a-rule-set-req-bqlv-002
 	 *
 	 * @no-admin-idor-exempt Authorization is delegated to OpenRegister: every read here
@@ -329,7 +376,7 @@ class RulesController extends Controller {
 	 *
 	 * @return JSONResponse 200 with the test summary, or 404.
 	 *
-	 * @spec openspec/changes/business-rules-engine/tasks.md#9.1
+	 * @spec openspec/changes/archive/2026-06-14-business-rules-engine/tasks.md#9.1
 	 *
 	 * @no-admin-idor-exempt Authorization is delegated to OpenRegister: every read here
 	 *   goes through RuleObjectReader::find(), which searches with `_rbac: true` and
@@ -383,7 +430,7 @@ class RulesController extends Controller {
 	 * @return array<string,mixed>|null
 	 */
 	private function findRuleSet(string $slug): ?array {
-		$rows = $this->query(schema: RuleEngineService::RULE_SET_SCHEMA, filters: ['slug' => $slug], limit: 1);
+		$rows = $this->query(schema: RuleEngineServiceInterface::RULE_SET_SCHEMA, filters: ['slug' => $slug], limit: 1);
 		if ($rows === []) {
 			return null;
 		}

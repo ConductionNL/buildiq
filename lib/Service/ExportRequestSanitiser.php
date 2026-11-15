@@ -22,7 +22,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
  *
  * @SPDX-License-Identifier: EUPL-1.2
  * @SPDX-FileCopyrightText:  2026 Conduction B.V. <info@conduction.nl>
@@ -35,7 +35,7 @@ namespace OCA\Buildiq\Service;
 /**
  * Pure sanitisers for the export submit payload.
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
  */
 class ExportRequestSanitiser {
 	/**
@@ -51,19 +51,11 @@ class ExportRequestSanitiser {
 	 *
 	 * @return array<int,array{register:string,includeData:bool}>
 	 *
-	 * @spec openspec/changes/data-registers-runtime/tasks.md#task-4.3
+	 * @spec openspec/changes/archive/2026-10-07-data-registers-runtime/tasks.md#task-4.3
 	 */
 	public function dataRegisters(mixed $raw): array {
-		if (is_array($raw) === false) {
-			return [];
-		}
-
 		$out = [];
-		foreach ($raw as $entry) {
-			if (is_array($entry) === false) {
-				continue;
-			}
-
+		foreach ($this->arrayEntries(raw: $raw) as $entry) {
 			$register = (string)($entry['register'] ?? '');
 			if ($register === '') {
 				continue;
@@ -113,19 +105,11 @@ class ExportRequestSanitiser {
 	 *
 	 * @return array<int, array{flow: string}> Normalised bindings.
 	 *
-	 * @spec openspec/changes/openbuild-exports-flows-and-agents/tasks.md#1-bundle-flows-and-agents-into-the-export
+	 * @spec openspec/changes/archive/2026-10-07-openbuild-exports-flows-and-agents/tasks.md#1-bundle-flows-and-agents-into-the-export
 	 */
 	public function flows(mixed $raw): array {
-		if (is_array($raw) === false) {
-			return [];
-		}
-
 		$out = [];
-		foreach ($raw as $entry) {
-			if (is_array($entry) === false) {
-				continue;
-			}
-
+		foreach ($this->arrayEntries(raw: $raw) as $entry) {
 			$flow = trim((string)($entry['flow'] ?? ''));
 			if ($flow === '') {
 				continue;
@@ -136,4 +120,20 @@ class ExportRequestSanitiser {
 
 		return $out;
 	}//end flows()
+	/**
+	 * The entries of a list choice that are themselves arrays, in order.
+	 *
+	 * @param mixed $raw The request payload's value.
+	 *
+	 * @return array<int, array<array-key, mixed>> The array entries; none for a non-array value.
+	 *
+	 * @spec openspec/changes/data-registers-runtime/tasks.md#task-4.3
+	 */
+	private function arrayEntries(mixed $raw): array {
+		if (is_array($raw) === false) {
+			return [];
+		}
+
+		return array_values(array_filter($raw, static fn (mixed $entry): bool => is_array($entry)));
+	}//end arrayEntries()
 }//end class
