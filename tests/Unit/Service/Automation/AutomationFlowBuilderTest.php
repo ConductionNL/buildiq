@@ -42,6 +42,7 @@ use PHPUnit\Framework\TestCase;
  * @uses \OCA\Buildiq\Service\FeelToJsonLogic
  * @uses \OCA\Buildiq\Service\FeelParser
  * @uses \OCA\Buildiq\Service\Automation\RuleDecisionNodes
+ * @uses \OCA\Buildiq\Service\Automation\RuleSetConditionNodes
  * @uses \OCA\Buildiq\Exception\UnsupportedAutomationCombinationException
  */
 final class AutomationFlowBuilderTest extends TestCase {
@@ -182,8 +183,8 @@ final class AutomationFlowBuilderTest extends TestCase {
 	}//end testAFeelConditionGatesTheSteps()
 
 	/**
-	 * An approval or a document step cannot share a flow, and a rule-set
-	 * condition is refused until its decision table compiles.
+	 * An approval or a document step cannot share a flow, and a condition
+	 * of an unknown type is refused.
 	 *
 	 * @return void
 	 */
@@ -192,7 +193,7 @@ final class AutomationFlowBuilderTest extends TestCase {
 		foreach ([
 			self::input(['type' => 'manual'], [self::createStep(), ['type' => 'approval']]),
 			self::input(['type' => 'manual'], [['type' => 'generateDocument']]),
-			self::input(['type' => 'manual'], [], ['type' => 'rule-set', 'ruleSetSlug' => 'fees']),
+			self::input(['type' => 'manual'], [], ['type' => 'script', 'expression' => 'x']),
 		] as $input) {
 			try {
 				$this->builder()->build($input, 'reg', ['inspectie']);
@@ -203,7 +204,7 @@ final class AutomationFlowBuilderTest extends TestCase {
 
 		self::assertCount(3, $refused);
 		self::assertStringContainsString('"approval" step cannot share', $refused[0]);
-		self::assertStringContainsString('rule-set condition', $refused[2]);
+		self::assertSame('Unknown condition type "script".', $refused[2]);
 	}//end testMixesTheFlowCannotRunAreRefused()
 
 	/**
@@ -317,4 +318,76 @@ final class AutomationFlowBuilderTest extends TestCase {
 		self::assertSame(['a' => 'fieldA', 'b' => 'fieldB'], $flow['nodes'][1]['config']['outputMapping']);
 		self::assertSame(['fieldA' => '{{json.fieldA}}', 'fieldB' => '{{json.fieldB}}'], $flow['nodes'][2]['config']['fields']);
 	}//end testARuleDecisionWithAnOutputMapping()
+
+	/**
+	 * REQ-BQAR-004: a rule-set condition runs its decision table and filters on
+	 * the outcome, so the steps run only when the table decides true; no
+	 * matching rule decides false instead of failing the run.
+	 *
+	 * @return void
+	 */
+	public function testARuleSetConditionGatesTheSteps(): void {
+		$input = self::input(['type' => 'object-created', 'schema' => 'aanvraag'], [self::createStep()], ['type' => 'rule-set', 'ruleSetSlug' => 'leges-categorie']);
+
+		self::assertSame(['leges-categorie'], $this->builder()->ruleSetSlugs($input));
+
+		$flow = $this->builder()->build($input, 'r', ['aanvraag', 'inspectie'], self::ruleSets());
+
+		self::assertSame(['trigger', 'condition-table', 'condition', 'step-1'], array_column($flow['nodes'], 'id'));
+		self::assertSame(
+			[
+				'type' => 'openregister.decision-table',
+				'config' => [
+					'tableRef' => 'buildiq.leges-categorie',
+					'outputMapping' => ['categorie' => '_condition.categorie'],
+					'defaultOutputs' => ['categorie' => false],
+				],
+			],
+			array_diff_key($flow['nodes'][1], ['id' => true])
+		);
+		self::assertSame(
+			['type' => 'openregister.filter', 'config' => ['condition' => ['===' => [['var' => 'json._condition.categorie'], true]]]],
+			array_diff_key($flow['nodes'][2], ['id' => true])
+		);
+		self::assertSame([['trigger'], ['condition-table'], ['condition']], array_column($flow['edges'], 'from'));
+	}//end testARuleSetConditionGatesTheSteps()
+
+	/**
+	 * The condition's rule set comes first in the slugs and is not repeated by a step that decides with it.
+	 *
+	 * @return void
+	 */
+	public function testTheConditionsRuleSetIsResolvedWithTheSteps(): void {
+		$input = self::input(
+			['type' => 'object-created', 'schema' => 'aanvraag'],
+			[['type' => 'rule-decision', 'ruleSetSlug' => 'two-out'], ['type' => 'rule-decision', 'ruleSetSlug' => 'leges-categorie']],
+			['type' => 'rule-set', 'ruleSetSlug' => 'leges-categorie']
+		);
+
+		self::assertSame(['leges-categorie', 'two-out'], $this->builder()->ruleSetSlugs($input));
+		self::assertSame([], $this->builder()->ruleSetSlugs(self::input(['type' => 'manual'], [], ['type' => 'rule-set', 'ruleSetSlug' => ' '])));
+	}//end testTheConditionsRuleSetIsResolvedWithTheSteps()
+
+	/**
+	 * A rule-set condition refuses a missing rule set, a condition-action one,
+	 * one without a table and a table that decides more than one outcome.
+	 *
+	 * @return void
+	 */
+	public function testARuleSetConditionRefusesWhatItCannotRun(): void {
+		$cases = [
+			'Pick the rule set the condition runs.' => 'gone',
+			'The rule set "checks" is not a decision table; a condition can only run a decision table.' => 'checks',
+			'The rule set "empty" has no decision table to run.' => 'empty',
+			'The rule set "two-out" decides 2 outputs; a condition needs a table that decides one, true or false.' => 'two-out',
+		];
+		foreach ($cases as $message => $slug) {
+			try {
+				$this->builder()->build(self::input(['type' => 'manual'], [], ['type' => 'rule-set', 'ruleSetSlug' => $slug]), 'r', [], self::ruleSets());
+				self::fail('Expected a refusal: ' . $message);
+			} catch (UnsupportedAutomationCombinationException $e) {
+				self::assertSame($message, $e->getMessage());
+			}
+		}
+	}//end testARuleSetConditionRefusesWhatItCannotRun()
 }//end class

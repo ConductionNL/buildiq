@@ -133,10 +133,7 @@ final class AutomationFlowBuilder {
 		$this->assertNoOwnBackend(input: $input);
 		$nodes = [$this->triggerNode(input: $input, register: $register)];
 
-		$filter = $this->filterNode(condition: $input->condition);
-		if ($filter !== null) {
-			$nodes[] = $filter;
-		}
+		array_push($nodes, ...$this->conditionNodes(condition: $input->condition, ruleSets: $ruleSets));
 
 		$decisions = new RuleDecisionNodes(register: $register, schema: (string)($input->trigger['schema'] ?? ''), ruleSets: $ruleSets);
 		foreach ($input->actions as $index => $action) {
@@ -211,30 +208,37 @@ final class AutomationFlowBuilder {
 	}//end triggerNode()
 
 	/**
-	 * The filter node of a FEEL condition, or null without one (D6).
+	 * The nodes that gate the actions, none without a condition (D6).
 	 *
-	 * A rule-set condition goes through a decision table first, which this
-	 * builder does not compile yet, so it is refused rather than dropped.
+	 * A FEEL condition is one filter; a rule-set condition runs its decision
+	 * table first and filters on the outcome.
 	 *
-	 * @param mixed $condition The stored condition.
+	 * @param mixed                               $condition The stored condition.
+	 * @param array<string, array<string, mixed>> $ruleSets  The resolved rule sets by slug.
 	 *
-	 * @return array<string, mixed>|null
+	 * @return list<array<string, mixed>>
 	 *
-	 * @throws UnsupportedAutomationCombinationException When the condition cannot be translated.
+	 * @throws UnsupportedAutomationCombinationException When the condition cannot be translated or its rule set cannot run.
+	 *
+	 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-condition-gates-the-actions-req-bqar-004
 	 */
-	private function filterNode(mixed $condition): ?array {
+	private function conditionNodes(mixed $condition, array $ruleSets): array {
 		if (is_array($condition) === false || $condition === []) {
-			return null;
+			return [];
 		}
 
 		$kind = (string)($condition['type'] ?? 'feel');
+		if ($kind === 'rule-set') {
+			return (new RuleSetConditionNodes(ruleSets: $ruleSets))->build(condition: $condition);
+		}
+
 		if ($kind !== 'feel') {
-			throw new UnsupportedAutomationCombinationException(message: 'A rule-set condition cannot gate a flow yet.');
+			throw new UnsupportedAutomationCombinationException(message: 'Unknown condition type "' . $kind . '".');
 		}
 
 		$expression = trim((string)($condition['expression'] ?? ''));
 		if ($expression === '') {
-			return null;
+			return [];
 		}
 
 		try {
@@ -243,8 +247,8 @@ final class AutomationFlowBuilder {
 			throw new UnsupportedAutomationCombinationException(message: 'The condition cannot run in a flow: ' . $e->getMessage(), previous: $e);
 		}
 
-		return ['id' => 'condition', 'type' => 'openregister.filter', 'config' => ['condition' => $logic]];
-	}//end filterNode()
+		return [['id' => 'condition', 'type' => 'openregister.filter', 'config' => ['condition' => $logic]]];
+	}//end conditionNodes()
 
 	/**
 	 * The node of one action (D4, D5, D1 for notifications).
@@ -275,7 +279,7 @@ final class AutomationFlowBuilder {
 	}//end actionNode()
 
 	/**
-	 * The rule set slugs the rule-decision steps of an automation name (D7).
+	 * The rule set slugs an automation names: its rule-set condition first, then its rule-decision steps (D6, D7).
 	 *
 	 * @param CompileInput $input The automation.
 	 *
@@ -284,7 +288,15 @@ final class AutomationFlowBuilder {
 	 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-step-decides-with-a-rule-set-req-bqar-005
 	 */
 	public function ruleSetSlugs(CompileInput $input): array {
-		$slugs = [];
+		$slugs     = [];
+		$condition = $input->condition;
+		if (is_array($condition) === true && ($condition['type'] ?? '') === 'rule-set') {
+			$slug = trim((string)($condition['ruleSetSlug'] ?? ''));
+			if ($slug !== '') {
+				$slugs[] = $slug;
+			}
+		}
+
 		foreach ($input->actions as $action) {
 			if (is_array($action) === true && ($action['type'] ?? '') === 'rule-decision') {
 				$slug = trim((string)($action['ruleSetSlug'] ?? ''));
