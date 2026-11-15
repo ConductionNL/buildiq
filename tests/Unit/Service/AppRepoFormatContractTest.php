@@ -53,6 +53,10 @@ use RuntimeException;
  * @uses   \OCA\Buildiq\Service\TemplateRepoSerializer
  * @uses   \OCA\Buildiq\Service\AppRepoPayloadSafety
  * @uses   \OCA\Buildiq\Exception\AppRepoParseException
+ * @uses   \OCA\Buildiq\Service\AppRepoChannelReader
+ * @uses   \OCA\Buildiq\Service\ConnectorExportRun
+ * @uses   \OCA\Buildiq\Service\GitHub\TokenScrubber
+ * @uses   \OCA\Buildiq\Service\SchemaSlugClaims
  */
 class AppRepoFormatContractTest extends TestCase {
 
