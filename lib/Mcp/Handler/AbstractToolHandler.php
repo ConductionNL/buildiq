@@ -167,23 +167,8 @@ abstract class AbstractToolHandler {
 			return $this->errorResult(error: 'forbidden', message: 'You must be signed in.');
 		}
 
-		// Openbuild is a system-wide register (not org-scoped); bypass the
-		// organisation filter so MCP callers in any org can resolve apps.
-		$apps = $this->objectService->searchObjectsBySlug(
-			self::REGISTER_SLUG,
-			'built-app',
-			['slug' => $appSlug],
-			_rbac: true,
-			_multitenancy: false
-		);
-		if (is_array($apps) === false || $apps === []) {
-			return $this->errorResult(error: 'not_found', message: "No virtual app found for slug '{$appSlug}'.");
-		}
-
-		$app = $this->toArray(item: $apps[0]);
-
-		// Organisation scope before any role, admins included (REQ-BQOS-002).
-		if ($this->visibleToOrganisation(app: $app, caller: $this->userSession->getUser()) === false) {
+		$app = $this->findVisibleAppBySlug(appSlug: $appSlug);
+		if ($app === null) {
 			return $this->errorResult(error: 'not_found', message: "No virtual app found for slug '{$appSlug}'.");
 		}
 
@@ -222,6 +207,40 @@ abstract class AbstractToolHandler {
 		);
 
 	}//end requireWriteRole()
+
+	/**
+	 * Find the Application by slug, as long as the caller's organisation may see it.
+	 *
+	 * Openbuild is a system-wide register (not org-scoped), so the organisation
+	 * filter is bypassed and MCP callers in any org can resolve apps; the
+	 * organisation scope is then checked before any role, admins included
+	 * (REQ-BQOS-002).
+	 *
+	 * @param string $appSlug Slug of the target Application.
+	 *
+	 * @return array<string, mixed>|null The Application, or null when it is unknown or not visible.
+	 *
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002
+	 */
+	private function findVisibleAppBySlug(string $appSlug): ?array {
+		$apps = $this->objectService->searchObjectsBySlug(
+			self::REGISTER_SLUG,
+			'built-app',
+			['slug' => $appSlug],
+			_rbac: true,
+			_multitenancy: false
+		);
+		if (is_array($apps) === false || $apps === []) {
+			return null;
+		}
+
+		$app = $this->toArray(item: $apps[0]);
+		if ($this->visibleToOrganisation(app: $app, caller: $this->userSession->getUser()) === false) {
+			return null;
+		}
+
+		return $app;
+	}//end findVisibleAppBySlug()
 
 	/**
 	 * Record an MCP admin-bypass to the OpenRegister per-object audit trail, at

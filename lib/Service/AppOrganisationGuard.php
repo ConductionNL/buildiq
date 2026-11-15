@@ -109,12 +109,13 @@ class AppOrganisationGuard {
 		}
 
 		$holder = $this->holderOf(application: $application);
-		if ($holder === '' || $user === null || $user->getUID() === '') {
+		$uid    = $this->uidOf(user: $user);
+		if ($holder === '' || $uid === '') {
 			return false;
 		}
 
 		try {
-			return $this->belongsTo(uid: $user->getUID(), holder: $holder);
+			return $this->belongsTo(uid: $uid, holder: $holder);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				'AppOrganisationGuard: organisation membership could not be read; the app is treated as not visible',
@@ -123,6 +124,21 @@ class AppOrganisationGuard {
 			return false;
 		}
 	}//end canSee()
+
+	/**
+	 * The user id of the caller.
+	 *
+	 * @param IUser|null $user The caller.
+	 *
+	 * @return string The uid, or '' without a caller.
+	 */
+	private function uidOf(?IUser $user): string {
+		if ($user === null) {
+			return '';
+		}
+
+		return $user->getUID();
+	}//end uidOf()
 
 	/**
 	 * The scope a new app starts with: `holder` while OpenRegister's multitenancy

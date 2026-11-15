@@ -106,6 +106,36 @@ class ManifestResolverService implements ManifestResolverServiceInterface {
 	}//end visibleToCaller()
 
 	/**
+	 * Find the Application by slug, as long as the caller may see it.
+	 *
+	 * Organisation scope comes before any role: another organisation's scoped app
+	 * answers exactly as an unknown slug does (REQ-BQOS-002).
+	 *
+	 * @param string     $appSlug The virtual-app slug.
+	 * @param IUser|null $caller  The caller.
+	 *
+	 * @return array<string, mixed>|null The Application, or null when it is unknown or not visible.
+	 *
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002
+	 */
+	private function findVisibleApplication(string $appSlug, ?IUser $caller): ?array {
+		$application = $this->findApplicationBySlug(appSlug: $appSlug);
+		if ($application === null) {
+			$this->logger->debug(
+				'ManifestResolverService: Application not found for slug={slug}',
+				['slug' => $appSlug]
+			);
+			return null;
+		}
+
+		if ($this->visibleToCaller(application: $application, caller: $caller) === false) {
+			return null;
+		}
+
+		return $application;
+	}//end findVisibleApplication()
+
+	/**
 	 * Resolve an application slug (+ optional version slug) to the manifest payload.
 	 *
 	 * Step 1  : look up the Application by slug via ObjectService.
@@ -132,19 +162,9 @@ class ManifestResolverService implements ManifestResolverServiceInterface {
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-71
 	 */
 	public function resolve(string $appSlug, ?string $versionSlug, ?IUser $caller): ?array {
-		// Step 1 — resolve Application by slug.
-		$application = $this->findApplicationBySlug(appSlug: $appSlug);
+		// Step 1 — resolve Application by slug, within the caller's organisation scope.
+		$application = $this->findVisibleApplication(appSlug: $appSlug, caller: $caller);
 		if ($application === null) {
-			$this->logger->debug(
-				'ManifestResolverService: Application not found for slug={slug}',
-				['slug' => $appSlug]
-			);
-			return null;
-		}
-
-		// Organisation scope before any role: another organisation's scoped app
-		// answers exactly as an unknown slug does (REQ-BQOS-002).
-		if ($this->visibleToCaller(application: $application, caller: $caller) === false) {
 			return null;
 		}
 
@@ -280,8 +300,8 @@ class ManifestResolverService implements ManifestResolverServiceInterface {
 			return null;
 		}
 
-		$application = $this->findApplicationBySlug(appSlug: $appSlug);
-		if ($application === null || $this->visibleToCaller(application: $application, caller: $caller) === false) {
+		$application = $this->findVisibleApplication(appSlug: $appSlug, caller: $caller);
+		if ($application === null) {
 			return null;
 		}
 
