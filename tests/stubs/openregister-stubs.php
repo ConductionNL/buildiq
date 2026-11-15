@@ -2328,21 +2328,21 @@ namespace OCA\OpenRegister\Service {
 			}//end deleteObject()
 
 			/**
-			 * @param \OCA\OpenRegister\Service\Object\LockRequest $request  What to lock, by whom and how long.
+			 * @param \OCA\OpenRegister\Kernel\Contracts\Value\LockRequest $request  What to lock, by whom and how long.
 			 * @param bool                                          $advisory Take an advisory lock.
 			 *
 			 * @return array<string, mixed>
 			 */
-			public function lockObject(\OCA\OpenRegister\Service\Object\LockRequest $request, bool $advisory = false): array {
+			public function lockObject(\OCA\OpenRegister\Kernel\Contracts\Value\LockRequest $request, bool $advisory = false): array {
 				return [];
 			}//end lockObject()
 
 			/**
-			 * @param \OCA\OpenRegister\Service\Object\UnlockRequest $request What to unlock.
+			 * @param \OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest $request What to unlock.
 			 *
 			 * @return bool
 			 */
-			public function unlockObject(\OCA\OpenRegister\Service\Object\UnlockRequest $request): bool {
+			public function unlockObject(\OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest $request): bool {
 				return true;
 			}//end unlockObject()
 
@@ -3781,7 +3781,7 @@ namespace OCA\OpenRegister\Service\Dmn {
 	}
 }
 
-namespace OCA\OpenRegister\Service\Object {
+namespace OCA\OpenRegister\Kernel\Contracts\Value {
 
 	if (class_exists(LockRequest::class, autoload: false) === false) {
 		/**

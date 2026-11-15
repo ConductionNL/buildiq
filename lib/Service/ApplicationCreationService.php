@@ -52,8 +52,8 @@ namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Exception\WizardCreationException;
 use OCA\Buildiq\Support\ObjectRecord;
-use OCA\OpenRegister\Service\Object\LockRequest;
-use OCA\OpenRegister\Service\Object\UnlockRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
 use OCA\OpenRegister\Service\RegisterService;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;

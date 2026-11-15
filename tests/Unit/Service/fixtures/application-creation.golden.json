@@ -5,7 +5,7 @@
             {
                 "objectService.lockObject#1": {
                     "request": {
-                        "object:OCA\\OpenRegister\\Service\\Object\\LockRequest": {
+                        "object:OCA\\OpenRegister\\Kernel\\Contracts\\Value\\LockRequest": {
                             "runUuid": null,
                             "nodeId": null,
                             "identifier": "createApp:permit-tracker",
@@ -156,7 +156,7 @@
             {
                 "objectService.unlockObject#1": {
                     "request": {
-                        "object:OCA\\OpenRegister\\Service\\Object\\UnlockRequest": {
+                        "object:OCA\\OpenRegister\\Kernel\\Contracts\\Value\\UnlockRequest": {
                             "identifier": "createApp:permit-tracker",
                             "advisory": true,
                             "runUuid": null,
@@ -173,7 +173,7 @@
             {
                 "objectService.lockObject#1": {
                     "request": {
-                        "object:OCA\\OpenRegister\\Service\\Object\\LockRequest": {
+                        "object:OCA\\OpenRegister\\Kernel\\Contracts\\Value\\LockRequest": {
                             "runUuid": null,
                             "nodeId": null,
                             "identifier": "createApp:permit-tracker",
@@ -400,7 +400,7 @@
             {
                 "objectService.unlockObject#1": {
                     "request": {
-                        "object:OCA\\OpenRegister\\Service\\Object\\UnlockRequest": {
+                        "object:OCA\\OpenRegister\\Kernel\\Contracts\\Value\\UnlockRequest": {
                             "identifier": "createApp:permit-tracker",
                             "advisory": true,
                             "runUuid": null,
@@ -417,7 +417,7 @@
             {
                 "objectService.lockObject#1": {
                     "request": {
-                        "object:OCA\\OpenRegister\\Service\\Object\\LockRequest": {
+                        "object:OCA\\OpenRegister\\Kernel\\Contracts\\Value\\LockRequest": {
                             "runUuid": null,
                             "nodeId": null,
                             "identifier": "createApp:permit-tracker",
@@ -720,7 +720,7 @@
             {
                 "objectService.unlockObject#1": {
                     "request": {
-                        "object:OCA\\OpenRegister\\Service\\Object\\UnlockRequest": {
+                        "object:OCA\\OpenRegister\\Kernel\\Contracts\\Value\\UnlockRequest": {
                             "identifier": "createApp:permit-tracker",
                             "advisory": true,
                             "runUuid": null,
@@ -737,7 +737,7 @@
             {
                 "objectService.lockObject#1": {
                     "request": {
-                        "object:OCA\\OpenRegister\\Service\\Object\\LockRequest": {
+                        "object:OCA\\OpenRegister\\Kernel\\Contracts\\Value\\LockRequest": {
                             "runUuid": null,
                             "nodeId": null,
                             "identifier": "createApp:custom-app",
@@ -964,7 +964,7 @@
             {
                 "objectService.unlockObject#1": {
                     "request": {
-                        "object:OCA\\OpenRegister\\Service\\Object\\UnlockRequest": {
+                        "object:OCA\\OpenRegister\\Kernel\\Contracts\\Value\\UnlockRequest": {
                             "identifier": "createApp:custom-app",
                             "advisory": true,
                             "runUuid": null,
@@ -981,7 +981,7 @@
             {
                 "objectService.lockObject#1": {
                     "request": {
-                        "object:OCA\\OpenRegister\\Service\\Object\\LockRequest": {
+                        "object:OCA\\OpenRegister\\Kernel\\Contracts\\Value\\LockRequest": {
                             "runUuid": null,
                             "nodeId": null,
                             "identifier": "createApp:permit-tracker",
@@ -1132,7 +1132,7 @@
             {
                 "objectService.unlockObject#1": {
                     "request": {
-                        "object:OCA\\OpenRegister\\Service\\Object\\UnlockRequest": {
+                        "object:OCA\\OpenRegister\\Kernel\\Contracts\\Value\\UnlockRequest": {
                             "identifier": "createApp:permit-tracker",
                             "advisory": true,
                             "runUuid": null,
@@ -1159,7 +1159,7 @@
             {
                 "objectService.lockObject#1": {
                     "request": {
-                        "object:OCA\\OpenRegister\\Service\\Object\\LockRequest": {
+                        "object:OCA\\OpenRegister\\Kernel\\Contracts\\Value\\LockRequest": {
                             "runUuid": null,
                             "nodeId": null,
                             "identifier": "createApp:permit-tracker",
@@ -1185,7 +1185,7 @@
             {
                 "objectService.lockObject#1": {
                     "request": {
-                        "object:OCA\\OpenRegister\\Service\\Object\\LockRequest": {
+                        "object:OCA\\OpenRegister\\Kernel\\Contracts\\Value\\LockRequest": {
                             "runUuid": null,
                             "nodeId": null,
                             "identifier": "createApp:Not A Slug",
@@ -1199,7 +1199,7 @@
             {
                 "objectService.unlockObject#1": {
                     "request": {
-                        "object:OCA\\OpenRegister\\Service\\Object\\UnlockRequest": {
+                        "object:OCA\\OpenRegister\\Kernel\\Contracts\\Value\\UnlockRequest": {
                             "identifier": "createApp:Not A Slug",
                             "advisory": true,
                             "runUuid": null,
@@ -1234,7 +1234,7 @@
             {
                 "objectService.lockObject#1": {
                     "request": {
-                        "object:OCA\\OpenRegister\\Service\\Object\\LockRequest": {
+                        "object:OCA\\OpenRegister\\Kernel\\Contracts\\Value\\LockRequest": {
                             "runUuid": null,
                             "nodeId": null,
                             "identifier": "createApp:permit-tracker",
@@ -1273,7 +1273,7 @@
             {
                 "objectService.unlockObject#1": {
                     "request": {
-                        "object:OCA\\OpenRegister\\Service\\Object\\UnlockRequest": {
+                        "object:OCA\\OpenRegister\\Kernel\\Contracts\\Value\\UnlockRequest": {
                             "identifier": "createApp:permit-tracker",
                             "advisory": true,
                             "runUuid": null,
@@ -1300,7 +1300,7 @@
             {
                 "objectService.lockObject#1": {
                     "request": {
-                        "object:OCA\\OpenRegister\\Service\\Object\\LockRequest": {
+                        "object:OCA\\OpenRegister\\Kernel\\Contracts\\Value\\LockRequest": {
                             "runUuid": null,
                             "nodeId": null,
                             "identifier": "createApp:permit-tracker",
@@ -1339,7 +1339,7 @@
             {
                 "objectService.unlockObject#1": {
                     "request": {
-                        "object:OCA\\OpenRegister\\Service\\Object\\UnlockRequest": {
+                        "object:OCA\\OpenRegister\\Kernel\\Contracts\\Value\\UnlockRequest": {
                             "identifier": "createApp:permit-tracker",
                             "advisory": true,
                             "runUuid": null,
@@ -1366,7 +1366,7 @@
             {
                 "objectService.lockObject#1": {
                     "request": {
-                        "object:OCA\\OpenRegister\\Service\\Object\\LockRequest": {
+                        "object:OCA\\OpenRegister\\Kernel\\Contracts\\Value\\LockRequest": {
                             "runUuid": null,
                             "nodeId": null,
                             "identifier": "createApp:permit-tracker",
@@ -1423,7 +1423,7 @@
             {
                 "objectService.unlockObject#1": {
                     "request": {
-                        "object:OCA\\OpenRegister\\Service\\Object\\UnlockRequest": {
+                        "object:OCA\\OpenRegister\\Kernel\\Contracts\\Value\\UnlockRequest": {
                             "identifier": "createApp:permit-tracker",
                             "advisory": true,
                             "runUuid": null,
@@ -1450,7 +1450,7 @@
             {
                 "objectService.lockObject#1": {
                     "request": {
-                        "object:OCA\\OpenRegister\\Service\\Object\\LockRequest": {
+                        "object:OCA\\OpenRegister\\Kernel\\Contracts\\Value\\LockRequest": {
                             "runUuid": null,
                             "nodeId": null,
                             "identifier": "createApp:permit-tracker",
@@ -1507,7 +1507,7 @@
             {
                 "objectService.unlockObject#1": {
                     "request": {
-                        "object:OCA\\OpenRegister\\Service\\Object\\UnlockRequest": {
+                        "object:OCA\\OpenRegister\\Kernel\\Contracts\\Value\\UnlockRequest": {
                             "identifier": "createApp:permit-tracker",
                             "advisory": true,
                             "runUuid": null,
@@ -1534,7 +1534,7 @@
             {
                 "objectService.lockObject#1": {
                     "request": {
-                        "object:OCA\\OpenRegister\\Service\\Object\\LockRequest": {
+                        "object:OCA\\OpenRegister\\Kernel\\Contracts\\Value\\LockRequest": {
                             "runUuid": null,
                             "nodeId": null,
                             "identifier": "createApp:permit-tracker",
@@ -1591,7 +1591,7 @@
             {
                 "objectService.unlockObject#1": {
                     "request": {
-                        "object:OCA\\OpenRegister\\Service\\Object\\UnlockRequest": {
+                        "object:OCA\\OpenRegister\\Kernel\\Contracts\\Value\\UnlockRequest": {
                             "identifier": "createApp:permit-tracker",
                             "advisory": true,
                             "runUuid": null,
@@ -1618,7 +1618,7 @@
             {
                 "objectService.lockObject#1": {
                     "request": {
-                        "object:OCA\\OpenRegister\\Service\\Object\\LockRequest": {
+                        "object:OCA\\OpenRegister\\Kernel\\Contracts\\Value\\LockRequest": {
                             "runUuid": null,
                             "nodeId": null,
                             "identifier": "createApp:permit-tracker",
@@ -1675,7 +1675,7 @@
             {
                 "objectService.unlockObject#1": {
                     "request": {
-                        "object:OCA\\OpenRegister\\Service\\Object\\UnlockRequest": {
+                        "object:OCA\\OpenRegister\\Kernel\\Contracts\\Value\\UnlockRequest": {
                             "identifier": "createApp:permit-tracker",
                             "advisory": true,
                             "runUuid": null,
@@ -1702,7 +1702,7 @@
             {
                 "objectService.lockObject#1": {
                     "request": {
-                        "object:OCA\\OpenRegister\\Service\\Object\\LockRequest": {
+                        "object:OCA\\OpenRegister\\Kernel\\Contracts\\Value\\LockRequest": {
                             "runUuid": null,
                             "nodeId": null,
                             "identifier": "createApp:permit-tracker",
@@ -1770,7 +1770,7 @@
             {
                 "objectService.unlockObject#1": {
                     "request": {
-                        "object:OCA\\OpenRegister\\Service\\Object\\UnlockRequest": {
+                        "object:OCA\\OpenRegister\\Kernel\\Contracts\\Value\\UnlockRequest": {
                             "identifier": "createApp:permit-tracker",
                             "advisory": true,
                             "runUuid": null,
@@ -1794,7 +1794,7 @@
             {
                 "objectService.lockObject#1": {
                     "request": {
-                        "object:OCA\\OpenRegister\\Service\\Object\\LockRequest": {
+                        "object:OCA\\OpenRegister\\Kernel\\Contracts\\Value\\LockRequest": {
                             "runUuid": null,
                             "nodeId": null,
                             "identifier": "createApp:permit-tracker",
@@ -1851,7 +1851,7 @@
             {
                 "objectService.unlockObject#1": {
                     "request": {
-                        "object:OCA\\OpenRegister\\Service\\Object\\UnlockRequest": {
+                        "object:OCA\\OpenRegister\\Kernel\\Contracts\\Value\\UnlockRequest": {
                             "identifier": "createApp:permit-tracker",
                             "advisory": true,
                             "runUuid": null,
@@ -1878,7 +1878,7 @@
             {
                 "objectService.lockObject#1": {
                     "request": {
-                        "object:OCA\\OpenRegister\\Service\\Object\\LockRequest": {
+                        "object:OCA\\OpenRegister\\Kernel\\Contracts\\Value\\LockRequest": {
                             "runUuid": null,
                             "nodeId": null,
                             "identifier": "createApp:permit-tracker",
@@ -2041,7 +2041,7 @@
             {
                 "objectService.unlockObject#1": {
                     "request": {
-                        "object:OCA\\OpenRegister\\Service\\Object\\UnlockRequest": {
+                        "object:OCA\\OpenRegister\\Kernel\\Contracts\\Value\\UnlockRequest": {
                             "identifier": "createApp:permit-tracker",
                             "advisory": true,
                             "runUuid": null,
@@ -2068,7 +2068,7 @@
             {
                 "objectService.lockObject#1": {
                     "request": {
-                        "object:OCA\\OpenRegister\\Service\\Object\\LockRequest": {
+                        "object:OCA\\OpenRegister\\Kernel\\Contracts\\Value\\LockRequest": {
                             "runUuid": null,
                             "nodeId": null,
                             "identifier": "createApp:permit-tracker",
@@ -2183,7 +2183,7 @@
             {
                 "objectService.unlockObject#1": {
                     "request": {
-                        "object:OCA\\OpenRegister\\Service\\Object\\UnlockRequest": {
+                        "object:OCA\\OpenRegister\\Kernel\\Contracts\\Value\\UnlockRequest": {
                             "identifier": "createApp:permit-tracker",
                             "advisory": true,
                             "runUuid": null,
@@ -2210,7 +2210,7 @@
             {
                 "objectService.lockObject#1": {
                     "request": {
-                        "object:OCA\\OpenRegister\\Service\\Object\\LockRequest": {
+                        "object:OCA\\OpenRegister\\Kernel\\Contracts\\Value\\LockRequest": {
                             "runUuid": null,
                             "nodeId": null,
                             "identifier": "createApp:permit-tracker",
@@ -2400,7 +2400,7 @@
             {
                 "objectService.unlockObject#1": {
                     "request": {
-                        "object:OCA\\OpenRegister\\Service\\Object\\UnlockRequest": {
+                        "object:OCA\\OpenRegister\\Kernel\\Contracts\\Value\\UnlockRequest": {
                             "identifier": "createApp:permit-tracker",
                             "advisory": true,
                             "runUuid": null,
@@ -2427,7 +2427,7 @@
             {
                 "objectService.lockObject#1": {
                     "request": {
-                        "object:OCA\\OpenRegister\\Service\\Object\\LockRequest": {
+                        "object:OCA\\OpenRegister\\Kernel\\Contracts\\Value\\LockRequest": {
                             "runUuid": null,
                             "nodeId": null,
                             "identifier": "createApp:permit-tracker",
@@ -2742,7 +2742,7 @@
             {
                 "objectService.unlockObject#1": {
                     "request": {
-                        "object:OCA\\OpenRegister\\Service\\Object\\UnlockRequest": {
+                        "object:OCA\\OpenRegister\\Kernel\\Contracts\\Value\\UnlockRequest": {
                             "identifier": "createApp:permit-tracker",
                             "advisory": true,
                             "runUuid": null,
@@ -2769,7 +2769,7 @@
             {
                 "objectService.lockObject#1": {
                     "request": {
-                        "object:OCA\\OpenRegister\\Service\\Object\\LockRequest": {
+                        "object:OCA\\OpenRegister\\Kernel\\Contracts\\Value\\LockRequest": {
                             "runUuid": null,
                             "nodeId": null,
                             "identifier": "createApp:permit-tracker",
@@ -3101,7 +3101,7 @@
             {
                 "objectService.unlockObject#1": {
                     "request": {
-                        "object:OCA\\OpenRegister\\Service\\Object\\UnlockRequest": {
+                        "object:OCA\\OpenRegister\\Kernel\\Contracts\\Value\\UnlockRequest": {
                             "identifier": "createApp:permit-tracker",
                             "advisory": true,
                             "runUuid": null,
@@ -3128,7 +3128,7 @@
             {
                 "objectService.lockObject#1": {
                     "request": {
-                        "object:OCA\\OpenRegister\\Service\\Object\\LockRequest": {
+                        "object:OCA\\OpenRegister\\Kernel\\Contracts\\Value\\LockRequest": {
                             "runUuid": null,
                             "nodeId": null,
                             "identifier": "createApp:permit-tracker",
@@ -3388,7 +3388,7 @@
             {
                 "objectService.unlockObject#1": {
                     "request": {
-                        "object:OCA\\OpenRegister\\Service\\Object\\UnlockRequest": {
+                        "object:OCA\\OpenRegister\\Kernel\\Contracts\\Value\\UnlockRequest": {
                             "identifier": "createApp:permit-tracker",
                             "advisory": true,
                             "runUuid": null,
@@ -3415,7 +3415,7 @@
             {
                 "objectService.lockObject#1": {
                     "request": {
-                        "object:OCA\\OpenRegister\\Service\\Object\\LockRequest": {
+                        "object:OCA\\OpenRegister\\Kernel\\Contracts\\Value\\LockRequest": {
                             "runUuid": null,
                             "nodeId": null,
                             "identifier": "createApp:permit-tracker",
@@ -3685,7 +3685,7 @@
             {
                 "objectService.unlockObject#1": {
                     "request": {
-                        "object:OCA\\OpenRegister\\Service\\Object\\UnlockRequest": {
+                        "object:OCA\\OpenRegister\\Kernel\\Contracts\\Value\\UnlockRequest": {
                             "identifier": "createApp:permit-tracker",
                             "advisory": true,
                             "runUuid": null,
@@ -3702,7 +3702,7 @@
             {
                 "objectService.lockObject#1": {
                     "request": {
-                        "object:OCA\\OpenRegister\\Service\\Object\\LockRequest": {
+                        "object:OCA\\OpenRegister\\Kernel\\Contracts\\Value\\LockRequest": {
                             "runUuid": null,
                             "nodeId": null,
                             "identifier": "createApp:permit-tracker",
@@ -3853,7 +3853,7 @@
             {
                 "objectService.unlockObject#1": {
                     "request": {
-                        "object:OCA\\OpenRegister\\Service\\Object\\UnlockRequest": {
+                        "object:OCA\\OpenRegister\\Kernel\\Contracts\\Value\\UnlockRequest": {
                             "identifier": "createApp:permit-tracker",
                             "advisory": true,
                             "runUuid": null,
@@ -3883,7 +3883,7 @@
             {
                 "objectService.lockObject#1": {
                     "request": {
-                        "object:OCA\\OpenRegister\\Service\\Object\\LockRequest": {
+                        "object:OCA\\OpenRegister\\Kernel\\Contracts\\Value\\LockRequest": {
                             "runUuid": null,
                             "nodeId": null,
                             "identifier": "createApp:permit-tracker",
@@ -4175,7 +4175,7 @@
             {
                 "objectService.unlockObject#1": {
                     "request": {
-                        "object:OCA\\OpenRegister\\Service\\Object\\UnlockRequest": {
+                        "object:OCA\\OpenRegister\\Kernel\\Contracts\\Value\\UnlockRequest": {
                             "identifier": "createApp:permit-tracker",
                             "advisory": true,
                             "runUuid": null,
@@ -4192,7 +4192,7 @@
             {
                 "objectService.lockObject#1": {
                     "request": {
-                        "object:OCA\\OpenRegister\\Service\\Object\\LockRequest": {
+                        "object:OCA\\OpenRegister\\Kernel\\Contracts\\Value\\LockRequest": {
                             "runUuid": null,
                             "nodeId": null,
                             "identifier": "createApp:permit-tracker",
@@ -4343,7 +4343,7 @@
             {
                 "objectService.unlockObject#1": {
                     "request": {
-                        "object:OCA\\OpenRegister\\Service\\Object\\UnlockRequest": {
+                        "object:OCA\\OpenRegister\\Kernel\\Contracts\\Value\\UnlockRequest": {
                             "identifier": "createApp:permit-tracker",
                             "advisory": true,
                             "runUuid": null,
@@ -4378,7 +4378,7 @@
             {
                 "objectService.lockObject#1": {
                     "request": {
-                        "object:OCA\\OpenRegister\\Service\\Object\\LockRequest": {
+                        "object:OCA\\OpenRegister\\Kernel\\Contracts\\Value\\LockRequest": {
                             "runUuid": null,
                             "nodeId": null,
                             "identifier": "createApp:permit-tracker",
@@ -4446,7 +4446,7 @@
             {
                 "objectService.unlockObject#1": {
                     "request": {
-                        "object:OCA\\OpenRegister\\Service\\Object\\UnlockRequest": {
+                        "object:OCA\\OpenRegister\\Kernel\\Contracts\\Value\\UnlockRequest": {
                             "identifier": "createApp:permit-tracker",
                             "advisory": true,
                             "runUuid": null,
