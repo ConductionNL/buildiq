@@ -38,15 +38,28 @@
 			{{ t('buildiq', 'Add app') }}
 		</NcButton>
 
+		<NcButton
+			variant="secondary"
+			data-testid="import-app"
+			@click="showImport = true">
+			{{ t('buildiq', 'Import app') }}
+		</NcButton>
+
 		<CreateApplicationWizard
 			v-model:show="showWizard"
 			@created="onWizardCreated" />
+
+		<ImportAppDialog
+			v-model:open="showImport"
+			@imported="onImported" />
 	</div>
 </template>
 
 <script>
+import { showSuccess, showWarning } from '@nextcloud/dialogs'
 import { NcButton } from '@nextcloud/vue'
 import CreateApplicationWizard from '../dialogs/CreateApplicationWizard.vue'
+import ImportAppDialog from '../dialogs/ImportAppDialog.vue'
 
 /**
  * The route's query with `filter` set to a value, or cleared for 'all'; the
@@ -72,11 +85,13 @@ export default {
 	components: {
 		NcButton,
 		CreateApplicationWizard,
+		ImportAppDialog,
 	},
 
 	data() {
 		return {
 			showWizard: false,
+			showImport: false,
 		}
 	},
 
@@ -151,6 +166,26 @@ export default {
 		 *
 		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-4
 		 */
+		/**
+		 * After an import: report each schema's records, then open the new app.
+		 *
+		 * @param {object} app The import's answer: the app's `uuid` and, with records, `records.schemas`.
+		 * @return {void}
+		 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-records-come-along-only-when-asked-req-bqic-003
+		 */
+		onImported(app) {
+			const records = app && app.records ? app.records.schemas || [] : []
+			records.forEach((line) => {
+				if (line.imported > 0) {
+					showSuccess(n('buildiq', '%n {schema} record imported', '%n {schema} records imported', line.imported, { schema: line.schema }))
+				}
+				if (line.failed > 0) {
+					showWarning(n('buildiq', '%n {schema} record failed to import', '%n {schema} records failed to import', line.failed, { schema: line.schema }))
+				}
+			})
+			this.onWizardCreated(app ? app.uuid : undefined)
+		},
+
 		onWizardCreated(applicationUuid) {
 			this.showWizard = false
 
