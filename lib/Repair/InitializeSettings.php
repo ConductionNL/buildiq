@@ -15,13 +15,16 @@
  * @version GIT: <git-id>
  *
  * @link https://conduction.nl
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
 
 namespace OCA\Buildiq\Repair;
 
-use OCA\Buildiq\Service\SettingsService;
+use OCA\Buildiq\Kernel\Contracts\SettingsServiceInterface;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
 use Psr\Log\LoggerInterface;
@@ -33,13 +36,13 @@ class InitializeSettings implements IRepairStep {
 	/**
 	 * Constructor for InitializeSettings.
 	 *
-	 * @param SettingsService $settingsService The settings service
+	 * @param SettingsServiceInterface $settingsService The settings service
 	 * @param LoggerInterface $logger The logger interface
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private SettingsService $settingsService,
+		private SettingsServiceInterface $settingsService,
 		private LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -60,7 +63,7 @@ class InitializeSettings implements IRepairStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-25-settings-and-observability/tasks.md#task-4
+	 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-settings-and-observability/tasks.md#task-4
 	 */
 	public function run(IOutput $output): void {
 		$output->info('Initializing Buildiq configuration...');

@@ -30,6 +30,28 @@ namespace OCA\OpenRegister\Service\Form {
 	// destination validator, openregister#4563) is on the autoload path its
 	// classes answer first, and these stubs only fire on an OpenRegister that
 	// predates them. They mirror the real shapes.
+	if (class_exists(PublishedForm::class) === false) {
+		/**
+		 * Stub PublishedForm: which form, in which app, its title and its audience.
+		 */
+		final class PublishedForm {
+
+			/**
+			 * @param string      $id       The form's id in its owning app.
+			 * @param string      $app      The owning app's id.
+			 * @param string      $title    The form's title.
+			 * @param string|null $audience `public` or `authenticated`.
+			 */
+			public function __construct(
+				public readonly string $id,
+				public readonly string $app,
+				public readonly string $title,
+				public readonly ?string $audience = null,
+			) {
+			}
+		}
+	}
+
 	if (class_exists(FormDependent::class) === false) {
 		/**
 		 * Stub FormDependent: a published form an owning app announces to a schema save.
@@ -37,23 +59,49 @@ namespace OCA\OpenRegister\Service\Form {
 		final class FormDependent {
 
 			/**
-			 * @param string               $id        The form's id in its owning app.
-			 * @param string               $app       The owning app's id.
-			 * @param string               $title     The form's title.
+			 * The form's id in its owning app.
+			 *
+			 * @var string
+			 */
+			public readonly string $id;
+
+			/**
+			 * The owning app's id.
+			 *
+			 * @var string
+			 */
+			public readonly string $app;
+
+			/**
+			 * The form's title.
+			 *
+			 * @var string
+			 */
+			public readonly string $title;
+
+			/**
+			 * `public` or `authenticated`.
+			 *
+			 * @var string|null
+			 */
+			public readonly ?string $audience;
+
+			/**
+			 * @param PublishedForm        $form      Which form, in which app, its title and its audience.
 			 * @param string|null          $author    The user id to notify.
 			 * @param array<string, mixed> $mapping   The form's mapping into the schema.
 			 * @param \Closure|null        $unpublish Unpublishes the form in its owning app.
-			 * @param string|null          $audience  `public` or `authenticated`.
 			 */
 			public function __construct(
-				public readonly string $id,
-				public readonly string $app,
-				public readonly string $title,
+				PublishedForm $form,
 				public readonly ?string $author,
 				public readonly array $mapping,
 				public readonly ?\Closure $unpublish = null,
-				public readonly ?string $audience = null,
 			) {
+				$this->id       = $form->id;
+				$this->app      = $form->app;
+				$this->title    = $form->title;
+				$this->audience = $form->audience;
 			}
 		}
 	}

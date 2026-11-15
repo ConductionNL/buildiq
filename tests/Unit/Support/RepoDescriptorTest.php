@@ -21,7 +21,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\Support;
 
 use OCA\Buildiq\Support\CanonicalJson;
-use OCA\Buildiq\Support\RepoDescriptor;
+use OCA\Buildiq\Service\RepoDescriptor;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -32,7 +32,7 @@ use PHPUnit\Framework\TestCase;
  * in its own fixture), recorded on the old code.
  *
  * @covers \OCA\Buildiq\Support\CanonicalJson
- * @covers \OCA\Buildiq\Support\RepoDescriptor
+ * @covers \OCA\Buildiq\Service\RepoDescriptor
  */
 class RepoDescriptorTest extends TestCase {
 

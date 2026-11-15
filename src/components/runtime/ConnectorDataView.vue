@@ -70,13 +70,20 @@ export default {
 			type: String,
 			default: '',
 		},
+
+		// Optional search term: only rows with a mapped field containing it
+		// (case-insensitive) are shown. Set by the connector list page.
+		search: {
+			type: String,
+			default: '',
+		},
 	},
 
 	/**
 	 * Bind the runtime resolver to the connector block.
 	 *
 	 * @param {object} props - component props.
-	 * @spec openspec/changes/openconnector-api-sources/tasks.md#task-4.3
+	 * @spec openspec/changes/archive/2026-06-14-openconnector-api-sources/tasks.md#task-4.3
 	 */
 	setup(props) {
 		const binding = (props.dataSource && props.dataSource.connector) || {}
@@ -85,27 +92,50 @@ export default {
 	},
 
 	computed: {
-		/** @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006 */
+		/** @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-006 */
 		loading() {
 			return this.resolver.loading.value
 		},
 
-		/** @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006 */
+		/** @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-006 */
 		error() {
 			return this.resolver.error.value
 		},
 
-		/** @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006 */
+		/** @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-006 */
 		isStale() {
 			return this.resolver.isStale.value
 		},
 
-		/** @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006 */
-		rows() {
+		/** @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-006 */
+		allRows() {
 			return this.resolver.data.value || []
 		},
 
-		/** @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006 */
+		/**
+		 * The loaded rows, filtered on the mapped fields by `search`.
+		 *
+		 * @return {Array<object>}
+		 * @spec openspec/changes/integrations-connector-bound-pages/specs/connector-bound-page-runtime/spec.md#requirement-the-list-page-shows-every-state-of-the-fetch-req-bqcb-002
+		 */
+		rows() {
+			const term = String(this.search || '').trim().toLowerCase()
+			if (term === '') {
+				return this.allRows
+			}
+			return this.allRows.filter((row) =>
+				this.columns.some((col) => {
+					const value = row[col]
+					return (
+						value !== null
+						&& value !== undefined
+						&& String(value).toLowerCase().includes(term)
+					)
+				}),
+			)
+		},
+
+		/** @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-006 */
 		columns() {
 			const connector = (this.dataSource && this.dataSource.connector) || {}
 			return Object.keys(connector.fields || {})
@@ -117,7 +147,7 @@ export default {
 	},
 
 	methods: {
-		/** @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006 */
+		/** @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-006 */
 		retry() {
 			this.resolver.retry()
 		},

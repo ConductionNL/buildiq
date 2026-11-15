@@ -1,0 +1,90 @@
+{
+	"_comment": "OpenSpec register fragment — logic-shared-flows-and-automations task T01 (REQ-BQSF-001, REQ-BQSF-003). Two OPTIONAL properties, declared BEFORE anything writes them, because OpenRegister's `additionalProperties: false` on the flow binding silently rejects a property that is written but not declared (the ADR-037 lesson 22-flows-and-agents.json records). (1) `Application.flows[].runOn`: where a bound flow runs, each entry one of the app version's schemas with an object event, or `from-record` with a schema (design.md D1). Absent or empty means what every binding predating this fragment means: the flow is bound and buildiq wires nothing to it. (2) `Automation.shared`: whether other apps may attach this automation (design.md D3), default false. Who may set it, and which automations may be shared, is enforced by the write and compile path, not by the schema. The merge recurses into `components.schemas.Application.properties.flows.items.properties` and `components.schemas.Automation.properties` and adds only these keys.",
+	"components": {
+		"schemas": {
+			"Application": {
+				"properties": {
+					"flows": {
+						"items": {
+							"properties": {
+								"runOn": {
+									"title": "Run On",
+									"type": "array",
+									"default": [],
+									"description": "Where this bound flow runs (REQ-BQSF-001). Each entry names one of the app version's schemas with an object event, or `mode: from-record` for a run an app user starts from a record of that schema. For each entry buildiq keeps a small wrapper flow of its own that starts the bound flow; the bound flow itself is never modified.",
+									"items": {
+										"type": "object",
+										"title": "Run On Entry",
+										"required": [
+											"schema"
+										],
+										"additionalProperties": false,
+										"properties": {
+											"schema": {
+												"title": "Schema",
+												"type": "string",
+												"minLength": 1,
+												"maxLength": 128,
+												"description": "Slug of one of the app version's schemas whose records the flow runs on."
+											},
+											"event": {
+												"title": "Event",
+												"type": "string",
+												"enum": [
+													"object.created",
+													"object.updated",
+													"object.deleted"
+												],
+												"description": "The record event that starts the flow. Absent on a `from-record` entry."
+											},
+											"mode": {
+												"title": "Mode",
+												"type": "string",
+												"enum": [
+													"from-record"
+												],
+												"description": "`from-record`: an app user starts the flow from a record of the schema. Absent on an event entry."
+											}
+										},
+										"oneOf": [
+											{
+												"required": [
+													"event"
+												],
+												"not": {
+													"required": [
+														"mode"
+													]
+												}
+											},
+											{
+												"required": [
+													"mode"
+												],
+												"not": {
+													"required": [
+														"event"
+													]
+												}
+											}
+										]
+									}
+								}
+							}
+						}
+					}
+				}
+			},
+			"Automation": {
+				"properties": {
+					"shared": {
+						"title": "Shared",
+						"type": "boolean",
+						"default": false,
+						"description": "Whether other apps may attach this automation (REQ-BQSF-003). Only an `owners` member of the automation's app may set it, and an automation whose steps write a schema of its own app cannot be shared. Both are enforced on save, not here."
+					}
+				}
+			}
+		}
+	}
+}

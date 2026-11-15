@@ -77,6 +77,16 @@ function slugFor(name) {
 		.replace(/-+$/g, '')
 }
 
+/**
+ * The HTTP status of a failed request, or 0 when there was no response.
+ *
+ * @param {Error|null} e The rejected request.
+ * @return {number}
+ */
+function responseStatus(e) {
+	return e && e.response ? e.response.status : 0
+}
+
 export default {
 	name: 'CopyAppDialog',
 	components: { NcButton, NcModal, NcTextField },
@@ -167,20 +177,29 @@ export default {
 			this.submitting = true
 			this.error = ''
 			try {
-				const { data } = await axios.post(
-					generateUrl(
-						'/apps/buildiq/api/applications/'
-							+ encodeURIComponent(this.application.slug)
-							+ '/copy',
-					),
-					{ name: this.localName.trim(), slug: this.localSlug },
-				)
-				this.$emit('copied', data)
+				this.$emit('copied', await this.requestCopy())
 			} catch (e) {
-				this.error = this.messageFor(e && e.response ? e.response.status : 0)
+				this.error = this.messageFor(responseStatus(e))
 			} finally {
 				this.submitting = false
 			}
+		},
+
+		/**
+		 * POST the copy under the chosen name and slug.
+		 *
+		 * @return {Promise<object>} The new app.
+		 */
+		async requestCopy() {
+			const { data } = await axios.post(
+				generateUrl(
+					'/apps/buildiq/api/applications/'
+						+ encodeURIComponent(this.application.slug)
+						+ '/copy',
+				),
+				{ name: this.localName.trim(), slug: this.localSlug },
+			)
+			return data
 		},
 
 		/**

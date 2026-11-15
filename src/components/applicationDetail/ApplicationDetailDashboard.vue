@@ -20,7 +20,7 @@
 	singleton (driven by the header's 7d/30d/90d toggle). Insights re-fetch on
 	(versionUuid, window) change with a 200ms debounce.
 
-	@spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
+	@spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 -->
 <template>
 	<div class="ob-detail-dashboard">
@@ -57,96 +57,30 @@
 				     built-in spinner (loading + !showZeroCount) instead of a stale 0;
 				     once loaded, showZeroCount renders a real 0 where applicable.
 				     The wrapper makes the whole card a clickable OpenRegister link. -->
-				<a
-					class="ob-detail-dashboard__kpi-link"
-					:class="{
-						'ob-detail-dashboard__kpi-link--clickable': !!registerSlug,
-					}"
-					:href="registerUrl('audit')"
-					:title="
-						registerSlug ? t('buildiq', 'Open in OpenRegister') : null
-					"
-					:aria-label="
-						registerSlug
-							? t('buildiq', 'Open Active users in OpenRegister')
-							: null
-					">
-					<ArrowTopRight
-						v-if="registerSlug"
-						class="ob-detail-dashboard__kpi-go"
-						:size="16"
-						aria-hidden="true" />
-					<CnStatsBlock
-						class="ob-detail-dashboard__kpi"
-						horizontal
-						:icon="iconUsers"
-						:title="t('buildiq', 'Active users')"
-						:count="kpis.activeUsers"
-						:countLabel="t('buildiq', 'users')"
-						variant="primary"
-						:loading="!loaded"
-						:error="error"
-						:loadingLabel="t('buildiq', 'Loading…')"
-						:showZeroCount="loaded" />
-				</a>
-				<a
-					class="ob-detail-dashboard__kpi-link"
-					:class="{
-						'ob-detail-dashboard__kpi-link--clickable': !!registerSlug,
-					}"
-					:href="registerUrl('objects')"
-					:title="
-						registerSlug ? t('buildiq', 'Open in OpenRegister') : null
-					"
-					:aria-label="
-						registerSlug
-							? t('buildiq', 'Open Object count in OpenRegister')
-							: null
-					">
-					<ArrowTopRight
-						v-if="registerSlug"
-						class="ob-detail-dashboard__kpi-go"
-						:size="16"
-						aria-hidden="true" />
-					<CnStatsBlock
-						class="ob-detail-dashboard__kpi"
-						horizontal
-						:icon="iconObjects"
-						:title="t('buildiq', 'Object count')"
-						:count="kpis.objectCount"
-						:countLabel="t('buildiq', 'objects')"
-						variant="primary"
-						:loading="!loaded"
-						:error="error"
-						:loadingLabel="t('buildiq', 'Loading…')"
-						:showZeroCount="loaded" />
-				</a>
 				<!-- Storage: the KPI value is the SUM of attached-file sizes (bytes)
 				     from the audit trail, NOT a file count — so we label it Storage and
 				     format it human-readable. Two variants: the loaded one uses the
 				     #value slot (which would otherwise bypass the spinner), the loading
 				     one keeps CnStatsBlock's built-in spinner. -->
 				<a
+					v-for="card in kpiCards"
+					:key="card.id"
 					class="ob-detail-dashboard__kpi-link"
 					:class="{
 						'ob-detail-dashboard__kpi-link--clickable': !!registerSlug,
 					}"
-					:href="registerUrl('files')"
+					:href="registerUrl(card.tab)"
 					:title="
 						registerSlug ? t('buildiq', 'Open in OpenRegister') : null
 					"
-					:aria-label="
-						registerSlug
-							? t('buildiq', 'Open Storage in OpenRegister')
-							: null
-					">
+					:aria-label="registerSlug ? card.linkLabel : null">
 					<ArrowTopRight
 						v-if="registerSlug"
 						class="ob-detail-dashboard__kpi-go"
 						:size="16"
 						aria-hidden="true" />
 					<CnStatsBlock
-						v-if="loaded"
+						v-if="card.id === 'storage' && loaded"
 						class="ob-detail-dashboard__kpi"
 						horizontal
 						:icon="iconStorage"
@@ -160,7 +94,7 @@
 						</template>
 					</CnStatsBlock>
 					<CnStatsBlock
-						v-else
+						v-else-if="card.id === 'storage'"
 						class="ob-detail-dashboard__kpi"
 						horizontal
 						:icon="iconStorage"
@@ -169,34 +103,15 @@
 						variant="success"
 						loading
 						:loadingLabel="t('buildiq', 'Loading…')" />
-				</a>
-				<a
-					class="ob-detail-dashboard__kpi-link"
-					:class="{
-						'ob-detail-dashboard__kpi-link--clickable': !!registerSlug,
-					}"
-					:href="registerUrl('audit')"
-					:title="
-						registerSlug ? t('buildiq', 'Open in OpenRegister') : null
-					"
-					:aria-label="
-						registerSlug
-							? t('buildiq', 'Open Audit events in OpenRegister')
-							: null
-					">
-					<ArrowTopRight
-						v-if="registerSlug"
-						class="ob-detail-dashboard__kpi-go"
-						:size="16"
-						aria-hidden="true" />
 					<CnStatsBlock
+						v-else
 						class="ob-detail-dashboard__kpi"
 						horizontal
-						:icon="iconAudit"
-						:title="t('buildiq', 'Audit events')"
-						:count="kpis.auditEventCount"
-						:countLabel="t('buildiq', 'events')"
-						variant="warning"
+						:icon="card.icon"
+						:title="card.title"
+						:count="kpis[card.kpi]"
+						:countLabel="card.countLabel"
+						:variant="card.variant"
 						:loading="!loaded"
 						:error="error"
 						:loadingLabel="t('buildiq', 'Loading…')"
@@ -344,6 +259,18 @@ import { useRole } from '../../composables/useRole.js'
 import { applicationVersionsMixin } from '../../mixins/applicationVersions.js'
 import { buildVersionedRoute } from '../../router/helpers.js'
 
+/**
+ * The KPI link cards, in display order: the OpenRegister tab each opens, the
+ * `kpis` field it counts and its stats-block variant. Labels and icons come
+ * from the component (`kpiCards`).
+ */
+const KPI_CARDS = Object.freeze([
+	{ id: 'users', tab: 'audit', kpi: 'activeUsers', variant: 'primary' },
+	{ id: 'objects', tab: 'objects', kpi: 'objectCount', variant: 'primary' },
+	{ id: 'storage', tab: 'files', kpi: 'filesCount', variant: 'success' },
+	{ id: 'audit', tab: 'audit', kpi: 'auditEventCount', variant: 'warning' },
+])
+
 export default {
 	name: 'ApplicationDetailDashboard',
 	components: {
@@ -427,10 +354,64 @@ export default {
 
 	computed: {
 		/**
+		 * The KPI link cards with their icon and translated labels.
+		 *
+		 * @return {Array<object>}
+		 */
+		kpiCards() {
+			return KPI_CARDS.map((card) => ({
+				...card,
+				icon: this.kpiIcons[card.id],
+				title: this.kpiTitles[card.id],
+				countLabel: this.kpiCountLabels[card.id],
+				linkLabel: this.kpiLinkLabels[card.id],
+			}))
+		},
+
+		/** @return {object} the stats-block icon per KPI card. */
+		kpiIcons() {
+			return {
+				users: this.iconUsers,
+				objects: this.iconObjects,
+				storage: this.iconStorage,
+				audit: this.iconAudit,
+			}
+		},
+
+		/** @return {object} the stats-block title per KPI card. */
+		kpiTitles() {
+			return {
+				users: t('buildiq', 'Active users'),
+				objects: t('buildiq', 'Object count'),
+				storage: t('buildiq', 'Storage'),
+				audit: t('buildiq', 'Audit events'),
+			}
+		},
+
+		/** @return {object} the count label per KPI card. */
+		kpiCountLabels() {
+			return {
+				users: t('buildiq', 'users'),
+				objects: t('buildiq', 'objects'),
+				audit: t('buildiq', 'events'),
+			}
+		},
+
+		/** @return {object} the link's accessible name per KPI card. */
+		kpiLinkLabels() {
+			return {
+				users: t('buildiq', 'Open Active users in OpenRegister'),
+				objects: t('buildiq', 'Open Object count in OpenRegister'),
+				storage: t('buildiq', 'Open Storage in OpenRegister'),
+				audit: t('buildiq', 'Open Audit events in OpenRegister'),
+			}
+		},
+
+		/**
 		 * Active version UUID.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		activeVersionUuid() {
 			return this.activeVersion ? this.activeVersion.uuid : ''
@@ -440,7 +421,7 @@ export default {
 		 * Active version slug.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		activeVersionSlug() {
 			return this.activeVersion ? this.activeVersion.slug : ''
@@ -450,7 +431,7 @@ export default {
 		 * Manifest of the active version.
 		 *
 		 * @return {object}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		/**
 		 * The application UUID the health section reads.
@@ -491,7 +472,7 @@ export default {
 		 * Pages declared in the active version's manifest.
 		 *
 		 * @return {Array<object>}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		activePages() {
 			const pages = this.activeManifest.pages
@@ -502,7 +483,7 @@ export default {
 		 * Menu items declared in the active version's manifest.
 		 *
 		 * @return {Array<object>}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		activeMenu() {
 			const menu = this.activeManifest.menu
@@ -513,7 +494,7 @@ export default {
 		 * Distinct schemas referenced by the active version's pages.
 		 *
 		 * @return {Array<object>}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		activeSchemas() {
 			const seen = new Set()
@@ -554,7 +535,7 @@ export default {
 		 * Total activity events across all buckets.
 		 *
 		 * @return {number}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		totalActivityEvents() {
 			return this.activity.reduce(
@@ -567,7 +548,7 @@ export default {
 		 * SVG polyline points for the activity sparkline.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		sparklinePoints() {
 			if (!this.activity || this.activity.length === 0) return '0,30 100,30'
@@ -592,7 +573,7 @@ export default {
 		 * The "version no longer accessible" banner descriptor, or null.
 		 *
 		 * @return {object|null}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		banner() {
 			// A hybrid app IS the live installed Nextcloud app — the
@@ -619,7 +600,7 @@ export default {
 		 * Whether this is a hybrid app (mirrors an installed Nextcloud app).
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+		 * @spec openspec/specs/unified-app-model/spec.md
 		 */
 		isHybrid() {
 			return (this.application && this.application.appType) === 'hybrid'
@@ -689,7 +670,7 @@ export default {
 		 * OpenRegister's own register manage-permission).
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.2
+		 * @spec openspec/changes/archive/2026-07-07-openbuild-data-import-wizard/tasks.md#2.2
 		 */
 		canImport() {
 			const role = useRole(this.application)
@@ -702,7 +683,7 @@ export default {
 		 * Re-fetch insights when the active version changes.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		activeVersionUuid() {
 			this.scheduleInsightsFetch()
@@ -712,7 +693,7 @@ export default {
 		 * Re-fetch insights when the shared window selection changes.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		selectedWindow() {
 			this.scheduleInsightsFetch()
@@ -723,7 +704,7 @@ export default {
 	 * Clear the pending insights debounce timer on teardown.
 	 *
 	 * @return {void}
-	 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
+	 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 	 */
 	beforeUnmount() {
 		if (this.insightsDebounce) {
@@ -763,7 +744,7 @@ export default {
 		 *
 		 * @param {number} bytes Raw byte count.
 		 * @return {string} Localised size with a binary unit.
-		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+		 * @spec openspec/specs/unified-app-model/spec.md
 		 */
 		formatBytes(bytes) {
 			const n = Number(bytes) || 0
@@ -787,7 +768,7 @@ export default {
 		 *
 		 * @param {object} application The Application record.
 		 * @return {void}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		/**
 		 * Open the schema designer for this app.
@@ -848,7 +829,7 @@ export default {
 		 * never offered as import targets.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.2
+		 * @spec openspec/changes/archive/2026-07-07-openbuild-data-import-wizard/tasks.md#2.2
 		 */
 		async onImportData() {
 			if (!this.registerSlug) {
@@ -868,7 +849,7 @@ export default {
 		 * the object counts reflect the freshly imported rows.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.2
+		 * @spec openspec/changes/archive/2026-07-07-openbuild-data-import-wizard/tasks.md#2.2
 		 */
 		onImported() {
 			if (typeof this.fetchInsights === 'function') {
@@ -934,7 +915,7 @@ export default {
 		 * Switch the active version to the production version (banner action).
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		switchToProduction() {
 			const prod = this.productionVersion
@@ -957,7 +938,7 @@ export default {
 		 * Start the insights and the user delta of the picked version.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		onVersionsLoaded() {
 			this.scheduleInsightsFetch()
@@ -968,7 +949,7 @@ export default {
 		 * 200ms-debounced wrapper around the insights fetch.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		scheduleInsightsFetch() {
 			if (this.insightsDebounce) {
@@ -981,7 +962,7 @@ export default {
 		 * Fetch the insights payload for the active (app, version, window).
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-3
 		 */
 		async fetchInsights() {
 			const appUuid =

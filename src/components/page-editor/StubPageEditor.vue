@@ -64,7 +64,7 @@ export default {
 			 * caret and half-typed JSON survive their own keystrokes.
 			 *
 			 * @param {?object} val - the new raw config block for the page; nullish renders as `{}`.
-			 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+			 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 			 */
 			handler(val) {
 				try {
@@ -86,7 +86,7 @@ export default {
 		 * replaces the page's config block; the last valid parse stands.
 		 *
 		 * @param {string} value - the raw textarea contents; must parse to the whole replacement config block for this page (note that `''` is invalid JSON, so clearing the textarea shows an error rather than emptying the config).
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		onInput(value) {
 			this.jsonDraft = value

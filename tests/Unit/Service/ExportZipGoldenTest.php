@@ -13,6 +13,9 @@
  * @version GIT: <git-id>
  *
  * @link https://conduction.nl
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -22,9 +25,9 @@ namespace OCA\Buildiq\Tests\Unit\Service;
 use OCA\Buildiq\Service\DataRegisterExportBundler;
 use OCA\Buildiq\Service\ExportAppContentBundler;
 use OCA\Buildiq\Service\ExportBundlers;
-use OCA\Buildiq\Service\ExportContents;
+use OCA\Buildiq\Kernel\Values\ExportContents;
 use OCA\Buildiq\Service\ExportService;
-use OCA\Buildiq\Service\ExportTarget;
+use OCA\Buildiq\Kernel\Values\ExportTarget;
 use OCA\Buildiq\Service\FlowAndAgentExportBundler;
 use OCA\Buildiq\Service\PlaceholderResolver;
 use OCA\Buildiq\Service\ServerBundleWriter;
@@ -41,11 +44,12 @@ use ZipArchive;
  * and the log lines. Set GOLDEN_RECORD=1 to write a missing fixture.
  *
  * @covers \OCA\Buildiq\Service\ExportService
- * @uses   \OCA\Buildiq\Service\ExportContents
- * @uses   \OCA\Buildiq\Service\ExportTarget
+ * @uses   \OCA\Buildiq\Kernel\Values\ExportContents
+ * @uses   \OCA\Buildiq\Kernel\Values\ExportTarget
  * @uses   \OCA\Buildiq\Service\ExportTreeFiles
  * @uses   \OCA\Buildiq\Service\PlaceholderResolver
  * @uses   \OCA\Buildiq\Service\ExportBundlers
+ * @uses   \OCA\Buildiq\Service\ExportArchiveStore
  */
 class ExportZipGoldenTest extends TestCase {
 

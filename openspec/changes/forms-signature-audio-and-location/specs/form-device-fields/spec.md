@@ -20,6 +20,12 @@ target latitude and longitude fields for location with an optional map pick.
 - **WHEN** they add a field of type signature named `handtekening`, allow drawing only, and save
 - **THEN** the form config holds `handtekening` with type `signature` and typed signing off
 
+#### Scenario: A user records a spoken note in a form
+
+- **GIVEN** a form with an audio field `spraaknotitie` with a maximum length of 2 minutes
+- **WHEN** a user starts recording on that field, speaks for 40 seconds, stops and submits the form
+- **THEN** the record holds the 40-second recording in `spraaknotitie` and the user can play it back on the record
+
 ### Requirement: The value lands in a matching property (REQ-BQSA-002)
 
 A signature or audio field SHALL require a `file` property on the form's target

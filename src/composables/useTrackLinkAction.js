@@ -14,7 +14,7 @@
  * for the registrable UI that gates this on
  * `runtime.externalForms[].trackLinkAction.enabled`).
  *
- * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-006
+ * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-006
  */
 import defaultAxios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
@@ -45,7 +45,7 @@ function resolvePublicUrl(data) {
  *
  * @param {object} [client] - axios-like client (test injection).
  * @return {{mintTrackLink: Function}}
- * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-006
+ * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-006
  */
 export function useTrackLinkAction(client = defaultAxios) {
 	/**
@@ -59,7 +59,7 @@ export function useTrackLinkAction(client = defaultAxios) {
 	 * @param {string} [opts.label] - optional human label for the token.
 	 * @param {number} [opts.ttlSeconds] - optional token lifetime.
 	 * @return {Promise<{token: string, url: string}>}
-	 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-006
+	 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-006
 	 */
 	async function mintTrackLink(register, schema, objectId, opts = {}) {
 		if (!register || !schema || !objectId) {

@@ -3,6 +3,9 @@
 /**
  * Buildiq AutomationWriteService
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Owns the WRITE path of the automation designer — the create/update/delete
  * half of `AutomationsController` (spec REQ-AUTD-008, Conduction/buildiq#173).
  * The controller keeps the effectual actions (compile/enable/disable/dry-run/
@@ -39,9 +42,6 @@
  *     deleted definition whose artifacts are still live is the one outcome that
  *     leaves the instance acting on a rule nobody can see or edit any more.
  *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
- *
  * @category Service
  * @package  OCA\Buildiq\Service
  *
@@ -60,6 +60,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\AutomationWriteServiceInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\AppFramework\Http;
@@ -75,7 +76,7 @@ use Throwable;
  *
  * @spec openspec/specs/automation-designer/spec.md#req-autd-008
  */
-class AutomationWriteService {
+class AutomationWriteService implements AutomationWriteServiceInterface {
 	/**
 	 * Shared Buildiq register slug.
 	 */

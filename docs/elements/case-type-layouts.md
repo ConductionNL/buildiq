@@ -45,5 +45,24 @@ condition to show a widget only when a field of the case holds, for example
   or hidden, with a default. A hidden field needs a default, or it can never be
   filled.
 
+### Where the task list sits
+
+Under **Show the task list**, pick where the consuming app shows the task list
+on this case type:
+
+- **Beside the tabs**: a panel next to the case's tabs. Tick the tabs it shows
+  beside; with none ticked it shows beside every tab. **Start folded** opens it
+  folded.
+- **As a tab of its own**: the task list is one of the tabs.
+- **Not at all**: this case type shows no task list. This is a choice, not an
+  absence: the schema-wide layout's panel does not apply.
+- **As the schema-wide layout does**: nothing is declared here, so the
+  schema-wide layout decides.
+
+The panel remembers tabs by their id, so renaming a tab keeps it. Removing a tab
+the panel shows beside makes the save fail and names the tab, so a panel never
+quietly disappears. Buildiq serves the choice as `taskList.panel`; it renders
+nothing itself, the consuming app does.
+
 Save the screen. The consuming app asks buildiq for the most specific layout: the
 type value first, then the schema-wide layout, then its own.
