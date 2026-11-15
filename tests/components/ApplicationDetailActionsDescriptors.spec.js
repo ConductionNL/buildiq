@@ -46,6 +46,7 @@ const CALLS = [
 	'openWalkthroughDesigner',
 	'openAutomations',
 	'openBusinessRules',
+	'openAgents',
 	'openSaveAsTemplate',
 	'openSupportEditor',
 ]

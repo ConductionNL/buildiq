@@ -716,6 +716,12 @@ export default {
 					icon: 'ScaleBalance',
 					onSelect: () => this.openBusinessRules(),
 				},
+				{
+					id: 'app-agents',
+					label: t('buildiq', 'Agents'),
+					icon: 'RobotOutline',
+					onSelect: () => this.openAgents(),
+				},
 			]
 		},
 
@@ -1079,6 +1085,26 @@ export default {
 			this.$router
 				.push({ name: 'BusinessRules', query: { app: slug } })
 				.catch(() => {})
+		},
+
+		/**
+		 * Open the Agents page on this app (REQ-BQAG-003).
+		 *
+		 * Like automations, agents belong to an app and have no menu entry of
+		 * their own, so the app is the way in. The page preselects the app
+		 * named in `?app=`.
+		 *
+		 * @return {void}
+		 *
+		 * @spec openspec/changes/ai-agents-knowledge-and-run-trace/specs/agent-workspace/spec.md#requirement-the-app-detail-page-leads-to-its-agents-req-bqag-003
+		 */
+		openAgents() {
+			const slug = this.obApp && this.obApp.slug
+			if (!slug) {
+				return
+			}
+
+			this.$router.push({ name: 'Agents', query: { app: slug } }).catch(() => {})
 		},
 
 		/**
