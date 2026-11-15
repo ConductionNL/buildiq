@@ -13,4 +13,5 @@
 - [ ] **T07**: Playwright `tests/e2e/journey-multi-product.spec.ts`, once the run and the widget exist: author the journey, submit two products in the preview host, see one bundle and two requests (REQ-BQMP-003).
 - [x] **T08**: Strings and docs: English and Dutch for the repeating write, the targets table, the product list and the warning (`l10n/en.json`, `l10n/nl.json`), and a section in `docs/` on requesting several products in one form.
   - Done: en/nl strings for the repeating write, the targets table, the process warning and the product list settings (`l10n/en.json`, `l10n/nl.json`, built into `en.js`/`nl.js`); section "Request several products in one form" in `docs/form-library.md`.
-- [ ] **T09**: Run `openspec validate forms-multi-product-request --strict`.
+- [x] **T09**: Run `openspec validate forms-multi-product-request --strict`.
+  - Done 2026-11-15: "Change 'forms-multi-product-request' is valid".
