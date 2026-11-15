@@ -47,7 +47,7 @@ export default {
 	/**
 	 * Observed behaviour of `created` (retrofit annotation).
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-4
+	 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-frontend-foundation/tasks.md#task-4
 	 */
 	async created() {
 		await initializeStores()

@@ -42,6 +42,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Dashboard;
 
+use OCA\Buildiq\Kernel\Values\WidgetDescriptor;
 use OCP\Dashboard\IAPIWidgetV2;
 use OCP\Dashboard\IConditionalWidget;
 use OCP\Dashboard\IIconWidget;

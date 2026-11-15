@@ -3,6 +3,9 @@
 /**
  * OpenRegister test stubs.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Provides minimal class declarations for the OpenRegister types that
  * Buildiq's controllers, services, repair steps and listeners reference
  * by hard-typed constructor parameters or return types. These stubs are
@@ -30,9 +33,6 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://conduction.nl
- *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
  */
 
 declare(strict_types=1);
@@ -1656,13 +1656,15 @@ namespace OCA\OpenRegister\Db {
 		 */
 		class AuditTrailMapper {
 			/**
-			 * @param array<string, mixed> $context
+			 * Record a non-CRUD action on one object.
+			 *
+			 * @param \OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent $event The object, action and context.
 			 *
 			 * @return AuditTrail
 			 */
-			public function createAuditTrailEntry(ObjectEntity $object, string $action, array $context = []): AuditTrail {
+			public function recordObjectEvent(\OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent $event): AuditTrail {
 				return new AuditTrail();
-			}//end createAuditTrailEntry()
+			}//end recordObjectEvent()
 
 			/**
 			 * @param array<int> $schemaIds Schema IDs to aggregate over.
@@ -1862,6 +1864,13 @@ namespace OCA\OpenRegister\Db {
 			 * @var string|null
 			 */
 			protected ?string $state = null;
+
+			/**
+			 * Stub outcome column.
+			 *
+			 * @var string|null
+			 */
+			protected ?string $outcome = null;
 
 			/**
 			 * Whether the task will never move again.
@@ -2629,6 +2638,46 @@ namespace OCA\OpenRegister\Service\Task {
 		}//end class
 	}//end if
 
+	if (class_exists(ResolvedChain::class, autoload: false) === false) {
+		/**
+		 * Stub ResolvedChain: a compiled approval template and its resolved amount tier.
+		 */
+		final class ResolvedChain {
+
+			/**
+			 * @param array<string, mixed>                  $template      The compiled template.
+			 * @param array<int, array<string, mixed>>|null $tierPositions The resolved amount tier.
+			 */
+			public function __construct(
+				public readonly array $template,
+				public readonly ?array $tierPositions=null,
+			) {
+			}//end __construct()
+		}//end class
+	}//end if
+
+	if (class_exists(SequenceAnchor::class, autoload: false) === false) {
+		/**
+		 * Stub SequenceAnchor: the object an approval is about, who asked and its register.
+		 */
+		final class SequenceAnchor {
+
+			/**
+			 * @param string      $objectUuid  The object the approval is about.
+			 * @param string|null $requesterId Who asked.
+			 * @param int|null    $registerId  The anchor's register.
+			 * @param object|null $provenance  Optional flow provenance.
+			 */
+			public function __construct(
+				public readonly string $objectUuid,
+				public readonly ?string $requesterId=null,
+				public readonly ?int $registerId=null,
+				public readonly ?object $provenance=null,
+			) {
+			}//end __construct()
+		}//end class
+	}//end if
+
 	if (class_exists(TaskSequenceService::class, autoload: false) === false) {
 		/**
 		 * Stub TaskSequenceService — opens an ordered task sequence from a
@@ -2640,21 +2689,12 @@ namespace OCA\OpenRegister\Service\Task {
 			/**
 			 * Stub: provision a sequence from a compiled template.
 			 *
-			 * @param array<string, mixed>                  $template         The compiled template.
-			 * @param string                                $anchorObjectUuid The object the approval is about.
-			 * @param string|null                           $requesterId      Who attempted the transition.
-			 * @param array<int, array<string, mixed>>|null $tierPositions    The resolved amount tier.
-			 * @param int|null                              $registerId       The anchor's register.
+			 * @param ResolvedChain  $chain  The compiled template and the resolved amount tier.
+			 * @param SequenceAnchor $anchor The object the approval is about and who asked.
 			 *
 			 * @return object The provisioned sequence.
 			 */
-			public function provision(
-				array $template,
-				string $anchorObjectUuid,
-				?string $requesterId,
-				?array $tierPositions=null,
-				?int $registerId=null,
-			): object {
+			public function provision(ResolvedChain $chain, SequenceAnchor $anchor): object {
 				return new \stdClass();
 			}//end provision()
 		}//end class
@@ -2732,6 +2772,52 @@ namespace OCA\OpenRegister\Service\Credential {
 	}//end if
 }
 
+namespace OCA\OpenRegister\Service\Lifecycle {
+
+	if (class_exists(TransitionMove::class, autoload: false) === false) {
+		/**
+		 * Stub TransitionMove: the action and the states a transition moved between.
+		 */
+		final class TransitionMove {
+			public function __construct(
+				public readonly string $action,
+				public readonly string $from,
+				public readonly string $to,
+			) {
+			}//end __construct()
+		}//end class
+	}//end if
+
+	if (class_exists(TransitionActor::class, autoload: false) === false) {
+		/**
+		 * Stub TransitionActor: who made a transition.
+		 */
+		final class TransitionActor {
+			public function __construct(
+				public readonly ?string $userId = null,
+				public readonly bool $automatic = false,
+			) {
+			}//end __construct()
+		}//end class
+	}//end if
+}
+
+namespace OCA\OpenRegister\Kernel\Contracts {
+
+	if (class_exists(RegisterSchemaRef::class, autoload: false) === false) {
+		/**
+		 * Stub RegisterSchemaRef: a register and schema reference.
+		 */
+		final class RegisterSchemaRef {
+			public function __construct(
+				public readonly string|int $register,
+				public readonly string|int $schema,
+			) {
+			}//end __construct()
+		}//end class
+	}//end if
+}
+
 namespace OCA\OpenRegister\Event {
 
 	if (class_exists(ObjectTransitionedEvent::class, autoload: false) === false) {
@@ -2739,6 +2825,18 @@ namespace OCA\OpenRegister\Event {
 		 * Stub ObjectTransitionedEvent — accessors the listener calls.
 		 */
 		class ObjectTransitionedEvent extends \OCP\EventDispatcher\Event {
+			private string $action;
+
+			private string $from;
+
+			private string $to;
+
+			private ?string $userId;
+
+			private string $register;
+
+			private string $schema;
+
 			/**
 			 * Constructor mirrors the real event so `disableOriginalConstructor()`
 			 * is unnecessary but harmless when a test builds a mock against it.
@@ -2747,14 +2845,18 @@ namespace OCA\OpenRegister\Event {
 			 */
 			public function __construct(
 				private readonly \OCA\OpenRegister\Db\ObjectEntity $object,
-				private readonly string $action = '',
-				private readonly string $from = '',
-				private readonly string $to = '',
-				private readonly ?string $userId = null,
-				private readonly string $register = '',
-				private readonly string $schema = '',
+				\OCA\OpenRegister\Service\Lifecycle\TransitionMove $move,
+				\OCA\OpenRegister\Kernel\Contracts\RegisterSchemaRef $scope,
+				?\OCA\OpenRegister\Service\Lifecycle\TransitionActor $actor = null,
 			) {
 				parent::__construct();
+				$actor = $actor ?? new \OCA\OpenRegister\Service\Lifecycle\TransitionActor();
+				$this->action = $move->action;
+				$this->from = $move->from;
+				$this->to = $move->to;
+				$this->userId = $actor->userId;
+				$this->register = (string) $scope->register;
+				$this->schema = (string) $scope->schema;
 			}//end __construct()
 
 			/**
@@ -2975,15 +3077,22 @@ namespace OCA\OpenRegister\Event {
 
 	if (class_exists(DeepLinkRegistrationEvent::class, autoload: false) === false) {
 		/**
-		 * Stub DeepLinkRegistrationEvent — `register` call surface.
+		 * Stub DeepLinkRegistrationEvent — `register` call surface, with the
+		 * parameter names of the real OpenRegister method (callers pass them
+		 * by name).
 		 */
 		class DeepLinkRegistrationEvent extends \OCP\EventDispatcher\Event {
 			/**
-			 * @param array<string, mixed> $metadata
-			 *
 			 * @return void
 			 */
-			public function register(string $appId, string $route, string $label, array $metadata = []): void {
+			public function register(
+				string $appId,
+				string $registerSlug,
+				string $schemaSlug,
+				string $urlTemplate,
+				string $icon = '',
+				?string $displayName = null,
+			): void {
 			}//end register()
 		}//end class
 	}
@@ -3044,11 +3153,46 @@ namespace OCA\OpenRegister\Event {
 			/**
 			 * Constructor.
 			 *
-			 * @param \OCA\OpenRegister\Db\TaskSequence $sequence The completed sequence.
+			 * @param \OCA\OpenRegister\Db\TaskSequence $sequence        The completed sequence.
+			 * @param \OCA\OpenRegister\Db\Task         $finalTask       The task whose decision closed it.
+			 * @param string|null                       $decider         Who decided.
+			 * @param string                            $statusOnApprove The status the anchor moves to.
 			 */
-			public function __construct(private readonly \OCA\OpenRegister\Db\TaskSequence $sequence) {
+			public function __construct(
+				private readonly \OCA\OpenRegister\Db\TaskSequence $sequence,
+				private readonly \OCA\OpenRegister\Db\Task $finalTask,
+				private readonly ?string $decider,
+				private readonly string $statusOnApprove,
+			) {
 				parent::__construct();
 			}//end __construct()
+
+			/**
+			 * The task whose decision closed the sequence.
+			 *
+			 * @return \OCA\OpenRegister\Db\Task The task.
+			 */
+			public function getFinalTask(): \OCA\OpenRegister\Db\Task {
+				return $this->finalTask;
+			}//end getFinalTask()
+
+			/**
+			 * Who decided.
+			 *
+			 * @return string|null The decider.
+			 */
+			public function getDecider(): ?string {
+				return $this->decider;
+			}//end getDecider()
+
+			/**
+			 * The status the anchor moves to.
+			 *
+			 * @return string The status.
+			 */
+			public function getStatusOnApprove(): string {
+				return $this->statusOnApprove;
+			}//end getStatusOnApprove()
 
 			/**
 			 * The completed sequence.
@@ -3070,15 +3214,24 @@ namespace OCA\OpenRegister\Event {
 			/**
 			 * Constructor.
 			 *
-			 * @param \OCA\OpenRegister\Db\Task $task    The terminal task.
-			 * @param string|null                  $outcome The resolved outcome.
+			 * @param \OCA\OpenRegister\Db\Task $task      The terminal task.
+			 * @param bool                      $committed Whether the terminal write has committed.
 			 */
 			public function __construct(
 				private readonly \OCA\OpenRegister\Db\Task $task,
-				private readonly ?string $outcome=null,
+				private readonly bool $committed=true,
 			) {
 				parent::__construct();
 			}//end __construct()
+
+			/**
+			 * Whether the terminal write has committed.
+			 *
+			 * @return bool True after commit.
+			 */
+			public function isCommitted(): bool {
+				return $this->committed;
+			}//end isCommitted()
 
 			/**
 			 * The terminal task.
@@ -3090,12 +3243,12 @@ namespace OCA\OpenRegister\Event {
 			}//end getTask()
 
 			/**
-			 * The resolved outcome.
+			 * The terminal task's outcome.
 			 *
 			 * @return string|null The outcome.
 			 */
 			public function getOutcome(): ?string {
-				return $this->outcome;
+				return $this->task->getOutcome();
 			}//end getOutcome()
 		}//end class
 	}//end if
@@ -3372,14 +3525,31 @@ namespace OCA\OpenRegister\AppHost {
 			/**
 			 * No-op stub of the one-call registrar.
 			 *
-			 * @param mixed $context Registration context.
-			 * @param string $appId Leaf app id.
-			 * @param array<string, mixed> $options Options.
+			 * @param mixed        $context  Registration context.
+			 * @param LeafAdoption $adoption Leaf app id and its overrides.
 			 *
 			 * @return void
 			 */
-			public static function register($context, string $appId, array $options = []): void {
+			public static function register($context, LeafAdoption $adoption): void {
 			}
+		}
+	}
+
+	if (class_exists(LeafAdoption::class, autoload: false) === false) {
+		/**
+		 * Stub LeafAdoption: one leaf app's adoption request.
+		 */
+		final class LeafAdoption {
+
+			/**
+			 * @param string               $appId   Leaf app id.
+			 * @param array<string, mixed> $options Namespaces and feature switches.
+			 */
+			public function __construct(
+				public readonly string $appId,
+				private readonly array $options=[],
+			) {
+			}//end __construct()
 		}
 	}
 
@@ -3402,6 +3572,90 @@ namespace OCA\OpenRegister\AppHost {
 			}
 		}
 	}
+}
+
+namespace OCA\OpenRegister\AppHost\Listener {
+
+	if (class_exists(GenericDeepLinkRegistrationListener::class, autoload: false) === false) {
+		/**
+		 * Stub GenericDeepLinkRegistrationListener — mirrors the real AppHost
+		 * listener: `handle()` registers every entry of the overridable
+		 * `loadDeepLinks()` hook that names a register, schema and URL
+		 * template; the hook reads `deepLinks` from the app's src/manifest.json.
+		 *
+		 * @implements \OCP\EventDispatcher\IEventListener<\OCP\EventDispatcher\Event>
+		 */
+		class GenericDeepLinkRegistrationListener implements \OCP\EventDispatcher\IEventListener {
+			/**
+			 * @param string                   $appId      Leaf app id.
+			 * @param \OCP\App\IAppManager     $appManager App path resolution.
+			 * @param \Psr\Log\LoggerInterface $logger     PSR logger.
+			 */
+			public function __construct(
+				protected readonly string $appId,
+				protected readonly \OCP\App\IAppManager $appManager,
+				protected readonly \Psr\Log\LoggerInterface $logger,
+			) {
+			}//end __construct()
+
+			/**
+			 * @param \OCP\EventDispatcher\Event $event The dispatched event.
+			 *
+			 * @return void
+			 */
+			public function handle(\OCP\EventDispatcher\Event $event): void {
+				if ($event instanceof \OCA\OpenRegister\Event\DeepLinkRegistrationEvent === false) {
+					return;
+				}
+
+				foreach ($this->loadDeepLinks() as $link) {
+					$registerSlug = (string)($link['registerSlug'] ?? '');
+					$schemaSlug = (string)($link['schemaSlug'] ?? '');
+					$urlTemplate = (string)($link['urlTemplate'] ?? '');
+					if ($registerSlug === '' || $schemaSlug === '' || $urlTemplate === '') {
+						continue;
+					}
+
+					$displayName = ($link['displayName'] ?? null);
+					if (is_string($displayName) === false) {
+						$displayName = null;
+					}
+
+					$event->register(
+						appId: $this->appId,
+						registerSlug: $registerSlug,
+						schemaSlug: $schemaSlug,
+						urlTemplate: $urlTemplate,
+						icon: (string)($link['icon'] ?? ''),
+						displayName: $displayName
+					);
+				}//end foreach
+			}//end handle()
+
+			/**
+			 * @return array<int, array<string, mixed>>
+			 */
+			protected function loadDeepLinks(): array {
+				try {
+					$path = $this->appManager->getAppPath(appId: $this->appId) . '/src/manifest.json';
+				} catch (\Throwable $e) {
+					return [];
+				}
+
+				if (is_readable($path) === false) {
+					return [];
+				}
+
+				$manifest = json_decode((string)file_get_contents($path), associative: true);
+				$links = (is_array($manifest) === true) ? ($manifest['deepLinks'] ?? []) : [];
+				if (is_array($links) === false) {
+					return [];
+				}
+
+				return array_values(array_filter($links, 'is_array'));
+			}//end loadDeepLinks()
+		}//end class
+	}//end if
 }
 
 namespace OCA\OpenRegister\AppHost\Service {
@@ -3774,4 +4028,65 @@ namespace OCA\OpenRegister\Service\Dmn {
 			}
 		}
 	}
+}
+
+namespace OCA\OpenRegister\Db\AuditTrail {
+
+	if (class_exists(NamedActor::class, autoload: false) === false) {
+		/**
+		 * Stub NamedActor: an explicit actor for an audit row.
+		 */
+		final class NamedActor {
+
+			/**
+			 * @param string|null $id   Actor id; null uses the session user.
+			 * @param string|null $name Actor display name.
+			 */
+			public function __construct(
+				public readonly ?string $id=null,
+				public readonly ?string $name=null,
+			) {
+			}//end __construct()
+		}//end class
+	}//end if
+
+	if (class_exists(ObjectAuditEventOptions::class, autoload: false) === false) {
+		/**
+		 * Stub ObjectAuditEventOptions: the explicit actor and address of an audit row.
+		 */
+		final class ObjectAuditEventOptions {
+
+			/**
+			 * @param NamedActor  $actor     The actor.
+			 * @param string|null $ipAddress The calling address.
+			 */
+			public function __construct(
+				public readonly NamedActor $actor=new NamedActor(),
+				public readonly ?string $ipAddress=null,
+			) {
+			}//end __construct()
+		}//end class
+	}//end if
+
+	if (class_exists(ObjectAuditEvent::class, autoload: false) === false) {
+		/**
+		 * Stub ObjectAuditEvent: one non-CRUD action on one object.
+		 */
+		final class ObjectAuditEvent {
+
+			/**
+			 * @param \OCA\OpenRegister\Db\ObjectEntity $object  The object.
+			 * @param string                            $action  The action.
+			 * @param array<string, mixed>              $context Additional context.
+			 * @param ObjectAuditEventOptions           $options Actor and address.
+			 */
+			public function __construct(
+				public readonly \OCA\OpenRegister\Db\ObjectEntity $object,
+				public readonly string $action,
+				public readonly array $context=[],
+				public readonly ObjectAuditEventOptions $options=new ObjectAuditEventOptions(),
+			) {
+			}//end __construct()
+		}//end class
+	}//end if
 }

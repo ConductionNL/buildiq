@@ -3,6 +3,9 @@
 /**
  * Registration Form Target Schema Reader
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Reads the schema a registration form writes into, so the rules that judge a
  * form can be given the two things they need from it: the properties it
  * declares, and the values its channel property accepts.
@@ -43,9 +46,6 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-005, REQ-OBRF-007)
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);

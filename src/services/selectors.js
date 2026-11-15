@@ -10,7 +10,7 @@
  * syntax — keep it the minimal subset every binding shares so the same
  * resolver works for the runtime read path and the designer preview.
  *
- * @spec openspec/changes/openconnector-api-sources/tasks.md#task-4.1
+ * @spec openspec/changes/archive/2026-06-14-openconnector-api-sources/tasks.md#task-4.1
  */
 
 /**
@@ -25,24 +25,41 @@
  * @param {string} selector - dot-path like `resultaten.0.naam`. Empty /
  *   nullish selector returns the root value unchanged.
  * @return {*} - the resolved value, or `undefined` when the path breaks.
- * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006
+ * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-006
  */
 export function resolveSelector(value, selector) {
-	if (selector === undefined || selector === null || selector === '') {
+	if (isBlankPath(selector)) {
 		return value
 	}
 	const segments = String(selector).split('.')
 	let cursor = value
 	for (const segment of segments) {
-		if (cursor === null || cursor === undefined) {
-			return undefined
-		}
-		if (typeof cursor !== 'object') {
+		if (!isTraversable(cursor)) {
 			return undefined
 		}
 		cursor = cursor[segment]
 	}
 	return cursor
+}
+
+/**
+ * Whether a selector or items path is absent: undefined, null or ''.
+ *
+ * @param {unknown} path - the selector.
+ * @return {boolean}
+ */
+function isBlankPath(path) {
+	return path === undefined || path === null || path === ''
+}
+
+/**
+ * Whether a path can step into a value: a non-null object or array.
+ *
+ * @param {unknown} cursor - the value reached so far.
+ * @return {boolean}
+ */
+function isTraversable(cursor) {
+	return cursor !== null && typeof cursor === 'object'
 }
 
 /**
@@ -56,7 +73,7 @@ export function resolveSelector(value, selector) {
  * @param {Function} [onMissing] - called `(fieldName, selector)` for each
  *   selector that resolved to `undefined`.
  * @return {object} - the projected row.
- * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006
+ * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-006
  */
 export function projectFields(item, fields, onMissing) {
 	const row = {}
@@ -85,14 +102,24 @@ export function projectFields(item, fields, onMissing) {
  * @param {*} response - the raw response payload.
  * @param {string} [itemsPath] - dot-path to the list root.
  * @return {Array} - the items list (possibly empty).
- * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006
+ * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-006
  */
 export function extractItems(response, itemsPath) {
-	if (itemsPath === undefined || itemsPath === null || itemsPath === '') {
-		return response === undefined || response === null ? [] : [response]
+	if (isBlankPath(itemsPath)) {
+		return isAbsent(response) ? [] : [response]
 	}
 	const resolved = resolveSelector(response, itemsPath)
 	return Array.isArray(resolved) ? resolved : []
+}
+
+/**
+ * Whether a response is undefined or null.
+ *
+ * @param {unknown} response - the raw response payload.
+ * @return {boolean}
+ */
+function isAbsent(response) {
+	return response === undefined || response === null
 }
 
 /**
@@ -104,7 +131,7 @@ export function extractItems(response, itemsPath) {
  * @param {string} [basePath] - accumulated dot-path prefix.
  * @param {number} [maxDepth] - recursion guard (default 8).
  * @return {Array<{path: string, value: *, isLeaf: boolean, isArray: boolean}>}
- * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-003
+ * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-003
  */
 export function flattenSample(value, basePath = '', maxDepth = 8) {
 	const out = []

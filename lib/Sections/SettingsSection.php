@@ -34,7 +34,7 @@ use OCA\OpenRegister\AppHost\Settings\GenericSettingsSection;
 /**
  * AppHost-backed admin settings section for Buildiq (ADR-040).
  *
- * @spec openspec/changes/adopt-apphost/specs/apphost-adoption/spec.md — Requirement: Boilerplate Adoption
+ * @spec openspec/changes/archive/2026-06-16-adopt-apphost/specs/apphost-adoption/spec.md — Requirement: Boilerplate Adoption
  */
 class SettingsSection extends GenericSettingsSection {
 }//end class

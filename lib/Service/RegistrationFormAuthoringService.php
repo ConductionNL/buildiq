@@ -3,6 +3,9 @@
 /**
  * Registration Form Authoring Service
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * The write half of forms-per-case-type. The leaf provider refuses an edit with
  * "a registration form is edited in buildiq, where the rules that validate it
  * live"; this is where they live.
@@ -36,9 +39,6 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004, REQ-OBRF-005)
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -47,6 +47,7 @@ namespace OCA\Buildiq\Service;
 
 use InvalidArgumentException;
 use OCA\Buildiq\Exception\FormDestinationRefusedException;
+use OCA\Buildiq\Kernel\Contracts\RegistrationFormAuthoringServiceInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\IAppConfig;
 
@@ -55,13 +56,20 @@ use OCP\IAppConfig;
  *
  * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004)
  */
-class RegistrationFormAuthoringService {
+class RegistrationFormAuthoringService implements RegistrationFormAuthoringServiceInterface {
 	/**
 	 * The schema holding registration forms, equal to the leaf provider's.
 	 *
 	 * @var string
 	 */
 	private const SCHEMA = 'registrationForm';
+
+	/**
+	 * The stored rows of this service's schema.
+	 *
+	 * @var AuthoredRowReader
+	 */
+	private readonly AuthoredRowReader $rows;
 
 	/**
 	 * Constructor.
@@ -81,6 +89,7 @@ class RegistrationFormAuthoringService {
 		private readonly RegistrationFormTargetSchemaReader $targetSchema,
 		private readonly RegistrationFormTargetWarnings $destination,
 	) {
+		$this->rows = new AuthoredRowReader(objectService: $objectService, appConfig: $appConfig, schema: self::SCHEMA);
 	}//end __construct()
 
 	/**
@@ -189,28 +198,7 @@ class RegistrationFormAuthoringService {
 	 * @return array<int, array<string, mixed>> The forms.
 	 */
 	private function storedFor(string $register, string $schema): array {
-		$rows = $this->objectService
-			->setRegister($this->registerSlug())
-			->setSchema(self::SCHEMA)
-			->findAll(['filters' => ['register' => $register], 'limit' => 500]);
-
-		if (is_array($rows) === false) {
-			return [];
-		}
-
-		$mine = [];
-		foreach ($rows as $row) {
-			if (is_array($row) === false
-				|| (string)($row['register'] ?? '') !== $register
-				|| (string)($row['schema'] ?? '') !== $schema
-			) {
-				continue;
-			}
-
-			$mine[] = $row;
-		}
-
-		return $mine;
+		return $this->rows->storedFor(register: $register, schema: $schema);
 	}//end storedFor()
 
 	/**
@@ -219,14 +207,6 @@ class RegistrationFormAuthoringService {
 	 * @return string The slug.
 	 */
 	private function registerSlug(): string {
-		$slug = $this->appConfig->getValueString('buildiq', 'register', 'buildiq');
-		if ($slug === '') {
-			// A setting emptied by hand is a misconfiguration, and reading on
-			// with no register names every register at once. Buildiq's own
-			// register is where these objects live, so that is what is used.
-			return 'buildiq';
-		}
-
-		return $slug;
+		return $this->rows->registerSlug();
 	}//end registerSlug()
 }//end class

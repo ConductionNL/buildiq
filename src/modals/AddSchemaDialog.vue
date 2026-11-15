@@ -64,7 +64,7 @@ export default {
 		/**
 		 * Validate the new-schema slug, title, and semver version.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
 		 * @return {boolean} True when the form is valid.
 		 */
 		isValid() {
@@ -80,7 +80,7 @@ export default {
 		/**
 		 * Reset the local form when the dialog opens.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
 		 * @param {boolean} value Open state.
 		 * @return {void}
 		 */
@@ -100,7 +100,7 @@ export default {
 		/**
 		 * Merge partial form input into the local draft.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
 		 * @param {object} value Partial form values.
 		 * @return {void}
 		 */
@@ -111,7 +111,7 @@ export default {
 		/**
 		 * Confirm only when valid, emitting the new schema payload.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
 		 * @return {void}
 		 */
 		onConfirm() {
@@ -124,7 +124,7 @@ export default {
 		/**
 		 * Emit a cancel event.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
 		 * @return {void}
 		 */
 		onCancel() {
@@ -134,7 +134,7 @@ export default {
 		/**
 		 * Sync the modal open state and emit cancel when closed.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
 		 * @param {boolean} value Open state.
 		 * @return {void}
 		 */

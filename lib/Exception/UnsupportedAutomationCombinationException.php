@@ -26,7 +26,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/automation-designer/tasks.md#2.1
+ * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#2.1
  */
 
 declare(strict_types=1);

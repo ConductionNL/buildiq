@@ -69,6 +69,12 @@
 /** The visibleWhen op allow-list (`$defs/visibleWhen.properties.op.enum`). */
 const OPS = ['eq', 'neq', 'gt', 'gte', 'lt', 'lte']
 
+/** The typed values that read as booleans. */
+const BOOLEAN_LITERALS = new Map([
+	['true', true],
+	['false', false],
+])
+
 /**
  * Coerce a typed value string to boolean/number where it unambiguously
  * looks like one, else leave it as the literal string (Decision 3 /
@@ -78,16 +84,20 @@ const OPS = ['eq', 'neq', 'gt', 'gte', 'lt', 'lte']
  * @return {boolean|number|string}
  */
 function coerceValue(raw) {
-	if (raw === 'true') {
-		return true
+	if (BOOLEAN_LITERALS.has(raw)) {
+		return BOOLEAN_LITERALS.get(raw)
 	}
-	if (raw === 'false') {
-		return false
-	}
-	if (raw !== '' && raw.trim() !== '' && !Number.isNaN(Number(raw))) {
-		return Number(raw)
-	}
-	return raw
+	return isNumeric(raw) ? Number(raw) : raw
+}
+
+/**
+ * Whether a typed value is a number (not blank, and not NaN).
+ *
+ * @param {string} raw - the raw typed value.
+ * @return {boolean}
+ */
+function isNumeric(raw) {
+	return raw !== '' && raw.trim() !== '' && !Number.isNaN(Number(raw))
 }
 
 export default {

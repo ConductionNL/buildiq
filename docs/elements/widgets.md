@@ -51,6 +51,37 @@ custom component, which is why most dashboards need no widget code at all.
 
 `props` passes configuration through to the component.
 
+## Charts
+
+A chart is a widget of type `chart`. In the page designer, open a dashboard
+page and choose **Add chart** under Widgets. Buildiq adds the chart and places
+it on the page in one step, below the widgets already there, so you do not
+have to add a layout item for it yourself.
+
+The chart row opens the same chart form the dashboard uses in the app: pick
+the chart type, the breakdown (over time, or by category), the register and
+schema, the date field and interval or the category field, and the metric.
+
+What is saved is plain manifest:
+
+```json
+{
+  "id": "chart-1",
+  "title": "Requests by status",
+  "type": "chart",
+  "props": { "chartKind": "bar" },
+  "dataSource": {
+    "register": "crm",
+    "schema": "requests",
+    "groupBy": { "field": "status", "metric": "count" }
+  }
+}
+```
+
+The chart type lives in `props.chartKind` and the binding in `dataSource`, the
+two keys the dashboard reads. Open the page again and the form shows your
+choices.
+
 ## Fields are widgets too
 
 Inside a form, `fieldWidget` does the same job at field level: an `id`, a

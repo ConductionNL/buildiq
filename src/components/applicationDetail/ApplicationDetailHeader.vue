@@ -19,7 +19,7 @@
 	and the insights window via the shared `useInsightsWindow` singleton (driven
 	by the toggle here).
 
-	@spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+	@spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 -->
 <template>
 	<div class="ob-detail-header">
@@ -187,6 +187,66 @@ import {
 import { applicationVersionsMixin } from '../../mixins/applicationVersions.js'
 import { buildVersionedRoute } from '../../router/helpers.js'
 
+/**
+ * The permission buckets that give a role badge, highest first, with the
+ * badge each one shows.
+ */
+const ROLE_BADGES = [
+	['owners', () => t('buildiq', 'owner')],
+	['editors', () => t('buildiq', 'editor')],
+	['viewers', () => t('buildiq', 'viewer')],
+]
+
+/**
+ * Whether a permission bucket lists the user (as `user:<uid>` or bare).
+ *
+ * @param {Array<string>|string|undefined} bucket The bucket from the permissions block.
+ * @param {string} uid The user id.
+ * @return {boolean}
+ */
+function inBucket(bucket, uid) {
+	return (
+		Array.isArray(bucket)
+		&& bucket.some((p) => p === `user:${uid}` || p === uid)
+	)
+}
+
+/**
+ * The display names of a promotion's source and target versions.
+ *
+ * @param {object} source The version being promoted.
+ * @param {object|null} target The version it is promoted to.
+ * @return {{source: string, target: string}}
+ */
+function promotionNames(source, target) {
+	return {
+		source: source.name || source.slug,
+		target: (target && (target.name || target.slug)) || '',
+	}
+}
+
+/**
+ * The response body of a failed request, or `{}`.
+ *
+ * @param {Error|null} e The rejected request.
+ * @return {object}
+ */
+function responseData(e) {
+	return (e && e.response && e.response.data) || {}
+}
+
+/**
+ * Why a promotion failed: the server's message or detail, else the error
+ * message, else nothing.
+ *
+ * @param {Error|null} e The rejected request.
+ * @return {string}
+ */
+function promotionFailureReason(e) {
+	const data = responseData(e)
+	return data.message || data.detail || (e && e.message) || ''
+}
+
 export default {
 	name: 'ApplicationDetailHeader',
 	components: { NcLoadingIcon, OpenInNew, PromoteVersionDialog },
@@ -245,7 +305,7 @@ export default {
 		 * Display name of the application.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		applicationName() {
 			return (
@@ -259,7 +319,7 @@ export default {
 		 * Application description.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		applicationDescription() {
 			return (this.application && this.application.description) || ''
@@ -297,7 +357,7 @@ export default {
 		 * as 'virtual' (legacy default), matching the schema.
 		 *
 		 * @return {string} 'virtual' | 'hybrid'
-		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+		 * @spec openspec/specs/unified-app-model/spec.md
 		 */
 		appTypeKey() {
 			return (this.application && this.application.appType) === 'hybrid'
@@ -309,7 +369,7 @@ export default {
 		 * Human-readable label for the app-type badge.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+		 * @spec openspec/specs/unified-app-model/spec.md
 		 */
 		appTypeLabel() {
 			return this.appTypeKey === 'hybrid'
@@ -322,7 +382,7 @@ export default {
 		 * read-only — it mirrors the installed Nextcloud app it customizes.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+		 * @spec openspec/specs/unified-app-model/spec.md
 		 */
 		isHybrid() {
 			return this.appTypeKey === 'hybrid'
@@ -332,7 +392,7 @@ export default {
 		 * URL of the app's icon SVG.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		iconUrl() {
 			if (!this.appSlug) return ''
@@ -347,7 +407,7 @@ export default {
 		 * `/apps/{slug}`. Empty for virtual apps (not installed NC apps).
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+		 * @spec openspec/specs/unified-app-model/spec.md
 		 */
 		installedAppUrl() {
 			if (this.isHybrid === false || !this.appSlug) return ''
@@ -358,7 +418,7 @@ export default {
 		 * Active version UUID.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		activeVersionUuid() {
 			return this.activeVersion ? this.activeVersion.uuid : ''
@@ -368,7 +428,7 @@ export default {
 		 * Semver of the production version (badge in the hero).
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		productionSemver() {
 			return (this.productionVersion && this.productionVersion.semver) || ''
@@ -378,20 +438,17 @@ export default {
 		 * The caller's role on this application (owner / editor / viewer).
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		callerRole() {
 			const permissions =
 				(this.application && this.application.permissions) || {}
 			const uid = this.callerUid
 			if (!uid) return ''
-			const inBucket = (bucket) =>
-				Array.isArray(bucket)
-				&& bucket.some((p) => p === `user:${uid}` || p === uid)
-			if (inBucket(permissions.owners)) return t('buildiq', 'owner')
-			if (inBucket(permissions.editors)) return t('buildiq', 'editor')
-			if (inBucket(permissions.viewers)) return t('buildiq', 'viewer')
-			return ''
+			const badge = ROLE_BADGES.find(([bucket]) =>
+				inBucket(permissions[bucket], uid),
+			)
+			return badge ? badge[1]() : ''
 		},
 
 		/**
@@ -399,7 +456,7 @@ export default {
 		 * versions are shown to editors/owners only.
 		 *
 		 * @return {Array<object>}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		visibleVersions() {
 			const uid = this.callerUid
@@ -423,7 +480,7 @@ export default {
 		 * Re-load when the route's objectId changes.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		objectId() {
 			this.refreshApplication()
@@ -481,21 +538,32 @@ export default {
 		 *
 		 * @param {object} version The version row.
 		 * @return {void}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		selectVersion(version) {
 			if (!version || !version.slug) return
 			this.selectedVersionUuid = version.uuid
-			const route = buildVersionedRoute(
-				this.$route ? this.$route.name : 'VirtualAppDetail',
-				this.$route ? this.$route.params : {},
-				version.slug,
-			)
+			const route = this.versionRoute(version.slug)
 			if (this.$router) {
 				this.$router.replace(route).catch(() => {
 					/* ignore duplicate nav */
 				})
 			}
+		},
+
+		/**
+		 * The current route, re-aimed at a version.
+		 *
+		 * @param {string} slug The version slug.
+		 * @return {object}
+		 */
+		versionRoute(slug) {
+			const current = this.$route
+			return buildVersionedRoute(
+				current ? current.name : 'VirtualAppDetail',
+				current ? current.params : {},
+				slug,
+			)
 		},
 
 		/**
@@ -536,16 +604,44 @@ export default {
 		 */
 		async onPromoteConfirm({ strategy }) {
 			const source = this.promoteDialog.sourceVersion
-			const target = this.promoteTarget
-			const appUuid = versionUuidOf(this.application)
 			const sourceUuid = versionUuidOf(source)
-			if (this.promoting || !source || !appUuid || !sourceUuid) {
-				return
+			if (!this.canPromote(source, sourceUuid)) return
+			const names = promotionNames(source, this.promoteTarget)
+			this.startPromotion(names)
+			try {
+				await this.postPromotion(sourceUuid, strategy)
+				this.finishPromotion(names)
+			} catch (e) {
+				this.failPromotion(names, e)
+			} finally {
+				this.promoting = false
 			}
-			const names = {
-				source: source.name || source.slug,
-				target: (target && (target.name || target.slug)) || '',
-			}
+		},
+
+		/**
+		 * Whether a promotion of this source version can start: none is
+		 * running and both the app and the version have a UUID.
+		 *
+		 * @param {object|null} source The version being promoted.
+		 * @param {string} sourceUuid Its UUID.
+		 * @return {boolean}
+		 */
+		canPromote(source, sourceUuid) {
+			return (
+				!this.promoting
+				&& !!source
+				&& !!versionUuidOf(this.application)
+				&& !!sourceUuid
+			)
+		},
+
+		/**
+		 * Mark the promotion as running, show it and close the dialog.
+		 *
+		 * @param {{source: string, target: string}} names The version names.
+		 * @return {void}
+		 */
+		startPromotion(names) {
 			this.promoting = true
 			this.promoteFailed = false
 			this.promoteNotice = t(
@@ -554,35 +650,54 @@ export default {
 				names,
 			)
 			closePromoteDialog()
-			try {
-				await axios.post(
-					generateUrl(
-						'/apps/buildiq/api/applications/{appUuid}/versions/{versionUuid}/promote',
-						{ appUuid, versionUuid: sourceUuid },
-					),
-					{ strategy },
-				)
-				this.promoteNotice = t(
-					'buildiq',
-					'{source} is promoted to {target}.',
-					names,
-				)
-				markPromoted()
-			} catch (e) {
-				const data = (e && e.response && e.response.data) || {}
-				this.promoteFailed = true
-				this.promoteNotice = t(
-					'buildiq',
-					'Could not promote {source}: {reason}',
-					{
-						...names,
-						reason:
-							data.message || data.detail || (e && e.message) || '',
-					},
-				)
-			} finally {
-				this.promoting = false
-			}
+		},
+
+		/**
+		 * POST the promotion of a version with the chosen data strategy.
+		 *
+		 * @param {string} sourceUuid The UUID of the version being promoted.
+		 * @param {string} strategy The chosen data strategy.
+		 * @return {Promise<void>}
+		 */
+		async postPromotion(sourceUuid, strategy) {
+			await axios.post(
+				generateUrl(
+					'/apps/buildiq/api/applications/{appUuid}/versions/{versionUuid}/promote',
+					{ appUuid: versionUuidOf(this.application), versionUuid: sourceUuid },
+				),
+				{ strategy },
+			)
+		},
+
+		/**
+		 * Show the promotion as done and reload the versions.
+		 *
+		 * @param {{source: string, target: string}} names The version names.
+		 * @return {void}
+		 */
+		finishPromotion(names) {
+			this.promoteNotice = t(
+				'buildiq',
+				'{source} is promoted to {target}.',
+				names,
+			)
+			markPromoted()
+		},
+
+		/**
+		 * Show why the promotion failed.
+		 *
+		 * @param {{source: string, target: string}} names The version names.
+		 * @param {Error|null} e The rejected request.
+		 * @return {void}
+		 */
+		failPromotion(names, e) {
+			this.promoteFailed = true
+			this.promoteNotice = t(
+				'buildiq',
+				'Could not promote {source}: {reason}',
+				{ ...names, reason: promotionFailureReason(e) },
+			)
 		},
 	},
 }

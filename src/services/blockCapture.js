@@ -14,7 +14,7 @@
  * Everything here is pure (no I/O): the OR write happens in
  * `SaveBlockDialog.vue` via axios, mirroring `SaveAsTemplateDialog.vue`.
  *
- * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+ * @spec openspec/specs/component-blocks/spec.md
  */
 
 import {
@@ -47,7 +47,7 @@ export const BLOCK_CATEGORIES = ['display', 'layout', 'form', 'navigation', 'dat
  * @param {*} node - the fragment node (object / array / scalar).
  * @param {Set<string>} [acc] - accumulator (created fresh by default).
  * @return {Set<string>} the set of distinct schema slugs referenced.
- * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+ * @spec openspec/specs/component-blocks/spec.md
  */
 export function collectSchemaRefs(node, acc = new Set()) {
 	if (Array.isArray(node)) {
@@ -87,7 +87,7 @@ function collectEntryRefs(node, acc) {
  * @param {string} sectionId - a stable id for the section wrapper.
  * @param {Array<object>} widgets - the selected widgetEntry objects.
  * @return {{id: string, widgets: Array<object>}} the section fragment.
- * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+ * @spec openspec/specs/component-blocks/spec.md
  */
 export function buildSectionFragment(sectionId, widgets) {
 	return { id: sectionId, widgets: Array.isArray(widgets) ? widgets : [] }
@@ -109,7 +109,7 @@ export function buildSectionFragment(sectionId, widgets) {
  *   the `ComponentBlock` record plus a capture summary the dialog renders.
  * @throws {SlugCollisionError} when two referenced schemas de-namespace to
  *   the same canonical slug.
- * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+ * @spec openspec/specs/component-blocks/spec.md
  */
 export function captureBlock(fragment, appSlug, metadata) {
 	const { rewriteMap, summaryEntries } = slugRewritesOf(
@@ -158,7 +158,7 @@ function blockRecord(metadata, captured) {
  *
  * @param {*} fragment - the fragment value.
  * @return {boolean} true when the fragment is a section wrapper.
- * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+ * @spec openspec/specs/component-blocks/spec.md
  */
 export function isSectionFragment(fragment) {
 	return !!(

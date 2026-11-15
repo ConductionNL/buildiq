@@ -148,19 +148,48 @@ const TOKEN_RESOLVERS = Object.freeze({
  * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-prefilled-from-the-user-or-the-record-req-bqlv-001
  */
 export function resolveDefault(value, context = {}) {
-	if (typeof value !== 'string' || value.charAt(0) !== '@') {
+	if (!isToken(value)) {
 		return value
 	}
-	const user = context.user || null
+	const user = userOf(context)
 	if (Object.hasOwn(TOKEN_RESOLVERS, value)) {
 		return TOKEN_RESOLVERS[value](user, context)
 	}
-	if (value.startsWith('@object.')) {
-		return context.object
-			? readPath(context.object, value.slice('@object.'.length))
-			: undefined
-	}
-	return value
+	return value.startsWith('@object.') ? objectFieldValue(value, context) : value
+}
+
+/**
+ * Whether a stored default is a token (a string starting with `@`).
+ *
+ * @param {unknown} value The stored default.
+ * @return {boolean}
+ */
+function isToken(value) {
+	return typeof value === 'string' && value.charAt(0) === '@'
+}
+
+/**
+ * The signed-in user the context carries, or null.
+ *
+ * @param {{user?: object}} context What is known.
+ * @return {?object}
+ */
+function userOf(context) {
+	return context.user || null
+}
+
+/**
+ * The value of an `@object.<path>` token: that field of the record the form
+ * was opened from.
+ *
+ * @param {string} token The `@object.` token.
+ * @param {{object?: object}} context What is known.
+ * @return {unknown} The value, or undefined without a record.
+ */
+function objectFieldValue(token, context) {
+	return context.object
+		? readPath(context.object, token.slice('@object.'.length))
+		: undefined
 }
 
 /**
@@ -224,85 +253,9 @@ function pick(answers, keys) {
  * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-calculated-from-a-rule-set-req-bqlv-002
  * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-form-can-check-eligibility-as-it-is-filled-in-req-bqlv-003
  */
-export function createLiveValuesBridge({
-	fields = [],
-	eligibility = null,
-	evaluate = evaluatePreview,
-	onChange,
-	delay = LIVE_DELAY_MS,
-}) {
-	const calculated = fields.filter(
-		(field) =>
-			field
-			&& field.calculate
-			&& field.calculate.ruleSet
-			&& field.calculate.output,
-	)
-	const check = eligibility && eligibility.ruleSet ? eligibility : null
-	const lastInputs = {}
-	let lastAnswers = null
-	let pending = null
-	let timer = null
-	const values = {}
-	let unmet = ''
-
-	const run = async () => {
-		const answers = pending
-		pending = null
-		timer = null
-		const jobs = []
-
-		calculated.forEach((field) => {
-			const inputs = Array.isArray(field.calculate.inputs)
-				? field.calculate.inputs
-				: []
-			const payload = pick(answers, inputs)
-			const signature = JSON.stringify(payload)
-			if (lastInputs[field.key] === signature) {
-				return
-			}
-			lastInputs[field.key] = signature
-			jobs.push(
-				evaluate(field.calculate.ruleSet, payload)
-					.then((result) => {
-						values[field.key] = result
-							? result[field.calculate.output]
-							: undefined
-					})
-					.catch(() => {
-						delete lastInputs[field.key]
-					}),
-			)
-		})
-
-		const signature = JSON.stringify(answers)
-		if (check && signature !== lastAnswers) {
-			lastAnswers = signature
-			jobs.push(
-				evaluate(check.ruleSet, answers)
-					.then((result) => {
-						unmet = unmetExplanation(check, result)
-					})
-					.catch(() => {
-						lastAnswers = null
-						unmet = t(
-							'buildiq',
-							'The conditions could not be checked. Try again in a moment.',
-						)
-					}),
-			)
-		}
-
-		if (jobs.length === 0) {
-			return
-		}
-		await Promise.all(jobs)
-		onChange({
-			values: { ...values },
-			unmet,
-			submitBlocked: !!(check && check.blockSubmit && unmet !== ''),
-		})
-	}
+export function createLiveValuesBridge(options) {
+	const state = bridgeState(options)
+	const run = () => runEvaluation(state)
 
 	return {
 		/**
@@ -313,11 +266,11 @@ export function createLiveValuesBridge({
 		 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-calculated-from-a-rule-set-req-bqlv-002
 		 */
 		answersChanged(answers) {
-			pending = { ...(answers || {}) }
-			if (timer !== null) {
-				clearTimeout(timer)
+			state.pending = { ...(answers || {}) }
+			if (state.timer !== null) {
+				clearTimeout(state.timer)
 			}
-			timer = setTimeout(run, delay)
+			state.timer = setTimeout(run, state.delay)
 		},
 		/**
 		 * Cancel a pending evaluation, when the form closes.
@@ -326,10 +279,211 @@ export function createLiveValuesBridge({
 		 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-calculated-from-a-rule-set-req-bqlv-002
 		 */
 		dispose() {
-			if (timer !== null) {
-				clearTimeout(timer)
+			if (state.timer !== null) {
+				clearTimeout(state.timer)
 			}
-			timer = null
+			state.timer = null
 		},
 	}
+}
+
+/**
+ * The bridge's settings and its evaluation state. The state never leaves the
+ * bridge.
+ *
+ * @param {object} options The bridge options, see createLiveValuesBridge().
+ * @return {object}
+ */
+function bridgeState(options) {
+	return { ...bridgeSettings(options), ...freshEvaluationState() }
+}
+
+/**
+ * The bridge options with their defaults applied.
+ *
+ * @param {object} options The bridge options, see createLiveValuesBridge().
+ * @return {object} `calculated`, `check`, `evaluate`, `onChange` and `delay`.
+ */
+function bridgeSettings(options) {
+	return {
+		calculated: orDefault(options.fields, []).filter(isCalculatedField),
+		check: eligibilityCheck(orDefault(options.eligibility, null)),
+		evaluate: orDefault(options.evaluate, evaluatePreview),
+		onChange: options.onChange,
+		delay: orDefault(options.delay, LIVE_DELAY_MS),
+	}
+}
+
+/**
+ * The evaluation state of a bridge that has evaluated nothing yet.
+ *
+ * @return {object}
+ */
+function freshEvaluationState() {
+	return {
+		lastInputs: {},
+		lastAnswers: null,
+		pending: null,
+		timer: null,
+		settled: null,
+		values: {},
+		unmet: '',
+	}
+}
+
+/**
+ * The value, or the fallback when it is undefined (as a default parameter).
+ *
+ * @param {unknown} value The given value.
+ * @param {unknown} fallback The default.
+ * @return {unknown}
+ */
+function orDefault(value, fallback) {
+	return value === undefined ? fallback : value
+}
+
+/**
+ * Whether a field is calculated by a rule set output.
+ *
+ * @param {?object} field A form field.
+ * @return {boolean}
+ */
+function isCalculatedField(field) {
+	return Boolean(
+		field && field.calculate && field.calculate.ruleSet && field.calculate.output,
+	)
+}
+
+/**
+ * The eligibility check when it names a rule set, else null.
+ *
+ * @param {?object} eligibility The form's eligibility check.
+ * @return {?object}
+ */
+function eligibilityCheck(eligibility) {
+	return eligibility && eligibility.ruleSet ? eligibility : null
+}
+
+/**
+ * Evaluate the settled answers: every calculated field whose inputs changed,
+ * then the eligibility check when any answer changed, and report the outcome
+ * once all of them are done.
+ *
+ * @param {object} state The bridge state.
+ * @return {Promise<void>}
+ */
+async function runEvaluation(state) {
+	settle(state)
+	const jobs = evaluationJobs(state)
+	if (jobs.length === 0) {
+		return
+	}
+	await Promise.all(jobs)
+	reportOutcome(state)
+}
+
+/**
+ * Take the pending answers as the ones to evaluate now.
+ *
+ * @param {object} state The bridge state.
+ * @return {void}
+ */
+function settle(state) {
+	state.settled = state.pending
+	state.pending = null
+	state.timer = null
+}
+
+/**
+ * Start the evaluations the settled answers need: the calculated fields in
+ * order, then the eligibility check.
+ *
+ * @param {object} state The bridge state.
+ * @return {Array<Promise<void>>}
+ */
+function evaluationJobs(state) {
+	const jobs = state.calculated
+		.map((field) => calculationJob(state, field))
+		.filter(Boolean)
+	const checkJob = eligibilityJob(state)
+	if (checkJob) {
+		jobs.push(checkJob)
+	}
+	return jobs
+}
+
+/**
+ * Evaluate one calculated field when the answers it reads changed.
+ *
+ * @param {object} state The bridge state.
+ * @param {object} field The calculated field.
+ * @return {?Promise<void>} The evaluation, or null when its inputs did not change.
+ */
+function calculationJob(state, field) {
+	const payload = pick(state.settled, calculationInputs(field))
+	const signature = JSON.stringify(payload)
+	if (state.lastInputs[field.key] === signature) {
+		return null
+	}
+	state.lastInputs[field.key] = signature
+	const { evaluate } = state
+	return evaluate(field.calculate.ruleSet, payload)
+		.then((result) => {
+			state.values[field.key] = result ? result[field.calculate.output] : undefined
+		})
+		.catch(() => {
+			delete state.lastInputs[field.key]
+		})
+}
+
+/**
+ * The answers a calculated field reads.
+ *
+ * @param {object} field The calculated field.
+ * @return {Array<string>}
+ */
+function calculationInputs(field) {
+	return Array.isArray(field.calculate.inputs) ? field.calculate.inputs : []
+}
+
+/**
+ * Evaluate the eligibility check when any answer changed.
+ *
+ * @param {object} state The bridge state.
+ * @return {?Promise<void>} The evaluation, or null when there is nothing to check.
+ */
+function eligibilityJob(state) {
+	const signature = JSON.stringify(state.settled)
+	if (!state.check || signature === state.lastAnswers) {
+		return null
+	}
+	state.lastAnswers = signature
+	const { evaluate, check } = state
+	return evaluate(check.ruleSet, state.settled)
+		.then((result) => {
+			state.unmet = unmetExplanation(check, result)
+		})
+		.catch(() => {
+			state.lastAnswers = null
+			state.unmet = t(
+				'buildiq',
+				'The conditions could not be checked. Try again in a moment.',
+			)
+		})
+}
+
+/**
+ * Hand the calculated values, the unmet explanation and whether submit must
+ * wait to the bridge's `onChange`.
+ *
+ * @param {object} state The bridge state.
+ * @return {void}
+ */
+function reportOutcome(state) {
+	const { onChange, check } = state
+	onChange({
+		values: { ...state.values },
+		unmet: state.unmet,
+		submitBlocked: !!(check && check.blockSubmit && state.unmet !== ''),
+	})
 }
