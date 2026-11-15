@@ -150,6 +150,8 @@ class ExportService implements ExportServiceInterface {
 	 * @param ExportContents $contents The placeholder context, data register bindings, flows and
 	 *                                 application source the tree is filled from.
 	 * @param bool $includeServerBundle Add `deploy/`, the files that run the app on its own server.
+	 * @param string|null $mobileBundleId Add `mobile/`, the app-store wrapper project, with this bundle id
+	 *                                    (empty for the default); null leaves it out.
 	 *
 	 * @return string Absolute (local) path to the produced ZIP.
 	 *
@@ -157,11 +159,13 @@ class ExportService implements ExportServiceInterface {
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-40
 	 * @spec openspec/changes/archive/2026-10-07-data-registers-runtime/tasks.md#task-4.2
+	 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T08
 	 */
 	public function generateAppZip(
 		ExportTarget $target,
 		ExportContents $contents,
 		bool $includeServerBundle = false,
+		?string $mobileBundleId = null,
 	): string {
 		$scratchDir = $this->prepareScratchDir(jobUuid: $target->jobUuid);
 		$this->copyTemplate(source: $this->templateRoot, dest: $scratchDir);
@@ -186,6 +190,16 @@ class ExportService implements ExportServiceInterface {
 		}
 
 		$serverBundle?->pointReadme(rootDir: $scratchDir);
+
+		// The app-store wrapper project, when the maker asked for it (REQ-BQOM-006).
+		if ($mobileBundleId !== null && $this->bundlers->mobileProjectWriter !== null) {
+			$this->bundlers->mobileProjectWriter->write(
+				rootDir: $scratchDir,
+				slug: $target->applicationSlug,
+				appName: (string)($contents->context['appName'] ?? ''),
+				bundleId: $mobileBundleId
+			);
+		}
 
 		// The flows the app is composed of, and the agents that point at it.
 		// Skips are RETURNED so the job result can name them — an operator

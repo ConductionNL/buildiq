@@ -236,7 +236,8 @@ class RunExportJob extends QueuedJob {
 				flows: $flows,
 				source: $source
 			),
-			includeServerBundle: ($job['includeServerBundle'] ?? false) === true
+			includeServerBundle: ($job['includeServerBundle'] ?? false) === true,
+			mobileBundleId: $this->mobileBundleId(job: $job)
 		);
 
 		// Name what could not be resolved on the job itself. A skip that only
@@ -474,4 +475,21 @@ class RunExportJob extends QueuedJob {
 
 		return $extra;
 	}//end buildSuccessFields()
+
+	/**
+	 * The bundle id the mobile app project is written with: null when the job asks for no project, empty for the default.
+	 *
+	 * @param array<string,mixed> $job The export job.
+	 *
+	 * @return string|null
+	 *
+	 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T08
+	 */
+	private function mobileBundleId(array $job): ?string {
+		if (($job['includeMobileProject'] ?? false) !== true) {
+			return null;
+		}
+
+		return (string)($job['mobileBundleId'] ?? '');
+	}//end mobileBundleId()
 }//end class

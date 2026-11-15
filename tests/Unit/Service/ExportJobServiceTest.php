@@ -406,6 +406,63 @@ final class ExportJobServiceTest extends TestCase {
 	}//end testQueueSetsTheServerBundleOnlyForTheServerTarget()
 
 	/**
+	 * The mobile app project is recorded for any target, only on a literal true, with its trimmed
+	 * bundle id; an invalid bundle id is refused before anything is recorded (REQ-BQOM-006).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T08
+	 */
+	public function testQueueRecordsTheMobileProjectChoiceForAnyTarget(): void {
+		$container = $this->createMock(ContainerInterface::class);
+		$objectService = $this->createMock(ObjectServiceInterface::class);
+		$container->method('has')->willReturn(true);
+		$container->method('get')->willReturn($objectService);
+
+		$captured = [];
+		$objectService
+			->method('saveObject')
+			->willReturnCallback(function ($job) use (&$captured): ObjectEntity {
+				$captured[] = $job;
+				return new ObjectEntity();
+			});
+
+		$service = new ExportJobService(
+			$container,
+			$this->jobList,
+			new NullLogger(),
+			$this->jobOwnerImpersonator
+		);
+
+		$payloads = [
+			['target' => 'zip', 'applicationVersion' => '1.0.0'],
+			['target' => 'zip', 'applicationVersion' => '1.0.0', 'includeMobileProject' => true],
+			['target' => 'github', 'applicationVersion' => '1.0.0', 'includeMobileProject' => true, 'mobileBundleId' => ' nl.gemeente.toezicht '],
+			['target' => 'zip', 'applicationVersion' => '1.0.0', 'includeMobileProject' => 1, 'mobileBundleId' => 'nl.gemeente.toezicht'],
+			['target' => 'zip', 'applicationVersion' => '1.0.0', 'includeMobileProject' => false, 'mobileBundleId' => 'not valid'],
+		];
+		foreach ($payloads as $payload) {
+			$service->queue(applicationSlug: 'hello-world', payload: $payload, requestedBy: null);
+		}
+
+		self::assertSame([false, true, true, false, false], array_column($captured, 'includeMobileProject'));
+		self::assertSame(['', '', 'nl.gemeente.toezicht', '', ''], array_column($captured, 'mobileBundleId'));
+
+		try {
+			$service->queue(
+				applicationSlug: 'hello-world',
+				payload: ['target' => 'zip', 'applicationVersion' => '1.0.0', 'includeMobileProject' => true, 'mobileBundleId' => 'toezicht'],
+				requestedBy: null
+			);
+			self::fail('An invalid bundle id was queued.');
+		} catch (\InvalidArgumentException $e) {
+			self::assertSame('The bundle id "toezicht" is not valid: use parts like nl.example.app.', $e->getMessage());
+		}
+
+		self::assertCount(5, $captured);
+	}//end testQueueRecordsTheMobileProjectChoiceForAnyTarget()
+
+	/**
 	 * uuid4() emits a canonical RFC 4122 v4 UUID for every call — regression
 	 * guard for #104's malformed 5x4-char grouping bug (vsprintf silently
 	 * dropping 3 of 8 hex groups). Runs several iterations since the value
