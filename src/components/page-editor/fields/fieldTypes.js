@@ -37,6 +37,10 @@ const TYPE_META = Object.freeze({
 	date: { label: () => t('buildiq', 'Date'), icon: '📅' },
 	file: { label: () => t('buildiq', 'File'), icon: '📎' },
 	'child-records': { label: () => t('buildiq', 'Table of records'), icon: '▦' },
+	// The device fields only the field builder offers (forms-signature-audio-and-location).
+	signature: { label: () => t('buildiq', 'Signature'), icon: '✍' },
+	audio: { label: () => t('buildiq', 'Audio recording'), icon: '🎤' },
+	location: { label: () => t('buildiq', 'Location'), icon: '📍' },
 })
 
 /**
