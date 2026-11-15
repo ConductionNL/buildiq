@@ -94,4 +94,63 @@ describe('appRegister', () => {
 		await expect(fetchAppRegister('shop')).resolves.toBe('')
 		await expect(fetchAppRegister('shop', 'development')).resolves.toBe('')
 	})
+
+	it('reads the uuid off @self, uuid or id of an embedded record without a register', async () => {
+		const list = [
+			{ uuid: 'by-uuid', register: 'r-uuid' },
+			{ id: 7, register: 'r-id' },
+			{ '@self': { id: 'by-self' }, uuid: 'other', register: 'r-self' },
+		]
+		route({ '/apps/buildiq/api/applications/shop/versions': { results: list } })
+		await expect(fetchProductionRegister('shop', { uuid: 'by-uuid' })).resolves.toBe('r-uuid')
+		await expect(fetchProductionRegister('shop', { id: 7 })).resolves.toBe('r-id')
+		await expect(
+			fetchProductionRegister('shop', { '@self': { id: 'by-self' } }),
+		).resolves.toBe('r-self')
+		await expect(fetchProductionRegister('shop', {})).resolves.toBe('')
+		expect(getMock).toHaveBeenCalledTimes(3)
+	})
+
+	it('answers empty without a request when the slug is missing', async () => {
+		await expect(fetchProductionRegister('', 'ver-prod')).resolves.toBe('')
+		await expect(fetchAppRegister('')).resolves.toBe('')
+		await expect(fetchAppRegister(undefined, 'development')).resolves.toBe('')
+		expect(getMock).not.toHaveBeenCalled()
+	})
+
+	it('treats a versions answer that is neither a list nor results as empty', async () => {
+		route({ '/apps/buildiq/api/applications/shop/versions': { other: VERSIONS } })
+		await expect(fetchProductionRegister('shop', 'ver-prod')).resolves.toBe('')
+		route({ '/apps/buildiq/api/applications/shop/versions': null })
+		await expect(fetchProductionRegister('shop', 'ver-prod')).resolves.toBe('')
+		route({})
+		await expect(fetchProductionRegister('shop', 'ver-prod')).resolves.toBe('')
+	})
+
+	it('encodes the slugs and answers empty when the app is not listed', async () => {
+		route({
+			'/apps/buildiq/api/applications/a%20b/versions/v%2F1': { register: 'r-v1' },
+			'/apps/openregister/api/objects/buildiq/built-app?slug': {
+				results: [null, { slug: 'other', productionVersion: 'ver-prod' }],
+			},
+		})
+		await expect(fetchAppRegister('a b', 'v/1')).resolves.toBe('r-v1')
+		await expect(fetchAppRegister('a b')).resolves.toBe('')
+		route({ '/apps/openregister/api/objects/buildiq/built-app?slug': null })
+		await expect(fetchAppRegister('shop')).resolves.toBe('')
+		expect(getMock).toHaveBeenLastCalledWith(
+			'/apps/openregister/api/objects/buildiq/built-app',
+			{ params: { slug: 'shop', _limit: 1 } },
+		)
+	})
+
+	it('uses an embedded production version from the built-app record', async () => {
+		route({
+			'/apps/openregister/api/objects/buildiq/built-app?slug': {
+				results: [{ slug: 'shop', productionVersion: { register: 'r-embedded' } }],
+			},
+		})
+		await expect(fetchAppRegister('shop')).resolves.toBe('r-embedded')
+		expect(getMock).toHaveBeenCalledTimes(1)
+	})
 })

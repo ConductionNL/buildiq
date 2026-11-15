@@ -13,14 +13,17 @@
  * @version GIT: <git-id>
  *
  * @link https://conduction.nl
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
 
 namespace OCA\Buildiq\Tests\Unit\Service;
 
-use OCA\Buildiq\Service\GitHub\BrokerAccess;
-use OCA\Buildiq\Service\GitHub\PushTarget;
+use OCA\Buildiq\Kernel\Values\BrokerAccess;
+use OCA\Buildiq\Kernel\Values\PushTarget;
 use OCA\Buildiq\Service\GitHubPushService;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
 use PHPUnit\Framework\TestCase;
@@ -38,8 +41,9 @@ use Throwable;
  * token. Set GOLDEN_RECORD=1 to write a missing fixture.
  *
  * @covers \OCA\Buildiq\Service\GitHubPushService
- * @uses   \OCA\Buildiq\Service\GitHub\BrokerAccess
- * @uses   \OCA\Buildiq\Service\GitHub\PushTarget
+ * @uses   \OCA\Buildiq\Kernel\Values\BrokerAccess
+ * @uses   \OCA\Buildiq\Service\GitHub\CredentialBrokerClient
+ * @uses   \OCA\Buildiq\Kernel\Values\PushTarget
  * @uses   \OCA\Buildiq\Service\GitHub\TokenScrubber
  */
 class GitHubPushCredentialRoutingGoldenTest extends TestCase {

@@ -281,3 +281,152 @@ describe('createLiveValuesBridge (REQ-BQLV-002, REQ-BQLV-003)', () => {
 		expect(onChange.mock.calls.at(-1)[0].submitBlocked).toBe(true)
 	})
 })
+
+describe('createLiveValuesBridge edges', () => {
+	beforeEach(() => {
+		vi.useFakeTimers()
+	})
+
+	afterEach(() => {
+		vi.useRealTimers()
+	})
+
+	const fee = {
+		key: 'fee',
+		calculate: { ruleSet: 'event-fee', output: 'fee', inputs: ['attendees'] },
+	}
+
+	it('skips fields that are not fully calculated and reads all answers for no inputs', async () => {
+		const evaluate = vi.fn().mockResolvedValue({ total: 3 })
+		const onChange = vi.fn()
+		const bridge = createLiveValuesBridge({
+			fields: [
+				null,
+				{ key: 'a', calculate: { ruleSet: 'r' } },
+				{ key: 'b', calculate: { output: 'o' } },
+				{ key: 'total', calculate: { ruleSet: 'sum', output: 'total', inputs: 'x' } },
+			],
+			evaluate,
+			onChange,
+			delay: 10,
+		})
+		bridge.answersChanged({ x: 1 })
+		await vi.advanceTimersByTimeAsync(10)
+		expect(evaluate).toHaveBeenCalledTimes(1)
+		expect(evaluate).toHaveBeenCalledWith('sum', {})
+		expect(onChange).toHaveBeenLastCalledWith({
+			values: { total: 3 },
+			unmet: '',
+			submitBlocked: false,
+		})
+	})
+
+	it('retries a calculation that failed and clears a value with no result', async () => {
+		const evaluate = vi
+			.fn()
+			.mockRejectedValueOnce(new Error('500'))
+			.mockResolvedValueOnce(null)
+		const onChange = vi.fn()
+		const bridge = createLiveValuesBridge({ fields: [fee], evaluate, onChange })
+		bridge.answersChanged({ attendees: 2 })
+		await vi.advanceTimersByTimeAsync(400)
+		expect(onChange).toHaveBeenLastCalledWith({
+			values: {},
+			unmet: '',
+			submitBlocked: false,
+		})
+		bridge.answersChanged({ attendees: 2 })
+		await vi.advanceTimersByTimeAsync(400)
+		expect(evaluate).toHaveBeenCalledTimes(2)
+		expect(onChange.mock.calls.at(-1)[0].values).toEqual({ fee: undefined })
+		expect(Object.hasOwn(onChange.mock.calls.at(-1)[0].values, 'fee')).toBe(true)
+	})
+
+	it('stays silent when nothing changed, and when there is nothing to evaluate', async () => {
+		const evaluate = vi.fn().mockResolvedValue({ fee: 1 })
+		const onChange = vi.fn()
+		const bridge = createLiveValuesBridge({ fields: [fee], evaluate, onChange })
+		bridge.answersChanged({ attendees: 2 })
+		await vi.advanceTimersByTimeAsync(400)
+		bridge.answersChanged({ attendees: 2 })
+		await vi.advanceTimersByTimeAsync(400)
+		expect(onChange).toHaveBeenCalledTimes(1)
+		const none = createLiveValuesBridge({
+			eligibility: { passWhen: {} },
+			evaluate,
+			onChange,
+		})
+		none.answersChanged(null)
+		await vi.advanceTimersByTimeAsync(400)
+		expect(onChange).toHaveBeenCalledTimes(1)
+	})
+
+	it('re-checks after a failed check, does not block without blockSubmit, and passes the explanation', async () => {
+		const evaluate = vi
+			.fn()
+			.mockRejectedValueOnce(new Error('429'))
+			.mockResolvedValueOnce({ decision: 'approved' })
+			.mockResolvedValueOnce({ decision: 'deny' })
+		const onChange = vi.fn()
+		const bridge = createLiveValuesBridge({
+			eligibility: {
+				ruleSet: 'loan',
+				passWhen: { output: 'decision', equals: 'approved' },
+			},
+			evaluate,
+			onChange,
+		})
+		bridge.answersChanged({ income: 1 })
+		await vi.advanceTimersByTimeAsync(400)
+		expect(onChange.mock.calls.at(-1)[0]).toEqual({
+			values: {},
+			unmet: 'The conditions could not be checked. Try again in a moment.',
+			submitBlocked: false,
+		})
+		bridge.answersChanged({ income: 1 })
+		await vi.advanceTimersByTimeAsync(400)
+		expect(onChange.mock.calls.at(-1)[0].unmet).toBe('')
+		bridge.answersChanged({ income: 2 })
+		await vi.advanceTimersByTimeAsync(400)
+		expect(onChange.mock.calls.at(-1)[0].unmet).toBe(
+			'You do not meet the conditions of this form yet.',
+		)
+		expect(evaluate).toHaveBeenCalledTimes(3)
+	})
+
+	it('evaluates the calculations before the check, and dispose cancels a pending run', async () => {
+		const evaluate = vi.fn().mockResolvedValue({ fee: 5, decision: 'approved' })
+		const onChange = vi.fn()
+		const bridge = createLiveValuesBridge({
+			fields: [fee],
+			eligibility: {
+				ruleSet: 'loan',
+				passWhen: { output: 'decision', equals: 'approved' },
+				blockSubmit: true,
+			},
+			evaluate,
+			onChange,
+		})
+		bridge.answersChanged({ attendees: 3 })
+		await vi.advanceTimersByTimeAsync(400)
+		expect(evaluate.mock.calls.map((c) => c[0])).toEqual(['event-fee', 'loan'])
+		expect(onChange).toHaveBeenLastCalledWith({
+			values: { fee: 5 },
+			unmet: '',
+			submitBlocked: false,
+		})
+		bridge.answersChanged({ attendees: 4 })
+		bridge.dispose()
+		bridge.dispose()
+		await vi.advanceTimersByTimeAsync(400)
+		expect(evaluate).toHaveBeenCalledTimes(2)
+		const onChangeThis = vi.fn(function () {
+			return this
+		})
+		const bare = createLiveValuesBridge({ fields: [fee], evaluate, onChange: onChangeThis })
+		bare.answersChanged({ attendees: 9 })
+		await vi.advanceTimersByTimeAsync(400)
+		expect(onChangeThis.mock.results[0].value).toBeUndefined()
+		expect(evaluate.mock.contexts.at(-1)).toBeUndefined()
+	})
+})

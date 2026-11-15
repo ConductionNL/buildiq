@@ -32,14 +32,14 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+ * @spec openspec/specs/unified-app-model/spec.md
  */
 
 declare(strict_types=1);
 
 namespace OCA\Buildiq\Repair;
 
-use OCA\Buildiq\Service\AppOverrideService;
+use OCA\Buildiq\Kernel\Contracts\AppOverrideServiceInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -52,7 +52,7 @@ use Throwable;
 /**
  * Idempotent migration of AppOverride rows into hybrid Applications.
  *
- * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+ * @spec openspec/specs/unified-app-model/spec.md
  */
 class MigrateAppOverridesToHybrid implements IRepairStep {
 	/**
@@ -67,7 +67,7 @@ class MigrateAppOverridesToHybrid implements IRepairStep {
 	 * @param ObjectServiceInterface $objectService OpenRegister object service.
 	 * @param RegisterMapper $registerMapper Resolves the buildiq register id.
 	 * @param SchemaMapper $schemaMapper Resolves + drops the app-override schema.
-	 * @param AppOverrideService $appOverrideService Unified hybrid-app store (create/update path).
+	 * @param AppOverrideServiceInterface $appOverrideService Unified hybrid-app store (create/update path).
 	 *
 	 * @return void
 	 */
@@ -76,7 +76,7 @@ class MigrateAppOverridesToHybrid implements IRepairStep {
 		private readonly ObjectServiceInterface $objectService,
 		private readonly RegisterMapper $registerMapper,
 		private readonly SchemaMapper $schemaMapper,
-		private readonly AppOverrideService $appOverrideService,
+		private readonly AppOverrideServiceInterface $appOverrideService,
 	) {
 	}//end __construct()
 
@@ -85,7 +85,7 @@ class MigrateAppOverridesToHybrid implements IRepairStep {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+	 * @spec openspec/specs/unified-app-model/spec.md
 	 */
 	public function getName(): string {
 		return 'Migrate Buildiq AppOverride records to hybrid Applications';
@@ -98,7 +98,7 @@ class MigrateAppOverridesToHybrid implements IRepairStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+	 * @spec openspec/specs/unified-app-model/spec.md
 	 */
 	public function run(IOutput $output): void {
 		$schemaId = $this->resolveLegacySchemaId();
@@ -169,7 +169,7 @@ class MigrateAppOverridesToHybrid implements IRepairStep {
 	private function enumerateLegacyOverrides(int $schemaId): array {
 		try {
 			$registerId = $this->registerMapper->find(
-				AppOverrideService::REGISTER_SLUG,
+				AppOverrideServiceInterface::REGISTER_SLUG,
 				_multitenancy: false
 			)->getId();
 		} catch (Throwable $e) {

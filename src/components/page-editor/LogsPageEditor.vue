@@ -44,43 +44,12 @@
 			</div>
 
 			<div v-if="sourceShape === 'register'" class="logs-page-editor__group">
-				<label>
-					{{ t('buildiq', 'Register') }}
-					<select
-						:value="config.register || ''"
-						:aria-invalid="isInvalid('register')"
-						@change="update('register', $event.target.value)">
-						<option value="">
-							{{ t('buildiq', '— select register —') }}
-						</option>
-						<option
-							v-for="r in registers"
-							:key="r.slug || r.id"
-							:value="r.slug">
-							{{ r.title || r.slug }}
-						</option>
-					</select>
-					<InlineFieldMark :error="markFor('register')" />
-				</label>
-				<label>
-					{{ t('buildiq', 'Schema') }}
-					<select
-						:value="config.schema || ''"
-						:disabled="!config.register"
-						:aria-invalid="isInvalid('schema')"
-						@change="update('schema', $event.target.value)">
-						<option value="">
-							{{ t('buildiq', '— select schema —') }}
-						</option>
-						<option
-							v-for="s in schemas"
-							:key="s.slug || s.id"
-							:value="s.slug">
-							{{ s.title || s.slug }}
-						</option>
-					</select>
-					<InlineFieldMark :error="markFor('schema')" />
-				</label>
+				<RegisterSchemaFields
+					:config="config"
+					:registers="registers"
+					:schemas="schemas"
+					@register="update('register', $event)"
+					@schema="update('schema', $event)" />
 			</div>
 			<div v-else class="logs-page-editor__group">
 				<label>
@@ -123,6 +92,7 @@
 <script>
 import ColumnBuilder from './fields/ColumnBuilder.vue'
 import InlineFieldMark from './fields/InlineFieldMark.vue'
+import RegisterSchemaFields from './fields/RegisterSchemaFields.vue'
 import { useEditorRegisterPicker } from '../../composables/useEditorRegisterPicker.js'
 import {
 	pageEditorBaseMixin,
@@ -132,7 +102,7 @@ import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 
 export default {
 	name: 'LogsPageEditor',
-	components: { ColumnBuilder, InlineFieldMark },
+	components: { ColumnBuilder, InlineFieldMark, RegisterSchemaFields },
 	mixins: [
 		pageEditorBaseMixin,
 		pageEditorValidationMixin,
@@ -152,7 +122,7 @@ export default {
 		/**
 		 * Observed behaviour of `validatedConfigKeys` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		validatedConfigKeys() {
 			return ['register', 'schema', 'source', 'columns']
@@ -161,7 +131,7 @@ export default {
 		/**
 		 * Observed behaviour of `sourceShape` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		sourceShape() {
 			// `source` wins only when there is no register binding so a
@@ -182,7 +152,7 @@ export default {
 		 *
 		 * @param {string} key - the config key being written: `register`, `schema`, `source` or `columns`.
 		 * @param {string|Array<object>} value - the new value: a slug from a `<select>`, the free-text source URL/registry key, or the rebuilt column list from ColumnBuilder. An empty string, `null` or an empty array deletes the key instead of storing it.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		update(key, value) {
 			const next = { ...this.config }
@@ -214,7 +184,7 @@ export default {
 		 * never satisfies both halves of the XOR at once.
 		 *
 		 * @param {'register'|'source'} shape - the radio's value: `source` drops `register` + `schema`, `register` drops `source`.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		setSourceShape(shape) {
 			const next = { ...this.config }

@@ -84,7 +84,7 @@
 			<section class="page-designer__centre">
 				<div v-if="selectedPage" class="page-designer__sub-editor">
 					<component
-						:is="subEditorFor(selectedPage.type)"
+						:is="subEditorFor(selectedPage.type, selectedPage)"
 						:config="selectedPage.config || {}"
 						:pageType="selectedPage.type"
 						:appSlug="slug"
@@ -233,6 +233,7 @@ import DebugLogPanel from '../components/page-editor/DebugLogPanel.vue'
 import DetailPageEditor from '../components/page-editor/DetailPageEditor.vue'
 import FilesPageEditor from '../components/page-editor/FilesPageEditor.vue'
 import FormPageEditor from '../components/page-editor/FormPageEditor.vue'
+import GridPageEditor from '../components/page-editor/GridPageEditor.vue'
 import IndexPageEditor from '../components/page-editor/IndexPageEditor.vue'
 import LogsPageEditor from '../components/page-editor/LogsPageEditor.vue'
 import MapPageEditor from '../components/page-editor/MapPageEditor.vue'
@@ -257,6 +258,7 @@ import { versionRegister } from '../services/appRegister.js'
 import { findingsForPage } from '../services/formDestinationCheck.js'
 import { resolveValidationMessage as resolveMessage } from '../services/manifestValidation/connectorErrorMessages.js'
 import { isEditableTarget } from '../utils/isEditableTarget.js'
+import { mirrorVersionLoad } from '../utils/mirrorVersionLoad.js'
 
 // Width the preview lays out at before scaling. The shell's nav is a rigid
 // 300px and NcAppContent's list pane another 300px, so narrower breaks it.
@@ -304,6 +306,7 @@ export default {
 		ChatPageEditor,
 		FilesPageEditor,
 		CustomPageEditor,
+		GridPageEditor,
 		MapPageEditor,
 		RoadmapPageEditor,
 		SearchPageEditor,
@@ -314,7 +317,7 @@ export default {
 	/**
 	 * Observed behaviour of `provide` (retrofit annotation).
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
+	 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
 	 */
 	provide() {
 		// Sub-editors `inject` this to (a) register their config keys with
@@ -373,7 +376,7 @@ export default {
 	 *   history with the session baseline before the first render; `slug` and
 	 *   `sessionKey` are consumed by the Options API half of the component.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
+	 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
 	 */
 	setup(props) {
 		const validator = useManifestValidator()
@@ -442,7 +445,7 @@ export default {
 		/**
 		 * Observed behaviour of `pages` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
 		 */
 		pages() {
 			return Array.isArray(this.manifest && this.manifest.pages)
@@ -453,7 +456,7 @@ export default {
 		/**
 		 * Observed behaviour of `menu` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
 		 */
 		menu() {
 			return Array.isArray(this.manifest && this.manifest.menu)
@@ -467,7 +470,7 @@ export default {
 		 * needing the whole manifest.
 		 *
 		 * @return {Array<object>}
-		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-001
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-001
 		 */
 		externalForms() {
 			return Array.isArray(
@@ -482,7 +485,7 @@ export default {
 		/**
 		 * Observed behaviour of `selectedPage` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
 		 */
 		selectedPage() {
 			if (this.selectedIndex < 0 || this.selectedIndex >= this.pages.length) {
@@ -504,7 +507,7 @@ export default {
 		/**
 		 * Observed behaviour of `validatorErrors` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
 		 */
 		validatorErrors() {
 			return this.validator.errors.value || []
@@ -513,7 +516,7 @@ export default {
 		/**
 		 * Observed behaviour of `canSaveAndPreview` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
 		 */
 		canSaveAndPreview() {
 			return !!this.slug && this.validatorErrors.length === 0
@@ -522,7 +525,7 @@ export default {
 		/**
 		 * Observed behaviour of `canUndo` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
 		 */
 		canUndo() {
 			return !!(this.history && this.history.canUndo.value)
@@ -531,7 +534,7 @@ export default {
 		/**
 		 * Observed behaviour of `canRedo` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
 		 */
 		canRedo() {
 			return !!(this.history && this.history.canRedo.value)
@@ -631,7 +634,7 @@ export default {
 			 *   the host's freshly-loaded manifest or one this view just emitted back
 			 *   through `update:manifest`. Validated and pushed onto the history.
 			 *
-			 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
+			 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
 			 */
 			handler(m) {
 				this.validator.validate(m)
@@ -679,7 +682,7 @@ export default {
 	 * useApplicationVersion.js, which is shared by all four builder views and
 	 * never returns the parent Application record.
 	 *
-	 * @spec openspec/changes/data-registers-runtime/tasks.md#task-2.2
+	 * @spec openspec/changes/archive/2026-10-07-data-registers-runtime/tasks.md#task-2.2
 	 */
 	created() {
 		if (this.slug) {
@@ -691,7 +694,7 @@ export default {
 	/**
 	 * Observed behaviour of `mounted` (retrofit annotation).
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
+	 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
 	 */
 	mounted() {
 		document.addEventListener('keydown', this.onKeydown)
@@ -711,23 +714,7 @@ export default {
 			)
 			this.applicationVersion = applicationVersion.value
 			this.versionLoading = loading.value
-			const unwatch = this.$watch(
-				() => applicationVersion.value,
-				(v) => {
-					this.applicationVersion = v
-				},
-			)
-			const unwatchLoading = this.$watch(
-				() => loading.value,
-				(v) => {
-					this.versionLoading = v
-					if (!v) {
-						unwatch()
-						unwatchLoading()
-						this.versionError = error.value
-					}
-				},
-			)
+			mirrorVersionLoad(this, { applicationVersion, loading, error })
 		}
 	},
 
@@ -761,7 +748,7 @@ export default {
 		 *
 		 * @param {string} err - the error as the validator returned it.
 		 * @return {string} The message to show.
-		 * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-001
+		 * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-001
 		 */
 		resolveValidationMessage(err) {
 			return resolveMessage(err)
@@ -814,7 +801,7 @@ export default {
 		 * dangling-reference non-goal.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/data-registers-runtime/tasks.md#task-2.2
+		 * @spec openspec/changes/archive/2026-10-07-data-registers-runtime/tasks.md#task-2.2
 		 */
 		async fetchApplicationDataRegisters() {
 			try {
@@ -847,7 +834,7 @@ export default {
 		 * block the rest of the page designer from rendering.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 * @spec openspec/specs/component-blocks/spec.md
 		 */
 		async fetchBlockCaptureContext() {
 			// No register yet (the version is still resolving): skip the
@@ -893,7 +880,7 @@ export default {
 		 *
 		 * @param {Array<object>} widgets - the widgetEntry objects to insert.
 		 * @return {void}
-		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 * @spec openspec/specs/component-blocks/spec.md
 		 */
 		onInsertWidgets(widgets) {
 			if (
@@ -917,7 +904,7 @@ export default {
 		 * immediately.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 * @spec openspec/specs/component-blocks/spec.md
 		 */
 		onBlockSaved() {
 			this.fetchBlockCaptureContext()
@@ -928,12 +915,19 @@ export default {
 		 *
 		 * @param {string} type - The selected page's `page.type` (a canonical v2 page
 		 *   type such as `index`, `detail`, `form`).
+		 * @param {?object} [page] - The selected page itself. A `custom` page
+		 *   whose `component` is `record-grid` gets the grid editor instead of
+		 *   the raw custom-page editor.
 		 * @return {string} Registered component name for that page type, or
 		 *   `'StubPageEditor'` for a type this build ships no visual editor for.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
+		 * @spec openspec/changes/data-index-grid-and-saved-views/tasks.md#t04
 		 */
-		subEditorFor(type) {
+		subEditorFor(type, page = null) {
+			if (type === 'custom' && page && page.component === 'record-grid') {
+				return 'GridPageEditor'
+			}
 			return SUB_EDITOR_MAP[type] || 'StubPageEditor'
 		},
 
@@ -977,7 +971,7 @@ export default {
 		 *   pane, from PageListEditor's `select` event. `-1` (emitted when the selected
 		 *   page is removed) clears the selection and shows the empty state.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
 		 */
 		selectPage(index) {
 			this.selectedIndex = index
@@ -1017,7 +1011,7 @@ export default {
 		 *   complete replacement manifest (every caller builds it by spreading the
 		 *   current one), emitted as `update:manifest`.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
 		 */
 		emitManifest(next) {
 			this.$emit('update:manifest', next)
@@ -1032,7 +1026,7 @@ export default {
 		 *   `update:pages` event (add / edit-field / remove / drag-reorder all emit
 		 *   the whole array, never a patch).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
 		 */
 		onPagesUpdate(pages) {
 			const next = { ...(this.manifest || {}), pages }
@@ -1061,7 +1055,7 @@ export default {
 		 * @param {Array<object>} widgets - the complete replacement `widgets[]`
 		 *   for the selected page, in the uniform v2 `widgetEntry` shape.
 		 * @return {void}
-		 * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+		 * @spec openspec/specs/openbuild-page-designer/spec.md
 		 */
 		onWidgetsUpdate(widgets) {
 			if (this.selectedIndex < 0 || !Array.isArray(widgets)) {
@@ -1087,7 +1081,7 @@ export default {
 		 *   tree from MenuTreeEditor's `update:menu` event. At most two levels deep;
 		 *   second-level entries carry no `children` of their own.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
 		 */
 		onMenuUpdate(menu) {
 			const next = { ...(this.manifest || {}), menu }
@@ -1098,7 +1092,7 @@ export default {
 		/**
 		 * Observed behaviour of `onDepthViolation` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
 		 */
 		onDepthViolation() {
 			this.depthError = true
@@ -1113,7 +1107,7 @@ export default {
 		 *   actions}`, a `form` page's `{fields, submitMethod, mode}`, …) and unknown
 		 *   keys are carried through untouched. No-ops while no page is selected.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
 		 */
 		onConfigUpdate(config) {
 			if (this.selectedIndex < 0) {
@@ -1135,7 +1129,7 @@ export default {
 		 *
 		 * @param {Array<object>} list - the full updated `externalForms` array.
 		 * @return {void}
-		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-001
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-001
 		 */
 		onExternalFormsUpdate(list) {
 			const next = { ...(this.manifest || {}) }
@@ -1156,7 +1150,7 @@ export default {
 		/**
 		 * Observed behaviour of `saveAndPreview` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
 		 */
 		saveAndPreview() {
 			this.$emit('save-and-preview')
@@ -1180,7 +1174,7 @@ export default {
 		/**
 		 * Observed behaviour of `undo` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
 		 */
 		undo() {
 			if (!this.history) {
@@ -1195,7 +1189,7 @@ export default {
 		/**
 		 * Observed behaviour of `redo` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
 		 */
 		redo() {
 			if (!this.history) {
@@ -1218,7 +1212,7 @@ export default {
 		 *   chords are acted on: Ctrl+Z undoes, Ctrl+Shift+Z / Ctrl+Y redo; anything
 		 *   else, and any chord fired while an editable element has focus, is ignored.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
 		 * @spec openspec/specs/builder-undo-redo/spec.md#req-bur-003
 		 */
 		onKeydown(event) {
@@ -1249,7 +1243,7 @@ export default {
 		 *   (`/pages/<selectedIndex>/config/<configKey>`), or `''` when no page is
 		 *   selected — which every caller treats as "no mark".
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
 		 */
 		configPathPrefix(configKey) {
 			if (this.selectedIndex < 0) {
@@ -1266,7 +1260,7 @@ export default {
 		 *   under its full manifest path so its errors stop bubbling into the
 		 *   side-panel list.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
 		 */
 		registerConfigField(configKey) {
 			const prefix = this.configPathPrefix(configKey)
@@ -1286,7 +1280,7 @@ export default {
 		 *   sub-editor is releasing (on unmount / page switch), so its errors go back
 		 *   to the side-panel list.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
 		 */
 		unregisterConfigField(configKey) {
 			const prefix = this.configPathPrefix(configKey)
@@ -1308,7 +1302,7 @@ export default {
 		 *   that field; `{ hasError: false, message: '' }` when the field is valid, no
 		 *   page is selected, or the validator exposes no `errorFor`.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
 		 */
 		configErrorFor(configKey) {
 			const empty = { hasError: false, message: '' }

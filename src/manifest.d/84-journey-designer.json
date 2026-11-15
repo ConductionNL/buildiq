@@ -1,0 +1,50 @@
+{
+	"_comment": "ADR-037 manifest fragment. journey-designer (ADR-085 §6): the Journeys list over buildiq's `journey` objects, and the Journey Designer beside the Page Designer. A row opens the designer (rowRoute names the JourneyDesigner page, which gets the row id as :id). A journey is saved only through buildiq's administrator-only save route, never through the generic object create, so showAdd is false and a new journey starts from the JourneyNew page. Both are admin pages: authoring a journey can write into any register its mappings name.",
+	"menu": [
+		{
+			"id": "JourneysMenu",
+			"label": "Journeys",
+			"icon": "MapMarkerPath",
+			"route": "Journeys",
+			"section": "settings",
+			"order": 97,
+			"permission": "admin"
+		}
+	],
+	"pages": [
+		{
+			"id": "Journeys",
+			"route": "/journeys",
+			"type": "index",
+			"title": "Journeys",
+			"permission": "admin",
+			"config": {
+				"register": "buildiq",
+				"schema": "journey",
+				"viewMode": "table",
+				"showAdd": false,
+				"rowRoute": "JourneyDesigner",
+				"columns": ["title", "description", "@self.updated"],
+				"documentationUrl": "https://buildiq.conduction.nl"
+			}
+		},
+		{
+			"id": "JourneyNew",
+			"route": "/journeys/new",
+			"type": "custom",
+			"title": "New journey",
+			"permission": "admin",
+			"component": "JourneyDesignerView",
+			"config": {}
+		},
+		{
+			"id": "JourneyDesigner",
+			"route": "/journeys/:id",
+			"type": "custom",
+			"title": "Journey designer",
+			"permission": "admin",
+			"component": "JourneyDesignerView",
+			"config": {}
+		}
+	]
+}

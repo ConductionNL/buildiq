@@ -330,7 +330,7 @@ class ChannelApplyReport {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/surface-hermiq-credential-scope-requirement/specs/app-channel-application/spec.md#requirement-application-is-best-effort-with-a-complete-per-item-outcome-report
+	 * @spec openspec/specs/app-channel-application/spec.md#requirement-application-is-best-effort-with-a-complete-per-item-outcome-report
 	 */
 	public function addWarning(string $code, string $channel, string $message): void {
 		$this->warnings[] = ['code' => $code, 'channel' => $channel, 'message' => $message];

@@ -148,12 +148,12 @@ export default {
 	},
 
 	computed: {
-		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
+		/** @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
 		editing() {
 			return !!this.attachment
 		},
 
-		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
+		/** @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
 		caseTypeOptions() {
 			return this.caseTypes.map((ct) => ({
 				label: ct.identificatie
@@ -164,7 +164,7 @@ export default {
 			}))
 		},
 
-		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
+		/** @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
 		schemaOptions() {
 			const exclude = this.editing ? [] : this.attachedSchemas
 			return this.schemas
@@ -172,7 +172,7 @@ export default {
 				.map((s) => ({ label: s.title || s.slug, slug: s.slug }))
 		},
 
-		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
+		/** @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
 		selectedSchemaSlug() {
 			return this.schemaOption ? this.schemaOption.slug : ''
 		},
@@ -186,7 +186,7 @@ export default {
 		 * link to nowhere.
 		 *
 		 * @return {object|null} A vue-router location, or null.
-		 * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002
+		 * @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-002
 		 */
 		createLinkPropertyRoute() {
 			const appSlug =
@@ -207,7 +207,7 @@ export default {
 			}
 		},
 
-		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
+		/** @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
 		linkPropertyOptions() {
 			const schema = this.schemas.find(
 				(s) => s.slug === this.selectedSchemaSlug,
@@ -225,7 +225,7 @@ export default {
 				.map((name) => ({ label: name, name }))
 		},
 
-		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
+		/** @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
 		canSave() {
 			return !!(
 				this.caseTypeOption
@@ -240,7 +240,7 @@ export default {
 		 * @param {boolean} isOpen - The dialog's new `open` state. Opening re-seeds the
 		 *   form from the attachment being edited and (when Procest is installed)
 		 *   refetches the selectable case types. Closing is not acted on.
-		 * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002
+		 * @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-002
 		 */
 		open(isOpen) {
 			if (isOpen) {
@@ -256,7 +256,7 @@ export default {
 		/**
 		 * Seed the form from an existing attachment when editing.
 		 *
-		 * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002
+		 * @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-002
 		 */
 		hydrate() {
 			this.error = ''
@@ -288,7 +288,7 @@ export default {
 		 * Load published case types from Procest's ZTC list endpoint.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002
+		 * @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-002
 		 */
 		async fetchCaseTypes() {
 			this.loadingCaseTypes = true
@@ -309,7 +309,7 @@ export default {
 		/**
 		 * Assemble + emit the workflow attachment entry.
 		 *
-		 * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002
+		 * @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-002
 		 */
 		onSave() {
 			if (!this.canSave) {
@@ -333,7 +333,7 @@ export default {
 			this.$emit('update:open', false)
 		},
 
-		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
+		/** @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-002 */
 		onClose() {
 			this.$emit('update:open', false)
 		},

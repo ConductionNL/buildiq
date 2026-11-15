@@ -1,0 +1,231 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`MapPageEditor property-key fields > emits each bound field change 1`] = `
+[
+  [
+    {
+      "markers": {
+        "dataSource": {
+          "register": "r",
+          "schema": "s",
+        },
+        "latField": "name",
+      },
+    },
+  ],
+  [
+    {
+      "markers": {
+        "dataSource": {
+          "register": "r",
+          "schema": "s",
+        },
+        "latField": "lat",
+        "lngField": "name",
+      },
+    },
+  ],
+  [
+    {
+      "markers": {
+        "dataSource": {
+          "register": "r",
+          "schema": "s",
+        },
+        "latField": "lat",
+        "popupField": "name",
+      },
+    },
+  ],
+]
+`;
+
+exports[`MapPageEditor property-key fields > emits each unbound field change 1`] = `
+[
+  [
+    {
+      "markers": {
+        "dataSource": {
+          "url": "https://x",
+        },
+        "latField": "typed",
+        "lngField": "lng",
+      },
+    },
+  ],
+  [
+    {
+      "markers": {
+        "dataSource": {
+          "url": "https://x",
+        },
+        "lngField": "typed",
+      },
+    },
+  ],
+  [
+    {
+      "markers": {
+        "dataSource": {
+          "url": "https://x",
+        },
+        "lngField": "lng",
+        "popupField": "typed",
+      },
+    },
+  ],
+]
+`;
+
+exports[`MapPageEditor property-key fields > renders the bound shape 1`] = `
+[
+  "<label class="map-page-editor__group-row">Latitude field <select value="lat">
+    <option value="">— select property —</option>
+    <option value="lat">lat</option>
+    <option value="lng">lng</option>
+    <option value="name">name</option>
+  </select></label>",
+  "<label class="map-page-editor__group-row">Longitude field <select value="">
+    <option value="">— select property —</option>
+    <option value="lat">lat</option>
+    <option value="lng">lng</option>
+    <option value="name">name</option>
+  </select></label>",
+  "<label class="map-page-editor__group-row">Popup field <select value="">
+    <option value="">— select property —</option>
+    <option value="lat">lat</option>
+    <option value="lng">lng</option>
+    <option value="name">name</option>
+  </select></label>",
+]
+`;
+
+exports[`MapPageEditor property-key fields > renders the unbound shape 1`] = `
+[
+  "<label class="map-page-editor__group-row">Latitude field <input type="text" value=""></label>",
+  "<label class="map-page-editor__group-row">Longitude field <input type="text" value="lng"></label>",
+  "<label class="map-page-editor__group-row">Popup field <input type="text" value=""></label>",
+]
+`;
+
+exports[`WikiPageEditor property-key fields > emits each bound field change 1`] = `
+[
+  [
+    {
+      "contentField": "name",
+      "register": "r",
+      "schema": "s",
+      "sidebarSchema": "s",
+      "titleField": "name",
+    },
+  ],
+  [
+    {
+      "register": "r",
+      "schema": "s",
+      "sidebarSchema": "s",
+      "titleField": "name",
+    },
+  ],
+  [
+    {
+      "register": "r",
+      "schema": "s",
+      "sidebarSchema": "s",
+      "titleField": "name",
+      "treeField": "name",
+    },
+  ],
+  [
+    {
+      "register": "r",
+      "schema": "s",
+      "sidebarSchema": "s",
+      "sidebarTitleField": "name",
+      "titleField": "name",
+    },
+  ],
+]
+`;
+
+exports[`WikiPageEditor property-key fields > emits each unbound field change 1`] = `
+[
+  [
+    {
+      "contentField": "typed",
+      "treeField": "kids",
+    },
+  ],
+  [
+    {
+      "titleField": "typed",
+      "treeField": "kids",
+    },
+  ],
+  [
+    {
+      "treeField": "typed",
+    },
+  ],
+  [
+    {
+      "sidebarTitleField": "typed",
+      "treeField": "kids",
+    },
+  ],
+]
+`;
+
+exports[`WikiPageEditor property-key fields > renders the bound shape 1`] = `
+[
+  "<label class="wiki-page-editor__group-row">Content field <select value="">
+    <option value="">— default: body —</option>
+    <option value="lat">lat</option>
+    <option value="lng">lng</option>
+    <option value="name">name</option>
+  </select>
+  <!--v-if-->
+</label>",
+  "<label class="wiki-page-editor__group-row">Title field <select value="name">
+    <option value="">— default: title —</option>
+    <option value="lat">lat</option>
+    <option value="lng">lng</option>
+    <option value="name">name</option>
+  </select>
+  <!--v-if-->
+</label>",
+  "<label class="wiki-page-editor__group-row">Tree children field <select value="">
+    <option value="">— default: children —</option>
+    <option value="lat">lat</option>
+    <option value="lng">lng</option>
+    <option value="name">name</option>
+  </select>
+  <!--v-if-->
+</label>",
+  "<label class="wiki-page-editor__group-row">Sidebar title field <select value="">
+    <option value="">— default: title field —</option>
+    <option value="lat">lat</option>
+    <option value="lng">lng</option>
+    <option value="name">name</option>
+  </select>
+  <!--v-if-->
+</label>",
+]
+`;
+
+exports[`WikiPageEditor property-key fields > renders the unbound shape 1`] = `
+[
+  "<label class="wiki-page-editor__group-row">Content field <input type="text" placeholder="body" value="">
+  <!--v-if-->
+</label>",
+  "<label class="wiki-page-editor__group-row">Title field <input type="text" placeholder="title" value="">
+  <!--v-if-->
+</label>",
+  "<label class="wiki-page-editor__group-row">Tree children field <input type="text" placeholder="children" value="kids">
+  <!--v-if-->
+</label>",
+  "<label class="wiki-page-editor__group-row">Sidebar title field <input type="text" value="">
+  <!--v-if-->
+</label>",
+]
+`;

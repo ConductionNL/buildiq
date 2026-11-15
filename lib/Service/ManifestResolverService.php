@@ -35,8 +35,8 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-70
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-71
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-70
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-71
  * @spec openspec/specs/openbuild-runtime/spec.md#requirement-menu-items-and-pages-must-be-filterable-by-permission
  */
 
@@ -44,6 +44,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\ManifestResolverServiceInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -56,9 +57,9 @@ use Throwable;
  * Resolves application slug + optional version slug to a manifest payload,
  * enforcing RBAC for non-production versions.
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-70
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-70
  */
-class ManifestResolverService {
+class ManifestResolverService implements ManifestResolverServiceInterface {
 	/**
 	 * Constructor.
 	 *
@@ -104,8 +105,8 @@ class ManifestResolverService {
 	 *
 	 * @return array<string, mixed>|null The manifest payload, or null → caller maps to 404.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-70
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-71
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-70
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-71
 	 */
 	public function resolve(string $appSlug, ?string $versionSlug, ?IUser $caller): ?array {
 		// Step 1 — resolve Application by slug.
@@ -176,7 +177,7 @@ class ManifestResolverService {
 	 *
 	 * @return bool True when access is denied; false when access is allowed.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-71
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-71
 	 */
 	private function checkNonProductionAccess(
 		array $application,
@@ -294,7 +295,7 @@ class ManifestResolverService {
 	 *
 	 * @return array<string, mixed>|null
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-70
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-70
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function findApplicationBySlug(string $appSlug): ?array {
@@ -348,7 +349,7 @@ class ManifestResolverService {
 	 *
 	 * @return array<string, mixed>|null
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-70
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-70
 	 */
 	private function resolveProductionManifest(array $application, string $appSlug): ?array {
 		$productionVersion = ($application['productionVersion'] ?? null);
@@ -400,7 +401,7 @@ class ManifestResolverService {
 	 *
 	 * @return array<string, mixed>|null
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-70
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-70
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function findVersionBySlug(array $application, string $versionSlug): ?array {
@@ -586,31 +587,14 @@ class ManifestResolverService {
 	 *
 	 * @return bool True when the caller is an editor or owner; false otherwise.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-71
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-71
 	 */
 	private function isCallerAuthorised(array $application, ?IUser $caller): bool {
 		if ($caller === null) {
 			return false;
 		}
 
-		$permissions = ($application['permissions'] ?? []);
-		if (is_array($permissions) === false) {
-			return false;
-		}
-
-		// Use PermissionResolver for consistent grammar (H1/H2 fix).
-		// Group membership is resolved here via IGroupManager so ManifestResolverService
-		// now honours group: entries for non-production version access, matching the
-		// behaviour of the HTTP endpoint (bucketContainsUid previously only matched user: entries).
-		$userGroups = $this->permissionResolver->resolveUserGroups($caller);
-
-		return $this->permissionResolver->matchesCaller(
-			permissions: $permissions,
-			caller: $caller,
-			userGroups: $userGroups,
-			allowAdminBypass: false,
-			roles: ['owners', 'editors']
-		);
+		return $this->hasWriteRole(application: $application, caller: $caller);
 	}//end isCallerAuthorised()
 
 	/**
@@ -661,7 +645,7 @@ class ManifestResolverService {
 	 *
 	 * @spec openspec/specs/openbuild-runtime/spec.md#requirement-menu-items-and-pages-must-be-filterable-by-permission
 	 * @spec openspec/specs/openbuild-runtime/spec.md#requirement-a-group-scoped-dashboard-may-be-the-landing-page-for-its-group
-	 * @spec openspec/changes/widget-roles-on-app-pages/specs/openbuild-runtime/spec.md#requirement-page-widgets-must-be-filterable-by-roles
+	 * @spec openspec/specs/openbuild-runtime/spec.md#requirement-page-widgets-must-be-filterable-by-roles
 	 */
 	public function filterManifestForCaller(array $manifest, array $application, ?IUser $caller): array {
 		if ($caller !== null && $this->permissionResolver->isAdmin($caller) === true) {
@@ -751,6 +735,9 @@ class ManifestResolverService {
 			return false;
 		}
 
+		// Use PermissionResolver for consistent grammar (H1/H2 fix). Group
+		// membership is resolved via IGroupManager, so `group:` entries count for
+		// non-production version access too, matching the HTTP endpoint.
 		$userGroups = $this->permissionResolver->resolveUserGroups($caller);
 
 		return $this->permissionResolver->matchesCaller(

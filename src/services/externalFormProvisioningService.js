@@ -19,9 +19,9 @@
  * fragment PUT/PATCH, per the fleet-wide "OR saveObject is PUT-semantic —
  * nulls/omissions clobber existing fields" gotcha (design.md Decision 2).
  *
- * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-003
- * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-004
- * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-005
+ * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-003
+ * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-004
+ * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-005
  */
 import defaultAxios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
@@ -125,7 +125,7 @@ function cloneAuthorization(authorization) {
  * @param {boolean} [opts.publicRead] - also add `"public"` to `read`.
  * @param {object} [client] - axios-like client (test injection).
  * @return {Promise<object>} - the updated schema.
- * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-003
+ * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-003
  */
 export async function enablePublicCreate(
 	{ schema, publicRead = false },
@@ -153,7 +153,7 @@ export async function enablePublicCreate(
  *   (only when this toggle enabled `publicRead` in the first place).
  * @param {object} [client] - axios-like client (test injection).
  * @return {Promise<object>} - the updated schema.
- * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-005
+ * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-005
  */
 export async function revokePublicCreate(
 	{ schema, removeRead = false },
@@ -381,7 +381,7 @@ async function createPortalPage(target, client) {
  *   to keep whatever level the portal page already stores.
  * @param {object} [client] - axios-like client (test injection).
  * @return {Promise<{objectId: ?string, portalPath: ?string, unavailable: boolean}>}
- * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-004
+ * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-004
  */
 export async function provisionPortalPage(
 	{ register, schema, objectId, minTrust },
@@ -410,7 +410,7 @@ export async function provisionPortalPage(
  * @param {?string} objectId - the linked portalPage uuid, or null/undefined when none.
  * @param {object} [client] - axios-like client (test injection).
  * @return {Promise<?object>} - the updated object, or null when there was nothing to do.
- * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-004
+ * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-004
  */
 export async function draftPortalPage(objectId, client = defaultAxios) {
 	if (!objectId) {
