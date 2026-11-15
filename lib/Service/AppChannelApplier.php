@@ -3,6 +3,9 @@
 /**
  * Buildiq AppChannelApplier
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Applies a parsed v2 app-repo template's channels — `dataRegisters`,
  * `connectors`, `automations`, `skills`, `flows` and `agents` — onto this
  * instance (app-channel-application). The last two (app-repo-format-flow-agent-
@@ -33,9 +36,6 @@
  * `openregister` — so their channels degrade with a machine-readable reason while
  * the remaining channels still apply.
  *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
- *
  * @category Service
  * @package  OCA\Buildiq\Service
  *
@@ -54,6 +54,9 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\AppChannelApplierInterface;
+use OCA\Buildiq\Kernel\Values\LocalApplicationRef;
+use OCA\Buildiq\Kernel\Values\RepoSource;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Exception\ObjectExistsException;
 use Psr\Log\LoggerInterface;
@@ -65,9 +68,9 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  *
  * @spec openspec/changes/apply-v2-channels/specs/app-channel-application/spec.md
- * @spec openspec/changes/app-repo-format-flow-agent-export/specs/app-channel-application/spec.md
+ * @spec openspec/specs/app-channel-application/spec.md
  */
-class AppChannelApplier {
+class AppChannelApplier implements AppChannelApplierInterface {
 
 	/**
 	 * Connector schemas, matching AppRepoSerializer::CONNECTOR_KINDS.
@@ -198,7 +201,7 @@ class AppChannelApplier {
 	 * @return array<string,mixed> The channel report.
 	 *
 	 * @spec openspec/changes/apply-v2-channels/specs/app-channel-application/spec.md#requirement-every-install-path-applies-the-v2-channels
-	 * @spec openspec/changes/app-repo-format-flow-agent-export/specs/app-channel-application/spec.md#requirement-published-flows-are-created-and-rebound-onto-the-local-application
+	 * @spec openspec/specs/app-channel-application/spec.md#requirement-published-flows-are-created-and-rebound-onto-the-local-application
 	 */
 	public function apply(
 		array $template,
@@ -268,7 +271,7 @@ class AppChannelApplier {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/surface-hermiq-credential-scope-requirement/specs/app-channel-application/spec.md#requirement-skills-are-delegated-to-hermiq-by-repository-coordinates
+	 * @spec openspec/specs/app-channel-application/spec.md#requirement-skills-are-delegated-to-hermiq-by-repository-coordinates
 	 */
 	private function applySkillsChannel(
 		array $skills,
@@ -327,7 +330,7 @@ class AppChannelApplier {
 	 *
 	 * @return bool|null True/false when conclusive, null when the credential is absent or the lookup failed.
 	 *
-	 * @spec openspec/changes/surface-hermiq-credential-scope-requirement/specs/app-channel-application/spec.md#requirement-skills-are-delegated-to-hermiq-by-repository-coordinates
+	 * @spec openspec/specs/app-channel-application/spec.md#requirement-skills-are-delegated-to-hermiq-by-repository-coordinates
 	 */
 	private function credentialAllowsApp(string $credentialId, string $appId): ?bool {
 		try {

@@ -3,6 +3,9 @@
 /**
  * Registration Form Leaf Provider
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * `buildiq-registration-form`. A consuming app places this leaf on its own type
  * object and asks: which form should I show, for this audience and this
  * channel. Buildiq answers with the form, its presets and the person's own
@@ -31,18 +34,15 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-005, REQ-OBRF-006, REQ-OBRF-009)
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
 
 namespace OCA\Buildiq\Integration;
 
-use OCA\Buildiq\Service\RegistrationFormPresenter;
+use OCA\Buildiq\Kernel\Contracts\RegistrationFormPresenterInterface;
+use OCA\Buildiq\Service\HelperFactory;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
-use OCA\OpenRegister\Service\Integration\IntegrationProvider;
 use OCP\IAppConfig;
 use OCP\IUserSession;
 use RuntimeException;
@@ -52,7 +52,7 @@ use RuntimeException;
  *
  * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-006)
  */
-final class RegistrationFormLeafProvider implements IntegrationProvider {
+final class RegistrationFormLeafProvider extends AppLocalLeafProvider {
 	/**
 	 * The leaf id, equal on both halves so gate-24 can pair them.
 	 *
@@ -75,12 +75,19 @@ final class RegistrationFormLeafProvider implements IntegrationProvider {
 	private const SCHEMA_DRAFT = 'formDraft';
 
 	/**
+	 * The shape a form takes on its way out.
+	 *
+	 * @var RegistrationFormPresenterInterface
+	 */
+	private readonly RegistrationFormPresenterInterface $presenter;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ObjectServiceInterface $objectService OpenRegister's object service.
-	 * @param IAppConfig $appConfig App config, for the register slug.
-	 * @param IUserSession $userSession The calling user, who owns the drafts.
-	 * @param RegistrationFormPresenter $presenter The shape a form takes on its way out.
+	 * @param ObjectServiceInterface                  $objectService OpenRegister's object service.
+	 * @param IAppConfig                              $appConfig     App config, for the register slug.
+	 * @param IUserSession                            $userSession   The calling user, who owns the drafts.
+	 * @param RegistrationFormPresenterInterface|null $presenter     How a form is shaped on its way out; null: the default.
 	 *
 	 * @return void
 	 */
@@ -88,8 +95,9 @@ final class RegistrationFormLeafProvider implements IntegrationProvider {
 		private readonly ObjectServiceInterface $objectService,
 		private readonly IAppConfig $appConfig,
 		private readonly IUserSession $userSession,
-		private readonly RegistrationFormPresenter $presenter = new RegistrationFormPresenter(),
+		?RegistrationFormPresenterInterface $presenter = null,
 	) {
+		$this->presenter = ($presenter ?? (new HelperFactory())->registrationFormPresenter());
 	}//end __construct()
 
 	/**
@@ -127,60 +135,6 @@ final class RegistrationFormLeafProvider implements IntegrationProvider {
 	public function getGroup(): string {
 		return 'Forms';
 	}//end getGroup()
-
-	/**
-	 * The app that must be installed for this leaf to answer.
-	 *
-	 * @return string The app id.
-	 */
-	public function getRequiredApp(): string {
-		return 'buildiq';
-	}//end getRequiredApp()
-
-	/**
-	 * Forms live in buildiq's own register.
-	 *
-	 * @return string The storage strategy.
-	 */
-	public function getStorageStrategy(): string {
-		return 'app-local';
-	}//end getStorageStrategy()
-
-	/**
-	 * No OpenConnector source.
-	 *
-	 * @return string|null The source.
-	 */
-	public function getOpenConnectorSource(): ?string {
-		return null;
-	}//end getOpenConnectorSource()
-
-	/**
-	 * The leaf answers whenever buildiq is installed.
-	 *
-	 * @return bool True.
-	 */
-	public function isEnabled(): bool {
-		return true;
-	}//end isEnabled()
-
-	/**
-	 * Reading a form needs no right of its own; a draft is scoped to its owner.
-	 *
-	 * @return string|null Null.
-	 */
-	public function requiresPermission(): ?string {
-		return null;
-	}//end requiresPermission()
-
-	/**
-	 * The leaf needs no credentials of its own.
-	 *
-	 * @return array<string, mixed> The requirements.
-	 */
-	public function authRequirements(): array {
-		return [];
-	}//end authRequirements()
 
 	/**
 	 * The published forms bound to this type object, defaults first, with the

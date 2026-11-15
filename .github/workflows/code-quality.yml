@@ -46,9 +46,18 @@ on:
     branches: [main, master, development, beta]
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   quality:
     if: (github.event_name != 'pull_request' || github.head_ref != 'development')
+    permissions:
+      contents: write
+      actions: write
+      issues: write
+      pull-requests: write
+      packages: read
     uses: ConductionNL/.github/.github/workflows/quality.yml@main
     with:
       app-name: buildiq
@@ -84,6 +93,10 @@ jobs:
       # new duplicated fragment of 6+ lines fails. Units the change does not
       # touch, or touches without making worse, are inherited and do not count.
       hydra-gates-sig-blocking: true
+      # Maintainability floor: no rating in .maintainability-floor.json may drop
+      # more than 0.01 against the merge base (pull request) or below the
+      # committed floor (push). The floor is raised after improving merges.
+      enable-maintainability-floor: true
       # No `hydra-gates-ref` here on purpose. The shared workflow defaults it
       # to @main, and this workflow is itself consumed at @main, so the two
       # sides move together and a gate fix reaches this repo without a commit
@@ -306,7 +319,11 @@ jobs:
       # renders the English source inside an otherwise translated form, silently.
       # The fleet had 30,459 such strings, so this records the current count and
       # fails only when it GROWS — burning it down stays an ordinary PR.
-      frontend-checks: '["check:manifest", "test:l10n", "check:gitignore", "check:nc-floor", "format", "check:l10n-js", "check:schema-l10n"]'
+      # `test:l10n:parity` (openbuild-nl-locale-parity) asserts every key in
+      # l10n/en.json and l10n/en.js has a non-empty Dutch value. Scoped to nl
+      # through L10N_REQUIRED_LOCALES: the other locales are hundreds of keys
+      # behind and widen the list one at a time once each is backfilled.
+      frontend-checks: '["check:manifest", "test:l10n", "test:l10n:parity", "check:gitignore", "check:nc-floor", "format", "check:l10n-js", "check:schema-l10n"]'
 
       # ── Coverage ratchet ─────────────────────────────────────────────────
       # `enable-coverage-guard` defaults to FALSE, which is why both

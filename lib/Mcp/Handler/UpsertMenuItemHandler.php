@@ -26,12 +26,13 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Mcp\Handler;
 
+use OCA\Buildiq\Support\ManifestEntryList;
 use OCA\Buildiq\Support\ManifestRoute;
 
 /**
  * Handles the buildiq.upsertMenuItem tool invocation.
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-42
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-42
  */
 class UpsertMenuItemHandler extends AbstractToolHandler {
 	/**
@@ -48,7 +49,6 @@ class UpsertMenuItemHandler extends AbstractToolHandler {
 		}
 
 		$appSlug = $validation['appSlug'];
-		$versionSlug = $validation['versionSlug'];
 		$id = $validation['id'];
 
 		$rbacError = $this->requireWriteRole(appSlug: $appSlug);
@@ -57,57 +57,7 @@ class UpsertMenuItemHandler extends AbstractToolHandler {
 		}
 
 		try {
-			// ADR-083 rule 1 / ADR-084: use the constructor-injected contract
-			// rather than reaching into the container by string name.
-			$objectService = $this->objectService;
-
-			$loaded = $this->loadVersion(objectService: $objectService, appSlug: $appSlug, versionSlug: $versionSlug);
-			if (isset($loaded['error']) === true) {
-				return $this->errorResult(error: $loaded['error'], message: $loaded['message']);
-			}
-
-			$version = $loaded['version'];
-			$manifest = (array)($version['manifest'] ?? []);
-			$menu = (array)($manifest['menu'] ?? []);
-
-			$newItem = [
-				'id' => $id,
-				'label' => $validation['label'],
-				'icon' => $validation['icon'],
-				'route' => $validation['route'],
-				'order' => $validation['order'],
-			];
-
-			[$menu, $replaced] = $this->upsertMenuItemInList(menu: $menu, itemId: $id, newItem: $newItem);
-
-			$manifest['menu'] = array_values($menu);
-
-			// H4: enforce menu-per-manifest (30) and total manifest size (256 KB).
-			// Cap is applied after upsert so updates to existing items always pass.
-			if ($replaced === false) {
-				$capError = $this->checkManifestCaps(manifest: $manifest);
-				if ($capError !== null) {
-					return $capError;
-				}
-			}
-
-			$saved = $this->saveVersionManifest(objectService: $objectService, version: $version, manifest: $manifest);
-
-			$action = 'created';
-			if ($replaced === true) {
-				$action = 'updated';
-			}
-
-			return [
-				'success' => true,
-				'action' => $action,
-				'menuItem' => $newItem,
-				'menuCount' => count($menu),
-				'version' => [
-					'uuid' => $this->extractUuid(item: $saved),
-					'slug' => (string)($saved['slug'] ?? $versionSlug),
-				],
-			];
+			return $this->upsertMenuItem(validation: $validation);
 		} catch (\Throwable $e) {
 			$this->logger->error(
 				'Buildiq MCP: upsertMenuItem failed',
@@ -117,6 +67,54 @@ class UpsertMenuItemHandler extends AbstractToolHandler {
 		}//end try
 
 	}//end handle()
+
+	/**
+	 * Insert or replace the menu item and save the version manifest.
+	 *
+	 * @param array<string, mixed> $validation The validated tool arguments.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function upsertMenuItem(array $validation): array {
+		$appSlug = $validation['appSlug'];
+		$versionSlug = $validation['versionSlug'];
+		$id = $validation['id'];
+
+		$loaded = $this->loadManifestForEdit(appSlug: $appSlug, versionSlug: $versionSlug);
+		if (isset($loaded['isError']) === true) {
+			return $loaded;
+		}
+
+		$manifest = $loaded['manifest'];
+		$menu = (array)($manifest['menu'] ?? []);
+
+		$newItem = [
+			'id' => $id,
+			'label' => $validation['label'],
+			'icon' => $validation['icon'],
+			'route' => $validation['route'],
+			'order' => $validation['order'],
+		];
+
+		[$menu, $replaced] = $this->upsertMenuItemInList(menu: $menu, newItem: $newItem);
+
+		$manifest['menu'] = array_values($menu);
+
+		// H4: enforce menu-per-manifest (30) and total manifest size (256 KB).
+		// Cap is applied after upsert so updates to existing items always pass.
+		$capError = $this->appendCapError(manifest: $manifest, replaced: $replaced);
+		if ($capError !== null) {
+			return $capError;
+		}
+
+		$saved = $this->saveVersionManifest(objectService: $this->objectService, version: $loaded['version'], manifest: $manifest);
+
+		return $this->upsertOutcome(replaced: $replaced) + [
+			'menuItem' => $newItem,
+			'menuCount' => count($menu),
+			'version' => $this->versionSummary(saved: $saved, versionSlug: $versionSlug),
+		];
+	}//end upsertMenuItem()
 
 	/**
 	 * Validate and extract typed arguments for upsertMenuItem.
@@ -181,7 +179,7 @@ class UpsertMenuItemHandler extends AbstractToolHandler {
 	}//end validateArgs()
 
 	/**
-	 * Upsert a menu item in the menu list using case-insensitive id matching.
+	 * Upsert a menu item in the menu list using case-insensitive id matching ({@see ManifestEntryList}).
 	 *
 	 * Uses the same case-insensitive strategy as UpsertPageHandler so that an
 	 * LLM can reliably target an existing item regardless of case variations
@@ -191,27 +189,14 @@ class UpsertMenuItemHandler extends AbstractToolHandler {
 	 * item was replaced (true) or a new item was appended (false).
 	 *
 	 * @param array<int, mixed> $menu Existing menu list from the manifest.
-	 * @param string $itemId The menu item id to look up (case-insensitive).
 	 * @param array<string, mixed> $newItem The menu item definition to insert or replace with.
 	 *
 	 * @return array{0: array, 1: bool}
 	 */
-	private function upsertMenuItemInList(array $menu, string $itemId, array $newItem): array {
-		$replaced = false;
-		$itemIdLc = strtolower($itemId);
+	private function upsertMenuItemInList(array $menu, array $newItem): array {
+		$list = new ManifestEntryList(entries: $menu);
+		$replaced = $list->upsert(entry: $newItem);
 
-		foreach ($menu as $i => $existing) {
-			if (is_array($existing) === true && strtolower((string)($existing['id'] ?? '')) === $itemIdLc) {
-				$menu[$i] = $newItem;
-				$replaced = true;
-				break;
-			}
-		}
-
-		if ($replaced === false) {
-			$menu[] = $newItem;
-		}
-
-		return [$menu, $replaced];
+		return [$list->entries(), $replaced];
 	}//end upsertMenuItemInList()
 }//end class

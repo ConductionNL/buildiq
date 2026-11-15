@@ -54,6 +54,84 @@ import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcModal, NcTextField } from '@nextcloud/vue'
 
+/**
+ * The name a template suggests: its title, else its slug.
+ *
+ * @param {object} tpl The template.
+ * @return {string} The name.
+ */
+function templateName(tpl) {
+	return tpl.title || tpl.slug || ''
+}
+
+/**
+ * What the suggested slug is made from: the template's slug, else its title.
+ *
+ * @param {object} tpl The template.
+ * @return {string} The source string.
+ */
+function templateSlugSource(tpl) {
+	return tpl.slug || tpl.title || ''
+}
+
+/**
+ * The GitHub install request body: the repository, the new app, and the ref
+ * when the repository names one.
+ *
+ * @param {{owner: string, repo: string, ref?: string}} repo The repository.
+ * @param {{name: string, slug: string}} payload The new app.
+ * @return {object} The body.
+ */
+function githubInstallBody(repo, payload) {
+	const body = {
+		owner: repo.owner,
+		repo: repo.repo,
+		name: payload.name,
+		slug: payload.slug,
+	}
+	if (repo.ref) {
+		body.ref = repo.ref
+	}
+	return body
+}
+
+/**
+ * What to say when an install failed: the server's detail or error, the
+ * request's message, or a generic line.
+ *
+ * @param {Error|object|null} e The failure.
+ * @return {string} The message.
+ */
+function installFailureMessage(e) {
+	const data = e?.response?.data
+	return (
+		data?.detail
+		|| data?.error
+		|| e?.message
+		|| t('buildiq', 'Install failed.')
+	)
+}
+
+/**
+ * The install failure message, naming the offending file when the GitHub
+ * install endpoint returned one (it returns a generic-but-actionable error
+ * carrying the parser error code + offending file path).
+ *
+ * @param {Error|object|null} e The failure.
+ * @return {string} The message.
+ */
+function githubInstallFailureMessage(e) {
+	const data = e?.response?.data
+	const file = data?.file || data?.path
+	const base = installFailureMessage(e)
+	return file
+		? t('buildiq', '{message} (in {file})', {
+				message: base,
+				file,
+			})
+		: base
+}
+
 export default {
 	name: 'CloneTemplateDialog',
 	components: { NcButton, NcModal, NcTextField },
@@ -73,7 +151,7 @@ export default {
 		githubRepo: { type: Object, default: null },
 	},
 
-	emits: ['close', 'submit', 'installed'],
+	emits: ['close', 'submit', 'installed', 'stale'],
 	data() {
 		return {
 			localName: '',
@@ -93,7 +171,7 @@ export default {
 		 * store template nor a GitHub app).
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/store-shows-built-in-templates/specs/template-catalogue-ui/spec.md
+		 * @spec openspec/specs/template-catalogue-ui/spec.md
 		 */
 		isLocal() {
 			return !this.remote && !this.github
@@ -116,7 +194,7 @@ export default {
 		/**
 		 * Observed behaviour of `resolvedTitle` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-2
 		 */
 		resolvedTitle() {
 			if (!this.template) return ''
@@ -126,7 +204,7 @@ export default {
 		/**
 		 * Observed behaviour of `canSubmit` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-2
 		 */
 		canSubmit() {
 			return (
@@ -141,7 +219,7 @@ export default {
 		 * template, cloning for a local built-in template.
 		 *
 		 * @return {string} The translated button label.
-		 * @spec openspec/changes/openbuild-remote-template-store/specs/openbuild-remote-template-store/spec.md
+		 * @spec openspec/specs/openbuild-remote-template-store/spec.md
 		 */
 		submitLabel() {
 			if (this.remote || this.github) {
@@ -192,31 +270,40 @@ export default {
 		 *   name/slug fields from the selected template and clears any error left over
 		 *   from a previous attempt; closing is ignored, so the fields survive until
 		 *   the next open.
-		 * @spec openspec/changes/retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-2
 		 */
 		open(value) {
 			if (value) {
-				// Prefill from the seeded template: name from title, slug suggested
-				// from the (remote) template slug, sanitised to kebab-case.
-				const tpl = this.template || {}
-				this.localName = tpl.title || tpl.slug || ''
-				this.localSlug = this.suggestSlug(tpl.slug || tpl.title || '')
-				this.localDescription = ''
-				this.slugEdited = false
-				this.error = ''
-				this.submitting = false
+				this.seedFromTemplate()
 			}
 		},
 	},
 
 	methods: {
 		/**
+		 * Prefill from the seeded template: name from title, slug suggested
+		 * from the (remote) template slug, sanitised to kebab-case; clear the
+		 * description, the slug-edited flag and any earlier error.
+		 *
+		 * @return {void}
+		 */
+		seedFromTemplate() {
+			const tpl = this.template || {}
+			this.localName = templateName(tpl)
+			this.localSlug = this.suggestSlug(templateSlugSource(tpl))
+			this.localDescription = ''
+			this.slugEdited = false
+			this.error = ''
+			this.submitting = false
+		},
+
+		/**
 		 * Name field input: store it, and let the slug follow until the user
 		 * has typed in the slug field.
 		 *
 		 * @param {string} value The new name.
 		 * @return {void}
-		 * @spec openspec/changes/store-shows-built-in-templates/specs/template-catalogue-ui/spec.md
+		 * @spec openspec/specs/template-catalogue-ui/spec.md
 		 */
 		onNameInput(value) {
 			this.localName = value
@@ -230,7 +317,7 @@ export default {
 		 *
 		 * @param {string} value The new slug.
 		 * @return {void}
-		 * @spec openspec/changes/store-shows-built-in-templates/specs/template-catalogue-ui/spec.md
+		 * @spec openspec/specs/template-catalogue-ui/spec.md
 		 */
 		onSlugInput(value) {
 			this.localSlug = value
@@ -240,7 +327,7 @@ export default {
 		/**
 		 * Observed behaviour of `onClose` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-2
 		 */
 		onClose() {
 			if (this.submitting) return
@@ -250,16 +337,38 @@ export default {
 		/**
 		 * Observed behaviour of `submit` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-2
 		 */
 		async submit() {
 			if (!this.canSubmit) {
-				this.error = t(
-					'buildiq',
-					'Provide a name and a kebab-case slug (max 32 chars).',
-				)
+				this.rejectIncomplete()
 				return
 			}
+			const payload = this.newAppPayload()
+			this.submitting = true
+			this.error = ''
+			await this.installOrClone(payload)
+		},
+
+		/**
+		 * Say what a valid name and slug look like.
+		 *
+		 * @return {void}
+		 */
+		rejectIncomplete() {
+			this.error = t(
+				'buildiq',
+				'Provide a name and a kebab-case slug (max 32 chars).',
+			)
+		},
+
+		/**
+		 * The new app `{name, slug}`, trimmed, plus the description for a local
+		 * template.
+		 *
+		 * @return {{name: string, slug: string, description?: string}} The payload.
+		 */
+		newAppPayload() {
 			const payload = {
 				name: this.localName.trim(),
 				slug: this.localSlug.trim(),
@@ -267,8 +376,17 @@ export default {
 			if (this.isLocal) {
 				payload.description = this.localDescription.trim()
 			}
-			this.submitting = true
-			this.error = ''
+			return payload
+		},
+
+		/**
+		 * Install from GitHub, install from the store, or hand a local clone to
+		 * the parent.
+		 *
+		 * @param {object} payload The new app.
+		 * @return {Promise<void>} Resolves once the request settles.
+		 */
+		async installOrClone(payload) {
 			if (this.github) {
 				await this.installGithub(payload)
 				return
@@ -277,6 +395,16 @@ export default {
 				await this.installRemote(payload)
 				return
 			}
+			await this.emitClone(payload)
+		},
+
+		/**
+		 * Hand a local clone to the parent through `submit`.
+		 *
+		 * @param {object} payload The new app.
+		 * @return {Promise<void>} Resolves once the parent's handler settles.
+		 */
+		async emitClone(payload) {
 			try {
 				await this.$emit('submit', payload)
 			} catch (e) {
@@ -292,7 +420,8 @@ export default {
 		 *
 		 * @param {object} payload The new app `{name, slug}`.
 		 * @return {Promise<void>} Resolves once the request settles.
-		 * @spec openspec/changes/openbuild-remote-template-store/specs/openbuild-remote-template-store/spec.md
+		 * @spec openspec/specs/openbuild-remote-template-store/spec.md
+		 * @spec openspec/changes/reuse-remote-store-section/specs/template-catalogue-ui/spec.md#requirement-a-maker-installs-a-catalogue-template-req-bqrs-004
 		 */
 		async installRemote(payload) {
 			try {
@@ -304,12 +433,14 @@ export default {
 				this.$emit('installed', resp.data)
 				this.$emit('close')
 			} catch (e) {
-				const data = e?.response?.data
-				this.error =
-					data?.detail
-					|| data?.error
-					|| e?.message
-					|| t('buildiq', 'Install failed.')
+				if (e?.response?.status === 404 && e?.response?.data?.error === 'template_not_found') {
+					// The template left the catalogue since the section was read.
+					this.error = t('buildiq', 'This template is no longer in the catalogue.')
+					this.submitting = false
+					this.$emit('stale')
+					return
+				}
+				this.error = installFailureMessage(e)
 				this.submitting = false
 			}
 		},
@@ -327,45 +458,42 @@ export default {
 		async installGithub(payload) {
 			const repo = this.githubRepo || {}
 			if (!repo.owner || !repo.repo) {
-				this.error = t(
-					'buildiq',
-					'This GitHub app is missing its repository identity.',
-				)
-				this.submitting = false
+				this.rejectMissingRepository()
 				return
 			}
 			try {
-				const url = generateUrl('/apps/buildiq/api/shop/github/install')
-				const body = {
-					owner: repo.owner,
-					repo: repo.repo,
-					name: payload.name,
-					slug: payload.slug,
-				}
-				if (repo.ref) {
-					body.ref = repo.ref
-				}
-				const resp = await axios.post(url, body)
-				this.$emit('installed', resp.data)
-				this.$emit('close')
+				await this.postGithubInstall(repo, payload)
 			} catch (e) {
-				const data = e?.response?.data
-				// The install endpoint returns a generic-but-actionable error
-				// carrying the parser error code + offending file path.
-				const file = data?.file || data?.path
-				const base =
-					data?.detail
-					|| data?.error
-					|| e?.message
-					|| t('buildiq', 'Install failed.')
-				this.error = file
-					? t('buildiq', '{message} (in {file})', {
-							message: base,
-							file,
-						})
-					: base
+				this.error = githubInstallFailureMessage(e)
 				this.submitting = false
 			}
+		},
+
+		/**
+		 * Refuse a GitHub app that does not say which repository it is.
+		 *
+		 * @return {void}
+		 */
+		rejectMissingRepository() {
+			this.error = t(
+				'buildiq',
+				'This GitHub app is missing its repository identity.',
+			)
+			this.submitting = false
+		},
+
+		/**
+		 * POST the GitHub install and report the created application.
+		 *
+		 * @param {{owner: string, repo: string, ref?: string}} repo The repository.
+		 * @param {object} payload The new app `{name, slug}`.
+		 * @return {Promise<void>} Resolves once installed.
+		 */
+		async postGithubInstall(repo, payload) {
+			const url = generateUrl('/apps/buildiq/api/shop/github/install')
+			const resp = await axios.post(url, githubInstallBody(repo, payload))
+			this.$emit('installed', resp.data)
+			this.$emit('close')
 		},
 
 		/**
@@ -373,7 +501,7 @@ export default {
 		 *
 		 * @param {string} source The source string (remote slug or title).
 		 * @return {string} A kebab-case slug, max 32 chars.
-		 * @spec openspec/changes/openbuild-remote-template-store/specs/openbuild-remote-template-store/spec.md
+		 * @spec openspec/specs/openbuild-remote-template-store/spec.md
 		 */
 		suggestSlug(source) {
 			return String(source || '')
@@ -392,7 +520,7 @@ export default {
 		 * dialog and re-enables the submit button so the user can correct and retry.
 		 *
 		 * @param {string} message - Already-translated error text to display.
-		 * @spec openspec/changes/retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-2
 		 */
 		setError(message) {
 			this.error = message

@@ -61,6 +61,24 @@ created, and removing the field SHALL remove that automation and its flow.
 - **WHEN** they add an AI field `summary_en` with operation translate, source `toelichting` and language English, then save the schema
 - **THEN** `summary_en` shows as read-only in the form, and a new `bezwaar` gets an English summary shortly after it is created
 
+#### Scenario: A maker adds a category field
+
+- **GIVEN** a maker in the schema designer of `melding` with the choice list `openbare ruimte, verkeer, afval`
+- **WHEN** they add an AI field `categorie` with operation categorise, source `omschrijving` and that choice list, then save the schema
+- **THEN** a new `melding` gets one of the three values in `categorie` shortly after it is created
+
+#### Scenario: A maker adds a cleaned text field
+
+- **GIVEN** the same schema designer
+- **WHEN** they add an AI field `omschrijving_schoon` with operation clean and source `omschrijving`, then save
+- **THEN** a new `melding` gets `omschrijving_schoon` filled with the source text cleaned by the fixed clean instruction (spelling and layout corrected, meaning kept), while `omschrijving` itself is unchanged
+
+#### Scenario: A maker adds a sentiment field
+
+- **GIVEN** the same schema designer
+- **WHEN** they add an AI field `toon` with operation sentiment and source `omschrijving`, then save
+- **THEN** a new `melding` gets `toon` set to positive, neutral or negative shortly after it is created
+
 ### Requirement: AI steps need the Hermiq node (REQ-BQLS-005)
 
 When OpenRegister's node catalogue does not list `hermiq.agent-step`, the Ask AI

@@ -125,7 +125,7 @@ export const pageEditorPickerMixin = {
  * Keeps the schema list on `config.register`: reloads when the bound register changes
  * (also on mount for an already-bound page), and empties it when the binding is cleared.
  *
- * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+ * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
  */
 export const pageEditorRegisterWatchMixin = {
 	watch: {
@@ -146,7 +146,7 @@ export const pageEditorRegisterWatchMixin = {
  * Keeps the schema properties on `config.schema`: reloads for a bound register and
  * schema, and empties them otherwise.
  *
- * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+ * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
  */
 export const pageEditorSchemaWatchMixin = {
 	watch: {
@@ -167,7 +167,7 @@ export const pageEditorSchemaWatchMixin = {
  * Everything an editor bound to one register and schema needs on top of the base:
  * the register props, the picker lists and both watchers.
  *
- * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+ * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
  */
 export const pageEditorSchemaBoundMixin = {
 	mixins: [

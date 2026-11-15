@@ -67,6 +67,27 @@
 						)
 					}}
 				</p>
+				<!-- Wrapper carries the test hook; NcSelect does not forward
+				     stray attributes to the DOM. -->
+				<div data-test="app-settings-database-picker">
+					<NcSelect
+						:modelValue="null"
+						:options="databaseOptions"
+						:disabled="busy || loadingDatabases"
+						:loading="loadingDatabases"
+						:inputLabel="t('buildiq', 'Connect a database')"
+						@update:modelValue="onDatabasePicked" />
+				</div>
+				<p
+					v-if="!loadingDatabases && !databaseOptions.length"
+					class="app-settings__hint">
+					{{
+						t(
+							'buildiq',
+							'No connected database to add. An administrator connects one in OpenRegister under Sources.',
+						)
+					}}
+				</p>
 				<div
 					v-for="(row, index) in rows"
 					:key="index"
@@ -140,6 +161,7 @@ import NcCheckboxRadioSwitch from '@nextcloud/vue/components/NcCheckboxRadioSwit
 import NcModal from '@nextcloud/vue/components/NcModal'
 import NcSelect from '@nextcloud/vue/components/NcSelect'
 import NcTextField from '@nextcloud/vue/components/NcTextField'
+import { fetchConnectedDatabases } from '../composables/useConnectedDatabases.js'
 
 export default {
 	name: 'AppSettingsModal',
@@ -194,10 +216,28 @@ export default {
 			// (see the watcher below). `register`/`label` default to '' so
 			// NcTextField always receives a string, never undefined.
 			rows: this.toRows(this.dataRegisters),
+			// The registers OpenRegister serves from a database source, read
+			// again every time the modal opens (REQ-BQDB-001).
+			databases: [],
+			loadingDatabases: false,
 		}
 	},
 
 	computed: {
+		/**
+		 * The connected databases not bound yet, as picker options.
+		 *
+		 * @return {Array<{label: string, value: string}>} Options.
+		 *
+		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-an-app-binds-a-connected-database-req-bqdb-001
+		 */
+		databaseOptions() {
+			const bound = new Set(this.rows.map((row) => (row.register || '').trim()))
+			return this.databases
+				.filter((database) => !bound.has(database.register))
+				.map((database) => ({ label: database.label, value: database.register }))
+		},
+
 		/**
 		 * The bound flows, as picker options.
 		 *
@@ -232,6 +272,23 @@ export default {
 	},
 
 	watch: {
+		open: {
+			immediate: true,
+			/**
+			 * Read the connected databases again whenever the modal opens.
+			 *
+			 * @param {boolean} isOpen Whether the modal is shown.
+			 * @return {void}
+			 *
+			 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-an-app-binds-a-connected-database-req-bqdb-001
+			 */
+			handler(isOpen) {
+				if (isOpen) {
+					this.loadDatabases()
+				}
+			},
+		},
+
 		dataRegisters: {
 			deep: true,
 			/**
@@ -250,6 +307,38 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Fetch the registers OpenRegister serves from a database source.
+		 *
+		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-an-app-binds-a-connected-database-req-bqdb-001
+		 */
+		async loadDatabases() {
+			this.loadingDatabases = true
+			try {
+				this.databases = await fetchConnectedDatabases()
+			} finally {
+				this.loadingDatabases = false
+			}
+		},
+
+		/**
+		 * Bind a picked database as a new data register row and emit it.
+		 *
+		 * @param {{label: string, value: string}|null} option The picked database.
+		 * @return {void}
+		 *
+		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-an-app-binds-a-connected-database-req-bqdb-001
+		 */
+		onDatabasePicked(option) {
+			if (!option || !option.value) {
+				return
+			}
+			this.rows = [...this.rows, { register: option.value, label: option.label || '' }]
+			this.emitRows()
+		},
+
 		/**
 		 * Emit the new bindings when the picker changes.
 		 *

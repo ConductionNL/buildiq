@@ -3,6 +3,9 @@
 /**
  * Keyed List Merger
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * The half of the keyed-delta contract that deals with a LIST whose entries
  * carry an id: tabs and widgets. A patch for one of those is a map keyed by the
  * entry ids, `{"$op": "remove"}` deletes an entry, and `__order` names the order
@@ -29,9 +32,6 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-001)
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);

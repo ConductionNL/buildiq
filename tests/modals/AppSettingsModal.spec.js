@@ -47,6 +47,8 @@ const baseStubs = {
 		template:
 			'<input type="checkbox" :checked="modelValue" :disabled="disabled" @change="$emit(\'update:modelValue\', $event.target.checked)" />',
 	},
+	// The database picker (REQ-BQDB-001) is not under test here.
+	NcSelect: { name: 'NcSelect', template: '<div />' },
 	NcTextField: {
 		name: 'NcTextField',
 		props: ['modelValue', 'label', 'disabled'],

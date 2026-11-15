@@ -28,12 +28,14 @@ use OCA\Buildiq\Exception\CopilotException;
 use OCA\Buildiq\Mcp\BuildiqToolProvider;
 use OCA\Buildiq\Service\AgentRunLogger;
 use OCA\Buildiq\Service\ApplicationDeletionService;
+use OCA\Buildiq\Service\Copilot\AgentKnowledgeReader;
 use OCA\Buildiq\Service\Copilot\CopilotPlanValidator;
 use OCA\Buildiq\Service\Copilot\CopilotPromptBuilder;
 use OCA\Buildiq\Service\CopilotService;
 use OCA\Buildiq\Service\PermissionResolver;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IGroupManager;
@@ -192,15 +194,19 @@ class CopilotServiceTest extends TestCase {
 		// Genuine bypass: admin is NOT an owner/editor → audit MUST fire once.
 		$genuineMapper = $this->createMock(AuditTrailMapper::class);
 		$genuineMapper->expects($this->once())
-			->method('createAuditTrailEntry')
-			->with($entity, 'rbac.admin_bypass', $this->anything());
+			->method('recordObjectEvent')
+			->with(
+				$this->callback(
+					callback: static fn (ObjectAuditEvent $event): bool => $event->object === $entity && $event->action === 'rbac.admin_bypass'
+				)
+			);
 
 		$appBypass = ['slug' => 'my-app', 'uuid' => 'app-uuid-1', 'permissions' => ['owners' => ['user:someone-else'], 'editors' => [], 'viewers' => []]];
 		$this->invokeAssertWriteRole($this->makeServiceWith($groupManager, $genuineMapper), $appBypass, 'admin-user');
 
 		// Legitimate admin-owner: NOT a bypass → audit MUST NOT fire.
 		$ownerMapper = $this->createMock(AuditTrailMapper::class);
-		$ownerMapper->expects($this->never())->method('createAuditTrailEntry');
+		$ownerMapper->expects($this->never())->method('recordObjectEvent');
 
 		$appOwner = ['slug' => 'my-app', 'uuid' => 'app-uuid-1', 'permissions' => ['owners' => ['user:admin-user'], 'editors' => [], 'viewers' => []]];
 		$this->invokeAssertWriteRole($this->makeServiceWith($groupManager, $ownerMapper), $appOwner, 'admin-user');
@@ -1298,6 +1304,31 @@ class CopilotServiceTest extends TestCase {
 	}//end testARealPlanPredictsAManifestTheValidatorAccepts()
 
 	/**
+	 * A predicted upsert replaces an existing entry case-insensitively, in place,
+	 * and appends an unknown one, for pages and menu items alike.
+	 *
+	 * @return void
+	 */
+	public function testPredictedUpsertsReplaceCaseInsensitivelyInPlace(): void {
+		$page = static fn (string $id, string $title): array => ['tool' => 'buildiq.upsertPage', 'arguments' => ['appSlug' => 'tool-library', 'pageId' => $id, 'title' => $title, 'type' => 'index', 'route' => '/' . strtolower($id)]];
+		$item = static fn (string $id, string $label): array => ['tool' => 'buildiq.upsertMenuItem', 'arguments' => ['appSlug' => 'tool-library', 'id' => $id, 'label' => $label, 'route' => strtolower($id)]];
+		$plan = [
+			'summary' => 'x',
+			'steps' => [
+				['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']],
+				$page('home', 'Home'), $page('about', 'About'), $page('HOME', 'Start'),
+				$item('home', 'Home'), $item('about', 'About'), $item('About', 'Over ons'),
+			],
+		];
+
+		$predicted = $this->makeService()->predictManifests(plan: $plan, appSlug: null)['tool-library@development']['predicted'];
+
+		self::assertSame([['HOME', 'Start'], ['about', 'About']], array_map(static fn (array $p): array => [$p['id'], $p['title']], $predicted['pages']));
+		$menu = [['id' => 'home', 'label' => 'Home', 'icon' => '', 'route' => 'home', 'order' => 100], ['id' => 'About', 'label' => 'Over ons', 'icon' => '', 'route' => 'about', 'order' => 100]];
+		self::assertSame($menu, $predicted['menu']);
+	}//end testPredictedUpsertsReplaceCaseInsensitivelyInPlace()
+
+	/**
 	 * predictManifests() throws when the predicted manifest exceeds the pages cap.
 	 *
 	 * @return void
@@ -1847,4 +1878,253 @@ class CopilotServiceTest extends TestCase {
 		$result = $this->makeService()->execute(plan: $plan, userId: 'anyone');
 		self::assertCount(1, $result['results']);
 	}//end testExecuteCreateAppOnlyRequiresNoExistingAppRole()
+	// -------------------------------------------------------------------
+	// plan() — model steps of an agent turn (ai-agents-knowledge-and-run-trace)
+	// -------------------------------------------------------------------
+
+	/**
+	 * A repaired plan keeps both model calls: the first with the parse error as its
+	 * refusal, the second successful, and the plan returns the trace id the run
+	 * will look them up by (REQ-BQAG-004).
+	 *
+	 * @return void
+	 */
+	public function testARepairedAgentPlanKeepsBothModelSteps(): void {
+		$this->wireTaskProcessingManager();
+		$this->taskManager->method('getAvailableTaskTypes')->willReturn([TextToText::ID => []]);
+		$this->wireAgent(agentId: 'agent-1');
+		$this->wireCaller(uid: 'alice');
+		$this->objectService->method('searchObjectsBySlug')->willReturn(
+			[
+				['id' => 'app-1', 'slug' => 'tool-library', 'permissions' => ['owners' => ['user:alice']]],
+			]
+		);
+
+		$nextId = 1;
+		$this->taskManager->method('scheduleTask')->willReturnCallback(
+			function (Task $task) use (&$nextId): void {
+				$task->setId($nextId++);
+			}
+		);
+		$broken = new Task(TextToText::ID, ['input' => 'x'], 'buildiq', 'alice');
+		$broken->setStatus(Task::STATUS_SUCCESSFUL);
+		$broken->setOutput(['output' => 'Sure! Here is your plan: {steps: oops']);
+		$valid = new Task(TextToText::ID, ['input' => 'x'], 'buildiq', 'alice');
+		$valid->setStatus(Task::STATUS_SUCCESSFUL);
+		$valid->setOutput(
+			[
+				'output' => json_encode(
+					[
+						'summary' => 'Add a page',
+						'steps' => [['tool' => 'buildiq.upsertPage', 'arguments' => ['appSlug' => 'tool-library', 'pageId' => 'a', 'title' => 'A', 'type' => 'index', 'route' => '/a']]],
+					]
+				),
+			]
+		);
+		$this->taskManager->method('getTask')->willReturnOnConsecutiveCalls($broken, $valid);
+
+		$kept = null;
+		$this->agentRunLogger->expects(self::once())->method('rememberTrace')
+			->willReturnCallback(
+				function (array $agent, string $userId, array $trace) use (&$kept): string {
+					self::assertSame('agent-1', $agent['id']);
+					self::assertSame('alice', $userId);
+					$kept = $trace;
+					return 'trace-1';
+				}
+			);
+		$this->agentRunLogger->expects(self::never())->method('log');
+
+		$result = $this->makeService()->plan(brief: 'x', appSlug: null, userId: 'alice', agentId: 'agent-1');
+
+		self::assertSame('trace-1', $result['traceId']);
+		self::assertSame(['plan', 'repair'], array_column($kept['modelSteps'], 'kind'));
+		self::assertSame([1, 2], array_column($kept['modelSteps'], 'attempt'));
+		self::assertSame(['repair-needed', 'successful'], array_column($kept['modelSteps'], 'status'));
+		self::assertNotSame('', $kept['modelSteps'][0]['refusal'], 'the parse error that caused the repair');
+		self::assertSame('', $kept['modelSteps'][1]['refusal']);
+		self::assertSame('Sure! Here is your plan: {steps: oops', $kept['modelSteps'][0]['output']);
+		self::assertSame('core:text2text', $kept['modelSteps'][0]['taskType']);
+		self::assertGreaterThan(0, $kept['modelSteps'][0]['promptChars']);
+		self::assertSame([], $kept['knowledgeUsed']);
+		self::assertSame(array_sum(array_column($kept['modelSteps'], 'durationMs')), $kept['durationMs']);
+	}//end testARepairedAgentPlanKeepsBothModelSteps()
+
+	/**
+	 * A plan rejected in the same request hands its steps to the run directly.
+	 *
+	 * @return void
+	 */
+	public function testARejectedAgentPlanLogsTheStepsInHand(): void {
+		$this->wireTaskProcessingManager();
+		$this->taskManager->method('getAvailableTaskTypes')->willReturn([TextToText::ID => []]);
+		$this->wireAgent(agentId: 'agent-1', agent: ['enabledTools' => ['buildiq.upsertPage']]);
+		$this->wireCaller(uid: 'alice');
+		$this->objectService->method('searchObjectsBySlug')->willReturn(
+			[
+				['id' => 'app-1', 'slug' => 'tool-library', 'permissions' => ['owners' => ['user:alice']]],
+			]
+		);
+		$this->wireSuccessfulLlmReply(
+			json_encode(['summary' => 'x', 'steps' => [['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'x', 'name' => 'X']]]])
+		);
+
+		$this->agentRunLogger->expects(self::never())->method('rememberTrace');
+		$this->agentRunLogger->expects(self::once())->method('log')
+			->with(
+				self::anything(),
+				'alice',
+				'x',
+				[],
+				[],
+				'plan-rejected',
+				null,
+				self::callback(static fn (array $trace): bool => array_column($trace['modelSteps'], 'status') === ['successful'])
+			);
+
+		$this->expectException(CopilotException::class);
+		$this->makeService()->plan(brief: 'x', appSlug: null, userId: 'alice', agentId: 'agent-1');
+	}//end testARejectedAgentPlanLogsTheStepsInHand()
+
+	/**
+	 * The bare copilot keeps no trace and returns no trace id.
+	 *
+	 * @return void
+	 */
+	public function testTheBareCopilotKeepsNoTrace(): void {
+		$this->wireTaskProcessingManager();
+		$this->taskManager->method('getAvailableTaskTypes')->willReturn([TextToText::ID => []]);
+		$this->wireSuccessfulLlmReply(
+			json_encode(['summary' => 'x', 'steps' => [['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']]]])
+		);
+		$this->agentRunLogger->expects(self::never())->method('rememberTrace');
+
+		$result = $this->makeService()->plan(brief: 'x', appSlug: null, userId: 'alice');
+
+		self::assertArrayNotHasKey('traceId', $result);
+	}//end testTheBareCopilotKeepsNoTrace()
+
+	// -------------------------------------------------------------------
+	// plan() — an agent's knowledge (ai-agents-knowledge-and-run-trace)
+	// -------------------------------------------------------------------
+
+	/**
+	 * Build the SUT with a given knowledge reader.
+	 *
+	 * @param AgentKnowledgeReader $reader The knowledge reader.
+	 *
+	 * @return CopilotService
+	 */
+	private function makeServiceWithKnowledge(AgentKnowledgeReader $reader): CopilotService {
+		return new CopilotService(
+			container: $this->container,
+			logger: $this->createMock(LoggerInterface::class),
+			objectService: $this->objectService,
+			userManager: $this->userManager,
+			groupManager: $this->groupManager,
+			permissionResolver: new PermissionResolver(groupManager: $this->groupManager, logger: $this->createMock(LoggerInterface::class)),
+			toolProvider: $this->toolProvider,
+			planValidator: new CopilotPlanValidator(),
+			promptBuilder: new CopilotPromptBuilder(toolProvider: $this->toolProvider),
+			appDeletionService: $this->deletionService,
+			agentRunLogger: $this->agentRunLogger,
+			knowledgeReader: $reader,
+		);
+	}//end makeServiceWithKnowledge()
+
+	/**
+	 * An agent's plan prompt carries its knowledge after its instructions and
+	 * before the brief, and the trace names the files used (REQ-BQAG-002).
+	 *
+	 * @return void
+	 */
+	public function testAnAgentPlanReadsItsKnowledgeAfterItsInstructions(): void {
+		$this->wireTaskProcessingManager();
+		$this->taskManager->method('getAvailableTaskTypes')->willReturn([TextToText::ID => []]);
+		$this->wireAgent(agentId: 'agent-1', agent: ['knowledge' => [['fileName' => 'huisstijl-formulieren.md']]]);
+		$this->wireCaller(uid: 'alice');
+		$this->objectService->method('searchObjectsBySlug')->willReturn(
+			[
+				['id' => 'app-1', 'slug' => 'tool-library', 'permissions' => ['owners' => ['user:alice']]],
+			]
+		);
+
+		$prompts = [];
+		$nextId = 1;
+		$this->taskManager->method('scheduleTask')->willReturnCallback(
+			function (Task $task) use (&$nextId, &$prompts): void {
+				$prompts[] = (string)($task->getInput()['input'] ?? '');
+				$task->setId($nextId++);
+			}
+		);
+		$done = new Task(TextToText::ID, ['input' => 'x'], 'buildiq', 'alice');
+		$done->setStatus(Task::STATUS_SUCCESSFUL);
+		$done->setOutput(
+			[
+				'output' => json_encode(
+					[
+						'summary' => 'Add a page',
+						'steps' => [['tool' => 'buildiq.upsertPage', 'arguments' => ['appSlug' => 'tool-library', 'pageId' => 'a', 'title' => 'A', 'type' => 'index', 'route' => '/a']]],
+					]
+				),
+			]
+		);
+		$this->taskManager->method('getTask')->willReturn($done);
+
+		$reader = $this->createMock(AgentKnowledgeReader::class);
+		$reader->expects(self::once())->method('read')
+			->with(self::callback(static fn (array $agent): bool => ($agent['id'] ?? null) === 'agent-1'))
+			->willReturn([['fileName' => 'huisstijl-formulieren.md', 'text' => 'Field labels are in sentence case.']]);
+
+		$kept = null;
+		$this->agentRunLogger->method('rememberTrace')->willReturnCallback(
+			function (array $agent, string $userId, array $trace) use (&$kept): string {
+				$kept = $trace;
+				return 'trace-1';
+			}
+		);
+
+		$this->makeServiceWithKnowledge(reader: $reader)->plan(brief: 'Add a contact form', appSlug: null, userId: 'alice', agentId: 'agent-1');
+
+		self::assertCount(1, $prompts);
+		$prompt = $prompts[0];
+		$instructions = strpos($prompt, 'Be helpful.');
+		$knowledge = strpos($prompt, "--- huisstijl-formulieren.md ---\nField labels are in sentence case.");
+		$brief = strpos($prompt, "User brief:\nAdd a contact form");
+		self::assertIsInt($instructions);
+		self::assertIsInt($knowledge);
+		self::assertIsInt($brief);
+		self::assertTrue($instructions < $knowledge && $knowledge < $brief, 'instructions, then knowledge, then the brief');
+		self::assertSame(['huisstijl-formulieren.md'], $kept['knowledgeUsed']);
+	}//end testAnAgentPlanReadsItsKnowledgeAfterItsInstructions()
+
+	/**
+	 * A caller without owner or editor access to the agent's app gets no plan,
+	 * and the agent's knowledge is never read for them (REQ-BQAG-002).
+	 *
+	 * @return void
+	 */
+	public function testACallerWithoutAppAccessGetsNoPlanAndNoKnowledge(): void {
+		$this->wireTaskProcessingManager();
+		$this->taskManager->method('getAvailableTaskTypes')->willReturn([TextToText::ID => []]);
+		$this->wireAgent(agentId: 'agent-1', agent: ['knowledge' => [['fileName' => 'huisstijl-formulieren.md']]]);
+		$this->wireCaller(uid: 'bob');
+		$this->objectService->method('searchObjectsBySlug')->willReturn(
+			[
+				['id' => 'app-1', 'slug' => 'tool-library', 'permissions' => ['owners' => ['user:alice'], 'viewers' => ['user:bob']]],
+			]
+		);
+		$this->taskManager->expects(self::never())->method('scheduleTask');
+
+		$reader = $this->createMock(AgentKnowledgeReader::class);
+		$reader->expects(self::never())->method('read');
+
+		try {
+			$this->makeServiceWithKnowledge(reader: $reader)->plan(brief: 'x', appSlug: null, userId: 'bob', agentId: 'agent-1');
+			self::fail('A viewer must get no plan.');
+		} catch (CopilotException $e) {
+			self::assertSame('forbidden', $e->getErrorCode());
+			self::assertSame(403, $e->getHttpStatus());
+		}
+	}//end testACallerWithoutAppAccessGetsNoPlanAndNoKnowledge()
 }//end class
