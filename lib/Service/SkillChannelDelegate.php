@@ -36,6 +36,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Values\RepoSource;
 use OCP\App\IAppManager;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -88,11 +89,8 @@ class SkillChannelDelegate {
 	 * Apply the skills channel.
 	 *
 	 * @param array<string,mixed> $skills The channel (name → path → contents).
-	 * @param string $owner Repo owner.
-	 * @param string $repo Repo name.
-	 * @param string|null $ref Optional git ref.
+	 * @param RepoSource $source Repo coordinates, git ref and broker credential.
 	 * @param string|null $actingUserId The session UID.
-	 * @param string|null $credentialId Optional broker credential UUID.
 	 * @param ChannelApplyReport $report The report to write into.
 	 *
 	 * @return void
@@ -101,11 +99,8 @@ class SkillChannelDelegate {
 	 */
 	public function apply(
 		array $skills,
-		string $owner,
-		string $repo,
-		?string $ref,
+		RepoSource $source,
 		?string $actingUserId,
-		?string $credentialId,
 		ChannelApplyReport $report,
 	): void {
 		$report->declareChannel(channel: self::CHANNEL, declared: count($skills));
@@ -114,7 +109,7 @@ class SkillChannelDelegate {
 			return;
 		}
 
-		if ($owner === '' || $repo === '') {
+		if ($source->owner === '' || $source->repo === '') {
 			// Hermiq fetches the bundle itself, so without coordinates there is
 			// nothing to delegate. Reported rather than treated as "no skills".
 			$report->skipChannel(channel: self::CHANNEL, reason: 'no-repo-coordinates');
@@ -132,11 +127,11 @@ class SkillChannelDelegate {
 
 		try {
 			$result = $installer->installFromRepo(
-				owner: $owner,
-				repo: $repo,
-				ref: $ref,
+				owner: $source->owner,
+				repo: $source->repo,
+				ref: $source->ref,
 				actingUserId: $actingUserId,
-				credentialId: $credentialId
+				credentialId: $source->credentialId
 			);
 
 			$this->adoptCounts(result: $result, report: $report);
@@ -188,14 +183,16 @@ class SkillChannelDelegate {
 
 		$report->adoptCounts(
 			channel: self::CHANNEL,
-			created: ($installed + $updated + $unchanged),
-			skipped: (int)($result['skipped'] ?? 0),
-			failed: (int)($result['failed'] ?? 0),
-			truncated: (bool)($result['truncated'] ?? false),
-			sourceCounts: [
-				'installed' => $installed,
-				'updated' => $updated,
-				'unchanged' => $unchanged,
+			outcome: [
+				'created' => ($installed + $updated + $unchanged),
+				'skipped' => (int)($result['skipped'] ?? 0),
+				'failed' => (int)($result['failed'] ?? 0),
+				'truncated' => (bool)($result['truncated'] ?? false),
+				'sourceCounts' => [
+					'installed' => $installed,
+					'updated' => $updated,
+					'unchanged' => $unchanged,
+				],
 			]
 		);
 

@@ -1,19 +1,30 @@
 <?php
 
+/**
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ */
+
 declare(strict_types=1);
 
 namespace OCA\Buildiq\Tests\Unit\Service;
 
 use OCA\Buildiq\Service\DataRegisterExportBundler;
 use OCA\Buildiq\Service\ExportAppContentBundler;
+use OCA\Buildiq\Service\ExportBundlers;
+use OCA\Buildiq\Kernel\Values\ExportContents;
 use OCA\Buildiq\Service\ExportService;
+use OCA\Buildiq\Kernel\Values\ExportTarget;
 use OCA\Buildiq\Service\PlaceholderResolver;
 use OCA\Buildiq\Service\RegisterRowReader;
+use OCA\Buildiq\Service\ScaffoldOptions;
+use OCA\Buildiq\Service\ServerBundleWriter;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCP\App\IAppManager;
 use OCP\Files\IAppData;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
@@ -78,6 +89,49 @@ final class ExportServiceTest extends TestCase {
 	}//end testGenerateAppZipResolvesPlaceholdersAcrossTheTree()
 
 	/**
+	 * REQ-BQSD-001, REQ-BQSD-003, REQ-BQSD-004: an own-server export carries
+	 * deploy/ with the app id and the builder's OpenRegister version filled in,
+	 * no buildiq and no password, and the README points at it.
+	 *
+	 * @return void
+	 */
+	public function testServerBundleLandsInDeployWithTheAppAndVersionsFilledIn(): void {
+		$appManager = $this->createMock(IAppManager::class);
+		$appManager->method('getAppVersion')->with('openregister')->willReturn('1.14.2');
+		$service = $this->buildService(serverBundleWriter: new ServerBundleWriter($appManager));
+
+		$entries = $this->export(service: $service, includeServerBundle: true);
+
+		foreach (['Dockerfile', 'compose.yaml', '.env.example', 'README.md', 'install-apps.sh', 'enable-apps.sh'] as $file) {
+			self::assertArrayHasKey('deploy/' . $file, $entries);
+			self::assertDoesNotMatchRegularExpression('/\{\{[a-zA-Z]+\}\}/', $entries['deploy/' . $file], 'unresolved placeholder in deploy/' . $file);
+			self::assertStringNotContainsStringIgnoringCase('buildiq', $entries['deploy/' . $file], 'deploy/' . $file . ' names buildiq');
+		}
+
+		self::assertStringContainsString('OPENREGISTER_VERSION=1.14.2', $entries['deploy/.env.example']);
+		self::assertStringContainsString('name: demo-app', $entries['deploy/compose.yaml']);
+		self::assertStringContainsString('${POSTGRES_PASSWORD:?', $entries['deploy/compose.yaml']);
+		self::assertStringContainsString('${NEXTCLOUD_ADMIN_PASSWORD:?', $entries['deploy/compose.yaml']);
+		self::assertMatchesRegularExpression('/^(NEXTCLOUD_ADMIN_PASSWORD|POSTGRES_PASSWORD)=$/m', $entries['deploy/.env.example']);
+		self::assertStringContainsString('app:enable demo-app', $entries['deploy/enable-apps.sh']);
+		self::assertStringContainsString('deploy/README.md', $entries['README.md']);
+	}//end testServerBundleLandsInDeployWithTheAppAndVersionsFilledIn()
+
+	/**
+	 * REQ-BQSD-001: without the flag there is no deploy/ folder, even when
+	 * the writer is wired.
+	 *
+	 * @return void
+	 */
+	public function testExportWithoutTheServerBundleHasNoDeployFolder(): void {
+		$service = $this->buildService(serverBundleWriter: new ServerBundleWriter($this->createMock(IAppManager::class)));
+
+		$entries = $this->export(service: $service);
+
+		self::assertSame([], array_values(array_filter(array_keys($entries), static fn (string $path): bool => str_starts_with($path, 'deploy/'))));
+	}//end testExportWithoutTheServerBundleHasNoDeployFolder()
+
+	/**
 	 * A freshly built archive must not already be older than the window the
 	 * cleanup job purges by.
 	 *
@@ -99,12 +153,8 @@ final class ExportServiceTest extends TestCase {
 	public function testGeneratedZipIsNotBornOlderThanTheCleanupWindow(): void {
 		$jobUuid = 'unit-' . bin2hex(random_bytes(6));
 		$zipPath = $this->buildService()->generateAppZip(
-			applicationUuid: 'app-uuid',
-			versionSlug: '1.2.3',
-			context: $this->context(),
-			jobUuid: $jobUuid,
-			dataRegisters: [],
-			source: null
+			target: new ExportTarget(applicationUuid: 'app-uuid', versionSlug: '1.2.3', jobUuid: $jobUuid),
+			contents: new ExportContents(context: $this->context(), dataRegisters: [], source: null)
 		);
 		$this->litter[] = $zipPath;
 		$this->litter[] = sys_get_temp_dir() . '/buildiq-work/' . $jobUuid;
@@ -458,6 +508,28 @@ final class ExportServiceTest extends TestCase {
 	}//end testBuildScaffoldMapProducesAnInstallableStandaloneApp()
 
 	/**
+	 * buildScaffoldMap() bundles the bound data registers' schemas into the
+	 * map, and adds nothing else to the plain scaffold for them.
+	 */
+	public function testBuildScaffoldMapBundlesBoundDataRegisters(): void {
+		$registerMapper = $this->createMock(RegisterMapper::class);
+		$registerMapper->method('find')->willReturn($this->buildRegisterMock(schemaIds: [1]));
+		$schemaMapper = $this->createMock(SchemaMapper::class);
+		$schemaMapper->method('find')->with(1)->willReturn($this->buildSchemaMock(slug: 'ok-schema', title: 'Ok', required: [], properties: []));
+		$service = $this->buildService(registerMapper: $registerMapper, schemaMapper: $schemaMapper);
+
+		$plain = $service->buildScaffoldMap(context: $this->context());
+		$bound = $service->buildScaffoldMap(
+			context: $this->context(),
+			options: new ScaffoldOptions(dataRegisters: [['register' => 'spectr']], applicationSlug: 'demo-app')
+		);
+
+		self::assertSame(['lib/Settings/data-registers/spectr.schema.json'], array_values(array_diff(array_keys($bound), array_keys($plain))));
+		self::assertSame([], array_diff(array_keys($plain), array_keys($bound)));
+		self::assertStringContainsString('ok-schema', $bound['lib/Settings/data-registers/spectr.schema.json']);
+	}//end testBuildScaffoldMapBundlesBoundDataRegisters()
+
+	/**
 	 * buildScaffoldMap() stages on disk but hands back only the map — it must
 	 * leave no scratch tree behind, on the success path or on the throw path.
 	 */
@@ -505,16 +577,14 @@ final class ExportServiceTest extends TestCase {
 		array $dataRegisters = [],
 		?ExportService $service = null,
 		?array $source = null,
+		bool $includeServerBundle = false,
 	): array {
 		$jobUuid = 'unit-' . bin2hex(random_bytes(6));
 
 		$zipPath = ($service ?? $this->buildService())->generateAppZip(
-			applicationUuid: 'app-uuid',
-			versionSlug: '1.2.3',
-			context: $this->context(),
-			jobUuid: $jobUuid,
-			dataRegisters: $dataRegisters,
-			source: $source
+			target: new ExportTarget(applicationUuid: 'app-uuid', versionSlug: '1.2.3', jobUuid: $jobUuid),
+			contents: new ExportContents(context: $this->context(), dataRegisters: $dataRegisters, source: $source),
+			includeServerBundle: $includeServerBundle
 		);
 
 		$this->litter[] = $zipPath;
@@ -572,6 +642,7 @@ final class ExportServiceTest extends TestCase {
 		?SchemaMapper $schemaMapper = null,
 		?ObjectServiceInterface $objectService = null,
 		?ExportAppContentBundler $contentBundler = null,
+		?ServerBundleWriter $serverBundleWriter = null,
 	): ExportService {
 		$appData = $this->createStub(IAppData::class);
 		$bundler = new DataRegisterExportBundler(
@@ -582,20 +653,20 @@ final class ExportServiceTest extends TestCase {
 		);
 
 		return new ExportService(
-			$appData,
-			new PlaceholderResolver(),
-			new NullLogger(),
-			$bundler,
-			// The flow/agent bundler. Injected as a no-op double: these tests
-			// are about the data-register path and the ZIP mechanics, and a
-			// real one here would couple them to a second store.
-			new \OCA\Buildiq\Service\FlowAndAgentExportBundler(
-				$this->createMock(\OCA\OpenRegister\Db\FlowMapper::class),
-				$this->createMock(\OCA\OpenRegister\Service\ObjectService::class),
-				appManager: $this->createMock(originalClassName: \OCP\App\IAppManager::class),
-				logger: new NullLogger()
-			),
-			$contentBundler
+			appData: $appData,
+			placeholderResolver: new PlaceholderResolver(),
+			logger: new NullLogger(),
+			bundlers: new ExportBundlers(
+				dataRegisterBundler: $bundler,
+				flowAndAgentBundler: new \OCA\Buildiq\Service\FlowAndAgentExportBundler(
+					$this->createMock(\OCA\OpenRegister\Db\FlowMapper::class),
+					$this->createMock(\OCA\OpenRegister\Service\ObjectService::class),
+					appManager: $this->createMock(originalClassName: \OCP\App\IAppManager::class),
+					logger: new NullLogger()
+				),
+				contentBundler: $contentBundler,
+				serverBundleWriter: $serverBundleWriter
+			)
 		);
 	}//end buildService()
 

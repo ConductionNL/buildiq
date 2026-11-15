@@ -3,6 +3,9 @@
 /**
  * Buildiq RuleActionDispatcher
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Completes the ADR-031 §Exceptions rules-engine code path: the concrete
  * side-effect dispatcher `ConditionActionExecutor` has always accepted as an
  * optional `?callable $dispatcher` but that `RuleEngineService` never wired
@@ -44,9 +47,6 @@
  * actions when `continueOnError` is false but the type itself is merely
  * unsupported rather than a hard failure.
  *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
- *
  * @category Service
  * @package  OCA\Buildiq\Service
  *
@@ -58,7 +58,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/automation-designer/tasks.md#2.3
+ * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#2.3
  * @spec openspec/specs/automation-designer/spec.md#req-autd-010
  */
 
@@ -67,7 +67,9 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use DateTime;
+use OCA\Buildiq\Kernel\Contracts\RuleActionDispatcherInterface;
 use OCA\Buildiq\Service\Connection\ConnectionReporter;
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\SecurityService;
 use OCP\Http\Client\IClientService;
@@ -85,7 +87,7 @@ use Throwable;
  *   OpenRegister objects, the HTTP client and its egress guard, the rule engine), and
  *   the egress guard ADR-067 requires on the webhook is what tipped the count over.
  */
-class RuleActionDispatcher {
+class RuleActionDispatcher implements RuleActionDispatcherInterface {
 	/**
 	 * App identifier stamped on every created NC notification.
 	 */
@@ -203,6 +205,7 @@ class RuleActionDispatcher {
 	 * @param array<string,mixed> $params Action parameters.
 	 *
 	 * @return array<string,mixed>|null The saved object, normalised, or null on skip.
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function dispatchObjectOp(array $params): ?array {
 		$schema = (string)($params['schema'] ?? '');
@@ -239,7 +242,7 @@ class RuleActionDispatcher {
 			$saved = $write();
 		}
 
-		return $this->normalise(object: $saved);
+		return ObjectRecord::arrayOrNull(object: $saved);
 	}//end dispatchObjectOp()
 
 	/**
@@ -353,26 +356,4 @@ class RuleActionDispatcher {
 		$this->logger->warning('Buildiq: RuleActionDispatcher received an unrecognised action type "' . $type . '".');
 		return null;
 	}//end logUnknown()
-
-	/**
-	 * Coerce an OR result entry to a plain associative array.
-	 *
-	 * @param mixed $object The OR object/result entry.
-	 *
-	 * @return array<string,mixed>|null
-	 */
-	private function normalise(mixed $object): ?array {
-		if (is_array($object) === true) {
-			return $object;
-		}
-
-		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-			$serialised = $object->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		return null;
-	}//end normalise()
 }//end class

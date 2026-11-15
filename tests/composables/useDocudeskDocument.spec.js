@@ -148,3 +148,97 @@ describe('useDocudeskDocument', () => {
 		expect(JSON.stringify(object)).toBe(snapshot)
 	})
 })
+
+describe('resolveDataRef fallbacks', () => {
+	it('falls back to top-level register, schema, uuid and id', () => {
+		expect(
+			resolveDataRef({ register: 'r', schema: 's', uuid: 'u', id: 'i' }, null),
+		).toEqual({ register: 'r', schema: 's', id: 'u' })
+		expect(resolveDataRef({ register: 'r', schema: 's', id: 'i' }, {})).toEqual({
+			register: 'r',
+			schema: 's',
+			id: 'i',
+		})
+	})
+	it('falls back to the attachment schema and keeps a register of 0', () => {
+		expect(resolveDataRef({ '@self': { register: 0, id: 'x' } }, attachment)).toEqual(
+			{ register: 0, schema: 'kapaanvraag', id: 'x' },
+		)
+	})
+	it('prefers @self over the top level, even when @self is falsy-but-set', () => {
+		expect(
+			resolveDataRef(
+				{ '@self': { register: 'a', schema: 's1', id: 'x' }, register: 'b', schema: 's2' },
+				attachment,
+			),
+		).toEqual({ register: 'a', schema: 's1', id: 'x' })
+	})
+	it('returns null without a register or a schema', () => {
+		expect(resolveDataRef({ '@self': { register: null, schema: 's', id: 'x' } }, {})).toBeNull()
+		expect(resolveDataRef({ '@self': { schema: 's', id: 'x' } }, {})).toBeNull()
+		expect(resolveDataRef({ '@self': { register: 'r', id: 'x' } }, {})).toBeNull()
+		expect(resolveDataRef({ '@self': { register: 'r', schema: '', id: 'x' } }, null)).toBeNull()
+	})
+	it('throws on a missing object', () => {
+		expect(() => resolveDataRef(null, attachment)).toThrow(TypeError)
+	})
+})
+
+describe('useDocudeskDocument generate outcomes', () => {
+	const blobResponse = () => ({
+		data: new Blob(['PDF'], { type: 'application/pdf' }),
+	})
+
+	it('fails without a request when the object reference cannot be resolved', async () => {
+		const client = { post: vi.fn() }
+		const docs = useDocudeskDocument({ client, download: vi.fn() })
+		const bare = { '@self': { register: 'kap' } }
+		await expect(docs.generate(attachment, bare)).resolves.toBe('generate-failed')
+		expect(client.post).not.toHaveBeenCalled()
+		expect(docs.errorFor(attachment, bare)).toBe('generate-failed')
+		expect(docs.busyFor(attachment, bare)).toBe(false)
+	})
+
+	it('sends the attachment format and names the download after it', async () => {
+		const client = { post: vi.fn().mockResolvedValue(blobResponse()) }
+		const download = vi.fn()
+		const docs = useDocudeskDocument({ client, download })
+		const result = await docs.generate({ ...attachment, format: 'docx' }, object)
+		expect(result).toBeNull()
+		const [url, body] = client.post.mock.calls[0]
+		expect(url).toBe('//index.php/apps/filinq/api/correspondence/generate')
+		expect(body).toEqual({
+			templateId: UUID,
+			dataRefs: [{ register: 'kap', schema: 'kapaanvraag', id: 'abc-123' }],
+			options: { format: 'docx' },
+			filename: 'Generate-confirmation-letter-abc-123.docx',
+		})
+		expect(download).toHaveBeenCalledTimes(1)
+		expect(download.mock.calls[0][1]).toBe(
+			'Generate-confirmation-letter-abc-123.docx',
+		)
+	})
+
+	it('clears the busy flag and a previous error after a later success', async () => {
+		const client = {
+			post: vi
+				.fn()
+				.mockRejectedValueOnce(undefined)
+				.mockResolvedValueOnce({ data: { content: '<p>x</p>' } }),
+		}
+		const download = vi.fn()
+		const docs = useDocudeskDocument({ client, download })
+		await expect(docs.generate(attachment, object)).resolves.toBe('generate-failed')
+		expect(docs.errorFor(attachment, object)).toBe('generate-failed')
+		expect(docs.busyFor(attachment, object)).toBe(false)
+		await expect(docs.generate(attachment, object)).resolves.toBeNull()
+		expect(docs.errorFor(attachment, object)).toBeNull()
+		expect(download.mock.calls[0][0]).toBeInstanceOf(Blob)
+	})
+
+	it('maps a failure without a response to generate-failed', async () => {
+		const client = { post: vi.fn().mockRejectedValue(new Error('net')) }
+		const docs = useDocudeskDocument({ client, download: vi.fn() })
+		await expect(docs.generate(attachment, object)).resolves.toBe('generate-failed')
+	})
+})

@@ -194,6 +194,52 @@ describe('AutomationEditDialog', () => {
 		})
 	})
 
+	it('buildActions: persists every action type in the shape OpenRegister accepts (golden)', async () => {
+		const wrapper = factory()
+		await openDialog(wrapper)
+
+		wrapper.vm.actions = [
+			{ type: 'send-notification', channels: ['email'], recipients: ['admins'], subjectEn: 'Hi', subjectNl: 'Hoi', extra: 1 },
+			{ type: 'run-synchronization', synchronizationId: 'sync-1', extra: 1 },
+			{ type: 'object-op', operation: 'update', schema: 'case', fieldMappingText: '{"a":1}' },
+			{ type: 'object-op', operation: 'create', schema: 'case', fieldMappingText: '{}' },
+			{ type: 'object-op', operation: 'create', schema: 'case', fieldMappingText: 'not json' },
+			{ type: 'object-op', operation: 'delete', schema: 'case', fieldMappingText: '' },
+			{ type: 'object-op', operation: 'create', schema: 'case', fieldMappingText: '42' },
+			{ type: 'object-op', operation: 'create', schema: 'case', fieldMappingText: '[1]' },
+			{ type: 'approval', assigneeGroup: 'managers', onApprove: [{ type: 'webhook' }], onReject: 'nope' },
+			{ type: 'approval', assigneeGroup: 'managers', onApprove: null, onReject: [] },
+			{ type: 'generateDocument', templateId: 'tpl-1', output: ['attach'] },
+			{ type: 'generateDocument', templateId: 'tpl-2', output: 'attach' },
+			{ type: 'webhook', url: 'https://hooks.test/a', payloadTemplateText: '{"b":2}' },
+			{ type: 'webhook', url: 'https://hooks.test/b', payloadTemplateText: '{}' },
+			{ type: 'webhook', url: 'https://hooks.test/c', payloadTemplateText: '{oops' },
+			{ type: 'something-else', url: 'https://hooks.test/d' },
+		]
+
+		expect(wrapper.vm.buildActions()).toEqual([
+			{ type: 'send-notification', channels: ['email'], recipients: ['admins'], subject: { en: 'Hi', nl: 'Hoi' } },
+			{ type: 'run-synchronization', synchronizationId: 'sync-1' },
+			{ type: 'object-op', operation: 'update', schema: 'case', fieldMapping: { a: 1 } },
+			{ type: 'object-op', operation: 'create', schema: 'case' },
+			{ type: 'object-op', operation: 'create', schema: 'case' },
+			{ type: 'object-op', operation: 'delete', schema: 'case' },
+			{ type: 'object-op', operation: 'create', schema: 'case' },
+			{ type: 'object-op', operation: 'create', schema: 'case', fieldMapping: [1] },
+			{ type: 'approval', assigneeGroup: 'managers', onApprove: [{ type: 'webhook' }], onReject: [] },
+			{ type: 'approval', assigneeGroup: 'managers', onApprove: [], onReject: [] },
+			{ type: 'generateDocument', templateId: 'tpl-1', output: ['attach'] },
+			{ type: 'generateDocument', templateId: 'tpl-2', output: [] },
+			{ type: 'webhook', url: 'https://hooks.test/a', payloadTemplate: { b: 2 } },
+			{ type: 'webhook', url: 'https://hooks.test/b' },
+			{ type: 'webhook', url: 'https://hooks.test/c' },
+			{ type: 'webhook', url: 'https://hooks.test/d' },
+		])
+		const keys = wrapper.vm.buildActions().map((a) => Object.keys(a))
+		expect(keys[3]).toEqual(['type', 'operation', 'schema'])
+		expect(keys[13]).toEqual(['type', 'url'])
+	})
+
 	it('REQ-AUTD-002 scenario 3: composes a manual automation with a condition + object-op', async () => {
 		const wrapper = factory()
 		await openDialog(wrapper)
@@ -428,5 +474,57 @@ describe('AutomationEditDialog', () => {
 		expect(wrapper.vm.docudeskAvailable).toBe(false)
 		expect(wrapper.vm.actionBlockedReason('generateDocument')).not.toBe('')
 		expect(wrapper.vm.valid).toBe(false)
+	})
+
+	describe('schedule cadence', () => {
+		it('offers the six cadences with their labels', async () => {
+			const wrapper = factory()
+			await openDialog(wrapper)
+
+			expect(wrapper.vm.cadenceOptions).toEqual([
+				{ id: 'hourly', label: 'Hourly' },
+				{ id: 'daily', label: 'Daily' },
+				{ id: 'weekly', label: 'Weekly' },
+				{ id: 'monthly', label: 'Monthly' },
+				{ id: 'custom-cron', label: 'Custom (cron)' },
+				{ id: 'custom-interval', label: 'Custom interval (seconds)' },
+			])
+		})
+
+		it.each([
+			[{ type: 'schedule', cron: '0 3 * * 1', interval: 3600 }, 'custom-cron'],
+			[{ type: 'schedule', cron: '', interval: 604800 }, 'weekly'],
+			[{ type: 'schedule', interval: 2592000 }, 'monthly'],
+			[{ type: 'schedule', interval: 43200 }, 'custom-interval'],
+			[{ type: 'manual' }, 'custom-interval'],
+		])('maps the stored trigger %j to the %s cadence', async (trigger, id) => {
+			const wrapper = factory({ ...baseAutomation(), slug: 'a', trigger })
+			await openDialog(wrapper)
+
+			expect(wrapper.vm.cadenceOption).toEqual(
+				wrapper.vm.cadenceOptions.find((o) => o.id === id),
+			)
+		})
+
+		it.each([
+			['hourly', { type: 'schedule', interval: 3600 }],
+			['monthly', { type: 'schedule', interval: 2592000 }],
+			[null, { type: 'schedule', interval: 86400 }],
+		])('writes the %s preset as its interval', async (id, expected) => {
+			const wrapper = factory()
+			await openDialog(wrapper)
+			wrapper.vm.triggerType = 'schedule'
+			wrapper.vm.cadenceOption = wrapper.vm.cadenceOptions.find((o) => o.id === id) || null
+
+			expect(wrapper.vm.buildTrigger()).toEqual(expected)
+		})
+
+		it('derives the slug from the name', async () => {
+			const wrapper = factory()
+			await openDialog(wrapper)
+			wrapper.vm.name = '  Nightly  Sync -- Run! '
+
+			expect(wrapper.vm.derivedSlug).toBe('nightly-sync-run')
+		})
 	})
 })

@@ -33,6 +33,117 @@ function pagesOf(manifest) {
 }
 
 /**
+ * Whether a value is a string with at least one character.
+ *
+ * @param {unknown} value - the value to test.
+ * @return {boolean}
+ * @spec exclude shape helper
+ */
+function isFilled(value) {
+	return typeof value === 'string' && value !== ''
+}
+
+/**
+ * Name every page without an id after its own route.
+ *
+ * The route is the only stable thing such a page carries, and it is unique
+ * within a manifest, so it doubles as the route name.
+ *
+ * @param {Array<object>} pages - the pages.
+ * @return {void}
+ * @spec exclude step of normalizeManifestRouting
+ */
+function nameUnnamedPages(pages) {
+	for (const page of pages) {
+		if (isUnnamedPage(page) && isFilled(page.route)) {
+			page.id = page.route
+		}
+	}
+}
+
+/**
+ * Whether an entry is a page object without an id.
+ *
+ * @param {unknown} page - a manifest page entry.
+ * @return {boolean}
+ * @spec exclude step of nameUnnamedPages
+ */
+function isUnnamedPage(page) {
+	return Boolean(page) && typeof page === 'object' && !isFilled(page.id)
+}
+
+/**
+ * The page ids of a manifest, and the first page id per page path.
+ *
+ * @param {Array<object>} pages - the pages.
+ * @return {{ids: Set<string>, idByRoute: Map<string,string>}} the index.
+ * @spec exclude step of normalizeManifestRouting
+ */
+function pageIndex(pages) {
+	const index = { ids: new Set(), idByRoute: new Map() }
+	for (const page of pages) {
+		if (page && isFilled(page.id)) {
+			indexPage(index, page)
+		}
+	}
+	return index
+}
+
+/**
+ * Add a named page to the index: its id, and its path when no earlier page
+ * took that path.
+ *
+ * @param {{ids: Set<string>, idByRoute: Map<string,string>}} index - the index (mutated).
+ * @param {object} page - a page with an id.
+ * @return {void}
+ * @spec exclude step of pageIndex
+ */
+function indexPage(index, page) {
+	index.ids.add(page.id)
+	if (isFilled(page.route) && !index.idByRoute.has(page.route)) {
+		index.idByRoute.set(page.route, page.id)
+	}
+}
+
+/**
+ * Point a menu entry that names a page's path at that page's id.
+ *
+ * @param {object} item - the menu entry.
+ * @param {{ids: Set<string>, idByRoute: Map<string, string>}} index - the page ids and the id of each page path.
+ * @return {void}
+ */
+function repointRoute(item, index) {
+	if (
+		isFilled(item.route)
+		&& !index.ids.has(item.route)
+		&& index.idByRoute.has(item.route)
+	) {
+		item.route = index.idByRoute.get(item.route)
+	}
+}
+
+/**
+ * Repoint one level of menu entries, then their children.
+ *
+ * @param {Array<object>} items - menu entries.
+ * @param {{ids: Set<string>, idByRoute: Map<string,string>}} index - the page
+ *   ids this manifest declares, and the page id per page path.
+ * @return {void}
+ * @spec exclude recursion helper for normalizeManifestRouting
+ */
+function repointMenu(items, index) {
+	for (const item of items) {
+		if (!item || typeof item !== 'object') {
+			continue
+		}
+		repointRoute(item, index)
+		if (Array.isArray(item.children)) {
+			repointMenu(item.children, index)
+		}
+	}
+}
+
+/**
  * Give every page an id, and point every menu entry at one.
  *
  * Mutates the manifest in place, because the runtime hands this same object to
@@ -48,66 +159,8 @@ export function normalizeManifestRouting(manifest) {
 	}
 
 	const pages = pagesOf(manifest)
-	for (const page of pages) {
-		if (!page || typeof page !== 'object') {
-			continue
-		}
-		if (typeof page.id === 'string' && page.id !== '') {
-			continue
-		}
-		// The route is the only stable thing such a page carries, and it is
-		// unique within a manifest, so it doubles as the route name.
-		if (typeof page.route === 'string' && page.route !== '') {
-			page.id = page.route
-		}
-	}
-
-	const idByRoute = new Map()
-	const ids = new Set()
-	for (const page of pages) {
-		if (page && typeof page.id === 'string' && page.id !== '') {
-			ids.add(page.id)
-			if (typeof page.route === 'string' && page.route !== '') {
-				if (!idByRoute.has(page.route)) {
-					idByRoute.set(page.route, page.id)
-				}
-			}
-		}
-	}
-
-	repointMenu(
-		manifest && Array.isArray(manifest.menu) ? manifest.menu : [],
-		ids,
-		idByRoute,
-	)
+	nameUnnamedPages(pages)
+	repointMenu(Array.isArray(manifest.menu) ? manifest.menu : [], pageIndex(pages))
 
 	return manifest
-}
-
-/**
- * Repoint one level of menu entries, then their children.
- *
- * @param {Array<object>} items - menu entries.
- * @param {Set<string>} ids - the page ids this manifest declares.
- * @param {Map<string,string>} idByRoute - page id per page path.
- * @return {void}
- * @spec exclude recursion helper for normalizeManifestRouting
- */
-function repointMenu(items, ids, idByRoute) {
-	for (const item of items) {
-		if (!item || typeof item !== 'object') {
-			continue
-		}
-		if (
-			typeof item.route === 'string'
-			&& item.route !== ''
-			&& !ids.has(item.route)
-			&& idByRoute.has(item.route)
-		) {
-			item.route = idByRoute.get(item.route)
-		}
-		if (Array.isArray(item.children)) {
-			repointMenu(item.children, ids, idByRoute)
-		}
-	}
 }

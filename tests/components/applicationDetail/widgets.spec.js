@@ -190,4 +190,40 @@ describe('applicationDetail widgets', () => {
 			}),
 		)
 	})
+	describe('GroupsWidget rows', () => {
+		it('labels users, groups and bare principals, in role then entry order', () => {
+			const wrapper = shallowMount(GroupsWidget, {
+				propsData: {
+					application: {
+						permissions: {
+							viewers: ['group:everyone'],
+							owners: ['user:alice', 'admins'],
+							editors: ['group:devs', '', 7, null, 'user:bob'],
+						},
+					},
+				},
+				mocks: { t },
+			})
+			expect(wrapper.vm.rows).toEqual([
+				{ role: 'owners', principal: 'user:alice', label: 'alice', isGroup: false },
+				{ role: 'owners', principal: 'admins', label: 'admins', isGroup: true },
+				{ role: 'editors', principal: 'group:devs', label: 'devs', isGroup: true },
+				{ role: 'editors', principal: 'user:bob', label: 'bob', isGroup: false },
+				{ role: 'viewers', principal: 'group:everyone', label: 'everyone', isGroup: true },
+			])
+		})
+
+		it.each([
+			[{ permissions: { owners: 'user:alice', editors: null } }],
+			[{ permissions: null }],
+			[{}],
+			[null],
+		])('has no rows for %j', (application) => {
+			const wrapper = shallowMount(GroupsWidget, {
+				propsData: { application },
+				mocks: { t },
+			})
+			expect(wrapper.vm.rows).toEqual([])
+		})
+	})
 })

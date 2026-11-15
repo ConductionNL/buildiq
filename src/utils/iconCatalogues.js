@@ -1,4 +1,8 @@
 /**
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ */
+/**
  * iconCatalogues.js
  *
  * Builds the icon catalogues passed to the shared CnIconPicker (enriched

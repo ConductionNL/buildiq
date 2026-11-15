@@ -33,6 +33,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Mcp\Handler;
 
 use OCA\Buildiq\Support\ManifestWidgetShape;
+use OCA\Buildiq\Support\WidgetSpec;
 
 /**
  * Handles the buildiq.addWidget tool invocation.
@@ -97,10 +98,7 @@ class AddWidgetHandler extends AbstractToolHandler {
 		}
 
 		$appSlug = $validation['appSlug'];
-		$versionSlug = $validation['versionSlug'];
 		$pageId = $validation['pageId'];
-		$widgetType = $validation['widgetType'];
-		$widgetConfig = $validation['widgetConfig'];
 
 		$rbacError = $this->requireWriteRole(appSlug: $appSlug);
 		if ($rbacError !== null) {
@@ -108,57 +106,7 @@ class AddWidgetHandler extends AbstractToolHandler {
 		}
 
 		try {
-			// ADR-083 rule 1 / ADR-084: use the constructor-injected contract
-			// rather than reaching into the container by string name.
-			$objectService = $this->objectService;
-
-			$loaded = $this->loadVersion(objectService: $objectService, appSlug: $appSlug, versionSlug: $versionSlug);
-			if (isset($loaded['error']) === true) {
-				return $this->errorResult(error: $loaded['error'], message: $loaded['message']);
-			}
-
-			$version = $loaded['version'];
-			$manifest = (array)($version['manifest'] ?? []);
-			$pages = (array)($manifest['pages'] ?? []);
-
-			$foundIdx = $this->findPageIndex(pages: $pages, pageId: $pageId);
-			if ($foundIdx === null) {
-				return $this->errorResult(error: 'not_found', message: "Page '{$pageId}' not found in manifest.");
-			}
-
-			[$pages, $widget] = $this->appendWidget(
-				pages: $pages,
-				pageIdx: $foundIdx,
-				widgetType: $widgetType,
-				widgetConfig: $widgetConfig,
-				widgetId: $validation['widgetId'],
-				title: $validation['title']
-			);
-
-			$manifest['pages'] = array_values($pages);
-
-			// H4: enforce widgets-per-page (50) and total manifest size (256 KB).
-			$capError = $this->checkManifestCaps(manifest: $manifest, pageIdx: $foundIdx);
-			if ($capError !== null) {
-				return $capError;
-			}
-
-			$saved = $this->saveVersionManifest(objectService: $objectService, version: $version, manifest: $manifest);
-
-			$pageConfig = (array)($pages[$foundIdx]['config'] ?? []);
-			$widgetCount = count((array)($pageConfig['widgets'] ?? []));
-
-			return [
-				'success' => true,
-				'added' => true,
-				'widget' => $widget,
-				'pageId' => $pageId,
-				'widgetCount' => $widgetCount,
-				'version' => [
-					'uuid' => $this->extractUuid(item: $saved),
-					'slug' => (string)($saved['slug'] ?? $versionSlug),
-				],
-			];
+			return $this->addWidget(validation: $validation);
 		} catch (\Throwable $e) {
 			$this->logger->error(
 				'Buildiq MCP: addWidget failed',
@@ -168,6 +116,62 @@ class AddWidgetHandler extends AbstractToolHandler {
 		}//end try
 
 	}//end handle()
+
+	/**
+	 * Append the widget to the page and save the version manifest.
+	 *
+	 * @param array<string, mixed> $validation The validated tool arguments.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function addWidget(array $validation): array {
+		$appSlug = $validation['appSlug'];
+		$versionSlug = $validation['versionSlug'];
+		$pageId = $validation['pageId'];
+		$widgetType = $validation['widgetType'];
+		$widgetConfig = $validation['widgetConfig'];
+
+		$loaded = $this->loadManifestForEdit(appSlug: $appSlug, versionSlug: $versionSlug);
+		if (isset($loaded['isError']) === true) {
+			return $loaded;
+		}
+
+		$manifest = $loaded['manifest'];
+		$pages = (array)($manifest['pages'] ?? []);
+
+		$foundIdx = $this->findPageIndex(pages: $pages, pageId: $pageId);
+		if ($foundIdx === null) {
+			return $this->errorResult(error: 'not_found', message: "Page '{$pageId}' not found in manifest.");
+		}
+
+		[$pages, $widget] = $this->appendWidget(
+			pages: $pages,
+			pageIdx: $foundIdx,
+			spec: new WidgetSpec(type: $widgetType, config: $widgetConfig, id: $validation['widgetId'], title: $validation['title'])
+		);
+
+		$manifest['pages'] = array_values($pages);
+
+		// H4: enforce widgets-per-page (50) and total manifest size (256 KB).
+		$capError = $this->checkManifestCaps(manifest: $manifest, pageIdx: $foundIdx);
+		if ($capError !== null) {
+			return $capError;
+		}
+
+		$saved = $this->saveVersionManifest(objectService: $this->objectService, version: $loaded['version'], manifest: $manifest);
+
+		$pageConfig = (array)($pages[$foundIdx]['config'] ?? []);
+		$widgetCount = count((array)($pageConfig['widgets'] ?? []));
+
+		return [
+			'success' => true,
+			'added' => true,
+			'widget' => $widget,
+			'pageId' => $pageId,
+			'widgetCount' => $widgetCount,
+			'version' => $this->versionSummary(saved: $saved, versionSlug: $versionSlug),
+		];
+	}//end addWidget()
 
 	/**
 	 * Validate and extract typed arguments for addWidget.
@@ -274,10 +278,7 @@ class AddWidgetHandler extends AbstractToolHandler {
 	 *
 	 * @param array<int, mixed> $pages Pages list from the manifest.
 	 * @param int $pageIdx Index of the target page.
-	 * @param string $widgetType Widget type identifier.
-	 * @param array $widgetConfig Widget-type-specific configuration blob.
-	 * @param string $widgetId Caller-supplied widget id, or '' to derive one.
-	 * @param string $title Caller-supplied widget title, or '' to derive one.
+	 * @param WidgetSpec $spec The widget type, settings bag, and optional id and title.
 	 *
 	 * @return array{0: array, 1: array{id: string, title: string, type: string}}
 	 *
@@ -286,23 +287,10 @@ class AddWidgetHandler extends AbstractToolHandler {
 	 * same object on four constructors to satisfy a rule aimed at hidden
 	 * service coupling, and this class has none to hide.
 	 */
-	private function appendWidget(
-		array $pages,
-		int $pageIdx,
-		string $widgetType,
-		array $widgetConfig,
-		string $widgetId = '',
-		string $title = '',
-	): array {
+	private function appendWidget(array $pages, int $pageIdx, WidgetSpec $spec): array {
 		// Shared with CopilotService::applyAddWidget() — see ManifestWidgetShape
 		// for why id, title and a layout row all come from one place.
-		[$page, $widget] = ManifestWidgetShape::appendTo(
-			page: (array)$pages[$pageIdx],
-			widgetType: $widgetType,
-			widgetConfig: $widgetConfig,
-			widgetId: $widgetId,
-			title: $title
-		);
+		[$page, $widget] = ManifestWidgetShape::appendTo(page: (array)$pages[$pageIdx], spec: $spec);
 		$pages[$pageIdx] = $page;
 
 		return [$pages, $widget];

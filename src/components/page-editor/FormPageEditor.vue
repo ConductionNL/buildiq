@@ -158,8 +158,19 @@
 			<FormFieldBuilder
 				:modelValue="config.fields || []"
 				:findings="findingsPerField"
+				:formMode="config.mode || 'public'"
+				:schemas="schemas"
+				:parentSchema="targetSchema || ''"
 				showLogic
-				@update:modelValue="update('fields', $event)" />
+				@update:modelValue="update('fields', $event)"
+				@addProperties="addTargetProperties" />
+			<p
+				v-if="propertyNote"
+				class="form-page-editor__property-note"
+				data-testid="device-property-note"
+				role="status">
+				{{ propertyNote }}
+			</p>
 			<InlineFieldMark :error="markFor('fields')" />
 		</fieldset>
 
@@ -257,8 +268,10 @@ import FormFieldBuilder from './fields/FormFieldBuilder.vue'
 import FormStepsManager from './fields/FormStepsManager.vue'
 import InlineFieldMark from './fields/InlineFieldMark.vue'
 import { useRegisterPicker } from '../../composables/useRegisterPicker.js'
+import { pageEditorBaseMixin } from '../../mixins/pageEditorBase.js'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 import { findingsByField } from '../../services/formDestinationCheck.js'
+import { addSchemaProperties } from '../../services/formLibrary.js'
 
 // OpenRegister's object collection URL: POSTing the form's values here
 // creates an object in that register and schema.
@@ -276,31 +289,16 @@ export default {
 		SaveFormToLibraryDialog,
 	},
 
-	mixins: [pageEditorValidationMixin],
+	mixins: [pageEditorBaseMixin, pageEditorValidationMixin],
 	props: {
-		config: {
-			type: Object,
-			default: () => ({}),
-		},
-
-		pageType: {
-			type: String,
-			default: 'form',
-		},
-
-		appSlug: {
-			type: String,
-			default: '',
-		},
-
 		dataRegisters: {
 			type: Array,
 			default: () => [],
 		},
 
-		parentRoute: {
+		pageType: {
 			type: String,
-			default: '',
+			default: 'form',
 		},
 
 		// The selected page's `id` (mergeManifestDelta's page key) — the
@@ -354,6 +352,8 @@ export default {
 			pendingRegister: '',
 			registers: [],
 			schemas: [],
+			// What happened to the last "Add the property" (REQ-BQSA-002).
+			propertyNote: '',
 		}
 	},
 
@@ -415,7 +415,7 @@ export default {
 		 * objects target) — gates the External access section (REQ-EFP-002).
 		 *
 		 * @return {?{register: string, schema: string}}
-		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-002
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-002
 		 */
 		externalTarget() {
 			if (this.submitShape !== 'endpoint') {
@@ -452,7 +452,7 @@ export default {
 		 * The existing `runtime.externalForms[]` entry for THIS page, if any.
 		 *
 		 * @return {?object}
-		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-001
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-001
 		 */
 		externalFormEntry() {
 			if (!this.pageId) {
@@ -470,7 +470,7 @@ export default {
 		 * `steps` added by REQ-OBFEL-001 so `formLogic.js` / the canonical
 		 * validator's `/pages/<n>/config/steps` errors mark inline.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 * @spec openspec/specs/form-editor-logic/spec.md#req-obfel-001
 		 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-form-can-check-eligibility-as-it-is-filled-in-req-bqlv-003
 		 */
@@ -492,7 +492,7 @@ export default {
 		/**
 		 * Observed behaviour of `submitShape` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		submitShape() {
 			if (this.config.submitHandler) {
@@ -548,6 +548,47 @@ export default {
 
 	methods: {
 		/**
+		 * Add the properties a device field writes to the schema the form
+		 * saves into, then put the stored schema back in the list so the
+		 * field builder sees them. Existing properties are never replaced.
+		 *
+		 * @param {{schema: object, additions: object}} request - from the field builder.
+		 * @param {object} [client] - axios-compatible client (tests inject one).
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-value-lands-in-a-matching-property-req-bqsa-002
+		 */
+		async addTargetProperties(request, client) {
+			const schema = request && request.schema
+			const additions = (request && request.additions) || {}
+			if (!schema || Object.keys(additions).length === 0) {
+				return
+			}
+			const name = schema.title || schema.slug || String(schema.id)
+			try {
+				const stored = await addSchemaProperties(schema, additions, client)
+				const merged = {
+					...schema,
+					...(stored && typeof stored === 'object' ? stored : {}),
+				}
+				if (!merged.properties) {
+					merged.properties = { ...(schema.properties || {}), ...additions }
+				}
+				this.schemas = this.schemas.map((entry) =>
+					entry === schema || (entry && String(entry.id) === String(schema.id)) ? merged : entry,
+				)
+				this.propertyNote = t('buildiq', 'Added {properties} to {schema}.', {
+					properties: Object.keys(additions).join(', '),
+					schema: name,
+				})
+			} catch (e) {
+				this.propertyNote = t('buildiq', 'Could not add the property to {schema}: {reason}', {
+					schema: name,
+					reason: (e && e.message) || '',
+				})
+			}
+		},
+
+		/**
 		 * Write one key on the page's `config` block. Only the named key is
 		 * touched, so config keys this editor does not surface round-trip
 		 * losslessly. The submit one-of is handled by `setSubmitHandler` /
@@ -555,7 +596,7 @@ export default {
 		 *
 		 * @param {string} key - the config key being written: `submitMethod`, `mode`, `submitLabel`, `successMessage`, `fields` or `steps`.
 		 * @param {string|Array<object>} value - the new value: the enum choice from a `<select>`, the i18n key from a text input, or the rebuilt list from FormFieldBuilder / FormStepsManager. `''` and `null` delete the key.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		update(key, value) {
 			const next = { ...this.config }
@@ -573,7 +614,7 @@ export default {
 		 * never carries both halves of the one-of.
 		 *
 		 * @param {'handler'|'endpoint'} shape - the radio's value: `handler` drops `submitEndpoint`, anything else drops `submitHandler`.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		setSubmitShape(shape) {
 			this.chosenShape = shape === 'handler' ? 'handler' : 'endpoint'
@@ -591,7 +632,7 @@ export default {
 		 * so typing a handler can never leave a stale endpoint behind.
 		 *
 		 * @param {string} value - the customComponents registry key of the submit handler; `''` deletes `submitHandler`, leaving the form with neither submit target.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		setSubmitHandler(value) {
 			const next = { ...this.config }
@@ -648,7 +689,7 @@ export default {
 		 * access section.
 		 *
 		 * @param {string} value - the submit URL; `''` deletes `submitEndpoint`, leaving the form with neither submit target.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		setSubmitEndpoint(value) {
 			const next = { ...this.config }
@@ -669,7 +710,7 @@ export default {
 		 *
 		 * @param {object} entry - the resolved `runtime.externalForms[]` entry.
 		 * @return {void}
-		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-002
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-002
 		 */
 		async onExternalFormSave(entry) {
 			const list = (this.runtimeExternalForms || []).slice()
@@ -693,12 +734,19 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../assets/editor-controls.scss' as c;
+
 .form-page-editor {
 	display: flex;
 	flex-direction: column;
 	gap: 12px;
 	padding: 12px;
+}
+
+.form-page-editor__property-note {
+	color: var(--color-text-maxcontrast);
+	margin-block: 4px 8px;
 }
 
 .form-page-editor__title {
@@ -708,12 +756,7 @@ export default {
 }
 
 .form-page-editor__fieldset {
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-	padding: 8px;
-	display: flex;
-	flex-direction: column;
-	gap: 6px;
+	@include c.fieldset;
 }
 
 .form-page-editor__fieldset legend {
@@ -737,11 +780,7 @@ export default {
 .form-page-editor__input,
 .form-page-editor__group-row input,
 .form-page-editor__group-row select {
-	padding: 4px 6px;
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-	background: var(--color-main-background);
-	color: var(--color-main-text);
+	@include c.control;
 }
 
 .form-page-editor__group-row {

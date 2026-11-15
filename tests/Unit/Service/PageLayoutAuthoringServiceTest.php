@@ -35,6 +35,7 @@ use OCA\Buildiq\Service\LayoutDeltaService;
 use OCA\Buildiq\Service\PageLayoutAuthoringService;
 use OCA\Buildiq\Service\PageLayoutFrozenBase;
 use OCA\Buildiq\Service\PageLayoutLayerStack;
+use OCA\Buildiq\Service\PageLayoutParts;
 use OCA\Buildiq\Service\PageLayoutPresenter;
 use OCA\Buildiq\Service\PageLayoutValidator;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
@@ -43,6 +44,7 @@ use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -109,10 +111,12 @@ final class PageLayoutAuthoringServiceTest extends TestCase {
 		$this->provider = new PageLayoutLeafProvider(
 			objectService: $objectService,
 			appConfig: $appConfig,
-			deltas: $this->deltas,
-			layers: $layers,
-			frozenBase: new PageLayoutFrozenBase(layers: $layers),
-			presenter: new PageLayoutPresenter(),
+			parts: new PageLayoutParts(
+				deltas: $this->deltas,
+				layers: $layers,
+				frozenBase: new PageLayoutFrozenBase(layers: $layers),
+				presenter: new PageLayoutPresenter()
+			),
 			logger: $this->createMock(LoggerInterface::class),
 		);
 
@@ -513,10 +517,10 @@ final class PageLayoutAuthoringServiceTest extends TestCase {
 			}//end listIds()
 		};
 		$cases = [
-			'not resolvable'   => null,
-			'without listIds'  => new \stdClass(),
-			'throws'           => $throws,
-			'answers no list'  => $noList,
+			'not resolvable' => null,
+			'without listIds' => new \stdClass(),
+			'throws' => $throws,
+			'answers no list' => $noList,
 		];
 
 		foreach ($cases as $name => $registry) {
@@ -524,7 +528,7 @@ final class PageLayoutAuthoringServiceTest extends TestCase {
 			$layout['tabs'][] = ['id' => 'kaart', 'kind' => 'leaf', 'label' => 'Kaart', 'ref' => 'nobody-offers-this'];
 			$result = $this->serviceWithRegistry(registry: $registry)->save($layout, 'beheerder');
 
-			$this->assertSame([], $result['warnings'], 'A registry that '.$name.' must not make the save warn.');
+			$this->assertSame([], $result['warnings'], 'A registry that ' . $name . ' must not make the save warn.');
 		}
 	}//end testARegistryThatCannotAnswerDoesNotWarn()
 
@@ -565,4 +569,112 @@ final class PageLayoutAuthoringServiceTest extends TestCase {
 
 		return $appConfig;
 	}//end appConfigFor()
+	/**
+	 * listFor reads buildiq's register and keeps the target's rows, in stored order.
+	 *
+	 * @param string $setting  The stored register setting.
+	 * @param string $register The register read from.
+	 *
+	 * @return void
+	 */
+	#[DataProvider('registerSettings')]
+	public function testListForReadsTheTargetRows(string $setting, string $register): void {
+		$calls = [];
+		$service = new PageLayoutAuthoringService(
+			objectService: $this->recordingObjectService(rows: $this->mixedRows(), calls: $calls),
+			appConfig: $this->appConfigReading(setting: $setting),
+			validator: new PageLayoutValidator(),
+			deltas: $this->deltas,
+			provider: $this->provider,
+		);
+
+		$layouts = $service->listFor(register: 'dossiq', schema: 'Zaak');
+
+		self::assertSame(['mine-1', 'mine-2'], array_column($layouts, 'id'));
+		self::assertSame([false, false], array_column($layouts, 'drifted'));
+		$read = [['setRegister', $register], ['setSchema', 'pageLayout'], ['findAll', ['filters' => ['register' => 'dossiq'], 'limit' => 500]]];
+		self::assertSame($read, $calls);
+	}//end testListForReadsTheTargetRows()
+
+	/**
+	 * Saving a stored layout again is not its own collision; a second one on the same scope is.
+	 *
+	 * @return void
+	 */
+	public function testALayoutIsNotItsOwnCollision(): void {
+		$this->service->save(layout: $this->schemaWide(), author: 'beheerder');
+
+		$again = $this->service->save(layout: ['name' => 'Hernoemd'] + $this->schemaWide(), author: 'beheerder');
+		self::assertSame('Hernoemd', $again['layout']['name']);
+
+		$this->expectException(InvalidArgumentException::class);
+		$this->service->save(layout: ['id' => 'pl-tweede'] + $this->schemaWide(), author: 'beheerder');
+	}//end testALayoutIsNotItsOwnCollision()
+
+	/**
+	 * An object service that records what it was asked and answers these rows.
+	 *
+	 * @param array<int, mixed> $rows The rows findAll() answers.
+	 * @param array<int, mixed> $calls Receives each call as `[method, argument]`.
+	 *
+	 * @return ObjectServiceInterface The double.
+	 */
+	private function recordingObjectService(array $rows, array &$calls): ObjectServiceInterface {
+		$objectService = $this->getMockBuilder(ObjectServiceInterface::class)
+			->disableOriginalConstructor()
+			->onlyMethods(['setRegister', 'setSchema', 'findAll', 'saveObject'])
+			->getMockForAbstractClass();
+		$objectService->method('setRegister')->willReturnCallback(function (string $slug) use (&$calls, $objectService) {
+			$calls[] = ['setRegister', $slug];
+			return $objectService;
+		});
+		$objectService->method('setSchema')->willReturnCallback(function (string $slug) use (&$calls, $objectService) {
+			$calls[] = ['setSchema', $slug];
+			return $objectService;
+		});
+		$objectService->method('findAll')->willReturnCallback(function (array $config) use (&$calls, $rows): array {
+			$calls[] = ['findAll', $config];
+			return $rows;
+		});
+
+		return $objectService;
+	}//end recordingObjectService()
+
+	/**
+	 * An app config whose register setting reads as given.
+	 *
+	 * @param string $setting The stored register setting.
+	 *
+	 * @return IAppConfig The double.
+	 */
+	private function appConfigReading(string $setting): IAppConfig {
+		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig->method('getValueString')->with('buildiq', 'register', 'buildiq')->willReturn($setting);
+
+		return $appConfig;
+	}//end appConfigReading()
+
+	/**
+	 * Stored register settings and the register they read from.
+	 *
+	 * @return array<string, array{0: string, 1: string}>
+	 */
+	public static function registerSettings(): array {
+		return ['default' => ['buildiq', 'buildiq'], 'configured' => ['eigen-register', 'eigen-register'], 'emptied by hand' => ['', 'buildiq']];
+	}//end registerSettings()
+
+	/**
+	 * The rows findAll() answers: junk, two strays and two that belong.
+	 *
+	 * @return array<int, mixed>
+	 */
+	private function mixedRows(): array {
+		return [
+			'not a row',
+			['id' => 'other-register', 'register' => 'elders', 'schema' => 'Zaak'],
+			['id' => 'other-schema', 'register' => 'dossiq', 'schema' => 'Besluit'],
+			['id' => 'mine-1', 'register' => 'dossiq', 'schema' => 'Zaak'],
+			['id' => 'mine-2', 'register' => 'dossiq', 'schema' => 'Zaak'],
+		];
+	}//end mixedRows()
 }//end class

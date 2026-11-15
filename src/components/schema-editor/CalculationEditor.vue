@@ -240,16 +240,7 @@ export default {
 					'Use letters, digits and underscores, starting with a letter.',
 				)
 			}
-			if (Object.hasOwn(this.annotation, name)) {
-				return this.t(
-					'buildiq',
-					'The register file already calculates this field.',
-				)
-			}
-			if (Object.hasOwn(this.propertyCalculations || {}, name)) {
-				return this.t('buildiq', 'This field already has a calculation.')
-			}
-			return ''
+			return this.existingCalculationError(name)
 		},
 	},
 
@@ -266,6 +257,26 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Why a well-formed name cannot be added: the register file or this
+		 * schema already calculates it; '' when neither does.
+		 *
+		 * @param {string} name - the trimmed new field name.
+		 * @return {string} the translated reason, or ''.
+		 */
+		existingCalculationError(name) {
+			if (Object.hasOwn(this.annotation, name)) {
+				return this.t(
+					'buildiq',
+					'The register file already calculates this field.',
+				)
+			}
+			if (Object.hasOwn(this.propertyCalculations || {}, name)) {
+				return this.t('buildiq', 'This field already has a calculation.')
+			}
+			return ''
+		},
+
 		/**
 		 * Pretty-print a value for a read-only block.
 		 *
@@ -413,7 +424,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../assets/editor-controls.scss' as c;
+
 .buildiq-calculation-editor {
 	display: flex;
 	flex-direction: column;
@@ -462,12 +475,6 @@ export default {
 }
 
 .buildiq-calculation-editor__readonly {
-	margin: 0;
-	padding: 8px;
-	background: var(--color-background-dark);
-	border-radius: var(--border-radius);
-	font-family: monospace;
-	font-size: 13px;
-	overflow: auto;
+	@include c.code-block;
 }
 </style>

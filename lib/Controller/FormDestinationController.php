@@ -32,9 +32,10 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Controller;
 
-use OCA\Buildiq\Service\ManifestFormDestinations;
-use OCA\Buildiq\Service\ManifestResolverService;
-use OCA\Buildiq\Service\PermissionResolver;
+use OCA\Buildiq\Kernel\Contracts\ManifestFormDestinationsInterface;
+use OCA\Buildiq\Kernel\Contracts\ManifestResolverServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\PermissionResolverInterface;
+use OCA\Buildiq\Service\CallerContext;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -60,14 +61,27 @@ class FormDestinationController extends Controller {
 	private const EDIT_ROLES = ['owners', 'editors'];
 
 	/**
+	 * The caller.
+	 *
+	 * @var IUserSession
+	 */
+	private readonly IUserSession $userSession;
+
+	/**
+	 * Decides whether the caller may edit it.
+	 *
+	 * @var PermissionResolverInterface
+	 */
+	private readonly PermissionResolverInterface $permissions;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string $appName The app id.
 	 * @param IRequest $request The request.
-	 * @param ManifestFormDestinations $destinations The manifest check.
-	 * @param ManifestResolverService $applications Finds the Application the manifest belongs to.
-	 * @param PermissionResolver $permissions Decides whether the caller may edit it.
-	 * @param IUserSession $userSession The caller.
+	 * @param ManifestFormDestinationsInterface $destinations The manifest check.
+	 * @param ManifestResolverServiceInterface $applications Finds the Application the manifest belongs to.
+	 * @param CallerContext $caller The caller's session, group memberships and the shared permission matcher.
 	 * @param LoggerInterface $logger Logger.
 	 *
 	 * @return void
@@ -75,12 +89,13 @@ class FormDestinationController extends Controller {
 	public function __construct(
 		string $appName,
 		IRequest $request,
-		private readonly ManifestFormDestinations $destinations,
-		private readonly ManifestResolverService $applications,
-		private readonly PermissionResolver $permissions,
-		private readonly IUserSession $userSession,
+		private readonly ManifestFormDestinationsInterface $destinations,
+		private readonly ManifestResolverServiceInterface $applications,
+		CallerContext $caller,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->userSession = $caller->userSession;
+		$this->permissions = $caller->permissionResolver;
 		parent::__construct(appName: $appName, request: $request);
 	}//end __construct()
 

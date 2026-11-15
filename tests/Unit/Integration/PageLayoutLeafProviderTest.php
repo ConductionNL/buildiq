@@ -26,6 +26,7 @@ use OCA\Buildiq\Integration\PageLayoutLeafProvider;
 use OCA\Buildiq\Service\LayoutDeltaService;
 use OCA\Buildiq\Service\PageLayoutFrozenBase;
 use OCA\Buildiq\Service\PageLayoutLayerStack;
+use OCA\Buildiq\Service\PageLayoutParts;
 use OCA\Buildiq\Service\PageLayoutPresenter;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
@@ -97,10 +98,12 @@ final class PageLayoutLeafProviderTest extends TestCase {
 		return new PageLayoutLeafProvider(
 			objectService: $objectService,
 			appConfig: $appConfig,
-			deltas: new LayoutDeltaService(),
-			layers: $layers,
-			frozenBase: new PageLayoutFrozenBase(layers: $layers),
-			presenter: new PageLayoutPresenter(),
+			parts: new PageLayoutParts(
+				deltas: new LayoutDeltaService(),
+				layers: $layers,
+				frozenBase: new PageLayoutFrozenBase(layers: $layers),
+				presenter: new PageLayoutPresenter()
+			),
 			logger: $this->createMock(LoggerInterface::class),
 		);
 	}//end makeProvider()

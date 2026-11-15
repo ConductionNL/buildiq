@@ -1,0 +1,940 @@
+{
+    "{\"options\":\"all options\",\"broker\":false,\"lookup\":\"mixed\"}": {
+        "exit": 1,
+        "display": [
+            "The OpenRegister credential broker is not available on this instance — cannot publish.",
+            ""
+        ],
+        "publishes": [],
+        "lookups": [],
+        "logs": []
+    },
+    "{\"options\":\"all options\",\"broker\":true,\"lookup\":\"mixed\"}": {
+        "exit": 1,
+        "display": [
+            "  OK    good -> https://github.com/acme/buildiq-good",
+            "  FAIL  bad -> broker_denied",
+            "  OK    no-url -> ",
+            "  FAIL  no-outcome -> unknown_error",
+            "  FAIL  explodes -> error: boom explodes",
+            "  FAIL  (unknown) -> error: boom ",
+            "",
+            "Published: 2  Failed: 4",
+            ""
+        ],
+        "publishes": [
+            {
+                "template": {
+                    "slug": "good",
+                    "isSeeded": true
+                },
+                "credentialId": "cred-1",
+                "org": "acme",
+                "repoName": null,
+                "actingUserId": "alice",
+                "visibility": "private"
+            },
+            {
+                "template": {
+                    "slug": "bad",
+                    "isSeeded": "1"
+                },
+                "credentialId": "cred-1",
+                "org": "acme",
+                "repoName": null,
+                "actingUserId": "alice",
+                "visibility": "private"
+            },
+            {
+                "template": {
+                    "slug": "no-url",
+                    "isSeeded": "true"
+                },
+                "credentialId": "cred-1",
+                "org": "acme",
+                "repoName": null,
+                "actingUserId": "alice",
+                "visibility": "private"
+            },
+            {
+                "template": {
+                    "slug": "no-outcome",
+                    "isSeeded": true
+                },
+                "credentialId": "cred-1",
+                "org": "acme",
+                "repoName": null,
+                "actingUserId": "alice",
+                "visibility": "private"
+            },
+            {
+                "template": {
+                    "slug": "explodes",
+                    "isSeeded": true
+                },
+                "credentialId": "cred-1",
+                "org": "acme",
+                "repoName": null,
+                "actingUserId": "alice",
+                "visibility": "private"
+            },
+            {
+                "template": {
+                    "isSeeded": true
+                },
+                "credentialId": "cred-1",
+                "org": "acme",
+                "repoName": null,
+                "actingUserId": "alice",
+                "visibility": "private"
+            }
+        ],
+        "lookups": [
+            [
+                "buildiq",
+                "application-template",
+                []
+            ]
+        ],
+        "logs": []
+    },
+    "{\"options\":\"bad visibility\",\"broker\":false,\"lookup\":\"mixed\"}": {
+        "exit": 2,
+        "display": [
+            "--visibility must be \"public\" or \"private\".",
+            ""
+        ],
+        "publishes": [],
+        "lookups": [],
+        "logs": []
+    },
+    "{\"options\":\"bad visibility\",\"broker\":true,\"lookup\":\"mixed\"}": {
+        "exit": 2,
+        "display": [
+            "--visibility must be \"public\" or \"private\".",
+            ""
+        ],
+        "publishes": [],
+        "lookups": [],
+        "logs": []
+    },
+    "{\"options\":\"blank credential\",\"broker\":false,\"lookup\":\"mixed\"}": {
+        "exit": 2,
+        "display": [
+            "--credential is required (the github broker credential UUID).",
+            ""
+        ],
+        "publishes": [],
+        "lookups": [],
+        "logs": []
+    },
+    "{\"options\":\"blank credential\",\"broker\":true,\"lookup\":\"mixed\"}": {
+        "exit": 2,
+        "display": [
+            "--credential is required (the github broker credential UUID).",
+            ""
+        ],
+        "publishes": [],
+        "lookups": [],
+        "logs": []
+    },
+    "{\"options\":\"blank org and user\",\"broker\":false,\"lookup\":\"mixed\"}": {
+        "exit": 1,
+        "display": [
+            "The OpenRegister credential broker is not available on this instance — cannot publish.",
+            ""
+        ],
+        "publishes": [],
+        "lookups": [],
+        "logs": []
+    },
+    "{\"options\":\"blank org and user\",\"broker\":true,\"lookup\":\"mixed\"}": {
+        "exit": 1,
+        "display": [
+            "  OK    good -> https://github.com/acme/buildiq-good",
+            "  FAIL  bad -> broker_denied",
+            "  OK    no-url -> ",
+            "  FAIL  no-outcome -> unknown_error",
+            "  FAIL  explodes -> error: boom explodes",
+            "  FAIL  (unknown) -> error: boom ",
+            "",
+            "Published: 2  Failed: 4",
+            ""
+        ],
+        "publishes": [
+            {
+                "template": {
+                    "slug": "good",
+                    "isSeeded": true
+                },
+                "credentialId": "cred-1",
+                "org": null,
+                "repoName": null,
+                "actingUserId": null,
+                "visibility": "public"
+            },
+            {
+                "template": {
+                    "slug": "bad",
+                    "isSeeded": "1"
+                },
+                "credentialId": "cred-1",
+                "org": null,
+                "repoName": null,
+                "actingUserId": null,
+                "visibility": "public"
+            },
+            {
+                "template": {
+                    "slug": "no-url",
+                    "isSeeded": "true"
+                },
+                "credentialId": "cred-1",
+                "org": null,
+                "repoName": null,
+                "actingUserId": null,
+                "visibility": "public"
+            },
+            {
+                "template": {
+                    "slug": "no-outcome",
+                    "isSeeded": true
+                },
+                "credentialId": "cred-1",
+                "org": null,
+                "repoName": null,
+                "actingUserId": null,
+                "visibility": "public"
+            },
+            {
+                "template": {
+                    "slug": "explodes",
+                    "isSeeded": true
+                },
+                "credentialId": "cred-1",
+                "org": null,
+                "repoName": null,
+                "actingUserId": null,
+                "visibility": "public"
+            },
+            {
+                "template": {
+                    "isSeeded": true
+                },
+                "credentialId": "cred-1",
+                "org": null,
+                "repoName": null,
+                "actingUserId": null,
+                "visibility": "public"
+            }
+        ],
+        "lookups": [
+            [
+                "buildiq",
+                "application-template",
+                []
+            ]
+        ],
+        "logs": []
+    },
+    "{\"options\":\"blank slug\",\"broker\":false,\"lookup\":\"mixed\"}": {
+        "exit": 1,
+        "display": [
+            "The OpenRegister credential broker is not available on this instance — cannot publish.",
+            ""
+        ],
+        "publishes": [],
+        "lookups": [],
+        "logs": []
+    },
+    "{\"options\":\"blank slug\",\"broker\":true,\"lookup\":\"mixed\"}": {
+        "exit": 1,
+        "display": [
+            "  OK    good -> https://github.com/acme/buildiq-good",
+            "  FAIL  bad -> broker_denied",
+            "  OK    no-url -> ",
+            "  FAIL  no-outcome -> unknown_error",
+            "  FAIL  explodes -> error: boom explodes",
+            "  FAIL  (unknown) -> error: boom ",
+            "",
+            "Published: 2  Failed: 4",
+            ""
+        ],
+        "publishes": [
+            {
+                "template": {
+                    "slug": "good",
+                    "isSeeded": true
+                },
+                "credentialId": "cred-1",
+                "org": null,
+                "repoName": null,
+                "actingUserId": null,
+                "visibility": "public"
+            },
+            {
+                "template": {
+                    "slug": "bad",
+                    "isSeeded": "1"
+                },
+                "credentialId": "cred-1",
+                "org": null,
+                "repoName": null,
+                "actingUserId": null,
+                "visibility": "public"
+            },
+            {
+                "template": {
+                    "slug": "no-url",
+                    "isSeeded": "true"
+                },
+                "credentialId": "cred-1",
+                "org": null,
+                "repoName": null,
+                "actingUserId": null,
+                "visibility": "public"
+            },
+            {
+                "template": {
+                    "slug": "no-outcome",
+                    "isSeeded": true
+                },
+                "credentialId": "cred-1",
+                "org": null,
+                "repoName": null,
+                "actingUserId": null,
+                "visibility": "public"
+            },
+            {
+                "template": {
+                    "slug": "explodes",
+                    "isSeeded": true
+                },
+                "credentialId": "cred-1",
+                "org": null,
+                "repoName": null,
+                "actingUserId": null,
+                "visibility": "public"
+            },
+            {
+                "template": {
+                    "isSeeded": true
+                },
+                "credentialId": "cred-1",
+                "org": null,
+                "repoName": null,
+                "actingUserId": null,
+                "visibility": "public"
+            }
+        ],
+        "lookups": [
+            [
+                "buildiq",
+                "application-template",
+                []
+            ]
+        ],
+        "logs": []
+    },
+    "{\"options\":\"credential only\",\"broker\":false,\"lookup\":\"mixed\"}": {
+        "exit": 1,
+        "display": [
+            "The OpenRegister credential broker is not available on this instance — cannot publish.",
+            ""
+        ],
+        "publishes": [],
+        "lookups": [],
+        "logs": []
+    },
+    "{\"options\":\"credential only\",\"broker\":true,\"lookup\":\"mixed\"}": {
+        "exit": 1,
+        "display": [
+            "  OK    good -> https://github.com/acme/buildiq-good",
+            "  FAIL  bad -> broker_denied",
+            "  OK    no-url -> ",
+            "  FAIL  no-outcome -> unknown_error",
+            "  FAIL  explodes -> error: boom explodes",
+            "  FAIL  (unknown) -> error: boom ",
+            "",
+            "Published: 2  Failed: 4",
+            ""
+        ],
+        "publishes": [
+            {
+                "template": {
+                    "slug": "good",
+                    "isSeeded": true
+                },
+                "credentialId": "cred-1",
+                "org": null,
+                "repoName": null,
+                "actingUserId": null,
+                "visibility": "public"
+            },
+            {
+                "template": {
+                    "slug": "bad",
+                    "isSeeded": "1"
+                },
+                "credentialId": "cred-1",
+                "org": null,
+                "repoName": null,
+                "actingUserId": null,
+                "visibility": "public"
+            },
+            {
+                "template": {
+                    "slug": "no-url",
+                    "isSeeded": "true"
+                },
+                "credentialId": "cred-1",
+                "org": null,
+                "repoName": null,
+                "actingUserId": null,
+                "visibility": "public"
+            },
+            {
+                "template": {
+                    "slug": "no-outcome",
+                    "isSeeded": true
+                },
+                "credentialId": "cred-1",
+                "org": null,
+                "repoName": null,
+                "actingUserId": null,
+                "visibility": "public"
+            },
+            {
+                "template": {
+                    "slug": "explodes",
+                    "isSeeded": true
+                },
+                "credentialId": "cred-1",
+                "org": null,
+                "repoName": null,
+                "actingUserId": null,
+                "visibility": "public"
+            },
+            {
+                "template": {
+                    "isSeeded": true
+                },
+                "credentialId": "cred-1",
+                "org": null,
+                "repoName": null,
+                "actingUserId": null,
+                "visibility": "public"
+            }
+        ],
+        "lookups": [
+            [
+                "buildiq",
+                "application-template",
+                []
+            ]
+        ],
+        "logs": []
+    },
+    "{\"options\":\"credential only\",\"broker\":true,\"lookup\":\"none\"}": {
+        "exit": 0,
+        "display": [
+            "No seeded application-templates found.",
+            ""
+        ],
+        "publishes": [],
+        "lookups": [
+            [
+                "buildiq",
+                "application-template",
+                []
+            ]
+        ],
+        "logs": []
+    },
+    "{\"options\":\"credential only\",\"broker\":true,\"lookup\":\"not a list\"}": {
+        "exit": 0,
+        "display": [
+            "No seeded application-templates found.",
+            ""
+        ],
+        "publishes": [],
+        "lookups": [
+            [
+                "buildiq",
+                "application-template",
+                []
+            ]
+        ],
+        "logs": []
+    },
+    "{\"options\":\"credential only\",\"broker\":true,\"lookup\":\"throws\"}": {
+        "exit": 0,
+        "display": [
+            "No seeded application-templates found.",
+            ""
+        ],
+        "publishes": [],
+        "lookups": [
+            [
+                "buildiq",
+                "application-template",
+                []
+            ]
+        ],
+        "logs": [
+            "Buildiq: template lookup failed: lookup down"
+        ]
+    },
+    "{\"options\":\"dry run with slug\",\"broker\":false,\"lookup\":\"mixed\"}": {
+        "exit": 0,
+        "display": [
+            "  [dry-run] bad -> buildiq-bad",
+            "",
+            "Published: 1  Failed: 0",
+            ""
+        ],
+        "publishes": [],
+        "lookups": [
+            [
+                "buildiq",
+                "application-template",
+                {
+                    "slug": "bad"
+                }
+            ]
+        ],
+        "logs": []
+    },
+    "{\"options\":\"dry run with slug\",\"broker\":true,\"lookup\":\"mixed\"}": {
+        "exit": 0,
+        "display": [
+            "  [dry-run] bad -> buildiq-bad",
+            "",
+            "Published: 1  Failed: 0",
+            ""
+        ],
+        "publishes": [],
+        "lookups": [
+            [
+                "buildiq",
+                "application-template",
+                {
+                    "slug": "bad"
+                }
+            ]
+        ],
+        "logs": []
+    },
+    "{\"options\":\"dry run\",\"broker\":false,\"lookup\":\"mixed\"}": {
+        "exit": 0,
+        "display": [
+            "  [dry-run] good -> buildiq-good",
+            "  [dry-run] bad -> buildiq-bad",
+            "  [dry-run] no-url -> buildiq-no-url",
+            "  [dry-run] no-outcome -> buildiq-no-outcome",
+            "  [dry-run] explodes -> buildiq-explodes",
+            "  [dry-run] (unknown) -> buildiq-(unknown)",
+            "",
+            "Published: 6  Failed: 0",
+            ""
+        ],
+        "publishes": [],
+        "lookups": [
+            [
+                "buildiq",
+                "application-template",
+                []
+            ]
+        ],
+        "logs": []
+    },
+    "{\"options\":\"dry run\",\"broker\":true,\"lookup\":\"mixed\"}": {
+        "exit": 0,
+        "display": [
+            "  [dry-run] good -> buildiq-good",
+            "  [dry-run] bad -> buildiq-bad",
+            "  [dry-run] no-url -> buildiq-no-url",
+            "  [dry-run] no-outcome -> buildiq-no-outcome",
+            "  [dry-run] explodes -> buildiq-explodes",
+            "  [dry-run] (unknown) -> buildiq-(unknown)",
+            "",
+            "Published: 6  Failed: 0",
+            ""
+        ],
+        "publishes": [],
+        "lookups": [
+            [
+                "buildiq",
+                "application-template",
+                []
+            ]
+        ],
+        "logs": []
+    },
+    "{\"options\":\"dry run\",\"broker\":true,\"lookup\":\"none\"}": {
+        "exit": 0,
+        "display": [
+            "No seeded application-templates found.",
+            ""
+        ],
+        "publishes": [],
+        "lookups": [
+            [
+                "buildiq",
+                "application-template",
+                []
+            ]
+        ],
+        "logs": []
+    },
+    "{\"options\":\"dry run\",\"broker\":true,\"lookup\":\"not a list\"}": {
+        "exit": 0,
+        "display": [
+            "No seeded application-templates found.",
+            ""
+        ],
+        "publishes": [],
+        "lookups": [
+            [
+                "buildiq",
+                "application-template",
+                []
+            ]
+        ],
+        "logs": []
+    },
+    "{\"options\":\"dry run\",\"broker\":true,\"lookup\":\"throws\"}": {
+        "exit": 0,
+        "display": [
+            "No seeded application-templates found.",
+            ""
+        ],
+        "publishes": [],
+        "lookups": [
+            [
+                "buildiq",
+                "application-template",
+                []
+            ]
+        ],
+        "logs": [
+            "Buildiq: template lookup failed: lookup down"
+        ]
+    },
+    "{\"options\":\"no credential\",\"broker\":false,\"lookup\":\"mixed\"}": {
+        "exit": 2,
+        "display": [
+            "--credential is required (the github broker credential UUID).",
+            ""
+        ],
+        "publishes": [],
+        "lookups": [],
+        "logs": []
+    },
+    "{\"options\":\"no credential\",\"broker\":true,\"lookup\":\"mixed\"}": {
+        "exit": 2,
+        "display": [
+            "--credential is required (the github broker credential UUID).",
+            ""
+        ],
+        "publishes": [],
+        "lookups": [],
+        "logs": []
+    },
+    "{\"options\":\"padded credential\",\"broker\":false,\"lookup\":\"mixed\"}": {
+        "exit": 1,
+        "display": [
+            "The OpenRegister credential broker is not available on this instance — cannot publish.",
+            ""
+        ],
+        "publishes": [],
+        "lookups": [],
+        "logs": []
+    },
+    "{\"options\":\"padded credential\",\"broker\":true,\"lookup\":\"mixed\"}": {
+        "exit": 1,
+        "display": [
+            "  OK    good -> https://github.com/acme/buildiq-good",
+            "  FAIL  bad -> broker_denied",
+            "  OK    no-url -> ",
+            "  FAIL  no-outcome -> unknown_error",
+            "  FAIL  explodes -> error: boom explodes",
+            "  FAIL  (unknown) -> error: boom ",
+            "",
+            "Published: 2  Failed: 4",
+            ""
+        ],
+        "publishes": [
+            {
+                "template": {
+                    "slug": "good",
+                    "isSeeded": true
+                },
+                "credentialId": "cred-2",
+                "org": null,
+                "repoName": null,
+                "actingUserId": null,
+                "visibility": "public"
+            },
+            {
+                "template": {
+                    "slug": "bad",
+                    "isSeeded": "1"
+                },
+                "credentialId": "cred-2",
+                "org": null,
+                "repoName": null,
+                "actingUserId": null,
+                "visibility": "public"
+            },
+            {
+                "template": {
+                    "slug": "no-url",
+                    "isSeeded": "true"
+                },
+                "credentialId": "cred-2",
+                "org": null,
+                "repoName": null,
+                "actingUserId": null,
+                "visibility": "public"
+            },
+            {
+                "template": {
+                    "slug": "no-outcome",
+                    "isSeeded": true
+                },
+                "credentialId": "cred-2",
+                "org": null,
+                "repoName": null,
+                "actingUserId": null,
+                "visibility": "public"
+            },
+            {
+                "template": {
+                    "slug": "explodes",
+                    "isSeeded": true
+                },
+                "credentialId": "cred-2",
+                "org": null,
+                "repoName": null,
+                "actingUserId": null,
+                "visibility": "public"
+            },
+            {
+                "template": {
+                    "isSeeded": true
+                },
+                "credentialId": "cred-2",
+                "org": null,
+                "repoName": null,
+                "actingUserId": null,
+                "visibility": "public"
+            }
+        ],
+        "lookups": [
+            [
+                "buildiq",
+                "application-template",
+                []
+            ]
+        ],
+        "logs": []
+    },
+    "{\"options\":\"padded org and user\",\"broker\":false,\"lookup\":\"mixed\"}": {
+        "exit": 1,
+        "display": [
+            "The OpenRegister credential broker is not available on this instance — cannot publish.",
+            ""
+        ],
+        "publishes": [],
+        "lookups": [],
+        "logs": []
+    },
+    "{\"options\":\"padded org and user\",\"broker\":true,\"lookup\":\"mixed\"}": {
+        "exit": 1,
+        "display": [
+            "  OK    good -> https://github.com/acme/buildiq-good",
+            "  FAIL  bad -> broker_denied",
+            "  OK    no-url -> ",
+            "  FAIL  no-outcome -> unknown_error",
+            "  FAIL  explodes -> error: boom explodes",
+            "  FAIL  (unknown) -> error: boom ",
+            "",
+            "Published: 2  Failed: 4",
+            ""
+        ],
+        "publishes": [
+            {
+                "template": {
+                    "slug": "good",
+                    "isSeeded": true
+                },
+                "credentialId": "cred-1",
+                "org": "acme",
+                "repoName": null,
+                "actingUserId": "bob",
+                "visibility": "public"
+            },
+            {
+                "template": {
+                    "slug": "bad",
+                    "isSeeded": "1"
+                },
+                "credentialId": "cred-1",
+                "org": "acme",
+                "repoName": null,
+                "actingUserId": "bob",
+                "visibility": "public"
+            },
+            {
+                "template": {
+                    "slug": "no-url",
+                    "isSeeded": "true"
+                },
+                "credentialId": "cred-1",
+                "org": "acme",
+                "repoName": null,
+                "actingUserId": "bob",
+                "visibility": "public"
+            },
+            {
+                "template": {
+                    "slug": "no-outcome",
+                    "isSeeded": true
+                },
+                "credentialId": "cred-1",
+                "org": "acme",
+                "repoName": null,
+                "actingUserId": "bob",
+                "visibility": "public"
+            },
+            {
+                "template": {
+                    "slug": "explodes",
+                    "isSeeded": true
+                },
+                "credentialId": "cred-1",
+                "org": "acme",
+                "repoName": null,
+                "actingUserId": "bob",
+                "visibility": "public"
+            },
+            {
+                "template": {
+                    "isSeeded": true
+                },
+                "credentialId": "cred-1",
+                "org": "acme",
+                "repoName": null,
+                "actingUserId": "bob",
+                "visibility": "public"
+            }
+        ],
+        "lookups": [
+            [
+                "buildiq",
+                "application-template",
+                []
+            ]
+        ],
+        "logs": []
+    },
+    "{\"options\":\"slug\",\"broker\":false,\"lookup\":\"mixed\"}": {
+        "exit": 1,
+        "display": [
+            "The OpenRegister credential broker is not available on this instance — cannot publish.",
+            ""
+        ],
+        "publishes": [],
+        "lookups": [],
+        "logs": []
+    },
+    "{\"options\":\"slug\",\"broker\":true,\"lookup\":\"mixed\"}": {
+        "exit": 0,
+        "display": [
+            "  OK    good -> https://github.com/acme/buildiq-good",
+            "",
+            "Published: 1  Failed: 0",
+            ""
+        ],
+        "publishes": [
+            {
+                "template": {
+                    "slug": "good",
+                    "isSeeded": true
+                },
+                "credentialId": "cred-1",
+                "org": null,
+                "repoName": null,
+                "actingUserId": "alice",
+                "visibility": "public"
+            }
+        ],
+        "lookups": [
+            [
+                "buildiq",
+                "application-template",
+                {
+                    "slug": "good"
+                }
+            ]
+        ],
+        "logs": []
+    },
+    "{\"options\":\"slug\",\"broker\":true,\"lookup\":\"none\"}": {
+        "exit": 0,
+        "display": [
+            "No seeded application-templates found for slug \"good\".",
+            ""
+        ],
+        "publishes": [],
+        "lookups": [
+            [
+                "buildiq",
+                "application-template",
+                {
+                    "slug": "good"
+                }
+            ]
+        ],
+        "logs": []
+    },
+    "{\"options\":\"slug\",\"broker\":true,\"lookup\":\"not a list\"}": {
+        "exit": 0,
+        "display": [
+            "No seeded application-templates found for slug \"good\".",
+            ""
+        ],
+        "publishes": [],
+        "lookups": [
+            [
+                "buildiq",
+                "application-template",
+                {
+                    "slug": "good"
+                }
+            ]
+        ],
+        "logs": []
+    },
+    "{\"options\":\"slug\",\"broker\":true,\"lookup\":\"throws\"}": {
+        "exit": 0,
+        "display": [
+            "No seeded application-templates found for slug \"good\".",
+            ""
+        ],
+        "publishes": [],
+        "lookups": [
+            [
+                "buildiq",
+                "application-template",
+                {
+                    "slug": "good"
+                }
+            ]
+        ],
+        "logs": [
+            "Buildiq: template lookup failed: lookup down"
+        ]
+    }
+}

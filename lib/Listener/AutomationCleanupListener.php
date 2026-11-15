@@ -32,7 +32,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/automation-designer/tasks.md#2.2
+ * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#2.2
  * @spec openspec/specs/automation-designer/spec.md#req-autd-005
  */
 
@@ -40,9 +40,10 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Listener;
 
-use OCA\Buildiq\Service\AutomationCompilerService;
-use OCA\Buildiq\Service\ListenerSlugContract;
-use OCA\Buildiq\Service\ObjectSchemaSlugResolver;
+use OCA\Buildiq\Kernel\Contracts\AutomationCompilerServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\ListenerSlugContractInterface;
+use OCA\Buildiq\Kernel\Contracts\ObjectSchemaSlugResolverInterface;
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Event\ObjectDeletedEvent;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
@@ -59,17 +60,17 @@ class AutomationCleanupListener implements IEventListener {
 	 * Constructor.
 	 *
 	 * @param LoggerInterface $logger PSR logger for diagnostics.
-	 * @param AutomationCompilerService $compiler Owns the artifact-removal logic.
-	 * @param ObjectSchemaSlugResolver $slugs Resolves the event's schema id to a slug.
-	 * @param ListenerSlugContract $contract Gates the corrected comparison.
+	 * @param AutomationCompilerServiceInterface $compiler Owns the artifact-removal logic.
+	 * @param ObjectSchemaSlugResolverInterface $slugs Resolves the event's schema id to a slug.
+	 * @param ListenerSlugContractInterface $contract Gates the corrected comparison.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly LoggerInterface $logger,
-		private readonly AutomationCompilerService $compiler,
-		private readonly ObjectSchemaSlugResolver $slugs,
-		private readonly ListenerSlugContract $contract,
+		private readonly AutomationCompilerServiceInterface $compiler,
+		private readonly ObjectSchemaSlugResolverInterface $slugs,
+		private readonly ListenerSlugContractInterface $contract,
 	) {
 	}//end __construct()
 
@@ -82,6 +83,7 @@ class AutomationCleanupListener implements IEventListener {
 	 * @return void
 	 *
 	 * @spec openspec/specs/automation-designer/spec.md
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	public function handle(Event $event): void {
 		if (($event instanceof ObjectDeletedEvent) === false) {
@@ -107,13 +109,13 @@ class AutomationCleanupListener implements IEventListener {
 		// the schema slug alone would delete artifacts for another app's rows.
 		if ($this->slugs->isBuildiqSchema(
 			entity: $entity,
-			schemaSlug: AutomationCompilerService::AUTOMATION_SCHEMA
+			schemaSlug: AutomationCompilerServiceInterface::AUTOMATION_SCHEMA
 		) === false
 		) {
 			return;
 		}
 
-		$automation = $this->extractObjectData(entity: $entity);
+		$automation = ObjectRecord::entityData(entity: $entity);
 		$provenance = $automation['provenance'] ?? [];
 		if (is_array($provenance) === false) {
 			$provenance = [];
@@ -129,30 +131,4 @@ class AutomationCleanupListener implements IEventListener {
 			);
 		}
 	}//end handle()
-
-	/**
-	 * Read the object payload (post-`@self`) from the ObjectEntity.
-	 *
-	 * @param object $entity The ObjectEntity instance.
-	 *
-	 * @return array<string,mixed>
-	 */
-	private function extractObjectData(object $entity): array {
-		if (method_exists($entity, 'getObject') === true) {
-			$object = $entity->getObject();
-			if (is_array($object) === true) {
-				return $object;
-			}
-		}
-
-		if (method_exists($entity, 'jsonSerialize') === true) {
-			$serialised = $entity->jsonSerialize();
-			if (is_array($serialised) === true) {
-				unset($serialised['@self']);
-				return $serialised;
-			}
-		}
-
-		return [];
-	}//end extractObjectData()
 }//end class

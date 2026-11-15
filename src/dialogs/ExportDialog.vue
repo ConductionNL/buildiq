@@ -87,6 +87,89 @@
 				</div>
 			</template>
 
+			<section
+				v-if="isServerTarget"
+				class="export-dialog__server"
+				data-test="export-server-section">
+				<h4 class="export-dialog__section-title">
+					{{ t('buildiq', 'Run on its own server') }}
+				</h4>
+				<p class="export-dialog__scope-hint">
+					{{
+						t(
+							'buildiq',
+							'The app becomes a Nextcloud app of its own that runs without buildiq, on a server of the municipality or of a supplier.',
+						)
+					}}
+				</p>
+				<table class="export-dialog__requirements">
+					<caption class="export-dialog__caption">
+						{{
+							t('buildiq', 'What the server needs')
+						}}
+					</caption>
+					<thead>
+						<tr>
+							<th scope="col">
+								{{ t('buildiq', 'Part') }}
+							</th>
+							<th scope="col">
+								{{ t('buildiq', 'Version') }}
+							</th>
+							<th scope="col">
+								{{ t('buildiq', 'Why') }}
+							</th>
+						</tr>
+					</thead>
+					<tbody>
+						<tr v-for="row in requirementRows" :key="row.key">
+							<th scope="row">
+								{{ row.part }}
+							</th>
+							<td>{{ row.version }}</td>
+							<td>{{ row.why }}</td>
+						</tr>
+					</tbody>
+				</table>
+				<h4 class="export-dialog__section-title">
+					{{ t('buildiq', 'In the package') }}
+				</h4>
+				<NcCheckboxRadioSwitch :modelValue="true" disabled>
+					{{ t('buildiq', 'App package') }}
+				</NcCheckboxRadioSwitch>
+				<p class="export-dialog__scope-hint">
+					{{
+						t(
+							'buildiq',
+							"The app's source with its pages, schemas and the records you chose.",
+						)
+					}}
+				</p>
+				<div data-test="export-server-compose">
+					<NcCheckboxRadioSwitch
+						v-model="form.includeServerBundle"
+						:disabled="submitting">
+						{{ t('buildiq', 'Docker Compose file') }}
+					</NcCheckboxRadioSwitch>
+				</div>
+				<p class="export-dialog__scope-hint">
+					{{
+						t(
+							'buildiq',
+							'Builds the app and starts it with Nextcloud and OpenRegister, for a trial or a small environment.',
+						)
+					}}
+				</p>
+				<p class="export-dialog__scope-hint">
+					{{
+						t(
+							'buildiq',
+							'After the export you no longer change the standalone app from buildiq. Make new versions here and export again.',
+						)
+					}}
+				</p>
+			</section>
+
 			<template v-if="form.target && form.target.value === 'github'">
 				<NcTextField
 					v-model="form.githubOrg"
@@ -138,7 +221,11 @@
 				{{ t('buildiq', 'Cancel') }}
 			</NcButton>
 			<NcButton variant="primary" :disabled="submitting" @click="submit">
-				{{ t('buildiq', 'Start export') }}
+				{{
+					isServerTarget
+						? t('buildiq', 'Make package')
+						: t('buildiq', 'Start export')
+				}}
 			</NcButton>
 		</template>
 	</NcDialog>
@@ -211,6 +298,8 @@ export default {
 			// Until they arrive (or when the call fails) the prop is used.
 			loadedVersions: [],
 			loadingVersions: false,
+			// What a server needs to run the app on its own, from the server.
+			serverRequirements: null,
 			form: {
 				version: this.availableVersions[0] || {
 					label: '0.1.0',
@@ -220,6 +309,7 @@ export default {
 				target: { label: this.t('buildiq', 'ZIP download'), value: 'zip' },
 				license: { label: 'EUPL-1.2', value: 'EUPL-1.2' },
 				includeSeedData: false,
+				includeServerBundle: true,
 				githubOrg: '',
 				githubRepo: '',
 				githubVisibility: {
@@ -255,7 +345,7 @@ export default {
 		/**
 		 * Observed behaviour of `versionOptions` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-exporter-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-exporter-ui/tasks.md#task-1
 		 */
 		versionOptions() {
 			return this.loadedVersions.length
@@ -266,19 +356,71 @@ export default {
 		/**
 		 * Observed behaviour of `targetOptions` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-exporter-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-exporter-ui/tasks.md#task-1
 		 */
 		targetOptions() {
 			return [
 				{ label: this.t('buildiq', 'ZIP download'), value: 'zip' },
+				{ label: this.t('buildiq', 'Own server'), value: 'server' },
 				{ label: this.t('buildiq', 'Push to GitHub'), value: 'github' },
+			]
+		},
+
+		/**
+		 * Whether the export runs the app on its own server.
+		 *
+		 * @spec openspec/changes/apps-standalone-deploy/specs/standalone-server-bundle/spec.md#requirement-the-export-offers-its-own-server-as-a-target-req-bqsd-001
+		 * @return {boolean} True for the Own server target.
+		 */
+		isServerTarget() {
+			return this.form.target?.value === 'server'
+		},
+
+		/**
+		 * The server's needs as table rows; a version the server did not
+		 * report reads as unknown.
+		 *
+		 * @spec openspec/changes/apps-standalone-deploy/specs/standalone-server-bundle/spec.md#requirement-the-export-offers-its-own-server-as-a-target-req-bqsd-001
+		 * @return {Array<{key: string, part: string, version: string, why: string}>} Rows.
+		 */
+		requirementRows() {
+			const needs = this.serverRequirements || {}
+			const orNewer = (version) =>
+				version
+					? this.t('buildiq', '{version} or newer', { version })
+					: this.t('buildiq', 'Unknown')
+			return [
+				{
+					key: 'nextcloud',
+					part: 'Nextcloud',
+					version: orNewer(needs.nextcloud),
+					why: this.t('buildiq', 'the app runs as a Nextcloud app'),
+				},
+				{
+					key: 'openregister',
+					part: 'OpenRegister',
+					version: orNewer(needs.openregister),
+					why: this.t('buildiq', "holds the app's schemas and records"),
+				},
+				{
+					key: 'php',
+					part: 'PHP',
+					version: orNewer(needs.php),
+					why: this.t('buildiq', 'Nextcloud and the app run on it'),
+				},
+				{
+					key: 'database',
+					part: this.t('buildiq', 'Database'),
+					version: needs.database || this.t('buildiq', 'Unknown'),
+					why: this.t('buildiq', 'Nextcloud keeps its data in it'),
+				},
 			]
 		},
 
 		/**
 		 * Observed behaviour of `licenseOptions` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-exporter-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-exporter-ui/tasks.md#task-1
 		 */
 		licenseOptions() {
 			return [
@@ -291,7 +433,7 @@ export default {
 		/**
 		 * Observed behaviour of `visibilityOptions` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-exporter-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-exporter-ui/tasks.md#task-1
 		 */
 		visibilityOptions() {
 			return [
@@ -310,6 +452,7 @@ export default {
 	mounted() {
 		this.fetchGithubCredentials()
 		this.fetchVersions()
+		this.fetchServerRequirements()
 	},
 
 	methods: {
@@ -387,6 +530,25 @@ export default {
 		},
 
 		/**
+		 * Load what a server needs to run the app on its own. A failure
+		 * leaves the versions unknown; the export itself still works.
+		 *
+		 * @spec openspec/changes/apps-standalone-deploy/specs/standalone-server-bundle/spec.md#requirement-the-export-offers-its-own-server-as-a-target-req-bqsd-001
+		 * @return {Promise<void>}
+		 */
+		async fetchServerRequirements() {
+			try {
+				const url = generateUrl(
+					'/apps/buildiq/api/exports/server-requirements',
+				)
+				const response = await axios.get(url)
+				this.serverRequirements = response?.data || null
+			} catch {
+				this.serverRequirements = null
+			}
+		},
+
+		/**
 		 * Start the queued export right away instead of waiting for cron.
 		 *
 		 * Not awaited: the export runs in that request, and the exports list
@@ -409,7 +571,7 @@ export default {
 		/**
 		 * Observed behaviour of `onClose` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-exporter-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-exporter-ui/tasks.md#task-1
 		 */
 		onClose() {
 			if (this.submitting) {
@@ -421,69 +583,143 @@ export default {
 		/**
 		 * Observed behaviour of `submit` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-exporter-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-exporter-ui/tasks.md#task-1
 		 */
 		async submit() {
 			this.submitting = true
 			this.errorMessage = ''
 			try {
-				const payload = {
-					applicationVersion: this.form.version.value,
-					// Which version row: the semver alone is shared by draft and production.
-					...(this.form.version.slug
-						? { applicationVersionSlug: this.form.version.slug }
-						: {}),
-
-					target: this.form.target.value,
-					license: this.form.license.value,
-					includeSeedData: this.form.includeSeedData,
-					// Mirrors the source Application's dataRegisters bindings
-					// 1:1, each carrying the resolved includeData flag
-					// (data-registers-runtime design.md Decision 5).
-					dataRegisters: this.dataRegisterChoices.map((choice) => ({
-						register: choice.register,
-						includeData: choice.includeData,
-					})),
-
-					// Only the chosen flows, and only their UUIDs — `label` is
-					// a picker convenience, and the exporter writes the flow's
-					// own name into the bundle rather than trusting this one.
-					flows: this.flowChoices
-						.filter((choice) => choice.include)
-						.map((choice) => ({ flow: choice.flow })),
+				const payload = this.exportPayload()
+				if (!this.addGithubTarget(payload)) {
+					return
 				}
-				if (this.form.target.value === 'github') {
-					if (!this.form.githubCredential) {
-						this.errorMessage = this.t(
-							'buildiq',
-							'Pick a GitHub credential to push with.',
-						)
-						this.submitting = false
-						return
-					}
-					payload.githubOrg = this.form.githubOrg
-					payload.githubRepo = this.form.githubRepo
-					payload.githubVisibility = this.form.githubVisibility.value
-					// A broker credential UUID, not a token. The secret never leaves the vault.
-					payload.githubCredentialId = this.form.githubCredential.value
-				}
-				const url = generateUrl(
-					`/apps/buildiq/api/applications/${encodeURIComponent(this.applicationSlug)}/exports`,
-				)
-				const response = await axios.post(url, payload)
-				this.startNow(response.data.uuid)
-				this.$emit('queued', response.data.uuid)
-				this.$emit('close')
+				await this.queueExport(payload)
 			} catch (err) {
-				this.errorMessage =
-					err?.response?.data?.error
-					|| this.t(
-						'buildiq',
-						'GitHub authentication failed. Please check the token scope and try again.',
-					)
+				this.errorMessage = this.exportFailureMessage(err)
 			} finally {
 				this.submitting = false
 			}
+		},
+
+		/**
+		 * The export request for every target: the version, target, license and
+		 * data choices, plus the server bundle flag for the own-server target.
+		 *
+		 * @return {object} The payload.
+		 */
+		exportPayload() {
+			const payload = {
+				applicationVersion: this.form.version.value,
+				// Which version row: the semver alone is shared by draft and production.
+				...(this.form.version.slug
+					? { applicationVersionSlug: this.form.version.slug }
+					: {}),
+
+				target: this.form.target.value,
+				license: this.form.license.value,
+				includeSeedData: this.form.includeSeedData,
+				dataRegisters: this.dataRegisterPayload(),
+				flows: this.flowPayload(),
+			}
+			if (this.isServerTarget) {
+				payload.includeServerBundle = this.form.includeServerBundle
+			}
+			return payload
+		},
+
+		/**
+		 * Mirrors the source Application's dataRegisters bindings 1:1, each
+		 * carrying the resolved includeData flag (data-registers-runtime
+		 * design.md Decision 5).
+		 *
+		 * @return {Array<{register: string, includeData: boolean}>}
+		 */
+		dataRegisterPayload() {
+			return this.dataRegisterChoices.map((choice) => ({
+				register: choice.register,
+				includeData: choice.includeData,
+			}))
+		},
+
+		/**
+		 * Only the chosen flows, and only their UUIDs — `label` is a picker
+		 * convenience, and the exporter writes the flow's own name into the
+		 * bundle rather than trusting this one.
+		 *
+		 * @return {Array<{flow: string}>}
+		 */
+		flowPayload() {
+			return this.flowChoices
+				.filter((choice) => choice.include)
+				.map((choice) => ({ flow: choice.flow }))
+		},
+
+		/**
+		 * Refuse to queue a GitHub export that has no credential to push with.
+		 *
+		 * @return {void}
+		 */
+		refuseWithoutCredential() {
+			this.errorMessage = this.t(
+				'buildiq',
+				'Pick a GitHub credential to push with.',
+			)
+			this.submitting = false
+		},
+
+		/**
+		 * Add the GitHub repository and credential to a GitHub export's
+		 * payload; refuse a GitHub export that has no credential.
+		 *
+		 * @param {object} payload The export request.
+		 * @return {boolean} false when the export is refused.
+		 */
+		addGithubTarget(payload) {
+			if (this.form.target.value !== 'github') {
+				return true
+			}
+			if (!this.form.githubCredential) {
+				this.refuseWithoutCredential()
+				return false
+			}
+			payload.githubOrg = this.form.githubOrg
+			payload.githubRepo = this.form.githubRepo
+			payload.githubVisibility = this.form.githubVisibility.value
+			// A broker credential UUID, not a token. The secret never leaves the vault.
+			payload.githubCredentialId = this.form.githubCredential.value
+			return true
+		},
+
+		/**
+		 * POST the export, start it right away and close.
+		 *
+		 * @param {object} payload The export request.
+		 * @return {Promise<void>}
+		 */
+		async queueExport(payload) {
+			const url = generateUrl(
+				`/apps/buildiq/api/applications/${encodeURIComponent(this.applicationSlug)}/exports`,
+			)
+			const response = await axios.post(url, payload)
+			this.startNow(response.data.uuid)
+			this.$emit('queued', response.data.uuid)
+			this.$emit('close')
+		},
+
+		/**
+		 * What to say when queueing the export failed.
+		 *
+		 * @param {Error|object} err The failure.
+		 * @return {string}
+		 */
+		exportFailureMessage(err) {
+			return (
+				err?.response?.data?.error
+				|| this.t(
+					'buildiq',
+					'GitHub authentication failed. Please check the token scope and try again.',
+				)
+			)
 		},
 	},
 }
@@ -522,6 +758,30 @@ export default {
 	margin: 8px 0 0;
 	font-size: 0.95rem;
 	font-weight: 600;
+}
+
+.export-dialog__requirements {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: 0.9rem;
+}
+
+.export-dialog__requirements th,
+.export-dialog__requirements td {
+	text-align: start;
+	padding: 4px 8px 4px 0;
+	border-bottom: 1px solid var(--color-border);
+}
+
+.export-dialog__requirements thead th {
+	color: var(--color-text-maxcontrast);
+	font-weight: 600;
+}
+
+.export-dialog__caption {
+	text-align: start;
+	font-weight: 600;
+	padding-bottom: 4px;
 }
 
 .export-dialog__error {

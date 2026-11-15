@@ -34,6 +34,7 @@ namespace OCA\Buildiq\Tests\Unit\Service;
 
 use OCA\Buildiq\Exception\WizardCreationException;
 use OCA\Buildiq\Service\ApplicationCreationService;
+use OCA\Buildiq\Service\RegisterStore;
 use OCA\Buildiq\Service\SlugValidator;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Register;
@@ -110,10 +111,12 @@ class ApplicationCreationServiceTest extends TestCase {
 
 		$this->service = new ApplicationCreationService(
 			logger: $this->logger,
-			objectService: $this->objectService,
+			store: new RegisterStore(
+				objectService: $this->objectService,
+				registerMapper: $this->registerMapper,
+				schemaMapper: $this->schemaMapper
+			),
 			registerService: $this->registerService,
-			registerMapper: $this->registerMapper,
-			schemaMapper: $this->schemaMapper,
 			userSession: $this->userSession,
 			slugValidator: $this->slugValidator,
 		);

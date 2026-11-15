@@ -3,6 +3,9 @@
 /**
  * ManifestPageShape — bring a tool-authored page up to what the validator wants.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * `upsertPage` takes a free-form `config` object and stores it verbatim, which
  * is fine until the page type has fields the canonical manifest validator
  * insists on. Two shapes turned up on the first real plan of the day, from a
@@ -27,9 +30,6 @@
  * and schema it belongs to. Where intent is genuinely missing, the page stays
  * as the model wrote it and the validator's message reaches the reader, which
  * is the honest outcome.
- *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
  *
  * @category Support
  * @package  OCA\Buildiq\Support

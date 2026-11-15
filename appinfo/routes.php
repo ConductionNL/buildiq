@@ -14,8 +14,11 @@ declare(strict_types=1);
 //
 // This file references no OpenRegister symbol at top level — Routes::standard()
 // is a pure array builder — so requiring it is safe even when OR is disabled.
-return \OCA\OpenRegister\AppHost\Routes::standard(
+// Every unversioned API route is also served under /api/v1/; see ApiPathAliases.
+return \OCA\Buildiq\Middleware\Support\ApiPathAliases::withVersionedAliases(\OCA\OpenRegister\AppHost\Routes::standard(
     [
+        // The OpenAPI document of buildiq's own API, public, served under /api/v1/ too.
+        ['name' => 'openApi#show', 'url' => '/api/openapi.json', 'verb' => 'GET'],
         // App-creation wizard endpoint (buildiq-app-creation-wizard REQ-OBWIZ-001).
         // POST /api/applications/wizard — atomic creation of Application + N versions + N registers.
         // ADMIN-ONLY (issue #157): #[AuthorizedAdminSetting(AdminSettings::class)] on the controller
@@ -23,6 +26,9 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         // defence in depth. The caller becomes the sole owner of the new Application.
         // Must precede the {slug} + collection routes so it does not shadow them.
         ['name' => 'applicationCreation#wizard', 'url' => '/api/applications/wizard', 'verb' => 'POST'],
+        // lifecycle-import-app-and-cli: an exported archive imported as a new app (REQ-BQIC-001).
+        ['name' => 'applicationImport#import', 'url' => '/api/applications/import', 'verb' => 'POST'],
+        ['name' => 'applicationImport#preview', 'url' => '/api/applications/import/preview', 'verb' => 'POST'],
 
         // First-time-setup contract (buildiq-first-time-setup, ADR-042) — the
         // fleet-wide CnSetupWizard endpoints. Admin-only via
@@ -90,6 +96,9 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         ['name' => 'applicationVersions#destroy', 'url' => '/api/applications/{appSlug}/versions/{versionSlug}',  'verb' => 'DELETE', 'requirements' => ['appSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'versionSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         // Owner-only release: set-as-production + publish + demote previous production
         // (`application-versions` REQ-OBV-110). Single-production invariant; NO admin bypass.
+        // lifecycle-git-branches: start a branch from a version, and preview / apply a merge into a draft version.
+        ['name' => 'applicationVersions#branch',   'url' => '/api/applications/{appSlug}/versions/{versionSlug}/branch', 'verb' => 'POST', 'requirements' => ['appSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'versionSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        ['name' => 'applicationVersions#merge',    'url' => '/api/applications/{appSlug}/versions/{source}/merge/{target}', 'verb' => 'POST', 'requirements' => ['appSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'source' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'target' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'applicationVersions#release',  'url' => '/api/applications/{appSlug}/versions/{versionSlug}/release', 'verb' => 'POST', 'requirements' => ['appSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'versionSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
         // Insights endpoint (buildiq-app-detail-overview REQ-OBAI-001 / REQ-OBAI-007).
@@ -100,6 +109,10 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         // auto-granted — mirrors buildiq-version-routing). UUID path params + the
         // trailing `/insights` literal disambiguate from the slug-based CRUD routes.
         ['name' => 'applicationInsights#getInsights', 'url' => '/api/applications/{appUuid}/versions/{versionUuid}/insights', 'verb' => 'GET', 'requirements' => ['appUuid' => '[a-f0-9-]{8,}', 'versionUuid' => '[a-f0-9-]{8,}']],
+        // operate-debug-log-and-monitoring: a version's health for the app detail page (insights' own
+        // RBAC), and the counts a running app posts (the manifest endpoint's rule, rate-limited).
+        ['name' => 'appHealth#show', 'url' => '/api/applications/{appUuid}/versions/{versionUuid}/health', 'verb' => 'GET', 'requirements' => ['appUuid' => '[a-f0-9-]{8,}', 'versionUuid' => '[a-f0-9-]{8,}']],
+        ['name' => 'appHealth#record', 'url' => '/api/applications/{slug}/health-samples', 'verb' => 'POST', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
         // Manual promotion endpoint (buildiq-version-promotion REQ-OBVP-001).
         // Spec mandates UUID path params (`{appUuid}/versions/{versionUuid}/promote`)
@@ -131,6 +144,11 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         // do. MUST use a DISTINCT route name (dashboard#builderSlash, a thin alias of
         // builder()) — the AppHost Routes::standard() guard throws on duplicate names.
         ['name' => 'dashboard#builderSlash', 'url' => '/builder/{slug}/', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        // pages-installable-offline-and-mobile D1/D2: the installable runtime has a
+        // path of its own, so a service worker scoped to it controls one app's
+        // runtime and nothing else; its web app manifest is signed-in only.
+        ['name' => 'dashboard#run', 'url' => '/run/{slug}/', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        ['name' => 'applications#webManifest', 'url' => '/run/{slug}/manifest.webmanifest', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
         // Reserved Buildiq designer sub-paths (buildiq-deep-links #100 fix).
         // `pages`, `schemas`, `schemas/{schemaId}` and `walkthrough` are
@@ -180,6 +198,8 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         // Export pipeline (Phase-2 graduation).
         ['name' => 'exports#submit',   'url' => '/api/applications/{slug}/exports', 'verb' => 'POST', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'exports#download', 'url' => '/api/exports/{uuid}/download',     'verb' => 'GET'],
+        // What a server needs to run an exported app (the export dialog's Own server target).
+        ['name' => 'exports#serverRequirements', 'url' => '/api/exports/server-requirements', 'verb' => 'GET'],
         // Runs a queued export in the request instead of waiting for cron (the dialog fires it and moves on).
         ['name' => 'exports#run',      'url' => '/api/exports/{uuid}/run',          'verb' => 'POST'],
 
@@ -235,7 +255,10 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         ['name' => 'automations#enable',   'url' => '/api/automations/{uuid}/enable',   'verb' => 'POST', 'requirements' => ['uuid' => '[a-f0-9-]{8,}']],
         ['name' => 'automations#disable',  'url' => '/api/automations/{uuid}/disable',  'verb' => 'POST', 'requirements' => ['uuid' => '[a-f0-9-]{8,}']],
         ['name' => 'automations#dryRun',   'url' => '/api/automations/{uuid}/dry-run',  'verb' => 'POST', 'requirements' => ['uuid' => '[a-f0-9-]{8,}']],
+        // The run log (logic-automation-run-log D3): the summary route comes first so `runs` is never read as a uuid.
+        ['name' => 'automations#runsSummary', 'url' => '/api/automations/runs/summary', 'verb' => 'GET'],
         ['name' => 'automations#status',   'url' => '/api/automations/{uuid}/status',   'verb' => 'GET',  'requirements' => ['uuid' => '[a-f0-9-]{8,}']],
+        ['name' => 'automations#runs',     'url' => '/api/automations/{uuid}/runs',     'verb' => 'GET',  'requirements' => ['uuid' => '[a-f0-9-]{8,}']],
 
         // App-override store-and-serve (buildiq-inline-edit-persistence,
         // spec app-override-persistence). Per-instance shared manifest delta for
@@ -287,6 +310,9 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         ['name' => 'registrationForm#target', 'url' => '/api/registration-forms/target', 'verb' => 'GET'],
         // Decision 179/189: the page designer checks its form pages against their destinations on save.
         ['name' => 'formDestination#check', 'url' => '/api/forms/destination-check', 'verb' => 'POST'],
+        // journey-designer: a journey's writes judged by OpenRegister's form destination validator; administrators only.
+        ['name' => 'journeyDesigner#check', 'url' => '/api/journeys/check', 'verb' => 'POST'],
+        ['name' => 'journeyDesigner#save', 'url' => '/api/journeys', 'verb' => 'POST'],
 
         // Remote template store (buildiq-remote-template-store). Consume-only:
         // search proxies the configured remote OpenRegister catalogue server-side;
@@ -294,6 +320,9 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         // shared ApplicationsController install seam.
         ['name' => 'store#search',  'url' => '/api/store/templates',                  'verb' => 'GET'],
         ['name' => 'store#install', 'url' => '/api/store/templates/{slug}/install',   'verb' => 'POST', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        // Also in OpenRegister's canonical table; declared here so it is
+        // visible where this app's routes are read, and it overrides by name.
+        ['name' => 'store#publish', 'url' => '/api/store/publish',                    'verb' => 'POST'],
 
         // GitHub shop source (github-shop-catalogue REQ-GHSC-005 / REQ-GHSC-006).
         // Both #[NoAdminRequired] with an in-body 401 guard; search is an
@@ -349,4 +378,4 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         // NB: the SPA catch-all (dashboard#catchAll) is appended by
         // \OCA\OpenRegister\AppHost\Routes::standard() — do NOT add it here.
     ]
-);
+));

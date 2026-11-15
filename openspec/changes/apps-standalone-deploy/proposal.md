@@ -32,8 +32,10 @@ running server is left to whoever receives it.
 
 ## What changes
 
-- The export dialog gets "Include files to run it on its own server", on by
-  default for both the ZIP and the GitHub target.
+- The export dialog gets a third target, "Own server" (board
+  BqExporterenZelfstandig), next to ZIP download and GitHub. It shows what the
+  server needs and what goes in the package, and downloads a ZIP with the
+  server bundle (the Docker Compose file can be switched off).
 - The exported tree gains a `deploy/` folder: a `Dockerfile` that builds the app
   from the exported source into a Nextcloud image, a `compose.yaml` that runs it
   with a database and OpenRegister, an `.env.example`, and a `README.md` that

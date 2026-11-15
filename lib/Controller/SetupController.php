@@ -3,6 +3,9 @@
 /**
  * Buildiq first-time-setup contract (ADR-042).
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Backs the shared CnSetupWizard renderer for Buildiq's own manifest `setup`
  * block: reports per-step completion (`GET /api/setup/status`), persists config
  * values from `config-fields` steps (`POST /api/setup/config`), and runs
@@ -29,9 +32,6 @@
  * enforced (no `#[NoCSRFRequired]`): the SPA posts via `@nextcloud/axios`,
  * which sends the `requesttoken`.
  *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
- *
  * @category Controller
  * @package  OCA\Buildiq\Controller
  *
@@ -50,19 +50,17 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Controller;
 
-use OCA\Buildiq\AppInfo\Application;
-use OCA\Buildiq\Service\DemoDataService;
-use OCA\Buildiq\Service\SettingsService;
-use OCA\Buildiq\Service\TemplateSeedService;
+use OCA\Buildiq\Kernel\AppIdentity;
+use OCA\Buildiq\Kernel\Contracts\DemoDataServiceInterface;
+use OCA\Buildiq\Service\CallerContext;
+use OCA\Buildiq\Service\SetupServices;
 use OCA\Buildiq\Settings\AdminSettings;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\AuthorizedAdminSetting;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IAppConfig;
-use OCP\IGroupManager;
 use OCP\IRequest;
-use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -116,11 +114,8 @@ class SetupController extends Controller {
 	 * @param IRequest $request The current HTTP request
 	 * @param LoggerInterface $logger PSR logger for diagnostics
 	 * @param IAppConfig $appConfig App-config reader/writer
-	 * @param IUserSession $userSession Current Nextcloud user session
-	 * @param IGroupManager $groupManager Group membership resolver (admin gate)
-	 * @param DemoDataService $demoDataService Demo dataset import (ADR-111 rule 4)
-	 * @param SettingsService $settings Settings write path (registry_* + secret token)
-	 * @param TemplateSeedService $seedService Shared idempotent seeding service
+	 * @param CallerContext $caller The caller's session, group memberships and the shared permission matcher.
+	 * @param SetupServices $setup Demo data, settings and template seeding.
 	 *
 	 * @return void
 	 */
@@ -128,13 +123,10 @@ class SetupController extends Controller {
 		IRequest $request,
 		private readonly LoggerInterface $logger,
 		private readonly IAppConfig $appConfig,
-		private readonly IUserSession $userSession,
-		private readonly IGroupManager $groupManager,
-		private readonly DemoDataService $demoDataService,
-		private readonly SettingsService $settings,
-		private readonly TemplateSeedService $seedService,
+		private readonly CallerContext $caller,
+		private readonly SetupServices $setup,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -149,7 +141,7 @@ class SetupController extends Controller {
 	 * @return JSONResponse `{ version, completed, templatesSeeded, steps: { <id>: { done } } }`.
 	 *
 	 * @spec openspec/changes/openbuild-first-time-setup/tasks.md#task-4.1
-	 * @spec openspec/changes/wizard-dataset-card-load/specs/first-time-setup/spec.md
+	 * @spec openspec/specs/first-time-setup/spec.md
 	 */
 	#[AuthorizedAdminSetting(AdminSettings::class)]
 	public function status(): JSONResponse {
@@ -158,17 +150,17 @@ class SetupController extends Controller {
 			return $denied;
 		}
 
-		$seedDone = $this->seedService->countSeeded() > 0;
-		$storeDone = $this->appConfig->getValueString(Application::APP_ID, 'registry_url', '') !== '';
+		$seedDone = $this->setup->seedService->countSeeded() > 0;
+		$storeDone = $this->appConfig->getValueString(AppIdentity::APP_ID, 'registry_url', '') !== '';
 		// DEALT WITH, not "demo objects exist". An operator who declines demo
 		// data has finished the step; re-offering it every visit would make
 		// "no thanks" impossible to express.
-		$demoDecided = $this->appConfig->getValueString(Application::APP_ID, self::DEMO_DATA_DECIDED_KEY, '') !== '';
-		$pickedDataset = $this->appConfig->getValueString(Application::APP_ID, self::DATASET_KEY, '');
+		$demoDecided = $this->appConfig->getValueString(AppIdentity::APP_ID, self::DEMO_DATA_DECIDED_KEY, '') !== '';
+		$pickedDataset = $this->appConfig->getValueString(AppIdentity::APP_ID, self::DATASET_KEY, '');
 		// No step is required, so setup is complete by definition. A missing
 		// OpenRegister is the manifest's dependency gate, not a wizard step.
 		$this->appConfig->setValueString(
-			Application::APP_ID,
+			AppIdentity::APP_ID,
 			self::COMPLETION_KEY,
 			(string)self::SETUP_VERSION
 		);
@@ -181,7 +173,7 @@ class SetupController extends Controller {
 				// The choice step reads its options from here: it declares
 				// `optionsSource: datasets` and no options of its own, so a
 				// dataset missing from this list is a dataset nobody can pick.
-				'datasets' => $this->demoDataService->listChoices(),
+				'datasets' => $this->setup->demoDataService->listChoices(),
 				// Exactly the ids of `manifest.setup.steps`: a step the server
 				// never reports stays open and reopens the wizard.
 				'steps' => [
@@ -228,7 +220,7 @@ class SetupController extends Controller {
 
 			unset($params[self::DATASET_KEY]);
 
-			$known = array_column($this->demoDataService->listChoices(), 'id');
+			$known = array_column($this->setup->demoDataService->listChoices(), 'id');
 			if (in_array($named, $known, true) === false) {
 				return new JSONResponse(
 					['success' => false, 'message' => 'No dataset is called "' . $named . '".'],
@@ -236,10 +228,10 @@ class SetupController extends Controller {
 				);
 			}
 
-			$this->appConfig->setValueString(Application::APP_ID, self::DATASET_KEY, $named);
+			$this->appConfig->setValueString(AppIdentity::APP_ID, self::DATASET_KEY, $named);
 		}
 
-		$this->settings->updateSettings($params);
+		$this->setup->settings->updateSettings($params);
 
 		return new JSONResponse(['success' => true]);
 	}//end saveConfig()
@@ -263,7 +255,7 @@ class SetupController extends Controller {
 		// `install-demo-data` is the id the step used before it asked WHICH
 		// dataset, and it still means "import the one this app ships". Kept so
 		// an older manifest, a runbook or a script that posts it keeps working.
-		if ($actionId === 'load-demo-data' || $actionId === 'install-demo-data') {
+		if ($this->isLoadAction(actionId: $actionId) === true) {
 			return $this->loadDataset(actionId: $actionId);
 		}
 
@@ -278,8 +270,28 @@ class SetupController extends Controller {
 			);
 		}
 
+		return $this->seedTemplates();
+	}//end runAction()
+
+	/**
+	 * Whether the action loads a dataset (`install-demo-data` is its older id).
+	 *
+	 * @param string $actionId The setup action id.
+	 *
+	 * @return bool
+	 */
+	private function isLoadAction(string $actionId): bool {
+		return $actionId === 'load-demo-data' || $actionId === 'install-demo-data';
+	}//end isLoadAction()
+
+	/**
+	 * Run the seed-templates action and report what was seeded.
+	 *
+	 * @return JSONResponse
+	 */
+	private function seedTemplates(): JSONResponse {
 		try {
-			$result = $this->seedService->seed();
+			$result = $this->setup->seedService->seed();
 		} catch (Throwable $e) {
 			$this->logger->error(
 				'Buildiq: setup seed-templates action failed',
@@ -311,7 +323,7 @@ class SetupController extends Controller {
 				'detail' => $result,
 			]
 		);
-	}//end runAction()
+	}//end seedTemplates()
 
 	/**
 	 * Import the dataset a card's Load button posted as `dataset`, or the
@@ -322,10 +334,70 @@ class SetupController extends Controller {
 	 *
 	 * @return JSONResponse The outcome, carrying the counts.
 	 *
-	 * @spec openspec/changes/wizard-dataset-card-load/specs/first-time-setup/spec.md
+	 * @spec openspec/specs/first-time-setup/spec.md
 	 */
 	private function loadDataset(string $actionId): JSONResponse {
-		$picked = $this->appConfig->getValueString(Application::APP_ID, self::DATASET_KEY, '');
+		$picked = $this->pickedDataset(actionId: $actionId);
+		if ($picked instanceof JSONResponse) {
+			return $picked;
+		}
+
+		// 🔴 NO SILENT DEFAULT. Importing here because the operator clicked Run
+		// one step early would plant example objects nobody asked for.
+		if ($picked === '') {
+			return new JSONResponse(
+				['success' => false, 'message' => 'Pick a dataset first.'],
+				Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		if ($picked === DemoDataServiceInterface::NONE_DATASET) {
+			$this->appConfig->setValueString(AppIdentity::APP_ID, self::DATASET_KEY, DemoDataServiceInterface::NONE_DATASET);
+			$this->appConfig->setValueString(AppIdentity::APP_ID, self::DEMO_DATA_DECIDED_KEY, 'skipped');
+
+			return new JSONResponse(['success' => true, 'message' => 'No example data was loaded.']);
+		}
+
+		try {
+			$imported = $this->setup->demoDataService->install();
+		} catch (Throwable $e) {
+			$this->logger->error('Buildiq: setup install-demo-data failed', ['exception' => $e->getMessage()]);
+
+			return new JSONResponse(['success' => false, 'message' => $e->getMessage()]);
+		}
+
+		// Recorded only after the import actually returned. Marking it first
+		// would let a failed install present as a finished step.
+		// Loading IS choosing the set, so the pick is recorded too.
+		$this->appConfig->setValueString(AppIdentity::APP_ID, self::DATASET_KEY, $picked);
+		$this->appConfig->setValueString(AppIdentity::APP_ID, self::DEMO_DATA_DECIDED_KEY, 'installed');
+
+		// 🔴 THE COUNTS, ALWAYS, AND BOTH OF THEM. "Demo data installed" with no
+		// numbers cannot be told apart from an import that wrote nothing — and
+		// neither can a count that merely repeats what was asked for. An
+		// operator who got part of the dataset must see the gap.
+		$message = $this->importedMessage(imported: $imported);
+
+		return new JSONResponse(
+			[
+				'success' => true,
+				'message' => $message,
+				'detail' => $imported,
+			]
+		);
+	}//end loadDataset()
+
+	/**
+	 * The dataset to load: the posted one when the body names one, the stored
+	 * pick otherwise, the shipped one for the legacy id; or the refusal of a
+	 * posted value.
+	 *
+	 * @param string $actionId The setup action id.
+	 *
+	 * @return string|JSONResponse
+	 */
+	private function pickedDataset(string $actionId): string|JSONResponse {
+		$picked = $this->appConfig->getValueString(AppIdentity::APP_ID, self::DATASET_KEY, '');
 
 		// The card's Load button names its dataset in the body. An older wizard
 		// posts nothing and relies on the pick stored a step earlier. Nothing is
@@ -344,46 +416,23 @@ class SetupController extends Controller {
 		// The legacy id carries no answer, so it means the shipped dataset. A
 		// caller that posts it has said which one by posting it.
 		if ($actionId === 'install-demo-data' && $picked === '') {
-			$picked = DemoDataService::DEMO_DATASET;
+			$picked = DemoDataServiceInterface::DEMO_DATASET;
 		}
 
-		// 🔴 NO SILENT DEFAULT. Importing here because the operator clicked Run
-		// one step early would plant example objects nobody asked for.
-		if ($picked === '') {
-			return new JSONResponse(
-				['success' => false, 'message' => 'Pick a dataset first.'],
-				Http::STATUS_BAD_REQUEST
-			);
-		}
+		return $picked;
+	}//end pickedDataset()
 
-		if ($picked === DemoDataService::NONE_DATASET) {
-			$this->appConfig->setValueString(Application::APP_ID, self::DATASET_KEY, DemoDataService::NONE_DATASET);
-			$this->appConfig->setValueString(Application::APP_ID, self::DEMO_DATA_DECIDED_KEY, 'skipped');
-
-			return new JSONResponse(['success' => true, 'message' => 'No example data was loaded.']);
-		}
-
-		try {
-			$imported = $this->demoDataService->install();
-		} catch (Throwable $e) {
-			$this->logger->error('Buildiq: setup install-demo-data failed', ['exception' => $e->getMessage()]);
-
-			return new JSONResponse(['success' => false, 'message' => $e->getMessage()]);
-		}
-
-		// Recorded only after the import actually returned. Marking it first
-		// would let a failed install present as a finished step.
-		// Loading IS choosing the set, so the pick is recorded too.
-		$this->appConfig->setValueString(Application::APP_ID, self::DATASET_KEY, $picked);
-		$this->appConfig->setValueString(Application::APP_ID, self::DEMO_DATA_DECIDED_KEY, 'installed');
-
-		// 🔴 THE COUNTS, ALWAYS, AND BOTH OF THEM. "Demo data installed" with no
-		// numbers cannot be told apart from an import that wrote nothing — and
-		// neither can a count that merely repeats what was asked for. An
-		// operator who got part of the dataset must see the gap.
+	/**
+	 * The message of a finished import: landed and declared counts, and the skipped ones.
+	 *
+	 * @param array<string, mixed> $imported The import counts.
+	 *
+	 * @return string
+	 */
+	private function importedMessage(array $imported): string {
 		$declared = (int)($imported['declared'] ?? $imported['objects']);
-		$skipped  = (int)($imported['skipped'] ?? 0);
-		$message  = sprintf('Imported %d of %d demo object(s).', $imported['objects'], $declared);
+		$skipped = (int)($imported['skipped'] ?? 0);
+		$message = sprintf('Imported %d of %d demo object(s).', $imported['objects'], $declared);
 		if ($skipped > 0) {
 			$message .= sprintf(
 				' %d skipped: their schema is not installed on this instance.',
@@ -391,14 +440,8 @@ class SetupController extends Controller {
 			);
 		}
 
-		return new JSONResponse(
-			[
-				'success' => true,
-				'message' => $message,
-				'detail'  => $imported,
-			]
-		);
-	}//end loadDataset()
+		return $message;
+	}//end importedMessage()
 
 	/**
 	 * Read the dataset id a card's Load button posted.
@@ -406,7 +449,7 @@ class SetupController extends Controller {
 	 * @return string|null The posted id, empty when the body held no scalar,
 	 *                     or null when nothing was posted.
 	 *
-	 * @spec openspec/changes/wizard-dataset-card-load/specs/first-time-setup/spec.md
+	 * @spec openspec/specs/first-time-setup/spec.md
 	 */
 	private function postedDataset(): ?string {
 		$posted = $this->request->getParam('dataset');
@@ -432,10 +475,10 @@ class SetupController extends Controller {
 	 *
 	 * @return JSONResponse|null The refusal, or null when the dataset is known.
 	 *
-	 * @spec openspec/changes/wizard-dataset-card-load/specs/first-time-setup/spec.md
+	 * @spec openspec/specs/first-time-setup/spec.md
 	 */
 	private function refuseDataset(string $value): ?JSONResponse {
-		$known = array_column($this->demoDataService->listChoices(), 'id');
+		$known = array_column($this->setup->demoDataService->listChoices(), 'id');
 		if ($value !== '' && in_array($value, $known, true) === true) {
 			return null;
 		}
@@ -465,8 +508,8 @@ class SetupController extends Controller {
 	private function skipDemoData(): JSONResponse {
 		// Skipping IS choosing "None", so both keys are written: an older
 		// runbook may read either one.
-		$this->appConfig->setValueString(Application::APP_ID, self::DATASET_KEY, DemoDataService::NONE_DATASET);
-		$this->appConfig->setValueString(Application::APP_ID, self::DEMO_DATA_DECIDED_KEY, 'skipped');
+		$this->appConfig->setValueString(AppIdentity::APP_ID, self::DATASET_KEY, DemoDataServiceInterface::NONE_DATASET);
+		$this->appConfig->setValueString(AppIdentity::APP_ID, self::DEMO_DATA_DECIDED_KEY, 'skipped');
 
 		return new JSONResponse(['success' => true, 'message' => 'No example data was loaded.']);
 	}//end skipDemoData()
@@ -481,7 +524,7 @@ class SetupController extends Controller {
 	 * @spec openspec/changes/openbuild-first-time-setup/tasks.md#task-2.1
 	 */
 	private function requireAdmin(): ?JSONResponse {
-		$user = $this->userSession->getUser();
+		$user = $this->caller->userSession->getUser();
 		if ($user === null) {
 			return new JSONResponse(
 				['error' => 'unauthenticated'],
@@ -489,7 +532,7 @@ class SetupController extends Controller {
 			);
 		}
 
-		if ($this->groupManager->isAdmin($user->getUID()) === false) {
+		if ($this->caller->groupManager->isAdmin($user->getUID()) === false) {
 			return new JSONResponse(
 				['error' => 'forbidden', 'message' => 'Setup requires Nextcloud admin privileges.'],
 				Http::STATUS_FORBIDDEN

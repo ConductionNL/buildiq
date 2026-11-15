@@ -3,6 +3,9 @@
 /**
  * Buildiq MoveDecisionTablesToOpenRegister repair step.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Moves every decision table buildiq kept in its own `decision-table` schema
  * into OpenRegister's `decision-tables` register (decision 196), where the
  * rule engine now reads it through OpenRegister's DecisionTableStore.
@@ -33,9 +36,6 @@
  * @copyright 2026 Conduction B.V.
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
- *
  * @version GIT: <git-id>
  *
  * @link https://conduction.nl
@@ -47,8 +47,9 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Repair;
 
-use OCA\Buildiq\Service\RuleEngineService;
-use OCA\Buildiq\Service\StoredDecisionTables;
+use OCA\Buildiq\Kernel\Contracts\RuleEngineServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\StoredDecisionTablesInterface;
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCP\IDBConnection;
@@ -85,14 +86,14 @@ class MoveDecisionTablesToOpenRegister implements IRepairStep {
 	 * @param IDBConnection          $db             Reads and renames the old schema row.
 	 * @param RegisterMapper         $registerMapper Resolves buildiq's register.
 	 * @param ObjectServiceInterface $objects        Reads the old rows.
-	 * @param StoredDecisionTables   $tables         Writes a table into OpenRegister's register.
+	 * @param StoredDecisionTablesInterface   $tables         Writes a table into OpenRegister's register.
 	 * @param LoggerInterface        $logger         Logger.
 	 */
 	public function __construct(
 		private readonly IDBConnection $db,
 		private readonly RegisterMapper $registerMapper,
 		private readonly ObjectServiceInterface $objects,
-		private readonly StoredDecisionTables $tables,
+		private readonly StoredDecisionTablesInterface $tables,
 		private readonly LoggerInterface $logger,
 	) {
 
@@ -136,7 +137,7 @@ class MoveDecisionTablesToOpenRegister implements IRepairStep {
 		try {
 			// Probe OpenRegister's register before reading anything: an
 			// OpenRegister that has not imported it yet answers a throw here.
-			$this->tables->exists(key: StoredDecisionTables::KEY_PREFIX . 'probe');
+			$this->tables->exists(key: StoredDecisionTablesInterface::KEY_PREFIX . 'probe');
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				'MoveDecisionTablesToOpenRegister: OpenRegister\'s decision-tables register is not readable; tables stay where they are until the next upgrade.',
@@ -219,10 +220,11 @@ class MoveDecisionTablesToOpenRegister implements IRepairStep {
 	 * @param list<int> $schemaIds The old schema ids.
 	 *
 	 * @return list<array<string,mixed>> The rows.
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function oldRows(array $schemaIds): array {
 		try {
-			$register = $this->registerMapper->find(RuleEngineService::REGISTER_SLUG, _multitenancy: false);
+			$register = $this->registerMapper->find(RuleEngineServiceInterface::REGISTER_SLUG, _multitenancy: false);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				'MoveDecisionTablesToOpenRegister: the buildiq register is not resolvable; nothing moved.',
@@ -248,7 +250,7 @@ class MoveDecisionTablesToOpenRegister implements IRepairStep {
 			}
 
 			foreach ((array)$found as $object) {
-				$data = $this->normalise(object: $object);
+				$data = ObjectRecord::serialised(object: $object);
 				if ($data !== []) {
 					$rows[] = $data;
 				}
@@ -323,27 +325,4 @@ class MoveDecisionTablesToOpenRegister implements IRepairStep {
 		return array_values(array_map('intval', (array)$rows));
 
 	}//end schemaIds()
-
-	/**
-	 * An object as an array, with its `@self` metadata when the entity has it.
-	 *
-	 * @param mixed $object The search result.
-	 *
-	 * @return array<string,mixed> The data, or an empty array.
-	 */
-	private function normalise(mixed $object): array {
-		if (is_array($object) === true) {
-			return $object;
-		}
-
-		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-			$serialised = $object->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		return [];
-
-	}//end normalise()
 }//end class

@@ -1,0 +1,59 @@
+[
+    {
+        "deleteData": true,
+        "trace": [
+            "findAll {\"filters\":{\"register\":\"buildiq\",\"schema\":\"applicationVersion\",\"application\":\"u-app\"},\"limit\":1000}",
+            "findRegister [\"reg-a\"]",
+            "findSchema [10]",
+            "findSchema [11]",
+            "findRegister [\"reg-a\"]",
+            "findAll {\"filters\":{\"register\":\"reg-a\",\"schema\":10},\"limit\":500}",
+            "findAll {\"filters\":{\"register\":\"reg-a\",\"schema\":11},\"limit\":500}",
+            "deleteRegister [\"reg-a\"]",
+            "findRegister [\"reg-b\"]",
+            "info [\"Buildiq: deleteApplication register {slug} not found, skipping: {message}\",{\"slug\":\"reg-b\",\"message\":\"no register reg-b\"}]",
+            "findRegister [\"reg-c\"]",
+            "findAll {\"filters\":{\"register\":\"reg-c\",\"schema\":12},\"limit\":500}",
+            "deleteRegister [\"reg-c\"]",
+            "error [\"Buildiq: deleteApplication failed to delete register {slug}: {message}\",{\"slug\":\"reg-c\",\"message\":\"register busy\"}]",
+            "deleteObject [\"v1\"]",
+            "deleteObject [\"v2\"]",
+            "deleteObject [\"v3\"]",
+            "deleteObject [\"v4\"]",
+            "findSchema [10]",
+            "deleteSchema [10]",
+            "findSchema [11]",
+            "error [\"Buildiq: deleteApplication({slug}) failed to delete schema {schema}: {message}\",{\"slug\":\"demo\",\"schema\":\"11\",\"message\":\"schema unreadable\"}]",
+            "findAll {\"filters\":{\"register\":\"buildiq\",\"schema\":\"built-app-route\",\"applicationUuid\":\"u-app\"},\"limit\":1000}",
+            "deleteObject [\"r1\"]",
+            "error [\"Buildiq: deleteApplication failed to delete {label} {uuid}: {message}\",{\"label\":\"route\",\"uuid\":\"r1\",\"message\":\"route locked\"}]",
+            "deleteObject [\"r2\"]",
+            "deleteObject [\"u-app\"]",
+            "warning [\"Buildiq: deleteApplication({slug}) left orphaned resources: {orphaned}\",{\"slug\":\"demo\",\"orphaned\":\"register:reg-c, schema:11, route:r1\"}]"
+        ],
+        "orphaned": [
+            "register:reg-c",
+            "schema:11",
+            "route:r1"
+        ]
+    },
+    {
+        "deleteData": false,
+        "trace": [
+            "findAll {\"filters\":{\"register\":\"buildiq\",\"schema\":\"applicationVersion\",\"application\":\"u-app\"},\"limit\":1000}",
+            "deleteObject [\"v1\"]",
+            "deleteObject [\"v2\"]",
+            "deleteObject [\"v3\"]",
+            "deleteObject [\"v4\"]",
+            "findAll {\"filters\":{\"register\":\"buildiq\",\"schema\":\"built-app-route\",\"applicationUuid\":\"u-app\"},\"limit\":1000}",
+            "deleteObject [\"r1\"]",
+            "error [\"Buildiq: deleteApplication failed to delete {label} {uuid}: {message}\",{\"label\":\"route\",\"uuid\":\"r1\",\"message\":\"route locked\"}]",
+            "deleteObject [\"r2\"]",
+            "deleteObject [\"u-app\"]",
+            "warning [\"Buildiq: deleteApplication({slug}) left orphaned resources: {orphaned}\",{\"slug\":\"demo\",\"orphaned\":\"route:r1\"}]"
+        ],
+        "orphaned": [
+            "route:r1"
+        ]
+    }
+]

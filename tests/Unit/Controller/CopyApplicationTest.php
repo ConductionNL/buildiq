@@ -34,8 +34,10 @@ namespace OCA\Buildiq\Tests\Unit\Controller;
 use OCA\Buildiq\Controller\ApplicationsController;
 use OCA\Buildiq\Service\AppChannelApplier;
 use OCA\Buildiq\Service\ApplicationVersionService;
+use OCA\Buildiq\Service\CallerContext;
 use OCA\Buildiq\Service\ManifestResolverService;
 use OCA\Buildiq\Service\PermissionResolver;
+use OCA\Buildiq\Service\RegisterStore;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -181,16 +183,20 @@ class CopyApplicationTest extends TestCase {
 		$this->controller = $this->getMockBuilder(ApplicationsController::class)
 			->setConstructorArgs(
 				[
-					$this->request,
-					$logger,
-					$this->objectService,
-					$registerMapper,
-					$schemaMapper,
-					$this->userSession,
-					$this->groupManager,
-					$this->createMock(ManifestResolverService::class),
-					new PermissionResolver(groupManager: $this->groupManager, logger: $logger),
-					$this->createMock(AppChannelApplier::class),
+					'request' => $this->request,
+					'logger' => $logger,
+					'store' => new RegisterStore(
+						objectService: $this->objectService,
+						registerMapper: $registerMapper,
+						schemaMapper: $schemaMapper
+					),
+					'caller' => new CallerContext(
+						userSession: $this->userSession,
+						groupManager: $this->groupManager,
+						permissionResolver: new PermissionResolver(groupManager: $this->groupManager, logger: $logger)
+					),
+					'manifestResolver' => $this->createMock(ManifestResolverService::class),
+					'channelApplier' => $this->createMock(AppChannelApplier::class),
 				]
 			)
 			->onlyMethods(['installFromTemplateArray'])

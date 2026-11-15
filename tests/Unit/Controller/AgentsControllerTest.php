@@ -33,7 +33,9 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\Controller;
 
 use OCA\Buildiq\Controller\AgentsController;
+use OCA\Buildiq\Service\CallerContext;
 use OCA\Buildiq\Service\PermissionResolver;
+use OCA\Buildiq\Service\RegisterStore;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -122,12 +124,16 @@ class AgentsControllerTest extends TestCase {
 		$this->controller = new AgentsController(
 			request: $this->request,
 			logger: $this->createMock(LoggerInterface::class),
-			objectService: $this->objectService,
-			registerMapper: $this->registerMapper,
-			schemaMapper: $this->schemaMapper,
-			permissionResolver: $permissionResolver,
-			groupManager: $this->groupManager,
-			userSession: $this->userSession,
+			store: new RegisterStore(
+				objectService: $this->objectService,
+				registerMapper: $this->registerMapper,
+				schemaMapper: $this->schemaMapper
+			),
+			caller: new CallerContext(
+				userSession: $this->userSession,
+				groupManager: $this->groupManager,
+				permissionResolver: $permissionResolver
+			),
 		);
 	}//end setUp()
 
@@ -282,12 +288,16 @@ class AgentsControllerTest extends TestCase {
 		$this->controller = new AgentsController(
 			request: $this->request,
 			logger: $this->createMock(LoggerInterface::class),
-			objectService: $this->objectService,
-			registerMapper: $this->registerMapper,
-			schemaMapper: $this->schemaMapper,
-			permissionResolver: $permissionResolver,
-			groupManager: $this->groupManager,
-			userSession: $this->userSession,
+			store: new RegisterStore(
+				objectService: $this->objectService,
+				registerMapper: $this->registerMapper,
+				schemaMapper: $this->schemaMapper
+			),
+			caller: new CallerContext(
+				userSession: $this->userSession,
+				groupManager: $this->groupManager,
+				permissionResolver: $permissionResolver
+			),
 		);
 		$this->wireAgentAndApplication(
 			agent: ['id' => 'agent-1', 'applicationSlug' => 'tool-library'],

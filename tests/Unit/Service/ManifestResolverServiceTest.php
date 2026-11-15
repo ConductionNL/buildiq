@@ -38,7 +38,9 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Tests\Unit\Service;
 
+use OCA\Buildiq\Service\AppVisibilityResolver;
 use OCA\Buildiq\Service\ManifestResolverService;
+use OCA\Buildiq\Service\ManifestWidgetRoleFilter;
 use OCA\Buildiq\Service\PermissionResolver;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Register;
@@ -120,6 +122,7 @@ class ManifestResolverServiceTest extends TestCase {
 			schemaMapper: $this->schemaMapper,
 			logger: $this->logger,
 			permissionResolver: $permissionResolver,
+			widgetRoleFilter: new ManifestWidgetRoleFilter(visibility: new AppVisibilityResolver(), groupManager: $groupManager),
 		);
 	}//end setUp()
 

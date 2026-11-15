@@ -48,9 +48,11 @@
 			:slug="obApp.slug"
 			:isOwner="obAppRole === 'owner'"
 			@update:open="githubOpen = $event" />
-		<CnEditSupportModal
+		<SupportEditorModal
 			v-if="supportOpen"
+			:slug="obApp.slug"
 			:working="supportWorkingManifest"
+			@failed="onSupportFailed"
 			@close="onSupportClose" />
 		<AppSettingsModal
 			:open="settingsOpen"
@@ -106,7 +108,7 @@
 // The action cluster names its icons as STRINGS in the CnActionButtons
 // descriptors, resolved by CnIcon through the registry src/icons.js fills — so
 // this file imports no icon components of its own any more.
-import { CnActionButtons, CnEditSupportModal } from '@conduction/nextcloud-vue'
+import { CnActionButtons } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { defineAsyncComponent } from 'vue'
@@ -117,6 +119,7 @@ import CopyAppDialog from '../modals/CopyAppDialog.vue'
 import GitHubSyncModal from '../modals/GitHubSyncModal.vue'
 import PermissionHistoryModal from '../modals/PermissionHistoryModal.vue'
 import PermissionsModal from '../modals/PermissionsModal.vue'
+import SupportEditorModal from '../modals/SupportEditorModal.vue'
 import { openPromoteDialog, promoteDialog } from '../composables/usePromoteDialog.js'
 import { useRegisterPicker } from '../composables/useRegisterPicker.js'
 import { getCurrentUserGroups } from '../composables/useRole.js'
@@ -138,6 +141,116 @@ const ExportDialog = defineAsyncComponent(
 
 const OR_TEMPLATES = '/apps/openregister/api/objects/buildiq/application-template'
 
+/**
+ * The descriptors of the rows whose gate is truthy, in row order. A row is
+ * `[gate, build]`; `build` returns one descriptor or an array of them and is
+ * only called for a shown row.
+ *
+ * @param {Array<Array>} rows The gated rows.
+ * @return {Array<object>} The shown descriptors.
+ */
+function shownEntries(rows) {
+	return rows.filter(([shown]) => shown).flatMap(([, build]) => build())
+}
+
+/**
+ * The first truthy value of a list, or `''` when none is.
+ *
+ * @param {Array} values Candidate values, in order of preference.
+ * @return {string}
+ */
+function firstTruthy(values) {
+	return values.find(Boolean) || ''
+}
+
+/**
+ * The server's detail of a failed request, else the error message, else the
+ * error itself.
+ *
+ * @param {Error} e The rejected request.
+ * @return {string|Error}
+ */
+function failureDetail(e) {
+	return (
+		(e.response && e.response.data && e.response.data.detail)
+		|| e.message
+		|| e
+	)
+}
+
+/**
+ * The version rows of a versions response (a bare array or `{ results }`).
+ *
+ * @param {Array|object|null} data The response body.
+ * @return {Array<object>}
+ */
+function versionList(data) {
+	if (Array.isArray(data)) {
+		return data
+	}
+	return data && data.results ? data.results : []
+}
+
+/**
+ * The flows of a flows response (`results`, `items` or a bare list).
+ *
+ * @param {Array|object} data The response body.
+ * @return {Array<object>}
+ */
+function flowList(data) {
+	return data.results || data.items || data || []
+}
+
+/**
+ * A flow as a picker option. Label by NAME, value by UUID: the binding is a
+ * UUID because the Flow entity has no slug, and a UUID in a picker is
+ * unreadable.
+ *
+ * @param {object} flow The flow record.
+ * @return {{label: string, value: string}}
+ */
+function toFlowOption(flow) {
+	return {
+		label: flow.name || flow.uuid,
+		value: flow.uuid || (flow['@self'] && flow['@self'].id),
+	}
+}
+
+/**
+ * The toast shown after a publish or unpublish.
+ *
+ * @param {boolean} shouldPublish Whether the app was published.
+ * @return {string}
+ */
+function publishToast(shouldPublish) {
+	return shouldPublish
+		? t('buildiq', 'App published — it now appears in the app menu.')
+		: t('buildiq', 'App unpublished — removed from the app menu.')
+}
+
+/**
+ * The error shown after a failed publish or unpublish.
+ *
+ * @param {boolean} shouldPublish Whether a publish was attempted.
+ * @param {string|Error} detail The failure detail.
+ * @return {string}
+ */
+function publishFailure(shouldPublish, detail) {
+	return shouldPublish
+		? `${t('buildiq', 'Publish failed')}: ${detail}`
+		: `${t('buildiq', 'Unpublish failed')}: ${detail}`
+}
+
+/**
+ * The manifest an Application record carries itself, else `{}`.
+ *
+ * @param {object} app The Application record.
+ * @return {object}
+ */
+function recordManifest(app) {
+	return app.manifest || (app.currentVersion && app.currentVersion.manifest) || {}
+}
+
 export default {
 	name: 'ApplicationDetailActions',
 	components: {
@@ -145,7 +258,7 @@ export default {
 		PermissionsModal,
 		PermissionHistoryModal,
 		AppSettingsModal,
-		CnEditSupportModal,
+		SupportEditorModal,
 		GitHubSyncModal,
 		DeleteAppDialog,
 		SaveAsTemplateDialog,
@@ -221,189 +334,138 @@ export default {
 		 */
 		actionDescriptors() {
 			const isOwner = this.obAppRole === 'owner'
-			const out = []
 
-			if (this.builderUrl) {
-				out.push({
-					id: 'open-app',
-					label: t('buildiq', 'Open app'),
-					icon: 'OpenInNew',
-					variant: 'primary',
-					href: this.builderUrl,
-					target: '_blank',
-					childrenLabel: t('buildiq', 'Open a version'),
-					children: this.openableVersions.flatMap((v) => [
-						{
-							id: `open-${v.slug}`,
-							label: this.versionLabel(v),
-							icon: 'OpenInNew',
-							href: this.versionUrl(v),
-							target: '_blank',
+			return shownEntries([
+				[Boolean(this.builderUrl), () => this.openAppDescriptor()],
+
+				// ── Meant to stay BUTTONS, Edit last ──
+				// CnActionButtons promotes the first N collapsible entries in
+				// declaration order, so this block IS the inline set: whatever sits
+				// here is what the header shows beside `···`. Both entries are
+				// conditional (isOwner, openEditForm), so a non-owner promotes
+				// whatever comes next instead — keep Edit at the end of the block
+				// regardless, since that is what puts it immediately left of the
+				// trigger whenever it is present. With the never-collapsed "Open
+				// app" the owner case makes three buttons in the header.
+				[
+					isOwner,
+					() => ({
+						id: 'app-settings-action',
+						label: t('buildiq', 'Settings'),
+						icon: 'CogOutline',
+						onSelect: () => this.onSettingsOpen(true),
+					}),
+				],
+				[
+					typeof this.openEditForm === 'function',
+					() => ({
+						id: 'app-edit-record',
+						label: t('buildiq', 'Edit'),
+						icon: 'PencilOutline',
+						onSelect: () => this.openEditForm(),
+					}),
+				],
+
+				// ── Everything below collapses into the `···` menu ──
+				[this.canEditVersions, () => this.versionEditorDescriptors()],
+				[
+					isOwner,
+					() => ({
+						id: 'app-permissions',
+						label: t('buildiq', 'Manage permissions'),
+						icon: 'AccountMultipleOutline',
+						onSelect: () => {
+							this.permissionsOpen = true
 						},
-						...(this.canEditVersions
-							? [
-									{
-										id: `edit-${v.slug}`,
-										label: t('buildiq', 'Edit {name}', {
-											name: this.versionLabel(v),
-										}),
-										icon: 'PencilRulerOutline',
-										onSelect: () => this.editVersion(v),
-									},
-								]
-							: []),
-					]),
-				})
-			}
-
-			// ── Meant to stay BUTTONS, Edit last ──
-			// CnActionButtons promotes the first N collapsible entries in
-			// declaration order, so this block IS the inline set: whatever sits
-			// here is what the header shows beside `···`. Both entries are
-			// conditional (isOwner, openEditForm), so a non-owner promotes
-			// whatever comes next instead — keep Edit at the end of the block
-			// regardless, since that is what puts it immediately left of the
-			// trigger whenever it is present. With the never-collapsed "Open
-			// app" the owner case makes three buttons in the header.
-			if (isOwner) {
-				out.push({
-					id: 'app-settings-action',
-					label: t('buildiq', 'Settings'),
-					icon: 'CogOutline',
-					onSelect: () => this.onSettingsOpen(true),
-				})
-			}
-			if (typeof this.openEditForm === 'function') {
-				out.push({
-					id: 'app-edit-record',
-					label: t('buildiq', 'Edit'),
-					icon: 'PencilOutline',
-					onSelect: () => this.openEditForm(),
-				})
-			}
-
-			// ── Everything below collapses into the `···` menu ──
-			if (this.canEditVersions) {
-				// One Promote entry per version that has a next version.
-				this.promotableVersions.forEach((v) => {
-					out.push({
-						id: `app-promote-${v.slug}`,
-						label: t('buildiq', 'Promote {name}', {
-							name: this.versionLabel(v),
-						}),
-						icon: 'ArrowUpBoldCircleOutline',
-						onSelect: () => this.promoteVersion(v),
-					})
-				})
-				out.push(
-					{
-						id: 'app-edit-setup',
-						label: t('buildiq', 'Setup wizard'),
-						icon: 'MapMarkerPath',
-						onSelect: () => this.openWalkthroughDesigner('setup'),
-					},
-					{
-						id: 'app-edit-walkthrough',
-						label: t('buildiq', 'Walkthrough'),
-						icon: 'MapMarkerPath',
-						onSelect: () => this.openWalkthroughDesigner('walkthrough'),
-					},
-					{
-						id: 'app-automations',
-						label: t('buildiq', 'Automations'),
-						icon: 'Sitemap',
-						onSelect: () => this.openAutomations(),
-					},
-				)
-			}
-			if (isOwner) {
-				out.push({
-					id: 'app-permissions',
-					label: t('buildiq', 'Manage permissions'),
-					icon: 'AccountMultipleOutline',
-					onSelect: () => {
-						this.permissionsOpen = true
-					},
-				})
-			}
-			if (this.canSaveAsTemplate) {
-				out.push({
-					id: 'app-save-as-template',
-					label: this.saveTemplateLoading
-						? t('buildiq', 'Preparing…')
-						: t('buildiq', 'Save as template'),
-					icon: 'ContentSaveOutline',
-					onSelect: () => this.openSaveAsTemplate(),
-				})
-			}
-			if (this.canCopyApp) {
-				out.push({
-					id: 'app-copy',
-					label: t('buildiq', 'Copy app'),
-					icon: 'ContentCopy',
-					onSelect: () => {
-						this.copyOpen = true
-					},
-				})
-			}
-			if (this.obApp && this.obApp.slug) {
-				out.push({
-					id: 'app-github',
-					label: t('buildiq', 'GitHub'),
-					icon: 'Github',
-					onSelect: () => {
-						this.githubOpen = true
-					},
-				})
-			}
-			if (isOwner) {
-				out.push({
-					id: 'app-permission-history',
-					label: t('buildiq', 'Permission history'),
-					icon: 'History',
-					onSelect: () => {
-						this.historyOpen = true
-					},
-				})
-			}
-			if (this.canEditVersions) {
-				out.push({
-					id: 'app-edit-support',
-					label: t('buildiq', 'Support & donation'),
-					icon: 'HeartOutline',
-					onSelect: () => this.openSupportEditor(),
-				})
-			}
-			out.push(
-				{
-					id: 'app-export',
-					label: t('buildiq', 'Export'),
-					icon: 'TrayArrowDown',
-					onSelect: () => {
-						this.exportOpen = true
-					},
-				},
-				{
-					id: 'app-documentation',
-					label: t('buildiq', 'Documentation'),
-					icon: 'HelpCircleOutline',
-					href: 'https://buildiq.conduction.nl',
-					target: '_blank',
-				},
-			)
-			if (isOwner) {
-				out.push({
-					id: 'app-delete',
-					label: t('buildiq', 'Delete'),
-					icon: 'DeleteOutline',
-					variant: 'error',
-					onSelect: () => {
-						this.deleteOpen = true
-					},
-				})
-			}
-
-			return out
+					}),
+				],
+				[
+					this.canSaveAsTemplate,
+					() => ({
+						id: 'app-save-as-template',
+						label: this.saveTemplateLoading
+							? t('buildiq', 'Preparing…')
+							: t('buildiq', 'Save as template'),
+						icon: 'ContentSaveOutline',
+						onSelect: () => this.openSaveAsTemplate(),
+					}),
+				],
+				[
+					this.canCopyApp,
+					() => ({
+						id: 'app-copy',
+						label: t('buildiq', 'Copy app'),
+						icon: 'ContentCopy',
+						onSelect: () => {
+							this.copyOpen = true
+						},
+					}),
+				],
+				[
+					this.obApp && this.obApp.slug,
+					() => ({
+						id: 'app-github',
+						label: t('buildiq', 'GitHub'),
+						icon: 'Github',
+						onSelect: () => {
+							this.githubOpen = true
+						},
+					}),
+				],
+				[
+					isOwner,
+					() => ({
+						id: 'app-permission-history',
+						label: t('buildiq', 'Permission history'),
+						icon: 'History',
+						onSelect: () => {
+							this.historyOpen = true
+						},
+					}),
+				],
+				[
+					this.canEditVersions,
+					() => ({
+						id: 'app-edit-support',
+						label: t('buildiq', 'Support & donation'),
+						icon: 'HeartOutline',
+						onSelect: () => this.openSupportEditor(),
+					}),
+				],
+				[
+					true,
+					() => ({
+						id: 'app-export',
+						label: t('buildiq', 'Export'),
+						icon: 'TrayArrowDown',
+						onSelect: () => {
+							this.exportOpen = true
+						},
+					}),
+				],
+				[
+					true,
+					() => ({
+						id: 'app-documentation',
+						label: t('buildiq', 'Documentation'),
+						icon: 'HelpCircleOutline',
+						href: 'https://buildiq.conduction.nl',
+						target: '_blank',
+					}),
+				],
+				[
+					isOwner,
+					() => ({
+						id: 'app-delete',
+						label: t('buildiq', 'Delete'),
+						icon: 'DeleteOutline',
+						variant: 'error',
+						onSelect: () => {
+							this.deleteOpen = true
+						},
+					}),
+				],
+			])
 		},
 
 		/**
@@ -451,7 +513,7 @@ export default {
 		 * rbac source of truth as the edit actions (REQ-SAT-001).
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+		 * @spec openspec/specs/save-as-template/spec.md
 		 */
 		canSaveAsTemplate() {
 			return this.obAppRole === 'owner' || this.obAppRole === 'editor'
@@ -493,7 +555,7 @@ export default {
 			if (!pv) {
 				return ''
 			}
-			return typeof pv === 'string' ? pv : pv.uuid || pv.id || ''
+			return typeof pv === 'string' ? pv : firstTruthy([pv.uuid, pv.id])
 		},
 
 		/**
@@ -571,11 +633,98 @@ export default {
 
 	methods: {
 		/**
+		 * The primary "Open app" entry, with one open (and, for an editor,
+		 * one edit) child per openable version.
+		 *
+		 * @return {object} Descriptor for CnActionButtons.
+		 *
+		 * @spec exclude assembles the already-specified `builderUrl` and version links into a descriptor
+		 */
+		openAppDescriptor() {
+			return {
+				id: 'open-app',
+				label: t('buildiq', 'Open app'),
+				icon: 'OpenInNew',
+				variant: 'primary',
+				href: this.builderUrl,
+				target: '_blank',
+				childrenLabel: t('buildiq', 'Open a version'),
+				children: this.openableVersions.flatMap((v) => [
+					{
+						id: `open-${v.slug}`,
+						label: this.versionLabel(v),
+						icon: 'OpenInNew',
+						href: this.versionUrl(v),
+						target: '_blank',
+					},
+					...(this.canEditVersions
+						? [
+								{
+									id: `edit-${v.slug}`,
+									label: t('buildiq', 'Edit {name}', {
+										name: this.versionLabel(v),
+									}),
+									icon: 'PencilRulerOutline',
+									onSelect: () => this.editVersion(v),
+								},
+							]
+						: []),
+				]),
+			}
+		},
+
+		/**
+		 * The version editor entries: one Promote per promotable version, then
+		 * the setup wizard, walkthrough and automations editors.
+		 *
+		 * @return {Array<object>} Descriptors for CnActionButtons.
+		 *
+		 * @spec exclude assembles the already-specified promote and editor openers into descriptors
+		 */
+		versionEditorDescriptors() {
+			return [
+				// One Promote entry per version that has a next version.
+				...this.promotableVersions.map((v) => ({
+					id: `app-promote-${v.slug}`,
+					label: t('buildiq', 'Promote {name}', {
+						name: this.versionLabel(v),
+					}),
+					icon: 'ArrowUpBoldCircleOutline',
+					onSelect: () => this.promoteVersion(v),
+				})),
+				{
+					id: 'app-edit-setup',
+					label: t('buildiq', 'Setup wizard'),
+					icon: 'MapMarkerPath',
+					onSelect: () => this.openWalkthroughDesigner('setup'),
+				},
+				{
+					id: 'app-edit-walkthrough',
+					label: t('buildiq', 'Walkthrough'),
+					icon: 'MapMarkerPath',
+					onSelect: () => this.openWalkthroughDesigner('walkthrough'),
+				},
+				{
+					id: 'app-automations',
+					label: t('buildiq', 'Automations'),
+					icon: 'Sitemap',
+					onSelect: () => this.openAutomations(),
+				},
+				{
+					id: 'app-agents',
+					label: t('buildiq', 'Agents'),
+					icon: 'RobotOutline',
+					onSelect: () => this.openAgents(),
+				},
+			]
+		},
+
+		/**
 		 * Load the app's ApplicationVersion rows for the Open-a-version chevron.
 		 *
 		 * @return {Promise<void>}
 		 *
-		 * @spec openspec/changes/version-lifecycle-and-switcher/specs/version-lifecycle-ui/spec.md
+		 * @spec openspec/specs/version-lifecycle-ui/spec.md
 		 */
 		async loadVersions() {
 			if (!this.obApp || !this.obApp.slug) {
@@ -583,19 +732,24 @@ export default {
 				return
 			}
 			try {
-				const url = generateUrl(
-					'/apps/buildiq/api/applications/{slug}/versions',
-					{ slug: this.obApp.slug },
-				)
-				const { data } = await axios.get(url)
-				this.versions = Array.isArray(data)
-					? data
-					: data && data.results
-						? data.results
-						: []
+				this.versions = await this.fetchVersions()
 			} catch (e) {
 				this.versions = []
 			}
+		},
+
+		/**
+		 * Fetch the app's ApplicationVersion rows.
+		 *
+		 * @return {Promise<Array<object>>}
+		 */
+		async fetchVersions() {
+			const url = generateUrl(
+				'/apps/buildiq/api/applications/{slug}/versions',
+				{ slug: this.obApp.slug },
+			)
+			const { data } = await axios.get(url)
+			return versionList(data)
 		},
 
 		/**
@@ -605,8 +759,11 @@ export default {
 		 * @return {string}
 		 */
 		versionRowUuid(v) {
-			const self = (v && v['@self']) || {}
-			return (v && v.id) || self.id || self.uuid || (v && v.uuid) || ''
+			if (!v) {
+				return ''
+			}
+			const self = v['@self'] || {}
+			return firstTruthy([v.id, self.id, self.uuid, v.uuid])
 		},
 
 		/**
@@ -716,31 +873,34 @@ export default {
 			this.toast = ''
 			this.error = ''
 			try {
-				const action = shouldPublish ? 'publish' : 'unpublish'
-				await axios.post(
-					generateUrl(
-						`/apps/buildiq/api/applications/${this.obAppUuid}/${action}`,
-					),
-					{},
-				)
-				// Force a refetch — the `object` prop snapshot still carries the
-				// pre-publish status, so the default load path would keep the
-				// toggle/badge stale until a full page reload.
-				await this.obLoadApp(true)
-				this.toast = shouldPublish
-					? t('buildiq', 'App published — it now appears in the app menu.')
-					: t('buildiq', 'App unpublished — removed from the app menu.')
+				await this.publishAndRefresh(shouldPublish)
 			} catch (e) {
-				const detail =
-					(e.response && e.response.data && e.response.data.detail)
-					|| e.message
-					|| e
-				this.error = shouldPublish
-					? `${t('buildiq', 'Publish failed')}: ${detail}`
-					: `${t('buildiq', 'Unpublish failed')}: ${detail}`
+				this.error = publishFailure(shouldPublish, failureDetail(e))
 			} finally {
 				this.publishing = false
 			}
+		},
+
+		/**
+		 * POST the publish or unpublish action, refetch the app and show the
+		 * outcome toast.
+		 *
+		 * @param {boolean} shouldPublish True to publish, false to unpublish.
+		 * @return {Promise<void>}
+		 */
+		async publishAndRefresh(shouldPublish) {
+			const action = shouldPublish ? 'publish' : 'unpublish'
+			await axios.post(
+				generateUrl(
+					`/apps/buildiq/api/applications/${this.obAppUuid}/${action}`,
+				),
+				{},
+			)
+			// Force a refetch — the `object` prop snapshot still carries the
+			// pre-publish status, so the default load path would keep the
+			// toggle/badge stale until a full page reload.
+			await this.obLoadApp(true)
+			this.toast = publishToast(shouldPublish)
 		},
 
 		/**
@@ -798,7 +958,7 @@ export default {
 		 *
 		 * @return {Promise<void>}
 		 *
-		 * @spec exclude opens an existing library editor on the resolved manifest
+		 * @spec openspec/changes/apps-support-note-editor-saves/specs/support-note/spec.md#requirement-the-support-editor-saves-the-note-to-the-apps-manifest-req-bqsn-001
 		 */
 		async openSupportEditor() {
 			if (!this.obApp || !this.obApp.slug) {
@@ -821,13 +981,28 @@ export default {
 		/**
 		 * Close the support-note editor and drop the working copy.
 		 *
+		 * Reached after a successful save or a cancel; a failed save keeps
+		 * the editor open (SupportEditorModal swallows that close).
+		 *
 		 * @return {void}
 		 *
-		 * @spec exclude closes a modal, no behaviour
+		 * @spec openspec/changes/apps-support-note-editor-saves/specs/support-note/spec.md#requirement-the-support-editor-saves-the-note-to-the-apps-manifest-req-bqsn-001
 		 */
 		onSupportClose() {
 			this.supportOpen = false
 			this.supportWorkingManifest = null
+		},
+
+		/**
+		 * Say why the support note was not saved; the editor and its working copy stay.
+		 *
+		 * @param {Error} e The rejected save.
+		 * @return {void}
+		 *
+		 * @spec openspec/changes/apps-support-note-editor-saves/specs/support-note/spec.md#requirement-a-failed-save-keeps-the-editor-open-req-bqsn-002
+		 */
+		onSupportFailed(e) {
+			this.error = t('buildiq', 'Could not save the support note: {reason}', { reason: String(failureDetail(e)) })
 		},
 
 		/**
@@ -880,13 +1055,44 @@ export default {
 				return
 			}
 
+			const query = this.automationsQuery(slug)
+			this.$router.push({ name: 'Automations', query }).catch(() => {})
+		},
+
+		/**
+		 * Open the Agents page on this app (REQ-BQAG-003).
+		 *
+		 * Like automations, agents belong to an app and have no menu entry of
+		 * their own, so the app is the way in. The page preselects the app
+		 * named in `?app=`.
+		 *
+		 * @return {void}
+		 *
+		 * @spec openspec/changes/ai-agents-knowledge-and-run-trace/specs/agent-workspace/spec.md#requirement-the-app-detail-page-leads-to-its-agents-req-bqag-003
+		 */
+		openAgents() {
+			const slug = this.obApp && this.obApp.slug
+			if (!slug) {
+				return
+			}
+
+			this.$router.push({ name: 'Agents', query: { app: slug } }).catch(() => {})
+		},
+
+		/**
+		 * The automations route query: the app, plus the version the header
+		 * pills have selected.
+		 *
+		 * @param {string} slug The app slug.
+		 * @return {object}
+		 */
+		automationsQuery(slug) {
 			const query = { app: slug }
 			const selected = this.selectedVersion
 			if (selected) {
 				query.version = selected.slug || selected.id
 			}
-
-			this.$router.push({ name: 'Automations', query }).catch(() => {})
+			return query
 		},
 
 		/**
@@ -911,24 +1117,26 @@ export default {
 
 			this.loadingFlows = true
 			try {
-				const { data } = await axios.get(
-					generateUrl('/apps/openregister/api/flows'),
-				)
-				const list = data.results || data.items || data || []
-				// Label by NAME, value by UUID: the binding is a UUID because
-				// the Flow entity has no slug, and a UUID in a picker is
-				// unreadable.
-				this.availableFlows = list
-					.map((flow) => ({
-						label: flow.name || flow.uuid,
-						value: flow.uuid || (flow['@self'] && flow['@self'].id),
-					}))
-					.filter((option) => !!option.value)
+				this.availableFlows = await this.fetchFlowOptions()
 			} catch (e) {
 				this.error = `${t('buildiq', 'Failed to load flows')}: ${e.message || e}`
 			} finally {
 				this.loadingFlows = false
 			}
+		},
+
+		/**
+		 * Fetch the flows as picker options, dropping flows without a UUID.
+		 *
+		 * @return {Promise<Array<{label: string, value: string}>>}
+		 */
+		async fetchFlowOptions() {
+			const { data } = await axios.get(
+				generateUrl('/apps/openregister/api/flows'),
+			)
+			return flowList(data)
+				.map(toFlowOption)
+				.filter((option) => !!option.value)
 		},
 
 		/**
@@ -988,26 +1196,42 @@ export default {
 			this.deleting = true
 			this.error = ''
 			try {
-				await axios.delete(
-					generateUrl(`/apps/buildiq/api/applications/${this.obAppUuid}`),
-					{
-						params: { deleteData: deleteData ? 1 : 0 },
-					},
-				)
-				this.deleteOpen = false
-				if (this.$router) {
-					this.$router.push({ name: 'VirtualApps' }).catch(() => {})
-				} else {
-					window.location.href = generateUrl('/apps/buildiq/applications')
-				}
+				await this.deleteAndLeave(deleteData)
 			} catch (e) {
-				const detail =
-					(e.response && e.response.data && e.response.data.detail)
-					|| e.message
-					|| e
-				this.error = `${t('buildiq', 'Delete failed')}: ${detail}`
+				this.error = `${t('buildiq', 'Delete failed')}: ${failureDetail(e)}`
 			} finally {
 				this.deleting = false
+			}
+		},
+
+		/**
+		 * DELETE the app, keeping or wiping its data, then close the dialog
+		 * and leave the deleted app.
+		 *
+		 * @param {boolean} deleteData Whether to also delete all app data.
+		 * @return {Promise<void>}
+		 */
+		async deleteAndLeave(deleteData) {
+			await axios.delete(
+				generateUrl(`/apps/buildiq/api/applications/${this.obAppUuid}`),
+				{
+					params: { deleteData: deleteData ? 1 : 0 },
+				},
+			)
+			this.deleteOpen = false
+			this.leaveDeletedApp()
+		},
+
+		/**
+		 * Navigate back to the apps list after the app was deleted.
+		 *
+		 * @return {void}
+		 */
+		leaveDeletedApp() {
+			if (this.$router) {
+				this.$router.push({ name: 'VirtualApps' }).catch(() => {})
+			} else {
+				window.location.href = generateUrl('/apps/buildiq/applications')
 			}
 		},
 
@@ -1054,7 +1278,7 @@ export default {
 		 * open the SaveAsTemplateDialog (REQ-SAT-001).
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+		 * @spec openspec/specs/save-as-template/spec.md
 		 */
 		async openSaveAsTemplate() {
 			if (!this.canSaveAsTemplate || !this.obApp || this.saveTemplateLoading) {
@@ -1063,46 +1287,7 @@ export default {
 			this.saveTemplateLoading = true
 			this.error = ''
 			try {
-				// Resolve the manifest from the app's ACTIVE VERSION, through the
-				// endpoint that owns that resolution.
-				//
-				// This used to read `obApp.manifest`, falling back to
-				// `obApp.currentVersion.manifest`. An Application record carries
-				// NEITHER: the manifest lives on the ApplicationVersion, and
-				// `GET /api/applications` returns no `manifest` and no
-				// `currentVersion` for any app — the seeded hello-world included.
-				// So the capture always fell through to `{}`, the dialog validated
-				// an empty object and opened with "The captured manifest is invalid
-				// and cannot be published: /version must be a string /menu must be
-				// an array /pages must be an array", with Save permanently
-				// disabled. Saving an app as a template was impossible for EVERY
-				// application.
-				const manifestUrl = generateUrl(
-					`/apps/buildiq/api/applications/${encodeURIComponent(this.obApp.slug)}/manifest`,
-				)
-				const { data: resolvedManifest } = await axios.get(manifestUrl)
-				this.saveTemplateManifest =
-					resolvedManifest
-					|| this.obApp.manifest
-					|| (this.obApp.currentVersion
-						&& this.obApp.currentVersion.manifest)
-					|| {}
-				// The manifest above is the production version's, so its
-				// companion schemas live in the production version's register.
-				const register = await fetchProductionRegister(
-					this.obApp.slug,
-					this.obApp.productionVersion,
-				)
-				const picker = useRegisterPicker({
-					appSlug: this.obApp.slug,
-					appRegister: register,
-					dataRegisters: this.obApp.dataRegisters || [],
-				})
-				this.saveTemplateSchemas = register
-					? await picker.fetchSchemas(register)
-					: []
-				this.existingTemplates = await this.loadExistingTemplates()
-				this.saveTemplateOpen = true
+				await this.captureTemplate()
 			} catch (e) {
 				this.error = `${t('buildiq', 'Could not prepare template capture')}: ${e.message || e}`
 			} finally {
@@ -1111,11 +1296,72 @@ export default {
 		},
 
 		/**
+		 * Capture the manifest, companion schemas and visible templates, then
+		 * open the dialog.
+		 *
+		 * @return {Promise<void>}
+		 */
+		async captureTemplate() {
+			this.saveTemplateManifest = await this.resolveTemplateManifest()
+			this.saveTemplateSchemas = await this.loadTemplateSchemas()
+			this.existingTemplates = await this.loadExistingTemplates()
+			this.saveTemplateOpen = true
+		},
+
+		/**
+		 * The manifest to capture: the app's ACTIVE VERSION manifest from the
+		 * endpoint that owns that resolution, else what the record carries.
+		 *
+		 * @return {Promise<object>}
+		 */
+		async resolveTemplateManifest() {
+			// Resolve the manifest from the app's ACTIVE VERSION, through the
+			// endpoint that owns that resolution.
+			//
+			// This used to read `obApp.manifest`, falling back to
+			// `obApp.currentVersion.manifest`. An Application record carries
+			// NEITHER: the manifest lives on the ApplicationVersion, and
+			// `GET /api/applications` returns no `manifest` and no
+			// `currentVersion` for any app — the seeded hello-world included.
+			// So the capture always fell through to `{}`, the dialog validated
+			// an empty object and opened with "The captured manifest is invalid
+			// and cannot be published: /version must be a string /menu must be
+			// an array /pages must be an array", with Save permanently
+			// disabled. Saving an app as a template was impossible for EVERY
+			// application.
+			const manifestUrl = generateUrl(
+				`/apps/buildiq/api/applications/${encodeURIComponent(this.obApp.slug)}/manifest`,
+			)
+			const { data: resolvedManifest } = await axios.get(manifestUrl)
+			return resolvedManifest || recordManifest(this.obApp)
+		},
+
+		/**
+		 * The companion schemas of the template. The manifest is the
+		 * production version's, so its companion schemas live in the
+		 * production version's register.
+		 *
+		 * @return {Promise<Array<object>>}
+		 */
+		async loadTemplateSchemas() {
+			const register = await fetchProductionRegister(
+				this.obApp.slug,
+				this.obApp.productionVersion,
+			)
+			const picker = useRegisterPicker({
+				appSlug: this.obApp.slug,
+				appRegister: register,
+				dataRegisters: this.obApp.dataRegisters || [],
+			})
+			return register ? await picker.fetchSchemas(register) : []
+		},
+
+		/**
 		 * Read the templates visible to the caller (for slug-collision
 		 * resolution). Plain OR REST read — no new PHP (REQ-SAT-006).
 		 *
 		 * @return {Promise<Array>}
-		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+		 * @spec openspec/specs/save-as-template/spec.md
 		 */
 		async loadExistingTemplates() {
 			try {
@@ -1135,7 +1381,7 @@ export default {
 		 *
 		 * @param {{slug: string, mode: string}} payload The save result.
 		 * @return {void}
-		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+		 * @spec openspec/specs/save-as-template/spec.md
 		 */
 		onTemplateSaved(payload) {
 			this.saveTemplateOpen = false

@@ -24,6 +24,7 @@ namespace OCA\Buildiq\Tests\Unit\Service;
 
 use OCA\Buildiq\Service\AgentChannelProvisioner;
 use OCA\Buildiq\Service\AppChannelApplier;
+use OCA\Buildiq\Service\ChannelProvisioners;
 use OCA\Buildiq\Service\ConnectorRegisterAvailability;
 use OCA\Buildiq\Service\ContainerLocator;
 use OCA\Buildiq\Service\DataRegisterProvisioner;
@@ -209,21 +210,23 @@ class ConnectorRegisterResolutionTest extends TestCase {
 		$logger = $this->createMock(LoggerInterface::class);
 
 		$applier = new AppChannelApplier(
-			$objectService,
-			new ConnectorRegisterAvailability(
+			objectService: $objectService,
+			connectorRegister: new ConnectorRegisterAvailability(
 				new FakeSlugResolver($presentSlugs),
 				$appManager,
 				$logger
 			),
-			new DataRegisterProvisioner(
-				$this->createMock(RegisterMapper::class),
-				$this->createMock(SchemaMapper::class),
-				$logger
+			provisioners: new ChannelProvisioners(
+				registerProvisioner: new DataRegisterProvisioner(
+					$this->createMock(RegisterMapper::class),
+					$this->createMock(SchemaMapper::class),
+					$logger
+				),
+				skillDelegate: new SkillChannelDelegate($appManager, $this->createMock(ContainerLocator::class), $logger),
+				flowProvisioner: new FlowChannelProvisioner($this->createMock(FlowService::class), $objectService, $logger),
+				agentProvisioner: new AgentChannelProvisioner($objectService, $logger)
 			),
-			new SkillChannelDelegate($appManager, $this->createMock(ContainerLocator::class), $logger),
-			new FlowChannelProvisioner($this->createMock(FlowService::class), $objectService, $logger),
-			new AgentChannelProvisioner($objectService, $logger),
-			$logger,
+			logger: $logger,
 		);
 
 		return $applier->apply(

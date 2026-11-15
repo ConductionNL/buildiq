@@ -35,26 +35,27 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Tests\Unit\Listener;
 
-use OCA\Buildiq\Listener\BuildiqLeafRegistrationListener;
 use OCA\Buildiq\Integration\PageLayoutLeafProvider;
 use OCA\Buildiq\Integration\RegistrationFormLeafProvider;
+use OCA\Buildiq\Integration\BuildiqLeafRegistrationListener;
 use OCA\Buildiq\Service\LayoutDeltaService;
 use OCA\Buildiq\Service\PageLayoutFrozenBase;
 use OCA\Buildiq\Service\PageLayoutLayerStack;
+use OCA\Buildiq\Service\PageLayoutParts;
 use OCA\Buildiq\Service\PageLayoutPresenter;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Event\RegisterLeafProvidersEvent;
+use OCA\OpenRegister\Service\Integration\LeafDescriptor;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IUserSession;
-use OCA\OpenRegister\Event\RegisterLeafProvidersEvent;
-use OCA\OpenRegister\Service\Integration\LeafDescriptor;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
 
 /**
  * `BuildiqLeafRegistrationListener`.
  *
- * The five `@uses` below are not decoration. `phpunit.xml` sets
+ * The `@uses` below are not decoration. `phpunit.xml` sets
  * `beStrictAboutCoverageMetadata="true"` next to `failOnRisky="true"`, so under
  * a coverage run a test that carries `@covers` and executes any class outside
  * that list is RISKY, and one risky test is exit 1 for the whole suite. This
@@ -64,13 +65,15 @@ use Psr\Log\NullLogger;
  * runs the same tests with `--coverage-clover` and every matrix cell goes red.
  * Reproduced with pcov: exit 0 without coverage, exit 1 with it, same 1277 tests.
  *
- * @covers \OCA\Buildiq\Listener\BuildiqLeafRegistrationListener
+ * @covers \OCA\Buildiq\Integration\BuildiqLeafRegistrationListener
  *
  * @uses \OCA\Buildiq\Integration\PageLayoutLeafProvider
  * @uses \OCA\Buildiq\Integration\RegistrationFormLeafProvider
  * @uses \OCA\Buildiq\Service\LayoutDeltaService
  * @uses \OCA\Buildiq\Service\PageLayoutFrozenBase
  * @uses \OCA\Buildiq\Service\PageLayoutLayerStack
+ * @uses   \OCA\Buildiq\Service\PageLayoutParts
+ * @uses   \OCA\Buildiq\Service\HelperFactory
  */
 class BuildiqLeafRegistrationListenerTest extends TestCase {
 
@@ -98,13 +101,15 @@ class BuildiqLeafRegistrationListenerTest extends TestCase {
 				$this->createMock(IUserSession::class)
 			),
 			new PageLayoutLeafProvider(
-				$this->createMock(ObjectServiceInterface::class),
-				$this->createMock(IAppConfig::class),
-				new LayoutDeltaService(),
-				$layers,
-				new PageLayoutFrozenBase($layers),
-				new PageLayoutPresenter(),
-				new NullLogger()
+				objectService: $this->createMock(ObjectServiceInterface::class),
+				appConfig: $this->createMock(IAppConfig::class),
+				parts: new PageLayoutParts(
+					deltas: new LayoutDeltaService(),
+					layers: $layers,
+					frozenBase: new PageLayoutFrozenBase($layers),
+					presenter: new PageLayoutPresenter()
+				),
+				logger: new NullLogger()
 			)
 		);
 

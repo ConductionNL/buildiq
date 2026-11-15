@@ -20,8 +20,17 @@ step. You add a field and the store accepts it.
 ## Defining fields
 
 The schema designer takes it field by field: a name, a type, and whether it is
-required. Types cover text, numbers, dates, enumerations and relations to other
-schemas.
+required. A type names what the field holds: text or long text, a number or a
+whole number, yes or no, a date or a date and time, a choice or several, a file
+or several, a user or several, a relation to another schema, a list or a group.
+
+A choice takes its options inline, as an ordered list of values with labels, or
+from a shared list: one of OpenRegister's concept schemes, so many schemas
+offer the same options and a value added to the list later is accepted without
+saving the schema again. A user field stores the Nextcloud user id.
+
+Saving from the designer keeps every setting it does not edit, such as an
+option list or a title an import put on a field.
 
 A relation is what lets a detail page show related records, and what lets a
 widget on one schema count rows in another.

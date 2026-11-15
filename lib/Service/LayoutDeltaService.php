@@ -3,6 +3,9 @@
 /**
  * Layout Delta Service
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * The PHP side of the keyed-delta contract `@conduction/nextcloud-vue` already
  * implements in JavaScript for app overrides: a patch is a map keyed by id, a
  * deletion is `{"$op": "remove"}`, and a reorder is `__order`. There is
@@ -36,21 +39,21 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-001, REQ-OBSO-002)
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\LayoutDeltaServiceInterface;
+use OCA\Buildiq\Support\CanonicalJson;
+
 /**
  * Applies and cuts keyed layout deltas, and fingerprints a base.
  *
  * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-001)
  */
-final class LayoutDeltaService {
+final class LayoutDeltaService implements LayoutDeltaServiceInterface {
 	/**
 	 * Constructor.
 	 *
@@ -285,6 +288,7 @@ final class LayoutDeltaService {
 	 * @return string The fingerprint.
 	 *
 	 * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-002)
+	 * @SuppressWarnings(PHPMD.StaticAccess) CanonicalJson is a pure function with no collaborators.
 	 */
 	public function fingerprint(array $base): string {
 		$patchable = [];
@@ -294,7 +298,7 @@ final class LayoutDeltaService {
 			}
 		}
 
-		return hash('sha256', (string)json_encode($this->normalise(value: $patchable)));
+		return hash('sha256', (string)json_encode(CanonicalJson::sortKeys(value: $patchable)));
 	}//end fingerprint()
 
 	/**
@@ -329,31 +333,4 @@ final class LayoutDeltaService {
 	private function isMap(mixed $value): bool {
 		return (is_array($value) === true && ($value === [] || array_is_list($value) === false));
 	}//end isMap()
-
-	/**
-	 * Sort a structure's keys recursively, so a reordered store does not read as
-	 * a changed base.
-	 *
-	 * @param mixed $value The value.
-	 *
-	 * @return mixed The normalised value.
-	 */
-	private function normalise(mixed $value): mixed {
-		if (is_array($value) === false) {
-			return $value;
-		}
-
-		if (array_is_list($value) === true) {
-			return array_map(fn (mixed $entry): mixed => $this->normalise(value: $entry), $value);
-		}
-
-		ksort($value);
-
-		$out = [];
-		foreach ($value as $key => $entry) {
-			$out[$key] = $this->normalise(value: $entry);
-		}
-
-		return $out;
-	}//end normalise()
 }//end class

@@ -3,6 +3,9 @@
 /**
  * Buildiq AppChannelApplier
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Applies a parsed v2 app-repo template's channels — `dataRegisters`,
  * `connectors`, `automations`, `skills`, `flows` and `agents` — onto this
  * instance (app-channel-application). The last two (app-repo-format-flow-agent-
@@ -33,9 +36,6 @@
  * `openregister` — so their channels degrade with a machine-readable reason while
  * the remaining channels still apply.
  *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
- *
  * @category Service
  * @package  OCA\Buildiq\Service
  *
@@ -54,6 +54,9 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\AppChannelApplierInterface;
+use OCA\Buildiq\Kernel\Values\LocalApplicationRef;
+use OCA\Buildiq\Kernel\Values\RepoSource;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Exception\ObjectExistsException;
 use Psr\Log\LoggerInterface;
@@ -65,9 +68,9 @@ use Throwable;
  * @SuppressWarnings(PHPMD.CouplingBetweenObjects)
  *
  * @spec openspec/changes/apply-v2-channels/specs/app-channel-application/spec.md
- * @spec openspec/changes/app-repo-format-flow-agent-export/specs/app-channel-application/spec.md
+ * @spec openspec/specs/app-channel-application/spec.md
  */
-class AppChannelApplier {
+class AppChannelApplier implements AppChannelApplierInterface {
 
 	/**
 	 * Connector schemas, matching AppRepoSerializer::CONNECTOR_KINDS.
@@ -123,6 +126,34 @@ class AppChannelApplier {
 	private const HERMIQ_APP_ID = 'hermiq';
 
 	/**
+	 * The data-registers channel.
+	 *
+	 * @var DataRegisterProvisioner
+	 */
+	private readonly DataRegisterProvisioner $registerProvisioner;
+
+	/**
+	 * The skills channel (delegated to hermiq).
+	 *
+	 * @var SkillChannelDelegate
+	 */
+	private readonly SkillChannelDelegate $skillDelegate;
+
+	/**
+	 * The flows channel (app-repo-format-flow-agent-export).
+	 *
+	 * @var FlowChannelProvisioner
+	 */
+	private readonly FlowChannelProvisioner $flowProvisioner;
+
+	/**
+	 * The agents channel (app-repo-format-flow-agent-export).
+	 *
+	 * @var AgentChannelProvisioner
+	 */
+	private readonly AgentChannelProvisioner $agentProvisioner;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ObjectServiceInterface $objectService OpenRegister object read/write.
@@ -130,10 +161,7 @@ class AppChannelApplier {
 	 *                                                         here, and with which slug. Not nullable: the
 	 *                                                         only fallback a null would leave is the
 	 *                                                         literal it replaces.
-	 * @param DataRegisterProvisioner $registerProvisioner The data-registers channel.
-	 * @param SkillChannelDelegate $skillDelegate The skills channel (delegated to hermiq).
-	 * @param FlowChannelProvisioner $flowProvisioner The flows channel (app-repo-format-flow-agent-export).
-	 * @param AgentChannelProvisioner $agentProvisioner The agents channel (app-repo-format-flow-agent-export).
+	 * @param ChannelProvisioners $provisioners The per-channel provisioners a published repository is applied through.
 	 * @param LoggerInterface $logger PSR logger (secret-free diagnostics).
 	 *
 	 * @return void
@@ -141,12 +169,13 @@ class AppChannelApplier {
 	public function __construct(
 		private readonly ObjectServiceInterface $objectService,
 		private readonly ConnectorRegisterAvailability $connectorRegister,
-		private readonly DataRegisterProvisioner $registerProvisioner,
-		private readonly SkillChannelDelegate $skillDelegate,
-		private readonly FlowChannelProvisioner $flowProvisioner,
-		private readonly AgentChannelProvisioner $agentProvisioner,
+		ChannelProvisioners $provisioners,
 		private readonly LoggerInterface $logger,
 	) {
+		$this->registerProvisioner = $provisioners->registerProvisioner;
+		$this->skillDelegate = $provisioners->skillDelegate;
+		$this->flowProvisioner = $provisioners->flowProvisioner;
+		$this->agentProvisioner = $provisioners->agentProvisioner;
 	}//end __construct()
 
 	/**
@@ -161,37 +190,28 @@ class AppChannelApplier {
 	 * through is a path that eventually gets added without them.
 	 *
 	 * @param array<string,mixed> $template The parsed repo template.
-	 * @param string|null $owner Repo owner (for the skills delegation).
-	 * @param string|null $repo Repo name (for the skills delegation).
-	 * @param string|null $ref Optional git ref.
+	 * @param RepoSource|null $source Repo coordinates, ref and broker credential for the skills delegation.
+	 *                                An empty owner or repo falls back to the template's origin.
 	 * @param string|null $actingUserId The session UID.
-	 * @param string|null $credentialId Optional broker credential UUID.
-	 * @param string|null $applicationUuid The LOCAL Application's own uuid — needed by the flows channel to
-	 *                                     rebind newly created flows. Null on a caller with no local
-	 *                                     Application context yet, in which case the flows channel degrades
-	 *                                     with a stated reason like any other missing context.
-	 * @param string|null $applicationSlug The LOCAL Application's own slug — needed by the agents channel
-	 *                                     to tag newly created agents with THIS instance's slug, never the
-	 *                                     source instance's.
+	 * @param LocalApplicationRef|null $local The LOCAL Application: its uuid lets the flows channel rebind newly
+	 *                                        created flows, its slug lets the agents channel tag newly created
+	 *                                        agents with THIS instance's slug, never the source instance's. A
+	 *                                        missing uuid degrades the flows channel with a stated reason.
 	 *
 	 * @return array<string,mixed> The channel report.
 	 *
 	 * @spec openspec/changes/apply-v2-channels/specs/app-channel-application/spec.md#requirement-every-install-path-applies-the-v2-channels
-	 * @spec openspec/changes/app-repo-format-flow-agent-export/specs/app-channel-application/spec.md#requirement-published-flows-are-created-and-rebound-onto-the-local-application
+	 * @spec openspec/specs/app-channel-application/spec.md#requirement-published-flows-are-created-and-rebound-onto-the-local-application
 	 */
 	public function apply(
 		array $template,
-		?string $owner = null,
-		?string $repo = null,
-		?string $ref = null,
+		?RepoSource $source = null,
 		?string $actingUserId = null,
-		?string $credentialId = null,
-		?string $applicationUuid = null,
-		?string $applicationSlug = null,
+		?LocalApplicationRef $local = null,
 	): array {
 		$report = new ChannelApplyReport();
 
-		[$owner, $repo] = $this->coordinatesFor(template: $template, owner: $owner, repo: $repo);
+		[$owner, $repo] = $this->coordinatesFor(template: $template, owner: $source?->owner, repo: $source?->repo);
 
 		$this->registerProvisioner->apply(
 			registers: $this->channelOf(template: $template, name: 'dataRegisters'),
@@ -210,23 +230,20 @@ class AppChannelApplier {
 
 		$this->flowProvisioner->apply(
 			flows: $this->channelOf(template: $template, name: 'flows'),
-			applicationUuid: $applicationUuid,
+			applicationUuid: $local?->uuid,
 			report: $report
 		);
 
 		$this->agentProvisioner->apply(
 			agents: $this->channelOf(template: $template, name: 'agents'),
-			applicationSlug: $applicationSlug,
+			applicationSlug: $local?->slug,
 			report: $report
 		);
 
 		$this->applySkillsChannel(
 			skills: $this->channelOf(template: $template, name: 'skills'),
-			owner: $owner,
-			repo: $repo,
-			ref: $ref,
+			source: new RepoSource(owner: $owner, repo: $repo, ref: $source?->ref, credentialId: $source?->credentialId),
 			actingUserId: $actingUserId,
-			credentialId: $credentialId,
 			report: $report
 		);
 
@@ -248,26 +265,21 @@ class AppChannelApplier {
 	 * of the generic `hermiq-install-failed` a caught Throwable produces.
 	 *
 	 * @param array<string,mixed> $skills The declared skills channel.
-	 * @param string $owner Repo owner (for the delegation).
-	 * @param string $repo Repo name (for the delegation).
-	 * @param string|null $ref Optional git ref.
+	 * @param RepoSource $source The repo coordinates, ref and credential (for the delegation).
 	 * @param string|null $actingUserId The session UID.
-	 * @param string|null $credentialId Optional broker credential UUID.
 	 * @param ChannelApplyReport $report The report to write into.
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/surface-hermiq-credential-scope-requirement/specs/app-channel-application/spec.md#requirement-skills-are-delegated-to-hermiq-by-repository-coordinates
+	 * @spec openspec/specs/app-channel-application/spec.md#requirement-skills-are-delegated-to-hermiq-by-repository-coordinates
 	 */
 	private function applySkillsChannel(
 		array $skills,
-		string $owner,
-		string $repo,
-		?string $ref,
+		RepoSource $source,
 		?string $actingUserId,
-		?string $credentialId,
 		ChannelApplyReport $report,
 	): void {
+		$credentialId = $source->credentialId;
 		if ($skills !== [] && in_array($credentialId, [null, ''], true) === false
 			&& $this->credentialAllowsApp(credentialId: $credentialId, appId: self::HERMIQ_APP_ID) === false
 		) {
@@ -290,11 +302,8 @@ class AppChannelApplier {
 
 		$this->skillDelegate->apply(
 			skills: $skills,
-			owner: $owner,
-			repo: $repo,
-			ref: $ref,
+			source: $source,
 			actingUserId: $actingUserId,
-			credentialId: $credentialId,
 			report: $report
 		);
 
@@ -321,7 +330,7 @@ class AppChannelApplier {
 	 *
 	 * @return bool|null True/false when conclusive, null when the credential is absent or the lookup failed.
 	 *
-	 * @spec openspec/changes/surface-hermiq-credential-scope-requirement/specs/app-channel-application/spec.md#requirement-skills-are-delegated-to-hermiq-by-repository-coordinates
+	 * @spec openspec/specs/app-channel-application/spec.md#requirement-skills-are-delegated-to-hermiq-by-repository-coordinates
 	 */
 	private function credentialAllowsApp(string $credentialId, string $appId): ?bool {
 		try {

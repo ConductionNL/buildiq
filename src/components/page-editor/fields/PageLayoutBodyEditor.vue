@@ -412,6 +412,51 @@
 					{{ t('buildiq', 'Add search field') }}
 				</button>
 			</div>
+			<!-- Where the consuming app shows the task list on this case type
+			     (pages-task-panel-beside-case-tabs). Tabs are named by id, so a
+			     relabelled tab keeps its panel. -->
+			<fieldset class="layout-body__panel-placement">
+				<legend>{{ t('buildiq', 'Show the task list') }}</legend>
+				<label
+					v-for="option in panelPlacements"
+					:key="'placement-' + option.value"
+					class="layout-body__row">
+					<input
+						type="radio"
+						name="task-panel-placement"
+						:value="option.value"
+						:checked="(taskPanel.placement || '') === option.value"
+						@change="onPanelPlacement(option.value)" />
+					{{ option.label }}
+				</label>
+			</fieldset>
+			<fieldset
+				v-if="taskPanel.placement === 'side'"
+				class="layout-body__panel-tabs">
+				<legend>{{ t('buildiq', 'Beside these tabs') }}</legend>
+				<p v-if="!(taskPanel.tabs || []).length" class="layout-body__hint">
+					{{ t('buildiq', 'None ticked: beside every tab.') }}
+				</p>
+				<label
+					v-for="tab in tabs"
+					:key="'panel-' + tab.id"
+					class="layout-body__row">
+					<input
+						type="checkbox"
+						:value="tab.id"
+						:checked="(taskPanel.tabs || []).includes(tab.id)"
+						@change="onPanelTab(tab.id, $event.target.checked)" />
+					{{ tab.label || tab.id }}
+				</label>
+				<label class="layout-body__row">
+					<input
+						type="checkbox"
+						class="layout-body__panel-collapsed"
+						:checked="taskPanel.collapsed === true"
+						@change="onPanelCollapsed($event.target.checked)" />
+					{{ t('buildiq', 'Start folded') }}
+				</label>
+			</fieldset>
 		</fieldset>
 
 		<fieldset class="layout-body__section">
@@ -533,6 +578,16 @@ function renumber(items) {
 }
 
 /**
+ * The empty reference each tab kind starts with, built fresh per tab.
+ */
+const EMPTY_TAB_REFERENCES = new Map([
+	['widgets', () => ({ widgets: [] })],
+	['fieldGroup', () => ({ fields: [] })],
+	['leaf', () => ({ ref: '' })],
+	['relatedList', () => ({ relatedRegister: '', relatedSchema: '' })],
+])
+
+/**
  * Add a tab of a kind with the empty reference its kind needs.
  *
  * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md#requirement-a-tab-declares-its-kind-and-an-admin-orders-tabs-per-case-type-req-obpl-004
@@ -543,14 +598,8 @@ function renumber(items) {
 export function addTab(tabs, kind) {
 	const list = tabs || []
 	const tab = { id: freshId('tab', list), kind, label: '', order: list.length }
-	if (kind === 'widgets') tab.widgets = []
-	if (kind === 'fieldGroup') tab.fields = []
-	if (kind === 'leaf') tab.ref = ''
-	if (kind === 'relatedList') {
-		tab.relatedRegister = ''
-		tab.relatedSchema = ''
-	}
-	return [...list, tab]
+	const emptyReference = EMPTY_TAB_REFERENCES.get(kind)
+	return [...list, emptyReference ? { ...tab, ...emptyReference() } : tab]
 }
 
 /**
@@ -570,6 +619,16 @@ export function moveItem(items, index, delta) {
 	return renumber(list)
 }
 
+// The key each tab kind needs before the server accepts it, by kind.
+const MISSING_REFERENCE = {
+	leaf: (tab) => (tab.ref ? '' : 'ref'),
+	fieldGroup: (tab) => ((tab.fields || []).length > 0 ? '' : 'fields'),
+	relatedList: (tab) => {
+		if (!tab.relatedRegister) return 'relatedRegister'
+		return tab.relatedSchema ? '' : 'relatedSchema'
+	},
+}
+
 /**
  * The reference a tab's kind needs and does not have, or an empty string.
  *
@@ -578,17 +637,11 @@ export function moveItem(items, index, delta) {
  * @return {string} The missing key.
  */
 export function missingReference(tab) {
-	switch (tab?.kind) {
-		case 'leaf':
-			return tab.ref ? '' : 'ref'
-		case 'fieldGroup':
-			return (tab.fields || []).length > 0 ? '' : 'fields'
-		case 'relatedList':
-			if (!tab.relatedRegister) return 'relatedRegister'
-			return tab.relatedSchema ? '' : 'relatedSchema'
-		default:
-			return ''
+	const kind = tab?.kind
+	if (typeof kind !== 'string' || !Object.hasOwn(MISSING_REFERENCE, kind)) {
+		return ''
 	}
+	return MISSING_REFERENCE[kind](tab)
 }
 
 /**
@@ -602,21 +655,28 @@ export function previewRows(widgets) {
 	const sorted = [...(widgets || [])].sort(
 		(a, b) => (a.order ?? 0) - (b.order ?? 0),
 	)
-	const rows = []
-	let row = []
-	let used = 0
-	for (const widget of sorted) {
-		const units = UNITS[widget.width] || UNITS.medium
-		if (used + units > 4 && row.length > 0) {
-			rows.push(row)
-			row = []
-			used = 0
-		}
-		row.push(widget)
-		used += units
+	const grid = sorted.reduce(placeWidget, { rows: [], row: [], used: 0 })
+	if (grid.row.length > 0) grid.rows.push(grid.row)
+	return grid.rows
+}
+
+/**
+ * Place one widget on the grid, starting a new row when it does not fit.
+ *
+ * @param {{rows: Array<Array<object>>, row: Array<object>, used: number}} grid The rows so far, the open row and its used units.
+ * @param {object} widget The widget.
+ * @return {{rows: Array<Array<object>>, row: Array<object>, used: number}} The same grid.
+ */
+function placeWidget(grid, widget) {
+	const units = UNITS[widget.width] || UNITS.medium
+	if (grid.used + units > 4 && grid.row.length > 0) {
+		grid.rows.push(grid.row)
+		grid.row = []
+		grid.used = 0
 	}
-	if (row.length > 0) rows.push(row)
-	return rows
+	grid.row.push(widget)
+	grid.used += units
+	return grid
 }
 
 /**
@@ -704,6 +764,31 @@ export default {
 		 */
 		taskList() {
 			return (this.modelValue && this.modelValue.taskList) || {}
+		},
+
+		/**
+		 * The task panel of this layout: where the task list sits.
+		 *
+		 * @spec openspec/changes/pages-task-panel-beside-case-tabs/specs/page-layout-task-panel/spec.md#requirement-a-layout-declares-where-the-task-panel-sits-req-bqtp-001
+		 * @return {object} the panel, or an empty object when none is declared.
+		 */
+		taskPanel() {
+			return this.taskList.panel || {}
+		},
+
+		/**
+		 * The placements a maker can pick, the schema-wide fall-back first.
+		 *
+		 * @spec openspec/changes/pages-task-panel-beside-case-tabs/specs/page-layout-task-panel/spec.md#requirement-a-layout-declares-where-the-task-panel-sits-req-bqtp-001
+		 * @return {Array<{value: string, label: string}>} the options.
+		 */
+		panelPlacements() {
+			return [
+				{ value: '', label: this.t('buildiq', 'As the schema-wide layout does') },
+				{ value: 'side', label: this.t('buildiq', 'Beside the tabs') },
+				{ value: 'tab', label: this.t('buildiq', 'As a tab of its own') },
+				{ value: 'none', label: this.t('buildiq', 'Not at all') },
+			]
 		},
 
 		/**
@@ -1089,6 +1174,75 @@ export default {
 		},
 
 		/**
+		 * Write the task panel. An empty placement removes the panel, so the
+		 * schema-wide layout's panel applies; `none` is kept as a choice.
+		 *
+		 * @spec openspec/changes/pages-task-panel-beside-case-tabs/specs/page-layout-task-panel/spec.md#requirement-a-layout-declares-where-the-task-panel-sits-req-bqtp-001
+		 * @param {object|null} panel The panel, or null to remove it.
+		 * @return {void}
+		 */
+		emitPanel(panel) {
+			const taskList = { ...this.taskList }
+			if (panel === null) {
+				delete taskList.panel
+			} else {
+				taskList.panel = panel
+			}
+			this.emitPatch({ taskList })
+		},
+
+		/**
+		 * Pick where the task list sits. Tabs are only kept for `side`.
+		 *
+		 * @spec openspec/changes/pages-task-panel-beside-case-tabs/specs/page-layout-task-panel/spec.md#requirement-a-layout-declares-where-the-task-panel-sits-req-bqtp-001
+		 * @param {string} placement `side`, `tab`, `none` or '' for none declared.
+		 * @return {void}
+		 */
+		onPanelPlacement(placement) {
+			if (placement === '') {
+				this.emitPanel(null)
+				return
+			}
+			const panel = { ...this.taskPanel, placement }
+			if (placement !== 'side') {
+				delete panel.tabs
+				delete panel.collapsed
+			}
+			this.emitPanel(panel)
+		},
+
+		/**
+		 * Tick or untick a tab the side panel shows beside, by id, in the
+		 * layout's tab order.
+		 *
+		 * @spec openspec/changes/pages-task-panel-beside-case-tabs/specs/page-layout-task-panel/spec.md#requirement-the-panel-names-tabs-the-layout-has-req-bqtp-002
+		 * @param {string} tabId The tab id.
+		 * @param {boolean} ticked Whether it is ticked.
+		 * @return {void}
+		 */
+		onPanelTab(tabId, ticked) {
+			const current = new Set(this.taskPanel.tabs || [])
+			if (ticked) {
+				current.add(tabId)
+			} else {
+				current.delete(tabId)
+			}
+			const tabs = this.tabs.map((tab) => tab.id).filter((id) => current.has(id))
+			this.emitPanel({ ...this.taskPanel, tabs })
+		},
+
+		/**
+		 * Whether the side panel starts folded.
+		 *
+		 * @spec openspec/changes/pages-task-panel-beside-case-tabs/specs/page-layout-task-panel/spec.md#requirement-a-layout-declares-where-the-task-panel-sits-req-bqtp-001
+		 * @param {boolean} collapsed Folded or not.
+		 * @return {void}
+		 */
+		onPanelCollapsed(collapsed) {
+			this.emitPanel({ ...this.taskPanel, collapsed })
+		},
+
+		/**
 		 * Add a task-list column.
 		 *
 		 * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md#requirement-a-case-type-declares-its-task-list-columns-and-search-fields-req-obpl-008
@@ -1223,6 +1377,18 @@ export default {
 </script>
 
 <style scoped>
+.layout-body__panel-placement,
+.layout-body__panel-tabs {
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius);
+	padding: 8px;
+}
+
+.layout-body__hint {
+	color: var(--color-text-maxcontrast);
+	margin: 0;
+}
+
 .layout-body__section {
 	margin-block-end: 12px;
 }

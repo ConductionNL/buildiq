@@ -39,12 +39,15 @@ owns.
 
 ## D2. The image builds from the exported source
 
-The `Dockerfile` has three stages: `composer install` without dev packages on the exported
-PHP, `npm ci && npm run build` on the exported frontend, and a final stage from
-the pinned Nextcloud image with the built app copied into `custom_apps/`. This
-works for a ZIP export with no repository and no release, and for a GitHub export
-before its first release. A release tarball would be faster, but it does not
-exist for a ZIP export.
+The `Dockerfile` has three stages: `composer install` without dev packages on the
+exported PHP, `npm ci && npm run build` on the exported frontend, and a small
+installer image that holds the built app. Compose runs that installer first: it
+copies the app into the shared apps volume and fetches the pinned OpenRegister
+release, the way `buildiq-compose.yaml` does, and a stock Nextcloud image then
+starts on that volume and enables both. This works for a ZIP export with no
+repository and no release, and keeps the Nextcloud image unmodified, so it
+upgrades the usual way. A release tarball would be faster, but it does not exist
+for a ZIP export.
 
 ## D3. No default credentials, fail closed
 
@@ -68,7 +71,11 @@ the same `resolvePlaceholders()` pass (app id, name, OpenRegister version). The
 GitHub path gets them through `buildScaffoldMap()`, so both targets produce the
 same folder. A new optional `exportJob.includeServerBundle` boolean, declared in
 a `register.d/33-export-job-server-bundle.json` fragment with the schema version
-bumped, carries the choice.
+bumped, carries the choice. The board (BqExporterenZelfstandig) makes "Own
+server" a target of its own rather than a switch on every export: the `server`
+target is a ZIP download with the bundle, and the dialog shows the server's
+requirements from `ServerBundleWriter::requirements()`, so the numbers it shows
+are the ones the bundle uses.
 
 ## D6. The app's data arrives by its own install step
 

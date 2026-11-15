@@ -30,18 +30,19 @@ namespace OCA\Buildiq\Tests\Unit\Service;
 use OCA\Buildiq\Service\ConditionActionExecutor;
 use OCA\Buildiq\Service\DecisionTableEvaluator;
 use OCA\Buildiq\Service\DecisionTableShape;
-use OCA\OpenRegister\Service\Dmn\DecisionTableEvaluator as SharedEvaluator;
 use OCA\Buildiq\Service\ExpressionEvaluator;
 use OCA\Buildiq\Service\RuleActionDispatcher;
 use OCA\Buildiq\Service\RuleEngineService;
+use OCA\Buildiq\Service\RuleEvaluators;
 use OCA\Buildiq\Service\RuleObjectReader;
 use OCA\Buildiq\Service\RuleSetCacheManager;
 use OCA\Buildiq\Service\StoredDecisionTables;
-use OCA\OpenRegister\Service\Dmn\DecisionTableStore;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Service\Dmn\DecisionTableEvaluator as SharedEvaluator;
+use OCA\OpenRegister\Service\Dmn\DecisionTableStore;
 use OCP\AppFramework\Db\DoesNotExistException;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -145,15 +146,17 @@ final class RuleEngineServiceTest extends TestCase {
 		$this->actionDispatcher = $this->createMock(RuleActionDispatcher::class);
 		$this->tables = $this->storedTables(evaluator: new DecisionTableEvaluator($evaluator, $this->sharedEvaluator()));
 		$this->service = new RuleEngineService(
-			$this->objectService,
-			new DecisionTableEvaluator($evaluator, $this->sharedEvaluator()),
-			new ConditionActionExecutor($evaluator),
-			$this->cacheManager,
-			$this->userSession,
-			$this->createMock(LoggerInterface::class),
-			$this->actionDispatcher,
-			$this->reader,
-			$this->tables,
+			objectService: $this->objectService,
+			evaluators: new RuleEvaluators(
+				decisionEvaluator: new DecisionTableEvaluator($evaluator, $this->sharedEvaluator()),
+				conditionExecutor: new ConditionActionExecutor($evaluator),
+				actionDispatcher: $this->actionDispatcher,
+				cacheManager: $this->cacheManager
+			),
+			userSession: $this->userSession,
+			logger: $this->createMock(LoggerInterface::class),
+			reader: $this->reader,
+			tables: $this->tables,
 		);
 
 	}//end setUp()
@@ -183,7 +186,6 @@ final class RuleEngineServiceTest extends TestCase {
 		);
 
 		return $shared;
-
 	}//end sharedEvaluator()
 
 	/**
@@ -224,7 +226,6 @@ final class RuleEngineServiceTest extends TestCase {
 		);
 
 		return $tables;
-
 	}//end storedTables()
 
 	/**
@@ -387,6 +388,158 @@ final class RuleEngineServiceTest extends TestCase {
 	}//end testPiiMasking()
 
 	/**
+	 * Golden: the execution log written for every pairing of payload, PII
+	 * masking, rule type and save outcome, signed in and signed out.
+	 *
+	 * The timestamp and the duration are replaced by placeholders; everything
+	 * else of each saved log, and the evaluation answer, is compared with the
+	 * recorded fixture. Set GOLDEN_RECORD=1 to write a missing fixture.
+	 *
+	 * @return void
+	 */
+	public function testExecutionLogGolden(): void {
+		$fixture = __DIR__ . '/fixtures/rule-execution-log.golden.json';
+		$payloads = [
+			['applicant' => ['age' => 30, 'monthlyIncome' => 3000, 'creditScore' => 700]],
+			['applicant' => ['age' => 30], 'bsn' => '123456789', 'email' => 'a@example.org'],
+			[],
+		];
+		$cases = [];
+		foreach (['loan-eligibility', 'escalate', 'broken'] as $slug) {
+			foreach ($payloads as $payload) {
+				foreach ([false, true] as $maskPii) {
+					foreach (['ok', 'throws'] as $save) {
+						foreach (['alice', null] as $uid) {
+							$cases[] = $this->executionLogCase(
+								case: ['slug' => $slug, 'payload' => $payload, 'maskPii' => $maskPii, 'save' => $save, 'uid' => $uid]
+							);
+						}
+					}
+				}
+			}
+		}
+
+		$actual = json_encode($cases, (JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)) . "\n";
+		if (file_exists($fixture) === false && getenv('GOLDEN_RECORD') === '1') {
+			file_put_contents($fixture, $actual);
+		}
+
+		$this->assertFileExists($fixture);
+		$this->assertSame(file_get_contents($fixture), $actual);
+
+	}//end testExecutionLogGolden()
+
+	/**
+	 * A condition-action RuleSet whose only rule has a condition that cannot be
+	 * evaluated, so the evaluation answers with errors.
+	 *
+	 * @param string $schema The schema slug queried.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 */
+	private function brokenRuleRows(string $schema): array {
+		if ($schema === 'rule-set') {
+			return [['slug' => 'broken', 'version' => '2.0.0', 'ruleType' => 'condition-action']];
+		}
+
+		if ($schema === 'condition-action-rule') {
+			return [
+				[
+					'ruleSetId' => 'broken',
+					'name' => 7,
+					'condition' => '(((',
+					'actions' => [],
+					'active' => true,
+				],
+				[
+					'ruleSetId' => 'broken',
+					'name' => 8,
+					'condition' => '',
+					'actions' => [],
+					'active' => true,
+				],
+			];
+		}
+
+		return [];
+	}//end brokenRuleRows()
+
+	/**
+	 * Run one evaluation of the execution-log golden and describe what it saved.
+	 *
+	 * @param array<string,mixed> $case The rule set slug, payload, maskPii flag, save outcome and uid.
+	 *
+	 * @return array<string,mixed> The case, the saved logs and the answer.
+	 */
+	private function executionLogCase(array $case): array {
+		$objectService = $this->createMock(ObjectServiceInterface::class);
+		$saved = [];
+		$objectService->method('saveObject')->willReturnCallback(
+			function (array $object, ...$rest) use (&$saved, $case): \OCA\OpenRegister\Db\ObjectEntity {
+				$object['timestamp'] = '<timestamp>';
+				$object['(register buildiq)'] = in_array('buildiq', $rest, true);
+				$object['(schema rule-execution-log)'] = in_array('rule-execution-log', $rest, true);
+				$object['executionDurationMs'] = '<duration>';
+				$saved[] = $object;
+				if ($case['save'] === 'throws') {
+					throw new RuntimeException('save failed');
+				}
+
+				return new \OCA\OpenRegister\Db\ObjectEntity();
+			}
+		);
+		$this->objectService = $objectService;
+		$this->stubScopedRows(
+			function (string $registerSlug, string $schema, array $filters = []) use ($case): array {
+				if ($case['slug'] === 'escalate') {
+					return $this->conditionActionFindAllResults($schema);
+				}
+
+				if ($case['slug'] === 'broken') {
+					return $this->brokenRuleRows($schema);
+				}
+
+				return $this->loanFindAllResults($schema);
+			}
+		);
+
+		$session = $this->createMock(IUserSession::class);
+		$user = null;
+		if ($case['uid'] !== null) {
+			$user = $this->createMock(IUser::class);
+			$user->method('getUID')->willReturn($case['uid']);
+		}
+
+		$session->method('getUser')->willReturn($user);
+		$logger = $this->createMock(LoggerInterface::class);
+		$logged = [];
+		$logger->method('error')->willReturnCallback(
+			function (string $message, array $context = []) use (&$logged): void {
+				$logged[] = [$message, $context];
+			}
+		);
+		$evaluator = new ExpressionEvaluator();
+		$service = new RuleEngineService(
+			objectService: $objectService,
+			evaluators: new RuleEvaluators(
+				decisionEvaluator: new DecisionTableEvaluator($evaluator, $this->sharedEvaluator()),
+				conditionExecutor: new ConditionActionExecutor($evaluator),
+				actionDispatcher: $this->actionDispatcher,
+				cacheManager: $this->cacheManager
+			),
+			userSession: $session,
+			logger: $logger,
+			reader: new RuleObjectReader($objectService, $this->registerMapper(), $this->schemaMapper(), $this->createMock(LoggerInterface::class)),
+			tables: $this->storedTables(evaluator: new DecisionTableEvaluator($evaluator, $this->sharedEvaluator())),
+		);
+
+		$answer = $service->evaluate($case['slug'], $case['payload'], null, true, $case['maskPii']);
+		$answer['executionTime'] = '<duration>';
+
+		return ['case' => $case, 'saved' => $saved, 'logged' => $logged, 'answer' => $answer];
+	}//end executionLogCase()
+
+	/**
 	 * Build a condition-action RuleSet + one unconditional rule carrying a
 	 * send-notification action.
 	 *
@@ -464,15 +617,17 @@ final class RuleEngineServiceTest extends TestCase {
 	public function testCallRuleSetSelfReferenceIsRefused(): void {
 		$conditionExecutor = $this->createMock(ConditionActionExecutor::class);
 		$service = new RuleEngineService(
-			$this->objectService,
-			$this->createMock(DecisionTableEvaluator::class),
-			$conditionExecutor,
-			$this->cacheManager,
-			$this->userSession,
-			$this->createMock(LoggerInterface::class),
-			$this->actionDispatcher,
-			$this->reader,
-			$this->tables,
+			objectService: $this->objectService,
+			evaluators: new RuleEvaluators(
+				decisionEvaluator: $this->createMock(DecisionTableEvaluator::class),
+				conditionExecutor: $conditionExecutor,
+				actionDispatcher: $this->actionDispatcher,
+				cacheManager: $this->cacheManager
+			),
+			userSession: $this->userSession,
+			logger: $this->createMock(LoggerInterface::class),
+			reader: $this->reader,
+			tables: $this->tables,
 		);
 
 		$this->stubScopedRows(
@@ -505,6 +660,46 @@ final class RuleEngineServiceTest extends TestCase {
 	}//end testCallRuleSetSelfReferenceIsRefused()
 
 	/**
+	 * An evaluator that throws leaves an empty answer carrying only its message,
+	 * and the evaluation still answers instead of failing.
+	 *
+	 * @return void
+	 */
+	public function testThrowingEvaluatorAnswersWithItsMessage(): void {
+		$conditionExecutor = $this->createMock(ConditionActionExecutor::class);
+		$service = new RuleEngineService(
+			objectService: $this->objectService,
+			evaluators: new RuleEvaluators(
+				decisionEvaluator: $this->createMock(DecisionTableEvaluator::class),
+				conditionExecutor: $conditionExecutor,
+				actionDispatcher: $this->actionDispatcher,
+				cacheManager: $this->cacheManager
+			),
+			userSession: $this->userSession,
+			logger: $this->createMock(LoggerInterface::class),
+			reader: $this->reader,
+			tables: $this->tables,
+		);
+		$this->stubScopedRows(
+			function (string $registerSlug, string $schema, array $filters = []): array {
+				return $this->conditionActionFindAllResults($schema);
+			}
+		);
+		$conditionExecutor->expects($this->once())
+			->method('execute')
+			->with($this->anything(), [], true, $this->actionDispatcher)
+			->willThrowException(new RuntimeException('executor failed'));
+
+		$outcome = $service->evaluate(ruleSetSlug: 'escalate', payload: [], preview: true);
+
+		$this->assertSame([], $outcome['result']);
+		$this->assertSame([], $outcome['triggeredRules']);
+		$this->assertSame(['executor failed'], $outcome['errors']);
+		$this->assertSame(['result', 'triggeredRules', 'executionTime', 'errors'], array_keys($outcome));
+
+	}//end testThrowingEvaluatorAnswersWithItsMessage()
+
+	/**
 	 * DoS guard: a chain of distinct rule sets calling one another is bounded by
 	 * the maximum call depth — the executor fires at most MAX_CALL_DEPTH times.
 	 *
@@ -513,15 +708,17 @@ final class RuleEngineServiceTest extends TestCase {
 	public function testCallRuleSetDepthIsBounded(): void {
 		$conditionExecutor = $this->createMock(ConditionActionExecutor::class);
 		$service = new RuleEngineService(
-			$this->objectService,
-			$this->createMock(DecisionTableEvaluator::class),
-			$conditionExecutor,
-			$this->cacheManager,
-			$this->userSession,
-			$this->createMock(LoggerInterface::class),
-			$this->actionDispatcher,
-			$this->reader,
-			$this->tables,
+			objectService: $this->objectService,
+			evaluators: new RuleEvaluators(
+				decisionEvaluator: $this->createMock(DecisionTableEvaluator::class),
+				conditionExecutor: $conditionExecutor,
+				actionDispatcher: $this->actionDispatcher,
+				cacheManager: $this->cacheManager
+			),
+			userSession: $this->userSession,
+			logger: $this->createMock(LoggerInterface::class),
+			reader: $this->reader,
+			tables: $this->tables,
 		);
 
 		$this->stubScopedRows(
@@ -598,6 +795,84 @@ final class RuleEngineServiceTest extends TestCase {
 		$this->service->evaluate('foreign-rule-set', []);
 
 	}//end testOutOfScopeRuleSetResolvesNotFound()
+
+	/**
+	 * Answer rule sets to a search, recording each search's RBAC and organisation flags.
+	 *
+	 * @param array<int,array<string,mixed>> $ruleSets The rule sets stored.
+	 *
+	 * @return \ArrayObject<int,array{0:bool,1:bool}> The flags of every search, in order.
+	 */
+	private function storedRuleSets(array $ruleSets): \ArrayObject {
+		$flags = new \ArrayObject();
+		$this->objectService->method('searchObjects')->willReturnCallback(
+			function (array $query = [], bool $_rbac = true, bool $_multitenancy = true) use ($ruleSets, $flags): array {
+				$flags->append([$_rbac, $_multitenancy]);
+				if ($this->schemaSlugOf(query: $query) !== 'rule-set') {
+					return [];
+				}
+
+				return array_values(array_filter($ruleSets, static fn (array $row): bool => $row['slug'] === ($query['slug'] ?? null)));
+			}
+		);
+
+		return $flags;
+	}//end storedRuleSets()
+
+	/**
+	 * rules-evaluation-for-other-apps D1: an app listed in callableBy gets the active rule set, read as the system.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/rules-evaluation-for-other-apps/specs/rules-evaluation-for-other-apps/spec.md#requirement-another-app-evaluates-a-rule-set-through-a-typed-command-req-bqrx-002
+	 */
+	public function testAListedAppGetsTheActiveRuleSet(): void {
+		$parking = ['slug' => 'parkeren-soort-vergunning', 'status' => 'active', 'version' => '2', 'callableBy' => ['portaliq', 'pipelinq']];
+		$flags = $this->storedRuleSets(ruleSets: [$parking, ['slug' => 'parkeren-soort-vergunning', 'status' => 'draft', 'callableBy' => ['portaliq']]]);
+
+		$this->assertSame(['status' => 'ok', 'ruleSet' => $parking], $this->service->resolveForApp(app: 'portaliq', slug: 'parkeren-soort-vergunning'));
+		$this->assertSame([[false, false]], $flags->getArrayCopy(), 'the one read outside a person\'s scope, and a read only');
+		$this->objectService->expects($this->never())->method('saveObject');
+	}//end testAListedAppGetsTheActiveRuleSet()
+
+	/**
+	 * An app that is not listed, an empty app id, or a rule set without callableBy is not allowed.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/rules-evaluation-for-other-apps/specs/rules-evaluation-for-other-apps/spec.md#requirement-a-rule-set-names-the-apps-that-may-call-it-req-bqrx-001
+	 */
+	public function testAnAppThatIsNotListedIsNotAllowed(): void {
+		$this->storedRuleSets(ruleSets: [
+			['slug' => 'listed', 'status' => 'active', 'callableBy' => ['portaliq']],
+			['slug' => 'private', 'status' => 'active'],
+			['slug' => 'odd', 'status' => 'active', 'callableBy' => 'portaliq'],
+		]);
+
+		foreach ([['decidiq', 'listed'], ['', 'listed'], ['portaliq', 'private'], ['portaliq', 'odd']] as [$app, $slug]) {
+			$this->assertSame(['status' => 'not-allowed', 'ruleSet' => null], $this->service->resolveForApp(app: $app, slug: $slug), $app . ' on ' . $slug);
+		}
+	}//end testAnAppThatIsNotListedIsNotAllowed()
+
+	/**
+	 * No active rule set, two of them, or no slug: unknown, whoever asks.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/rules-evaluation-for-other-apps/specs/rules-evaluation-for-other-apps/spec.md#requirement-another-app-evaluates-a-rule-set-through-a-typed-command-req-bqrx-002
+	 */
+	public function testAnInactiveOrAmbiguousRuleSetIsUnknown(): void {
+		$this->storedRuleSets(ruleSets: [
+			['slug' => 'concept', 'status' => 'draft', 'callableBy' => ['portaliq']],
+			['slug' => 'archived', 'status' => 'archived', 'callableBy' => ['portaliq']],
+			['slug' => 'twice', 'status' => 'active', 'callableBy' => ['portaliq']],
+			['slug' => 'twice', 'status' => 'active', 'callableBy' => ['portaliq']],
+		]);
+
+		foreach (['concept', 'archived', 'twice', 'missing', ' '] as $slug) {
+			$this->assertSame(['status' => 'unknown-rule-set', 'ruleSet' => null], $this->service->resolveForApp(app: 'portaliq', slug: $slug), $slug);
+		}
+	}//end testAnInactiveOrAmbiguousRuleSetIsUnknown()
 
 	/**
 	 * REQ-BRE-007: a rule set held by another organisation is not found.
@@ -681,7 +956,6 @@ final class RuleEngineServiceTest extends TestCase {
 		);
 
 		return $mapper;
-
 	}//end registerMapper()
 
 	/**
@@ -713,7 +987,6 @@ final class RuleEngineServiceTest extends TestCase {
 		);
 
 		return $mapper;
-
 	}//end schemaMapper()
 
 	/**
@@ -776,7 +1049,6 @@ final class RuleEngineServiceTest extends TestCase {
 		}
 
 		return $slug;
-
 	}//end schemaSlugOf()
 
 	/**
@@ -789,15 +1061,17 @@ final class RuleEngineServiceTest extends TestCase {
 	private function serviceWith(RuleSetCacheManager $cacheManager): RuleEngineService {
 		$evaluator = new ExpressionEvaluator();
 		return new RuleEngineService(
-			$this->objectService,
-			new DecisionTableEvaluator($evaluator, $this->sharedEvaluator()),
-			new ConditionActionExecutor($evaluator),
-			$cacheManager,
-			$this->userSession,
-			$this->createMock(LoggerInterface::class),
-			$this->actionDispatcher,
-			$this->reader,
-			$this->tables,
+			objectService: $this->objectService,
+			evaluators: new RuleEvaluators(
+				decisionEvaluator: new DecisionTableEvaluator($evaluator, $this->sharedEvaluator()),
+				conditionExecutor: new ConditionActionExecutor($evaluator),
+				actionDispatcher: $this->actionDispatcher,
+				cacheManager: $cacheManager
+			),
+			userSession: $this->userSession,
+			logger: $this->createMock(LoggerInterface::class),
+			reader: $this->reader,
+			tables: $this->tables,
 		);
 
 	}//end serviceWith()

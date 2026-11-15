@@ -135,6 +135,67 @@ const INBOX_SCOPES = ['pooled', 'assigned']
  */
 const DUE_SOON_DAYS = 2
 
+/**
+ * The rows of one scope's answer: a bare list or a `results` envelope.
+ *
+ * @param {Array<object>|object|null} data - the response body.
+ * @return {Array<object>}
+ */
+function pageRows(data) {
+	return Array.isArray(data) ? data : (data?.results ?? [])
+}
+
+/**
+ * Merge the scope answers into one list. A claimed task can surface in more
+ * than one scope: show it once.
+ *
+ * @param {Array<{data: object}>} pages - one axios response per scope.
+ * @return {Array<object>} the task rows, in arrival order.
+ */
+function uniqueRows(pages) {
+	const seen = new Set()
+	const rows = []
+	for (const { data } of pages) {
+		for (const row of pageRows(data)) {
+			const key = row.uuid ?? row.id
+			if (!seen.has(key)) {
+				seen.add(key)
+				rows.push(row)
+			}
+		}
+	}
+	return rows
+}
+
+/**
+ * Order two deadlines: by time when both are set, the dated one first when
+ * only one is; 0 when neither is (and NaN for an unreadable pair).
+ *
+ * @param {?string} da - a deadline.
+ * @param {?string} db - another deadline.
+ * @return {number}
+ */
+function compareDeadlines(da, db) {
+	if (!da || !db) {
+		return compareMissingDeadlines(da, db)
+	}
+	return new Date(da) - new Date(db)
+}
+
+/**
+ * Order two deadlines of which at least one is missing.
+ *
+ * @param {?string} da - a deadline.
+ * @param {?string} db - another deadline.
+ * @return {number} -1 when only `da` is set, 1 when only `db` is, else 0.
+ */
+function compareMissingDeadlines(da, db) {
+	if (da) {
+		return -1
+	}
+	return db ? 1 : 0
+}
+
 export default {
 	name: 'MyApprovalsWidget',
 	components: { NcButton, NcNoteCard },
@@ -154,7 +215,7 @@ export default {
 		 * each scope to the viewer's user and groups, so no client filter.
 		 *
 		 * @return {Array}
-		 * @spec openspec/changes/automation-approval-steps/tasks.md#4.1
+		 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#4.1
 		 */
 		pendingSteps() {
 			return this.steps
@@ -173,7 +234,7 @@ export default {
 		 *
 		 * @param {object} step - the task row.
 		 * @return {string|null} ISO-8601 instant, or null.
-		 * @spec openspec/changes/automation-approval-steps/tasks.md#4.1
+		 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#4.1
 		 */
 		deadlineOf(step) {
 			return step.dueAt || step.expiresAt || null
@@ -184,7 +245,7 @@ export default {
 		 *
 		 * @param {object} step - the task row.
 		 * @return {string} 'overdue', 'soon' or ''.
-		 * @spec openspec/changes/automation-approval-steps/tasks.md#4.1
+		 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#4.1
 		 */
 		deadlineFlag(step) {
 			if (step.overdue === true) {
@@ -204,7 +265,7 @@ export default {
 		 *
 		 * @param {string} iso - ISO-8601 instant.
 		 * @return {string}
-		 * @spec openspec/changes/automation-approval-steps/tasks.md#4.1
+		 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#4.1
 		 */
 		formatDeadline(iso) {
 			const date = new Date(iso)
@@ -222,7 +283,7 @@ export default {
 		 *
 		 * @param {object} step - the task row.
 		 * @return {string}
-		 * @spec openspec/changes/automation-approval-steps/tasks.md#4.1
+		 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#4.1
 		 */
 		candidateLabel(step) {
 			const groups = Array.isArray(step.candidateGroups)
@@ -238,51 +299,14 @@ export default {
 		 * Load pending approval steps directly from OpenRegister's REST API.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/automation-approval-steps/tasks.md#4.1
+		 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#4.1
 		 */
 		async load() {
 			this.loading = true
 			this.error = false
 			try {
-				// openregister #3302 retired /api/approval-steps; an approval is an
-				// ordered task sequence now, and its open positions are tasks.
-				const url = generateUrl('/apps/openregister/api/flow-tasks')
-				const pages = await Promise.all(
-					INBOX_SCOPES.map((scope) =>
-						axios.get(url, {
-							params: { scope, isTerminal: 'false', limit: 50 },
-						}),
-					),
-				)
-				// A claimed task can surface in more than one scope: show it once.
-				const seen = new Set()
-				const rows = []
-				for (const { data } of pages) {
-					const page = Array.isArray(data) ? data : (data?.results ?? [])
-					for (const row of page) {
-						const key = row.uuid ?? row.id
-						if (!seen.has(key)) {
-							seen.add(key)
-							rows.push(row)
-						}
-					}
-				}
-				// Each scope comes back sorted by deadline; keep that order
-				// across the merge, with tasks that have no deadline last.
-				this.steps = rows
-					.map((row, index) => ({ row, index }))
-					.sort((a, b) => {
-						const da = this.deadlineOf(a.row)
-						const db = this.deadlineOf(b.row)
-						if (da && db) {
-							return new Date(da) - new Date(db) || a.index - b.index
-						}
-						if (da || db) {
-							return da ? -1 : 1
-						}
-						return a.index - b.index
-					})
-					.map(({ row }) => row)
+				const pages = await this.readInboxPages()
+				this.steps = this.byDeadline(uniqueRows(pages))
 			} catch (err) {
 				this.error = true
 				this.steps = []
@@ -292,13 +316,59 @@ export default {
 		},
 
 		/**
+		 * Read the open tasks of every inbox scope.
+		 *
+		 * @return {Promise<Array<object>>} one axios response per scope.
+		 */
+		readInboxPages() {
+			// openregister #3302 retired /api/approval-steps; an approval is an
+			// ordered task sequence now, and its open positions are tasks.
+			const url = generateUrl('/apps/openregister/api/flow-tasks')
+			return Promise.all(
+				INBOX_SCOPES.map((scope) =>
+					axios.get(url, {
+						params: { scope, isTerminal: 'false', limit: 50 },
+					}),
+				),
+			)
+		},
+
+		/**
+		 * Each scope comes back sorted by deadline; keep that order across the
+		 * merge, with tasks that have no deadline last.
+		 *
+		 * @param {Array<object>} rows - the merged task rows, in arrival order.
+		 * @return {Array<object>}
+		 */
+		byDeadline(rows) {
+			return rows
+				.map((row, index) => ({ row, index }))
+				.sort((a, b) => this.compareByDeadline(a, b))
+				.map(({ row }) => row)
+		},
+
+		/**
+		 * Earlier deadline first; equal or unreadable deadlines, and two
+		 * undated tasks, keep their arrival order.
+		 *
+		 * @param {{row: object, index: number}} a - a task and its position.
+		 * @param {{row: object, index: number}} b - another task and its position.
+		 * @return {number}
+		 */
+		compareByDeadline(a, b) {
+			const da = this.deadlineOf(a.row)
+			const db = this.deadlineOf(b.row)
+			return compareDeadlines(da, db) || a.index - b.index
+		},
+
+		/**
 		 * Approve or reject a step by calling OpenRegister's endpoint DIRECTLY
 		 * — no Buildiq controller mediates the call (task 4.2).
 		 *
 		 * @param {object} step - the approval step row.
 		 * @param {string} action - 'approve' or 'reject'.
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/automation-approval-steps/tasks.md#4.2
+		 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#4.2
 		 */
 		async decide(step, action) {
 			this.decideError = ''
@@ -339,7 +409,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../assets/editor-controls.scss' as c;
+
 .my-approvals-widget {
 	padding: 12px;
 	display: flex;
@@ -361,12 +433,7 @@ export default {
 }
 
 .my-approvals-widget__list {
-	list-style: none;
-	margin: 0;
-	padding: 0;
-	display: flex;
-	flex-direction: column;
-	gap: 8px;
+	@include c.plain-list(8px);
 }
 
 .my-approvals-widget__row {

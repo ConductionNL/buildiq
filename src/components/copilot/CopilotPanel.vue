@@ -137,7 +137,7 @@
 <script>
 import { NcButton } from '@nextcloud/vue'
 import CopilotProposal from './CopilotProposal.vue'
-import { useCopilot } from '../../composables/useCopilot.js'
+import { uniqueValidatorMessages, useCopilot } from '../../composables/useCopilot.js'
 
 export default {
 	name: 'CopilotPanel',
@@ -227,7 +227,7 @@ export default {
 		 * The copilot state machine's current state.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		state() {
 			return this.copilot.state.value
@@ -238,7 +238,7 @@ export default {
 		 * canonical manifest v2 validator.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		canApprove() {
 			return this.copilot.canApprove.value
@@ -251,18 +251,10 @@ export default {
 		 * leaving the reader to guess at their own wording.
 		 *
 		 * @return {Array<string>}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		validationErrors() {
-			const seen = new Set()
-			for (const errors of this.copilot.manifestErrors.value.values()) {
-				for (const line of errors || []) {
-					if (typeof line === 'string' && line.length > 0) {
-						seen.add(line)
-					}
-				}
-			}
-			return [...seen]
+			return uniqueValidatorMessages(this.copilot.manifestErrors.value)
 		},
 
 		/**
@@ -273,7 +265,7 @@ export default {
 		 * exists at a time).
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		inputDisabled() {
 			return (
@@ -291,33 +283,19 @@ export default {
 		 *
 		 * @param {object} message - a message list entry.
 		 * @return {boolean}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		isPendingProposal(message) {
 			return message.id === this.pendingMessageId
 		},
 
 		/**
-		 * Send the draft as a new user turn and request a plan.
+		 * Add the assistant's answer to the last request: the plan to review, or the error.
 		 *
-		 * @return {Promise<void>}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @return {void}
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
-		async onSend() {
-			const text = this.draft.trim()
-			if (!text || this.inputDisabled) {
-				return
-			}
-			this.messages.push({ id: this.nextMessageId++, role: 'user', text })
-			this.draft = ''
-
-			await this.copilot.generatePlan(
-				text,
-				this.appSlug,
-				this.agentId || undefined,
-				this.versionSlug || undefined,
-			)
-
+		appendPlanOutcome() {
 			const assistantId = this.nextMessageId++
 			if (this.copilot.state.value === 'review') {
 				this.pendingMessageId = assistantId
@@ -337,11 +315,35 @@ export default {
 		},
 
 		/**
+		 * Send the draft as a new user turn and request a plan.
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/specs/ai-copilot/spec.md
+		 */
+		async onSend() {
+			const text = this.draft.trim()
+			if (!text || this.inputDisabled) {
+				return
+			}
+			this.messages.push({ id: this.nextMessageId++, role: 'user', text })
+			this.draft = ''
+
+			await this.copilot.generatePlan(
+				text,
+				this.appSlug,
+				this.agentId || undefined,
+				this.versionSlug || undefined,
+			)
+
+			this.appendPlanOutcome()
+		},
+
+		/**
 		 * Approve the pending proposal — the ONLY path that sends an execute request.
 		 *
 		 * @param {object} message - the assistant message carrying the plan.
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		async onApprove(message) {
 			if (!this.isPendingProposal(message)) {
@@ -360,7 +362,7 @@ export default {
 		 *
 		 * @param {object} message - the assistant message carrying the plan.
 		 * @return {void}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		onDiscard(message) {
 			if (!this.isPendingProposal(message)) {

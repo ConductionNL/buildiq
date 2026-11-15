@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -181,6 +182,7 @@ class ExportAppSchemaReader {
 	 * @return array<int,array{key: string, data: array<string,mixed>}> The records, in a stable order.
 	 *
 	 * @spec openspec/specs/openbuild-exporter/spec.md#requirement-optional-seed-data-inclusion
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	public function collectRecords(int $registerId, int $schemaId, array $renames): array {
 		try {
@@ -199,7 +201,7 @@ class ExportAppSchemaReader {
 
 		$records = [];
 		foreach ((array)$results as $result) {
-			$row = $this->normalise(object: $result);
+			$row = ObjectRecord::serialised(object: $result);
 			if ($row === []) {
 				continue;
 			}
@@ -272,26 +274,4 @@ class ExportAppSchemaReader {
 
 		return (string)($object['id'] ?? ($object['uuid'] ?? ''));
 	}//end uuidOf()
-
-	/**
-	 * Coerce an OpenRegister result to an array.
-	 *
-	 * @param mixed $object The result.
-	 *
-	 * @return array<string,mixed> The array, empty when it is neither.
-	 */
-	private function normalise(mixed $object): array {
-		if (is_array($object) === true) {
-			return $object;
-		}
-
-		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-			$serialised = $object->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		return [];
-	}//end normalise()
 }//end class
