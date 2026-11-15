@@ -461,6 +461,73 @@ class ApplicationCreationServiceTest extends TestCase {
 	}//end createApplicationReturnUuidOnSinglePresetSuccess()
 
 	// -------------------------------------------------------------------------
+	// Stubs
+	// -------------------------------------------------------------------------
+
+	/**
+	 * Wire saveObject to return deterministic UUIDs for the given chain.
+	 *
+	 * The first call to saveObject returns the Application UUID; subsequent
+	 * calls return version UUIDs in order; final calls for wiring + setting
+	 * productionVersion return the last saved version.
+	 *
+	 * @param string $appUuid UUID to assign to the Application
+	 * @param array<string,string> $versionUuids Map of versionSlug → UUID
+	 *
+	 * @return void
+	 */
+	private function stubSuccessfulCreation(string $appUuid, array $versionUuids): void {
+		// Build the mock register. Register::getId() is now an explicit stub method
+		// (declared in tests/stubs/openregister-stubs.php) so use onlyMethods().
+		$mockRegister = $this->getMockBuilder(Register::class)
+			->disableOriginalConstructor()
+			->onlyMethods(['getSchemas', 'setSchemas', 'getId'])
+			->getMock();
+		$mockRegister->method('getSchemas')->willReturn([]);
+		$mockRegister->method('getId')->willReturn(1);
+
+		$this->registerMapper->method('find')->willReturn($mockRegister);
+		$this->registerMapper->method('createFromArray')->willReturn($mockRegister);
+		$this->registerMapper->method('update')->willReturn($mockRegister);
+
+		// Build mock schema. Schema::getId() is now an explicit stub method
+		// (declared in tests/stubs/openregister-stubs.php) so use onlyMethods().
+		$mockSchema = $this->getMockBuilder(Schema::class)
+			->disableOriginalConstructor()
+			->onlyMethods(['getId'])
+			->getMock();
+		$mockSchema->method('getId')->willReturn(1);
+		$this->schemaMapper->method('find')->willReturn($mockSchema);
+		$this->schemaMapper->method('createFromArray')->willReturn($mockSchema);
+
+		// Build ObjectEntity mocks for saveObject return values.
+		// saveObject() must return an ObjectEntity; normaliseObject() calls jsonSerialize()
+		// on the result to extract the UUID, so each mock's jsonSerialize() returns the payload.
+		$makeEntity = function (array $payload): \OCA\OpenRegister\Db\ObjectEntity {
+			$entity = $this->createMock(\OCA\OpenRegister\Db\ObjectEntity::class);
+			$entity->method('jsonSerialize')->willReturn($payload);
+			return $entity;
+		};
+
+		$appEntity = $makeEntity(['id' => $appUuid, 'uuid' => $appUuid]);
+		$versionEntities = [];
+		foreach ($versionUuids as $slug => $uuid) {
+			$versionEntities[] = $makeEntity(['id' => $uuid, 'uuid' => $uuid, 'slug' => $slug]);
+		}
+
+		// Map saveObject call sequence: app, then versions (×2 for create+wiring), then productionVersion update.
+		$callQueue = [$appEntity, ...$versionEntities, ...array_fill(0, count($versionUuids), $appEntity), $appEntity];
+
+		$callIndex = 0;
+		$this->objectService->method('saveObject')
+			->willReturnCallback(function () use ($callQueue, &$callIndex) {
+				$result = $callQueue[$callIndex] ?? $callQueue[count($callQueue) - 1];
+				$callIndex++;
+				return $result;
+			});
+	}//end stubSuccessfulCreation()
+
+	// -------------------------------------------------------------------------
 	// Start from a database (REQ-BQDB-003)
 	// -------------------------------------------------------------------------
 
@@ -657,71 +724,4 @@ class ApplicationCreationServiceTest extends TestCase {
 			$messages
 		);
 	}//end createApplicationRefusesAMalformedOrUnreadableDatabaseBlock()
-
-	// -------------------------------------------------------------------------
-	// Stubs
-	// -------------------------------------------------------------------------
-
-	/**
-	 * Wire saveObject to return deterministic UUIDs for the given chain.
-	 *
-	 * The first call to saveObject returns the Application UUID; subsequent
-	 * calls return version UUIDs in order; final calls for wiring + setting
-	 * productionVersion return the last saved version.
-	 *
-	 * @param string $appUuid UUID to assign to the Application
-	 * @param array<string,string> $versionUuids Map of versionSlug → UUID
-	 *
-	 * @return void
-	 */
-	private function stubSuccessfulCreation(string $appUuid, array $versionUuids): void {
-		// Build the mock register. Register::getId() is now an explicit stub method
-		// (declared in tests/stubs/openregister-stubs.php) so use onlyMethods().
-		$mockRegister = $this->getMockBuilder(Register::class)
-			->disableOriginalConstructor()
-			->onlyMethods(['getSchemas', 'setSchemas', 'getId'])
-			->getMock();
-		$mockRegister->method('getSchemas')->willReturn([]);
-		$mockRegister->method('getId')->willReturn(1);
-
-		$this->registerMapper->method('find')->willReturn($mockRegister);
-		$this->registerMapper->method('createFromArray')->willReturn($mockRegister);
-		$this->registerMapper->method('update')->willReturn($mockRegister);
-
-		// Build mock schema. Schema::getId() is now an explicit stub method
-		// (declared in tests/stubs/openregister-stubs.php) so use onlyMethods().
-		$mockSchema = $this->getMockBuilder(Schema::class)
-			->disableOriginalConstructor()
-			->onlyMethods(['getId'])
-			->getMock();
-		$mockSchema->method('getId')->willReturn(1);
-		$this->schemaMapper->method('find')->willReturn($mockSchema);
-		$this->schemaMapper->method('createFromArray')->willReturn($mockSchema);
-
-		// Build ObjectEntity mocks for saveObject return values.
-		// saveObject() must return an ObjectEntity; normaliseObject() calls jsonSerialize()
-		// on the result to extract the UUID, so each mock's jsonSerialize() returns the payload.
-		$makeEntity = function (array $payload): \OCA\OpenRegister\Db\ObjectEntity {
-			$entity = $this->createMock(\OCA\OpenRegister\Db\ObjectEntity::class);
-			$entity->method('jsonSerialize')->willReturn($payload);
-			return $entity;
-		};
-
-		$appEntity = $makeEntity(['id' => $appUuid, 'uuid' => $appUuid]);
-		$versionEntities = [];
-		foreach ($versionUuids as $slug => $uuid) {
-			$versionEntities[] = $makeEntity(['id' => $uuid, 'uuid' => $uuid, 'slug' => $slug]);
-		}
-
-		// Map saveObject call sequence: app, then versions (×2 for create+wiring), then productionVersion update.
-		$callQueue = [$appEntity, ...$versionEntities, ...array_fill(0, count($versionUuids), $appEntity), $appEntity];
-
-		$callIndex = 0;
-		$this->objectService->method('saveObject')
-			->willReturnCallback(function () use ($callQueue, &$callIndex) {
-				$result = $callQueue[$callIndex] ?? $callQueue[count($callQueue) - 1];
-				$callIndex++;
-				return $result;
-			});
-	}//end stubSuccessfulCreation()
 }//end class

@@ -225,10 +225,10 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 		$database = $this->validatePayload(payload: $payload);
 		$plan = [
 			'slug' => (string)($payload['slug'] ?? ''),
+			'database' => $database,
 			'name' => (string)($payload['name'] ?? ''),
 			'description' => (string)($payload['description'] ?? ''),
 			'versions' => $this->resolveVersionChain(payload: $payload),
-			'database' => $database,
 		];
 
 		// ---- State tracker for rollback -------------------------------------
@@ -289,6 +289,7 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 			'description' => $plan['description'],
 			'permissions' => $permissions,
 		];
+
 		if ($plan['database'] !== null) {
 			// REQ-BQDB-003: the database is bound as a data register; whether it
 			// takes writes is read from OpenRegister each time, never stored here.
