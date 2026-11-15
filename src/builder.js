@@ -21,8 +21,10 @@ import {
 	defaultPageTypes,
 	registerBuiltinDashboardWidgets,
 	registerIcons,
+	registerOfflineWorker,
 	registerTranslations,
 } from '@conduction/nextcloud-vue'
+import { getCurrentUser } from '@nextcloud/auth'
 import axios from '@nextcloud/axios'
 import { loadState } from '@nextcloud/initial-state'
 import {
@@ -50,6 +52,7 @@ import {
 import { startHealthReporting } from './services/healthReporting.js'
 import { normalizeManifestPages } from './services/manifestPageDefaults.js'
 import { normalizeManifestRouting } from './services/manifestRouting.js'
+import { startOffline } from './services/offlineRuntime.js'
 import { brandTopBar } from './services/topBarBrand.js'
 import { keepVersionQuery } from './services/versionQuery.js'
 import { virtualAppSupportDialog } from './utils/virtualAppSupportDialog.js'
@@ -408,6 +411,55 @@ function navSlots(manifest, router) {
  * @spec openspec/changes/openbuild-connector-widget-runtime/specs/connector-widget-runtime/spec.md#requirement-req-cwr-001-single-runtime-registry-seam-for-every-virtual-app-host
  * @return {Promise<void>}
  */
+/**
+ * Start offline for this app: register its worker and take its records
+ * along, or clear them when the app opened without a session.
+ *
+ * The offline core is loaded only when the app declares offline, so an app
+ * without it never loads the cache library.
+ *
+ * @param {object} manifest The app's manifest.
+ * @return {Promise<void>}
+ *
+ * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-app-users-work-offline-and-sync-later-req-bqom-004
+ */
+async function bootOffline(manifest) {
+	const allowed = loadState('buildiq', 'offlineAppsAllowed', false) === true
+	if (!allowed || !manifest || !manifest.offline) {
+		return
+	}
+	try {
+		const offline = await import('@conduction/nextcloud-vue/src/integrations/offline/index.js')
+		await startOffline({
+			slug,
+			manifest,
+			allowed,
+			signedIn: getCurrentUser() !== null,
+			register: await fetchAppRegister(slug, versionSlug),
+			generateUrl,
+			registerOfflineWorker,
+			storePlanning: offline.storePlanning,
+			fetchObjects: async ({ register, schema, query }) => {
+				const url = generateUrl(`/apps/openregister/api/objects/${encodeURIComponent(register)}/${encodeURIComponent(schema)}`)
+				const { data } = await axios.get(url, { params: query })
+				return (data && data.results) || []
+			},
+			clearCollection: async (collection) => {
+				const db = await offline.openDb()
+				await db.objectCache.where('collection').equals(collection).delete()
+				await db.meta.filter((row) => row.collection === collection).delete()
+			},
+		})
+	} catch (error) {
+		// Offline never stops the app from opening online.
+		// eslint-disable-next-line no-console
+		console.warn('[buildiq:builder] offline did not start', error)
+	}
+}
+
+/**
+ *
+ */
 async function boot() {
 	// Flip the top-bar off the host "Buildiq" identity immediately using the
 	// slug, so there's no visible "Buildiq" flash while the manifest (which
@@ -439,6 +491,11 @@ async function boot() {
 		useRegisterPicker({ appSlug: slug }).fetchDataSources(
 			registerScope(await fetchAppRegister(slug, versionSlug), manifest),
 		)
+
+	// Offline (REQ-BQOM-002..004): nothing unless the instance allows it and
+	// the app declares an `offline` block. Not awaited: the app opens while
+	// the take-along downloads.
+	bootOffline(manifest)
 
 	const router = createRouter({
 		history: createWebHistory(generateUrl(`/apps/buildiq/builder/${slug}`)),

@@ -235,8 +235,8 @@ class DashboardControllerTest extends TestCase {
 		$routes = require __DIR__ . '/../../../appinfo/routes.php';
 		$run = array_values(array_filter($routes['routes'], static fn (array $route): bool => str_starts_with($route['url'], '/run/')));
 
-		$this->assertSame(['/run/{slug}/', '/run/{slug}/manifest.webmanifest'], array_column($run, 'url'));
-		foreach ([[\OCA\Buildiq\Controller\DashboardController::class, 'run'], [\OCA\Buildiq\Controller\ApplicationsController::class, 'webManifest']] as [$class, $method]) {
+		$this->assertSame(['/run/{slug}/', '/run/{slug}/manifest.webmanifest', '/run/{slug}/offline-worker.js'], array_column($run, 'url'));
+		foreach ([[\OCA\Buildiq\Controller\DashboardController::class, 'run'], [\OCA\Buildiq\Controller\ApplicationsController::class, 'webManifest'], [\OCA\Buildiq\Controller\ApplicationsController::class, 'offlineWorker']] as [$class, $method]) {
 			$this->assertSame([], (new \ReflectionMethod($class, $method))->getAttributes(\OCP\AppFramework\Http\Attribute\PublicPage::class));
 		}
 	}//end testTheRunRoutesAreNotPublic()

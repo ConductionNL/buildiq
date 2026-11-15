@@ -59,7 +59,9 @@ use OCA\Buildiq\Kernel\Contracts\ApplicationVersionServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\ManifestResolverServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\PermissionResolverInterface;
 use OCA\Buildiq\Kernel\Contracts\TemplateInstallSeamInterface;
+use OCA\Buildiq\Kernel\Contracts\SettingsServiceInterface;
 use OCA\Buildiq\Service\Icon\SvgRasteriser;
+use OCA\Buildiq\Service\Offline\OfflineWorkerScript;
 use OCA\Buildiq\Service\CallerContext;
 use OCA\Buildiq\Service\HelperFactory;
 use OCA\Buildiq\Kernel\Values\LocalApplicationRef;
@@ -79,6 +81,7 @@ use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\UserRateLimit;
+use OCP\AppFramework\Http\DataDisplayResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -162,6 +165,8 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 	 * @param ManifestResolverServiceInterface $manifestResolver Version-aware manifest resolver (REQ-OBVR-002)
 	 * @param AppChannelApplierInterface $channelApplier Applies the v2 repo channels (apply-v2-channels)
 	 * @param SvgRasteriser $rasteriser Whether a PNG touch icon can be offered (pages-installable-offline-and-mobile T02)
+	 * @param SettingsServiceInterface|null $settings Whether the instance lets apps work offline (T05)
+	 * @param OfflineWorkerScript $workerScript The built offline worker (T05)
 	 *
 	 * @return void
 	 */
@@ -173,6 +178,8 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 		private readonly ManifestResolverServiceInterface $manifestResolver,
 		private readonly AppChannelApplierInterface $channelApplier,
 		private readonly SvgRasteriser $rasteriser=new SvgRasteriser(),
+		private readonly ?SettingsServiceInterface $settings=null,
+		private readonly OfflineWorkerScript $workerScript=new OfflineWorkerScript(),
 	) {
 		$this->objectService = $store->objectService;
 		$this->registerMapper = $store->registerMapper;
@@ -337,6 +344,60 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 
 		return $response;
 	}//end webManifest()
+
+	/**
+	 * Serve the app's offline worker, scoped to its run path.
+	 *
+	 * Answered only when the instance lets apps work offline, the caller may
+	 * open the app, and the app's production manifest declares an `offline`
+	 * block; every other case is 404, the same as an app that does not exist.
+	 * `Service-Worker-Allowed: ./` caps the scope at `/run/{slug}/`: this app's
+	 * runtime and nothing else (design D1).
+	 *
+	 * @param string $slug The virtual app slug.
+	 *
+	 * @return DataDisplayResponse|JSONResponse The script, or 404.
+	 *
+	 * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-a-maker-declares-what-goes-offline-req-bqom-003
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function offlineWorker(string $slug): DataDisplayResponse|JSONResponse {
+		$notFound = new JSONResponse(['error' => 'not_found'], Http::STATUS_NOT_FOUND);
+		$script = null;
+		try {
+			if ($this->settings?->offlineAppsAllowed() !== true) {
+				return $notFound;
+			}
+
+			$resolved = $this->resolvePermittedApplication(slug: $slug);
+			if ($resolved instanceof JSONResponse) {
+				return $notFound;
+			}
+
+			$manifest = $this->manifestResolver->resolve(
+				appSlug: $slug,
+				versionSlug: null,
+				caller: $this->userSession->getUser()
+			);
+			if (is_array($manifest) === true && is_array($manifest['offline'] ?? null) === true) {
+				$script = $this->workerScript->script();
+			}
+		} catch (Throwable $e) {
+			$this->logger->error('Buildiq: offline worker failed for slug ' . $slug . ': ' . $e->getMessage(), ['exception' => $e]);
+			return $notFound;
+		}//end try
+
+		if ($script === null) {
+			return $notFound;
+		}
+
+		$response = new DataDisplayResponse($script, Http::STATUS_OK, ['Content-Type' => 'text/javascript; charset=utf-8']);
+		$response->addHeader('Service-Worker-Allowed', './');
+		$response->addHeader('Cache-Control', 'no-cache');
+
+		return $response;
+	}//end offlineWorker()
 
 	/**
 	 * The `?_version=` query parameter, or null when it is absent or empty.
