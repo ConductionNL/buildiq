@@ -7,14 +7,17 @@ import { mount } from '@vue/test-utils'
  *
  * Spec: agent-workspace ("Agent entity declares a named, tool-scoped configuration").
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@nextcloud/router', async (importOriginal) => ({
 	...(await importOriginal()),
 	generateUrl: (p) => p,
 }))
 vi.mock('@nextcloud/axios', () => ({
-	default: { get: vi.fn(), post: vi.fn(), put: vi.fn() },
+	default: { get: vi.fn(), post: vi.fn(), put: vi.fn(), delete: vi.fn() },
+}))
+vi.mock('@nextcloud/auth', () => ({
+	getCurrentUser: () => ({ uid: 'alice' }),
 }))
 
 import axios from '@nextcloud/axios'
@@ -277,5 +280,149 @@ describe('AgentEditDialog', () => {
 			expect(wrapper.emitted('saved')).toHaveLength(1)
 			expect(wrapper.vm.saving).toBe(false)
 		})
+	})
+})
+
+describe('AgentEditDialog knowledge (REQ-BQAG-001)', () => {
+	const keyOnly = globalThis.t
+	afterEach(() => {
+		globalThis.t = keyOnly
+	})
+
+	beforeEach(() => {
+		// The refusals are built in script code: fill in their placeholders.
+		globalThis.t = (_app, key, vars = {}) => key.replace(/\{(\w+)\}/g, (match, name) => (name in vars ? String(vars[name]) : match))
+		axios.get.mockReset()
+		axios.post.mockReset()
+		axios.put.mockReset()
+		axios.delete.mockReset()
+		axios.post.mockResolvedValue({ data: { id: 'new-agent-uuid' } })
+		axios.put.mockResolvedValue({ data: {} })
+		axios.delete.mockResolvedValue({ data: {} })
+	})
+
+	/**
+	 * A picked file as the file input's change event carries it.
+	 *
+	 * @param {string} name - the file name.
+	 * @param {string} text - the file text.
+	 * @return {object}
+	 */
+	function pick(name, text) {
+		const target = { files: [{ name, text: () => Promise.resolve(text) }], value: name }
+		return { target }
+	}
+
+	const existing = {
+		id: 'agent-1',
+		name: 'Formulierbouwer',
+		enabledTools: ['buildiq.upsertPage'],
+		maxActionsPerRun: 10,
+		knowledge: [{ fileName: 'old.md', addedBy: 'bob', addedAt: '2026-11-01T10:00:00Z', characters: 38000 }],
+	}
+
+	it('adds a Markdown file and uploads it to the agent object on save', async () => {
+		const wrapper = factory({ ...existing, knowledge: [] })
+		await openDialog(wrapper)
+
+		const event = pick('huisstijl-formulieren.md', 'Labels in sentence case.')
+		await wrapper.vm.onKnowledgePick(event)
+		await flush()
+
+		expect(event.target.value).toBe('')
+		expect(wrapper.findAll('[data-testid="agent-knowledge-item"]')).toHaveLength(1)
+		expect(wrapper.text()).toContain('huisstijl-formulieren.md')
+		expect(wrapper.vm.knowledge[0]).toMatchObject({
+			fileName: 'huisstijl-formulieren.md',
+			addedBy: 'alice',
+			characters: 24,
+		})
+
+		await wrapper.find('[data-testid="agent-save-button"]').trigger('click')
+		await flush()
+
+		expect(axios.put.mock.calls[0][1].knowledge.map((k) => k.fileName)).toEqual(['huisstijl-formulieren.md'])
+		expect(axios.post).toHaveBeenCalledWith(
+			'/apps/openregister/api/objects/buildiq/buildAgent/agent-1/files',
+			{ name: 'huisstijl-formulieren.md', content: 'Labels in sentence case.' },
+		)
+		expect(axios.get).not.toHaveBeenCalled()
+		expect(wrapper.emitted('saved')).toBeTruthy()
+	})
+
+	it('uploads to the id a new agent comes back with', async () => {
+		const wrapper = factory(null)
+		await openDialog(wrapper)
+		wrapper.vm.name = 'New agent'
+		wrapper.vm.enabledTools = ['buildiq.upsertPage']
+		await wrapper.vm.onKnowledgePick(pick('notes.txt', 'Hello'))
+
+		await wrapper.find('[data-testid="agent-save-button"]').trigger('click')
+		await flush()
+
+		expect(axios.post).toHaveBeenCalledTimes(2)
+		expect(axios.post.mock.calls[0][0]).toBe('/apps/openregister/api/objects/buildiq/buildAgent')
+		expect(axios.post.mock.calls[1]).toEqual([
+			'/apps/openregister/api/objects/buildiq/buildAgent/new-agent-uuid/files',
+			{ name: 'notes.txt', content: 'Hello' },
+		])
+	})
+
+	it('refuses a file over the budget and names the room left', async () => {
+		const wrapper = factory(existing)
+		await openDialog(wrapper)
+
+		await wrapper.vm.onKnowledgePick(pick('extra.md', 'x'.repeat(5000)))
+		await flush()
+
+		expect(wrapper.vm.knowledge.map((k) => k.fileName)).toEqual(['old.md'])
+		const error = wrapper.find('[data-testid="agent-knowledge-error"]')
+		expect(error.exists()).toBe(true)
+		expect(error.text()).toContain('extra.md has 5,000 characters, but only 2,000 characters of room are left.')
+		expect(wrapper.vm.pendingKnowledge).toEqual({})
+	})
+
+	it('refuses a type other than text or Markdown, and a name already listed', async () => {
+		const wrapper = factory(existing)
+		await openDialog(wrapper)
+
+		await wrapper.vm.onKnowledgePick(pick('handbook.pdf', '%PDF'))
+		expect(wrapper.vm.knowledgeError).toBe('Only text (.txt) and Markdown (.md) files can be added as knowledge.')
+
+		await wrapper.vm.onKnowledgePick(pick('old.md', 'again'))
+		expect(wrapper.vm.knowledgeError).toBe('old.md is already in this agent\'s knowledge.')
+		expect(wrapper.vm.knowledge).toHaveLength(1)
+	})
+
+	it('removes a stored file and detaches it from the agent object on save', async () => {
+		axios.get.mockResolvedValue({ data: { results: [{ id: 7, title: 'old.md' }, { id: 8, title: 'other.md' }] } })
+		const wrapper = factory(existing)
+		await openDialog(wrapper)
+
+		await wrapper.find('[data-testid="agent-knowledge-remove"]').trigger('click')
+		expect(wrapper.vm.knowledge).toEqual([])
+		expect(wrapper.vm.knowledgeRoom).toBe(40000)
+
+		await wrapper.find('[data-testid="agent-save-button"]').trigger('click')
+		await flush()
+
+		expect(axios.put.mock.calls[0][1].knowledge).toEqual([])
+		expect(axios.get).toHaveBeenCalledWith('/apps/openregister/api/objects/buildiq/buildAgent/agent-1/files')
+		expect(axios.delete).toHaveBeenCalledTimes(1)
+		expect(axios.delete).toHaveBeenCalledWith('/apps/openregister/api/objects/buildiq/buildAgent/agent-1/files/7')
+	})
+
+	it('removing a file added in this dialog uploads nothing', async () => {
+		const wrapper = factory({ ...existing, knowledge: [] })
+		await openDialog(wrapper)
+		await wrapper.vm.onKnowledgePick(pick('draft.md', 'draft'))
+		wrapper.vm.removeKnowledge('draft.md')
+
+		await wrapper.find('[data-testid="agent-save-button"]').trigger('click')
+		await flush()
+
+		expect(axios.post).not.toHaveBeenCalled()
+		expect(axios.get).not.toHaveBeenCalled()
+		expect(axios.delete).not.toHaveBeenCalled()
 	})
 })

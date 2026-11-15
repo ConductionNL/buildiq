@@ -191,6 +191,37 @@ class AppOverrideControllerTest extends TestCase {
 	}//end testInScopeSaveIsAllowed()
 
 	/**
+	 * The baseRef note reaches the store JSON-encoded, whether it came as an object or as a JSON string.
+	 *
+	 * @return void
+	 */
+	public function testTheBaseRefIsPassedOnAsJson(): void {
+		$this->userSession->method('getUser')->willReturn($this->mockUser('alice'));
+		$this->appManager->method('isEnabledForUser')->willReturn(true);
+		$this->request->method('getParams')->willReturn(['pages' => [['id' => 'home', 'title' => 'X']]]);
+		$baseRefs = [['version' => '1.2.0', 'hash' => 'abc'], '{"version":"1.1.0"}'];
+		$this->request->method('getParam')->willReturnCallback(
+			static function (string $key) use (&$baseRefs) {
+				return $key === 'baseRef' ? array_shift($baseRefs) : null;
+			}
+		);
+		$this->service->method('validateDeltaShape')->willReturn([]);
+		$this->service->method('wouldBlankApp')->willReturn(false);
+		$received = [];
+		$this->service->expects(self::exactly(2))->method('upsert')->willReturnCallback(
+			static function (string $appId, array $delta, ?string $baseRef, string $updatedBy) use (&$received): array {
+				$received[] = $baseRef;
+				return ['appId' => $appId, 'updatedBy' => $updatedBy];
+			}
+		);
+
+		$this->controller()->save(appId: 'pipelinq');
+		$this->controller()->save(appId: 'pipelinq');
+
+		self::assertSame(['{"version":"1.2.0","hash":"abc"}', '{"version":"1.1.0"}'], $received);
+	}//end testTheBaseRefIsPassedOnAsJson()
+
+	/**
 	 * A malformed (list-shaped) body is rejected 422 and persists nothing.
 	 *
 	 * @return void

@@ -118,12 +118,12 @@ class DashboardControllerTest extends TestCase {
 		$rasteriser->method('available')->willReturn($rasterises);
 
 		return new DashboardController(
-			$this->request,
-			$this->initialState,
-			$this->userSession,
-			$this->groupManager,
-			$this->navigationManager,
-			$rasteriser
+			request: $this->request,
+			initialState: $this->initialState,
+			userSession: $this->userSession,
+			groupManager: $this->groupManager,
+			navigationManager: $this->navigationManager,
+			rasteriser: $rasteriser
 		);
 	}//end dashboard()
 
@@ -319,13 +319,13 @@ class DashboardControllerTest extends TestCase {
 		$settings->method('offlineAppsAllowed')->willReturn(true);
 		$rasteriser = $this->createMock(\OCA\Buildiq\Service\Icon\SvgRasteriser::class);
 		$controller = new DashboardController(
-			$this->request,
-			$this->initialState,
-			$this->userSession,
-			$this->groupManager,
-			$this->navigationManager,
-			$rasteriser,
-			$settings
+			request: $this->request,
+			initialState: $this->initialState,
+			userSession: $this->userSession,
+			groupManager: $this->groupManager,
+			navigationManager: $this->navigationManager,
+			rasteriser: $rasteriser,
+			settings: $settings
 		);
 
 		$controller->page();
@@ -352,13 +352,13 @@ class DashboardControllerTest extends TestCase {
 		$settings = $this->createMock(\OCA\Buildiq\Kernel\Contracts\SettingsServiceInterface::class);
 		$settings->method('offlineAppsAllowed')->willThrowException(new \RuntimeException('config down'));
 		$controller = new DashboardController(
-			$this->request,
-			$this->initialState,
-			$this->userSession,
-			$this->groupManager,
-			$this->navigationManager,
-			$this->createMock(\OCA\Buildiq\Service\Icon\SvgRasteriser::class),
-			$settings
+			request: $this->request,
+			initialState: $this->initialState,
+			userSession: $this->userSession,
+			groupManager: $this->groupManager,
+			navigationManager: $this->navigationManager,
+			rasteriser: $this->createMock(\OCA\Buildiq\Service\Icon\SvgRasteriser::class),
+			settings: $settings
 		);
 		$published['offlineAppsAllowed'] = true;
 		$controller->page();

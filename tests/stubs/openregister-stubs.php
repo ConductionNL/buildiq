@@ -3804,6 +3804,7 @@ namespace OCA\OpenRegister\AppHost\Settings {
 			 * @param int $priority Priority.
 			 * @param mixed $appManager App manager.
 			 * @param mixed $initialState Initial state service.
+			 * @param mixed $appConfig App config (optional in the engine).
 			 */
 			public function __construct(
 				protected readonly string $appId = '',
@@ -3811,6 +3812,7 @@ namespace OCA\OpenRegister\AppHost\Settings {
 				protected readonly int $priority = 10,
 				protected readonly mixed $appManager = null,
 				protected readonly mixed $initialState = null,
+				protected readonly mixed $appConfig = null,
 			) {
 			}
 
