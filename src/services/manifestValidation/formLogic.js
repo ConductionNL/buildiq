@@ -28,6 +28,8 @@
  * @spec openspec/specs/form-editor-logic/spec.md#req-obfel-005
  */
 
+import { deviceFieldProblems } from '../deviceFields.js'
+
 /** The visibleWhen op allow-list (mirrors `$defs/visibleWhen.properties.op.enum`). */
 export const VISIBLE_WHEN_OPS = Object.freeze([
 	'eq',
@@ -509,6 +511,7 @@ function fieldListOf(config) {
 function formPageErrors(config, pathBase) {
 	const fieldList = fieldListOf(config)
 	const declaredKeys = new Set(fieldKeys(fieldList))
+	const mode = config.mode || 'public'
 	return [
 		...validateSteps(config, pathBase, declaredKeys),
 		...fieldList.flatMap((field, fIndex) =>
@@ -516,6 +519,11 @@ function formPageErrors(config, pathBase) {
 				fieldPath: `${pathBase}/fields/${fIndex}`,
 				declaredKeys,
 			}),
+		),
+		...fieldList.flatMap((field, fIndex) =>
+			deviceFieldProblems(field, mode).map(
+				(code) => `${pathBase}/fields/${fIndex}: buildiq.formLogic.error.${code}`,
+			),
 		),
 	]
 }
