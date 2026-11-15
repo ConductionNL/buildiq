@@ -3,6 +3,9 @@
 /**
  * Page Layout Layer Stack
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Which published layouts apply to THIS caller looking at THIS object, and in
  * which order each patches the one beneath it: the base a layer names with
  * `baseRef`, the schema-wide layout, the type layout, the audience override and
@@ -28,15 +31,13 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-004, REQ-OBSO-005)
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\PageLayoutLayerStackInterface;
 use OCP\IGroupManager;
 use OCP\IUserSession;
 
@@ -45,7 +46,7 @@ use OCP\IUserSession;
  *
  * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-005)
  */
-final class PageLayoutLayerStack {
+final class PageLayoutLayerStack implements PageLayoutLayerStackInterface {
 	/**
 	 * Constructor.
 	 *

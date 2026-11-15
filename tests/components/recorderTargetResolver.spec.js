@@ -73,4 +73,43 @@ describe('recorderTargetResolver', () => {
 	it('returns null for a non-element', () => {
 		expect(resolveTargetFromElement(null)).toBeNull()
 	})
+
+	it('skips an empty stable attribute and uses the next one', () => {
+		document.body.innerHTML =
+			'<li data-cn-route="Leads"><button data-walkthrough-id=""><i id="x"></i></button></li>'
+		expect(resolveTargetFromElement(document.getElementById('x'))).toEqual({
+			kind: 'nav-item',
+			ref: 'Leads',
+		})
+	})
+
+	it('answers null for a node without closest()', () => {
+		expect(resolveTargetFromElement({})).toBeNull()
+		expect(resolveTargetFromElement(document.createTextNode('t'))).toBeNull()
+	})
+
+	it('cssPath pins the exact chain: four levels, first class, nth-of-type', () => {
+		document.body.innerHTML =
+			'<main><div><section class="a b"><ul><li></li><li class="  row  x"><em>y</em></li></ul></section></div></main>'
+		const em = document.querySelector('em')
+		expect(cssPath(em)).toBe('section.a > ul > li.row:nth-of-type(2) > em')
+		expect(cssPath(document.querySelector('ul'))).toBe('main > div > section.a > ul')
+		expect(resolveTargetFromElement(em)).toEqual({
+			kind: 'selector',
+			selector: 'section.a > ul > li.row:nth-of-type(2) > em',
+		})
+	})
+
+	it('cssPath stops at the nearest id and escapes ids and classes', () => {
+		document.body.innerHTML =
+			'<div id="a:b"><p class="x.y"><span></span><span></span></p></div>'
+		const span = document.querySelectorAll('span')[1]
+		expect(cssPath(span)).toBe('#a\\:b > p.x\\.y > span:nth-of-type(2)')
+	})
+
+	it('cssPath answers empty for a non-element and handles a detached element', () => {
+		expect(cssPath(null)).toBe('')
+		expect(cssPath(document.createTextNode('t'))).toBe('')
+		expect(cssPath(document.createElement('b'))).toBe('b')
+	})
 })

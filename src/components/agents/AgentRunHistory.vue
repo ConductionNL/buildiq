@@ -45,6 +45,56 @@
 					{{ run.prompt }}
 				</p>
 
+				<ol
+					v-if="(run.modelSteps || []).length > 0"
+					class="agent-run-history__model-steps"
+					:aria-label="t('buildiq', 'Model steps')">
+					<li
+						v-for="step in run.modelSteps"
+						:key="step.attempt"
+						class="agent-run-history__model-step"
+						data-testid="agent-run-model-step">
+						<span class="agent-run-history__step-title">{{
+							stepLabel(step)
+						}}</span>
+						<span class="agent-run-history__step-meta">{{
+							durationLabel(step)
+						}}</span>
+						<p
+							v-if="step.refusal"
+							class="agent-run-history__step-refusal"
+							data-testid="agent-run-step-refusal">
+							{{ step.refusal }}
+						</p>
+						<details
+							v-if="step.output"
+							class="agent-run-history__tool-detail">
+							<summary>{{ t('buildiq', 'Model answer') }}</summary>
+							<pre class="agent-run-history__tool-json">{{
+								step.output
+							}}</pre>
+						</details>
+					</li>
+				</ol>
+				<p
+					v-else-if="run.traceMissing"
+					class="agent-run-history__no-calls"
+					data-testid="agent-run-trace-missing">
+					{{
+						t(
+							'buildiq',
+							'The model steps of this run were not kept: the plan was made too long before it was applied.',
+						)
+					}}
+				</p>
+
+				<p
+					v-if="(run.knowledgeUsed || []).length > 0"
+					class="agent-run-history__knowledge"
+					data-testid="agent-run-knowledge">
+					{{ knowledgeLabel(run) }}
+				</p>
+
 				<ul
 					v-if="(run.toolCalls || []).length > 0"
 					class="agent-run-history__tool-calls">
@@ -165,6 +215,44 @@ export default {
 		},
 
 		/**
+		 * The heading of one model step: "Attempt 1, repair needed", "Attempt 2".
+		 *
+		 * @param {object} step - one entry of `run.modelSteps`.
+		 * @return {string}
+		 * @spec openspec/changes/ai-agents-knowledge-and-run-trace/specs/agent-workspace/spec.md#requirement-the-run-history-shows-the-model-steps-req-bqag-005
+		 */
+		stepLabel(step) {
+			const statuses = {
+				'repair-needed': t('buildiq', 'Attempt {attempt}, repair needed', { attempt: step.attempt }),
+				failed: t('buildiq', 'Attempt {attempt}, no usable answer', { attempt: step.attempt }),
+				error: t('buildiq', 'Attempt {attempt}, the model did not answer', { attempt: step.attempt }),
+			}
+			return statuses[step.status] || t('buildiq', 'Attempt {attempt}', { attempt: step.attempt })
+		},
+
+		/**
+		 * How long one model step took, in milliseconds.
+		 *
+		 * @param {object} step - one entry of `run.modelSteps`.
+		 * @return {string}
+		 * @spec openspec/changes/ai-agents-knowledge-and-run-trace/specs/agent-workspace/spec.md#requirement-the-run-history-shows-the-model-steps-req-bqag-005
+		 */
+		durationLabel(step) {
+			return t('buildiq', '{duration} ms', { duration: step.durationMs || 0 })
+		},
+
+		/**
+		 * The knowledge files a run read, as one line.
+		 *
+		 * @param {object} run - one run.
+		 * @return {string}
+		 * @spec openspec/changes/ai-agents-knowledge-and-run-trace/specs/agent-workspace/spec.md#requirement-the-run-history-shows-the-model-steps-req-bqag-005
+		 */
+		knowledgeLabel(run) {
+			return t('buildiq', 'Knowledge used: {files}', { files: (run.knowledgeUsed || []).join(', ') })
+		},
+
+		/**
 		 * Pretty-print a tool call's arguments/result for the expandable detail view.
 		 *
 		 * @param {object} value - the arguments or result object.
@@ -244,6 +332,33 @@ export default {
 	font-size: 0.85em;
 	max-width: 100%;
 	overflow-x: auto;
+}
+
+.agent-run-history__model-steps {
+	@include c.plain-list(6px);
+	margin-bottom: 8px;
+}
+
+.agent-run-history__model-step {
+	border-inline-start: 3px solid var(--color-border-dark);
+	padding-inline-start: 8px;
+}
+
+.agent-run-history__step-title {
+	font-weight: 600;
+	margin-inline-end: 8px;
+}
+
+.agent-run-history__step-meta,
+.agent-run-history__knowledge {
+	color: var(--color-text-maxcontrast);
+	font-size: 0.9em;
+}
+
+.agent-run-history__step-refusal {
+	margin: 4px 0;
+	color: var(--color-error-text);
+	font-size: 0.9em;
 }
 
 .agent-run-history__no-calls {

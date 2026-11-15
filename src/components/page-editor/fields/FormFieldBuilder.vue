@@ -16,14 +16,50 @@
   -->
 <template>
 	<div class="form-field-builder">
+		<!-- REQ-BQFK-005: the palette; drag a type onto the form, or Enter adds it at the end. -->
 		<div
+			v-if="showLogic"
+			class="form-field-builder__palette"
+			role="group"
+			:aria-label="t('buildiq', 'Field types')">
+			<button
+				v-for="type in FIELD_TYPES"
+				:key="'palette-' + type"
+				type="button"
+				draggable="true"
+				class="form-field-builder__palette-item"
+				:data-testid="'palette-' + type"
+				:title="t('buildiq', 'Drag onto the form, or press Enter to add at the end')"
+				@dragstart="startDrag({ kind: 'type', type }, $event)"
+				@dragend="endDrag"
+				@click="addOfType(type)">
+				<span class="form-field-builder__palette-icon" aria-hidden="true">{{ typeIcon(type) }}</span>
+				{{ typeLabel(type) }}
+			</button>
+		</div>
+		<template
 			v-for="(field, index) in localFields"
-			:key="index"
-			class="form-field-builder__row">
+			:key="index">
+		<div
+			v-if="showLogic"
+			class="form-field-builder__slot"
+			:class="{ 'form-field-builder__slot--active': dragging !== null }"
+			:data-testid="'drop-slot-' + index"
+			@dragover.prevent
+			@drop.prevent="dropAt(index)" />
+		<div class="form-field-builder__row">
+			<span
+				v-if="showLogic"
+				class="form-field-builder__handle"
+				draggable="true"
+				aria-hidden="true"
+				:title="t('buildiq', 'Drag to reorder')"
+				@dragstart="startDrag({ kind: 'row', index }, $event)"
+				@dragend="endDrag">⠿</span>
 			<input
 				:value="field.key || ''"
 				type="text"
-				class="form-field-builder__field"
+				class="form-field-builder__field form-field-builder__key"
 				:placeholder="t('buildiq', 'Key')"
 				:aria-label="t('buildiq', 'Key')"
 				@input="updateField(index, 'key', $event.target.value)" />
@@ -38,8 +74,8 @@
 				:value="field.type || 'string'"
 				class="form-field-builder__field form-field-builder__field--narrow"
 				@change="updateField(index, 'type', $event.target.value)">
-				<option v-for="t in FIELD_TYPES" :key="t" :value="t">
-					{{ t }}
+				<option v-for="type in FIELD_TYPES" :key="type" :value="type">
+					{{ type }}
 				</option>
 			</select>
 
@@ -73,6 +109,24 @@
 					{{ isExpanded(index) ? '▲' : '▼' }}
 					{{ t('buildiq', 'Details') }}
 				</button>
+				<button
+					type="button"
+					class="form-field-builder__move"
+					:disabled="index === 0"
+					:aria-label="t('buildiq', 'Move field up')"
+					:title="t('buildiq', 'Move field up')"
+					@click="moveField(index, -1)">
+					↑
+				</button>
+				<button
+					type="button"
+					class="form-field-builder__move"
+					:disabled="index === localFields.length - 1"
+					:aria-label="t('buildiq', 'Move field down')"
+					:title="t('buildiq', 'Move field down')"
+					@click="moveField(index, 1)">
+					↓
+				</button>
 			</template>
 
 			<button
@@ -92,6 +146,28 @@
 			<div
 				v-if="showLogic && isExpanded(index)"
 				class="form-field-builder__details">
+				<div
+					v-if="field.type === 'file'"
+					class="form-field-builder__section">
+					<span class="form-field-builder__section-label">{{
+						t('buildiq', 'File')
+					}}</span>
+					<FileFieldSettings
+						:field="field"
+						@update="replaceField(index, $event)" />
+				</div>
+				<div
+					v-if="field.type === 'child-records'"
+					class="form-field-builder__section">
+					<span class="form-field-builder__section-label">{{
+						t('buildiq', 'Table of records')
+					}}</span>
+					<ChildRecordsFieldSettings
+						:field="field"
+						:schemas="schemas"
+						:parentSchema="parentSchema"
+						@update="replaceField(index, $event)" />
+				</div>
 				<div class="form-field-builder__section">
 					<span class="form-field-builder__section-label">{{
 						t('buildiq', 'Conditions')
@@ -133,8 +209,26 @@
 							updateLive(index, 'calculate', $event)
 						" />
 				</div>
+				<div class="form-field-builder__section">
+					<span class="form-field-builder__section-label">{{
+						t('buildiq', 'Fill in from another answer')
+					}}</span>
+					<FieldAssignBuilder
+						:modelValue="Array.isArray(field.assign) ? field.assign : null"
+						:fieldKey="field.key || ''"
+						:fieldOptions="declaredKeys"
+						@update:modelValue="updateLive(index, 'assign', $event)" />
+				</div>
 			</div>
 		</div>
+		</template>
+		<div
+			v-if="showLogic"
+			class="form-field-builder__slot"
+			:class="{ 'form-field-builder__slot--active': dragging !== null }"
+			:data-testid="'drop-slot-' + localFields.length"
+			@dragover.prevent
+			@drop.prevent="dropAt(localFields.length)" />
 		<button type="button" class="form-field-builder__add" @click="addField">
 			+ {{ t('buildiq', 'Add field') }}
 		</button>
@@ -142,17 +236,102 @@
 </template>
 
 <script>
+import ChildRecordsFieldSettings from './ChildRecordsFieldSettings.vue'
+import FieldAssignBuilder from './FieldAssignBuilder.vue'
 import FieldCalculationBuilder from './FieldCalculationBuilder.vue'
 import FieldDefaultBuilder from './FieldDefaultBuilder.vue'
 import FieldValidationBuilder from './FieldValidationBuilder.vue'
+import FileFieldSettings from './FileFieldSettings.vue'
 import InlineFieldMark from './InlineFieldMark.vue'
 import VisibleWhenBuilder from './VisibleWhenBuilder.vue'
+import {
+	FIELD_TYPES,
+	fieldTypeIcon,
+	fieldTypeLabel,
+	insertAt,
+	moveToSlot,
+} from './fieldTypes.js'
 
-const FIELD_TYPES = ['string', 'number', 'boolean', 'select', 'textarea', 'date']
+/**
+ * Where each old position lands after a list operation, given the new order
+ * of old positions (null for an inserted item).
+ *
+ * @param {Array<number|null>} order - old index per new position.
+ * @param {number[]} indices - old indices to remap.
+ * @return {number[]}
+ */
+function remapIndices(order, indices) {
+	return indices.map((i) => order.indexOf(i)).filter((i) => i !== -1)
+}
+
+/**
+ * Whether a `visibleWhen` condition points at a field of this form (not an
+ * endpoint or a remote source), so its key can be checked for existence.
+ *
+ * @param {object|undefined} vw - the field's `visibleWhen`.
+ * @return {boolean}
+ */
+function isLocalFieldCondition(vw) {
+	return !!vw && !vw.endpoint && !vw.source && typeof vw.field === 'string'
+}
+
+/**
+ * Whether a field is required, from its validation object when it has one
+ * and from the legacy flat key otherwise.
+ *
+ * @param {object} field - the field entry.
+ * @return {boolean}
+ */
+function hasRequiredMark(field) {
+	const validation = field && field.validation
+	return validation ? !!validation.required : !!(field && field.required)
+}
+
+/**
+ * Whether a field carries a pattern: a validation pattern that is set at all,
+ * or else a truthy legacy flat pattern.
+ *
+ * @param {object} field - the field entry.
+ * @return {boolean}
+ */
+function hasPatternMark(field) {
+	const validation = field && field.validation
+	return validation && validation.pattern !== undefined
+		? true
+		: !!(field && field.pattern)
+}
+
+/**
+ * The marks of a field's collapsed-row summary, in display order: when each
+ * applies and its label.
+ */
+const SUMMARY_MARKS = [
+	{ applies: hasRequiredMark, label: () => t('buildiq', 'required') },
+	{ applies: hasPatternMark, label: () => t('buildiq', 'pattern') },
+	{
+		applies: (field) => !!(field && field.visibleWhen),
+		label: () => t('buildiq', '1 condition'),
+	},
+	{
+		applies: (field) => !!(field && field.default !== undefined),
+		label: () => t('buildiq', 'prefilled'),
+	},
+	{
+		applies: (field) => !!(field && field.calculate),
+		label: () => t('buildiq', 'calculated'),
+	},
+	{
+		applies: (field) => !!(field && Array.isArray(field.assign) && field.assign.length),
+		label: () => t('buildiq', 'filled in from another answer'),
+	},
+]
 
 export default {
 	name: 'FormFieldBuilder',
 	components: {
+		ChildRecordsFieldSettings,
+		FieldAssignBuilder,
+		FileFieldSettings,
 		VisibleWhenBuilder,
 		FieldValidationBuilder,
 		InlineFieldMark,
@@ -180,6 +359,19 @@ export default {
 			type: Object,
 			default: () => ({}),
 		},
+
+		// The schemas of the form's register (with their properties), for
+		// the child-records settings (REQ-BQFK-003).
+		schemas: {
+			type: Array,
+			default: () => [],
+		},
+
+		// The slug or id of the schema the form saves into.
+		parentSchema: {
+			type: String,
+			default: '',
+		},
 	},
 
 	emits: ['update:modelValue'],
@@ -187,6 +379,10 @@ export default {
 		return {
 			FIELD_TYPES,
 			expandedIndices: [],
+			// What is being dragged: { kind: 'type', type } or { kind: 'row', index }.
+			dragging: null,
+			// The row whose key gets focus once rendered (keyboard add).
+			pendingFocus: null,
 		}
 	},
 
@@ -194,7 +390,7 @@ export default {
 		/**
 		 * Observed behaviour of `localFields` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		localFields() {
 			return Array.isArray(this.modelValue) ? this.modelValue : []
@@ -213,6 +409,17 @@ export default {
 		},
 	},
 
+	watch: {
+		/**
+		 * A keyboard-added field gets focus when the parent renders it.
+		 *
+		 * @return {void}
+		 */
+		localFields() {
+			this.$nextTick(() => this.applyPendingFocus())
+		},
+	},
+
 	methods: {
 		/**
 		 * Observed behaviour of `updateField` (retrofit annotation).
@@ -226,7 +433,7 @@ export default {
 		 *   `false` DELETES the key, except for the identity keys `key`, `label` and
 		 *   `type`, which are always written.
 		 * @return {void}
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		updateField(index, key, value) {
 			const next = this.localFields.slice()
@@ -314,9 +521,170 @@ export default {
 		},
 
 		/**
+		 * Replace a whole field entry (the file and child-records settings
+		 * emit the next entry).
+		 *
+		 * @param {number} index - the field index.
+		 * @param {object} field - the next entry.
+		 * @return {void}
+		 */
+		replaceField(index, field) {
+			const next = this.localFields.slice()
+			next[index] = field
+			this.$emit('update:modelValue', next)
+		},
+
+		/**
+		 * The palette name of a field type.
+		 *
+		 * @param {string} type - the type.
+		 * @return {string}
+		 */
+		typeLabel(type) {
+			return fieldTypeLabel(type)
+		},
+
+		/**
+		 * The palette icon of a field type.
+		 *
+		 * @param {string} type - the type.
+		 * @return {string}
+		 */
+		typeIcon(type) {
+			return fieldTypeIcon(type)
+		},
+
+		/**
+		 * A new, empty field of a type.
+		 *
+		 * @param {string} type - the type.
+		 * @return {object}
+		 */
+		newField(type) {
+			return { key: '', label: '', type }
+		},
+
+		/**
+		 * Add a field of a type at the end and focus its key (the keyboard
+		 * path: pick the type in the palette, press Enter).
+		 *
+		 * @param {string} type - the type.
+		 * @return {void}
+		 * @spec openspec/changes/forms-designer-file-camera-children-and-assign/specs/form-field-kinds/spec.md#requirement-a-maker-builds-a-form-by-dragging-field-types-from-a-palette-req-bqfk-005
+		 */
+		addOfType(type) {
+			const next = this.localFields.slice()
+			next.push(this.newField(type))
+			this.$emit('update:modelValue', next)
+			this.focusKey(next.length - 1)
+		},
+
+		/**
+		 * Focus a row's key input once it is rendered.
+		 *
+		 * @param {number} index - the row index.
+		 * @return {void}
+		 */
+		focusKey(index) {
+			this.pendingFocus = index
+			this.$nextTick(() => this.applyPendingFocus())
+		},
+
+		/**
+		 * Focus the row waiting for focus, once the parent has rendered it.
+		 *
+		 * @return {void}
+		 */
+		applyPendingFocus() {
+			if (this.pendingFocus === null) {
+				return
+			}
+			const inputs = this.$el.querySelectorAll('.form-field-builder__key')
+			if (inputs[this.pendingFocus]) {
+				inputs[this.pendingFocus].focus()
+				this.pendingFocus = null
+			}
+		},
+
+		/**
+		 * Start dragging a palette type or a row.
+		 *
+		 * @param {object} payload - what is dragged.
+		 * @param {DragEvent} event - the drag event.
+		 * @return {void}
+		 */
+		startDrag(payload, event) {
+			this.dragging = payload
+			if (event && event.dataTransfer) {
+				event.dataTransfer.effectAllowed = payload.kind === 'row' ? 'move' : 'copy'
+				event.dataTransfer.setData('text/plain', JSON.stringify(payload))
+			}
+		},
+
+		/**
+		 * End a drag without a drop.
+		 *
+		 * @return {void}
+		 */
+		endDrag() {
+			this.dragging = null
+		},
+
+		/**
+		 * Drop at a slot (0 = before the first field, length = after the
+		 * last): a palette type inserts a new field there, a row moves there.
+		 *
+		 * @param {number} slot - the drop slot.
+		 * @return {void}
+		 * @spec openspec/changes/forms-designer-file-camera-children-and-assign/specs/form-field-kinds/spec.md#requirement-a-maker-builds-a-form-by-dragging-field-types-from-a-palette-req-bqfk-005
+		 */
+		dropAt(slot) {
+			const dragged = this.dragging
+			this.dragging = null
+			if (!dragged) {
+				return
+			}
+			const positions = this.localFields.map((_, i) => i)
+			if (dragged.kind === 'type') {
+				this.expandedIndices = remapIndices(insertAt(positions, slot, null), this.expandedIndices)
+				this.$emit('update:modelValue', insertAt(this.localFields, slot, this.newField(dragged.type)))
+				return
+			}
+			this.reorder(dragged.index, slot)
+		},
+
+		/**
+		 * Move a row one place up (-1) or down (+1).
+		 *
+		 * @param {number} index - the row.
+		 * @param {-1|1} step - the direction.
+		 * @return {void}
+		 */
+		moveField(index, step) {
+			this.reorder(index, step < 0 ? index - 1 : index + 2)
+		},
+
+		/**
+		 * Move a row to a slot, keeping open details pinned to their fields.
+		 *
+		 * @param {number} from - the row.
+		 * @param {number} slot - the drop slot.
+		 * @return {void}
+		 */
+		reorder(from, slot) {
+			const positions = this.localFields.map((_, i) => i)
+			const order = moveToSlot(positions, from, slot)
+			if (order.every((old, i) => old === i)) {
+				return
+			}
+			this.expandedIndices = remapIndices(order, this.expandedIndices)
+			this.$emit('update:modelValue', moveToSlot(this.localFields, from, slot))
+		},
+
+		/**
 		 * Observed behaviour of `addField` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		addField() {
 			const next = this.localFields.slice()
@@ -339,7 +707,7 @@ export default {
 		 *
 		 * @param {number} index - position of the field to drop from the `fields` array.
 		 * @return {void}
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		removeField(index) {
 			const next = this.localFields.slice()
@@ -376,7 +744,7 @@ export default {
 		 */
 		danglingConditionMark(field) {
 			const vw = field && field.visibleWhen
-			if (!vw || vw.endpoint || vw.source || typeof vw.field !== 'string') {
+			if (!isLocalFieldCondition(vw)) {
 				return { hasError: false, message: '' }
 			}
 			if (this.declaredKeys.includes(vw.field)) {
@@ -400,31 +768,9 @@ export default {
 		 * @spec openspec/specs/form-editor-logic/spec.md
 		 */
 		summaryFor(field) {
-			const validation = field && field.validation
-			const parts = []
-			const hasRequired = validation
-				? !!validation.required
-				: !!(field && field.required)
-			if (hasRequired) {
-				parts.push(t('buildiq', 'required'))
-			}
-			const hasPattern =
-				validation && validation.pattern !== undefined
-					? true
-					: !!(field && field.pattern)
-			if (hasPattern) {
-				parts.push(t('buildiq', 'pattern'))
-			}
-			if (field && field.visibleWhen) {
-				parts.push(t('buildiq', '1 condition'))
-			}
-			if (field && field.default !== undefined) {
-				parts.push(t('buildiq', 'prefilled'))
-			}
-			if (field && field.calculate) {
-				parts.push(t('buildiq', 'calculated'))
-			}
-			return parts.join(' · ')
+			return SUMMARY_MARKS.filter((mark) => mark.applies(field))
+				.map((mark) => mark.label())
+				.join(' · ')
 		},
 
 		/**
@@ -498,6 +844,45 @@ export default {
 
 .form-field-builder__remove {
 	@include c.danger-button;
+}
+
+.form-field-builder__move {
+	@include c.ghost-button;
+}
+
+.form-field-builder__palette {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.form-field-builder__palette-item {
+	display: inline-flex;
+	gap: 4px;
+	align-items: center;
+	cursor: grab;
+	@include c.ghost-button;
+}
+
+.form-field-builder__palette-icon {
+	min-width: 1.2em;
+	text-align: center;
+}
+
+.form-field-builder__handle {
+	cursor: grab;
+	color: var(--color-text-maxcontrast);
+	user-select: none;
+}
+
+.form-field-builder__slot {
+	height: 4px;
+	border-radius: var(--border-radius);
+}
+
+.form-field-builder__slot--active {
+	height: 12px;
+	border: 1px dashed var(--color-primary-element);
 }
 
 .form-field-builder__add {

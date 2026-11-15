@@ -25,6 +25,7 @@
 					"requests": { "title": "Requests", "type": "integer", "minimum": 0 , "description": "Requests the page made in the window." },
 					"failures4xx": { "title": "Failures 4xx", "type": "integer", "minimum": 0 , "description": "Requests answered with a 4xx status." },
 					"failures5xx": { "title": "Failures 5xx", "type": "integer", "minimum": 0 , "description": "Requests answered with a 5xx status, or that did not complete." },
+					"failures": { "title": "Failures", "type": "integer", "minimum": 0 , "description": "Failed requests, 4xx and 5xx together. Derived by the server, never posted; summed by the request failure metric." },
 					"durationUnder250": { "title": "Requests under 250 ms", "type": "integer", "minimum": 0 , "description": "Requests that took under 250 ms." },
 					"durationUnder1000": { "title": "Requests from 250 ms to 1 s", "type": "integer", "minimum": 0 , "description": "Requests that took from 250 ms to 1 s." },
 					"durationUnder3000": { "title": "Requests from 1 s to 3 s", "type": "integer", "minimum": 0 , "description": "Requests that took from 1 s to 3 s." },

@@ -59,6 +59,23 @@ import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcModal, NcTextField } from '@nextcloud/vue'
 
+/**
+ * What to say when linking failed: the server's detail or error, the request's
+ * message, or a generic line.
+ *
+ * @param {Error|object|null} e The failure.
+ * @return {string} The message.
+ */
+function linkFailureMessage(e) {
+	const data = e?.response?.data
+	return (
+		data?.detail
+		|| data?.error
+		|| e?.message
+		|| t('buildiq', 'Could not link the repository.')
+	)
+}
+
 export default {
 	name: 'LinkRepoDialog',
 	components: { NcButton, NcModal, NcTextField },
@@ -129,23 +146,27 @@ export default {
 			this.submitting = true
 			this.error = ''
 			try {
-				const url = generateUrl(
-					'/apps/buildiq/api/applications/{slug}/github/link',
-					{ slug: this.slug },
-				)
-				const body = { owner: this.owner.trim(), name: this.name.trim() }
-				const { data } = await axios.post(url, body)
-				this.$emit('linked', data)
-				this.$emit('close')
+				await this.postLink()
 			} catch (e) {
-				const data = e?.response?.data
-				this.error =
-					data?.detail
-					|| data?.error
-					|| e?.message
-					|| t('buildiq', 'Could not link the repository.')
+				this.error = linkFailureMessage(e)
 				this.submitting = false
 			}
+		},
+
+		/**
+		 * POST the trimmed owner and name, then report the link and close.
+		 *
+		 * @return {Promise<void>}
+		 */
+		async postLink() {
+			const url = generateUrl(
+				'/apps/buildiq/api/applications/{slug}/github/link',
+				{ slug: this.slug },
+			)
+			const body = { owner: this.owner.trim(), name: this.name.trim() }
+			const { data } = await axios.post(url, body)
+			this.$emit('linked', data)
+			this.$emit('close')
 		},
 	},
 }

@@ -68,6 +68,33 @@
 </template>
 
 <script>
+/**
+ * Copy an object without its `undefined` entries, keeping key order.
+ *
+ * @param {object} source - Any plain object.
+ * @return {object}
+ */
+function definedEntries(source) {
+	return Object.fromEntries(
+		Object.entries(source).filter(([, value]) => value !== undefined),
+	)
+}
+
+/**
+ * Read a min/max input as a number, or `undefined` when it is blank or not
+ * numeric.
+ *
+ * @param {string|number|null|undefined} raw - The raw input value.
+ * @return {number|undefined}
+ */
+function toBound(raw) {
+	if (raw === '' || raw === null || raw === undefined) {
+		return undefined
+	}
+	const value = Number(raw)
+	return Number.isNaN(value) ? undefined : value
+}
+
 export default {
 	name: 'FieldValidationBuilder',
 	props: {
@@ -148,6 +175,21 @@ export default {
 		},
 
 		/**
+		 * The validation fields as currently shown in the inputs.
+		 *
+		 * @return {object}
+		 */
+		displayedValidation() {
+			return {
+				required: this.requiredDisplay,
+				min: this.minDisplay,
+				max: this.maxDisplay,
+				pattern: this.patternDisplayValue,
+				message: this.messageDisplay,
+			}
+		},
+
+		/**
 		 * Whether the currently displayed pattern fails to compile.
 		 *
 		 * @return {boolean}
@@ -184,49 +226,17 @@ export default {
 		 * @return {object}
 		 */
 		buildValidation(overrides) {
-			const required =
-				overrides.required !== undefined
-					? overrides.required
-					: this.requiredDisplay
-			const minRaw =
-				overrides.min !== undefined ? overrides.min : this.minDisplay
-			const maxRaw =
-				overrides.max !== undefined ? overrides.max : this.maxDisplay
-			const pattern =
-				overrides.pattern !== undefined
-					? overrides.pattern
-					: this.patternDisplayValue
-			const message =
-				overrides.message !== undefined
-					? overrides.message
-					: this.messageDisplay
-			const next = {}
-			if (required) {
-				next.required = true
+			const values = {
+				...this.displayedValidation,
+				...definedEntries(overrides),
 			}
-			if (
-				minRaw !== ''
-				&& minRaw !== null
-				&& minRaw !== undefined
-				&& !Number.isNaN(Number(minRaw))
-			) {
-				next.min = Number(minRaw)
-			}
-			if (
-				maxRaw !== ''
-				&& maxRaw !== null
-				&& maxRaw !== undefined
-				&& !Number.isNaN(Number(maxRaw))
-			) {
-				next.max = Number(maxRaw)
-			}
-			if (pattern) {
-				next.pattern = pattern
-			}
-			if (message) {
-				next.message = message
-			}
-			return next
+			return definedEntries({
+				required: values.required ? true : undefined,
+				min: toBound(values.min),
+				max: toBound(values.max),
+				pattern: values.pattern || undefined,
+				message: values.message || undefined,
+			})
 		},
 
 		/**

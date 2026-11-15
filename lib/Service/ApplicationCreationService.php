@@ -37,13 +37,13 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-9
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-10
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-11
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-12
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-13
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-14
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-15
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-9
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-10
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-11
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-12
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-13
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-14
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-15
  */
 
 declare(strict_types=1);
@@ -51,6 +51,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Exception\WizardCreationException;
+use OCA\Buildiq\Kernel\Contracts\ApplicationCreationServiceInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Service\RegisterService;
 use OCP\IUserSession;
@@ -65,7 +66,7 @@ use Throwable;
  * N register provisions simultaneously, so we implement a careful-sequencing
  * + reverse-delete rollback strategy.
  */
-class ApplicationCreationService {
+class ApplicationCreationService implements ApplicationCreationServiceInterface {
 	/**
 	 * Four canonical presets and their hardcoded version chains.
 	 * Each entry is [name => string, slug => string] in chain order
@@ -133,10 +134,10 @@ class ApplicationCreationService {
 	 * @throws WizardCreationException On validation failure (failedAtStep=validate)
 	 *                                 or on any mid-flight creation failure (with rollback)
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-12
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-13
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-14
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-15
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-12
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-13
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-14
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-15
 	 */
 	public function createApplication(array $payload): string {
 		// M2: Acquire a per-slug advisory lock before the slug-uniqueness check so
@@ -424,12 +425,7 @@ class ApplicationCreationService {
 	private function provisionVersionRegister(array $version, array $state): void {
 		$registerSlug = $version['registerSlug'];
 		try {
-			$this->provisionRegister(
-				registerSlug: $registerSlug,
-				appSlug: $version['appSlug'],
-				versionSlug: $version['slug'],
-				defaultSchemas: $version['schemas']
-			);
+			$this->provisionRegister(version: $version);
 		} catch (Throwable $e) {
 			$this->logger->error(
 				'Buildiq: wizard register-provision failed for ' . $registerSlug . ': ' . $e->getMessage(),
@@ -597,8 +593,8 @@ class ApplicationCreationService {
 	 *
 	 * @throws WizardCreationException With failedAtStep=validate on any failure
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-10
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-11
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-10
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-11
 	 */
 	private function validatePayload(array $payload): void {
 		$appSlug = (string)($payload['slug'] ?? '');
@@ -637,30 +633,85 @@ class ApplicationCreationService {
 
 		// Validate each version slug.
 		foreach ($versions as $versionDef) {
-			$versionSlug = (string)($versionDef['slug'] ?? '');
-			$versionName = (string)($versionDef['name'] ?? '');
-
-			if ($versionName === '') {
-				throw new WizardCreationException(
-					errorCode: 'validation_error',
-					failedAtStep: 'validate',
-					message: 'Version name must not be empty.',
-					rollbackStatus: 'none'
-				);
-			}
-
-			$slugError = $this->slugValidator->validateVersionSlug(slug: $versionSlug);
-			if ($slugError !== []) {
-				throw new WizardCreationException(
-					errorCode: (string)($slugError['code'] ?? 'validation_error'),
-					failedAtStep: 'validate',
-					message: (string)($slugError['message'] ?? 'Invalid version slug.'),
-					rollbackStatus: 'none'
-				);
-			}
-		}//end foreach
+			$this->validateVersionDef(versionDef: $versionDef);
+		}
 
 		// Validate no duplicate version slugs in chain.
+		$this->validateChainSlugs(versions: $versions);
+
+		// Check app slug uniqueness across existing Applications.
+		$this->assertAppSlugFree(appSlug: $appSlug);
+	}//end validatePayload()
+
+	/**
+	 * Refuse an app slug that an existing Application already uses.
+	 *
+	 * @param string $appSlug The app slug.
+	 *
+	 * @return void
+	 *
+	 * @throws WizardCreationException With failedAtStep=validate on a conflict
+	 *
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-11
+	 */
+	private function assertAppSlugFree(string $appSlug): void {
+		if ($this->appSlugExists(slug: $appSlug) === true) {
+			throw new WizardCreationException(
+				errorCode: 'app_slug_conflict',
+				failedAtStep: 'validate',
+				message: sprintf('An Application with slug "%s" already exists.', $appSlug),
+				rollbackStatus: 'none'
+			);
+		}
+	}//end assertAppSlugFree()
+
+	/**
+	 * Validate one version definition: a name, and a valid version slug.
+	 *
+	 * @param array<string,mixed> $versionDef The version definition.
+	 *
+	 * @return void
+	 *
+	 * @throws WizardCreationException With failedAtStep=validate on any failure
+	 *
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-10
+	 */
+	private function validateVersionDef(array $versionDef): void {
+		$versionSlug = (string)($versionDef['slug'] ?? '');
+		$versionName = (string)($versionDef['name'] ?? '');
+
+		if ($versionName === '') {
+			throw new WizardCreationException(
+				errorCode: 'validation_error',
+				failedAtStep: 'validate',
+				message: 'Version name must not be empty.',
+				rollbackStatus: 'none'
+			);
+		}
+
+		$slugError = $this->slugValidator->validateVersionSlug(slug: $versionSlug);
+		if ($slugError !== []) {
+			throw new WizardCreationException(
+				errorCode: (string)($slugError['code'] ?? 'validation_error'),
+				failedAtStep: 'validate',
+				message: (string)($slugError['message'] ?? 'Invalid version slug.'),
+				rollbackStatus: 'none'
+			);
+		}
+	}//end validateVersionDef()
+
+	/**
+	 * Refuse a version chain that repeats a slug.
+	 *
+	 * @param array<int,array<string,mixed>> $versions The version chain.
+	 *
+	 * @return void
+	 *
+	 * @throws WizardCreationException With failedAtStep=validate on a duplicate
+	 *
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-10
+	 */
+	private function validateChainSlugs(array $versions): void {
 		$slugList = array_column($versions, 'slug');
 		$chainError = $this->slugValidator->validateChainSlugs(slugs: $slugList);
 		if ($chainError !== []) {
@@ -675,17 +726,7 @@ class ApplicationCreationService {
 				rollbackStatus: 'none'
 			);
 		}
-
-		// Check app slug uniqueness across existing Applications.
-		if ($this->appSlugExists(slug: $appSlug) === true) {
-			throw new WizardCreationException(
-				errorCode: 'app_slug_conflict',
-				failedAtStep: 'validate',
-				message: sprintf('An Application with slug "%s" already exists.', $appSlug),
-				rollbackStatus: 'none'
-			);
-		}
-	}//end validatePayload()
+	}//end validateChainSlugs()
 
 	/**
 	 * Resolve the version chain from the payload.
@@ -697,8 +738,8 @@ class ApplicationCreationService {
 	 *
 	 * @return array<int,array<string,string>> Version definitions [{name, slug}, ...]
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-9
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-11
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-9
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-11
 	 */
 	public function resolveVersionChain(array $payload): array {
 		$preset = (string)($payload['preset'] ?? '');
@@ -735,7 +776,7 @@ class ApplicationCreationService {
 	 *
 	 * @return bool True when a conflicting row exists
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-10
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-10
 	 */
 	private function appSlugExists(string $slug): bool {
 		try {
@@ -800,41 +841,68 @@ class ApplicationCreationService {
 	/**
 	 * Provision a per-version OR register and seed its schema set.
 	 *
-	 * @param string $registerSlug The register slug to create
-	 * @param string $appSlug Parent application slug (for labels)
-	 * @param string $versionSlug Version slug (for labels)
-	 * @param array<int,array<string,mixed>> $defaultSchemas Seed schema blobs from default-schemas.json
+	 * @param array<string,mixed> $version The version plan: `registerSlug` (the register to create), `appSlug` and
+	 *                                     `slug` (for labels and the schema prefix), and `schemas` (seed schema
+	 *                                     blobs from default-schemas.json).
 	 *
 	 * @return void
 	 *
 	 * @throws Throwable When register creation or schema seeding fails
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-13
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-13
 	 */
-	private function provisionRegister(
-		string $registerSlug,
-		string $appSlug,
-		string $versionSlug,
-		array $defaultSchemas,
-	): void {
-		$register = $this->store->registerMapper->createFromArray(
-			[
-				'slug' => $registerSlug,
-				'title' => 'Buildiq — ' . $appSlug . ' (' . $versionSlug . ')',
-				'description' => 'Per-version schema namespace for Buildiq app `' . $appSlug . '` version `' . $versionSlug . '`.',
-				'version' => '0.1.0',
-				'schemas' => [],
-			]
-		);
+	private function provisionRegister(array $version): void {
+		$register = $this->store->registerMapper->createFromArray($this->versionRegisterFields(version: $version));
 
-		// Seed the default schema set into the freshly-provisioned register.
-		// Schema slugs are unique per organisation, so namespace each seed slug
-		// with the app+version prefix to avoid colliding with the same seed
-		// already installed in another register (e.g. the global `buildiq`
-		// register or another wizard-provisioned app's register).
-		$slugPrefix = $appSlug . '-' . $versionSlug . '-';
+		$createdIds = $this->seedVersionSchemas(version: $version);
+		if ($createdIds === []) {
+			return;
+		}
+
+		$existing = $register->getSchemas();
+		if (is_array($existing) === false) {
+			$existing = [];
+		}
+
+		$register->setSchemas(array_values(array_unique(array_merge($existing, $createdIds))));
+		$this->store->registerMapper->update($register);
+	}//end provisionRegister()
+
+	/**
+	 * The fields a per-version register is created with.
+	 *
+	 * @param array<string,mixed> $version The version plan (`registerSlug`, `appSlug`, `slug`).
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function versionRegisterFields(array $version): array {
+		$appSlug = $version['appSlug'];
+		$versionSlug = $version['slug'];
+		return [
+			'slug' => $version['registerSlug'],
+			'title' => 'Buildiq — ' . $appSlug . ' (' . $versionSlug . ')',
+			'description' => 'Per-version schema namespace for Buildiq app `' . $appSlug . '` version `' . $versionSlug . '`.',
+			'version' => '0.1.0',
+			'schemas' => [],
+		];
+	}//end versionRegisterFields()
+
+	/**
+	 * Seed the default schema set for a freshly-provisioned register.
+	 *
+	 * Schema slugs are unique per organisation, so each seed slug is namespaced
+	 * with the app+version prefix to avoid colliding with the same seed already
+	 * installed in another register (e.g. the global `buildiq` register or
+	 * another wizard-provisioned app's register).
+	 *
+	 * @param array<string,mixed> $version The version plan (`appSlug`, `slug`, `schemas`).
+	 *
+	 * @return array<int,mixed> The created schemas' ids.
+	 */
+	private function seedVersionSchemas(array $version): array {
+		$slugPrefix = $version['appSlug'] . '-' . $version['slug'] . '-';
 		$createdIds = [];
-		foreach ($defaultSchemas as $schemaBlob) {
+		foreach ($version['schemas'] as $schemaBlob) {
 			$blob = $schemaBlob;
 			$originalSlug = (string)($blob['slug'] ?? '');
 			if ($originalSlug !== '') {
@@ -845,16 +913,8 @@ class ApplicationCreationService {
 			$createdIds[] = $schema->getId();
 		}
 
-		if ($createdIds !== []) {
-			$existing = $register->getSchemas();
-			if (is_array($existing) === false) {
-				$existing = [];
-			}
-
-			$register->setSchemas(array_values(array_unique(array_merge($existing, $createdIds))));
-			$this->store->registerMapper->update($register);
-		}
-	}//end provisionRegister()
+		return $createdIds;
+	}//end seedVersionSchemas()
 
 	/**
 	 * Delete a per-version register as part of rollback.
@@ -865,7 +925,7 @@ class ApplicationCreationService {
 	 *
 	 * @return bool True on success, false on failure
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-12
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-12
 	 */
 	private function deleteRegister(string $registerSlug): bool {
 		try {
@@ -896,7 +956,7 @@ class ApplicationCreationService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-12
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-12
 	 */
 	private function rollback(array $state, array &$orphaned): void {
 		// 0. BuiltAppRoute objects first (last created, first torn down).
@@ -947,7 +1007,7 @@ class ApplicationCreationService {
 	 *
 	 * @throws WizardCreationException Always — with the rollback status derived from orphaned resources
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-12
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-12
 	 */
 	private function rollbackAndThrow(array $state, string $failedAtStep, string|Throwable $cause): never {
 		$orphaned = [];
@@ -988,7 +1048,7 @@ class ApplicationCreationService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-12
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-12
 	 */
 	private function rollbackObjects(array $uuids, string $label, string $prefix, array &$orphaned): void {
 		$ordered = array_reverse(array_values($uuids));
@@ -1021,7 +1081,7 @@ class ApplicationCreationService {
 	 *
 	 * @throws WizardCreationException When the fixture cannot be found, read or decoded
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-14
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-14
 	 */
 	private function loadWizardFixture(array $fixture): array {
 		$name = $fixture['name'];
@@ -1070,7 +1130,7 @@ class ApplicationCreationService {
 	 *
 	 * @return array<string,mixed> The manifest with the token substituted
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-13
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-13
 	 */
 	public function substituteRegisterSlug(array $manifest, string $registerSlug): array {
 		return $this->substituteVersionContext(
@@ -1099,7 +1159,7 @@ class ApplicationCreationService {
 	 *
 	 * @return array<string,mixed> The manifest with tokens substituted
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-14
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-14
 	 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generated-pages-keep-the-database-register-req-bqdb-004
 	 */
 	public function substituteVersionContext(

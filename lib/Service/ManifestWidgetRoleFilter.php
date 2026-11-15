@@ -36,7 +36,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/widget-roles-on-app-pages/specs/openbuild-runtime/spec.md#requirement-page-widgets-must-be-filterable-by-roles
+ * @spec openspec/specs/openbuild-runtime/spec.md#requirement-page-widgets-must-be-filterable-by-roles
  */
 
 declare(strict_types=1);
@@ -49,7 +49,7 @@ use OCP\IUser;
 /**
  * Strips page widgets whose `roles` the caller does not match.
  *
- * @spec openspec/changes/widget-roles-on-app-pages/specs/openbuild-runtime/spec.md#requirement-page-widgets-must-be-filterable-by-roles
+ * @spec openspec/specs/openbuild-runtime/spec.md#requirement-page-widgets-must-be-filterable-by-roles
  */
 class ManifestWidgetRoleFilter {
 	/**
@@ -78,7 +78,7 @@ class ManifestWidgetRoleFilter {
 	 * @return array<string, mixed> The manifest without the widgets the caller
 	 *                              does not match.
 	 *
-	 * @spec openspec/changes/widget-roles-on-app-pages/specs/openbuild-runtime/spec.md#requirement-page-widgets-must-be-filterable-by-roles
+	 * @spec openspec/specs/openbuild-runtime/spec.md#requirement-page-widgets-must-be-filterable-by-roles
 	 */
 	public function filterManifest(array $manifest, ?IUser $caller): array {
 		if (is_array($manifest['pages'] ?? null) === true) {
@@ -102,7 +102,7 @@ class ManifestWidgetRoleFilter {
 	 *
 	 * @return array<string, mixed> The page without the caller's hidden widgets.
 	 *
-	 * @spec openspec/changes/widget-roles-on-app-pages/specs/openbuild-runtime/spec.md#requirement-page-widgets-must-be-filterable-by-roles
+	 * @spec openspec/specs/openbuild-runtime/spec.md#requirement-page-widgets-must-be-filterable-by-roles
 	 */
 	public function filterPage(array $page, ?IUser $caller): array {
 		$removedIds = [];
@@ -173,7 +173,7 @@ class ManifestWidgetRoleFilter {
 	 *
 	 * @return bool True when the caller may see the widget.
 	 *
-	 * @spec openspec/changes/widget-roles-on-app-pages/specs/openbuild-runtime/spec.md#requirement-page-widgets-must-be-filterable-by-roles
+	 * @spec openspec/specs/openbuild-runtime/spec.md#requirement-page-widgets-must-be-filterable-by-roles
 	 */
 	public function isWidgetVisible(array $widget, ?IUser $caller): bool {
 		$roles = $this->visibility->normaliseRoles(roles: ($widget['roles'] ?? null));

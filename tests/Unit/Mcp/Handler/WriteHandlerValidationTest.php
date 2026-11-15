@@ -39,6 +39,7 @@ use OCA\Buildiq\Mcp\BuildiqToolProvider;
 use OCA\Buildiq\Mcp\Handler\AbstractToolHandler;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -794,8 +795,12 @@ class WriteHandlerValidationTest extends TestCase {
 		$entity = $this->createMock(ObjectEntity::class);
 
 		$auditMapper->expects($this->once())
-			->method('createAuditTrailEntry')
-			->with($entity, 'rbac.admin_bypass', $this->anything());
+			->method('recordObjectEvent')
+			->with(
+				$this->callback(
+					callback: static fn (ObjectAuditEvent $event): bool => $event->object === $entity && $event->action === 'rbac.admin_bypass'
+				)
+			);
 
 		$this->bypassHandler($auditMapper)->callRecordAdminBypass($entity, 'my-app', 'admin-user');
 
@@ -880,8 +885,12 @@ class WriteHandlerValidationTest extends TestCase {
 
 		$auditMapper = $this->createMock(AuditTrailMapper::class);
 		$auditMapper->expects($this->once())
-			->method('createAuditTrailEntry')
-			->with($entity, 'rbac.admin_bypass', $this->anything());
+			->method('recordObjectEvent')
+			->with(
+				$this->callback(
+					callback: static fn (ObjectAuditEvent $event): bool => $event->object === $entity && $event->action === 'rbac.admin_bypass'
+				)
+			);
 
 		$result = $this->writeRoleHandler($auditMapper, $renderedArray, $entity)->callRequireWriteRole('my-app');
 		$this->assertNull($result, 'admin bypass grants write access (null = authorised)');
@@ -906,7 +915,7 @@ class WriteHandlerValidationTest extends TestCase {
 		$entity = $this->createMock(ObjectEntity::class);
 
 		$auditMapper = $this->createMock(AuditTrailMapper::class);
-		$auditMapper->expects($this->never())->method('createAuditTrailEntry');
+		$auditMapper->expects($this->never())->method('recordObjectEvent');
 
 		$result = $this->writeRoleHandler($auditMapper, $app, $entity)->callRequireWriteRole('my-app');
 		$this->assertNull($result, 'owner is authorised (null), and no bypass is audited');

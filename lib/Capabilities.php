@@ -36,7 +36,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq;
 
-use OCA\Buildiq\AppInfo\Application;
+use OCA\Buildiq\Kernel\AppIdentity;
 use OCP\App\IAppManager;
 use OCP\Capabilities\ICapability;
 use OCP\IUserSession;
@@ -96,6 +96,6 @@ class Capabilities implements ICapability {
 			return false;
 		}
 
-		return $this->appManager->isEnabledForUser(Application::APP_ID, $user);
+		return $this->appManager->isEnabledForUser(AppIdentity::APP_ID, $user);
 	}//end computeCanEdit()
 }//end class

@@ -121,6 +121,41 @@ import { captureForm, FormBindingError } from '../services/formCapture.js'
 import { createLibraryForm, fetchRegisterSchema } from '../services/formLibrary.js'
 import { suggestSlug, TEMPLATE_CATEGORIES } from '../services/templateCapture.js'
 
+/**
+ * Whether a slug is lowercase kebab-case of 2 to 64 characters.
+ *
+ * @param {string} slug The slug.
+ * @return {boolean}
+ */
+function isValidSlug(slug) {
+	return /^[a-z0-9][a-z0-9-]*[a-z0-9]$/.test(slug) && slug.length <= 64
+}
+
+/**
+ * The response body of a failed request, if any.
+ *
+ * @param {Error|null} error The rejected request.
+ * @return {object|undefined}
+ */
+function responseData(error) {
+	return error && error.response && error.response.data
+}
+
+/**
+ * The message shown when storing the form fails: the server's detail,
+ * message or error, else a generic message.
+ *
+ * @param {Error|null} error The rejected request.
+ * @return {string}
+ */
+function saveFailureMessage(error) {
+	const data = responseData(error)
+	return (
+		(data && (data.detail || data.message || data.error))
+		|| t('buildiq', 'Saving the form to the library failed.')
+	)
+}
+
 export default {
 	name: 'SaveFormToLibraryDialog',
 
@@ -257,8 +292,7 @@ export default {
 			return (
 				!this.saving
 				&& this.name.trim() !== ''
-				&& /^[a-z0-9][a-z0-9-]*[a-z0-9]$/.test(this.slug)
-				&& this.slug.length <= 64
+				&& isValidSlug(this.slug)
 				&& this.category !== ''
 				&& this.record !== null
 			)
@@ -390,17 +424,23 @@ export default {
 			this.saving = true
 			this.saveError = ''
 			try {
-				const stored = await createLibraryForm(this.record)
-				this.$emit('saved', stored || this.record)
-				this.$emit('update:open', false)
+				await this.storeAndClose()
 			} catch (error) {
-				const data = error && error.response && error.response.data
-				this.saveError =
-					(data && (data.detail || data.message || data.error))
-					|| t('buildiq', 'Saving the form to the library failed.')
+				this.saveError = saveFailureMessage(error)
 			} finally {
 				this.saving = false
 			}
+		},
+
+		/**
+		 * Store the captured record, emit what was stored, then close.
+		 *
+		 * @return {Promise<void>}
+		 */
+		async storeAndClose() {
+			const stored = await createLibraryForm(this.record)
+			this.$emit('saved', stored || this.record)
+			this.$emit('update:open', false)
 		},
 	},
 }

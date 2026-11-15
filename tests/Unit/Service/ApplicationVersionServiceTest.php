@@ -206,6 +206,37 @@ class ApplicationVersionServiceTest extends TestCase {
 	}//end testGuardNoCycleRejectsSelfLoop()
 
 	/**
+	 * Cycle guard rejects a self-loop written in another case or form of the same uuid.
+	 *
+	 * @return void
+	 */
+	public function testGuardNoCycleRejectsASelfLoopInAnotherForm(): void {
+		$uuid = '0b7d1f2e-4a5c-4e8f-9a1b-2c3d4e5f6a7b';
+		foreach (['0B7D1F2E-4A5C-4E8F-9A1B-2C3D4E5F6A7B', '0b7d1f2e4a5c4e8f9a1b2c3d4e5f6a7b', 'urn:uuid:' . $uuid, '{' . $uuid . '}'] as $variant) {
+			try {
+				$this->service->guardNoCycle(currentUuid: $uuid, proposedTargetUuid: $variant);
+				self::fail($variant . ' must be refused as a self-loop');
+			} catch (RuntimeException $e) {
+				self::assertStringContainsString('cannot promote to itself', $e->getMessage());
+			}
+		}
+	}//end testGuardNoCycleRejectsASelfLoopInAnotherForm()
+
+	/**
+	 * Cycle guard catches an indirect cycle that comes back in another case.
+	 *
+	 * @return void
+	 */
+	public function testGuardNoCycleDetectsAnIndirectCycleInAnotherCase(): void {
+		$aEntity = $this->mockVersion(promotesTo: 'UUID-C');
+		$this->objectService->method('find')
+			->willReturnCallback(static fn (string|int $id): ?ObjectEntity => $id === 'uuid-a' ? $aEntity : null);
+
+		$this->expectException(RuntimeException::class);
+		$this->service->guardNoCycle(currentUuid: 'uuid-c', proposedTargetUuid: 'uuid-a');
+	}//end testGuardNoCycleDetectsAnIndirectCycleInAnotherCase()
+
+	/**
 	 * Cycle guard accepts a null target (terminal version).
 	 *
 	 * @return void
@@ -387,6 +418,40 @@ class ApplicationVersionServiceTest extends TestCase {
 			strategy: ApplicationVersionService::STRATEGY_KEEP_REGISTER
 		);
 	}//end testDeleteVersionKeepRegisterDoesNotDropRegister()
+
+	/**
+	 * orphan-grace stamps `orphanedAt` into the register's configuration and keeps the register.
+	 *
+	 * @return void
+	 */
+	public function testDeleteVersionOrphanGraceStampsRegisterConfiguration(): void {
+		$version = $this->mockVersion(application: 'uuid-app', register: 'openbuild-foo-staging', uuid: 'uuid-v');
+		$application = $this->mockApplication(productionVersion: 'uuid-prod');
+
+		$this->objectService->method('find')
+			->willReturnCallback(static function (string|int $id) use ($version, $application): ?ObjectEntity {
+				return match ($id) {
+					'uuid-v' => $version,
+					'uuid-app' => $application,
+					default => null,
+				};
+			});
+
+		$register = new Register();
+		$register->setConfiguration(['schemas' => ['7' => ['magicMapping' => true]]]);
+		$this->registerMapper->method('find')->with('openbuild-foo-staging')->willReturn($register);
+		$this->registerMapper->expects(self::once())->method('update')->with($register);
+		$this->registerService->expects(self::never())->method('delete');
+
+		$this->service->deleteVersion(
+			versionUuid: 'uuid-v',
+			strategy: ApplicationVersionService::STRATEGY_ORPHAN_GRACE
+		);
+
+		$configuration = $register->getConfiguration();
+		self::assertSame(expected: ['7' => ['magicMapping' => true]], actual: $configuration['schemas']);
+		self::assertMatchesRegularExpression(pattern: '/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/', string: (string)($configuration['orphanedAt'] ?? ''));
+	}//end testDeleteVersionOrphanGraceStampsRegisterConfiguration()
 
 	/**
 	 * release() publishes the chosen version, moves the production pointer, and

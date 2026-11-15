@@ -91,7 +91,7 @@ function activityOf(data) {
  *   versionNoLongerAccessible: import('vue').Ref<boolean>,
  *   refresh: () => Promise<void>,
  * }}
- * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-1
+ * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-frontend-foundation/tasks.md#task-1
  */
 export function useApplicationInsights(appUuidRef, versionUuidRef, windowRef) {
 	const kpis = ref(emptyKpis())
