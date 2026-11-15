@@ -20,7 +20,7 @@ export const useSettingsStore = defineStore('settings', {
 		/**
 		 * Observed behaviour of `fetchSettings` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-frontend-foundation/tasks.md#task-3
 		 */
 		async fetchSettings() {
 			this.loading = true
@@ -63,7 +63,7 @@ export const useSettingsStore = defineStore('settings', {
 		 *   (including the `registry_token_set` flag), or `null` when the request
 		 *   failed.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-frontend-foundation/tasks.md#task-3
 		 */
 		async saveSettings(settings) {
 			this.loading = true

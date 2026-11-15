@@ -16,7 +16,7 @@
  * Anything it does not recognise is returned untouched, so the other
  * validators in the pipeline keep whatever they already produce.
  *
- * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-001
+ * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-001
  */
 
 import { translate as t } from '@nextcloud/l10n'
@@ -26,7 +26,7 @@ import { translate as t } from '@nextcloud/l10n'
  * wrong and, where there is one, what to do instead.
  *
  * @return {Record<string, string>} Code to message.
- * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-001
+ * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-001
  */
 function messages() {
 	return {
@@ -97,7 +97,7 @@ function messages() {
  *
  * @param {string} error - an error as the validators return it.
  * @return {string} The same error with a known code replaced by its sentence.
- * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-001
+ * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-001
  */
 export function resolveValidationMessage(error) {
 	if (typeof error !== 'string') {

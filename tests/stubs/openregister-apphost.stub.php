@@ -305,12 +305,26 @@ class Bootstrap {
 	/**
 	 * Wire the generic AppHost plumbing for one app.
 	 *
-	 * @param \OCP\AppFramework\Bootstrap\IRegistrationContext $context The registration context.
-	 * @param string $appId The app id.
-	 * @param array<string,mixed> $options Namespaces and feature switches.
+	 * @param \OCP\AppFramework\Bootstrap\IRegistrationContext $context  The registration context.
+	 * @param LeafAdoption                                     $adoption The app id and its overrides.
 	 *
 	 * @return void
 	 */
-	public static function register(\OCP\AppFramework\Bootstrap\IRegistrationContext $context, string $appId, array $options = []): void {
+	public static function register(\OCP\AppFramework\Bootstrap\IRegistrationContext $context, LeafAdoption $adoption): void {
 	}//end register()
+}//end class
+
+/**
+ * Static-analysis stub for one leaf app's adoption request.
+ */
+final class LeafAdoption {
+	/**
+	 * @param string              $appId   The app id.
+	 * @param array<string,mixed> $options Namespaces and feature switches.
+	 */
+	public function __construct(
+		public readonly string $appId,
+		private readonly array $options = [],
+	) {
+	}//end __construct()
 }//end class

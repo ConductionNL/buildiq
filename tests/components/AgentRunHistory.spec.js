@@ -7,7 +7,7 @@ import { mount } from '@vue/test-utils'
  *
  * Spec: agent-workspace ("Every agent run is transparently logged and reviewable").
  */
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('@nextcloud/router', async (importOriginal) => ({
 	...(await importOriginal()),
@@ -147,5 +147,66 @@ describe('AgentRunHistory', () => {
 		expect(wrapper.find('[data-testid="agent-run-outcome"]').text()).toBe(
 			'Discarded',
 		)
+	})
+	describe('model steps (REQ-BQAG-005)', () => {
+		const plainT = globalThis.t
+		beforeEach(() => {
+			globalThis.t = (_app, key, vars = {}) => key.replace(/\{(\w+)\}/g, (m, k) => (k in vars ? String(vars[k]) : m))
+		})
+		afterEach(() => {
+			globalThis.t = plainT
+		})
+
+	it('lists a repaired run\'s model steps above its tool calls, with the refusal and knowledge used (REQ-BQAG-005)', async () => {
+		axios.get.mockResolvedValueOnce({
+			data: [
+				run({
+					knowledgeUsed: ['huisstijl-formulieren.md'],
+					modelSteps: [
+						{ attempt: 1, kind: 'plan', status: 'repair-needed', durationMs: 1200, refusal: 'Syntax error', output: '{steps: oops' },
+						{ attempt: 2, kind: 'repair', status: 'successful', durationMs: 900, refusal: '', output: '{"steps": []}' },
+					],
+				}),
+			],
+		})
+		const wrapper = mount(AgentRunHistory, { propsData: { agentId: 'agent-1' }, stubs })
+		await flush()
+		await flush()
+
+		const steps = wrapper.findAll('[data-testid="agent-run-model-step"]')
+		expect(steps).toHaveLength(2)
+		expect(steps.at(0).text()).toContain('Attempt 1, repair needed')
+		expect(steps.at(0).find('[data-testid="agent-run-step-refusal"]').text()).toBe('Syntax error')
+		expect(steps.at(0).find('details pre').text()).toBe('{steps: oops')
+		expect(steps.at(1).text()).toContain('Attempt 2')
+		expect(steps.at(1).text()).toContain('900 ms')
+		expect(steps.at(1).find('[data-testid="agent-run-step-refusal"]').exists()).toBe(false)
+		expect(wrapper.find('[data-testid="agent-run-knowledge"]').text()).toBe('Knowledge used: huisstijl-formulieren.md')
+
+		const html = wrapper.html()
+		expect(html.indexOf('agent-run-model-step')).toBeLessThan(html.indexOf('agent-run-tool-call'))
+		expect(wrapper.find('[data-testid="agent-run-trace-missing"]').exists()).toBe(false)
+	})
+
+	it('says so when a run\'s model steps were not kept, and still lists its tool calls', async () => {
+		axios.get.mockResolvedValueOnce({ data: [run({ modelSteps: [], traceMissing: true })] })
+		const wrapper = mount(AgentRunHistory, { propsData: { agentId: 'agent-1' }, stubs })
+		await flush()
+		await flush()
+
+		expect(wrapper.find('[data-testid="agent-run-trace-missing"]').exists()).toBe(true)
+		expect(wrapper.findAll('[data-testid="agent-run-model-step"]')).toHaveLength(0)
+		expect(wrapper.findAll('[data-testid="agent-run-tool-call"]')).toHaveLength(1)
+	})
+
+	it('shows nothing about model steps for a run recorded before steps were kept', async () => {
+		axios.get.mockResolvedValueOnce({ data: [run()] })
+		const wrapper = mount(AgentRunHistory, { propsData: { agentId: 'agent-1' }, stubs })
+		await flush()
+		await flush()
+
+		expect(wrapper.find('[data-testid="agent-run-trace-missing"]').exists()).toBe(false)
+		expect(wrapper.find('[data-testid="agent-run-knowledge"]').exists()).toBe(false)
+	})
 	})
 })

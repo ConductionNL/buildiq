@@ -47,7 +47,7 @@ use ReflectionMethod;
  * Unit tests for how DocumentGenerationService finds the generate route.
  *
  * @covers \OCA\Buildiq\Service\DocumentGenerationService
- * @uses \OCA\Buildiq\Support\FleetAppId
+ * @uses \OCA\Buildiq\Service\FleetAppId
  */
 class DocumentGenerationRouteTest extends TestCase {
 

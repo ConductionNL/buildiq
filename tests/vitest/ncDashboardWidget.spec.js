@@ -124,4 +124,27 @@ describe('ncDashboard entry', () => {
 	it('registers nothing when Nextcloud has no dashboard registry', () => {
 		expect(registerNcDashboardWidgets([descriptor()], undefined)).toBe(0)
 	})
+
+	it('resolves nothing without a key, unwraps an override component and falls back to the catalog', () => {
+		const Inner = { name: 'SpecInner', render: () => h('i') }
+		expect(resolveWidgetComponent(null, {})).toBeNull()
+		expect(resolveWidgetComponent(descriptor({ widgetKey: '' }), {})).toBeNull()
+		expect(
+			resolveWidgetComponent(descriptor(), { [KNOWN_KEY]: { component: Inner } }),
+		).toBe(Inner)
+		expect(resolveWidgetComponent(descriptor(), null)).toBe(KnownWidget)
+		expect(resolveWidgetComponent(descriptor({ widgetKey: UNKNOWN_KEY }), null)).toBeNull()
+		expect(resolveWidgetComponent(descriptor(), { [KNOWN_KEY]: 0 })).toBe(KnownWidget)
+	})
+
+	it('skips empty descriptors, refuses a registry without register(), and mounts on callback', () => {
+		expect(registerNcDashboardWidgets([descriptor()], { register: 'x' })).toBe(0)
+		const register = vi.fn()
+		expect(registerNcDashboardWidgets([null, descriptor()], { register })).toBe(1)
+		const el = document.createElement('div')
+		document.body.appendChild(el)
+		register.mock.calls[0][1](el)
+		expect(el.querySelector('.cn-widget-wrapper-stub')).not.toBeNull()
+		expect(el.textContent).toContain('rendered by the registry')
+	})
 })

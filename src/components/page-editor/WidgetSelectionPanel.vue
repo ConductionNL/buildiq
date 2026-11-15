@@ -90,7 +90,7 @@ export default {
 		 * selected.
 		 *
 		 * @return {?object}
-		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 * @spec openspec/specs/component-blocks/spec.md
 		 */
 		captureFragment() {
 			const selected = this.widgets.filter((w) =>
@@ -115,7 +115,7 @@ export default {
 		 * re-fetched) page.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 * @spec openspec/specs/component-blocks/spec.md
 		 */
 		widgets() {
 			const ids = new Set(this.widgets.map((w) => w.id))
@@ -139,7 +139,7 @@ export default {
 		 *
 		 * @param {string} id - the widget id.
 		 * @return {void}
-		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 * @spec openspec/specs/component-blocks/spec.md
 		 */
 		toggle(id) {
 			this.selectedIds = this.isSelected(id)
@@ -151,7 +151,7 @@ export default {
 		 * Open `SaveBlockDialog` for the current selection.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 * @spec openspec/specs/component-blocks/spec.md
 		 */
 		openSaveDialog() {
 			if (this.captureFragment) {
@@ -164,7 +164,7 @@ export default {
 		 *
 		 * @param {object} payload - `{ slug }` of the saved block.
 		 * @return {void}
-		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 * @spec openspec/specs/component-blocks/spec.md
 		 */
 		onSaved(payload) {
 			this.selectedIds = []
