@@ -103,12 +103,10 @@
 		</div>
 
 		<template #actions>
-			<NcButton @click="$emit('close')">
-				{{ t('buildiq', 'Cancel') }}
-			</NcButton>
-			<NcButton variant="primary" :disabled="saving" @click="save">
-				{{ saving ? t('buildiq', 'Saving…') : t('buildiq', 'Save') }}
-			</NcButton>
+			<SaveCancelActions
+				:saving="saving"
+				@cancel="$emit('close')"
+				@save="save" />
 		</template>
 	</NcDialog>
 </template>
@@ -123,7 +121,9 @@ import {
 	NcSelect,
 	NcTextField,
 } from '@nextcloud/vue'
+import SaveCancelActions from '../components/SaveCancelActions.vue'
 import { isCellConditionValid } from '../utils/feelCell.js'
+import { saveRuleSetRecord } from './ruleSetRecords.js'
 
 export default {
 	name: 'DecisionTableEditor',
@@ -133,6 +133,7 @@ export default {
 		NcNoteCard,
 		NcSelect,
 		NcTextField,
+		SaveCancelActions,
 	},
 
 	props: {
@@ -246,29 +247,31 @@ export default {
 		},
 
 		/**
-		 * Persist the RuleSet and its DecisionTable via OpenRegister.
+		 * Persist the RuleSet via OpenRegister and its decision table through buildiq,
+		 * which stores it in OpenRegister's decision-tables register.
 		 *
 		 * @return {Promise<void>}
 		 * @spec openspec/specs/business-rules-engine/spec.md#requirement-req-bre-002-decisiontable-schema-for-dmn-based-multi-condition-rules
+		 * @spec openspec/changes/decision-tables-live-in-openregister/specs/business-rules-engine/spec.md
 		 */
 		async save() {
 			this.saving = true
 			this.errorMessage = ''
 			try {
-				const ruleSetUrl = generateUrl(
-					'/apps/openregister/api/objects/buildiq/rule-set',
-				)
-				await axios.post(ruleSetUrl, {
+				await saveRuleSetRecord({
 					slug: this.staged.slug,
 					name: this.staged.name,
 					ruleType: 'decision-table',
 					status: this.ruleSet.status || 'draft',
 				})
+				// The table is stored in OpenRegister's decision-tables
+				// register (decision 196). buildiq maps the authoring shape
+				// onto the stored one, so the editor sends it to buildiq.
 				const tableUrl = generateUrl(
-					'/apps/openregister/api/objects/buildiq/decision-table',
+					'/apps/buildiq/api/rules/{slug}/decision-table',
+					{ slug: this.staged.slug },
 				)
-				await axios.post(tableUrl, {
-					ruleSetId: this.staged.slug,
+				await axios.put(tableUrl, {
 					hitPolicy: this.staged.hitPolicy,
 					inputColumns: this.staged.inputColumns,
 					rules: this.staged.rules,

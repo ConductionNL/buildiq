@@ -17,12 +17,17 @@
  * @version GIT: <git-id>
  *
  * @link https://conduction.nl
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
 
 namespace OCA\Buildiq\Tests\Unit\Service;
 
+use OCA\Buildiq\Service\CallerContext;
+use OCA\Buildiq\Service\PermissionResolver;
 use OCA\Buildiq\Service\SettingsService;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
@@ -88,8 +93,11 @@ final class SettingsServiceTest extends TestCase {
 			appConfig: $this->appConfig,
 			appManager: $this->appManager,
 			container: $this->container,
-			groupManager: $this->groupManager,
-			userSession: $this->userSession,
+			caller: new CallerContext(
+				userSession: $this->userSession,
+				groupManager: $this->groupManager,
+				permissionResolver: $this->createMock(PermissionResolver::class)
+			),
 			logger: new NullLogger(),
 		);
 	}//end sut()

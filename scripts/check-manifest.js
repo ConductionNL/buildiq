@@ -108,7 +108,60 @@ function substituteTokens(manifest) {
 }
 
 /**
+ * Validate one parsed manifest against the schema version it declares and
+ * print the result.
  *
+ * @param {string} target The target as given on the command line.
+ * @param {{manifest: object, validators: object}} context The parsed manifest and the compiled validators.
+ * @return {boolean} Whether the manifest is valid.
+ */
+function validateManifest(target, context) {
+	const { manifest, validators } = context
+	const candidate = substituteTokens(manifest)
+	const version = schemaVersionFor(manifest)
+	const validate = validators[version]
+	const valid = validate(candidate)
+	if (valid) {
+		console.log(`PASS ${target} (${version})`)
+		return true
+	}
+
+	console.error(`FAIL ${target} (${version})`)
+	for (const err of validate.errors || []) {
+		console.error(`  ${err.instancePath || '(root)'} ${err.message}`)
+	}
+	return false
+}
+
+/**
+ * Check one target file: a missing file is skipped, unparseable JSON fails.
+ *
+ * @param {string} target The target as given on the command line.
+ * @param {{repoRoot: string, validators: object}} context The repo root and the compiled validators.
+ * @return {boolean} Whether the target passed (a skipped target passes).
+ */
+function checkTarget(target, context) {
+	const abs = path.isAbsolute(target)
+		? target
+		: path.join(context.repoRoot, target)
+	if (!fs.existsSync(abs)) {
+		console.error(`SKIP ${target} (not found)`)
+		return true
+	}
+
+	let manifest
+	try {
+		manifest = loadJson(abs)
+	} catch (err) {
+		console.error(`FAIL ${target} — JSON parse error: ${err.message}`)
+		return false
+	}
+
+	return validateManifest(target, { manifest, validators: context.validators })
+}
+
+/**
+ * Validate every target and exit 0 when all pass, 1 otherwise.
  */
 function main() {
 	const args = process.argv.slice(2)
@@ -121,40 +174,10 @@ function main() {
 		v2: ajv.compile(loadJson(SCHEMA_V2_PATH)),
 	}
 
-	let allPassed = true
-	for (const target of targets) {
-		const abs = path.isAbsolute(target) ? target : path.join(repoRoot, target)
-		if (!fs.existsSync(abs)) {
-			console.error(`SKIP ${target} (not found)`)
-			continue
-		}
-
-		let manifest
-		try {
-			manifest = loadJson(abs)
-		} catch (err) {
-			console.error(`FAIL ${target} — JSON parse error: ${err.message}`)
-			allPassed = false
-			continue
-		}
-
-		const candidate = substituteTokens(manifest)
-		const version = schemaVersionFor(manifest)
-		const validate = validators[version]
-		const valid = validate(candidate)
-		if (valid) {
-			console.log(`PASS ${target} (${version})`)
-			continue
-		}
-
-		allPassed = false
-		console.error(`FAIL ${target} (${version})`)
-		for (const err of validate.errors || []) {
-			console.error(`  ${err.instancePath || '(root)'} ${err.message}`)
-		}
-	}
-
-	process.exit(allPassed ? 0 : 1)
+	const results = targets.map((target) =>
+		checkTarget(target, { repoRoot, validators }),
+	)
+	process.exit(results.every(Boolean) ? 0 : 1)
 }
 
 main()

@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ */
+
 declare(strict_types=1);
 
 // Define that we're running PHPUnit.
@@ -192,6 +197,12 @@ foreach ([
 // classes ARE available (in-container run).
 require_once __DIR__ . '/stubs/openregister-stubs.php';
 
+// Form destination contract (openregister#4563). Same guards.
+require_once __DIR__ . '/stubs/openregister-form.stub.php';
+
+// Leaf-provider contract (ADR-066). Same guards: a no-op in-container.
+require_once __DIR__ . '/stubs/openregister-leaf.stub.php';
+
 // Same guard for the IMcpToolProvider interface which ships with OR but may
 // not be present until OR#1466 merges.
 require_once __DIR__ . '/Stubs/Mcp/IMcpToolProvider.php';
@@ -220,10 +231,10 @@ if (!defined('OC_CONSOLE') && $buildiqNcRoot !== null) {
 			require_once $ncAutoload;
 		}
 
-		if (class_exists(\OC_App::class)) {
-			\OC_App::loadApps();
-			\OC_App::loadApp('buildiq');
-		}
+		// Public API: NC 35 removed the private \OC_App app loaders.
+		$buildiqAppManager = \OCP\Server::get(\OCP\App\IAppManager::class);
+		$buildiqAppManager->loadApps();
+		$buildiqAppManager->loadApp('buildiq');
 
 		if (class_exists(\OC_Hook::class)) {
 			\OC_Hook::clear();

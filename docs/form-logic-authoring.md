@@ -96,6 +96,75 @@ keys on that field are replaced. Fields you never touch keep their flat
 keys exactly as they were; this is opt-in, per field, never a bulk
 rewrite of the whole form.
 
+## Prefilled, calculated and checked while it is filled in
+
+A form can fill in what is already known, work out what follows from the
+answers, and tell the person filling it in straight away why they do not
+qualify. Calculations and checks come from a rule set you already built and
+tested under **Rules**. There is no formula language to learn.
+
+**Filled in when the form opens.** In a field's **Details**, pick what it
+starts with: a fixed value, the user name of the person filling it in, their
+name, their e-mail, today, or a field of the record the form opens from (for
+example `title`). The field stores a token such as `@me.email`; the person
+can still change the value.
+
+**Calculated.** Pick the rule set that works the value out, the outcome to
+show, and the answers it reads. The field shows the outcome read-only and
+works it out again when one of those answers changes. A rule set that is not
+active is marked, because the field stays empty until it is.
+
+**Eligibility check.** On the form page, pick a rule set, the outcome and
+value that mean the person qualifies (for `loan-eligibility`: `decision` is
+`approved`), and the outcome that explains why not (`reason`). With **Wait
+for a pass before the form can be sent** the submit button stays disabled
+until the check passes.
+
+While the form is filled in, buildiq evaluates these rule sets in preview
+mode, which writes nothing to the execution log. When the record is saved,
+buildiq evaluates every calculated field again with the saved values and
+stores its own answer, so a value changed in the browser never lands. A
+blocking check that fails refuses the save with its explanation.
+
+> Showing these values while the form is filled in needs the matching hooks
+> in `@conduction/nextcloud-vue`'s `CnFormPage`. Until the app's renderer has
+> them, the form shows the fields as plain inputs; the server still
+> recomputes and checks on save.
+
+## Field types, files, tables and answers that fill other answers
+
+The designer's palette lists every field type it offers: text, number, yes
+or no, choice, long text, date, file and table of records. Drag a type onto
+the form and drop it where it should go, or drag a field's handle to move
+it. Without a mouse, pick a type in the palette and press Enter: the field
+is added at the end and gets focus, and **Move field up** / **Move field
+down** put it in place.
+
+A **file** field has its own settings under **Details**:
+
+- **Allowed file types**, written as `accept` (for example `.pdf,image/*`).
+- **Maximum size (MB)**, written as `maxSize` in bytes (10 MB is
+  `10485760`).
+- **Several files**, written as `multiple: true`.
+- **Camera**: off, back camera (`capture: "environment"`) or front camera
+  (`capture: "user"`). Off removes `capture`.
+
+A **table of records** field edits another schema's records inside the form,
+such as order lines on an order. Pick the child schema from the form's
+register; the designer then offers the child's fields that point back at the
+form's schema (`parentField`) and the columns to show (`columns`). A schema
+with no field pointing back is named as unusable and is not saved on the
+field. Saving a form whose table has no schema or no parent field lists it as
+a finding.
+
+**Fill in from another answer** writes a field's `assign` rules. Each rule
+is a condition on another field (the same operators as a condition) and a
+value: a fixed value, another answer (`@answer.<field>`) or a token such as
+`@me` or `@today`. The first rule whose condition holds fills the field; once
+the person types in it themselves, the rules stop. A rule may not read the
+field it fills: the designer refuses it, and a rule naming a field the form
+does not have is listed as a finding.
+
 ## The dangling-reference warning
 
 Deleting a field that's still referenced by another field's condition,

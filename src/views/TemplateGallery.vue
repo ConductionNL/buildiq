@@ -7,8 +7,7 @@
 				{{
 					t(
 						'buildiq',
-						'Install an app published to GitHub. The store lists every repository tagged with the openbuild-app topic. Installing adds a copy to your apps that you can change.',
-						'Start from a template that ships with Buildiq, or install an app published to GitHub. Either way you get an editable draft app.',
+						'Start from a template that ships with Buildiq, or install an app published to GitHub. Either way you get your own copy of the app to change.',
 					)
 				}}
 			</p>
@@ -41,9 +40,36 @@
 				@click="onSelectBlocksTab">
 				{{ t('buildiq', 'Blocks') }}
 			</button>
+			<!-- REQ-BQGL-003: the form library beside templates and blocks. -->
+			<button
+				type="button"
+				role="tab"
+				data-testid="forms-tab"
+				:aria-selected="viewMode === 'forms'"
+				class="template-gallery__view-btn"
+				:class="[
+					{ 'template-gallery__view-btn--active': viewMode === 'forms' },
+				]"
+				@click="viewMode = 'forms'">
+				{{ t('buildiq', 'Forms') }}
+			</button>
 		</div>
 
 		<template v-if="viewMode === 'templates'">
+			<!-- REQ-BQGL-001: one category filter for the built-in, organisation
+			     and GitHub templates, kept in ?category= so a link opens the
+			     same view. -->
+			<div class="template-gallery__filters">
+				<NcSelect
+					data-testid="template-category-filter"
+					:modelValue="selectedTemplateCategory"
+					:inputLabel="t('buildiq', 'Filter by category')"
+					:options="templateCategoryOptions"
+					:clearable="true"
+					:placeholder="t('buildiq', 'All categories')"
+					@update:modelValue="onTemplateCategory" />
+			</div>
+
 			<!-- Built-in templates: the application-template records of the
 			     buildiq register (seeded ones first, then organisation ones). -->
 			<section
@@ -79,45 +105,75 @@
 					:description="
 						t(
 							'buildiq',
-							'An admin can install the starter templates from the Buildiq setup wizard.',
+							'An admin can install the starter templates from the Buildiq admin settings.',
 						)
 					" />
 
-				<ul v-else class="template-gallery__grid">
-					<li
-						v-for="tpl in sortedTemplates"
-						:key="tpl.slug || tpl.id"
-						class="template-card"
-						data-testid="builtin-template-card">
-						<div class="template-card__body">
-							<h3 class="template-card__title">
-								{{ tpl.title || tpl.slug }}
-							</h3>
-							<span
-								v-if="tpl.isSeeded === false"
-								class="template-card__badge">
-								{{ t('buildiq', 'Organisation template') }}
-							</span>
-							<span
-								v-if="tpl.category"
-								class="template-card__category"
-								>{{ categoryLabel(tpl.category) }}</span
-							>
-							<p v-if="tpl.useCase" class="template-card__usecase">
-								{{ tpl.useCase }}
-							</p>
-							<p class="template-card__description">
-								{{ tpl.description || '' }}
-							</p>
-						</div>
-						<div class="template-card__actions">
-							<NcButton variant="primary" @click="openClone(tpl)">
-								{{ t('buildiq', 'Use this template') }}
-							</NcButton>
-						</div>
-					</li>
-				</ul>
+				<NcEmptyContent
+					v-else-if="templateGroups.length === 0"
+					:name="t('buildiq', 'No templates in this category')" />
+
+				<template v-else>
+					<section
+						v-for="group in templateGroups"
+						:key="group.id"
+						class="template-gallery__category"
+						data-testid="template-category-group"
+						:aria-labelledby="'template-category-' + group.id">
+						<h3
+							:id="'template-category-' + group.id"
+							class="template-gallery__category-title">
+							{{ group.label }}
+						</h3>
+						<ul class="template-gallery__grid">
+							<li
+								v-for="tpl in group.templates"
+								:key="tpl.slug || tpl.id"
+								class="template-card"
+								data-testid="builtin-template-card">
+								<div class="template-card__body">
+									<h4 class="template-card__title">
+										{{ tpl.title || tpl.slug }}
+									</h4>
+									<span
+										v-if="tpl.isSeeded === false"
+										class="template-card__badge">
+										{{ t('buildiq', 'Organisation template') }}
+									</span>
+									<span
+										v-if="tpl.category"
+										class="template-card__category"
+										>{{ categoryLabel(tpl.category) }}</span
+									>
+									<p
+										v-if="tpl.useCase"
+										class="template-card__usecase">
+										{{ tpl.useCase }}
+									</p>
+									<p class="template-card__description">
+										{{ tpl.description || '' }}
+									</p>
+								</div>
+								<div class="template-card__actions">
+									<NcButton
+										variant="primary"
+										@click="openClone(tpl)">
+										{{ t('buildiq', 'Use this template') }}
+									</NcButton>
+								</div>
+							</li>
+						</ul>
+					</section>
+				</template>
 			</section>
+
+			<!-- The remote catalogue an administrator configured, between the
+			     built-in templates and GitHub (reuse-remote-store-section). -->
+			<SharedCatalogueSection
+				ref="sharedCatalogue"
+				:category="templateCategory || ''"
+				:categoryLabel="categoryLabel"
+				@install="openStoreInstall" />
 
 			<h2 class="template-gallery__section-title">
 				{{ t('buildiq', 'Apps on GitHub') }}
@@ -168,7 +224,7 @@
 			</div>
 
 			<div
-				v-else-if="githubCards.length === 0 && githubSearched"
+				v-else-if="visibleGithubCards.length === 0 && githubSearched"
 				class="template-gallery__empty">
 				<NcEmptyContent
 					:name="t('buildiq', 'No GitHub apps match your search')" />
@@ -179,9 +235,10 @@
 				class="template-gallery__grid"
 				data-walkthrough-id="templates-grid">
 				<li
-					v-for="card in githubCards"
+					v-for="card in visibleGithubCards"
 					:key="card.owner + '/' + card.repo"
-					class="template-card">
+					class="template-card"
+					data-testid="github-card">
 					<div class="template-card__body">
 						<h3 class="template-card__title">
 							{{ card.name || card.slug || card.repo }}
@@ -249,6 +306,12 @@
 		<!-- component-blocks: "Blocks" filter — browse-only, no clone action
 		     (blocks insert via the page designer's block library, per
 		     REQ "Blocks filter shows blocks without the clone action"). -->
+		<FormLibraryView
+			v-else-if="viewMode === 'forms'"
+			:categoryOptions="templateCategoryOptions"
+			:category="templateCategory"
+			@update:category="onTemplateCategory" />
+
 		<template v-else>
 			<div class="template-gallery__filters">
 				<NcSelect
@@ -304,9 +367,12 @@
 			:template="cloneTarget"
 			:github="cloneMode === 'github'"
 			:githubRepo="cloneGithubRepo"
+			:remote="cloneMode === 'store'"
+			:remoteSlug="cloneMode === 'store' ? cloneTarget?.slug || '' : ''"
 			@close="cloneOpen = false"
 			@submit="onCloneSubmit"
-			@installed="onInstalled" />
+			@installed="onInstalled"
+			@stale="onStaleStoreTemplate" />
 	</div>
 </template>
 
@@ -322,9 +388,15 @@ import {
 	NcSelect,
 	NcTextField,
 } from '@nextcloud/vue'
+import FormLibraryView from '../components/store/FormLibraryView.vue'
+import SharedCatalogueSection from '../components/store/SharedCatalogueSection.vue'
 import CloneTemplateDialog from '../modals/CloneTemplateDialog.vue'
+import {
+	blocksInCategory,
+	categoryOptionsOf,
+	fetchComponentBlocks,
+} from '../services/blockCatalogue.js'
 
-const OR_BLOCKS = '/apps/openregister/api/objects/buildiq/component-block'
 const OR_TEMPLATES = '/apps/openregister/api/objects/buildiq/application-template'
 
 const CATEGORY_LABELS = {
@@ -332,6 +404,21 @@ const CATEGORY_LABELS = {
 	'internal-operations': 'Internal operations',
 	'citizen-engagement': 'Citizen engagement',
 	'field-work': 'Field work',
+}
+
+// The group of templates and cards without one of the four categories.
+const OTHER_CATEGORY = 'other'
+
+/**
+ * The category a template or GitHub card is grouped under.
+ *
+ * @param {object} item A template or a GitHub card.
+ * @return {string} One of the four category ids, or OTHER_CATEGORY.
+ * @spec openspec/changes/reuse-gallery-categories-and-form-library/specs/template-catalogue-ui/spec.md#requirement-templates-can-be-filtered-and-browsed-by-category-req-bqgl-001
+ */
+function categoryOf(item) {
+	const category = item && item.category
+	return Object.hasOwn(CATEGORY_LABELS, category) ? category : OTHER_CATEGORY
 }
 
 export default {
@@ -344,6 +431,8 @@ export default {
 		NcSelect,
 		NcTextField,
 		CloneTemplateDialog,
+		FormLibraryView,
+		SharedCatalogueSection,
 	},
 
 	data() {
@@ -351,7 +440,8 @@ export default {
 			cloneOpen: false,
 			cloneTarget: null,
 			cloneGithubRepo: null,
-			// 'local' for a built-in template, 'github' for a GitHub app.
+			// 'local' for a built-in template, 'github' for a GitHub app,
+			// 'store' for a template of the shared catalogue.
 			cloneMode: 'github',
 			// Built-in templates (application-template records).
 			templates: [],
@@ -374,17 +464,91 @@ export default {
 			blocksLoading: false,
 			blocksLoaded: false,
 			blockCategoryFilter: null,
+			// REQ-BQGL-001: the picked template category id, or null for all.
+			templateCategory: null,
 		}
 	},
 
 	computed: {
+		/**
+		 * The template categories the filter offers: the closed enum of
+		 * ApplicationTemplate.category, in its own order.
+		 *
+		 * @return {Array<{id: string, label: string}>}
+		 * @spec openspec/changes/reuse-gallery-categories-and-form-library/specs/template-catalogue-ui/spec.md#requirement-templates-can-be-filtered-and-browsed-by-category-req-bqgl-001
+		 */
+		templateCategoryOptions() {
+			return Object.keys(CATEGORY_LABELS).map((id) => ({
+				id,
+				label: this.categoryLabel(id),
+			}))
+		},
+
+		/**
+		 * The filter's current option, or null when every category shows.
+		 *
+		 * @return {{id: string, label: string}|null}
+		 * @spec openspec/changes/reuse-gallery-categories-and-form-library/specs/template-catalogue-ui/spec.md#requirement-templates-can-be-filtered-and-browsed-by-category-req-bqgl-001
+		 */
+		selectedTemplateCategory() {
+			return (
+				this.templateCategoryOptions.find(
+					(option) => option.id === this.templateCategory,
+				) || null
+			)
+		},
+
+		/**
+		 * The built-in and organisation templates under a heading per
+		 * category, in the enum's order, with templates without a known
+		 * category last under "Other". Inside a group the seeded templates
+		 * come first. Narrowed to the picked category.
+		 *
+		 * @return {Array<{id: string, label: string, templates: Array<object>}>}
+		 * @spec openspec/changes/reuse-gallery-categories-and-form-library/specs/template-catalogue-ui/spec.md#requirement-templates-can-be-filtered-and-browsed-by-category-req-bqgl-001
+		 */
+		templateGroups() {
+			const ids = [...Object.keys(CATEGORY_LABELS), OTHER_CATEGORY]
+			return ids
+				.filter(
+					(id) => !this.templateCategory || id === this.templateCategory,
+				)
+				.map((id) => ({
+					id,
+					label:
+						id === OTHER_CATEGORY
+							? t('buildiq', 'Other')
+							: this.categoryLabel(id),
+					templates: this.sortedTemplates.filter(
+						(tpl) => categoryOf(tpl) === id,
+					),
+				}))
+				.filter((group) => group.templates.length > 0)
+		},
+
+		/**
+		 * The GitHub cards after the category filter, by the category
+		 * their descriptor carries.
+		 *
+		 * @return {Array<object>}
+		 * @spec openspec/changes/reuse-gallery-categories-and-form-library/specs/template-catalogue-ui/spec.md#requirement-templates-can-be-filtered-and-browsed-by-category-req-bqgl-001
+		 */
+		visibleGithubCards() {
+			if (!this.templateCategory) {
+				return this.githubCards
+			}
+			return this.githubCards.filter(
+				(card) => categoryOf(card) === this.templateCategory,
+			)
+		},
+
 		/**
 		 * The built-in templates in display order: seeded ones first, then
 		 * organisation templates, each group in the order the register
 		 * returned them.
 		 *
 		 * @return {Array<object>}
-		 * @spec openspec/changes/store-shows-built-in-templates/specs/template-catalogue-ui/spec.md
+		 * @spec openspec/specs/template-catalogue-ui/spec.md
 		 */
 		sortedTemplates() {
 			const list = this.templates.filter((tpl) => tpl && (tpl.slug || tpl.id))
@@ -412,38 +576,43 @@ export default {
 		 * Distinct categories present across the loaded blocks, for the filter.
 		 *
 		 * @return {Array<{id: string, label: string}>}
-		 * @spec openspec/changes/component-blocks/specs/openbuild-template-catalogue/spec.md
+		 * @spec openspec/specs/openbuild-template-catalogue/spec.md
 		 */
 		blockCategoryOptions() {
-			const seen = new Set()
-			return this.blocks
-				.map((b) => b && b.category)
-				.filter((c) => c && !seen.has(c) && seen.add(c))
-				.map((c) => ({ id: c, label: c }))
+			return categoryOptionsOf(this.blocks)
 		},
 
 		/**
 		 * The visible blocks after the category filter is applied.
 		 *
 		 * @return {Array<object>}
-		 * @spec openspec/changes/component-blocks/specs/openbuild-template-catalogue/spec.md
+		 * @spec openspec/specs/openbuild-template-catalogue/spec.md
 		 */
 		filteredBlocks() {
-			const selected =
-				this.blockCategoryFilter
-				&& (this.blockCategoryFilter.id ?? this.blockCategoryFilter)
-			if (!selected) {
-				return this.blocks
-			}
-			return this.blocks.filter((b) => b && b.category === selected)
+			return blocksInCategory(this.blocks, this.blockCategoryFilter)
 		},
+	},
+
+	/**
+	 * Open on the category a shared link names.
+	 *
+	 * @return {void}
+	 * @spec openspec/changes/reuse-gallery-categories-and-form-library/specs/template-catalogue-ui/spec.md#requirement-templates-can-be-filtered-and-browsed-by-category-req-bqgl-001
+	 */
+	created() {
+		// REQ-BQGL-001: a shared link opens on the category it names.
+		const fromLink = this.$route?.query?.category
+		this.templateCategory = Object.hasOwn(CATEGORY_LABELS, fromLink)
+			? fromLink
+			: null
 	},
 
 	/**
 	 * Load the built-in templates, run the initial GitHub search and detect a
 	 * GitHub credential.
 	 *
-	 * @spec openspec/changes/store-shows-built-in-templates/specs/template-catalogue-ui/spec.md
+	 * @return {void}
+	 * @spec openspec/specs/template-catalogue-ui/spec.md
 	 */
 	mounted() {
 		// The store is GitHub-only: run the initial (empty-query) search so the
@@ -456,10 +625,37 @@ export default {
 
 	methods: {
 		/**
+		 * Apply a category picked in the filter and keep it in ?category=,
+		 * leaving the rest of the query as it was.
+		 *
+		 * @param {{id: string}|string|null} option The picked option, or null when cleared.
+		 * @return {void}
+		 * @spec openspec/changes/reuse-gallery-categories-and-form-library/specs/template-catalogue-ui/spec.md#requirement-templates-can-be-filtered-and-browsed-by-category-req-bqgl-001
+		 */
+		onTemplateCategory(option) {
+			const id = option && (option.id ?? option)
+			this.templateCategory = Object.hasOwn(CATEGORY_LABELS, id) ? id : null
+			if (!this.$router || typeof this.$router.replace !== 'function') {
+				return
+			}
+			const query = { ...(this.$route?.query || {}) }
+			if (this.templateCategory) {
+				query.category = this.templateCategory
+			} else {
+				delete query.category
+			}
+			const done = this.$router.replace({ query })
+			if (done && typeof done.catch === 'function') {
+				// Replacing with the same query is not an error worth showing.
+				done.catch(() => {})
+			}
+		},
+
+		/**
 		 * Load the built-in templates from the buildiq register.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/store-shows-built-in-templates/specs/template-catalogue-ui/spec.md
+		 * @spec openspec/specs/template-catalogue-ui/spec.md
 		 */
 		async fetchTemplates() {
 			this.templatesLoading = true
@@ -486,7 +682,7 @@ export default {
 		 *
 		 * @param {object} template The template record.
 		 * @return {void}
-		 * @spec openspec/changes/store-shows-built-in-templates/specs/template-catalogue-ui/spec.md
+		 * @spec openspec/specs/template-catalogue-ui/spec.md
 		 */
 		openClone(template) {
 			this.cloneMode = 'local'
@@ -501,7 +697,7 @@ export default {
 		 *
 		 * @param {{name: string, slug: string, description?: string}} payload The dialog input.
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/store-shows-built-in-templates/specs/template-catalogue-ui/spec.md
+		 * @spec openspec/specs/template-catalogue-ui/spec.md
 		 */
 		async onCloneSubmit(payload) {
 			const templateSlug = this.cloneTarget?.slug
@@ -529,7 +725,7 @@ export default {
 		 *
 		 * @param {object} e The axios error.
 		 * @return {string} The message to show in the dialog.
-		 * @spec openspec/changes/store-shows-built-in-templates/specs/template-catalogue-ui/spec.md
+		 * @spec openspec/specs/template-catalogue-ui/spec.md
 		 */
 		cloneErrorMessage(e) {
 			const data = e?.response?.data || {}
@@ -648,6 +844,34 @@ export default {
 		},
 
 		/**
+		 * Open the clone dialog to install a shared-catalogue template, in store mode.
+		 *
+		 * @param {object} card The catalogue card.
+		 * @return {void}
+		 * @spec openspec/changes/reuse-remote-store-section/specs/template-catalogue-ui/spec.md#requirement-a-maker-installs-a-catalogue-template-req-bqrs-004
+		 */
+		openStoreInstall(card) {
+			this.cloneMode = 'store'
+			this.cloneGithubRepo = null
+			this.cloneTarget = {
+				title: card.title || card.slug,
+				slug: card.slug,
+				description: card.description,
+			}
+			this.cloneOpen = true
+		},
+
+		/**
+		 * A template that left the catalogue: read the section again.
+		 *
+		 * @return {void}
+		 * @spec openspec/changes/reuse-remote-store-section/specs/template-catalogue-ui/spec.md#requirement-a-maker-installs-a-catalogue-template-req-bqrs-004
+		 */
+		onStaleStoreTemplate() {
+			this.$refs.sharedCatalogue?.reload()
+		},
+
+		/**
 		 * Redirect to the new application after a GitHub install (the dialog owns
 		 * the POST and emits `installed`).
 		 *
@@ -671,7 +895,7 @@ export default {
 		 *
 		 * @param {{warnings?: Array<{message: string}>}} created The install response.
 		 * @return {void}
-		 * @spec openspec/changes/surface-hermiq-credential-scope-requirement/specs/app-channel-application/spec.md
+		 * @spec openspec/specs/app-channel-application/spec.md
 		 */
 		showInstallWarnings(created) {
 			const warnings = Array.isArray(created?.warnings) ? created.warnings : []
@@ -685,7 +909,7 @@ export default {
 		 *
 		 * @param {string} category The category key.
 		 * @return {string}
-		 * @spec openspec/changes/retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-1
 		 */
 		categoryLabel(category) {
 			return t('buildiq', CATEGORY_LABELS[category] || category || '')
@@ -699,7 +923,7 @@ export default {
 		 *   build the route params; a payload without one (a backend that answered 200
 		 *   with no body) leaves the user on the gallery rather than navigating
 		 *   nowhere.
-		 * @spec openspec/changes/retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-template-catalogue-ui/tasks.md#task-1
 		 */
 		redirectAfterClone(created) {
 			const slug = created?.slug
@@ -741,7 +965,7 @@ export default {
 		 * first time it is opened.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/component-blocks/specs/openbuild-template-catalogue/spec.md
+		 * @spec openspec/specs/openbuild-template-catalogue/spec.md
 		 */
 		onSelectBlocksTab() {
 			this.viewMode = 'blocks'
@@ -755,17 +979,12 @@ export default {
 		 * OR REST listing the page designer's block-library panel uses).
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/component-blocks/specs/openbuild-template-catalogue/spec.md
+		 * @spec openspec/specs/openbuild-template-catalogue/spec.md
 		 */
 		async fetchBlocks() {
 			this.blocksLoading = true
 			try {
-				const { data } = await axios.get(generateUrl(OR_BLOCKS))
-				this.blocks = Array.isArray(data && data.results)
-					? data.results
-					: Array.isArray(data)
-						? data
-						: []
+				this.blocks = await fetchComponentBlocks()
 			} catch (e) {
 				this.blocks = []
 			} finally {
@@ -784,6 +1003,15 @@ export default {
 	flex-direction: column;
 	gap: 20px;
 	color: var(--color-main-text);
+}
+
+.template-gallery__header {
+	/* Clear the Nextcloud navigation toggle, which is absolutely positioned at
+	   the left edge of .app-content and sat on top of the first letter of the
+	   title. Same 56px the library's page headers reserve
+	   (.cn-dashboard-page__header). Only the HEADER shifts: the cards below
+	   keep the full width. */
+	padding-inline-start: 56px;
 }
 
 .template-gallery__header h1 {
@@ -831,6 +1059,11 @@ export default {
 .template-gallery__section-title {
 	margin: 0;
 	font-size: 1.2rem;
+}
+
+.template-gallery__category-title {
+	margin: 12px 0 8px;
+	font-size: 1rem;
 }
 
 .template-card__usecase {

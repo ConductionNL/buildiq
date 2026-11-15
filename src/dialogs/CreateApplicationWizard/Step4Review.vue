@@ -95,7 +95,7 @@ export default {
 		/**
 		 * Observed behaviour of `versions` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
 		 */
 		versions() {
 			return Array.isArray(this.payload.versions) ? this.payload.versions : []
@@ -104,7 +104,7 @@ export default {
 		/**
 		 * Observed behaviour of `chainDisplay` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
 		 */
 		chainDisplay() {
 			if (this.versions.length === 0) return '—'
@@ -114,7 +114,7 @@ export default {
 		/**
 		 * Observed behaviour of `productionSlug` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
 		 */
 		productionSlug() {
 			if (this.versions.length === 0) return '—'

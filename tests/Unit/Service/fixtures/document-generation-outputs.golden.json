@@ -1,0 +1,314 @@
+[
+    {
+        "modes": [
+            "attach"
+        ],
+        "filesWork": true,
+        "result": true,
+        "request": {
+            "templateId": "tpl-1",
+            "dataRefs": [
+                {
+                    "register": "buildiq",
+                    "schema": "permit",
+                    "id": "obj-uuid-9"
+                }
+            ],
+            "options": {
+                "format": "pdf"
+            },
+            "filename": "document-obj-uuid-9.pdf"
+        },
+        "trace": [
+            "runAsOwner app-uuid-1",
+            "saveObject {\"generatedDocument\":{\"ref\":\"42\"}}"
+        ]
+    },
+    {
+        "modes": [
+            "attach"
+        ],
+        "filesWork": false,
+        "result": false,
+        "request": {
+            "templateId": "tpl-1",
+            "dataRefs": [
+                {
+                    "register": "buildiq",
+                    "schema": "permit",
+                    "id": "obj-uuid-9"
+                }
+            ],
+            "options": {
+                "format": "pdf"
+            },
+            "filename": "document-obj-uuid-9.pdf"
+        },
+        "trace": [
+            "runAsOwner app-uuid-1"
+        ]
+    },
+    {
+        "modes": [
+            "download-link"
+        ],
+        "filesWork": true,
+        "result": true,
+        "request": {
+            "templateId": "tpl-1",
+            "dataRefs": [
+                {
+                    "register": "buildiq",
+                    "schema": "permit",
+                    "id": "obj-uuid-9"
+                }
+            ],
+            "options": {
+                "format": "pdf"
+            },
+            "filename": "document-obj-uuid-9.pdf"
+        },
+        "trace": [
+            "runAsOwner app-uuid-1"
+        ]
+    },
+    {
+        "modes": [
+            "download-link"
+        ],
+        "filesWork": false,
+        "result": false,
+        "request": {
+            "templateId": "tpl-1",
+            "dataRefs": [
+                {
+                    "register": "buildiq",
+                    "schema": "permit",
+                    "id": "obj-uuid-9"
+                }
+            ],
+            "options": {
+                "format": "pdf"
+            },
+            "filename": "document-obj-uuid-9.pdf"
+        },
+        "trace": [
+            "runAsOwner app-uuid-1"
+        ]
+    },
+    {
+        "modes": [
+            "attach",
+            "notify"
+        ],
+        "filesWork": true,
+        "result": true,
+        "request": {
+            "templateId": "tpl-1",
+            "dataRefs": [
+                {
+                    "register": "buildiq",
+                    "schema": "permit",
+                    "id": "obj-uuid-9"
+                }
+            ],
+            "options": {
+                "format": "pdf"
+            },
+            "filename": "document-obj-uuid-9.pdf"
+        },
+        "trace": [
+            "runAsOwner app-uuid-1",
+            "saveObject {\"generatedDocument\":{\"ref\":\"42\"}}",
+            "send-notification {\"subject\":\"Your generated document has been attached\",\"recipientUid\":\"app-owner\",\"objectId\":\"obj-uuid-9\"}"
+        ]
+    },
+    {
+        "modes": [
+            "attach",
+            "notify"
+        ],
+        "filesWork": false,
+        "result": true,
+        "request": {
+            "templateId": "tpl-1",
+            "dataRefs": [
+                {
+                    "register": "buildiq",
+                    "schema": "permit",
+                    "id": "obj-uuid-9"
+                }
+            ],
+            "options": {
+                "format": "pdf"
+            },
+            "filename": "document-obj-uuid-9.pdf"
+        },
+        "trace": [
+            "runAsOwner app-uuid-1",
+            "send-notification {\"subject\":\"Your generated document is ready\",\"recipientUid\":\"app-owner\",\"objectId\":\"obj-uuid-9\"}"
+        ]
+    },
+    {
+        "modes": [
+            "download-link",
+            "notify"
+        ],
+        "filesWork": true,
+        "result": true,
+        "request": {
+            "templateId": "tpl-1",
+            "dataRefs": [
+                {
+                    "register": "buildiq",
+                    "schema": "permit",
+                    "id": "obj-uuid-9"
+                }
+            ],
+            "options": {
+                "format": "pdf"
+            },
+            "filename": "document-obj-uuid-9.pdf"
+        },
+        "trace": [
+            "runAsOwner app-uuid-1",
+            "send-notification {\"subject\":\"Your generated document is ready to download\",\"recipientUid\":\"app-owner\",\"objectId\":\"obj-uuid-9\"}"
+        ]
+    },
+    {
+        "modes": [
+            "download-link",
+            "notify"
+        ],
+        "filesWork": false,
+        "result": true,
+        "request": {
+            "templateId": "tpl-1",
+            "dataRefs": [
+                {
+                    "register": "buildiq",
+                    "schema": "permit",
+                    "id": "obj-uuid-9"
+                }
+            ],
+            "options": {
+                "format": "pdf"
+            },
+            "filename": "document-obj-uuid-9.pdf"
+        },
+        "trace": [
+            "runAsOwner app-uuid-1",
+            "send-notification {\"subject\":\"Your generated document is ready\",\"recipientUid\":\"app-owner\",\"objectId\":\"obj-uuid-9\"}"
+        ]
+    },
+    {
+        "modes": [
+            "attach",
+            "download-link",
+            "notify"
+        ],
+        "filesWork": true,
+        "result": true,
+        "request": {
+            "templateId": "tpl-1",
+            "dataRefs": [
+                {
+                    "register": "buildiq",
+                    "schema": "permit",
+                    "id": "obj-uuid-9"
+                }
+            ],
+            "options": {
+                "format": "pdf"
+            },
+            "filename": "document-obj-uuid-9.pdf"
+        },
+        "trace": [
+            "runAsOwner app-uuid-1",
+            "saveObject {\"generatedDocument\":{\"ref\":\"42\"}}",
+            "send-notification {\"subject\":\"Your generated document is ready to download\",\"recipientUid\":\"app-owner\",\"objectId\":\"obj-uuid-9\"}"
+        ]
+    },
+    {
+        "modes": [
+            "attach",
+            "download-link",
+            "notify"
+        ],
+        "filesWork": false,
+        "result": true,
+        "request": {
+            "templateId": "tpl-1",
+            "dataRefs": [
+                {
+                    "register": "buildiq",
+                    "schema": "permit",
+                    "id": "obj-uuid-9"
+                }
+            ],
+            "options": {
+                "format": "pdf"
+            },
+            "filename": "document-obj-uuid-9.pdf"
+        },
+        "trace": [
+            "runAsOwner app-uuid-1",
+            "send-notification {\"subject\":\"Your generated document is ready\",\"recipientUid\":\"app-owner\",\"objectId\":\"obj-uuid-9\"}"
+        ]
+    },
+    {
+        "modes": [
+            "notify",
+            "attach",
+            "attach"
+        ],
+        "filesWork": true,
+        "result": true,
+        "request": {
+            "templateId": "tpl-1",
+            "dataRefs": [
+                {
+                    "register": "buildiq",
+                    "schema": "permit",
+                    "id": "obj-uuid-9"
+                }
+            ],
+            "options": {
+                "format": "pdf"
+            },
+            "filename": "document-obj-uuid-9.pdf"
+        },
+        "trace": [
+            "runAsOwner app-uuid-1",
+            "saveObject {\"generatedDocument\":{\"ref\":\"42\"}}",
+            "send-notification {\"subject\":\"Your generated document has been attached\",\"recipientUid\":\"app-owner\",\"objectId\":\"obj-uuid-9\"}"
+        ]
+    },
+    {
+        "modes": [
+            "notify",
+            "attach",
+            "attach"
+        ],
+        "filesWork": false,
+        "result": true,
+        "request": {
+            "templateId": "tpl-1",
+            "dataRefs": [
+                {
+                    "register": "buildiq",
+                    "schema": "permit",
+                    "id": "obj-uuid-9"
+                }
+            ],
+            "options": {
+                "format": "pdf"
+            },
+            "filename": "document-obj-uuid-9.pdf"
+        },
+        "trace": [
+            "runAsOwner app-uuid-1",
+            "send-notification {\"subject\":\"Your generated document is ready\",\"recipientUid\":\"app-owner\",\"objectId\":\"obj-uuid-9\"}"
+        ]
+    }
+]

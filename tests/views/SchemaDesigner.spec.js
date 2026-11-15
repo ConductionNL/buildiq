@@ -74,6 +74,9 @@ const { default: axios } = await import('@nextcloud/axios')
 const REGISTER = 'openbuild-hello-world-production'
 let registerSchemas = []
 let registerSchemasError = null
+// data-model-diagram: the register model and the app record (its dataRegisters).
+let registerModel = { nodes: [], edges: [] }
+let applicationsList = []
 
 vi.spyOn(axios, 'get').mockImplementation((url) => {
 	const target = String(url)
@@ -81,6 +84,12 @@ vi.spyOn(axios, 'get').mockImplementation((url) => {
 		return registerSchemasError
 			? Promise.reject(registerSchemasError)
 			: Promise.resolve({ data: { results: registerSchemas } })
+	}
+	if (target.includes('/model')) {
+		return Promise.resolve({ data: registerModel })
+	}
+	if (target.endsWith('/apps/buildiq/api/applications')) {
+		return Promise.resolve({ data: { results: applicationsList } })
 	}
 	if (target.includes('cloud/groups')) {
 		return Promise.resolve({
@@ -157,7 +166,7 @@ const editorStubs = {
 	},
 	CalculationEditor: {
 		name: 'CalculationEditor',
-		props: ['calculations'],
+		props: ['calculations', 'propertyCalculations', 'fieldNames', 'refusals'],
 		template: '<div class="calc-stub" />',
 	},
 	NotificationEditor: {
@@ -227,6 +236,8 @@ const persistedSchema = {
 beforeEach(() => {
 	registerSchemas = []
 	registerSchemasError = null
+	registerModel = { nodes: [], edges: [] }
+	applicationsList = []
 	axios.get.mockClear()
 	storeMocks.fetchCollection.mockReset()
 	storeMocks.fetchObject.mockReset()
@@ -582,8 +593,10 @@ describe('SchemaDesigner', () => {
 			storeMocks.errors = {
 				schema: {
 					status: 409,
-					message: 'This schema was modified by another user. Please reload.',
-					details: 'Schema change classified breaking; acknowledgeBreaking required.',
+					message:
+						'This schema was modified by another user. Please reload.',
+					details:
+						'Schema change classified breaking; acknowledgeBreaking required.',
 				},
 			}
 			return null
@@ -594,10 +607,17 @@ describe('SchemaDesigner', () => {
 
 		expect(wrapper.vm.saveError).toBe('')
 		expect(wrapper.find('.breaking-stub').exists()).toBe(true)
-		expect(wrapper.find('.breaking-line').text()).toContain('"title" becomes required')
-		expect(storeMocks.saveObject.mock.calls[0][1].acknowledgeBreaking).toBeUndefined()
+		expect(wrapper.find('.breaking-line').text()).toContain(
+			'"title" becomes required',
+		)
+		expect(
+			storeMocks.saveObject.mock.calls[0][1].acknowledgeBreaking,
+		).toBeUndefined()
 
-		storeMocks.saveObject.mockImplementationOnce(async (_type, body) => ({ ...body, version: '1.0.0' }))
+		storeMocks.saveObject.mockImplementationOnce(async (_type, body) => ({
+			...body,
+			version: '1.0.0',
+		}))
 		await wrapper.find('.breaking-confirm').trigger('click')
 		await new Promise((resolve) => setTimeout(resolve, 0))
 		await wrapper.vm.$nextTick()
@@ -609,7 +629,9 @@ describe('SchemaDesigner', () => {
 		})
 		expect(wrapper.find('.breaking-stub').exists()).toBe(false)
 		// The global t() stub returns the key; the version itself lands on the staged model.
-		expect(dialogMocks.showSuccess).toHaveBeenCalledWith('Schema saved as version {version}.')
+		expect(dialogMocks.showSuccess).toHaveBeenCalledWith(
+			'Schema saved as version {version}.',
+		)
 		expect(wrapper.vm.staged.version).toBe('1.0.0')
 	})
 
@@ -618,7 +640,12 @@ describe('SchemaDesigner', () => {
 		stageRequiredTitle(wrapper)
 		storeMocks.saveObject.mockImplementationOnce(async () => {
 			storeMocks.errors = {
-				schema: { status: 500, message: 'An unexpected server error occurred. Please try again.', details: null },
+				schema: {
+					status: 500,
+					message:
+						'An unexpected server error occurred. Please try again.',
+					details: null,
+				},
 			}
 			return null
 		})
@@ -628,7 +655,9 @@ describe('SchemaDesigner', () => {
 		expect(wrapper.find('.breaking-stub').exists()).toBe(false)
 		// The global t() stub returns the key unsubstituted; the point is it is not the generic line.
 		expect(wrapper.vm.saveError).toBe('Could not save the schema: {error}')
-		expect(wrapper.vm.saveErrorText(storeMocks.errors.schema)).not.toBe('Could not save the schema.')
+		expect(wrapper.vm.saveErrorText(storeMocks.errors.schema)).not.toBe(
+			'Could not save the schema.',
+		)
 	})
 
 	it('an unchanged version is left out so OpenRegister moves it, and required is always sent', async () => {
@@ -639,7 +668,10 @@ describe('SchemaDesigner', () => {
 			description: '',
 			version: '0.1.0',
 		})
-		storeMocks.saveObject.mockImplementationOnce(async (_type, body) => ({ ...body, version: '0.1.1' }))
+		storeMocks.saveObject.mockImplementationOnce(async (_type, body) => ({
+			...body,
+			version: '0.1.1',
+		}))
 
 		await wrapper.vm.save()
 
@@ -647,16 +679,254 @@ describe('SchemaDesigner', () => {
 		expect(body).not.toHaveProperty('version')
 		expect(body.required).toEqual([])
 		expect(wrapper.vm.staged.version).toBe('0.1.1')
-		expect(dialogMocks.showSuccess).toHaveBeenCalledWith('Schema saved as version {version}.')
+		expect(dialogMocks.showSuccess).toHaveBeenCalledWith(
+			'Schema saved as version {version}.',
+		)
 	})
 
 	it('the Access group picker offers the instance groups', async () => {
 		const wrapper = await mountDetail()
 		await new Promise((resolve) => setTimeout(resolve, 0))
 
-		expect(wrapper.vm.availableGroups).toEqual(expect.arrayContaining(['vets', 'admin']))
-		expect(wrapper.findComponent({ name: 'AccessEditor' }).props('availableGroups')).toEqual(
+		expect(wrapper.vm.availableGroups).toEqual(
 			expect.arrayContaining(['vets', 'admin']),
 		)
+		expect(
+			wrapper.findComponent({ name: 'AccessEditor' }).props('availableGroups'),
+		).toEqual(expect.arrayContaining(['vets', 'admin']))
+	})
+
+	// data-calculated-field-authoring REQ-BQCF-001 and REQ-BQCF-004.
+	describe('calculated fields', () => {
+		const total = {
+			type: 'number',
+			expression: { '*': [{ prop: 'quantity' }, { prop: 'unitPrice' }] },
+		}
+		const orderSchema = {
+			...persistedSchema,
+			properties: {
+				quantity: { type: 'number' },
+				unitPrice: { type: 'number' },
+				old: {
+					type: 'number',
+					calculation: { type: 'number', expression: 1 },
+				},
+			},
+			'x-property-order': ['quantity', 'unitPrice', 'old'],
+			'x-openregister-calculations': {
+				age: { type: 'integer', expression: 1 },
+			},
+		}
+
+		async function mountOrder() {
+			storeMocks.fetchCollection.mockResolvedValue([orderSchema])
+			storeMocks.fetchObject.mockResolvedValue(orderSchema)
+			const wrapper = mount(SchemaDesigner, {
+				stubs: editorStubs,
+				mocks: {
+					$route: makeRouter({ schemaId: 'hello' }),
+					$router: { push: vi.fn().mockResolvedValue() },
+				},
+			})
+			await new Promise((resolve) => setTimeout(resolve, 0))
+			await wrapper.vm.$nextTick()
+			return wrapper
+		}
+
+		it('REQ-BQCF-001: stages the property calculations and hands them to the editor', async () => {
+			const wrapper = await mountOrder()
+			const editor = wrapper.findComponent({ name: 'CalculationEditor' })
+			expect(editor.props('propertyCalculations')).toEqual({
+				old: { type: 'number', expression: 1 },
+			})
+			expect(editor.props('calculations')).toEqual(
+				orderSchema['x-openregister-calculations'],
+			)
+			expect(editor.props('fieldNames')).toEqual([
+				'quantity',
+				'unitPrice',
+				'old',
+			])
+		})
+
+		it('REQ-BQCF-001: a save writes the calculation on its property and keeps the register file block', async () => {
+			const wrapper = await mountOrder()
+			storeMocks.saveObject.mockImplementation(async (_type, body) => body)
+			wrapper.vm.onPropertyCalculationsChange({ total })
+			await wrapper.vm.$nextTick()
+			await wrapper.vm.save()
+			const [, body] = storeMocks.saveObject.mock.calls[0]
+			expect(body.properties.total).toEqual({
+				type: 'number',
+				calculation: total,
+			})
+			expect(body.properties.old).toEqual({ type: 'number' })
+			expect(body['x-property-order']).toEqual([
+				'quantity',
+				'unitPrice',
+				'old',
+				'total',
+			])
+			expect(body['x-openregister-calculations']).toEqual(
+				orderSchema['x-openregister-calculations'],
+			)
+		})
+
+		it('REQ-BQCF-004: a refused calculation shows on its field and the staged edit is kept', async () => {
+			const wrapper = await mountOrder()
+			wrapper.vm.onPropertyCalculationsChange({ total })
+			const refusal = [
+				{
+					code: 'calculation-prop-unknown',
+					message:
+						'Calculation "total": prop "qty" is not a property or calculation.',
+				},
+			]
+			storeMocks.saveObject.mockImplementationOnce(async () => {
+				storeMocks.errors = {
+					schema: {
+						status: 422,
+						message: 'Validation failed for schema',
+						details: refusal,
+						fields: refusal,
+						isValidation: true,
+					},
+				}
+				return null
+			})
+			await wrapper.vm.save()
+			await wrapper.vm.$nextTick()
+			expect(
+				wrapper
+					.findComponent({ name: 'CalculationEditor' })
+					.props('refusals'),
+			).toEqual({
+				total: [
+					'Calculation "total": prop "qty" is not a property or calculation.',
+				],
+			})
+			expect(wrapper.vm.staged.propertyCalculations.total).toEqual(total)
+		})
+	})
+
+	describe('data-model-diagram: List | Diagram switch (REQ-BQMD-001, REQ-BQMD-005)', () => {
+		const diagramStubs = {
+			...editorStubs,
+			DataModelDiagram: {
+				name: 'DataModelDiagram',
+				props: ['model', 'loading', 'error'],
+				emits: ['open'],
+				template: '<div class="diagram-stub"><button class="diagram-open" @click="$emit(\'open\', \'document\')" /></div>',
+			},
+		}
+
+		/**
+		 * Mount the designer in list mode and let mounted() settle.
+		 *
+		 * @param {object} query The route query.
+		 * @return {Promise<{wrapper: object, router: object}>}
+		 */
+		async function mountList(query = {}) {
+			const route = { params: { slug: 'vergunningen', schemaId: '' }, query }
+			const router = { push: vi.fn().mockResolvedValue(), replace: vi.fn().mockResolvedValue() }
+			const wrapper = mount(SchemaDesigner, {
+				stubs: diagramStubs,
+				mocks: { $route: route, $router: router },
+			})
+			await new Promise((resolve) => setTimeout(resolve, 0))
+			await new Promise((resolve) => setTimeout(resolve, 0))
+			await wrapper.vm.$nextTick()
+			return { wrapper, router }
+		}
+
+		/**
+		 * The model requests made so far.
+		 *
+		 * @return {Array<string>} Their URLs.
+		 */
+		function modelUrls() {
+			return axios.get.mock.calls.map((call) => String(call[0])).filter((url) => url.includes('/model'))
+		}
+
+		it('shows the list by default and reads no model', async () => {
+			const { wrapper } = await mountList()
+
+			expect(wrapper.find('.schema-list-stub').exists()).toBe(true)
+			expect(wrapper.find('.diagram-stub').exists()).toBe(false)
+			expect(wrapper.find('.buildiq-schema-designer__view-list').attributes('aria-pressed')).toBe('true')
+			expect(modelUrls()).toEqual([])
+		})
+
+		it('opens on the diagram from ?view=diagram and reads the version register model', async () => {
+			registerModel = { nodes: [{ id: '1', slug: 'permit', title: 'Permit' }], edges: [] }
+			const { wrapper } = await mountList({ view: 'diagram' })
+
+			expect(wrapper.find('.schema-list-stub').exists()).toBe(false)
+			const diagram = wrapper.findComponent({ name: 'DataModelDiagram' })
+			expect(diagram.exists()).toBe(true)
+			expect(modelUrls()).toHaveLength(1)
+			expect(modelUrls()[0]).toContain(`/apps/openregister/api/registers/${REGISTER}/model`)
+			expect(diagram.props('model')).toEqual(registerModel)
+			expect(wrapper.find('.buildiq-schema-designer__view-diagram').attributes('aria-pressed')).toBe('true')
+		})
+
+		it('keeps the choice in the view query key next to _version', async () => {
+			const { wrapper, router } = await mountList({ _version: 'production' })
+
+			await wrapper.find('.buildiq-schema-designer__view-diagram').trigger('click')
+			await new Promise((resolve) => setTimeout(resolve, 0))
+			expect(router.replace).toHaveBeenCalledWith({ query: { _version: 'production', view: 'diagram' } })
+			expect(modelUrls()).toHaveLength(1)
+
+			await wrapper.find('.buildiq-schema-designer__view-list').trigger('click')
+			expect(router.replace).toHaveBeenLastCalledWith({ query: { _version: 'production' } })
+		})
+
+		it('opens a schema chosen in the diagram in the designer for the same version', async () => {
+			const { wrapper, router } = await mountList({ view: 'diagram', _version: 'production' })
+
+			await wrapper.find('.diagram-open').trigger('click')
+
+			expect(router.push).toHaveBeenCalledTimes(1)
+			const target = router.push.mock.calls[0][0]
+			expect(target.params).toMatchObject({ slug: 'vergunningen', schemaId: 'document' })
+			expect(target.query).toMatchObject({ _version: 'production' })
+		})
+
+		it('offers the version register and the app data registers, and draws the one picked', async () => {
+			applicationsList = [{
+				slug: 'vergunningen',
+				dataRegisters: [{ register: 'permits-db', label: 'Permits database' }, { register: 'zones' }],
+			}]
+			const { wrapper } = await mountList({ view: 'diagram' })
+
+			const options = wrapper.findAll('#buildiq-diagram-register option')
+			expect(options.map((o) => o.attributes('value'))).toEqual([REGISTER, 'permits-db', 'zones'])
+			expect(options[1].text()).toBe('Permits database')
+			expect(options[2].text()).toBe('zones')
+
+			await wrapper.find('#buildiq-diagram-register').setValue('permits-db')
+			await new Promise((resolve) => setTimeout(resolve, 0))
+			expect(modelUrls().at(-1)).toContain('/apps/openregister/api/registers/permits-db/model')
+		})
+
+		it('hides the register switch when the app binds no data register', async () => {
+			const { wrapper } = await mountList({ view: 'diagram' })
+
+			expect(wrapper.find('#buildiq-diagram-register').exists()).toBe(false)
+		})
+
+		it('passes a failed model read to the diagram as its error', async () => {
+			const original = axios.get.getMockImplementation()
+			axios.get.mockImplementation((url) => (String(url).includes('/model')
+				? Promise.reject(new Error('Register not found'))
+				: original(url)))
+			try {
+				const { wrapper } = await mountList({ view: 'diagram' })
+				expect(wrapper.findComponent({ name: 'DataModelDiagram' }).props('error')).toContain('Register not found')
+			} finally {
+				axios.get.mockImplementation(original)
+			}
+		})
 	})
 })

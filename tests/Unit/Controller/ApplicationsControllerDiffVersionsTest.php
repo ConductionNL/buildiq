@@ -40,8 +40,10 @@ namespace OCA\Buildiq\Tests\Unit\Controller;
 
 use OCA\Buildiq\Controller\ApplicationsController;
 use OCA\Buildiq\Service\AppChannelApplier;
+use OCA\Buildiq\Service\CallerContext;
 use OCA\Buildiq\Service\ManifestResolverService;
 use OCA\Buildiq\Service\PermissionResolver;
+use OCA\Buildiq\Service\RegisterStore;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -131,18 +133,22 @@ class ApplicationsControllerDiffVersionsTest extends TestCase {
 		return new ApplicationsController(
 			request: $this->request,
 			logger: $this->createMock(LoggerInterface::class),
-			objectService: $this->objectService,
-			registerMapper: $this->registerMapper,
-			schemaMapper: $this->schemaMapper,
-			userSession: $this->userSession,
-			groupManager: $this->groupManager,
-			manifestResolver: $this->createMock(ManifestResolverService::class),
-			permissionResolver: new PermissionResolver(
-				$this->groupManager,
-				$this->createMock(LoggerInterface::class)
+			store: new RegisterStore(
+				objectService: $this->objectService,
+				registerMapper: $this->registerMapper,
+				schemaMapper: $this->schemaMapper,
+				auditTrailMapper: null
 			),
-			channelApplier: $this->createMock(AppChannelApplier::class),
-			auditTrailMapper: null
+			caller: new CallerContext(
+				userSession: $this->userSession,
+				groupManager: $this->groupManager,
+				permissionResolver: new PermissionResolver(
+					$this->groupManager,
+					$this->createMock(LoggerInterface::class)
+				)
+			),
+			manifestResolver: $this->createMock(ManifestResolverService::class),
+			channelApplier: $this->createMock(AppChannelApplier::class)
 		);
 
 	}//end controller()

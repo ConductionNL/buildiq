@@ -25,7 +25,7 @@
 				"id": "welcome",
 				"type": "info",
 				"title": "Welcome to Buildiq",
-				"body": "Buildiq builds apps from templates. This quick setup makes sure the bundled starter templates are available and, optionally, connects a remote template store. It is safe to run more than once."
+				"body": "Buildiq builds apps from templates. This quick setup offers example data and can connect a remote template store. The starter templates install on their own. An admin can reinstall them in the admin settings."
 			},
 			{
 				"id": "demo-data",
@@ -33,25 +33,10 @@
 				"display": "cards",
 				"optionsSource": "datasets",
 				"configKey": "demo_dataset",
+				"loadAction": "load-demo-data",
 				"title": "Load example data?",
 				"required": false,
-				"body": "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Pick \"None\" on a production install."
-			},
-			{
-				"id": "load-demo-data",
-				"type": "run-action",
-				"action": "load-demo-data",
-				"title": "Load the example data",
-				"required": false,
-				"body": "Loads what you picked. The data is obviously sample data, it is safe to run more than once, and you can delete it afterwards."
-			},
-			{
-				"id": "seed",
-				"type": "run-action",
-				"title": "Install starter templates",
-				"required": true,
-				"action": "seed-templates",
-				"body": "Fills the Store with the starter templates, so the create-from-template flow has something to offer. This normally runs on install. Run it here if OpenRegister was enabled after Buildiq, or to repair a partial install. Safe to run twice: existing templates are left untouched."
+				"body": "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Each card has its own Load button. Pick \"None\" on a production install."
 			},
 			{
 				"id": "store",
@@ -378,7 +363,7 @@
 			"label": "Reports",
 			"icon": "ChartBoxOutline",
 			"route": "Reports",
-			"section": "footer",
+			"section": "settings",
 			"order": 95
 		},
 		{
@@ -501,6 +486,13 @@
 						"order": 60
 					},
 					{
+						"id": "api",
+						"label": "API",
+						"icon": "Api",
+						"component": "ApplicationApiTab",
+						"order": 65
+					},
+					{
 						"id": "audit",
 						"label": "History",
 						"icon": "History",
@@ -544,7 +536,7 @@
 				"schema": "application-template",
 				"documentationUrl": "https://buildiq.conduction.nl"
 			},
-			"_note": "Templates renders the store-aware TemplateGallery view (buildiq-remote-template-store): when a registry is configured the remote store search is the primary surface with built-in templates secondary; with no registry it falls back to the built-in templates as today. Install clones via CloneTemplateDialog."
+			"_note": "Templates renders the TemplateGallery view: built-in templates first, then the shared catalogue section (reuse-remote-store-section, SharedCatalogueSection) when an administrator configured a remote catalogue, then apps on GitHub. With no catalogue the section is absent. Install opens CloneTemplateDialog: clone for a built-in template, store install for a catalogue template, GitHub install for a GitHub app."
 		},
 		{
 			"id": "SchemaDesignerList",
@@ -1166,16 +1158,24 @@
 			"route": "/flows",
 			"type": "index",
 			"title": "Flows",
-			"config": { "entitySource": "flows", "app": "buildiq" },
-			"_note": "A flow is app-specific - a buildiq flow operates on buildiq's objects - so the authoring surface lives here rather than behind a deep link to OpenRegister's list. An ordinary index over the named `flows` source: a flow lives in the shared native flow store, not a register/schema pair, so the object-backed index had nothing to address until config.entitySource named the collection. Same store OpenRegister, integriq and hermiq use, so list and status semantics stay identical fleet-wide."
+			"config": { "entitySource": "flows", "app": "buildiq", "rowRoute": "FlowDetail" },
+			"_note": "A flow is app-specific - a buildiq flow operates on buildiq's objects - so the authoring surface lives here rather than behind a deep link to OpenRegister's list. An ordinary index over the named `flows` source: a flow lives in the shared native flow store, not a register/schema pair, so the object-backed index had nothing to address until config.entitySource named the collection. Same store OpenRegister, integriq and hermiq use, so list and status semantics stay identical fleet-wide. rowRoute names the FlowDetail page (a route name, not a path): a named-source page has no register and schema, so without it a row click opens nothing and Edit falls back to the source's own /flows path."
 		},
 		{
 			"id": "FlowDetail",
 			"route": "/flows/:id",
 			"type": "flow",
 			"title": "Flow",
-			"config": { "app": "buildiq" },
-			"_note": "The shared flow canvas over the same native flow store the rest of the fleet uses - not an app-owned editor."
+			"config": { "app": "buildiq", "listMode": true, "testPayload": true },
+			"_note": "The shared flow canvas over the same native flow store the rest of the fleet uses - not an app-owned editor. listMode offers the list view beside the canvas (board BqFlowsBewerken, a variant of OrFlowLijst)."
+		},
+		{
+			"id": "ApplicationFlow",
+			"route": "/applications/:app/flows/:id",
+			"type": "flow",
+			"title": "Flow",
+			"config": { "listMode": true, "testPayload": true },
+			"_note": "The same flow page for a flow of a built application, opened from Automations with ?view=list. No config.app on purpose: the :app route param reaches the page as its app prop, so a new flow is stamped with the application under construction. Stays after FlowDetail: CnBuildiqEditButton opens the first listMode page with :id set to new, and this route has an :app it cannot fill."
 		}
 	],
 	"observability": {
@@ -1229,8 +1229,60 @@
 						"status"
 					]
 				}
+			},
+			{
+				"name": "app_requests_total",
+				"type": "counter",
+				"help": "Requests made by running built apps, from their health samples, per app and version",
+				"source": {
+					"kind": "objectSum",
+					"register": "buildiq",
+					"schema": "app-health-sample",
+					"field": "requests",
+					"groupBy": [
+						"applicationUuid",
+						"versionUuid"
+					]
+				}
+			},
+			{
+				"name": "app_request_failures_total",
+				"type": "counter",
+				"help": "Failed requests (4xx and 5xx) of running built apps, per app and version",
+				"source": {
+					"kind": "objectSum",
+					"register": "buildiq",
+					"schema": "app-health-sample",
+					"field": "failures",
+					"groupBy": [
+						"applicationUuid",
+						"versionUuid"
+					]
+				}
+			},
+			{
+				"name": "app_client_errors_total",
+				"type": "counter",
+				"help": "Client-side errors in running built apps, per app and version",
+				"source": {
+					"kind": "objectSum",
+					"register": "buildiq",
+					"schema": "app-health-sample",
+					"field": "clientErrors",
+					"groupBy": [
+						"applicationUuid",
+						"versionUuid"
+					]
+				}
 			}
 		]
 	},
-	"deepLinks": []
+	"deepLinks": [
+		{
+			"registerSlug": "buildiq",
+			"schemaSlug": "built-app",
+			"urlTemplate": "/apps/buildiq/applications/{uuid}",
+			"displayName": "App"
+		}
+	]
 }

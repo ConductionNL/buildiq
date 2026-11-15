@@ -118,7 +118,7 @@ export default {
 		/**
 		 * Observed behaviour of `groupOptions` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-frontend-foundation/tasks.md#task-4
 		 */
 		groupOptions() {
 			return this.availableGroups.map((gid) => ({ label: gid, value: gid }))
@@ -137,7 +137,7 @@ export default {
 			 *   modal is pointed at a different application. Runs immediately, and is
 			 *   `null` until the parent has a record.
 			 *
-			 * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-4
+			 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-frontend-foundation/tasks.md#task-4
 			 */
 			handler(app) {
 				this.syncFromApplication(app)
@@ -158,7 +158,7 @@ export default {
 		 *   into the `{label, value}` option objects NcSelect binds to. A `null` app
 		 *   (or one with no `permissions`) yields three empty pickers.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-frontend-foundation/tasks.md#task-4
 		 */
 		syncFromApplication(app) {
 			const perms = (app && app.permissions) || {}
@@ -181,7 +181,7 @@ export default {
 		/**
 		 * Observed behaviour of `onClose` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-frontend-foundation/tasks.md#task-4
 		 */
 		onClose() {
 			this.$emit('update:open', false)
@@ -190,7 +190,7 @@ export default {
 		/**
 		 * Observed behaviour of `save` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-frontend-foundation/tasks.md#task-4
 		 */
 		async save() {
 			const owners = this.ownersModel.map((o) => o.value)

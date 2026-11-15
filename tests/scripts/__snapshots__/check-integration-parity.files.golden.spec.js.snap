@@ -1,0 +1,13 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`check-integration-parity file walk golden output > reads only the PHP, JS and declaration files the walk may see 1`] = `
+{
+  "status": 1,
+  "stderr": "integration parity gate FAILED — 1 violation(s) over 2 server leaf face(s), 1 JS registration(s), 1 OpenRegister schema declaration file(s):
+✗ [R6 offlineConfig] leaf offlineConfig.plannedSchema = "0" (src/ok.js) names a schema this repo does not declare in lib/Settings/** — the leaf would query a schema that does not exist. Declared slugs: listed
+
+Assertions run per rule: R1:1 R2:1 R3:0 R4:0 R5:0 R7:0 R6:1
+",
+  "stdout": "",
+}
+`;

@@ -209,6 +209,69 @@ final class RuleActionDispatcherTest extends TestCase {
 	}//end testWebhookPostsCompiledTarget()
 
 	/**
+	 * A webhook post never follows a redirect, so a public URL cannot bounce
+	 * the request on to an address the egress guard would have refused.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/automation-designer/spec.md#req-autd-010
+	 */
+	public function testWebhookDoesNotFollowRedirects(): void {
+		$client = $this->createMock(IClient::class);
+		$response = $this->createMock(IResponse::class);
+		$response->method('getStatusCode')->willReturn(200);
+
+		$client->expects($this->once())
+			->method('post')
+			->with('https://example.test/hook', $this->callback(static fn (array $options): bool => ($options['allow_redirects'] ?? null) === false))
+			->willReturn($response);
+
+		$this->httpClientService->method('newClient')->willReturn($client);
+
+		$this->assertSame(200, ($this->dispatcher)('webhook', ['url' => 'https://example.test/hook'], []));
+
+	}//end testWebhookDoesNotFollowRedirects()
+
+	/**
+	 * A webhook URL the maker typed that points at a metadata endpoint, a
+	 * private or loopback address, or a scheme other than http(s) is refused
+	 * before any request leaves the server (ADR-067, buildiq#987).
+	 *
+	 * @param string $url The refused webhook URL.
+	 *
+	 * @return void
+	 *
+	 * @dataProvider refusedWebhookUrls
+	 *
+	 * @spec openspec/specs/automation-designer/spec.md#req-autd-010
+	 */
+	public function testWebhookToANonPublicTargetIsRefusedBeforeAnyRequest(string $url): void {
+		$client = $this->createMock(IClient::class);
+		$client->expects($this->never())->method('post');
+		$this->httpClientService->method('newClient')->willReturn($client);
+
+		$this->assertNull(($this->dispatcher)('webhook', ['url' => $url, 'payload' => ['a' => 1]], []));
+
+	}//end testWebhookToANonPublicTargetIsRefusedBeforeAnyRequest()
+
+	/**
+	 * Webhook URLs the egress guard must refuse.
+	 *
+	 * @return array<string,array{0:string}>
+	 */
+	public static function refusedWebhookUrls(): array {
+		return [
+			'cloud metadata endpoint' => ['http://169.254.169.254/latest/meta-data/'],
+			'loopback' => ['http://127.0.0.1:8080/hook'],
+			'private range' => ['http://10.0.0.5/hook'],
+			'ipv6 loopback' => ['http://[::1]/hook'],
+			'file scheme' => ['file:///etc/passwd'],
+			'gopher scheme' => ['gopher://example.test/_hook'],
+		];
+
+	}//end refusedWebhookUrls()
+
+	/**
 	 * An unrecognised action type never throws — it is logged and no-op'd.
 	 *
 	 * @return void

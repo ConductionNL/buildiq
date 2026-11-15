@@ -24,6 +24,11 @@
 				<option v-for="type in PAGE_TYPES" :key="type" :value="type">
 					{{ type }}
 				</option>
+				<!-- Not a page type: a `custom` page with the record-grid
+				     component, so the closed page-type enum stays as it is. -->
+				<option :value="GRID_CHOICE">
+					{{ t('buildiq', 'Grid (edit records in place)') }}
+				</option>
 			</select>
 			<input
 				v-model="addingTitle"
@@ -121,6 +126,14 @@
 						" />
 					<button
 						type="button"
+						class="page-list-editor__copy"
+						:title="t('buildiq', 'Copy page')"
+						:aria-label="t('buildiq', 'Copy page')"
+						@click.stop="copyPageAt(index)">
+						⧉
+					</button>
+					<button
+						type="button"
 						class="page-list-editor__remove"
 						:title="t('buildiq', 'Remove page')"
 						@click.stop="removePage(index)">
@@ -151,6 +164,7 @@
 <script>
 import Draggable from 'vuedraggable'
 import PermissionGroupField from './fields/PermissionGroupField.vue'
+import { copyPage } from '../../services/pageCopy.js'
 
 export const PAGE_TYPES = [
 	'index',
@@ -168,7 +182,30 @@ export const PAGE_TYPES = [
 	'wiki',
 ]
 
-export const ROUTE_PATTERN = /^\/$|^(\/[A-Za-z0-9_-]+|\/:[A-Za-z_][A-Za-z0-9_]*(\(.*\))?)+$/
+/**
+ * The "Grid" choice of the add-page form. It is not a page type: it writes a
+ * `custom` page whose `component` is the runtime `record-grid` page, with the
+ * register, schema, columns and editable columns in `config` (CnPageRenderer
+ * hands a custom page's `config` to its component as props).
+ */
+export const GRID_CHOICE = 'grid'
+
+/**
+ * The page a "Grid" choice adds, without its id, route and title.
+ *
+ * @return {{type: string, component: string, config: object}}
+ * @spec openspec/changes/data-index-grid-and-saved-views/tasks.md#t04
+ */
+export function gridPageShape() {
+	return {
+		type: 'custom',
+		component: 'record-grid',
+		config: { register: '', schema: '', columns: [], editable: [] },
+	}
+}
+
+export const ROUTE_PATTERN =
+	/^\/$|^(\/[A-Za-z0-9_-]+|\/:[A-Za-z_][A-Za-z0-9_]*(\(.*\))?)+$/
 
 const DEFAULT_CONFIGS = {
 	index: { register: '', schema: '', columns: [], actions: [] },
@@ -198,6 +235,16 @@ function slugify(value) {
 		.toLowerCase()
 		.replace(/[^a-z0-9_-]+/g, '-')
 		.replace(/^-+|-+$/g, '')
+}
+
+/**
+ * A page's route, if the page is there.
+ *
+ * @param {?object} page - a page record.
+ * @return {string|undefined|null}
+ */
+function routeOf(page) {
+	return page && page.route
 }
 
 /**
@@ -249,6 +296,7 @@ export default {
 	data() {
 		return {
 			PAGE_TYPES,
+			GRID_CHOICE,
 			addingType: null,
 			addingTitle: '',
 			addingId: '',
@@ -280,7 +328,7 @@ export default {
 		/**
 		 * Observed behaviour of `duplicateIds` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		duplicateIds() {
 			const counts = new Map()
@@ -316,7 +364,7 @@ export default {
 		/**
 		 * Observed behaviour of `invalidRoutes` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		invalidRoutes() {
 			return this.pages
@@ -329,7 +377,7 @@ export default {
 		/**
 		 * Observed behaviour of `startAdd` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		startAdd() {
 			this.addingType = ''
@@ -340,7 +388,7 @@ export default {
 		/**
 		 * Observed behaviour of `cancelAdd` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		cancelAdd() {
 			this.addingType = null
@@ -351,39 +399,80 @@ export default {
 		/**
 		 * Observed behaviour of `confirmAdd` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		confirmAdd() {
 			if (!this.addingType) {
 				return
 			}
-			const type = this.addingType
 			const next = this.pages.slice()
-			const takenIds = new Set(next.map((p) => p && p.id))
-			const takenRoutes = new Set(next.map((p) => p && p.route))
-			const id = uniqueValue(
-				slugify(this.addingId) || `${type}-page-${next.length + 1}`,
-				takenIds,
-			)
-			// The first page on "/" is the home page; any later page gets its
-			// own route, so it does not hide behind the one already there.
-			const typedSlug = slugify(this.addingId)
-			let route = uniqueValue(`/${typedSlug || type}`, takenRoutes)
-			if (type === 'index' && !typedSlug && !takenRoutes.has('/')) {
-				route = '/'
-			}
-			const title = this.addingTitle.trim() || defaultTitle(type)
-			const placeholder = {
-				id,
-				route,
-				type,
-				title,
-				config: JSON.parse(JSON.stringify(DEFAULT_CONFIGS[type] || {})),
-			}
-			next.push(placeholder)
+			next.push(this.newPage(next))
 			this.$emit('update:pages', next)
 			this.$emit('select', next.length - 1)
 			this.cancelAdd()
+		},
+
+		/**
+		 * The page the add form describes: a unique id and route, the typed or
+		 * default title, and a copy of the type's default config. The "Grid"
+		 * choice adds a `custom` page with the `record-grid` component.
+		 *
+		 * @param {Array<object>} pages - the pages it joins.
+		 * @return {{id: string, route: string, type: string, title: string, config: object}}
+		 * @spec openspec/changes/data-index-grid-and-saved-views/tasks.md#t04
+		 */
+		newPage(pages) {
+			const type = this.addingType
+			if (type === GRID_CHOICE) {
+				const shape = gridPageShape()
+				return {
+					id: this.newPageId(pages),
+					route: this.newPageRoute(pages),
+					type: shape.type,
+					title: this.addingTitle.trim() || t('buildiq', 'Grid'),
+					component: shape.component,
+					config: shape.config,
+				}
+			}
+			return {
+				id: this.newPageId(pages),
+				route: this.newPageRoute(pages),
+				type,
+				title: this.addingTitle.trim() || defaultTitle(type),
+				config: JSON.parse(JSON.stringify(DEFAULT_CONFIGS[type] || {})),
+			}
+		},
+
+		/**
+		 * The new page's id: the typed slug, else `<type>-page-<n>`, made unique.
+		 *
+		 * @param {Array<object>} pages - the pages it joins.
+		 * @return {string}
+		 */
+		newPageId(pages) {
+			const takenIds = new Set(pages.map((p) => p && p.id))
+			return uniqueValue(
+				slugify(this.addingId) || `${this.addingType}-page-${pages.length + 1}`,
+				takenIds,
+			)
+		},
+
+		/**
+		 * The new page's route. The first page on "/" is the home page; any
+		 * later page gets its own route, so it does not hide behind the one
+		 * already there.
+		 *
+		 * @param {Array<object>} pages - the pages it joins.
+		 * @return {string}
+		 */
+		newPageRoute(pages) {
+			const type = this.addingType
+			const takenRoutes = new Set(pages.map((p) => p && p.route))
+			const typedSlug = slugify(this.addingId)
+			if (type === 'index' && !typedSlug && !takenRoutes.has('/')) {
+				return '/'
+			}
+			return uniqueValue(`/${typedSlug || type}`, takenRoutes)
 		},
 
 		/**
@@ -395,7 +484,7 @@ export default {
 		 * @param {number} index - position of the page in the `pages` prop, taken from the vuedraggable `#item` slot.
 		 * @param {string} key - the page key being written: `title`, `id`, `route` or `permission`.
 		 * @param {string} value - the new value from the bound input (for `permission` the `group:<gid>` string from PermissionGroupField); `''` deletes the key.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		updateField(index, key, value) {
 			const next = this.pages.slice()
@@ -410,12 +499,30 @@ export default {
 		},
 
 		/**
+		 * Insert a copy of a page below it, with a unique id and route and the
+		 * title "Copy of ..." (REQ-BQCP-003). The page list's own duplicate
+		 * checks then run as for any page.
+		 *
+		 * @param {number} index - position of the page to copy.
+		 * @return {void}
+		 * @spec openspec/changes/apps-copy-app-and-page/specs/copy-app-page-and-form/spec.md#requirement-a-maker-copies-a-page-req-bqcp-003
+		 */
+		copyPageAt(index) {
+			this.$emit(
+				'update:pages',
+				copyPage(this.pages, index, (title) =>
+					t('buildiq', 'Copy of {title}', { title }),
+				),
+			)
+		},
+
+		/**
 		 * Drop a page from the manifest. When the removed page was the
 		 * selected one, `select` is re-emitted with -1 so PageDesigner clears
 		 * the centre pane instead of pointing at a shifted neighbour.
 		 *
 		 * @param {number} index - position of the page to remove in the `pages` prop.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		removePage(index) {
 			const next = this.pages.slice()
@@ -433,7 +540,7 @@ export default {
 		 * order key, their array position IS their order in the manifest.
 		 *
 		 * @param {Array<{id: string, route: string, type: string, config: object}>} newOrder - the pages in their new visual order, as emitted by vuedraggable.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		onReorder(newOrder) {
 			this.$emit('update:pages', newOrder)
@@ -447,25 +554,36 @@ export default {
 		 * @param {{id?: string, route?: string, type: string, config?: object}} page - the page record for this row, from the vuedraggable `#item` slot.
 		 * @param {number} index - position of the page in the `pages` prop. It is only ever compared against -1, a value the `#item` slot cannot produce, so in practice it never makes a row invalid.
 		 * @return {boolean} - true when the row is invalid.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		hasError(page, index) {
 			if (this.duplicateIds.includes(page && page.id)) {
 				return true
 			}
-			if (page && page.route && this.duplicateRoutes.includes(page.route)) {
-				return true
-			}
-			if (page && page.route && !ROUTE_PATTERN.test(page.route)) {
+			const route = routeOf(page)
+			if (route && this.routeIsInvalid(route)) {
 				return true
 			}
 			return index === -1
+		},
+
+		/**
+		 * Whether a route is shared with another page or fails the
+		 * route-pattern grammar.
+		 *
+		 * @param {string} route - a page's route.
+		 * @return {boolean}
+		 */
+		routeIsInvalid(route) {
+			return this.duplicateRoutes.includes(route) || !ROUTE_PATTERN.test(route)
 		},
 	},
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../assets/editor-controls.scss' as c;
+
 .page-list-editor {
 	display: flex;
 	flex-direction: column;
@@ -490,27 +608,32 @@ export default {
 
 .page-list-editor__add,
 .page-list-editor__add-row button {
-	background: var(--color-primary-element-light);
-	border: 1px solid var(--color-border);
-	color: var(--color-main-text);
-	padding: 4px 10px;
-	border-radius: var(--border-radius);
-	cursor: pointer;
+	@include c.add-button;
 }
 
 .page-list-editor__add-row {
 	display: flex;
+	/* The row holds five controls (type picker, Title, Slug, Confirm, Cancel)
+	   inside a pane measured at 284px. Without wrapping they overflow to the
+	   RIGHT, out of the pane and under the centre panel, which paints over
+	   them: measured at 1280x900, Cancel sat at x=684 while the row ended at
+	   x=639, so `elementFromPoint` on its centre returned
+	   `.page-designer__empty` and the click never reached the button. Escape
+	   does not close the row either, so the only way out of an accidental
+	   "Add page" was reloading the designer.
+
+	   Wrapping is what fixes it, and it is the whole fix: with the two inputs
+	   already carrying `min-width: 0` (see `.page-list-editor__field`), the
+	   controls fall onto three lines and every one of them lands inside the
+	   pane. */
+	flex-wrap: wrap;
 	gap: 6px;
 	align-items: center;
 }
 
 .page-list-editor__select {
 	flex: 1 1 auto;
-	padding: 4px 6px;
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-	background: var(--color-main-background);
-	color: var(--color-main-text);
+	@include c.control;
 }
 
 .page-list-editor__list {
@@ -585,11 +708,7 @@ export default {
 	   below it. Two such inputs alone exceeded the 284px row, which is how the
 	   type tag and the remove button ended up outside the pane. */
 	min-width: 0;
-	padding: 4px 6px;
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-	background: var(--color-main-background);
-	color: var(--color-main-text);
+	@include c.control;
 }
 
 .page-list-editor__permission {
@@ -639,13 +758,12 @@ export default {
 	color: var(--color-text-maxcontrast);
 }
 
+.page-list-editor__copy {
+	@include c.ghost-button;
+}
+
 .page-list-editor__remove {
-	background: transparent;
-	border: 1px solid var(--color-border);
-	color: var(--color-error, var(--color-main-text));
-	padding: 4px 8px;
-	border-radius: var(--border-radius);
-	cursor: pointer;
+	@include c.danger-button;
 }
 
 .page-list-editor__empty {

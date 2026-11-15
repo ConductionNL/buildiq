@@ -44,17 +44,23 @@ function translatedStrings(file) {
 }
 
 describe('schema designer copy', () => {
-	it.each(DESIGNER_FILES)('%s shows no internal references or em-dashes', (file) => {
-		const offending = translatedStrings(file).filter((text) =>
-			/ADR-\d|Decision \d|chain spec|REQ-[A-Z]|OQ-\d|—/.test(text),
-		)
-		expect(offending).toEqual([])
-	})
+	it.each(DESIGNER_FILES)(
+		'%s shows no internal references or em-dashes',
+		(file) => {
+			const offending = translatedStrings(file).filter((text) =>
+				/ADR-\d|Decision \d|chain spec|REQ-[A-Z]|OQ-\d|—/.test(text),
+			)
+			expect(offending).toEqual([])
+		},
+	)
 })
 
 describe('toast styles', () => {
-	it.each(['src/main.js', 'src/builder.js'])('%s imports the toast stylesheet', (file) => {
-		const source = readFileSync(resolve(root, file), 'utf8')
-		expect(source).toMatch(/import '@nextcloud\/dialogs\/style\.css'/)
-	})
+	it.each(['src/main.js', 'src/builder.js'])(
+		'%s imports the toast stylesheet',
+		(file) => {
+			const source = readFileSync(resolve(root, file), 'utf8')
+			expect(source).toMatch(/import '@nextcloud\/dialogs\/style\.css'/)
+		},
+	)
 })

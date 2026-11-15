@@ -1,0 +1,1636 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`l10n build and check scripts > l10n-js: --check when current 1`] = `
+{
+  "files": {
+    "appinfo/info.xml": "<info>
+	<id> buildiq </id>
+</info>
+",
+    "l10n/.schema-l10n-baseline.json": "{
+  "uncovered": 3
+}",
+    "l10n/README.md": "not a catalogue",
+    "l10n/en.js": "OC.L10N.register(
+    "buildiq",
+    {
+        "Hello": "Hello",
+        "Say \\"hi\\"": "Say \\"hi\\""
+    },
+    "nplurals=2; plural=(n != 1);"
+)
+",
+    "l10n/en.json": "{
+  "translations": {
+    "Hello": "Hello",
+    "Say \\"hi\\"": "Say \\"hi\\""
+  }
+}",
+    "l10n/nl.js": "OC.L10N.register(
+    "buildiq",
+    {
+        "Hello": "Hallo"
+    },
+    "nplurals=2; plural=(n > 1);"
+)
+",
+    "l10n/nl.json": "{
+  "translations": {
+    "Hello": "Hallo"
+  },
+  "pluralForm": "nplurals=2; plural=(n > 1);"
+}",
+  },
+  "status": 0,
+  "stderr": "",
+  "stdout": "  ✓ l10n/en.js up to date (2 keys)
+  ✓ l10n/nl.js up to date (1 keys)
+",
+}
+`;
+
+exports[`l10n build and check scripts > l10n-js: --check when stale 1`] = `
+{
+  "files": {
+    "appinfo/info.xml": "<info>
+	<id> buildiq </id>
+</info>
+",
+    "l10n/.schema-l10n-baseline.json": "{
+  "uncovered": 3
+}",
+    "l10n/README.md": "not a catalogue",
+    "l10n/en.js": "old
+",
+    "l10n/en.json": "{
+  "translations": {
+    "Hello": "Hello",
+    "Say \\"hi\\"": "Say \\"hi\\""
+  }
+}",
+    "l10n/nl.json": "{
+  "translations": {
+    "Hello": "Hallo"
+  },
+  "pluralForm": "nplurals=2; plural=(n > 1);"
+}",
+  },
+  "status": 1,
+  "stderr": "
+Stale browser catalogue: l10n/en.js, l10n/nl.js
+Run \`npm run l10n:build\` and commit the result.
+",
+  "stdout": "",
+}
+`;
+
+exports[`l10n build and check scripts > l10n-js: --check with one stale 1`] = `
+{
+  "files": {
+    "appinfo/info.xml": "<info>
+	<id> buildiq </id>
+</info>
+",
+    "l10n/.schema-l10n-baseline.json": "{
+  "uncovered": 3
+}",
+    "l10n/README.md": "not a catalogue",
+    "l10n/en.js": "old
+",
+    "l10n/en.json": "{
+  "translations": {
+    "Hello": "Hello",
+    "Say \\"hi\\"": "Say \\"hi\\""
+  }
+}",
+    "l10n/nl.js": "OC.L10N.register(
+    "buildiq",
+    {
+        "Hello": "Hallo"
+    },
+    "nplurals=2; plural=(n > 1);"
+)
+",
+    "l10n/nl.json": "{
+  "translations": {
+    "Hello": "Hallo"
+  },
+  "pluralForm": "nplurals=2; plural=(n > 1);"
+}",
+  },
+  "status": 1,
+  "stderr": "
+Stale browser catalogue: l10n/en.js
+Run \`npm run l10n:build\` and commit the result.
+",
+  "stdout": "  ✓ l10n/nl.js up to date (1 keys)
+",
+}
+`;
+
+exports[`l10n build and check scripts > l10n-js: catalogue does not parse 1`] = `
+{
+  "files": {
+    "appinfo/info.xml": "<info>
+	<id> buildiq </id>
+</info>
+",
+    "l10n/.schema-l10n-baseline.json": "{
+  "uncovered": 3
+}",
+    "l10n/README.md": "not a catalogue",
+    "l10n/en.js": "OC.L10N.register(
+    "buildiq",
+    {
+        "Hello": "Hello",
+        "Say \\"hi\\"": "Say \\"hi\\""
+    },
+    "nplurals=2; plural=(n != 1);"
+)
+",
+    "l10n/en.json": "{
+  "translations": {
+    "Hello": "Hello",
+    "Say \\"hi\\"": "Say \\"hi\\""
+  }
+}",
+    "l10n/nl.json": "{ nope",
+  },
+  "status": 1,
+  "stderr": "l10n/nl.json does not parse: <message>
+",
+  "stdout": "  ✎ l10n/en.js written (2 keys)
+",
+}
+`;
+
+exports[`l10n build and check scripts > l10n-js: catalogue without translations 1`] = `
+{
+  "files": {
+    "appinfo/info.xml": "<info>
+	<id> buildiq </id>
+</info>
+",
+    "l10n/.schema-l10n-baseline.json": "{
+  "uncovered": 3
+}",
+    "l10n/README.md": "not a catalogue",
+    "l10n/en.js": "OC.L10N.register(
+    "buildiq",
+    {
+        "Hello": "Hello",
+        "Say \\"hi\\"": "Say \\"hi\\""
+    },
+    "nplurals=2; plural=(n != 1);"
+)
+",
+    "l10n/en.json": "{
+  "translations": {
+    "Hello": "Hello",
+    "Say \\"hi\\"": "Say \\"hi\\""
+  }
+}",
+    "l10n/nl.json": "{
+  "pluralForm": "x"
+}",
+  },
+  "status": 1,
+  "stderr": "l10n/nl.json is missing "translations"
+",
+  "stdout": "  ✎ l10n/en.js written (2 keys)
+",
+}
+`;
+
+exports[`l10n build and check scripts > l10n-js: empty translations 1`] = `
+{
+  "files": {
+    "appinfo/info.xml": "<id>buildiq</id>",
+    "l10n/de.js": "OC.L10N.register(
+    "buildiq",
+    {
+
+    },
+    "nplurals=2; plural=(n != 1);"
+)
+",
+    "l10n/de.json": "{
+  "translations": {}
+}",
+  },
+  "status": 0,
+  "stderr": "",
+  "stdout": "  ✎ l10n/de.js written (0 keys)
+",
+}
+`;
+
+exports[`l10n build and check scripts > l10n-js: info.xml without an id 1`] = `
+{
+  "files": {
+    "appinfo/info.xml": "<info></info>",
+    "l10n/.schema-l10n-baseline.json": "{
+  "uncovered": 3
+}",
+    "l10n/README.md": "not a catalogue",
+    "l10n/en.json": "{
+  "translations": {
+    "Hello": "Hello",
+    "Say \\"hi\\"": "Say \\"hi\\""
+  }
+}",
+    "l10n/nl.json": "{
+  "translations": {
+    "Hello": "Hallo"
+  },
+  "pluralForm": "nplurals=2; plural=(n > 1);"
+}",
+  },
+  "status": 1,
+  "stderr": "appinfo/info.xml declares no <id>
+",
+  "stdout": "",
+}
+`;
+
+exports[`l10n build and check scripts > l10n-js: no catalogue 1`] = `
+{
+  "files": {
+    "appinfo/info.xml": "<id>buildiq</id>",
+    "l10n/.schema-l10n-baseline.json": "{}",
+  },
+  "status": 1,
+  "stderr": "l10n/ holds no <locale>.json catalogue to generate from
+",
+  "stdout": "",
+}
+`;
+
+exports[`l10n build and check scripts > l10n-js: rewrites only the stale one 1`] = `
+{
+  "files": {
+    "appinfo/info.xml": "<info>
+	<id> buildiq </id>
+</info>
+",
+    "l10n/.schema-l10n-baseline.json": "{
+  "uncovered": 3
+}",
+    "l10n/README.md": "not a catalogue",
+    "l10n/en.js": "OC.L10N.register(
+    "buildiq",
+    {
+        "Hello": "Hello",
+        "Say \\"hi\\"": "Say \\"hi\\""
+    },
+    "nplurals=2; plural=(n != 1);"
+)
+",
+    "l10n/en.json": "{
+  "translations": {
+    "Hello": "Hello",
+    "Say \\"hi\\"": "Say \\"hi\\""
+  }
+}",
+    "l10n/nl.js": "OC.L10N.register(
+    "buildiq",
+    {
+        "Hello": "Hallo"
+    },
+    "nplurals=2; plural=(n > 1);"
+)
+",
+    "l10n/nl.json": "{
+  "translations": {
+    "Hello": "Hallo"
+  },
+  "pluralForm": "nplurals=2; plural=(n > 1);"
+}",
+  },
+  "status": 0,
+  "stderr": "",
+  "stdout": "  ✎ l10n/en.js written (2 keys)
+  ✓ l10n/nl.js up to date (1 keys)
+",
+}
+`;
+
+exports[`l10n build and check scripts > l10n-js: writes every catalogue 1`] = `
+{
+  "files": {
+    "appinfo/info.xml": "<info>
+	<id> buildiq </id>
+</info>
+",
+    "l10n/.schema-l10n-baseline.json": "{
+  "uncovered": 3
+}",
+    "l10n/README.md": "not a catalogue",
+    "l10n/en.js": "OC.L10N.register(
+    "buildiq",
+    {
+        "Hello": "Hello",
+        "Say \\"hi\\"": "Say \\"hi\\""
+    },
+    "nplurals=2; plural=(n != 1);"
+)
+",
+    "l10n/en.json": "{
+  "translations": {
+    "Hello": "Hello",
+    "Say \\"hi\\"": "Say \\"hi\\""
+  }
+}",
+    "l10n/nl.js": "OC.L10N.register(
+    "buildiq",
+    {
+        "Hello": "Hallo"
+    },
+    "nplurals=2; plural=(n > 1);"
+)
+",
+    "l10n/nl.json": "{
+  "translations": {
+    "Hello": "Hallo"
+  },
+  "pluralForm": "nplurals=2; plural=(n > 1);"
+}",
+  },
+  "status": 0,
+  "stderr": "",
+  "stdout": "  ✎ l10n/en.js written (2 keys)
+  ✎ l10n/nl.js written (1 keys)
+",
+}
+`;
+
+exports[`l10n build and check scripts > schema-l10n: --list 1`] = `
+{
+  "files": {
+    "l10n/.schema-l10n-baseline.json": "{
+  "uncovered": 10
+}",
+    "l10n/en.json": "{
+  "translations": {
+    "Meeting": "Meeting",
+    "Name": "Name",
+    "Tag A": "Tag A"
+  }
+}",
+    "lib/Settings/buildiq_register.json": "{
+  "components": {
+    "schemas": {
+      "Meeting": {
+        "title": "Meeting",
+        "properties": {
+          "name": {
+            "title": "Name",
+            "description": "Full name"
+          },
+          "status": {
+            "title": "Status",
+            "description": "Full name",
+            "x-enum-labels": {
+              "open": "Open",
+              "closed": "Closed"
+            }
+          },
+          "tags": {
+            "items": {
+              "x-enum-labels": {
+                "a": "Tag A",
+                "b": " "
+              }
+            }
+          },
+          "broken": null,
+          "count": 3,
+          "blank": {
+            "title": "",
+            "description": 42
+          }
+        }
+      },
+      "List": [
+        {
+          "properties": {
+            "item": {
+              "title": "Item title"
+            }
+          }
+        },
+        "text"
+      ]
+    }
+  }
+}",
+    "lib/Settings/register.d/bad.json": "{ broken",
+    "lib/Settings/register.d/motion.json": "{
+  "title": "Motion",
+  "properties": {
+    "days": {
+      "title": "Days",
+      "description": "Name"
+    }
+  },
+  "nested": {
+    "properties": "not an object",
+    "other": {
+      "properties": []
+    },
+    "listed": {
+      "title": "Array props",
+      "properties": [
+        {
+          "title": "Array item"
+        }
+      ]
+    }
+  }
+}",
+    "lib/Settings/register.d/notes.txt": "not json",
+  },
+  "status": 0,
+  "stderr": "",
+  "stdout": "lib/Settings/buildiq_register.json:status.x-enum-labels
+  Closed
+lib/Settings/register.d/motion.json:days.title
+  Days
+lib/Settings/buildiq_register.json:name.description
+  Full name
+lib/Settings/buildiq_register.json:item.title
+  Item title
+lib/Settings/register.d/motion.json:schema title
+  Motion
+lib/Settings/buildiq_register.json:status.x-enum-labels
+  Open
+lib/Settings/buildiq_register.json:status.title
+  Status
+10 schema string(s); 7 uncovered, baseline 10
+3 fewer than the baseline — lower it with:
+  npm run check:schema-l10n -- --update
+",
+}
+`;
+
+exports[`l10n build and check scripts > schema-l10n: --update 1`] = `
+{
+  "files": {
+    "l10n/.schema-l10n-baseline.json": "{
+  "uncovered": 7
+}
+",
+    "l10n/en.json": "{
+  "translations": {
+    "Meeting": "Meeting",
+    "Name": "Name",
+    "Tag A": "Tag A"
+  }
+}",
+    "lib/Settings/buildiq_register.json": "{
+  "components": {
+    "schemas": {
+      "Meeting": {
+        "title": "Meeting",
+        "properties": {
+          "name": {
+            "title": "Name",
+            "description": "Full name"
+          },
+          "status": {
+            "title": "Status",
+            "description": "Full name",
+            "x-enum-labels": {
+              "open": "Open",
+              "closed": "Closed"
+            }
+          },
+          "tags": {
+            "items": {
+              "x-enum-labels": {
+                "a": "Tag A",
+                "b": " "
+              }
+            }
+          },
+          "broken": null,
+          "count": 3,
+          "blank": {
+            "title": "",
+            "description": 42
+          }
+        }
+      },
+      "List": [
+        {
+          "properties": {
+            "item": {
+              "title": "Item title"
+            }
+          }
+        },
+        "text"
+      ]
+    }
+  }
+}",
+    "lib/Settings/register.d/bad.json": "{ broken",
+    "lib/Settings/register.d/motion.json": "{
+  "title": "Motion",
+  "properties": {
+    "days": {
+      "title": "Days",
+      "description": "Name"
+    }
+  },
+  "nested": {
+    "properties": "not an object",
+    "other": {
+      "properties": []
+    },
+    "listed": {
+      "title": "Array props",
+      "properties": [
+        {
+          "title": "Array item"
+        }
+      ]
+    }
+  }
+}",
+    "lib/Settings/register.d/notes.txt": "not json",
+  },
+  "status": 0,
+  "stderr": "",
+  "stdout": "baseline written: 7 uncovered schema string(s)
+",
+}
+`;
+
+exports[`l10n build and check scripts > schema-l10n: --update and --list 1`] = `
+{
+  "files": {
+    "l10n/.schema-l10n-baseline.json": "{
+  "uncovered": 7
+}
+",
+    "l10n/en.json": "{
+  "translations": {
+    "Meeting": "Meeting",
+    "Name": "Name",
+    "Tag A": "Tag A"
+  }
+}",
+    "lib/Settings/buildiq_register.json": "{
+  "components": {
+    "schemas": {
+      "Meeting": {
+        "title": "Meeting",
+        "properties": {
+          "name": {
+            "title": "Name",
+            "description": "Full name"
+          },
+          "status": {
+            "title": "Status",
+            "description": "Full name",
+            "x-enum-labels": {
+              "open": "Open",
+              "closed": "Closed"
+            }
+          },
+          "tags": {
+            "items": {
+              "x-enum-labels": {
+                "a": "Tag A",
+                "b": " "
+              }
+            }
+          },
+          "broken": null,
+          "count": 3,
+          "blank": {
+            "title": "",
+            "description": 42
+          }
+        }
+      },
+      "List": [
+        {
+          "properties": {
+            "item": {
+              "title": "Item title"
+            }
+          }
+        },
+        "text"
+      ]
+    }
+  }
+}",
+    "lib/Settings/register.d/bad.json": "{ broken",
+    "lib/Settings/register.d/motion.json": "{
+  "title": "Motion",
+  "properties": {
+    "days": {
+      "title": "Days",
+      "description": "Name"
+    }
+  },
+  "nested": {
+    "properties": "not an object",
+    "other": {
+      "properties": []
+    },
+    "listed": {
+      "title": "Array props",
+      "properties": [
+        {
+          "title": "Array item"
+        }
+      ]
+    }
+  }
+}",
+    "lib/Settings/register.d/notes.txt": "not json",
+  },
+  "status": 0,
+  "stderr": "",
+  "stdout": "lib/Settings/buildiq_register.json:status.x-enum-labels
+  Closed
+lib/Settings/register.d/motion.json:days.title
+  Days
+lib/Settings/buildiq_register.json:name.description
+  Full name
+lib/Settings/buildiq_register.json:item.title
+  Item title
+lib/Settings/register.d/motion.json:schema title
+  Motion
+lib/Settings/buildiq_register.json:status.x-enum-labels
+  Open
+lib/Settings/buildiq_register.json:status.title
+  Status
+baseline written: 7 uncovered schema string(s)
+",
+}
+`;
+
+exports[`l10n build and check scripts > schema-l10n: a schema-shaped file that is not .json 1`] = `
+{
+  "files": {
+    "l10n/.schema-l10n-baseline.json": "{
+  "uncovered": 7
+}",
+    "l10n/en.json": "{
+  "translations": {
+    "Meeting": "Meeting",
+    "Name": "Name",
+    "Tag A": "Tag A"
+  }
+}",
+    "lib/Settings/buildiq_register.json": "{
+  "components": {
+    "schemas": {
+      "Meeting": {
+        "title": "Meeting",
+        "properties": {
+          "name": {
+            "title": "Name",
+            "description": "Full name"
+          },
+          "status": {
+            "title": "Status",
+            "description": "Full name",
+            "x-enum-labels": {
+              "open": "Open",
+              "closed": "Closed"
+            }
+          },
+          "tags": {
+            "items": {
+              "x-enum-labels": {
+                "a": "Tag A",
+                "b": " "
+              }
+            }
+          },
+          "broken": null,
+          "count": 3,
+          "blank": {
+            "title": "",
+            "description": 42
+          }
+        }
+      },
+      "List": [
+        {
+          "properties": {
+            "item": {
+              "title": "Item title"
+            }
+          }
+        },
+        "text"
+      ]
+    }
+  }
+}",
+    "lib/Settings/register.d/bad.json": "{ broken",
+    "lib/Settings/register.d/draft.json.bak": "{
+  "title": "Draft only",
+  "properties": {
+    "note": {
+      "title": "Draft note"
+    }
+  }
+}",
+    "lib/Settings/register.d/motion.json": "{
+  "title": "Motion",
+  "properties": {
+    "days": {
+      "title": "Days",
+      "description": "Name"
+    }
+  },
+  "nested": {
+    "properties": "not an object",
+    "other": {
+      "properties": []
+    },
+    "listed": {
+      "title": "Array props",
+      "properties": [
+        {
+          "title": "Array item"
+        }
+      ]
+    }
+  }
+}",
+    "lib/Settings/register.d/notes.txt": "not json",
+  },
+  "status": 0,
+  "stderr": "",
+  "stdout": "10 schema string(s); 7 uncovered, baseline 7
+",
+}
+`;
+
+exports[`l10n build and check scripts > schema-l10n: at the baseline 1`] = `
+{
+  "files": {
+    "l10n/.schema-l10n-baseline.json": "{
+  "uncovered": 10
+}",
+    "l10n/en.json": "{
+  "translations": {
+    "Meeting": "Meeting",
+    "Name": "Name",
+    "Tag A": "Tag A"
+  }
+}",
+    "lib/Settings/buildiq_register.json": "{
+  "components": {
+    "schemas": {
+      "Meeting": {
+        "title": "Meeting",
+        "properties": {
+          "name": {
+            "title": "Name",
+            "description": "Full name"
+          },
+          "status": {
+            "title": "Status",
+            "description": "Full name",
+            "x-enum-labels": {
+              "open": "Open",
+              "closed": "Closed"
+            }
+          },
+          "tags": {
+            "items": {
+              "x-enum-labels": {
+                "a": "Tag A",
+                "b": " "
+              }
+            }
+          },
+          "broken": null,
+          "count": 3,
+          "blank": {
+            "title": "",
+            "description": 42
+          }
+        }
+      },
+      "List": [
+        {
+          "properties": {
+            "item": {
+              "title": "Item title"
+            }
+          }
+        },
+        "text"
+      ]
+    }
+  }
+}",
+    "lib/Settings/register.d/bad.json": "{ broken",
+    "lib/Settings/register.d/motion.json": "{
+  "title": "Motion",
+  "properties": {
+    "days": {
+      "title": "Days",
+      "description": "Name"
+    }
+  },
+  "nested": {
+    "properties": "not an object",
+    "other": {
+      "properties": []
+    },
+    "listed": {
+      "title": "Array props",
+      "properties": [
+        {
+          "title": "Array item"
+        }
+      ]
+    }
+  }
+}",
+    "lib/Settings/register.d/notes.txt": "not json",
+  },
+  "status": 0,
+  "stderr": "",
+  "stdout": "10 schema string(s); 7 uncovered, baseline 10
+3 fewer than the baseline — lower it with:
+  npm run check:schema-l10n -- --update
+",
+}
+`;
+
+exports[`l10n build and check scripts > schema-l10n: catalogue without translations 1`] = `
+{
+  "files": {
+    "l10n/.schema-l10n-baseline.json": "{
+  "uncovered": 13
+}",
+    "l10n/en.json": "{}",
+    "lib/Settings/buildiq_register.json": "{
+  "components": {
+    "schemas": {
+      "Meeting": {
+        "title": "Meeting",
+        "properties": {
+          "name": {
+            "title": "Name",
+            "description": "Full name"
+          },
+          "status": {
+            "title": "Status",
+            "description": "Full name",
+            "x-enum-labels": {
+              "open": "Open",
+              "closed": "Closed"
+            }
+          },
+          "tags": {
+            "items": {
+              "x-enum-labels": {
+                "a": "Tag A",
+                "b": " "
+              }
+            }
+          },
+          "broken": null,
+          "count": 3,
+          "blank": {
+            "title": "",
+            "description": 42
+          }
+        }
+      },
+      "List": [
+        {
+          "properties": {
+            "item": {
+              "title": "Item title"
+            }
+          }
+        },
+        "text"
+      ]
+    }
+  }
+}",
+    "lib/Settings/register.d/bad.json": "{ broken",
+    "lib/Settings/register.d/motion.json": "{
+  "title": "Motion",
+  "properties": {
+    "days": {
+      "title": "Days",
+      "description": "Name"
+    }
+  },
+  "nested": {
+    "properties": "not an object",
+    "other": {
+      "properties": []
+    },
+    "listed": {
+      "title": "Array props",
+      "properties": [
+        {
+          "title": "Array item"
+        }
+      ]
+    }
+  }
+}",
+    "lib/Settings/register.d/notes.txt": "not json",
+  },
+  "status": 0,
+  "stderr": "",
+  "stdout": "10 schema string(s); 10 uncovered, baseline 13
+3 fewer than the baseline — lower it with:
+  npm run check:schema-l10n -- --update
+",
+}
+`;
+
+exports[`l10n build and check scripts > schema-l10n: exactly at the baseline 1`] = `
+{
+  "files": {
+    "l10n/.schema-l10n-baseline.json": "{
+  "uncovered": 7
+}",
+    "l10n/en.json": "{
+  "translations": {
+    "Meeting": "Meeting",
+    "Name": "Name",
+    "Tag A": "Tag A"
+  }
+}",
+    "lib/Settings/buildiq_register.json": "{
+  "components": {
+    "schemas": {
+      "Meeting": {
+        "title": "Meeting",
+        "properties": {
+          "name": {
+            "title": "Name",
+            "description": "Full name"
+          },
+          "status": {
+            "title": "Status",
+            "description": "Full name",
+            "x-enum-labels": {
+              "open": "Open",
+              "closed": "Closed"
+            }
+          },
+          "tags": {
+            "items": {
+              "x-enum-labels": {
+                "a": "Tag A",
+                "b": " "
+              }
+            }
+          },
+          "broken": null,
+          "count": 3,
+          "blank": {
+            "title": "",
+            "description": 42
+          }
+        }
+      },
+      "List": [
+        {
+          "properties": {
+            "item": {
+              "title": "Item title"
+            }
+          }
+        },
+        "text"
+      ]
+    }
+  }
+}",
+    "lib/Settings/register.d/bad.json": "{ broken",
+    "lib/Settings/register.d/motion.json": "{
+  "title": "Motion",
+  "properties": {
+    "days": {
+      "title": "Days",
+      "description": "Name"
+    }
+  },
+  "nested": {
+    "properties": "not an object",
+    "other": {
+      "properties": []
+    },
+    "listed": {
+      "title": "Array props",
+      "properties": [
+        {
+          "title": "Array item"
+        }
+      ]
+    }
+  }
+}",
+    "lib/Settings/register.d/notes.txt": "not json",
+  },
+  "status": 0,
+  "stderr": "",
+  "stdout": "10 schema string(s); 7 uncovered, baseline 7
+",
+}
+`;
+
+exports[`l10n build and check scripts > schema-l10n: fell below the baseline 1`] = `
+{
+  "files": {
+    "l10n/.schema-l10n-baseline.json": "{
+  "uncovered": 12
+}",
+    "l10n/en.json": "{
+  "translations": {
+    "Meeting": "Meeting",
+    "Name": "Name",
+    "Tag A": "Tag A"
+  }
+}",
+    "lib/Settings/buildiq_register.json": "{
+  "components": {
+    "schemas": {
+      "Meeting": {
+        "title": "Meeting",
+        "properties": {
+          "name": {
+            "title": "Name",
+            "description": "Full name"
+          },
+          "status": {
+            "title": "Status",
+            "description": "Full name",
+            "x-enum-labels": {
+              "open": "Open",
+              "closed": "Closed"
+            }
+          },
+          "tags": {
+            "items": {
+              "x-enum-labels": {
+                "a": "Tag A",
+                "b": " "
+              }
+            }
+          },
+          "broken": null,
+          "count": 3,
+          "blank": {
+            "title": "",
+            "description": 42
+          }
+        }
+      },
+      "List": [
+        {
+          "properties": {
+            "item": {
+              "title": "Item title"
+            }
+          }
+        },
+        "text"
+      ]
+    }
+  }
+}",
+    "lib/Settings/register.d/bad.json": "{ broken",
+    "lib/Settings/register.d/motion.json": "{
+  "title": "Motion",
+  "properties": {
+    "days": {
+      "title": "Days",
+      "description": "Name"
+    }
+  },
+  "nested": {
+    "properties": "not an object",
+    "other": {
+      "properties": []
+    },
+    "listed": {
+      "title": "Array props",
+      "properties": [
+        {
+          "title": "Array item"
+        }
+      ]
+    }
+  }
+}",
+    "lib/Settings/register.d/notes.txt": "not json",
+  },
+  "status": 0,
+  "stderr": "",
+  "stdout": "10 schema string(s); 7 uncovered, baseline 12
+5 fewer than the baseline — lower it with:
+  npm run check:schema-l10n -- --update
+",
+}
+`;
+
+exports[`l10n build and check scripts > schema-l10n: grew past the baseline 1`] = `
+{
+  "files": {
+    "l10n/.schema-l10n-baseline.json": "{
+  "uncovered": 5
+}",
+    "l10n/en.json": "{
+  "translations": {
+    "Meeting": "Meeting",
+    "Name": "Name",
+    "Tag A": "Tag A"
+  }
+}",
+    "lib/Settings/buildiq_register.json": "{
+  "components": {
+    "schemas": {
+      "Meeting": {
+        "title": "Meeting",
+        "properties": {
+          "name": {
+            "title": "Name",
+            "description": "Full name"
+          },
+          "status": {
+            "title": "Status",
+            "description": "Full name",
+            "x-enum-labels": {
+              "open": "Open",
+              "closed": "Closed"
+            }
+          },
+          "tags": {
+            "items": {
+              "x-enum-labels": {
+                "a": "Tag A",
+                "b": " "
+              }
+            }
+          },
+          "broken": null,
+          "count": 3,
+          "blank": {
+            "title": "",
+            "description": 42
+          }
+        }
+      },
+      "List": [
+        {
+          "properties": {
+            "item": {
+              "title": "Item title"
+            }
+          }
+        },
+        "text"
+      ]
+    }
+  }
+}",
+    "lib/Settings/register.d/bad.json": "{ broken",
+    "lib/Settings/register.d/motion.json": "{
+  "title": "Motion",
+  "properties": {
+    "days": {
+      "title": "Days",
+      "description": "Name"
+    }
+  },
+  "nested": {
+    "properties": "not an object",
+    "other": {
+      "properties": []
+    },
+    "listed": {
+      "title": "Array props",
+      "properties": [
+        {
+          "title": "Array item"
+        }
+      ]
+    }
+  }
+}",
+    "lib/Settings/register.d/notes.txt": "not json",
+  },
+  "status": 1,
+  "stderr": "
+2 schema string(s) added with no catalogue key — they will render
+in English inside an otherwise translated form.
+
+Add them to l10n/en.json (identity) and l10n/nl.json (translated), then
+run \`npm run l10n:build\`. See what is uncovered with:
+  node scripts/check-schema-l10n.js --list
+",
+  "stdout": "10 schema string(s); 7 uncovered, baseline 5
+",
+}
+`;
+
+exports[`l10n build and check scripts > schema-l10n: no baseline 1`] = `
+{
+  "files": {
+    "l10n/en.json": "{
+  "translations": {
+    "Meeting": "Meeting",
+    "Name": "Name",
+    "Tag A": "Tag A"
+  }
+}",
+    "lib/Settings/buildiq_register.json": "{
+  "components": {
+    "schemas": {
+      "Meeting": {
+        "title": "Meeting",
+        "properties": {
+          "name": {
+            "title": "Name",
+            "description": "Full name"
+          },
+          "status": {
+            "title": "Status",
+            "description": "Full name",
+            "x-enum-labels": {
+              "open": "Open",
+              "closed": "Closed"
+            }
+          },
+          "tags": {
+            "items": {
+              "x-enum-labels": {
+                "a": "Tag A",
+                "b": " "
+              }
+            }
+          },
+          "broken": null,
+          "count": 3,
+          "blank": {
+            "title": "",
+            "description": 42
+          }
+        }
+      },
+      "List": [
+        {
+          "properties": {
+            "item": {
+              "title": "Item title"
+            }
+          }
+        },
+        "text"
+      ]
+    }
+  }
+}",
+    "lib/Settings/register.d/bad.json": "{ broken",
+    "lib/Settings/register.d/motion.json": "{
+  "title": "Motion",
+  "properties": {
+    "days": {
+      "title": "Days",
+      "description": "Name"
+    }
+  },
+  "nested": {
+    "properties": "not an object",
+    "other": {
+      "properties": []
+    },
+    "listed": {
+      "title": "Array props",
+      "properties": [
+        {
+          "title": "Array item"
+        }
+      ]
+    }
+  }
+}",
+    "lib/Settings/register.d/notes.txt": "not json",
+  },
+  "status": 1,
+  "stderr": "No baseline. Run \`npm run check:schema-l10n -- --update\` and commit it.
+",
+  "stdout": "",
+}
+`;
+
+exports[`l10n build and check scripts > schema-l10n: no catalogue 1`] = `
+{
+  "files": {
+    "l10n/.schema-l10n-baseline.json": "{
+  "uncovered": 13
+}",
+    "lib/Settings/buildiq_register.json": "{
+  "components": {
+    "schemas": {
+      "Meeting": {
+        "title": "Meeting",
+        "properties": {
+          "name": {
+            "title": "Name",
+            "description": "Full name"
+          },
+          "status": {
+            "title": "Status",
+            "description": "Full name",
+            "x-enum-labels": {
+              "open": "Open",
+              "closed": "Closed"
+            }
+          },
+          "tags": {
+            "items": {
+              "x-enum-labels": {
+                "a": "Tag A",
+                "b": " "
+              }
+            }
+          },
+          "broken": null,
+          "count": 3,
+          "blank": {
+            "title": "",
+            "description": 42
+          }
+        }
+      },
+      "List": [
+        {
+          "properties": {
+            "item": {
+              "title": "Item title"
+            }
+          }
+        },
+        "text"
+      ]
+    }
+  }
+}",
+    "lib/Settings/register.d/bad.json": "{ broken",
+    "lib/Settings/register.d/motion.json": "{
+  "title": "Motion",
+  "properties": {
+    "days": {
+      "title": "Days",
+      "description": "Name"
+    }
+  },
+  "nested": {
+    "properties": "not an object",
+    "other": {
+      "properties": []
+    },
+    "listed": {
+      "title": "Array props",
+      "properties": [
+        {
+          "title": "Array item"
+        }
+      ]
+    }
+  }
+}",
+    "lib/Settings/register.d/notes.txt": "not json",
+  },
+  "status": 0,
+  "stderr": "",
+  "stdout": "10 schema string(s); 10 uncovered, baseline 13
+3 fewer than the baseline — lower it with:
+  npm run check:schema-l10n -- --update
+",
+}
+`;
+
+exports[`l10n build and check scripts > schema-l10n: no lib/Settings 1`] = `
+{
+  "files": {
+    "l10n/.schema-l10n-baseline.json": "{
+  "uncovered": 0
+}",
+  },
+  "status": 0,
+  "stderr": "",
+  "stdout": "0 schema string(s); 0 uncovered, baseline 0
+",
+}
+`;
+
+exports[`l10n build and check scripts > schema-l10n: one below the baseline 1`] = `
+{
+  "files": {
+    "l10n/.schema-l10n-baseline.json": "{
+  "uncovered": 8
+}",
+    "l10n/en.json": "{
+  "translations": {
+    "Meeting": "Meeting",
+    "Name": "Name",
+    "Tag A": "Tag A"
+  }
+}",
+    "lib/Settings/buildiq_register.json": "{
+  "components": {
+    "schemas": {
+      "Meeting": {
+        "title": "Meeting",
+        "properties": {
+          "name": {
+            "title": "Name",
+            "description": "Full name"
+          },
+          "status": {
+            "title": "Status",
+            "description": "Full name",
+            "x-enum-labels": {
+              "open": "Open",
+              "closed": "Closed"
+            }
+          },
+          "tags": {
+            "items": {
+              "x-enum-labels": {
+                "a": "Tag A",
+                "b": " "
+              }
+            }
+          },
+          "broken": null,
+          "count": 3,
+          "blank": {
+            "title": "",
+            "description": 42
+          }
+        }
+      },
+      "List": [
+        {
+          "properties": {
+            "item": {
+              "title": "Item title"
+            }
+          }
+        },
+        "text"
+      ]
+    }
+  }
+}",
+    "lib/Settings/register.d/bad.json": "{ broken",
+    "lib/Settings/register.d/motion.json": "{
+  "title": "Motion",
+  "properties": {
+    "days": {
+      "title": "Days",
+      "description": "Name"
+    }
+  },
+  "nested": {
+    "properties": "not an object",
+    "other": {
+      "properties": []
+    },
+    "listed": {
+      "title": "Array props",
+      "properties": [
+        {
+          "title": "Array item"
+        }
+      ]
+    }
+  }
+}",
+    "lib/Settings/register.d/notes.txt": "not json",
+  },
+  "status": 0,
+  "stderr": "",
+  "stdout": "10 schema string(s); 7 uncovered, baseline 8
+1 fewer than the baseline — lower it with:
+  npm run check:schema-l10n -- --update
+",
+}
+`;
+
+exports[`l10n build and check scripts > schema-l10n: one past the baseline 1`] = `
+{
+  "files": {
+    "l10n/.schema-l10n-baseline.json": "{
+  "uncovered": 6
+}",
+    "l10n/en.json": "{
+  "translations": {
+    "Meeting": "Meeting",
+    "Name": "Name",
+    "Tag A": "Tag A"
+  }
+}",
+    "lib/Settings/buildiq_register.json": "{
+  "components": {
+    "schemas": {
+      "Meeting": {
+        "title": "Meeting",
+        "properties": {
+          "name": {
+            "title": "Name",
+            "description": "Full name"
+          },
+          "status": {
+            "title": "Status",
+            "description": "Full name",
+            "x-enum-labels": {
+              "open": "Open",
+              "closed": "Closed"
+            }
+          },
+          "tags": {
+            "items": {
+              "x-enum-labels": {
+                "a": "Tag A",
+                "b": " "
+              }
+            }
+          },
+          "broken": null,
+          "count": 3,
+          "blank": {
+            "title": "",
+            "description": 42
+          }
+        }
+      },
+      "List": [
+        {
+          "properties": {
+            "item": {
+              "title": "Item title"
+            }
+          }
+        },
+        "text"
+      ]
+    }
+  }
+}",
+    "lib/Settings/register.d/bad.json": "{ broken",
+    "lib/Settings/register.d/motion.json": "{
+  "title": "Motion",
+  "properties": {
+    "days": {
+      "title": "Days",
+      "description": "Name"
+    }
+  },
+  "nested": {
+    "properties": "not an object",
+    "other": {
+      "properties": []
+    },
+    "listed": {
+      "title": "Array props",
+      "properties": [
+        {
+          "title": "Array item"
+        }
+      ]
+    }
+  }
+}",
+    "lib/Settings/register.d/notes.txt": "not json",
+  },
+  "status": 1,
+  "stderr": "
+1 schema string(s) added with no catalogue key — they will render
+in English inside an otherwise translated form.
+
+Add them to l10n/en.json (identity) and l10n/nl.json (translated), then
+run \`npm run l10n:build\`. See what is uncovered with:
+  node scripts/check-schema-l10n.js --list
+",
+  "stdout": "10 schema string(s); 7 uncovered, baseline 6
+",
+}
+`;

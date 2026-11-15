@@ -18,7 +18,8 @@ vi.mock('@nextcloud/axios', () => ({ default: axiosMock }))
 vi.mock('@nextcloud/dialogs', () => ({ showError: vi.fn(), showSuccess: vi.fn() }))
 vi.mock('@nextcloud/router', async (importOriginal) => ({
 	...(await importOriginal()),
-	generateUrl: (p, params = {}) => p.replace(/\{(\w+)\}/g, (_, k) => params[k] ?? `{${k}}`),
+	generateUrl: (p, params = {}) =>
+		p.replace(/\{(\w+)\}/g, (_, k) => params[k] ?? `{${k}}`),
 }))
 vi.mock('../../src/composables/useRole.js', () => ({
 	useRole: () => 'owner',
@@ -27,9 +28,17 @@ vi.mock('../../src/composables/useRole.js', () => ({
 
 import ApplicationDetailActions from '../../src/components/ApplicationDetailActions.vue'
 import VersionHistory from '../../src/views/VersionHistory.vue'
-import { closePromoteDialog, promoteDialog } from '../../src/composables/usePromoteDialog.js'
+import {
+	closePromoteDialog,
+	promoteDialog,
+} from '../../src/composables/usePromoteDialog.js'
 
-const t = (app, key, vars) => Object.keys(vars || {}).reduce((out, k) => out.replace(`{${k}}`, vars[k]), key)
+function t(app, key, vars) {
+	return Object.keys(vars || {}).reduce(
+		(out, k) => out.replace(`{${k}}`, vars[k]),
+		key,
+	)
+}
 globalThis.t = t
 
 const application = {
@@ -40,8 +49,20 @@ const application = {
 	permissions: { owners: ['user:alice'], editors: [], viewers: [] },
 }
 const versions = [
-	{ id: 'dev-uuid', slug: 'development', name: 'Development', status: 'draft', promotesTo: 'prod-uuid' },
-	{ id: 'prod-uuid', slug: 'production', name: 'Production', status: 'published', promotesTo: null },
+	{
+		id: 'dev-uuid',
+		slug: 'development',
+		name: 'Development',
+		status: 'draft',
+		promotesTo: 'prod-uuid',
+	},
+	{
+		id: 'prod-uuid',
+		slug: 'production',
+		name: 'Production',
+		status: 'published',
+		promotesTo: null,
+	},
 ]
 
 describe('Promote entry points', () => {
@@ -49,7 +70,9 @@ describe('Promote entry points', () => {
 		closePromoteDialog()
 		axiosMock.get.mockReset()
 		axiosMock.get.mockImplementation((url) =>
-			Promise.resolve({ data: url.includes('/versions') ? versions : application }),
+			Promise.resolve({
+				data: url.includes('/versions') ? versions : application,
+			}),
 		)
 	})
 
@@ -60,7 +83,9 @@ describe('Promote entry points', () => {
 		})
 		await flushPromises()
 
-		const promotes = wrapper.vm.actionDescriptors.filter((a) => a.id.startsWith('app-promote-'))
+		const promotes = wrapper.vm.actionDescriptors.filter((a) =>
+			a.id.startsWith('app-promote-'),
+		)
 		expect(promotes.map((a) => a.id)).toEqual(['app-promote-development'])
 
 		promotes[0].onSelect()
@@ -70,12 +95,22 @@ describe('Promote entry points', () => {
 
 	it('the Version history tab has a Promote button that opens the dialog', async () => {
 		const wrapper = shallowMount(VersionHistory, {
-			props: { appSlug: 'shop', applicationUuid: 'app-uuid', currentVersionUuid: 'prod-uuid', canEdit: true },
-			global: { mocks: { t }, stubs: { RollbackConfirmModal: true, 'router-link': true } },
+			props: {
+				appSlug: 'shop',
+				applicationUuid: 'app-uuid',
+				currentVersionUuid: 'prod-uuid',
+				canEdit: true,
+			},
+			global: {
+				mocks: { t },
+				stubs: { RollbackConfirmModal: true, 'router-link': true },
+			},
 		})
 		await flushPromises()
 
-		const buttons = wrapper.findAll('button').filter((b) => b.text() === 'Promote')
+		const buttons = wrapper
+			.findAll('button')
+			.filter((b) => b.text() === 'Promote')
 		expect(buttons.length).toBe(1)
 		await buttons[0].trigger('click')
 

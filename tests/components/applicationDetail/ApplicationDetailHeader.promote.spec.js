@@ -33,7 +33,11 @@ function t(app, key, vars) {
 globalThis.t = t
 
 const router = { push: vi.fn(), replace: vi.fn().mockResolvedValue(undefined) }
-const route = { name: 'VirtualAppDetail', params: { objectId: 'app-uuid' }, query: {} }
+const route = {
+	name: 'VirtualAppDetail',
+	params: { objectId: 'app-uuid' },
+	query: {},
+}
 
 const application = {
 	'@self': { id: 'app-uuid' },
@@ -44,8 +48,20 @@ const application = {
 	permissions: { owners: ['user:alice'], editors: [], viewers: [] },
 }
 const versions = [
-	{ id: 'dev-uuid', slug: 'development', name: 'Development', promotesTo: 'prod-uuid', register: 'openbuild-shop-development' },
-	{ id: 'prod-uuid', slug: 'production', name: 'Production', promotesTo: null, register: 'openbuild-shop-production' },
+	{
+		id: 'dev-uuid',
+		slug: 'development',
+		name: 'Development',
+		promotesTo: 'prod-uuid',
+		register: 'openbuild-shop-development',
+	},
+	{
+		id: 'prod-uuid',
+		slug: 'production',
+		name: 'Production',
+		promotesTo: null,
+		register: 'openbuild-shop-production',
+	},
 ]
 
 function mountHeader(props) {
@@ -53,7 +69,13 @@ function mountHeader(props) {
 		props,
 		global: {
 			mocks: { t, $router: router, $route: route },
-			stubs: { PromoteVersionDialog: { name: 'PromoteVersionDialog', props: ['sourceVersion', 'targetVersion', 'application'], template: '<div class="promote-dialog-stub" />' } },
+			stubs: {
+				PromoteVersionDialog: {
+					name: 'PromoteVersionDialog',
+					props: ['sourceVersion', 'targetVersion', 'application'],
+					template: '<div class="promote-dialog-stub" />',
+				},
+			},
 		},
 	})
 }
@@ -114,7 +136,9 @@ describe('ApplicationDetailHeader promotion and loading state', () => {
 	})
 
 	it('shows why a promotion failed', async () => {
-		axios.post.mockRejectedValue({ response: { data: { message: 'Target is locked' } } })
+		axios.post.mockRejectedValue({
+			response: { data: { message: 'Target is locked' } },
+		})
 		const wrapper = mountHeader({ object: application, objectId: 'app-uuid' })
 		await flushPromises()
 
@@ -122,6 +146,8 @@ describe('ApplicationDetailHeader promotion and loading state', () => {
 		await wrapper.vm.onPromoteConfirm({ strategy: 'migrate-existing-data' })
 		await flushPromises()
 
-		expect(wrapper.text()).toContain('Could not promote Development: Target is locked')
+		expect(wrapper.text()).toContain(
+			'Could not promote Development: Target is locked',
+		)
 	})
 })

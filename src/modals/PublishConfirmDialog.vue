@@ -13,7 +13,7 @@
 	<NcModal v-if="open" size="small" @close="onClose">
 		<div class="publish-confirm">
 			<h2>{{ t('buildiq', 'Publish to GitHub') }}</h2>
-			<p class="publish-confirm__summary">
+			<p v-if="linked" class="publish-confirm__summary">
 				{{
 					t(
 						'buildiq',
@@ -28,6 +28,28 @@
 					)
 				}}
 			</p>
+			<template v-else>
+				<p class="publish-confirm__summary">
+					{{
+						t(
+							'buildiq',
+							'This app has no repository yet. Name one. Publishing creates it as a public repository, tagged so the store can find it.',
+						)
+					}}
+				</p>
+				<NcTextField
+					:modelValue="repoName"
+					:label="t('buildiq', 'Repository name')"
+					:placeholder="defaultRepoName"
+					@update:modelValue="repoName = $event" />
+				<NcTextField
+					:modelValue="org"
+					:label="t('buildiq', 'Create under organisation (optional)')"
+					:placeholder="
+						t('buildiq', 'Leave empty to use your own account')
+					"
+					@update:modelValue="org = $event" />
+			</template>
 			<p class="publish-confirm__cred">
 				{{
 					t('buildiq', 'Using credential: {name}', {
@@ -51,6 +73,7 @@
 				<NcButton
 					variant="primary"
 					:disabled="!credentialId || submitting"
+					data-testid="publish-confirm-submit"
 					@click="submit">
 					{{
 						submitting
@@ -66,11 +89,32 @@
 <script>
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import { NcButton, NcModal, NcSelect } from '@nextcloud/vue'
+import { NcButton, NcModal, NcSelect, NcTextField } from '@nextcloud/vue'
+
+/**
+ * The version slug a selection names: an option object by its id, a plain slug as it is.
+ *
+ * @param {object|string|null} selected The selected version.
+ * @return {string|null} The slug, or null without a selection.
+ */
+function selectedVersionSlug(selected) {
+	return selected?.id ?? selected ?? null
+}
+
+/**
+ * Whether a push answer is a refusal: an outcome other than `ok` without a commit.
+ *
+ * @param {object} data The push answer body.
+ * @return {boolean} True when the push was refused.
+ */
+function isRefusedPush(data) {
+	const outcome = data?.outcome
+	return Boolean(outcome && outcome !== 'ok' && !data?.commitSha)
+}
 
 export default {
 	name: 'PublishConfirmDialog',
-	components: { NcButton, NcModal, NcSelect },
+	components: { NcButton, NcModal, NcSelect, NcTextField },
 	props: {
 		/** Whether the modal is shown. */
 		open: { type: Boolean, default: false },
@@ -90,12 +134,52 @@ export default {
 	data() {
 		return {
 			selectedVersion: null,
+			repoName: '',
+			org: '',
 			submitting: false,
 			error: '',
 		}
 	},
 
 	computed: {
+		/**
+		 * Whether the app already points at a repository.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/github-app-sync/specs/application-detail-ui/spec.md
+		 */
+		linked() {
+			return !!(this.repo && this.repo.owner && this.repo.name)
+		},
+
+		/**
+		 * The repository name proposed for an app that has none, matching the
+		 * name the server would pick for a published template.
+		 *
+		 * @return {string}
+		 * @spec openspec/changes/github-app-sync/specs/application-detail-ui/spec.md
+		 */
+		defaultRepoName() {
+			return this.slug ? `openbuild-${this.slug}` : ''
+		},
+
+		/**
+		 * The repository this publish creates, or null when one is linked.
+		 *
+		 * @return {?object} `{ name, org }`, or null.
+		 * @spec openspec/changes/github-app-sync/specs/application-detail-ui/spec.md
+		 */
+		newRepo() {
+			if (this.linked) {
+				return null
+			}
+			const name = (this.repoName || this.defaultRepoName).trim()
+			if (!/^[A-Za-z0-9][A-Za-z0-9-]*$/.test(name)) {
+				return null
+			}
+			return { name, org: this.org.trim() }
+		},
+
 		/**
 		 * Human label of the linked repository for the summary line.
 		 *
@@ -124,9 +208,19 @@ export default {
 	},
 
 	watch: {
+		/**
+		 * Seed the form each time the dialog opens, so a second publish never
+		 * shows the first one's answers.
+		 *
+		 * @param {boolean} value Whether the dialog is now open.
+		 * @return {void}
+		 * @spec openspec/changes/github-app-sync/specs/application-detail-ui/spec.md
+		 */
 		open(value) {
 			if (value) {
 				this.selectedVersion = null
+				this.repoName = this.defaultRepoName
+				this.org = ''
 				this.error = ''
 				this.submitting = false
 			}
@@ -171,6 +265,11 @@ export default {
 				),
 
 				not_linked: t('buildiq', 'Link a repository before publishing.'),
+				github_rate_limited: t(
+					'buildiq',
+					'GitHub is rate-limiting this credential right now. Try again shortly.',
+				),
+
 				github_unreachable: t(
 					'buildiq',
 					'GitHub could not be reached. Try again shortly.',
@@ -194,35 +293,112 @@ export default {
 			this.submitting = true
 			this.error = ''
 			try {
-				const url = generateUrl(
-					'/apps/buildiq/api/applications/{slug}/github/push',
-					{ slug: this.slug },
-				)
-				const body = { credentialId: this.credentialId }
-				const versionSlug =
-					this.selectedVersion?.id ?? this.selectedVersion ?? null
-				if (versionSlug) {
-					body.versionSlug = versionSlug
-				}
-				const { data } = await axios.post(url, body)
-				const outcome = data?.outcome
-				if (outcome && outcome !== 'ok' && !data?.commitSha) {
-					this.error = this.outcomeMessage(outcome)
-					this.submitting = false
-					return
-				}
-				this.$emit('published', data)
-				this.$emit('close')
+				await this.push()
 			} catch (e) {
-				const data = e?.response?.data
-				this.error =
-					(data?.outcome && this.outcomeMessage(data.outcome))
-					|| data?.detail
-					|| data?.error
-					|| e?.message
-					|| t('buildiq', 'Publishing failed.')
-				this.submitting = false
+				this.stopWith(this.failureSentence(e))
 			}
+		},
+
+		/**
+		 * Send the push; stop with a sentence when the new repository name is
+		 * not one GitHub accepts or the endpoint refuses, else hand the
+		 * answer on and close.
+		 *
+		 * @return {Promise<void>}
+		 */
+		async push() {
+			const body = this.pushBody()
+			if (body === null) {
+				this.stopWith(
+					t('buildiq', 'Give the repository a name of letters, numbers and dashes.'),
+				)
+				return
+			}
+			const { data } = await axios.post(this.pushUrl(), body)
+			if (isRefusedPush(data)) {
+				this.stopWith(this.outcomeMessage(data.outcome))
+				return
+			}
+			this.$emit('published', data)
+			this.$emit('close')
+		},
+
+		/**
+		 * End a push that did not publish: show why and allow another try.
+		 *
+		 * @param {string} sentence What went wrong.
+		 * @return {void}
+		 */
+		stopWith(sentence) {
+			this.error = sentence
+			this.submitting = false
+		},
+
+		/**
+		 * The GitHub sync push endpoint for this app.
+		 *
+		 * @return {string} The URL.
+		 */
+		pushUrl() {
+			return generateUrl(
+				'/apps/buildiq/api/applications/{slug}/github/push',
+				{ slug: this.slug },
+			)
+		},
+
+		/**
+		 * The push request body: the credential, the repository to create when
+		 * the app has none, and the version to publish when one is selected.
+		 *
+		 * An app with no repository names one here, and the push endpoint
+		 * creates it, tags it with the discovery topic and links it. Without
+		 * this the publish came back `not_linked`, and the only way to a
+		 * first repository was to create it on github.com by hand.
+		 *
+		 * @return {object|null} The body, or null when the new repository name is not one GitHub accepts.
+		 */
+		pushBody() {
+			const body = { credentialId: this.credentialId }
+			if (!this.linked) {
+				if (this.newRepo === null) {
+					return null
+				}
+				body.repo = this.newRepo
+			}
+			const versionSlug = selectedVersionSlug(this.selectedVersion)
+			if (versionSlug) {
+				body.versionSlug = versionSlug
+			}
+			return body
+		},
+
+		/**
+		 * The sentence a failed push is shown with: the endpoint's outcome,
+		 * then its detail, then its error code, then the failure's own message.
+		 *
+		 * @param {Error|object} e The failure.
+		 * @return {string} The sentence.
+		 */
+		failureSentence(e) {
+			return (
+				this.answerSentence(e?.response?.data)
+				|| e?.message
+				|| t('buildiq', 'Publishing failed.')
+			)
+		},
+
+		/**
+		 * The sentence a failure answer carries, when it carries one.
+		 *
+		 * @param {object|undefined} data The failure answer body.
+		 * @return {string|undefined} The sentence, or a falsy value.
+		 */
+		answerSentence(data) {
+			return (
+				(data?.outcome && this.outcomeMessage(data.outcome))
+				|| data?.detail
+				|| data?.error
+			)
 		},
 	},
 }

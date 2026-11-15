@@ -19,7 +19,8 @@ vi.mock('@nextcloud/axios', () => ({ default: axiosMock }))
 vi.mock('@nextcloud/dialogs', () => ({ showError: vi.fn(), showSuccess: vi.fn() }))
 vi.mock('@nextcloud/router', async (importOriginal) => ({
 	...(await importOriginal()),
-	generateUrl: (p, params = {}) => p.replace(/\{(\w+)\}/g, (_, k) => params[k] ?? `{${k}}`),
+	generateUrl: (p, params = {}) =>
+		p.replace(/\{(\w+)\}/g, (_, k) => params[k] ?? `{${k}}`),
 	imagePath: (app, p) => `/${app}/${p}`,
 }))
 vi.mock('../../src/composables/useRole.js', () => ({
@@ -39,7 +40,12 @@ import {
 	resetProductionVersions,
 } from '../../src/store/productionVersions.js'
 
-const t = (app, key, vars) => Object.keys(vars || {}).reduce((out, k) => out.replace(`{${k}}`, vars[k]), key)
+function t(app, key, vars) {
+	return Object.keys(vars || {}).reduce(
+		(out, k) => out.replace(`{${k}}`, vars[k]),
+		key,
+	)
+}
 globalThis.t = t
 const n = (app, one, many, count) => (count === 1 ? one : many).replace('%n', count)
 
@@ -51,16 +57,44 @@ const application = {
 	permissions: { owners: ['user:alice'], editors: [], viewers: [] },
 }
 const versions = [
-	{ id: 'dev-uuid', slug: 'development', name: 'Development', semver: '0.2.0', status: 'draft', promotesTo: 'prod-uuid', application: 'app-uuid' },
-	{ id: 'prod-uuid', slug: 'production', name: 'Production', semver: '0.1.0', status: 'published', promotesTo: null, application: 'app-uuid' },
+	{
+		id: 'dev-uuid',
+		slug: 'development',
+		name: 'Development',
+		semver: '0.2.0',
+		status: 'draft',
+		promotesTo: 'prod-uuid',
+		application: 'app-uuid',
+	},
+	{
+		id: 'prod-uuid',
+		slug: 'production',
+		name: 'Production',
+		semver: '0.1.0',
+		status: 'published',
+		promotesTo: null,
+		application: 'app-uuid',
+	},
 ]
-const mocks = () => ({ t, n, $route: routeState, $router: { push: vi.fn().mockResolvedValue(), replace: vi.fn().mockResolvedValue() } })
+function mocks() {
+	return {
+		t,
+		n,
+		$route: routeState,
+		$router: {
+			push: vi.fn().mockResolvedValue(),
+			replace: vi.fn().mockResolvedValue(),
+		},
+	}
+}
 
 beforeEach(() => {
 	routeState.query = {}
 	axiosMock.get.mockReset()
 	axiosMock.get.mockImplementation((url) =>
-		Promise.resolve({ data: url.includes('/versions') ? versions : application }),
+		Promise.resolve({
+			data: url.includes('/versions') ? versions : application,
+		}),
 	)
 })
 
@@ -85,7 +119,9 @@ describe('Diff tab', () => {
 	})
 
 	it('says so when the app has one version', async () => {
-		axiosMock.get.mockImplementation(() => Promise.resolve({ data: [versions[1]] }))
+		axiosMock.get.mockImplementation(() =>
+			Promise.resolve({ data: [versions[1]] }),
+		)
 		const wrapper = shallowMount(ApplicationDiffTab, {
 			props: { object: application, objectId: 'app-uuid' },
 			global: { mocks: mocks() },
@@ -101,7 +137,10 @@ describe('Version history', () => {
 	it('never asks the non-existent applicationversions endpoint', async () => {
 		shallowMount(VersionHistory, {
 			props: { applicationUuid: 'app-uuid' },
-			global: { mocks: mocks(), stubs: { RollbackConfirmModal: true, 'router-link': true } },
+			global: {
+				mocks: mocks(),
+				stubs: { RollbackConfirmModal: true, 'router-link': true },
+			},
 		})
 		await flushPromises()
 
@@ -114,7 +153,9 @@ describe('Export jobs', () => {
 	function mountWithJobs(sequence) {
 		const fetchMock = vi.fn(async () => ({
 			ok: true,
-			json: async () => ({ results: sequence.length > 1 ? sequence.shift() : sequence[0] }),
+			json: async () => ({
+				results: sequence.length > 1 ? sequence.shift() : sequence[0],
+			}),
 		}))
 		vi.stubGlobal('fetch', fetchMock)
 		const wrapper = shallowMount(ExportJobsList, {
@@ -180,7 +221,15 @@ describe('App card status index', () => {
 		expect(productionVersions['prod-uuid']).toBeUndefined()
 
 		axiosMock.get.mockResolvedValueOnce({
-			data: [{ productionVersion: 'prod-uuid', productionVersionDetail: { status: 'published', semver: '0.1.0' } }],
+			data: [
+				{
+					productionVersion: 'prod-uuid',
+					productionVersionDetail: {
+						status: 'published',
+						semver: '0.1.0',
+					},
+				},
+			],
 		})
 		await ensureProductionVersionsLoaded('prod-uuid')
 		expect(productionVersions['prod-uuid'].status).toBe('published')
@@ -191,7 +240,12 @@ describe('App card status index', () => {
 		await ensureProductionVersionsLoaded('new-uuid')
 
 		axiosMock.get.mockResolvedValueOnce({
-			data: [{ productionVersion: 'new-uuid', productionVersionDetail: { status: 'published' } }],
+			data: [
+				{
+					productionVersion: 'new-uuid',
+					productionVersionDetail: { status: 'published' },
+				},
+			],
 		})
 		await ensureProductionVersionsLoaded('new-uuid')
 		await ensureProductionVersionsLoaded('new-uuid')
@@ -232,11 +286,32 @@ describe('Schemas widget counts', () => {
 	it('shows the per-schema object count from the insights payload', async () => {
 		axiosMock.get.mockImplementation((url) => {
 			if (url.includes('/insights')) {
-				return Promise.resolve({ data: { kpis: { objectCount: 3 }, activity: [], schemaCounts: { 'shop-production-order': 3 } } })
+				return Promise.resolve({
+					data: {
+						kpis: { objectCount: 3 },
+						activity: [],
+						schemaCounts: { 'shop-production-order': 3 },
+					},
+				})
 			}
 			return Promise.resolve({
 				data: url.includes('/versions')
-					? [{ ...versions[1], manifest: { pages: [{ config: { register: 'openbuild-shop-production', schema: 'shop-production-order' } }] } }]
+					? [
+							{
+								...versions[1],
+								manifest: {
+									pages: [
+										{
+											config: {
+												register:
+													'openbuild-shop-production',
+												schema: 'shop-production-order',
+											},
+										},
+									],
+								},
+							},
+						]
 					: {},
 			})
 		})
@@ -250,7 +325,12 @@ describe('Schemas widget counts', () => {
 		await flushPromises()
 
 		expect(wrapper.vm.activeSchemas).toEqual([
-			{ id: 'shop-production-order', name: 'shop-production-order', objectCount: 3, status: 'active' },
+			{
+				id: 'shop-production-order',
+				name: 'shop-production-order',
+				objectCount: 3,
+				status: 'active',
+			},
 		])
 	})
 })

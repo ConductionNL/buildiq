@@ -15,7 +15,12 @@
 		@closing="$emit('cancel')">
 		<div class="breaking-change" data-test="breaking-change-dialog">
 			<p>
-				{{ t('buildiq', 'This save changes the shape of records that already exist.') }}
+				{{
+					t(
+						'buildiq',
+						'This save changes the shape of records that already exist.',
+					)
+				}}
 			</p>
 			<ul class="breaking-change__list">
 				<li v-for="(line, index) in changes" :key="index">
@@ -23,7 +28,12 @@
 				</li>
 			</ul>
 			<p class="breaking-change__hint">
-				{{ t('buildiq', 'Save anyway to apply it. The schema gets a new major version.') }}
+				{{
+					t(
+						'buildiq',
+						'Save anyway to apply it. The schema gets a new major version.',
+					)
+				}}
 			</p>
 		</div>
 		<template #actions>

@@ -48,6 +48,13 @@ webpackConfig.entry = {
 		import: path.join(__dirname, 'src', 'builder.js'),
 		filename: appId + '-builder.js',
 	},
+	// Browser half of a promoted virtual-app widget on the NEXTCLOUD dashboard.
+	// Added by VirtualAppWidget::load(), which also provides the descriptors
+	// this user may see as initial state.
+	ncDashboard: {
+		import: path.join(__dirname, 'src', 'ncDashboard.js'),
+		filename: appId + '-ncDashboard.js',
+	},
 }
 
 // Use local source when available (monorepo dev), otherwise fall back to npm

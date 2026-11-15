@@ -170,15 +170,18 @@ describe('TemplateGallery.vue — GitHub-only store', () => {
 		// component-blocks REQ-OBTC-003 adds a NEW, unrelated top-level
 		// Templates/Blocks toggle — that one is expected to exist.
 		expect(wrapper.find('.template-gallery__view-toggle').exists()).toBe(true)
-		expect(wrapper.findAll('[role="tab"]').length).toBe(2)
+		// Templates, Blocks and (REQ-BQGL-003) Forms.
+		expect(wrapper.findAll('[role="tab"]').length).toBe(3)
 	})
 
-	it('does not fetch the remote registry store endpoint', async () => {
-		// The built-in application-template records ARE fetched now
-		// (store-shows-built-in-templates); the remote registry store is not.
+	it('asks the shared catalogue once, without a search term', async () => {
+		// reuse-remote-store-section REQ-BQRS-001: the shared catalogue section
+		// asks the store once on mount; with `not_configured` (or any answer
+		// here) it asks nothing more until the maker searches.
 		await mountGallery()
-		const urls = axiosMock.get.mock.calls.map((c) => String(c[0]))
-		expect(urls.some((u) => u.includes('store/templates'))).toBe(false)
+		const storeCalls = axiosMock.get.mock.calls.filter((c) => String(c[0]).includes('store/templates'))
+		expect(storeCalls).toHaveLength(1)
+		expect(storeCalls[0][1]).toEqual({ params: {} })
 	})
 
 	it('marks an unparseable repo as a non-installable card (no Install action)', async () => {

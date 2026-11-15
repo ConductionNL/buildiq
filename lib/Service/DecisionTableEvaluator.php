@@ -30,8 +30,8 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/business-rules-engine/tasks.md#3.1
- * @spec openspec/changes/business-rules-engine/tasks.md#3.2
+ * @spec openspec/changes/archive/2026-06-14-business-rules-engine/tasks.md#3.1
+ * @spec openspec/changes/archive/2026-06-14-business-rules-engine/tasks.md#3.2
  */
 
 declare(strict_types=1);
@@ -96,16 +96,7 @@ class DecisionTableEvaluator {
 		$hitPolicy = $this->sharedHitPolicy(hitPolicy: (string)($table['hitPolicy'] ?? 'first'));
 
 		// Resolve each input column's value from the payload once.
-		$columnValues = [];
-		foreach ($inputs as $col) {
-			$name = (string)($col['name'] ?? '');
-			if ($name === '') {
-				continue;
-			}
-
-			$path = (string)($col['expressionPath'] ?? $name);
-			$columnValues[$name] = $this->expressionEvaluator->evaluateExpression($path, $payload);
-		}
+		$columnValues = $this->resolveColumnValues(inputs: $inputs, payload: $payload);
 
 		// A path that does not resolve in the payload yields null, and the shared
 		// evaluator coerces every declared input up front, so a single null
@@ -120,27 +111,13 @@ class DecisionTableEvaluator {
 		try {
 			$outcome = $this->sharedEvaluator->evaluate(
 				decisionTable: $this->toSharedTable(
-					inputs: $inputs,
-					outputs: $outputs,
-					rules: $rules,
-					hitPolicy: $hitPolicy,
+					table: ['inputs' => $inputs, 'outputs' => $outputs, 'rules' => $rules, 'hitPolicy' => $hitPolicy],
 					unresolved: $unresolved,
 				),
 				inputs: $columnValues,
 			);
 		} catch (DecisionEvaluationException $e) {
-			if ($e->getErrorCode() === 'no_rule_matched') {
-				return $this->noMatchResult(outputs: $outputs);
-			}
-
-			if ($e->getErrorCode() === 'hit_policy_violation') {
-				$matched = implode(', ', ($e->getDetails()['matchedRuleIds'] ?? []));
-				throw new RuntimeException(
-					'Hit policy "' . strtolower($hitPolicy) . '" violated: rules ' . $matched . ' all matched.'
-				);
-			}
-
-			throw $e;
+			return $this->evaluationFailure(exception: $e, hitPolicy: $hitPolicy, outputs: $outputs);
 		}//end try
 
 		$matched = array_map(static fn (string $id): int => (int)$id, $outcome['matchedRuleIds']);
@@ -149,12 +126,7 @@ class DecisionTableEvaluator {
 		}
 
 		if ($hitPolicy === 'COLLECT') {
-			$collected = [];
-			foreach ($matched as $index) {
-				$collected[] = ($rules[$index]['values'] ?? []);
-			}
-
-			return $this->result(output: ['collected' => $collected], ruleId: $this->ruleLabel(index: $matched[0], rules: $rules), matched: $matched);
+			return $this->collectedResult(matched: $matched, rules: $rules);
 		}
 
 		return $this->result(
@@ -166,57 +138,100 @@ class DecisionTableEvaluator {
 	}//end evaluate()
 
 	/**
+	 * Each named input column's value, resolved from the payload.
+	 *
+	 * @param array<int, mixed>    $inputs  The table's input columns.
+	 * @param array<string, mixed> $payload The payload.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function resolveColumnValues(array $inputs, array $payload): array {
+		$columnValues = [];
+		foreach ($inputs as $col) {
+			$name = (string)($col['name'] ?? '');
+			if ($name === '') {
+				continue;
+			}
+
+			$path = (string)($col['expressionPath'] ?? $name);
+			$columnValues[$name] = $this->expressionEvaluator->evaluateExpression($path, $payload);
+		}
+
+		return $columnValues;
+	}//end resolveColumnValues()
+
+	/**
+	 * The no-match result when no rule matched; any other evaluation failure is thrown.
+	 *
+	 * @param DecisionEvaluationException $exception The shared evaluator's failure.
+	 * @param string                      $hitPolicy The shared hit policy.
+	 * @param array<int, mixed>           $outputs   The table's output columns.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @throws RuntimeException On a hit policy violation; any other failure is rethrown.
+	 */
+	private function evaluationFailure(DecisionEvaluationException $exception, string $hitPolicy, array $outputs): array {
+		if ($exception->getErrorCode() === 'no_rule_matched') {
+			return $this->noMatchResult(outputs: $outputs);
+		}
+
+		if ($exception->getErrorCode() === 'hit_policy_violation') {
+			$matched = implode(', ', ($exception->getDetails()['matchedRuleIds'] ?? []));
+			throw new RuntimeException(
+				'Hit policy "' . strtolower($hitPolicy) . '" violated: rules ' . $matched . ' all matched.'
+			);
+		}
+
+		throw $exception;
+	}//end evaluationFailure()
+
+	/**
+	 * The COLLECT result: the output values of every matched rule.
+	 *
+	 * @param array<int, int>   $matched The matched rule indexes.
+	 * @param array<int, mixed> $rules   The table's rules.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function collectedResult(array $matched, array $rules): array {
+		$collected = [];
+		foreach ($matched as $index) {
+			$collected[] = ($rules[$index]['values'] ?? []);
+		}
+
+		return $this->result(output: ['collected' => $collected], ruleId: $this->ruleLabel(index: $matched[0], rules: $rules), matched: $matched);
+	}//end collectedResult()
+
+	/**
 	 * Translate buildiq's table shape into the shared evaluator's.
 	 *
 	 * Rule ids are set to the rule's own index as a string, so the shared
 	 * evaluator's `matchedRuleIds` come back as buildiq's rule indexes and the
 	 * winning row can be read straight out of buildiq's `rules` array.
 	 *
-	 * @param array<int,mixed>  $inputs     buildiq's input columns.
-	 * @param array<int,mixed>  $outputs    buildiq's output columns.
-	 * @param array<int,mixed>  $rules      buildiq's rule rows.
-	 * @param string            $hitPolicy  The already-translated hit policy.
+	 * @param array<string,mixed> $table buildiq's `inputs`, `outputs` and `rules`, and the translated `hitPolicy`.
 	 * @param array<int,string> $unresolved Columns whose payload path yielded null.
 	 *
 	 * @return array<string,mixed> The shared evaluator's table shape.
 	 */
-	private function toSharedTable(array $inputs, array $outputs, array $rules, string $hitPolicy, array $unresolved = []): array {
+	private function toSharedTable(array $table, array $unresolved): array {
+		$inputColumns = [];
+		foreach ($this->columnNames(columns: $table['inputs']) as $name) {
+			$inputColumns[] = [$name, in_array($name, $unresolved, true)];
+		}
+
+		$outputNames = $this->columnNames(columns: $table['outputs']);
+
 		$sharedRules = [];
-		foreach ($rules as $index => $rule) {
-			$inputEntries = [];
-			$testsNullColumn = false;
-			foreach ($inputs as $col) {
-				$name = (string)($col['name'] ?? '');
-				if ($name === '') {
-					continue;
-				}
-
-				$cell = $this->sharedCell(cell: (string)($rule['conditions'][$name] ?? ''));
-				if (in_array($name, $unresolved, true) === true) {
-					// The column has no value, so a real test on it cannot pass.
-					// A wildcard still would, and dropping the column leaves the
-					// rest of the rule to decide, which is what used to happen.
-					if ($cell !== '-') {
-						$testsNullColumn = true;
-					}
-
-					continue;
-				}
-
-				$inputEntries[] = $cell;
-			}
-
-			if ($testsNullColumn === true) {
+		foreach ($table['rules'] as $index => $rule) {
+			$inputEntries = $this->sharedInputEntries(rule: $rule, inputColumns: $inputColumns);
+			if ($inputEntries === null) {
 				continue;
 			}
 
 			$outputEntries = [];
-			foreach ($outputs as $col) {
-				$name = (string)($col['name'] ?? '');
-				if ($name === '') {
-					continue;
-				}
-
+			foreach ($outputNames as $name) {
 				$outputEntries[] = ($rule['values'][$name] ?? null);
 			}
 
@@ -229,13 +244,61 @@ class DecisionTableEvaluator {
 		}//end foreach
 
 		return [
-			'hitPolicy' => $hitPolicy,
-			'inputs' => $this->sharedColumns(columns: $inputs, exclude: $unresolved),
-			'outputs' => $this->sharedColumns(columns: $outputs),
+			'hitPolicy' => $table['hitPolicy'],
+			'inputs' => $this->sharedColumns(columns: $table['inputs'], exclude: $unresolved),
+			'outputs' => $this->sharedColumns(columns: $table['outputs']),
 			'rules' => $sharedRules,
 		];
 
 	}//end toSharedTable()
+
+	/**
+	 * The names of the columns that have one, in column order.
+	 *
+	 * @param array<int,mixed> $columns Input or output columns.
+	 *
+	 * @return array<int,string>
+	 */
+	private function columnNames(array $columns): array {
+		$names = [];
+		foreach ($columns as $col) {
+			$name = (string)($col['name'] ?? '');
+			if ($name !== '') {
+				$names[] = $name;
+			}
+		}
+
+		return $names;
+
+	}//end columnNames()
+
+	/**
+	 * One rule's input entries in the shared evaluator's cell syntax, or null
+	 * when the rule tests an unresolved column.
+	 *
+	 * An unresolved column has no value, so a real test on it cannot pass and
+	 * the rule is dropped. A wildcard still would pass, so it only drops the
+	 * column and leaves the rest of the rule to decide.
+	 *
+	 * @param mixed $rule One rule row.
+	 * @param array<int,array{0: string, 1: bool}> $inputColumns Each named input column and whether it is unresolved.
+	 *
+	 * @return array<int,string>|null
+	 */
+	private function sharedInputEntries(mixed $rule, array $inputColumns): ?array {
+		$entries = [];
+		foreach ($inputColumns as [$name, $isUnresolved]) {
+			$cell = $this->sharedCell(cell: (string)($rule['conditions'][$name] ?? ''));
+			if ($isUnresolved === false) {
+				$entries[] = $cell;
+			} elseif ($cell !== '-') {
+				return null;
+			}
+		}
+
+		return $entries;
+
+	}//end sharedInputEntries()
 
 	/**
 	 * Reduce buildiq's column definitions to the shared `{name, type}` shape.
@@ -280,8 +343,10 @@ class DecisionTableEvaluator {
 	 * @param string $cell The raw cell condition.
 	 *
 	 * @return string The cell in the shared grammar.
+	 *
+	 * @spec openspec/changes/decision-tables-live-in-openregister/specs/business-rules-engine/spec.md
 	 */
-	private function sharedCell(string $cell): string {
+	public function sharedCell(string $cell): string {
 		$trimmed = trim($cell);
 
 		if (in_array(strtolower($trimmed), self::DONT_CARE, true) === true) {
@@ -314,8 +379,10 @@ class DecisionTableEvaluator {
 	 * @param string $hitPolicy buildiq's declared hit policy.
 	 *
 	 * @return string The shared evaluator's spelling.
+	 *
+	 * @spec openspec/changes/decision-tables-live-in-openregister/specs/business-rules-engine/spec.md
 	 */
-	private function sharedHitPolicy(string $hitPolicy): string {
+	public function sharedHitPolicy(string $hitPolicy): string {
 		$upper = strtoupper(trim($hitPolicy));
 		if ($upper === 'RULE-ORDER') {
 			return 'FIRST';

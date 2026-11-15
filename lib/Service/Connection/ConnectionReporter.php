@@ -29,7 +29,9 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service\Connection;
 
-use OCA\Buildiq\AppInfo\Application;
+use OCA\Buildiq\Kernel\AppIdentity;
+use OCA\Buildiq\Kernel\Contracts\ConnectionReporterInterface;
+use OCA\Buildiq\Service\FleetAppId;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventDispatcher;
@@ -42,14 +44,14 @@ use Throwable;
  *
  * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md#requirement-req-biq-conn-003-buildiq-reports-what-its-connection-calls-met
  */
-class ConnectionReporter {
+class ConnectionReporter implements ConnectionReporterInterface {
 
 	/**
 	 * The app id integriq keys the rows by.
 	 *
 	 * @var string
 	 */
-	public const APP_ID = Application::APP_ID;
+	public const APP_ID = AppIdentity::APP_ID;
 
 	/**
 	 * Integriq's report event (ADR-041). Named by string so Buildiq stays
@@ -224,10 +226,37 @@ class ConnectionReporter {
 			key: 'documents',
 			observe: static fn (): array => [
 				'error',
-				'No route answers to ' . $route . ', so no document was generated. Is Filinq installed and enabled?',
+				'No route answers to ' . $route . ', so no document was generated. '
+				. 'Install and enable ' . self::documentAppNames() . '.',
 			]
 		);
 	}//end reportDocumentRouteMissing()
+
+	/**
+	 * Name every app id that can answer the document route, newest first.
+	 *
+	 * The document app was renamed from docudesk to filinq. An instance runs
+	 * one or the other, so a message that names only the new app sends an
+	 * admin on the old one looking for the wrong thing.
+	 *
+	 * @return string The app names, for example "Filinq, or Docudesk".
+	 *
+	 * @spec exclude Message-building detail of the report above; it carries no
+	 *  requirement of its own and is asserted through that report's tests.
+	 */
+	private static function documentAppNames(): string {
+		$names = array_map(
+			static fn (string $appId): string => ucfirst($appId),
+			FleetAppId::CANDIDATES['filinq']
+		);
+
+		$newest = array_shift($names);
+		if ($names === []) {
+			return $newest;
+		}
+
+		return $newest . ', or ' . implode(', or ', $names);
+	}//end documentAppNames()
 
 	/**
 	 * Report what one rule webhook call met.

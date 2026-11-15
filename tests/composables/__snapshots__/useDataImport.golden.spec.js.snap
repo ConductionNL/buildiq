@@ -1,0 +1,926 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`useDataImport golden > importFile sends or refuses every parameter set as recorded 1`] = `
+[
+  {
+    "posted": 0,
+    "refused": "registerId is required",
+  },
+  {
+    "posted": 0,
+    "refused": "registerId is required",
+  },
+  {
+    "posted": 0,
+    "refused": "registerId is required",
+  },
+  {
+    "posted": 0,
+    "refused": "file is required",
+  },
+  {
+    "posted": 0,
+    "refused": "file is required",
+  },
+  {
+    "posted": 0,
+    "refused": "file is required",
+  },
+  {
+    "posted": 0,
+    "refused": "registerId is required",
+  },
+  {
+    "posted": 0,
+    "refused": "registerId is required",
+  },
+  {
+    "posted": 0,
+    "refused": "registerId is required",
+  },
+  {
+    "posted": 0,
+    "refused": "registerId is required",
+  },
+  {
+    "posted": 0,
+    "refused": "registerId is required",
+  },
+  {
+    "posted": 0,
+    "refused": "registerId is required",
+  },
+  {
+    "fields": [
+      [
+        "file",
+        "f",
+      ],
+      [
+        "includeObjects",
+        "true",
+      ],
+    ],
+    "options": {
+      "headers": {
+        "OCS-APIREQUEST": "true",
+      },
+    },
+    "summary": {
+      "created": 2,
+      "errors": [
+        {
+          "error": "x",
+          "row": 2,
+          "sheet": "0",
+        },
+        {
+          "message": "plain",
+          "sheet": "0",
+        },
+        {
+          "message": "null",
+          "sheet": "0",
+        },
+        {
+          "message": "7",
+          "sheet": "0",
+        },
+      ],
+      "errorsCsv": null,
+      "errorsCsvFilename": null,
+      "importJobId": null,
+      "skipped": 3,
+      "updated": 1,
+    },
+    "url": "/index.php/apps/openregister/api/registers/reg/import",
+  },
+  {
+    "fields": [
+      [
+        "file",
+        "f",
+      ],
+      [
+        "includeObjects",
+        "true",
+      ],
+    ],
+    "options": {
+      "headers": {
+        "OCS-APIREQUEST": "true",
+      },
+    },
+    "summary": {
+      "created": 0,
+      "errors": [],
+      "errorsCsv": null,
+      "errorsCsvFilename": null,
+      "importJobId": null,
+      "skipped": 0,
+      "updated": 0,
+    },
+    "url": "/index.php/apps/openregister/api/registers/reg/import",
+  },
+  {
+    "fields": [
+      [
+        "file",
+        "f",
+      ],
+      [
+        "includeObjects",
+        "true",
+      ],
+    ],
+    "options": {
+      "headers": {
+        "OCS-APIREQUEST": "true",
+      },
+    },
+    "summary": {
+      "created": 0,
+      "errors": [],
+      "errorsCsv": null,
+      "errorsCsvFilename": null,
+      "importJobId": null,
+      "skipped": 0,
+      "updated": 0,
+    },
+    "url": "/index.php/apps/openregister/api/registers/reg/import",
+  },
+  {
+    "fields": [
+      [
+        "file",
+        "f",
+      ],
+      [
+        "includeObjects",
+        "true",
+      ],
+      [
+        "schema",
+        "person",
+      ],
+      [
+        "type",
+        "csv",
+      ],
+    ],
+    "options": {
+      "headers": {
+        "OCS-APIREQUEST": "true",
+      },
+    },
+    "summary": {
+      "created": 2,
+      "errors": [
+        {
+          "error": "x",
+          "row": 2,
+          "sheet": "0",
+        },
+        {
+          "message": "plain",
+          "sheet": "0",
+        },
+        {
+          "message": "null",
+          "sheet": "0",
+        },
+        {
+          "message": "7",
+          "sheet": "0",
+        },
+      ],
+      "errorsCsv": null,
+      "errorsCsvFilename": null,
+      "importJobId": null,
+      "skipped": 3,
+      "updated": 1,
+    },
+    "url": "/index.php/apps/openregister/api/registers/r%20g%2F1/import",
+  },
+  {
+    "fields": [
+      [
+        "file",
+        "f",
+      ],
+      [
+        "includeObjects",
+        "true",
+      ],
+      [
+        "schema",
+        "person",
+      ],
+      [
+        "type",
+        "csv",
+      ],
+    ],
+    "options": {
+      "headers": {
+        "OCS-APIREQUEST": "true",
+      },
+    },
+    "summary": {
+      "created": 0,
+      "errors": [],
+      "errorsCsv": null,
+      "errorsCsvFilename": null,
+      "importJobId": null,
+      "skipped": 0,
+      "updated": 0,
+    },
+    "url": "/index.php/apps/openregister/api/registers/r%20g%2F1/import",
+  },
+  {
+    "fields": [
+      [
+        "file",
+        "f",
+      ],
+      [
+        "includeObjects",
+        "true",
+      ],
+      [
+        "schema",
+        "person",
+      ],
+      [
+        "type",
+        "csv",
+      ],
+    ],
+    "options": {
+      "headers": {
+        "OCS-APIREQUEST": "true",
+      },
+    },
+    "summary": {
+      "created": 0,
+      "errors": [],
+      "errorsCsv": null,
+      "errorsCsvFilename": null,
+      "importJobId": null,
+      "skipped": 0,
+      "updated": 0,
+    },
+    "url": "/index.php/apps/openregister/api/registers/r%20g%2F1/import",
+  },
+  {
+    "fields": [
+      [
+        "file",
+        "f",
+      ],
+      [
+        "includeObjects",
+        "false",
+      ],
+    ],
+    "options": {
+      "headers": {
+        "OCS-APIREQUEST": "true",
+      },
+    },
+    "summary": {
+      "created": 2,
+      "errors": [
+        {
+          "error": "x",
+          "row": 2,
+          "sheet": "0",
+        },
+        {
+          "message": "plain",
+          "sheet": "0",
+        },
+        {
+          "message": "null",
+          "sheet": "0",
+        },
+        {
+          "message": "7",
+          "sheet": "0",
+        },
+      ],
+      "errorsCsv": null,
+      "errorsCsvFilename": null,
+      "importJobId": null,
+      "skipped": 3,
+      "updated": 1,
+    },
+    "url": "/index.php/apps/openregister/api/registers/reg/import",
+  },
+  {
+    "fields": [
+      [
+        "file",
+        "f",
+      ],
+      [
+        "includeObjects",
+        "false",
+      ],
+    ],
+    "options": {
+      "headers": {
+        "OCS-APIREQUEST": "true",
+      },
+    },
+    "summary": {
+      "created": 0,
+      "errors": [],
+      "errorsCsv": null,
+      "errorsCsvFilename": null,
+      "importJobId": null,
+      "skipped": 0,
+      "updated": 0,
+    },
+    "url": "/index.php/apps/openregister/api/registers/reg/import",
+  },
+  {
+    "fields": [
+      [
+        "file",
+        "f",
+      ],
+      [
+        "includeObjects",
+        "false",
+      ],
+    ],
+    "options": {
+      "headers": {
+        "OCS-APIREQUEST": "true",
+      },
+    },
+    "summary": {
+      "created": 0,
+      "errors": [],
+      "errorsCsv": null,
+      "errorsCsvFilename": null,
+      "importJobId": null,
+      "skipped": 0,
+      "updated": 0,
+    },
+    "url": "/index.php/apps/openregister/api/registers/reg/import",
+  },
+  {
+    "fields": [
+      [
+        "file",
+        "f",
+      ],
+      [
+        "includeObjects",
+        "false",
+      ],
+      [
+        "schema",
+        "7",
+      ],
+      [
+        "type",
+        "xlsx",
+      ],
+    ],
+    "options": {
+      "headers": {
+        "OCS-APIREQUEST": "true",
+      },
+    },
+    "summary": {
+      "created": 2,
+      "errors": [
+        {
+          "error": "x",
+          "row": 2,
+          "sheet": "0",
+        },
+        {
+          "message": "plain",
+          "sheet": "0",
+        },
+        {
+          "message": "null",
+          "sheet": "0",
+        },
+        {
+          "message": "7",
+          "sheet": "0",
+        },
+      ],
+      "errorsCsv": null,
+      "errorsCsvFilename": null,
+      "importJobId": null,
+      "skipped": 3,
+      "updated": 1,
+    },
+    "url": "/index.php/apps/openregister/api/registers/reg/import",
+  },
+  {
+    "fields": [
+      [
+        "file",
+        "f",
+      ],
+      [
+        "includeObjects",
+        "false",
+      ],
+      [
+        "schema",
+        "7",
+      ],
+      [
+        "type",
+        "xlsx",
+      ],
+    ],
+    "options": {
+      "headers": {
+        "OCS-APIREQUEST": "true",
+      },
+    },
+    "summary": {
+      "created": 0,
+      "errors": [],
+      "errorsCsv": null,
+      "errorsCsvFilename": null,
+      "importJobId": null,
+      "skipped": 0,
+      "updated": 0,
+    },
+    "url": "/index.php/apps/openregister/api/registers/reg/import",
+  },
+  {
+    "fields": [
+      [
+        "file",
+        "f",
+      ],
+      [
+        "includeObjects",
+        "false",
+      ],
+      [
+        "schema",
+        "7",
+      ],
+      [
+        "type",
+        "xlsx",
+      ],
+    ],
+    "options": {
+      "headers": {
+        "OCS-APIREQUEST": "true",
+      },
+    },
+    "summary": {
+      "created": 0,
+      "errors": [],
+      "errorsCsv": null,
+      "errorsCsvFilename": null,
+      "importJobId": null,
+      "skipped": 0,
+      "updated": 0,
+    },
+    "url": "/index.php/apps/openregister/api/registers/reg/import",
+  },
+  {
+    "fields": [
+      [
+        "file",
+        "f",
+      ],
+      [
+        "includeObjects",
+        "true",
+      ],
+    ],
+    "options": {
+      "headers": {
+        "OCS-APIREQUEST": "true",
+      },
+    },
+    "summary": {
+      "created": 2,
+      "errors": [
+        {
+          "error": "x",
+          "row": 2,
+          "sheet": "0",
+        },
+        {
+          "message": "plain",
+          "sheet": "0",
+        },
+        {
+          "message": "null",
+          "sheet": "0",
+        },
+        {
+          "message": "7",
+          "sheet": "0",
+        },
+      ],
+      "errorsCsv": null,
+      "errorsCsvFilename": null,
+      "importJobId": null,
+      "skipped": 3,
+      "updated": 1,
+    },
+    "url": "/index.php/apps/openregister/api/registers/reg/import",
+  },
+  {
+    "fields": [
+      [
+        "file",
+        "f",
+      ],
+      [
+        "includeObjects",
+        "true",
+      ],
+    ],
+    "options": {
+      "headers": {
+        "OCS-APIREQUEST": "true",
+      },
+    },
+    "summary": {
+      "created": 0,
+      "errors": [],
+      "errorsCsv": null,
+      "errorsCsvFilename": null,
+      "importJobId": null,
+      "skipped": 0,
+      "updated": 0,
+    },
+    "url": "/index.php/apps/openregister/api/registers/reg/import",
+  },
+  {
+    "fields": [
+      [
+        "file",
+        "f",
+      ],
+      [
+        "includeObjects",
+        "true",
+      ],
+    ],
+    "options": {
+      "headers": {
+        "OCS-APIREQUEST": "true",
+      },
+    },
+    "summary": {
+      "created": 0,
+      "errors": [],
+      "errorsCsv": null,
+      "errorsCsvFilename": null,
+      "importJobId": null,
+      "skipped": 0,
+      "updated": 0,
+    },
+    "url": "/index.php/apps/openregister/api/registers/reg/import",
+  },
+  {
+    "fields": [
+      [
+        "file",
+        "f",
+      ],
+      [
+        "includeObjects",
+        "true",
+      ],
+    ],
+    "options": {
+      "headers": {
+        "OCS-APIREQUEST": "true",
+      },
+    },
+    "summary": {
+      "created": 2,
+      "errors": [
+        {
+          "error": "x",
+          "row": 2,
+          "sheet": "0",
+        },
+        {
+          "message": "plain",
+          "sheet": "0",
+        },
+        {
+          "message": "null",
+          "sheet": "0",
+        },
+        {
+          "message": "7",
+          "sheet": "0",
+        },
+      ],
+      "errorsCsv": null,
+      "errorsCsvFilename": null,
+      "importJobId": null,
+      "skipped": 3,
+      "updated": 1,
+    },
+    "url": "/index.php/apps/openregister/api/registers/5/import",
+  },
+  {
+    "fields": [
+      [
+        "file",
+        "f",
+      ],
+      [
+        "includeObjects",
+        "true",
+      ],
+    ],
+    "options": {
+      "headers": {
+        "OCS-APIREQUEST": "true",
+      },
+    },
+    "summary": {
+      "created": 0,
+      "errors": [],
+      "errorsCsv": null,
+      "errorsCsvFilename": null,
+      "importJobId": null,
+      "skipped": 0,
+      "updated": 0,
+    },
+    "url": "/index.php/apps/openregister/api/registers/5/import",
+  },
+  {
+    "fields": [
+      [
+        "file",
+        "f",
+      ],
+      [
+        "includeObjects",
+        "true",
+      ],
+    ],
+    "options": {
+      "headers": {
+        "OCS-APIREQUEST": "true",
+      },
+    },
+    "summary": {
+      "created": 0,
+      "errors": [],
+      "errorsCsv": null,
+      "errorsCsvFilename": null,
+      "importJobId": null,
+      "skipped": 0,
+      "updated": 0,
+    },
+    "url": "/index.php/apps/openregister/api/registers/5/import",
+  },
+]
+`;
+
+exports[`useDataImport golden > summarizeImport flattens every response as recorded 1`] = `
+[
+  {
+    "created": 0,
+    "errors": [],
+    "errorsCsv": null,
+    "errorsCsvFilename": null,
+    "importJobId": null,
+    "skipped": 0,
+    "updated": 0,
+  },
+  {
+    "created": 0,
+    "errors": [],
+    "errorsCsv": null,
+    "errorsCsvFilename": null,
+    "importJobId": null,
+    "skipped": 0,
+    "updated": 0,
+  },
+  {
+    "created": 0,
+    "errors": [],
+    "errorsCsv": null,
+    "errorsCsvFilename": null,
+    "importJobId": null,
+    "skipped": 0,
+    "updated": 0,
+  },
+  {
+    "created": 0,
+    "errors": [],
+    "errorsCsv": null,
+    "errorsCsvFilename": null,
+    "importJobId": null,
+    "skipped": 0,
+    "updated": 0,
+  },
+  {
+    "created": 0,
+    "errors": [],
+    "errorsCsv": null,
+    "errorsCsvFilename": null,
+    "importJobId": null,
+    "skipped": 0,
+    "updated": 0,
+  },
+  {
+    "created": 0,
+    "errors": [],
+    "errorsCsv": null,
+    "errorsCsvFilename": null,
+    "importJobId": null,
+    "skipped": 0,
+    "updated": 0,
+  },
+  {
+    "created": 0,
+    "errors": [],
+    "errorsCsv": null,
+    "errorsCsvFilename": null,
+    "importJobId": null,
+    "skipped": 0,
+    "updated": 0,
+  },
+  {
+    "created": 0,
+    "errors": [],
+    "errorsCsv": null,
+    "errorsCsvFilename": null,
+    "importJobId": "job-1",
+    "skipped": 0,
+    "updated": 0,
+  },
+  {
+    "created": 2,
+    "errors": [
+      {
+        "error": "x",
+        "row": 2,
+        "sheet": "A",
+      },
+      {
+        "message": "plain",
+        "sheet": "A",
+      },
+      {
+        "message": "null",
+        "sheet": "A",
+      },
+      {
+        "message": "7",
+        "sheet": "A",
+      },
+    ],
+    "errorsCsv": null,
+    "errorsCsvFilename": null,
+    "importJobId": null,
+    "skipped": 3,
+    "updated": 1,
+  },
+  {
+    "created": 0,
+    "errors": [],
+    "errorsCsv": null,
+    "errorsCsvFilename": null,
+    "importJobId": null,
+    "skipped": 0,
+    "updated": 0,
+  },
+  {
+    "created": 2,
+    "errors": [
+      {
+        "error": "x",
+        "row": 2,
+        "sheet": "A",
+      },
+      {
+        "message": "plain",
+        "sheet": "A",
+      },
+      {
+        "message": "null",
+        "sheet": "A",
+      },
+      {
+        "message": "7",
+        "sheet": "A",
+      },
+    ],
+    "errorsCsv": null,
+    "errorsCsvFilename": null,
+    "importJobId": null,
+    "skipped": 3,
+    "updated": 1,
+  },
+  {
+    "created": 2,
+    "errors": [
+      {
+        "error": "x",
+        "row": 2,
+        "sheet": "0",
+      },
+      {
+        "message": "plain",
+        "sheet": "0",
+      },
+      {
+        "message": "null",
+        "sheet": "0",
+      },
+      {
+        "message": "7",
+        "sheet": "0",
+      },
+    ],
+    "errorsCsv": null,
+    "errorsCsvFilename": null,
+    "importJobId": null,
+    "skipped": 3,
+    "updated": 1,
+  },
+  {
+    "created": 2,
+    "errors": [
+      {
+        "error": "x",
+        "row": 2,
+        "sheet": "A",
+      },
+      {
+        "message": "plain",
+        "sheet": "A",
+      },
+      {
+        "message": "null",
+        "sheet": "A",
+      },
+      {
+        "message": "7",
+        "sheet": "A",
+      },
+    ],
+    "errorsCsv": "a,b",
+    "errorsCsvFilename": "e.csv",
+    "importJobId": null,
+    "skipped": 3,
+    "updated": 1,
+  },
+  {
+    "created": 0,
+    "errors": [],
+    "errorsCsv": "a,b",
+    "errorsCsvFilename": "import_errors.csv",
+    "importJobId": null,
+    "skipped": 0,
+    "updated": 0,
+  },
+  {
+    "created": 0,
+    "errors": [],
+    "errorsCsv": null,
+    "errorsCsvFilename": null,
+    "importJobId": null,
+    "skipped": 0,
+    "updated": 0,
+  },
+  {
+    "created": 0,
+    "errors": [],
+    "errorsCsv": null,
+    "errorsCsvFilename": null,
+    "importJobId": null,
+    "skipped": 0,
+    "updated": 0,
+  },
+  {
+    "created": 0,
+    "errors": [],
+    "errorsCsv": "only",
+    "errorsCsvFilename": "import_errors.csv",
+    "importJobId": null,
+    "skipped": 0,
+    "updated": 0,
+  },
+]
+`;

@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use Psr\Log\LoggerInterface;
@@ -99,6 +100,7 @@ class ExportAppSourceResolver {
 	 * @param string $applicationUuid The application UUID.
 	 *
 	 * @return array<string,mixed>|null The record, or null when it cannot be read.
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function loadApplication(string $applicationUuid): ?array {
 		try {
@@ -112,7 +114,7 @@ class ExportAppSourceResolver {
 			return null;
 		}
 
-		$data = $this->normalise(object: $object);
+		$data = ObjectRecord::serialised(object: $object);
 		if ($data === []) {
 			return null;
 		}
@@ -130,6 +132,7 @@ class ExportAppSourceResolver {
 	 * @param string $applicationUuid The application UUID.
 	 *
 	 * @return array<int,array<string,mixed>> The versions.
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function loadVersions(string $applicationUuid): array {
 		$resolution = $this->slugResolver->resolve(canonical: self::CANONICAL_REGISTER);
@@ -153,7 +156,7 @@ class ExportAppSourceResolver {
 
 		$versions = [];
 		foreach ((array)$results as $result) {
-			$row = $this->normalise(object: $result);
+			$row = ObjectRecord::serialised(object: $result);
 			if ((string)($row['application'] ?? '') === $applicationUuid) {
 				$versions[] = $row;
 			}
@@ -215,26 +218,4 @@ class ExportAppSourceResolver {
 
 		return (string)($object['id'] ?? ($object['uuid'] ?? ''));
 	}//end uuidOf()
-
-	/**
-	 * Coerce an OpenRegister result to an array.
-	 *
-	 * @param mixed $object The result.
-	 *
-	 * @return array<string,mixed> The array, empty when it is neither.
-	 */
-	private function normalise(mixed $object): array {
-		if (is_array($object) === true) {
-			return $object;
-		}
-
-		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-			$serialised = $object->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		return [];
-	}//end normalise()
 }//end class

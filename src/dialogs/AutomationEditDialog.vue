@@ -133,6 +133,17 @@
 						:modelValue="conditionRuleSetSlug"
 						:label="t('buildiq', 'Rule set slug')"
 						@update:modelValue="conditionRuleSetSlug = $event" />
+					<NcNoteCard
+						v-if="conditionKind === 'rule-set'"
+						type="info"
+						data-testid="condition-rule-set-note">
+						{{
+							t(
+								'buildiq',
+								'The actions always run. The rule set runs first, and its outcome does not stop them.',
+							)
+						}}
+					</NcNoteCard>
 				</template>
 			</section>
 
@@ -363,13 +374,15 @@ import {
 	isActionAllowed,
 	isConditionAllowed,
 } from '../services/automationMatrix.js'
-
-const INTERVAL_PRESETS = Object.freeze([
-	{ id: 'hourly', interval: 3600 },
-	{ id: 'daily', interval: 86400 },
-	{ id: 'weekly', interval: 604800 },
-	{ id: 'monthly', interval: 2592000 },
-])
+import { fetchConnectorSynchronizations } from '../services/connectorSynchronizations.js'
+import { slugify } from '../utils/slugify.js'
+import { toPersistedAction } from './automationPersistedActions.js'
+import {
+	cadenceById,
+	cadenceOptions,
+	presetById,
+	presetForInterval,
+} from './scheduleCadence.js'
 
 let keyCounter = 0
 /**
@@ -378,20 +391,6 @@ let keyCounter = 0
 function nextKey() {
 	keyCounter += 1
 	return `aut-action-${keyCounter}`
-}
-
-/**
- * Derive a kebab-case slug from a human label.
- *
- * @param {string} label - the human label.
- * @return {string}
- */
-function slugify(label) {
-	return String(label || '')
-		.toLowerCase()
-		.trim()
-		.replace(/[^a-z0-9]+/g, '-')
-		.replace(/^-+|-+$/g, '')
 }
 
 export default {
@@ -418,7 +417,7 @@ export default {
 	 * mirrors `docudesk-document-templates` REQ-DDT-005's editor-side
 	 * degradation and `ConnectorSourcePicker`'s existing `setup()` usage).
 	 *
-	 * @spec openspec/changes/automation-document-action/tasks.md#4.2
+	 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#4.2
 	 */
 	setup() {
 		const docudeskStatus = useAppStatus('filinq')
@@ -517,17 +516,7 @@ export default {
 		 * @spec openspec/specs/automation-designer/spec.md
 		 */
 		cadenceOptions() {
-			return [
-				{ id: 'hourly', label: t('buildiq', 'Hourly') },
-				{ id: 'daily', label: t('buildiq', 'Daily') },
-				{ id: 'weekly', label: t('buildiq', 'Weekly') },
-				{ id: 'monthly', label: t('buildiq', 'Monthly') },
-				{ id: 'custom-cron', label: t('buildiq', 'Custom (cron)') },
-				{
-					id: 'custom-interval',
-					label: t('buildiq', 'Custom interval (seconds)'),
-				},
-			]
+			return cadenceOptions()
 		},
 
 		isCustomCron() {
@@ -545,7 +534,7 @@ export default {
 			return [
 				{ value: 'none', label: t('buildiq', 'None') },
 				{ value: 'feel', label: t('buildiq', 'FEEL expression') },
-				{ value: 'rule-set', label: t('buildiq', 'Reference a rule set') },
+				{ value: 'rule-set', label: t('buildiq', 'Also run a rule set') },
 			]
 		},
 
@@ -561,7 +550,7 @@ export default {
 		 * Action type options for the type picker on each action row.
 		 *
 		 * @return {Array<object>}
-		 * @spec openspec/changes/automation-approval-steps/tasks.md#3.1
+		 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#3.1
 		 */
 		actionTypeOptions() {
 			return [
@@ -592,7 +581,7 @@ export default {
 		 * `ConnectorSourcePicker::appAvailable`).
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/automation-document-action/tasks.md#4.2
+		 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#4.2
 		 */
 		docudeskAvailable() {
 			return (
@@ -606,7 +595,7 @@ export default {
 		 * (design.md Decision 3 of automation-document-action).
 		 *
 		 * @return {Array<object>}
-		 * @spec openspec/changes/automation-document-action/tasks.md#4.1
+		 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#4.1
 		 */
 		outputModeOptions() {
 			return [
@@ -621,7 +610,7 @@ export default {
 		 * should degrade to a free-text template id.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/automation-document-action/tasks.md#4.1
+		 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#4.1
 		 */
 		templatePickerAvailable() {
 			return (
@@ -657,7 +646,7 @@ export default {
 		 * at least one option), or the field should degrade to free-text.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/automation-approval-steps/tasks.md#3.1
+		 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#3.1
 		 */
 		groupPickerAvailable() {
 			return !this.groupFetchFailed && this.groupOptions.length > 0
@@ -670,7 +659,7 @@ export default {
 		 * (automation-document-action).
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/automation-document-action/tasks.md#4.1
+		 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#4.1
 		 */
 		valid() {
 			if (this.derivedSlug === '' || this.name.trim() === '') {
@@ -724,7 +713,7 @@ export default {
 		 *
 		 * @param {boolean} isOpen - the dialog's new open state.
 		 * @return {void}
-		 * @spec openspec/changes/automation-approval-steps/tasks.md#3.1
+		 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#3.1
 		 */
 		open(isOpen) {
 			if (isOpen) {
@@ -739,7 +728,7 @@ export default {
 	},
 
 	methods: {
-		/** @spec openspec/changes/automation-designer/tasks.md#5.2 */
+		/** @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#5.2 */
 		hydrate() {
 			this.showValidation = false
 			this.errorMessage = ''
@@ -755,20 +744,15 @@ export default {
 			this.triggerTransition = trigger.transition || ''
 			this.triggerCron = trigger.cron || ''
 			this.triggerInterval = trigger.interval || 86400
-			const preset = INTERVAL_PRESETS.find(
-				(p) => p.interval === trigger.interval,
-			)
+			const preset = presetForInterval(trigger.interval)
 			if (trigger.cron) {
-				this.cadenceOption = this.cadenceOptions.find(
-					(o) => o.id === 'custom-cron',
-				)
+				this.cadenceOption = cadenceById(this.cadenceOptions, 'custom-cron')
 			} else if (preset) {
-				this.cadenceOption = this.cadenceOptions.find(
-					(o) => o.id === preset.id,
-				)
+				this.cadenceOption = cadenceById(this.cadenceOptions, preset.id)
 			} else {
-				this.cadenceOption = this.cadenceOptions.find(
-					(o) => o.id === 'custom-interval',
+				this.cadenceOption = cadenceById(
+					this.cadenceOptions,
+					'custom-interval',
 				)
 			}
 
@@ -799,7 +783,7 @@ export default {
 		 *
 		 * @param {object} action - the stored action record.
 		 * @return {object}
-		 * @spec openspec/changes/automation-approval-steps/tasks.md#3.1
+		 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#3.1
 		 */
 		actionToEditor(action) {
 			const subject = action.subject || {}
@@ -931,30 +915,21 @@ export default {
 		},
 
 		/**
-		 * Load OpenConnector synchronizations for the run-synchronization
+		 * Load the connector app's synchronizations for the run-synchronization
 		 * action picker; degrades to free-text on failure.
 		 *
+		 * The register segment and the paging key both come from the shared
+		 * loader: this list was empty on every renamed instance, because the
+		 * URL named the `openconnector` register and paged with `limit`.
+		 *
 		 * @return {Promise<void>}
+		 * @spec openspec/specs/automation-designer/spec.md#requirement-automation-editor-composes-trigger-condition-and-actions-req-autd-002
 		 */
 		async fetchSynchronizations() {
 			this.syncLoading = true
 			this.syncFetchFailed = false
 			try {
-				const url = generateUrl(
-					'/apps/openregister/api/objects/openconnector/synchronization',
-				)
-				const { data } = await axios.get(url, { params: { limit: 500 } })
-				const list = Array.isArray(data && data.results)
-					? data.results
-					: Array.isArray(data)
-						? data
-						: []
-				this.syncOptions = list
-					.map((sync) => ({
-						id: String(sync.id || sync.uuid),
-						label: sync.name || sync.title || sync.id,
-					}))
-					.filter((o) => o.id && o.id !== 'undefined')
+				this.syncOptions = await fetchConnectorSynchronizations()
 				if (this.syncOptions.length === 0) {
 					this.syncFetchFailed = true
 				}
@@ -987,7 +962,7 @@ export default {
 		 * (e.g. openregister's EditSchema.vue).
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/automation-approval-steps/tasks.md#3.1
+		 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#3.1
 		 */
 		async fetchGroups() {
 			this.groupLoading = true
@@ -1022,7 +997,7 @@ export default {
 		 *
 		 * @param {string} groupId - the stored assignee group id.
 		 * @return {?object}
-		 * @spec openspec/changes/automation-approval-steps/tasks.md#3.1
+		 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#3.1
 		 */
 		groupOption(groupId) {
 			return this.groupOptions.find((o) => o.value === groupId) || null
@@ -1034,7 +1009,7 @@ export default {
 		 * @param {number} index - the action's index in `actions`.
 		 * @param {?object} option - the selected group option.
 		 * @return {void}
-		 * @spec openspec/changes/automation-approval-steps/tasks.md#3.1
+		 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#3.1
 		 */
 		onGroupSelect(index, option) {
 			this.updateAction(index, 'assigneeGroup', option ? option.value : '')
@@ -1047,7 +1022,7 @@ export default {
 		 * on failure/absence.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/automation-document-action/tasks.md#4.1
+		 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#4.1
 		 */
 		async fetchDocudeskTemplateOptions() {
 			if (!this.docudeskAvailable) {
@@ -1068,7 +1043,7 @@ export default {
 		 *
 		 * @param {string} templateId - the stored template uuid.
 		 * @return {?object}
-		 * @spec openspec/changes/automation-document-action/tasks.md#4.1
+		 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#4.1
 		 */
 		templateOption(templateId) {
 			return (
@@ -1083,7 +1058,7 @@ export default {
 		 * @param {number} index - the action's index in `actions`.
 		 * @param {?object} option - the selected template option.
 		 * @return {void}
-		 * @spec openspec/changes/automation-document-action/tasks.md#4.1
+		 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#4.1
 		 */
 		onTemplateSelect(index, option) {
 			this.updateAction(index, 'templateId', option ? option.uuid : '')
@@ -1095,7 +1070,7 @@ export default {
 		 *
 		 * @param {object} action - the editor-shape action row.
 		 * @return {Array<object>}
-		 * @spec openspec/changes/automation-document-action/tasks.md#4.1
+		 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#4.1
 		 */
 		outputModeSelection(action) {
 			const modes = Array.isArray(action.output) ? action.output : []
@@ -1109,7 +1084,7 @@ export default {
 		 * @param {number} index - the action's index in `actions`.
 		 * @param {?Array<object>} options - the selected output-mode options.
 		 * @return {void}
-		 * @spec openspec/changes/automation-document-action/tasks.md#4.1
+		 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#4.1
 		 */
 		onOutputModesSelect(index, options) {
 			const modes = Array.isArray(options) ? options.map((o) => o.value) : []
@@ -1125,7 +1100,7 @@ export default {
 		 *
 		 * @param {object} action - the editor-shape `generateDocument` action.
 		 * @return {boolean}
-		 * @spec openspec/changes/automation-document-action/tasks.md#4.1
+		 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#4.1
 		 */
 		generateDocumentActionValid(action) {
 			if (!action.templateId) {
@@ -1166,8 +1141,8 @@ export default {
 		 *
 		 * @param {string} type - the action's type.
 		 * @return {string}
-		 * @spec openspec/changes/automation-document-action/tasks.md#4.2
-		 * @spec openspec/changes/automation-document-action/tasks.md#4.3
+		 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#4.2
+		 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#4.3
 		 */
 		actionBlockedReason(type) {
 			const matrixReason = blockedActionReason(this.triggerType, type)
@@ -1244,9 +1219,8 @@ export default {
 				} else if (this.isCustomInterval) {
 					trigger.interval = this.triggerInterval
 				} else {
-					const preset = INTERVAL_PRESETS.find(
-						(p) =>
-							p.id === (this.cadenceOption && this.cadenceOption.id),
+					const preset = presetById(
+						this.cadenceOption && this.cadenceOption.id,
 					)
 					trigger.interval = preset ? preset.interval : 86400
 				}
@@ -1258,89 +1232,10 @@ export default {
 		 * Assemble the persisted `actions[]` from the working state.
 		 *
 		 * @return {Array}
-		 * @spec openspec/changes/automation-approval-steps/tasks.md#3.1
+		 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#3.1
 		 */
 		buildActions() {
-			return this.actions.map((action) => {
-				if (action.type === 'send-notification') {
-					return {
-						type: 'send-notification',
-						channels: action.channels,
-						recipients: action.recipients,
-						subject: { en: action.subjectEn, nl: action.subjectNl },
-					}
-				}
-				if (action.type === 'run-synchronization') {
-					return {
-						type: 'run-synchronization',
-						synchronizationId: action.synchronizationId,
-					}
-				}
-				if (action.type === 'object-op') {
-					// OpenRegister rejects BOTH an empty object ({}) and null for this
-					// nested (array-item) object property, so an object-op with no
-					// field mapping must OMIT the key entirely rather than send {}/null.
-					let fieldMapping = null
-					try {
-						const parsed = JSON.parse(action.fieldMappingText || 'null')
-						fieldMapping =
-							parsed
-							&& typeof parsed === 'object'
-							&& Object.keys(parsed).length > 0
-								? parsed
-								: null
-					} catch (e) {
-						fieldMapping = null
-					}
-					const objectOp = {
-						type: 'object-op',
-						operation: action.operation,
-						schema: action.schema,
-					}
-					if (fieldMapping !== null) {
-						objectOp.fieldMapping = fieldMapping
-					}
-					return objectOp
-				}
-				if (action.type === 'approval') {
-					return {
-						type: 'approval',
-						assigneeGroup: action.assigneeGroup,
-						onApprove: Array.isArray(action.onApprove)
-							? action.onApprove
-							: [],
-						onReject: Array.isArray(action.onReject)
-							? action.onReject
-							: [],
-					}
-				}
-				if (action.type === 'generateDocument') {
-					return {
-						type: 'generateDocument',
-						templateId: action.templateId,
-						output: Array.isArray(action.output) ? action.output : [],
-					}
-				}
-				// Same OpenRegister nested-object rule as object-op above: an empty
-				// payload template must OMIT the key rather than send {}/null.
-				let payloadTemplate = null
-				try {
-					const parsed = JSON.parse(action.payloadTemplateText || 'null')
-					payloadTemplate =
-						parsed
-						&& typeof parsed === 'object'
-						&& Object.keys(parsed).length > 0
-							? parsed
-							: null
-				} catch (e) {
-					payloadTemplate = null
-				}
-				const webhook = { type: 'webhook', url: action.url }
-				if (payloadTemplate !== null) {
-					webhook.payloadTemplate = payloadTemplate
-				}
-				return webhook
-			})
+			return this.actions.map(toPersistedAction)
 		},
 
 		/**

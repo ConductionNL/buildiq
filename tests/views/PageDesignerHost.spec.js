@@ -23,8 +23,10 @@ import { ref } from 'vue'
 const axiosGetMock = vi.fn()
 const axiosPutMock = vi.fn()
 const axiosPatchMock = vi.fn()
+const axiosPostMock = vi.fn()
 vi.mock('@nextcloud/axios', () => ({
 	default: {
+		post: (...a) => axiosPostMock(...a),
 		get: (...a) => axiosGetMock(...a),
 		put: (...a) => axiosPutMock(...a),
 		patch: (...a) => axiosPatchMock(...a),
@@ -170,6 +172,8 @@ function mountHost({
 
 describe('PageDesignerHost', () => {
 	beforeEach(() => {
+		axiosPostMock.mockReset()
+		axiosPostMock.mockResolvedValue({ data: { accepted: true, findings: [] } })
 		versionHolder = null
 		versionResolvesAsync = false
 		statusAvailable = true
@@ -424,6 +428,50 @@ describe('PageDesignerHost', () => {
 		)
 		expect(axiosPutMock).not.toHaveBeenCalled()
 		expect(wrapper.vm.toast).toBe('Pages saved.')
+	})
+
+	it('save() keeps the pages as a draft and hands the destination findings to the designer (decision 189)', async () => {
+		const finding = {
+			page: 'new',
+			pageIndex: 0,
+			field: 'x',
+			property: 'x',
+			code: 'property-unknown',
+			message: 'X',
+		}
+		axiosPostMock.mockResolvedValue({
+			data: { accepted: false, findings: [finding] },
+		})
+		const wrapper = mountHost({
+			version: null,
+			appList: [{ slug: 'petstore', '@self': { id: 'app-1' } }],
+		})
+		await flush(wrapper)
+		axiosPutMock.mockResolvedValueOnce({ data: { '@self': { id: 'app-1' } } })
+
+		const saved = await wrapper.vm.save()
+
+		expect(saved).toBe(true)
+		expect(axiosPostMock).toHaveBeenCalledWith(
+			'/apps/buildiq/api/forms/destination-check',
+			{ appSlug: expect.any(String), manifest: expect.any(Object) },
+		)
+		expect(wrapper.vm.destinationFindings).toEqual([finding])
+		expect(wrapper.vm.toast).not.toBe('Pages saved.')
+	})
+
+	it('save() says so when the forms could not be checked', async () => {
+		axiosPostMock.mockRejectedValue(new Error('down'))
+		const wrapper = mountHost({
+			version: null,
+			appList: [{ slug: 'petstore', '@self': { id: 'app-1' } }],
+		})
+		await flush(wrapper)
+		axiosPutMock.mockResolvedValueOnce({ data: { '@self': { id: 'app-1' } } })
+
+		await wrapper.vm.save()
+
+		expect(wrapper.vm.error).toContain('could not be checked')
 	})
 
 	it('save() falls back to the Application object PUT when there is no version', async () => {

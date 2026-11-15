@@ -39,8 +39,11 @@ describe('describeBreakingChanges', () => {
 	})
 
 	it('falls back to a general line when it cannot tell what broke', () => {
-		expect(describeBreakingChanges(saved, { properties: saved.properties, required: [] })).toEqual([
-			'This change can make existing records invalid.',
-		])
+		expect(
+			describeBreakingChanges(saved, {
+				properties: saved.properties,
+				required: [],
+			}),
+		).toEqual(['This change can make existing records invalid.'])
 	})
 })

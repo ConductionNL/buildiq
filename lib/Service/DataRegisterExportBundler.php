@@ -20,7 +20,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/data-registers-runtime/tasks.md#task-4.2
+ * @spec openspec/changes/archive/2026-10-07-data-registers-runtime/tasks.md#task-4.2
  *
  * @SPDX-License-Identifier: EUPL-1.2
  * @SPDX-FileCopyrightText:  2026 Conduction B.V. <info@conduction.nl>
@@ -30,7 +30,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -52,7 +52,7 @@ use Throwable;
  * skipped silently (no schemas bundled), matching the existing failure
  * mode for a deleted `ApplicationVersion.register`.
  *
- * @spec openspec/changes/data-registers-runtime/tasks.md#task-4.2
+ * @spec openspec/changes/archive/2026-10-07-data-registers-runtime/tasks.md#task-4.2
  */
 class DataRegisterExportBundler {
 	/**
@@ -60,14 +60,14 @@ class DataRegisterExportBundler {
 	 *
 	 * @param RegisterMapper $registerMapper Resolves a bound data register's slug.
 	 * @param SchemaMapper $schemaMapper Resolves a bound data register's schema definitions.
-	 * @param ObjectServiceInterface $objectService Reads a bound data register's row data (includeData opt-in).
 	 * @param LoggerInterface $logger Logger.
+	 * @param RegisterRowReader $rowReader Reads a bound data register's row data (includeData opt-in).
 	 */
 	public function __construct(
 		private readonly RegisterMapper $registerMapper,
 		private readonly SchemaMapper $schemaMapper,
-		private readonly ObjectServiceInterface $objectService,
 		private readonly LoggerInterface $logger,
+		private readonly RegisterRowReader $rowReader,
 	) {
 	}//end __construct()
 
@@ -86,7 +86,7 @@ class DataRegisterExportBundler {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/data-registers-runtime/tasks.md#task-4.2
+	 * @spec openspec/changes/archive/2026-10-07-data-registers-runtime/tasks.md#task-4.2
 	 */
 	public function bundle(string $rootDir, array $dataRegisters): void {
 		if ($dataRegisters === []) {
@@ -142,7 +142,7 @@ class DataRegisterExportBundler {
 	 *
 	 * @return array<string,array<string,mixed>>
 	 *
-	 * @spec openspec/changes/data-registers-runtime/tasks.md#task-4.2
+	 * @spec openspec/changes/archive/2026-10-07-data-registers-runtime/tasks.md#task-4.2
 	 */
 	private function resolveRegisterSchemaDefinitions(Register $register, string $registerSlug): array {
 		$definitions = [];
@@ -184,7 +184,7 @@ class DataRegisterExportBundler {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/data-registers-runtime/tasks.md#task-4.2
+	 * @spec openspec/changes/archive/2026-10-07-data-registers-runtime/tasks.md#task-4.2
 	 */
 	private function writeSchemaFile(string $targetDir, string $registerSlug, array $schemaDefinitions): void {
 		$payload = [
@@ -212,29 +212,34 @@ class DataRegisterExportBundler {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/data-registers-runtime/tasks.md#task-4.2
+	 * @spec openspec/changes/archive/2026-10-07-data-registers-runtime/tasks.md#task-4.2
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function writeSeedDataFile(string $targetDir, string $registerSlug, Register $register): void {
 		try {
-			$rows = $this->objectService->searchObjects(
-				query: ['@self' => ['register' => $register->getId()]],
+			// Per schema, not per register. resolveRegisterSchemaDefinitions()
+			// above already walks getSchemas(); this read did not, and a
+			// register-only search names no table for OpenRegister to read.
+			// Every includeData export therefore shipped "objects": [].
+			$rows = $this->rowReader->rowsInRegister(
+				register: $register,
 				_rbac: false,
 				_multitenancy: false
 			);
 		} catch (Throwable $e) {
-			$this->logger->info(
-				'Buildiq export: could not read row data for data register "' . $registerSlug . '": ' . $e->getMessage()
+			// Still not fatal to the export as a whole, but say which
+			// register lost its data rather than writing an empty fixture
+			// that reads as a register with nothing in it.
+			$this->logger->warning(
+				'Buildiq export: could not read row data for data register "' . $registerSlug
+				. '"; its seed-data fixture is NOT written: ' . $e->getMessage()
 			);
 			return;
 		}
 
-		if (is_array($rows) === false) {
-			$rows = [];
-		}
-
 		$objects = [];
 		foreach ($rows as $row) {
-			$objects[] = $this->normaliseObjectArray(object: $row);
+			$objects[] = ObjectRecord::toArray(object: $row);
 		}
 
 		$payload = [
@@ -264,34 +269,4 @@ class DataRegisterExportBundler {
 
 		file_put_contents($path, $encoded . "\n");
 	}//end writeJsonFile()
-
-	/**
-	 * Coerce an OR result entry to a plain associative array (mirrors
-	 * VersionPromotionService::normaliseObjectArray()'s contract).
-	 *
-	 * @param mixed $object The OR object/result entry.
-	 *
-	 * @return array<string,mixed>
-	 */
-	private function normaliseObjectArray(mixed $object): array {
-		if (is_array($object) === true) {
-			return $object;
-		}
-
-		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-			$serialised = $object->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		if (is_object($object) === true && method_exists($object, 'getObject') === true) {
-			$inner = $object->getObject();
-			if (is_array($inner) === true) {
-				return $inner;
-			}
-		}
-
-		return [];
-	}//end normaliseObjectArray()
 }//end class

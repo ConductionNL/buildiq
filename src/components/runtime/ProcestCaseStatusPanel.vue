@@ -30,7 +30,7 @@
 
 		<div v-else-if="!hasLinkedCase" class="procest-case-status-panel__unlinked">
 			<p>
-				{{ t('buildiq', 'No Procest case is linked to this object yet.') }}
+				{{ t('buildiq', 'No Dossiq case is linked to this object yet.') }}
 			</p>
 			<NcButton variant="primary" :disabled="starting" @click="startNow">
 				{{
@@ -76,7 +76,7 @@
 				:href="deepLink"
 				target="_blank"
 				rel="noopener noreferrer">
-				{{ t('buildiq', 'Open case in Procest') }}
+				{{ t('buildiq', 'Open case in Dossiq') }}
 			</a>
 		</div>
 	</div>
@@ -89,6 +89,19 @@ import {
 	buildProcestCaseUrl,
 	caseUuidFromReference,
 } from '../../services/procestLinks.js'
+
+/**
+ * The status name a case embeds in its `status` object, if any.
+ *
+ * @param {object} detail The case detail.
+ * @return {string|undefined}
+ */
+function embeddedStatusName(detail) {
+	return (
+		detail.status
+		&& (detail.status.statustypeOmschrijving || detail.status.naam)
+	)
+}
 
 export default {
 	name: 'ProcestCaseStatusPanel',
@@ -111,7 +124,7 @@ export default {
 	 * Bind the Procest case integration to this attachment.
 	 *
 	 * @param {object} props - component props.
-	 * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-004
+	 * @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-004
 	 */
 	setup(props) {
 		const procest = useProcestCase({ attachment: props.attachment })
@@ -119,64 +132,62 @@ export default {
 	},
 
 	computed: {
-		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-004 */
+		/** @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-004 */
 		loadingDetail() {
 			return this.procest.loadingDetail.value
 		},
 
-		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-004 */
+		/** @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-004 */
 		detailError() {
 			return this.procest.detailError.value
 		},
 
-		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-004 */
+		/** @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-004 */
 		noAccess() {
 			return this.procest.noAccess.value
 		},
 
-		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-003 */
+		/** @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-003 */
 		starting() {
 			return this.procest.starting.value
 		},
 
-		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-003 */
+		/** @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-003 */
 		startError() {
 			return this.procest.startError.value
 		},
 
-		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-004 */
+		/** @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-004 */
 		linkReference() {
 			const prop = this.attachment && this.attachment.linkProperty
 			return (prop && this.object && this.object[prop]) || ''
 		},
 
-		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-004 */
+		/** @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-004 */
 		hasLinkedCase() {
 			return !!this.procest.caseDetail.value || !!this.linkReference
 		},
 
-		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-004 */
+		/** @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-004 */
 		statusHistory() {
 			return this.procest.statusHistory.value || []
 		},
 
-		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-004 */
+		/** @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-004 */
 		caseIdentification() {
 			const c = this.procest.caseDetail.value || {}
 			return c.identificatie || c.identification || t('buildiq', 'Linked case')
 		},
 
-		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-004 */
+		/** @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-004 */
 		currentStatus() {
 			const c = this.procest.caseDetail.value || {}
 			return (
-				c.statusName
-				|| (c.status && (c.status.statustypeOmschrijving || c.status.naam))
-				|| t('buildiq', 'Unknown')
+				c.statusName || embeddedStatusName(c) || t('buildiq', 'Unknown')
 			)
 		},
 
-		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-005 */
+		/** @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-005 */
 		deepLink() {
 			const c = this.procest.caseDetail.value || {}
 			const uuid =
@@ -187,7 +198,7 @@ export default {
 		},
 	},
 
-	/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-004 */
+	/** @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-004 */
 	mounted() {
 		if (this.linkReference) {
 			this.procest.loadDetail(this.linkReference)
@@ -198,7 +209,7 @@ export default {
 		/**
 		 * @param {object} s - a status-history entry.
 		 * @return {string}
-		 * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-004
+		 * @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-004
 		 */
 		statusLabel(s) {
 			return (
@@ -210,12 +221,12 @@ export default {
 			)
 		},
 
-		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-004 */
+		/** @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-004 */
 		reload() {
 			this.procest.loadDetail(this.linkReference)
 		},
 
-		/** @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-003 */
+		/** @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-003 */
 		async startNow() {
 			await this.procest.reconcileOrStart(this.object)
 		},

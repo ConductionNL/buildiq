@@ -11,10 +11,7 @@
   },
   "src/components/AutomationActionListEditor.vue": {
     "@typescript-eslint/no-unused-vars": {
-      "count": 2
-    },
-    "no-useless-assignment": {
-      "count": 2
+      "count": 1
     }
   },
   "src/components/agents/AgentRunHistory.vue": {
@@ -97,10 +94,10 @@
   },
   "src/components/schema-editor/FieldEditor.vue": {
     "eqeqeq": {
-      "count": 19
+      "count": 6
     },
     "jsdoc/require-param-type": {
-      "count": 4
+      "count": 3
     }
   },
   "src/components/schema-editor/WidgetEditor.vue": {
@@ -121,11 +118,6 @@
       "count": 2
     }
   },
-  "src/composables/useApplicationVersion.js": {
-    "no-unused-vars": {
-      "count": 1
-    }
-  },
   "src/composables/useOrAccessCapabilities.js": {
     "no-unused-vars": {
       "count": 1
@@ -143,10 +135,7 @@
   },
   "src/dialogs/AutomationEditDialog.vue": {
     "@typescript-eslint/no-unused-vars": {
-      "count": 7
-    },
-    "no-useless-assignment": {
-      "count": 2
+      "count": 5
     }
   },
   "src/dialogs/ConditionActionRuleEditor.vue": {
@@ -222,11 +211,6 @@
       "count": 1
     }
   },
-  "src/services/blockExport.js": {
-    "no-unused-vars": {
-      "count": 1
-    }
-  },
   "src/services/blockInsert.js": {
     "no-useless-assignment": {
       "count": 1
@@ -249,12 +233,12 @@
   },
   "src/views/AgentsPage.vue": {
     "@typescript-eslint/no-unused-vars": {
-      "count": 3
+      "count": 2
     }
   },
   "src/views/AutomationsPage.vue": {
     "@typescript-eslint/no-unused-vars": {
-      "count": 7
+      "count": 6
     }
   },
   "src/views/DashboardIndex.vue": {

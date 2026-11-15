@@ -90,7 +90,7 @@ export default {
 		 * selected.
 		 *
 		 * @return {?object}
-		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 * @spec openspec/specs/component-blocks/spec.md
 		 */
 		captureFragment() {
 			const selected = this.widgets.filter((w) =>
@@ -115,7 +115,7 @@ export default {
 		 * re-fetched) page.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 * @spec openspec/specs/component-blocks/spec.md
 		 */
 		widgets() {
 			const ids = new Set(this.widgets.map((w) => w.id))
@@ -139,7 +139,7 @@ export default {
 		 *
 		 * @param {string} id - the widget id.
 		 * @return {void}
-		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 * @spec openspec/specs/component-blocks/spec.md
 		 */
 		toggle(id) {
 			this.selectedIds = this.isSelected(id)
@@ -151,7 +151,7 @@ export default {
 		 * Open `SaveBlockDialog` for the current selection.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 * @spec openspec/specs/component-blocks/spec.md
 		 */
 		openSaveDialog() {
 			if (this.captureFragment) {
@@ -164,7 +164,7 @@ export default {
 		 *
 		 * @param {object} payload - `{ slug }` of the saved block.
 		 * @return {void}
-		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 * @spec openspec/specs/component-blocks/spec.md
 		 */
 		onSaved(payload) {
 			this.selectedIds = []
@@ -174,7 +174,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../assets/editor-controls.scss' as c;
+
 .widget-selection-panel {
 	border: 1px solid var(--color-border);
 	border-radius: var(--border-radius);
@@ -192,12 +194,7 @@ export default {
 }
 
 .widget-selection-panel__list {
-	list-style: none;
-	margin: 0;
-	padding: 0;
-	display: flex;
-	flex-direction: column;
-	gap: 4px;
+	@include c.plain-list(4px);
 }
 
 .widget-selection-panel__row label {

@@ -27,6 +27,10 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\Service;
 
 use OCA\Buildiq\Service\AppNavigationService;
+use OCA\Buildiq\Service\AppVisibilityResolver;
+use OCA\Buildiq\Service\CallerContext;
+use OCA\Buildiq\Service\PermissionResolver;
+use OCA\Buildiq\Service\PublishedApps;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\IAppConfig;
@@ -120,12 +124,15 @@ class AppNavigationServiceTest extends TestCase {
 		// constructor parameter (the nav-order base override) and this test was never
 		// updated, so all 11 of its cases have simply been erroring on a TypeError.
 		$this->service = new AppNavigationService(
-			$this->objectService,
-			$this->urlGenerator,
-			$this->userSession,
-			$this->groupManager,
-			$this->appConfig,
-			$this->logger,
+			objectService: $this->objectService,
+			urlGenerator: $this->urlGenerator,
+			caller: new CallerContext(
+				userSession: $this->userSession,
+				groupManager: $this->groupManager,
+				permissionResolver: $this->createMock(PermissionResolver::class)
+			),
+			appConfig: $this->appConfig,
+			logger: $this->logger,
 		);
 	}//end setUp()
 
@@ -186,6 +193,40 @@ class AppNavigationServiceTest extends TestCase {
 
 		$this->service->registerNavEntries($nav);
 	}//end testRegisterNavEntriesNoneWhenNoPublishedApps()
+
+	/**
+	 * An injected visibility resolver is the one consulted, not a default copy.
+	 *
+	 * @return void
+	 */
+	public function testTheInjectedVisibilityResolverDecides(): void {
+		$resolver = $this->createMock(AppVisibilityResolver::class);
+		$resolver->expects($this->once())
+			->method('isVisible')
+			->with(['owners' => ['group:*']], [], $this->userSession, $this->groupManager)
+			->willReturn(false);
+
+		$service = new AppNavigationService(
+			objectService: $this->objectService,
+			urlGenerator: $this->urlGenerator,
+			caller: new CallerContext(
+				userSession: $this->userSession,
+				groupManager: $this->groupManager,
+				permissionResolver: $this->createMock(PermissionResolver::class)
+			),
+			appConfig: $this->appConfig,
+			logger: $this->logger,
+			published: new PublishedApps(visibilityResolver: $resolver),
+		);
+
+		$this->assertFalse(
+			$service->isVisibleForCurrentUser(
+				permissions: ['owners' => ['group:*']],
+				userSession: $this->userSession,
+				groupManager: $this->groupManager
+			)
+		);
+	}//end testTheInjectedVisibilityResolverDecides()
 
 	// -------------------------------------------------------------------------
 	// isVisibleForCurrentUser — group:* wildcard
@@ -492,12 +533,15 @@ class AppNavigationServiceTest extends TestCase {
 			);
 
 		$service = new AppNavigationService(
-			$this->objectService,
-			$urlGenerator,
-			$this->userSession,
-			$this->groupManager,
-			$this->appConfig,
-			$this->logger,
+			objectService: $this->objectService,
+			urlGenerator: $urlGenerator,
+			caller: new CallerContext(
+				userSession: $this->userSession,
+				groupManager: $this->groupManager,
+				permissionResolver: $this->createMock(PermissionResolver::class)
+			),
+			appConfig: $this->appConfig,
+			logger: $this->logger,
 		);
 
 		$user = $this->createMock(IUser::class);

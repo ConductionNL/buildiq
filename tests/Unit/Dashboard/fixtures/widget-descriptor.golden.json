@@ -1,0 +1,1706 @@
+{
+    "plain / 'open-cases' / panel empty / placement empty": {
+        "json": {
+            "id": "buildiq-3f2c9a10-1111-4222-8333-444455556666-open-cases",
+            "applicationSlug": "pet-store",
+            "applicationName": "Pet Store",
+            "entryId": "open-cases",
+            "widgetKey": "stat-empty",
+            "pageRoute": "/",
+            "props": [],
+            "dataSource": [],
+            "title": "open-cases",
+            "icon": "",
+            "order": 60,
+            "link": ""
+        },
+        "applicationUuid": "3f2c9a10-1111-4222-8333-444455556666",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "plain / 'open-cases' / panel empty / placement full": {
+        "json": {
+            "id": "buildiq-3f2c9a10-1111-4222-8333-444455556666-open-cases",
+            "applicationSlug": "pet-store",
+            "applicationName": "Pet Store",
+            "entryId": "open-cases",
+            "widgetKey": "stat-empty",
+            "pageRoute": "/overview",
+            "props": {
+                "a": 1
+            },
+            "dataSource": {
+                "register": "r"
+            },
+            "title": "open-cases",
+            "icon": "",
+            "order": 60,
+            "link": ""
+        },
+        "applicationUuid": "3f2c9a10-1111-4222-8333-444455556666",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "plain / 'open-cases' / panel empty / placement scalars": {
+        "json": {
+            "id": "buildiq-3f2c9a10-1111-4222-8333-444455556666-open-cases",
+            "applicationSlug": "pet-store",
+            "applicationName": "Pet Store",
+            "entryId": "open-cases",
+            "widgetKey": "stat-empty",
+            "pageRoute": "/",
+            "props": [
+                "p"
+            ],
+            "dataSource": [
+                3
+            ],
+            "title": "open-cases",
+            "icon": "",
+            "order": 60,
+            "link": ""
+        },
+        "applicationUuid": "3f2c9a10-1111-4222-8333-444455556666",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "plain / 'open-cases' / panel full / placement empty": {
+        "json": {
+            "id": "buildiq-3f2c9a10-1111-4222-8333-444455556666-open-cases",
+            "applicationSlug": "pet-store",
+            "applicationName": "Pet Store",
+            "entryId": "open-cases",
+            "widgetKey": "stat-full",
+            "pageRoute": "/",
+            "props": [],
+            "dataSource": [],
+            "title": "Cases",
+            "icon": "icon-folder",
+            "order": 5,
+            "link": "/apps/x"
+        },
+        "applicationUuid": "3f2c9a10-1111-4222-8333-444455556666",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "plain / 'open-cases' / panel full / placement full": {
+        "json": {
+            "id": "buildiq-3f2c9a10-1111-4222-8333-444455556666-open-cases",
+            "applicationSlug": "pet-store",
+            "applicationName": "Pet Store",
+            "entryId": "open-cases",
+            "widgetKey": "stat-full",
+            "pageRoute": "/overview",
+            "props": {
+                "a": 1
+            },
+            "dataSource": {
+                "register": "r"
+            },
+            "title": "Cases",
+            "icon": "icon-folder",
+            "order": 5,
+            "link": "/apps/x"
+        },
+        "applicationUuid": "3f2c9a10-1111-4222-8333-444455556666",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "plain / 'open-cases' / panel full / placement scalars": {
+        "json": {
+            "id": "buildiq-3f2c9a10-1111-4222-8333-444455556666-open-cases",
+            "applicationSlug": "pet-store",
+            "applicationName": "Pet Store",
+            "entryId": "open-cases",
+            "widgetKey": "stat-full",
+            "pageRoute": "/",
+            "props": [
+                "p"
+            ],
+            "dataSource": [
+                3
+            ],
+            "title": "Cases",
+            "icon": "icon-folder",
+            "order": 5,
+            "link": "/apps/x"
+        },
+        "applicationUuid": "3f2c9a10-1111-4222-8333-444455556666",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "plain / 'open-cases' / panel string order / placement empty": {
+        "json": {
+            "id": "buildiq-3f2c9a10-1111-4222-8333-444455556666-open-cases",
+            "applicationSlug": "pet-store",
+            "applicationName": "Pet Store",
+            "entryId": "open-cases",
+            "widgetKey": "stat-string order",
+            "pageRoute": "/",
+            "props": [],
+            "dataSource": [],
+            "title": "7",
+            "icon": "",
+            "order": 12,
+            "link": ""
+        },
+        "applicationUuid": "3f2c9a10-1111-4222-8333-444455556666",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "plain / 'open-cases' / panel string order / placement full": {
+        "json": {
+            "id": "buildiq-3f2c9a10-1111-4222-8333-444455556666-open-cases",
+            "applicationSlug": "pet-store",
+            "applicationName": "Pet Store",
+            "entryId": "open-cases",
+            "widgetKey": "stat-string order",
+            "pageRoute": "/overview",
+            "props": {
+                "a": 1
+            },
+            "dataSource": {
+                "register": "r"
+            },
+            "title": "7",
+            "icon": "",
+            "order": 12,
+            "link": ""
+        },
+        "applicationUuid": "3f2c9a10-1111-4222-8333-444455556666",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "plain / 'open-cases' / panel string order / placement scalars": {
+        "json": {
+            "id": "buildiq-3f2c9a10-1111-4222-8333-444455556666-open-cases",
+            "applicationSlug": "pet-store",
+            "applicationName": "Pet Store",
+            "entryId": "open-cases",
+            "widgetKey": "stat-string order",
+            "pageRoute": "/",
+            "props": [
+                "p"
+            ],
+            "dataSource": [
+                3
+            ],
+            "title": "7",
+            "icon": "",
+            "order": 12,
+            "link": ""
+        },
+        "applicationUuid": "3f2c9a10-1111-4222-8333-444455556666",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "plain / 'Open Cases!' / panel empty / placement empty": {
+        "json": {
+            "id": "buildiq-3f2c9a10-1111-4222-8333-444455556666-open-cases-7c7f96c9",
+            "applicationSlug": "pet-store",
+            "applicationName": "Pet Store",
+            "entryId": "Open Cases!",
+            "widgetKey": "stat-empty",
+            "pageRoute": "/",
+            "props": [],
+            "dataSource": [],
+            "title": "Open Cases!",
+            "icon": "",
+            "order": 60,
+            "link": ""
+        },
+        "applicationUuid": "3f2c9a10-1111-4222-8333-444455556666",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "plain / 'Open Cases!' / panel empty / placement full": {
+        "json": {
+            "id": "buildiq-3f2c9a10-1111-4222-8333-444455556666-open-cases-7c7f96c9",
+            "applicationSlug": "pet-store",
+            "applicationName": "Pet Store",
+            "entryId": "Open Cases!",
+            "widgetKey": "stat-empty",
+            "pageRoute": "/overview",
+            "props": {
+                "a": 1
+            },
+            "dataSource": {
+                "register": "r"
+            },
+            "title": "Open Cases!",
+            "icon": "",
+            "order": 60,
+            "link": ""
+        },
+        "applicationUuid": "3f2c9a10-1111-4222-8333-444455556666",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "plain / 'Open Cases!' / panel empty / placement scalars": {
+        "json": {
+            "id": "buildiq-3f2c9a10-1111-4222-8333-444455556666-open-cases-7c7f96c9",
+            "applicationSlug": "pet-store",
+            "applicationName": "Pet Store",
+            "entryId": "Open Cases!",
+            "widgetKey": "stat-empty",
+            "pageRoute": "/",
+            "props": [
+                "p"
+            ],
+            "dataSource": [
+                3
+            ],
+            "title": "Open Cases!",
+            "icon": "",
+            "order": 60,
+            "link": ""
+        },
+        "applicationUuid": "3f2c9a10-1111-4222-8333-444455556666",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "plain / 'Open Cases!' / panel full / placement empty": {
+        "json": {
+            "id": "buildiq-3f2c9a10-1111-4222-8333-444455556666-open-cases-7c7f96c9",
+            "applicationSlug": "pet-store",
+            "applicationName": "Pet Store",
+            "entryId": "Open Cases!",
+            "widgetKey": "stat-full",
+            "pageRoute": "/",
+            "props": [],
+            "dataSource": [],
+            "title": "Cases",
+            "icon": "icon-folder",
+            "order": 5,
+            "link": "/apps/x"
+        },
+        "applicationUuid": "3f2c9a10-1111-4222-8333-444455556666",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "plain / 'Open Cases!' / panel full / placement full": {
+        "json": {
+            "id": "buildiq-3f2c9a10-1111-4222-8333-444455556666-open-cases-7c7f96c9",
+            "applicationSlug": "pet-store",
+            "applicationName": "Pet Store",
+            "entryId": "Open Cases!",
+            "widgetKey": "stat-full",
+            "pageRoute": "/overview",
+            "props": {
+                "a": 1
+            },
+            "dataSource": {
+                "register": "r"
+            },
+            "title": "Cases",
+            "icon": "icon-folder",
+            "order": 5,
+            "link": "/apps/x"
+        },
+        "applicationUuid": "3f2c9a10-1111-4222-8333-444455556666",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "plain / 'Open Cases!' / panel full / placement scalars": {
+        "json": {
+            "id": "buildiq-3f2c9a10-1111-4222-8333-444455556666-open-cases-7c7f96c9",
+            "applicationSlug": "pet-store",
+            "applicationName": "Pet Store",
+            "entryId": "Open Cases!",
+            "widgetKey": "stat-full",
+            "pageRoute": "/",
+            "props": [
+                "p"
+            ],
+            "dataSource": [
+                3
+            ],
+            "title": "Cases",
+            "icon": "icon-folder",
+            "order": 5,
+            "link": "/apps/x"
+        },
+        "applicationUuid": "3f2c9a10-1111-4222-8333-444455556666",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "plain / 'Open Cases!' / panel string order / placement empty": {
+        "json": {
+            "id": "buildiq-3f2c9a10-1111-4222-8333-444455556666-open-cases-7c7f96c9",
+            "applicationSlug": "pet-store",
+            "applicationName": "Pet Store",
+            "entryId": "Open Cases!",
+            "widgetKey": "stat-string order",
+            "pageRoute": "/",
+            "props": [],
+            "dataSource": [],
+            "title": "7",
+            "icon": "",
+            "order": 12,
+            "link": ""
+        },
+        "applicationUuid": "3f2c9a10-1111-4222-8333-444455556666",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "plain / 'Open Cases!' / panel string order / placement full": {
+        "json": {
+            "id": "buildiq-3f2c9a10-1111-4222-8333-444455556666-open-cases-7c7f96c9",
+            "applicationSlug": "pet-store",
+            "applicationName": "Pet Store",
+            "entryId": "Open Cases!",
+            "widgetKey": "stat-string order",
+            "pageRoute": "/overview",
+            "props": {
+                "a": 1
+            },
+            "dataSource": {
+                "register": "r"
+            },
+            "title": "7",
+            "icon": "",
+            "order": 12,
+            "link": ""
+        },
+        "applicationUuid": "3f2c9a10-1111-4222-8333-444455556666",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "plain / 'Open Cases!' / panel string order / placement scalars": {
+        "json": {
+            "id": "buildiq-3f2c9a10-1111-4222-8333-444455556666-open-cases-7c7f96c9",
+            "applicationSlug": "pet-store",
+            "applicationName": "Pet Store",
+            "entryId": "Open Cases!",
+            "widgetKey": "stat-string order",
+            "pageRoute": "/",
+            "props": [
+                "p"
+            ],
+            "dataSource": [
+                3
+            ],
+            "title": "7",
+            "icon": "",
+            "order": 12,
+            "link": ""
+        },
+        "applicationUuid": "3f2c9a10-1111-4222-8333-444455556666",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "plain / '' / panel empty / placement empty": {
+        "json": {
+            "id": "buildiq-3f2c9a10-1111-4222-8333-444455556666-x-da39a3ee",
+            "applicationSlug": "pet-store",
+            "applicationName": "Pet Store",
+            "entryId": "",
+            "widgetKey": "stat-empty",
+            "pageRoute": "/",
+            "props": [],
+            "dataSource": [],
+            "title": "",
+            "icon": "",
+            "order": 60,
+            "link": ""
+        },
+        "applicationUuid": "3f2c9a10-1111-4222-8333-444455556666",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "plain / '' / panel empty / placement full": {
+        "json": {
+            "id": "buildiq-3f2c9a10-1111-4222-8333-444455556666-x-da39a3ee",
+            "applicationSlug": "pet-store",
+            "applicationName": "Pet Store",
+            "entryId": "",
+            "widgetKey": "stat-empty",
+            "pageRoute": "/overview",
+            "props": {
+                "a": 1
+            },
+            "dataSource": {
+                "register": "r"
+            },
+            "title": "",
+            "icon": "",
+            "order": 60,
+            "link": ""
+        },
+        "applicationUuid": "3f2c9a10-1111-4222-8333-444455556666",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "plain / '' / panel empty / placement scalars": {
+        "json": {
+            "id": "buildiq-3f2c9a10-1111-4222-8333-444455556666-x-da39a3ee",
+            "applicationSlug": "pet-store",
+            "applicationName": "Pet Store",
+            "entryId": "",
+            "widgetKey": "stat-empty",
+            "pageRoute": "/",
+            "props": [
+                "p"
+            ],
+            "dataSource": [
+                3
+            ],
+            "title": "",
+            "icon": "",
+            "order": 60,
+            "link": ""
+        },
+        "applicationUuid": "3f2c9a10-1111-4222-8333-444455556666",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "plain / '' / panel full / placement empty": {
+        "json": {
+            "id": "buildiq-3f2c9a10-1111-4222-8333-444455556666-x-da39a3ee",
+            "applicationSlug": "pet-store",
+            "applicationName": "Pet Store",
+            "entryId": "",
+            "widgetKey": "stat-full",
+            "pageRoute": "/",
+            "props": [],
+            "dataSource": [],
+            "title": "Cases",
+            "icon": "icon-folder",
+            "order": 5,
+            "link": "/apps/x"
+        },
+        "applicationUuid": "3f2c9a10-1111-4222-8333-444455556666",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "plain / '' / panel full / placement full": {
+        "json": {
+            "id": "buildiq-3f2c9a10-1111-4222-8333-444455556666-x-da39a3ee",
+            "applicationSlug": "pet-store",
+            "applicationName": "Pet Store",
+            "entryId": "",
+            "widgetKey": "stat-full",
+            "pageRoute": "/overview",
+            "props": {
+                "a": 1
+            },
+            "dataSource": {
+                "register": "r"
+            },
+            "title": "Cases",
+            "icon": "icon-folder",
+            "order": 5,
+            "link": "/apps/x"
+        },
+        "applicationUuid": "3f2c9a10-1111-4222-8333-444455556666",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "plain / '' / panel full / placement scalars": {
+        "json": {
+            "id": "buildiq-3f2c9a10-1111-4222-8333-444455556666-x-da39a3ee",
+            "applicationSlug": "pet-store",
+            "applicationName": "Pet Store",
+            "entryId": "",
+            "widgetKey": "stat-full",
+            "pageRoute": "/",
+            "props": [
+                "p"
+            ],
+            "dataSource": [
+                3
+            ],
+            "title": "Cases",
+            "icon": "icon-folder",
+            "order": 5,
+            "link": "/apps/x"
+        },
+        "applicationUuid": "3f2c9a10-1111-4222-8333-444455556666",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "plain / '' / panel string order / placement empty": {
+        "json": {
+            "id": "buildiq-3f2c9a10-1111-4222-8333-444455556666-x-da39a3ee",
+            "applicationSlug": "pet-store",
+            "applicationName": "Pet Store",
+            "entryId": "",
+            "widgetKey": "stat-string order",
+            "pageRoute": "/",
+            "props": [],
+            "dataSource": [],
+            "title": "7",
+            "icon": "",
+            "order": 12,
+            "link": ""
+        },
+        "applicationUuid": "3f2c9a10-1111-4222-8333-444455556666",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "plain / '' / panel string order / placement full": {
+        "json": {
+            "id": "buildiq-3f2c9a10-1111-4222-8333-444455556666-x-da39a3ee",
+            "applicationSlug": "pet-store",
+            "applicationName": "Pet Store",
+            "entryId": "",
+            "widgetKey": "stat-string order",
+            "pageRoute": "/overview",
+            "props": {
+                "a": 1
+            },
+            "dataSource": {
+                "register": "r"
+            },
+            "title": "7",
+            "icon": "",
+            "order": 12,
+            "link": ""
+        },
+        "applicationUuid": "3f2c9a10-1111-4222-8333-444455556666",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "plain / '' / panel string order / placement scalars": {
+        "json": {
+            "id": "buildiq-3f2c9a10-1111-4222-8333-444455556666-x-da39a3ee",
+            "applicationSlug": "pet-store",
+            "applicationName": "Pet Store",
+            "entryId": "",
+            "widgetKey": "stat-string order",
+            "pageRoute": "/",
+            "props": [
+                "p"
+            ],
+            "dataSource": [
+                3
+            ],
+            "title": "7",
+            "icon": "",
+            "order": 12,
+            "link": ""
+        },
+        "applicationUuid": "3f2c9a10-1111-4222-8333-444455556666",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "plain / '-x-' / panel empty / placement empty": {
+        "json": {
+            "id": "buildiq-3f2c9a10-1111-4222-8333-444455556666-x-be080ee6",
+            "applicationSlug": "pet-store",
+            "applicationName": "Pet Store",
+            "entryId": "-x-",
+            "widgetKey": "stat-empty",
+            "pageRoute": "/",
+            "props": [],
+            "dataSource": [],
+            "title": "-x-",
+            "icon": "",
+            "order": 60,
+            "link": ""
+        },
+        "applicationUuid": "3f2c9a10-1111-4222-8333-444455556666",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "plain / '-x-' / panel empty / placement full": {
+        "json": {
+            "id": "buildiq-3f2c9a10-1111-4222-8333-444455556666-x-be080ee6",
+            "applicationSlug": "pet-store",
+            "applicationName": "Pet Store",
+            "entryId": "-x-",
+            "widgetKey": "stat-empty",
+            "pageRoute": "/overview",
+            "props": {
+                "a": 1
+            },
+            "dataSource": {
+                "register": "r"
+            },
+            "title": "-x-",
+            "icon": "",
+            "order": 60,
+            "link": ""
+        },
+        "applicationUuid": "3f2c9a10-1111-4222-8333-444455556666",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "plain / '-x-' / panel empty / placement scalars": {
+        "json": {
+            "id": "buildiq-3f2c9a10-1111-4222-8333-444455556666-x-be080ee6",
+            "applicationSlug": "pet-store",
+            "applicationName": "Pet Store",
+            "entryId": "-x-",
+            "widgetKey": "stat-empty",
+            "pageRoute": "/",
+            "props": [
+                "p"
+            ],
+            "dataSource": [
+                3
+            ],
+            "title": "-x-",
+            "icon": "",
+            "order": 60,
+            "link": ""
+        },
+        "applicationUuid": "3f2c9a10-1111-4222-8333-444455556666",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "plain / '-x-' / panel full / placement empty": {
+        "json": {
+            "id": "buildiq-3f2c9a10-1111-4222-8333-444455556666-x-be080ee6",
+            "applicationSlug": "pet-store",
+            "applicationName": "Pet Store",
+            "entryId": "-x-",
+            "widgetKey": "stat-full",
+            "pageRoute": "/",
+            "props": [],
+            "dataSource": [],
+            "title": "Cases",
+            "icon": "icon-folder",
+            "order": 5,
+            "link": "/apps/x"
+        },
+        "applicationUuid": "3f2c9a10-1111-4222-8333-444455556666",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "plain / '-x-' / panel full / placement full": {
+        "json": {
+            "id": "buildiq-3f2c9a10-1111-4222-8333-444455556666-x-be080ee6",
+            "applicationSlug": "pet-store",
+            "applicationName": "Pet Store",
+            "entryId": "-x-",
+            "widgetKey": "stat-full",
+            "pageRoute": "/overview",
+            "props": {
+                "a": 1
+            },
+            "dataSource": {
+                "register": "r"
+            },
+            "title": "Cases",
+            "icon": "icon-folder",
+            "order": 5,
+            "link": "/apps/x"
+        },
+        "applicationUuid": "3f2c9a10-1111-4222-8333-444455556666",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "plain / '-x-' / panel full / placement scalars": {
+        "json": {
+            "id": "buildiq-3f2c9a10-1111-4222-8333-444455556666-x-be080ee6",
+            "applicationSlug": "pet-store",
+            "applicationName": "Pet Store",
+            "entryId": "-x-",
+            "widgetKey": "stat-full",
+            "pageRoute": "/",
+            "props": [
+                "p"
+            ],
+            "dataSource": [
+                3
+            ],
+            "title": "Cases",
+            "icon": "icon-folder",
+            "order": 5,
+            "link": "/apps/x"
+        },
+        "applicationUuid": "3f2c9a10-1111-4222-8333-444455556666",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "plain / '-x-' / panel string order / placement empty": {
+        "json": {
+            "id": "buildiq-3f2c9a10-1111-4222-8333-444455556666-x-be080ee6",
+            "applicationSlug": "pet-store",
+            "applicationName": "Pet Store",
+            "entryId": "-x-",
+            "widgetKey": "stat-string order",
+            "pageRoute": "/",
+            "props": [],
+            "dataSource": [],
+            "title": "7",
+            "icon": "",
+            "order": 12,
+            "link": ""
+        },
+        "applicationUuid": "3f2c9a10-1111-4222-8333-444455556666",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "plain / '-x-' / panel string order / placement full": {
+        "json": {
+            "id": "buildiq-3f2c9a10-1111-4222-8333-444455556666-x-be080ee6",
+            "applicationSlug": "pet-store",
+            "applicationName": "Pet Store",
+            "entryId": "-x-",
+            "widgetKey": "stat-string order",
+            "pageRoute": "/overview",
+            "props": {
+                "a": 1
+            },
+            "dataSource": {
+                "register": "r"
+            },
+            "title": "7",
+            "icon": "",
+            "order": 12,
+            "link": ""
+        },
+        "applicationUuid": "3f2c9a10-1111-4222-8333-444455556666",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "plain / '-x-' / panel string order / placement scalars": {
+        "json": {
+            "id": "buildiq-3f2c9a10-1111-4222-8333-444455556666-x-be080ee6",
+            "applicationSlug": "pet-store",
+            "applicationName": "Pet Store",
+            "entryId": "-x-",
+            "widgetKey": "stat-string order",
+            "pageRoute": "/",
+            "props": [
+                "p"
+            ],
+            "dataSource": [
+                3
+            ],
+            "title": "7",
+            "icon": "",
+            "order": 12,
+            "link": ""
+        },
+        "applicationUuid": "3f2c9a10-1111-4222-8333-444455556666",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "odd uuid / 'open-cases' / panel empty / placement empty": {
+        "json": {
+            "id": "buildiq-uuid-with-spaces-48a25bf3-open-cases",
+            "applicationSlug": "",
+            "applicationName": "",
+            "entryId": "open-cases",
+            "widgetKey": "stat-empty",
+            "pageRoute": "/",
+            "props": [],
+            "dataSource": [],
+            "title": "open-cases",
+            "icon": "",
+            "order": 60,
+            "link": ""
+        },
+        "applicationUuid": "UUID With Spaces",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "odd uuid / 'open-cases' / panel empty / placement full": {
+        "json": {
+            "id": "buildiq-uuid-with-spaces-48a25bf3-open-cases",
+            "applicationSlug": "",
+            "applicationName": "",
+            "entryId": "open-cases",
+            "widgetKey": "stat-empty",
+            "pageRoute": "/overview",
+            "props": {
+                "a": 1
+            },
+            "dataSource": {
+                "register": "r"
+            },
+            "title": "open-cases",
+            "icon": "",
+            "order": 60,
+            "link": ""
+        },
+        "applicationUuid": "UUID With Spaces",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "odd uuid / 'open-cases' / panel empty / placement scalars": {
+        "json": {
+            "id": "buildiq-uuid-with-spaces-48a25bf3-open-cases",
+            "applicationSlug": "",
+            "applicationName": "",
+            "entryId": "open-cases",
+            "widgetKey": "stat-empty",
+            "pageRoute": "/",
+            "props": [
+                "p"
+            ],
+            "dataSource": [
+                3
+            ],
+            "title": "open-cases",
+            "icon": "",
+            "order": 60,
+            "link": ""
+        },
+        "applicationUuid": "UUID With Spaces",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "odd uuid / 'open-cases' / panel full / placement empty": {
+        "json": {
+            "id": "buildiq-uuid-with-spaces-48a25bf3-open-cases",
+            "applicationSlug": "",
+            "applicationName": "",
+            "entryId": "open-cases",
+            "widgetKey": "stat-full",
+            "pageRoute": "/",
+            "props": [],
+            "dataSource": [],
+            "title": "Cases",
+            "icon": "icon-folder",
+            "order": 5,
+            "link": "/apps/x"
+        },
+        "applicationUuid": "UUID With Spaces",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "odd uuid / 'open-cases' / panel full / placement full": {
+        "json": {
+            "id": "buildiq-uuid-with-spaces-48a25bf3-open-cases",
+            "applicationSlug": "",
+            "applicationName": "",
+            "entryId": "open-cases",
+            "widgetKey": "stat-full",
+            "pageRoute": "/overview",
+            "props": {
+                "a": 1
+            },
+            "dataSource": {
+                "register": "r"
+            },
+            "title": "Cases",
+            "icon": "icon-folder",
+            "order": 5,
+            "link": "/apps/x"
+        },
+        "applicationUuid": "UUID With Spaces",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "odd uuid / 'open-cases' / panel full / placement scalars": {
+        "json": {
+            "id": "buildiq-uuid-with-spaces-48a25bf3-open-cases",
+            "applicationSlug": "",
+            "applicationName": "",
+            "entryId": "open-cases",
+            "widgetKey": "stat-full",
+            "pageRoute": "/",
+            "props": [
+                "p"
+            ],
+            "dataSource": [
+                3
+            ],
+            "title": "Cases",
+            "icon": "icon-folder",
+            "order": 5,
+            "link": "/apps/x"
+        },
+        "applicationUuid": "UUID With Spaces",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "odd uuid / 'open-cases' / panel string order / placement empty": {
+        "json": {
+            "id": "buildiq-uuid-with-spaces-48a25bf3-open-cases",
+            "applicationSlug": "",
+            "applicationName": "",
+            "entryId": "open-cases",
+            "widgetKey": "stat-string order",
+            "pageRoute": "/",
+            "props": [],
+            "dataSource": [],
+            "title": "7",
+            "icon": "",
+            "order": 12,
+            "link": ""
+        },
+        "applicationUuid": "UUID With Spaces",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "odd uuid / 'open-cases' / panel string order / placement full": {
+        "json": {
+            "id": "buildiq-uuid-with-spaces-48a25bf3-open-cases",
+            "applicationSlug": "",
+            "applicationName": "",
+            "entryId": "open-cases",
+            "widgetKey": "stat-string order",
+            "pageRoute": "/overview",
+            "props": {
+                "a": 1
+            },
+            "dataSource": {
+                "register": "r"
+            },
+            "title": "7",
+            "icon": "",
+            "order": 12,
+            "link": ""
+        },
+        "applicationUuid": "UUID With Spaces",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "odd uuid / 'open-cases' / panel string order / placement scalars": {
+        "json": {
+            "id": "buildiq-uuid-with-spaces-48a25bf3-open-cases",
+            "applicationSlug": "",
+            "applicationName": "",
+            "entryId": "open-cases",
+            "widgetKey": "stat-string order",
+            "pageRoute": "/",
+            "props": [
+                "p"
+            ],
+            "dataSource": [
+                3
+            ],
+            "title": "7",
+            "icon": "",
+            "order": 12,
+            "link": ""
+        },
+        "applicationUuid": "UUID With Spaces",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "odd uuid / 'Open Cases!' / panel empty / placement empty": {
+        "json": {
+            "id": "buildiq-uuid-with-spaces-48a25bf3-open-cases-7c7f96c9",
+            "applicationSlug": "",
+            "applicationName": "",
+            "entryId": "Open Cases!",
+            "widgetKey": "stat-empty",
+            "pageRoute": "/",
+            "props": [],
+            "dataSource": [],
+            "title": "Open Cases!",
+            "icon": "",
+            "order": 60,
+            "link": ""
+        },
+        "applicationUuid": "UUID With Spaces",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "odd uuid / 'Open Cases!' / panel empty / placement full": {
+        "json": {
+            "id": "buildiq-uuid-with-spaces-48a25bf3-open-cases-7c7f96c9",
+            "applicationSlug": "",
+            "applicationName": "",
+            "entryId": "Open Cases!",
+            "widgetKey": "stat-empty",
+            "pageRoute": "/overview",
+            "props": {
+                "a": 1
+            },
+            "dataSource": {
+                "register": "r"
+            },
+            "title": "Open Cases!",
+            "icon": "",
+            "order": 60,
+            "link": ""
+        },
+        "applicationUuid": "UUID With Spaces",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "odd uuid / 'Open Cases!' / panel empty / placement scalars": {
+        "json": {
+            "id": "buildiq-uuid-with-spaces-48a25bf3-open-cases-7c7f96c9",
+            "applicationSlug": "",
+            "applicationName": "",
+            "entryId": "Open Cases!",
+            "widgetKey": "stat-empty",
+            "pageRoute": "/",
+            "props": [
+                "p"
+            ],
+            "dataSource": [
+                3
+            ],
+            "title": "Open Cases!",
+            "icon": "",
+            "order": 60,
+            "link": ""
+        },
+        "applicationUuid": "UUID With Spaces",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "odd uuid / 'Open Cases!' / panel full / placement empty": {
+        "json": {
+            "id": "buildiq-uuid-with-spaces-48a25bf3-open-cases-7c7f96c9",
+            "applicationSlug": "",
+            "applicationName": "",
+            "entryId": "Open Cases!",
+            "widgetKey": "stat-full",
+            "pageRoute": "/",
+            "props": [],
+            "dataSource": [],
+            "title": "Cases",
+            "icon": "icon-folder",
+            "order": 5,
+            "link": "/apps/x"
+        },
+        "applicationUuid": "UUID With Spaces",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "odd uuid / 'Open Cases!' / panel full / placement full": {
+        "json": {
+            "id": "buildiq-uuid-with-spaces-48a25bf3-open-cases-7c7f96c9",
+            "applicationSlug": "",
+            "applicationName": "",
+            "entryId": "Open Cases!",
+            "widgetKey": "stat-full",
+            "pageRoute": "/overview",
+            "props": {
+                "a": 1
+            },
+            "dataSource": {
+                "register": "r"
+            },
+            "title": "Cases",
+            "icon": "icon-folder",
+            "order": 5,
+            "link": "/apps/x"
+        },
+        "applicationUuid": "UUID With Spaces",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "odd uuid / 'Open Cases!' / panel full / placement scalars": {
+        "json": {
+            "id": "buildiq-uuid-with-spaces-48a25bf3-open-cases-7c7f96c9",
+            "applicationSlug": "",
+            "applicationName": "",
+            "entryId": "Open Cases!",
+            "widgetKey": "stat-full",
+            "pageRoute": "/",
+            "props": [
+                "p"
+            ],
+            "dataSource": [
+                3
+            ],
+            "title": "Cases",
+            "icon": "icon-folder",
+            "order": 5,
+            "link": "/apps/x"
+        },
+        "applicationUuid": "UUID With Spaces",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "odd uuid / 'Open Cases!' / panel string order / placement empty": {
+        "json": {
+            "id": "buildiq-uuid-with-spaces-48a25bf3-open-cases-7c7f96c9",
+            "applicationSlug": "",
+            "applicationName": "",
+            "entryId": "Open Cases!",
+            "widgetKey": "stat-string order",
+            "pageRoute": "/",
+            "props": [],
+            "dataSource": [],
+            "title": "7",
+            "icon": "",
+            "order": 12,
+            "link": ""
+        },
+        "applicationUuid": "UUID With Spaces",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "odd uuid / 'Open Cases!' / panel string order / placement full": {
+        "json": {
+            "id": "buildiq-uuid-with-spaces-48a25bf3-open-cases-7c7f96c9",
+            "applicationSlug": "",
+            "applicationName": "",
+            "entryId": "Open Cases!",
+            "widgetKey": "stat-string order",
+            "pageRoute": "/overview",
+            "props": {
+                "a": 1
+            },
+            "dataSource": {
+                "register": "r"
+            },
+            "title": "7",
+            "icon": "",
+            "order": 12,
+            "link": ""
+        },
+        "applicationUuid": "UUID With Spaces",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "odd uuid / 'Open Cases!' / panel string order / placement scalars": {
+        "json": {
+            "id": "buildiq-uuid-with-spaces-48a25bf3-open-cases-7c7f96c9",
+            "applicationSlug": "",
+            "applicationName": "",
+            "entryId": "Open Cases!",
+            "widgetKey": "stat-string order",
+            "pageRoute": "/",
+            "props": [
+                "p"
+            ],
+            "dataSource": [
+                3
+            ],
+            "title": "7",
+            "icon": "",
+            "order": 12,
+            "link": ""
+        },
+        "applicationUuid": "UUID With Spaces",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "odd uuid / '' / panel empty / placement empty": {
+        "json": {
+            "id": "buildiq-uuid-with-spaces-48a25bf3-x-da39a3ee",
+            "applicationSlug": "",
+            "applicationName": "",
+            "entryId": "",
+            "widgetKey": "stat-empty",
+            "pageRoute": "/",
+            "props": [],
+            "dataSource": [],
+            "title": "",
+            "icon": "",
+            "order": 60,
+            "link": ""
+        },
+        "applicationUuid": "UUID With Spaces",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "odd uuid / '' / panel empty / placement full": {
+        "json": {
+            "id": "buildiq-uuid-with-spaces-48a25bf3-x-da39a3ee",
+            "applicationSlug": "",
+            "applicationName": "",
+            "entryId": "",
+            "widgetKey": "stat-empty",
+            "pageRoute": "/overview",
+            "props": {
+                "a": 1
+            },
+            "dataSource": {
+                "register": "r"
+            },
+            "title": "",
+            "icon": "",
+            "order": 60,
+            "link": ""
+        },
+        "applicationUuid": "UUID With Spaces",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "odd uuid / '' / panel empty / placement scalars": {
+        "json": {
+            "id": "buildiq-uuid-with-spaces-48a25bf3-x-da39a3ee",
+            "applicationSlug": "",
+            "applicationName": "",
+            "entryId": "",
+            "widgetKey": "stat-empty",
+            "pageRoute": "/",
+            "props": [
+                "p"
+            ],
+            "dataSource": [
+                3
+            ],
+            "title": "",
+            "icon": "",
+            "order": 60,
+            "link": ""
+        },
+        "applicationUuid": "UUID With Spaces",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "odd uuid / '' / panel full / placement empty": {
+        "json": {
+            "id": "buildiq-uuid-with-spaces-48a25bf3-x-da39a3ee",
+            "applicationSlug": "",
+            "applicationName": "",
+            "entryId": "",
+            "widgetKey": "stat-full",
+            "pageRoute": "/",
+            "props": [],
+            "dataSource": [],
+            "title": "Cases",
+            "icon": "icon-folder",
+            "order": 5,
+            "link": "/apps/x"
+        },
+        "applicationUuid": "UUID With Spaces",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "odd uuid / '' / panel full / placement full": {
+        "json": {
+            "id": "buildiq-uuid-with-spaces-48a25bf3-x-da39a3ee",
+            "applicationSlug": "",
+            "applicationName": "",
+            "entryId": "",
+            "widgetKey": "stat-full",
+            "pageRoute": "/overview",
+            "props": {
+                "a": 1
+            },
+            "dataSource": {
+                "register": "r"
+            },
+            "title": "Cases",
+            "icon": "icon-folder",
+            "order": 5,
+            "link": "/apps/x"
+        },
+        "applicationUuid": "UUID With Spaces",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "odd uuid / '' / panel full / placement scalars": {
+        "json": {
+            "id": "buildiq-uuid-with-spaces-48a25bf3-x-da39a3ee",
+            "applicationSlug": "",
+            "applicationName": "",
+            "entryId": "",
+            "widgetKey": "stat-full",
+            "pageRoute": "/",
+            "props": [
+                "p"
+            ],
+            "dataSource": [
+                3
+            ],
+            "title": "Cases",
+            "icon": "icon-folder",
+            "order": 5,
+            "link": "/apps/x"
+        },
+        "applicationUuid": "UUID With Spaces",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "odd uuid / '' / panel string order / placement empty": {
+        "json": {
+            "id": "buildiq-uuid-with-spaces-48a25bf3-x-da39a3ee",
+            "applicationSlug": "",
+            "applicationName": "",
+            "entryId": "",
+            "widgetKey": "stat-string order",
+            "pageRoute": "/",
+            "props": [],
+            "dataSource": [],
+            "title": "7",
+            "icon": "",
+            "order": 12,
+            "link": ""
+        },
+        "applicationUuid": "UUID With Spaces",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "odd uuid / '' / panel string order / placement full": {
+        "json": {
+            "id": "buildiq-uuid-with-spaces-48a25bf3-x-da39a3ee",
+            "applicationSlug": "",
+            "applicationName": "",
+            "entryId": "",
+            "widgetKey": "stat-string order",
+            "pageRoute": "/overview",
+            "props": {
+                "a": 1
+            },
+            "dataSource": {
+                "register": "r"
+            },
+            "title": "7",
+            "icon": "",
+            "order": 12,
+            "link": ""
+        },
+        "applicationUuid": "UUID With Spaces",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "odd uuid / '' / panel string order / placement scalars": {
+        "json": {
+            "id": "buildiq-uuid-with-spaces-48a25bf3-x-da39a3ee",
+            "applicationSlug": "",
+            "applicationName": "",
+            "entryId": "",
+            "widgetKey": "stat-string order",
+            "pageRoute": "/",
+            "props": [
+                "p"
+            ],
+            "dataSource": [
+                3
+            ],
+            "title": "7",
+            "icon": "",
+            "order": 12,
+            "link": ""
+        },
+        "applicationUuid": "UUID With Spaces",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "odd uuid / '-x-' / panel empty / placement empty": {
+        "json": {
+            "id": "buildiq-uuid-with-spaces-48a25bf3-x-be080ee6",
+            "applicationSlug": "",
+            "applicationName": "",
+            "entryId": "-x-",
+            "widgetKey": "stat-empty",
+            "pageRoute": "/",
+            "props": [],
+            "dataSource": [],
+            "title": "-x-",
+            "icon": "",
+            "order": 60,
+            "link": ""
+        },
+        "applicationUuid": "UUID With Spaces",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "odd uuid / '-x-' / panel empty / placement full": {
+        "json": {
+            "id": "buildiq-uuid-with-spaces-48a25bf3-x-be080ee6",
+            "applicationSlug": "",
+            "applicationName": "",
+            "entryId": "-x-",
+            "widgetKey": "stat-empty",
+            "pageRoute": "/overview",
+            "props": {
+                "a": 1
+            },
+            "dataSource": {
+                "register": "r"
+            },
+            "title": "-x-",
+            "icon": "",
+            "order": 60,
+            "link": ""
+        },
+        "applicationUuid": "UUID With Spaces",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "odd uuid / '-x-' / panel empty / placement scalars": {
+        "json": {
+            "id": "buildiq-uuid-with-spaces-48a25bf3-x-be080ee6",
+            "applicationSlug": "",
+            "applicationName": "",
+            "entryId": "-x-",
+            "widgetKey": "stat-empty",
+            "pageRoute": "/",
+            "props": [
+                "p"
+            ],
+            "dataSource": [
+                3
+            ],
+            "title": "-x-",
+            "icon": "",
+            "order": 60,
+            "link": ""
+        },
+        "applicationUuid": "UUID With Spaces",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "odd uuid / '-x-' / panel full / placement empty": {
+        "json": {
+            "id": "buildiq-uuid-with-spaces-48a25bf3-x-be080ee6",
+            "applicationSlug": "",
+            "applicationName": "",
+            "entryId": "-x-",
+            "widgetKey": "stat-full",
+            "pageRoute": "/",
+            "props": [],
+            "dataSource": [],
+            "title": "Cases",
+            "icon": "icon-folder",
+            "order": 5,
+            "link": "/apps/x"
+        },
+        "applicationUuid": "UUID With Spaces",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "odd uuid / '-x-' / panel full / placement full": {
+        "json": {
+            "id": "buildiq-uuid-with-spaces-48a25bf3-x-be080ee6",
+            "applicationSlug": "",
+            "applicationName": "",
+            "entryId": "-x-",
+            "widgetKey": "stat-full",
+            "pageRoute": "/overview",
+            "props": {
+                "a": 1
+            },
+            "dataSource": {
+                "register": "r"
+            },
+            "title": "Cases",
+            "icon": "icon-folder",
+            "order": 5,
+            "link": "/apps/x"
+        },
+        "applicationUuid": "UUID With Spaces",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "odd uuid / '-x-' / panel full / placement scalars": {
+        "json": {
+            "id": "buildiq-uuid-with-spaces-48a25bf3-x-be080ee6",
+            "applicationSlug": "",
+            "applicationName": "",
+            "entryId": "-x-",
+            "widgetKey": "stat-full",
+            "pageRoute": "/",
+            "props": [
+                "p"
+            ],
+            "dataSource": [
+                3
+            ],
+            "title": "Cases",
+            "icon": "icon-folder",
+            "order": 5,
+            "link": "/apps/x"
+        },
+        "applicationUuid": "UUID With Spaces",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "odd uuid / '-x-' / panel string order / placement empty": {
+        "json": {
+            "id": "buildiq-uuid-with-spaces-48a25bf3-x-be080ee6",
+            "applicationSlug": "",
+            "applicationName": "",
+            "entryId": "-x-",
+            "widgetKey": "stat-string order",
+            "pageRoute": "/",
+            "props": [],
+            "dataSource": [],
+            "title": "7",
+            "icon": "",
+            "order": 12,
+            "link": ""
+        },
+        "applicationUuid": "UUID With Spaces",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "odd uuid / '-x-' / panel string order / placement full": {
+        "json": {
+            "id": "buildiq-uuid-with-spaces-48a25bf3-x-be080ee6",
+            "applicationSlug": "",
+            "applicationName": "",
+            "entryId": "-x-",
+            "widgetKey": "stat-string order",
+            "pageRoute": "/overview",
+            "props": {
+                "a": 1
+            },
+            "dataSource": {
+                "register": "r"
+            },
+            "title": "7",
+            "icon": "",
+            "order": 12,
+            "link": ""
+        },
+        "applicationUuid": "UUID With Spaces",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    },
+    "odd uuid / '-x-' / panel string order / placement scalars": {
+        "json": {
+            "id": "buildiq-uuid-with-spaces-48a25bf3-x-be080ee6",
+            "applicationSlug": "",
+            "applicationName": "",
+            "entryId": "-x-",
+            "widgetKey": "stat-string order",
+            "pageRoute": "/",
+            "props": [
+                "p"
+            ],
+            "dataSource": [
+                3
+            ],
+            "title": "7",
+            "icon": "",
+            "order": 12,
+            "link": ""
+        },
+        "applicationUuid": "UUID With Spaces",
+        "principals": [
+            "user:a",
+            "group:b"
+        ]
+    }
+}

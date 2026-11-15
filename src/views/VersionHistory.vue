@@ -78,6 +78,25 @@
 						{{ t('buildiq', 'Promote') }}
 					</button>
 					<button
+						v-if="canEdit"
+						class="version-history__btn"
+						data-test="version-branch"
+						@click="askBranch(row)">
+						{{ t('buildiq', 'Start a branch') }}
+					</button>
+					<button
+						v-if="canEdit && mergeTargets(row).length"
+						class="version-history__btn"
+						data-test="version-merge"
+						@click="askMerge(row)">
+						{{ t('buildiq', 'Merge into') }}
+					</button>
+					<small
+						v-if="row.githubBranch"
+						class="version-history__branch">
+						{{ t('buildiq', 'Git branch: {branch}', { branch: row.githubBranch }) }}
+					</small>
+					<button
 						v-if="!isProduction(row)"
 						class="version-history__btn version-history__btn--danger"
 						@click="askRollback(row)">
@@ -87,6 +106,20 @@
 			</li>
 		</ul>
 
+		<PromptTextDialog
+			:open="branchSource !== null"
+			:name="t('buildiq', 'Start a branch')"
+			:label="t('buildiq', 'Branch name')"
+			:confirmLabel="t('buildiq', 'Start a branch')"
+			@update:open="branchSource = null"
+			@submit="startBranch" />
+		<MergeVersionDialog
+			:open="mergeSource !== null"
+			:appSlug="appSlug"
+			:source="mergeSource"
+			:targets="mergeSource ? mergeTargets(mergeSource) : []"
+			@update:open="mergeSource = null"
+			@merged="refresh" />
 		<RollbackConfirmModal
 			:open="rollbackOpen"
 			:version="rollbackTarget"
@@ -100,16 +133,75 @@
 import axios from '@nextcloud/axios'
 import { showError, showSuccess } from '@nextcloud/dialogs'
 import { generateUrl } from '@nextcloud/router'
+import MergeVersionDialog from '../dialogs/MergeVersionDialog.vue'
+import PromptTextDialog from '../dialogs/PromptTextDialog.vue'
 import RollbackConfirmModal from '../modals/RollbackConfirmModal.vue'
-import {
-	openPromoteDialog,
-	promoteDialog,
-} from '../composables/usePromoteDialog.js'
+import { openPromoteDialog, promoteDialog } from '../composables/usePromoteDialog.js'
 import { buildVersionedRoute } from '../router/helpers.js'
+
+/**
+ * The rows of a versions answer: a bare list or a `results` envelope.
+ *
+ * @param {Array<object>|object|null} data The response body.
+ * @return {Array<object>}
+ */
+function versionRowsOf(data) {
+	if (Array.isArray(data)) {
+		return data
+	}
+	return data && data.results ? data.results : []
+}
+
+/**
+ * A row's publishedAt, '' when it has none.
+ *
+ * @param {object} row A version row.
+ * @return {string}
+ */
+function publishedAtOf(row) {
+	return (row && row.publishedAt) || ''
+}
+
+/**
+ * Newest first by publishedAt; equal dates keep their order.
+ *
+ * @param {object} a A version row.
+ * @param {object} b Another version row.
+ * @return {number}
+ */
+function compareNewestFirst(a, b) {
+	const aDate = publishedAtOf(a)
+	const bDate = publishedAtOf(b)
+	return bDate > aDate ? 1 : bDate < aDate ? -1 : 0
+}
+
+/**
+ * The server's `detail` for a failed request, if it gave one.
+ *
+ * @param {Error|null} e The failure.
+ * @return {string|undefined}
+ */
+function responseDetailOf(e) {
+	return e && e.response && e.response.data && e.response.data.detail
+}
+
+/**
+ * What to show when a release failed: "Release failed", with the server's
+ * detail or the request's message when there is one.
+ *
+ * @param {Error|null} e The failure.
+ * @return {string}
+ */
+function releaseFailureMessage(e) {
+	const detail = responseDetailOf(e) || (e && e.message) || ''
+	return t('buildiq', 'Release failed') + (detail ? ': ' + detail : '')
+}
 
 export default {
 	name: 'VersionHistory',
 	components: {
+		MergeVersionDialog,
+		PromptTextDialog,
 		RollbackConfirmModal,
 	},
 
@@ -153,6 +245,8 @@ export default {
 			releasing: '',
 			rollbackOpen: false,
 			rollbackTarget: null,
+			branchSource: null,
+			mergeSource: null,
 			promoteDialog,
 		}
 	},
@@ -175,7 +269,7 @@ export default {
 			 * @param {string} slug The parent Application slug.
 			 * @return {void}
 			 *
-			 * @spec openspec/changes/version-lifecycle-and-switcher/specs/version-routing-ui/spec.md
+			 * @spec openspec/specs/version-routing-ui/spec.md
 			 */
 			handler(slug) {
 				if (slug) {
@@ -198,7 +292,7 @@ export default {
 		 *
 		 * @return {Promise<void>}
 		 *
-		 * @spec openspec/changes/version-lifecycle-and-switcher/specs/version-routing-ui/spec.md
+		 * @spec openspec/specs/version-routing-ui/spec.md
 		 */
 		async refresh() {
 			// Only the slug endpoint exists. The uuid fallback asked for
@@ -211,45 +305,74 @@ export default {
 			}
 			this.loading = true
 			try {
-				const url = generateUrl(
-					'/apps/buildiq/api/applications/{slug}/versions',
-					{ slug: this.appSlug },
-				)
-				const { data } = await axios.get(url)
-				const raw = Array.isArray(data)
-					? data
-					: data && data.results
-						? data.results
-						: []
-				// The endpoint is already scoped to the app. A row that names
-				// another parent through its `application` relation is still
-				// dropped, as defence in depth.
-				const filtered = this.applicationUuid
-					? raw.filter(
-							(r) =>
-								r
-								&& (!r.application
-									|| r.application === this.applicationUuid),
-						)
-					: raw
-				this.versions = filtered
-					.filter((r) => this.rowStatus(r) !== 'archived')
-					.sort((a, b) => {
-						const bProd = this.isProduction(b) ? 1 : 0
-						const aProd = this.isProduction(a) ? 1 : 0
-						if (bProd !== aProd) {
-							return bProd - aProd
-						}
-						// Newest first by publishedAt.
-						const aDate = (a && a.publishedAt) || ''
-						const bDate = (b && b.publishedAt) || ''
-						return bDate > aDate ? 1 : bDate < aDate ? -1 : 0
-					})
+				this.versions = this.visibleVersions(await this.readVersionRows())
 			} catch (e) {
 				this.versions = []
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Read the app's version rows from the slug endpoint.
+		 *
+		 * @return {Promise<Array<object>>}
+		 */
+		async readVersionRows() {
+			const url = generateUrl(
+				'/apps/buildiq/api/applications/{slug}/versions',
+				{ slug: this.appSlug },
+			)
+			const { data } = await axios.get(url)
+			return versionRowsOf(data)
+		},
+
+		/**
+		 * The rows to list: this app's own, archived ones hidden, production
+		 * first and then newest first.
+		 *
+		 * @param {Array<object>} raw The rows the endpoint returned.
+		 * @return {Array<object>}
+		 */
+		visibleVersions(raw) {
+			return this.ownRows(raw)
+				.filter((r) => this.rowStatus(r) !== 'archived')
+				.sort(this.compareRows)
+		},
+
+		/**
+		 * The endpoint is already scoped to the app. A row that names another
+		 * parent through its `application` relation is still dropped, as
+		 * defence in depth.
+		 *
+		 * @param {Array<object>} raw The rows the endpoint returned.
+		 * @return {Array<object>}
+		 */
+		ownRows(raw) {
+			if (!this.applicationUuid) {
+				return raw
+			}
+			return raw.filter(
+				(r) =>
+					r && (!r.application || r.application === this.applicationUuid),
+			)
+		},
+
+		/**
+		 * Sort order of the list: the production version first, then the
+		 * newest by publishedAt.
+		 *
+		 * @param {object} a A version row.
+		 * @param {object} b Another version row.
+		 * @return {number}
+		 */
+		compareRows(a, b) {
+			const bProd = this.isProduction(b) ? 1 : 0
+			const aProd = this.isProduction(a) ? 1 : 0
+			if (bProd !== aProd) {
+				return bProd - aProd
+			}
+			return compareNewestFirst(a, b)
 		},
 
 		/**
@@ -269,8 +392,11 @@ export default {
 		 * @return {string}
 		 */
 		rowUuid(row) {
-			const self = (row && row['@self']) || {}
-			return (row && row.id) || self.id || self.uuid || (row && row.uuid) || ''
+			if (!row) {
+				return ''
+			}
+			const self = row['@self'] || {}
+			return [row.id, self.id, self.uuid, row.uuid].find(Boolean) || ''
 		},
 
 		/**
@@ -301,7 +427,7 @@ export default {
 		 * @param {object} row The version row.
 		 * @return {string}
 		 *
-		 * @spec openspec/changes/version-lifecycle-and-switcher/specs/version-routing-ui/spec.md
+		 * @spec openspec/specs/version-routing-ui/spec.md
 		 */
 		rowSemver(row) {
 			return (row && (row.semver || row.version)) || ''
@@ -356,7 +482,7 @@ export default {
 		 * @param {object} row The version row.
 		 * @return {string|null} The URL, or null without an app slug.
 		 *
-		 * @spec openspec/changes/version-lifecycle-and-switcher/specs/version-lifecycle-ui/spec.md
+		 * @spec openspec/specs/version-lifecycle-ui/spec.md
 		 */
 		versionUrl(row) {
 			if (!this.appSlug) {
@@ -378,7 +504,7 @@ export default {
 		 * @param {object} row The version row.
 		 * @return {object} A vue-router location.
 		 *
-		 * @spec openspec/changes/version-lifecycle-and-switcher/specs/version-lifecycle-ui/spec.md
+		 * @spec openspec/specs/version-lifecycle-ui/spec.md
 		 */
 		editRoute(row) {
 			return buildVersionedRoute(
@@ -401,13 +527,80 @@ export default {
 		},
 
 		/**
+		 * Ask for the name of a branch started from a version.
+		 *
+		 * @param {object} row The version row.
+		 * @return {void}
+		 *
+		 * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-starts-a-branch-from-a-version-req-bqgb-001
+		 */
+		askBranch(row) {
+			this.branchSource = row
+		},
+
+		/**
+		 * Start the branch: POST its name, tell the maker, and reload the list.
+		 *
+		 * @param {string} name The branch name the maker entered.
+		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-starts-a-branch-from-a-version-req-bqgb-001
+		 */
+		async startBranch(name) {
+			const source = this.branchSource
+			this.branchSource = null
+			if (!source || !this.appSlug) {
+				return
+			}
+			try {
+				await axios.post(
+					generateUrl('/apps/buildiq/api/applications/{slug}/versions/{versionSlug}/branch', {
+						slug: this.appSlug,
+						versionSlug: this.rowSlug(source),
+					}),
+					{ name: name.trim() },
+				)
+				showSuccess(t('buildiq', 'Branch “{name}” started.', { name: name.trim() }))
+				await this.refresh()
+			} catch (e) {
+				showError(responseDetailOf(e) || t('buildiq', 'The branch could not be started.'))
+			}
+		},
+
+		/**
+		 * Open the merge dialog for a version.
+		 *
+		 * @param {object} row The version row merged in.
+		 * @return {void}
+		 *
+		 * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-merges-a-branch-and-picks-a-side-per-conflict-req-bqgb-003
+		 */
+		askMerge(row) {
+			this.mergeSource = row
+		},
+
+		/**
+		 * The versions a version may merge into: the other drafts that are not production.
+		 *
+		 * @param {object} row The version merged in.
+		 * @return {Array<object>}
+		 */
+		mergeTargets(row) {
+			return this.versions.filter(
+				(other) => this.rowSlug(other) !== this.rowSlug(row)
+					&& this.rowStatus(other) === 'draft'
+					&& !this.isProduction(other),
+			)
+		},
+
+		/**
 		 * Release a draft version: set-as-production + publish + demote previous
 		 * production (owner only, server-enforced). Refreshes on success.
 		 *
 		 * @param {object} row The version row.
 		 * @return {Promise<void>}
 		 *
-		 * @spec openspec/changes/version-lifecycle-and-switcher/specs/version-lifecycle-ui/spec.md
+		 * @spec openspec/specs/version-lifecycle-ui/spec.md
 		 */
 		async release(row) {
 			const versionSlug = this.rowSlug(row)
@@ -416,29 +609,34 @@ export default {
 			}
 			this.releasing = this.rowUuid(row)
 			try {
-				const url = generateUrl(
-					'/apps/buildiq/api/applications/{slug}/versions/{versionSlug}/release',
-					{ slug: this.appSlug, versionSlug },
-				)
-				await axios.post(url, {})
-				showSuccess(
-					t('buildiq', '“{name}” is now the production version.', {
-						name: this.rowName(row),
-					}),
-				)
-				this.$emit('released')
-				await this.refresh()
+				await this.postRelease(row, versionSlug)
 			} catch (e) {
-				const detail =
-					(e && e.response && e.response.data && e.response.data.detail)
-					|| (e && e.message)
-					|| ''
-				showError(
-					t('buildiq', 'Release failed') + (detail ? ': ' + detail : ''),
-				)
+				showError(releaseFailureMessage(e))
 			} finally {
 				this.releasing = ''
 			}
+		},
+
+		/**
+		 * POST the release, tell the maker, and reload the list.
+		 *
+		 * @param {object} row The version row.
+		 * @param {string} versionSlug The row's slug.
+		 * @return {Promise<void>}
+		 */
+		async postRelease(row, versionSlug) {
+			const url = generateUrl(
+				'/apps/buildiq/api/applications/{slug}/versions/{versionSlug}/release',
+				{ slug: this.appSlug, versionSlug },
+			)
+			await axios.post(url, {})
+			showSuccess(
+				t('buildiq', '“{name}” is now the production version.', {
+					name: this.rowName(row),
+				}),
+			)
+			this.$emit('released')
+			await this.refresh()
 		},
 
 		/**
@@ -447,7 +645,7 @@ export default {
 		 * @param {object} row The version row.
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/version-lifecycle-and-switcher/specs/version-lifecycle-ui/spec.md
+		 * @spec openspec/specs/version-lifecycle-ui/spec.md
 		 */
 		askRollback(row) {
 			this.rollbackTarget = {
@@ -599,6 +797,11 @@ export default {
 	background: var(--color-primary-element, #0082c9);
 	color: var(--color-primary-element-text, #fff);
 	border-color: var(--color-primary-element, #0082c9);
+}
+
+.version-history__branch {
+	align-self: center;
+	color: var(--color-text-maxcontrast);
 }
 
 .version-history__btn--danger {

@@ -24,7 +24,10 @@ describe('BackToVirtualApps', () => {
 		const wrapper = mount(BackToVirtualApps)
 		const link = wrapper.find('a')
 		expect(link.attributes('href')).toBe('/index.php/apps/buildiq/applications')
-		expect(link.text()).toContain('Back to virtual apps')
+		// The label follows the navigation item, which is "Apps". It said
+		// "virtual apps" until #878, and this assertion is what caught the
+		// rename reaching the component.
+		expect(link.text()).toContain('Back to apps')
 	})
 
 	it('shows in a version preview', () => {
@@ -50,7 +53,7 @@ describe('BackToVirtualApps', () => {
 		expect(showBackToVirtualApps()).toBe(false)
 	})
 
-	it("steps aside where the app declares its own primary action", () => {
+	it('steps aside where the app declares its own primary action', () => {
 		const manifest = {
 			pages: [
 				{ id: 'list', primaryAction: { label: 'New order' } },
@@ -60,7 +63,10 @@ describe('BackToVirtualApps', () => {
 		expect(declaresPrimaryAction(manifest, 'list')).toBe(true)
 		expect(declaresPrimaryAction(manifest, 'home')).toBe(false)
 		expect(
-			declaresPrimaryAction({ nav: { primaryAction: { label: 'New' } } }, 'home'),
+			declaresPrimaryAction(
+				{ nav: { primaryAction: { label: 'New' } } },
+				'home',
+			),
 		).toBe(true)
 		expect(declaresPrimaryAction(null, 'home')).toBe(false)
 	})

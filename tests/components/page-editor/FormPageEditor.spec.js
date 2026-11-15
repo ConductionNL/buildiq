@@ -222,7 +222,9 @@ describe('FormPageEditor', () => {
 			expect(register.findAll('option')).toHaveLength(2)
 			await register.setValue('openbuild-shop-development')
 			await flushPromises()
-			expect(fetchSchemasMock).toHaveBeenCalledWith('openbuild-shop-development')
+			expect(fetchSchemasMock).toHaveBeenCalledWith(
+				'openbuild-shop-development',
+			)
 			await wrapper.find('select.form-page-editor__schema').setValue('order')
 			expect(wrapper.emitted('update:config').at(-1)[0]).toEqual({
 				submitEndpoint:

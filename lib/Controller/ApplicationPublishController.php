@@ -31,12 +31,15 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Controller;
 
-use OCA\Buildiq\AppInfo\Application;
 use OCA\Buildiq\Exception\InsufficientPermissionException;
-use OCA\Buildiq\Service\ApplicationDeletionService;
-use OCA\Buildiq\Service\Credential\VirtualAppCredentialRegistrar;
-use OCA\Buildiq\Service\PermissionResolver;
-use OCA\Buildiq\Service\VersionPromotionService;
+use OCA\Buildiq\Kernel\AppIdentity;
+use OCA\Buildiq\Kernel\Contracts\ApplicationDeletionServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\ManifestFormDestinationsInterface;
+use OCA\Buildiq\Kernel\Contracts\ManifestResolverServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\PermissionResolverInterface;
+use OCA\Buildiq\Kernel\Contracts\VersionPromotionServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\VirtualAppCredentialRegistrarInterface;
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -77,9 +80,11 @@ class ApplicationPublishController extends Controller {
 	 * @param LoggerInterface $logger PSR logger
 	 * @param ObjectServiceInterface $objectService OR object surface (load + save)
 	 * @param IUserSession $userSession Current NC user session
-	 * @param PermissionResolver $permissionResolver Shared permission-grammar resolver
-	 * @param ApplicationDeletionService $deletionService Full-teardown service for delete
-	 * @param VirtualAppCredentialRegistrar $credentialRegistrar Onboards a published credentials[]-declaring app to the broker
+	 * @param PermissionResolverInterface $permissionResolver Shared permission-grammar resolver
+	 * @param ApplicationDeletionServiceInterface $deletionService Full-teardown service for delete
+	 * @param VirtualAppCredentialRegistrarInterface $credentialRegistrar Onboards a published credentials[]-declaring app to the broker
+	 * @param ManifestResolverServiceInterface|null $manifests Resolves the manifest a publish makes live
+	 * @param ManifestFormDestinationsInterface|null $formDestinations Checks its form pages against their destinations
 	 *
 	 * @return void
 	 */
@@ -88,11 +93,13 @@ class ApplicationPublishController extends Controller {
 		private readonly LoggerInterface $logger,
 		private readonly ObjectServiceInterface $objectService,
 		private readonly IUserSession $userSession,
-		private readonly PermissionResolver $permissionResolver,
-		private readonly ApplicationDeletionService $deletionService,
-		private readonly VirtualAppCredentialRegistrar $credentialRegistrar,
+		private readonly PermissionResolverInterface $permissionResolver,
+		private readonly ApplicationDeletionServiceInterface $deletionService,
+		private readonly VirtualAppCredentialRegistrarInterface $credentialRegistrar,
+		private readonly ?ManifestResolverServiceInterface $manifests = null,
+		private readonly ?ManifestFormDestinationsInterface $formDestinations = null,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -137,6 +144,14 @@ class ApplicationPublishController extends Controller {
 	 * resolved safe-by-default via {@see wantsDataPurge()}: only an explicit
 	 * affirmative purges. This deliberately does NOT rely on PHP/Nextcloud
 	 * stringy-bool coercion for an irreversible action.
+	 *
+	 * `orphanedResources` is a FAILURE list, not an inventory of what the
+	 * delete left standing: it names the resources this call tried to remove
+	 * and could not. The normal answer is an empty array, including the
+	 * ordinary `deleteData: false` case, where the registers and their objects
+	 * are kept on purpose and so were never attempted. Read as an inventory it
+	 * says the opposite of what it means, which is how it was read during the
+	 * demo review of 2026-09-19.
 	 *
 	 * @param string $appUuid Parent Application UUID (path param)
 	 *
@@ -217,12 +232,45 @@ class ApplicationPublishController extends Controller {
 	}//end wantsDataPurge()
 
 	/**
+	 * The destination findings on the form pages of the manifest a publish makes live.
+	 *
+	 * @param array<string, mixed> $application The Application.
+	 * @param IUser $user The publishing user.
+	 *
+	 * @return array<int, array<string, mixed>> The findings; empty when every form is accepted.
+	 *
+	 * @spec openspec/changes/forms-are-valid-against-their-destination/specs/form-destination-authoring/spec.md#requirement-every-buildiq-form-must-be-valid-against-its-destination-before-it-is-published
+	 */
+	private function formFindings(array $application, IUser $user): array {
+		if ($this->manifests === null || $this->formDestinations === null) {
+			return [];
+		}
+
+		$slug = (string)($application['slug'] ?? '');
+		$manifest = null;
+		if ($slug !== '') {
+			$manifest = $this->manifests->resolve(appSlug: $slug, versionSlug: null, caller: $user);
+		}
+
+		if (is_array($manifest) === false) {
+			$manifest = ($application['manifest'] ?? null);
+		}
+
+		if (is_array($manifest) === false) {
+			return [];
+		}
+
+		return $this->formDestinations->findings(manifest: $manifest);
+	}//end formFindings()
+
+	/**
 	 * Flip an Application's status after an owner-only RBAC check.
 	 *
 	 * @param string $appUuid The Application UUID.
 	 * @param string $status Target status (`published` or `draft`).
 	 *
 	 * @return JSONResponse
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function setStatus(string $appUuid, string $status): JSONResponse {
 		$user = $this->userSession->getUser();
@@ -234,46 +282,7 @@ class ApplicationPublishController extends Controller {
 		}
 
 		try {
-			$application = $this->loadApplication(uuid: $appUuid);
-			if ($application === null) {
-				return new JSONResponse(
-					data: ['error' => 'not_found', 'detail' => 'Application ' . $appUuid . ' not found'],
-					statusCode: Http::STATUS_NOT_FOUND
-				);
-			}
-
-			$this->assertOwner(application: $application, user: $user);
-
-			// Strip the OR-managed metadata envelope before writing back — the
-			// save path expects the bare object data + the uuid (mirrors how
-			// ApplicationCreationService updates the Application).
-			unset($application['@self']);
-			$application['status'] = $status;
-			$saved = $this->objectService->saveObject(
-				object: $application,
-				register: VersionPromotionService::REGISTER_SLUG,
-				schema: VersionPromotionService::APPLICATION_SCHEMA,
-				uuid: $appUuid
-			);
-
-			// On go-live, onboard the app to the credential broker when its
-			// manifest declares credentials[]. Best-effort + never-throw — a
-			// broker/Doriath hiccup must not fail the publish (see registrar).
-			if ($status === self::STATUS_PUBLISHED) {
-				$slug = (string)($application['slug'] ?? '');
-				if ($slug !== '') {
-					$this->credentialRegistrar->onPublish(slug: $slug, caller: $user);
-					$this->ensureBuiltAppRoute(slug: $slug, applicationUuid: $appUuid);
-				}
-			}
-
-			return new JSONResponse(
-				data: [
-					'status' => $status,
-					'application' => $this->normaliseObject(object: $saved),
-				],
-				statusCode: Http::STATUS_OK
-			);
+			return $this->changeStatus(appUuid: $appUuid, status: $status, user: $user);
 		} catch (InsufficientPermissionException $e) {
 			return new JSONResponse(
 				data: ['error' => 'forbidden', 'detail' => $e->getMessage()],
@@ -290,6 +299,114 @@ class ApplicationPublishController extends Controller {
 			);
 		}//end try
 	}//end setStatus()
+
+	/**
+	 * Flip the status of an Application the caller owns.
+	 *
+	 * @param string $appUuid The Application UUID.
+	 * @param string $status  Target status (`published` or `draft`).
+	 * @param IUser  $user    The caller.
+	 *
+	 * @return JSONResponse
+	 *
+	 * @throws InsufficientPermissionException When the caller does not own the Application.
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
+	 */
+	private function changeStatus(string $appUuid, string $status, IUser $user): JSONResponse {
+		$application = $this->loadApplication(uuid: $appUuid);
+		if ($application === null) {
+			return new JSONResponse(
+				data: ['error' => 'not_found', 'detail' => 'Application ' . $appUuid . ' not found'],
+				statusCode: Http::STATUS_NOT_FOUND
+			);
+		}
+
+		$this->assertOwner(application: $application, user: $user);
+
+		// Decision 179/189: the pages saved as a draft may carry destination
+		// findings; publishing makes them live, so it needs zero.
+		$blocked = $this->publishBlocked(application: $application, user: $user, status: $status);
+		if ($blocked !== null) {
+			return $blocked;
+		}
+
+		// Strip the OR-managed metadata envelope before writing back — the
+		// save path expects the bare object data + the uuid (mirrors how
+		// ApplicationCreationService updates the Application).
+		unset($application['@self']);
+		$application['status'] = $status;
+		$saved = $this->objectService->saveObject(
+			object: $application,
+			register: VersionPromotionServiceInterface::REGISTER_SLUG,
+			schema: VersionPromotionServiceInterface::APPLICATION_SCHEMA,
+			uuid: $appUuid
+		);
+
+		// On go-live, onboard the app to the credential broker when its
+		// manifest declares credentials[]. Best-effort + never-throw — a
+		// broker/Doriath hiccup must not fail the publish (see registrar).
+		if ($status === self::STATUS_PUBLISHED) {
+			$this->goLive(application: $application, user: $user, appUuid: $appUuid);
+		}
+
+		return new JSONResponse(
+			data: [
+				'status' => $status,
+				'application' => ObjectRecord::toArray(object: $saved),
+			],
+			statusCode: Http::STATUS_OK
+		);
+	}//end changeStatus()
+
+	/**
+	 * The 422 response refusing to publish forms that carry destination findings,
+	 * or null when the status change may go ahead.
+	 *
+	 * @param array<string,mixed> $application The Application.
+	 * @param IUser               $user        The caller.
+	 * @param string              $status      Target status.
+	 *
+	 * @return JSONResponse|null
+	 */
+	private function publishBlocked(array $application, IUser $user, string $status): JSONResponse|null {
+		if ($status !== self::STATUS_PUBLISHED) {
+			return null;
+		}
+
+		$findings = $this->formFindings(application: $application, user: $user);
+		if ($findings !== []) {
+			return new JSONResponse(
+				data: [
+					'error' => 'destination_findings',
+					'message' => sprintf(
+						'This app cannot be published: its forms have %d point(s) their destination refuses. Each one is marked on its field in the page designer.',
+						count($findings)
+					),
+					'findings' => $findings,
+				],
+				statusCode: Http::STATUS_UNPROCESSABLE_ENTITY
+			);
+		}
+
+		return null;
+	}//end publishBlocked()
+
+	/**
+	 * Onboard a published app to the credential broker and its route index.
+	 *
+	 * @param array<string,mixed> $application The Application.
+	 * @param IUser               $user        The caller.
+	 * @param string              $appUuid     The Application UUID.
+	 *
+	 * @return void
+	 */
+	private function goLive(array $application, IUser $user, string $appUuid): void {
+		$slug = (string)($application['slug'] ?? '');
+		if ($slug !== '') {
+			$this->credentialRegistrar->onPublish(slug: $slug, caller: $user);
+			$this->ensureBuiltAppRoute(slug: $slug, applicationUuid: $appUuid);
+		}
+	}//end goLive()
 
 	/**
 	 * Idempotently ensure a BuiltAppRoute index object exists for this slug.
@@ -312,15 +429,16 @@ class ApplicationPublishController extends Controller {
 	 * @param string $applicationUuid The Application UUID the route should point at.
 	 *
 	 * @return void
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function ensureBuiltAppRoute(string $slug, string $applicationUuid): void {
 		try {
 			$existing = $this->objectService->find(
 				id: $slug,
-				register: VersionPromotionService::REGISTER_SLUG,
+				register: VersionPromotionServiceInterface::REGISTER_SLUG,
 				schema: 'built-app-route'
 			);
-			$existingData = $this->normaliseObject(object: $existing);
+			$existingData = ObjectRecord::toArray(object: $existing);
 			$existingTarget = (string)($existingData['applicationUuid'] ?? '');
 			if ($existingTarget === $applicationUuid) {
 				return;
@@ -332,7 +450,7 @@ class ApplicationPublishController extends Controller {
 		try {
 			$this->objectService->saveObject(
 				object: ['slug' => $slug, 'applicationUuid' => $applicationUuid],
-				register: VersionPromotionService::REGISTER_SLUG,
+				register: VersionPromotionServiceInterface::REGISTER_SLUG,
 				schema: 'built-app-route'
 			);
 		} catch (Throwable $e) {
@@ -362,13 +480,14 @@ class ApplicationPublishController extends Controller {
 	 * @param string $uuid Application UUID.
 	 *
 	 * @return array<string,mixed>|null Normalised application array, or null when absent.
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function loadApplication(string $uuid): ?array {
 		try {
 			$entity = $this->objectService->find(
 				id: $uuid,
-				register: VersionPromotionService::REGISTER_SLUG,
-				schema: VersionPromotionService::APPLICATION_SCHEMA
+				register: VersionPromotionServiceInterface::REGISTER_SLUG,
+				schema: VersionPromotionServiceInterface::APPLICATION_SCHEMA
 			);
 		} catch (Throwable $e) {
 			$this->logger->debug(
@@ -382,7 +501,7 @@ class ApplicationPublishController extends Controller {
 			return null;
 		}
 
-		return $this->normaliseObject(object: $entity);
+		return ObjectRecord::toArray(object: $entity);
 	}//end loadApplication()
 
 	/**
@@ -419,33 +538,4 @@ class ApplicationPublishController extends Controller {
 				. (string)($application['slug'] ?? ($application['id'] ?? '?'))
 		);
 	}//end assertOwner()
-
-	/**
-	 * Coerce an OR result entry (ObjectEntity or array) to an associative array.
-	 *
-	 * @param mixed $object The OR object/result entry.
-	 *
-	 * @return array<string,mixed>
-	 */
-	private function normaliseObject(mixed $object): array {
-		if (is_array($object) === true) {
-			return $object;
-		}
-
-		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-			$serialised = $object->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		if (is_object($object) === true && method_exists($object, 'getObject') === true) {
-			$inner = $object->getObject();
-			if (is_array($inner) === true) {
-				return $inner;
-			}
-		}
-
-		return [];
-	}//end normaliseObject()
 }//end class

@@ -6,14 +6,14 @@
   "category": "government-services",
   "screenshotUrl": "img/templates/permit-tracker.svg",
   "isSeeded": true,
-  "version": "1.0.0",
+  "version": "1.0.1",
   "manifest": {
     "version": "1.0.0",
     "dependencies": ["openregister"],
     "menu": [
-      { "label": "Applications", "route": "/applications" },
-      { "label": "Kanban", "route": "/kanban" },
-      { "label": "Submit", "route": "/submit" }
+      { "label": "Applications", "route": "Applications" },
+      { "label": "Kanban", "route": "ApplicationKanban" },
+      { "label": "Submit", "route": "ApplicationForm" }
     ],
     "pages": [
       {

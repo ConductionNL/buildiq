@@ -150,21 +150,23 @@ describe('TemplateGallery built-in templates', () => {
 		)
 	})
 
-	it('lists the four seeded templates first, each with its category badge and a Use this template action', async () => {
+	// REQ-BQGL-001 groups the templates under a heading per category (in the
+	// enum's order), so "seeded first" now holds inside each category group.
+	it('lists the seeded templates first within their category, each with its category badge and a Use this template action', async () => {
 		const { wrapper } = await mountGallery()
 		const cards = wrapper.findAll('[data-testid="builtin-template-card"]')
 
 		expect(cards.map((c) => c.find('.template-card__title').text())).toEqual([
 			'Permit Tracker',
-			'Stakeholder Consultation',
-			'Employee Onboarding',
-			'Incident Reporter',
 			'Voorbeeld Title 1',
+			'Employee Onboarding',
+			'Stakeholder Consultation',
+			'Incident Reporter',
 		])
 		expect(cards[0].find('.template-card__category').text()).toBe(
 			'Government services',
 		)
-		expect(cards[3].find('.template-card__category').text()).toBe('Field work')
+		expect(cards[4].find('.template-card__category').text()).toBe('Field work')
 		expect(cards[0].text()).toContain('Use this template')
 	})
 
@@ -172,7 +174,7 @@ describe('TemplateGallery built-in templates', () => {
 		const { wrapper } = await mountGallery()
 		const cards = wrapper.findAll('[data-testid="builtin-template-card"]')
 
-		expect(cards[4].find('.template-card__badge').text()).toBe(
+		expect(cards[1].find('.template-card__badge').text()).toBe(
 			'Organisation template',
 		)
 		expect(cards[0].find('.template-card__badge').exists()).toBe(false)

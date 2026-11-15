@@ -41,16 +41,17 @@ app silently.
 
 ## Atomicity guarantee
 
-An approved plan is applied step by step. If any step fails partway
-through, Buildiq restores every manifest it had touched to its
-pre-plan snapshot, and deletes an application the plan itself created (so
-you're never left with a half-built app you didn't ask for). This is
-compensation-based, not a database transaction — OpenRegister has no
-cross-object transactions — so the guarantee is precisely scoped: **a
-failed plan leaves no plan-created state behind.** Every write still goes
-through the same locked, validated handler path, so nothing is ever
-silently corrupted; worst case is a visible, deletable draft you can
-remove by hand.
+An approved plan is applied step by step. If a step fails partway
+through, Buildiq restores every manifest it had touched, and deletes the
+application the plan created. **A failed plan leaves nothing behind.**
+That includes the registers the app created and the schemas inside them:
+the plan made those seconds earlier, so there is no data of yours to
+lose. You do not have to go looking for leftovers.
+
+This is compensation, not a database transaction. OpenRegister has no
+transaction across objects, so Buildiq undoes its own writes instead. If
+something resists deletion, the error response names it, and you can
+remove that one thing yourself.
 
 ## Provider setup (admins)
 
@@ -68,6 +69,13 @@ names a model.
   independent surface — the copilot's deterministic plan/approve flow is
   specific to Buildiq.
 
+### Where the model call runs
+
+A provider that runs inside Nextcloud answers in the same request, so a plan
+comes back as fast as the model does. A provider that runs outside Nextcloud
+(an ExApp) cannot, so the request waits for a task processing worker. Keep one
+running, or the copilot gives up after two minutes and cancels its task.
+
 ### Degradation without a provider
 
 When no provider is configured (or the server predates NC 30), the copilot
@@ -75,6 +83,18 @@ is simply absent: the wizard's "Generate with AI" button and the builder's
 panel toggle are both hidden. Nextcloud administrators additionally see a
 small hint in the wizard pointing at the AI provider settings; everyone
 else sees no trace of the feature at all.
+
+A provider that is registered but cannot answer, for instance one with no
+model configured behind it, is a different case: the copilot is offered, the
+call fails, and the panel says so and repeats what the provider said. It does
+not ask you to rephrase a brief the model never saw.
+
+### Which version a proposal writes to
+
+The builder tools default to the `development` version. The page designer
+tells the copilot which version you have open, so a proposal lands on the
+version you are editing. The panel says which one that is, above the
+conversation.
 
 ## Permissions
 

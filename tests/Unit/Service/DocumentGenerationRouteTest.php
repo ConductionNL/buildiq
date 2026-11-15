@@ -47,7 +47,7 @@ use ReflectionMethod;
  * Unit tests for how DocumentGenerationService finds the generate route.
  *
  * @covers \OCA\Buildiq\Service\DocumentGenerationService
- * @uses \OCA\Buildiq\Support\FleetAppId
+ * @uses \OCA\Buildiq\Service\FleetAppId
  */
 class DocumentGenerationRouteTest extends TestCase {
 
@@ -119,6 +119,23 @@ class DocumentGenerationRouteTest extends TestCase {
 			actual: $this->resolve(known: ['docudesk.correspondence.generate'])
 		);
 	}//end testDocudeskRouteIsTheFallback()
+
+	/**
+	 * With both apps enabled, filinq wins.
+	 *
+	 * The other two cases each know one route, so they pass under any
+	 * candidate order. Only this one pins that the order is newest first.
+	 *
+	 * @return void
+	 */
+	public function testFilinqWinsWhenBothAnswer(): void {
+		$this->assertSame(
+			expected: ['filinq.correspondence.generate', self::ROOT_URL . 'route/filinq.correspondence.generate'],
+			actual: $this->resolve(
+				known: ['filinq.correspondence.generate', 'docudesk.correspondence.generate']
+			)
+		);
+	}//end testFilinqWinsWhenBothAnswer()
 
 	/**
 	 * With neither app, no URL comes back and the newest route is named.

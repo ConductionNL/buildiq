@@ -3,6 +3,9 @@
 /**
  * Buildiq AutomationWriteService
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Owns the WRITE path of the automation designer — the create/update/delete
  * half of `AutomationsController` (spec REQ-AUTD-008, Conduction/buildiq#173).
  * The controller keeps the effectual actions (compile/enable/disable/dry-run/
@@ -39,9 +42,6 @@
  *     deleted definition whose artifacts are still live is the one outcome that
  *     leaves the instance acting on a rule nobody can see or edit any more.
  *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
- *
  * @category Service
  * @package  OCA\Buildiq\Service
  *
@@ -60,6 +60,8 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\AutomationWriteServiceInterface;
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
@@ -74,7 +76,7 @@ use Throwable;
  *
  * @spec openspec/specs/automation-designer/spec.md#req-autd-008
  */
-class AutomationWriteService {
+class AutomationWriteService implements AutomationWriteServiceInterface {
 	/**
 	 * Shared Buildiq register slug.
 	 */
@@ -164,6 +166,7 @@ class AutomationWriteService {
 	 * @return JSONResponse The created Automation, or an error envelope.
 	 *
 	 * @spec openspec/specs/automation-designer/spec.md#req-autd-008
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	public function create(array $payload, array $roles): JSONResponse {
 		return $this->withApplication(
@@ -175,7 +178,7 @@ class AutomationWriteService {
 				// documented on saveAuthorised().
 				$saved = $this->saveAuthorised(automation: $payload, uuid: null);
 
-				return new JSONResponse(data: $this->normalise(object: $saved), statusCode: Http::STATUS_CREATED);
+				return new JSONResponse(data: ObjectRecord::toArray(object: $saved), statusCode: Http::STATUS_CREATED);
 			}
 		);
 
@@ -197,6 +200,7 @@ class AutomationWriteService {
 	 * @return JSONResponse The saved Automation.
 	 *
 	 * @spec openspec/specs/automation-designer/spec.md#req-autd-008
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	public function update(string $uuid, array $payload, array $automation): JSONResponse {
 		$payload['applicationSlug'] = ($automation['applicationSlug'] ?? null);
@@ -204,7 +208,7 @@ class AutomationWriteService {
 
 		$saved = $this->saveAuthorised(automation: $payload, uuid: $uuid);
 
-		return new JSONResponse(data: $this->normalise(object: $saved), statusCode: Http::STATUS_OK);
+		return new JSONResponse(data: ObjectRecord::toArray(object: $saved), statusCode: Http::STATUS_OK);
 	}//end update()
 
 	/**
@@ -257,9 +261,10 @@ class AutomationWriteService {
 	 * @return array<string,mixed> The saved object, normalised.
 	 *
 	 * @spec openspec/specs/automation-designer/spec.md#req-autd-008
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	public function saveCompiled(array $automation, string $uuid): array {
-		return $this->normalise(object: $this->saveAuthorised(automation: $automation, uuid: $uuid));
+		return ObjectRecord::toArray(object: $this->saveAuthorised(automation: $automation, uuid: $uuid));
 	}//end saveCompiled()
 
 	/**
@@ -403,6 +408,7 @@ class AutomationWriteService {
 	 * @return array<string,mixed>|null
 	 *
 	 * @spec openspec/specs/automation-designer/spec.md#req-autd-008
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	public function loadAutomation(string $uuid): ?array {
 		try {
@@ -415,7 +421,7 @@ class AutomationWriteService {
 			return null;
 		}
 
-		return $this->normalise(object: $entity);
+		return ObjectRecord::toArray(object: $entity);
 	}//end loadAutomation()
 
 	/**
@@ -426,6 +432,7 @@ class AutomationWriteService {
 	 * @return array<string,mixed>|null
 	 *
 	 * @spec openspec/specs/automation-designer/spec.md#req-autd-008
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	public function loadApplication(string $slug): ?array {
 		if ($slug === '') {
@@ -442,7 +449,7 @@ class AutomationWriteService {
 			return null;
 		}
 
-		return $this->normalise(object: $entity);
+		return ObjectRecord::toArray(object: $entity);
 	}//end loadApplication()
 
 	/**
@@ -459,35 +466,6 @@ class AutomationWriteService {
 
 		return [];
 	}//end orArray()
-
-	/**
-	 * Coerce an OR result entry to a plain associative array.
-	 *
-	 * @param mixed $object The OR object/result entry.
-	 *
-	 * @return array<string,mixed>
-	 */
-	private function normalise(mixed $object): array {
-		if (is_array($object) === true) {
-			return $object;
-		}
-
-		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-			$serialised = $object->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		if (is_object($object) === true && method_exists($object, 'getObject') === true) {
-			$inner = $object->getObject();
-			if (is_array($inner) === true) {
-				return $inner;
-			}
-		}
-
-		return [];
-	}//end normalise()
 
 	/**
 	 * Build a uniform error envelope.

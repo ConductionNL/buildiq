@@ -43,7 +43,10 @@ describe('versionQuery', () => {
 			'/m?_version=staging',
 		)
 		expect(
-			withVersion({ path: '/m', query: { _version: 'staging' } }, 'development'),
+			withVersion(
+				{ path: '/m', query: { _version: 'staging' } },
+				'development',
+			),
 		).toEqual({ path: '/m', query: { _version: 'staging' } })
 	})
 

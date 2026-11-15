@@ -33,7 +33,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/unify-apps-with-app-type/specs/app-override-persistence/spec.md
+ * @spec openspec/specs/app-override-persistence/spec.md
  */
 
 declare(strict_types=1);
@@ -42,6 +42,8 @@ namespace OCA\Buildiq\Service;
 
 use DateTimeImmutable;
 use DateTimeInterface;
+use OCA\Buildiq\Kernel\Contracts\AppOverrideServiceInterface;
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\App\IAppManager;
 use Psr\Log\LoggerInterface;
@@ -55,23 +57,9 @@ use Throwable;
  * delta is served back raw for a client-side merge; the write path validates
  * the delta shape and refuses an app-blanking delta (design D4).
  *
- * @spec openspec/changes/unify-apps-with-app-type/specs/app-override-persistence/spec.md
+ * @spec openspec/specs/app-override-persistence/spec.md
  */
-class AppOverrideService {
-	/**
-	 * OpenRegister register slug that hosts the Buildiq control schemas.
-	 */
-	public const REGISTER_SLUG = 'buildiq';
-
-	/**
-	 * OpenRegister schema slug for the logical app record.
-	 */
-	public const APPLICATION_SCHEMA = 'built-app';
-
-	/**
-	 * OpenRegister schema slug for the deployable version record.
-	 */
-	public const APPLICATION_VERSION_SCHEMA = 'applicationVersion';
+class AppOverrideService implements AppOverrideServiceInterface {
 
 	/**
 	 * The fixed version slug used for a hybrid app's single production version.
@@ -107,7 +95,7 @@ class AppOverrideService {
 	 *
 	 * @return array<string, mixed>|null The record with a `manifestDelta` key, or null when none exists.
 	 *
-	 * @spec openspec/changes/unify-apps-with-app-type/specs/app-override-persistence/spec.md
+	 * @spec openspec/specs/app-override-persistence/spec.md
 	 */
 	public function findByAppId(string $appId): ?array {
 		$version = $this->findHybridProductionVersion(appId: $appId);
@@ -144,7 +132,7 @@ class AppOverrideService {
 	 *
 	 * @return array<string, mixed>|null The record with a merged `manifestDelta` key, or null when no hybrid app exists.
 	 *
-	 * @spec openspec/changes/layered-versioned-app-deltas/specs/layered-app-deltas/spec.md
+	 * @spec openspec/specs/layered-app-deltas/spec.md
 	 */
 	public function resolveLayeredDelta(string $appId, ?string $uid): ?array {
 		$application = $this->findHybridApplication(appId: $appId);
@@ -194,7 +182,7 @@ class AppOverrideService {
 	 *                              `exists` (the caller has a user delta), `manifestDelta`,
 	 *                              `versionUuid` (the OR row uuid for version history / rollback).
 	 *
-	 * @spec openspec/changes/layered-versioned-app-deltas/specs/layered-app-deltas/spec.md
+	 * @spec openspec/specs/layered-app-deltas/spec.md
 	 */
 	public function getUserDelta(string $appId, string $uid): array {
 		$application = $this->findHybridApplication(appId: $appId);
@@ -248,7 +236,8 @@ class AppOverrideService {
 	 *
 	 * @throws \RuntimeException When the app does not exist or does not allow user overrides.
 	 *
-	 * @spec openspec/changes/layered-versioned-app-deltas/specs/layered-app-deltas/spec.md
+	 * @spec openspec/specs/layered-app-deltas/spec.md
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	public function upsertUserDelta(string $appId, array $delta, string $uid): array {
 		if ($uid === '') {
@@ -323,7 +312,7 @@ class AppOverrideService {
 			);
 		}//end if
 
-		$savedData = $this->normaliseObject(object: $saved);
+		$savedData = ObjectRecord::toArray(object: $saved);
 
 		return [
 			'appId' => $appId,
@@ -345,7 +334,7 @@ class AppOverrideService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/layered-versioned-app-deltas/specs/layered-app-deltas/spec.md
+	 * @spec openspec/specs/layered-app-deltas/spec.md
 	 */
 	public function deleteUserDelta(string $appId, string $uid): void {
 		if ($uid === '') {
@@ -383,7 +372,8 @@ class AppOverrideService {
 	 *
 	 * @return array<int, array<string, mixed>> List of `{ owner, versionUuid, semver, status, updatedAt }`.
 	 *
-	 * @spec openspec/changes/layered-versioned-app-deltas/specs/application-delta-layers-ui/spec.md
+	 * @spec openspec/specs/application-delta-layers-ui/spec.md
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	public function listUserDeltas(string $appId): array {
 		$application = $this->findHybridApplication(appId: $appId);
@@ -416,7 +406,7 @@ class AppOverrideService {
 
 		$deltas = [];
 		foreach ($results as $result) {
-			$row = $this->normaliseObject(object: $result);
+			$row = ObjectRecord::toArray(object: $result);
 			if ((string)($row['application'] ?? '') !== $appUuid) {
 				continue;
 			}
@@ -463,7 +453,7 @@ class AppOverrideService {
 	 *
 	 * @return array<string, mixed> A normalised summary: appId, updatedBy, updatedAt, applicationUuid.
 	 *
-	 * @spec openspec/changes/unify-apps-with-app-type/specs/app-override-persistence/spec.md
+	 * @spec openspec/specs/app-override-persistence/spec.md
 	 */
 	public function upsert(string $appId, array $delta, ?string $baseRef, string $updatedBy, bool $systemContext = false): array {
 		$now = (new DateTimeImmutable())->format(DateTimeInterface::ATOM);
@@ -515,7 +505,7 @@ class AppOverrideService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/unify-apps-with-app-type/specs/app-override-persistence/spec.md
+	 * @spec openspec/specs/app-override-persistence/spec.md
 	 */
 	public function delete(string $appId): void {
 		$application = $this->findHybridApplication(appId: $appId);
@@ -547,7 +537,7 @@ class AppOverrideService {
 	 *
 	 * @return array<int, string> A list of violations; empty when the delta is valid.
 	 *
-	 * @spec openspec/changes/unify-apps-with-app-type/specs/app-override-persistence/spec.md
+	 * @spec openspec/specs/app-override-persistence/spec.md
 	 */
 	public function validateDeltaShape(array $delta): array {
 		return $this->deltaValidator->validateDeltaShape(delta: $delta);
@@ -561,7 +551,7 @@ class AppOverrideService {
 	 *
 	 * @return bool True when the delta resolves (over an empty base) to no pages/menu.
 	 *
-	 * @spec openspec/changes/unify-apps-with-app-type/specs/app-override-persistence/spec.md
+	 * @spec openspec/specs/app-override-persistence/spec.md
 	 */
 	public function wouldBlankApp(array $delta): bool {
 		return $this->deltaValidator->wouldBlankApp(delta: $delta);
@@ -577,7 +567,8 @@ class AppOverrideService {
 	 *
 	 * @return array<string, mixed>|null The normalised Application, or null when none exists.
 	 *
-	 * @spec openspec/changes/unify-apps-with-app-type/specs/app-override-persistence/spec.md
+	 * @spec openspec/specs/app-override-persistence/spec.md
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	public function findHybridApplication(string $appId): ?array {
 		try {
@@ -601,7 +592,7 @@ class AppOverrideService {
 			return null;
 		}
 
-		return $this->normaliseObject(object: $results[0]);
+		return ObjectRecord::toArray(object: $results[0]);
 	}//end findHybridApplication()
 
 	/**
@@ -611,6 +602,7 @@ class AppOverrideService {
 	 * @param array<string, mixed>|null $application Optional already-resolved Application (avoids a re-lookup).
 	 *
 	 * @return array<string, mixed>|null The normalised production version, or null when unresolvable.
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function findHybridProductionVersion(string $appId, ?array $application = null): ?array {
 		if ($application === null) {
@@ -644,7 +636,7 @@ class AppOverrideService {
 			return null;
 		}
 
-		return $this->normaliseObject(object: $entity);
+		return ObjectRecord::toArray(object: $entity);
 	}//end findHybridProductionVersion()
 
 	/**
@@ -656,6 +648,7 @@ class AppOverrideService {
 	 * @param bool $systemContext Bypass OR RBAC + multitenancy (migration/system writes).
 	 *
 	 * @return string The created Application's uuid (empty string when unresolved).
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function createHybridApp(string $appId, array $delta, ?string $baseRef, bool $systemContext = false): string {
 		$baseRefObject = $this->buildBaseRef(appId: $appId, baseRef: $baseRef);
@@ -674,7 +667,7 @@ class AppOverrideService {
 			_multitenancy: $rbac
 		);
 
-		$applicationData = $this->normaliseObject(object: $application);
+		$applicationData = ObjectRecord::toArray(object: $application);
 		$applicationUuid = $this->extractUuid(object: $applicationData);
 
 		$version = $this->objectService->saveObject(
@@ -696,7 +689,7 @@ class AppOverrideService {
 			_multitenancy: $rbac
 		);
 
-		$versionData = $this->normaliseObject(object: $version);
+		$versionData = ObjectRecord::toArray(object: $version);
 		$versionUuid = $this->extractUuid(object: $versionData);
 
 		// Point the Application's productionVersion at the new version. Use an
@@ -779,12 +772,10 @@ class AppOverrideService {
 	 * @return array<string, mixed> The baseRef object.
 	 */
 	private function buildBaseRef(string $appId, ?string $baseRef): array {
-		if ($baseRef !== null && $baseRef !== '') {
-			$decoded = json_decode($baseRef, true);
-			if (is_array($decoded) === true && ($decoded['id'] ?? null) !== null) {
-				$decoded['kind'] = ($decoded['kind'] ?? 'fleet-app');
-				return $decoded;
-			}
+		$decoded = json_decode((string)$baseRef, true);
+		if (is_array($decoded) === true && is_string($decoded['id'] ?? null) === true && trim($decoded['id']) !== '') {
+			$decoded['kind'] = ($decoded['kind'] ?? 'fleet-app');
+			return $decoded;
 		}
 
 		return ['kind' => 'fleet-app', 'id' => $appId];
@@ -842,6 +833,7 @@ class AppOverrideService {
 	 * @param string $uid The owning user UID.
 	 *
 	 * @return array<string, mixed>|null The normalised user-scoped version, or null when none exists.
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function findUserDeltaForApp(array $application, string $uid): ?array {
 		if ($uid === '') {
@@ -875,7 +867,7 @@ class AppOverrideService {
 		}
 
 		foreach ($results as $result) {
-			$normalised = $this->normaliseObject(object: $result);
+			$normalised = ObjectRecord::toArray(object: $result);
 			// Owner-scope re-check (defence in depth) + match the parent app.
 			if ((string)($normalised['owner'] ?? '') !== $uid) {
 				continue;
@@ -973,33 +965,4 @@ class AppOverrideService {
 
 		return '';
 	}//end extractUuid()
-
-	/**
-	 * Coerce an OR result entry (ObjectEntity or array) to a plain associative array.
-	 *
-	 * @param mixed $object The OR object/result entry.
-	 *
-	 * @return array<string, mixed>
-	 */
-	private function normaliseObject(mixed $object): array {
-		if (is_array($object) === true) {
-			return $object;
-		}
-
-		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-			$serialised = $object->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		if (is_object($object) === true && method_exists($object, 'getObject') === true) {
-			$inner = $object->getObject();
-			if (is_array($inner) === true) {
-				return $inner;
-			}
-		}
-
-		return [];
-	}//end normaliseObject()
 }//end class

@@ -26,8 +26,10 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Mcp\Handler;
 
-use OCA\Buildiq\Service\PermissionResolver;
+use OCA\Buildiq\Kernel\Contracts\PermissionResolverInterface;
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\IGroupManager;
@@ -61,7 +63,7 @@ abstract class AbstractToolHandler {
 	 * @param LoggerInterface $logger PSR logger used for non-fatal warnings and error logging.
 	 * @param IGroupManager $groupManager Group manager used for admin and group membership checks.
 	 * @param ObjectServiceInterface $objectService OpenRegister's published object contract (ADR-084) — the ONE way a handler reaches OR data.
-	 * @param PermissionResolver $permissionResolver Shared permission-grammar resolver (H1 fix).
+	 * @param PermissionResolverInterface $permissionResolver Shared permission-grammar resolver (H1 fix).
 	 * @param AuditTrailMapper|null $auditTrailMapper Optional OR audit-trail writer for admin-bypass parity (L2).
 	 */
 	public function __construct(
@@ -75,7 +77,7 @@ abstract class AbstractToolHandler {
 		// could see it) while this constructor-injected contract sat unused
 		// beside them. One injected dependency, one way in.
 		protected readonly ObjectServiceInterface $objectService,
-		protected readonly ?PermissionResolver $permissionResolver = null,
+		protected readonly ?PermissionResolverInterface $permissionResolver = null,
 		protected readonly ?AuditTrailMapper $auditTrailMapper = null,
 	) {
 	}//end __construct()
@@ -238,10 +240,8 @@ abstract class AbstractToolHandler {
 
 		if ($this->auditTrailMapper !== null && $appEntity instanceof ObjectEntity) {
 			try {
-				$this->auditTrailMapper->createAuditTrailEntry(
-					object: $appEntity,
-					action: 'rbac.admin_bypass',
-					context: $context
+				$this->auditTrailMapper->recordObjectEvent(
+					event: new ObjectAuditEvent(object: $appEntity, action: 'rbac.admin_bypass', context: $context)
 				);
 				// Mirror to PSR at info so the bypass is also visible in log streams.
 				$this->logger->info('Buildiq MCP: rbac.admin_bypass', $context);
@@ -366,39 +366,21 @@ abstract class AbstractToolHandler {
 
 		// Inline fallback (no resolver injected — used by tests that pre-date
 		// the resolver injection).
-		$userSet = [];
-		$groupSet = [];
+		return $this->fallbackHasWriteRole(permissions: $permissions, uid: $uid, allowAdminBypass: $allowAdminBypass, caller: $caller);
+	}//end callerHasWriteRole()
 
-		foreach (self::WRITE_ROLES as $role) {
-			$bucket = ($permissions[$role] ?? []);
-			if (is_array($bucket) === false) {
-				continue;
-			}
-
-			foreach ($bucket as $principal) {
-				if (is_string($principal) === false || $principal === '') {
-					continue;
-				}
-
-				if (str_starts_with($principal, 'user:') === true) {
-					$pUid = substr($principal, 5);
-					if ($pUid !== '') {
-						$userSet[$pUid] = true;
-					}
-
-					continue;
-				}
-
-				$gid = $principal;
-				if (str_starts_with($principal, 'group:') === true) {
-					$gid = substr($principal, 6);
-				}
-
-				if ($gid !== '') {
-					$groupSet[$gid] = true;
-				}
-			}//end foreach
-		}//end foreach
+	/**
+	 * The write-role check without a PermissionResolver.
+	 *
+	 * @param array<string, mixed> $permissions      The Application's permissions block.
+	 * @param string               $uid              Caller's user ID.
+	 * @param bool                 $allowAdminBypass Whether NC admin bypass applies.
+	 * @param IUser                $caller           The session caller.
+	 *
+	 * @return bool
+	 */
+	private function fallbackHasWriteRole(array $permissions, string $uid, bool $allowAdminBypass, IUser $caller): bool {
+		[$userSet, $groupSet] = $this->writePrincipals(permissions: $permissions);
 
 		if (isset($userSet[$uid]) === true) {
 			return true;
@@ -408,6 +390,84 @@ abstract class AbstractToolHandler {
 			return true;
 		}
 
+		return $this->callerInGroupSet(caller: $caller, groupSet: $groupSet);
+	}//end fallbackHasWriteRole()
+
+	/**
+	 * The users and groups named in the WRITE_ROLES buckets of a permissions block.
+	 *
+	 * @param array<string, mixed> $permissions The Application's permissions block.
+	 *
+	 * @return array{0: array<string, true>, 1: array<string, true>} The user set and the group set.
+	 */
+	private function writePrincipals(array $permissions): array {
+		$sets = ['u' => [], 'g' => []];
+
+		foreach (self::WRITE_ROLES as $role) {
+			$bucket = ($permissions[$role] ?? []);
+			if (is_array($bucket) === false) {
+				continue;
+			}
+
+			foreach ($bucket as $principal) {
+				$key = $this->classifyPrincipal(principal: $principal);
+				if ($key !== []) {
+					$sets[$key[0]][$key[1]] = true;
+				}
+			}
+		}
+
+		return [$sets['u'], $sets['g']];
+	}//end writePrincipals()
+
+	/**
+	 * Classify one principal: `user:<uid>` is a user, `group:<gid>` or a bare id is a group.
+	 *
+	 * @param mixed $principal The principal entry.
+	 *
+	 * @return array{}|array{0: string, 1: string} ['u'|'g', id], or [] for an empty or non-string entry.
+	 */
+	private function classifyPrincipal(mixed $principal): array {
+		if (is_string($principal) === false || $principal === '') {
+			return [];
+		}
+
+		if (str_starts_with($principal, 'user:') === true) {
+			return $this->keyedPrincipal(kind: 'u', id: substr($principal, 5));
+		}
+
+		if (str_starts_with($principal, 'group:') === true) {
+			return $this->keyedPrincipal(kind: 'g', id: substr($principal, 6));
+		}
+
+		return $this->keyedPrincipal(kind: 'g', id: $principal);
+	}//end classifyPrincipal()
+
+	/**
+	 * A classified principal, or [] when its id is empty.
+	 *
+	 * @param string $kind 'u' or 'g'.
+	 * @param string $id   The user or group id.
+	 *
+	 * @return array{}|array{0: string, 1: string}
+	 */
+	private function keyedPrincipal(string $kind, string $id): array {
+		if ($id === '') {
+			return [];
+		}
+
+		return [$kind, $id];
+	}//end keyedPrincipal()
+
+	/**
+	 * Whether the caller is in one of the groups.
+	 *
+	 * @param IUser               $caller   The caller.
+	 * @param array<string, true> $groupSet The group ids.
+	 *
+	 * @return bool
+	 */
+	private function callerInGroupSet(IUser $caller, array $groupSet): bool {
 		$userGroups = $this->groupManager->getUserGroups($caller);
 		foreach ($userGroups as $group) {
 			if ($group instanceof IUser === false && isset($groupSet[$group->getGID()]) === true) {
@@ -416,7 +476,7 @@ abstract class AbstractToolHandler {
 		}
 
 		return false;
-	}//end callerHasWriteRole()
+	}//end callerInGroupSet()
 
 	/**
 	 * Validate that a candidate string matches the Buildiq slug shape.
@@ -509,6 +569,76 @@ abstract class AbstractToolHandler {
 	}//end buildDeepLink()
 
 	/**
+	 * Resolve the version a manifest edit writes to, together with its manifest.
+	 *
+	 * @param string $appSlug Application slug to resolve.
+	 * @param string $versionSlug ApplicationVersion slug to resolve.
+	 *
+	 * @return array<string, mixed> The loadVersion() result plus `manifest`, or the error envelope.
+	 */
+	protected function loadManifestForEdit(string $appSlug, string $versionSlug): array {
+		// ADR-083 rule 1 / ADR-084: use the constructor-injected contract
+		// rather than reaching into the container by string name.
+		$loaded = $this->loadVersion(objectService: $this->objectService, appSlug: $appSlug, versionSlug: $versionSlug);
+		if (isset($loaded['error']) === true) {
+			return $this->errorResult(error: $loaded['error'], message: $loaded['message']);
+		}
+
+		$loaded['manifest'] = (array)($loaded['version']['manifest'] ?? []);
+		return $loaded;
+	}//end loadManifestForEdit()
+
+	/**
+	 * Apply the manifest caps to an upsert that appended an entry.
+	 *
+	 * The caps only apply to an append, so an update of an existing entry
+	 * always passes, even on a manifest that is already over a cap.
+	 *
+	 * @param array<string, mixed> $manifest The manifest after the upsert.
+	 * @param bool $replaced True when an existing entry was replaced.
+	 *
+	 * @return array{isError: true, error: string, message: string}|null Null on pass.
+	 */
+	protected function appendCapError(array $manifest, bool $replaced): ?array {
+		if ($replaced === true) {
+			return null;
+		}
+
+		return $this->checkManifestCaps(manifest: $manifest);
+	}//end appendCapError()
+
+	/**
+	 * The leading keys of a successful upsert result.
+	 *
+	 * @param bool $replaced True when an existing entry was replaced.
+	 *
+	 * @return array{success: true, action: string}
+	 */
+	protected function upsertOutcome(bool $replaced): array {
+		$action = 'created';
+		if ($replaced === true) {
+			$action = 'updated';
+		}
+
+		return ['success' => true, 'action' => $action];
+	}//end upsertOutcome()
+
+	/**
+	 * Summarise the saved version for a tool result.
+	 *
+	 * @param array<string, mixed> $saved The saved ApplicationVersion.
+	 * @param string $versionSlug The slug the caller asked for, used when the saved version carries none.
+	 *
+	 * @return array{uuid: string, slug: string}
+	 */
+	protected function versionSummary(array $saved, string $versionSlug): array {
+		return [
+			'uuid' => $this->extractUuid(item: $saved),
+			'slug' => (string)($saved['slug'] ?? $versionSlug),
+		];
+	}//end versionSummary()
+
+	/**
 	 * Build an MCP "source" descriptor pointing at the Buildiq app deep link.
 	 *
 	 * @param string $uuid Application UUID.
@@ -527,20 +657,10 @@ abstract class AbstractToolHandler {
 	 * @param mixed $item Value to coerce.
 	 *
 	 * @return array<string, mixed>
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	protected function toArray(mixed $item): array {
-		if (is_array($item) === true) {
-			return $item;
-		}
-
-		if (is_object($item) === true && method_exists($item, 'jsonSerialize') === true) {
-			$serialised = $item->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		return (array)$item;
+		return ObjectRecord::castArray(object: $item);
 	}//end toArray()
 
 	/**
