@@ -2485,6 +2485,7 @@
         "Pages saved as a draft. Forms have %n points their destination refuses; each is marked on its field, and the app can be published once they are fixed.": "Pagina's opgeslagen als concept. Formulieren hebben %n punten die hun bestemming weigert; elk staat gemarkeerd bij het veld, en de app kan worden gepubliceerd zodra ze zijn opgelost.",
         "Reference a rule set": "Naar een regelset verwijzen",
         "An admin can install the starter templates from the Buildiq setup wizard.": "Een beheerder kan de startsjablonen installeren via de installatiewizard van Buildiq.",
+        "Search": "Zoeken",
         "Add external data widget": "Widget met externe gegevens toevoegen",
         "Failures": "Fouten",
         "Failed requests, 4xx and 5xx together. Derived by the server, never posted; summed by the request failure metric.": "Mislukte verzoeken, 4xx en 5xx samen. Afgeleid door de server, nooit meegestuurd; opgeteld door de metriek voor mislukte verzoeken.",
