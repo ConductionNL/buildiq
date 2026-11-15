@@ -31,7 +31,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/business-rules-engine/tasks.md#7.1
+ * @spec openspec/changes/archive/2026-06-14-business-rules-engine/tasks.md#7.1
  */
 
 declare(strict_types=1);
@@ -57,7 +57,7 @@ use Throwable;
  *     'notification_recipients' => string[],
  *   ]
  *
- * @spec openspec/changes/business-rules-engine/tasks.md#7.1
+ * @spec openspec/changes/archive/2026-06-14-business-rules-engine/tasks.md#7.1
  */
 class RuleImpactAnalysisService {
 
@@ -95,7 +95,7 @@ class RuleImpactAnalysisService {
 	 *
 	 * @return array{ruleSetId:string,windowDays:int,consumerApps:array<int,array{appId:string,callCount:int,lastCallAt:string}>,notification_recipients:string[]}
 	 *
-	 * @spec openspec/changes/business-rules-engine/tasks.md#7.1
+	 * @spec openspec/changes/archive/2026-06-14-business-rules-engine/tasks.md#7.1
 	 */
 	public function analyzeImpactOnActivation(string $ruleSetId, int $windowDays = self::WINDOW_DAYS): array {
 		$logs = $this->fetchLogs(ruleSetId: $ruleSetId, windowDays: $windowDays);

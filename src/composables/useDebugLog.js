@@ -23,18 +23,54 @@ const DESIGNER_PATH = /\/apps\/buildiq\//
 function requestEntry(report, pageId) {
 	const status = Number(report.status) || 0
 	const path = String(report.path || '')
-	if ((status > 0 && status < 400) || DESIGNER_PATH.test(path)) {
+	if (isQuietRequest(status, path)) {
 		return null
 	}
-	const request = `${String(report.method || 'GET').toUpperCase()} ${path}`
-	return {
-		key: `request|${pageId}|${request}|${status}`,
-		kind: 'request',
+	return failedRequestEntry(report, {
 		pageId,
-		request,
+		request: `${requestMethod(report)} ${path}`,
 		status,
+	})
+}
+
+/**
+ * The log entry of a failed request.
+ *
+ * @param {object} report A diagnostics report of kind `request`.
+ * @param {{pageId: string, request: string, status: number}} failure The page, the `METHOD path` line and the status.
+ * @return {object} The entry.
+ */
+function failedRequestEntry(report, failure) {
+	return {
+		key: `request|${failure.pageId}|${failure.request}|${failure.status}`,
+		kind: 'request',
+		pageId: failure.pageId,
+		request: failure.request,
+		status: failure.status,
 		durationMs: Number(report.durationMs) || 0,
 	}
+}
+
+/**
+ * Whether a request is no problem of the previewed app: it succeeded, or the
+ * designer made it.
+ *
+ * @param {number} status The response status (0 when there was none).
+ * @param {string} path The request path.
+ * @return {boolean}
+ */
+function isQuietRequest(status, path) {
+	return (status > 0 && status < 400) || DESIGNER_PATH.test(path)
+}
+
+/**
+ * The request method, upper-cased; GET when the report names none.
+ *
+ * @param {object} report A diagnostics report of kind `request`.
+ * @return {string}
+ */
+function requestMethod(report) {
+	return String(report.method || 'GET').toUpperCase()
 }
 
 /**
@@ -90,10 +126,20 @@ function bindingEntry(report, pageId) {
 		problem: what,
 		register: String(report.register || ''),
 		schema: String(report.schema || ''),
-		property: report.property ? String(report.property) : '',
-		where: report.where ? String(report.where) : '',
+		property: optionalText(report.property),
+		where: optionalText(report.where),
 		what,
 	}
+}
+
+/**
+ * A report value as text, or '' when it is not set.
+ *
+ * @param {unknown} value A report value.
+ * @return {string}
+ */
+function optionalText(value) {
+	return value ? String(value) : ''
 }
 
 /** The entry builder of each report kind the log keeps. */
@@ -117,13 +163,20 @@ export function entryOf(report) {
 		return null
 	}
 	const pageId = report.pageId ? String(report.pageId) : ''
-	if (
-		typeof report.kind !== 'string'
-		|| !Object.hasOwn(ENTRY_BUILDERS, report.kind)
-	) {
+	if (!isLoggedKind(report.kind)) {
 		return null
 	}
 	return ENTRY_BUILDERS[report.kind](report, pageId)
+}
+
+/**
+ * Whether the log keeps reports of a kind.
+ *
+ * @param {unknown} kind The report kind.
+ * @return {boolean}
+ */
+function isLoggedKind(kind) {
+	return typeof kind === 'string' && Object.hasOwn(ENTRY_BUILDERS, kind)
 }
 
 /**

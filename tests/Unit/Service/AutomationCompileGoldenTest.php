@@ -13,6 +13,9 @@
  * @version GIT: <git-id>
  *
  * @link https://conduction.nl
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -36,7 +39,7 @@ use Throwable;
  * @covers \OCA\Buildiq\Service\AutomationCompilerService
  * @uses   \OCA\Buildiq\Service\Automation\CompileInput
  * @uses   \OCA\Buildiq\Exception\UnsupportedAutomationCombinationException
- * @uses   \OCA\Buildiq\Support\FleetAppId
+ * @uses   \OCA\Buildiq\Service\FleetAppId
  */
 class AutomationCompileGoldenTest extends TestCase {
 

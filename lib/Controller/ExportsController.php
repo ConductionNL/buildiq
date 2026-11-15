@@ -18,11 +18,11 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-34
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-37
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-47
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-34
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-37
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-47
  *
  * @SPDX-License-Identifier: EUPL-1.2
  * @SPDX-FileCopyrightText:  2026 Conduction B.V. <info@conduction.nl>
@@ -32,9 +32,10 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Controller;
 
-use OCA\Buildiq\AppInfo\Application;
-use OCA\Buildiq\Service\ExportJobService;
-use OCA\Buildiq\Service\ServerBundleWriter;
+use OCA\Buildiq\Kernel\AppIdentity;
+use OCA\Buildiq\Kernel\Contracts\ExportArchiveStoreInterface;
+use OCA\Buildiq\Kernel\Contracts\ExportJobServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\ServerBundleWriterInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCP\AppFramework\Controller;
@@ -54,8 +55,8 @@ use Throwable;
 /**
  * Controller for the Buildiq export pipeline.
  *
- * @spec openspec/changes/openbuild-exporter/tasks.md#task-7.2
- * @spec openspec/changes/openbuild-exporter/tasks.md#task-5.2
+ * @spec openspec/changes/archive/2026-06-14-openbuild-exporter/tasks.md#task-7.2
+ * @spec openspec/changes/archive/2026-06-14-openbuild-exporter/tasks.md#task-5.2
  */
 class ExportsController extends Controller {
 
@@ -75,21 +76,23 @@ class ExportsController extends Controller {
 	 * Constructor.
 	 *
 	 * @param IRequest $request Request.
-	 * @param ExportJobService $exportJobService Job-orchestration service.
+	 * @param ExportJobServiceInterface $exportJobService Job-orchestration service.
 	 * @param IUserSession $userSession Current user session.
 	 * @param ContainerInterface $container Container for optional OR services.
 	 * @param LoggerInterface $logger Logger.
 	 * @param IGroupManager $groupManager Group membership resolver (RBAC, issue #158).
+	 * @param ExportArchiveStoreInterface|null $archives The archives kept in app data, for a download on another server (REQ-PLAT-010).
 	 */
 	public function __construct(
 		IRequest $request,
-		private ExportJobService $exportJobService,
+		private ExportJobServiceInterface $exportJobService,
 		private IUserSession $userSession,
 		private ContainerInterface $container,
 		private LoggerInterface $logger,
 		private IGroupManager $groupManager,
+		private ?ExportArchiveStoreInterface $archives = null,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -155,7 +158,7 @@ class ExportsController extends Controller {
 	 *
 	 * @return bool True when the caller is allowed.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-47
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-47
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function isAuthorisedForApplication(string $applicationSlug): bool {
@@ -176,87 +179,154 @@ class ExportsController extends Controller {
 		}
 
 		try {
-			// ADR-083 rule 1: state the availability check in the idiom the
-			// fleet (and hydra gate-66) recognises. This is not a behaviour
-			// change — NC's `SimpleContainer::has()` IS
-			// `isset($this->container[$id]) || class_exists($id)`
-			// (server/lib/private/AppFramework/Utility/SimpleContainer.php:50),
-			// so the previous `container->has()` probe answered the same
-			// question. Spelling it as class_exists() makes the optional reach
-			// visible to a reader without routing the answer through the
-			// container.
-			if (class_exists('\OCA\OpenRegister\Service\ObjectService') === false) {
+			$app = $this->exportApplicationBySlug(applicationSlug: $applicationSlug);
+			if ($app === []) {
 				return false;
 			}
-
-			$service = $this->container->get('OCA\\OpenRegister\\Service\\ObjectService');
-			if (method_exists($service, 'searchObjectsBySlug') === false) {
-				return false;
-			}
-
-			// Fails closed: this is the IDOR guard, so an unresolvable register denies.
-			$registerSlug = $this->ownRegisterSlug();
-			if ($registerSlug === null) {
-				return false;
-			}
-
-			$apps = $service->searchObjectsBySlug($registerSlug, 'built-app', ['slug' => $applicationSlug]);
-			if (is_array($apps) === false || $apps === []) {
-				return false;
-			}
-
-			// OpenRegister hands back ObjectEntity objects here. This used to read the
-			// permissions only `if (is_array($app))` — which is never true — so every
-			// non-admin fell through to an empty bucket list and was denied. The admin
-			// bypass above masked it.
-			$app = ObjectRecord::serialised(object: $apps[0]);
-			$permissions = ($app['permissions'] ?? []);
-
-			if (is_array($permissions) === false) {
-				$permissions = [];
-			}
-
-			// Check all three role buckets: owners, editors, viewers.
-			foreach (['owners', 'editors', 'viewers'] as $role) {
-				$bucket = ($permissions[$role] ?? []);
-				if (is_array($bucket) === false) {
-					continue;
-				}
-
-				foreach ($bucket as $principal) {
-					if (is_string($principal) === false || $principal === '') {
-						continue;
-					}
-
-					if (str_starts_with($principal, 'user:') === true) {
-						if (substr($principal, 5) === $uid) {
-							return true;
-						}
-
-						continue;
-					}
-
-					// Back-compat / group: prefix.
-					if (str_starts_with($principal, 'group:') === true) {
-						$gid = substr($principal, 6);
-					} else {
-						$gid = $principal;
-					}
-
-					if ($gid !== '' && $this->groupManager->isInGroup($uid, $gid) === true) {
-						return true;
-					}
-				}//end foreach
-			}//end foreach
 
 			// NC admin already short-circuited to true above; a non-admin who
 			// is not in any role bucket is not authorised.
-			return false;
+			return $this->uidHoldsAnyRole(app: $app, uid: $uid);
 		} catch (\Throwable $e) {
 			$this->logger->debug('Buildiq export: authz lookup failed: ' . $e->getMessage());
 			return false;
 		}//end try
 	}//end isAuthorisedForApplication()
+
+	/**
+	 * The Application with this slug in the app's own register, or [] when it
+	 * cannot be found or OpenRegister cannot answer.
+	 *
+	 * @param string $applicationSlug Application slug.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-47
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
+	 */
+	private function exportApplicationBySlug(string $applicationSlug): array {
+		// ADR-083 rule 1: state the availability check in the idiom the
+		// fleet (and hydra gate-66) recognises. This is not a behaviour
+		// change — NC's `SimpleContainer::has()` IS
+		// `isset($this->container[$id]) || class_exists($id)`
+		// (server/lib/private/AppFramework/Utility/SimpleContainer.php:50),
+		// so the previous `container->has()` probe answered the same
+		// question. Spelling it as class_exists() makes the optional reach
+		// visible to a reader without routing the answer through the
+		// container.
+		$service = $this->slugSearchService();
+		if ($service === null) {
+			return [];
+		}
+
+		// Fails closed: this is the IDOR guard, so an unresolvable register denies.
+		$registerSlug = $this->ownRegisterSlug();
+		if ($registerSlug === null) {
+			return [];
+		}
+
+		$apps = $service->searchObjectsBySlug($registerSlug, 'built-app', ['slug' => $applicationSlug]);
+		if (is_array($apps) === false || $apps === []) {
+			return [];
+		}
+
+		// OpenRegister hands back ObjectEntity objects here. This used to read the
+		// permissions only `if (is_array($app))` — which is never true — so every
+		// non-admin fell through to an empty bucket list and was denied. The admin
+		// bypass above masked it.
+		return ObjectRecord::serialised(object: $apps[0]);
+	}//end exportApplicationBySlug()
+
+	/**
+	 * OpenRegister's object service when it is installed and can search by slug.
+	 *
+	 * @return object|null
+	 *
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-47
+	 */
+	private function slugSearchService(): object|null {
+		if (class_exists('\OCA\OpenRegister\Service\ObjectService') === false) {
+			return null;
+		}
+
+		$service = $this->container->get('OCA\\OpenRegister\\Service\\ObjectService');
+		if (method_exists($service, 'searchObjectsBySlug') === false) {
+			return null;
+		}
+
+		return $service;
+	}//end slugSearchService()
+
+	/**
+	 * Whether the user is named in the owners, editors or viewers bucket, directly or through a group.
+	 *
+	 * @param array<string, mixed> $app The Application.
+	 * @param string               $uid The user id.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-47
+	 */
+	private function uidHoldsAnyRole(array $app, string $uid): bool {
+		$permissions = ($app['permissions'] ?? []);
+		if (is_array($permissions) === false) {
+			$permissions = [];
+		}
+
+		// Check all three role buckets: owners, editors, viewers.
+		foreach (['owners', 'editors', 'viewers'] as $role) {
+			$bucket = ($permissions[$role] ?? []);
+			if (is_array($bucket) === true && $this->bucketNamesUid(bucket: $bucket, uid: $uid) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end uidHoldsAnyRole()
+
+	/**
+	 * Whether a role bucket names the user, as `user:<uid>`, `group:<gid>` or a bare group id.
+	 *
+	 * @param array<mixed> $bucket The role bucket.
+	 * @param string       $uid    The user id.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-47
+	 */
+	private function bucketNamesUid(array $bucket, string $uid): bool {
+		foreach ($bucket as $principal) {
+			if (is_string($principal) === true && $principal !== '' && $this->principalNamesUid(principal: $principal, uid: $uid) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end bucketNamesUid()
+
+	/**
+	 * Whether one non-empty principal names the user.
+	 *
+	 * @param string $principal The principal entry.
+	 * @param string $uid       The user id.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-47
+	 */
+	private function principalNamesUid(string $principal, string $uid): bool {
+		if (str_starts_with($principal, 'user:') === true) {
+			return substr($principal, 5) === $uid;
+		}
+
+		// Back-compat / group: prefix.
+		$gid = $principal;
+		if (str_starts_with($principal, 'group:') === true) {
+			$gid = substr($principal, 6);
+		}
+
+		return $gid !== '' && $this->groupManager->isInGroup($uid, $gid) === true;
+	}//end principalNamesUid()
 
 	/**
 	 * Authorize the caller for an ExportJob UUID.
@@ -392,7 +462,7 @@ class ExportsController extends Controller {
 	 *
 	 * @return JSONResponse|null JSONResponse on validation error, null on success.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-37
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-37
 	 */
 	private function validateSubmitBody(array $body): ?JSONResponse {
 		$target = $this->readStringField(body: $body, field: 'target', default: 'zip');
@@ -460,7 +530,7 @@ class ExportsController extends Controller {
 	 *
 	 * @return JSONResponse|null
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-34
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-34
 	 */
 	private function validateGithubFields(array $body): ?JSONResponse {
 		$org = $this->readStringField(body: $body, field: 'githubOrg', default: '');
@@ -507,8 +577,8 @@ class ExportsController extends Controller {
 	 * credential instead), but it can still push a repository into existence under
 	 * the user's GitHub identity, so it stays CSRF-protected.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
-	 * @spec openspec/changes/openbuild-export-csrf-hardening/tasks.md#task-1.1
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
+	 * @spec openspec/changes/archive/2026-11-12-openbuild-export-csrf-hardening/tasks.md#task-1.1
 	 */
 	#[NoAdminRequired]
 	public function submit(string $slug): JSONResponse {
@@ -558,12 +628,36 @@ class ExportsController extends Controller {
 
 		// The queueing user's UID travels to the session-less background job so the
 		// broker's ownership guard has an identity to check the credential against.
+		$requestedBy = $this->requesterUid();
+
+		return $this->queueExport(slug: $slug, body: $body, requestedBy: $requestedBy);
+	}//end submit()
+
+	/**
+	 * The session user's UID, or null without a session user.
+	 *
+	 * @return string|null
+	 */
+	private function requesterUid(): string|null {
 		$requestedBy = null;
 		$user = $this->userSession->getUser();
 		if ($user !== null) {
 			$requestedBy = $user->getUID();
 		}
 
+		return $requestedBy;
+	}//end requesterUid()
+
+	/**
+	 * Queue the export job: 202 with its uuid, 422 on a refused payload, 500 on any other failure.
+	 *
+	 * @param string              $slug        The application slug.
+	 * @param array<string,mixed> $body        The validated request body.
+	 * @param string|null         $requestedBy The queueing user's UID.
+	 *
+	 * @return JSONResponse
+	 */
+	private function queueExport(string $slug, array $body, string|null $requestedBy): JSONResponse {
 		try {
 			$jobUuid = $this->exportJobService->queue(
 				applicationSlug: $slug,
@@ -587,7 +681,7 @@ class ExportsController extends Controller {
 			['uuid' => $jobUuid],
 			Http::STATUS_ACCEPTED
 		);
-	}//end submit()
+	}//end queueExport()
 
 	/**
 	 * What a server needs to run an exported app on its own.
@@ -601,7 +695,7 @@ class ExportsController extends Controller {
 	 */
 	#[NoAdminRequired]
 	public function serverRequirements(): JSONResponse {
-		$writer = $this->container->get(ServerBundleWriter::class);
+		$writer = $this->container->get(ServerBundleWriterInterface::class);
 
 		return new JSONResponse($writer->requirements());
 	}//end serverRequirements()
@@ -660,8 +754,9 @@ class ExportsController extends Controller {
 	 * download link cannot carry the `requesttoken` header a CSRF check
 	 * requires, and removing it would break the download link entirely.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
-	 * @spec openspec/changes/openbuild-export-csrf-hardening/tasks.md#task-1.3
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
+	 * @spec openspec/changes/archive/2026-11-12-openbuild-export-csrf-hardening/tasks.md#task-1.3
+	 * @spec openspec/specs/platform-properties/spec.md#REQ-PLAT-010
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -677,19 +772,61 @@ class ExportsController extends Controller {
 		}
 
 		$resolved = $this->exportJobService->resolveDownload($uuid);
-		if ($resolved === null) {
-			return new JSONResponse(['error' => 'Unknown export job.'], Http::STATUS_NOT_FOUND);
-		}
-
-		if ($resolved['expired'] === true) {
+		if ($resolved !== null && $resolved['expired'] === true) {
 			return new JSONResponse(['error' => 'Export has expired.'], Http::STATUS_GONE);
 		}
 
-		$body = file_get_contents($resolved['path']);
+		$body = $this->archiveBytes(resolved: $resolved, uuid: $uuid);
 		if ($body === false) {
+			if ($resolved === null) {
+				return new JSONResponse(['error' => 'Unknown export job.'], Http::STATUS_NOT_FOUND);
+			}
+
 			return new JSONResponse(['error' => 'Unable to read export.'], Http::STATUS_INTERNAL_SERVER_ERROR);
 		}
 
-		return new DataDownloadResponse($body, basename($resolved['path']), 'application/zip');
+		return new DataDownloadResponse($body, self::downloadName(resolved: $resolved, uuid: $uuid), 'application/zip');
 	}//end download()
+
+	/**
+	 * The file name the download carries: the staging file's own name, or the
+	 * job's archive name when only app data holds it.
+	 *
+	 * @param array{path:string,expired:bool}|null $resolved The staging copy, if any.
+	 * @param string                                $uuid     ExportJob UUID.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/specs/platform-properties/spec.md#REQ-PLAT-010
+	 */
+	private static function downloadName(?array $resolved, string $uuid): string {
+		if ($resolved !== null) {
+			return basename($resolved['path']);
+		}
+
+		return $uuid . '.zip';
+	}//end downloadName()
+
+	/**
+	 * The bytes of a job's archive: this server's staging copy, or, when it is
+	 * gone or unreadable, the copy kept in app data, which any web server can
+	 * read (REQ-PLAT-010).
+	 *
+	 * @param array{path:string,expired:bool}|null $resolved The staging copy, if any.
+	 * @param string                                $uuid     ExportJob UUID.
+	 *
+	 * @return string|false The archive, or false when neither copy is there.
+	 *
+	 * @spec openspec/specs/platform-properties/spec.md#REQ-PLAT-010
+	 */
+	private function archiveBytes(?array $resolved, string $uuid): string|false {
+		if ($resolved !== null && is_readable($resolved['path']) === true) {
+			$body = file_get_contents($resolved['path']);
+			if ($body !== false) {
+				return $body;
+			}
+		}
+
+		return ($this->archives?->read(jobUuid: $uuid) ?? false);
+	}//end archiveBytes()
 }//end class

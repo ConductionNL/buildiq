@@ -48,7 +48,7 @@ class ExportTreeFiles {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/openbuild-exports-flows-and-agents/specs/app-export-completeness/spec.md#requirement-an-export-must-carry-the-flows-the-application-binds-and-the-agents-that-point-at-it
+	 * @spec openspec/specs/app-export-completeness/spec.md#requirement-an-export-must-carry-the-flows-the-application-binds-and-the-agents-that-point-at-it
 	 */
 	public function removeTree(string $dir): void {
 		if (is_dir($dir) === false) {
@@ -84,7 +84,7 @@ class ExportTreeFiles {
 	 *
 	 * @return array<int, string> Absolute file paths.
 	 *
-	 * @spec openspec/changes/openbuild-exports-flows-and-agents/specs/app-export-completeness/spec.md#requirement-an-export-must-carry-the-flows-the-application-binds-and-the-agents-that-point-at-it
+	 * @spec openspec/specs/app-export-completeness/spec.md#requirement-an-export-must-carry-the-flows-the-application-binds-and-the-agents-that-point-at-it
 	 */
 	public function filePaths(string $dir): array {
 		$paths = [];
@@ -117,7 +117,7 @@ class ExportTreeFiles {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/openbuild-exports-flows-and-agents/specs/app-export-completeness/spec.md#requirement-an-export-must-carry-the-flows-the-application-binds-and-the-agents-that-point-at-it
+	 * @spec openspec/specs/app-export-completeness/spec.md#requirement-an-export-must-carry-the-flows-the-application-binds-and-the-agents-that-point-at-it
 	 */
 	public function copyTree(string $source, string $dest, array $skip, int $timestamp): void {
 		$iterator = new RecursiveIteratorIterator(
@@ -155,7 +155,7 @@ class ExportTreeFiles {
 	 *
 	 * @throws RuntimeException When the directory is missing.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-40
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-40
 	 */
 	public function requireDirectory(string $dir, string $label): void {
 		if (is_dir($dir) === false) {
@@ -173,7 +173,7 @@ class ExportTreeFiles {
 	 *
 	 * @throws RuntimeException When the archive cannot be opened or finalised.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
 	 */
 	public function zipTree(string $sourceDir, string $zipPath): void {
 		$zip = new ZipArchive();
@@ -234,7 +234,7 @@ class ExportTreeFiles {
 	 *
 	 * @return array<int, string> Relative paths, sorted.
 	 *
-	 * @spec openspec/changes/openbuild-exports-flows-and-agents/specs/app-export-completeness/spec.md#requirement-an-export-must-carry-the-flows-the-application-binds-and-the-agents-that-point-at-it
+	 * @spec openspec/specs/app-export-completeness/spec.md#requirement-an-export-must-carry-the-flows-the-application-binds-and-the-agents-that-point-at-it
 	 */
 	public function listFilesSorted(string $baseDir): array {
 		$files = [];

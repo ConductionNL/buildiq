@@ -33,6 +33,7 @@ use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
 use OCP\App\IAppManager;
+use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -479,4 +480,161 @@ class TemplateSeedServiceTest extends TestCase {
 			self::assertContains('uuid-' . $slug, $flat, 'update must target the existing uuid for ' . $slug);
 		}
 	}//end testUpdateTargetsExistingUuid()
+
+	/**
+	 * A fixture that is not JSON, or fails validation, is reported and the
+	 * other fixtures still seed.
+	 *
+	 * @return void
+	 */
+	public function testUnreadableAndInvalidFixturesAreReported(): void {
+		$wrongSlug = $this->validFixture('employee-onboarding');
+		$wrongSlug['slug'] = 'something-else';
+		$this->seedFixturesDir(
+			[
+				'permit-tracker' => $this->validFixture('permit-tracker'),
+				'stakeholder-consultation' => array_merge($this->validFixture('stakeholder-consultation'), ['category' => 'astrology']),
+				'employee-onboarding' => $wrongSlug,
+				'incident-reporter' => $this->validFixture('incident-reporter'),
+			]
+		);
+		file_put_contents($this->tempDir . '/incident-reporter.json', '{not json');
+		$this->objectService->method('findAll')->willReturn([]);
+		$this->objectService->expects(self::once())->method('saveObject');
+
+		$result = $this->service()->seed();
+
+		self::assertSame(1, $result['seeded']);
+		self::assertSame(
+			[
+				'Template "stakeholder-consultation" has unknown category: astrology',
+				'Template fixture filename "employee-onboarding.json" does not match its slug "something-else".',
+				'Invalid JSON in template fixture: ' . $this->tempDir . '/incident-reporter.json',
+			],
+			$result['errors']
+		);
+	}//end testUnreadableAndInvalidFixturesAreReported()
+
+	/**
+	 * A stored seeded row whose uuid cannot be resolved is skipped, not duplicated.
+	 *
+	 * @return void
+	 */
+	public function testAStoredRowWithoutAUuidIsSkipped(): void {
+		$this->seedAllFixturesAtVersion('2.0.0');
+		$this->objectService->method('findAll')->willReturnCallback(
+			static fn (array $config): array => [['slug' => $config['filters']['slug'], 'isSeeded' => true, 'version' => '1.0.0']]
+		);
+		$this->objectService->expects(self::never())->method('saveObject');
+		$this->logger->expects(self::exactly(4))->method('warning')->with(
+			'Buildiq: cannot resolve uuid for existing template — skipping update',
+			self::callback(static fn (array $context): bool => in_array($context['slug'], self::EXPECTED_SLUGS, true))
+		);
+
+		$result = $this->service()->seed();
+
+		self::assertSame(['seeded' => 0, 'updated' => 0, 'skipped' => 4, 'errors' => []], $result);
+	}//end testAStoredRowWithoutAUuidIsSkipped()
+
+	/**
+	 * A register that does not exist yet defers the whole batch, keeping the counts so far.
+	 *
+	 * @return void
+	 */
+	public function testAMissingRegisterDefersSeeding(): void {
+		$this->seedAllFixturesAtVersion('1.0.0');
+		$this->objectService->method('findAll')->willReturn([]);
+		$entity = $this->createMock(ObjectEntity::class);
+		$this->objectService->expects(self::exactly(2))->method('saveObject')->willReturnOnConsecutiveCalls(
+			$entity,
+			self::throwException(new DoesNotExistException('no schema'))
+		);
+
+		$result = $this->service()->seed();
+
+		self::assertSame(['seeded' => 1, 'updated' => 0, 'skipped' => 0, 'errors' => [], 'deferred' => true], $result);
+	}//end testAMissingRegisterDefersSeeding()
+
+	/**
+	 * Any other failing write is reported per slug and the rest still seed.
+	 *
+	 * @return void
+	 */
+	public function testAFailingWriteIsReportedPerSlug(): void {
+		$this->seedAllFixturesAtVersion('1.0.0');
+		$this->objectService->method('findAll')->willReturn([]);
+		$entity = $this->createMock(ObjectEntity::class);
+		$this->objectService->method('saveObject')->willReturnCallback(
+			static function (array $object) use ($entity): ObjectEntity {
+				if ($object['slug'] === 'employee-onboarding') {
+					throw new \RuntimeException('validation failed');
+				}
+
+				return $entity;
+			}
+		);
+		$this->logger->expects(self::once())->method('error')->with(
+			'Buildiq: failed to seed template',
+			['slug' => 'employee-onboarding', 'exception' => 'validation failed']
+		);
+
+		$result = $this->service()->seed();
+
+		self::assertSame(3, $result['seeded']);
+		self::assertSame(['Failed to seed template "employee-onboarding": validation failed'], $result['errors']);
+	}//end testAFailingWriteIsReportedPerSlug()
+
+	/**
+	 * A fixture that is not JSON or fails validation is reported and skipped;
+	 * a stored seeded row whose uuid cannot be resolved is skipped with a
+	 * warning instead of creating a duplicate; a failed write is reported and
+	 * the run goes on.
+	 *
+	 * @return void
+	 */
+	public function testBadFixturesUnresolvableRowsAndFailedWritesAreReported(): void {
+		$invalid = $this->validFixture('stakeholder-consultation');
+		$invalid['category'] = 'not-a-category';
+		$this->seedFixturesDir(
+			[
+				'permit-tracker' => $this->validFixture('permit-tracker'),
+				'stakeholder-consultation' => $invalid,
+				'employee-onboarding' => $this->versionedFixture('employee-onboarding', '2.0.0'),
+				'incident-reporter' => null,
+			]
+		);
+		file_put_contents($this->tempDir . '/incident-reporter.json', '{not json');
+		$this->objectService->method('findAll')->willReturnCallback(
+			static fn (array $config): array => (($config['filters']['slug'] ?? '') === 'employee-onboarding' ? [['slug' => 'employee-onboarding', 'isSeeded' => true, 'version' => '1.0.0']] : [])
+		);
+		$this->objectService->expects(self::once())->method('saveObject')->willThrowException(new \RuntimeException('disk full'));
+		$this->logger->expects(self::once())->method('warning')->with(
+			'Buildiq: cannot resolve uuid for existing template — skipping update',
+			['slug' => 'employee-onboarding']
+		);
+
+		$result = $this->service()->seed();
+
+		self::assertSame([0, 0, 1], [$result['seeded'], $result['updated'], $result['skipped']]);
+		self::assertCount(3, $result['errors']);
+		self::assertSame('Failed to seed template "permit-tracker": disk full', $result['errors'][0]);
+		self::assertStringContainsString('stakeholder-consultation', $result['errors'][1]);
+		self::assertSame('Invalid JSON in template fixture: ' . $this->tempDir . '/incident-reporter.json', $result['errors'][2]);
+	}//end testBadFixturesUnresolvableRowsAndFailedWritesAreReported()
+
+	/**
+	 * A register or schema that is not provisioned yet defers the whole batch.
+	 *
+	 * @return void
+	 */
+	public function testMissingRegisterDefersSeeding(): void {
+		$this->seedAllFixturesAtVersion('1.0.0');
+		$this->objectService->method('findAll')->willReturn([]);
+		$this->objectService->expects(self::once())->method('saveObject')
+			->willThrowException(new \OCP\AppFramework\Db\DoesNotExistException('no schema'));
+
+		$result = $this->service()->seed();
+
+		self::assertSame(['seeded' => 0, 'updated' => 0, 'skipped' => 0, 'errors' => [], 'deferred' => true], $result);
+	}//end testMissingRegisterDefersSeeding()
 }//end class

@@ -32,6 +32,16 @@ export function showBackToVirtualApps({ versionSlug = '', manifest = null } = {}
 	if (versionSlug) {
 		return true
 	}
+	return isOwnerManifest(manifest)
+}
+
+/**
+ * Whether the manifest the server returned says the viewer owns the app.
+ *
+ * @param {?object} manifest - the running app's manifest.
+ * @return {boolean} true only for `runtime.user.isOwner === true`.
+ */
+function isOwnerManifest(manifest) {
 	const user = manifest && manifest.runtime && manifest.runtime.user
 	return !!(user && user.isOwner === true)
 }
@@ -49,12 +59,23 @@ export function declaresPrimaryAction(manifest, routeName) {
 	if (!manifest) {
 		return false
 	}
-	const pages = Array.isArray(manifest.pages) ? manifest.pages : []
-	const page = pages.find((p) => p && p.id === routeName)
-	if (page && page.primaryAction) {
+	if (pageDeclaresPrimaryAction(manifest, routeName)) {
 		return true
 	}
 	return !!(manifest.nav && manifest.nav.primaryAction)
+}
+
+/**
+ * Whether the page on screen declares its own primary action.
+ *
+ * @param {object} manifest - the running app's manifest.
+ * @param {?string} routeName - the name (page id) of the route on screen.
+ * @return {boolean} true when that page carries a primary action.
+ */
+function pageDeclaresPrimaryAction(manifest, routeName) {
+	const pages = Array.isArray(manifest.pages) ? manifest.pages : []
+	const page = pages.find((p) => p && p.id === routeName)
+	return !!(page && page.primaryAction)
 }
 
 export default {

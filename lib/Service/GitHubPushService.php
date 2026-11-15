@@ -3,6 +3,9 @@
 /**
  * Buildiq GitHub Push Service
  *
+ * SPDX-FileCopyrightText:  2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Pushes the generated app tree to a new GitHub repository and opens a
  * placeholder pull request, over the GitHub REST + Git Data API (create-repo,
  * create-blob, create-tree, create-commit, create-ref, create-pull).
@@ -31,20 +34,19 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/openbuild-exporter/tasks.md#task-6.2
- *
- * @SPDX-License-Identifier: EUPL-1.2
- * @SPDX-FileCopyrightText:  2026 Conduction B.V. <info@conduction.nl>
+ * @spec openspec/changes/archive/2026-06-14-openbuild-exporter/tasks.md#task-6.2
  */
 
 declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
-use OCA\Buildiq\Service\GitHub\BrokerAccess;
-use OCA\Buildiq\Service\GitHub\PushTarget;
-use OCA\Buildiq\Service\GitHub\TokenScrubber;
 use FilesystemIterator;
+use OCA\Buildiq\Kernel\Contracts\GitHubPushServiceInterface;
+use OCA\Buildiq\Kernel\Values\BrokerAccess;
+use OCA\Buildiq\Service\GitHub\CredentialBrokerClient;
+use OCA\Buildiq\Kernel\Values\PushTarget;
+use OCA\Buildiq\Service\GitHub\TokenScrubber;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RecursiveDirectoryIterator;
@@ -54,9 +56,9 @@ use RuntimeException;
 /**
  * GitHub delivery target. PAT-handling contract documented in Decision 3.
  *
- * @spec openspec/changes/openbuild-exporter/tasks.md#task-6.2
+ * @spec openspec/changes/archive/2026-06-14-openbuild-exporter/tasks.md#task-6.2
  */
-class GitHubPushService {
+class GitHubPushService implements GitHubPushServiceInterface {
 	/**
 	 * OpenRegister's credential broker.
 	 *
@@ -75,13 +77,6 @@ class GitHubPushService {
 	 * @var string
 	 */
 	private const BROKER_CLASS = 'OCA\\OpenRegister\\Service\\Credential\\CredentialBrokerService';
-
-	/**
-	 * The broker `appId` Buildiq identifies itself with.
-	 *
-	 * @var string
-	 */
-	private const APP_ID = 'buildiq';
 
 	/**
 	 * The branch the generated tree is pushed to, before the PR is opened against the
@@ -117,6 +112,13 @@ class GitHubPushService {
 	private ?string $lastFailureDetail = null;
 
 	/**
+	 * Sends the JSON calls through OpenRegister's credential broker.
+	 *
+	 * @var CredentialBrokerClient
+	 */
+	private readonly CredentialBrokerClient $broker;
+
+	/**
 	 * Constructor.
 	 *
 	 * No HTTP client: this service no longer makes outbound calls of its own.
@@ -127,8 +129,9 @@ class GitHubPushService {
 	 */
 	public function __construct(
 		private LoggerInterface $logger,
-		private readonly ContainerInterface $container,
+		ContainerInterface $container,
 	) {
+		$this->broker = new CredentialBrokerClient(container: $container);
 	}//end __construct()
 
 	/**
@@ -144,7 +147,7 @@ class GitHubPushService {
 	 *
 	 * @throws RuntimeException On any GitHub API failure (auth, repo-exists, …).
 	 *
-	 * @spec openspec/changes/openbuild-exporter/tasks.md#task-6.2
+	 * @spec openspec/changes/archive/2026-06-14-openbuild-exporter/tasks.md#task-6.2
 	 */
 	public function push(string $jobUuid, string $treeDir, BrokerAccess $access, PushTarget $target): array {
 		$org = $target->org;
@@ -227,7 +230,7 @@ class GitHubPushService {
 	 *
 	 * @throws RuntimeException On API failure.
 	 *
-	 * @spec openspec/changes/openbuild-exporter/tasks.md#task-6.2
+	 * @spec openspec/changes/archive/2026-06-14-openbuild-exporter/tasks.md#task-6.2
 	 */
 	public function createRepo(PushTarget $target, BrokerAccess $access): array {
 		$created = $this->brokerCall(
@@ -266,7 +269,7 @@ class GitHubPushService {
 	 *
 	 * @throws RuntimeException On API failure.
 	 *
-	 * @spec openspec/changes/openbuild-exporter/tasks.md#task-6.2
+	 * @spec openspec/changes/archive/2026-06-14-openbuild-exporter/tasks.md#task-6.2
 	 */
 	public function pushTree(PushTarget $target, string $branch, string $treeDir, BrokerAccess $access): string {
 		$base = $target->repoPath();
@@ -322,7 +325,7 @@ class GitHubPushService {
 	 *
 	 * @throws RuntimeException On API failure.
 	 *
-	 * @spec openspec/changes/openbuild-exporter/tasks.md#task-6.2
+	 * @spec openspec/changes/archive/2026-06-14-openbuild-exporter/tasks.md#task-6.2
 	 */
 	public function openPullRequest(PushTarget $target, string $toBranch, BrokerAccess $access): string {
 		$pullRequest = $this->postJson(
@@ -413,24 +416,9 @@ class GitHubPushService {
 		$this->lastFailureDetail = null;
 		$method = (string)$request['method'];
 		$path = (string)$request['path'];
-		$body = $request['body'];
-
-		$encoded = null;
-		if ($body !== null) {
-			$encoded = (string)json_encode($body);
-		}
 
 		try {
-			$broker = $this->container->get(self::BROKER_CLASS);
-			$response = $broker->request(
-				$access->credentialId,
-				self::APP_ID,
-				$method,
-				$path,
-				['Accept' => 'application/vnd.github+json', 'Content-Type' => 'application/json'],
-				$encoded,
-				$access->actingUserId
-			);
+			$response = $this->broker->sendJson(request: $request, access: $access);
 		} catch (\Throwable $e) {
 			// The broker never puts the secret in its exception messages, but this
 			// path is also reached for transport errors, so scrub anyway.
@@ -499,7 +487,7 @@ class GitHubPushService {
 	 *
 	 * @return bool True when the broker class can be resolved.
 	 *
-	 * @spec openspec/changes/openbuild-exporter/tasks.md#task-6.2
+	 * @spec openspec/changes/archive/2026-06-14-openbuild-exporter/tasks.md#task-6.2
 	 */
 	public function isBrokerAvailable(): bool {
 		return class_exists(self::BROKER_CLASS) === true;

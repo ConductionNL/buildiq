@@ -1,0 +1,589 @@
+{
+    "cases": [
+        {
+            "name": "missing descriptor",
+            "files": {
+                "manifest.json": "{\"version\":\"1\",\"pages\":[]}"
+            },
+            "repo": null,
+            "error": {
+                "code": "descriptor_missing",
+                "message": "No openbuild-app.json at the repo root \u2014 not an Buildiq app repo.",
+                "filePath": "openbuild-app.json"
+            }
+        },
+        {
+            "name": "descriptor unparseable",
+            "files": {
+                "openbuild-app.json": "{bad",
+                "manifest.json": "{\"version\":\"1\",\"pages\":[]}"
+            },
+            "repo": null,
+            "error": {
+                "code": "descriptor_unparseable",
+                "message": "openbuild-app.json is not valid JSON: Syntax error",
+                "filePath": "openbuild-app.json"
+            }
+        },
+        {
+            "name": "descriptor list",
+            "files": {
+                "openbuild-app.json": "[1]",
+                "manifest.json": "{\"version\":\"1\",\"pages\":[]}"
+            },
+            "repo": null,
+            "error": {
+                "code": "descriptor_unparseable",
+                "message": "openbuild-app.json is not a JSON object.",
+                "filePath": "openbuild-app.json"
+            }
+        },
+        {
+            "name": "descriptor scalar",
+            "files": {
+                "openbuild-app.json": "5",
+                "manifest.json": "{\"version\":\"1\",\"pages\":[]}"
+            },
+            "repo": null,
+            "error": {
+                "code": "descriptor_unparseable",
+                "message": "openbuild-app.json is not a JSON object.",
+                "filePath": "openbuild-app.json"
+            }
+        },
+        {
+            "name": "descriptor too big",
+            "files": {
+                "openbuild-app.json": {
+                    "head": "",
+                    "fill": " ",
+                    "tail": "",
+                    "repeat": 1048577
+                },
+                "manifest.json": "{\"version\":\"1\",\"pages\":[]}"
+            },
+            "repo": null,
+            "error": {
+                "code": "descriptor_unparseable",
+                "message": "openbuild-app.json exceeds the maximum allowed size and was rejected before decode.",
+                "filePath": "openbuild-app.json"
+            }
+        },
+        {
+            "name": "format 3",
+            "files": {
+                "openbuild-app.json": "{\"formatVersion\":\"3.0\",\"appType\":\"virtual\",\"slug\":\"my-app\",\"name\":\"My App\",\"description\":\"D\",\"version\":\"1.2.3\"}",
+                "manifest.json": "{\"version\":\"1\",\"pages\":[]}"
+            },
+            "repo": null,
+            "error": {
+                "code": "format_version_unsupported",
+                "message": "openbuild-app.json formatVersion \"3.0\" is not supported by this Buildiq.",
+                "filePath": "openbuild-app.json"
+            }
+        },
+        {
+            "name": "format garbage",
+            "files": {
+                "openbuild-app.json": "{\"formatVersion\":\"x\",\"appType\":\"virtual\",\"slug\":\"my-app\",\"name\":\"My App\",\"description\":\"D\",\"version\":\"1.2.3\"}",
+                "manifest.json": "{\"version\":\"1\",\"pages\":[]}"
+            },
+            "repo": null,
+            "error": {
+                "code": "format_version_unsupported",
+                "message": "openbuild-app.json formatVersion \"x\" is not supported by this Buildiq.",
+                "filePath": "openbuild-app.json"
+            }
+        },
+        {
+            "name": "format missing",
+            "files": {
+                "openbuild-app.json": "{\"appType\":\"virtual\",\"slug\":\"a-b\"}",
+                "manifest.json": "{\"version\":\"1\",\"pages\":[]}"
+            },
+            "repo": null,
+            "error": {
+                "code": "format_version_unsupported",
+                "message": "openbuild-app.json formatVersion \"\" is not supported by this Buildiq.",
+                "filePath": "openbuild-app.json"
+            }
+        },
+        {
+            "name": "apptype bad",
+            "files": {
+                "openbuild-app.json": "{\"formatVersion\":\"2.0\",\"appType\":\"native\",\"slug\":\"my-app\",\"name\":\"My App\",\"description\":\"D\",\"version\":\"1.2.3\"}",
+                "manifest.json": "{\"version\":\"1\",\"pages\":[]}"
+            },
+            "repo": null,
+            "error": {
+                "code": "app_type_unknown",
+                "message": "openbuild-app.json appType \"native\" is not one of virtual|hybrid.",
+                "filePath": "openbuild-app.json"
+            }
+        },
+        {
+            "name": "slug bad",
+            "files": {
+                "openbuild-app.json": "{\"formatVersion\":\"2.0\",\"appType\":\"virtual\",\"slug\":\"Bad_Slug\",\"name\":\"My App\",\"description\":\"D\",\"version\":\"1.2.3\"}",
+                "manifest.json": "{\"version\":\"1\",\"pages\":[]}"
+            },
+            "repo": null,
+            "error": {
+                "code": "app_type_unknown",
+                "message": "openbuild-app.json slug \"Bad_Slug\" is not a valid kebab-case slug.",
+                "filePath": "openbuild-app.json"
+            }
+        },
+        {
+            "name": "manifest missing",
+            "files": {
+                "openbuild-app.json": "{\"formatVersion\":\"2.0\",\"appType\":\"virtual\",\"slug\":\"my-app\",\"name\":\"My App\",\"description\":\"D\",\"version\":\"1.2.3\"}"
+            },
+            "repo": null,
+            "error": {
+                "code": "manifest_missing",
+                "message": "manifest.json is required.",
+                "filePath": "manifest.json"
+            }
+        },
+        {
+            "name": "manifest unparseable",
+            "files": {
+                "openbuild-app.json": "{\"formatVersion\":\"2.0\",\"appType\":\"virtual\",\"slug\":\"my-app\",\"name\":\"My App\",\"description\":\"D\",\"version\":\"1.2.3\"}",
+                "manifest.json": "nope"
+            },
+            "repo": null,
+            "error": {
+                "code": "manifest_unparseable",
+                "message": "manifest.json is not valid JSON: Syntax error",
+                "filePath": "manifest.json"
+            }
+        },
+        {
+            "name": "manifest empty object",
+            "files": {
+                "openbuild-app.json": "{\"formatVersion\":\"2.0\",\"appType\":\"virtual\",\"slug\":\"my-app\",\"name\":\"My App\",\"description\":\"D\",\"version\":\"1.2.3\"}",
+                "manifest.json": "{}"
+            },
+            "repo": null,
+            "error": {
+                "code": "manifest_unparseable",
+                "message": "manifest.json is not a JSON object.",
+                "filePath": "manifest.json"
+            }
+        },
+        {
+            "name": "manifest no version",
+            "files": {
+                "openbuild-app.json": "{\"formatVersion\":\"2.0\",\"appType\":\"virtual\",\"slug\":\"my-app\",\"name\":\"My App\",\"description\":\"D\",\"version\":\"1.2.3\"}",
+                "manifest.json": "{\"version\":1,\"pages\":[]}"
+            },
+            "repo": null,
+            "error": {
+                "code": "manifest_invalid",
+                "message": "manifest.json is missing a string `version` property.",
+                "filePath": "manifest.json"
+            }
+        },
+        {
+            "name": "manifest no pages",
+            "files": {
+                "openbuild-app.json": "{\"formatVersion\":\"2.0\",\"appType\":\"virtual\",\"slug\":\"my-app\",\"name\":\"My App\",\"description\":\"D\",\"version\":\"1.2.3\"}",
+                "manifest.json": "{\"version\":\"1\",\"pages\":\"x\"}"
+            },
+            "repo": null,
+            "error": {
+                "code": "manifest_invalid",
+                "message": "manifest.json is missing a `pages` array.",
+                "filePath": "manifest.json"
+            }
+        },
+        {
+            "name": "v1 minimal",
+            "files": {
+                "openbuild-app.json": "{\"formatVersion\":\"1.0\",\"appType\":\"hybrid\",\"slug\":\"ab\"}",
+                "manifest.json": "{\"version\":\"1\",\"pages\":[]}",
+                "data-registers/x-y.json": "{}"
+            },
+            "repo": {
+                "owner": "o",
+                "name": "n"
+            },
+            "result": {
+                "slug": "ab",
+                "title": "ab",
+                "description": "",
+                "useCase": "",
+                "category": "",
+                "version": "",
+                "manifest": {
+                    "version": "1",
+                    "pages": []
+                },
+                "companionSchemas": [],
+                "templateOrigin": {
+                    "source": "github",
+                    "repo": "o/n",
+                    "version": ""
+                }
+            }
+        },
+        {
+            "name": "v2 minimal repo empty owner",
+            "files": {
+                "openbuild-app.json": "{\"formatVersion\":\"2.0\",\"appType\":\"virtual\",\"slug\":\"my-app\",\"name\":\"My App\",\"description\":\"D\",\"version\":\"1.2.3\"}",
+                "manifest.json": "{\"version\":\"1\",\"pages\":[]}"
+            },
+            "repo": {
+                "owner": "",
+                "name": "n"
+            },
+            "result": {
+                "slug": "my-app",
+                "title": "My App",
+                "description": "D",
+                "useCase": "D",
+                "category": "",
+                "version": "1.2.3",
+                "manifest": {
+                    "version": "1",
+                    "pages": []
+                },
+                "companionSchemas": [],
+                "templateOrigin": {
+                    "source": "github",
+                    "repo": null,
+                    "version": "1.2.3"
+                },
+                "channels": {
+                    "dataRegisters": [],
+                    "connectors": [],
+                    "automations": [],
+                    "skills": [],
+                    "flows": [],
+                    "agents": []
+                }
+            }
+        },
+        {
+            "name": "v2 fields fallbacks",
+            "files": {
+                "openbuild-app.json": "{\"formatVersion\":\"2\",\"appType\":\"virtual\",\"slug\":\"ab\",\"useCase\":\"U\",\"category\":\"C\"}",
+                "manifest.json": "{\"version\":\"1\",\"pages\":[]}"
+            },
+            "repo": {
+                "owner": "o",
+                "name": "n"
+            },
+            "result": {
+                "slug": "ab",
+                "title": "ab",
+                "description": "",
+                "useCase": "U",
+                "category": "C",
+                "version": "",
+                "manifest": {
+                    "version": "1",
+                    "pages": []
+                },
+                "companionSchemas": [],
+                "templateOrigin": {
+                    "source": "github",
+                    "repo": "o/n",
+                    "version": ""
+                },
+                "channels": {
+                    "dataRegisters": [],
+                    "connectors": [],
+                    "automations": [],
+                    "skills": [],
+                    "flows": [],
+                    "agents": []
+                }
+            }
+        },
+        {
+            "name": "schema bad base",
+            "files": {
+                "openbuild-app.json": "{\"formatVersion\":\"2.0\",\"appType\":\"virtual\",\"slug\":\"my-app\",\"name\":\"My App\",\"description\":\"D\",\"version\":\"1.2.3\"}",
+                "manifest.json": "{\"version\":\"1\",\"pages\":[]}",
+                "schemas/Bad.json": "{\"properties\":{}}"
+            },
+            "repo": null,
+            "error": {
+                "code": "schema_invalid",
+                "message": "schema file base name \"Bad\" is not a valid kebab-case slug.",
+                "filePath": "schemas/Bad.json"
+            }
+        },
+        {
+            "name": "schema nested base",
+            "files": {
+                "openbuild-app.json": "{\"formatVersion\":\"2.0\",\"appType\":\"virtual\",\"slug\":\"my-app\",\"name\":\"My App\",\"description\":\"D\",\"version\":\"1.2.3\"}",
+                "manifest.json": "{\"version\":\"1\",\"pages\":[]}",
+                "schemas/a/b.json": "{\"properties\":{}}"
+            },
+            "repo": null,
+            "error": {
+                "code": "schema_invalid",
+                "message": "schema file base name \"a/b\" is not a valid kebab-case slug.",
+                "filePath": "schemas/a/b.json"
+            }
+        },
+        {
+            "name": "schema unparseable",
+            "files": {
+                "openbuild-app.json": "{\"formatVersion\":\"2.0\",\"appType\":\"virtual\",\"slug\":\"my-app\",\"name\":\"My App\",\"description\":\"D\",\"version\":\"1.2.3\"}",
+                "manifest.json": "{\"version\":\"1\",\"pages\":[]}",
+                "schemas/ok-one.json": "{"
+            },
+            "repo": null,
+            "error": {
+                "code": "schema_unparseable",
+                "message": "schemas/ok-one.json is not valid JSON: Syntax error",
+                "filePath": "schemas/ok-one.json"
+            }
+        },
+        {
+            "name": "schema no properties",
+            "files": {
+                "openbuild-app.json": "{\"formatVersion\":\"2.0\",\"appType\":\"virtual\",\"slug\":\"my-app\",\"name\":\"My App\",\"description\":\"D\",\"version\":\"1.2.3\"}",
+                "manifest.json": "{\"version\":\"1\",\"pages\":[]}",
+                "schemas/ok-one.json": "{\"type\":\"object\"}"
+            },
+            "repo": null,
+            "error": {
+                "code": "schema_invalid",
+                "message": "schema file \"schemas/ok-one.json\" is not a JSON-schema object (missing `properties`).",
+                "filePath": "schemas/ok-one.json"
+            }
+        },
+        {
+            "name": "schema bad declared slug",
+            "files": {
+                "openbuild-app.json": "{\"formatVersion\":\"2.0\",\"appType\":\"virtual\",\"slug\":\"my-app\",\"name\":\"My App\",\"description\":\"D\",\"version\":\"1.2.3\"}",
+                "manifest.json": "{\"version\":\"1\",\"pages\":[]}",
+                "schemas/ok-one.json": "{\"properties\":{},\"slug\":\"NO\"}"
+            },
+            "repo": null,
+            "error": {
+                "code": "schema_invalid",
+                "message": "schema file \"schemas/ok-one.json\" declares an invalid slug \"NO\".",
+                "filePath": "schemas/ok-one.json"
+            }
+        },
+        {
+            "name": "schema duplicate slug",
+            "files": {
+                "openbuild-app.json": "{\"formatVersion\":\"2.0\",\"appType\":\"virtual\",\"slug\":\"my-app\",\"name\":\"My App\",\"description\":\"D\",\"version\":\"1.2.3\"}",
+                "manifest.json": "{\"version\":\"1\",\"pages\":[]}",
+                "schemas/zz-two.json": "{\"properties\":{},\"slug\":\"ok-one\"}",
+                "schemas/ok-one.json": "{\"properties\":{\"a\":1}}"
+            },
+            "repo": null,
+            "error": {
+                "code": "schema_slug_duplicate",
+                "message": "schema slug \"ok-one\" is declared by both schemas/ok-one.json and schemas/zz-two.json.",
+                "filePath": "schemas/zz-two.json"
+            }
+        },
+        {
+            "name": "schemas ok",
+            "files": {
+                "openbuild-app.json": "{\"formatVersion\":\"2.0\",\"appType\":\"virtual\",\"slug\":\"my-app\",\"name\":\"My App\",\"description\":\"D\",\"version\":\"1.2.3\"}",
+                "manifest.json": "{\"version\":\"1\",\"pages\":[]}",
+                "schemas/b-b.json": "{\"properties\":{\"x\":{}},\"title\":\"B\"}",
+                "schemas/a-a.json": "{\"properties\":{},\"slug\":\"c-c\"}",
+                "schemas/readme.md": "x",
+                "other/a.json": "{}"
+            },
+            "repo": null,
+            "result": {
+                "slug": "my-app",
+                "title": "My App",
+                "description": "D",
+                "useCase": "D",
+                "category": "",
+                "version": "1.2.3",
+                "manifest": {
+                    "version": "1",
+                    "pages": []
+                },
+                "companionSchemas": [
+                    {
+                        "properties": [],
+                        "slug": "c-c"
+                    },
+                    {
+                        "properties": {
+                            "x": []
+                        },
+                        "title": "B",
+                        "slug": "b-b"
+                    }
+                ],
+                "templateOrigin": {
+                    "source": "github",
+                    "repo": null,
+                    "version": "1.2.3"
+                },
+                "channels": {
+                    "dataRegisters": [],
+                    "connectors": [],
+                    "automations": [],
+                    "skills": [],
+                    "flows": [],
+                    "agents": []
+                }
+            }
+        },
+        {
+            "name": "channels all",
+            "files": {
+                "openbuild-app.json": "{\"formatVersion\":\"2.0\",\"appType\":\"virtual\",\"slug\":\"my-app\",\"name\":\"My App\",\"description\":\"D\",\"version\":\"1.2.3\"}",
+                "manifest.json": "{\"version\":\"1\",\"pages\":[]}",
+                "data-registers/reg-one.json": "{\"a\":1}",
+                "data-registers/Bad.json": "{\"a\":1}",
+                "data-registers/reg-two.json": "[1,2]",
+                "data-registers/reg-three.json": "nope",
+                "data-registers/reg-four.txt": "{}",
+                "data-registers/big-one.json": {
+                    "head": "{\"a\":\"",
+                    "fill": "x",
+                    "tail": "\"}",
+                    "repeat": 1048577
+                },
+                "data-registers/deep-one.json": "[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[[]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]]",
+                "connectors/source/src-a.json": "{\"s\":1}",
+                "connectors/mapping/map-a.json": "{\"m\":1}",
+                "connectors/job/job-a.json": "\"str\"",
+                "connectors/bogus/x-a.json": "{}",
+                "connectors/source/a/b.json": "{}",
+                "connectors/source.json": "{}",
+                "connectors/synchronization/Sy.json": "{}",
+                "connectors/synchronization/sy-a.json": "{}",
+                "automations/auto-a.json": "{\"t\":1}",
+                "automations/x.json": "{}",
+                "automations/auto-b.json": "3",
+                "flows/0a1b2c3d-1111-2222-3333-444455556666.json": "{\"f\":1}",
+                "flows/not-a-uuid.json": "{}",
+                "flows/0a1b2c3d-1111-2222-3333-444455556666.txt": "{}",
+                "agents/0a1b2c3d-1111-2222-3333-444455556666.json": "{\"g\":1}",
+                "agents/123.json": "{}",
+                "skills/sk-a/SKILL.md": "# hi",
+                "skills/sk-a/refs/x.md": "r",
+                "skills/sk-a/": "empty",
+                "skills/Bad/SKILL.md": "b",
+                "skills/sk-b": "nofile",
+                "skills/sk-c/data.json": "{\"raw\":true}",
+                "../data-registers/evil-a.json": "{}",
+                "/flows/abs.json": "{}",
+                "data-registers/../x-y.json": "{}",
+                "skills/..a/SKILL.md": "x"
+            },
+            "repo": null,
+            "result": {
+                "slug": "my-app",
+                "title": "My App",
+                "description": "D",
+                "useCase": "D",
+                "category": "",
+                "version": "1.2.3",
+                "manifest": {
+                    "version": "1",
+                    "pages": []
+                },
+                "companionSchemas": [],
+                "templateOrigin": {
+                    "source": "github",
+                    "repo": null,
+                    "version": "1.2.3"
+                },
+                "channels": {
+                    "dataRegisters": {
+                        "reg-one": {
+                            "a": 1
+                        },
+                        "reg-two": [
+                            1,
+                            2
+                        ]
+                    },
+                    "connectors": {
+                        "mapping": {
+                            "map-a": {
+                                "m": 1
+                            }
+                        },
+                        "source": {
+                            "src-a": {
+                                "s": 1
+                            }
+                        },
+                        "synchronization": {
+                            "sy-a": []
+                        }
+                    },
+                    "automations": {
+                        "auto-a": {
+                            "t": 1
+                        }
+                    },
+                    "skills": {
+                        "sk-a": {
+                            "SKILL.md": "# hi",
+                            "refs/x.md": "r"
+                        },
+                        "sk-c": {
+                            "data.json": "{\"raw\":true}"
+                        }
+                    },
+                    "flows": {
+                        "0a1b2c3d-1111-2222-3333-444455556666": {
+                            "f": 1
+                        }
+                    },
+                    "agents": {
+                        "0a1b2c3d-1111-2222-3333-444455556666": {
+                            "g": 1
+                        }
+                    }
+                }
+            }
+        },
+        {
+            "name": "channels v2 empty",
+            "files": {
+                "openbuild-app.json": "{\"formatVersion\":\"2.0\",\"appType\":\"virtual\",\"slug\":\"my-app\",\"name\":\"My App\",\"description\":\"D\",\"version\":\"1.2.3\"}",
+                "manifest.json": "{\"version\":\"1\",\"pages\":[]}"
+            },
+            "repo": null,
+            "result": {
+                "slug": "my-app",
+                "title": "My App",
+                "description": "D",
+                "useCase": "D",
+                "category": "",
+                "version": "1.2.3",
+                "manifest": {
+                    "version": "1",
+                    "pages": []
+                },
+                "companionSchemas": [],
+                "templateOrigin": {
+                    "source": "github",
+                    "repo": null,
+                    "version": "1.2.3"
+                },
+                "channels": {
+                    "dataRegisters": [],
+                    "connectors": [],
+                    "automations": [],
+                    "skills": [],
+                    "flows": [],
+                    "agents": []
+                }
+            }
+        }
+    ]
+}

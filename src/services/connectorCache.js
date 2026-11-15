@@ -15,7 +15,7 @@
  * The cache holds no credential material — only the projected response —
  * consistent with REQ-OCAS-004 (auth lives entirely in OpenConnector).
  *
- * @spec openspec/changes/openconnector-api-sources/tasks.md#task-4.2
+ * @spec openspec/changes/archive/2026-06-14-openconnector-api-sources/tasks.md#task-4.2
  */
 
 /** @type {Map<string, {data: *, fetchedAt: number, ttlMs: number, inflight: Promise<*>|null}>} */
@@ -27,7 +27,7 @@ const store = new Map()
  *
  * @param {object} [query] - query parameter map.
  * @return {string}
- * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006
+ * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-006
  */
 export function stableQueryHash(query) {
 	if (!query || typeof query !== 'object') {
@@ -44,7 +44,7 @@ export function stableQueryHash(query) {
  * @param {string} endpointPath - the OpenConnector endpoint path.
  * @param {object} [query] - query parameter map.
  * @return {string}
- * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006
+ * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-006
  */
 export function cacheKey(appId, endpointPath, query) {
 	return `${appId || ''}::${endpointPath || ''}::${stableQueryHash(query)}`
@@ -55,7 +55,7 @@ export function cacheKey(appId, endpointPath, query) {
  *
  * @param {number} [ttlSeconds] - raw cacheTtl in seconds.
  * @return {number} - TTL in milliseconds (0–3600 s clamped).
- * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006
+ * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-006
  */
 export function ttlToMs(ttlSeconds) {
 	const DEFAULT = 60
@@ -70,7 +70,7 @@ export function ttlToMs(ttlSeconds) {
  * @param {object|undefined} entry - stored cache entry.
  * @param {number} t - current time in ms.
  * @return {boolean}
- * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006
+ * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-006
  */
 function isFresh(entry, t) {
 	return hasData(entry) && t - entry.fetchedAt < entry.ttlMs
@@ -81,7 +81,7 @@ function isFresh(entry, t) {
  *
  * @param {object|undefined} entry - stored cache entry.
  * @return {boolean}
- * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006
+ * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-006
  */
 function hasData(entry) {
 	return Boolean(entry) && entry.data !== undefined
@@ -93,7 +93,7 @@ function hasData(entry) {
  * @param {object|undefined} entry - stored cache entry.
  * @param {number} ttlMs - freshness window in ms.
  * @return {{data: unknown, fetchedAt: number, ttlMs: number}}
- * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006
+ * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-006
  */
 function carriedOver(entry, ttlMs) {
 	return {
@@ -109,7 +109,7 @@ function carriedOver(entry, ttlMs) {
  * @param {{key: string, ttlMs: number, now: () => number}} request - the read.
  * @param {{entry: (object|undefined), loader: () => Promise<unknown>}} source - the current entry and the loader.
  * @return {Promise<unknown>} the loader's promise.
- * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006
+ * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-006
  */
 function startLoad(request, source) {
 	const { entry, loader } = source
@@ -124,7 +124,7 @@ function startLoad(request, source) {
  * @param {{key: string, ttlMs: number, now: () => number}} request - the read.
  * @param {unknown} data - the loaded data.
  * @return {{data: unknown, isStale: boolean}}
- * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006
+ * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-006
  */
 function storeLoaded(request, data) {
 	const { key, ttlMs, now } = request
@@ -139,7 +139,7 @@ function storeLoaded(request, data) {
  * @param {{key: string, ttlMs: number, now: () => number}} request - the read.
  * @param {Error} err - the load error.
  * @return {{data: unknown, isStale: boolean}}
- * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006
+ * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-006
  */
 function serveStale(request, err) {
 	const { key, ttlMs, now } = request
@@ -159,7 +159,7 @@ function serveStale(request, err) {
  * @param {Function} loader - `() => Promise<*>` that performs the network call.
  * @param {Function} [now] - clock injection for tests (default `Date.now`).
  * @return {Promise<{data: *, isStale: boolean}>}
- * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006
+ * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-006
  */
 export async function readThrough(key, ttlMs, loader, now = Date.now) {
 	const entry = store.get(key)
@@ -186,7 +186,7 @@ export async function readThrough(key, ttlMs, loader, now = Date.now) {
 /**
  * Test / teardown helper — drop all cached entries.
  *
- * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-006
+ * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-006
  */
 export function clearConnectorCache() {
 	store.clear()

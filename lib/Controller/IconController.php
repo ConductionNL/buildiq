@@ -35,16 +35,16 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-2
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-3
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-2
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-3
  */
 
 declare(strict_types=1);
 
 namespace OCA\Buildiq\Controller;
 
-use OCA\Buildiq\AppInfo\Application;
-use OCA\Buildiq\Service\IconService;
+use OCA\Buildiq\Kernel\AppIdentity;
+use OCA\Buildiq\Kernel\Contracts\IconServiceInterface;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -79,7 +79,7 @@ class IconController extends Controller {
 	 * Constructor.
 	 *
 	 * @param IRequest $request The incoming HTTP request.
-	 * @param IconService $iconService The icon-resolution service.
+	 * @param IconServiceInterface $iconService The icon-resolution service.
 	 * @param IUserSession $userSession User session for authentication guard.
 	 * @param LoggerInterface $logger PSR logger.
 	 *
@@ -87,11 +87,11 @@ class IconController extends Controller {
 	 */
 	public function __construct(
 		IRequest $request,
-		private readonly IconService $iconService,
+		private readonly IconServiceInterface $iconService,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -107,7 +107,7 @@ class IconController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-2
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-2
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -134,7 +134,7 @@ class IconController extends Controller {
 	 * @NoAdminRequired
 	 * @NoCSRFRequired
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-3
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-3
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -167,8 +167,8 @@ class IconController extends Controller {
 	 *
 	 * @return Response
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-2
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-3
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-2
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-3
 	 */
 	private function buildIconResponse(string $slug, bool $dark): Response {
 		try {

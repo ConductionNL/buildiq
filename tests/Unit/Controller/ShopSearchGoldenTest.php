@@ -13,6 +13,9 @@
  * @version GIT: <git-id>
  *
  * @link https://conduction.nl
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -42,6 +45,8 @@ use RuntimeException;
  *
  * @covers \OCA\Buildiq\Controller\ShopController
  * @covers \OCA\Buildiq\Service\GitHubShopSearch
+ * @uses \OCA\Buildiq\Controller\GitHubRequestParams
+ * @uses \OCA\Buildiq\Service\GitHub\TokenScrubber
  */
 class ShopSearchGoldenTest extends TestCase {
 

@@ -13,6 +13,9 @@
  * @version GIT: <git-id>
  *
  * @link https://conduction.nl
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -38,7 +41,8 @@ use PHPUnit\Framework\TestCase;
  * Forged userId and ownerUid request parameters never become the owner.
  *
  * @covers \OCA\Buildiq\Controller\ShopController
- * @uses   \OCA\Buildiq\Service\RepoSource
+ * @uses   \OCA\Buildiq\Kernel\Values\RepoSource
+ * @uses \OCA\Buildiq\Controller\GitHubRequestParams
  */
 class ShopInstallSeamTest extends TestCase {
 

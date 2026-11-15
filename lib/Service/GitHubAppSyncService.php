@@ -43,11 +43,15 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Exception\AppRepoParseException;
-use OCA\Buildiq\Service\GitHub\AppPushRequest;
-use OCA\Buildiq\Service\GitHub\BrokerAccess;
-use OCA\Buildiq\Service\GitHub\BrokeredRepo;
+use OCA\Buildiq\Kernel\Contracts\GitHubAppSyncServiceInterface;
+use OCA\Buildiq\Kernel\Values\LocalApplicationRef;
+use OCA\Buildiq\Kernel\Values\RepoSource;
+use OCA\Buildiq\Kernel\Values\AppPushRequest;
+use OCA\Buildiq\Kernel\Values\BrokerAccess;
+use OCA\Buildiq\Kernel\Values\BrokeredRepo;
+use OCA\Buildiq\Service\GitHub\CredentialBrokerClient;
 use OCA\Buildiq\Service\GitHub\FileCommit;
-use OCA\Buildiq\Service\GitHub\PushTarget;
+use OCA\Buildiq\Kernel\Values\PushTarget;
 use OCA\Buildiq\Service\GitHub\TokenScrubber;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
@@ -62,16 +66,11 @@ use Throwable;
  *
  * @spec openspec/changes/github-app-sync/specs/github-app-sync/spec.md
  */
-class GitHubAppSyncService {
+class GitHubAppSyncService implements GitHubAppSyncServiceInterface {
 	/**
 	 * The credential-broker service FQCN (resolved lazily; may be absent).
 	 */
 	private const BROKER_CLASS = 'OCA\\OpenRegister\\Service\\Credential\\CredentialBrokerService';
-
-	/**
-	 * The broker `appId` Buildiq identifies itself with.
-	 */
-	private const APP_ID = 'buildiq';
 
 	/**
 	 * The shared Buildiq register slug.
@@ -91,47 +90,13 @@ class GitHubAppSyncService {
 	/**
 	 * The discovery topic set on a freshly created repo.
 	 */
-	private const DISCOVERY_TOPIC = 'openbuild-app';
+	private const DISCOVERY_TOPIC = 'buildiq-app';
 
 	/**
-	 * Outcome: the operation succeeded.
+	 * The shape of a version's Git branch, as GitHubSyncController's REF_PATTERN
+	 * (lifecycle-git-branches); `..` is refused separately.
 	 */
-	public const OUTCOME_OK = 'ok';
-
-	/**
-	 * Outcome: the credential broker is absent — publish is unavailable.
-	 */
-	public const OUTCOME_BROKER_UNAVAILABLE = 'broker_unavailable';
-
-	/**
-	 * Outcome: the broker denied the call (rules missing / credential not allowed).
-	 */
-	public const OUTCOME_BROKER_DENIED = 'broker_denied';
-
-	/**
-	 * Outcome: the app is not linked to a GitHub repository.
-	 */
-	public const OUTCOME_NOT_LINKED = 'not_linked';
-
-	/**
-	 * Outcome: the remote head moved — the owner must pull first (never force).
-	 */
-	public const OUTCOME_PUSH_CONFLICT = 'push_conflict';
-
-	/**
-	 * Outcome: GitHub / transport failure.
-	 */
-	public const OUTCOME_UNREACHABLE = 'github_unreachable';
-
-	/**
-	 * Outcome: GitHub refused the call on permissions grounds (HTTP 403).
-	 *
-	 * Distinct from a transport failure. Publishing a generated app needs a
-	 * credential carrying the `workflow` permission, because the scaffold always
-	 * emits `.github/workflows/*` and GitHub rejects a tree containing those
-	 * without it.
-	 */
-	public const OUTCOME_FORBIDDEN = 'github_forbidden';
+	private const BRANCH_PATTERN = '/^(?!.*\.\.)[A-Za-z0-9._\/-]{1,255}$/';
 
 	/**
 	 * OR object CRUD (load/save Application + versions).
@@ -169,6 +134,13 @@ class GitHubAppSyncService {
 	private readonly AppRepoParser $parser;
 
 	/**
+	 * Sends the JSON calls through OpenRegister's credential broker.
+	 *
+	 * @var CredentialBrokerClient
+	 */
+	private readonly CredentialBrokerClient $broker;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param RegisterStore $store OpenRegister's object service, register and schema mappers and audit trail.
@@ -187,13 +159,14 @@ class GitHubAppSyncService {
 		private readonly GitHubCatalogService $catalogService,
 		private readonly AppChannelApplier $channelApplier,
 		private readonly LoggerInterface $logger,
-		private readonly ContainerInterface $container,
+		ContainerInterface $container,
 	) {
 		$this->objectService = $store->objectService;
 		$this->registerMapper = $store->registerMapper;
 		$this->schemaMapper = $store->schemaMapper;
 		$this->serializer = $codec->serializer;
 		$this->parser = $codec->parser;
+		$this->broker = new CredentialBrokerClient(container: $container);
 	}//end __construct()
 
 	/**
@@ -273,9 +246,14 @@ class GitHubAppSyncService {
 			return $repo;
 		}
 
-		$result = $this->commitFileMap(
-			commit: new FileCommit(repo: $this->foundRepo(found: $repo, access: $request->access), branch: $repo['branch'], files: $files)
-		);
+		$brokered = $this->foundRepo(found: $repo, access: $request->access);
+		$branch = $this->versionBranch(application: $application, version: $version, defaultBranch: $repo['branch']);
+		$missing = $this->ensureBranch(repo: $brokered, branch: $branch, defaultBranch: $repo['branch']);
+		if ($missing !== null) {
+			return ['outcome' => $missing];
+		}
+
+		$result = $this->commitFileMap(commit: new FileCommit(repo: $brokered, branch: $branch, files: $files));
 		if ($result['outcome'] !== self::OUTCOME_OK) {
 			return $result;
 		}
@@ -363,6 +341,65 @@ class GitHubAppSyncService {
 			'branch' => $commit->branch,
 		];
 	}//end commitFileMap()
+
+	/**
+	 * The branch a version pushes to: its own `githubBranch`, or the default
+	 * branch for the production version and for a version without one.
+	 *
+	 * @param array<string,mixed> $application   The Application object.
+	 * @param array<string,mixed> $version       The version pushed.
+	 * @param string              $defaultBranch The repository's default branch.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-each-version-pushes-to-its-own-branch-req-bqgb-002
+	 */
+	private function versionBranch(array $application, array $version, string $defaultBranch): string {
+		$branch = trim((string)($version['githubBranch'] ?? ''));
+		$isProduction = $this->uuidOf(object: $version) === (string)($application['productionVersion'] ?? '');
+		if ($branch === '' || $isProduction === true || preg_match(self::BRANCH_PATTERN, $branch) !== 1) {
+			return $defaultBranch;
+		}
+
+		return $branch;
+	}//end versionBranch()
+
+	/**
+	 * Make a version branch that does not exist yet from the default branch head.
+	 *
+	 * @param BrokeredRepo $repo          The repository and access.
+	 * @param string       $branch        The version's branch.
+	 * @param string       $defaultBranch The repository's default branch.
+	 *
+	 * @return string|null Null when the branch is there (or is the default branch), else the failure outcome.
+	 *
+	 * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-each-version-pushes-to-its-own-branch-req-bqgb-002
+	 */
+	private function ensureBranch(BrokeredRepo $repo, string $branch, string $defaultBranch): ?string {
+		if ($branch === $defaultBranch || $this->resolveHead(repo: $repo, branch: $branch) !== null) {
+			return null;
+		}
+
+		$head = $this->resolveHead(repo: $repo, branch: $defaultBranch);
+		if ($head === null) {
+			// An empty repository: the first commit creates the branch itself.
+			return null;
+		}
+
+		$created = $this->brokerJson(
+			request: [
+				'method' => 'POST',
+				'path' => $repo->target->repoPath() . '/git/refs',
+				'body' => ['ref' => 'refs/heads/' . $branch, 'sha' => $head['commitSha']],
+			],
+			access: $repo->access
+		);
+		if ($created['ok'] === false) {
+			return $this->brokerFailureOutcome(result: $created);
+		}
+
+		return null;
+	}//end ensureBranch()
 
 	/**
 	 * Store the app's GitHub linkage (owner/name + resolved default branch).
@@ -1155,22 +1192,8 @@ class GitHubAppSyncService {
 		$method = (string)$request['method'];
 		$path = (string)$request['path'];
 
-		$encoded = null;
-		if ($request['body'] !== null) {
-			$encoded = (string)json_encode($request['body']);
-		}
-
 		try {
-			$broker = $this->container->get(self::BROKER_CLASS);
-			$response = $broker->request(
-				$access->credentialId,
-				self::APP_ID,
-				$method,
-				$path,
-				['Accept' => 'application/vnd.github+json', 'Content-Type' => 'application/json'],
-				$encoded,
-				$access->actingUserId
-			);
+			$response = $this->broker->sendJson(request: $request, access: $access);
 		} catch (Throwable $e) {
 			// At `debug` this is invisible on any instance running a normal
 			// loglevel, which leaves an operator with a bare 502 and nothing to

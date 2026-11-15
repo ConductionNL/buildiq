@@ -3,6 +3,9 @@
 /**
  * Bundles an Application's flows and agents into an export tree.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Sibling to {@see DataRegisterExportBundler}: same "write JSON into the
  * scaffold, skip what does not resolve" shape, different stores and different
  * failure modes.
@@ -64,8 +67,6 @@
  * (`hermiq.workload-step`, `hermiq.workload-collect`) is an ORDINARY
  * OpenRegister flow. This class does not branch on node type, does not
  * special-case hermiq, and emits one file shape for every flow.
- *
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @category Service
  * @package  OCA\Buildiq\Service
@@ -179,8 +180,8 @@ class FlowAndAgentExportBundler {
 	 *
 	 * @return array<int, array{kind: string, ref: string, reason: string}> What was skipped, for the job result.
 	 *
-	 * @spec openspec/changes/openbuild-exports-flows-and-agents/specs/app-composition-bindings/spec.md#requirement-a-binding-must-be-resolved-against-the-openregister-flow-entity
-	 * @spec openspec/changes/openbuild-exports-flows-and-agents/specs/app-export-completeness/spec.md#requirement-an-unresolvable-binding-must-be-reported-not-silently-dropped
+	 * @spec openspec/specs/app-composition-bindings/spec.md#requirement-a-binding-must-be-resolved-against-the-openregister-flow-entity
+	 * @spec openspec/specs/app-export-completeness/spec.md#requirement-an-unresolvable-binding-must-be-reported-not-silently-dropped
 	 */
 	public function bundle(string $rootDir, array $flows, string $applicationSlug): array {
 		$skipped = $this->bundleFlows(rootDir: $rootDir, flows: $flows);

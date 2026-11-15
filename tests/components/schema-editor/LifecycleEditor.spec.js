@@ -317,4 +317,60 @@ describe('LifecycleEditor', () => {
 			expect(result.transitions[0]).toEqual({ from: 'draft', to: 'draft' })
 		})
 	})
+	describe('lifecycleToEditor transition and action fallbacks', () => {
+		/**
+		 * Drop the generated `_key` fields, so rows compare by content.
+		 *
+		 * @param {Array<object>} rows Editor rows.
+		 * @return {Array<object>}
+		 */
+		function withoutKeys(rows) {
+			return JSON.parse(JSON.stringify(rows, (k, v) => (k === '_key' ? undefined : v)))
+		}
+
+		it('fills missing transition fields with empty strings and no actions', () => {
+			const { transitions } = lifecycleToEditor({ states: ['a'], transitions: [{}] })
+			expect(withoutKeys(transitions)).toEqual([{ from: '', to: '', label: '', actions: [] }])
+		})
+
+		it('reads actions from on_transition before the flat list', () => {
+			const { transitions } = lifecycleToEditor({
+				states: ['a'],
+				transitions: [
+					{ from: 'a', to: 'b', label: 'Go', on_transition: { actions: [{ type: 'webhook', url: 'u' }] }, actions: [{ type: 'x' }] },
+					{ from: 'a', to: 'b', on_transition: {}, actions: [{ payload: 'p' }] },
+				],
+			})
+			expect(withoutKeys(transitions)).toEqual([
+				{ from: 'a', to: 'b', label: 'Go', actions: [{ type: 'webhook', payload: 'u' }] },
+				{ from: 'a', to: 'b', label: '', actions: [{ type: 'audit-event-emit', payload: 'p' }] },
+			])
+		})
+
+		it.each([
+			[{ payload: 'p', event: 'e', template: 't', url: 'u' }, 'p'],
+			[{ event: 'e', template: 't', url: 'u' }, 'e'],
+			[{ template: 't', url: 'u' }, 't'],
+			[{ url: 'u' }, 'u'],
+			[{}, ''],
+		])('takes the action payload from %j', (action, payload) => {
+			const { transitions } = lifecycleToEditor({ transitions: [{ actions: [action] }] })
+			expect(transitions[0].actions[0].payload).toBe(payload)
+		})
+
+		it('gives every transition and action its own key, transition first', () => {
+			const { transitions } = lifecycleToEditor({
+				transitions: [{ actions: [{}, {}] }, { actions: [{}] }],
+			})
+			const keys = [
+				transitions[0]._key,
+				...transitions[0].actions.map((a) => a._key),
+				transitions[1]._key,
+				transitions[1].actions[0]._key,
+			]
+			const numbers = keys.map((key) => Number(key.replace('lc-', '')))
+			expect(numbers).toEqual([...numbers].sort((x, y) => x - y))
+			expect(new Set(keys).size).toBe(5)
+		})
+	})
 })
