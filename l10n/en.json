@@ -2343,7 +2343,11 @@
         "Add records to take along": "Add records to take along",
         "Works offline": "Works offline",
         "Submissions made without a connection wait on the device and are sent when it returns. The app gets a \"Waiting to sync\" page.": "Submissions made without a connection wait on the device and are sent when it returns. The app gets a \"Waiting to sync\" page.",
-        "Waiting to sync": "Waiting to sync"
+        "Waiting to sync": "Waiting to sync",
+        "Mobile app project": "Mobile app project",
+        "Adds a project your organisation turns into iOS and Android apps that open this app. Buildiq does not build, sign or publish them.": "Adds a project your organisation turns into iOS and Android apps that open this app. Buildiq does not build, sign or publish them.",
+        "Bundle id": "Bundle id",
+        "Leave empty for {bundleId}. The stores do not let you change it after the first release.": "Leave empty for {bundleId}. The stores do not let you change it after the first release."
     },
     "plurals": "",
     "pluralForm": "nplurals=2; plural=(n != 1);"

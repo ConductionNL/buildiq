@@ -2409,7 +2409,11 @@ OC.L10N.register(
         "Add records to take along": "Records toevoegen om mee te nemen",
         "Works offline": "Werkt offline",
         "Submissions made without a connection wait on the device and are sent when it returns. The app gets a \"Waiting to sync\" page.": "Inzendingen zonder verbinding wachten op het apparaat en worden verstuurd zodra die terug is. De app krijgt een pagina \"Wacht op synchronisatie\".",
-        "Waiting to sync": "Wacht op synchronisatie"
+        "Waiting to sync": "Wacht op synchronisatie",
+        "Mobile app project": "Project voor een mobiele app",
+        "Adds a project your organisation turns into iOS and Android apps that open this app. Buildiq does not build, sign or publish them.": "Voegt een project toe waarmee je organisatie iOS- en Android-apps maakt die deze app openen. Buildiq bouwt, ondertekent en publiceert ze niet.",
+        "Bundle id": "Bundel-id",
+        "Leave empty for {bundleId}. The stores do not let you change it after the first release.": "Laat leeg voor {bundleId}. In de app-winkels kun je dit na de eerste uitgave niet meer wijzigen."
     },
     "nplurals=2; plural=(n != 1);"
 )
