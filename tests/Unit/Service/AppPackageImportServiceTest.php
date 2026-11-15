@@ -40,6 +40,7 @@ use ZipArchive;
  * @uses   \OCA\Buildiq\Service\AppRepoParser
  * @uses   \OCA\Buildiq\Exception\AppRepoParseException
  * @uses   \OCA\Buildiq\Service\SchemaSlugClaims
+ * @uses   \OCA\Buildiq\Service\AppRecordsImporter
  */
 class AppPackageImportServiceTest extends TestCase {
 
