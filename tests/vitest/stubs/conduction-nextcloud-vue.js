@@ -434,6 +434,14 @@ export const CnWidgetWrapper = {
  */
 export function registerBuiltinDashboardWidgets() {}
 
+// A few names of the library's shared dashboard icon set, keyed as the real
+// DASHBOARD_ICONS is (name -> icon component), for pickers that offer them.
+export const DASHBOARD_ICONS = Object.freeze({
+	ViewDashboard: stub('ViewDashboardIcon'),
+	ChartBar: stub('ChartBarIcon'),
+	Calendar: stub('CalendarIcon'),
+})
+
 /**
  * Stub for `CnAddWidgetModal`. Declares every prop the panel binds (the spec
  * asserts `surface`, `userAddableOnly` and `editingWidget` on it) and both

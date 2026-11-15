@@ -214,7 +214,8 @@ export function useCopilot() {
 		errorDetail.value = ''
 		try {
 			const result = await executePlan(
-				{ summary: plan.value.summary, steps: plan.value.steps },
+				// traceId: the run keeps this plan's model steps (REQ-BQAG-004).
+				{ summary: plan.value.summary, steps: plan.value.steps, traceId: plan.value.traceId },
 				{ agentId, prompt: lastPrompt.value },
 			)
 			executeResult.value = result
@@ -245,7 +246,7 @@ export function useCopilot() {
 			discardRun({
 				agentId,
 				prompt: lastPrompt.value,
-				plan: { summary: plan.value.summary, steps: plan.value.steps },
+				plan: { summary: plan.value.summary, steps: plan.value.steps, traceId: plan.value.traceId },
 			})
 		}
 		state.value = 'idle'
