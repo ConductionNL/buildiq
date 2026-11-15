@@ -40,9 +40,11 @@ namespace OCA\Buildiq\Service;
 use OCA\Buildiq\Exception\CopilotException;
 use OCA\Buildiq\Kernel\Contracts\BuildiqToolProviderInterface;
 use OCA\Buildiq\Kernel\Contracts\CopilotServiceInterface;
+use OCA\Buildiq\Service\Copilot\AgentKnowledgeReader;
 use OCA\Buildiq\Service\Copilot\CopilotPlanValidator;
 use OCA\Buildiq\Service\Copilot\CopilotPromptBuilder;
 use OCA\Buildiq\Service\Copilot\CopilotTextTask;
+use OCA\Buildiq\Service\Copilot\ModelStep;
 use OCA\Buildiq\Support\ManifestEntryList;
 use OCA\Buildiq\Support\ManifestPageShape;
 use OCA\Buildiq\Support\ManifestRoute;
@@ -132,11 +134,39 @@ class CopilotService implements CopilotServiceInterface {
 	];
 
 	/**
+	 * The model steps of the plan request in progress (REQ-BQAG-004).
+	 *
+	 * @var array<int, array<string, mixed>>
+	 */
+	private array $modelSteps = [];
+
+	/**
 	 * The text-to-text task seam shared with the builder assist.
 	 *
 	 * @var CopilotTextTask
 	 */
 	private readonly CopilotTextTask $textTask;
+
+	/**
+	 * Reads an agent's knowledge files into its plan prompt (REQ-BQAG-002).
+	 *
+	 * @var AgentKnowledgeReader
+	 */
+	private readonly AgentKnowledgeReader $knowledgeReader;
+
+	/**
+	 * The knowledge files the plan request in progress puts in its prompt (REQ-BQAG-002).
+	 *
+	 * @var array<int, array{fileName: string, text: string}>
+	 */
+	private array $knowledge = [];
+
+	/**
+	 * The trace id the execute request in progress echoes back (REQ-BQAG-004).
+	 *
+	 * @var string|null
+	 */
+	private ?string $traceId = null;
 
 	/**
 	 * Constructor.
@@ -161,6 +191,7 @@ class CopilotService implements CopilotServiceInterface {
 	 *                                       turn.
 	 * @param AuditTrailMapper|null $auditTrailMapper Optional OR audit-trail writer for admin-bypass parity (L2).
 	 * @param CopilotTextTask|null $textTask The text-to-text task seam; built from the container and logger when not given.
+	 * @param AgentKnowledgeReader|null $knowledgeReader Reads an agent's knowledge files; built from the container and logger when not given.
 	 *
 	 * @return void
 	 */
@@ -178,8 +209,10 @@ class CopilotService implements CopilotServiceInterface {
 		private readonly AgentRunLogger $agentRunLogger,
 		private readonly ?AuditTrailMapper $auditTrailMapper = null,
 		?CopilotTextTask $textTask = null,
+		?AgentKnowledgeReader $knowledgeReader = null,
 	) {
 		$this->textTask = ($textTask ?? new CopilotTextTask(container: $container, logger: $logger));
+		$this->knowledgeReader = ($knowledgeReader ?? new AgentKnowledgeReader(container: $container, logger: $logger));
 	}//end __construct()
 
 	/**
@@ -250,8 +283,10 @@ class CopilotService implements CopilotServiceInterface {
 			$appSlug = (string)($agent['applicationSlug'] ?? '');
 		}
 
+		$this->modelSteps = [];
+		$this->knowledge = [];
 		try {
-			return $this->planWithinContext(brief: $brief, appSlug: $appSlug, userId: $userId, agent: $agent, versionSlug: $versionSlug);
+			$result = $this->planWithinContext(brief: $brief, appSlug: $appSlug, userId: $userId, agent: $agent, versionSlug: $versionSlug);
 		} catch (CopilotException $e) {
 			if ($agent !== null) {
 				$this->agentRunLogger->log(
@@ -260,13 +295,36 @@ class CopilotService implements CopilotServiceInterface {
 					prompt: $brief,
 					plan: [],
 					toolCalls: [],
-					outcome: 'plan-rejected'
+					outcome: 'plan-rejected',
+					trace: $this->currentTrace()
 				);
 			}
 
 			throw $e;
 		}//end try
+
+		// REQ-BQAG-004: the steps wait for the run under an id the client echoes back.
+		if ($agent !== null) {
+			$result['traceId'] = $this->agentRunLogger->rememberTrace(agent: $agent, userId: $userId, trace: $this->currentTrace());
+		}
+
+		return $result;
 	}//end plan()
+
+	/**
+	 * The model steps of the plan request just made, as a run keeps them.
+	 *
+	 * @return array{modelSteps: array<int, array<string, mixed>>, knowledgeUsed: array<int, string>, durationMs: int}
+	 *
+	 * @spec openspec/changes/ai-agents-knowledge-and-run-trace/specs/agent-workspace/spec.md#requirement-a-run-keeps-its-model-steps-req-bqag-004
+	 */
+	private function currentTrace(): array {
+		return [
+			'modelSteps' => $this->modelSteps,
+			'knowledgeUsed' => array_column($this->knowledge, 'fileName'),
+			'durationMs' => array_sum(array_column($this->modelSteps, 'durationMs')),
+		];
+	}//end currentTrace()
 
 	/**
 	 * Core plan logic, wrapped by {@see plan()} so an agent-scoped failure
@@ -301,6 +359,8 @@ class CopilotService implements CopilotServiceInterface {
 			$agentEnabledTools = (array)($agent['enabledTools'] ?? []);
 			$effectiveDescriptors = $this->narrowDescriptors(descriptors: $effectiveDescriptors, enabledTools: $agentEnabledTools);
 			$instructionsPrefix = (string)($agent['instructions'] ?? '');
+			// REQ-BQAG-002: read only after the caller's role on the agent's app is confirmed above.
+			$this->knowledge = $this->knowledgeReader->read(agent: $agent);
 		}
 
 		$plan = $this->requestPlanFromLlm(
@@ -348,6 +408,7 @@ class CopilotService implements CopilotServiceInterface {
 	 * @param string $userId Acting user's UID.
 	 * @param string $prompt The user's natural-language brief for this turn.
 	 * @param array<string, mixed> $plan The plan `{summary, steps[]}` that was reviewed and discarded.
+	 * @param string|null $traceId The trace id the plan returned, so the run keeps its model steps (REQ-BQAG-004).
 	 *
 	 * @return array<string, mixed> The persisted `AgentRun` record.
 	 *
@@ -355,7 +416,7 @@ class CopilotService implements CopilotServiceInterface {
 	 *
 	 * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/agent-workspace/spec.md
 	 */
-	public function discard(string $agentId, string $userId, string $prompt, array $plan): array {
+	public function discard(string $agentId, string $userId, string $prompt, array $plan, ?string $traceId = null): array {
 		$agent = $this->requireAgent(agentId: $agentId);
 		$appSlug = (string)($agent['applicationSlug'] ?? '');
 		if ($appSlug !== '') {
@@ -369,7 +430,8 @@ class CopilotService implements CopilotServiceInterface {
 			prompt: $prompt,
 			plan: $plan,
 			toolCalls: [],
-			outcome: 'discarded'
+			outcome: 'discarded',
+			traceId: $traceId
 		);
 	}//end discard()
 
@@ -867,6 +929,7 @@ class CopilotService implements CopilotServiceInterface {
 	 * @param string $prompt The original user brief for this turn, echoed back so the
 	 *                       resulting `AgentRun` record carries it. Ignored when
 	 *                       `$agentId` is null.
+	 * @param string|null $traceId The trace id the plan returned, so the run keeps its model steps (REQ-BQAG-004).
 	 *
 	 * @return array{results: array<int, array<string, mixed>>}
 	 *
@@ -875,11 +938,12 @@ class CopilotService implements CopilotServiceInterface {
 	 * @spec openspec/specs/ai-copilot/spec.md
 	 * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
 	 */
-	public function execute(array $plan, string $userId, ?string $agentId = null, string $prompt = ''): array {
+	public function execute(array $plan, string $userId, ?string $agentId = null, string $prompt = '', ?string $traceId = null): array {
 		// The server never trusts the client's review, so it re-normalises for
 		// the same reason it re-validates: a plan posted straight at this
 		// endpoint gets the routes and data bindings the review screen showed.
 		$plan = $this->normalisePlan(plan: $plan);
+		$this->traceId = $traceId;
 
 		$agent = $this->resolveAgentForExecute(plan: $plan, userId: $userId, prompt: $prompt, agentId: $agentId);
 
@@ -949,7 +1013,15 @@ class CopilotService implements CopilotServiceInterface {
 			}
 		} catch (CopilotException $e) {
 			if ($agent !== null) {
-				$this->agentRunLogger->log(agent: $agent, userId: $userId, prompt: $prompt, plan: $plan, toolCalls: [], outcome: 'plan-rejected');
+				$this->agentRunLogger->log(
+					agent: $agent,
+					userId: $userId,
+					prompt: $prompt,
+					plan: $plan,
+					toolCalls: [],
+					outcome: 'plan-rejected',
+					traceId: $this->traceId
+				);
 			}
 
 			throw $e;
@@ -1008,7 +1080,15 @@ class CopilotService implements CopilotServiceInterface {
 			}//end foreach
 
 			if ($agent !== null) {
-				$this->agentRunLogger->log(agent: $agent, userId: $userId, prompt: $prompt, plan: $plan, toolCalls: $toolCalls, outcome: 'applied');
+				$this->agentRunLogger->log(
+					agent: $agent,
+					userId: $userId,
+					prompt: $prompt,
+					plan: $plan,
+					toolCalls: $toolCalls,
+					outcome: 'applied',
+					traceId: $this->traceId
+				);
 			}
 
 			return ['results' => $results];
@@ -1022,7 +1102,8 @@ class CopilotService implements CopilotServiceInterface {
 					prompt: $prompt,
 					plan: $plan,
 					toolCalls: $toolCalls,
-					outcome: 'rolled-back'
+					outcome: 'rolled-back',
+					traceId: $this->traceId
 				);
 			}
 
@@ -1356,19 +1437,24 @@ class CopilotService implements CopilotServiceInterface {
 			throw new CopilotException(errorCode: 'unsupported_server', message: 'The AI copilot is not available.', httpStatus: 503);
 		}
 
-		$prompt = $this->promptBuilder->build(
+		// REQ-BQAG-002: the agent's knowledge files go after its instructions.
+		$builder = $this->promptBuilder->withKnowledge(knowledge: $this->knowledge);
+		$prompt = $builder->build(
 			brief: $brief,
 			targetContext: $targetContext,
 			toolDescriptors: $toolDescriptors,
 			instructionsPrefix: $instructionsPrefix
 		);
-		[$plan, $raw, $parseError] = $this->runPlanAttempt(manager: $manager, prompt: $prompt, userId: $userId, appSlug: $appSlug);
+		[$plan, $raw, $parseError] = $this->recordedPlanAttempt(
+			step: new ModelStep(attempt: 1, prompt: $prompt),
+			run: fn (): array => $this->runPlanAttempt(manager: $manager, prompt: $prompt, userId: $userId, appSlug: $appSlug)
+		);
 		if ($plan !== null) {
 			return $plan;
 		}
 
 		// Exactly one repair round-trip (spec REQ-OBAIC-002) — never a third LLM call.
-		$repairPrompt = $this->promptBuilder->buildRepairPrompt(
+		$repairPrompt = $builder->buildRepairPrompt(
 			brief: $brief,
 			previousOutput: $raw,
 			parseError: $parseError,
@@ -1376,7 +1462,10 @@ class CopilotService implements CopilotServiceInterface {
 			toolDescriptors: $toolDescriptors,
 			instructionsPrefix: $instructionsPrefix
 		);
-		[$plan, , $parseError] = $this->runPlanAttempt(manager: $manager, prompt: $repairPrompt, userId: $userId, appSlug: $appSlug);
+		[$plan, , $parseError] = $this->recordedPlanAttempt(
+			step: new ModelStep(attempt: 2, prompt: $repairPrompt),
+			run: fn (): array => $this->runPlanAttempt(manager: $manager, prompt: $repairPrompt, userId: $userId, appSlug: $appSlug)
+		);
 		if ($plan !== null) {
 			return $plan;
 		}
@@ -1387,6 +1476,35 @@ class CopilotService implements CopilotServiceInterface {
 			httpStatus: 422
 		);
 	}//end requestPlanFromLlm()
+
+	/**
+	 * Run one plan attempt and keep its model step (REQ-BQAG-004).
+	 *
+	 * A failed first attempt is `repair-needed` (a repair follows), a failed
+	 * second one `failed`. A provider error is kept as `error` before it is
+	 * rethrown, so a rejected run still shows where the model call stopped.
+	 *
+	 * @param ModelStep $step The step record, started just before the call.
+	 * @param callable  $run  Runs the attempt; returns `[plan|null, rawOutput, parseError]`.
+	 *
+	 * @return array{0: array<string, mixed>|null, 1: string, 2: string} `[plan|null, rawOutput, parseError]`.
+	 *
+	 * @throws CopilotException When the provider fails.
+	 *
+	 * @spec openspec/changes/ai-agents-knowledge-and-run-trace/specs/agent-workspace/spec.md#requirement-a-run-keeps-its-model-steps-req-bqag-004
+	 */
+	private function recordedPlanAttempt(ModelStep $step, callable $run): array {
+		try {
+			$result = $run();
+		} catch (CopilotException $e) {
+			$this->modelSteps[] = $step->error(message: $e->getMessage());
+			throw $e;
+		}
+
+		$this->modelSteps[] = $step->answered(result: $result);
+
+		return $result;
+	}//end recordedPlanAttempt()
 
 	/**
 	 * Run a single LLM call attempt and try to decode the result as a plan object.

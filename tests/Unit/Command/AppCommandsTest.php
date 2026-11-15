@@ -128,7 +128,8 @@ class AppCommandsTest extends TestCase {
 		$users = $this->createMock(IUserManager::class);
 		$users->method('userExists')->willReturnCallback(static fn (string $uid): bool => $uid === 'sanne');
 		$importer = $this->createMock(AppPackageImportServiceInterface::class);
-		$importer->expects($this->once())->method('import')->with($file, '', 'vergunningen', 'sanne')
+		$importer->expects($this->once())->method('importWithRecords')
+			->with($file, ['name' => '', 'slug' => 'vergunningen', 'owner' => 'sanne', 'records' => false])
 			->willReturn(['status' => 201, 'data' => ['slug' => 'vergunningen', 'warnings' => ['skills skipped']]]);
 		$tester = self::tester(new AppImport($importer, $users));
 
@@ -155,7 +156,7 @@ class AppCommandsTest extends TestCase {
 		$users = $this->createMock(IUserManager::class);
 		$users->method('userExists')->willReturn(true);
 		$importer = $this->createMock(AppPackageImportServiceInterface::class);
-		$importer->method('import')->willReturn(['status' => 422, 'data' => ['error' => 'schema_unparseable', 'detail' => 'bad JSON', 'path' => 'schemas/permit.json']]);
+		$importer->method('importWithRecords')->willReturn(['status' => 422, 'data' => ['error' => 'schema_unparseable', 'detail' => 'bad JSON', 'path' => 'schemas/permit.json']]);
 		$tester = self::tester(new AppImport($importer, $users));
 
 		$this->assertSame(Command::FAILURE, $tester->execute(['file' => $file, '--owner' => 'sanne']));
@@ -163,6 +164,45 @@ class AppCommandsTest extends TestCase {
 		unlink($file);
 
 	}//end testARefusedPackagePrintsTheCodeAndFile()
+
+	/**
+	 * With --records the records come along, and each schema's outcome is printed; a failed schema does not fail the import.
+	 *
+	 * @return void
+	 */
+	public function testRecordsAreImportedAndReportedPerSchema(): void {
+		$file = (string)tempnam(sys_get_temp_dir(), 'bqcli');
+		$users = $this->createMock(IUserManager::class);
+		$users->method('userExists')->willReturn(true);
+		$importer = $this->createMock(AppPackageImportServiceInterface::class);
+		$importer->expects($this->once())->method('importWithRecords')
+			->with($file, ['name' => '', 'slug' => '', 'owner' => 'sanne', 'records' => true])
+			->willReturn(
+				[
+					'status' => 201,
+					'data' => [
+						'slug' => 'vergunningen',
+						'records' => [
+							'imported' => 40,
+							'failed' => 3,
+							'schemas' => [
+								['schema' => 'permit', 'imported' => 40, 'failed' => 0],
+								['schema' => 'zaak', 'imported' => 0, 'failed' => 3, 'error' => 'import_failed'],
+							],
+						],
+					],
+				]
+			);
+		$tester = self::tester(new AppImport($importer, $users));
+
+		$this->assertSame(Command::SUCCESS, $tester->execute(['file' => $file, '--owner' => 'sanne', '--records' => true]));
+		$this->assertStringContainsString('40 permit records imported.', $tester->getDisplay());
+		$this->assertStringContainsString('0 zaak records imported.', $tester->getDisplay());
+		$this->assertStringContainsString('3 zaak records failed: import_failed.', $tester->getDisplay());
+		$this->assertStringNotContainsString('permit records failed', $tester->getDisplay());
+		unlink($file);
+
+	}//end testRecordsAreImportedAndReportedPerSchema()
 
 	/**
 	 * Delete asks first: a declined prompt deletes nothing, a confirmed one keeps the data by default.
