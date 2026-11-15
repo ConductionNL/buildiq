@@ -40,6 +40,7 @@ use OCA\Buildiq\Kernel\Contracts\ConditionActionExecutorInterface;
 use OCA\Buildiq\Kernel\Contracts\ConnectionReporterInterface;
 use OCA\Buildiq\Kernel\Contracts\CopilotServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\DemoDataServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\DeviceFeaturesInterface;
 use OCA\Buildiq\Kernel\Contracts\DocumentGenerationServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\ExportAppContentBundlerInterface;
 use OCA\Buildiq\Kernel\Contracts\ExportArchiveStoreInterface;
@@ -131,6 +132,7 @@ final class ContractBindings {
 		$context->registerServiceAlias(ConnectionReporterInterface::class, ConnectionReporter::class);
 		$context->registerServiceAlias(CopilotServiceInterface::class, CopilotService::class);
 		$context->registerServiceAlias(DemoDataServiceInterface::class, DemoDataService::class);
+		$context->registerServiceAlias(DeviceFeaturesInterface::class, DeviceFeatures::class);
 		$context->registerServiceAlias(DocumentGenerationServiceInterface::class, DocumentGenerationService::class);
 		$context->registerServiceAlias(ExportAppContentBundlerInterface::class, ExportAppContentBundler::class);
 		$context->registerServiceAlias(ExportArchiveStoreInterface::class, ExportArchiveStore::class);
