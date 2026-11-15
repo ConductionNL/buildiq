@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ */
+
 declare(strict_types=1);
 
 // Define that we're running PHPUnit.
@@ -49,12 +54,53 @@ foreach ($orCandidates as $orPath) {
 	}
 }
 
+// OpenRegister's published contracts, from the hydra-gates package, the same
+// way `bootstrap.php` loads them. The stub file below declares
+// `class ObjectEntity ... implements \OCA\OpenRegister\Contract\ObjectEntityInterface`,
+// and most tests mock `ObjectServiceInterface`, so without these this config
+// errored on every such test while `phpunit.xml` passed them.
+//
+// `RegisterSlugResolution` is a CLASS, so the guard asks both questions: a
+// duplicate declaration is a fatal, not a no-op.
+// The published contract still declares the old lock signature; buildiq
+// locks through OpenRegister main's LockRequest / UnlockRequest, so declare
+// the interface from the local stub first when OpenRegister is not loadable.
+if (interface_exists('\\OCA\\OpenRegister\\Contract\\ObjectServiceInterface') === false) {
+	require_once __DIR__ . '/stubs/openregister-object-service-interface.stub.php';
+}
+
+$buildiqContractDir = __DIR__ . '/../vendor/conduction/hydra-gates/hydra-gates/contracts';
+foreach ([
+	'ObjectEntityInterface',
+	'ObjectServiceInterface',
+	'RegisterSlugResolution',
+	'RegisterSlugResolverInterface',
+] as $contract) {
+	$fqcn = '\\OCA\\OpenRegister\\Contract\\' . $contract;
+	if (interface_exists($fqcn) === true || class_exists($fqcn) === true) {
+		continue;
+	}
+
+	$shipped = $buildiqContractDir . '/' . $contract . '.php';
+	if (file_exists($shipped) === true) {
+		require_once $shipped;
+	}
+}
+
+unset($buildiqContractDir, $contract, $fqcn, $shipped);
+
 // Final fallback — if OpenRegister sources aren't present at all,
 // register a stub set so type-hinted parameters resolve.
 require_once __DIR__ . '/stubs/openregister-stubs.php';
 
 // Form destination contract (openregister#4563). Same guards.
 require_once __DIR__ . '/stubs/openregister-form.stub.php';
+
+// Leaf-provider contract (ADR-066). Same guards.
+require_once __DIR__ . '/stubs/openregister-leaf.stub.php';
+
+// Object import contract (records of an imported app archive). Same guards.
+require_once __DIR__ . '/stubs/openregister-import.stub.php';
 
 // OCP\Files\IRootFolder extends OC\Hooks\Emitter (NC server core, not part
 // of the nextcloud/ocp stub package) — see the stub's own docblock for why
@@ -85,6 +131,16 @@ require_once __DIR__ . '/stubs/DoctrineStubs.php';
 // loadable in unit-test isolation — load the stub so `implements
 // IMcpToolProvider` doesn't blow up at class-load time.
 require_once __DIR__ . '/Stubs/Mcp/IMcpToolProvider.php';
+
+// Integriq's connection-registry events, which ConnectionReporter sends by
+// class name behind class_exists (ADR-041). Loaded only when integriq is absent.
+foreach (['ConnectionStatusReportedEvent', 'ConnectionRefreshRequestedEvent'] as $integriqStubEvent) {
+	if (class_exists('\\OCA\\Integriq\\Event\\' . $integriqStubEvent) === false) {
+		require_once __DIR__ . '/Stubs/Integriq/Event/' . $integriqStubEvent . '.php';
+	}
+}
+
+unset($integriqStubEvent);
 
 /**
  * Tell whether a Nextcloud root is an INSTALLED instance, not just a source tree.

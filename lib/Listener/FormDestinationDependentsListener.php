@@ -34,12 +34,13 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Listener;
 
-use OCA\Buildiq\Service\RegistrationFormTargetWarnings;
+use OCA\Buildiq\Kernel\Contracts\RegistrationFormTargetWarningsInterface;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Event\FormDestinationDependentsEvent;
 use OCA\OpenRegister\Service\Form\FormDependent;
+use OCA\OpenRegister\Service\Form\PublishedForm;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use OCP\IAppConfig;
@@ -67,7 +68,7 @@ final class FormDestinationDependentsListener implements IEventListener {
 	 * @param ObjectServiceInterface $objectService OpenRegister's object service.
 	 * @param RegisterMapper $registerMapper Resolves a form's destination register.
 	 * @param IAppConfig $appConfig App config, for buildiq's own register slug.
-	 * @param RegistrationFormTargetWarnings $forms Maps a form the way the save-time check does.
+	 * @param RegistrationFormTargetWarningsInterface $forms Maps a form the way the save-time check does.
 	 * @param LoggerInterface $logger Logger.
 	 *
 	 * @return void
@@ -76,7 +77,7 @@ final class FormDestinationDependentsListener implements IEventListener {
 		private readonly ObjectServiceInterface $objectService,
 		private readonly RegisterMapper $registerMapper,
 		private readonly IAppConfig $appConfig,
-		private readonly RegistrationFormTargetWarnings $forms,
+		private readonly RegistrationFormTargetWarningsInterface $forms,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -114,15 +115,17 @@ final class FormDestinationDependentsListener implements IEventListener {
 
 			$event->addForm(
 				new FormDependent(
-					id: (string)($form['id'] ?? ''),
-					app: 'buildiq',
-					title: (string)($form['name'] ?? ''),
+					form: new PublishedForm(
+						id: (string)($form['id'] ?? ''),
+						app: 'buildiq',
+						title: (string)($form['name'] ?? ''),
+						audience: $audience,
+					),
 					author: $this->authorOf(form: $form),
 					mapping: $this->forms->mappingOf(form: $form),
 					unpublish: function () use ($form): void {
 						$this->unpublish(form: $form);
 					},
-					audience: $audience,
 				)
 			);
 		}

@@ -55,13 +55,21 @@ function isFilled(value) {
  */
 function nameUnnamedPages(pages) {
 	for (const page of pages) {
-		if (!page || typeof page !== 'object' || isFilled(page.id)) {
-			continue
-		}
-		if (isFilled(page.route)) {
+		if (isUnnamedPage(page) && isFilled(page.route)) {
 			page.id = page.route
 		}
 	}
+}
+
+/**
+ * Whether an entry is a page object without an id.
+ *
+ * @param {unknown} page - a manifest page entry.
+ * @return {boolean}
+ * @spec exclude step of nameUnnamedPages
+ */
+function isUnnamedPage(page) {
+	return Boolean(page) && typeof page === 'object' && !isFilled(page.id)
 }
 
 /**
@@ -72,18 +80,29 @@ function nameUnnamedPages(pages) {
  * @spec exclude step of normalizeManifestRouting
  */
 function pageIndex(pages) {
-	const idByRoute = new Map()
-	const ids = new Set()
+	const index = { ids: new Set(), idByRoute: new Map() }
 	for (const page of pages) {
-		if (!page || !isFilled(page.id)) {
-			continue
-		}
-		ids.add(page.id)
-		if (isFilled(page.route) && !idByRoute.has(page.route)) {
-			idByRoute.set(page.route, page.id)
+		if (page && isFilled(page.id)) {
+			indexPage(index, page)
 		}
 	}
-	return { ids, idByRoute }
+	return index
+}
+
+/**
+ * Add a named page to the index: its id, and its path when no earlier page
+ * took that path.
+ *
+ * @param {{ids: Set<string>, idByRoute: Map<string,string>}} index - the index (mutated).
+ * @param {object} page - a page with an id.
+ * @return {void}
+ * @spec exclude step of pageIndex
+ */
+function indexPage(index, page) {
+	index.ids.add(page.id)
+	if (isFilled(page.route) && !index.idByRoute.has(page.route)) {
+		index.idByRoute.set(page.route, page.id)
+	}
 }
 
 /**

@@ -104,6 +104,17 @@
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 
+/**
+ * A health answer as the section's state: the body when it is an object,
+ * null otherwise.
+ *
+ * @param {object|string|number|null} data - the response body.
+ * @return {?object}
+ */
+function healthOf(data) {
+	return data && typeof data === 'object' ? data : null
+}
+
 export default {
 	name: 'ApplicationHealthSection',
 
@@ -190,18 +201,27 @@ export default {
 			}
 			this.state = 'loading'
 			try {
-				const url = generateUrl(
-					`/apps/buildiq/api/applications/${encodeURIComponent(this.appUuid)}/versions/${encodeURIComponent(this.versionUuid)}/health`,
-				)
-				const { data } = await axios.get(url, {
-					params: { window: this.window },
-				})
-				this.health = data && typeof data === 'object' ? data : null
+				this.health = healthOf(await this.readHealth())
 				this.state = 'done'
 			} catch {
 				this.health = null
 				this.state = 'error'
 			}
+		},
+
+		/**
+		 * Read the version's health for the window.
+		 *
+		 * @return {Promise<object>} the response body.
+		 */
+		async readHealth() {
+			const url = generateUrl(
+				`/apps/buildiq/api/applications/${encodeURIComponent(this.appUuid)}/versions/${encodeURIComponent(this.versionUuid)}/health`,
+			)
+			const { data } = await axios.get(url, {
+				params: { window: this.window },
+			})
+			return data
 		},
 
 		/**

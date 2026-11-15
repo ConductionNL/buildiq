@@ -23,10 +23,64 @@ function versionsFrom(data) {
 }
 
 /**
+ * The uuid of a version given as a uuid or as an embedded record.
+ *
+ * @param {?(string|object)} version The version reference.
+ * @return {string|null} The uuid, or null.
+ */
+function versionUuidOf(version) {
+	if (!version) return null
+	if (typeof version === 'string') return version
+	return version.uuid || version.id || null
+}
+
+/**
+ * The Application id a component loads: its `objectId`, else the route's.
+ *
+ * @param {object} vm The component.
+ * @return {string} The id, or ''.
+ */
+function requestedApplicationId(vm) {
+	return vm.objectId || routeObjectId(vm.$route) || ''
+}
+
+/**
+ * The `objectId` route param, if any.
+ *
+ * @param {?object} route The current route.
+ * @return {string|undefined}
+ */
+function routeObjectId(route) {
+	return route && route.params && route.params.objectId
+}
+
+/**
+ * Take the next request number for a component's record refresh.
+ *
+ * @param {object} vm The component.
+ * @return {number} The number of the request now in flight.
+ */
+function nextApplicationRequest(vm) {
+	const seq = (vm._appReqSeq || 0) + 1
+	vm._appReqSeq = seq
+	return seq
+}
+
+/**
+ * A rejection as an Error.
+ *
+ * @param {unknown} e The rejection.
+ * @return {Error}
+ */
+function asError(e) {
+	return e instanceof Error ? e : new Error(String(e))
+}
+
+/**
  * Loading, ordering and picking the versions of the application a detail
  * component shows. A component runs its own follow-up in `onVersionsLoaded()`.
  *
- * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+ * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
  */
 export const applicationVersionsMixin = {
 	computed: {
@@ -34,7 +88,7 @@ export const applicationVersionsMixin = {
 		 * App slug from the resolved Application record.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		appSlug() {
 			return (this.application && this.application.slug) || ''
@@ -44,20 +98,17 @@ export const applicationVersionsMixin = {
 		 * Production version UUID resolved from the Application record.
 		 *
 		 * @return {string|null}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		productionVersionUuid() {
-			const pv = this.application && this.application.productionVersion
-			if (!pv) return null
-			if (typeof pv === 'string') return pv
-			return pv.uuid || pv.id || null
+			return versionUuidOf(this.application && this.application.productionVersion)
 		},
 
 		/**
 		 * Versions ordered along the promotesTo chain (most-upstream first).
 		 *
 		 * @return {Array<object>}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		orderedVersions() {
 			const all = Array.isArray(this.versions) ? this.versions.slice() : []
@@ -86,7 +137,7 @@ export const applicationVersionsMixin = {
 		 * Currently active version (selected, or production, or first).
 		 *
 		 * @return {object|null}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		activeVersion() {
 			if (!this.selectedVersionUuid) {
@@ -102,7 +153,7 @@ export const applicationVersionsMixin = {
 		 * The production version row (for the chain/star resolution).
 		 *
 		 * @return {object|null}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		productionVersion() {
 			if (!this.productionVersionUuid) return null
@@ -120,7 +171,7 @@ export const applicationVersionsMixin = {
 		 *
 		 * @param {object} next The new Application record.
 		 * @return {void}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		object(next) {
 			if (next) {
@@ -144,7 +195,7 @@ export const applicationVersionsMixin = {
 	 * Fetch the Application + versions on mount.
 	 *
 	 * @return {void}
-	 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+	 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 	 */
 	mounted() {
 		if (!this.application) {
@@ -159,20 +210,16 @@ export const applicationVersionsMixin = {
 		 * Re-load the Application record by `objectId`.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-1
 		 */
 		async refreshApplication() {
-			const uuid =
-				this.objectId
-				|| (this.$route && this.$route.params && this.$route.params.objectId)
-				|| ''
+			const uuid = requestedApplicationId(this)
 			if (!uuid) return
 
 			// Staleness token: if the uuid changes while a request is in flight
 			// (route change), the older response must not overwrite the newer
 			// record — latest-request-wins, not last-response-wins.
-			const seq = (this._appReqSeq || 0) + 1
-			this._appReqSeq = seq
+			const seq = nextApplicationRequest(this)
 
 			try {
 				// Shared with ApplicationDetailDashboard so the two components —
@@ -184,7 +231,7 @@ export const applicationVersionsMixin = {
 				this.loadVersions()
 			} catch (e) {
 				if (seq !== this._appReqSeq) return
-				this.error = e instanceof Error ? e : new Error(String(e))
+				this.error = asError(e)
 			}
 		},
 

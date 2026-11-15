@@ -3,6 +3,9 @@
 /**
  * Buildiq StoreController
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * HTTP surface for the remote template "store" (buildiq-remote-template-
  * store):
  *   - GET  /api/store/templates            — search remote templates (cards).
@@ -42,9 +45,6 @@
  * becomes the new app's owner — mirrors the local createFromTemplate posture).
  * No publishing in this cut.
  *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
- *
  * @category Controller
  * @package  OCA\Buildiq\Controller
  *
@@ -63,8 +63,8 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Controller;
 
-use OCA\Buildiq\AppInfo\Application;
-use OCA\Buildiq\Service\Connection\ConnectionReporter;
+use OCA\Buildiq\Kernel\AppIdentity;
+use OCA\Buildiq\Kernel\Contracts\ConnectionReporterInterface;
 use OCA\Buildiq\Service\StoreClient;
 use OCA\OpenRegister\AppHost\Service\GenericStoreService;
 use OCA\OpenRegister\AppHost\Service\StoreDescriptor;
@@ -72,6 +72,7 @@ use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IAppConfig;
 use OCP\IRequest;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -96,7 +97,8 @@ class StoreController extends Controller {
 	 * @param IUserSession $userSession Current NC user session.
 	 * @param StoreClient $store OpenRegister's store client and the authorizer that decides who may publish.
 	 * @param ApplicationsController $appsController Shared clone/install seam.
-	 * @param ConnectionReporter|null $connectionReporter Tells integriq what a search met, or nothing when absent.
+	 * @param ConnectionReporterInterface|null $connectionReporter Tells integriq what a search met, or nothing when absent.
+	 * @param IAppConfig|null $appConfig Reads the catalogue address, for its host name only.
 	 *
 	 * @return void
 	 *
@@ -108,9 +110,10 @@ class StoreController extends Controller {
 		private readonly IUserSession $userSession,
 		private readonly StoreClient $store,
 		private readonly ApplicationsController $appsController,
-		private readonly ?ConnectionReporter $connectionReporter = null,
+		private readonly ?ConnectionReporterInterface $connectionReporter = null,
+		private readonly ?IAppConfig $appConfig = null,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -121,7 +124,7 @@ class StoreController extends Controller {
 	 */
 	private function descriptor(): StoreDescriptor {
 		return new StoreDescriptor(
-			appId: Application::APP_ID,
+			appId: AppIdentity::APP_ID,
 			schema: 'application-template',
 			defaultRegister: 'buildiq',
 			cardFields: [
@@ -147,10 +150,12 @@ class StoreController extends Controller {
 	 * once an hour while it stays the same (adopt-connection-registry). The
 	 * report never changes the response.
 	 *
-	 * @return JSONResponse 200 with `{outcome, cards}`; 401 for anonymous.
+	 * @return JSONResponse 200 with `{outcome, cards, source}` (`source` is the catalogue's host,
+	 *                      absent for `not_configured`); 401 for anonymous.
 	 *
 	 * @spec openspec/specs/openbuild-remote-template-store/spec.md
 	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md#requirement-req-biq-conn-003-buildiq-reports-what-its-connection-calls-met
+	 * @spec openspec/changes/reuse-remote-store-section/specs/template-catalogue-ui/spec.md#requirement-the-app-store-shows-the-shared-catalogue-as-a-section-req-bqrs-001
 	 *
 	 * @no-admin-idor-exempt Addresses no buildiq-owned object: the slug identifies a
 	 *   template in an EXTERNAL catalogue (the configured store registry / a GitHub
@@ -186,18 +191,40 @@ class StoreController extends Controller {
 			$this->logger->error('Buildiq store: search failed: ' . $e->getMessage());
 			$this->connectionReporter?->reportStoreSearch(outcome: GenericStoreService::OUTCOME_UNREACHABLE);
 			return new JSONResponse(
-				data: ['outcome' => GenericStoreService::OUTCOME_UNREACHABLE, 'cards' => []],
+				data: ['outcome' => GenericStoreService::OUTCOME_UNREACHABLE, 'cards' => [], 'source' => $this->catalogueHost()],
 				statusCode: Http::STATUS_OK
 			);
 		}
 
 		$this->connectionReporter?->reportStoreSearch(outcome: (string)$result['outcome']);
 
-		return new JSONResponse(
-			data: ['outcome' => $result['outcome'], 'cards' => $result['cards']],
-			statusCode: Http::STATUS_OK
-		);
+		$data = ['outcome' => $result['outcome'], 'cards' => $result['cards']];
+		if ($result['outcome'] !== GenericStoreService::OUTCOME_NOT_CONFIGURED) {
+			$data['source'] = $this->catalogueHost();
+		}
+
+		return new JSONResponse(data: $data, statusCode: Http::STATUS_OK);
 	}//end search()
+
+	/**
+	 * The host name of the configured catalogue, for the section's lead line.
+	 *
+	 * Only the host: never the scheme, path, query or token of `registry_url`
+	 * (design D5). Empty when no address is configured or it has no host.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/reuse-remote-store-section/specs/template-catalogue-ui/spec.md#requirement-the-app-store-shows-the-shared-catalogue-as-a-section-req-bqrs-001
+	 */
+	private function catalogueHost(): string {
+		$url = trim((string)$this->appConfig?->getValueString(AppIdentity::APP_ID, 'registry_url', ''));
+		$host = parse_url($url, PHP_URL_HOST);
+		if (is_string($host) === false) {
+			return '';
+		}
+
+		return $host;
+	}//end catalogueHost()
 
 	/**
 	 * Validate a remote slug and resolve its FULL payload for install.

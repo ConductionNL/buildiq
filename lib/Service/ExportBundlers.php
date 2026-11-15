@@ -28,7 +28,7 @@ namespace OCA\Buildiq\Service;
 /**
  * The writers that bundle registers, flows/agents, content and the server bundle.
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
  */
 final class ExportBundlers {
 	/**

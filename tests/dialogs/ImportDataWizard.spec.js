@@ -226,4 +226,21 @@ describe('ImportDataWizard', () => {
 			'email',
 		)
 	})
+	describe('schemaOptions resolution order', () => {
+		it.each([
+			[{ slug: 's', '@self': { slug: 'self' }, id: 1, uuid: 'u', title: 'T', name: 'N' }, 's', 'T'],
+			[{ '@self': { slug: 'self' }, id: 1, uuid: 'u', name: 'N' }, 'self', 'N'],
+			[{ '@self': {}, id: 7, uuid: 'u' }, '7', '7'],
+			[{ uuid: 'u' }, 'u', ''],
+			[{ slug: 'only' }, 'only', 'only'],
+		])('projects %j to id %j and label %j', (schema, id, label) => {
+			const wrapper = mountWizard({ schemas: [schema] })
+			expect(wrapper.vm.schemaOptions).toEqual([{ id, label, type: schema }])
+		})
+
+		it('drops schemas without any id and tolerates no schemas', () => {
+			expect(mountWizard({ schemas: [{ title: 'No id' }] }).vm.schemaOptions).toEqual([])
+			expect(mountWizard({ schemas: null }).vm.schemaOptions).toEqual([])
+		})
+	})
 })

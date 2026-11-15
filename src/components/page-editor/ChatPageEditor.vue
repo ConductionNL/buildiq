@@ -109,7 +109,7 @@ export default {
 		/**
 		 * Observed behaviour of `validatedConfigKeys` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		validatedConfigKeys() {
 			return ['conversationSource', 'postUrl', 'schema']
@@ -118,7 +118,7 @@ export default {
 		/**
 		 * Observed behaviour of `transportShape` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		transportShape() {
 			if (this.config.postUrl && !this.config.conversationSource) {
@@ -137,7 +137,7 @@ export default {
 		 *
 		 * @param {string} key - the config key being written; from the template only `schema`, the optional message-record schema slug.
 		 * @param {string} value - the new value from the bound input; `''` (or `null`) deletes the key.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		update(key, value) {
 			const next = { ...this.config }
@@ -156,7 +156,7 @@ export default {
 		 * is lost.
 		 *
 		 * @param {'conversationSource'|'postUrl'} shape - the radio's value: `postUrl` drops `conversationSource`, anything else drops `postUrl`.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		setTransportShape(shape) {
 			const next = { ...this.config }
@@ -175,7 +175,7 @@ export default {
 		 *
 		 * @param {'conversationSource'|'postUrl'} key - which transport is being typed into; the other of the two is deleted.
 		 * @param {string} value - the endpoint / stream URL from the bound input; `''` deletes the key too, leaving neither branch set.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		setTransport(key, value) {
 			const partner = key === 'postUrl' ? 'conversationSource' : 'postUrl'

@@ -29,12 +29,12 @@ namespace OCA\Buildiq\Tests\Unit\BackgroundJob;
 
 use OCA\Buildiq\BackgroundJob\RunExportJob;
 use OCA\Buildiq\Service\ExportAppContentBundler;
-use OCA\Buildiq\Service\ExportContents;
+use OCA\Buildiq\Kernel\Values\ExportContents;
 use OCA\Buildiq\Service\ExportJobService;
 use OCA\Buildiq\Service\ExportService;
-use OCA\Buildiq\Service\ExportTarget;
-use OCA\Buildiq\Service\GitHub\BrokerAccess;
-use OCA\Buildiq\Service\GitHub\PushTarget;
+use OCA\Buildiq\Kernel\Values\ExportTarget;
+use OCA\Buildiq\Kernel\Values\BrokerAccess;
+use OCA\Buildiq\Kernel\Values\PushTarget;
 use OCA\Buildiq\Service\GitHubPushService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\MockObject\MockObject;

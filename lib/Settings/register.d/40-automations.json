@@ -1,5 +1,5 @@
 {
-	"_comment": "ADR-037 register fragment — automation-designer, extended by automation-approval-steps. Adds the `Automation` schema to the shared `buildiq` register: a single declarative object composing TRIGGER + optional CONDITION + ACTIONS, source-of-truth for `AutomationCompilerService`. Per design.md Decision 1 the designer always renders FROM this object, never by parsing compiled artifacts — the object IS the decompiled form, which is what makes compilation reversible. Compilation targets ONLY existing declarative primitives (ADR-031): `x-openregister-notifications` entries (see 10-business-rules.json:153 for the live dialect shape this compiler writes to), `x-openregister-lifecycle` typed transition actions, manifest `schedules[]` entries (existing `openconnector:synchronization` action only), namespaced RuleSet/ConditionActionRule objects evaluated by the existing RuleEngineService, and — since automation-approval-steps — an OpenRegister `ApprovalChain` (one step, group-only `role`) upserted via OR's `ApprovalChainMapper`/`ApprovalService::initializeChain()`. No new imperative engine is introduced in buildiq. Every artifact id/key the compiler mints carries the `aut-` prefix (rule-set slugs use `aut-<uuid8>`, the approval chain name is `aut-<slug>`) so recompile/delete never touches hand-authored entries — see `provenance` below. Property names are English (new schema; unrelated to the pre-existing Dutch rules-engine schemas). `approval` is selectable in v1 ONLY on `object-created|object-updated|object-deleted|lifecycle-transition` triggers (design.md Decision 1 of automation-approval-steps); `schedule`/`manual` + `approval` remain blocked fail-closed. Assignee is group-only (OR's `ApprovalStep.role` has no per-user primitive — deferred, see automation-approval-steps design.md Open Questions); no escalation-timeout field is exposed (OR has no timeout primitive — omitted entirely from v1 rather than shipping an inert field).",
+	"_comment": "ADR-037 register fragment — automation-designer, extended by automation-approval-steps. Adds the `Automation` schema to the shared `buildiq` register: a single declarative object composing TRIGGER + optional CONDITION + ACTIONS, source-of-truth for `AutomationCompilerService`. Per design.md Decision 1 the designer always renders FROM this object, never by parsing compiled artifacts — the object IS the decompiled form, which is what makes compilation reversible. Compilation targets ONLY existing declarative primitives (ADR-031): `x-openregister-notifications` entries (see 10-business-rules.json:153 for the live dialect shape this compiler writes to), `x-openregister-lifecycle` typed transition actions, manifest `schedules[]` entries (existing `openconnector:synchronization` action only), namespaced RuleSet/ConditionActionRule objects evaluated by the existing RuleEngineService, and — since automation-approval-steps — an OpenRegister `ApprovalChain` (one step, group-only `role`) upserted via OR's `ApprovalChainMapper`/`ApprovalService::initializeChain()`. No new imperative engine is introduced in buildiq. Every artifact id/key the compiler mints carries the `aut-` prefix (rule-set slugs use `aut-<uuid8>`, the approval chain name is `aut-<slug>`) so recompile/delete never touches hand-authored entries — see `provenance` below. Property names are English (new schema; unrelated to the pre-existing Dutch rules-engine schemas). `approval` is selectable in v1 ONLY on `object-created|object-updated|object-deleted|lifecycle-transition` triggers (design.md Decision 1 of automation-approval-steps); `schedule`/`manual` + `approval` remain blocked fail-closed. Assignee is group-only (OR's `ApprovalStep.role` has no per-user primitive — deferred, see automation-approval-steps design.md Open Questions); no escalation-timeout field is exposed (OR has no timeout primitive — omitted entirely from v1 rather than shipping an inert field). logic-automation-run-log adds AutomationRun (slug automation-run): one record per automation run, admin-only on the object API.",
 	"components": {
 		"schemas": {
 			"Automation": {
@@ -366,6 +366,140 @@
 								"description": "sha256:<hex> of the canonical-JSON compiled plan. Recomputed by the status endpoint to detect drift."
 							}
 						}
+					}
+				}
+			},
+			"AutomationRun": {
+				"slug": "automation-run",
+				"icon": "History",
+				"version": "1.0.0",
+				"title": "Automation run",
+				"description": "One run of one automation on one subject (logic-automation-run-log, design D1): the trigger, the outcome, the duration and one step per action. No input payload is stored. Admin-only on OpenRegister's object API; makers read runs through GET /api/automations/{uuid}/runs, which applies the automation's own rules. Pruned after 90 days.",
+				"authorization": {
+					"read": [
+						"admin"
+					],
+					"create": [
+						"admin"
+					],
+					"update": [
+						"admin"
+					],
+					"delete": [
+						"admin"
+					]
+				},
+				"type": "object",
+				"required": [
+					"automation",
+					"trigger",
+					"startedAt",
+					"outcome"
+				],
+				"properties": {
+					"automation": {
+						"title": "Automation",
+						"type": "string",
+						"description": "The uuid of the automation that ran."
+					},
+					"versionUuid": {
+						"title": "Version",
+						"type": "string",
+						"description": "The application version the automation belongs to."
+					},
+					"compiledHash": {
+						"title": "Compiled hash",
+						"type": "string",
+						"description": "provenance.compiledHash at run time, so a run of an older definition shows as such."
+					},
+					"trigger": {
+						"title": "Trigger",
+						"type": "string",
+						"description": "What started the run.",
+						"enum": [
+							"object-created",
+							"object-updated",
+							"object-deleted",
+							"lifecycle-transition",
+							"schedule",
+							"manual"
+						]
+					},
+					"subject": {
+						"title": "Subject",
+						"type": "object",
+						"description": "The schema and uuid of the object the run acted on; empty for a schedule.",
+						"properties": {
+							"schema": {
+								"type": "string",
+								"title": "Schema"
+							},
+							"uuid": {
+								"type": "string",
+								"title": "Object"
+							}
+						}
+					},
+					"startedAt": {
+						"title": "Started",
+						"type": "string",
+						"description": "When the run started.",
+						"format": "date-time"
+					},
+					"durationMs": {
+						"title": "Duration (ms)",
+						"type": "integer",
+						"description": "How long the run took."
+					},
+					"outcome": {
+						"title": "Outcome",
+						"type": "string",
+						"description": "How the run ended; waiting until an approval decides it.",
+						"enum": [
+							"succeeded",
+							"failed",
+							"skipped",
+							"waiting"
+						]
+					},
+					"reason": {
+						"title": "Reason",
+						"type": "string",
+						"description": "For a failed or skipped run: one sentence saying why."
+					},
+					"steps": {
+						"title": "Steps",
+						"type": "array",
+						"description": "One entry per action: action, outcome and message.",
+						"items": {
+							"type": "object",
+							"properties": {
+								"action": {
+									"type": "string",
+									"title": "Action"
+								},
+								"outcome": {
+									"type": "string",
+									"title": "Outcome",
+									"enum": [
+										"succeeded",
+										"failed",
+										"skipped",
+										"waiting",
+										"in-openregister"
+									]
+								},
+								"message": {
+									"type": "string",
+									"title": "Message"
+								}
+							}
+						}
+					},
+					"actor": {
+						"title": "Actor",
+						"type": "string",
+						"description": "The user that caused the trigger, or system."
 					}
 				}
 			}

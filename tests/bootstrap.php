@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ */
+
 declare(strict_types=1);
 
 // Define that we're running PHPUnit.
@@ -165,6 +170,13 @@ if (is_dir($ocpStubs)) {
 // `RegisterSlugResolution` is a CLASS, not an interface, so the guard has to ask
 // both questions. Asking only interface_exists() would re-require a file that is
 // already loaded, and a duplicate declaration is a fatal, not a no-op.
+// The published contract still declares the old lock signature; buildiq
+// locks through OpenRegister main's LockRequest / UnlockRequest, so declare
+// the interface from the local stub first when OpenRegister is not loadable.
+if (interface_exists('\\OCA\\OpenRegister\\Contract\\ObjectServiceInterface') === false) {
+	require_once __DIR__ . '/stubs/openregister-object-service-interface.stub.php';
+}
+
 $buildiqContractDir = __DIR__ . '/../vendor/conduction/hydra-gates/hydra-gates/contracts';
 
 foreach ([

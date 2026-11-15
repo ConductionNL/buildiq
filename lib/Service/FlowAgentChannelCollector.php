@@ -29,7 +29,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/app-repo-format-flow-agent-export/specs/github-app-repo-format/spec.md
+ * @spec openspec/specs/github-app-repo-format/spec.md
  */
 
 declare(strict_types=1);
@@ -45,7 +45,7 @@ use Throwable;
 /**
  * Collects an application's flows and agents into the repo file-map convention.
  *
- * @spec openspec/changes/app-repo-format-flow-agent-export/specs/github-app-repo-format/spec.md
+ * @spec openspec/specs/github-app-repo-format/spec.md
  */
 class FlowAgentChannelCollector {
 
@@ -89,7 +89,7 @@ class FlowAgentChannelCollector {
 	 *
 	 * @return array{flows:array<string,array<string,mixed>>,agents:array<string,array<string,mixed>>,declaredFlows:int,skipped:array<int,array<string,mixed>>}
 	 *
-	 * @spec openspec/changes/app-repo-format-flow-agent-export/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-app-s-bound-flows-and-agents
+	 * @spec openspec/changes/archive/2026-08-19-app-repo-format-flow-agent-export/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-app-s-bound-flows-and-agents
 	 */
 	public function collect(array $application): array {
 		$empty = ['flows' => [], 'agents' => [], 'declaredFlows' => 0, 'skipped' => []];

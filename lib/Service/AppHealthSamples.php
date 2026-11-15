@@ -72,9 +72,10 @@ class AppHealthSamples {
 	 *
 	 * @param mixed $pages The posted `pages` list.
 	 *
-	 * @return list<array<string, int|string>> One `{pageId, ...counts}` per kept page.
+	 * @return list<array<string, int|string>> One `{pageId, ...counts, failures}` per kept page.
 	 *
 	 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-the-server-scopes-and-bounds-samples-req-bqdm-005
+	 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-operators-read-the-same-numbers-as-metrics-req-bqdm-007
 	 */
 	public function sanitise(mixed $pages): array {
 		if (is_array($pages) === false) {
@@ -95,6 +96,9 @@ class AppHealthSamples {
 			}
 
 			if ($total > 0) {
+				// Derived here, never taken from the post: the request failure
+				// metric sums one field (REQ-BQDM-007).
+				$sample['failures'] = ($sample['failures4xx'] + $sample['failures5xx']);
 				$kept[] = $sample;
 			}
 		}
