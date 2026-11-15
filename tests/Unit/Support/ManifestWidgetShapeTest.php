@@ -28,6 +28,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\Support;
 
 use OCA\Buildiq\Support\ManifestWidgetShape;
+use OCA\Buildiq\Support\WidgetSpec;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -51,18 +52,22 @@ class ManifestWidgetShapeTest extends TestCase {
 
 		[$page] = ManifestWidgetShape::appendTo(
 			page: $page,
-			widgetType: 'stat',
-			widgetConfig: ['register' => 'tool-library', 'schema' => 'loan'],
-			widgetId: 'tools-out-on-loan',
-			title: 'Tools out on loan'
+			spec: new WidgetSpec(
+				type: 'stat',
+				config: ['register' => 'tool-library', 'schema' => 'loan'],
+				id: 'tools-out-on-loan',
+				title: 'Tools out on loan'
+			)
 		);
 		[$page] = ManifestWidgetShape::appendTo(
 			page: $page,
-			widgetType: 'chart',
-			widgetConfig: ['chartKind' => 'bar'],
-			title: 'Loans per month'
+			spec: new WidgetSpec(
+				type: 'chart',
+				config: ['chartKind' => 'bar'],
+				title: 'Loans per month'
+			)
 		);
-		[$page] = ManifestWidgetShape::appendTo(page: $page, widgetType: 'stat', widgetConfig: [], title: 'Overdue');
+		[$page] = ManifestWidgetShape::appendTo(page: $page, spec: new WidgetSpec(type: 'stat', config: [], title: 'Overdue'));
 
 		self::assertSame($expected, $page);
 	}//end testAppendToReproducesTheSharedFixture()
@@ -82,16 +87,18 @@ class ManifestWidgetShapeTest extends TestCase {
 	public function testAStatTileGetsTheNestedSourceBlockItsComponentReads(): void {
 		[, $widget] = ManifestWidgetShape::appendTo(
 			page: ['id' => 'overview', 'type' => 'dashboard'],
-			widgetType: 'stat',
-			widgetConfig: [
-				'register' => 'openbuild-tool-library-development',
-				'schema' => 'tool-library-development-loan',
-				'aggregate' => 'count',
-				'filter' => ['returned' => false],
-				'icon' => 'hammer-wrench',
-			],
-			widgetId: 'loans-open',
-			title: 'Open loans'
+			spec: new WidgetSpec(
+				type: 'stat',
+				config: [
+					'register' => 'openbuild-tool-library-development',
+					'schema' => 'tool-library-development-loan',
+					'aggregate' => 'count',
+					'filter' => ['returned' => false],
+					'icon' => 'hammer-wrench',
+				],
+				id: 'loans-open',
+				title: 'Open loans'
+			)
 		);
 
 		self::assertSame(
@@ -118,9 +125,11 @@ class ManifestWidgetShapeTest extends TestCase {
 	public function testAnObjectListKeepsItsFlatBinding(): void {
 		[, $widget] = ManifestWidgetShape::appendTo(
 			page: ['id' => 'overview', 'type' => 'dashboard'],
-			widgetType: 'object-list',
-			widgetConfig: ['register' => 'openbuild-tool-library-development', 'schema' => 'tool-library-development-loan'],
-			title: 'Recent loans'
+			spec: new WidgetSpec(
+				type: 'object-list',
+				config: ['register' => 'openbuild-tool-library-development', 'schema' => 'tool-library-development-loan'],
+				title: 'Recent loans'
+			)
 		);
 
 		self::assertArrayNotHasKey('source', $widget['content']);
@@ -137,9 +146,11 @@ class ManifestWidgetShapeTest extends TestCase {
 	public function testATileWithNoBindingIsUntouched(): void {
 		[, $widget] = ManifestWidgetShape::appendTo(
 			page: ['id' => 'overview', 'type' => 'dashboard'],
-			widgetType: 'stat',
-			widgetConfig: ['label' => 'Manual number', 'value' => 7],
-			title: 'Manual'
+			spec: new WidgetSpec(
+				type: 'stat',
+				config: ['label' => 'Manual number', 'value' => 7],
+				title: 'Manual'
+			)
 		);
 
 		self::assertArrayNotHasKey('source', $widget['content']);
@@ -154,7 +165,7 @@ class ManifestWidgetShapeTest extends TestCase {
 	public function testEveryWidgetCarriesIdTitleAndType(): void {
 		$page = ['id' => 'home', 'type' => 'dashboard'];
 
-		[$page, $widget] = ManifestWidgetShape::appendTo(page: $page, widgetType: 'stats-block', widgetConfig: []);
+		[$page, $widget] = ManifestWidgetShape::appendTo(page: $page, spec: new WidgetSpec(type: 'stats-block', config: []));
 
 		self::assertSame('stats-block', $widget['id']);
 		self::assertSame('Stats block', $widget['title']);
@@ -170,8 +181,10 @@ class ManifestWidgetShapeTest extends TestCase {
 	public function testTitleIsTakenFromTheWidgetConfigWhenNotGivenSeparately(): void {
 		[, $widget] = ManifestWidgetShape::appendTo(
 			page: ['id' => 'home'],
-			widgetType: 'stat',
-			widgetConfig: ['title' => 'Tools out on loan']
+			spec: new WidgetSpec(
+				type: 'stat',
+				config: ['title' => 'Tools out on loan']
+			)
 		);
 
 		self::assertSame('Tools out on loan', $widget['title']);
@@ -185,9 +198,9 @@ class ManifestWidgetShapeTest extends TestCase {
 	 */
 	public function testIdsAreUniqueWithinThePage(): void {
 		$page = ['id' => 'home'];
-		[$page] = ManifestWidgetShape::appendTo(page: $page, widgetType: 'stat', widgetConfig: [], title: 'Loans');
-		[$page] = ManifestWidgetShape::appendTo(page: $page, widgetType: 'stat', widgetConfig: [], title: 'Loans');
-		[$page] = ManifestWidgetShape::appendTo(page: $page, widgetType: 'stat', widgetConfig: [], title: 'Loans');
+		[$page] = ManifestWidgetShape::appendTo(page: $page, spec: new WidgetSpec(type: 'stat', config: [], title: 'Loans'));
+		[$page] = ManifestWidgetShape::appendTo(page: $page, spec: new WidgetSpec(type: 'stat', config: [], title: 'Loans'));
+		[$page] = ManifestWidgetShape::appendTo(page: $page, spec: new WidgetSpec(type: 'stat', config: [], title: 'Loans'));
 
 		$ids = array_column($page['config']['widgets'], 'id');
 
@@ -206,7 +219,7 @@ class ManifestWidgetShapeTest extends TestCase {
 			'config' => ['layout' => [['id' => 'loans', 'widgetId' => 'loans', 'gridX' => 0, 'gridY' => 0, 'gridWidth' => 6, 'gridHeight' => 2]]],
 		];
 
-		[, $widget] = ManifestWidgetShape::appendTo(page: $page, widgetType: 'stat', widgetConfig: [], title: 'Loans');
+		[, $widget] = ManifestWidgetShape::appendTo(page: $page, spec: new WidgetSpec(type: 'stat', config: [], title: 'Loans'));
 
 		self::assertSame('loans-2', $widget['id']);
 	}//end testAnIdHeldOnlyByALayoutRowIsNotReused()
@@ -218,9 +231,9 @@ class ManifestWidgetShapeTest extends TestCase {
 	 */
 	public function testEachWidgetGetsALayoutRow(): void {
 		$page = ['id' => 'home'];
-		[$page] = ManifestWidgetShape::appendTo(page: $page, widgetType: 'stat', widgetConfig: [], title: 'One');
-		[$page] = ManifestWidgetShape::appendTo(page: $page, widgetType: 'stat', widgetConfig: [], title: 'Two');
-		[$page] = ManifestWidgetShape::appendTo(page: $page, widgetType: 'stat', widgetConfig: [], title: 'Three');
+		[$page] = ManifestWidgetShape::appendTo(page: $page, spec: new WidgetSpec(type: 'stat', config: [], title: 'One'));
+		[$page] = ManifestWidgetShape::appendTo(page: $page, spec: new WidgetSpec(type: 'stat', config: [], title: 'Two'));
+		[$page] = ManifestWidgetShape::appendTo(page: $page, spec: new WidgetSpec(type: 'stat', config: [], title: 'Three'));
 
 		$layout = $page['config']['layout'];
 
@@ -238,13 +251,17 @@ class ManifestWidgetShapeTest extends TestCase {
 	public function testTheSettingsBagLandsOnTheKeyTheRendererReads(): void {
 		[, $stat] = ManifestWidgetShape::appendTo(
 			page: ['id' => 'home'],
-			widgetType: 'stat',
-			widgetConfig: ['register' => 'tool-library']
+			spec: new WidgetSpec(
+				type: 'stat',
+				config: ['register' => 'tool-library']
+			)
 		);
 		[, $chart] = ManifestWidgetShape::appendTo(
 			page: ['id' => 'home'],
-			widgetType: 'chart',
-			widgetConfig: ['chartKind' => 'bar']
+			spec: new WidgetSpec(
+				type: 'chart',
+				config: ['chartKind' => 'bar']
+			)
 		);
 
 		self::assertSame(['register' => 'tool-library'], $stat['content']);
@@ -268,7 +285,7 @@ class ManifestWidgetShapeTest extends TestCase {
 			],
 		];
 
-		[$page] = ManifestWidgetShape::appendTo(page: $page, widgetType: 'stat', widgetConfig: [], title: 'Added');
+		[$page] = ManifestWidgetShape::appendTo(page: $page, spec: new WidgetSpec(type: 'stat', config: [], title: 'Added'));
 
 		self::assertCount(2, $page['config']['widgets']);
 		self::assertSame('kept', $page['config']['widgets'][0]['id']);

@@ -70,7 +70,7 @@ export default {
 		/**
 		 * Observed behaviour of `localActions` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		localActions() {
 			return Array.isArray(this.modelValue) ? this.modelValue : []
@@ -86,7 +86,7 @@ export default {
 		 * @param {string} value - the control's new value (input text, or the
 		 *   `<select>` option for `target`). An empty value DELETES the key so the
 		 *   manifest stays minimal — except for `id`, which is always written.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		updateField(index, key, value) {
 			const next = this.localActions.slice()
@@ -103,7 +103,7 @@ export default {
 		/**
 		 * Observed behaviour of `addAction` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		addAction() {
 			const next = this.localActions.slice()
@@ -115,7 +115,7 @@ export default {
 		 * Observed behaviour of `removeAction` (retrofit annotation).
 		 *
 		 * @param {number} index - position of the action to drop from the `actions` array.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		removeAction(index) {
 			const next = this.localActions.slice()
@@ -126,7 +126,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../../assets/editor-controls.scss' as c;
+
 .action-builder {
 	display: flex;
 	flex-direction: column;
@@ -141,11 +143,7 @@ export default {
 
 .action-builder__field {
 	flex: 1 1 auto;
-	padding: 4px 6px;
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-	background: var(--color-main-background);
-	color: var(--color-main-text);
+	@include c.control;
 }
 
 .action-builder__field--narrow {
@@ -153,21 +151,11 @@ export default {
 }
 
 .action-builder__remove {
-	background: transparent;
-	border: 1px solid var(--color-border);
-	color: var(--color-error, var(--color-main-text));
-	padding: 4px 8px;
-	border-radius: var(--border-radius);
-	cursor: pointer;
+	@include c.danger-button;
 }
 
 .action-builder__add {
 	align-self: flex-start;
-	background: var(--color-primary-element-light);
-	border: 1px solid var(--color-border);
-	color: var(--color-main-text);
-	padding: 4px 10px;
-	border-radius: var(--border-radius);
-	cursor: pointer;
+	@include c.add-button;
 }
 </style>

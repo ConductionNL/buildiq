@@ -205,6 +205,31 @@ class AddWidgetHandlerTest extends TestCase {
 	}//end testStoredWidgetGetsALayoutRow()
 
 	/**
+	 * A caller-supplied widgetId is stored as the id, also when the title
+	 * would slug to another one.
+	 *
+	 * @return void
+	 */
+	public function testTheCallersWidgetIdWinsOverTheTitle(): void {
+		$this->wireVersion(manifest: $this->emptyDashboardManifest());
+
+		$this->provider->invokeTool('buildiq.addWidget', [
+			'appSlug' => 'my-app',
+			'pageId' => 'home',
+			'widgetType' => 'stat',
+			'widgetId' => 'late-returns',
+			'title' => 'Overdue tools',
+		]);
+
+		$config = $this->savedManifest['pages'][0]['config'];
+
+		$this->assertSame('late-returns', $config['widgets'][0]['id']);
+		$this->assertSame('Overdue tools', $config['widgets'][0]['title']);
+		$this->assertSame('late-returns', $config['layout'][0]['widgetId']);
+
+	}//end testTheCallersWidgetIdWinsOverTheTitle()
+
+	/**
 	 * A second widget whose title matches the first gets its own id, so a
 	 * page never stores two widgets under one key.
 	 *

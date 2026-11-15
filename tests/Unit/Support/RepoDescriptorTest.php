@@ -21,7 +21,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\Support;
 
 use OCA\Buildiq\Support\CanonicalJson;
-use OCA\Buildiq\Support\RepoDescriptor;
+use OCA\Buildiq\Service\RepoDescriptor;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -32,7 +32,7 @@ use PHPUnit\Framework\TestCase;
  * in its own fixture), recorded on the old code.
  *
  * @covers \OCA\Buildiq\Support\CanonicalJson
- * @covers \OCA\Buildiq\Support\RepoDescriptor
+ * @covers \OCA\Buildiq\Service\RepoDescriptor
  */
 class RepoDescriptorTest extends TestCase {
 
@@ -104,9 +104,12 @@ class RepoDescriptorTest extends TestCase {
 	 * credentials() derives every recorded manifest's list as before.
 	 *
 	 * The secretBearing manifest carries token, secret, password, value,
-	 * clientSecret, credentialId and apiKey keys next to the declaration: the
-	 * derived list holds provider, reason and scopes only, so a descriptor
-	 * never carries a secret value.
+	 * clientSecret, credentialId, apiKey, a nested auth token, an env-style
+	 * GITHUB_TOKEN, accessToken, refreshToken, privateKey and a url with a
+	 * password next to the declaration: the derived list holds provider,
+	 * reason and scopes only, so a descriptor never carries a secret value.
+	 * Scopes are read from a list only: a scopes map (mixed, secretBearing)
+	 * yields no scopes, because its values could be anything.
 	 *
 	 * @return void
 	 */
@@ -151,6 +154,12 @@ class RepoDescriptorTest extends TestCase {
 						'value' => 'inline-secret',
 						'clientSecret' => 'oauth-client-secret',
 						'credentialId' => '0b7d1f2e-credential-uuid',
+						'auth' => ['token' => 'ghp_nested-auth-token'],
+						'GITHUB_TOKEN' => 'ghp_env-style-token',
+						'accessToken' => 'oauth-access-token',
+						'refreshToken' => 'oauth-refresh-token',
+						'privateKey' => '-----BEGIN PRIVATE KEY-----',
+						'url' => 'https://user:url-password@example.org',
 					],
 					['provider' => 'mail', 'apiKey' => 'mail-api-key', 'scopes' => ['send' => 'send'], 'reason' => 'Notify'],
 				],

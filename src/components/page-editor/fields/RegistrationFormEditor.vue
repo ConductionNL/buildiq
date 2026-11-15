@@ -24,6 +24,23 @@
 			{{ modelValue.name || t('buildiq', 'This form') }}
 		</h4>
 
+		<fieldset class="form-editor__block" data-testid="registration-form-applies-to">
+			<legend>{{ t('buildiq', 'Applies to') }}</legend>
+			<p class="form-editor__applies">
+				{{ appliesToTarget }}
+			</p>
+			<p class="form-editor__applies-hint">
+				{{
+					modelValue.typeValue
+						? t('buildiq', 'Only objects whose {property} is {value} get this form.', {
+							property: modelValue.typeProperty || '',
+							value: modelValue.typeValue,
+						})
+						: t('buildiq', 'No type is set, so this form covers every object in the schema.')
+				}}
+			</p>
+		</fieldset>
+
 		<fieldset class="form-editor__block">
 			<legend>{{ t('buildiq', 'This form') }}</legend>
 
@@ -203,6 +220,41 @@
 			:findings="findingsPerField"
 			@update:presets="write('presets', $event)" />
 
+		<fieldset class="form-editor__block" data-testid="registration-form-steps">
+			<legend>{{ t('buildiq', 'Steps and phases') }}</legend>
+			<FormStepsManager
+				:steps="modelValue.steps || []"
+				:fields="stepFieldPool"
+				:withPhase="true"
+				:leavesUnassigned="true"
+				@update:steps="writeSteps" />
+			<label class="form-editor__inline">
+				<input
+					type="checkbox"
+					:checked="!!modelValue.allowSaveForLater"
+					data-testid="registration-form-save-for-later"
+					@change="write('allowSaveForLater', $event.target.checked)" />
+				{{ t('buildiq', 'The filer may save the form and finish it later') }}
+			</label>
+		</fieldset>
+
+		<fieldset
+			v-if="ruleFields.length"
+			class="form-editor__block"
+			data-testid="registration-form-rules">
+			<legend>{{ t('buildiq', 'When a question is shown') }}</legend>
+			<div
+				v-for="field in ruleFields"
+				:key="field.index"
+				class="form-editor__rule">
+				<span class="form-editor__rule-name">{{ field.label }}</span>
+				<VisibleWhenBuilder
+					:modelValue="field.visibleWhen"
+					:fieldOptions="otherFieldNames(field.index)"
+					@update:modelValue="writeVisibleWhen(field.index, $event)" />
+			</div>
+		</fieldset>
+
 		<!-- Decision 179/189: a draft saves with its findings; publishing
 		     needs none. Findings on no field or preset are listed here. -->
 		<div
@@ -254,12 +306,19 @@
 <script>
 import FormLayoutBuilder from './FormLayoutBuilder.vue'
 import FormPresetsBuilder from './FormPresetsBuilder.vue'
+import FormStepsManager from './FormStepsManager.vue'
+import VisibleWhenBuilder from './VisibleWhenBuilder.vue'
 import { findingsByField } from '../../../services/formDestinationCheck.js'
 
 export default {
 	name: 'RegistrationFormEditor',
 
-	components: { FormLayoutBuilder, FormPresetsBuilder },
+	components: {
+		FormLayoutBuilder,
+		FormPresetsBuilder,
+		FormStepsManager,
+		VisibleWhenBuilder,
+	},
 
 	props: {
 		modelValue: {
@@ -300,6 +359,56 @@ export default {
 	emits: ['update:modelValue', 'save', 'close', 'saveToLibrary'],
 
 	computed: {
+		/**
+		 * What the form creates, said in one line: the app, register and
+		 * schema it is bound to.
+		 *
+		 * @return {string}
+		 * @spec openspec/changes/registration-form-builder/specs/registration-form-builder/spec.md (REQ-OBRF-002)
+		 */
+		appliesToTarget() {
+			const parts = [
+				this.modelValue.targetApp,
+				this.modelValue.register,
+				this.modelValue.schema,
+			].filter((part) => typeof part === 'string' && part !== '')
+			return parts.length
+				? parts.join(' / ')
+				: t('buildiq', 'Not bound to a schema yet')
+		},
+
+		/**
+		 * The form's field names in the `{key}` shape the steps manager
+		 * assigns from.
+		 *
+		 * @return {Array<{key: string}>}
+		 * @spec openspec/changes/registration-form-builder/specs/registration-form-builder/spec.md (REQ-OBRF-002)
+		 */
+		stepFieldPool() {
+			return (this.modelValue.fields || [])
+				.map((f) => f && f.name)
+				.filter((name) => typeof name === 'string' && name !== '')
+				.map((key) => ({ key }))
+		},
+
+		/**
+		 * The named fields a rule can be set on, with their index in
+		 * `fields[]` so a write lands on the right one.
+		 *
+		 * @return {Array<{index: number, label: string, visibleWhen: object|null}>}
+		 * @spec openspec/changes/registration-form-builder/specs/registration-form-builder/spec.md (REQ-OBRF-002)
+		 */
+		ruleFields() {
+			return (this.modelValue.fields || [])
+				.map((f, index) => ({ f, index }))
+				.filter(({ f }) => f && typeof f.name === 'string' && f.name !== '')
+				.map(({ f, index }) => ({
+					index,
+					label: f.label || f.name,
+					visibleWhen: f.visibleWhen || null,
+				}))
+		},
+
 		/**
 		 * The findings grouped by the field or preset they sit on.
 		 *
@@ -385,6 +494,58 @@ export default {
 		 * @return {void}
 		 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-009)
 		 */
+		/**
+		 * Write the steps. The steps manager sends null for no steps; the key
+		 * is then removed, since an empty steps list is a single-step form.
+		 *
+		 * @param {Array<object>|null} steps - the next steps, or null.
+		 * @return {void}
+		 * @spec openspec/changes/registration-form-builder/specs/registration-form-builder/spec.md (REQ-OBRF-002)
+		 */
+		writeSteps(steps) {
+			const next = { ...this.modelValue }
+			if (Array.isArray(steps) && steps.length) {
+				next.steps = steps
+			} else {
+				delete next.steps
+			}
+			this.$emit('update:modelValue', next)
+		},
+
+		/**
+		 * The other fields' names, which a rule on this field may look at.
+		 *
+		 * @param {number} index - the field's index in `fields[]`.
+		 * @return {string[]}
+		 * @spec openspec/changes/registration-form-builder/specs/registration-form-builder/spec.md (REQ-OBRF-002)
+		 */
+		otherFieldNames(index) {
+			return (this.modelValue.fields || [])
+				.filter((f, i) => i !== index && f && f.name)
+				.map((f) => f.name)
+		},
+
+		/**
+		 * Write one field's `visibleWhen`; null removes the rule, leaving
+		 * every other key of that field as it was.
+		 *
+		 * @param {number} index - the field's index in `fields[]`.
+		 * @param {object|null} rule - the next rule, or null for none.
+		 * @return {void}
+		 * @spec openspec/changes/registration-form-builder/specs/registration-form-builder/spec.md (REQ-OBRF-002)
+		 */
+		writeVisibleWhen(index, rule) {
+			const fields = (this.modelValue.fields || []).slice()
+			const field = { ...fields[index] }
+			if (rule) {
+				field.visibleWhen = rule
+			} else {
+				delete field.visibleWhen
+			}
+			fields[index] = field
+			this.write('fields', fields)
+		},
+
 		writePublic(checked) {
 			const next = { ...this.modelValue, isPublic: checked }
 			if (checked) {
@@ -424,12 +585,30 @@ export default {
 	margin-block-end: 8px;
 }
 
-.form-editor__hint {
+.form-editor__hint,
+.form-editor__applies-hint {
 	color: var(--color-text-maxcontrast);
 }
 
 .form-editor__warn {
 	color: var(--color-warning-text, var(--color-text-maxcontrast));
+}
+
+.form-editor__applies {
+	font-weight: bold;
+	margin-block: 0 4px;
+}
+
+.form-editor__rule {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	align-items: center;
+	margin-block-end: 8px;
+}
+
+.form-editor__rule-name {
+	min-width: 160px;
 }
 
 .form-editor__actions {

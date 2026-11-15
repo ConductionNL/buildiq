@@ -152,23 +152,35 @@ final class ExportAppContentBundlerTest extends TestCase {
 	}//end testBundleWritesThePortableLayout()
 
 	/**
-	 * The README only names a way to use the archive that exists (buildiq#992).
-	 *
-	 * Buildiq has no route, controller or button that takes an uploaded app
-	 * archive, so the README must not send the reader to one. Running the
-	 * archive as its own Nextcloud app is the path that works.
+	 * Neither exported manifest carries a secret written next to a credential
+	 * declaration; the declaration itself is kept.
+	 */
+	public function testExportedManifestsCarryNoCredentialSecret(): void {
+		$this->bundleDevelopment(includeSeedData: false);
+
+		foreach (['manifest.json', 'src/manifest.json'] as $file) {
+			self::assertStringNotContainsString('ghp_exported-secret', (string)file_get_contents($this->root . '/' . $file), $file);
+			self::assertSame([['provider' => 'github', 'reason' => 'Push', 'scopes' => ['repo']]], $this->json($file)['credentials'], $file);
+		}
+	}//end testExportedManifestsCarryNoCredentialSecret()
+
+	/**
+	 * The README only names ways to use the archive that exist: the Applications page's "Import app" button, by its
+	 * label, and `occ buildiq:app:import`, next to running the archive as its own Nextcloud app.
 	 *
 	 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-a-maker-imports-an-exported-archive-as-a-new-app-req-bqic-001
 	 */
-	public function testReadmeDoesNotPointAtAnImportButtonBuildiqLacks(): void {
+	public function testReadmeNamesTheImportButtonAndCommand(): void {
 		$this->bundleDevelopment(includeSeedData: false);
 
 		$readme = (string)file_get_contents($this->root . '/README.md');
-		self::assertStringNotContainsString('Import application', $readme);
-		self::assertStringNotContainsString('when you import this archive', $readme);
+		self::assertStringContainsString('choose "Import app" and pick this archive', $readme);
+		self::assertStringContainsString('`occ buildiq:app:import <archive> --owner=<uid>`', $readme);
+		self::assertStringContainsString('Add `--records` (or tick "Import records")', $readme);
 		self::assertStringContainsString('As its own app: run `composer install`', $readme);
-		self::assertStringContainsString('Buildiq cannot import this archive yet', $readme);
-	}//end testReadmeDoesNotPointAtAnImportButtonBuildiqLacks()
+		self::assertStringNotContainsString('Import application', $readme);
+		self::assertStringNotContainsString('cannot import this archive', $readme);
+	}//end testReadmeNamesTheImportButtonAndCommand()
 
 	/**
 	 * With seed data on, the records go in both layouts, stripped of their source identity.
@@ -189,6 +201,62 @@ final class ExportAppContentBundlerTest extends TestCase {
 		self::assertSame('aaaaaaaa-0000-4000-8000-000000000002', $objects[0]['@self']['slug'], 'a record without a slug is keyed by its UUID');
 		self::assertSame(['register' => 'demo-app', 'schema' => 'message', 'slug' => 'hello'], $objects[1]['@self']);
 	}//end testBundleWritesRecordsOnlyWhenSeedDataIsIncluded()
+
+	/**
+	 * Every file the bundler writes, and the summary it answers, for an
+	 * application with all its fields, without its name and description, and
+	 * also without its slug, with and
+	 * without seed data, compared with the recorded fixture. Set GOLDEN_RECORD=1
+	 * to write a missing fixture.
+	 */
+	public function testBundledTreeGolden(): void {
+		$fixture = __DIR__ . '/fixtures/export-app-content.golden.json';
+		$cases = [];
+		foreach ([[], ['name', 'description'], ['name', 'description', 'slug']] as $dropped) {
+			foreach ([false, true] as $includeSeedData) {
+				$cases[] = $this->goldenCase(dropped: $dropped, includeSeedData: $includeSeedData);
+			}
+		}
+
+		$actual = json_encode($cases, (JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE)) . "\n";
+		if (file_exists($fixture) === false && getenv('GOLDEN_RECORD') === '1') {
+			file_put_contents($fixture, $actual);
+		}
+
+		self::assertFileExists($fixture);
+		self::assertSame(file_get_contents($fixture), $actual);
+	}//end testBundledTreeGolden()
+
+	/**
+	 * Bundle one golden case into a fresh copy of the template tree.
+	 *
+	 * @param array<int,string> $dropped The application fields to leave out.
+	 * @param bool $includeSeedData Whether to include records.
+	 *
+	 * @return array<string,mixed> The case, the summary and every written file.
+	 */
+	private function goldenCase(array $dropped, bool $includeSeedData): array {
+		$this->tearDown();
+		$this->setUp();
+		$bundler = $this->bundler();
+		$source = $bundler->resolveSource(applicationUuid: self::APP_UUID, semver: '0.1.0', versionSlug: 'development');
+		self::assertNotNull($source);
+		$source['includeSeedData'] = $includeSeedData;
+		foreach ($dropped as $field) {
+			unset($source['application'][$field]);
+		}
+
+		$summary = $bundler->bundle(rootDir: $this->root, source: $source, appId: 'demo-app', semver: '0.1.0');
+
+		$files = [];
+		$iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($this->root, \FilesystemIterator::SKIP_DOTS));
+		foreach ($iterator as $file) {
+			$files[substr($file->getPathname(), strlen($this->root) + 1)] = (string)file_get_contents($file->getPathname());
+		}
+
+		ksort($files);
+		return ['dropped' => $dropped, 'includeSeedData' => $includeSeedData, 'summary' => $summary, 'files' => $files];
+	}//end goldenCase()
 
 	/**
 	 * Run the bundler on the development version.
@@ -314,6 +382,7 @@ final class ExportAppContentBundlerTest extends TestCase {
 				'version' => '1.0.0',
 				'menu' => [['id' => 'messages', 'label' => 'Messages', 'route' => 'Messages']],
 				'pages' => $pages,
+				'credentials' => [['provider' => 'github', 'reason' => 'Push', 'scopes' => ['repo'], 'token' => 'ghp_exported-secret']],
 			],
 		];
 	}//end version()

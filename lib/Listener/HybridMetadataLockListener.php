@@ -12,7 +12,7 @@
  * editable, and a `virtual` app keeps full edit of slug/name.
  *
  * This is the cross-row companion to the same-row `hybrid-requires-baseRef`
- * `x-openregister-validation` rule declared on the Application schema: a plain
+ * `x-openregister-validations` rule declared on the Application schema: a plain
  * field rule cannot compare the proposed slug/name against the stored row, so
  * the immutability check is an imperative pre-save guard (ADR-031 §Exceptions(1)
  * — cross-row / temporal validation OR's per-row declarative engine cannot
@@ -37,7 +37,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+ * @spec openspec/specs/unified-app-model/spec.md
  */
 
 declare(strict_types=1);
@@ -55,7 +55,7 @@ use Psr\Log\LoggerInterface;
  *
  * @template-implements IEventListener<Event>
  *
- * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+ * @spec openspec/specs/unified-app-model/spec.md
  */
 class HybridMetadataLockListener implements IEventListener {
 	/**
@@ -119,7 +119,7 @@ class HybridMetadataLockListener implements IEventListener {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+	 * @spec openspec/specs/unified-app-model/spec.md
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	public function handle(Event $event): void {

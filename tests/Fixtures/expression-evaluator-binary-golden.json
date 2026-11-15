@@ -1,0 +1,187 @@
+{
+    "context": {
+        "a": 5,
+        "b": "5",
+        "c": 2.5,
+        "s": "abc",
+        "t": "abd",
+        "n": null,
+        "z": 0,
+        "zf": 0.0,
+        "arr": [
+            1
+        ],
+        "yes": true
+    },
+    "cases": {
+        "a == b": {
+            "type": "boolean",
+            "value": true
+        },
+        "a != b": {
+            "type": "boolean",
+            "value": false
+        },
+        "a == c": {
+            "type": "boolean",
+            "value": false
+        },
+        "s == s": {
+            "type": "boolean",
+            "value": true
+        },
+        "s != t": {
+            "type": "boolean",
+            "value": true
+        },
+        "n == n": {
+            "type": "boolean",
+            "value": true
+        },
+        "arr == arr": {
+            "type": "boolean",
+            "value": true
+        },
+        "yes == 1": {
+            "type": "boolean",
+            "value": true
+        },
+        "a < c": {
+            "type": "boolean",
+            "value": false
+        },
+        "s < t": {
+            "type": "boolean",
+            "value": true
+        },
+        "a > c": {
+            "type": "boolean",
+            "value": true
+        },
+        "a <= 5": {
+            "type": "boolean",
+            "value": true
+        },
+        "a >= 6": {
+            "type": "boolean",
+            "value": false
+        },
+        "a + c": {
+            "type": "double",
+            "value": 7.5
+        },
+        "s + 1": {
+            "type": "integer",
+            "value": 1
+        },
+        "b + 1": {
+            "type": "integer",
+            "value": 6
+        },
+        "a - c": {
+            "type": "double",
+            "value": 2.5
+        },
+        "a * c": {
+            "type": "double",
+            "value": 12.5
+        },
+        "a / 2": {
+            "type": "double",
+            "value": 2.5
+        },
+        "a / c": {
+            "type": "double",
+            "value": 2.0
+        },
+        "a / z": {
+            "error": "InvalidArgumentException: Division by zero in expression."
+        },
+        "a / zf": {
+            "error": "InvalidArgumentException: Division by zero in expression."
+        },
+        "a / s": {
+            "error": "InvalidArgumentException: Division by zero in expression."
+        },
+        "7 / 2": {
+            "type": "double",
+            "value": 3.5
+        },
+        "n + 1": {
+            "type": "integer",
+            "value": 1
+        },
+        "2 * 3 + 4 / 2": {
+            "type": "integer",
+            "value": 8
+        },
+        "-a": {
+            "type": "integer",
+            "value": -5
+        },
+        "a - -1": {
+            "type": "integer",
+            "value": 6
+        },
+        "missing + 1": {
+            "type": "integer",
+            "value": 1
+        },
+        "missing == n": {
+            "type": "boolean",
+            "value": true
+        },
+        "1..3": {
+            "type": "array",
+            "value": {
+                "low": 1,
+                "high": 3
+            }
+        },
+        "n is not null": {
+            "type": "boolean",
+            "value": false
+        },
+        "missing is null": {
+            "type": "boolean",
+            "value": true
+        },
+        "a is not null": {
+            "type": "boolean",
+            "value": true
+        },
+        "not yes": {
+            "type": "boolean",
+            "value": false
+        },
+        "not z": {
+            "type": "boolean",
+            "value": true
+        },
+        "yes and z": {
+            "type": "boolean",
+            "value": false
+        },
+        "yes or z": {
+            "type": "boolean",
+            "value": true
+        },
+        "a in (1, 5)": {
+            "type": "boolean",
+            "value": true
+        },
+        "a in (1..4)": {
+            "type": "boolean",
+            "value": false
+        },
+        "raw %": {
+            "error": "InvalidArgumentException: Unknown binary operator: %"
+        },
+        "raw mystery": {
+            "error": "InvalidArgumentException: Unknown AST node type: mystery"
+        },
+        "raw untyped": {
+            "error": "InvalidArgumentException: Unknown AST node type: null"
+        }
+    }
+}

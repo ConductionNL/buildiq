@@ -104,6 +104,12 @@ import { NcButton, NcEmptyContent, NcLoadingIcon, NcSelect } from '@nextcloud/vu
 import BlockRemapDialog from '../../dialogs/BlockRemapDialog.vue'
 import { isSectionFragment } from '../../services/blockCapture.js'
 import {
+	blocksInCategory,
+	categoryOptionsOf,
+	fetchComponentBlocks,
+	OR_BLOCKS,
+} from '../../services/blockCatalogue.js'
+import {
 	BlockImportError,
 	downloadBlockExport,
 	parseBlockImport,
@@ -113,8 +119,6 @@ import {
 	insertBlock,
 	remapBlockRecord,
 } from '../../services/blockInsert.js'
-
-const OR_BLOCKS = '/apps/openregister/api/objects/buildiq/component-block'
 
 export default {
 	name: 'BlockLibraryPanel',
@@ -158,30 +162,20 @@ export default {
 		 * Distinct categories present across the loaded blocks, for the filter.
 		 *
 		 * @return {Array<{id: string, label: string}>}
-		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 * @spec openspec/specs/component-blocks/spec.md
 		 */
 		categoryOptions() {
-			const seen = new Set()
-			return this.blocks
-				.map((b) => b && b.category)
-				.filter((c) => c && !seen.has(c) && seen.add(c))
-				.map((c) => ({ id: c, label: c }))
+			return categoryOptionsOf(this.blocks)
 		},
 
 		/**
 		 * The visible blocks after the category filter is applied.
 		 *
 		 * @return {Array<object>}
-		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 * @spec openspec/specs/component-blocks/spec.md
 		 */
 		filteredBlocks() {
-			const selected =
-				this.categoryFilter
-				&& (this.categoryFilter.id ?? this.categoryFilter)
-			if (!selected) {
-				return this.blocks
-			}
-			return this.blocks.filter((b) => b && b.category === selected)
+			return blocksInCategory(this.blocks, this.categoryFilter)
 		},
 	},
 
@@ -191,7 +185,7 @@ export default {
 		 *
 		 * @param {boolean} value - the new `open` prop value.
 		 * @return {void}
-		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 * @spec openspec/specs/component-blocks/spec.md
 		 */
 		open(value) {
 			if (value) {
@@ -204,7 +198,7 @@ export default {
 	 * Fetch the block list when already open on mount.
 	 *
 	 * @return {void}
-	 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+	 * @spec openspec/specs/component-blocks/spec.md
 	 */
 	mounted() {
 		if (this.open) {
@@ -218,17 +212,12 @@ export default {
 		 * OR's standard object listing — REQ "Library lists org-wide blocks").
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 * @spec openspec/specs/component-blocks/spec.md
 		 */
 		async fetchBlocks() {
 			this.loading = true
 			try {
-				const { data } = await axios.get(generateUrl(OR_BLOCKS))
-				this.blocks = Array.isArray(data && data.results)
-					? data.results
-					: Array.isArray(data)
-						? data
-						: []
+				this.blocks = await fetchComponentBlocks()
 			} catch (e) {
 				this.blocks = []
 			} finally {
@@ -241,7 +230,7 @@ export default {
 		 *
 		 * @param {object} block - a `ComponentBlock` record.
 		 * @return {string}
-		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 * @spec openspec/specs/component-blocks/spec.md
 		 */
 		previewLabel(block) {
 			const fragment = block && block.fragment
@@ -261,7 +250,7 @@ export default {
 		 *
 		 * @param {object} block - the block to insert.
 		 * @return {void}
-		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 * @spec openspec/specs/component-blocks/spec.md
 		 */
 		onInsert(block) {
 			const mismatches = computeSchemaMismatches(
@@ -284,7 +273,7 @@ export default {
 		 * @param {object} block - the block being inserted.
 		 * @param {{remapMap?: object, unresolvedDependencies?: string[]}} resolution - the resolved remap.
 		 * @return {void}
-		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 * @spec openspec/specs/component-blocks/spec.md
 		 */
 		emitInsert(block, resolution) {
 			const widgets = insertBlock(block, {
@@ -300,7 +289,7 @@ export default {
 		 *
 		 * @param {object} block - the block to export.
 		 * @return {void}
-		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 * @spec openspec/specs/component-blocks/spec.md
 		 */
 		onExport(block) {
 			downloadBlockExport(block)
@@ -313,7 +302,7 @@ export default {
 		 *
 		 * @param {Event} event - the file input's change event.
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 * @spec openspec/specs/component-blocks/spec.md
 		 */
 		async onImportFile(event) {
 			this.importError = ''
@@ -353,7 +342,7 @@ export default {
 		 *
 		 * @param {{remapMap: object, unresolvedDependencies: string[]}} resolution - the resolved remap.
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 * @spec openspec/specs/component-blocks/spec.md
 		 */
 		async onRemapResolved(resolution) {
 			const pending = this.pendingRemap
@@ -378,7 +367,7 @@ export default {
 		 *
 		 * @param {object} record - the block record to create.
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 * @spec openspec/specs/component-blocks/spec.md
 		 */
 		async createBlock(record) {
 			try {
@@ -399,7 +388,7 @@ export default {
 		 *
 		 * @param {object} block - the block to delete.
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 * @spec openspec/specs/component-blocks/spec.md
 		 */
 		async onDelete(block) {
 			this.confirmDeleteSlug = ''
@@ -418,7 +407,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../assets/editor-controls.scss' as c;
+
 .block-library-panel {
 	display: flex;
 	flex-direction: column;
@@ -452,12 +443,7 @@ export default {
 }
 
 .block-library-panel__list {
-	list-style: none;
-	margin: 0;
-	padding: 0;
-	display: flex;
-	flex-direction: column;
-	gap: 10px;
+	@include c.plain-list(10px);
 }
 
 .block-card {

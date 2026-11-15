@@ -5857,6 +5857,47 @@
             "warning Buildiq channel apply: hermiq skill install failed: install failed"
         ]
     },
+    "{\"origin\":\"origin ok\",\"coords\":\"no coordinates\",\"credential\":\"no credential\",\"skills\":true,\"hermiq\":true,\"install\":\"truncated short\",\"ref\":null,\"actingUserId\":null}": {
+        "error": null,
+        "skills": {
+            "declared": 2,
+            "created": 1,
+            "skipped": 1,
+            "failed": 0,
+            "truncated": 0,
+            "status": "applied",
+            "reason": "source-bundle-truncated",
+            "items": [],
+            "sourceCounts": {
+                "installed": 1,
+                "updated": 0,
+                "unchanged": 0
+            }
+        },
+        "warnings": [],
+        "reportKeys": [
+            "channels",
+            "needsCredentials",
+            "warnings"
+        ],
+        "installs": [
+            {
+                "owner": "ConductionNL",
+                "repo": "example-app",
+                "ref": null,
+                "actingUserId": null,
+                "credentialId": null
+            }
+        ],
+        "locatorGets": 1,
+        "finds": [],
+        "enabledChecks": [
+            "hermiq"
+        ],
+        "logs": [
+            "get \\OCA\\Hermiq\\Service\\SkillBundleInstaller"
+        ]
+    },
     "{\"origin\":\"origin ok\",\"coords\":\"no coordinates\",\"credential\":\"not scoped for hermiq\",\"skills\":false,\"hermiq\":true,\"install\":\"installs\",\"ref\":null,\"actingUserId\":null}": {
         "error": null,
         "skills": {
@@ -6042,6 +6083,38 @@
         "logs": []
     },
     "{\"origin\":\"origin ok\",\"coords\":\"no coordinates\",\"credential\":\"not scoped for hermiq\",\"skills\":true,\"hermiq\":true,\"install\":\"throws\",\"ref\":null,\"actingUserId\":null}": {
+        "error": null,
+        "skills": {
+            "declared": 2,
+            "created": 0,
+            "skipped": 2,
+            "failed": 0,
+            "truncated": 0,
+            "status": "skipped",
+            "reason": "credential-missing-hermiq-scope",
+            "items": []
+        },
+        "warnings": [
+            {
+                "code": "credential-missing-hermiq-scope",
+                "channel": "skills",
+                "message": "This repository declares 2 skill(s), but the GitHub credential used for this install is not authorised for hermiq. Skills are fetched by hermiq itself, under its own app identity, so a credential scoped only to \"buildiq\" cannot be used for that fetch. Add \"hermiq\" to the credential's allowed apps and re-run the GitHub sync to install the skills."
+            }
+        ],
+        "reportKeys": [
+            "channels",
+            "needsCredentials",
+            "warnings"
+        ],
+        "installs": [],
+        "locatorGets": 0,
+        "finds": [
+            "cred-1"
+        ],
+        "enabledChecks": [],
+        "logs": []
+    },
+    "{\"origin\":\"origin ok\",\"coords\":\"no coordinates\",\"credential\":\"not scoped for hermiq\",\"skills\":true,\"hermiq\":true,\"install\":\"truncated short\",\"ref\":null,\"actingUserId\":null}": {
         "error": null,
         "skills": {
             "declared": 2,
@@ -6318,6 +6391,49 @@
         "logs": [
             "get \\OCA\\Hermiq\\Service\\SkillBundleInstaller",
             "warning Buildiq channel apply: hermiq skill install failed: install failed"
+        ]
+    },
+    "{\"origin\":\"origin ok\",\"coords\":\"no coordinates\",\"credential\":\"scoped for hermiq\",\"skills\":true,\"hermiq\":true,\"install\":\"truncated short\",\"ref\":null,\"actingUserId\":null}": {
+        "error": null,
+        "skills": {
+            "declared": 2,
+            "created": 1,
+            "skipped": 1,
+            "failed": 0,
+            "truncated": 0,
+            "status": "applied",
+            "reason": "source-bundle-truncated",
+            "items": [],
+            "sourceCounts": {
+                "installed": 1,
+                "updated": 0,
+                "unchanged": 0
+            }
+        },
+        "warnings": [],
+        "reportKeys": [
+            "channels",
+            "needsCredentials",
+            "warnings"
+        ],
+        "installs": [
+            {
+                "owner": "ConductionNL",
+                "repo": "example-app",
+                "ref": null,
+                "actingUserId": null,
+                "credentialId": "cred-1"
+            }
+        ],
+        "locatorGets": 1,
+        "finds": [
+            "cred-1"
+        ],
+        "enabledChecks": [
+            "hermiq"
+        ],
+        "logs": [
+            "get \\OCA\\Hermiq\\Service\\SkillBundleInstaller"
         ]
     },
     "{\"origin\":\"origin ok\",\"coords\":\"owner only\",\"credential\":\"allowedApps not a list\",\"skills\":true,\"hermiq\":true,\"install\":\"installs\",\"ref\":\"main\",\"actingUserId\":\"alice\"}": {

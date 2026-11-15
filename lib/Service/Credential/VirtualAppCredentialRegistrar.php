@@ -46,6 +46,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service\Credential;
 
+use OCA\Buildiq\Kernel\Contracts\VirtualAppCredentialRegistrarInterface;
 use OCA\Buildiq\Service\ManifestResolverService;
 use OCP\IUser;
 use Psr\Container\ContainerInterface;
@@ -61,7 +62,7 @@ use Throwable;
  *
  * @spec openregister/openspec/changes/per-app-doriath-application/specs/credential-broker/spec.md#per-app-doriath-application-registration
  */
-class VirtualAppCredentialRegistrar {
+class VirtualAppCredentialRegistrar implements VirtualAppCredentialRegistrarInterface {
 	/**
 	 * FQCN of OpenRegister's broker app-key service.
 	 *

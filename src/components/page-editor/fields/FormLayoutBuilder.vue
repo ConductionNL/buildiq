@@ -249,8 +249,19 @@
 <script>
 import InlineFieldMark from './InlineFieldMark.vue'
 import { toKebabCase } from '../../../utils/slugPattern.js'
+import { FIELD_TYPES } from './fieldTypes.js'
 
-const FIELD_TYPES = ['string', 'number', 'boolean', 'select', 'textarea', 'date']
+/**
+ * Whether a section's reference still follows its heading: it is the one
+ * derived from the heading, or the section has no heading yet.
+ *
+ * @param {{name?: string, label?: string}} section - the section.
+ * @return {boolean}
+ */
+function nameFollowsLabel(section) {
+	const derived = toKebabCase(section.label || '')
+	return (section.name || '') === derived || !section.label
+}
 
 export default {
 	name: 'FormLayoutBuilder',
@@ -405,8 +416,7 @@ export default {
 		renameSection(index, label) {
 			const next = this.sections.slice()
 			const current = next[index] || {}
-			const derived = toKebabCase(current.label || '')
-			const follows = (current.name || '') === derived || !current.label
+			const follows = nameFollowsLabel(current)
 
 			next[index] = { ...current, label }
 			if (follows === true) {

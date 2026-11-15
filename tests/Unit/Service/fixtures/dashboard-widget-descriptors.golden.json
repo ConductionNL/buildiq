@@ -1,0 +1,137 @@
+{
+    "descriptors": [
+        {
+            "id": "buildiq-u-3-full",
+            "applicationUuid": "u-3",
+            "applicationSlug": "by-id",
+            "applicationName": "by-id",
+            "principals": [],
+            "roles": [
+                "group:staff"
+            ],
+            "entryId": "full",
+            "widgetKey": "object-table",
+            "title": "Full",
+            "icon": "icon-x",
+            "order": 3,
+            "link": "/x",
+            "pageRoute": "/b",
+            "props": {
+                "limit": 5
+            },
+            "dataSource": {
+                "register": "r"
+            }
+        },
+        {
+            "id": "buildiq-u-3-bare",
+            "applicationUuid": "u-3",
+            "applicationSlug": "by-id",
+            "applicationName": "by-id",
+            "principals": [],
+            "roles": [
+                "group:admins"
+            ],
+            "entryId": "bare",
+            "widgetKey": "",
+            "title": "bare",
+            "icon": "",
+            "order": 60,
+            "link": "",
+            "pageRoute": "/b",
+            "props": [],
+            "dataSource": []
+        },
+        {
+            "id": "buildiq-u-3-no-route",
+            "applicationUuid": "u-3",
+            "applicationSlug": "by-id",
+            "applicationName": "by-id",
+            "principals": [],
+            "roles": [],
+            "entryId": "no-route",
+            "widgetKey": "",
+            "title": "no-route",
+            "icon": "",
+            "order": 60,
+            "link": "",
+            "pageRoute": "/",
+            "props": [],
+            "dataSource": []
+        },
+        {
+            "id": "buildiq-u-4-full",
+            "applicationUuid": "u-4",
+            "applicationSlug": "named",
+            "applicationName": "Named",
+            "principals": [
+                "user:alice",
+                "group:staff"
+            ],
+            "roles": [
+                "group:staff"
+            ],
+            "entryId": "full",
+            "widgetKey": "object-table",
+            "title": "Full",
+            "icon": "icon-x",
+            "order": 3,
+            "link": "/x",
+            "pageRoute": "/b",
+            "props": {
+                "limit": 5
+            },
+            "dataSource": {
+                "register": "r"
+            }
+        },
+        {
+            "id": "buildiq-u-4-bare",
+            "applicationUuid": "u-4",
+            "applicationSlug": "named",
+            "applicationName": "Named",
+            "principals": [
+                "user:alice",
+                "group:staff"
+            ],
+            "roles": [
+                "group:admins"
+            ],
+            "entryId": "bare",
+            "widgetKey": "",
+            "title": "bare",
+            "icon": "",
+            "order": 60,
+            "link": "",
+            "pageRoute": "/b",
+            "props": [],
+            "dataSource": []
+        },
+        {
+            "id": "buildiq-u-4-no-route",
+            "applicationUuid": "u-4",
+            "applicationSlug": "named",
+            "applicationName": "Named",
+            "principals": [
+                "user:alice",
+                "group:staff"
+            ],
+            "roles": [],
+            "entryId": "no-route",
+            "widgetKey": "",
+            "title": "no-route",
+            "icon": "",
+            "order": 60,
+            "link": "",
+            "pageRoute": "/",
+            "props": [],
+            "dataSource": []
+        }
+    ],
+    "warnings": [
+        "DashboardWidgetRegistrar: skipped a promoted widget on app \"by-id\" because its placement carries no id.",
+        "DashboardWidgetRegistrar: skipped promoted widget \"bad-roles\" on app \"by-id\" because its roles are neither a string nor a list.",
+        "DashboardWidgetRegistrar: skipped a promoted widget on app \"named\" because its placement carries no id.",
+        "DashboardWidgetRegistrar: skipped promoted widget \"bad-roles\" on app \"named\" because its roles are neither a string nor a list."
+    ]
+}

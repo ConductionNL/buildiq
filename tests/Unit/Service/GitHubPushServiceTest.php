@@ -34,6 +34,9 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Tests\Unit\Service;
 
+use OCA\Buildiq\Kernel\Values\BrokerAccess;
+use OCA\Buildiq\Kernel\Values\PushTarget;
+use OCA\Buildiq\Service\GitHub\TokenScrubber;
 use OCA\Buildiq\Service\GitHubPushService;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
@@ -119,13 +122,16 @@ final class GitHubPushServiceTest extends TestCase {
 	 */
 	public function testPushTakesACredentialIdAndAnActingUser(): void {
 		$reflection = new \ReflectionMethod(GitHubPushService::class, 'push');
-		$names = array_map(static fn ($p) => $p->getName(), $reflection->getParameters());
+		$types = array_map(static fn ($p) => (string)$p->getType(), $reflection->getParameters());
+		self::assertContains(BrokerAccess::class, $types, 'push() must take the broker access, not a secret');
 
-		self::assertContains('credentialId', $names, 'push() must take a broker credential UUID');
-		self::assertContains(
-			'actingUserId',
-			$names,
-			'push() must take the credential owner — the background job has no session for the broker to read'
+		$access = new \ReflectionClass(BrokerAccess::class);
+		$names = array_map(static fn ($p) => $p->getName(), $access->getConstructor()->getParameters());
+		self::assertSame(['credentialId', 'actingUserId'], $names, 'the access must name a broker credential UUID');
+		self::assertSame(
+			['credentialId', 'actingUserId'],
+			array_map(static fn ($p) => $p->getName(), $access->getProperties()),
+			'the access must carry the credential owner — the background job has no session for the broker to read'
 		);
 	}//end testPushTakesACredentialIdAndAnActingUser()
 
@@ -167,10 +173,8 @@ final class GitHubPushServiceTest extends TestCase {
 			$service->push(
 				jobUuid: 'job-123',
 				treeDir: $treeDir,
-				credentialId: 'cred-uuid',
-				org: 'acme',
-				repo: 'app',
-				visibility: 'public'
+				access: new BrokerAccess(credentialId: 'cred-uuid'),
+				target: new PushTarget(org: 'acme', repo: 'app', visibility: 'public')
 			);
 			self::fail('push() must throw when the broker cannot serve the call.');
 		} catch (RuntimeException $e) {
@@ -230,9 +234,8 @@ final class GitHubPushServiceTest extends TestCase {
 			$service->push(
 				jobUuid: 'job-123',
 				treeDir: $treeDir,
-				credentialId: '',
-				org: 'acme',
-				repo: 'app'
+				access: new BrokerAccess(credentialId: ''),
+				target: new PushTarget(org: 'acme', repo: 'app')
 			);
 		} finally {
 			$this->removeTree($treeDir);
@@ -293,22 +296,21 @@ final class GitHubPushServiceTest extends TestCase {
 	}//end testFailureDetailFromStatusTruncatesAnOversizedBody()
 
 	/**
-	 * `scrub()` is the redaction the whole fix leans on: verify it actually
-	 * strips a GitHub PAT-shaped token out of a failure-detail string before
-	 * that string could reach `errorMessage` or a log line.
+	 * The redaction the failure detail leans on strips every token shape, classic
+	 * and fine-grained, before the text could reach `errorMessage` or a log line.
 	 *
 	 * @return void
 	 */
 	public function testScrubRedactsAGitHubPatShapedToken(): void {
-		$service = $this->makeService();
-		$method = new \ReflectionMethod(GitHubPushService::class, 'scrub');
-		$method->setAccessible(true);
+		$tokens = ['gh' . 'p_' . str_repeat('a', 36), 'gh' . 's_' . str_repeat('b', 36), 'github' . '_pat_' . str_repeat('c1_', 27)];
+		foreach ($tokens as $token) {
+			self::assertSame(
+				'upstream rejected [redacted-token] here',
+				TokenScrubber::scrub(message: 'upstream rejected ' . $token . ' here')
+			);
+		}
 
-		$leaky = 'upstream rejected credential ghp_' . str_repeat('a', 36);
-		$scrubbed = $method->invoke($service, $leaky);
-
-		self::assertStringNotContainsString('ghp_', $scrubbed, 'A PAT-shaped token must never survive scrub()');
-		self::assertStringContainsString('[redacted-token]', $scrubbed);
+		self::assertSame('ghp_short and github_pat_short', TokenScrubber::scrub(message: 'ghp_short and github_pat_short'));
 	}//end testScrubRedactsAGitHubPatShapedToken()
 
 	/**
@@ -358,11 +360,9 @@ final class GitHubPushServiceTest extends TestCase {
 		$service = new GitHubPushService(new NullLogger(), $container);
 
 		$url = $service->openPullRequest(
-			org: 'acme',
-			repo: 'app',
+			target: new PushTarget(org: 'acme', repo: 'app'),
 			toBranch: 'trunk',
-			credentialId: 'cred-1',
-			actingUserId: 'alice'
+			access: new BrokerAccess(credentialId: 'cred-1', actingUserId: 'alice')
 		);
 
 		$this->assertSame('https://github.com/acme/app/pull/1', $url);

@@ -137,24 +137,16 @@
 			@close="testPanelOpen = false" />
 
 		<!--
-		  flow-engine-unification task 6.4: the shared node/edge canvas, scoped
-		  to this built application (`app`), not the fixed "buildiq" — each
-		  application under construction gets its own flows, mirroring how
-		  automations are already scoped by `applicationSlug` above. CnFlowDetail
-		  treats the literal id "new" as "start blank", so this always opens
-		  usably even before the app has a first flow.
+		  flow-engine-unification task 6.4: flows are scoped to this built
+		  application (`app`), not the fixed "buildiq" — each application under
+		  construction gets its own flows, mirroring how automations are already
+		  scoped by `applicationSlug` above.
 		-->
 		<FlowPickerDialog
 			v-if="flowPickerOpen"
 			:app="selectedApp ? selectedApp.slug : null"
 			@pick="onFlowPicked"
 			@close="flowPickerOpen = false" />
-
-		<CnFlowEditModal
-			v-if="flowModalOpen"
-			:flowId="editingFlowId"
-			:app="selectedApp ? selectedApp.slug : null"
-			@close="flowModalOpen = false" />
 
 		<ConfirmActionDialog
 			v-model:open="confirmDeleteOpen"
@@ -173,7 +165,6 @@
 </template>
 
 <script>
-import { CnFlowEditModal } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import {
@@ -188,6 +179,8 @@ import AutomationEditDialog from '../dialogs/AutomationEditDialog.vue'
 import ConfirmActionDialog from '../dialogs/ConfirmActionDialog.vue'
 import FlowPickerDialog from '../dialogs/FlowPickerDialog.vue'
 import AutomationTestPanelModal from '../modals/AutomationTestPanelModal.vue'
+import { applicationPickerMixin } from '../mixins/applicationPicker.js'
+import { listResults } from '../utils/listResults.js'
 
 export default {
 	name: 'AutomationsPage',
@@ -201,16 +194,15 @@ export default {
 		AutomationEditDialog,
 		AutomationTestPanelModal,
 		ConfirmActionDialog,
-		CnFlowEditModal,
 		FlowPickerDialog,
 	},
+
+	mixins: [applicationPickerMixin],
 
 	data() {
 		return {
 			loading: false,
-			loadingApplications: false,
 			loadingVersions: false,
-			applications: [],
 			selectedApp: null,
 			versions: [],
 			selectedVersion: null,
@@ -219,8 +211,6 @@ export default {
 			errorMessage: '',
 			editDialogOpen: false,
 			flowPickerOpen: false,
-			flowModalOpen: false,
-			editingFlowId: 'new',
 			editingAutomation: null,
 			testPanelOpen: false,
 			testingAutomation: null,
@@ -231,7 +221,7 @@ export default {
 	},
 
 	computed: {
-		/** @spec openspec/changes/automation-designer/tasks.md#5.1 */
+		/** @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#5.1 */
 		selectedVersionId() {
 			return this.selectedVersion ? this.selectedVersion.id : ''
 		},
@@ -309,26 +299,6 @@ export default {
 		},
 
 		/**
-		 * Load the caller's Applications for the picker.
-		 *
-		 * @return {Promise<void>}
-		 * @spec openspec/specs/automation-designer/spec.md#req-autd-001
-		 */
-		async fetchApplications() {
-			this.loadingApplications = true
-			this.errorMessage = ''
-			try {
-				const url = generateUrl('/apps/buildiq/api/applications')
-				const { data } = await axios.get(url)
-				this.applications = this.extractResults(data)
-			} catch (error) {
-				this.errorMessage = t('buildiq', 'Could not load applications.')
-			} finally {
-				this.loadingApplications = false
-			}
-		},
-
-		/**
 		 * Handle an application selection: reset the version + list, fetch
 		 * versions, and put the app in the URL.
 		 *
@@ -361,7 +331,7 @@ export default {
 					`/apps/buildiq/api/applications/${this.selectedApp.slug}/versions`,
 				)
 				const { data } = await axios.get(url)
-				this.versions = this.extractResults(data)
+				this.versions = listResults(data)
 			} catch (error) {
 				this.errorMessage = t('buildiq', 'Could not load versions.')
 			} finally {
@@ -411,7 +381,7 @@ export default {
 						versionUuid: this.selectedVersionId,
 					},
 				})
-				const all = this.extractResults(data)
+				const all = listResults(data)
 				this.automations = all.filter(
 					(a) =>
 						a.applicationSlug === this.selectedApp.slug
@@ -469,7 +439,7 @@ export default {
 		 *
 		 * @param {string} uuid - the automation's uuid.
 		 * @return {string}
-		 * @spec openspec/changes/automation-approval-steps/tasks.md#5.1
+		 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#5.1
 		 */
 		approvalStateFor(uuid) {
 			const status = this.statusByUuid[uuid]
@@ -482,7 +452,7 @@ export default {
 		 *
 		 * @param {string} state - one of pending|approved|rejected.
 		 * @return {string}
-		 * @spec openspec/changes/automation-approval-steps/tasks.md#5.1
+		 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#5.1
 		 */
 		approvalStateLabel(state) {
 			const labels = {
@@ -557,9 +527,7 @@ export default {
 		 * Offer the selected application's flows: pick one to edit, or start a
 		 * new one.
 		 *
-		 * `flow-engine-unification` task 6.4. This used to hard-code `new`,
-		 * which made the modal a creator that could never edit — a flow saved a
-		 * minute earlier was unreachable from this surface.
+		 * `flow-engine-unification` task 6.4.
 		 *
 		 * @return {void}
 		 * @spec openspec/specs/automation-designer/spec.md#req-autd-001
@@ -569,16 +537,22 @@ export default {
 		},
 
 		/**
-		 * Open the flow the picker chose on the shared canvas.
+		 * Open the flow the picker chose on the flow page, in list mode.
+		 *
+		 * The page takes the application from the URL, so a new flow is stamped
+		 * with this application rather than with buildiq.
 		 *
 		 * @param {string} id The flow id, or the literal `new`.
 		 * @return {void}
 		 * @spec openspec/specs/automation-designer/spec.md#req-autd-001
 		 */
 		onFlowPicked(id) {
-			this.editingFlowId = id
 			this.flowPickerOpen = false
-			this.flowModalOpen = true
+			this.$router.push({
+				name: 'ApplicationFlow',
+				params: { app: this.selectedApp.slug, id },
+				query: { view: 'list' },
+			})
 		},
 
 		/**
@@ -721,22 +695,6 @@ export default {
 				this.confirmDeleteOpen = false
 				this.pendingDelete = null
 			}
-		},
-
-		/**
-		 * Normalise an OR REST list response to a plain array.
-		 *
-		 * @param {object|Array} data - the raw axios response body.
-		 * @return {Array}
-		 */
-		extractResults(data) {
-			if (Array.isArray(data)) {
-				return data
-			}
-			if (data && Array.isArray(data.results)) {
-				return data.results
-			}
-			return []
 		},
 	},
 }

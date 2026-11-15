@@ -29,7 +29,7 @@ namespace OCA\Buildiq\Service;
 /**
  * The rule object reader, stored decision tables and rule set versioning.
  *
- * @spec openspec/changes/business-rules-engine/tasks.md#9.1
+ * @spec openspec/changes/archive/2026-06-14-business-rules-engine/tasks.md#9.1
  */
 final class RuleStorage {
 	/**

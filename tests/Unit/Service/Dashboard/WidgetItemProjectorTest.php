@@ -28,8 +28,8 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Tests\Unit\Service\Dashboard;
 
-use OCA\Buildiq\Dashboard\WidgetApplication;
-use OCA\Buildiq\Dashboard\WidgetDescriptor;
+use OCA\Buildiq\Kernel\Values\WidgetApplication;
+use OCA\Buildiq\Kernel\Values\WidgetDescriptor;
 use OCA\Buildiq\Service\Dashboard\AggregationGateway;
 use OCA\Buildiq\Service\Dashboard\WidgetItemProjector;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;

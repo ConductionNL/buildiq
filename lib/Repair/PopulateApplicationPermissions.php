@@ -35,7 +35,7 @@
  * principal for the callable only. The `_rbac`/`_multitenancy` bypass on the
  * save call remains as defence in depth.
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-30
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-30
  */
 
 declare(strict_types=1);
@@ -88,7 +88,7 @@ class PopulateApplicationPermissions implements IRepairStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-30
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-30
 	 */
 	public function run(IOutput $output): void {
 		$output->info('Populating permissions on pre-existing Applications...');
@@ -145,7 +145,7 @@ class PopulateApplicationPermissions implements IRepairStep {
 	 *
 	 * @return integer|null Number of Applications patched, or null when none were found
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-30
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-30
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function patchApplicationsMissingPermissions(IOutput $output): ?int {
@@ -164,6 +164,7 @@ class PopulateApplicationPermissions implements IRepairStep {
 		}
 
 		$patched = 0;
+		$refused = [];
 		foreach ($applications as $applicationEntry) {
 			$applicationArray = ObjectRecord::toArray(object: $applicationEntry);
 			if ($this->needsMigration(application: $applicationArray) === false) {
@@ -182,21 +183,68 @@ class PopulateApplicationPermissions implements IRepairStep {
 				'viewers' => [],
 			];
 
+			if ($this->save(application: $applicationArray, uuid: $uuid) === false) {
+				$refused[] = $uuid;
+				continue;
+			}
+
+			$patched++;
+		}//end foreach
+
+		$this->reportRefused(refused: $refused, output: $output);
+
+		return $patched;
+	}//end patchApplicationsMissingPermissions()
+
+	/**
+	 * Name the Applications whose save was refused, when there are any.
+	 *
+	 * @param array<int,string> $refused Uuids of the refused Applications.
+	 * @param IOutput $output Repair output channel.
+	 *
+	 * @return void
+	 */
+	private function reportRefused(array $refused, IOutput $output): void {
+		if ($refused === []) {
+			return;
+		}
+
+		$output->warning(
+			count($refused) . ' Application(s) were refused on save and still have no permissions: '
+			. implode(', ', $refused)
+		);
+	}//end reportRefused()
+
+	/**
+	 * Save one patched Application; a refused save is noted and the run goes on.
+	 *
+	 * @param array<string,mixed> $application The patched Application.
+	 * @param string $uuid Its uuid.
+	 *
+	 * @return bool Whether the save went through.
+	 */
+	private function save(array $application, string $uuid): bool {
+		try {
 			// Defence in depth alongside the runAsSystem() elevation: the
 			// Application schema's update:[admin] guard would otherwise deny
 			// the Anonymous repair-step caller.
 			$this->objectService->saveObject(
-				object: $applicationArray,
+				object: $application,
 				register: 'buildiq',
 				schema: 'built-app',
 				_rbac: false,
 				_multitenancy: false
 			);
-			$patched++;
-		}//end foreach
+		} catch (\Throwable $e) {
+			$this->logger->warning(
+				'Buildiq: PopulateApplicationPermissions could not save ' . $uuid,
+				['exception' => $e->getMessage()]
+			);
+			return false;
+		}
 
-		return $patched;
-	}//end patchApplicationsMissingPermissions()
+		return true;
+	}//end save()
 
 	/**
 	 * Decide whether an Application needs the permissions migration.
@@ -208,7 +256,7 @@ class PopulateApplicationPermissions implements IRepairStep {
 	 *
 	 * @return bool True when the Application should be patched
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-30
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-30
 	 */
 	private function needsMigration(array $application): bool {
 		$permissions = ($application['permissions'] ?? null);

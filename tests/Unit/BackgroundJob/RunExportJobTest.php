@@ -29,10 +29,12 @@ namespace OCA\Buildiq\Tests\Unit\BackgroundJob;
 
 use OCA\Buildiq\BackgroundJob\RunExportJob;
 use OCA\Buildiq\Service\ExportAppContentBundler;
-use OCA\Buildiq\Service\ExportContents;
+use OCA\Buildiq\Kernel\Values\ExportContents;
 use OCA\Buildiq\Service\ExportJobService;
 use OCA\Buildiq\Service\ExportService;
-use OCA\Buildiq\Service\ExportTarget;
+use OCA\Buildiq\Kernel\Values\ExportTarget;
+use OCA\Buildiq\Kernel\Values\BrokerAccess;
+use OCA\Buildiq\Kernel\Values\PushTarget;
 use OCA\Buildiq\Service\GitHubPushService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -407,11 +409,8 @@ final class RunExportJobTest extends TestCase {
 			->with(
 				self::anything(),
 				self::anything(),
-				self::equalTo('cred-uuid-1234'),
-				self::equalTo('acme-co'),
-				self::equalTo('hello-world'),
-				self::anything(),
-				self::equalTo('alice')
+				self::equalTo(new BrokerAccess(credentialId: 'cred-uuid-1234', actingUserId: 'alice')),
+				self::equalTo(new PushTarget(org: 'acme-co', repo: 'hello-world', visibility: 'private'))
 			)
 			->willReturn(
 				[
@@ -422,6 +421,47 @@ final class RunExportJobTest extends TestCase {
 
 		$this->invokeRun($this->buildJob(), ['jobUuid' => $jobUuid]);
 	}//end testGithubExportPassesCredentialAndActingUserToPush()
+
+	/**
+	 * The acting user is the job's requestedBy; the owner only stands in when
+	 * requestedBy is absent or empty, and with neither the broker gets no user.
+	 *
+	 * @return void
+	 */
+	public function testTheActingUserIsRequestedByBeforeOwner(): void {
+		$cases = [
+			'both set' => [['requestedBy' => 'alice', 'owner' => 'mallory'], 'alice'],
+			'only requestedBy' => [['requestedBy' => 'alice'], 'alice'],
+			'empty requestedBy' => [['requestedBy' => '', 'owner' => 'bob'], 'bob'],
+			'only owner' => [['owner' => 'bob'], 'bob'],
+			'neither' => [[], null],
+		];
+		foreach ($cases as $name => [$identity, $expected]) {
+			$this->setUp();
+			$job = $this->jobFixture() + $identity;
+			$job['target'] = 'github';
+			$job['githubOrg'] = 'acme-co';
+			$job['githubRepo'] = 'hello-world';
+			$job['githubCredentialId'] = 'cred-uuid-1234';
+
+			$this->exportJobService->method('loadJob')->willReturn($job);
+			$this->exportJobService->method('transitionJob')->willReturn(true);
+			$this->exportService->method('generateAppZip')->willReturn('/tmp/x.zip');
+			$this->exportService->method('scratchTreeDir')->willReturn('/tmp/tree');
+
+			$seen = [];
+			$this->githubPushService->method('push')->willReturnCallback(
+				static function (string $jobUuid, string $treeDir, BrokerAccess $access) use (&$seen): array {
+					$seen[] = $access->actingUserId;
+					return ['repoUrl' => 'https://github.com/acme-co/hello-world', 'pullRequestUrl' => ''];
+				}
+			);
+
+			$this->invokeRun($this->buildJob(), ['jobUuid' => 'acting-user']);
+
+			self::assertSame([$expected], $seen, $name);
+		}//end foreach
+	}//end testTheActingUserIsRequestedByBeforeOwner()
 
 	/**
 	 * Re-running a job with the same UUID must invoke the pipeline with
@@ -574,7 +614,7 @@ final class RunExportJobTest extends TestCase {
 
 		foreach ($captured as $line) {
 			self::assertDoesNotMatchRegularExpression(
-				'/gh[pousr]_[A-Za-z0-9]{10,}/',
+				'/gh[pousr]_[A-Za-z0-9]{10,}|github_pat_[A-Za-z0-9_]{10,}/',
 				$line,
 				'No GitHub token may ever appear in a log line — found in: ' . $line
 			);

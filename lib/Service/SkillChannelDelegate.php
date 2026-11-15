@@ -36,6 +36,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Values\RepoSource;
 use OCP\App\IAppManager;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -182,14 +183,16 @@ class SkillChannelDelegate {
 
 		$report->adoptCounts(
 			channel: self::CHANNEL,
-			created: ($installed + $updated + $unchanged),
-			skipped: (int)($result['skipped'] ?? 0),
-			failed: (int)($result['failed'] ?? 0),
-			truncated: (bool)($result['truncated'] ?? false),
-			sourceCounts: [
-				'installed' => $installed,
-				'updated' => $updated,
-				'unchanged' => $unchanged,
+			outcome: [
+				'created' => ($installed + $updated + $unchanged),
+				'skipped' => (int)($result['skipped'] ?? 0),
+				'failed' => (int)($result['failed'] ?? 0),
+				'truncated' => (bool)($result['truncated'] ?? false),
+				'sourceCounts' => [
+					'installed' => $installed,
+					'updated' => $updated,
+					'unchanged' => $unchanged,
+				],
 			]
 		);
 

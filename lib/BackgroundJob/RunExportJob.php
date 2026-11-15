@@ -18,8 +18,8 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-34
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-34
  *
  * @SPDX-License-Identifier: EUPL-1.2
  * @SPDX-FileCopyrightText:  2026 Conduction B.V. <info@conduction.nl>
@@ -29,12 +29,14 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\BackgroundJob;
 
-use OCA\Buildiq\Service\ExportAppContentBundler;
-use OCA\Buildiq\Service\ExportJobService;
-use OCA\Buildiq\Service\ExportContents;
-use OCA\Buildiq\Service\ExportService;
-use OCA\Buildiq\Service\ExportTarget;
-use OCA\Buildiq\Service\GitHubPushService;
+use OCA\Buildiq\Kernel\Contracts\ExportAppContentBundlerInterface;
+use OCA\Buildiq\Kernel\Contracts\ExportJobServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\ExportServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\GitHubPushServiceInterface;
+use OCA\Buildiq\Kernel\Values\ExportContents;
+use OCA\Buildiq\Kernel\Values\ExportTarget;
+use OCA\Buildiq\Kernel\Values\BrokerAccess;
+use OCA\Buildiq\Kernel\Values\PushTarget;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\QueuedJob;
 use Psr\Log\LoggerInterface;
@@ -43,27 +45,27 @@ use RuntimeException;
 /**
  * Background job that runs a single ExportJob to completion.
  *
- * @spec openspec/changes/openbuild-exporter/tasks.md#task-7.1
+ * @spec openspec/changes/archive/2026-06-14-openbuild-exporter/tasks.md#task-7.1
  */
 class RunExportJob extends QueuedJob {
 	/**
 	 * Constructor.
 	 *
 	 * @param ITimeFactory $time Time factory (Nextcloud-injectable).
-	 * @param ExportService $exportService File-generation pipeline.
-	 * @param ExportJobService $exportJobService Job orchestration helper.
-	 * @param GitHubPushService $githubPushService GitHub delivery target.
+	 * @param ExportServiceInterface $exportService File-generation pipeline.
+	 * @param ExportJobServiceInterface $exportJobService Job orchestration helper.
+	 * @param GitHubPushServiceInterface $githubPushService GitHub delivery target.
 	 * @param LoggerInterface $logger Logger.
-	 * @param ExportAppContentBundler|null $contentBundler Finds the application and version the job names.
+	 * @param ExportAppContentBundlerInterface|null $contentBundler Finds the application and version the job names.
 	 *                                                     Null exports the bare scaffold.
 	 */
 	public function __construct(
 		ITimeFactory $time,
-		private ExportService $exportService,
-		private ExportJobService $exportJobService,
-		private GitHubPushService $githubPushService,
+		private ExportServiceInterface $exportService,
+		private ExportJobServiceInterface $exportJobService,
+		private GitHubPushServiceInterface $githubPushService,
 		private LoggerInterface $logger,
-		private ?ExportAppContentBundler $contentBundler = null,
+		private ?ExportAppContentBundlerInterface $contentBundler = null,
 	) {
 		parent::__construct(time: $time);
 	}//end __construct()
@@ -81,7 +83,7 @@ class RunExportJob extends QueuedJob {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
 	 */
 	protected function run($argument): void {
 		$jobUuid = $this->extractJobUuid(argument: $argument);
@@ -177,8 +179,8 @@ class RunExportJob extends QueuedJob {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
-	 * @spec openspec/changes/data-registers-runtime/tasks.md#task-4.3
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
+	 * @spec openspec/changes/archive/2026-10-07-data-registers-runtime/tasks.md#task-4.3
 	 */
 	private function executePipeline(string $jobUuid): void {
 		// Load the queued ExportJob record so we have the real application
@@ -197,15 +199,8 @@ class RunExportJob extends QueuedJob {
 		$applicationSlug = (string)($job['applicationSlug'] ?? 'exported-app');
 		$license = (string)($job['license'] ?? 'EUPL-1.2');
 
-		$dataRegisters = [];
-		if (is_array($job['dataRegisters'] ?? null) === true) {
-			$dataRegisters = $job['dataRegisters'];
-		}
-
-		$flows = [];
-		if (is_array($job['flows'] ?? null) === true) {
-			$flows = $job['flows'];
-		}
+		$dataRegisters = $this->listField(job: $job, key: 'dataRegisters');
+		$flows = $this->listField(job: $job, key: 'flows');
 
 		if ($applicationUuid === '') {
 			throw new RuntimeException(
@@ -260,6 +255,22 @@ class RunExportJob extends QueuedJob {
 		$this->exportJobService->transitionJob(jobUuid: $jobUuid, action: 'succeed', extraFields: $extra);
 		$this->logger->info('Buildiq export succeeded', ['jobUuid' => $jobUuid]);
 	}//end executePipeline()
+
+	/**
+	 * An array field of the job record, or [] when it is absent or not an array.
+	 *
+	 * @param array<string, mixed> $job The ExportJob record.
+	 * @param string               $key The field name.
+	 *
+	 * @return array<mixed>
+	 */
+	private function listField(array $job, string $key): array {
+		if (is_array($job[$key] ?? null) === true) {
+			return $job[$key];
+		}
+
+		return [];
+	}//end listField()
 
 	/**
 	 * Find the application and version the job names.
@@ -397,7 +408,7 @@ class RunExportJob extends QueuedJob {
 	 *
 	 * @throws RuntimeException When a GitHub export has no broker credential.
 	 *
-	 * @spec openspec/changes/openbuild-exporter/tasks.md#task-6.2
+	 * @spec openspec/changes/archive/2026-06-14-openbuild-exporter/tasks.md#task-6.2
 	 */
 	private function maybePush(string $jobUuid, array $job): ?array {
 		if ((string)($job['target'] ?? 'zip') !== 'github') {
@@ -427,11 +438,12 @@ class RunExportJob extends QueuedJob {
 		return $this->githubPushService->push(
 			jobUuid: $jobUuid,
 			treeDir: $treeDir,
-			credentialId: $credentialId,
-			org: (string)($job['githubOrg'] ?? ''),
-			repo: (string)($job['githubRepo'] ?? ''),
-			visibility: (string)($job['githubVisibility'] ?? 'private'),
-			actingUserId: $actingUserId
+			access: new BrokerAccess(credentialId: $credentialId, actingUserId: $actingUserId),
+			target: new PushTarget(
+				org: (string)($job['githubOrg'] ?? ''),
+				repo: (string)($job['githubRepo'] ?? ''),
+				visibility: (string)($job['githubVisibility'] ?? 'private')
+			)
 		);
 	}//end maybePush()
 

@@ -48,7 +48,7 @@ class OpenRegisterAggregationGateway implements AggregationGateway {
 	/**
 	 * OpenRegister's validated aggregation query value object.
 	 */
-	private const QUERY_CLASS = '\\OCA\\OpenRegister\\Service\\Aggregation\\AggregationQuery';
+	private const QUERY_CLASS = '\\OCA\\OpenRegister\\Search\\Service\\Aggregation\\AggregationQuery';
 
 	/**
 	 * Constructor.

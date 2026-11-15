@@ -104,4 +104,22 @@ final class CleanupExpiredExportsTest extends TestCase {
 		// No exception thrown == idempotent.
 		self::assertTrue(true);
 	}//end testRunIsIdempotent()
+
+	/**
+	 * REQ-PLAT-010: the run also purges the archives kept in app data, with the
+	 * same 24 hour window.
+	 *
+	 * @return void
+	 */
+	public function testRunPurgesTheAppDataArchivesToo(): void {
+		$time = $this->createMock(ITimeFactory::class);
+		$time->method('getTime')->willReturn(time());
+		$archives = $this->createMock(\OCA\Buildiq\Service\ExportArchiveStore::class);
+		$archives->expects(self::once())
+			->method('purgeOlderThan')
+			->with(self::greaterThanOrEqual(time()), 86400)
+			->willReturn(2);
+
+		$this->invokeRun(new CleanupExpiredExports($time, new NullLogger(), $archives));
+	}//end testRunPurgesTheAppDataArchivesToo()
 }//end class

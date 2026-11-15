@@ -33,6 +33,7 @@ use OCA\Buildiq\Service\AppOverrideService;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCP\App\IAppManager;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -335,6 +336,56 @@ class AppOverrideServiceTest extends TestCase {
 		self::assertTrue($this->service->wouldBlankApp(delta: $delta));
 
 	}//end testWouldBlankAppTrueWhenAllPagesRemovedAndMenuEmptied()
+
+	/**
+	 * A new hybrid app keeps a caller baseRef only when it names a non-blank id;
+	 * otherwise it links the fleet app itself, so the Application never breaks
+	 * the register's `hybrid-requires-baseRef` validation.
+	 *
+	 * @param string|null $baseRef The caller's JSON-encoded baseRef.
+	 * @param array<string,mixed> $expected The baseRef stored on the Application.
+	 *
+	 * @return void
+	 */
+	#[DataProvider('baseRefs')]
+	public function testCreatedHybridAppCarriesABaseRefId(?string $baseRef, array $expected): void {
+		$this->objectService->method('searchObjectsBySlug')->willReturn([]);
+		$this->appManager->method('getAppInfo')->willReturn(['name' => 'OpenCatalogi']);
+
+		$saved = [];
+		$this->objectService->method('saveObject')->willReturnCallback(
+			function (array $object) use (&$saved): ObjectEntity {
+				$saved[] = $object;
+				return $this->mockEntity(['id' => 'row-' . count($saved)]);
+			}
+		);
+
+		$this->service->upsert(appId: 'opencatalogi', delta: [], baseRef: $baseRef, updatedBy: 'alice');
+
+		self::assertSame($expected, $saved[0]['baseRef']);
+	}//end testCreatedHybridAppCarriesABaseRefId()
+
+	/**
+	 * Caller baseRefs and the baseRef the new Application gets.
+	 *
+	 * @return array<string, array{0: string|null, 1: array<string,mixed>}>
+	 */
+	public static function baseRefs(): array {
+		$fleet = ['kind' => 'fleet-app', 'id' => 'opencatalogi'];
+
+		return [
+			'none' => [null, $fleet],
+			'empty string' => ['', $fleet],
+			'not json' => ['files', $fleet],
+			'kind only' => ['{"kind":"fleet-app"}', $fleet],
+			'id null' => ['{"id":null}', $fleet],
+			'id empty' => ['{"kind":"fleet-app","id":""}', $fleet],
+			'id whitespace' => ['{"id":"  "}', $fleet],
+			'id not a string' => ['{"id":5}', $fleet],
+			'id set, kind defaulted' => ['{"id":"files","version":"1.2"}', ['id' => 'files', 'version' => '1.2', 'kind' => 'fleet-app']],
+			'id and kind set' => ['{"kind":"fleet-app","id":"files"}', ['kind' => 'fleet-app', 'id' => 'files']],
+		];
+	}//end baseRefs()
 
 	/**
 	 * Build a mock ObjectEntity whose jsonSerialize returns the given array.
