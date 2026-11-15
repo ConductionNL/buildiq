@@ -97,6 +97,14 @@
 		]
 	},
 	{
+		"icon": "ScaleBalance",
+		"id": "app-business-rules",
+		"label": "buildiq:Business rules",
+		"onSelect": [
+			"openBusinessRules([])"
+		]
+	},
+	{
 		"icon": "AccountMultipleOutline",
 		"id": "app-permissions",
 		"label": "buildiq:Manage permissions",

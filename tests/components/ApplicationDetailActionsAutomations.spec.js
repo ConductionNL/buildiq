@@ -106,4 +106,26 @@ describe('ApplicationDetailActions automations entry', () => {
 			query: { app: 'permit-tracker', version: 'production' },
 		})
 	})
+
+	it('offers Business rules next to Automations (REQ-BQAR-008)', async () => {
+		const wrapper = mountActions()
+		await wrapper.vm.$nextTick()
+
+		const ids = wrapper.vm.actionDescriptors.map((a) => a.id)
+		expect(ids.indexOf('app-business-rules')).toBe(ids.indexOf('app-automations') + 1)
+		const entry = wrapper.vm.actionDescriptors.find((a) => a.id === 'app-business-rules')
+		expect(entry.label).toBe('Business rules')
+	})
+
+	it('opens the business rules page with this app preselected', async () => {
+		const wrapper = mountActions()
+		await wrapper.vm.$nextTick()
+
+		wrapper.vm.actionDescriptors.find((a) => a.id === 'app-business-rules').onSelect()
+
+		expect(router.push).toHaveBeenCalledWith({
+			name: 'BusinessRules',
+			query: { app: 'permit-tracker' },
+		})
+	})
 })

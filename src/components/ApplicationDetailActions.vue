@@ -710,6 +710,12 @@ export default {
 					icon: 'Sitemap',
 					onSelect: () => this.openAutomations(),
 				},
+				{
+					id: 'app-business-rules',
+					label: t('buildiq', 'Business rules'),
+					icon: 'ScaleBalance',
+					onSelect: () => this.openBusinessRules(),
+				},
 			]
 		},
 
@@ -1051,6 +1057,28 @@ export default {
 
 			const query = this.automationsQuery(slug)
 			this.$router.push({ name: 'Automations', query }).catch(() => {})
+		},
+
+		/**
+		 * Open the business rules page with this app preselected: the rule
+		 * sets this app owns and the global ones.
+		 *
+		 * Like automations, the page has no menu entry of its own; rules
+		 * belong to an app and are reached from it.
+		 *
+		 * @return {void}
+		 *
+		 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-the-app-leads-to-its-business-rules-req-bqar-008
+		 */
+		openBusinessRules() {
+			const slug = this.obApp && this.obApp.slug
+			if (!slug) {
+				return
+			}
+
+			this.$router
+				.push({ name: 'BusinessRules', query: { app: slug } })
+				.catch(() => {})
 		},
 
 		/**
