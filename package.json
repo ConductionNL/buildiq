@@ -9,6 +9,7 @@
   "scripts": {
     "test:l10n": "node tests/l10n/check-l10n.js",
     "test:l10n:write": "node tests/l10n/check-l10n.js --write",
+    "test:l10n:parity": "L10N_REQUIRED_LOCALES=nl node tests/l10n/check-l10n-parity.js",
     "postinstall": "patch-package",
     "build": "NODE_ENV=production webpack --config webpack.config.js --progress",
     "postbuild": "node scripts/check-single-dexie.js",

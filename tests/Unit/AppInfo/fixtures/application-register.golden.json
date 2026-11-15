@@ -155,6 +155,13 @@
     {
         "method": "registerServiceAlias",
         "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\DeviceFeaturesInterface",
+            "target": "OCA\\Buildiq\\Service\\DeviceFeatures"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
             "alias": "OCA\\Buildiq\\Kernel\\Contracts\\DocumentGenerationServiceInterface",
             "target": "OCA\\Buildiq\\Service\\DocumentGenerationService"
         }
@@ -570,6 +577,20 @@
         "args": {
             "event": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
             "listener": "OCA\\Buildiq\\Listener\\FormLiveValuesListener"
+        }
+    },
+    {
+        "method": "registerEventListener",
+        "args": {
+            "event": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+            "listener": "OCA\\Buildiq\\Listener\\DeviceFeaturesListener"
+        }
+    },
+    {
+        "method": "registerEventListener",
+        "args": {
+            "event": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+            "listener": "OCA\\Buildiq\\Listener\\DeviceFeaturesListener"
         }
     },
     {
