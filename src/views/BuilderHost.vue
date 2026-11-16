@@ -71,6 +71,16 @@ export default {
 		CnAppRoot,
 	},
 
+	/**
+	 * The app slug for runtime components inside the app, read as a function
+	 * so it follows the route (logic-automation-actions-that-run D8).
+	 *
+	 * @return {object}
+	 */
+	provide() {
+		return { cnAppSlug: () => this.slug }
+	},
+
 	data() {
 		return {
 			// REQ-OBVR-004: reactive version state from useApplicationVersion.

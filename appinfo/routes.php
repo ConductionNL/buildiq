@@ -257,6 +257,8 @@ return \OCA\Buildiq\Middleware\Support\ApiPathAliases::withVersionedAliases(\OCA
         ['name' => 'automations#dryRun',   'url' => '/api/automations/{uuid}/dry-run',  'verb' => 'POST', 'requirements' => ['uuid' => '[a-f0-9-]{8,}']],
         // The run log (logic-automation-run-log D3): the summary route comes first so `runs` is never read as a uuid.
         ['name' => 'automations#runsSummary', 'url' => '/api/automations/runs/summary', 'verb' => 'GET'],
+        ['name' => 'automations#manual',   'url' => '/api/automations/manual',          'verb' => 'GET'],
+        ['name' => 'automations#run',      'url' => '/api/automations/{uuid}/run',      'verb' => 'POST', 'requirements' => ['uuid' => '[a-f0-9-]{8,}']],
         ['name' => 'automations#status',   'url' => '/api/automations/{uuid}/status',   'verb' => 'GET',  'requirements' => ['uuid' => '[a-f0-9-]{8,}']],
         ['name' => 'automations#runs',     'url' => '/api/automations/{uuid}/runs',     'verb' => 'GET',  'requirements' => ['uuid' => '[a-f0-9-]{8,}']],
 

@@ -2397,7 +2397,10 @@ OC.L10N.register(
         "The branch could not be started.": "The branch could not be started.",
         "The merge could not be completed.": "The merge could not be completed.",
         "This merge changes schemas in a way that can break records already stored:": "This merge changes schemas in a way that can break records already stored:",
-        "Which side to keep": "Which side to keep"
+        "Which side to keep": "Which side to keep",
+        "Run automation": "Run automation",
+        "\"{name}\" started": "\"{name}\" started",
+        "\"{name}\" could not be started": "\"{name}\" could not be started"
     },
     "nplurals=2; plural=(n != 1);"
 )

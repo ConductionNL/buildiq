@@ -2375,7 +2375,6 @@
         "Total load time (ms)": "Total load time (ms)",
         "Window start": "Window start",
         "Include server bundle": "Include server bundle",
-        "Search": "Search",
         "Add external data widget": "Add external data widget",
         "Failures": "Failures",
         "Failed requests, 4xx and 5xx together. Derived by the server, never posted; summed by the request failure metric.": "Failed requests, 4xx and 5xx together. Derived by the server, never posted; summed by the request failure metric.",
@@ -2409,7 +2408,10 @@
         "The branch could not be started.": "The branch could not be started.",
         "The merge could not be completed.": "The merge could not be completed.",
         "This merge changes schemas in a way that can break records already stored:": "This merge changes schemas in a way that can break records already stored:",
-        "Which side to keep": "Which side to keep"
+        "Which side to keep": "Which side to keep",
+        "\"{name}\" could not be started": "\"{name}\" could not be started",
+        "\"{name}\" started": "\"{name}\" started",
+        "Run automation": "Run automation"
     },
     "plurals": "",
     "pluralForm": "nplurals=2; plural=(n != 1);"
