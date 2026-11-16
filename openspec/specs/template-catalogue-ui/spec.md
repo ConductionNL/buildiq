@@ -107,7 +107,7 @@ SHALL expose an "Install" action that opens the existing `CloneTemplateDialog`.
 The local built-in templates SHALL keep working (install via the local
 from-template path) as the secondary section.
 
-@e2e exclude retrofit component-contract spec — the store search-renders-results
+@e2e exclude retrofit component-contract spec — the marketplace search-renders-results
 and install-opens-dialog behaviours are `TemplateGallery` component-state
 contracts verified by Vitest; the end-to-end install flow is covered by the
 buildiq-template-catalogue Playwright tests.
@@ -127,8 +127,8 @@ buildiq-template-catalogue Playwright tests.
 
 ### Requirement: Install through CloneTemplateDialog calls the store endpoint
 
-`CloneTemplateDialog` SHALL route installs of a remote store card to the store
-endpoint. When the dialog is opened from a remote store card, a successful
+`CloneTemplateDialog` SHALL route installs of a remote marketplace card to the store
+endpoint. When the dialog is opened from a remote marketplace card, a successful
 submit SHALL call `POST /api/store/templates/{slug}/install` (instead of the
 local from-template endpoint) with the user-supplied name + slug, and on success
 SHALL close the dialog and redirect to the new application's editor exactly like
@@ -152,7 +152,7 @@ tests.
 `TemplateGallery` SHALL fall back to rendering the locally-seeded **built-in
 templates as the primary content** when no registry is configured
 (`storeConfigured` is false) — exactly as today's local Templates page — and
-SHALL NOT render the store search box or remote cards, and SHALL NOT issue any
+SHALL NOT render the marketplace search box or remote cards, and SHALL NOT issue any
 store request. Admin
 users SHALL additionally see a "configure a registry" hint linking to the
 Buildiq admin settings; non-admins SHALL simply see the local templates. This
@@ -161,6 +161,6 @@ guarantees a registry-less instance is non-regressed.
 #### Scenario: Falls back to local templates when unconfigured
 
 - **WHEN** the Templates page loads with `storeConfigured` false
-- **THEN** the store search box and remote cards are not rendered
+- **THEN** the marketplace search box and remote cards are not rendered
 - **AND** no `GET /api/store/templates` request is issued
 - **AND** the local built-in templates are listed as the primary content
