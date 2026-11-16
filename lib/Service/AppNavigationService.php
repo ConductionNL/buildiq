@@ -93,6 +93,13 @@ class AppNavigationService implements AppNavigationServiceInterface {
 	private AppVisibilityResolver $visibilityResolver;
 
 	/**
+	 * The organisation-scope check; null hides every scoped app.
+	 *
+	 * @var AppOrganisationGuard|null
+	 */
+	private ?AppOrganisationGuard $organisationGuard;
+
+	/**
 	 * User session
 	 *
 	 * @var IUserSession
@@ -130,6 +137,7 @@ class AppNavigationService implements AppNavigationServiceInterface {
 		$this->groupManager = $caller->groupManager;
 		$this->applicationProvider = $published->applicationProvider;
 		$this->visibilityResolver = ($published->visibilityResolver ?? new AppVisibilityResolver());
+		$this->organisationGuard = $published->organisationGuard;
 	}//end __construct()
 
 	/**
@@ -204,6 +212,7 @@ class AppNavigationService implements AppNavigationServiceInterface {
 		// Capture variables for the closure — PHP closures close over
 		// variables by reference unless 'use' explicitly binds them by value.
 		$capturedPermissions = $permissions;
+		$capturedApplication = $application;
 		$userSession = $this->userSession;
 		$groupManager = $this->groupManager;
 
@@ -215,14 +224,17 @@ class AppNavigationService implements AppNavigationServiceInterface {
 				$iconUrl,
 				$order,
 				$capturedPermissions,
+				$capturedApplication,
 				$userSession,
 				$groupManager
 			): array {
-				$visible = $this->isVisibleForCurrentUser(
-					permissions: $capturedPermissions,
-					userSession: $userSession,
-					groupManager: $groupManager
-				);
+				// Organisation scope first (REQ-BQOS-002), then the role check.
+				$visible = $this->visibleToOrganisation(application: $capturedApplication, userSession: $userSession)
+					&& $this->isVisibleForCurrentUser(
+						permissions: $capturedPermissions,
+						userSession: $userSession,
+						groupManager: $groupManager
+					);
 
 				// NavigationManager has no 'enabled' concept — entries
 				// are filtered by 'type' (getAll('link')). Returning a
@@ -247,6 +259,25 @@ class AppNavigationService implements AppNavigationServiceInterface {
 			}
 		);
 	}//end addNavEntry()
+
+	/**
+	 * Whether the current user may see the app at all, by its organisation scope.
+	 * A shared app passes; a scoped one needs the guard to admit the user.
+	 *
+	 * @param array<string, mixed> $application The published Application.
+	 * @param IUserSession         $userSession The session.
+	 *
+	 * @return bool True when the app is visible to the current user.
+	 *
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002
+	 */
+	private function visibleToOrganisation(array $application, IUserSession $userSession): bool {
+		if (AppOrganisationGuard::isShared(application: $application) === true) {
+			return true;
+		}
+
+		return $this->organisationGuard?->canSee(application: $application, user: $userSession->getUser()) === true;
+	}//end visibleToOrganisation()
 
 	/**
 	 * The slug and display name of an Application's entry, or [] without a slug.
