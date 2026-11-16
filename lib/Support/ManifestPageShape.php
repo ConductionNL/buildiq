@@ -64,6 +64,8 @@ final class ManifestPageShape {
 	 * @return array<string, mixed> The same page, in a shape the validator accepts.
 	 *
 	 * @spec openspec/specs/ai-copilot/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) FormPageConfig is a pure shape rule with no state.
 	 */
 	public static function normalise(array $page): array {
 		$config = $page['config'] ?? [];

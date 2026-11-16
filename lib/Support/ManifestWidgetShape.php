@@ -88,6 +88,8 @@ final class ManifestWidgetShape {
 	 * @return array{0: array<string, mixed>, 1: array<string, mixed>} The updated page and the widget that was appended.
 	 *
 	 * @spec openspec/specs/ai-copilot/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) WidgetIdAllocator and WidgetDataBinding are pure rules with no state.
 	 */
 	public static function appendTo(array $page, WidgetSpec $spec): array {
 		$pageConfig = self::asMap(value: ($page['config'] ?? []));
