@@ -80,6 +80,44 @@ class VersionMergeRunner implements VersionMergeRunnerInterface {
 	}//end startBranch()
 
 	/**
+	 * The merge of the source version into the target version, written nowhere.
+	 *
+	 * @param array<string,mixed> $application The Application (`productionVersion`).
+	 * @param array<string,mixed> $source      The version merged in.
+	 * @param array<string,mixed> $target      The version merged into.
+	 *
+	 * @return array<string,mixed> `manifest`, `schemas`, `conflicts`, `breaking` and the target's `targetHash`.
+	 *
+	 * @throws VersionBranchRefused When the target cannot take a merge or the pair has no common base.
+	 *
+	 * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-merges-a-branch-and-picks-a-side-per-conflict-req-bqgb-003
+	 */
+	public function previewMerge(array $application, array $source, array $target): array {
+		return $this->preview(application: $application, request: new VersionMergeRequest(source: $source, target: $target));
+	}//end previewMerge()
+
+	/**
+	 * Apply the merge of the source version into the target version and write the target.
+	 *
+	 * @param array<string,mixed> $application The Application (`productionVersion`).
+	 * @param array<string,mixed> $source      The version merged in.
+	 * @param array<string,mixed> $target      The version merged into.
+	 * @param array<string,mixed> $resolution  `choices`, the previewed `targetHash` and `acknowledgeBreaking`.
+	 *
+	 * @return array<string,mixed> The saved target version.
+	 *
+	 * @throws VersionBranchRefused When anything would make the write wrong; nothing is written then.
+	 *
+	 * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-merge-only-writes-a-draft-that-has-not-moved-req-bqgb-004
+	 */
+	public function applyMerge(array $application, array $source, array $target, array $resolution): array {
+		return $this->apply(
+			application: $application,
+			request: new VersionMergeRequest(source: $source, target: $target, resolution: $resolution)
+		);
+	}//end applyMerge()
+
+	/**
 	 * The merge of the request's source into its target, written nowhere.
 	 *
 	 * @param array<string,mixed> $application The Application (`productionVersion`).

@@ -24,8 +24,6 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Kernel\Contracts;
 
-use OCA\Buildiq\Service\Branch\VersionMergeRequest;
-
 /**
  * Contract of VersionMergeRunner.
  *
@@ -53,26 +51,29 @@ interface VersionMergeRunnerInterface {
 	public function startBranch(array $application, array $source, string $name): array;
 
 	/**
-	 * The merge of the request's source into its target, written nowhere.
+	 * The merge of the source version into the target version, written nowhere.
 	 *
 	 * @param array<string,mixed> $application The Application (`productionVersion`).
-	 * @param VersionMergeRequest $request     The two versions.
+	 * @param array<string,mixed> $source      The version merged in.
+	 * @param array<string,mixed> $target      The version merged into.
 	 *
 	 * @return array<string,mixed> `manifest`, `schemas`, `conflicts`, `breaking` and the target's `targetHash`.
 	 *
 	 * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-merges-a-branch-and-picks-a-side-per-conflict-req-bqgb-003
 	 */
-	public function preview(array $application, VersionMergeRequest $request): array;
+	public function previewMerge(array $application, array $source, array $target): array;
 
 	/**
-	 * Apply the merge with the request's choices and write the target.
+	 * Apply the merge of the source version into the target version and write the target.
 	 *
 	 * @param array<string,mixed> $application The Application (`productionVersion`).
-	 * @param VersionMergeRequest $request     The versions, choices, previewed hash and confirmation.
+	 * @param array<string,mixed> $source      The version merged in.
+	 * @param array<string,mixed> $target      The version merged into.
+	 * @param array<string,mixed> $resolution  `choices`, the previewed `targetHash` and `acknowledgeBreaking`.
 	 *
 	 * @return array<string,mixed> The saved target version.
 	 *
 	 * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-merge-only-writes-a-draft-that-has-not-moved-req-bqgb-004
 	 */
-	public function apply(array $application, VersionMergeRequest $request): array;
+	public function applyMerge(array $application, array $source, array $target, array $resolution): array;
 }//end interface
