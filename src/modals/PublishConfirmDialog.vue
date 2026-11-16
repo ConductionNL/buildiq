@@ -33,7 +33,7 @@
 					{{
 						t(
 							'buildiq',
-							'This app has no repository yet. Name one. Publishing creates it as a public repository, tagged so the store can find it.',
+							'This app has no repository yet. Name one. Publishing creates it as a public repository, tagged so the marketplace can find it.',
 						)
 					}}
 				</p>
