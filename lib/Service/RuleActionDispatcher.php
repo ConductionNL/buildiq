@@ -232,10 +232,16 @@ class RuleActionDispatcher implements RuleActionDispatcherInterface {
 
 		$write = function () use ($object, $register, $schema, $operation, $id) {
 			if ($operation === 'update') {
-				return $this->objectService->saveObject(object: $object, options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: $id));
+				return $this->objectService->saveObject(
+					object: $object,
+					options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: $id)
+				);
 			}
 
-			return $this->objectService->saveObject(object: $object, options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema)));
+			return $this->objectService->saveObject(
+				object: $object,
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema))
+			);
 		};
 
 		if ($this->userSession->getUser() === null && $id !== '') {

@@ -1314,7 +1314,13 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 		$version['manifest'] = $manifest;
 
 		try {
-			$this->objectService->saveObject(object: $version, options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: 'applicationVersion'), uuid: $versionUuid));
+			$this->objectService->saveObject(
+				object: $version,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: 'applicationVersion'),
+					uuid: $versionUuid
+				)
+			);
 		} catch (Throwable $e) {
 			$this->logger->error(
 				'Buildiq: AutomationCompilerService failed to save schedules onto ApplicationVersion "' . $versionUuid . '": ' . $e->getMessage()
@@ -1423,7 +1429,12 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 					)
 				);
 			} else {
-				$this->objectService->saveObject(object: $ruleSet, options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: RuleEngineService::RULE_SET_SCHEMA)));
+				$this->objectService->saveObject(
+					object: $ruleSet,
+					options: new ObjectSaveOptions(
+						target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: RuleEngineService::RULE_SET_SCHEMA)
+					)
+				);
 			}
 		} catch (Throwable $e) {
 			$this->logger->error('Buildiq: AutomationCompilerService failed to save RuleSet "' . $ruleSet['slug'] . '": ' . $e->getMessage());
@@ -1670,7 +1681,9 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 	 */
 	private function deleteObjectQuietly(string $uuid, string $schema): void {
 		try {
-			$this->objectService->deleteObject(new ObjectDeletion(uuid: $uuid, target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: $schema)));
+			$this->objectService->deleteObject(
+				new ObjectDeletion(uuid: $uuid, target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: $schema))
+			);
 		} catch (Throwable $e) {
 			$this->logger->warning('Buildiq: AutomationCompilerService failed to delete ' . $schema . ' "' . $uuid . '": ' . $e->getMessage());
 		}
@@ -2060,7 +2073,10 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 		}
 
 		try {
-			$entity = $this->objectService->find(id: $uuid, options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: 'applicationVersion'));
+			$entity = $this->objectService->find(
+				id: $uuid,
+				options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: 'applicationVersion')
+			);
 		} catch (Throwable $e) {
 			$this->logger->warning('Buildiq: AutomationCompilerService could not load ApplicationVersion "' . $uuid . '": ' . $e->getMessage());
 			return null;

@@ -180,12 +180,13 @@ class FormDestinationCheck {
 		$second = ((new ReflectionMethod($validator, 'validate'))->getParameters()[1] ?? null);
 		if ($second !== null && $second->getName() === 'destination' && class_exists(self::DESTINATION) === true) {
 			$audience = $options['audience'] ?? null;
-			$class    = self::DESTINATION;
+			if ($audience !== null) {
+				$audience = (string)$audience;
+			}
 
-			return $validator->validate(
-				mapping: $mapping,
-				destination: new $class(schema: $schema, audience: ($audience === null) ? null : (string)$audience)
-			);
+			$class = self::DESTINATION;
+
+			return $validator->validate(mapping: $mapping, destination: new $class(schema: $schema, audience: $audience));
 		}
 
 		return $validator->validate(mapping: $mapping, schema: $schema, options: $options);

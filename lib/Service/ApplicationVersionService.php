@@ -1055,7 +1055,10 @@ class ApplicationVersionService implements ApplicationVersionServiceInterface {
 		unset($payload['id'], $payload['uuid'], $payload['@self'], $payload['provenance']);
 		$payload['versionUuid'] = $newVersionUuid;
 
-		$created = $this->objectService->saveObject(object: $payload, options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: 'automation')));
+		$created = $this->objectService->saveObject(
+			object: $payload,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: 'automation'))
+		);
 		$createdArray = ObjectRecord::toArray(object: $created);
 
 		// Prefer the entity's own uuid (NC Entity's magic getUuid() — not
@@ -1089,7 +1092,10 @@ class ApplicationVersionService implements ApplicationVersionServiceInterface {
 		$provenance = $this->automationCompiler->apply(automation: $createdArray, plan: $plan, priorProvenance: []);
 
 		$createdArray['provenance'] = $provenance;
-		$this->objectService->saveObject(object: $createdArray, options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: 'automation'), uuid: $newUuid));
+		$this->objectService->saveObject(
+			object: $createdArray,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: 'automation'), uuid: $newUuid)
+		);
 	}//end cloneOneAutomation()
 
 	/**
