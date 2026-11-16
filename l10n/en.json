@@ -2439,7 +2439,8 @@
         "The current record (detail pages)": "The current record (detail pages)",
         "The rows of the page’s register and schema, with its filters": "The rows of the page’s register and schema, with its filters",
         "The route parameters": "The route parameters",
-        "The signed-in user’s id and name": "The signed-in user’s id and name"
+        "The signed-in user’s id and name": "The signed-in user’s id and name",
+        "Widgets shown with the open record. A custom widget can be written by hand.": "Widgets shown with the open record. A custom widget can be written by hand."
     },
     "plurals": "",
     "pluralForm": "nplurals=2; plural=(n != 1);"

@@ -1,6 +1,10 @@
 <!-- SPDX-License-Identifier: EUPL-1.2 -->
 <!--
-  - WidgetBuilder — authors the `widgetDef` $def. Used by DashboardPageEditor.
+  - WidgetBuilder — authors the `widgetDef` $def. Used by DashboardPageEditor
+  - and DetailPageEditor.
+  -
+  - A `custom` widget may carry a code component, `config.code` (pages-custom-code
+  - D1, D5): "Write your own" opens the same CodeComponentEditor as a custom page.
   -->
 <template>
 	<div class="widget-builder">
@@ -47,6 +51,23 @@
 				@update:content="updateChart(index, $event)" />
 			<!-- A connector widget binds its own data source with the same origin
 			     toggle, source picker and field mapper as a page (REQ-BQCB-003). -->
+			<!-- A custom widget may be written by hand (REQ-BQCC-001). The server
+			     decides who may save it (REQ-BQCC-005). -->
+			<label
+				v-if="widget.type === 'custom'"
+				class="widget-builder__code-toggle"
+				data-testid="widget-builder-write-your-own">
+				<input
+					type="checkbox"
+					:checked="hasCode(widget)"
+					@change="setCodeMode(index, $event.target.checked)">
+				{{ t('buildiq', 'Write your own') }}
+			</label>
+			<CodeComponentEditor
+				v-if="widget.type === 'custom' && hasCode(widget)"
+				class="widget-builder__code"
+				:modelValue="widget.config.code"
+				@update:modelValue="updateCode(index, $event)" />
 			<DataSourceOriginToggle
 				v-if="isConnectorWidget(widget)"
 				class="widget-builder__binding"
@@ -58,6 +79,7 @@
 				+ {{ t('buildiq', 'Add widget') }}
 			</button>
 			<button
+				v-if="!withoutConnectors"
 				type="button"
 				class="widget-builder__add"
 				data-testid="widget-builder-add-connector"
@@ -71,6 +93,7 @@
 <script>
 import { CnChartWidgetForm } from '@conduction/nextcloud-vue'
 import DataSourceOriginToggle from '../DataSourceOriginToggle.vue'
+import CodeComponentEditor from './CodeComponentEditor.vue'
 import { CONNECTOR_WIDGET_TYPE } from '../../../services/connectorPages.js'
 import { chartFormInput, widgetWithChartContent } from './chartWidget.js'
 
@@ -78,6 +101,7 @@ export default {
 	name: 'WidgetBuilder',
 	components: {
 		CnChartWidgetForm,
+		CodeComponentEditor,
 		DataSourceOriginToggle,
 	},
 
@@ -86,9 +110,24 @@ export default {
 			type: Array,
 			default: () => [],
 		},
+
+		/** Leave out the external data (connector) widget, for pages that do not place one. */
+		withoutConnectors: {
+			type: Boolean,
+			default: false,
+		},
 	},
 
 	emits: ['update:modelValue', 'add:connectorWidget'],
+
+	data() {
+		return {
+			// The code a widget held when "Write your own" was switched off, by
+			// widget id, so switching it back on within the session restores it.
+			stashedCode: {},
+		}
+	},
+
 	computed: {
 		/**
 		 * Observed behaviour of `localWidgets` (retrofit annotation).
@@ -130,6 +169,74 @@ export default {
 			const next = this.localWidgets.slice()
 			const current = next[index] || {}
 			next[index] = { ...current, [key]: value }
+			this.$emit('update:modelValue', next)
+		},
+
+		/**
+		 * Whether a widget carries a code component.
+		 *
+		 * @param {object} widget - a widget definition.
+		 * @return {boolean}
+		 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-an-owner-writes-a-code-component-req-bqcc-001
+		 */
+		hasCode(widget) {
+			const config = widget && widget.config
+			return Boolean(config) && typeof config === 'object' && Boolean(config.code) && typeof config.code === 'object' && !Array.isArray(config.code)
+		},
+
+		/**
+		 * Switch "Write your own" on or off for a widget. On writes
+		 * `config.code` (the code switched off earlier in this session, else
+		 * empty); off takes it out again and drops a `config` left empty.
+		 *
+		 * @param {number} index - position of the widget in the `widgets` array.
+		 * @param {boolean} on - whether the widget is now written by hand.
+		 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-an-owner-writes-a-code-component-req-bqcc-001
+		 */
+		setCodeMode(index, on) {
+			const current = this.localWidgets[index] || {}
+			if (on === this.hasCode(current)) {
+				return
+			}
+			const stashKey = current.id || String(index)
+			const config = { ...((current.config && typeof current.config === 'object') ? current.config : {}) }
+			if (on) {
+				config.code = this.stashedCode[stashKey] || {}
+			} else {
+				this.stashedCode = { ...this.stashedCode, [stashKey]: config.code }
+				delete config.code
+			}
+			this.writeConfig(index, config)
+		},
+
+		/**
+		 * Write a widget's code component.
+		 *
+		 * @param {number} index - position of the widget in the `widgets` array.
+		 * @param {object} code - the code block CodeComponentEditor emitted.
+		 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-an-owner-writes-a-code-component-req-bqcc-001
+		 */
+		updateCode(index, code) {
+			const current = this.localWidgets[index] || {}
+			this.writeConfig(index, { ...(current.config || {}), code })
+		},
+
+		/**
+		 * Replace a widget's `config`, removing the key when it is empty.
+		 *
+		 * @param {number} index - position of the widget in the `widgets` array.
+		 * @param {object} config - the new config.
+		 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-an-owner-writes-a-code-component-req-bqcc-001
+		 */
+		writeConfig(index, config) {
+			const next = this.localWidgets.slice()
+			const widget = { ...(next[index] || {}) }
+			if (Object.keys(config).length === 0) {
+				delete widget.config
+			} else {
+				widget.config = config
+			}
+			next[index] = widget
 			this.$emit('update:modelValue', next)
 		},
 
@@ -246,6 +353,18 @@ export default {
 .widget-builder__chart {
 	padding: 8px;
 	border-left: 2px solid var(--color-border);
+}
+
+.widget-builder__code-toggle {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 13px;
+}
+
+.widget-builder__code {
+	padding-inline-start: 12px;
+	border-inline-start: 2px solid var(--color-border);
 }
 
 .widget-builder__binding {

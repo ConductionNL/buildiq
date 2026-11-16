@@ -2503,7 +2503,8 @@ OC.L10N.register(
         "The current record (detail pages)": "Het huidige record (detailpagina's)",
         "The rows of the page’s register and schema, with its filters": "De rijen van het register en schema van de pagina, met de filters",
         "The route parameters": "De routeparameters",
-        "The signed-in user’s id and name": "Id en naam van de ingelogde gebruiker"
+        "The signed-in user’s id and name": "Id en naam van de ingelogde gebruiker",
+        "Widgets shown with the open record. A custom widget can be written by hand.": "Widgets die bij het geopende record worden getoond. Een aangepaste widget kun je zelf schrijven."
     },
     "nplurals=2; plural=(n != 1);"
 )
