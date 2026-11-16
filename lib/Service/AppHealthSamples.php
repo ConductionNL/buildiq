@@ -128,6 +128,32 @@ class AppHealthSamples {
 			}
 		}
 
+		$rows = $this->pageRows(pages: $pages);
+
+		$failures = $total['failures4xx'] + $total['failures5xx'];
+		$overOneSecond = $total['durationUnder3000'] + $total['durationOver3000'];
+
+		return [
+			'requests' => $total['requests'],
+			'failures' => $failures,
+			'failureShare' => $this->share(part: $failures, whole: $total['requests']),
+			'slowRequestShare' => $this->share(part: $overOneSecond, whole: $total['requests']),
+			'loads' => $total['loads'],
+			'averageLoadMs' => $this->average(sum: $total['loadMsSum'], count: $total['loads']),
+			'slowLoadShare' => $this->share(part: $total['slowLoads'], whole: $total['loads']),
+			'clientErrors' => $total['clientErrors'],
+			'slowestPages' => array_slice($rows, 0, self::SLOWEST),
+		];
+	}//end aggregate()
+
+	/**
+	 * One row per page that loaded at least once, slowest average first.
+	 *
+	 * @param array<string, array<string, int>> $pages Summed counts per page id.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function pageRows(array $pages): array {
 		$rows = [];
 		foreach ($pages as $pageId => $counts) {
 			if ($pageId === '' || $counts['loads'] === 0) {
@@ -145,21 +171,8 @@ class AppHealthSamples {
 
 		usort($rows, static fn (array $a, array $b): int => $b['averageLoadMs'] <=> $a['averageLoadMs']);
 
-		$failures = $total['failures4xx'] + $total['failures5xx'];
-		$overOneSecond = $total['durationUnder3000'] + $total['durationOver3000'];
-
-		return [
-			'requests' => $total['requests'],
-			'failures' => $failures,
-			'failureShare' => $this->share(part: $failures, whole: $total['requests']),
-			'slowRequestShare' => $this->share(part: $overOneSecond, whole: $total['requests']),
-			'loads' => $total['loads'],
-			'averageLoadMs' => $this->average(sum: $total['loadMsSum'], count: $total['loads']),
-			'slowLoadShare' => $this->share(part: $total['slowLoads'], whole: $total['loads']),
-			'clientErrors' => $total['clientErrors'],
-			'slowestPages' => array_slice($rows, 0, self::SLOWEST),
-		];
-	}//end aggregate()
+		return $rows;
+	}//end pageRows()
 
 	/**
 	 * The cap of one count: the total load time may be MAX_COUNT loads of a minute.
