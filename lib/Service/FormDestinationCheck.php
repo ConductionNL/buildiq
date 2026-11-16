@@ -119,29 +119,9 @@ class FormDestinationCheck {
 			];
 		}
 
-		try {
-			$entity = $this->schemas->schemaOf(registerSlug: $register, schemaSlug: $schema);
-		} catch (Throwable $e) {
-			$this->logger->warning(
-				'Buildiq: destination check could not read schema "' . $schema . '" in register "' . $register . '": ' . $e->getMessage(),
-				['exception' => $e]
-			);
-
-			return [
-				self::finding(
-					code: self::DESTINATION_UNCHECKED,
-					message: sprintf('The schema "%s" could not be read, so the form could not be checked and is not saved.', $schema)
-				),
-			];
-		}
-
-		if ($entity === null) {
-			return [
-				self::finding(
-					code: self::DESTINATION_UNCHECKED,
-					message: sprintf('The register "%s" holds no schema called "%s", so the form has nowhere to save into.', $register, $schema)
-				),
-			];
+		$destination = $this->readDestination(register: $register, schema: $schema);
+		if ($destination['findings'] !== []) {
+			return $destination['findings'];
 		}
 
 		$validator = $this->validator();
@@ -154,13 +134,72 @@ class FormDestinationCheck {
 			];
 		}
 
-		$findings = $this->validateWith(validator: $validator, mapping: $mapping, schema: $entity, options: $options);
+		return self::listedFindings(
+			findings: $this->validateWith(validator: $validator, mapping: $mapping, schema: $destination['entity'], options: $options)
+		);
+	}//end check()
+
+	/**
+	 * The destination schema, or the finding that says why it cannot be checked against.
+	 *
+	 * @param string $register The destination register slug.
+	 * @param string $schema   The destination schema slug.
+	 *
+	 * @return array{entity: object|null, findings: array<int, array<string, mixed>>}
+	 *
+	 * @spec openspec/changes/forms-are-valid-against-their-destination/specs/form-destination-authoring/spec.md#requirement-every-buildiq-form-must-be-valid-against-its-destination-before-it-is-published
+	 */
+	private function readDestination(string $register, string $schema): array {
+		try {
+			$entity = $this->schemas->schemaOf(registerSlug: $register, schemaSlug: $schema);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				'Buildiq: destination check could not read schema "' . $schema . '" in register "' . $register . '": ' . $e->getMessage(),
+				['exception' => $e]
+			);
+
+			return [
+				'entity'   => null,
+				'findings' => [
+					self::finding(
+						code: self::DESTINATION_UNCHECKED,
+						message: sprintf('The schema "%s" could not be read, so the form could not be checked and is not saved.', $schema)
+					),
+				],
+			];
+		}
+
+		if ($entity === null) {
+			return [
+				'entity'   => null,
+				'findings' => [
+					self::finding(
+						code: self::DESTINATION_UNCHECKED,
+						message: sprintf('The register "%s" holds no schema called "%s", so the form has nowhere to save into.', $register, $schema)
+					),
+				],
+			];
+		}
+
+		return ['entity' => $entity, 'findings' => []];
+	}//end readDestination()
+
+	/**
+	 * The validator's answer as a list of findings; anything but an array is no finding.
+	 *
+	 * @param mixed $findings What the validator answered.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 *
+	 * @spec openspec/changes/forms-are-valid-against-their-destination/specs/form-destination-authoring/spec.md#requirement-every-buildiq-form-must-be-valid-against-its-destination-before-it-is-published
+	 */
+	private static function listedFindings(mixed $findings): array {
 		if (is_array($findings) === false) {
 			return [];
 		}
 
 		return array_values(array_filter($findings, 'is_array'));
-	}//end check()
+	}//end listedFindings()
 
 	/**
 	 * Ask the validator, in the form this OpenRegister's `validate()` takes.
