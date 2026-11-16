@@ -126,6 +126,12 @@
 				@input="onDescriptionInput" />
 		</div>
 
+		<!-- Start from a database (data-external-database-sources REQ-BQDB-003):
+		     shows only when OpenRegister serves at least one connected database. -->
+		<StartFromDatabase
+			:payload="payload"
+			@update:payload="(partial) => $emit('update:payload', partial)" />
+
 		<!-- App icon (optional) — pick a Material or OpenGemeenten glyph, or
 		     upload your own SVG. A single pick yields a correct light/dark pair
 		     (white glyph for the dark app header, dark glyph for light bg);
@@ -226,6 +232,7 @@ import { CnIconPicker } from '@conduction/nextcloud-vue'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton } from '@nextcloud/vue'
 import CopilotGenerateDialog from '../CopilotGenerateDialog.vue'
+import StartFromDatabase from './StartFromDatabase.vue'
 import { useCopilot } from '../../composables/useCopilot.js'
 import {
 	buildIconCatalogues,
@@ -241,6 +248,7 @@ export default {
 		CnIconPicker,
 		NcButton,
 		CopilotGenerateDialog,
+		StartFromDatabase,
 	},
 
 	props: {
@@ -355,7 +363,22 @@ export default {
 				(this.payload.name || '').trim() !== ''
 				&& (this.payload.slug || '').trim() !== ''
 				&& this.slugError === null
+				&& this.databaseChoiceComplete
 			)
+		},
+
+		/**
+		 * Whether "Start from a database" is off, or has a database and at least one table.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
+		 */
+		databaseChoiceComplete() {
+			const choice = this.payload.fromDatabase
+			if (!choice) {
+				return true
+			}
+			return (choice.register || '') !== '' && Array.isArray(choice.schemas) && choice.schemas.length > 0
 		},
 	},
 
