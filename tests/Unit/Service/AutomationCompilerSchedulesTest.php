@@ -28,6 +28,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Upserting planned schedules, dropping prior ones, keeping hand-authored ones.
@@ -90,13 +91,11 @@ final class AutomationCompilerSchedulesTest extends TestCase {
 			static fn (string|int $id): ?ObjectEntity => ($versions[$id] ?? null)
 		);
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (
-				array $object,
-				?array $extend = [],
-				string|int|null $register = null,
-				string|int|null $schema = null,
-				?string $uuid = null
-			): ObjectEntity {
+			function (array $object, ObjectSaveOptions $options = new ObjectSaveOptions()): ObjectEntity {
+				$extend = $options->extend ?? [];
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$this->saves[] = [$object, $register, $schema, $uuid];
 				return $this->entity($object);
 			}

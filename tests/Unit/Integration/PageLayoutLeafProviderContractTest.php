@@ -36,6 +36,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\Buildiq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Covers the paths around resolution: reading the host when the caller did
@@ -265,6 +266,7 @@ final class PageLayoutLeafProviderContractTest extends TestCase {
 		$saved = [];
 		$this->objectService->expects(self::once())->method('saveObject')->willReturnCallback(
 			static function (mixed ...$args) use (&$saved) {
+				$args = LegacyObjectArgs::positional(method: 'saveObject', args: $args);
 				$saved = $args;
 				throw new RuntimeException('locked');
 			}
