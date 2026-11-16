@@ -120,6 +120,7 @@ export default {
 		 * Whether the maker chose to start from a database.
 		 *
 		 * @return {boolean}
+		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
 		 */
 		enabled() {
 			return !!this.payload.fromDatabase
@@ -129,6 +130,7 @@ export default {
 		 * The picked database register, or ''.
 		 *
 		 * @return {string}
+		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
 		 */
 		register() {
 			return this.payload.fromDatabase?.register || ''
@@ -138,6 +140,7 @@ export default {
 		 * The ticked table slugs, in the order ticked.
 		 *
 		 * @return {Array<string>}
+		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
 		 */
 		chosen() {
 			return this.payload.fromDatabase?.schemas || []
@@ -147,6 +150,7 @@ export default {
 		 * Whether a database and at least one table are chosen.
 		 *
 		 * @return {boolean}
+		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
 		 */
 		complete() {
 			return this.register !== '' && this.chosen.length > 0
@@ -156,6 +160,7 @@ export default {
 		 * Whether the picked database takes writes.
 		 *
 		 * @return {boolean}
+		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
 		 */
 		writable() {
 			const match = this.databases.find((database) => database.register === this.register)
@@ -228,6 +233,7 @@ export default {
 		 *
 		 * @param {string} register The register slug.
 		 * @return {Promise<void>}
+		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
 		 */
 		async loadTables(register) {
 			this.loading = true

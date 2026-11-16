@@ -179,6 +179,7 @@ export default {
 		 * Whether a preview can run: a database and a query, and nothing running.
 		 *
 		 * @return {boolean}
+		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-an-administrator-saves-a-sql-query-as-a-table-req-bqdb-005
 		 */
 		canPreview() {
 			return !this.busy && this.database !== null && this.query.trim() !== ''
@@ -201,6 +202,7 @@ export default {
 		 * The preview's columns for the result grid.
 		 *
 		 * @return {Array<{key: string, label: string}>}
+		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-an-administrator-saves-a-sql-query-as-a-table-req-bqdb-005
 		 */
 		previewColumns() {
 			return (this.preview?.columns || []).map((column) => ({ key: column.name, label: column.name }))
@@ -210,6 +212,7 @@ export default {
 		 * The preview's rows, at most 50.
 		 *
 		 * @return {Array<object>}
+		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-an-administrator-saves-a-sql-query-as-a-table-req-bqdb-005
 		 */
 		previewRows() {
 			return (this.preview?.rows || []).slice(0, PREVIEW_ROWS)
@@ -221,6 +224,7 @@ export default {
 		 * A different database or query invalidates the preview.
 		 *
 		 * @return {void}
+		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-an-administrator-saves-a-sql-query-as-a-table-req-bqdb-005
 		 */
 		database() {
 			this.preview = null
@@ -232,6 +236,7 @@ export default {
 	 * Read the connected databases for the picker.
 	 *
 	 * @return {Promise<void>}
+	 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-an-administrator-saves-a-sql-query-as-a-table-req-bqdb-005
 	 */
 	async created() {
 		this.databases = await fetchConnectedDatabases()

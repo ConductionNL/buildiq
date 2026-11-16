@@ -167,6 +167,7 @@ export default {
 		 * Seed values for the wizard's shared stepData.
 		 *
 		 * @return {object}
+		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
 		 */
 		defaults() {
 			return {
