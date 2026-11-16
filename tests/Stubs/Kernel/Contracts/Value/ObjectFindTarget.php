@@ -17,7 +17,6 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec exclude Value object of the ObjectService::find() facade; read behaviour owned by object-interactions.
  */
 
 declare(strict_types=1);
@@ -33,7 +32,6 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 /**
  * The register and schema one ObjectService::find() call names, as the caller gave them.
  *
- * @spec exclude Value object of the ObjectService::find() facade; read behaviour owned by object-interactions.
  */
 final class ObjectFindTarget {
 
@@ -43,7 +41,6 @@ final class ObjectFindTarget {
 	 * @param Register|string|int|null $register The register object or its ID/UUID.
 	 * @param Schema|string|int|null   $schema   The schema object or its ID/UUID.
 	 *
-	 * @spec exclude Value object of the ObjectService::find() facade; read behaviour owned by object-interactions.
 	 */
 	public function __construct(
 		public readonly Register|string|int|null $register=null,
@@ -58,7 +55,6 @@ final class ObjectFindTarget {
 	 *
 	 * @return self The target.
 	 *
-	 * @spec exclude Value object of the ObjectService::find() facade; read behaviour owned by object-interactions.
 	 */
 	public static function fromFindOptions(ObjectFindOptions $options): self {
 		$register = $options->register;

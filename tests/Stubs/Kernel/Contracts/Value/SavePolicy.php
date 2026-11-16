@@ -17,7 +17,6 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/specs/object-lifecycle/spec.md
  */
 
 namespace OCA\OpenRegister\Kernel\Contracts\Value;
@@ -25,7 +24,6 @@ namespace OCA\OpenRegister\Kernel\Contracts\Value;
 /**
  * The policy switches of one object save. Every default is the behaviour a caller gets without asking.
  *
- * @spec openspec/specs/object-lifecycle/spec.md
  */
 final class SavePolicy {
 
@@ -43,7 +41,6 @@ final class SavePolicy {
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Each flag is a documented save policy with a safe default.
 	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
 		public readonly bool $silent=false,

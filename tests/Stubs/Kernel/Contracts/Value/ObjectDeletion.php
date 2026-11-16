@@ -17,7 +17,6 @@
  *
  * @link https://www.OpenRegister.app
  *
- * @spec openspec/specs/object-lifecycle/spec.md
  */
 
 declare(strict_types=1);
@@ -29,7 +28,6 @@ use OCP\IUser;
 /**
  * One delete a caller asks for: the object, where to find it, who acts and whether the row is destroyed.
  *
- * @spec openspec/specs/object-lifecycle/spec.md
  */
 final class ObjectDeletion {
 
@@ -52,7 +50,6 @@ final class ObjectDeletion {
 	 *
 	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) Soft delete is the default every caller gets.
 	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function __construct(
 		public readonly string $uuid,
@@ -68,7 +65,6 @@ final class ObjectDeletion {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/specs/object-lifecycle/spec.md
 	 */
 	public function isScoped(): bool {
 		return $this->target->register !== null && $this->target->schema !== null;

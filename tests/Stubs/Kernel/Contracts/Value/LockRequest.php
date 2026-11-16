@@ -17,7 +17,6 @@
  *
  * @link https://OpenRegister.app
  *
- * @spec openspec/specs/object-interactions/spec.md
  */
 
 declare(strict_types=1);

@@ -29,7 +29,6 @@ use OCA\OpenRegister\Kernel\Contracts\SchemaInterface;
  * Without a register and schema the read searches every table. `render` and
  * `audit` apply to find() only; findSilent() never renders or audits.
  *
- * @spec exclude ADR-011 parameter object of the object read, not a capability of its own
  */
 final class ObjectFindOptions {
 
