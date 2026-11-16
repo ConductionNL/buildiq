@@ -47,9 +47,9 @@ use DateTimeImmutable;
 use DateTimeInterface;
 use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Kernel\Contracts\ApplicationVersionServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\VersionMergeRunnerInterface;
 use OCA\Buildiq\Service\Branch\VersionBranchRefused;
 use OCA\Buildiq\Service\Branch\VersionMergeRequest;
-use OCA\Buildiq\Service\Branch\VersionMergeRunner;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
@@ -131,7 +131,7 @@ class ApplicationVersionsController extends Controller {
 	 * @param IGroupManager $groupManager Group membership resolver
 	 * @param ApplicationVersionServiceInterface $versionService Owner of the imperative logic
 	 * @param AuditTrailMapper|null $auditTrailMapper Optional OR audit-trail writer (null until OR loaded)
-	 * @param VersionMergeRunner|null $merges Starts a branch, previews and applies a merge (lifecycle-git-branches)
+	 * @param VersionMergeRunnerInterface|null $merges Starts a branch, previews and applies a merge (lifecycle-git-branches)
 	 *
 	 * @return void
 	 */
@@ -145,7 +145,7 @@ class ApplicationVersionsController extends Controller {
 		private readonly IGroupManager $groupManager,
 		private readonly ApplicationVersionServiceInterface $versionService,
 		private readonly ?AuditTrailMapper $auditTrailMapper = null,
-		private readonly ?VersionMergeRunner $merges = null,
+		private readonly ?VersionMergeRunnerInterface $merges = null,
 	) {
 		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
@@ -362,7 +362,7 @@ class ApplicationVersionsController extends Controller {
 		}
 
 		return $this->branchRun(
-			run: fn (): array => $this->merges->branches->start(application: $application, source: $source, name: $name),
+			run: fn (): array => $this->merges->startBranch(application: $application, source: $source, name: $name),
 			status: Http::STATUS_CREATED
 		);
 	}//end branch()

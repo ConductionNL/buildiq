@@ -32,6 +32,7 @@ namespace OCA\Buildiq\Service\Branch;
 
 use InvalidArgumentException;
 use OCA\Buildiq\Kernel\Contracts\ApplicationVersionServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\VersionMergeRunnerInterface;
 use OCA\Buildiq\Service\VersionMergeService;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
@@ -41,7 +42,7 @@ use OCA\OpenRegister\Contract\ObjectServiceInterface;
  *
  * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-merge-only-writes-a-draft-that-has-not-moved-req-bqgb-004
  */
-class VersionMergeRunner {
+class VersionMergeRunner implements VersionMergeRunnerInterface {
 
 	/**
 	 * Constructor.
@@ -60,6 +61,23 @@ class VersionMergeRunner {
 		private readonly ObjectServiceInterface $objects,
 	) {
 	}//end __construct()
+
+	/**
+	 * A new draft version branched from the source version.
+	 *
+	 * @param array<string,mixed> $application The Application.
+	 * @param array<string,mixed> $source      The version to branch from.
+	 * @param string              $name        The new version's slug.
+	 *
+	 * @return array<string,mixed> The new version.
+	 *
+	 * @throws VersionBranchRefused When the name is not a valid slug (400) or its register is taken (409).
+	 *
+	 * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-starts-a-branch-from-a-version-req-bqgb-001
+	 */
+	public function startBranch(array $application, array $source, string $name): array {
+		return $this->branches->start(application: $application, source: $source, name: $name);
+	}//end startBranch()
 
 	/**
 	 * The merge of the request's source into its target, written nowhere.
