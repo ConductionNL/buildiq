@@ -75,13 +75,6 @@ final class ManifestWidgetShape {
 	private const WIDGET_HEIGHT = 2;
 
 	/**
-	 * Longest id this class will mint, matching the tool schema's maxLength.
-	 *
-	 * @var int
-	 */
-	private const MAX_ID_LENGTH = 48;
-
-	/**
 	 * Append a widget, and its layout placement, to one page.
 	 *
 	 * The id is derived in this order: the caller's `widgetId`, else a slug of
@@ -104,9 +97,9 @@ final class ManifestWidgetShape {
 		$widgetConfig = $spec->config;
 
 		$resolvedTitle = self::resolveTitle(spec: $spec);
-		$resolvedId = self::resolveId(
+		$resolvedId = WidgetIdAllocator::allocate(
 			sources: [$spec->id, $resolvedTitle, $widgetType],
-			taken: self::takenIds(widgets: $widgets, layout: $layout)
+			existing: ['widgets' => $widgets, 'layout' => $layout]
 		);
 
 		$widget = [
@@ -122,7 +115,7 @@ final class ManifestWidgetShape {
 		// Chart widgets take their inputs from `props` instead, so a chart gets
 		// the same bag under both keys rather than a type-specific guess here.
 		if ($widgetConfig !== []) {
-			$widget['content'] = self::withDataBinding(widgetConfig: $widgetConfig, widgetType: $widgetType);
+			$widget['content'] = WidgetDataBinding::apply(widgetConfig: $widgetConfig, widgetType: $widgetType);
 			if ($widgetType === 'chart') {
 				$widget['props'] = $widget['content'];
 			}
@@ -137,84 +130,6 @@ final class ManifestWidgetShape {
 
 		return [$page, $widget];
 	}//end appendTo()
-
-	/**
-	 * Widget types whose component reads its register and schema from a
-	 * nested block, and the key each one reads.
-	 *
-	 * Not every data widget spells this the same way, which is the whole
-	 * reason this map exists rather than a rule. Read out of the shipped
-	 * `@conduction/nextcloud-vue` bundle, and each one confirmed against the
-	 * live instance on 2026-09-18:
-	 *
-	 *  - `CnStatWidget::fetchValue()` opens `const s = this.content.source || {}`
-	 *    and returns early when `!s.register || !s.schema`. `CnGaugeWidget` and
-	 *    `CnDeltaWidget` read the same key;
-	 *  - `CnChartWidget` and `CnStatsBlockWidget` take a `dataSource` block;
-	 *  - `CnObjectListWidget` reads `content.register` / `content.schema` flat,
-	 *    so it is deliberately absent from this map and left alone.
-	 *
-	 * A stat tile written flat is stored, valid, and renders an em dash
-	 * forever. Measured: the three tiles the live plan proposed all read
-	 * `—`, and the same tile written with a `source` block read `1`.
-	 *
-	 * @var array<string, string>
-	 */
-	private const NESTED_BINDING_KEY = [
-		'stat' => 'source',
-		'gauge' => 'source',
-		'delta' => 'source',
-		'chart' => 'dataSource',
-		'stats-block' => 'dataSource',
-	];
-
-	/**
-	 * The keys that make up a data binding, as opposed to presentation.
-	 *
-	 * @var array<int, string>
-	 */
-	private const BINDING_KEYS = ['register', 'schema', 'filter', 'aggregate', 'metric', 'field', 'kind'];
-
-	/**
-	 * Give a widget's settings bag the nested binding block its component
-	 * actually reads, when it was written flat.
-	 *
-	 * The flat keys are kept alongside. They cost nothing to a component that
-	 * does not read them, and removing them would break `object-list`, which
-	 * does.
-	 *
-	 * @param array<string, mixed> $widgetConfig The settings bag as the tool was handed it.
-	 * @param string $widgetType The widget type.
-	 *
-	 * @return array<string, mixed>
-	 *
-	 * @spec openspec/specs/ai-copilot/spec.md
-	 */
-	private static function withDataBinding(array $widgetConfig, string $widgetType): array {
-		$key = (self::NESTED_BINDING_KEY[$widgetType] ?? '');
-		if ($key === '' || isset($widgetConfig[$key]) === true) {
-			return $widgetConfig;
-		}
-
-		// Nothing is invented: without a register AND a schema at the top level
-		// there is no binding to lift, and the widget stays as it was written.
-		$register = ($widgetConfig['register'] ?? null);
-		$schema = ($widgetConfig['schema'] ?? null);
-		if (is_string($register) === false || trim($register) === '' || $schema === null || $schema === '') {
-			return $widgetConfig;
-		}
-
-		$binding = [];
-		foreach (self::BINDING_KEYS as $bindingKey) {
-			if (array_key_exists($bindingKey, $widgetConfig) === true) {
-				$binding[$bindingKey] = $widgetConfig[$bindingKey];
-			}
-		}
-
-		$widgetConfig[$key] = $binding;
-
-		return $widgetConfig;
-	}//end withDataBinding()
 
 	/**
 	 * Build the layout row placing one widget on the grid.
@@ -271,106 +186,6 @@ final class ManifestWidgetShape {
 
 		return (mb_strtoupper(mb_substr($fromType, 0, 1)) . mb_substr($fromType, 1));
 	}//end resolveTitle()
-
-	/**
-	 * Resolve a page-unique, kebab-case widget id.
-	 *
-	 * @param array<int, string> $sources Candidate sources in order: the caller-supplied id
-	 *                                    (possibly empty), the already-resolved title, the widget type.
-	 * @param array<string, bool> $taken Ids already used on this page, keyed by id.
-	 *
-	 * @return string A non-empty id not present in $taken.
-	 */
-	private static function resolveId(array $sources, array $taken): string {
-		$base = '';
-		foreach ($sources as $source) {
-			$base = self::slug(value: $source);
-			if ($base !== '') {
-				break;
-			}
-		}
-
-		if ($base === '') {
-			$base = 'widget';
-		}
-
-		if (isset($taken[$base]) === false) {
-			return $base;
-		}
-
-		$suffix = 2;
-		while (isset($taken[$base . '-' . $suffix]) === true) {
-			$suffix++;
-		}
-
-		return ($base . '-' . $suffix);
-	}//end resolveId()
-
-	/**
-	 * Collect the ids already spoken for on a page.
-	 *
-	 * Layout rows are read as well as widgets: a layout row keyed by an id no
-	 * widget carries still owns that id, and reusing it would silently place
-	 * the new widget in the old row.
-	 *
-	 * @param array<int, mixed> $widgets The page's existing widgets.
-	 * @param array<int, mixed> $layout The page's existing layout rows.
-	 *
-	 * @return array<string, bool> Set of taken ids.
-	 */
-	private static function takenIds(array $widgets, array $layout): array {
-		$taken = [];
-		self::collectIds(rows: $widgets, keys: ['id'], taken: $taken);
-		self::collectIds(rows: $layout, keys: ['id', 'widgetId'], taken: $taken);
-
-		return $taken;
-	}//end takenIds()
-
-	/**
-	 * Add every non-empty string found under $keys in $rows to $taken.
-	 *
-	 * @param array<int, mixed> $rows Entries to read.
-	 * @param array<int, string> $keys Keys on each entry that hold an id.
-	 * @param array<string, bool> $taken Accumulator, keyed by id.
-	 *
-	 * @return void
-	 */
-	private static function collectIds(array $rows, array $keys, array &$taken): void {
-		foreach ($rows as $row) {
-			if (is_array($row) === false) {
-				continue;
-			}
-
-			foreach ($keys as $key) {
-				$id = ($row[$key] ?? null);
-				if (is_string($id) === true && $id !== '') {
-					$taken[$id] = true;
-				}
-			}
-		}
-	}//end collectIds()
-
-	/**
-	 * Reduce a string to a kebab-case identifier.
-	 *
-	 * @param string $value Free text.
-	 *
-	 * @return string Kebab-case slug, or '' when nothing usable remains.
-	 */
-	private static function slug(string $value): string {
-		$lower = mb_strtolower(trim($value));
-		$slug = preg_replace('/[^a-z0-9]+/', '-', $lower);
-		if (is_string($slug) === false) {
-			return '';
-		}
-
-		$slug = trim($slug, '-');
-		if (mb_strlen($slug) > self::MAX_ID_LENGTH) {
-			$slug = trim(mb_substr($slug, 0, self::MAX_ID_LENGTH), '-');
-		}
-
-		return $slug;
-	}//end slug()
 
 	/**
 	 * Read a value as a string-keyed map, tolerating the JSON-decoded `[]`
