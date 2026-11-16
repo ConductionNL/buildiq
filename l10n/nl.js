@@ -1,3 +1,7 @@
+/**
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ */
 OC.L10N.register(
     "buildiq",
     {
@@ -2456,6 +2460,14 @@ OC.L10N.register(
         "Add external data widget": "Widget met externe gegevens toevoegen",
         "Failures": "Fouten",
         "Failed requests, 4xx and 5xx together. Derived by the server, never posted; summed by the request failure metric.": "Mislukte verzoeken, 4xx en 5xx samen. Afgeleid door de server, nooit meegestuurd; opgeteld door de metriek voor mislukte verzoeken.",
+        "No type is set, so this form covers every object in the schema.": "Er is geen type ingesteld, dus dit formulier geldt voor elk object in het schema.",
+        "Not bound to a schema yet": "Nog niet aan een schema gekoppeld",
+        "Only objects whose {property} is {value} get this form.": "Alleen objecten waarvan {property} gelijk is aan {value} krijgen dit formulier.",
+        "Phase": "Fase",
+        "Phase, shown as the group heading": "Fase, getoond als kop van de groep",
+        "Steps and phases": "Stappen en fases",
+        "The filer may save the form and finish it later": "De invuller mag het formulier opslaan en later afmaken",
+        "When a question is shown": "Wanneer een vraag wordt getoond",
         "Branch “{name}” started.": "Branch “{name}” gestart.",
         "Branch name": "Naam van de branch",
         "Branch per version": "Branch per versie",
@@ -2484,7 +2496,17 @@ OC.L10N.register(
         "Every organisation will see this app. Its records stay with this organisation.": "Elke organisatie ziet deze app. De gegevens blijven bij deze organisatie.",
         "Share with all organisations": "Delen met alle organisaties",
         "Keep it to this organisation": "Bij deze organisatie houden",
-        "This slug is taken. Choose another.": "Deze slug is al in gebruik. Kies een andere."
+        "This slug is taken. Choose another.": "Deze slug is al in gebruik. Kies een andere.",
+        "%n page": "%n pagina",
+        "%n pages": "%n pagina's",
+        "%n schema": "%n schema",
+        "%n schemas": "%n schema's",
+        "%n record": "%n record",
+        "%n records": "%n records",
+        "%n {schema} record imported": "%n {schema}-record geïmporteerd",
+        "%n {schema} records imported": "%n {schema}-records geïmporteerd",
+        "%n {schema} record failed to import": "%n {schema}-record kon niet worden geïmporteerd",
+        "%n {schema} records failed to import": "%n {schema}-records konden niet worden geïmporteerd"
     },
     "nplurals=2; plural=(n != 1);"
 )

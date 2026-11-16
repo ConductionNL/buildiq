@@ -2533,7 +2533,17 @@
         "Every organisation will see this app. Its records stay with this organisation.": "Elke organisatie ziet deze app. De gegevens blijven bij deze organisatie.",
         "Share with all organisations": "Delen met alle organisaties",
         "Keep it to this organisation": "Bij deze organisatie houden",
-        "This slug is taken. Choose another.": "Deze slug is al in gebruik. Kies een andere."
+        "This slug is taken. Choose another.": "Deze slug is al in gebruik. Kies een andere.",
+        "%n page": "%n pagina",
+        "%n pages": "%n pagina's",
+        "%n schema": "%n schema",
+        "%n schemas": "%n schema's",
+        "%n record": "%n record",
+        "%n records": "%n records",
+        "%n {schema} record imported": "%n {schema}-record geïmporteerd",
+        "%n {schema} records imported": "%n {schema}-records geïmporteerd",
+        "%n {schema} record failed to import": "%n {schema}-record kon niet worden geïmporteerd",
+        "%n {schema} records failed to import": "%n {schema}-records konden niet worden geïmporteerd"
     },
     "plurals": null,
     "pluralForm": "nplurals=2; plural=(n != 1);"
