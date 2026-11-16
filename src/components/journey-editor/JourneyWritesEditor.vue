@@ -260,6 +260,7 @@ export default {
 		 * The parts of one target, besides its product value.
 		 *
 		 * @return {Array<{key: string, label: string}>}
+		 * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-each-item-goes-to-its-products-target-req-bqmp-002
 		 */
 		targetParts() {
 			return [
@@ -366,6 +367,7 @@ export default {
 		 * @param {number} index - the write's position.
 		 * @param {string} from - the old value.
 		 * @param {string} to - the new value.
+		 * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-each-item-goes-to-its-products-target-req-bqmp-002
 		 */
 		renameTarget(index, from, to) {
 			const targets = {}
@@ -379,6 +381,7 @@ export default {
 		 * Add an empty target.
 		 *
 		 * @param {number} index - the write's position.
+		 * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-each-item-goes-to-its-products-target-req-bqmp-002
 		 */
 		addTarget(index) {
 			const targets = this.localWrites[index].targets || {}
@@ -394,6 +397,7 @@ export default {
 		 *
 		 * @param {number} index - the write's position.
 		 * @param {string} value - the product value.
+		 * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-each-item-goes-to-its-products-target-req-bqmp-002
 		 */
 		removeTarget(index, value) {
 			const { [value]: removed, ...targets } = this.localWrites[index].targets || {}
@@ -416,6 +420,7 @@ export default {
 		 *
 		 * @param {object} flow - the flow.
 		 * @return {string}
+		 * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-the-designer-says-whether-a-part-starts-a-process-req-bqmp-004
 		 */
 		flowName(flow) {
 			return String(flow.name || flow.title || flow.id || '')

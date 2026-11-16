@@ -55,22 +55,38 @@ export default {
 	emits: ['update'],
 
 	computed: {
-		/** @return {object} The field with its settings filled in. */
+		/**
+		 * @return {object} The field with its settings filled in.
+		 *
+		 * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-the-parts-can-hang-under-one-bundle-req-bqmp-003
+		 */
 		current() {
 			return productListField(this.field)
 		},
 
-		/** @return {Array<string>} The products of the first column. */
+		/**
+		 * @return {Array<string>} The products of the first column.
+		 *
+		 * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-the-parts-can-hang-under-one-bundle-req-bqmp-003
+		 */
 		products() {
 			return this.current.columns[0].options
 		},
 
-		/** @return {Array<string>} The detail column keys. */
+		/**
+		 * @return {Array<string>} The detail column keys.
+		 *
+		 * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-the-parts-can-hang-under-one-bundle-req-bqmp-003
+		 */
 		details() {
 			return this.current.columns.slice(1).map((col) => col.key)
 		},
 
-		/** @return {number} The most rows a product list may hold. */
+		/**
+		 * @return {number} The most rows a product list may hold.
+		 *
+		 * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-the-parts-can-hang-under-one-bundle-req-bqmp-003
+		 */
 		maxAllowed() {
 			return PRODUCT_LIST_MAX_ITEMS
 		},
@@ -82,6 +98,7 @@ export default {
 		 *
 		 * @param {string} text - the input.
 		 * @return {Array<string>}
+		 * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-the-parts-can-hang-under-one-bundle-req-bqmp-003
 		 */
 		split(text) {
 			return String(text).split(',').map((part) => part.trim()).filter((part) => part !== '')

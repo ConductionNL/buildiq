@@ -745,6 +745,7 @@ export default {
 		 *
 		 * @param {string} type - the type.
 		 * @return {object}
+		 * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-the-parts-can-hang-under-one-bundle-req-bqmp-003
 		 */
 		newField(type) {
 			// A product list starts as the sub-objects widget with its product column.

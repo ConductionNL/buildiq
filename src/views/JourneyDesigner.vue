@@ -203,6 +203,11 @@ export default {
 		},
 	},
 
+	/**
+	 * Load the journey, then read the flows its targets start.
+	 *
+	 * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-the-designer-says-whether-a-part-starts-a-process-req-bqmp-004
+	 */
 	async created() {
 		await this.load()
 		await this.loadCreationFlows()
