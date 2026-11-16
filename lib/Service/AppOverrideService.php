@@ -144,26 +144,13 @@ class AppOverrideService implements AppOverrideServiceInterface {
 			return null;
 		}
 
-		$adminVersion = $this->findHybridProductionVersion(appId: $appId, application: $application);
-		$adminDelta = [];
-		if ($adminVersion !== null) {
-			$candidate = ($adminVersion['manifestDelta'] ?? []);
-			if (is_array($candidate) === true) {
-				$adminDelta = $candidate;
-			}
-		}
-
-		$resolved = $adminDelta;
+		$adminDelta = $this->deltaOf(version: $this->findHybridProductionVersion(appId: $appId, application: $application));
+		$resolved   = $adminDelta;
 
 		// Layer the caller's own user delta on top, gated by the per-app flag.
-		if ($uid !== null && $uid !== '' && $this->appAllowsUserOverrides(application: $application) === true) {
-			$userVersion = $this->findUserDeltaForApp(application: $application, uid: $uid);
-			if ($userVersion !== null) {
-				$userDelta = ($userVersion['manifestDelta'] ?? []);
-				if (is_array($userDelta) === true && $userDelta !== []) {
-					$resolved = $this->deepMergeDelta(base: $adminDelta, overlay: $userDelta);
-				}
-			}
+		$userDelta = $this->callerDeltaOf(application: $application, uid: $uid);
+		if ($userDelta !== []) {
+			$resolved = $this->deepMergeDelta(base: $adminDelta, overlay: $userDelta);
 		}
 
 		return [
@@ -172,6 +159,38 @@ class AppOverrideService implements AppOverrideServiceInterface {
 		];
 
 	}//end resolveLayeredDelta()
+
+	/**
+	 * The `manifestDelta` of a delta version.
+	 *
+	 * @param array<string,mixed>|null $version The version, or null when there is none.
+	 *
+	 * @return array<string,mixed> The delta, empty when the version is missing or carries no array.
+	 */
+	private function deltaOf(?array $version): array {
+		$delta = ($version['manifestDelta'] ?? []);
+		if (is_array($delta) === false) {
+			return [];
+		}
+
+		return $delta;
+	}//end deltaOf()
+
+	/**
+	 * The caller's own user delta for an app that allows user overrides.
+	 *
+	 * @param array<string,mixed> $application The parent Application.
+	 * @param string|null         $uid         The calling user's UID, or null for an anonymous caller.
+	 *
+	 * @return array<string,mixed> The user delta, empty when there is none to layer.
+	 */
+	private function callerDeltaOf(array $application, ?string $uid): array {
+		if ($uid === null || $uid === '' || $this->appAllowsUserOverrides(application: $application) === false) {
+			return [];
+		}
+
+		return $this->deltaOf(version: $this->findUserDeltaForApp(application: $application, uid: $uid));
+	}//end callerDeltaOf()
 
 	/**
 	 * Read the caller's own user-scoped delta record for a fleet app, for editing.

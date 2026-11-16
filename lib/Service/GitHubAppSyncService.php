@@ -449,17 +449,13 @@ class GitHubAppSyncService implements GitHubAppSyncServiceInterface {
 		?string $credentialId,
 		?string $actingUserId,
 	): array {
-		$repo = ($application['githubRepo'] ?? null);
-		if (is_array($repo) === false) {
-			return ['outcome' => self::OUTCOME_NOT_LINKED];
+		$linked = $this->linkedRepo(application: $application);
+		if (isset($linked['outcome']) === true) {
+			return $linked;
 		}
 
-		$owner = (string)($repo['owner'] ?? '');
-		$name = (string)($repo['name'] ?? '');
-		if ($owner === '' || $name === '') {
-			return ['outcome' => self::OUTCOME_NOT_LINKED];
-		}
-
+		$owner = $linked['owner'];
+		$name = $linked['name'];
 		$source = new RepoSource(owner: $owner, repo: $name, ref: $ref, credentialId: $credentialId);
 		$files = $this->catalogService->fetchRepoFiles(source: $source, actingUserId: $actingUserId);
 		if ($files === []) {
@@ -483,24 +479,16 @@ class GitHubAppSyncService implements GitHubAppSyncServiceInterface {
 			registerSlug: $registerSlug
 		);
 
-		$manifest = $this->rewriteSchemaRefs(node: $template['manifest'], map: $rewriteMap);
-		if (is_array($manifest) === false) {
-			$manifest = [];
-		}
+		$manifest = $this->draftManifest(template: $template, rewriteMap: $rewriteMap);
 
 		$commitSha = $this->catalogService->resolveCommitSha(source: $source, actingUserId: $actingUserId);
-
-		$semver = (string)($template['version'] ?? '');
-		if (preg_match('/^[0-9]+\.[0-9]+\.[0-9]+/', $semver) !== 1) {
-			$semver = '0.1.0';
-		}
 
 		$payload = [
 			'name' => 'Pulled ' . $versionSlug,
 			'slug' => $versionSlug,
 			'manifest' => $manifest,
 			'register' => $registerSlug,
-			'semver' => $semver,
+			'semver' => self::semverOf(template: $template),
 			'status' => 'draft',
 			'application' => $appUuid,
 			'sourceRef' => $ref,
@@ -543,6 +531,43 @@ class GitHubAppSyncService implements GitHubAppSyncServiceInterface {
 			'warnings' => ($channels['warnings'] ?? []),
 		];
 	}//end pull()
+
+	/**
+	 * The pulled manifest with its schema references rewritten to the draft's namespaced slugs.
+	 *
+	 * @param array<string,mixed>  $template   The parsed clone-seam array.
+	 * @param array<string,string> $rewriteMap Source-slug → namespaced-slug rewrite map.
+	 *
+	 * @return array<mixed> The manifest; empty when the rewrite does not give an array.
+	 *
+	 * @spec openspec/changes/github-app-sync/specs/github-app-sync/spec.md
+	 */
+	private function draftManifest(array $template, array $rewriteMap): array {
+		$manifest = $this->rewriteSchemaRefs(node: $template['manifest'], map: $rewriteMap);
+		if (is_array($manifest) === false) {
+			return [];
+		}
+
+		return $manifest;
+	}//end draftManifest()
+
+	/**
+	 * The pulled template's semantic version, or 0.1.0 when it carries none.
+	 *
+	 * @param array<string,mixed> $template The parsed clone-seam array.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/github-app-sync/specs/github-app-sync/spec.md
+	 */
+	private static function semverOf(array $template): string {
+		$semver = (string)($template['version'] ?? '');
+		if (preg_match('/^[0-9]+\.[0-9]+\.[0-9]+/', $semver) !== 1) {
+			return '0.1.0';
+		}
+
+		return $semver;
+	}//end semverOf()
 
 	/**
 	 * Ensure a linked repo exists — create it via the broker when unlinked.
@@ -931,19 +956,11 @@ class GitHubAppSyncService implements GitHubAppSyncServiceInterface {
 	 * @return array<string,string> Source-slug → namespaced-slug rewrite map.
 	 */
 	private function reconcileCompanionSchemas(array $template, string $appSlug, string $versionSlug, string $registerSlug): array {
-		$companions = [];
-		if (is_array($template['companionSchemas'] ?? null) === true) {
-			$companions = $template['companionSchemas'];
-		}
-
-		$prefix = $appSlug . '-' . $versionSlug . '-';
-		$map = [];
+		$companions = $this->companionSchemasOf(template: $template);
+		$prefix     = $appSlug . '-' . $versionSlug . '-';
+		$map        = [];
 		foreach ($companions as $companion) {
-			if (is_array($companion) === false || isset($companion['slug']) === false) {
-				continue;
-			}
-
-			$source = (string)$companion['slug'];
+			$source       = (string)$companion['slug'];
 			$map[$source] = $prefix . $source;
 		}
 
@@ -956,40 +973,80 @@ class GitHubAppSyncService implements GitHubAppSyncServiceInterface {
 
 		$createdIds = [];
 		foreach ($companions as $companion) {
-			if (is_array($companion) === false || isset($companion['slug']) === false) {
-				continue;
-			}
-
-			$source = (string)$companion['slug'];
-			$blob = $this->rewriteSchemaRefs(node: $companion, map: $map);
-			if (is_array($blob) === false) {
-				continue;
-			}
-
-			$blob['slug'] = $map[$source];
-			if (isset($blob['version']) === false) {
-				$blob['version'] = '0.1.0';
-			}
-
-			try {
-				$createdIds[] = $this->schemaMapper->createFromArray(object: $blob)->getId();
-			} catch (Throwable $e) {
-				$this->logger->warning('Buildiq GitHub pull: could not clone schema "' . $source . '": ' . $e->getMessage());
-			}
-		}//end foreach
+			$createdIds = array_merge($createdIds, $this->cloneCompanionSchema(companion: $companion, map: $map));
+		}
 
 		if ($createdIds !== []) {
-			try {
-				$existing = (array)$register->getSchemas();
-				$register->setSchemas(array_values(array_unique(array_merge($existing, $createdIds))));
-				$this->registerMapper->update($register);
-			} catch (Throwable $e) {
-				$this->logger->warning('Buildiq GitHub pull: could not attach schemas to draft register: ' . $e->getMessage());
-			}
+			$this->attachSchemas(register: $register, schemaIds: $createdIds);
 		}
 
 		return $map;
 	}//end reconcileCompanionSchemas()
+
+	/**
+	 * The template's companion schemas that carry a slug.
+	 *
+	 * @param array<string,mixed> $template The parsed clone-seam array.
+	 *
+	 * @return array<int|string,array<string,mixed>> The companion schemas, in template order.
+	 */
+	private function companionSchemasOf(array $template): array {
+		$companions = [];
+		if (is_array($template['companionSchemas'] ?? null) === true) {
+			$companions = $template['companionSchemas'];
+		}
+
+		return array_filter(
+			$companions,
+			static fn (mixed $companion): bool => is_array($companion) === true && isset($companion['slug']) === true
+		);
+	}//end companionSchemasOf()
+
+	/**
+	 * Clone one companion schema under its namespaced slug.
+	 *
+	 * @param array<string,mixed>  $companion The companion schema.
+	 * @param array<string,string> $map       Source-slug → namespaced-slug map.
+	 *
+	 * @return array<int,mixed> The created schema's id, or nothing when it could not be cloned.
+	 */
+	private function cloneCompanionSchema(array $companion, array $map): array {
+		$source = (string)$companion['slug'];
+		$blob   = $this->rewriteSchemaRefs(node: $companion, map: $map);
+		if (is_array($blob) === false) {
+			return [];
+		}
+
+		$blob['slug'] = $map[$source];
+		if (isset($blob['version']) === false) {
+			$blob['version'] = '0.1.0';
+		}
+
+		try {
+			return [$this->schemaMapper->createFromArray(object: $blob)->getId()];
+		} catch (Throwable $e) {
+			$this->logger->warning('Buildiq GitHub pull: could not clone schema "' . $source . '": ' . $e->getMessage());
+			return [];
+		}
+	}//end cloneCompanionSchema()
+
+	/**
+	 * Attach the cloned schemas to the draft register.
+	 *
+	 * @param \OCA\OpenRegister\Db\Register $register  The draft register.
+	 * @param array<int,mixed>              $schemaIds The cloned schema ids.
+	 *
+	 * @return void
+	 */
+	private function attachSchemas(\OCA\OpenRegister\Db\Register $register, array $schemaIds): void {
+		try {
+			$existing = (array)$register->getSchemas();
+			$register->setSchemas(array_values(array_unique(array_merge($existing, $schemaIds))));
+			$this->registerMapper->update($register);
+		} catch (Throwable $e) {
+			$this->logger->warning('Buildiq GitHub pull: could not attach schemas to draft register: ' . $e->getMessage());
+		}
+	}//end attachSchemas()
 
 	/**
 	 * Find or create a draft register at an exact slug.
@@ -1052,7 +1109,41 @@ class GitHubAppSyncService implements GitHubAppSyncServiceInterface {
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function resolveVersion(array $application, ?string $versionSlug): ?array {
-		$appUuid = $this->uuidOf(object: $application);
+		$versions = $this->versionsOfApplication(appUuid: $this->uuidOf(object: $application));
+		if ($versions === []) {
+			return null;
+		}
+
+		if ($versionSlug !== null && $versionSlug !== '') {
+			return $this->firstVersionWhere(
+				versions: $versions,
+				match: static fn (array $version): bool => (string)($version['slug'] ?? '') === $versionSlug
+			);
+		}
+
+		$production = (string)($application['productionVersion'] ?? '');
+		if ($production !== '') {
+			$found = $this->firstVersionWhere(
+				versions: $versions,
+				match: fn (array $version): bool => $this->uuidOf(object: $version) === $production
+			);
+			if ($found !== null) {
+				return $found;
+			}
+		}
+
+		return $versions[0];
+	}//end resolveVersion()
+
+	/**
+	 * The version rows of one Application, serialised.
+	 *
+	 * @param string $appUuid The parent Application UUID.
+	 *
+	 * @return array<int,array<string,mixed>> The versions, empty when none or when the lookup failed.
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
+	 */
+	private function versionsOfApplication(string $appUuid): array {
 		try {
 			$registerId = $this->registerMapper->find(self::REGISTER_SLUG, _multitenancy: false)->getId();
 			$schemaId = $this->schemaMapper->find(self::VERSION_SCHEMA, _multitenancy: false)->getId();
@@ -1072,44 +1163,37 @@ class GitHubAppSyncService implements GitHubAppSyncServiceInterface {
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning('Buildiq GitHub sync: version lookup failed: ' . $e->getMessage());
-			return null;
+			return [];
 		}//end try
 
 		$versions = [];
 		foreach ((array)$results as $result) {
 			$normalisedRow = ObjectRecord::serialised(object: $result);
-			if ((string)($normalisedRow['application'] ?? '') !== $appUuid) {
-				continue;
-			}
-
-			$versions[] = $normalisedRow;
-		}
-
-		if ($versions === []) {
-			return null;
-		}
-
-		if ($versionSlug !== null && $versionSlug !== '') {
-			foreach ($versions as $version) {
-				if ((string)($version['slug'] ?? '') === $versionSlug) {
-					return $version;
-				}
-			}
-
-			return null;
-		}
-
-		$production = (string)($application['productionVersion'] ?? '');
-		if ($production !== '') {
-			foreach ($versions as $version) {
-				if ($this->uuidOf(object: $version) === $production) {
-					return $version;
-				}
+			if ((string)($normalisedRow['application'] ?? '') === $appUuid) {
+				$versions[] = $normalisedRow;
 			}
 		}
 
-		return $versions[0];
-	}//end resolveVersion()
+		return $versions;
+	}//end versionsOfApplication()
+
+	/**
+	 * The first version a predicate accepts.
+	 *
+	 * @param array<int,array<string,mixed>>      $versions The versions.
+	 * @param callable(array<string,mixed>): bool $match    The predicate.
+	 *
+	 * @return array<string,mixed>|null The first match, or null when none.
+	 */
+	private function firstVersionWhere(array $versions, callable $match): ?array {
+		foreach ($versions as $version) {
+			if ($match($version) === true) {
+				return $version;
+			}
+		}
+
+		return null;
+	}//end firstVersionWhere()
 
 	/**
 	 * Resolve a repo's default branch (via the broker, else the stored/default).
