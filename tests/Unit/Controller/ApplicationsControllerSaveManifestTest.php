@@ -40,6 +40,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Contract tests for ApplicationsController::saveManifest().
@@ -370,7 +371,10 @@ class ApplicationsControllerSaveManifestTest extends TestCase {
 	private function captureSaves(): \ArrayObject {
 		$saves = new \ArrayObject();
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (array $object, ?array $extend = [], string|int|null $register = null, string|int|null $schema = null) use ($saves): ObjectEntity {
+			function (array $object, ObjectSaveOptions $options = new ObjectSaveOptions()) use ($saves): ObjectEntity {
+				$extend = $options->extend ?? [];
+				$register = $options->target->register;
+				$schema = $options->target->schema;
 				$saves[] = [$object, $register, $schema];
 				return $this->buildEntity($object);
 			}

@@ -43,6 +43,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\Buildiq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Tests for {@see AutomationsController}.
@@ -660,6 +661,7 @@ final class AutomationsControllerTest extends TestCase {
 		$this->objectService->expects($this->once())
 			->method('saveObject')
 			->willReturnCallback(function (...$arguments) use (&$written): ObjectEntity {
+				$arguments = LegacyObjectArgs::positional(method: 'saveObject', args: $arguments);
 				$written = $arguments[0];
 				return $this->buildEntity(['id' => 'a-1']);
 			});

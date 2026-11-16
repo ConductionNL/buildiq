@@ -57,7 +57,7 @@ function databaseSourcesByKey(sources) {
  * rather than a database it cannot vouch for.
  *
  * @param {object} [http] An axios-like client (defaults to @nextcloud/axios).
- * @return {Promise<Array<{register: string, label: string, source: string, writable: boolean}>>}
+ * @return {Promise<Array<{register: string, label: string, source: string, sourceId: string, writable: boolean}>>}
  * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-an-app-binds-a-connected-database-req-bqdb-001
  */
 export async function fetchConnectedDatabases(http = axios) {
@@ -76,6 +76,7 @@ export async function fetchConnectedDatabases(http = axios) {
 					register: key,
 					label: register.title || key,
 					source: String(register.source),
+					sourceId: String(databases.get(String(register.source))?.id ?? register.source),
 					writable: databases.get(String(register.source))?.authConfig?.writable === true,
 				}
 			})

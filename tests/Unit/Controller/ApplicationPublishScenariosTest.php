@@ -38,6 +38,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * An owner publishes and unpublishes; a viewer is refused and nothing is written.
@@ -162,7 +163,11 @@ class ApplicationPublishScenariosTest extends TestCase {
 
 		$saved = [];
 		$this->objectService->expects($this->once())->method('saveObject')->willReturnCallback(
-			function (array $object, ?array $extend = [], string|int|null $register = null, string|int|null $schema = null, ?string $uuid = null) use (&$saved): ObjectEntity {
+			function (array $object, ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$saved): ObjectEntity {
+				$extend = $options->extend ?? [];
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$saved = ['object' => $object, 'schema' => $schema, 'uuid' => $uuid];
 				return $this->application(status: $object['status']);
 			}

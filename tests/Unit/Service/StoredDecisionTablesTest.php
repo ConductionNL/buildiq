@@ -40,6 +40,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use UnexpectedValueException;
+use OCA\Buildiq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Tests for {@see StoredDecisionTables} and {@see DecisionTableShape}.
@@ -251,15 +252,15 @@ final class StoredDecisionTablesTest extends TestCase {
 		$mine->method('getUuid')->willReturn('uuid-mine');
 		$this->objects->method('searchObjectsBySlug')->willReturn([$other, $mine]);
 
-		$this->objects->expects($this->once())->method('saveObject')->with(
-			$this->callback(static fn (array $row): bool => $row['key'] === 'buildiq.org-a.loan-eligibility' && $row['name'] === 'Loan eligibility'),
-			$this->anything(),
-			'decision-tables',
-			'decision-table',
-			'uuid-mine',
-			false,
-			false
-		);
+		$this->objects->expects($this->once())->method('saveObject')->with(...LegacyObjectArgs::with(method: 'saveObject', expected: [
+				'object' => $this->callback(static fn (array $row): bool => $row['key'] === 'buildiq.org-a.loan-eligibility' && $row['name'] === 'Loan eligibility'),
+				'extend' => $this->anything(),
+				'register' => 'decision-tables',
+				'schema' => 'decision-table',
+				'uuid' => 'uuid-mine',
+				'_rbac' => false,
+				'_multitenancy' => false,
+			]));
 
 		$this->tables->save(
 			['slug' => 'loan-eligibility', 'name' => 'Loan eligibility', '@self' => ['organisation' => 'org-a']],

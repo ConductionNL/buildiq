@@ -150,3 +150,54 @@ describe('AppSettingsModal — Data registers section (data-registers-runtime ta
 		expect(last).toEqual([{ register: 'spectr' }])
 	})
 })
+
+describe('AppSettingsModal — organisation scope (operate-organisation-scoped-apps T07)', () => {
+	const scopeSwitch = (wrapper) => wrapper.find('[data-testid="organisation-scope"] input')
+
+	it('is not offered while multitenancy is off', () => {
+		const wrapper = mountModal({ organisationScopeAvailable: false, isOwner: true, organisationScope: 'holder' })
+		expect(wrapper.find('[data-testid="organisation-scope"]').exists()).toBe(false)
+	})
+
+	it('is not offered to a non-owner', () => {
+		const wrapper = mountModal({ organisationScopeAvailable: true, isOwner: false, organisationScope: 'holder' })
+		expect(wrapper.find('[data-testid="organisation-scope"]').exists()).toBe(false)
+	})
+
+	it('shows a scoped app as "This organisation only"', () => {
+		const wrapper = mountModal({ organisationScopeAvailable: true, isOwner: true, organisationScope: 'holder' })
+		expect(scopeSwitch(wrapper).element.checked).toBe(true)
+		expect(wrapper.find('[data-testid="organisation-scope"]').text()).toContain('Only members of the organisation that holds this app see it')
+	})
+
+	it('keeps a shared app to the organisation at once', async () => {
+		const wrapper = mountModal({ organisationScopeAvailable: true, isOwner: true, organisationScope: 'all' })
+		expect(scopeSwitch(wrapper).element.checked).toBe(false)
+		scopeSwitch(wrapper).element.checked = true
+		await scopeSwitch(wrapper).trigger('change')
+		expect(wrapper.emitted('update:organisationScope')).toEqual([['holder']])
+		expect(wrapper.find('[data-testid="organisation-scope-confirm"]').exists()).toBe(false)
+	})
+
+	it('asks before sharing a scoped app with every organisation', async () => {
+		const wrapper = mountModal({ organisationScopeAvailable: true, isOwner: true, organisationScope: 'holder' })
+		scopeSwitch(wrapper).element.checked = false
+		await scopeSwitch(wrapper).trigger('change')
+		expect(wrapper.emitted('update:organisationScope')).toBeUndefined()
+		const confirm = wrapper.find('[data-testid="organisation-scope-confirm"]')
+		expect(confirm.text()).toContain('Every organisation will see this app.')
+
+		await wrapper.find('[data-testid="organisation-scope-share"]').trigger('click')
+		expect(wrapper.emitted('update:organisationScope')).toEqual([['all']])
+		expect(wrapper.find('[data-testid="organisation-scope-confirm"]').exists()).toBe(false)
+	})
+
+	it('keeps the scope when the confirmation is declined', async () => {
+		const wrapper = mountModal({ organisationScopeAvailable: true, isOwner: true, organisationScope: 'holder' })
+		scopeSwitch(wrapper).element.checked = false
+		await scopeSwitch(wrapper).trigger('change')
+		await wrapper.find('[data-testid="organisation-scope-keep"]').trigger('click')
+		expect(wrapper.emitted('update:organisationScope')).toBeUndefined()
+		expect(wrapper.find('[data-testid="organisation-scope-confirm"]').exists()).toBe(false)
+	})
+})

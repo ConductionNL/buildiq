@@ -28,11 +28,16 @@ namespace OCA\Buildiq\Mcp\Handler;
 
 use OCA\Buildiq\Kernel\Contracts\PermissionResolverInterface;
 use OCA\Buildiq\Service\PageCodeGuard;
+use OCA\Buildiq\Service\AppOrganisationGuard;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -167,20 +172,10 @@ abstract class AbstractToolHandler {
 			return $this->errorResult(error: 'forbidden', message: 'You must be signed in.');
 		}
 
-		// Openbuild is a system-wide register (not org-scoped); bypass the
-		// organisation filter so MCP callers in any org can resolve apps.
-		$apps = $this->objectService->searchObjectsBySlug(
-			self::REGISTER_SLUG,
-			'built-app',
-			['slug' => $appSlug],
-			_rbac: true,
-			_multitenancy: false
-		);
-		if (is_array($apps) === false || $apps === []) {
+		$app = $this->findVisibleAppBySlug(appSlug: $appSlug);
+		if ($app === null) {
 			return $this->errorResult(error: 'not_found', message: "No virtual app found for slug '{$appSlug}'.");
 		}
-
-		$app = $this->toArray(item: $apps[0]);
 
 		if ($this->callerHasWriteRole(app: $app, uid: $uid, allowAdminBypass: $allowAdminBypass) === true) {
 			// Record only a *genuine* admin bypass: an admin who would NOT pass
@@ -217,6 +212,40 @@ abstract class AbstractToolHandler {
 		);
 
 	}//end requireWriteRole()
+
+	/**
+	 * Find the Application by slug, as long as the caller's organisation may see it.
+	 *
+	 * Openbuild is a system-wide register (not org-scoped), so the organisation
+	 * filter is bypassed and MCP callers in any org can resolve apps; the
+	 * organisation scope is then checked before any role, admins included
+	 * (REQ-BQOS-002).
+	 *
+	 * @param string $appSlug Slug of the target Application.
+	 *
+	 * @return array<string, mixed>|null The Application, or null when it is unknown or not visible.
+	 *
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002
+	 */
+	private function findVisibleAppBySlug(string $appSlug): ?array {
+		$apps = $this->objectService->searchObjectsBySlug(
+			self::REGISTER_SLUG,
+			'built-app',
+			['slug' => $appSlug],
+			_rbac: true,
+			_multitenancy: false
+		);
+		if (is_array($apps) === false || $apps === []) {
+			return null;
+		}
+
+		$app = $this->toArray(item: $apps[0]);
+		if ($this->visibleToOrganisation(app: $app, caller: $this->userSession->getUser()) === false) {
+			return null;
+		}
+
+		return $app;
+	}//end findVisibleAppBySlug()
 
 	/**
 	 * Record an MCP admin-bypass to the OpenRegister per-object audit trail, at
@@ -282,6 +311,13 @@ abstract class AbstractToolHandler {
 			return $this->errorResult(error: 'forbidden', message: 'You must be signed in.');
 		}
 
+		// Organisation scope before any role (REQ-BQOS-002): another
+		// organisation's scoped app answers as an app that does not exist.
+		if ($this->visibleToOrganisation(app: $app, caller: $caller) === false) {
+			$slug = (string)($app['slug'] ?? '');
+			return $this->errorResult(error: 'not_found', message: "No published virtual app found for slug '{$slug}'.");
+		}
+
 		$permissions = ($app['permissions'] ?? []);
 		if (is_array($permissions) === false) {
 			$permissions = [];
@@ -297,6 +333,34 @@ abstract class AbstractToolHandler {
 		);
 
 	}//end requireAnyRoleOnApp()
+
+	/**
+	 * Whether the caller may see the Application at all, by its organisation scope.
+	 *
+	 * A shared app passes without a lookup; a scoped one needs the guard, resolved
+	 * lazily, to admit the caller, and an unresolvable guard fails closed.
+	 *
+	 * @param array<string, mixed> $app    The Application.
+	 * @param IUser|null           $caller The caller.
+	 *
+	 * @return bool True when the app is visible to the caller.
+	 *
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002
+	 */
+	protected function visibleToOrganisation(array $app, ?IUser $caller): bool {
+		if (AppOrganisationGuard::isShared(application: $app) === true) {
+			return true;
+		}
+
+		try {
+			$guard = $this->container->get(AppOrganisationGuard::class);
+		} catch (\Throwable $e) {
+			$this->logger->warning('Buildiq MCP: organisation guard unavailable; the scoped app is treated as not visible');
+			return false;
+		}
+
+		return ($guard instanceof AppOrganisationGuard) === true && $guard->canSee(application: $app, user: $caller) === true;
+	}//end visibleToOrganisation()
 
 	/**
 	 * Whether the caller holds ANY role on the Application.
@@ -767,9 +831,7 @@ abstract class AbstractToolHandler {
 		// the finally must release it.
 		try {
 			$objectService->lockObject(
-				identifier: $versionUuid,
-				process: 'buildiq.mcp-manifest-edit',
-				duration: 30
+				new LockRequest(identifier: $versionUuid, process: 'buildiq.mcp-manifest-edit', duration: 30)
 			);
 		} catch (\Throwable $lockError) {
 			$this->logger->warning(
@@ -793,15 +855,16 @@ abstract class AbstractToolHandler {
 
 			$saved = $objectService->saveObject(
 				object: $payload,
-				register: self::REGISTER_SLUG,
-				schema: 'applicationVersion',
-				uuid: $versionUuid,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: 'applicationVersion'),
+					uuid: $versionUuid
+				)
 			);
 
 			return $this->toArray(item: $saved);
 		} finally {
 			try {
-				$objectService->unlockObject(identifier: $versionUuid);
+				$objectService->unlockObject(new UnlockRequest(identifier: $versionUuid));
 			} catch (\Throwable $unlockError) {
 				$this->logger->warning(
 					'Buildiq MCP: failed to release manifest lock on ' . $versionUuid,

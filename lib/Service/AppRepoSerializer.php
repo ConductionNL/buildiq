@@ -42,6 +42,7 @@ use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -636,8 +637,7 @@ class AppRepoSerializer {
 			// mappings), so a slug lookup would miss most real ingestion.
 			$found = $this->objectService->find(
 				id: $uuid,
-				register: $registerSlug->slug,
-				schema: $kind
+				options: new ObjectFindOptions(register: $registerSlug->slug, schema: $kind)
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning(
@@ -734,15 +734,23 @@ class AppRepoSerializer {
 			return [];
 		}
 
-		$out = [];
-		foreach ((array)$results as $result) {
-			$payload = null;
-			if (is_object($result) === true && method_exists($result, 'getObject') === true) {
-				$payload = (array)$result->getObject();
-			} elseif (is_array($result) === true) {
-				$payload = $result;
-			}
+		return $this->automationsBySlug(results: (array)$results);
+	}//end collectAutomations()
 
+	/**
+	 * The automation payloads found, keyed by slug; a result without a payload
+	 * or with an unsafe slug is left out.
+	 *
+	 * @param array<int|string,mixed> $results The findAll results.
+	 *
+	 * @return array<string,array<string,mixed>> Automation blobs keyed by slug.
+	 *
+	 * @spec openspec/changes/archive/2026-10-07-app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-app-s-whole-configuration
+	 */
+	private function automationsBySlug(array $results): array {
+		$out = [];
+		foreach ($results as $result) {
+			$payload = self::automationPayload(result: $result);
 			if ($payload === null) {
 				continue;
 			}
@@ -753,10 +761,32 @@ class AppRepoSerializer {
 			}
 
 			$out[$automationSlug] = $payload;
-		}//end foreach
+		}
 
 		return $out;
-	}//end collectAutomations()
+	}//end automationsBySlug()
+
+	/**
+	 * The payload of one findAll result: an entity's object, an array as is,
+	 * null for anything else.
+	 *
+	 * @param mixed $result One findAll result.
+	 *
+	 * @return array<string,mixed>|null The payload.
+	 *
+	 * @spec openspec/changes/archive/2026-10-07-app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-app-s-whole-configuration
+	 */
+	private static function automationPayload(mixed $result): ?array {
+		if (is_object($result) === true && method_exists($result, 'getObject') === true) {
+			return (array)$result->getObject();
+		}
+
+		if (is_array($result) === true) {
+			return $result;
+		}
+
+		return null;
+	}//end automationPayload()
 
 	/**
 	 * Collect the application's bound flows and the agents that point at it.

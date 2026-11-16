@@ -53,6 +53,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 
 /**
  * Covers the not-found and internal-error arms of runs().
@@ -151,14 +152,11 @@ class AgentsControllerRunsFailuresTest extends TestCase {
 		$schemasAsked = [];
 		$agentEntity = $this->objectEntity(['id' => 'agent-1']);
 		$this->objectService->method('find')->willReturnCallback(
-			static function (
-				string|int $id,
-				mixed $extend,
-				mixed $files,
-				mixed $register,
-				mixed $schema,
-				mixed ...$rest
-			) use ($agentEntity, &$schemasAsked) {
+			static function (string|int $id, ?ObjectFindOptions $options = null, bool $_rbac = true, bool $_multitenancy = true, mixed ...$rest) use ($agentEntity, &$schemasAsked) {
+				$extend = $options?->extend;
+				$files = $options?->files;
+				$register = $options?->register;
+				$schema = $options?->schema;
 				$schemasAsked[] = $schema;
 				return ($schema === 'buildAgent' ? $agentEntity : null);
 			}
@@ -265,14 +263,11 @@ class AgentsControllerRunsFailuresTest extends TestCase {
 		$applicationEntity = ($application === null ? null : $this->objectEntity($application));
 
 		$this->objectService->method('find')->willReturnCallback(
-			static function (
-				string|int $id,
-				mixed $extend,
-				mixed $files,
-				mixed $register,
-				mixed $schema,
-				mixed ...$rest
-			) use ($agentEntity, $applicationEntity) {
+			static function (string|int $id, ?ObjectFindOptions $options = null, bool $_rbac = true, bool $_multitenancy = true, mixed ...$rest) use ($agentEntity, $applicationEntity) {
+				$extend = $options?->extend;
+				$files = $options?->files;
+				$register = $options?->register;
+				$schema = $options?->schema;
 				if ($schema === 'buildAgent') {
 					return $agentEntity;
 				}
