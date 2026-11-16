@@ -2504,7 +2504,16 @@ OC.L10N.register(
         "The rows of the page’s register and schema, with its filters": "De rijen van het register en schema van de pagina, met de filters",
         "The route parameters": "De routeparameters",
         "The signed-in user’s id and name": "Id en naam van de ingelogde gebruiker",
-        "Widgets shown with the open record. A custom widget can be written by hand.": "Widgets die bij het geopende record worden getoond. Een aangepaste widget kun je zelf schrijven."
+        "Widgets shown with the open record. A custom widget can be written by hand.": "Widgets die bij het geopende record worden getoond. Een aangepaste widget kun je zelf schrijven.",
+        "_%n expression runs without errors_::_%n expressions run without errors_": ["%n expressie werkt zonder fouten","%n expressies werken zonder fouten"],
+        "%n expression runs without errors": "%n expressie werkt zonder fouten",
+        "%n expressions run without errors": "%n expressies werken zonder fouten",
+        "Code on pages is switched off for this Nextcloud: code components show a placeholder and expressions are skipped.": "Code op pagina's staat uit voor deze Nextcloud: codecomponenten tonen een plaatshouder en expressies worden overgeslagen.",
+        "Code preview": "Voorbeeld van de code",
+        "Code runs here in the same sandbox as in the app, with sample inputs: an empty record and no rows.": "De code draait hier in dezelfde afgeschermde omgeving als in de app, met voorbeeldinvoer: een leeg record en geen rijen.",
+        "Expression evaluator": "Evaluatie van expressies",
+        "Preview of {name}": "Voorbeeld van {name}",
+        "The expression took too long.": "De expressie duurde te lang."
     },
     "nplurals=2; plural=(n != 1);"
 )

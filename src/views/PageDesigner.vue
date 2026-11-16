@@ -189,6 +189,9 @@
 								:diagnostics="debugLog.record" />
 						</div>
 					</div>
+					<!-- Code components and expressions run in the sandbox
+					     frames, never in the preview app (pages-custom-code T07). -->
+					<CodePreviewPanel :manifest="livePreviewProps.manifest" />
 					<DebugLogPanel
 						:entries="debugLog.entries"
 						:pageTitles="debugPageTitles"
@@ -227,6 +230,7 @@ import { generateUrl } from '@nextcloud/router'
 import { NcAppSidebar } from '@nextcloud/vue'
 import BlockLibraryPanel from '../components/page-editor/BlockLibraryPanel.vue'
 import ChatPageEditor from '../components/page-editor/ChatPageEditor.vue'
+import CodePreviewPanel from '../components/page-editor/CodePreviewPanel.vue'
 import CustomPageEditor from '../components/page-editor/CustomPageEditor.vue'
 import DashboardPageEditor from '../components/page-editor/DashboardPageEditor.vue'
 import DebugLogPanel from '../components/page-editor/DebugLogPanel.vue'
@@ -289,6 +293,7 @@ const SUB_EDITOR_MAP = {
 export default {
 	name: 'PageDesigner',
 	components: {
+		CodePreviewPanel,
 		DebugLogPanel,
 		PreviewSandbox,
 		NcAppSidebar,

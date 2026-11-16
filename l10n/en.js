@@ -2435,7 +2435,15 @@ OC.L10N.register(
         "The rows of the page’s register and schema, with its filters": "The rows of the page’s register and schema, with its filters",
         "The route parameters": "The route parameters",
         "The signed-in user’s id and name": "The signed-in user’s id and name",
-        "Widgets shown with the open record. A custom widget can be written by hand.": "Widgets shown with the open record. A custom widget can be written by hand."
+        "Widgets shown with the open record. A custom widget can be written by hand.": "Widgets shown with the open record. A custom widget can be written by hand.",
+        "%n expression runs without errors": "%n expression runs without errors",
+        "%n expressions run without errors": "%n expressions run without errors",
+        "Code on pages is switched off for this Nextcloud: code components show a placeholder and expressions are skipped.": "Code on pages is switched off for this Nextcloud: code components show a placeholder and expressions are skipped.",
+        "Code preview": "Code preview",
+        "Code runs here in the same sandbox as in the app, with sample inputs: an empty record and no rows.": "Code runs here in the same sandbox as in the app, with sample inputs: an empty record and no rows.",
+        "Expression evaluator": "Expression evaluator",
+        "Preview of {name}": "Preview of {name}",
+        "The expression took too long.": "The expression took too long."
     },
     "nplurals=2; plural=(n != 1);"
 )

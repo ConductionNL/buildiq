@@ -114,6 +114,40 @@ window.addEventListener('message', function (event) {
 JS;
 
 	/**
+	 * The preview script: the page designer posts the code component being
+	 * edited, `{type: "render", code, inputs}`, and the frame replaces its own
+	 * document with it. Errors the code throws are posted back as
+	 * `{type: "error", message}`, and the inputs are handed in as the page
+	 * would, `{type: "inputs", data}`. The document keeps this response's
+	 * policy, so the code still has no network and no same origin.
+	 *
+	 * @var string
+	 */
+	private const PREVIEW_SCRIPT = <<<'JS'
+'use strict';
+window.addEventListener('message', function (event) {
+	var message = event.data;
+	if (event.source !== window.parent || !message || message.type !== 'render' || !message.code || typeof message.code !== 'object') {
+		return;
+	}
+	var text = function (value) { return typeof value === 'string' ? value : ''; };
+	var css = text(message.code.css).replace(/<\/style/gi, '<\\/style');
+	var js = text(message.code.js).replace(/<\/script/gi, '<\\/script');
+	var inputs = JSON.stringify(message.inputs || {}).replace(/</g, '\\u003c');
+	var report = "window.addEventListener('error', function (e) { parent.postMessage({ type: 'error', message: String(e.message) }, '*'); });";
+	var handIn = 'window.postMessage({ type: "inputs", data: ' + inputs + ' }, "*");';
+	document.open();
+	document.write(
+		'<!DOCTYPE html><html><head><meta charset="utf-8">'
+		+ '<script>' + report + '<\/script><style>' + css + '</style></head>'
+		+ '<body>' + text(message.code.html)
+		+ '<script>' + js + '<\/script><script>' + handIn + '<\/script></body></html>'
+	);
+	document.close();
+});
+JS;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IRequest                         $request             The request.
@@ -204,6 +238,32 @@ JS;
 
 		return $this->document(body: '<script>' . $script . '</script>', status: Http::STATUS_OK, evaluator: true);
 	}//end evaluator()
+
+	/**
+	 * The preview document of the page designer.
+	 *
+	 * It holds no app data and no code of its own: the designer posts the code
+	 * component under edit into it (see PREVIEW_SCRIPT), so a maker sees it run,
+	 * and its errors, before saving. It needs a signed-in user, and with "Allow
+	 * code on pages" off it is a placeholder that runs nothing.
+	 *
+	 * @return DataDisplayResponse The document.
+	 *
+	 * @spec openspec/changes/pages-custom-code/tasks.md#t07
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function preview(): DataDisplayResponse {
+		if ($this->userSession->getUser() === null) {
+			return $this->document(body: '', status: Http::STATUS_UNAUTHORIZED, evaluator: false);
+		}
+
+		if ($this->allowed() === false) {
+			return $this->document(body: '<p>Code on pages is switched off for this Nextcloud.</p>', status: Http::STATUS_OK, evaluator: false);
+		}
+
+		return $this->document(body: '<script>' . self::PREVIEW_SCRIPT . '</script>', status: Http::STATUS_OK, evaluator: false);
+	}//end preview()
 
 	/**
 	 * The status that refuses this caller the app, or null when they may use it.

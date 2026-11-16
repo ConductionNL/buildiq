@@ -74,6 +74,7 @@ return \OCA\Buildiq\Middleware\Support\ApiPathAliases::withVersionedAliases(\OCA
         // loaded into an iframe with sandbox="allow-scripts" and no
         // allow-same-origin, answered with a policy that allows no requests.
         ['name' => 'sandbox#evaluator', 'url' => '/sandbox/evaluator', 'verb' => 'GET'],
+        ['name' => 'sandbox#preview', 'url' => '/sandbox/preview', 'verb' => 'GET'],
         ['name' => 'sandbox#code', 'url' => '/sandbox/{slug}/{version}/{codeId}', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
         // Versioning — diff endpoint (chain spec #6 buildiq-versioning, REQ-OBV-005). Returns

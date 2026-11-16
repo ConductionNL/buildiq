@@ -260,6 +260,50 @@ final class SandboxControllerTest extends TestCase {
 	}//end testTheEvaluatorMayEvalButNotConnect()
 
 	/**
+	 * The designer's preview document renders posted code under the code
+	 * policy: inline script, no eval, no network, sandboxed.
+	 *
+	 * @return void
+	 */
+	public function testThePreviewRendersPostedCodeWithoutEvalOrNetwork(): void {
+		$response = $this->sut()->preview();
+		$policy   = self::policy(response: $response);
+
+		self::assertSame(200, $response->getStatus());
+		self::assertStringContainsString("message.type !== 'render'", $response->getData());
+		self::assertStringContainsString('event.source !== window.parent', $response->getData());
+		self::assertStringContainsString("type: 'error'", $response->getData());
+		self::assertStringContainsString("script-src 'unsafe-inline';", $policy);
+		self::assertStringNotContainsString('unsafe-eval', $policy);
+		self::assertStringNotContainsString('connect-src', $policy);
+
+		$headers = (new \ReflectionProperty(\OCP\AppFramework\Http\Response::class, 'headers'))->getValue($response);
+		self::assertStringEndsWith(';sandbox allow-scripts', $headers['Content-Security-Policy']);
+	}//end testThePreviewRendersPostedCodeWithoutEvalOrNetwork()
+
+	/**
+	 * With the setting off the preview runs nothing; signed out it is refused.
+	 *
+	 * @return void
+	 */
+	public function testThePreviewIsAPlaceholderWhenOffAndRefusedSignedOut(): void {
+		$this->appConfig = $this->createMock(IAppConfig::class);
+		$this->appConfig->method('getValueBool')->willReturn(false);
+		$off = $this->sut()->preview();
+
+		self::assertSame(200, $off->getStatus());
+		self::assertStringContainsString('Code on pages is switched off', $off->getData());
+		self::assertStringNotContainsString('<script>', $off->getData());
+
+		$this->session = $this->createMock(IUserSession::class);
+		$this->session->method('getUser')->willReturn(null);
+		$refused = $this->sut()->preview();
+
+		self::assertSame(401, $refused->getStatus());
+		self::assertStringNotContainsString('<script>', $refused->getData());
+	}//end testThePreviewIsAPlaceholderWhenOffAndRefusedSignedOut()
+
+	/**
 	 * Every document, refusals included, carries the sandbox directive in the policy it sends.
 	 *
 	 * @return void
