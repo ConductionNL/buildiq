@@ -110,6 +110,15 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 	private const BUILT_APP_ROUTE_SCHEMA = 'built-app-route';
 
 	/**
+	 * The refusal of a taken slug. It names neither the slug's app nor its
+	 * organisation, so a slug held by another organisation's scoped app tells
+	 * the maker nothing about who holds it (REQ-BQOS-004).
+	 *
+	 * @var string
+	 */
+	public const SLUG_TAKEN = 'This slug is taken. Choose another.';
+
+	/**
 	 * Constructor.
 	 *
 	 * @param LoggerInterface $logger PSR logger for diagnostics
@@ -117,6 +126,7 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 	 * @param RegisterService $registerService OpenRegister register-level service
 	 * @param IUserSession $userSession Current Nextcloud user session
 	 * @param SlugValidator $slugValidator Slug validation helper
+	 * @param AppOrganisationGuard|null $organisationGuard Gives a new app its default organisation scope; null leaves it absent.
 	 *
 	 * @return void
 	 */
@@ -126,6 +136,7 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 		private readonly RegisterService $registerService,
 		private readonly IUserSession $userSession,
 		private readonly SlugValidator $slugValidator,
+		private readonly ?AppOrganisationGuard $organisationGuard = null,
 	) {
 	}//end __construct()
 
@@ -287,6 +298,12 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 			'permissions' => $permissions,
 		];
 
+		// A new app starts as "This organisation only" while multitenancy is on;
+		// OpenRegister holds it in the creator's active organisation (REQ-BQOS-001).
+		if ($this->organisationGuard !== null) {
+			$applicationPayload['organisationScope'] = $this->organisationGuard->defaultScope();
+		}
+
 		try {
 			$created = $this->store->objectService->saveObject(
 				object: $applicationPayload,
@@ -312,7 +329,7 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 				throw new WizardCreationException(
 					errorCode: 'app_slug_conflict',
 					failedAtStep: 'validate',
-					message: sprintf('An Application with slug "%s" already exists.', $plan['slug']),
+					message: self::SLUG_TAKEN,
 					rollbackStatus: 'none',
 					previous: $e
 				);
@@ -676,7 +693,7 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 			throw new WizardCreationException(
 				errorCode: 'app_slug_conflict',
 				failedAtStep: 'validate',
-				message: sprintf('An Application with slug "%s" already exists.', $appSlug),
+				message: self::SLUG_TAKEN,
 				rollbackStatus: 'none'
 			);
 		}

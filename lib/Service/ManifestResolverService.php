@@ -70,6 +70,7 @@ class ManifestResolverService implements ManifestResolverServiceInterface {
 	 * @param LoggerInterface $logger PSR logger for diagnostics
 	 * @param PermissionResolver $permissionResolver Shared principal-grammar resolver (H1/H2 fix)
 	 * @param ManifestWidgetRoleFilter $widgetRoleFilter Removes page widgets by `roles`
+	 * @param AppOrganisationGuard|null $organisationGuard Hides another organisation's scoped app; without it a scoped app is hidden from everyone.
 	 *
 	 * @return void
 	 */
@@ -80,8 +81,60 @@ class ManifestResolverService implements ManifestResolverServiceInterface {
 		private readonly LoggerInterface $logger,
 		private readonly PermissionResolver $permissionResolver,
 		private readonly ManifestWidgetRoleFilter $widgetRoleFilter,
+		private readonly ?AppOrganisationGuard $organisationGuard = null,
 	) {
 	}//end __construct()
+
+	/**
+	 * Whether the caller may see the Application at all, by its organisation scope.
+	 *
+	 * A shared app passes without a guard; a scoped one needs the guard to admit
+	 * the caller, so a missing guard fails closed.
+	 *
+	 * @param array<string, mixed> $application The Application.
+	 * @param IUser|null           $caller      The caller.
+	 *
+	 * @return bool True when the app is visible to the caller.
+	 *
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002
+	 */
+	private function visibleToCaller(array $application, ?IUser $caller): bool {
+		if (AppOrganisationGuard::isShared(application: $application) === true) {
+			return true;
+		}
+
+		return $this->organisationGuard?->canSee(application: $application, user: $caller) === true;
+	}//end visibleToCaller()
+
+	/**
+	 * Find the Application by slug, as long as the caller may see it.
+	 *
+	 * Organisation scope comes before any role: another organisation's scoped app
+	 * answers exactly as an unknown slug does (REQ-BQOS-002).
+	 *
+	 * @param string     $appSlug The virtual-app slug.
+	 * @param IUser|null $caller  The caller.
+	 *
+	 * @return array<string, mixed>|null The Application, or null when it is unknown or not visible.
+	 *
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002
+	 */
+	private function findVisibleApplication(string $appSlug, ?IUser $caller): ?array {
+		$application = $this->findApplicationBySlug(appSlug: $appSlug);
+		if ($application === null) {
+			$this->logger->debug(
+				'ManifestResolverService: Application not found for slug={slug}',
+				['slug' => $appSlug]
+			);
+			return null;
+		}
+
+		if ($this->visibleToCaller(application: $application, caller: $caller) === false) {
+			return null;
+		}
+
+		return $application;
+	}//end findVisibleApplication()
 
 	/**
 	 * Resolve an application slug (+ optional version slug) to the manifest payload.
@@ -110,13 +163,9 @@ class ManifestResolverService implements ManifestResolverServiceInterface {
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-71
 	 */
 	public function resolve(string $appSlug, ?string $versionSlug, ?IUser $caller): ?array {
-		// Step 1 — resolve Application by slug.
-		$application = $this->findApplicationBySlug(appSlug: $appSlug);
+		// Step 1 — resolve Application by slug, within the caller's organisation scope.
+		$application = $this->findVisibleApplication(appSlug: $appSlug, caller: $caller);
 		if ($application === null) {
-			$this->logger->debug(
-				'ManifestResolverService: Application not found for slug={slug}',
-				['slug' => $appSlug]
-			);
 			return null;
 		}
 
@@ -252,7 +301,7 @@ class ManifestResolverService implements ManifestResolverServiceInterface {
 			return null;
 		}
 
-		$application = $this->findApplicationBySlug(appSlug: $appSlug);
+		$application = $this->findVisibleApplication(appSlug: $appSlug, caller: $caller);
 		if ($application === null) {
 			return null;
 		}
