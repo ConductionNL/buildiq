@@ -79,3 +79,35 @@ An expression is a single JavaScript expression with `row` (in a column),
 and must not change anything. An expression that throws or runs too long
 renders as empty with a marker, and the page designer preview shows the error.
 Expressions never run in the page itself or on the server.
+
+## Writing code in the page designer
+
+- **A custom page:** in the page's editor, choose **Write your own** instead of
+  **Registered component**. You get an HTML editor, CSS and JavaScript editors
+  and a checklist of the inputs the code needs. Switching back to a registered
+  component takes the code out of the page; switching again within the same
+  session brings it back.
+- **A widget:** on a dashboard page, or under **Widgets** on a detail page, add
+  a widget of type `custom` and tick **Write your own**. The same editors open
+  for that widget.
+- **An expression:** switch on **fx** next to a column, a field default or a
+  show-when rule, and type the expression.
+
+## Trying it before you publish
+
+Under the live preview, **Code preview** runs every code component of the app
+in its own sandboxed frame and every expression in the evaluator, the same way
+the app will. The page designer has no record open, so the inputs are samples:
+an empty record, no rows, the route without parameters and you as the user.
+
+- A code component that throws shows the error under its frame. The frames
+  reload a moment after you stop typing.
+- An expression that throws, or takes too long, is listed with its error. With
+  an empty sample record an expression that reaches into a missing field (for
+  example `row.adres.straat`) reports an error the real data may not cause.
+- While **Allow code on pages** is off, the frames show the placeholder and the
+  panel says that code is switched off.
+
+The preview frames load `GET /apps/buildiq/sandbox/preview`. It holds no app
+data and no code of its own: the page designer posts the code under edit into
+it, and it runs under the same policy as a code component's document.
