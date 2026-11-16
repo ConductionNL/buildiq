@@ -243,6 +243,28 @@ class JourneyWritesCheck implements JourneyWritesCheckInterface {
 			$refusals[] = ['property' => '', 'code' => self::FOREACH_INVALID, 'message' => 'A repeating write has to name the list answer it repeats over.'];
 		}
 
+		$refusals = array_merge($refusals, self::targetRefusals(write: $write, repeats: $repeats));
+
+		if (($write['bundle'] ?? false) === true && $repeats === true) {
+			$refusals[] = ['property' => '', 'code' => self::BUNDLE_REPEATS, 'message' => 'A bundle is written once; it cannot repeat over a list.'];
+		}
+
+		return $refusals;
+	}//end repeatRefusals()
+
+	/**
+	 * The refusals on a write's `targets` and `targetBy`: only on a write that
+	 * repeats, and `targets` needs a `targetBy`.
+	 *
+	 * @param array<string, mixed> $write   The write.
+	 * @param bool                 $repeats Whether the write repeats over a list answer.
+	 *
+	 * @return array<int, array<string, string>> The refusals.
+	 *
+	 * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-a-write-can-repeat-per-list-item-req-bqmp-001
+	 */
+	private static function targetRefusals(array $write, bool $repeats): array {
+		$refusals   = [];
 		$hasTargets = isset($write['targets']) === true || isset($write['targetBy']) === true;
 		if ($hasTargets === true && $repeats === false) {
 			$refusals[] = [
@@ -260,12 +282,8 @@ class JourneyWritesCheck implements JourneyWritesCheckInterface {
 			];
 		}
 
-		if (($write['bundle'] ?? false) === true && $repeats === true) {
-			$refusals[] = ['property' => '', 'code' => self::BUNDLE_REPEATS, 'message' => 'A bundle is written once; it cannot repeat over a list.'];
-		}
-
 		return $refusals;
-	}//end repeatRefusals()
+	}//end targetRefusals()
 
 	/**
 	 * The mapping with each `{ "$write": "<as>" }` fixed value replaced by the placeholder id,
