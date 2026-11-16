@@ -34,9 +34,21 @@ namespace OCA\Buildiq\Kernel\Contracts;
  * @link     https://github.com/ConductionNL/buildiq
  *
  * @psalm-type LiveCalc = array{field:string,ruleSet:string,output:string,inputs:list<string>}
- * @psalm-type LiveBinding = array{register:string,schema:string,calculate:list<LiveCalc>,eligibility:array<string,mixed>|null}
+ * @psalm-type LiveBinding = array{
+ *     register:string,
+ *     schema:string,
+ *     calculate:list<LiveCalc>,
+ *     eligibility:array<string,mixed>|null,
+ *     formats?:array<string,string>
+ * }
  * @phpstan-type LiveCalc array{field:string,ruleSet:string,output:string,inputs:list<string>}
- * @phpstan-type LiveBinding array{register:string,schema:string,calculate:list<LiveCalc>,eligibility:array<string,mixed>|null}
+ * @phpstan-type LiveBinding array{
+ *     register:string,
+ *     schema:string,
+ *     calculate:list<LiveCalc>,
+ *     eligibility:array<string,mixed>|null,
+ *     formats?:array<string,string>
+ * }
  *
  * @spec exclude Structural contract, no functional requirement.
  */

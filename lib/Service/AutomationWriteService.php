@@ -63,6 +63,10 @@ namespace OCA\Buildiq\Service;
 use OCA\Buildiq\Kernel\Contracts\AutomationWriteServiceInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
@@ -237,9 +241,10 @@ class AutomationWriteService implements AutomationWriteServiceInterface {
 		// `_rbac: false` — see saveAuthorised() for the full rationale; the
 		// delete is the same decision as the save.
 		$this->objectService->deleteObject(
-			uuid: $uuid,
-			register: self::REGISTER_SLUG,
-			schema: self::AUTOMATION_SCHEMA,
+			new ObjectDeletion(
+				uuid: $uuid,
+				target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::AUTOMATION_SCHEMA)
+			),
 			_rbac: false
 		);
 
@@ -316,9 +321,10 @@ class AutomationWriteService implements AutomationWriteServiceInterface {
 		// `?string $uuid = null`) — on create, OR mints the uuid itself.
 		return $this->objectService->saveObject(
 			object: $automation,
-			register: self::REGISTER_SLUG,
-			schema: self::AUTOMATION_SCHEMA,
-			uuid: $uuid,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::AUTOMATION_SCHEMA),
+				uuid: $uuid
+			),
 			_rbac: false
 		);
 
@@ -412,7 +418,7 @@ class AutomationWriteService implements AutomationWriteServiceInterface {
 	 */
 	public function loadAutomation(string $uuid): ?array {
 		try {
-			$entity = $this->objectService->find(id: $uuid, register: self::REGISTER_SLUG, schema: self::AUTOMATION_SCHEMA);
+			$entity = $this->objectService->find(id: $uuid, options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: self::AUTOMATION_SCHEMA));
 		} catch (Throwable $e) {
 			return null;
 		}
@@ -440,7 +446,7 @@ class AutomationWriteService implements AutomationWriteServiceInterface {
 		}
 
 		try {
-			$entity = $this->objectService->find(id: $slug, register: self::REGISTER_SLUG, schema: self::APPLICATION_SCHEMA);
+			$entity = $this->objectService->find(id: $slug, options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: self::APPLICATION_SCHEMA));
 		} catch (Throwable $e) {
 			return null;
 		}

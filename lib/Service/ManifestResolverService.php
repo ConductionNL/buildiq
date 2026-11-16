@@ -49,6 +49,7 @@ use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCP\IUser;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -559,8 +560,10 @@ class ManifestResolverService implements ManifestResolverServiceInterface {
 		try {
 			$version = $this->objectService->find(
 				id: $uuid,
-				register: 'buildiq',
-				schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
+				options: new ObjectFindOptions(
+					register: 'buildiq',
+					schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
+				)
 			);
 
 			if ($version === null) {

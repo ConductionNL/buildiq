@@ -39,6 +39,8 @@ namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Kernel\Contracts\RuleEngineServiceInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -620,8 +622,7 @@ class RuleEngineService implements RuleEngineServiceInterface {
 		try {
 			$this->objectService->saveObject(
 				object: $log,
-				register: self::REGISTER_SLUG,
-				schema: self::EXECUTION_LOG_SCHEMA
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::EXECUTION_LOG_SCHEMA))
 			);
 		} catch (Throwable $e) {
 			// A failed audit write must not abort the evaluation response, but

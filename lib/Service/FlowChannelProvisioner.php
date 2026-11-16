@@ -66,6 +66,9 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -274,8 +277,7 @@ class FlowChannelProvisioner {
 		try {
 			$found = $this->objectService->find(
 				id: $uuid,
-				register: self::REGISTER_SLUG,
-				schema: self::APPLICATION_SCHEMA,
+				options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: self::APPLICATION_SCHEMA),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -335,9 +337,10 @@ class FlowChannelProvisioner {
 		try {
 			$this->objectService->saveObject(
 				object: $application,
-				register: self::REGISTER_SLUG,
-				schema: self::APPLICATION_SCHEMA,
-				uuid: $applicationUuid,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::APPLICATION_SCHEMA),
+					uuid: $applicationUuid
+				),
 				_rbac: false,
 				_multitenancy: false
 			);

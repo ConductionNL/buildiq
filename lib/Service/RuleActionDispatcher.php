@@ -71,6 +71,8 @@ use OCA\Buildiq\Kernel\Contracts\RuleActionDispatcherInterface;
 use OCA\Buildiq\Service\Connection\ConnectionReporter;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\SecurityService;
 use OCP\Http\Client\IClientService;
 use OCP\IUserSession;
@@ -239,10 +241,16 @@ class RuleActionDispatcher implements RuleActionDispatcherInterface {
 
 		$write = function () use ($object, $register, $schema, $operation, $id) {
 			if ($operation === 'update') {
-				return $this->objectService->saveObject(object: $object, register: $register, schema: $schema, uuid: $id);
+				return $this->objectService->saveObject(
+					object: $object,
+					options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: $id)
+				);
 			}
 
-			return $this->objectService->saveObject(object: $object, register: $register, schema: $schema);
+			return $this->objectService->saveObject(
+				object: $object,
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema))
+			);
 		};
 
 		if ($this->userSession->getUser() === null && $id !== '') {
