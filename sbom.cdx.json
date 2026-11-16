@@ -3350,8 +3350,8 @@
       "type": "library",
       "name": "types",
       "group": "@oxc-project",
-      "version": "0.147.0",
-      "bom-ref": "buildiq@0.2.0|@oxc-project/types@0.147.0",
+      "version": "0.156.0",
+      "bom-ref": "buildiq@0.2.0|@oxc-project/types@0.156.0",
       "licenses": [
         {
           "license": {
@@ -3359,15 +3359,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40oxc-project/types@0.147.0",
+      "purl": "pkg:npm/%40oxc-project/types@0.156.0",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@oxc-project/types/-/types-0.147.0.tgz",
+          "url": "https://registry.npmjs.org/@oxc-project/types/-/types-0.156.0.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "209decea5b472e9e394b46e1ee98645fe8093bb0355aecf611aaa90216fc5a3a83c1bccc896287872c93e36b6c91a5a31185ed1ed5423e99c12554fdf9d7112e"
+              "content": "d43bb2838f1374935dca1101f179f52f7e9b4fd3efe8652d94a8c7c4ecacf3191a17fad0ab75c913e6c0bab48afc0808cf998616c6fbedc9fd3dbdb4f9609273"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -3895,8 +3895,8 @@
       "type": "library",
       "name": "binding-android-arm-eabi",
       "group": "@rolldown",
-      "version": "1.2.6",
-      "bom-ref": "buildiq@0.2.0|@rolldown/binding-android-arm-eabi@1.2.6",
+      "version": "1.2.16",
+      "bom-ref": "buildiq@0.2.0|@rolldown/binding-android-arm-eabi@1.2.16",
       "scope": "optional",
       "licenses": [
         {
@@ -3905,15 +3905,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40rolldown/binding-android-arm-eabi@1.2.6",
+      "purl": "pkg:npm/%40rolldown/binding-android-arm-eabi@1.2.16",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@rolldown/binding-android-arm-eabi/-/binding-android-arm-eabi-1.2.6.tgz",
+          "url": "https://registry.npmjs.org/@rolldown/binding-android-arm-eabi/-/binding-android-arm-eabi-1.2.16.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "6fe8d370045d4e214b23a8c1e1ae578d39b445677a29c45f423fc8db7e7a7f15197a68a1a3dcd02f1a3446d0ae30303229c2e8e9c125b6481b429e9dd7eb238d"
+              "content": "89adc3c00b343ac3064bbf880a89e9b528b293da445e43b1fc06c9da7fe5006c47dd091642eb35b7c77b827013dfc142536b10bbc9546de47a022645bf827168"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -3934,8 +3934,8 @@
       "type": "library",
       "name": "binding-android-arm64",
       "group": "@rolldown",
-      "version": "1.2.6",
-      "bom-ref": "buildiq@0.2.0|@rolldown/binding-android-arm64@1.2.6",
+      "version": "1.2.16",
+      "bom-ref": "buildiq@0.2.0|@rolldown/binding-android-arm64@1.2.16",
       "scope": "optional",
       "licenses": [
         {
@@ -3944,15 +3944,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40rolldown/binding-android-arm64@1.2.6",
+      "purl": "pkg:npm/%40rolldown/binding-android-arm64@1.2.16",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@rolldown/binding-android-arm64/-/binding-android-arm64-1.2.6.tgz",
+          "url": "https://registry.npmjs.org/@rolldown/binding-android-arm64/-/binding-android-arm64-1.2.16.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "964594f1925a464f6adc22046354dceef20500ba775f0e4d7c6268da1420e6822a360c568b5cc8f8888310adebef4045e43ce8975b5c5ec9f3b1173c34b846f9"
+              "content": "931e70062301e84ed312fa65d81f608cb534d38064bc49b60ebf78d41163c7f4a89ed3f04b336e41422854ac471e84a3a4521f1cc99c82ec8b3adca7d2139b46"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -3973,8 +3973,8 @@
       "type": "library",
       "name": "binding-darwin-arm64",
       "group": "@rolldown",
-      "version": "1.2.6",
-      "bom-ref": "buildiq@0.2.0|@rolldown/binding-darwin-arm64@1.2.6",
+      "version": "1.2.16",
+      "bom-ref": "buildiq@0.2.0|@rolldown/binding-darwin-arm64@1.2.16",
       "scope": "optional",
       "licenses": [
         {
@@ -3983,15 +3983,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40rolldown/binding-darwin-arm64@1.2.6",
+      "purl": "pkg:npm/%40rolldown/binding-darwin-arm64@1.2.16",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@rolldown/binding-darwin-arm64/-/binding-darwin-arm64-1.2.6.tgz",
+          "url": "https://registry.npmjs.org/@rolldown/binding-darwin-arm64/-/binding-darwin-arm64-1.2.16.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "760479e8d627bc0b339bb39bd41dbf567d1ef1b5106191f652355a30cb4c54e08a1527e385f2e6b80ffdf8ef85f9a8d4746e81fdb4acb2b296e892580126bc8c"
+              "content": "aac959ad79ca254e1c5298e8026b40a3f29033d7b62113259a98a0e99a708fef0a5b15bcbfe9e401ff76d7a06c7a4f65382d63be0db20a3ca0085a367fcde6b1"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -4012,8 +4012,8 @@
       "type": "library",
       "name": "binding-darwin-x64",
       "group": "@rolldown",
-      "version": "1.2.6",
-      "bom-ref": "buildiq@0.2.0|@rolldown/binding-darwin-x64@1.2.6",
+      "version": "1.2.16",
+      "bom-ref": "buildiq@0.2.0|@rolldown/binding-darwin-x64@1.2.16",
       "scope": "optional",
       "licenses": [
         {
@@ -4022,15 +4022,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40rolldown/binding-darwin-x64@1.2.6",
+      "purl": "pkg:npm/%40rolldown/binding-darwin-x64@1.2.16",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@rolldown/binding-darwin-x64/-/binding-darwin-x64-1.2.6.tgz",
+          "url": "https://registry.npmjs.org/@rolldown/binding-darwin-x64/-/binding-darwin-x64-1.2.16.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "be957116f502162a09aae83b393beaa6d91ce326fc517d00c1f0e6269691ff4b16cfe0549aa49501fedcf0991482737c60bb296f86bf37a3614f230099dc90ed"
+              "content": "15d17ecb8f0d0f5dde0323369909fef3992f02a365bd15913b2dab860038eb75ffd06bf8bc6b5acd9b5f685d664412ec718bed3a58784272e3396885cd7ebd39"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -4051,8 +4051,8 @@
       "type": "library",
       "name": "binding-freebsd-x64",
       "group": "@rolldown",
-      "version": "1.2.6",
-      "bom-ref": "buildiq@0.2.0|@rolldown/binding-freebsd-x64@1.2.6",
+      "version": "1.2.16",
+      "bom-ref": "buildiq@0.2.0|@rolldown/binding-freebsd-x64@1.2.16",
       "scope": "optional",
       "licenses": [
         {
@@ -4061,15 +4061,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40rolldown/binding-freebsd-x64@1.2.6",
+      "purl": "pkg:npm/%40rolldown/binding-freebsd-x64@1.2.16",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@rolldown/binding-freebsd-x64/-/binding-freebsd-x64-1.2.6.tgz",
+          "url": "https://registry.npmjs.org/@rolldown/binding-freebsd-x64/-/binding-freebsd-x64-1.2.16.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "875c06e98e8adc9951b30c6c23ae2a409a81032e2facbb878116dcf0264c192593385458ea084c02933534acc1d88d27e715757e3904d7c4ae565d90a4b78da4"
+              "content": "75d8ea14ce5ef790202db50fb4a212ed5d4a4d5940d11520095af99a7fbf20486c772de9afe56e8ff1d9ee794c376172c48c1492d387d4b10f2105ced6ff72d5"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -4090,8 +4090,8 @@
       "type": "library",
       "name": "binding-linux-arm-gnueabihf",
       "group": "@rolldown",
-      "version": "1.2.6",
-      "bom-ref": "buildiq@0.2.0|@rolldown/binding-linux-arm-gnueabihf@1.2.6",
+      "version": "1.2.16",
+      "bom-ref": "buildiq@0.2.0|@rolldown/binding-linux-arm-gnueabihf@1.2.16",
       "scope": "optional",
       "licenses": [
         {
@@ -4100,15 +4100,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40rolldown/binding-linux-arm-gnueabihf@1.2.6",
+      "purl": "pkg:npm/%40rolldown/binding-linux-arm-gnueabihf@1.2.16",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@rolldown/binding-linux-arm-gnueabihf/-/binding-linux-arm-gnueabihf-1.2.6.tgz",
+          "url": "https://registry.npmjs.org/@rolldown/binding-linux-arm-gnueabihf/-/binding-linux-arm-gnueabihf-1.2.16.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "b5b0a2aae6f4ab63155892a01793e80253560ad43276239848b22477cb01caa2bfe8c3182c945c497498a1da98b5dd0ef85c3b41a56628a952e282fde18459d3"
+              "content": "b4774a59b16414123af3b8a29b72c8c88bf22fb8fae95bd06240cfb2ce52b67feac84dad5a4475603d1d5e65cf14a2aa4ffa39644255b1a46c592da6790c0638"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -4129,8 +4129,8 @@
       "type": "library",
       "name": "binding-linux-arm64-gnu",
       "group": "@rolldown",
-      "version": "1.2.6",
-      "bom-ref": "buildiq@0.2.0|@rolldown/binding-linux-arm64-gnu@1.2.6",
+      "version": "1.2.16",
+      "bom-ref": "buildiq@0.2.0|@rolldown/binding-linux-arm64-gnu@1.2.16",
       "scope": "optional",
       "licenses": [
         {
@@ -4139,15 +4139,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40rolldown/binding-linux-arm64-gnu@1.2.6",
+      "purl": "pkg:npm/%40rolldown/binding-linux-arm64-gnu@1.2.16",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@rolldown/binding-linux-arm64-gnu/-/binding-linux-arm64-gnu-1.2.6.tgz",
+          "url": "https://registry.npmjs.org/@rolldown/binding-linux-arm64-gnu/-/binding-linux-arm64-gnu-1.2.16.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "a312bdf9b68404f8591b91c1e14458fae534e33256799947e936fdac1e432b80c5f57475b9734b5ede50e59b2e81329ac8d08d2e191cc33ff27bbe21448f7c76"
+              "content": "14988b1806e53c132504475b3aac3a916e907170d601ffe826eee062cf59259c2683e2beff38c52f13d3218f62cc9533c73736e051ef9ac7b203422f252975ef"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -4168,8 +4168,8 @@
       "type": "library",
       "name": "binding-linux-arm64-musl",
       "group": "@rolldown",
-      "version": "1.2.6",
-      "bom-ref": "buildiq@0.2.0|@rolldown/binding-linux-arm64-musl@1.2.6",
+      "version": "1.2.16",
+      "bom-ref": "buildiq@0.2.0|@rolldown/binding-linux-arm64-musl@1.2.16",
       "scope": "optional",
       "licenses": [
         {
@@ -4178,15 +4178,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40rolldown/binding-linux-arm64-musl@1.2.6",
+      "purl": "pkg:npm/%40rolldown/binding-linux-arm64-musl@1.2.16",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@rolldown/binding-linux-arm64-musl/-/binding-linux-arm64-musl-1.2.6.tgz",
+          "url": "https://registry.npmjs.org/@rolldown/binding-linux-arm64-musl/-/binding-linux-arm64-musl-1.2.16.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "9ae582936ec5541119b6fd0cb0af209df4a681ccc0f0a434b915496d30012a19117d0737f1a52b71bedf862dc1362cac7859a0711b2831f42c48d27e0db65d4b"
+              "content": "86b2696e532cad0e7c53dbde5a96d7ce4855e734adba776ce8758ba6baaad6a6aebe006bd44e8ffb6e242e3ea548b23dbe3467fd16298e9ae190740f2865a936"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -4207,8 +4207,8 @@
       "type": "library",
       "name": "binding-linux-ppc64-gnu",
       "group": "@rolldown",
-      "version": "1.2.6",
-      "bom-ref": "buildiq@0.2.0|@rolldown/binding-linux-ppc64-gnu@1.2.6",
+      "version": "1.2.16",
+      "bom-ref": "buildiq@0.2.0|@rolldown/binding-linux-ppc64-gnu@1.2.16",
       "scope": "optional",
       "licenses": [
         {
@@ -4217,15 +4217,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40rolldown/binding-linux-ppc64-gnu@1.2.6",
+      "purl": "pkg:npm/%40rolldown/binding-linux-ppc64-gnu@1.2.16",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@rolldown/binding-linux-ppc64-gnu/-/binding-linux-ppc64-gnu-1.2.6.tgz",
+          "url": "https://registry.npmjs.org/@rolldown/binding-linux-ppc64-gnu/-/binding-linux-ppc64-gnu-1.2.16.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "7960e849f53b0a8daa8f7be00770ede258f5986e82a166dc25091130fdd726997208cb6e6aadcb1ef3c58d2f5020fbcc19655a7490b4e178b2d0875c54fb67c1"
+              "content": "a8977f742ea3e82c0b1bdfecfd13f69dbd51674188823ec8a23ef1fd261add1ce356b973ae61f47e120ea5fbea403788b1d3f49688be90768c849cd8d4f04868"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -4246,8 +4246,8 @@
       "type": "library",
       "name": "binding-linux-s390x-gnu",
       "group": "@rolldown",
-      "version": "1.2.6",
-      "bom-ref": "buildiq@0.2.0|@rolldown/binding-linux-s390x-gnu@1.2.6",
+      "version": "1.2.16",
+      "bom-ref": "buildiq@0.2.0|@rolldown/binding-linux-s390x-gnu@1.2.16",
       "scope": "optional",
       "licenses": [
         {
@@ -4256,15 +4256,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40rolldown/binding-linux-s390x-gnu@1.2.6",
+      "purl": "pkg:npm/%40rolldown/binding-linux-s390x-gnu@1.2.16",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@rolldown/binding-linux-s390x-gnu/-/binding-linux-s390x-gnu-1.2.6.tgz",
+          "url": "https://registry.npmjs.org/@rolldown/binding-linux-s390x-gnu/-/binding-linux-s390x-gnu-1.2.16.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "d9b58d8d14886b2beea512b15d4636b561bd7d87685254ea5b2c0746f13c12adc6bee43e7f61de224bdeebdedf22df8842cfcf57cc85b1d5ae869d5a2753dd9c"
+              "content": "571ed7839b9426e35cba326323bd0e202687d04623f3406d38b65348deee39883c40e2e5c8a9da1b4216ec59ff27422926c68ace60ca321390bf524133d9bdbe"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -4285,8 +4285,8 @@
       "type": "library",
       "name": "binding-linux-x64-gnu",
       "group": "@rolldown",
-      "version": "1.2.6",
-      "bom-ref": "buildiq@0.2.0|@rolldown/binding-linux-x64-gnu@1.2.6",
+      "version": "1.2.16",
+      "bom-ref": "buildiq@0.2.0|@rolldown/binding-linux-x64-gnu@1.2.16",
       "scope": "optional",
       "licenses": [
         {
@@ -4295,15 +4295,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40rolldown/binding-linux-x64-gnu@1.2.6",
+      "purl": "pkg:npm/%40rolldown/binding-linux-x64-gnu@1.2.16",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@rolldown/binding-linux-x64-gnu/-/binding-linux-x64-gnu-1.2.6.tgz",
+          "url": "https://registry.npmjs.org/@rolldown/binding-linux-x64-gnu/-/binding-linux-x64-gnu-1.2.16.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "29e908d204b4c0bc5ed540524128de9c1570a2efc991c40f0f304f2021998f152ff64dd1b5e1c33c141a88e89c65414a4481f6c0a122986c15a6726c6cfceeef"
+              "content": "4cd2a1804dee253b13cdab5449262dd0a828f8e6b6b929528f3e2bd5a10879aec75fa50b0729b87c09585211b58baa6335fda78df09401f2b0afa0b713d5e0d7"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -4324,8 +4324,8 @@
       "type": "library",
       "name": "binding-linux-x64-musl",
       "group": "@rolldown",
-      "version": "1.2.6",
-      "bom-ref": "buildiq@0.2.0|@rolldown/binding-linux-x64-musl@1.2.6",
+      "version": "1.2.16",
+      "bom-ref": "buildiq@0.2.0|@rolldown/binding-linux-x64-musl@1.2.16",
       "scope": "optional",
       "licenses": [
         {
@@ -4334,15 +4334,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40rolldown/binding-linux-x64-musl@1.2.6",
+      "purl": "pkg:npm/%40rolldown/binding-linux-x64-musl@1.2.16",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@rolldown/binding-linux-x64-musl/-/binding-linux-x64-musl-1.2.6.tgz",
+          "url": "https://registry.npmjs.org/@rolldown/binding-linux-x64-musl/-/binding-linux-x64-musl-1.2.16.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "4efb4f9df56bf87b721a20e63cae155a694d9bb42134d01c2b943d03b68e5ec23ce78e720b26a831a89c5eb159ef62737988da51593bc93db8df34f48f38c529"
+              "content": "edc8577698d767ca86d3e988c4408dddc4fd92f859dffa1984c5fa3e9f3be8fec20eb232f2726cc2f6ba32adf9ec947b7985dfbac93067131e5754b3a19747ac"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -4363,8 +4363,8 @@
       "type": "library",
       "name": "binding-openharmony-arm64",
       "group": "@rolldown",
-      "version": "1.2.6",
-      "bom-ref": "buildiq@0.2.0|@rolldown/binding-openharmony-arm64@1.2.6",
+      "version": "1.2.16",
+      "bom-ref": "buildiq@0.2.0|@rolldown/binding-openharmony-arm64@1.2.16",
       "scope": "optional",
       "licenses": [
         {
@@ -4373,15 +4373,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40rolldown/binding-openharmony-arm64@1.2.6",
+      "purl": "pkg:npm/%40rolldown/binding-openharmony-arm64@1.2.16",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@rolldown/binding-openharmony-arm64/-/binding-openharmony-arm64-1.2.6.tgz",
+          "url": "https://registry.npmjs.org/@rolldown/binding-openharmony-arm64/-/binding-openharmony-arm64-1.2.16.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "88ea345446b2d97161682707d2ca6ce572229a44ae3a735a66b7faf9992848e40124f28d538f1192626fd3f952a62a5ec6ee4ffa8b8581a7dee481abfc38907e"
+              "content": "2b08edfbbb8d4c92b9fcc0e41961953b62903e78fcc8057be5d3297f0c8766b2525d61eb9e2381d1a5045a55587f71f584ea852c84ad2dd339417aba6e72a639"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -4402,8 +4402,8 @@
       "type": "library",
       "name": "binding-win32-arm64-msvc",
       "group": "@rolldown",
-      "version": "1.2.6",
-      "bom-ref": "buildiq@0.2.0|@rolldown/binding-win32-arm64-msvc@1.2.6",
+      "version": "1.2.16",
+      "bom-ref": "buildiq@0.2.0|@rolldown/binding-win32-arm64-msvc@1.2.16",
       "scope": "optional",
       "licenses": [
         {
@@ -4412,15 +4412,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40rolldown/binding-win32-arm64-msvc@1.2.6",
+      "purl": "pkg:npm/%40rolldown/binding-win32-arm64-msvc@1.2.16",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@rolldown/binding-win32-arm64-msvc/-/binding-win32-arm64-msvc-1.2.6.tgz",
+          "url": "https://registry.npmjs.org/@rolldown/binding-win32-arm64-msvc/-/binding-win32-arm64-msvc-1.2.16.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "cb93539a66ac312e39e4994e08ee1933d92b21c86fdccbe6d5cacbd6250f18e3e01334a4bdeb3d9f449d0b94a3cfafaa58316177cfc9a5f58c1fc35258d1def8"
+              "content": "fcb1fa59f8c34575c9cffa79c65e13994fa3a5c9f07316ca110056fc6644d091df3749462324edb14106690feafc68a4906276c8b29eea9c26ec09c458ef2977"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -4441,8 +4441,8 @@
       "type": "library",
       "name": "binding-win32-x64-msvc",
       "group": "@rolldown",
-      "version": "1.2.6",
-      "bom-ref": "buildiq@0.2.0|@rolldown/binding-win32-x64-msvc@1.2.6",
+      "version": "1.2.16",
+      "bom-ref": "buildiq@0.2.0|@rolldown/binding-win32-x64-msvc@1.2.16",
       "scope": "optional",
       "licenses": [
         {
@@ -4451,15 +4451,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40rolldown/binding-win32-x64-msvc@1.2.6",
+      "purl": "pkg:npm/%40rolldown/binding-win32-x64-msvc@1.2.16",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@rolldown/binding-win32-x64-msvc/-/binding-win32-x64-msvc-1.2.6.tgz",
+          "url": "https://registry.npmjs.org/@rolldown/binding-win32-x64-msvc/-/binding-win32-x64-msvc-1.2.16.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "9e9f226522df5e5003e245a18b2abfbb462df28643b5143c9468506825e8dab977eca363794d068c9bb0af83f7a1e67ef9139fa1fb0a341a91e4b4cef1a5f259"
+              "content": "d65bf52af5f467cef5cdf93bbf0f9d9d730c9c73720f0333586f0abf71f10d730e873097e121dcec72b7d7d7c89cfd22fb4a7d0fc6eb91fccbee924e68697eb7"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -11753,8 +11753,8 @@
     {
       "type": "library",
       "name": "enhanced-resolve",
-      "version": "5.24.5",
-      "bom-ref": "buildiq@0.2.0|enhanced-resolve@5.24.5",
+      "version": "5.27.0",
+      "bom-ref": "buildiq@0.2.0|enhanced-resolve@5.27.0",
       "licenses": [
         {
           "license": {
@@ -11762,15 +11762,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/enhanced-resolve@5.24.5",
+      "purl": "pkg:npm/enhanced-resolve@5.27.0",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/enhanced-resolve/-/enhanced-resolve-5.24.5.tgz",
+          "url": "https://registry.npmjs.org/enhanced-resolve/-/enhanced-resolve-5.27.0.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "2f597c4cdbe89a6e94556e41db9dc01b141a81242bfaf1b084c96badf452daa9a1c78e8032931524a4182ef5986f2b13318f15a2270ebf31f3a0731bcb307ee0"
+              "content": "0e8e81076c7395c73fa1d160f97118ca7780c784ff59fcb03bbd72c3d78f4b6b557d1b1fec9551e2651e10b69d21e1f38b19336c6e43a65ba21053e2d9619f61"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -17500,8 +17500,8 @@
     {
       "type": "library",
       "name": "marked",
-      "version": "18.0.12",
-      "bom-ref": "buildiq@0.2.0|marked@18.0.12",
+      "version": "18.2.0",
+      "bom-ref": "buildiq@0.2.0|marked@18.2.0",
       "licenses": [
         {
           "license": {
@@ -17509,15 +17509,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/marked@18.0.12",
+      "purl": "pkg:npm/marked@18.2.0",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/marked/-/marked-18.0.12.tgz",
+          "url": "https://registry.npmjs.org/marked/-/marked-18.2.0.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "2c49b881ad98788d93dc65478fd6f405a0cf3e4f772cb4c730578cc906cd2333f173cbc2234cbfb1ccb4640eb3ea55cac93f63f4d865fce0ba6582981ae15270"
+              "content": "29a78bfad01bb6f23ddf4abb1c4d8f3799585d8753f048929b11e537a177aec7dbe7bc1de66a795b94cb6b3a5d8f88a74d00497608d8c1bb38d16ff4554194f9"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -19250,8 +19250,8 @@
     {
       "type": "library",
       "name": "minimizer-webpack-plugin",
-      "version": "5.8.0",
-      "bom-ref": "buildiq@0.2.0|minimizer-webpack-plugin@5.8.0",
+      "version": "5.14.0",
+      "bom-ref": "buildiq@0.2.0|minimizer-webpack-plugin@5.14.0",
       "licenses": [
         {
           "license": {
@@ -19259,15 +19259,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/minimizer-webpack-plugin@5.8.0",
+      "purl": "pkg:npm/minimizer-webpack-plugin@5.14.0",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/minimizer-webpack-plugin/-/minimizer-webpack-plugin-5.8.0.tgz",
+          "url": "https://registry.npmjs.org/minimizer-webpack-plugin/-/minimizer-webpack-plugin-5.14.0.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "d9c4fdfa0a097c186d333fa026a7a349fd3d0a58266213e171c45bfdf6f4ced55b8b1b740643bc991b88dba1683cfb94364464ea2103af2580228b9ce56f1e24"
+              "content": "3e7bd05c22718601f665554eecb8f4b0ceaaf0bd571b19d4bddf30550211c22f2484c08bab9c20d0d8317b8e1b72e64bd8548df3545d544ed81c45734cab100d"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -19450,8 +19450,8 @@
     {
       "type": "library",
       "name": "nanoid",
-      "version": "3.3.18",
-      "bom-ref": "buildiq@0.2.0|nanoid@3.3.18",
+      "version": "3.3.20",
+      "bom-ref": "buildiq@0.2.0|nanoid@3.3.20",
       "licenses": [
         {
           "license": {
@@ -19459,15 +19459,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/nanoid@3.3.18",
+      "purl": "pkg:npm/nanoid@3.3.20",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/nanoid/-/nanoid-3.3.18.tgz",
+          "url": "https://registry.npmjs.org/nanoid/-/nanoid-3.3.20.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "0d38383096c631691f8ba55915d36ddbf71a31b432e0ebbe3a9fe1250bc611672755fa00d5003ec7344a033c3d8c3ebe19538e798aff98872e0d276e83a17afb"
+              "content": "b8a760d86dc63422909fd6f260ea716c6aab4f67c63b9291b7927ff1bde9a24f2b4faab119617a871332262118b407fe155c98b83f6145a0ea5f9b8f15827865"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -19514,39 +19514,6 @@
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/natural-compare"
-        }
-      ]
-    },
-    {
-      "type": "library",
-      "name": "neo-async",
-      "version": "2.6.2",
-      "bom-ref": "buildiq@0.2.0|neo-async@2.6.2",
-      "licenses": [
-        {
-          "license": {
-            "id": "MIT"
-          }
-        }
-      ],
-      "purl": "pkg:npm/neo-async@2.6.2",
-      "externalReferences": [
-        {
-          "url": "https://registry.npmjs.org/neo-async/-/neo-async-2.6.2.tgz",
-          "type": "distribution",
-          "hashes": [
-            {
-              "alg": "SHA-512",
-              "content": "61ddd4112e665824aa47ea8d4fddd2dd4a18524a8067d94b83c6bb83dae29ac5a66062bc7154e8038fec17746bb21772577b0018c5d5526a4c60ec3e74ba4ebb"
-            }
-          ],
-          "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
-        }
-      ],
-      "properties": [
-        {
-          "name": "cdx:npm:package:path",
-          "value": "node_modules/neo-async"
         }
       ]
     },
@@ -21251,8 +21218,8 @@
     {
       "type": "library",
       "name": "postcss",
-      "version": "8.5.26",
-      "bom-ref": "buildiq@0.2.0|postcss@8.5.26",
+      "version": "8.5.32",
+      "bom-ref": "buildiq@0.2.0|postcss@8.5.32",
       "licenses": [
         {
           "license": {
@@ -21260,15 +21227,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/postcss@8.5.26",
+      "purl": "pkg:npm/postcss@8.5.32",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/postcss/-/postcss-8.5.26.tgz",
+          "url": "https://registry.npmjs.org/postcss/-/postcss-8.5.32.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "bbcd8def82c5cc6f1c6be743f29b8f9e99535e8187e1f4cfa551ae21bb77e86deabcd964bdf0f49440194b16a5cb7297f134bf2f503582c0849af2a605c55b91"
+              "content": "2c994a08201414a3ae6718a951d630d4dcc821312c3dc832386f4b92f449bee2a3fdb4736ee458d00457bcbd29586a6c66f9fc8e4bbe2cc7a9d9e534b1e1e9f2"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -22796,8 +22763,8 @@
     {
       "type": "library",
       "name": "rolldown",
-      "version": "1.2.6",
-      "bom-ref": "buildiq@0.2.0|rolldown@1.2.6",
+      "version": "1.2.16",
+      "bom-ref": "buildiq@0.2.0|rolldown@1.2.16",
       "licenses": [
         {
           "license": {
@@ -22805,15 +22772,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/rolldown@1.2.6",
+      "purl": "pkg:npm/rolldown@1.2.16",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/rolldown/-/rolldown-1.2.6.tgz",
+          "url": "https://registry.npmjs.org/rolldown/-/rolldown-1.2.16.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "bcc338ab76a2c5fe3a1a21752a893c8c33c5b04a578055868d41d7364347366f98d9a757006d9d6d7f758e4b62de2d1946c3a57266eecc0cf5a6839b4870a650"
+              "content": "6d6be532914a8937c329f9caec50b630f80f79609ffcaa70b2ae3d029756f8541a0596fa3ba759e0c00f6cf523a7b85842bc3f4686ea0b39fae0146b41e7061f"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -22969,8 +22936,8 @@
     {
       "type": "library",
       "name": "sass",
-      "version": "1.104.0",
-      "bom-ref": "buildiq@0.2.0|sass@1.104.0",
+      "version": "1.108.2",
+      "bom-ref": "buildiq@0.2.0|sass@1.108.2",
       "licenses": [
         {
           "license": {
@@ -22978,15 +22945,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/sass@1.104.0",
+      "purl": "pkg:npm/sass@1.108.2",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/sass/-/sass-1.104.0.tgz",
+          "url": "https://registry.npmjs.org/sass/-/sass-1.108.2.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "6ed1cc0295b66e0a25bc2961456f00950273808f65501de93d2a1f050413f84e3a196bdff68d13550d77498bf9ae2599545c8f37e24dcf74ca5bd5e1065735d3"
+              "content": "92e80af1d8e8b671bd1d044f4ce7f7e9ab0a625c60f2b596b0d2d81ce8160c854e89942a9517ca0601785d733a91fc35e3a9080ccbe6e7b07818892f0d2c93cc"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -23039,8 +23006,8 @@
     {
       "type": "library",
       "name": "schema-utils",
-      "version": "4.3.3",
-      "bom-ref": "buildiq@0.2.0|schema-utils@4.3.3",
+      "version": "4.8.3",
+      "bom-ref": "buildiq@0.2.0|schema-utils@4.8.3",
       "licenses": [
         {
           "license": {
@@ -23048,15 +23015,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/schema-utils@4.3.3",
+      "purl": "pkg:npm/schema-utils@4.8.3",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/schema-utils/-/schema-utils-4.3.3.tgz",
+          "url": "https://registry.npmjs.org/schema-utils/-/schema-utils-4.8.3.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "79f94af3012dc8e13afa1b1a4553f1bd42980a9460ccba834dbf24aef02c448c0e1a51e84a060b8015e8b9b1a02ddd9f4f8d7f39461d6f8f2fe24e1658742eac"
+              "content": "a887e8ddffa544daa730f8295d22af521b13de963953ea699a01abe23f0b6a714fdd6fd97bec63f0363f74f6f9a95bb79baa8520cc8c58a5512cd2b1acd8715a"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -23066,41 +23033,6 @@
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/schema-utils"
-        }
-      ],
-      "components": [
-        {
-          "type": "library",
-          "name": "ajv-formats",
-          "version": "2.1.1",
-          "bom-ref": "buildiq@0.2.0|schema-utils@4.3.3|ajv-formats@2.1.1",
-          "licenses": [
-            {
-              "license": {
-                "id": "MIT"
-              }
-            }
-          ],
-          "purl": "pkg:npm/ajv-formats@2.1.1",
-          "externalReferences": [
-            {
-              "url": "https://registry.npmjs.org/ajv-formats/-/ajv-formats-2.1.1.tgz",
-              "type": "distribution",
-              "hashes": [
-                {
-                  "alg": "SHA-512",
-                  "content": "5b1d0ac79da1c44ec2d7c8643048206251227ea599b58691828b89a2bf9631d3e743210ad77be0116c9536ea7b4a879ea0b32caf891fe61e9d396d75235e4c50"
-                }
-              ],
-              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
-            }
-          ],
-          "properties": [
-            {
-              "name": "cdx:npm:package:path",
-              "value": "node_modules/schema-utils/node_modules/ajv-formats"
-            }
-          ]
         }
       ]
     },
@@ -24958,8 +24890,8 @@
     {
       "type": "library",
       "name": "tapable",
-      "version": "2.3.3",
-      "bom-ref": "buildiq@0.2.0|tapable@2.3.3",
+      "version": "2.3.4",
+      "bom-ref": "buildiq@0.2.0|tapable@2.3.4",
       "licenses": [
         {
           "license": {
@@ -24967,15 +24899,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/tapable@2.3.3",
+      "purl": "pkg:npm/tapable@2.3.4",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/tapable/-/tapable-2.3.3.tgz",
+          "url": "https://registry.npmjs.org/tapable/-/tapable-2.3.4.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "bb173fce9a8583ac7b0bcbce13b961e8b6dd6bc7842fdce6566fcf2de4cf051861d710a0756690f89d42522786a487e6d8776db14a51bfe1ec8626ac04c71ce8"
+              "content": "3471625a701b309c4d36907088eee3255183baa3314fdfe857cbf9ed147e7e00504a19098a5e629c60fcff15b2d218cbc874325f5b6edbb400361973dca06a0a"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -26337,8 +26269,8 @@
     {
       "type": "library",
       "name": "vite",
-      "version": "8.2.4",
-      "bom-ref": "buildiq@0.2.0|vite@8.2.4",
+      "version": "8.3.5",
+      "bom-ref": "buildiq@0.2.0|vite@8.3.5",
       "licenses": [
         {
           "license": {
@@ -26346,15 +26278,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/vite@8.2.4",
+      "purl": "pkg:npm/vite@8.3.5",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/vite/-/vite-8.2.4.tgz",
+          "url": "https://registry.npmjs.org/vite/-/vite-8.3.5.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "95f6ae5e7adfdb1d29f94a00fb05e1d1d8055a75230b21ba26cf79281920682c1453d9340c01c8e16e90d160b1fa1fb983e02571ed72e198b64238cad14bc607"
+              "content": "cf56298e2789f60d1e6d3990a4b06ffe8abd13717d10894e7beecb6a15bc4ab1372d3886dee7414545d03a56173fd6fe202daada9847795c63f711a5c37e0e11"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -26375,7 +26307,7 @@
           "type": "library",
           "name": "fsevents",
           "version": "2.3.3",
-          "bom-ref": "buildiq@0.2.0|vite@8.2.4|fsevents@2.3.3",
+          "bom-ref": "buildiq@0.2.0|vite@8.3.5|fsevents@2.3.3",
           "scope": "optional",
           "licenses": [
             {
@@ -26784,8 +26716,8 @@
     {
       "type": "library",
       "name": "watchpack",
-      "version": "2.5.2",
-      "bom-ref": "buildiq@0.2.0|watchpack@2.5.2",
+      "version": "2.6.4",
+      "bom-ref": "buildiq@0.2.0|watchpack@2.6.4",
       "licenses": [
         {
           "license": {
@@ -26793,15 +26725,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/watchpack@2.5.2",
+      "purl": "pkg:npm/watchpack@2.6.4",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/watchpack/-/watchpack-2.5.2.tgz",
+          "url": "https://registry.npmjs.org/watchpack/-/watchpack-2.6.4.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "ea2ff4d0d0633f8c863ecf9c68a4b245fa5317ff13a2bb2ed0c396de633321b86021215d7abf22ef16ea80794b33026b76237c9dd055dd4035fc07f33d2afe8e"
+              "content": "e47dd371ed867f359b72bf559d2ab26a4db084568e370e017662390439cc5e895de2a4a508577ae1768c404491876be40ca99d524bfaad4a35ed4bd9f5ff675f"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -26951,8 +26883,8 @@
     {
       "type": "library",
       "name": "webpack-sources",
-      "version": "3.5.1",
-      "bom-ref": "buildiq@0.2.0|webpack-sources@3.5.1",
+      "version": "3.7.0",
+      "bom-ref": "buildiq@0.2.0|webpack-sources@3.7.0",
       "licenses": [
         {
           "license": {
@@ -26960,15 +26892,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/webpack-sources@3.5.1",
+      "purl": "pkg:npm/webpack-sources@3.7.0",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/webpack-sources/-/webpack-sources-3.5.1.tgz",
+          "url": "https://registry.npmjs.org/webpack-sources/-/webpack-sources-3.7.0.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "8f2ba218976dbd8e37e33e5b519ae3cfaeefefafde3cdbc5653a7d31dcf6f48947e3e18fb20c868e2bf47ca23e33b05d914e800e3ba551c280777b542b75a513"
+              "content": "3dd5216c2c9cc048224b5841fc504392c58a83f6ac84022e24aab075b3e7f3f7455605392f142206f1b48ece954512333ee8ccad2b5809ccf2c29f363f42969e"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -27017,8 +26949,8 @@
     {
       "type": "library",
       "name": "webpack",
-      "version": "5.110.3",
-      "bom-ref": "buildiq@0.2.0|webpack@5.110.3",
+      "version": "5.112.2",
+      "bom-ref": "buildiq@0.2.0|webpack@5.112.2",
       "licenses": [
         {
           "license": {
@@ -27026,15 +26958,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/webpack@5.110.3",
+      "purl": "pkg:npm/webpack@5.112.2",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/webpack/-/webpack-5.110.3.tgz",
+          "url": "https://registry.npmjs.org/webpack/-/webpack-5.112.2.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "1ae8b307346fa3d60fa72a0d31fdda83b033c5b696f39aab452a9385adf8e4ac896c014fb77fdc33304cd21f915a0ed22bfec377344b20d3f72ef43486faf886"
+              "content": "076b69d4b23d0fc195a4f0eaa6b76dd76ba44e45d76a18fd333a92589ab87da48f80e50cec2759686001e87acbffc13a5306c1a5d8f8bf35836caa059d5a14ea"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -27051,7 +26983,7 @@
           "type": "library",
           "name": "mime-db",
           "version": "1.54.0",
-          "bom-ref": "buildiq@0.2.0|webpack@5.110.3|mime-db@1.54.0",
+          "bom-ref": "buildiq@0.2.0|webpack@5.112.2|mime-db@1.54.0",
           "licenses": [
             {
               "license": {

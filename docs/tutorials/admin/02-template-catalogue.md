@@ -22,7 +22,7 @@ By the end you will have saved a finished virtual app as a template, picked its 
 
 ## Steps
 
-1. Open **Store** in the Buildiq left navigation. The page is titled **App store** and opens on the **Templates** tab, with the shipped set under **Built-in templates** and a **Use this template** button on every card.
+1. Open **Marketplace** in the Buildiq left navigation. The page is titled **Marketplace** and opens on the **Templates** tab, with the shipped set under **Built-in templates** and a **Use this template** button on every card.
 
    ![Template gallery](/screenshots/tutorials/admin/02-template-catalogue-01.png)
 
@@ -75,4 +75,4 @@ copies skip it:
 ## Reference
 
 - [Create an application from a template](../user/02-create-from-template.md): the flow your template feeds.
-- [Export the app](../user/08-export-app.md): the downloadable alternative to a store card.
+- [Export the app](../user/08-export-app.md): the downloadable alternative to a marketplace card.
