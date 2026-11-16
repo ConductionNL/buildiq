@@ -24,12 +24,15 @@ use OCA\Buildiq\Exception\WizardCreationException;
 use OCA\Buildiq\Service\ApplicationCreationService;
 use OCA\Buildiq\Service\RegisterStore;
 use OCA\Buildiq\Service\SlugValidator;
+use OCA\Buildiq\Tests\Support\LegacyObjectArgs;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
 use OCA\OpenRegister\Service\RegisterService;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -240,14 +243,57 @@ class ApplicationCreationGoldenTest extends TestCase {
 				continue;
 			}
 
-			$params = $method->getParameters();
+			// The object service is recorded under the release's argument names,
+			// so the golden file keeps reading register, schema, uuid, ….
+			$params  = LegacyObjectArgs::parameters(class: $class, method: $name);
+			$release = (preg_match('/ObjectService(Interface)?$/', $class) === 1
+				&& in_array($name, ['find', 'findSilent', 'saveObject', 'saveObjects', 'deleteObject', 'patchObject'], true) === true);
 			$mock->method($name)->willReturnCallback(
-				fn (...$args) => $this->respond(call: $label . '.' . $name, named: $this->passedArguments(params: $params, args: $args))
+				fn (...$args) => $this->respond(
+					call: $label . '.' . $name,
+					named: ($this->lockArguments(args: $args) ?? $this->passedArguments(
+						params: $params,
+						args: ($release === true) ? LegacyObjectArgs::positional(method: $name, args: $args) : $args
+					))
+				)
 			);
 		}
 
 		return $mock;
 	}//end recorder()
+
+	/**
+	 * A lock or unlock request, keyed by the release's argument names; null for any other call.
+	 *
+	 * @param array<int,mixed> $args The arguments the mock received.
+	 *
+	 * @return array<string,mixed>|null
+	 */
+	private function lockArguments(array $args): ?array {
+		$request = ($args[0] ?? null);
+		if ($request instanceof LockRequest) {
+			$named = array_filter(
+				['identifier' => $request->identifier, 'process' => $request->process, 'duration' => $request->duration],
+				static fn ($value): bool => $value !== null
+			);
+			if (($args[1] ?? false) === true) {
+				$named['advisory'] = true;
+			}
+
+			return $named;
+		}
+
+		if ($request instanceof UnlockRequest) {
+			$named = ['identifier' => $request->identifier];
+			if ($request->advisory === true) {
+				$named['advisory'] = true;
+			}
+
+			return $named;
+		}
+
+		return null;
+	}//end lockArguments()
 
 	/**
 	 * Record one call, apply its fault, and answer it.

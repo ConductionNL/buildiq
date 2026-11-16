@@ -122,6 +122,10 @@ use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCP\App\IAppManager;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -834,32 +838,64 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 		}
 
 		foreach ($generateDocumentActions as $action) {
-			$templateId = (string)($action['templateId'] ?? '');
-			if ($templateId === '') {
-				throw new UnsupportedAutomationCombinationException(
-					message: 'A "generateDocument" action is missing a required "templateId".'
-				);
-			}
-
-			$outputModes = $this->normaliseGenerateDocumentOutput(raw: $action['output'] ?? null);
-			if ($outputModes === []) {
-				throw new UnsupportedAutomationCombinationException(
-					message: 'A "generateDocument" action must set "output" to one or more of "'
-					. implode('", "', self::GENERATE_DOCUMENT_OUTPUT_MODES) . '".'
-				);
-			}
-
-			$hasNotify = in_array('notify', $outputModes, true);
-			$hasDeliveryMode = in_array('attach', $outputModes, true) === true || in_array('download-link', $outputModes, true) === true;
-			if ($hasNotify === true && $hasDeliveryMode === false) {
-				throw new UnsupportedAutomationCombinationException(
-					message: 'A "generateDocument" action with "output: notify" must also set "attach" '
-					. 'and/or "download-link" — "notify" alone is incomplete.'
-				);
-			}
-		}//end foreach
+			$this->assertGenerateDocumentAction(action: $action);
+		}
 
 	}//end assertGenerateDocumentActions()
+
+	/**
+	 * Validate one `generateDocument` action: a template and at least one output mode.
+	 *
+	 * @param array<string, mixed> $action The action.
+	 *
+	 * @return void
+	 *
+	 * @throws UnsupportedAutomationCombinationException On a missing template or output, or `notify` alone.
+	 *
+	 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#1.2
+	 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#1.3
+	 */
+	private function assertGenerateDocumentAction(array $action): void {
+		$templateId = (string)($action['templateId'] ?? '');
+		if ($templateId === '') {
+			throw new UnsupportedAutomationCombinationException(
+				message: 'A "generateDocument" action is missing a required "templateId".'
+			);
+		}
+
+		$outputModes = $this->normaliseGenerateDocumentOutput(raw: $action['output'] ?? null);
+		if ($outputModes === []) {
+			throw new UnsupportedAutomationCombinationException(
+				message: 'A "generateDocument" action must set "output" to one or more of "'
+				. implode('", "', self::GENERATE_DOCUMENT_OUTPUT_MODES) . '".'
+			);
+		}
+
+		self::assertNotifyHasDelivery(outputModes: $outputModes);
+	}//end assertGenerateDocumentAction()
+
+	/**
+	 * `notify` only tells someone about a document that is attached or linked, so it never stands alone.
+	 *
+	 * @param array<int, string> $outputModes The action's normalised output modes.
+	 *
+	 * @return void
+	 *
+	 * @throws UnsupportedAutomationCombinationException When `notify` is set without `attach` or `download-link`.
+	 *
+	 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#1.2
+	 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#1.3
+	 */
+	private static function assertNotifyHasDelivery(array $outputModes): void {
+		$hasNotify = in_array('notify', $outputModes, true);
+		$hasDeliveryMode = in_array('attach', $outputModes, true) === true || in_array('download-link', $outputModes, true) === true;
+		if ($hasNotify === true && $hasDeliveryMode === false) {
+			throw new UnsupportedAutomationCombinationException(
+				message: 'A "generateDocument" action with "output: notify" must also set "attach" '
+				. 'and/or "download-link" — "notify" alone is incomplete.'
+			);
+		}
+	}//end assertNotifyHasDelivery()
 
 	/**
 	 * Normalise a `generateDocument` action's `output` field to a
@@ -1422,49 +1458,101 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 
 		$result = [];
 		foreach ($schemas as $schemaSlug) {
-			$target = $this->configuredSchema(slug: $schemaSlug);
-			if ($target === null) {
-				continue;
-			}
-
-			[$schema, $config] = $target;
-			$lifecycle = $this->orNullArray(value: $config['x-openregister-lifecycle'] ?? null);
-			if ($lifecycle === null) {
-				continue;
-			}
-
-			$transitions = $this->orArray(value: $lifecycle['transitions'] ?? null);
-
-			foreach ($transitions as $tName => $t) {
-				$actions = $this->orArray(value: $t['actions'] ?? null);
-				$transitions[$tName]['actions'] = array_values(
-					array_filter(
-						$actions,
-						static fn ($a): bool => is_array($a) === false || ($a['marker'] ?? null) !== $marker
-					)
-				);
-			}
-
-			foreach (($plannedBySchema[$schemaSlug] ?? []) as $entry) {
-				$tName = (string)$entry['transition'];
-				if (isset($transitions[$tName]) === false) {
-					continue;
-				}
-
-				$actions = $this->orArray(value: $transitions[$tName]['actions'] ?? null);
-				$actions[] = $entry['action'];
-				$transitions[$tName]['actions'] = $actions;
-				$result[] = ['schema' => $schemaSlug, 'transition' => $tName, 'marker' => $marker];
-			}
-
-			$lifecycle['transitions'] = $transitions;
-			$config['x-openregister-lifecycle'] = $lifecycle;
-			$schema->setConfiguration($config);
-			$this->schemaMapper->update($schema);
-		}//end foreach
+			array_push(
+				$result,
+				...$this->applyLifecycleToSchema(
+					schemaSlug: $schemaSlug,
+					plan: ['marker' => $marker, 'entries' => ($plannedBySchema[$schemaSlug] ?? [])]
+				)
+			);
+		}
 
 		return $result;
 	}//end applyLifecycleActions()
+
+	/**
+	 * Re-add one schema's planned lifecycle actions after stripping its marker-tagged ones, and save the schema.
+	 *
+	 * @param string                                                                  $schemaSlug The target schema slug.
+	 * @param array{marker: string, entries: array<int, array<string, mixed>>} $plan       The marker and the planned entries.
+	 *
+	 * @return array<int, array<string, string>> The provenance records of the actions added.
+	 */
+	private function applyLifecycleToSchema(string $schemaSlug, array $plan): array {
+		$target = $this->configuredSchema(slug: $schemaSlug);
+		if ($target === null) {
+			return [];
+		}
+
+		[$schema, $config] = $target;
+		$lifecycle = $this->orNullArray(value: $config['x-openregister-lifecycle'] ?? null);
+		if ($lifecycle === null) {
+			return [];
+		}
+
+		$transitions = $this->withoutMarkedActions(
+			transitions: $this->orArray(value: $lifecycle['transitions'] ?? null),
+			marker: $plan['marker']
+		);
+		$added       = $this->withPlannedActions(transitions: $transitions, entries: $plan['entries']);
+
+		$lifecycle['transitions'] = $added['transitions'];
+		$config['x-openregister-lifecycle'] = $lifecycle;
+		$schema->setConfiguration($config);
+		$this->schemaMapper->update($schema);
+
+		return array_map(
+			static fn (string $tName): array => ['schema' => $schemaSlug, 'transition' => $tName, 'marker' => $plan['marker']],
+			$added['added']
+		);
+	}//end applyLifecycleToSchema()
+
+	/**
+	 * The transitions with every action carrying this marker removed.
+	 *
+	 * @param array<string, mixed> $transitions The schema's lifecycle transitions.
+	 * @param string               $marker      The automation's marker.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function withoutMarkedActions(array $transitions, string $marker): array {
+		foreach ($transitions as $tName => $t) {
+			$actions = $this->orArray(value: $t['actions'] ?? null);
+			$transitions[$tName]['actions'] = array_values(
+				array_filter(
+					$actions,
+					static fn ($a): bool => is_array($a) === false || ($a['marker'] ?? null) !== $marker
+				)
+			);
+		}
+
+		return $transitions;
+	}//end withoutMarkedActions()
+
+	/**
+	 * The transitions with the planned actions added; an entry for a transition the schema lacks is skipped.
+	 *
+	 * @param array<string, mixed>             $transitions The schema's lifecycle transitions.
+	 * @param array<int, array<string, mixed>> $entries     The planned `{transition, action}` entries.
+	 *
+	 * @return array{transitions: array<string, mixed>, added: array<int, string>} The transitions and the names the actions went to.
+	 */
+	private function withPlannedActions(array $transitions, array $entries): array {
+		$added = [];
+		foreach ($entries as $entry) {
+			$tName = (string)$entry['transition'];
+			if (isset($transitions[$tName]) === false) {
+				continue;
+			}
+
+			$actions = $this->orArray(value: $transitions[$tName]['actions'] ?? null);
+			$actions[] = $entry['action'];
+			$transitions[$tName]['actions'] = $actions;
+			$added[] = $tName;
+		}
+
+		return ['transitions' => $transitions, 'added' => $added];
+	}//end withPlannedActions()
 
 	/**
 	 * Upsert planned schedules entries into the target ApplicationVersion's
@@ -1506,7 +1594,13 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 		$version['manifest'] = $manifest;
 
 		try {
-			$this->objectService->saveObject(object: $version, register: self::REGISTER_SLUG, schema: 'applicationVersion', uuid: $versionUuid);
+			$this->objectService->saveObject(
+				object: $version,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: 'applicationVersion'),
+					uuid: $versionUuid
+				)
+			);
 		} catch (Throwable $e) {
 			$this->logger->error(
 				'Buildiq: AutomationCompilerService failed to save schedules onto ApplicationVersion "' . $versionUuid . '": ' . $e->getMessage()
@@ -1600,48 +1694,89 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 			return null;
 		}
 
+		$this->saveRuleSet(ruleSet: $ruleSet);
+		$this->saveConditionActionRule(conditionActionRule: $conditionActionRule, ruleSetSlug: (string)$ruleSet['slug']);
+
+		return (string)$ruleSet['slug'];
+	}//end applyRuleSet()
+
+	/**
+	 * Create the compiled RuleSet, or update the one with the same slug.
+	 *
+	 * A failed save is logged, never thrown.
+	 *
+	 * @param array<string,mixed> $ruleSet Planned RuleSet fields.
+	 *
+	 * @return void
+	 */
+	private function saveRuleSet(array $ruleSet): void {
 		$existingRuleSet = $this->findOneObject(schema: RuleEngineService::RULE_SET_SCHEMA, filters: ['slug' => $ruleSet['slug']]);
 		try {
 			if ($existingRuleSet !== null) {
 				$id = (string)($existingRuleSet['id'] ?? $existingRuleSet['uuid'] ?? '');
 				$this->objectService->saveObject(
 					object: $ruleSet,
-					register: self::REGISTER_SLUG,
-					schema: RuleEngineService::RULE_SET_SCHEMA,
-					uuid: $id
+					options: new ObjectSaveOptions(
+						target: new ObjectFindTarget(
+								register: self::REGISTER_SLUG,
+								schema: RuleEngineService::RULE_SET_SCHEMA
+							),
+						uuid: $id
+					)
 				);
 			} else {
-				$this->objectService->saveObject(object: $ruleSet, register: self::REGISTER_SLUG, schema: RuleEngineService::RULE_SET_SCHEMA);
+				$this->objectService->saveObject(
+					object: $ruleSet,
+					options: new ObjectSaveOptions(
+						target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: RuleEngineService::RULE_SET_SCHEMA)
+					)
+				);
 			}
 		} catch (Throwable $e) {
 			$this->logger->error('Buildiq: AutomationCompilerService failed to save RuleSet "' . $ruleSet['slug'] . '": ' . $e->getMessage());
 		}
+	}//end saveRuleSet()
 
-		$existingRule = $this->findOneObject(schema: RuleEngineService::CONDITION_RULE_SCHEMA, filters: ['ruleSetId' => $ruleSet['slug']]);
+	/**
+	 * Create the ConditionActionRule of a RuleSet, or update the one it already has.
+	 *
+	 * A failed save is logged, never thrown.
+	 *
+	 * @param array<string,mixed> $conditionActionRule Planned ConditionActionRule fields.
+	 * @param string              $ruleSetSlug         The slug of its RuleSet.
+	 *
+	 * @return void
+	 */
+	private function saveConditionActionRule(array $conditionActionRule, string $ruleSetSlug): void {
+		$existingRule = $this->findOneObject(schema: RuleEngineService::CONDITION_RULE_SCHEMA, filters: ['ruleSetId' => $ruleSetSlug]);
 		try {
 			if ($existingRule !== null) {
 				$id = (string)($existingRule['id'] ?? $existingRule['uuid'] ?? '');
 				$this->objectService->saveObject(
 					object: $conditionActionRule,
-					register: self::REGISTER_SLUG,
-					schema: RuleEngineService::CONDITION_RULE_SCHEMA,
-					uuid: $id
+					options: new ObjectSaveOptions(
+						target: new ObjectFindTarget(
+								register: self::REGISTER_SLUG,
+								schema: RuleEngineService::CONDITION_RULE_SCHEMA
+							),
+						uuid: $id
+					)
 				);
 			} else {
 				$this->objectService->saveObject(
 					object: $conditionActionRule,
-					register: self::REGISTER_SLUG,
-					schema: RuleEngineService::CONDITION_RULE_SCHEMA
+					options: new ObjectSaveOptions(target: new ObjectFindTarget(
+							register: self::REGISTER_SLUG,
+							schema: RuleEngineService::CONDITION_RULE_SCHEMA
+						))
 				);
 			}
 		} catch (Throwable $e) {
 			$this->logger->error(
-				'Buildiq: AutomationCompilerService failed to save ConditionActionRule for "' . $ruleSet['slug'] . '": ' . $e->getMessage()
+				'Buildiq: AutomationCompilerService failed to save ConditionActionRule for "' . $ruleSetSlug . '": ' . $e->getMessage()
 			);
 		}//end try
-
-		return (string)$ruleSet['slug'];
-	}//end applyRuleSet()
+	}//end saveConditionActionRule()
 
 	/**
 	 * Delete the RuleSet + its ConditionActionRule by slug.
@@ -1889,7 +2024,9 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 	 */
 	private function deleteObjectQuietly(string $uuid, string $schema): void {
 		try {
-			$this->objectService->deleteObject(uuid: $uuid, register: self::REGISTER_SLUG, schema: $schema);
+			$this->objectService->deleteObject(
+				new ObjectDeletion(uuid: $uuid, target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: $schema))
+			);
 		} catch (Throwable $e) {
 			$this->logger->warning('Buildiq: AutomationCompilerService failed to delete ' . $schema . ' "' . $uuid . '": ' . $e->getMessage());
 		}
@@ -2309,7 +2446,10 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 		}
 
 		try {
-			$entity = $this->objectService->find(id: $uuid, register: self::REGISTER_SLUG, schema: 'applicationVersion');
+			$entity = $this->objectService->find(
+				id: $uuid,
+				options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: 'applicationVersion')
+			);
 		} catch (Throwable $e) {
 			$this->logger->warning('Buildiq: AutomationCompilerService could not load ApplicationVersion "' . $uuid . '": ' . $e->getMessage());
 			return null;

@@ -45,6 +45,8 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Write-target tests for ApplicationsController::saveManifest().
@@ -166,8 +168,8 @@ class ApplicationsControllerSaveManifestWritesTest extends TestCase {
 			[['id' => 'route-1', 'slug' => 'permit-tracker', 'applicationUuid' => 'app-uuid']]
 		);
 		$this->objectService->method('find')->willReturnCallback(
-			fn (string|int $id, mixed $_extend = [], mixed $files = false, mixed $register = null, mixed $schema = null): ?ObjectEntity
-				=> ($this->objects[(string)$schema][$id] ?? null)
+			fn (string|int $id, ?ObjectFindOptions $options = null): ?ObjectEntity
+				=> ($this->objects[(string)($options?->schema)][$id] ?? null)
 		);
 
 	}//end setUp()
@@ -274,7 +276,10 @@ class ApplicationsControllerSaveManifestWritesTest extends TestCase {
 	 */
 	private function captureSave(array &$saved): void {
 		$this->objectService->expects(self::once())->method('saveObject')->willReturnCallback(
-			function (mixed $object, mixed $extend = null, mixed $register = null, mixed $schema = null) use (&$saved) {
+			function (mixed $object, ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$saved) {
+				$extend = $options->extend;
+				$register = $options->target->register;
+				$schema = $options->target->schema;
 				$saved = ['object' => $object, 'register' => $register, 'schema' => $schema];
 				return $this->buildEntity([]);
 			}

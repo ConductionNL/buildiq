@@ -48,6 +48,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\Buildiq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Tests for ApplicationsController::diffVersions.
@@ -184,6 +185,7 @@ class ApplicationsControllerDiffTest extends TestCase {
 		$this->objectService->method('searchObjects')->willReturn([$route]);
 		$this->objectService->method('find')
 			->willReturnCallback(function (...$args) use ($application, $oldVersion, $newVersion) {
+				$args = LegacyObjectArgs::flatten(args: $args);
 				$id = $args['id'] ?? $args[0];
 				if ($id === 'app-uuid-1') {
 					return $this->entity($application);
@@ -228,6 +230,7 @@ class ApplicationsControllerDiffTest extends TestCase {
 		$this->objectService->method('searchObjects')->willReturn([$route]);
 		$this->objectService->method('find')
 			->willReturnCallback(function (...$args) use ($application) {
+				$args = LegacyObjectArgs::flatten(args: $args);
 				$id = $args['id'] ?? $args[0];
 				if ($id === 'app-uuid-1') {
 					return $this->entity($application);
@@ -269,6 +272,7 @@ class ApplicationsControllerDiffTest extends TestCase {
 		$this->objectService->method('searchObjects')->willReturn([$route]);
 		$this->objectService->method('find')
 			->willReturnCallback(function (...$args) use ($application, $foreignSnap) {
+				$args = LegacyObjectArgs::flatten(args: $args);
 				$id = $args['id'] ?? $args[0];
 				if ($id === 'app-uuid-1') {
 					return $this->entity($application);
@@ -359,6 +363,7 @@ class ApplicationsControllerDiffTest extends TestCase {
 		$objectService->method('searchObjects')->willReturn([$route]);
 		$objectService->method('find')
 			->willReturnCallback(function (...$args) use ($application) {
+				$args = LegacyObjectArgs::flatten(args: $args);
 				$id = $args['id'] ?? $args[0];
 				if ($id === 'app-uuid-1') {
 					$entity = $this->createMock(ObjectEntity::class);

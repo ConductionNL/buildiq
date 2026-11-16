@@ -29,6 +29,10 @@ use DateTimeZone;
 use OCA\Buildiq\Kernel\Contracts\AutomationRunRecorderInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCP\AppFramework\Utility\ITimeFactory;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -245,7 +249,11 @@ class AutomationRunRecorder implements AutomationRunRecorderInterface {
 			}
 
 			try {
-				$this->objectService->deleteObject(uuid: $uuid, register: self::REGISTER_SLUG, schema: self::SCHEMA_SLUG, _rbac: false, _multitenancy: false);
+				$this->objectService->deleteObject(
+					new ObjectDeletion(uuid: $uuid, target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::SCHEMA_SLUG)),
+					_rbac: false,
+					_multitenancy: false
+				);
 				$deleted++;
 			} catch (Throwable $e) {
 				$this->logger->warning('Buildiq: an automation run could not be deleted', ['uuid' => $uuid, 'exception' => $e->getMessage()]);
@@ -309,7 +317,12 @@ class AutomationRunRecorder implements AutomationRunRecorderInterface {
 	 */
 	private function read(string $uuid): ?array {
 		try {
-			$entry = $this->objectService->find(id: $uuid, register: self::REGISTER_SLUG, schema: self::SCHEMA_SLUG, _rbac: false, _multitenancy: false);
+			$entry = $this->objectService->find(
+				id: $uuid,
+				options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: self::SCHEMA_SLUG),
+				_rbac: false,
+				_multitenancy: false
+			);
 		} catch (Throwable $e) {
 			return null;
 		}
@@ -337,9 +350,10 @@ class AutomationRunRecorder implements AutomationRunRecorderInterface {
 		try {
 			$saved = $this->objectService->saveObject(
 				object: $record,
-				register: self::REGISTER_SLUG,
-				schema: self::SCHEMA_SLUG,
-				uuid: $uuid,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::SCHEMA_SLUG),
+					uuid: $uuid
+				),
 				_rbac: false,
 				_multitenancy: false
 			);
