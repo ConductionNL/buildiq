@@ -250,15 +250,19 @@
 									"description": "approval: the fields the approver fills in before approving, in order (logic-approval-task-form). Each is a scalar property of the trigger schema that is neither read-only nor hidden; the compiler refuses any other, naming it. Empty or absent: the approver only approves or rejects.",
 									"properties": {
 										"fields": {
+											"title": "Form fields",
 											"type": "array",
+											"description": "The fields the approver fills in, in the order they are shown.",
 											"items": {
 												"type": "object",
 												"properties": {
 													"field": {
+														"title": "Field",
 														"type": "string",
 														"description": "A property of the trigger schema."
 													},
 													"required": {
+														"title": "Required",
 														"type": "boolean",
 														"default": false,
 														"description": "Whether the approver must fill it in."
