@@ -14,7 +14,7 @@
  * @version   GIT: <git_id>
  * @link      https://github.com/ConductionNL/buildiq
  *
- * @spec openspec/specs/method-decomposition/spec.md
+ * @spec openspec/specs/app-composition-bindings/spec.md
  *
  * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
  * SPDX-License-Identifier: EUPL-1.2

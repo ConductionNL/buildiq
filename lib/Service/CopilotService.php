@@ -55,6 +55,9 @@ use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -1273,7 +1276,7 @@ class CopilotService implements CopilotServiceInterface {
 	 */
 	private function requireAgent(string $agentId): array {
 		try {
-			$entity = $this->objectService->find(id: $agentId, register: self::REGISTER_SLUG, schema: self::AGENT_SCHEMA);
+			$entity = $this->objectService->find(id: $agentId, options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: self::AGENT_SCHEMA));
 		} catch (Throwable $e) {
 			$entity = null;
 		}
@@ -2060,9 +2063,13 @@ class CopilotService implements CopilotServiceInterface {
 
 				$this->objectService->saveObject(
 					object: $payload,
-					register: self::REGISTER_SLUG,
-					schema: self::APPLICATION_VERSION_SCHEMA,
-					uuid: $versionUuid,
+					options: new ObjectSaveOptions(
+						target: new ObjectFindTarget(
+								register: self::REGISTER_SLUG,
+								schema: self::APPLICATION_VERSION_SCHEMA
+							),
+						uuid: $versionUuid
+					)
 				);
 			} catch (Throwable $e) {
 				$target = $snapshot['appSlug'] . '@' . $snapshot['versionSlug'];

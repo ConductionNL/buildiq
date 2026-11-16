@@ -119,6 +119,10 @@ use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCP\App\IAppManager;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -1421,7 +1425,13 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 		$version['manifest'] = $manifest;
 
 		try {
-			$this->objectService->saveObject(object: $version, register: self::REGISTER_SLUG, schema: 'applicationVersion', uuid: $versionUuid);
+			$this->objectService->saveObject(
+				object: $version,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: 'applicationVersion'),
+					uuid: $versionUuid
+				)
+			);
 		} catch (Throwable $e) {
 			$this->logger->error(
 				'Buildiq: AutomationCompilerService failed to save schedules onto ApplicationVersion "' . $versionUuid . '": ' . $e->getMessage()
@@ -1516,13 +1526,15 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 		}
 
 		$this->saveRuleSet(ruleSet: $ruleSet);
-		$this->saveConditionActionRule(conditionActionRule: $conditionActionRule, ruleSet: $ruleSet);
+		$this->saveConditionActionRule(conditionActionRule: $conditionActionRule, ruleSetSlug: (string)$ruleSet['slug']);
 
 		return (string)$ruleSet['slug'];
 	}//end applyRuleSet()
 
 	/**
-	 * Create or update the compiled RuleSet, found by its slug.
+	 * Create the compiled RuleSet, or update the one with the same slug.
+	 *
+	 * A failed save is logged, never thrown.
 	 *
 	 * @param array<string,mixed> $ruleSet Planned RuleSet fields.
 	 *
@@ -1535,12 +1547,21 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 				$id = (string)($existingRuleSet['id'] ?? $existingRuleSet['uuid'] ?? '');
 				$this->objectService->saveObject(
 					object: $ruleSet,
-					register: self::REGISTER_SLUG,
-					schema: RuleEngineService::RULE_SET_SCHEMA,
-					uuid: $id
+					options: new ObjectSaveOptions(
+						target: new ObjectFindTarget(
+								register: self::REGISTER_SLUG,
+								schema: RuleEngineService::RULE_SET_SCHEMA
+							),
+						uuid: $id
+					)
 				);
 			} else {
-				$this->objectService->saveObject(object: $ruleSet, register: self::REGISTER_SLUG, schema: RuleEngineService::RULE_SET_SCHEMA);
+				$this->objectService->saveObject(
+					object: $ruleSet,
+					options: new ObjectSaveOptions(
+						target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: RuleEngineService::RULE_SET_SCHEMA)
+					)
+				);
 			}
 		} catch (Throwable $e) {
 			$this->logger->error('Buildiq: AutomationCompilerService failed to save RuleSet "' . $ruleSet['slug'] . '": ' . $e->getMessage());
@@ -1548,34 +1569,42 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 	}//end saveRuleSet()
 
 	/**
-	 * Create or update the RuleSet's ConditionActionRule, found by its `ruleSetId`.
+	 * Create the ConditionActionRule of a RuleSet, or update the one it already has.
+	 *
+	 * A failed save is logged, never thrown.
 	 *
 	 * @param array<string,mixed> $conditionActionRule Planned ConditionActionRule fields.
-	 * @param array<string,mixed> $ruleSet             Planned RuleSet fields.
+	 * @param string              $ruleSetSlug         The slug of its RuleSet.
 	 *
 	 * @return void
 	 */
-	private function saveConditionActionRule(array $conditionActionRule, array $ruleSet): void {
-		$existingRule = $this->findOneObject(schema: RuleEngineService::CONDITION_RULE_SCHEMA, filters: ['ruleSetId' => $ruleSet['slug']]);
+	private function saveConditionActionRule(array $conditionActionRule, string $ruleSetSlug): void {
+		$existingRule = $this->findOneObject(schema: RuleEngineService::CONDITION_RULE_SCHEMA, filters: ['ruleSetId' => $ruleSetSlug]);
 		try {
 			if ($existingRule !== null) {
 				$id = (string)($existingRule['id'] ?? $existingRule['uuid'] ?? '');
 				$this->objectService->saveObject(
 					object: $conditionActionRule,
-					register: self::REGISTER_SLUG,
-					schema: RuleEngineService::CONDITION_RULE_SCHEMA,
-					uuid: $id
+					options: new ObjectSaveOptions(
+						target: new ObjectFindTarget(
+								register: self::REGISTER_SLUG,
+								schema: RuleEngineService::CONDITION_RULE_SCHEMA
+							),
+						uuid: $id
+					)
 				);
 			} else {
 				$this->objectService->saveObject(
 					object: $conditionActionRule,
-					register: self::REGISTER_SLUG,
-					schema: RuleEngineService::CONDITION_RULE_SCHEMA
+					options: new ObjectSaveOptions(target: new ObjectFindTarget(
+							register: self::REGISTER_SLUG,
+							schema: RuleEngineService::CONDITION_RULE_SCHEMA
+						))
 				);
 			}
 		} catch (Throwable $e) {
 			$this->logger->error(
-				'Buildiq: AutomationCompilerService failed to save ConditionActionRule for "' . $ruleSet['slug'] . '": ' . $e->getMessage()
+				'Buildiq: AutomationCompilerService failed to save ConditionActionRule for "' . $ruleSetSlug . '": ' . $e->getMessage()
 			);
 		}//end try
 	}//end saveConditionActionRule()
@@ -1826,7 +1855,9 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 	 */
 	private function deleteObjectQuietly(string $uuid, string $schema): void {
 		try {
-			$this->objectService->deleteObject(uuid: $uuid, register: self::REGISTER_SLUG, schema: $schema);
+			$this->objectService->deleteObject(
+				new ObjectDeletion(uuid: $uuid, target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: $schema))
+			);
 		} catch (Throwable $e) {
 			$this->logger->warning('Buildiq: AutomationCompilerService failed to delete ' . $schema . ' "' . $uuid . '": ' . $e->getMessage());
 		}
@@ -2246,7 +2277,10 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 		}
 
 		try {
-			$entity = $this->objectService->find(id: $uuid, register: self::REGISTER_SLUG, schema: 'applicationVersion');
+			$entity = $this->objectService->find(
+				id: $uuid,
+				options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: 'applicationVersion')
+			);
 		} catch (Throwable $e) {
 			$this->logger->warning('Buildiq: AutomationCompilerService could not load ApplicationVersion "' . $uuid . '": ' . $e->getMessage());
 			return null;

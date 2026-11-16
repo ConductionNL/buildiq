@@ -42,6 +42,7 @@ use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -636,8 +637,7 @@ class AppRepoSerializer {
 			// mappings), so a slug lookup would miss most real ingestion.
 			$found = $this->objectService->find(
 				id: $uuid,
-				register: $registerSlug->slug,
-				schema: $kind
+				options: new ObjectFindOptions(register: $registerSlug->slug, schema: $kind)
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning(

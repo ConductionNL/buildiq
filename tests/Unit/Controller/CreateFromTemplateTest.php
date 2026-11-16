@@ -58,6 +58,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Tests for ApplicationsController::createFromTemplate.
@@ -295,9 +296,9 @@ class CreateFromTemplateTest extends TestCase {
 	 *
 	 * PHPUnit resolves the controller's NAMED arguments against
 	 * `ObjectServiceInterface::saveObject()`'s OWN signature and then invokes
-	 * this callback POSITIONALLY, so the parameters below must mirror that
-	 * signature's order exactly: (object, extend, register, schema, uuid, …).
-	 * Verified against the live interface with ReflectionMethod.
+	 * this callback POSITIONALLY, so the parameters below mirror that
+	 * signature's order: (object, options, …). The register, schema and uuid
+	 * travel in the ObjectSaveOptions.
 	 *
 	 * The expected call count is configured on THIS matcher, never as a second
 	 * `expects()` on the same method: PHPUnit answers a call from the first
@@ -315,13 +316,10 @@ class CreateFromTemplateTest extends TestCase {
 			: $this->objectService->expects($matcher)->method('saveObject');
 
 		$stub->willReturnCallback(
-			function (
-				array $object,
-				?array $extend = [],
-				string|int|null $register = null,
-				string|int|null $schema = null,
-				?string $uuid = null,
-			) use (&$calls): ObjectEntity {
+			function (array $object, ?ObjectSaveOptions $options = null) use (&$calls): ObjectEntity {
+				$register = $options?->target->register;
+				$schema   = $options?->target->schema;
+				$uuid     = $options?->uuid;
 				$calls[] = [
 					'object' => $object,
 					'register' => $register,
@@ -890,13 +888,11 @@ class CreateFromTemplateTest extends TestCase {
 
 		$seen = 0;
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (
-				array $object,
-				?array $extend = [],
-				string|int|null $register = null,
-				string|int|null $schema = null,
-				?string $uuid = null,
-			) use (&$seen): ObjectEntity {
+			function (array $object, ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$seen): ObjectEntity {
+				$extend = $options->extend ?? [];
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$seen++;
 				if ($schema === 'applicationVersion') {
 					throw new \RuntimeException('OR unavailable');
@@ -935,13 +931,11 @@ class CreateFromTemplateTest extends TestCase {
 
 		$calls = [];
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (
-				array $object,
-				?array $extend = [],
-				string|int|null $register = null,
-				string|int|null $schema = null,
-				?string $uuid = null,
-			) use (&$calls): ObjectEntity {
+			function (array $object, ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$calls): ObjectEntity {
+				$extend = $options->extend ?? [];
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$calls[] = $schema;
 				if ($schema === 'applicationVersion') {
 					// An entity carrying neither `uuid` nor `id`.

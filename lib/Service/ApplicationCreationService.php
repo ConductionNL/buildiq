@@ -53,6 +53,11 @@ namespace OCA\Buildiq\Service;
 use OCA\Buildiq\Exception\WizardCreationException;
 use OCA\Buildiq\Kernel\Contracts\ApplicationCreationServiceInterface;
 use OCA\Buildiq\Support\ObjectRecord;
+use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
 use OCA\OpenRegister\Service\RegisterService;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
@@ -171,7 +176,7 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 			// M2: Release the per-slug advisory lock regardless of outcome.
 			if ($locked === true) {
 				try {
-					$this->store->objectService->unlockObject(identifier: $lockKey, advisory: true);
+					$this->store->objectService->unlockObject(new UnlockRequest(identifier: $lockKey, advisory: true));
 				} catch (Throwable $unlockError) {
 					$this->logger->warning(
 						'Buildiq: failed to release slug lock ' . $lockKey,
@@ -200,9 +205,7 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 
 		try {
 			$this->store->objectService->lockObject(
-				identifier: $lockKey,
-				process: 'buildiq.createApplication',
-				duration: 10,
+				new LockRequest(identifier: $lockKey, process: 'buildiq.createApplication', duration: 10),
 				advisory: true
 			);
 		} catch (Throwable $lockError) {
@@ -318,8 +321,10 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 		try {
 			$created = $this->store->objectService->saveObject(
 				object: $applicationPayload,
-				register: ApplicationVersionService::REGISTER_SLUG,
-				schema: ApplicationVersionService::APPLICATION_SCHEMA
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(
+						register: ApplicationVersionService::REGISTER_SLUG,
+						schema: ApplicationVersionService::APPLICATION_SCHEMA
+					))
 			);
 			$appData = ObjectRecord::toArray(object: $created);
 			return (string)($appData['id'] ?? $appData['uuid'] ?? '');
@@ -467,8 +472,10 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 		try {
 			$createdVersion = $this->store->objectService->saveObject(
 				object: $versionPayload,
-				register: ApplicationVersionService::REGISTER_SLUG,
-				schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(
+						register: ApplicationVersionService::REGISTER_SLUG,
+						schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
+					))
 			);
 			$versionData = ObjectRecord::toArray(object: $createdVersion);
 			$versionUuid = (string)($versionData['id'] ?? $versionData['uuid'] ?? '');
@@ -561,9 +568,13 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 
 			$this->store->objectService->saveObject(
 				object: $fullPayload,
-				register: ApplicationVersionService::REGISTER_SLUG,
-				schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA,
-				uuid: $currentUuid
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(
+							register: ApplicationVersionService::REGISTER_SLUG,
+							schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
+						),
+					uuid: $currentUuid
+				)
 			);
 		} catch (Throwable $e) {
 			$this->logger->error(
@@ -607,9 +618,13 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 
 			$this->store->objectService->saveObject(
 				object: $fullPayload,
-				register: ApplicationVersionService::REGISTER_SLUG,
-				schema: ApplicationVersionService::APPLICATION_SCHEMA,
-				uuid: $state['applicationUuid']
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(
+							register: ApplicationVersionService::REGISTER_SLUG,
+							schema: ApplicationVersionService::APPLICATION_SCHEMA
+						),
+					uuid: $state['applicationUuid']
+				)
 			);
 		} catch (Throwable $e) {
 			$this->logger->error(
@@ -642,8 +657,10 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 		try {
 			$createdRoute = $this->store->objectService->saveObject(
 				object: ['slug' => $plan['slug'], 'applicationUuid' => $state['applicationUuid']],
-				register: ApplicationVersionService::REGISTER_SLUG,
-				schema: self::BUILT_APP_ROUTE_SCHEMA
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(
+						register: ApplicationVersionService::REGISTER_SLUG,
+						schema: self::BUILT_APP_ROUTE_SCHEMA
+					))
 			);
 			$routeData = ObjectRecord::toArray(object: $createdRoute);
 			$routeUuid = (string)($routeData['id'] ?? $routeData['uuid'] ?? '');
@@ -1210,7 +1227,7 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 			}
 
 			try {
-				$this->store->objectService->deleteObject(uuid: $uuid);
+				$this->store->objectService->deleteObject(new ObjectDeletion(uuid: $uuid));
 			} catch (Throwable $e) {
 				$this->logger->error(
 					'Buildiq: wizard rollback failed to delete ' . $label . ' ' . $uuid . ': ' . $e->getMessage(),
