@@ -180,7 +180,7 @@ namespace OCA\OpenRegister\Kernel\Contracts {
 
 			public function isAutoCreateTableEnabledForSchema(int $schemaId, ?string $schemaSlug = null): bool;
 
-			public function enableMagicMappingForSchema(int $schemaId, bool $autoCreateTable = true, ?string $comment = null): static;
+			public function enableMagicMappingForSchema(int $schemaId, ?\OCA\OpenRegister\Kernel\Contracts\Value\MagicMappingOptions $options = null): static;
 
 			public function disableMagicMappingForSchema(int $schemaId): static;
 
@@ -224,7 +224,7 @@ namespace OCA\OpenRegister\Kernel\Contracts {
 
 			public function validateAuthorization(): bool;
 
-			public function hasPermission(string $groupId, string $action, ?string $userId = null, ?string $userGroup = null, ?string $objectOwner = null, ?array $objectData = null, ?string $objectOrganisation = null, ?string $activeOrganisation = null): bool;
+			public function hasPermission(\OCA\OpenRegister\Kernel\Contracts\Value\GrantQuery $query): bool;
 
 			public function getAuthorizedGroups(string $action): array;
 
@@ -658,13 +658,14 @@ namespace OCA\OpenRegister\Db {
 			}//end isAutoCreateTableEnabledForSchema()
 
 			/**
-			 * @param int         $schemaId        The schema id.
-			 * @param bool        $autoCreateTable Whether to create the table.
-			 * @param string|null $comment         Optional note.
+			 * @param int                                                          $schemaId The schema id.
+			 * @param \OCA\OpenRegister\Kernel\Contracts\Value\MagicMappingOptions|null $options  Table creation and note.
 			 *
 			 * @return static This register.
 			 */
-			public function enableMagicMappingForSchema(int $schemaId, bool $autoCreateTable = true, ?string $comment = null): static {
+			public function enableMagicMappingForSchema(int $schemaId, ?\OCA\OpenRegister\Kernel\Contracts\Value\MagicMappingOptions $options = null): static {
+				$autoCreateTable = $options?->autoCreateTable ?? true;
+				$comment         = $options?->comment;
 				$config = $this->getConfiguration();
 				$config['schemas'][$schemaId] = array_filter(
 					['magicMapping' => true, 'autoCreateTable' => $autoCreateTable, 'comment' => $comment],
@@ -1022,31 +1023,32 @@ namespace OCA\OpenRegister\Db {
 			}//end validateAuthorization()
 
 			/**
-			 * @param string      $groupId            The group.
-			 * @param string      $action             The CRUD action.
-			 * @param string|null $userId             The user.
-			 * @param string|null $userGroup          The user's group.
-			 * @param string|null $objectOwner        The object owner.
-			 * @param array|null  $objectData         The object data.
-			 * @param string|null $objectOrganisation The object organisation.
-			 * @param string|null $activeOrganisation The active organisation.
+			 * @param \OCA\OpenRegister\Kernel\Contracts\Value\GrantQuery $query The grant question.
 			 *
 			 * @return bool Always true: a schema without authorization is open.
-			 *
-			 * @SuppressWarnings(PHPMD.ExcessiveParameterList)
 			 */
-			public function hasPermission(
-				string $groupId,
-				string $action,
-				?string $userId = null,
-				?string $userGroup = null,
-				?string $objectOwner = null,
-				?array $objectData = null,
-				?string $objectOrganisation = null,
-				?string $activeOrganisation = null
-			): bool {
+			public function hasPermission(\OCA\OpenRegister\Kernel\Contracts\Value\GrantQuery $query): bool {
 				return true;
 			}//end hasPermission()
+
+			/**
+			 * @return bool True when the configuration marks the schema federatable.
+			 */
+			public function isFederatable(): bool {
+				return (($this->getConfiguration() ?? [])['federatable'] ?? false) === true;
+			}//end isFederatable()
+
+			/**
+			 * @return bool True when the schema declares preservation as enabled.
+			 */
+			public function isPreservationEnabled(): bool {
+				$annotation = (($this->getConfiguration() ?? [])['x-openregister-preserve'] ?? null);
+				if (is_array($annotation) === false) {
+					return false;
+				}
+
+				return ($annotation['enabled'] ?? false) === true;
+			}//end isPreservationEnabled()
 
 			/**
 			 * @param string $action The CRUD action.
