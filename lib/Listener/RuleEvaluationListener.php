@@ -39,9 +39,8 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Listener;
 
 use OCA\Buildiq\Event\RuleEvaluationRequestedEvent;
-use OCA\Buildiq\Service\RuleEngineService;
-use OCA\Buildiq\Service\RuleSetColumns;
-use OCA\Buildiq\Service\StoredDecisionTables;
+use OCA\Buildiq\Kernel\Contracts\RuleEngineServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\StoredDecisionTablesInterface;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Log\LoggerInterface;
@@ -64,15 +63,15 @@ class RuleEvaluationListener implements IEventListener {
 	/**
 	 * Constructor.
 	 *
-	 * @param RuleEngineService    $engine The rule engine.
-	 * @param StoredDecisionTables $tables A rule set's decision table, for its declared inputs.
-	 * @param LoggerInterface      $logger PSR logger.
+	 * @param RuleEngineServiceInterface    $engine The rule engine.
+	 * @param StoredDecisionTablesInterface $tables A rule set's decision table, for its declared inputs.
+	 * @param LoggerInterface               $logger PSR logger.
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly RuleEngineService $engine,
-		private readonly StoredDecisionTables $tables,
+		private readonly RuleEngineServiceInterface $engine,
+		private readonly StoredDecisionTablesInterface $tables,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -125,7 +124,7 @@ class RuleEvaluationListener implements IEventListener {
 		}
 
 		$outcome = $this->engine->evaluateForApp(app: $command->getApp(), ruleSet: $resolved['ruleSet'], payload: $inputs);
-		if ($outcome['executionTime'] > RuleEngineService::TIMEOUT_MS) {
+		if ($outcome['executionTime'] > RuleEngineServiceInterface::TIMEOUT_MS) {
 			$command->refuse(reason: RuleEvaluationRequestedEvent::TIMEOUT);
 			return;
 		}
@@ -157,10 +156,7 @@ class RuleEvaluationListener implements IEventListener {
 			return null;
 		}
 
-		$tables = $this->tables->forRuleSet(ruleSet: $ruleSet);
-		$columns = RuleSetColumns::fromTable(table: (array)($tables[0] ?? []));
-
-		return RuleSetColumns::checkInputs(columns: $columns['inputs'], inputs: $inputs);
+		return $this->tables->checkedInputs(ruleSet: $ruleSet, inputs: $inputs);
 
 	}//end checkedInputs()
 }//end class

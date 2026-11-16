@@ -47,7 +47,6 @@ namespace OCA\Buildiq\Controller;
 use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Kernel\Contracts\RuleEngineServiceInterface;
 use OCA\Buildiq\Service\CallerContext;
-use OCA\Buildiq\Service\RuleSetColumns;
 use OCA\Buildiq\Service\RuleStorage;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -394,9 +393,7 @@ class RulesController extends Controller {
 	 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-calculated-from-a-rule-set-req-bqlv-002
 	 */
 	private function decisionColumns(array $ruleSet): array {
-		$tables = $this->storage->tables->forRuleSet(ruleSet: $ruleSet);
-
-		return RuleSetColumns::fromTable(table: (array)($tables[0] ?? []));
+		return $this->storage->decisionColumns(ruleSet: $ruleSet);
 	}//end decisionColumns()
 
 	/**

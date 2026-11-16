@@ -67,6 +67,18 @@ interface StoredDecisionTablesInterface {
 	public function keyOfRuleSet(array $ruleSet): string;
 
 	/**
+	 * Inputs checked against the columns a rule set's decision table declares.
+	 *
+	 * @param array<string,mixed> $ruleSet The resolved rule set.
+	 * @param array<string,mixed> $inputs  What the caller sent.
+	 *
+	 * @return array<string,mixed>|null The declared inputs only, or null when they are refused.
+	 *
+	 * @spec openspec/changes/rules-evaluation-for-other-apps/specs/rules-evaluation-for-other-apps/spec.md#requirement-another-app-evaluates-a-rule-set-through-a-typed-command-req-bqrx-002
+	 */
+	public function checkedInputs(array $ruleSet, array $inputs): ?array;
+
+	/**
 	 * Write a rule set's table into OpenRegister, replacing the one it had.
 	 *
 	 * The CALLER authorises: the write runs without OpenRegister's register

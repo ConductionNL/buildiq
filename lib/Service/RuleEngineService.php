@@ -52,11 +52,6 @@ class RuleEngineService implements RuleEngineServiceInterface {
 	public const CONDITION_RULE_SCHEMA = 'condition-action-rule';
 
 	/**
-	 * Soft evaluation timeout in milliseconds (design.md Decision 10).
-	 */
-	public const TIMEOUT_MS = 500;
-
-	/**
 	 * Maximum `call-rule-set` chain depth (DoS hardening, harden-xss-dos-csrf).
 	 *
 	 * A condition-action rule may dispatch a `call-rule-set` action that

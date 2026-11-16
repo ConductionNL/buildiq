@@ -69,7 +69,7 @@ final class RuleEvaluationListenerTest extends TestCase {
 
 	protected function setUp(): void {
 		$this->engine = $this->createMock(RuleEngineService::class);
-		$this->tables = $this->createMock(StoredDecisionTables::class);
+		$this->tables = $this->createPartialMock(StoredDecisionTables::class, ['forRuleSet']);
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->tables->method('forRuleSet')->willReturn(
 			[
