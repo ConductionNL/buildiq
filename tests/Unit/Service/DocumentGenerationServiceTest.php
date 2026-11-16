@@ -54,6 +54,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
 use stdClass;
+use OCA\Buildiq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Tests for {@see DocumentGenerationService}.
@@ -516,6 +517,7 @@ final class DocumentGenerationServiceTest extends TestCase {
 
 		$this->objectService->method('saveObject')->willReturnCallback(
 			static function (...$args) use (&$trace) {
+				$args = LegacyObjectArgs::positional(method: 'saveObject', args: $args);
 				$trace[] = 'saveObject ' . json_encode($args[0]);
 				return null;
 			}

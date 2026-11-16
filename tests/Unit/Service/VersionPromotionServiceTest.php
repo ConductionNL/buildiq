@@ -46,6 +46,10 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\Buildiq\Tests\Support\LegacyObjectArgs;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
 
 /**
  * Tests for VersionPromotionService.
@@ -482,6 +486,7 @@ class VersionPromotionServiceTest extends TestCase {
 			->method('saveObject')
 			->willReturnCallback(
 				static function (...$args) use (&$callCount, &$savedPayloads, $savedArchived): ObjectEntity {
+					$args = LegacyObjectArgs::positional(method: 'saveObject', args: $args);
 					$callCount++;
 					$savedPayloads[] = $args[0];
 					if ($callCount === 1) {
@@ -724,7 +729,8 @@ class VersionPromotionServiceTest extends TestCase {
 
 		$deleted = [];
 		$this->objectService->method('deleteObject')->willReturnCallback(
-			static function (string $uuid) use (&$deleted): bool {
+			static function (ObjectDeletion $deletion) use (&$deleted): bool {
+				$uuid = $deletion->uuid;
 				$deleted[] = $uuid;
 				return true;
 			}
@@ -819,7 +825,8 @@ class VersionPromotionServiceTest extends TestCase {
 
 		$this->objectService
 			->method('deleteObject')
-			->willReturnCallback(function (string $uuid): bool {
+			->willReturnCallback(function (ObjectDeletion $deletion): bool {
+				$uuid = $deletion->uuid;
 				self::assertNotSame('spectr', $uuid);
 				return true;
 			});
@@ -974,7 +981,8 @@ class VersionPromotionServiceTest extends TestCase {
 
 		$this->objectService
 			->method('deleteObject')
-			->willReturnCallback(function (string $uuid): bool {
+			->willReturnCallback(function (ObjectDeletion $deletion): bool {
+				$uuid = $deletion->uuid;
 				self::assertNotSame('spectr', $uuid);
 				return true;
 			});
@@ -1076,7 +1084,8 @@ class VersionPromotionServiceTest extends TestCase {
 				}
 			);
 
-		$this->objectService->method('unlockObject')->willReturnCallback(function ($uuid) {
+		$this->objectService->method('unlockObject')->willReturnCallback(function (UnlockRequest $request) {
+			$uuid = $request->identifier;
 			self::assertNotSame('spectr', $uuid);
 			return true;
 		});
@@ -1333,7 +1342,10 @@ class VersionPromotionServiceTest extends TestCase {
 		$rowSchemas = [];
 		$savedManifest = null;
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (array $object, mixed $extend = [], mixed $register = null, mixed $schema = null) use (&$rowSchemas, &$savedManifest): ObjectEntity {
+			function (array $object, ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$rowSchemas, &$savedManifest): ObjectEntity {
+				$extend = $options->extend ?? [];
+				$register = $options->target->register;
+				$schema = $options->target->schema;
 				if ($register === 'openbuild-shop-production') {
 					$rowSchemas[] = $schema;
 				} else {

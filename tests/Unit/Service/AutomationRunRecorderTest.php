@@ -33,6 +33,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\Buildiq\Tests\Support\LegacyObjectArgs;
 
 /**
  * One record per run, with its steps and outcome, never thrown, read back newest first and pruned after 90 days.
@@ -124,6 +125,7 @@ final class AutomationRunRecorderTest extends TestCase {
 	public function testAFailingActionIsRecordedWithItsSteps(): void {
 		$calls = [];
 		$this->objects->expects($this->once())->method('saveObject')->willReturnCallback(function (...$arguments) use (&$calls): ObjectEntity {
+			$arguments = LegacyObjectArgs::positional(method: 'saveObject', args: $arguments);
 			$calls[] = $arguments;
 			return $this->entity(['@self' => ['id' => 'run-1']]);
 		});
@@ -195,6 +197,7 @@ final class AutomationRunRecorderTest extends TestCase {
 	public function testAWaitingRunIsCompletedByTheDecision(): void {
 		$found = [];
 		$this->objects->method('find')->willReturnCallback(function (...$arguments) use (&$found): ObjectEntity {
+			$arguments = LegacyObjectArgs::positional(method: 'find', args: $arguments);
 			$found[] = $arguments;
 			return $this->entity([
 				'@self' => ['id' => 'run-3'],
@@ -206,6 +209,7 @@ final class AutomationRunRecorderTest extends TestCase {
 		});
 		$calls = [];
 		$this->objects->expects($this->once())->method('saveObject')->willReturnCallback(function (...$arguments) use (&$calls): ObjectEntity {
+			$arguments = LegacyObjectArgs::positional(method: 'saveObject', args: $arguments);
 			$calls[] = $arguments;
 			return $this->entity(['@self' => ['id' => 'run-3']]);
 		});

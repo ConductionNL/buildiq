@@ -30,6 +30,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * Reading, skipping and logging of RuleExecutionLogCleanup.
@@ -146,7 +147,8 @@ final class RuleExecutionLogCleanupLoggingTest extends TestCase {
 			]
 		);
 		$this->objects->method('deleteObject')->willReturnCallback(
-			static function (string $uuid): bool {
+			static function (ObjectDeletion $deletion): bool {
+				$uuid = $deletion->uuid;
 				if ($uuid === 'locked') {
 					throw new RuntimeException('row locked');
 				}

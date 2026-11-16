@@ -40,6 +40,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Tests for RepairValidationViolations.
@@ -121,7 +122,11 @@ class RepairValidationViolationsTest extends TestCase {
 			}
 		);
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (array $object, ?array $extend = [], mixed $register = null, mixed $schema = null, mixed $uuid = null, bool $rbac = true, bool $multitenancy = true): ObjectEntityInterface {
+			function (array $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $rbac = true, bool $multitenancy = true): ObjectEntityInterface {
+				$extend = $options->extend ?? [];
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$this->assertSame([false, false], [$rbac, $multitenancy], 'saveObject runs without RBAC and multitenancy');
 				$this->saves[] = [$schema, $uuid, $object, $register];
 				$this->store[(string)$schema][(string)$uuid] = $object;

@@ -37,6 +37,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * Tests for AppOverrideService on the unified app model.
@@ -225,7 +226,8 @@ class AppOverrideServiceTest extends TestCase {
 		$deleted = [];
 		$this->objectService->expects(self::exactly(2))
 			->method('deleteObject')
-			->willReturnCallback(static function ($uuid) use (&$deleted): void {
+			->willReturnCallback(static function (ObjectDeletion $deletion) use (&$deleted): void {
+				$uuid = $deletion->uuid;
 				$deleted[] = $uuid;
 			});
 

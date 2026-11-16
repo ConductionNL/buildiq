@@ -34,6 +34,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\Buildiq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Edge-case tests for PopulateApplicationPermissions.
@@ -135,6 +136,7 @@ final class PopulateApplicationPermissionsEdgeCasesTest extends TestCase {
 		$saved = [];
 		$this->objectService->expects($this->exactly(count: 4))->method('saveObject')->willReturnCallback(
 			function (array $object, ...$rest) use (&$saved): ObjectEntityInterface {
+				$rest = array_slice(LegacyObjectArgs::positional(method: 'saveObject', args: [$object, ...$rest]), 1);
 				$saved[] = $object;
 				return $this->createMock(originalClassName: ObjectEntityInterface::class);
 			}

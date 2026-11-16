@@ -39,6 +39,8 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * @covers \OCA\Buildiq\Controller\ApplicationPublishController
@@ -164,7 +166,11 @@ class ApplicationPublishControllerFailuresTest extends TestCase {
 	 */
 	private function rows(?array $application, mixed $route = 'throw'): void {
 		$this->objectService->method('find')->willReturnCallback(
-			function (int|string $id, ?array $_extend = [], bool $files = false, string|int|null $register = null, string|int|null $schema = null) use ($application, $route): ?ObjectEntity {
+			function (int|string $id, ?ObjectFindOptions $options = null) use ($application, $route): ?ObjectEntity {
+				$_extend = $options?->extend ?? [];
+				$files = $options?->files ?? false;
+				$register = $options?->register;
+				$schema = $options?->schema;
 				if ($schema === 'built-app-route') {
 					if ($route === 'throw') {
 						throw new RuntimeException('no route');
@@ -344,7 +350,10 @@ class ApplicationPublishControllerFailuresTest extends TestCase {
 		$this->signInAs(uid: 'alice');
 		$this->rows(application: self::APP, route: ['slug' => 'demo', 'applicationUuid' => 'someone-else']);
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (array $object, ?array $extend = [], string|int|null $register = null, string|int|null $schema = null): ObjectEntity {
+			function (array $object, ObjectSaveOptions $options = new ObjectSaveOptions()): ObjectEntity {
+				$extend = $options->extend ?? [];
+				$register = $options->target->register;
+				$schema = $options->target->schema;
 				if ($schema === 'built-app-route') {
 					throw new RuntimeException('route refused');
 				}

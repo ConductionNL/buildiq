@@ -51,6 +51,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use UnexpectedValueException;
+use OCA\Buildiq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Tests for {@see RuleEngineService}.
@@ -476,6 +477,7 @@ final class RuleEngineServiceTest extends TestCase {
 		$saved = [];
 		$objectService->method('saveObject')->willReturnCallback(
 			function (array $object, ...$rest) use (&$saved, $case): \OCA\OpenRegister\Db\ObjectEntity {
+				$rest = array_slice(LegacyObjectArgs::positional(method: 'saveObject', args: [$object, ...$rest]), 1);
 				$object['timestamp'] = '<timestamp>';
 				$object['(register buildiq)'] = in_array('buildiq', $rest, true);
 				$object['(schema rule-execution-log)'] = in_array('rule-execution-log', $rest, true);

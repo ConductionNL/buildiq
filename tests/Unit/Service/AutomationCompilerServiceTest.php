@@ -40,6 +40,7 @@ use OCP\App\IAppManager;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OCA\Buildiq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Tests for {@see AutomationCompilerService}.
@@ -967,6 +968,7 @@ final class AutomationCompilerServiceTest extends TestCase {
 		);
 		$this->objectService->method('saveObject')->willReturnCallback(
 			function (...$args) use (&$saved, $entity) {
+				$args = LegacyObjectArgs::positional(method: 'saveObject', args: $args);
 				$saved[] = $args[0];
 				return $entity;
 			}
