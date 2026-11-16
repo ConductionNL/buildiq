@@ -65,6 +65,36 @@ automation enables, disables and deletes the flow.
 A manual automation can be run from a record through the **Run automation**
 action, once OpenRegister can start a manual flow for an app user.
 
+### Starting an automation from mail or from another system
+
+Two triggers start an automation from outside Nextcloud. Both run only flow
+steps (record, webhook, notification and "Decide with a rule set"); an
+approval, document or synchronization step is refused. Both need the
+**Integriq** app: without it they are shown but disabled, with the reason.
+Buildiq itself opens no address and reads no mailbox; integriq does both and
+checks every caller.
+
+- **Email received** listens to an integriq **mailbox** you can read. You can
+  narrow it to mail from one sender and to subjects containing a text. On
+  apply, buildiq writes one integriq event subscription on that mailbox whose
+  action starts the automation's flow; disabling the automation pauses the
+  subscription, deleting it removes the subscription. A run gets the mail's
+  `from`, `to`, `subject`, `receivedAt`, `bodyText` and attachment names as
+  input, and acts as you, the person who applied it, with your rights.
+- **Webhook called** gives the automation an address served by integriq,
+  `…/apps/integriq/api/endpoint/buildiq/<app>/<automation>`, shown in the
+  editor once the automation has a name. The calling system signs in with an
+  **API key**; integriq issues and shows the key ("Show key in Integriq"),
+  buildiq never stores it. A call without a valid key is refused by integriq
+  and starts nothing; calls are rate limited. A run gets the request body as
+  input (give an example body to see its fields in the editor) and acts as
+  the account bound to the key.
+
+The integriq objects written (the subscription, or the endpoint with its rule
+and consumer) are listed in the automation's `provenance.inbound`; delete and
+recompile touch exactly those. When integriq cannot take them, applying the
+automation fails with the reason and nothing is written, not even the flow.
+
 **Require approval** compiles to an OpenRegister `ApprovalChain` (one step,
 group-only assignee) instantiated against the fired object's uuid at
 trigger-fire time; on-approve/on-reject follow-up actions dispatch through

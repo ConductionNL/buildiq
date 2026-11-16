@@ -6,5 +6,5 @@
 - [x] **T04**: Add both triggers to `src/dialogs/AutomationEditDialog.vue`: the mailbox source picker and filters, the authorization choice, the shown address, the "Show key" link to integriq, the input field hints, and the disabled states (REQ-BQTR-001, REQ-BQTR-003). Verify: vitest cases in `tests/dialogs/AutomationEditDialog.spec.js`.
 - [x] **T05**: Assert no new public route: add a case to `tests/Unit/AppInfo/RoutesTest.php` that fails when an automations route targets a `#[PublicPage]` method (REQ-BQTR-004). Verify: that PHPUnit case.
 - [ ] **T06**: Playwright `tests/e2e/automation-inbound-triggers.spec.ts` against integriq mock mode: a seeded mail creates a record, and a signed webhook call updates one while an unsigned call does not (REQ-BQTR-002, REQ-BQTR-003).
-- [ ] **T07**: Strings and docs: English and Dutch for the triggers, the pickers, the address block and the reasons (`l10n/en.json`, `l10n/nl.json`), and a section in `docs/` on starting an automation from mail or from another system.
+- [x] **T07**: Strings and docs: English and Dutch for the triggers, the pickers, the address block and the reasons (`l10n/en.json`, `l10n/nl.json`), and a section in `docs/` on starting an automation from mail or from another system.
 - [ ] **T08**: Run `openspec validate logic-email-and-webhook-triggers --strict`.
