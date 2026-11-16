@@ -214,6 +214,17 @@ final class ApprovalFormDeclaration {
 			return 'it is hidden';
 		}
 
+		return self::shapeRefusal(property: $property);
+	}//end refusal()
+
+	/**
+	 * Why a declared, visible and writable property's shape keeps it off the form, or null.
+	 *
+	 * @param array<string, mixed> $property The schema property.
+	 *
+	 * @return string|null
+	 */
+	private static function shapeRefusal(array $property): ?string {
 		$type = $property['type'] ?? null;
 		if ($type === 'array' || (is_array($type) === true && in_array('array', $type, true) === true)) {
 			return 'it is a list';
@@ -225,5 +236,5 @@ final class ApprovalFormDeclaration {
 		}
 
 		return null;
-	}//end refusal()
+	}//end shapeRefusal()
 }//end class

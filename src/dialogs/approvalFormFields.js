@@ -23,6 +23,17 @@ export function isAskableProperty(property) {
 	if (property.readOnly === true || property.visible === false) {
 		return false
 	}
+	return hasAskableShape(property)
+}
+
+/**
+ * Whether a property's shape fits one form field: not a list, not an object and not a relation.
+ *
+ * @param {object} property - the schema property definition.
+ * @return {boolean}
+ * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
+ */
+function hasAskableShape(property) {
 	const types = Array.isArray(property.type) ? property.type : [property.type]
 	if (types.includes('array') || types.includes('object')) {
 		return false

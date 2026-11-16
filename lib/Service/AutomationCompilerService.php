@@ -1932,19 +1932,38 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 			'steps' => $steps,
 			'enabled' => (bool)($spec['enabled'] ?? true),
 		];
-		// Logic-approval-task-form D3: the position's form, read back in the
-		// compiled shape, so a form changed outside buildiq shows as drift.
-		$first = ($spec['approvers'][0] ?? null);
-		if (is_array($first) === true && is_array($first['form'] ?? null) === true) {
-			$live['form'] = $first['form'];
-			if (($first['form']['kind'] ?? null) === 'fields') {
-				$live['form'] = (ApprovalFormDeclaration::chainForm(action: ['form' => $first['form']]) ?? ['kind' => 'fields', 'fields' => []]);
-			}
+		$form = self::liveApprovalForm(spec: $spec);
+		if ($form !== null) {
+			$live['form'] = $form;
 		}
 
 		return $live;
 
 	}//end fetchLiveApprovalChain()
+
+	/**
+	 * The first position's form of a live chain, read back in the compiled shape.
+	 *
+	 * Logic-approval-task-form D3: so a form changed outside buildiq shows as drift.
+	 *
+	 * @param array<string,mixed> $spec The live chain's spec.
+	 *
+	 * @return array<string,mixed>|null The form, or null when the position has none.
+	 *
+	 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-the-form-is-compiled-into-the-approval-chain-or-refused-req-bqtf-002
+	 */
+	private static function liveApprovalForm(array $spec): ?array {
+		$first = ($spec['approvers'][0] ?? null);
+		if (is_array($first) === false || is_array($first['form'] ?? null) === false) {
+			return null;
+		}
+
+		if (($first['form']['kind'] ?? null) !== 'fields') {
+			return $first['form'];
+		}
+
+		return (ApprovalFormDeclaration::chainForm(action: ['form' => $first['form']]) ?? ['kind' => 'fields', 'fields' => []]);
+	}//end liveApprovalForm()
 
 	/**
 	 * The newest approval sequence opened from a chain's compiled template.
