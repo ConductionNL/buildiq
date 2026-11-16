@@ -40,6 +40,7 @@ use RuntimeException;
  * @covers \OCA\Buildiq\Mcp\Handler\AbstractToolHandler
  * @covers \OCA\Buildiq\Mcp\Handler\ListAppsHandler
  * @uses   \OCA\Buildiq\Service\AppOrganisationGuard
+ * @uses   \OCA\Buildiq\Service\AppOrganisationMembership
  * @uses   \OCA\Buildiq\Support\ObjectRecord
  *
  * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002

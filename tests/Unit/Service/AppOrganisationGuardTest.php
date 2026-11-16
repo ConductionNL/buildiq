@@ -36,6 +36,7 @@ use RuntimeException;
  * Tests the organisation scope: `all`, a member, a non-member, a child organisation and a missing scope.
  *
  * @covers \OCA\Buildiq\Service\AppOrganisationGuard
+ * @uses   \OCA\Buildiq\Service\AppOrganisationMembership
  *
  * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002
  */

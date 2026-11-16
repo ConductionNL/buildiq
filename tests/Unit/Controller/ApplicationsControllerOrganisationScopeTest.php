@@ -49,6 +49,7 @@ use Psr\Log\LoggerInterface;
  *
  * @covers \OCA\Buildiq\Controller\ApplicationsController
  * @uses   \OCA\Buildiq\Service\AppOrganisationGuard
+ * @uses   \OCA\Buildiq\Service\AppOrganisationMembership
  * @uses   \OCA\Buildiq\Service\RegisterStore
  * @uses   \OCA\Buildiq\Service\CallerContext
  * @uses   \OCA\Buildiq\Service\PermissionResolver

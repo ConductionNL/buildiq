@@ -42,6 +42,7 @@ use Psr\Log\LoggerInterface;
  *
  * @covers \OCA\Buildiq\Service\ManifestResolverService
  * @uses   \OCA\Buildiq\Service\AppOrganisationGuard
+ * @uses   \OCA\Buildiq\Service\AppOrganisationMembership
  * @uses   \OCA\Buildiq\Service\AppVisibilityResolver
  * @uses   \OCA\Buildiq\Service\ManifestWidgetRoleFilter
  * @uses   \OCA\Buildiq\Service\PermissionResolver
