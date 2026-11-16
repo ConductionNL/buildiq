@@ -91,6 +91,12 @@ export default {
 		},
 	},
 
+	/**
+	 * Prefill the form when the dialog is mounted already open (REQ-BQRX-001).
+	 *
+	 * @return {void}
+	 * @spec openspec/changes/rules-evaluation-for-other-apps/specs/rules-evaluation-for-other-apps/spec.md#requirement-a-rule-set-names-the-apps-that-may-call-it-req-bqrx-001
+	 */
 	mounted() {
 		if (this.open) {
 			this.reset()

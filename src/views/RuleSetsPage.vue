@@ -297,6 +297,12 @@ export default {
 			URL.revokeObjectURL(link.href)
 		},
 
+		/**
+		 * Close the open editor or callers dialog and reload the rule sets after a save.
+		 *
+		 * @return {void}
+		 * @spec openspec/changes/rules-evaluation-for-other-apps/specs/rules-evaluation-for-other-apps/spec.md#requirement-a-rule-set-names-the-apps-that-may-call-it-req-bqrx-001
+		 */
 		onSaved() {
 			this.showDecisionEditor = false
 			this.showConditionEditor = false
