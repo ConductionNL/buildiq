@@ -34,6 +34,7 @@ use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Kernel\Contracts\AppNavigationServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\DeviceFeaturesInterface;
 use OCA\Buildiq\Kernel\Contracts\PublishedApplicationProviderInterface;
+use OCA\Buildiq\Service\AppOrganisationGuard;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
@@ -64,6 +65,7 @@ class DashboardController extends Controller {
 	 * @param INavigationManager $navigationManager Top-bar navigation manager
 	 * @param PublishedApplicationProviderInterface|null $publishedApps The published apps, to read a served app's device features
 	 * @param DeviceFeaturesInterface|null $deviceFeatures Turns device features into the page's feature policy
+	 * @param AppOrganisationGuard|null $organisationGuard Tells the settings whether an app can be kept to its organisation
 	 *
 	 * @return void
 	 */
@@ -75,6 +77,7 @@ class DashboardController extends Controller {
 		private readonly INavigationManager $navigationManager,
 		private readonly ?PublishedApplicationProviderInterface $publishedApps=null,
 		private readonly ?DeviceFeaturesInterface $deviceFeatures=null,
+		private readonly ?AppOrganisationGuard $organisationGuard=null,
 	) {
 		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
@@ -95,6 +98,12 @@ class DashboardController extends Controller {
 	#[NoCSRFRequired]
 	public function page(): TemplateResponse {
 		$this->publishCurrentUserGroups();
+		// The organisation scope is only offered while OpenRegister's
+		// multitenancy is on (REQ-BQOS-001).
+		$this->initialState->provideInitialState(
+			'organisationScopeAvailable',
+			$this->organisationGuard?->multitenancyOn() === true
+		);
 		return new TemplateResponse(AppIdentity::APP_ID, 'index');
 	}//end page()
 

@@ -2392,7 +2392,8 @@
         "Total load time (ms)": "Total load time (ms)",
         "Window start": "Window start",
         "Include server bundle": "Include server bundle",
-        "Search": "Search",
+        "Organisation scope": "Organisation scope",
+        "Who sees this app: all organisations, or only the organisation that holds it. Absent means all organisations.": "Who sees this app: all organisations, or only the organisation that holds it. Absent means all organisations.",
         "Add external data widget": "Add external data widget",
         "Failures": "Failures",
         "Failed requests, 4xx and 5xx together. Derived by the server, never posted; summed by the request failure metric.": "Failed requests, 4xx and 5xx together. Derived by the server, never posted; summed by the request failure metric.",
@@ -2426,7 +2427,13 @@
         "The branch could not be started.": "The branch could not be started.",
         "The merge could not be completed.": "The merge could not be completed.",
         "This merge changes schemas in a way that can break records already stored:": "This merge changes schemas in a way that can break records already stored:",
-        "Which side to keep": "Which side to keep"
+        "Which side to keep": "Which side to keep",
+        "This organisation only": "This organisation only",
+        "Only members of the organisation that holds this app see it, open it and read its records. Rule sets and data registers stay shared.": "Only members of the organisation that holds this app see it, open it and read its records. Rule sets and data registers stay shared.",
+        "Every organisation will see this app. Its records stay with this organisation.": "Every organisation will see this app. Its records stay with this organisation.",
+        "Share with all organisations": "Share with all organisations",
+        "Keep it to this organisation": "Keep it to this organisation",
+        "This slug is taken. Choose another.": "This slug is taken. Choose another."
     },
     "plurals": "",
     "pluralForm": "nplurals=2; plural=(n != 1);"
