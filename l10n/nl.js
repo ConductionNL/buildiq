@@ -1963,6 +1963,8 @@ OC.L10N.register(
         "Total load time (ms)": "Totale laadtijd (ms)",
         "Window start": "Begin van het venster",
         "Include server bundle": "Serverbundel meenemen",
+        "Organisation scope": "Organisatiebereik",
+        "Who sees this app: all organisations, or only the organisation that holds it. Absent means all organisations.": "Wie deze app ziet: alle organisaties, of alleen de organisatie die hem beheert. Niet ingevuld betekent alle organisaties.",
         "Example data fills the lists, detail pages and dashboards so you can see the app working straight away. Pick \"None\" on a production install.": "Voorbeeldgegevens vullen de lijsten, detailpagina's en dashboards, zodat je de app meteen ziet werken. Kies \"Geen\" op een productie-installatie.",
         "Load the example data": "Voorbeeldgegevens laden",
         "Loads what you picked. The data is obviously sample data, it is safe to run more than once, and you can delete it afterwards.": "Laadt wat je hebt gekozen. Het zijn duidelijk voorbeeldgegevens, je kunt dit veilig meerdere keren uitvoeren en ze achteraf verwijderen.",
@@ -2476,7 +2478,13 @@ OC.L10N.register(
         "The branch could not be started.": "De branch kon niet worden gestart.",
         "The merge could not be completed.": "Het samenvoegen kon niet worden voltooid.",
         "This merge changes schemas in a way that can break records already stored:": "Dit samenvoegen wijzigt schema's zo dat al opgeslagen gegevens kunnen breken:",
-        "Which side to keep": "Welke kant behouden"
+        "Which side to keep": "Welke kant behouden",
+        "This organisation only": "Alleen deze organisatie",
+        "Only members of the organisation that holds this app see it, open it and read its records. Rule sets and data registers stay shared.": "Alleen leden van de organisatie die deze app beheert, zien en openen de app en lezen de gegevens. Regelsets en dataregisters blijven gedeeld.",
+        "Every organisation will see this app. Its records stay with this organisation.": "Elke organisatie ziet deze app. De gegevens blijven bij deze organisatie.",
+        "Share with all organisations": "Delen met alle organisaties",
+        "Keep it to this organisation": "Bij deze organisatie houden",
+        "This slug is taken. Choose another.": "Deze slug is al in gebruik. Kies een andere."
     },
     "nplurals=2; plural=(n != 1);"
 )
