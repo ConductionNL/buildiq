@@ -77,6 +77,8 @@
 						:fields="fieldsHere"
 						:earlierWrites="earlierWrites"
 						:findings="serverFindingsHere"
+						:listFields="listFieldsHere"
+						:flows="flows"
 						@update:modelValue="patchSelected({ writes: $event })" />
 				</template>
 			</section>
@@ -91,8 +93,9 @@ import JourneyBranchEditor from '../components/journey-editor/JourneyBranchEdito
 import JourneyPreviewPane from '../components/journey-editor/JourneyPreviewPane.vue'
 import JourneyStepsManager from '../components/journey-editor/JourneyStepsManager.vue'
 import JourneyWritesEditor from '../components/journey-editor/JourneyWritesEditor.vue'
+import { loadFlows } from '../services/creationFlows.js'
 import { fetchJourney, fetchJourneyForms, saveJourney } from '../services/journeyStore.js'
-import { fieldsAskedBy, journeyFindings } from '../services/journeyValidation.js'
+import { fieldsAskedBy, journeyFindings, listFieldsAskedBy } from '../services/journeyValidation.js'
 
 export default {
 	name: 'JourneyDesigner',
@@ -118,6 +121,7 @@ export default {
 			journey: { id: '', title: '', description: '', steps: [] },
 			forms: {},
 			formOptions: [],
+			flows: null,
 			selectedId: '',
 			loading: true,
 			loadError: '',
@@ -156,6 +160,16 @@ export default {
 			return this.selectedIndex >= 0 ? fieldsAskedBy(this.journey, this.forms, this.selectedIndex) : []
 		},
 
+		/**
+		 * The list answers a write on the selected step may repeat over.
+		 *
+		 * @return {Array<{key: string, columns: Array<string>}>}
+		 * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-a-write-can-repeat-per-list-item-req-bqmp-001
+		 */
+		listFieldsHere() {
+			return this.selectedIndex >= 0 ? listFieldsAskedBy(this.journey, this.forms, this.selectedIndex) : []
+		},
+
 		/** @return {Array<object>} The steps a rule can go to: every other step. */
 		branchTargets() {
 			return this.journey.steps.filter((step) => step.id !== this.selectedId).map((step) => ({ id: step.id, title: step.title }))
@@ -189,11 +203,32 @@ export default {
 		},
 	},
 
+	/**
+	 * Load the journey, then read the flows its targets start.
+	 *
+	 * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-the-designer-says-whether-a-part-starts-a-process-req-bqmp-004
+	 */
 	async created() {
 		await this.load()
+		await this.loadCreationFlows()
 	},
 
 	methods: {
+		/**
+		 * Read OpenRegister's flows, so each target of a repeating write says
+		 * whether it starts a process. Unreadable flows leave no warning at
+		 * all rather than a wrong one.
+		 *
+		 * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-the-designer-says-whether-a-part-starts-a-process-req-bqmp-004
+		 */
+		async loadCreationFlows() {
+			try {
+				this.flows = await loadFlows(this.client)
+			} catch {
+				this.flows = null
+			}
+		},
+
 		/**
 		 * Load the form library and, for an existing journey, the journey.
 		 *

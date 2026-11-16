@@ -15,6 +15,7 @@ import {
 	checkJourneyWrites,
 	fieldsAskedBy,
 	journeyFindings,
+	listFieldsAskedBy,
 	moveStep,
 	repeatFindings,
 	stepFindings,
@@ -185,6 +186,22 @@ describe('repeating writes (forms-multi-product-request)', () => {
 	 * @param {string} [on] - the step that makes it.
 	 * @return {object} The journey.
 	 */
+	it('lists the list answers asked so far, with their item fields', () => {
+		const journey = {
+			steps: [
+				{ id: 'contact', type: 'form', formId: 'form-contact' },
+				{ id: 'products', type: 'form', formId: 'form-products' },
+				{ id: 'more', type: 'form', formId: 'form-columns' },
+			],
+		}
+		const forms = { ...productForms, 'form-columns': { fields: [{ key: 'bijlagen', widget: 'sub-objects', columns: [{ key: 'soort' }, { name: 'bestand' }] }] } }
+
+		expect(listFieldsAskedBy(journey, forms, 0)).toEqual([])
+		expect(listFieldsAskedBy(journey, forms, 1)).toEqual([{ key: 'producten', columns: ['product'] }])
+		expect(listFieldsAskedBy(journey, forms, 2)).toEqual([{ key: 'producten', columns: ['product'] }, { key: 'bijlagen', columns: ['soort', 'bestand'] }])
+		expect(listFieldsAskedBy(null, forms, 2)).toEqual([])
+	})
+
 	function multi(write, on = 'products') {
 		const steps = [
 			{ id: 'contact', type: 'form', formId: 'form-contact' },
