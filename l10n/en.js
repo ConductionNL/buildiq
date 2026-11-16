@@ -1,7 +1,3 @@
-/**
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
- * SPDX-License-Identifier: EUPL-1.2
- */
 OC.L10N.register(
     "buildiq",
     {
@@ -1635,6 +1631,16 @@ OC.L10N.register(
         "Arguments & result": "Arguments & result",
         "Assignee group": "Assignee group",
         "Assignee group id": "Assignee group id",
+        "Fields the approver fills in": "Fields the approver fills in",
+        "Leave empty: the approver only approves or rejects.": "Leave empty: the approver only approves or rejects.",
+        "_asks for {count} field: {fields}_::_asks for {count} fields: {fields}_": ["asks for {count} field: {fields}","asks for {count} fields: {fields}"],
+        "asks for {count} field: {fields}": "asks for {count} field: {fields}",
+        "asks for {count} fields: {fields}": "asks for {count} fields: {fields}",
+        "_{count} field to fill in_::_{count} fields to fill in_": ["{count} field to fill in","{count} fields to fill in"],
+        "{count} field to fill in": "{count} field to fill in",
+        "{count} fields to fill in": "{count} fields to fill in",
+        "The form of this approval could not be loaded.": "The form of this approval could not be loaded.",
+        "The form of this approval cannot be filled in.": "The form of this approval cannot be filled in.",
         "Attach to object": "Attach to object",
         "Bindings reference {count} schema(s).": "Bindings reference {count} schema(s).",
         "Block name": "Block name",
@@ -2403,6 +2409,8 @@ OC.L10N.register(
         "A KvK number has eight digits.": "A KvK number has eight digits.",
         "A branch number has twelve digits.": "A branch number has twelve digits.",
         "This value does not have the expected format.": "This value does not have the expected format.",
+        "Organisation scope": "Organisation scope",
+        "Who sees this app: all organisations, or only the organisation that holds it. Absent means all organisations.": "Who sees this app: all organisations, or only the organisation that holds it. Absent means all organisations.",
         "Add external data widget": "Add external data widget",
         "Failures": "Failures",
         "Failed requests, 4xx and 5xx together. Derived by the server, never posted; summed by the request failure metric.": "Failed requests, 4xx and 5xx together. Derived by the server, never posted; summed by the request failure metric.",
@@ -2428,7 +2436,13 @@ OC.L10N.register(
         "The branch could not be started.": "The branch could not be started.",
         "The merge could not be completed.": "The merge could not be completed.",
         "This merge changes schemas in a way that can break records already stored:": "This merge changes schemas in a way that can break records already stored:",
-        "Which side to keep": "Which side to keep"
+        "Which side to keep": "Which side to keep",
+        "This organisation only": "This organisation only",
+        "Only members of the organisation that holds this app see it, open it and read its records. Rule sets and data registers stay shared.": "Only members of the organisation that holds this app see it, open it and read its records. Rule sets and data registers stay shared.",
+        "Every organisation will see this app. Its records stay with this organisation.": "Every organisation will see this app. Its records stay with this organisation.",
+        "Share with all organisations": "Share with all organisations",
+        "Keep it to this organisation": "Keep it to this organisation",
+        "This slug is taken. Choose another.": "This slug is taken. Choose another."
     },
     "nplurals=2; plural=(n != 1);"
 )

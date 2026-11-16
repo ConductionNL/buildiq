@@ -90,13 +90,20 @@
 							}}
 						</time>
 					</span>
+					<span
+						v-if="formLine(step)"
+						class="my-approvals-widget__form"
+						:class="{ 'my-approvals-widget__form--blocked': formState(step) !== 'ready' }"
+						data-testid="my-approvals-form">
+						{{ formLine(step) }}
+					</span>
 				</div>
 				<div class="my-approvals-widget__row-actions">
 					<NcButton
 						variant="primary"
-						:disabled="!!deciding[step.id]"
+						:disabled="!!deciding[step.id] || !approvable(step)"
 						data-testid="approve-button"
-						@click="decide(step, 'approve')">
+						@click="approve(step)">
 						{{ t('buildiq', 'Approve') }}
 					</NcButton>
 					<NcButton
@@ -113,14 +120,26 @@
 		<NcNoteCard v-if="decideError" type="error">
 			{{ decideError }}
 		</NcNoteCard>
+
+		<ApprovalTaskFormDialog
+			v-if="formTask"
+			:task="formTask"
+			:dialogTitle="formTask.displayTitle || formTask.title || ''"
+			@completed="onFormCompleted"
+			@close="formTask = null" />
 	</div>
 </template>
 
 <script>
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
+import { defineAsyncComponent } from 'vue'
 import NcButton from '@nextcloud/vue/components/NcButton'
 import NcNoteCard from '@nextcloud/vue/components/NcNoteCard'
+
+// Loaded when an approver opens a form, so the widget (and every host that
+// registers it) does not pull the task form in at boot.
+const ApprovalTaskFormDialog = defineAsyncComponent(() => import('../../dialogs/ApprovalTaskFormDialog.vue'))
 
 /**
  * The inbox scopes that together mean "waiting for me": the unclaimed tasks
@@ -198,7 +217,7 @@ function compareMissingDeadlines(da, db) {
 
 export default {
 	name: 'MyApprovalsWidget',
-	components: { NcButton, NcNoteCard },
+	components: { ApprovalTaskFormDialog, NcButton, NcNoteCard },
 	data() {
 		return {
 			loading: false,
@@ -206,6 +225,8 @@ export default {
 			steps: [],
 			deciding: {},
 			decideError: '',
+			taskForms: {},
+			formTask: null,
 		}
 	},
 
@@ -307,6 +328,7 @@ export default {
 			try {
 				const pages = await this.readInboxPages()
 				this.steps = this.byDeadline(uniqueRows(pages))
+				await this.readTaskForms(this.steps)
 			} catch (err) {
 				this.error = true
 				this.steps = []
@@ -359,6 +381,132 @@ export default {
 			const da = this.deadlineOf(a.row)
 			const db = this.deadlineOf(b.row)
 			return compareDeadlines(da, db) || a.index - b.index
+		},
+
+		/**
+		 * Whether an inbox row's task carries a form: OpenRegister copies a
+		 * position's form into the task's `metadata.form` when it opens it.
+		 *
+		 * @param {object} step - the inbox row.
+		 * @return {boolean}
+		 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-an-approver-fills-in-the-form-before-approving-req-bqtf-003
+		 */
+		hasForm(step) {
+			const form = step && step.metadata && step.metadata.form
+			return Boolean(form) && typeof form === 'object' && !Array.isArray(form)
+		},
+
+		/**
+		 * Read `GET /flow-tasks/{uuid}` for every row with a form, for the
+		 * form's state and the dialog. A failed read leaves the row without
+		 * a resolved form, so it cannot be approved.
+		 *
+		 * @param {Array<object>} steps - the inbox rows.
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-an-approver-fills-in-the-form-before-approving-req-bqtf-003
+		 */
+		async readTaskForms(steps) {
+			const withForm = steps.filter((step) => this.hasForm(step))
+			const read = await Promise.all(withForm.map(async (step) => {
+				const uuid = step.uuid ?? step.id
+				try {
+					const { data } = await axios.get(
+						generateUrl(`/apps/openregister/api/flow-tasks/${encodeURIComponent(uuid)}`),
+					)
+					return [step.id, data || null]
+				} catch {
+					return [step.id, null]
+				}
+			}))
+			this.taskForms = Object.fromEntries(read)
+		},
+
+		/**
+		 * The form state of a row: '' without a form, `unread` when its task
+		 * could not be read, else the state OpenRegister reports.
+		 *
+		 * @param {object} step - the inbox row.
+		 * @return {string}
+		 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-an-approver-fills-in-the-form-before-approving-req-bqtf-003
+		 */
+		formState(step) {
+			if (!this.hasForm(step)) {
+				return ''
+			}
+			const task = this.taskForms[step.id]
+			const form = task && task.form
+			if (!form || typeof form !== 'object') {
+				return 'unread'
+			}
+			return String(form.state || 'broken')
+		},
+
+		/**
+		 * The row's extra line: how many fields the approver fills in, or
+		 * why the form cannot be used.
+		 *
+		 * @param {object} step - the inbox row.
+		 * @return {string}
+		 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-an-approver-fills-in-the-form-before-approving-req-bqtf-003
+		 */
+		formLine(step) {
+			const state = this.formState(step)
+			if (state === '') {
+				return ''
+			}
+			if (state === 'unread') {
+				return t('buildiq', 'The form of this approval could not be loaded.')
+			}
+			const form = this.taskForms[step.id].form
+			const fields = Array.isArray(form.fields) ? form.fields : []
+			if (state === 'ready') {
+				return n('buildiq', '{count} field to fill in', '{count} fields to fill in', fields.length, { count: fields.length })
+			}
+			const broken = fields.find((field) => field && field.renderable === false && field.reason)
+			return (broken && broken.reason) || form.error || t('buildiq', 'The form of this approval cannot be filled in.')
+		},
+
+		/**
+		 * Whether Approve is offered: always without a form, only for a ready one with.
+		 *
+		 * @param {object} step - the inbox row.
+		 * @return {boolean}
+		 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-an-approver-fills-in-the-form-before-approving-req-bqtf-003
+		 */
+		approvable(step) {
+			const state = this.formState(step)
+			return state === '' || state === 'ready'
+		},
+
+		/**
+		 * Approve a row: open the form dialog when its task asks for fields,
+		 * else complete it as before.
+		 *
+		 * @param {object} step - the inbox row.
+		 * @return {Promise<void>|void}
+		 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-an-approver-fills-in-the-form-before-approving-req-bqtf-003
+		 */
+		approve(step) {
+			if (!this.approvable(step)) {
+				return undefined
+			}
+			if (this.formState(step) === 'ready') {
+				this.decideError = ''
+				this.formTask = this.taskForms[step.id]
+				return undefined
+			}
+			return this.decide(step, 'approve')
+		},
+
+		/**
+		 * The form dialog completed the task: close it and reload the inbox.
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-an-approver-fills-in-the-form-before-approving-req-bqtf-003
+		 */
+		async onFormCompleted() {
+			this.formTask = null
+			await this.load()
 		},
 
 		/**
@@ -482,6 +630,15 @@ export default {
 .my-approvals-widget__flag--soon {
 	color: var(--color-warning-text, var(--color-warning));
 	border: 1px solid var(--color-warning);
+}
+
+.my-approvals-widget__form {
+	font-size: 0.85em;
+	color: var(--color-text-maxcontrast);
+}
+
+.my-approvals-widget__form--blocked {
+	color: var(--color-error-text, var(--color-error));
 }
 
 .my-approvals-widget__row-actions {
