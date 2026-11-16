@@ -134,7 +134,9 @@ class FormDestinationCheck {
 			];
 		}
 
-		return self::listedFindings(findings: $this->validateWith(validator: $validator, mapping: $mapping, schema: $destination['entity'], options: $options));
+		return self::listedFindings(
+			findings: $this->validateWith(validator: $validator, mapping: $mapping, schema: $destination['entity'], options: $options)
+		);
 	}//end check()
 
 	/**
