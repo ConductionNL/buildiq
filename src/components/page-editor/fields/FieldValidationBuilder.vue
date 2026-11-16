@@ -202,6 +202,8 @@ export default {
 		 * The line under the select: where an inherited format comes from, or the format's hint.
 		 *
 		 * @return {string}
+		 *
+		 * @spec openspec/changes/form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-the-form-designer-offers-dutch-formats-for-a-field-req-bqdf-001
 		 */
 		formatHint() {
 			if (isDutchFormat(this.inheritedFormat)) {
@@ -381,6 +383,13 @@ export default {
 			}
 		},
 
+		/**
+		 * Takes a typed pattern, unless a Dutch format already decides the field's check.
+		 *
+		 * @param {string} value The pattern as typed.
+		 *
+		 * @spec openspec/changes/form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-the-form-designer-offers-dutch-formats-for-a-field-req-bqdf-001
+		 */
 		onPatternInput(value) {
 			if (this.formatDisplay) {
 				return

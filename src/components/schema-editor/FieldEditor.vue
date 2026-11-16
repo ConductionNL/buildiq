@@ -560,6 +560,8 @@ export default {
 		 * The Dutch formats, labelled (form-dutch-field-formats T03).
 		 *
 		 * @return {Array<{id: string, label: string, hint: string}>}
+		 *
+		 * @spec openspec/changes/form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-the-form-designer-offers-dutch-formats-for-a-field-req-bqdf-001
 		 */
 		dutchFormatOptions() {
 			return dutchFormatOptions()
