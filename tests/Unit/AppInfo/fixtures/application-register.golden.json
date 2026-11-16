@@ -407,6 +407,13 @@
     {
         "method": "registerServiceAlias",
         "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\VersionMergeRunnerInterface",
+            "target": "OCA\\Buildiq\\Service\\Branch\\VersionMergeRunner"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
             "alias": "OCA\\Buildiq\\Kernel\\Contracts\\VersionPromotionServiceInterface",
             "target": "OCA\\Buildiq\\Service\\VersionPromotionService"
         }

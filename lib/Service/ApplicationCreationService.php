@@ -1323,35 +1323,62 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 			return $manifest;
 		}
 
-		foreach ($manifest['pages'] as &$page) {
-			if (is_array($page) === false) {
+		foreach ($manifest['pages'] as $index => $page) {
+			if (is_array($page) === false || is_array($page['config'] ?? null) === false) {
 				continue;
 			}
 
-			if (isset($page['config']) === false || is_array($page['config']) === false) {
-				continue;
-			}
+			$config = $this->withVersionRegister(config: $page['config'], registerSlug: $registerSlug);
+			$manifest['pages'][$index]['config'] = $this->withSchemaPrefix(
+				config: $config,
+				schemaSlugPrefix: $schemaSlugPrefix,
+				dataRegisters: $dataRegisters
+			);
+		}
 
-			if (isset($page['config']['register']) === true && $page['config']['register'] === '{registerSlug}') {
-				$page['config']['register'] = $registerSlug;
-			}
-
-			// REQ-BQDB-004: a page on a bound data register keeps its schema.
-			$onDataRegister = in_array(($page['config']['register'] ?? null), $dataRegisters, true);
-			if ($schemaSlugPrefix !== ''
-				&& $onDataRegister === false
-				&& isset($page['config']['schema']) === true
-				&& is_string($page['config']['schema']) === true
-				&& $page['config']['schema'] !== ''
-				&& str_starts_with($page['config']['schema'], $schemaSlugPrefix) === false
-			) {
-				$page['config']['schema'] = $schemaSlugPrefix . $page['config']['schema'];
-			}
-		}//end foreach
-
-		unset($page);
 		return $manifest;
 	}//end substituteVersionContext()
+
+	/**
+	 * Replace the `{registerSlug}` token in a page config's `register`.
+	 *
+	 * @param array<string,mixed> $config       The page config.
+	 * @param string              $registerSlug The per-version register slug.
+	 *
+	 * @return array<string,mixed> The config with the register substituted.
+	 */
+	private function withVersionRegister(array $config, string $registerSlug): array {
+		if (($config['register'] ?? null) === '{registerSlug}') {
+			$config['register'] = $registerSlug;
+		}
+
+		return $config;
+	}//end withVersionRegister()
+
+	/**
+	 * Prefix a page config's schema slug with the namespaced seed prefix.
+	 *
+	 * A page on a bound data register keeps its schema (REQ-BQDB-004), as
+	 * does an empty schema or one that already carries the prefix.
+	 *
+	 * @param array<string,mixed> $config           The page config.
+	 * @param string              $schemaSlugPrefix Namespaced prefix for schema slugs.
+	 * @param array<int,string>   $dataRegisters    Register slugs bound in `dataRegisters`.
+	 *
+	 * @return array<string,mixed> The config with the schema prefixed where it applies.
+	 */
+	private function withSchemaPrefix(array $config, string $schemaSlugPrefix, array $dataRegisters): array {
+		if ($schemaSlugPrefix === '' || in_array(($config['register'] ?? null), $dataRegisters, true) === true) {
+			return $config;
+		}
+
+		$schema = $config['schema'] ?? null;
+		if (is_string($schema) === true && $schema !== '' && str_starts_with($schema, $schemaSlugPrefix) === false) {
+			$config['schema'] = $schemaSlugPrefix . $schema;
+		}
+
+		return $config;
+	}//end withSchemaPrefix()
 
 	/**
 	 * Get the UID of the currently authenticated user.

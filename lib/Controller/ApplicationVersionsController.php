@@ -47,9 +47,8 @@ use DateTimeImmutable;
 use DateTimeInterface;
 use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Kernel\Contracts\ApplicationVersionServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\VersionMergeRunnerInterface;
 use OCA\Buildiq\Service\Branch\VersionBranchRefused;
-use OCA\Buildiq\Service\Branch\VersionMergeRequest;
-use OCA\Buildiq\Service\Branch\VersionMergeRunner;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
@@ -131,7 +130,7 @@ class ApplicationVersionsController extends Controller {
 	 * @param IGroupManager $groupManager Group membership resolver
 	 * @param ApplicationVersionServiceInterface $versionService Owner of the imperative logic
 	 * @param AuditTrailMapper|null $auditTrailMapper Optional OR audit-trail writer (null until OR loaded)
-	 * @param VersionMergeRunner|null $merges Starts a branch, previews and applies a merge (lifecycle-git-branches)
+	 * @param VersionMergeRunnerInterface|null $merges Starts a branch, previews and applies a merge (lifecycle-git-branches)
 	 *
 	 * @return void
 	 */
@@ -145,7 +144,7 @@ class ApplicationVersionsController extends Controller {
 		private readonly IGroupManager $groupManager,
 		private readonly ApplicationVersionServiceInterface $versionService,
 		private readonly ?AuditTrailMapper $auditTrailMapper = null,
-		private readonly ?VersionMergeRunner $merges = null,
+		private readonly ?VersionMergeRunnerInterface $merges = null,
 	) {
 		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
@@ -362,7 +361,7 @@ class ApplicationVersionsController extends Controller {
 		}
 
 		return $this->branchRun(
-			run: fn (): array => $this->merges->branches->start(application: $application, source: $source, name: $name),
+			run: fn (): array => $this->merges->startBranch(application: $application, source: $source, name: $name),
 			status: Http::STATUS_CREATED
 		);
 	}//end branch()
@@ -390,44 +389,51 @@ class ApplicationVersionsController extends Controller {
 		}
 
 		$application = $this->loadApplication(slug: $appSlug);
-		$request     = $this->mergeRequest(application: (array)$application, source: $source, target: $target);
-		if ($application === null || $request === null) {
+		$versions    = $this->mergeVersions(application: (array)$application, source: $source, target: $target);
+		if ($application === null || $versions === null) {
 			return $this->errorResponse(code: 'not_found', detail: $source . ' / ' . $target, status: Http::STATUS_NOT_FOUND);
 		}
 
 		if ($this->request->getParam('preview') === true || $this->request->getParam('preview') === 'true') {
-			return $this->branchRun(run: fn (): array => $this->merges->preview(application: $application, request: $request), status: Http::STATUS_OK);
+			return $this->branchRun(
+				run: fn (): array => $this->merges->previewMerge(application: $application, source: $versions['source'], target: $versions['target']),
+				status: Http::STATUS_OK
+			);
 		}
 
-		return $this->branchRun(run: fn (): array => $this->merges->apply(application: $application, request: $request), status: Http::STATUS_OK);
+		return $this->branchRun(
+			run: fn (): array => $this->merges->applyMerge(
+				application: $application,
+				source: $versions['source'],
+				target: $versions['target'],
+				resolution: [
+					'choices' => $this->request->getParam('choices', []),
+					'targetHash' => $this->request->getParam('targetHash', ''),
+					'acknowledgeBreaking' => $this->request->getParam('acknowledgeBreaking'),
+				]
+			),
+			status: Http::STATUS_OK
+		);
 	}//end merge()
 
 	/**
-	 * The merge request of two versions of the Application, or null when either is missing.
+	 * The two versions of the Application to merge, or null when either is missing.
 	 *
 	 * @param array<string,mixed> $application The Application.
 	 * @param string              $source      The source version slug.
 	 * @param string              $target      The target version slug.
 	 *
-	 * @return VersionMergeRequest|null
+	 * @return array{source: array<string,mixed>, target: array<string,mixed>}|null
 	 */
-	private function mergeRequest(array $application, string $source, string $target): ?VersionMergeRequest {
+	private function mergeVersions(array $application, string $source, string $target): ?array {
 		$from = $this->findVersionRowBySlug(application: $application, versionSlug: $source);
 		$into = $this->findVersionRowBySlug(application: $application, versionSlug: $target);
 		if ($from === null || $into === null || $source === $target) {
 			return null;
 		}
 
-		return new VersionMergeRequest(
-			source: $from,
-			target: $into,
-			resolution: [
-				'choices' => $this->request->getParam('choices', []),
-				'targetHash' => $this->request->getParam('targetHash', ''),
-				'acknowledgeBreaking' => $this->request->getParam('acknowledgeBreaking'),
-			]
-		);
-	}//end mergeRequest()
+		return ['source' => $from, 'target' => $into];
+	}//end mergeVersions()
 
 	/**
 	 * Run a branch or merge step, answering a refusal with its own code and status.
