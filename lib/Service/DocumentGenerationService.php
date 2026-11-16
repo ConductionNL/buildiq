@@ -89,6 +89,8 @@ use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCP\Authentication\Token\IToken;
 use OCP\Files\AppData\IAppDataFactory;
 use OCP\Files\Folder;
@@ -794,9 +796,10 @@ class DocumentGenerationService implements DocumentGenerationServiceInterface {
 		try {
 			$this->objectService->saveObject(
 				object: [self::ATTACHMENT_FIELD => ['ref' => $fileId]],
-				register: self::REGISTER_SLUG,
-				schema: $schemaSlug,
-				uuid: $objectUuid
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: $schemaSlug),
+					uuid: $objectUuid
+				)
 			);
 		} catch (Throwable $e) {
 			$this->logger->error(

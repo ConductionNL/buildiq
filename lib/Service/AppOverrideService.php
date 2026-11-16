@@ -45,6 +45,10 @@ use DateTimeInterface;
 use OCA\Buildiq\Kernel\Contracts\AppOverrideServiceInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCP\App\IAppManager;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -282,9 +286,13 @@ class AppOverrideService implements AppOverrideServiceInterface {
 
 			$saved = $this->objectService->saveObject(
 				object: $existing,
-				register: self::REGISTER_SLUG,
-				schema: self::APPLICATION_VERSION_SCHEMA,
-				uuid: $versionUuid,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(
+							register: self::REGISTER_SLUG,
+							schema: self::APPLICATION_VERSION_SCHEMA
+						),
+					uuid: $versionUuid
+				),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -305,8 +313,10 @@ class AppOverrideService implements AppOverrideServiceInterface {
 					'status' => 'draft',
 					'application' => $appUuid,
 				],
-				register: self::REGISTER_SLUG,
-				schema: self::APPLICATION_VERSION_SCHEMA,
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(
+						register: self::REGISTER_SLUG,
+						schema: self::APPLICATION_VERSION_SCHEMA
+					)),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -621,8 +631,7 @@ class AppOverrideService implements AppOverrideServiceInterface {
 		try {
 			$entity = $this->objectService->find(
 				id: $versionUuid,
-				register: self::REGISTER_SLUG,
-				schema: self::APPLICATION_VERSION_SCHEMA
+				options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: self::APPLICATION_VERSION_SCHEMA)
 			);
 		} catch (Throwable $e) {
 			$this->logger->error(
@@ -661,8 +670,7 @@ class AppOverrideService implements AppOverrideServiceInterface {
 				'appType' => 'hybrid',
 				'baseRef' => $baseRefObject,
 			],
-			register: self::REGISTER_SLUG,
-			schema: self::APPLICATION_SCHEMA,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::APPLICATION_SCHEMA)),
 			_rbac: $rbac,
 			_multitenancy: $rbac
 		);
@@ -683,8 +691,7 @@ class AppOverrideService implements AppOverrideServiceInterface {
 				'status' => 'published',
 				'application' => $applicationUuid,
 			],
-			register: self::REGISTER_SLUG,
-			schema: self::APPLICATION_VERSION_SCHEMA,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::APPLICATION_VERSION_SCHEMA)),
 			_rbac: $rbac,
 			_multitenancy: $rbac
 		);
@@ -701,9 +708,10 @@ class AppOverrideService implements AppOverrideServiceInterface {
 			$applicationData['productionVersion'] = $versionUuid;
 			$this->objectService->saveObject(
 				object: $applicationData,
-				register: self::REGISTER_SLUG,
-				schema: self::APPLICATION_SCHEMA,
-				uuid: $applicationUuid,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::APPLICATION_SCHEMA),
+					uuid: $applicationUuid
+				),
 				_rbac: $rbac,
 				_multitenancy: $rbac
 			);
@@ -749,9 +757,13 @@ class AppOverrideService implements AppOverrideServiceInterface {
 
 			$this->objectService->saveObject(
 				object: $version,
-				register: self::REGISTER_SLUG,
-				schema: self::APPLICATION_VERSION_SCHEMA,
-				uuid: $versionUuid,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(
+							register: self::REGISTER_SLUG,
+							schema: self::APPLICATION_VERSION_SCHEMA
+						),
+					uuid: $versionUuid
+				),
 				_rbac: $rbac,
 				_multitenancy: $rbac
 			);
@@ -811,7 +823,7 @@ class AppOverrideService implements AppOverrideServiceInterface {
 	 */
 	private function deleteObjectSafely(string $uuid, string $context): void {
 		try {
-			$this->objectService->deleteObject(uuid: $uuid);
+			$this->objectService->deleteObject(new ObjectDeletion(uuid: $uuid));
 		} catch (Throwable $e) {
 			$this->logger->error(
 				'Buildiq: failed to delete ' . $context . ': ' . $e->getMessage(),

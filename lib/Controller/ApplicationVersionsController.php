@@ -57,6 +57,11 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -261,8 +266,10 @@ class ApplicationVersionsController extends Controller {
 
 			$created = $this->objectService->saveObject(
 				object: $payload,
-				register: ApplicationVersionServiceInterface::REGISTER_SLUG,
-				schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(
+						register: ApplicationVersionServiceInterface::REGISTER_SLUG,
+						schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
+					))
 			);
 
 			return new JSONResponse(
@@ -490,9 +497,13 @@ class ApplicationVersionsController extends Controller {
 			try {
 				$updated = $this->objectService->saveObject(
 					object: $payload,
-					register: ApplicationVersionServiceInterface::REGISTER_SLUG,
-					schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA,
-					uuid: $currentUuid
+					options: new ObjectSaveOptions(
+						target: new ObjectFindTarget(
+								register: ApplicationVersionServiceInterface::REGISTER_SLUG,
+								schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
+							),
+						uuid: $currentUuid
+					)
 				);
 			} finally {
 				$this->releaseUpdateLock(currentUuid: $currentUuid, locked: $locked);
@@ -589,9 +600,7 @@ class ApplicationVersionsController extends Controller {
 
 		try {
 			$this->objectService->lockObject(
-				identifier: $currentUuid,
-				process: 'buildiq.controller-update',
-				duration: 15
+				new LockRequest(identifier: $currentUuid, process: 'buildiq.controller-update', duration: 15)
 			);
 		} catch (Throwable $lockError) {
 			return $this->errorResponse(
@@ -618,7 +627,7 @@ class ApplicationVersionsController extends Controller {
 		}
 
 		try {
-			$this->objectService->unlockObject(identifier: $currentUuid);
+			$this->objectService->unlockObject(new UnlockRequest(identifier: $currentUuid));
 		} catch (Throwable $unlockErr) {
 			$this->logger->warning(
 				'Buildiq: failed to release update lock on ' . $currentUuid . ': ' . $unlockErr->getMessage()
@@ -781,8 +790,10 @@ class ApplicationVersionsController extends Controller {
 		try {
 			$version = $this->objectService->find(
 				id: $versionUuid,
-				register: ApplicationVersionServiceInterface::REGISTER_SLUG,
-				schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
+				options: new ObjectFindOptions(
+					register: ApplicationVersionServiceInterface::REGISTER_SLUG,
+					schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
+				)
 			);
 		} catch (Throwable $e) {
 			return null;

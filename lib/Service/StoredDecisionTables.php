@@ -40,6 +40,8 @@ namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Kernel\Contracts\StoredDecisionTablesInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\Dmn\DecisionTableStore;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -196,9 +198,13 @@ class StoredDecisionTables implements StoredDecisionTablesInterface {
 		try {
 			$this->objects->saveObject(
 				object: $row,
-				register: DecisionTableStore::REGISTER,
-				schema: DecisionTableStore::SCHEMA,
-				uuid: $this->existingUuid(key: $key),
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(
+							register: DecisionTableStore::REGISTER,
+							schema: DecisionTableStore::SCHEMA
+						),
+					uuid: $this->existingUuid(key: $key)
+				),
 				_rbac: false,
 				_multitenancy: false
 			);

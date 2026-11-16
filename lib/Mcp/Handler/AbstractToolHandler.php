@@ -32,6 +32,10 @@ use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -746,9 +750,7 @@ abstract class AbstractToolHandler {
 		// the finally must release it.
 		try {
 			$objectService->lockObject(
-				identifier: $versionUuid,
-				process: 'buildiq.mcp-manifest-edit',
-				duration: 30
+				new LockRequest(identifier: $versionUuid, process: 'buildiq.mcp-manifest-edit', duration: 30)
 			);
 		} catch (\Throwable $lockError) {
 			$this->logger->warning(
@@ -772,15 +774,16 @@ abstract class AbstractToolHandler {
 
 			$saved = $objectService->saveObject(
 				object: $payload,
-				register: self::REGISTER_SLUG,
-				schema: 'applicationVersion',
-				uuid: $versionUuid,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: 'applicationVersion'),
+					uuid: $versionUuid
+				)
 			);
 
 			return $this->toArray(item: $saved);
 		} finally {
 			try {
-				$objectService->unlockObject(identifier: $versionUuid);
+				$objectService->unlockObject(new UnlockRequest(identifier: $versionUuid));
 			} catch (\Throwable $unlockError) {
 				$this->logger->warning(
 					'Buildiq MCP: failed to release manifest lock on ' . $versionUuid,
