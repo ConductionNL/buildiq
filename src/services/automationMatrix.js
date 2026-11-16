@@ -47,6 +47,7 @@ export const ACTION_TYPES = Object.freeze([
 	'webhook',
 	'approval',
 	'generateDocument',
+	'rule-decision',
 ])
 
 /**
@@ -58,20 +59,36 @@ export const ACTION_TYPES = Object.freeze([
  * (automation-document-action) is expressible on the SAME four triggers for
  * the identical reason — Docudesk generates a document FOR a concrete
  * object instance, which a `schedule`/`manual` trigger does not carry.
+ *
+ * logic-automation-actions-that-run (D1, D3): the flow actions `object-op`,
+ * `webhook` and `rule-decision` compile to one OpenRegister flow, which the
+ * compiler builds for an object event or a manual trigger before it consults
+ * its own matrix, so they are offered there too.
+ *
+ * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-declarative-primitives-or-one-openregister-flow-req-bqar-001
  */
 export const MATRIX = Object.freeze({
 	'object-created': Object.freeze([
 		'send-notification',
+		'object-op',
+		'webhook',
+		'rule-decision',
 		'approval',
 		'generateDocument',
 	]),
 	'object-updated': Object.freeze([
 		'send-notification',
+		'object-op',
+		'webhook',
+		'rule-decision',
 		'approval',
 		'generateDocument',
 	]),
 	'object-deleted': Object.freeze([
 		'send-notification',
+		'object-op',
+		'webhook',
+		'rule-decision',
 		'approval',
 		'generateDocument',
 	]),
@@ -83,7 +100,12 @@ export const MATRIX = Object.freeze({
 		'generateDocument',
 	]),
 	schedule: Object.freeze(['run-synchronization']),
-	manual: Object.freeze(['send-notification', 'object-op', 'webhook']),
+	manual: Object.freeze([
+		'send-notification',
+		'object-op',
+		'webhook',
+		'rule-decision',
+	]),
 })
 
 /** Trigger types on which a condition is v1-supported. */

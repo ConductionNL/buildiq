@@ -140,7 +140,7 @@
 						{{
 							t(
 								'buildiq',
-								'The actions always run. The rule set runs first, and its outcome does not stop them.',
+								'The rule set runs first. The actions run only when its outcome is true.',
 							)
 						}}
 					</NcNoteCard>
@@ -242,17 +242,84 @@
 					</template>
 
 					<template v-else-if="action.type === 'webhook'">
-						<NcTextField
-							:modelValue="action.url"
-							:label="t('buildiq', 'Webhook URL')"
+						<!-- logic-automation-actions-that-run D5: a configured
+						     integriq source and a path, never a bare URL. -->
+						<NcNoteCard
+							v-if="action.url && !action.source"
+							type="warning"
+							data-testid="webhook-bare-url">
+							{{
+								t('buildiq', 'This step still posts to {url}. Pick a source for this webhook.', { url: action.url })
+							}}
+						</NcNoteCard>
+						<NcSelect
+							v-if="sourcePickerAvailable"
+							:modelValue="sourceOption(action.source)"
+							:inputLabel="t('buildiq', 'Source')"
+							:options="sourceOptions"
+							:loading="sourcesLoading"
+							label="label"
+							data-testid="webhook-source-select"
 							@update:modelValue="
-								updateAction(index, 'url', $event)
+								updateAction(index, 'source', $event ? $event.id : '')
+							" />
+						<NcTextField
+							v-else
+							:modelValue="action.source"
+							:label="t('buildiq', 'Source')"
+							data-testid="webhook-source-text"
+							@update:modelValue="
+								updateAction(index, 'source', $event)
+							" />
+						<NcTextField
+							:modelValue="action.path"
+							:label="t('buildiq', 'Path')"
+							placeholder="/intake"
+							@update:modelValue="
+								updateAction(index, 'path', $event)
 							" />
 						<NcTextArea
 							:modelValue="action.payloadTemplateText"
 							:label="t('buildiq', 'Payload template (JSON)')"
 							@update:modelValue="
 								updateAction(index, 'payloadTemplateText', $event)
+							" />
+					</template>
+
+					<template v-else-if="action.type === 'rule-decision'">
+						<!-- logic-automation-actions-that-run D7: a decision
+						     table decides, and its outcome is written onto
+						     the record. -->
+						<NcSelect
+							v-if="ruleSetPickerAvailable"
+							:modelValue="ruleSetOption(action.ruleSetSlug)"
+							:inputLabel="t('buildiq', 'Rule set')"
+							:options="ruleSetOptions"
+							:loading="ruleSetsLoading"
+							label="label"
+							data-testid="rule-decision-rule-set-select"
+							@update:modelValue="
+								updateAction(index, 'ruleSetSlug', $event ? $event.id : '')
+							" />
+						<NcTextField
+							v-else
+							:modelValue="action.ruleSetSlug"
+							:label="t('buildiq', 'Rule set slug')"
+							data-testid="rule-decision-rule-set-text"
+							@update:modelValue="
+								updateAction(index, 'ruleSetSlug', $event)
+							" />
+						<NcTextArea
+							:modelValue="action.inputMappingText"
+							:label="t('buildiq', 'Inputs (JSON, table column to record field)')"
+							@update:modelValue="
+								updateAction(index, 'inputMappingText', $event)
+							" />
+						<NcTextField
+							:modelValue="action.outputField"
+							:label="t('buildiq', 'Write the decision to field')"
+							@update:modelValue="
+								updateAction(index, 'outputField', $event)
 							" />
 					</template>
 
@@ -381,6 +448,10 @@ import {
 	isActionAllowed,
 	isConditionAllowed,
 } from '../services/automationMatrix.js'
+import {
+	fetchDecisionRuleSets,
+	fetchIntegriqSources,
+} from '../services/automationStepSources.js'
 import { fetchConnectorSynchronizations } from '../services/connectorSynchronizations.js'
 import { slugify } from '../utils/slugify.js'
 import { askableFieldOptions, formFieldsOf } from './approvalFormFields.js'
@@ -430,7 +501,9 @@ export default {
 	 */
 	setup() {
 		const docudeskStatus = useAppStatus('filinq')
-		return { docudeskStatus }
+		// A webhook step calls an integriq source (logic-automation-actions-that-run D5).
+		const integriqStatus = useAppStatus('integriq')
+		return { docudeskStatus, integriqStatus }
 	},
 
 	data() {
@@ -466,6 +539,12 @@ export default {
 			groupLoading: false,
 			groupFetchFailed: false,
 			docudeskTemplateOptions: [],
+			sourceOptions: [],
+			sourcesLoading: false,
+			sourcesFetchFailed: false,
+			ruleSetOptions: [],
+			ruleSetsLoading: false,
+			ruleSetsFetchFailed: false,
 			docudeskTemplatesLoading: false,
 			docudeskTemplatesFetchFailed: false,
 			saving: false,
@@ -556,7 +635,9 @@ export default {
 			return [
 				{ value: 'none', label: t('buildiq', 'None') },
 				{ value: 'feel', label: t('buildiq', 'FEEL expression') },
-				{ value: 'rule-set', label: t('buildiq', 'Also run a rule set') },
+				// A condition is offered only on a manual trigger, which compiles to
+				// a flow where the rule set's outcome gates the steps (REQ-BQAR-004).
+				{ value: 'rule-set', label: t('buildiq', 'Rule set decides') },
 			]
 		},
 
@@ -594,7 +675,69 @@ export default {
 					value: 'generateDocument',
 					label: t('buildiq', 'Generate document'),
 				},
+				{
+					value: 'rule-decision',
+					label: t('buildiq', 'Decide with a rule set'),
+				},
 			]
+		},
+
+		/**
+		 * Whether integriq is available; assumed until the soft check says
+		 * otherwise, as `docudeskAvailable` does.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-webhook-step-calls-a-configured-source-req-bqar-003
+		 */
+		integriqAvailable() {
+			return (
+				!this.integriqStatus.checked.value
+				|| this.integriqStatus.available.value
+			)
+		},
+
+		/**
+		 * Whether the source list loaded; otherwise the source is typed.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-webhook-step-calls-a-configured-source-req-bqar-003
+		 */
+		sourcePickerAvailable() {
+			return !this.sourcesFetchFailed && this.sourceOptions.length > 0
+		},
+
+		/**
+		 * Whether the decision table list loaded; otherwise the slug is typed.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-step-decides-with-a-rule-set-req-bqar-005
+		 */
+		ruleSetPickerAvailable() {
+			return !this.ruleSetsFetchFailed && this.ruleSetOptions.length > 0
+		},
+
+		/**
+		 * The first flow step that is not complete, as its refusal, or ''.
+		 * A webhook needs a source, a rule decision a rule set and an output
+		 * field (REQ-BQAR-003, REQ-BQAR-005).
+		 *
+		 * @return {string}
+		 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-webhook-step-calls-a-configured-source-req-bqar-003
+		 */
+		incompleteStepMessage() {
+			for (const action of this.actions) {
+				if (action.type === 'webhook' && String(action.source || '').trim() === '') {
+					return t('buildiq', 'Pick a source for this webhook.')
+				}
+				if (
+					action.type === 'rule-decision'
+					&& (String(action.ruleSetSlug || '').trim() === ''
+						|| String(action.outputField || '').trim() === '')
+				) {
+					return t('buildiq', 'Pick a rule set and the field its decision is written to.')
+				}
+			}
+			return ''
 		},
 
 		/**
@@ -706,6 +849,9 @@ export default {
 			) {
 				return false
 			}
+			if (this.incompleteStepMessage !== '') {
+				return false
+			}
 			return this.actions
 				.filter((a) => a.type === 'generateDocument')
 				.every((a) => this.generateDocumentActionValid(a))
@@ -720,6 +866,9 @@ export default {
 			}
 			if (this.actions.length === 0) {
 				return t('buildiq', 'Add at least one action.')
+			}
+			if (this.incompleteStepMessage !== '') {
+				return this.incompleteStepMessage
 			}
 			return t(
 				'buildiq',
@@ -757,6 +906,7 @@ export default {
 				this.fetchGroups()
 				this.docudeskStatus.check()
 				this.fetchDocudeskTemplateOptions()
+				this.fetchStepSources()
 			}
 		},
 	},
@@ -836,6 +986,11 @@ export default {
 				schema: action.schema || '',
 				fieldMappingText: JSON.stringify(action.fieldMapping || {}, null, 2),
 				url: action.url || '',
+				source: action.source || '',
+				path: action.path || '',
+				ruleSetSlug: action.ruleSetSlug || '',
+				inputMappingText: JSON.stringify(action.inputMapping || {}, null, 2),
+				outputField: action.outputField || '',
 				payloadTemplateText: JSON.stringify(
 					action.payloadTemplate || {},
 					null,
@@ -1009,6 +1164,59 @@ export default {
 		 */
 		syncOption(syncId) {
 			return this.syncOptions.find((o) => o.id === syncId) || null
+		},
+
+		/**
+		 * Load the integriq sources and the decision tables the flow steps
+		 * pick from; each list degrades to a text field when it cannot load
+		 * (logic-automation-actions-that-run D5, D7).
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-webhook-step-calls-a-configured-source-req-bqar-003
+		 */
+		async fetchStepSources() {
+			this.sourcesLoading = true
+			this.ruleSetsLoading = true
+			const available = await this.integriqStatus.check()
+			const [sources, ruleSets] = await Promise.allSettled([
+				available ? fetchIntegriqSources() : Promise.resolve([]),
+				fetchDecisionRuleSets(),
+			])
+			this.sourceOptions = sources.status === 'fulfilled' ? sources.value : []
+			this.sourcesFetchFailed = sources.status !== 'fulfilled'
+			this.ruleSetOptions = ruleSets.status === 'fulfilled' ? ruleSets.value : []
+			this.ruleSetsFetchFailed = ruleSets.status !== 'fulfilled'
+			this.sourcesLoading = false
+			this.ruleSetsLoading = false
+		},
+
+		/**
+		 * The listed source a webhook step names, or a plain option for one
+		 * that is not listed, so the stored reference stays visible.
+		 *
+		 * @param {string} reference The stored source reference.
+		 * @return {?object}
+		 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-webhook-step-calls-a-configured-source-req-bqar-003
+		 */
+		sourceOption(reference) {
+			if (!reference) {
+				return null
+			}
+			return this.sourceOptions.find((o) => o.id === reference) || { id: reference, label: reference }
+		},
+
+		/**
+		 * The listed decision table a rule decision names, or a plain option.
+		 *
+		 * @param {string} slug The stored rule set slug.
+		 * @return {?object}
+		 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-step-decides-with-a-rule-set-req-bqar-005
+		 */
+		ruleSetOption(slug) {
+			if (!slug) {
+				return null
+			}
+			return this.ruleSetOptions.find((o) => o.id === slug) || { id: slug, label: slug }
 		},
 
 		onSyncSelect(index, option) {
@@ -1213,6 +1421,12 @@ export default {
 				return t(
 					'buildiq',
 					'Docudesk is not installed — document-generation actions are unavailable.',
+				)
+			}
+			if (type === 'webhook' && !this.integriqAvailable) {
+				return t(
+					'buildiq',
+					'Integriq is not installed, so a webhook step has no source to call.',
 				)
 			}
 			return ''

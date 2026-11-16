@@ -113,7 +113,8 @@ describe('AutomationEditDialog — fields', () => {
 		await field(wrapper, 'Operation').setValue('update')
 		await field(wrapper, 'Target schema').setValue('decision')
 		await field(wrapper, 'Field mapping (JSON)').setValue('{"permit":"{{ id }}"}')
-		await field(wrapper, 'Webhook URL').setValue('https://hooks.example.org/permit')
+		await field(wrapper, 'Source').setValue('planning')
+		await field(wrapper, 'Path').setValue('/intake')
 		await field(wrapper, 'Payload template (JSON)').setValue('{"id":"{{ id }}"}')
 		await field(wrapper, 'Assignee group id').setValue('vergunningen')
 		await wrapper.find('[data-testid="on-approve-editor"]').trigger('click')
@@ -123,7 +124,7 @@ describe('AutomationEditDialog — fields', () => {
 		const [notify, objectOp, webhook, approval, document] = wrapper.vm.actions
 		expect(notify).toMatchObject({ subjectEn: 'Permit approved', subjectNl: 'Vergunning verleend' })
 		expect(objectOp).toMatchObject({ operation: 'update', schema: 'decision', fieldMappingText: '{"permit":"{{ id }}"}' })
-		expect(webhook).toMatchObject({ url: 'https://hooks.example.org/permit', payloadTemplateText: '{"id":"{{ id }}"}' })
+		expect(webhook).toMatchObject({ source: 'planning', path: '/intake', payloadTemplateText: '{"id":"{{ id }}"}' })
 		expect(approval).toMatchObject({
 			assigneeGroup: 'vergunningen',
 			onApprove: [{ type: 'object-op' }],
