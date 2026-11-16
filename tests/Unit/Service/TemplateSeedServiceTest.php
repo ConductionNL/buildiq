@@ -37,6 +37,7 @@ use OCP\AppFramework\Db\DoesNotExistException;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\Buildiq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Tests for TemplateSeedService::seed and ::countSeeded.
@@ -467,6 +468,7 @@ class TemplateSeedServiceTest extends TestCase {
 		$captured = [];
 		$this->objectService->method('saveObject')->willReturnCallback(
 			function (...$args) use (&$captured, $entity): ObjectEntity {
+				$args = LegacyObjectArgs::positional(method: 'saveObject', args: $args);
 				$captured[] = $args;
 				return $entity;
 			}

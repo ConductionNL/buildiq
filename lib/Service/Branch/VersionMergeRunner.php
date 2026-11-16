@@ -36,6 +36,8 @@ use OCA\Buildiq\Kernel\Contracts\VersionMergeRunnerInterface;
 use OCA\Buildiq\Service\VersionMergeService;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Runs a version merge: preview first, write once.
@@ -198,9 +200,13 @@ class VersionMergeRunner implements VersionMergeRunnerInterface {
 		return ObjectRecord::toArray(
 			object: $this->objects->saveObject(
 				object: $this->branches->versions->onSave(current: $current, next: $next),
-				register: ApplicationVersionServiceInterface::REGISTER_SLUG,
-				schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA,
-				uuid: $uuid
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(
+							register: ApplicationVersionServiceInterface::REGISTER_SLUG,
+							schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
+						),
+					uuid: $uuid
+				)
 			)
 		);
 	}//end saveTarget()

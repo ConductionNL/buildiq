@@ -211,8 +211,8 @@ class UpsertMenuItemHandlerTest extends TestCase {
 	public function testAppendsANewEntryUnderTheLock(): void {
 		$this->arrange(permissions: ['editors' => ['user:alice']], entries: [['id' => 'home', 'label' => 'Home', 'route' => 'home', 'order' => 0]]);
 		$this->objectService->expects(self::once())->method('lockObject')
-			->with('ver-uuid', 'buildiq.mcp-manifest-edit', 30);
-		$this->objectService->expects(self::once())->method('unlockObject')->with('ver-uuid');
+			->with(self::callback(static fn ($request): bool => $request->identifier === 'ver-uuid' && $request->process === 'buildiq.mcp-manifest-edit' && $request->duration === 30));
+		$this->objectService->expects(self::once())->method('unlockObject')->with(self::callback(static fn ($request): bool => $request->identifier === 'ver-uuid'));
 		$captured = null;
 		$this->captureSave(captured: $captured);
 

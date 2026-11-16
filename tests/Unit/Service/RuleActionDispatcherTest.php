@@ -42,6 +42,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
+use OCA\Buildiq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Tests for {@see RuleActionDispatcher}.
@@ -150,6 +151,7 @@ final class RuleActionDispatcherTest extends TestCase {
 			->method('saveObject')
 			->willReturnCallback(
 				function (...$args) use (&$captured) {
+					$args = LegacyObjectArgs::positional(method: 'saveObject', args: $args);
 					$captured = $args;
 					$entity = new \OCA\OpenRegister\Db\ObjectEntity();
 					$entity->setUuid('new-1');
