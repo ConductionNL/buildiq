@@ -56,6 +56,7 @@ vi.mock('@conduction/nextcloud-vue', async (importOriginal) => ({
 		},
 	},
 	CnAppNav: { name: 'CnAppNav', render: () => null },
+	CnFormPage: { name: 'CnFormPage', render: () => null },
 	CnPageRenderer: { name: 'CnPageRenderer', render: () => null },
 	defaultPageTypes: {},
 	registerBuiltinDashboardWidgets: () => {},
