@@ -33,6 +33,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * Retention rules of AppHealthSampleCleanup.
@@ -78,7 +79,8 @@ final class AppHealthSampleCleanupRetentionTest extends TestCase {
 		$this->objects = $this->createMock(ObjectServiceInterface::class);
 		$this->objects->method('findAll')->willReturn($rows);
 		$this->objects->method('deleteObject')->willReturnCallback(
-			function (string $uuid): bool {
+			function (ObjectDeletion $deletion): bool {
+				$uuid = $deletion->uuid;
 				if ($uuid === 'locked') {
 					throw new RuntimeException('row locked');
 				}

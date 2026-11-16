@@ -74,6 +74,9 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -683,8 +686,7 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 			$applicationArray['productionVersion']['manifest'] = $manifest;
 			$this->objectService->saveObject(
 				object: $applicationArray,
-				register: 'buildiq',
-				schema: 'built-app'
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: 'buildiq', schema: 'built-app'))
 			);
 			return new JSONResponse(data: ['status' => 'ok', 'target' => 'embedded'], statusCode: Http::STATUS_OK);
 		}
@@ -693,8 +695,7 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 		$applicationArray['manifest'] = $manifest;
 		$this->objectService->saveObject(
 			object: $applicationArray,
-			register: 'buildiq',
-			schema: 'built-app'
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: 'buildiq', schema: 'built-app'))
 		);
 		return new JSONResponse(data: ['status' => 'ok', 'target' => 'application'], statusCode: Http::STATUS_OK);
 	}//end writeManifest()
@@ -729,16 +730,20 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 	private function writeVersionManifest(string $versionUuid, array $manifest): ?JSONResponse {
 		$versionEntity = $this->objectService->find(
 			id: $versionUuid,
-			register: 'buildiq',
-			schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
+			options: new ObjectFindOptions(
+				register: 'buildiq',
+				schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
+			)
 		);
 		if ($versionEntity !== null) {
 			$versionArray = ObjectRecord::toArray(object: $versionEntity);
 			$versionArray['manifest'] = $manifest;
 			$this->objectService->saveObject(
 				object: $versionArray,
-				register: 'buildiq',
-				schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(
+						register: 'buildiq',
+						schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
+					))
 			);
 			return new JSONResponse(data: ['status' => 'ok', 'target' => 'version'], statusCode: Http::STATUS_OK);
 		}
@@ -1068,8 +1073,10 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 		try {
 			$version = $this->objectService->find(
 				id: $token,
-				register: 'buildiq',
-				schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
+				options: new ObjectFindOptions(
+					register: 'buildiq',
+					schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
+				)
 			);
 		} catch (Throwable $e) {
 			$version = null;
@@ -1208,8 +1215,7 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 		// Step 2 — load the Application object.
 		$application = $this->objectService->find(
 			id: $applicationUuid,
-			register: 'buildiq',
-			schema: 'built-app'
+			options: new ObjectFindOptions(register: 'buildiq', schema: 'built-app')
 		);
 
 		if ($application === null) {
@@ -2119,8 +2125,10 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 			$version = ObjectRecord::toArray(
 				object: $this->objectService->find(
 					id: $versionId,
-					register: 'buildiq',
-					schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
+					options: new ObjectFindOptions(
+						register: 'buildiq',
+						schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
+					)
 				)
 			);
 		}
@@ -2481,8 +2489,7 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 						'viewers' => [],
 					],
 				] + $this->newAppScope(),
-				register: $ctx['register'],
-				schema: $ctx['applicationSchema']
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $ctx['register'], schema: $ctx['applicationSchema']))
 			);
 		} catch (Throwable $e) {
 			$this->logger->error('Buildiq: application save failed', ['exception' => $e->getMessage()]);
@@ -2547,8 +2554,10 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 
 			$createdVersion = $this->objectService->saveObject(
 				object: $versionPayload,
-				register: ApplicationVersionServiceInterface::REGISTER_SLUG,
-				schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(
+						register: ApplicationVersionServiceInterface::REGISTER_SLUG,
+						schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
+					))
 			);
 			$versionData = ObjectRecord::toArray(object: $createdVersion);
 			$versionUuid = (string)($versionData['uuid'] ?? $versionData['id'] ?? '');
@@ -2572,9 +2581,13 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 
 			$this->objectService->saveObject(
 				object: $application,
-				register: ApplicationVersionServiceInterface::REGISTER_SLUG,
-				schema: ApplicationVersionServiceInterface::APPLICATION_SCHEMA,
-				uuid: $appUuid
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(
+							register: ApplicationVersionServiceInterface::REGISTER_SLUG,
+							schema: ApplicationVersionServiceInterface::APPLICATION_SCHEMA
+						),
+					uuid: $appUuid
+				)
 			);
 		} catch (Throwable $e) {
 			$this->logger->error(

@@ -35,6 +35,7 @@ use PHPUnit\Framework\TestCase;
 use RuntimeException;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Tester\CommandTester;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * The write sequence of SeedHelloWorldFixture.
@@ -109,13 +110,11 @@ final class SeedHelloWorldFixtureFlowTest extends TestCase {
 		);
 
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (
-				array|ObjectEntity $object,
-				?array $extend = [],
-				Register|string|int|null $register = null,
-				Schema|string|int|null $schema = null,
-				?string $uuid = null,
-			) use ($failOnSave): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions()) use ($failOnSave): ObjectEntity {
+				$extend = $options->extend ?? [];
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				if ($failOnSave !== null) {
 					throw $failOnSave;
 				}
