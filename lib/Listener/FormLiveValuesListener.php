@@ -41,10 +41,10 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Listener;
 
 use OCA\Buildiq\Kernel\Contracts\ApplicationVersionServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\DutchFormatValidatorInterface;
 use OCA\Buildiq\Kernel\Contracts\FormLiveBindingIndexInterface;
 use OCA\Buildiq\Kernel\Contracts\FormLiveValuesRecomputerInterface;
 use OCA\Buildiq\Kernel\Contracts\ObjectSchemaSlugResolverInterface;
-use OCA\Buildiq\Service\DutchFormatValidator;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Event\ObjectCreatingEvent;
 use OCA\OpenRegister\Event\ObjectUpdatingEvent;
@@ -78,7 +78,7 @@ class FormLiveValuesListener implements IEventListener {
 	 * @param FormLiveBindingIndexInterface $index The live form index
 	 * @param FormLiveValuesRecomputerInterface $recomputer Evaluates on save
 	 * @param LoggerInterface $logger PSR logger
-	 * @param DutchFormatValidator|null $dutchFormats Checks the Dutch formats of form fields (form-dutch-field-formats T04)
+	 * @param DutchFormatValidatorInterface|null $dutchFormats Checks the Dutch formats of form fields (form-dutch-field-formats T04)
 	 *
 	 * @return void
 	 */
@@ -87,7 +87,7 @@ class FormLiveValuesListener implements IEventListener {
 		private readonly FormLiveBindingIndexInterface $index,
 		private readonly FormLiveValuesRecomputerInterface $recomputer,
 		private readonly LoggerInterface $logger,
-		private readonly ?DutchFormatValidator $dutchFormats=null,
+		private readonly ?DutchFormatValidatorInterface $dutchFormats=null,
 	) {
 	}//end __construct()
 

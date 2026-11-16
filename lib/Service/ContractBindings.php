@@ -42,6 +42,7 @@ use OCA\Buildiq\Kernel\Contracts\CopilotServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\DemoDataServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\DeviceFeaturesInterface;
 use OCA\Buildiq\Kernel\Contracts\DocumentGenerationServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\DutchFormatValidatorInterface;
 use OCA\Buildiq\Kernel\Contracts\ExportAppContentBundlerInterface;
 use OCA\Buildiq\Kernel\Contracts\ExportArchiveStoreInterface;
 use OCA\Buildiq\Kernel\Contracts\ExportJobServiceInterface;
@@ -134,6 +135,7 @@ final class ContractBindings {
 		$context->registerServiceAlias(DemoDataServiceInterface::class, DemoDataService::class);
 		$context->registerServiceAlias(DeviceFeaturesInterface::class, DeviceFeatures::class);
 		$context->registerServiceAlias(DocumentGenerationServiceInterface::class, DocumentGenerationService::class);
+		$context->registerServiceAlias(DutchFormatValidatorInterface::class, DutchFormatValidator::class);
 		$context->registerServiceAlias(ExportAppContentBundlerInterface::class, ExportAppContentBundler::class);
 		$context->registerServiceAlias(ExportArchiveStoreInterface::class, ExportArchiveStore::class);
 		$context->registerServiceAlias(ExportJobServiceInterface::class, ExportJobService::class);

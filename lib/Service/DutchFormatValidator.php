@@ -33,6 +33,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\DutchFormatValidatorInterface;
 use OCP\IL10N;
 use RuntimeException;
 
@@ -41,7 +42,7 @@ use RuntimeException;
  *
  * @spec openspec/changes/form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-buildiqs-own-forms-check-the-dutch-formats-on-save-req-bqdf-002
  */
-class DutchFormatValidator {
+class DutchFormatValidator implements DutchFormatValidatorInterface {
 
 	/**
 	 * The shared rule data file.
