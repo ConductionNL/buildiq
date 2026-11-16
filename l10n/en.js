@@ -1,7 +1,3 @@
-/**
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
- * SPDX-License-Identifier: EUPL-1.2
- */
 OC.L10N.register(
     "buildiq",
     {
@@ -882,14 +878,14 @@ OC.L10N.register(
         "Publishing is unavailable until a GitHub credential is configured. Pulling public repositories still works.": "Publishing is unavailable until a GitHub credential is configured. Pulling public repositories still works.",
         "Publishing is unavailable: the credential broker or its GitHub write rules are not enabled on this instance. Pulling public repositories still works.": "Publishing is unavailable: the credential broker or its GitHub write rules are not enabled on this instance. Pulling public repositories still works.",
         "Publishing…": "Publishing…",
+        "Pull": "Pull",
+        "Pull failed.": "Pull failed.",
         "Shared catalogue": "Shared catalogue",
         "From {source}": "From {source}",
         "Search the catalogue": "Search the catalogue",
         "No templates in the catalogue match your search": "No templates in the catalogue match your search",
         "The shared catalogue could not be reached. Try again later.": "The shared catalogue could not be reached. Try again later.",
         "This template is no longer in the catalogue.": "This template is no longer in the catalogue.",
-        "Pull": "Pull",
-        "Pull failed.": "Pull failed.",
         "Pulled a new draft version \"{name}\" from {ref}. Promote it via the version history when you are ready — your production version is unchanged.": "Pulled a new draft version \"{name}\" from {ref}. Promote it via the version history when you are ready — your production version is unchanged.",
         "Pulling…": "Pulling…",
         "Push to GitHub": "Push to GitHub",
@@ -1246,6 +1242,7 @@ OC.L10N.register(
         "Upload SVG": "Upload SVG",
         "Upload your own SVG": "Upload your own SVG",
         "Use case (one line)": "Use case (one line)",
+        "Use this template": "Use this template",
         "API": "API",
         "Base address": "Base address",
         "Download OpenAPI file": "Download OpenAPI file",
@@ -1257,7 +1254,6 @@ OC.L10N.register(
         "The pages of this version use no OpenRegister schema.": "The pages of this version use no OpenRegister schema.",
         "These pages read from a connector, not from an OpenRegister schema.": "These pages read from a connector, not from an OpenRegister schema.",
         "This app has no version to document yet.": "This app has no version to document yet.",
-        "Use this template": "Use this template",
         "User overrides": "User overrides",
         "User settings will appear here in a future update.": "User settings will appear here in a future update.",
         "users": "users",
@@ -1648,6 +1644,16 @@ OC.L10N.register(
         "Arguments & result": "Arguments & result",
         "Assignee group": "Assignee group",
         "Assignee group id": "Assignee group id",
+        "Fields the approver fills in": "Fields the approver fills in",
+        "Leave empty: the approver only approves or rejects.": "Leave empty: the approver only approves or rejects.",
+        "_asks for {count} field: {fields}_::_asks for {count} fields: {fields}_": ["asks for {count} field: {fields}","asks for {count} fields: {fields}"],
+        "asks for {count} field: {fields}": "asks for {count} field: {fields}",
+        "asks for {count} fields: {fields}": "asks for {count} fields: {fields}",
+        "_{count} field to fill in_::_{count} fields to fill in_": ["{count} field to fill in","{count} fields to fill in"],
+        "{count} field to fill in": "{count} field to fill in",
+        "{count} fields to fill in": "{count} fields to fill in",
+        "The form of this approval could not be loaded.": "The form of this approval could not be loaded.",
+        "The form of this approval cannot be filled in.": "The form of this approval cannot be filled in.",
         "Attach to object": "Attach to object",
         "Bindings reference {count} schema(s).": "Bindings reference {count} schema(s).",
         "Block name": "Block name",
@@ -2391,7 +2397,8 @@ OC.L10N.register(
         "Total load time (ms)": "Total load time (ms)",
         "Window start": "Window start",
         "Include server bundle": "Include server bundle",
-        "Search": "Search",
+        "Organisation scope": "Organisation scope",
+        "Who sees this app: all organisations, or only the organisation that holds it. Absent means all organisations.": "Who sees this app: all organisations, or only the organisation that holds it. Absent means all organisations.",
         "Add external data widget": "Add external data widget",
         "Failures": "Failures",
         "Failed requests, 4xx and 5xx together. Derived by the server, never posted; summed by the request failure metric.": "Failed requests, 4xx and 5xx together. Derived by the server, never posted; summed by the request failure metric.",
@@ -2417,7 +2424,13 @@ OC.L10N.register(
         "The branch could not be started.": "The branch could not be started.",
         "The merge could not be completed.": "The merge could not be completed.",
         "This merge changes schemas in a way that can break records already stored:": "This merge changes schemas in a way that can break records already stored:",
-        "Which side to keep": "Which side to keep"
+        "Which side to keep": "Which side to keep",
+        "This organisation only": "This organisation only",
+        "Only members of the organisation that holds this app see it, open it and read its records. Rule sets and data registers stay shared.": "Only members of the organisation that holds this app see it, open it and read its records. Rule sets and data registers stay shared.",
+        "Every organisation will see this app. Its records stay with this organisation.": "Every organisation will see this app. Its records stay with this organisation.",
+        "Share with all organisations": "Share with all organisations",
+        "Keep it to this organisation": "Keep it to this organisation",
+        "This slug is taken. Choose another.": "This slug is taken. Choose another."
     },
     "nplurals=2; plural=(n != 1);"
 )

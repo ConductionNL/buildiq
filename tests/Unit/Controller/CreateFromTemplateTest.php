@@ -564,6 +564,49 @@ class CreateFromTemplateTest extends TestCase {
 	}//end testTheStoredApplicationRecordsNameOwnerAndOrigin()
 
 	/**
+	 * An installed app starts with the same organisation scope as a new app:
+	 * the guard's default, `holder` while multitenancy is on (REQ-BQOS-005).
+	 *
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-installs-land-in-the-installer-s-organisation-req-bqos-005
+	 *
+	 * @return void
+	 */
+	public function testAnInstalledAppStartsWithTheDefaultOrganisationScope(): void {
+		$guard = $this->createMock(\OCA\Buildiq\Service\AppOrganisationGuard::class);
+		$guard->expects(self::once())->method('defaultScope')->willReturn('holder');
+		$controller = new ApplicationsController(
+			request: $this->request,
+			logger: $this->logger,
+			store: new RegisterStore(
+				objectService: $this->objectService,
+				registerMapper: $this->registerMapper,
+				schemaMapper: $this->schemaMapper,
+				auditTrailMapper: null
+			),
+			caller: new CallerContext(
+				userSession: $this->userSession,
+				groupManager: $this->groupManager,
+				permissionResolver: new PermissionResolver($this->groupManager, $this->logger),
+				organisationGuard: $guard
+			),
+			manifestResolver: $this->manifestResolver,
+			channelApplier: $this->channelApplier,
+		);
+		$this->authenticateAs('alice');
+		$this->withRequestParams(['name' => 'Meldingen Zuid', 'slug' => 'meldingen-zuid']);
+		$this->objectService->method('searchObjects')->willReturnOnConsecutiveCalls([$this->templateRecord(self::TEMPLATE_SLUG)], []);
+		$this->schemaMapper->method('createFromArray')->willReturn($this->schemaWithId(7777));
+		$calls = [];
+		$this->recordSaves($calls);
+
+		$controller->createFromTemplate(templateSlug: self::TEMPLATE_SLUG);
+
+		self::assertSame('meldingen-zuid', $calls[0]['object']['slug']);
+		self::assertSame('holder', $calls[0]['object']['organisationScope']);
+		self::assertSame(['user:alice'], $calls[0]['object']['permissions']['owners']);
+	}//end testAnInstalledAppStartsWithTheDefaultOrganisationScope()
+
+	/**
 	 * The install hands the channel applier the template, the acting user
 	 * and the new application; a local template has no repo or credential.
 	 *

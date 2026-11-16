@@ -95,3 +95,4 @@ All code EUPL-1.2 — free to copy, modify and redistribute across the public se
 ## Command line
 
 - [App commands](./app-commands.md): list, export, import and delete apps, and publish templates, with `occ`.
+- [Organisation-scoped apps](./organisation-scoped-apps.md): keep an app, and its records, to the organisation that holds it.
