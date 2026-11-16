@@ -44,6 +44,7 @@ namespace OCA\Buildiq\Service;
 
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use ReflectionMethod;
 use Throwable;
 
 /**
@@ -58,6 +59,13 @@ class FormDestinationCheck {
 	 * @var string
 	 */
 	public const VALIDATOR = 'OCA\\OpenRegister\\Service\\Form\\FormDestinationValidator';
+
+	/**
+	 * OpenRegister main's argument object for the validator: the schema and the audience.
+	 *
+	 * @var string
+	 */
+	public const DESTINATION = 'OCA\\OpenRegister\\Service\\Form\\FormDestination';
 
 	/**
 	 * Finding code: the form names no register or schema.
@@ -146,13 +154,42 @@ class FormDestinationCheck {
 			];
 		}
 
-		$findings = $validator->validate(mapping: $mapping, schema: $entity, options: $options);
+		$findings = $this->validateWith(validator: $validator, mapping: $mapping, schema: $entity, options: $options);
 		if (is_array($findings) === false) {
 			return [];
 		}
 
 		return array_values(array_filter($findings, 'is_array'));
 	}//end check()
+
+	/**
+	 * Ask the validator, in the form this OpenRegister's `validate()` takes.
+	 *
+	 * OpenRegister main takes a FormDestination (the schema and the audience);
+	 * earlier releases took the schema and an options array. Both carry the
+	 * same schema and audience.
+	 *
+	 * @param object               $validator OpenRegister's validator.
+	 * @param array<string, mixed> $mapping   The mapping: `fields` and `fixed`.
+	 * @param object               $schema    The destination schema.
+	 * @param array<string, mixed> $options   `audience`: `public` or `authenticated` when the form is not internal.
+	 *
+	 * @return mixed The validator's findings.
+	 */
+	private function validateWith(object $validator, array $mapping, object $schema, array $options): mixed {
+		$second = ((new ReflectionMethod($validator, 'validate'))->getParameters()[1] ?? null);
+		if ($second !== null && $second->getName() === 'destination' && class_exists(self::DESTINATION) === true) {
+			$audience = $options['audience'] ?? null;
+			$class    = self::DESTINATION;
+
+			return $validator->validate(
+				mapping: $mapping,
+				destination: new $class(schema: $schema, audience: ($audience === null) ? null : (string)$audience)
+			);
+		}
+
+		return $validator->validate(mapping: $mapping, schema: $schema, options: $options);
+	}//end validateWith()
 
 	/**
 	 * OpenRegister's validator, or null when this OpenRegister does not ship it.

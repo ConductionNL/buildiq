@@ -167,15 +167,15 @@ final class PopulateApplicationPermissionsEdgeCasesTest extends TestCase {
 	 */
 	public function testTheSaveBypassesRbacAndMultitenancy(): void {
 		$this->applications(applications: [['uuid' => 'u1']]);
-		$this->objectService->expects($this->once())->method('saveObject')->with(
-			['uuid' => 'u1', 'permissions' => ['owners' => ['admin'], 'editors' => [], 'viewers' => []]],
-			$this->anything(),
-			'buildiq',
-			'built-app',
-			null,
-			false,
-			false
-		)->willReturn($this->createMock(originalClassName: ObjectEntityInterface::class));
+		$this->objectService->expects($this->once())->method('saveObject')->with(...LegacyObjectArgs::with(method: 'saveObject', expected: [
+				'object' => ['uuid' => 'u1', 'permissions' => ['owners' => ['admin'], 'editors' => [], 'viewers' => []]],
+				'extend' => $this->anything(),
+				'register' => 'buildiq',
+				'schema' => 'built-app',
+				'uuid' => null,
+				'_rbac' => false,
+				'_multitenancy' => false,
+			]))->willReturn($this->createMock(originalClassName: ObjectEntityInterface::class));
 
 		$this->step->run(output: $this->output);
 	}//end testTheSaveBypassesRbacAndMultitenancy()

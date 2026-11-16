@@ -30,6 +30,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
 use RuntimeException;
+use OCA\Buildiq\Tests\Support\LegacyObjectArgs;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
@@ -112,7 +113,9 @@ final class RuleExecutionLogCleanupLoggingTest extends TestCase {
 				['uuid' => 'by-uuid', 'timestamp' => $this->old()],
 			]
 		);
-		$this->objects->expects($this->once())->method('deleteObject')->with('by-uuid')->willReturn(true);
+		$this->objects->expects($this->once())->method('deleteObject')->with(...LegacyObjectArgs::with(method: 'deleteObject', expected: [
+				'uuid' => 'by-uuid',
+			]))->willReturn(true);
 		$this->logger->expects($this->once())->method('info')
 			->with('Buildiq cleanup: purged 1 expired rule-execution log(s)');
 

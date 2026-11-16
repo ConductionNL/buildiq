@@ -389,7 +389,9 @@ class AppOverrideServiceUserDeltaTest extends TestCase {
 			userRows: [['id' => 'alice-row', 'owner' => 'alice', 'application' => 'app-A']]
 		);
 		$this->objectService->expects(self::once())->method('deleteObject')
-			->with(self::callback(callback: static fn ($uuid): bool => $uuid === 'alice-row'))
+			->with(...LegacyObjectArgs::with(method: 'deleteObject', expected: [
+				'uuid' => 'alice-row',
+			]))
 			->willReturn(true);
 
 		$this->service->deleteUserDelta(appId: 'demo', uid: 'alice');

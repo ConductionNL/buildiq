@@ -41,6 +41,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\Buildiq\Tests\Support\LegacyObjectArgs;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
@@ -338,7 +339,9 @@ class MigrateToVersionedModelEdgeCasesTest extends TestCase {
 		);
 		$this->registerService->expects($this->never())->method('delete');
 		$this->objectService->expects($this->once())->method('deleteObject')
-			->with('uuid-alpha')
+			->with(...LegacyObjectArgs::with(method: 'deleteObject', expected: [
+				'uuid' => 'uuid-alpha',
+			]))
 			->willReturn(true);
 
 		$this->output->expects($this->once())->method('info')
@@ -361,7 +364,9 @@ class MigrateToVersionedModelEdgeCasesTest extends TestCase {
 			[$this->entity(['id' => 'u-b', 'slug' => 'beta', 'currentVersion' => 'cv'])]
 		);
 		$this->registerService->expects($this->once())->method('delete')->with($perApp);
-		$this->objectService->expects($this->once())->method('deleteObject')->with('u-b')->willReturn(true);
+		$this->objectService->expects($this->once())->method('deleteObject')->with(...LegacyObjectArgs::with(method: 'deleteObject', expected: [
+				'uuid' => 'u-b',
+			]))->willReturn(true);
 
 		$this->step()->run($this->output);
 

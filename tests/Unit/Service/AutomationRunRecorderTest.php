@@ -296,7 +296,13 @@ final class AutomationRunRecorderTest extends TestCase {
 			['@self' => ['id' => 'new'], 'automation' => 'aut-1', 'startedAt' => gmdate(DATE_ATOM, self::NOW - 86400)],
 			['@self' => ['id' => 'undated'], 'automation' => 'aut-1'],
 		]);
-		$this->objects->expects($this->once())->method('deleteObject')->with('old', 'buildiq', 'automation-run', false, false);
+		$this->objects->expects($this->once())->method('deleteObject')->with(...LegacyObjectArgs::with(method: 'deleteObject', expected: [
+				'uuid' => 'old',
+				'register' => 'buildiq',
+				'schema' => 'automation-run',
+				'_rbac' => false,
+				'_multitenancy' => false,
+			]));
 
 		$this->assertSame(1, $this->recorder()->prune(now: self::NOW));
 	}//end testPruneDeletesRunsOlderThan90Days()

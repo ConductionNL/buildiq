@@ -302,7 +302,9 @@ class VersionPromotionServiceTest extends TestCase {
 		$this->objectService
 			->expects(self::once())
 			->method('lockObject')
-			->with('u-tgt', 'buildiq.version-promotion', 60);
+			->with(self::callback(static fn ($request): bool => $request->identifier === 'u-tgt'
+				&& $request->process === 'buildiq.version-promotion'
+				&& $request->duration === 60));
 
 		// RegisterMapper::update should be invoked for the schema-set forwarding.
 		$this->registerMapper
@@ -341,7 +343,7 @@ class VersionPromotionServiceTest extends TestCase {
 		$this->objectService
 			->expects(self::once())
 			->method('unlockObject')
-			->with('u-tgt');
+			->with(self::callback(static fn ($request): bool => $request->identifier === 'u-tgt'));
 
 		$result = $this->service->promote(
 			source: $source,
@@ -414,7 +416,7 @@ class VersionPromotionServiceTest extends TestCase {
 		$this->objectService
 			->expects(self::once())
 			->method('unlockObject')
-			->with('u-tgt');
+			->with(self::callback(static fn ($request): bool => $request->identifier === 'u-tgt'));
 
 		$this->expectException(PromotionFailedException::class);
 
@@ -575,7 +577,9 @@ class VersionPromotionServiceTest extends TestCase {
 		$this->objectService
 			->expects(self::once())
 			->method('deleteObject')
-			->with('r-tgt-1');
+			->with(...LegacyObjectArgs::with(method: 'deleteObject', expected: [
+					'uuid' => 'r-tgt-1',
+				]));
 
 		// saveObject is called once per source row (2 copies) + once for the manifest write.
 		$savedTarget = $this->buildObjectEntity(
