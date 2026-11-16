@@ -1034,9 +1034,9 @@ class CopilotService implements CopilotServiceInterface {
 	 * keep its own complexity within the project's PHPMD thresholds.
 	 *
 	 * @param array<int, array<string, mixed>> $ordered Plan steps in dispatch order.
-	 * @param array{snapshots: array<int, array<string, mixed>>, agent: array<string, mixed>|null, userId: string, prompt: string, plan: array<string, mixed>} $turn
-	 *        The manifest snapshots to restore on failure, the resolved `Agent` record (null for the bare
-	 *        copilot path), the acting user's UID, and the brief and reviewed plan for the AgentRun log.
+	 * @param array<string, mixed>             $turn    The turn: `snapshots` to restore on failure, the resolved
+	 *                                                  `agent` (null for the bare copilot path), the acting
+	 *                                                  `userId`, and the `prompt` and `plan` for the AgentRun log.
 	 *
 	 * @return array{results: array<int, array<string, mixed>>}
 	 *
@@ -1096,10 +1096,11 @@ class CopilotService implements CopilotServiceInterface {
 	/**
 	 * The dispatch with a succeeded step's result added; a created app is remembered for the rollback.
 	 *
-	 * @param array{results: array<int, mixed>, toolCalls: array<int, array<string, mixed>>, createdAppUuid: string|null, createdAppSlug: string|null} $dispatch The dispatch so far.
-	 * @param array{tool: string, arguments: array<mixed>, result: mixed}                                                                             $call     The succeeded call.
+	 * @param array<string, mixed>                                         $dispatch The dispatch so far: `results`,
+	 *                                                                               `toolCalls`, `createdAppUuid`, `createdAppSlug`.
+	 * @param array{tool: string, arguments: array<mixed>, result: mixed} $call     The succeeded call.
 	 *
-	 * @return array{results: array<int, mixed>, toolCalls: array<int, array<string, mixed>>, createdAppUuid: string|null, createdAppSlug: string|null}
+	 * @return array<string, mixed> The dispatch with the step recorded.
 	 */
 	private static function withStepResult(array $dispatch, array $call): array {
 		if ($call['tool'] === 'buildiq.createApp') {
@@ -1115,8 +1116,8 @@ class CopilotService implements CopilotServiceInterface {
 	/**
 	 * Persist the transparent `AgentRun` record of a turn that ran through an agent.
 	 *
-	 * @param array{agent: array<string, mixed>|null, userId: string, prompt: string, plan: array<string, mixed>, toolCalls: array<int, array<string, mixed>>} $turn    The turn and its tool calls.
-	 * @param string                                                                                                                                       $outcome `applied` or `rolled-back`.
+	 * @param array<string, mixed> $turn    The turn: `agent` (or null), `userId`, `prompt`, `plan` and `toolCalls`.
+	 * @param string               $outcome `applied` or `rolled-back`.
 	 *
 	 * @return void
 	 */

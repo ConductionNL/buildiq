@@ -125,7 +125,7 @@ class DatabaseManifestBuilder {
 	 * The index and detail page of one table.
 	 *
 	 * @param array{schema: array<string, mixed>, slug: string, segment: string, title: string, pageId: string} $table  The table.
-	 * @param array{register: string, writable: bool}                                                       $source The database register and whether it takes writes.
+	 * @param array{register: string, writable: bool}                                                       $source The register; writable.
 	 *
 	 * @return list<array<string, mixed>>
 	 *

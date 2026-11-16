@@ -192,7 +192,7 @@ class ConditionActionExecutor implements ConditionActionExecutorInterface {
 	 * side-effect action goes to the dispatcher (skipped in a dry run).
 	 *
 	 * @param mixed                                                                   $action The action: `{type, parameters}`.
-	 * @param array{payload: array<string,mixed>, dryRun: bool, dispatcher: callable|null} $run    The working payload, whether side effects are suppressed, and the dispatcher.
+	 * @param array{payload: array<string,mixed>, dryRun: bool, dispatcher: callable|null} $run    The payload, dry run, dispatcher.
 	 *
 	 * @return array{payload: array<string,mixed>, executed: string|null} The payload after the action and what ran; null for an unknown type.
 	 */
