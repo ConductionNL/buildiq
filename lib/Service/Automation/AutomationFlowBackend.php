@@ -106,7 +106,7 @@ class AutomationFlowBackend {
 	 *
 	 * @throws UnsupportedAutomationCombinationException When the version or its register cannot be read.
 	 *
-	 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-record-step-writes-a-record-of-the-app-req-bqar-002
+	 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-record-step-runs-outside-an-approval-req-bqar-002
 	 */
 	public function scope(string $versionUuid): array {
 		$version = $this->loadVersion(uuid: $versionUuid);

@@ -94,6 +94,11 @@ export default {
 	watch: {
 		schema: {
 			immediate: true,
+			/**
+			 * Reload the list when the record's schema changes.
+			 *
+			 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-app-users-run-manual-automations-from-a-record-req-bqar-006
+			 */
 			handler() {
 				this.load()
 			},
