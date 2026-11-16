@@ -673,7 +673,7 @@ class CopilotService implements CopilotServiceInterface {
 	 * `CnFormPage: handler "loan" not registered`.
 	 *
 	 * Naming the schema on the page instead lets
-	 * {@see ManifestPageShape::withSubmitDestination()} point the form at the
+	 * {@see FormPageConfig::normalise()} point the form at the
 	 * collection it belongs to, which is what it already does for a form that
 	 * named no destination at all. Proven on the deployed instance: the same
 	 * page with its schema named posted 201 Created and the record appeared on
