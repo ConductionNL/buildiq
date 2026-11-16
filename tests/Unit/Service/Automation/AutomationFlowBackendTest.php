@@ -37,6 +37,9 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\Flow\FlowVersionServiceInterface;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -130,8 +133,8 @@ final class AutomationFlowBackendTest extends TestCase {
 		$this->application = ['slug' => 'claims', 'name' => 'Claims', 'flows' => []];
 
 		$this->objects->method('find')->willReturnCallback(
-			function (int|string $id, ?array $_extend = [], bool $files = false, string|int|null $register = null, string|int|null $schema = null): ?ObjectEntity {
-				if ($schema === 'applicationVersion') {
+			function (int|string $id, ?ObjectFindOptions $options = null): ?ObjectEntity {
+				if ($options?->schema === 'applicationVersion') {
 					return $this->version === null ? null : $this->entity(data: $this->version);
 				}
 
@@ -139,6 +142,15 @@ final class AutomationFlowBackendTest extends TestCase {
 			}
 		);
 	}//end setUp()
+
+	/**
+	 * The save options of the Application write: the buildiq register, the built-app schema, its uuid.
+	 *
+	 * @return ObjectSaveOptions
+	 */
+	private static function applicationSave(): ObjectSaveOptions {
+		return new ObjectSaveOptions(target: new ObjectFindTarget(register: 'buildiq', schema: 'built-app'), uuid: self::APPLICATION);
+	}//end applicationSave()
 
 	/**
 	 * An object entity holding a payload.
@@ -271,10 +283,9 @@ final class AutomationFlowBackendTest extends TestCase {
 			->method('saveObject')
 			->with(
 				['slug' => 'claims', 'name' => 'Claims', 'flows' => [['label' => 'aut-send', 'flow' => self::FLOW]]],
-				[],
-				'buildiq',
-				'built-app',
-				self::APPLICATION,
+				self::applicationSave(),
+				false,
+				false
 			);
 
 		$uuid = $this->backend()->apply(flow: self::document(), priorUuid: null, enabled: false, versionUuid: self::VERSION);
@@ -391,7 +402,7 @@ final class AutomationFlowBackendTest extends TestCase {
 		$this->flows->expects($this->once())->method('delete')->with(self::FLOW);
 		$this->objects->expects($this->once())
 			->method('saveObject')
-			->with(['slug' => 'claims', 'name' => 'Claims', 'flows' => [$other]], [], 'buildiq', 'built-app', self::APPLICATION);
+			->with(['slug' => 'claims', 'name' => 'Claims', 'flows' => [$other]], self::applicationSave(), false, false);
 
 		$this->backend()->remove(flowUuid: self::FLOW, versionUuid: self::VERSION);
 	}//end testRemoveDeletesAndUnbinds()
