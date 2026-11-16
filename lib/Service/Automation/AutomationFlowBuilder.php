@@ -101,7 +101,8 @@ final class AutomationFlowBuilder {
 	 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-declarative-primitives-or-one-openregister-flow-req-bqar-001
 	 */
 	public function wantsFlow(CompileInput $input): bool {
-		if ($input->triggerType === 'manual') {
+		// Logic-email-and-webhook-triggers D1: the inbound triggers run only as a flow.
+		if ($input->triggerType === 'manual' || InboundTriggerDeclarations::isInbound(triggerType: $input->triggerType) === true) {
 			return true;
 		}
 
@@ -194,6 +195,13 @@ final class AutomationFlowBuilder {
 
 		if ($type === 'manual') {
 			return ['id' => 'trigger', 'type' => 'openregister.trigger-manual', 'config' => []];
+		}
+
+		// Logic-email-and-webhook-triggers D1: integriq starts the run, with the
+		// mail or the request body as input, so the flow itself is started manually.
+		if (InboundTriggerDeclarations::isInbound(triggerType: $type) === true) {
+			InboundTriggerDeclarations::check(trigger: $input->trigger);
+			return ['id' => 'trigger', 'type' => 'openregister.trigger-manual', 'config' => ['startedBy' => 'integriq', 'trigger' => $type]];
 		}
 
 		if ($type === 'schedule') {

@@ -76,7 +76,7 @@
 					"trigger": {
 						"title": "Trigger",
 						"type": "object",
-						"description": "Exactly one trigger: object created/updated/deleted, a lifecycle transition, a cron/interval schedule, or manual (rules-backend) invocation.",
+						"description": "Exactly one trigger: object created/updated/deleted, a lifecycle transition, a cron/interval schedule, manual invocation, an email received on an integriq mailbox, or a call to a webhook integriq serves.",
 						"required": [
 							"type"
 						],
@@ -91,7 +91,9 @@
 									"object-deleted",
 									"lifecycle-transition",
 									"schedule",
-									"manual"
+									"manual",
+									"email-received",
+									"webhook-called"
 								]
 							},
 							"schema": {
@@ -113,6 +115,34 @@
 								"title": "Cron Expression",
 								"type": "string",
 								"description": "5-field cron expression (schedule trigger type; mutually exclusive with `interval`)."
+							},
+							"source": {
+								"title": "Mailbox Source",
+								"type": "string",
+								"description": "UUID of the integriq mailbox source whose received messages start the automation (email-received trigger type)."
+							},
+							"from": {
+								"title": "Sender Filter",
+								"type": "string",
+								"description": "Only mail from this sender address starts the automation (email-received trigger type, optional)."
+							},
+							"subjectContains": {
+								"title": "Subject Filter",
+								"type": "string",
+								"description": "Only mail whose subject contains this text starts the automation (email-received trigger type, optional)."
+							},
+							"authorization": {
+								"title": "Caller Authorization",
+								"type": "string",
+								"description": "How the calling system signs in at the webhook address integriq serves (webhook-called trigger type). The secret is issued and shown by integriq, never stored here.",
+								"enum": [
+									"api-key"
+								]
+							},
+							"bodyExample": {
+								"title": "Example Body",
+								"type": "string",
+								"description": "Optional JSON example of the request body, offered as fields in the step pickers (webhook-called trigger type)."
 							}
 						}
 					},
@@ -443,6 +473,29 @@
 								"title": "Flow UUID",
 								"type": "string",
 								"description": "The uuid of the OpenRegister flow `aut-<slug>` this automation compiled to: a manual trigger, or a record, webhook or rule step (logic-automation-actions-that-run). Absent for an automation without a flow. Disable switches that flow off; delete removes it and its Application.flows binding."
+							},
+							"inbound": {
+								"title": "Inbound Declarations",
+								"type": "object",
+								"description": "The integriq objects that start the flow from outside, by schema slug: `event_subscription` for an email-received trigger, `endpoint`, `rule` and `consumer` for a webhook-called trigger (logic-email-and-webhook-triggers D2, D3). Absent for every other trigger. Remove deletes exactly these.",
+								"properties": {
+									"event_subscription": {
+										"type": "string",
+										"description": "UUID of the mailbox subscription."
+									},
+									"endpoint": {
+										"type": "string",
+										"description": "UUID of the webhook endpoint."
+									},
+									"rule": {
+										"type": "string",
+										"description": "UUID of the endpoint rule that starts the flow."
+									},
+									"consumer": {
+										"type": "string",
+										"description": "UUID of the consumer whose credential integriq checks."
+									}
+								}
 							},
 							"compiledHash": {
 								"title": "Compiled Hash",

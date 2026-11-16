@@ -92,6 +92,9 @@ require_once __DIR__ . '/stubs/openregister-form.stub.php';
 // Leaf-provider contract (ADR-066). Same guards.
 require_once __DIR__ . '/stubs/openregister-leaf.stub.php';
 
+// OpenRegister main's object-API value objects (ObjectSaveOptions and friends). Same guards.
+require_once __DIR__ . '/stubs/openregister-object-options.stub.php';
+
 // Object import contract (records of an imported app archive). Same guards.
 require_once __DIR__ . '/stubs/openregister-import.stub.php';
 

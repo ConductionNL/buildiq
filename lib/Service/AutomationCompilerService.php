@@ -118,6 +118,7 @@ use OCA\Buildiq\Service\Automation\AutomationFlowBackend;
 use OCA\Buildiq\Service\Automation\AutomationFlowBuilder;
 use OCA\Buildiq\Service\Automation\AutomationRuleSets;
 use OCA\Buildiq\Service\Automation\CompileInput;
+use OCA\Buildiq\Service\Automation\InboundTriggerDeclarations;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -150,6 +151,9 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 		'lifecycle-transition' => ['send-notification', 'object-op', 'webhook', 'approval', 'generateDocument'],
 		'schedule' => ['run-synchronization'],
 		'manual' => ['send-notification', 'object-op', 'webhook'],
+		// Logic-email-and-webhook-triggers D1: flow actions only, compiled through the flow backend.
+		'email-received' => ['send-notification', 'object-op', 'webhook', 'rule-decision'],
+		'webhook-called' => ['send-notification', 'object-op', 'webhook', 'rule-decision'],
 	];
 
 	/**
@@ -231,6 +235,9 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 	 * @param AutomationFlowBuilder|null $flowBuilder Builds that flow; a default one when null.
 	 * @param AutomationRuleSets|null $ruleSets Resolves the rule sets of rule-decision steps;
 	 *                                          resolved from the container when null.
+	 * @param InboundTriggerDeclarations|null $inbound Writes the integriq declarations of the
+	 *                                                 email and webhook triggers; resolved from
+	 *                                                 the container when null.
 	 *
 	 * @return void
 	 */
@@ -243,6 +250,7 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 		private readonly ?AutomationFlowBackend $flowBackend = null,
 		private readonly ?AutomationFlowBuilder $flowBuilder = null,
 		private readonly ?AutomationRuleSets $ruleSets = null,
+		private readonly ?InboundTriggerDeclarations $inbound = null,
 	) {
 
 	}//end __construct()
@@ -264,6 +272,16 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 	private function flowBackend(): AutomationFlowBackend {
 		return ($this->flowBackend ?? $this->container->get(AutomationFlowBackend::class));
 	}//end flowBackend()
+
+	/**
+	 * The integriq declarations of the inbound triggers, resolved at use time
+	 * (logic-email-and-webhook-triggers D2, D3).
+	 *
+	 * @return InboundTriggerDeclarations
+	 */
+	private function inbound(): InboundTriggerDeclarations {
+		return ($this->inbound ?? $this->container->get(InboundTriggerDeclarations::class));
+	}//end inbound()
 
 	/**
 	 * Return `$value` when it is an array, otherwise `$default`.
@@ -460,6 +478,12 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 		$slug = (string)($automation['slug'] ?? '');
 		$versionUuid = (string)($automation['versionUuid'] ?? '');
 
+		// Logic-email-and-webhook-triggers D6: refuse before anything is written
+		// when integriq cannot take the trigger's declarations.
+		if (InboundTriggerDeclarations::isInbound(triggerType: (string)($automation['trigger']['type'] ?? '')) === true) {
+			$this->inbound()->assertReady(trigger: (array)$automation['trigger']);
+		}
+
 		$notificationKeys = $this->applyNotifications(
 			planned: $plan['notifications'],
 			priorKeys: $this->orArray(value: $priorProvenance['notificationKeys'] ?? null)
@@ -504,6 +528,16 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 		);
 		if ($flowUuid !== null) {
 			$provenance['flowUuid'] = $flowUuid;
+		}
+
+		// Logic-email-and-webhook-triggers D2/D3: the integriq objects that start
+		// the flow from a mailbox or a webhook call, and removal of the prior ones.
+		$priorInbound = $this->orArray(value: $priorProvenance['inbound'] ?? null);
+		if ($priorInbound !== [] || InboundTriggerDeclarations::isInbound(triggerType: (string)($automation['trigger']['type'] ?? '')) === true) {
+			$inbound = $this->inbound()->apply(automation: $automation, flowUuid: $flowUuid, prior: $priorInbound);
+			if ($inbound !== []) {
+				$provenance['inbound'] = $inbound;
+			}
 		}
 
 		if (($plan['ruleSetVersions'] ?? []) !== []) {
@@ -578,6 +612,11 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 				name: $approvalChainName,
 				schemaSlug: (string)($automation['trigger']['schema'] ?? '')
 			);
+		}
+
+		$inbound = $this->orArray(value: $provenance['inbound'] ?? null);
+		if ($inbound !== []) {
+			$this->inbound()->remove(prior: $inbound);
 		}
 
 		$flowUuid = ($provenance['flowUuid'] ?? null);
