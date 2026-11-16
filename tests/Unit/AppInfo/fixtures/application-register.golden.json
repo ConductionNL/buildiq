@@ -169,6 +169,13 @@
     {
         "method": "registerServiceAlias",
         "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\DutchFormatValidatorInterface",
+            "target": "OCA\\Buildiq\\Service\\DutchFormatValidator"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
             "alias": "OCA\\Buildiq\\Kernel\\Contracts\\ExportAppContentBundlerInterface",
             "target": "OCA\\Buildiq\\Service\\ExportAppContentBundler"
         }
@@ -661,6 +668,13 @@
         "args": {
             "event": "OCA\\OpenRegister\\Event\\ObjectTransitionedEvent",
             "listener": "OCA\\Buildiq\\Listener\\DocumentGenerationListener"
+        }
+    },
+    {
+        "method": "registerEventListener",
+        "args": {
+            "event": "OCA\\Buildiq\\Event\\RuleEvaluationRequestedEvent",
+            "listener": "OCA\\Buildiq\\Listener\\RuleEvaluationListener"
         }
     },
     {

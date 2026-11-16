@@ -64,6 +64,10 @@
 			:availableFlows="availableFlows"
 			:loadingFlows="loadingFlows"
 			:busy="publishing"
+			:organisationScope="(obApp && obApp.organisationScope) || 'all'"
+			:organisationScopeAvailable="organisationScopeAvailable"
+			:isOwner="obAppRole === 'owner'"
+			@update:organisationScope="setOrganisationScope"
 			@update:open="onSettingsOpen"
 			@setPublished="setPublished"
 			@update:allowOverrides="setAllowOverrides"
@@ -110,6 +114,7 @@
 // this file imports no icon components of its own any more.
 import { CnActionButtons } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
+import { loadState } from '@nextcloud/initial-state'
 import { generateUrl } from '@nextcloud/router'
 import { defineAsyncComponent } from 'vue'
 import DeleteAppDialog from '../dialogs/DeleteAppDialog.vue'
@@ -283,6 +288,9 @@ export default {
 
 	data() {
 		return {
+			// Whether OpenRegister's multitenancy is on, so the settings can
+			// offer the organisation scope (REQ-BQOS-001).
+			organisationScopeAvailable: loadState('buildiq', 'organisationScopeAvailable', false) === true,
 			versions: [],
 			publishing: false,
 			deleting: false,
@@ -924,6 +932,26 @@ export default {
 			this.error = ''
 			try {
 				await this.obPatchApp({ allowUserOverrides: allow })
+			} catch (e) {
+				this.error = `${t('buildiq', 'Failed to save settings')}: ${e.message || e}`
+			}
+		},
+
+		/**
+		 * Set the app's organisation scope, `holder` or `all` (owners only).
+		 *
+		 * @param {string} scope The new scope.
+		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-an-app-has-an-organisation-scope-req-bqos-001
+		 */
+		async setOrganisationScope(scope) {
+			if (this.obAppRole !== 'owner' || !this.obApp) {
+				return
+			}
+			this.error = ''
+			try {
+				await this.obPatchApp({ organisationScope: scope })
 			} catch (e) {
 				this.error = `${t('buildiq', 'Failed to save settings')}: ${e.message || e}`
 			}

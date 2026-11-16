@@ -15,7 +15,7 @@
 			:description="
 				t(
 					'buildiq',
-					'Fills the Store with the starter templates. Run it after you enable OpenRegister, or to repair a partial install. Templates that are already there stay as they are.',
+					'Fills the Marketplace with the starter templates. Run it after you enable OpenRegister, or to repair a partial install. Templates that are already there stay as they are.',
 				)
 			"
 			:buttonLabel="t('buildiq', 'Install templates')" />
