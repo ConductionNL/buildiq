@@ -42,6 +42,12 @@ updates:
         update-types: ["version-update:semver-major"]
       - dependency-name: "@babel/preset-env"
         update-types: ["version-update:semver-major"]
+      # stylelint 18: @conduction/nextcloud-vue (2.180.0) peers
+      #                `stylelint: ^17.9.1` (optional), so npm ci refuses the
+      #                major with ERESOLVE. Lift it when the library's peer
+      #                range accepts ^18.
+      - dependency-name: "stylelint"
+        update-types: ["version-update:semver-major"]
     cooldown:
       default-days: 1
       include:

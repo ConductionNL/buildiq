@@ -86,6 +86,13 @@ final class VersionMergeControllerTest extends TestCase {
 	private array $saved = [];
 
 	/**
+	 * Whether the object store fails every save.
+	 *
+	 * @var bool
+	 */
+	private bool $saveFails = false;
+
+	/**
 	 * Set up `development`, its branch `permit-fees` (which added the page `fees`) and `production`.
 	 *
 	 * @return void
@@ -195,6 +202,10 @@ final class VersionMergeControllerTest extends TestCase {
 		);
 		$objects->method('saveObject')->willReturnCallback(
 			function (array $object): ObjectEntityInterface {
+				if ($this->saveFails === true) {
+					throw new \RuntimeException('register unavailable');
+				}
+
 				$this->saved[] = $object;
 				$entity = $this->createMock(ObjectEntityInterface::class);
 				$entity->method('jsonSerialize')->willReturn($object);
@@ -249,6 +260,36 @@ final class VersionMergeControllerTest extends TestCase {
 		$this->assertSame('permit-fees', $saved['branchBase']['source']);
 		$this->assertSame('0.1.1', $saved['semver']);
 	}//end testApplyWritesTheTargetOnce()
+
+	/**
+	 * A merge whose write fails for another reason is a generic 422, without the internal message.
+	 *
+	 * @return void
+	 */
+	public function testAFailedWriteIsAGenericBranchFailure(): void {
+		$hash = $this->previewHash();
+		$this->saveFails = true;
+
+		$response = $this->controller(uid: 'olga', params: ['targetHash' => $hash, 'choices' => []])->merge(appSlug: 'vergunningen', source: 'permit-fees', target: 'development');
+
+		$this->assertSame(422, $response->getStatus());
+		$this->assertSame(['error' => 'branch_failed', 'detail' => 'The branch or merge could not be completed.'], $response->getData());
+		$this->assertSame([], $this->saved);
+	}//end testAFailedWriteIsAGenericBranchFailure()
+
+	/**
+	 * A branch from, or a merge of, a version the application does not have is 404 and writes nothing.
+	 *
+	 * @return void
+	 */
+	public function testAnUnknownVersionIs404(): void {
+		$branch = $this->controller(uid: 'olga', params: ['name' => 'new-idea'])->branch(appSlug: 'vergunningen', versionSlug: 'no-such-version');
+		$merge  = $this->controller(uid: 'olga', params: ['preview' => true])->merge(appSlug: 'vergunningen', source: 'no-such-version', target: 'development');
+
+		$this->assertSame([404, ['error' => 'not_found', 'detail' => 'no-such-version']], [$branch->getStatus(), $branch->getData()]);
+		$this->assertSame([404, ['error' => 'not_found', 'detail' => 'no-such-version / development']], [$merge->getStatus(), $merge->getData()]);
+		$this->assertSame([], $this->saved);
+	}//end testAnUnknownVersionIs404()
 
 	/**
 	 * Production cannot take a merge; nothing is written.

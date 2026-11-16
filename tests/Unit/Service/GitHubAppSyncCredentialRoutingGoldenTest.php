@@ -45,6 +45,7 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\AbstractLogger;
 use Stringable;
 use Throwable;
+use OCA\Buildiq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Pins, for every push, template publish and link, which broker credential and
@@ -219,6 +220,7 @@ class GitHubAppSyncCredentialRoutingGoldenTest extends TestCase {
 		);
 		$objects->method('saveObject')->willReturnCallback(
 			function (...$args) use (&$trace): ObjectEntityInterface {
+				$args = LegacyObjectArgs::positional(method: 'saveObject', args: $args);
 				$trace['saved'][] = ['object' => $args[0], 'target' => array_values(array_filter(array_slice($args, 1), 'is_string'))];
 				return $this->createMock(ObjectEntityInterface::class);
 			}

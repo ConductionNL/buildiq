@@ -121,17 +121,12 @@ class JourneyWritesCheck implements JourneyWritesCheckInterface {
 	 * @spec openspec/changes/journey-designer/specs/journey-designer/spec.md#requirement-write-mappings-must-be-validated-against-the-target-schema-at-author-time
 	 */
 	public function findings(array $journey): array {
-		$options = $this->optionsOf(journey: $journey);
-		$made    = [];
+		$context = ['options' => $this->optionsOf(journey: $journey), 'made' => []];
 		$out     = [];
-		$index   = 0;
-
-		foreach ($this->stepsOf(journey: $journey) as $step) {
-			$stepId = (string)($step['id'] ?? '');
-			$writes = ($step['writes'] ?? []);
-			if (is_array($writes) === false || array_is_list($writes) === false) {
+		foreach ($this->writeEntries(journey: $journey) as $entry) {
+			if ($entry['write'] === null) {
 				$out[] = [
-					'step'     => $stepId,
+					'step'     => $entry['step'],
 					'write'    => '',
 					'property' => '',
 					'code'     => self::WRITES_INVALID,
@@ -140,35 +135,93 @@ class JourneyWritesCheck implements JourneyWritesCheckInterface {
 				continue;
 			}
 
-			foreach ($writes as $write) {
-				if (is_array($write) === false) {
-					$write = [];
-				}
+			foreach ($this->writeFindings(entry: $entry, context: $context) as $finding) {
+				$out[] = ['step' => $entry['step'], 'write' => $entry['as']] + $finding;
+			}
 
-				$as = (string)($write['as'] ?? ('write' . $index));
-				$index++;
-
-				$mapping = [];
-				if (is_array($write['mapping'] ?? null) === true) {
-					$mapping = $write['mapping'];
-				}
-
-				[$mapping, $refusals] = $this->withPlaceholders(mapping: $mapping, made: $made);
-				$findings = array_merge(
-					$refusals,
-					$this->repeatRefusals(write: $write),
-					$this->destinationFindings(write: $write, mapping: $mapping, options: $options)
-				);
-				foreach ($findings as $finding) {
-					$out[] = ['step' => $stepId, 'write' => $as] + $finding;
-				}
-
-				$made[$as] = true;
-			}//end foreach
-		}//end foreach
+			$context['made'][$entry['as']] = true;
+		}
 
 		return $out;
 	}//end findings()
+
+	/**
+	 * Every write of the journey in step order, each with its step and its `as`;
+	 * a step whose writes are not a list gives one entry with a null write.
+	 *
+	 * @param array<string, mixed> $journey The journey.
+	 *
+	 * @return list<array{step: string, as: string, write: array<string, mixed>|null}>
+	 *
+	 * @spec openspec/changes/journey-designer/specs/journey-designer/spec.md#requirement-write-mappings-must-be-validated-against-the-target-schema-at-author-time
+	 */
+	private function writeEntries(array $journey): array {
+		$entries = [];
+		$index   = 0;
+		foreach ($this->stepsOf(journey: $journey) as $step) {
+			$stepEntries = $this->stepEntries(step: $step, index: $index);
+			$index      += count(array_filter($stepEntries, static fn (array $entry): bool => $entry['write'] !== null));
+			array_push($entries, ...$stepEntries);
+		}
+
+		return $entries;
+	}//end writeEntries()
+
+	/**
+	 * The writes of one step; a write without `as` is named after its place in the journey.
+	 *
+	 * @param array<string, mixed> $step  The step.
+	 * @param int                  $index The place in the journey of the step's first write.
+	 *
+	 * @return list<array{step: string, as: string, write: array<string, mixed>|null}>
+	 *
+	 * @spec openspec/changes/journey-designer/specs/journey-designer/spec.md#requirement-write-mappings-must-be-validated-against-the-target-schema-at-author-time
+	 */
+	private function stepEntries(array $step, int $index): array {
+		$stepId = (string)($step['id'] ?? '');
+		$writes = ($step['writes'] ?? []);
+		if (is_array($writes) === false || array_is_list($writes) === false) {
+			return [['step' => $stepId, 'as' => '', 'write' => null]];
+		}
+
+		$entries = [];
+		foreach ($writes as $write) {
+			if (is_array($write) === false) {
+				$write = [];
+			}
+
+			$entries[] = ['step' => $stepId, 'as' => (string)($write['as'] ?? ('write' . $index)), 'write' => $write];
+			$index++;
+		}
+
+		return $entries;
+	}//end stepEntries()
+
+	/**
+	 * The findings on one write: placeholder refusals, repeat refusals and what the destination finds.
+	 *
+	 * @param array{step: string, as: string, write: array<string, mixed>} $entry   The write.
+	 * @param array{options: array<string, string>, made: array<string, true>} $context The validator options and the writes made before this one.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 *
+	 * @spec openspec/changes/journey-designer/specs/journey-designer/spec.md#requirement-write-mappings-must-be-validated-against-the-target-schema-at-author-time
+	 */
+	private function writeFindings(array $entry, array $context): array {
+		$write   = $entry['write'];
+		$mapping = [];
+		if (is_array($write['mapping'] ?? null) === true) {
+			$mapping = $write['mapping'];
+		}
+
+		[$mapping, $refusals] = $this->withPlaceholders(mapping: $mapping, made: $context['made']);
+
+		return array_merge(
+			$refusals,
+			$this->repeatRefusals(write: $write),
+			$this->destinationFindings(write: $write, mapping: $mapping, options: $context['options'])
+		);
+	}//end writeFindings()
 
 	/**
 	 * What OpenRegister's validator finds on the write's mapping: against the
@@ -243,6 +296,28 @@ class JourneyWritesCheck implements JourneyWritesCheckInterface {
 			$refusals[] = ['property' => '', 'code' => self::FOREACH_INVALID, 'message' => 'A repeating write has to name the list answer it repeats over.'];
 		}
 
+		$refusals = array_merge($refusals, self::targetRefusals(write: $write, repeats: $repeats));
+
+		if (($write['bundle'] ?? false) === true && $repeats === true) {
+			$refusals[] = ['property' => '', 'code' => self::BUNDLE_REPEATS, 'message' => 'A bundle is written once; it cannot repeat over a list.'];
+		}
+
+		return $refusals;
+	}//end repeatRefusals()
+
+	/**
+	 * The refusals on a write's `targets` and `targetBy`: only on a write that
+	 * repeats, and `targets` needs a `targetBy`.
+	 *
+	 * @param array<string, mixed> $write   The write.
+	 * @param bool                 $repeats Whether the write repeats over a list answer.
+	 *
+	 * @return array<int, array<string, string>> The refusals.
+	 *
+	 * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-a-write-can-repeat-per-list-item-req-bqmp-001
+	 */
+	private static function targetRefusals(array $write, bool $repeats): array {
+		$refusals   = [];
 		$hasTargets = isset($write['targets']) === true || isset($write['targetBy']) === true;
 		if ($hasTargets === true && $repeats === false) {
 			$refusals[] = [
@@ -260,12 +335,8 @@ class JourneyWritesCheck implements JourneyWritesCheckInterface {
 			];
 		}
 
-		if (($write['bundle'] ?? false) === true && $repeats === true) {
-			$refusals[] = ['property' => '', 'code' => self::BUNDLE_REPEATS, 'message' => 'A bundle is written once; it cannot repeat over a list.'];
-		}
-
 		return $refusals;
-	}//end repeatRefusals()
+	}//end targetRefusals()
 
 	/**
 	 * The mapping with each `{ "$write": "<as>" }` fixed value replaced by the placeholder id,

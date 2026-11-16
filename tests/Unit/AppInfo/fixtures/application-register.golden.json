@@ -155,8 +155,22 @@
     {
         "method": "registerServiceAlias",
         "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\DeviceFeaturesInterface",
+            "target": "OCA\\Buildiq\\Service\\DeviceFeatures"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
             "alias": "OCA\\Buildiq\\Kernel\\Contracts\\DocumentGenerationServiceInterface",
             "target": "OCA\\Buildiq\\Service\\DocumentGenerationService"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\DutchFormatValidatorInterface",
+            "target": "OCA\\Buildiq\\Service\\DutchFormatValidator"
         }
     },
     {
@@ -400,6 +414,13 @@
     {
         "method": "registerServiceAlias",
         "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\VersionMergeRunnerInterface",
+            "target": "OCA\\Buildiq\\Service\\Branch\\VersionMergeRunner"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
             "alias": "OCA\\Buildiq\\Kernel\\Contracts\\VersionPromotionServiceInterface",
             "target": "OCA\\Buildiq\\Service\\VersionPromotionService"
         }
@@ -575,6 +596,20 @@
     {
         "method": "registerEventListener",
         "args": {
+            "event": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+            "listener": "OCA\\Buildiq\\Listener\\DeviceFeaturesListener"
+        }
+    },
+    {
+        "method": "registerEventListener",
+        "args": {
+            "event": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+            "listener": "OCA\\Buildiq\\Listener\\DeviceFeaturesListener"
+        }
+    },
+    {
+        "method": "registerEventListener",
+        "args": {
             "event": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
             "listener": "OCA\\Buildiq\\Listener\\AutomationApprovalTriggerListener"
         }
@@ -640,6 +675,13 @@
         "args": {
             "event": "OCA\\OpenRegister\\Event\\ObjectTransitionedEvent",
             "listener": "OCA\\Buildiq\\Listener\\DocumentGenerationListener"
+        }
+    },
+    {
+        "method": "registerEventListener",
+        "args": {
+            "event": "OCA\\Buildiq\\Event\\RuleEvaluationRequestedEvent",
+            "listener": "OCA\\Buildiq\\Listener\\RuleEvaluationListener"
         }
     },
     {
