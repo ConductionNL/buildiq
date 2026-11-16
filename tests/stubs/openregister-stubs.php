@@ -2266,6 +2266,18 @@ namespace OCA\OpenRegister\Db {
 	}//end if
 }
 
+namespace OCA\OpenRegister\Service\Task {
+	if (class_exists(ApprovalPositionForm::class, autoload: false) === false) {
+		/**
+		 * Stub ApprovalPositionForm — present on an OpenRegister that carries an
+		 * approval position's form into the tasks it opens
+		 * (approval-position-task-form). Buildiq only checks that it exists.
+		 */
+		final class ApprovalPositionForm {
+		}//end class
+	}//end if
+}
+
 namespace OCA\OpenRegister\Service {
 
 	if (class_exists(ObjectService::class, autoload: false) === false) {

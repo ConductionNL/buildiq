@@ -467,6 +467,192 @@ final class AutomationCompilerServiceTest extends TestCase {
 	}//end testObjectCreatedPlusApprovalCompilesToApprovalChainPlan()
 
 	/**
+	 * An automation on `klacht` asking the approver for these fields.
+	 *
+	 * @param array<int,array<string,mixed>> $fields The form fields.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private static function approvalWithForm(array $fields): array {
+		return [
+			'id' => 'auto-form',
+			'slug' => 'klacht-ter-goedkeuring',
+			'applicationSlug' => 'klachten',
+			'versionUuid' => 'version-1',
+			'enabled' => true,
+			'trigger' => ['type' => 'object-updated', 'schema' => 'klacht'],
+			'condition' => null,
+			'actions' => [['type' => 'approval', 'assigneeGroup' => 'teamleiders', 'form' => ['fields' => $fields]]],
+		];
+	}//end approvalWithForm()
+
+	/**
+	 * Let the schema mapper answer `klacht` with these properties.
+	 *
+	 * @return void
+	 */
+	private function klachtSchema(): void {
+		$schema = $this->createMock(Schema::class);
+		$schema->method('getProperties')->willReturn([
+			'bedrag' => ['type' => 'number'],
+			'motivering' => ['type' => 'string'],
+			'zaaknummer' => ['type' => 'string', 'readOnly' => true],
+			'intern' => ['type' => 'string', 'visible' => false],
+			'bijlagen' => ['type' => 'array', 'items' => ['type' => 'string']],
+			'melder' => ['type' => 'string', 'format' => 'uuid', '$ref' => 'persoon'],
+			'adres' => ['type' => 'object'],
+		]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+	}//end klachtSchema()
+
+	/**
+	 * logic-approval-task-form REQ-BQTF-001: each field the task form cannot render is refused, naming it.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
+	 */
+	public function testAnApprovalFormFieldTheFormCannotRenderIsRefusedByName(): void {
+		$this->klachtSchema();
+		$cases = [
+			'onbekend' => 'it is not a property',
+			'zaaknummer' => 'it is read-only',
+			'intern' => 'it is hidden',
+			'bijlagen' => 'it is a list',
+			'melder' => 'it is a relation',
+			'adres' => 'it is a relation',
+		];
+
+		foreach ($cases as $field => $reason) {
+			try {
+				$this->compiler->compile(self::approvalWithForm(fields: [['field' => 'bedrag', 'required' => true], ['field' => $field]]));
+				$this->fail('Expected a refusal for ' . $field);
+			} catch (UnsupportedAutomationCombinationException $e) {
+				$this->assertSame('The approval form cannot ask for "' . $field . '": ' . $reason . ' in schema "klacht".', $e->getMessage());
+			}
+		}
+	}//end testAnApprovalFormFieldTheFormCannotRenderIsRefusedByName()
+
+	/**
+	 * A field listed twice, or a row without a field, is refused too.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
+	 */
+	public function testADuplicateOrNamelessFormFieldIsRefused(): void {
+		$this->klachtSchema();
+
+		foreach ([[['field' => 'bedrag'], ['field' => 'bedrag']], [['field' => ' '], ['required' => true]]] as $fields) {
+			try {
+				$this->compiler->compile(self::approvalWithForm(fields: $fields));
+				$this->fail('Expected a refusal');
+			} catch (UnsupportedAutomationCombinationException $e) {
+				$this->assertMatchesRegularExpression('/listed twice|without a name/', $e->getMessage());
+			}
+		}
+	}//end testADuplicateOrNamelessFormFieldIsRefused()
+
+	/**
+	 * logic-approval-task-form REQ-BQTF-002: with OpenRegister carrying it, a valid form compiles onto the chain position, in order, and into the hash.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-the-form-is-compiled-into-the-approval-chain-or-refused-req-bqtf-002
+	 */
+	public function testAValidApprovalFormCompilesOntoTheChainPosition(): void {
+		$this->assertTrue(class_exists('OCA\\OpenRegister\\Service\\Task\\ApprovalPositionForm'));
+		$this->klachtSchema();
+
+		$plan = $this->compiler->compile(self::approvalWithForm(fields: [['field' => 'bedrag', 'required' => true], ['field' => 'motivering', 'required' => false]]));
+		$plain = $this->compiler->compile(self::approvalWithForm(fields: []));
+
+		$this->assertSame(
+			[
+				'name' => 'aut-klacht-ter-goedkeuring',
+				'schema' => 'klacht',
+				'assigneeGroup' => 'teamleiders',
+				'enabled' => true,
+				'form' => ['kind' => 'fields', 'fields' => [['field' => 'bedrag', 'required' => true], ['field' => 'motivering', 'required' => false]]],
+			],
+			$plan['approvalChain']
+		);
+		$this->assertNotSame($plain['hash'], $plan['hash']);
+	}//end testAValidApprovalFormCompilesOntoTheChainPosition()
+
+	/**
+	 * logic-approval-task-form REQ-BQTF-002: applying writes the form on the declared approver, and a form changed outside buildiq changes the live hash.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-the-form-is-compiled-into-the-approval-chain-or-refused-req-bqtf-002
+	 */
+	public function testTheAppliedChainCarriesTheFormAndAChangedFormShowsInTheLiveHash(): void {
+		$captured = [];
+		$schema = $this->schemaWithConfig([], $captured);
+		$schema->method('getId')->willReturn(42);
+		$schema->method('getProperties')->willReturn(['bedrag' => ['type' => 'number'], 'motivering' => ['type' => 'string']]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$automation = self::approvalWithForm(fields: [['field' => 'bedrag', 'required' => true], ['field' => 'motivering']]);
+
+		$plan = $this->compiler->compile($automation);
+		$provenance = $this->compiler->apply($automation, $plan, []);
+
+		$this->assertSame(
+			[
+				'approvers' => [[
+					'role' => 'teamleiders',
+					'form' => ['kind' => 'fields', 'fields' => [['field' => 'bedrag', 'required' => true], ['field' => 'motivering', 'required' => false]]],
+				]],
+				'enabled' => true,
+			],
+			$captured['x-openregister-approval-chains']['aut-klacht-ter-goedkeuring']
+		);
+
+		$before = $this->compiler->status($automation, $provenance)['liveHash'];
+		$this->assertSame($before, $this->compiler->status($automation, $provenance)['liveHash']);
+
+		$edited = $captured;
+		$edited['x-openregister-approval-chains']['aut-klacht-ter-goedkeuring']['approvers'][0]['form']['fields'] = [['field' => 'bedrag', 'required' => true]];
+		$schema->setConfiguration($edited);
+
+		$after = $this->compiler->status($automation, $provenance);
+		$this->assertTrue($after['drift']);
+		$this->assertNotSame($before, $after['liveHash']);
+	}//end testTheAppliedChainCarriesTheFormAndAChangedFormShowsInTheLiveHash()
+
+	/**
+	 * An empty field list is no form: the approval compiles as before, without reading the schema.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
+	 */
+	public function testAnEmptyApprovalFormLeavesTheApprovalAsItWas(): void {
+		$this->schemaMapper->expects($this->never())->method('find');
+
+		$plan = $this->compiler->compile(self::approvalWithForm(fields: []));
+
+		$this->assertSame(['name' => 'aut-klacht-ter-goedkeuring', 'schema' => 'klacht', 'assigneeGroup' => 'teamleiders', 'enabled' => true], $plan['approvalChain']);
+	}//end testAnEmptyApprovalFormLeavesTheApprovalAsItWas()
+
+	/**
+	 * A trigger schema that cannot be read refuses the form rather than letting it through unchecked.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
+	 */
+	public function testAnUnreadableSchemaRefusesTheForm(): void {
+		$this->schemaMapper->method('find')->willThrowException(new \RuntimeException('gone'));
+
+		$this->expectException(UnsupportedAutomationCombinationException::class);
+		$this->expectExceptionMessage('schema "klacht" could not be read');
+
+		$this->compiler->compile(self::approvalWithForm(fields: [['field' => 'bedrag']]));
+	}//end testAnUnreadableSchemaRefusesTheForm()
+
+	/**
 	 * automation-approval-steps REQ-AUTD-004: `lifecycle-transition` +
 	 * `approval` is also supported (not just plain object events).
 	 *
