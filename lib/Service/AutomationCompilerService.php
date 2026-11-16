@@ -1441,6 +1441,22 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 			return null;
 		}
 
+		$this->saveRuleSet(ruleSet: $ruleSet);
+		$this->saveConditionActionRule(conditionActionRule: $conditionActionRule, ruleSetSlug: (string)$ruleSet['slug']);
+
+		return (string)$ruleSet['slug'];
+	}//end applyRuleSet()
+
+	/**
+	 * Create the compiled RuleSet, or update the one with the same slug.
+	 *
+	 * A failed save is logged, never thrown.
+	 *
+	 * @param array<string,mixed> $ruleSet Planned RuleSet fields.
+	 *
+	 * @return void
+	 */
+	private function saveRuleSet(array $ruleSet): void {
 		$existingRuleSet = $this->findOneObject(schema: RuleEngineService::RULE_SET_SCHEMA, filters: ['slug' => $ruleSet['slug']]);
 		try {
 			if ($existingRuleSet !== null) {
@@ -1466,8 +1482,20 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 		} catch (Throwable $e) {
 			$this->logger->error('Buildiq: AutomationCompilerService failed to save RuleSet "' . $ruleSet['slug'] . '": ' . $e->getMessage());
 		}
+	}//end saveRuleSet()
 
-		$existingRule = $this->findOneObject(schema: RuleEngineService::CONDITION_RULE_SCHEMA, filters: ['ruleSetId' => $ruleSet['slug']]);
+	/**
+	 * Create the ConditionActionRule of a RuleSet, or update the one it already has.
+	 *
+	 * A failed save is logged, never thrown.
+	 *
+	 * @param array<string,mixed> $conditionActionRule Planned ConditionActionRule fields.
+	 * @param string              $ruleSetSlug         The slug of its RuleSet.
+	 *
+	 * @return void
+	 */
+	private function saveConditionActionRule(array $conditionActionRule, string $ruleSetSlug): void {
+		$existingRule = $this->findOneObject(schema: RuleEngineService::CONDITION_RULE_SCHEMA, filters: ['ruleSetId' => $ruleSetSlug]);
 		try {
 			if ($existingRule !== null) {
 				$id = (string)($existingRule['id'] ?? $existingRule['uuid'] ?? '');
@@ -1492,12 +1520,10 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 			}
 		} catch (Throwable $e) {
 			$this->logger->error(
-				'Buildiq: AutomationCompilerService failed to save ConditionActionRule for "' . $ruleSet['slug'] . '": ' . $e->getMessage()
+				'Buildiq: AutomationCompilerService failed to save ConditionActionRule for "' . $ruleSetSlug . '": ' . $e->getMessage()
 			);
 		}//end try
-
-		return (string)$ruleSet['slug'];
-	}//end applyRuleSet()
+	}//end saveConditionActionRule()
 
 	/**
 	 * Delete the RuleSet + its ConditionActionRule by slug.
