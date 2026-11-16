@@ -345,7 +345,6 @@ import FieldValidationBuilder from './FieldValidationBuilder.vue'
 import FileFieldSettings from './FileFieldSettings.vue'
 import InlineFieldMark from './InlineFieldMark.vue'
 import VisibleWhenBuilder from './VisibleWhenBuilder.vue'
-import { isDutchFormat } from '../../../services/dutchFormats.js'
 import {
 	AUDIO_MAX_SECONDS,
 	AUDIO_MIN_SECONDS,
@@ -357,6 +356,7 @@ import {
 	longestAudioSeconds,
 	missingDeviceTargets,
 } from '../../../services/deviceFields.js'
+import { isDutchFormat } from '../../../services/dutchFormats.js'
 import {
 	FIELD_TYPES as BASE_FIELD_TYPES,
 	fieldTypeIcon,
