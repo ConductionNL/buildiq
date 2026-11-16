@@ -123,15 +123,7 @@ class ConnectedDatabaseReader {
 	 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
 	 */
 	private function databaseWritable(string $sourceId, string $register): bool {
-		$source = null;
-		if (trim($sourceId) !== '') {
-			try {
-				$source = $this->sources->findForSystem(sourceId: trim($sourceId));
-			} catch (Throwable) {
-				$source = null;
-			}
-		}
-
+		$source = $this->findSource(sourceId: trim($sourceId));
 		if ($source === null || (string)$source->getType() !== self::DATABASE_TYPE) {
 			throw new InvalidArgumentException(sprintf('The register "%s" is not a connected database.', $register));
 		}
@@ -139,6 +131,27 @@ class ConnectedDatabaseReader {
 		$authConfig = $source->getAuthConfig();
 		return is_array($authConfig) === true && ($authConfig['writable'] ?? false) === true;
 	}//end databaseWritable()
+
+	/**
+	 * The source a register names, or null when it names none or the source cannot be read.
+	 *
+	 * @param string $sourceId The trimmed source id ('' for none).
+	 *
+	 * @return mixed The source, or null.
+	 *
+	 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
+	 */
+	private function findSource(string $sourceId): mixed {
+		if ($sourceId === '') {
+			return null;
+		}
+
+		try {
+			return $this->sources->findForSystem(sourceId: $sourceId);
+		} catch (Throwable) {
+			return null;
+		}
+	}//end findSource()
 
 	/**
 	 * The chosen tables as `{slug, title, properties}`, in the order the maker ticked them.

@@ -115,19 +115,35 @@ export const PREVIEW_ROWS = 50
  */
 export function refusalMessage(response) {
 	const status = response?.status
-	if (status === 400 || status === 422) {
-		return t('buildiq', 'Only a single read-only query can run.')
+	const fixed = {
+		400: t('buildiq', 'Only a single read-only query can run.'),
+		422: t('buildiq', 'Only a single read-only query can run.'),
+		401: t('buildiq', 'Only an administrator can run a query.'),
+		403: t('buildiq', 'Only an administrator can run a query.'),
+		404: t('buildiq', 'This database is no longer connected.'),
 	}
-	if (status === 401 || status === 403) {
-		return t('buildiq', 'Only an administrator can run a query.')
+	if (status in fixed) {
+		return fixed[status]
 	}
-	if (status === 404) {
-		return t('buildiq', 'This database is no longer connected.')
-	}
-	if ((status === 502 || status === 503) && typeof response?.data?.error === 'string' && response.data.error !== '') {
+	if (upstreamSentence(response) !== '') {
 		return response.data.error
 	}
 	return t('buildiq', 'The query could not be run. Try again later.')
+}
+
+/**
+ * OpenRegister's own sentence for a 502 or 503, or '' for any other answer.
+ *
+ * @param {object} [response] The axios error response.
+ * @return {string}
+ * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-only-a-safe-query-from-an-administrator-runs-req-bqdb-006
+ */
+function upstreamSentence(response) {
+	const error = response?.data?.error
+	if (![502, 503].includes(response?.status) || typeof error !== 'string') {
+		return ''
+	}
+	return error
 }
 
 /**

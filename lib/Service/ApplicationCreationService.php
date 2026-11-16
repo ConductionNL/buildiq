@@ -311,13 +311,7 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 			// passed appSlugExists() then both tried saveObject — the second one will
 			// receive a unique-constraint violation (issue #163).
 			$errorMsg = $e->getMessage();
-			$isSlugConflict = (
-				str_contains($errorMsg, 'Duplicate')
-				|| str_contains($errorMsg, 'duplicate')
-				|| str_contains($errorMsg, 'unique constraint')
-				|| str_contains($errorMsg, 'UNIQUE')
-			);
-			if ($isSlugConflict === true) {
+			if (self::isSlugConflict(errorMsg: $errorMsg) === true) {
 				throw new WizardCreationException(
 					errorCode: 'app_slug_conflict',
 					failedAtStep: 'validate',
@@ -340,6 +334,20 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 			);
 		}//end try
 	}//end createApplicationRecord()
+
+	/**
+	 * Whether a save failure is a unique-constraint violation on the slug.
+	 *
+	 * @param string $errorMsg The message of the save failure.
+	 *
+	 * @return bool True for a duplicate-slug race.
+	 */
+	private static function isSlugConflict(string $errorMsg): bool {
+		return str_contains($errorMsg, 'Duplicate')
+			|| str_contains($errorMsg, 'duplicate')
+			|| str_contains($errorMsg, 'unique constraint')
+			|| str_contains($errorMsg, 'UNIQUE');
+	}//end isSlugConflict()
 
 	/**
 	 * Step 3: create each ApplicationVersion and provision its register, in chain order.
@@ -716,15 +724,7 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 		}
 
 		$block = $payload['fromDatabase'];
-		$tables = ($block['schemas'] ?? null);
-		if (is_array($block) === false || is_string($block['register'] ?? null) === false || is_array($tables) === false) {
-			throw new WizardCreationException(
-				errorCode: 'validation_error',
-				failedAtStep: 'validate',
-				message: 'fromDatabase needs a register and a list of tables.',
-				rollbackStatus: 'none'
-			);
-		}
+		$tables = self::databaseTables(block: $block);
 
 		if ($this->databases === null) {
 			throw new WizardCreationException(
@@ -747,6 +747,35 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 			);
 		}
 	}//end validateDatabase()
+
+	/**
+	 * The ticked tables of a `fromDatabase` block, once its shape is checked.
+	 *
+	 * @param mixed $block The `fromDatabase` block.
+	 *
+	 * @return array<mixed> The block's `schemas` list.
+	 *
+	 * @throws WizardCreationException With failedAtStep=validate when the block has no register or no list of tables
+	 *
+	 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
+	 */
+	private static function databaseTables(mixed $block): array {
+		$tables = null;
+		if (is_array($block) === true && is_string($block['register'] ?? null) === true) {
+			$tables = ($block['schemas'] ?? null);
+		}
+
+		if (is_array($tables) === false) {
+			throw new WizardCreationException(
+				errorCode: 'validation_error',
+				failedAtStep: 'validate',
+				message: 'fromDatabase needs a register and a list of tables.',
+				rollbackStatus: 'none'
+			);
+		}
+
+		return $tables;
+	}//end databaseTables()
 
 	/**
 	 * Refuse an app slug that an existing Application already uses.
