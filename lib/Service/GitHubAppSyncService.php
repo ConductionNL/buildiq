@@ -447,17 +447,13 @@ class GitHubAppSyncService implements GitHubAppSyncServiceInterface {
 		?string $credentialId,
 		?string $actingUserId,
 	): array {
-		$repo = ($application['githubRepo'] ?? null);
-		if (is_array($repo) === false) {
-			return ['outcome' => self::OUTCOME_NOT_LINKED];
+		$linked = $this->linkedRepo(application: $application);
+		if (isset($linked['outcome']) === true) {
+			return $linked;
 		}
 
-		$owner = (string)($repo['owner'] ?? '');
-		$name = (string)($repo['name'] ?? '');
-		if ($owner === '' || $name === '') {
-			return ['outcome' => self::OUTCOME_NOT_LINKED];
-		}
-
+		$owner = $linked['owner'];
+		$name = $linked['name'];
 		$source = new RepoSource(owner: $owner, repo: $name, ref: $ref, credentialId: $credentialId);
 		$files = $this->catalogService->fetchRepoFiles(source: $source, actingUserId: $actingUserId);
 		if ($files === []) {
@@ -481,24 +477,16 @@ class GitHubAppSyncService implements GitHubAppSyncServiceInterface {
 			registerSlug: $registerSlug
 		);
 
-		$manifest = $this->rewriteSchemaRefs(node: $template['manifest'], map: $rewriteMap);
-		if (is_array($manifest) === false) {
-			$manifest = [];
-		}
+		$manifest = $this->draftManifest(template: $template, rewriteMap: $rewriteMap);
 
 		$commitSha = $this->catalogService->resolveCommitSha(source: $source, actingUserId: $actingUserId);
-
-		$semver = (string)($template['version'] ?? '');
-		if (preg_match('/^[0-9]+\.[0-9]+\.[0-9]+/', $semver) !== 1) {
-			$semver = '0.1.0';
-		}
 
 		$payload = [
 			'name' => 'Pulled ' . $versionSlug,
 			'slug' => $versionSlug,
 			'manifest' => $manifest,
 			'register' => $registerSlug,
-			'semver' => $semver,
+			'semver' => self::semverOf(template: $template),
 			'status' => 'draft',
 			'application' => $appUuid,
 			'sourceRef' => $ref,
@@ -542,6 +530,43 @@ class GitHubAppSyncService implements GitHubAppSyncServiceInterface {
 			'warnings' => ($channels['warnings'] ?? []),
 		];
 	}//end pull()
+
+	/**
+	 * The pulled manifest with its schema references rewritten to the draft's namespaced slugs.
+	 *
+	 * @param array<string,mixed>  $template   The parsed clone-seam array.
+	 * @param array<string,string> $rewriteMap Source-slug → namespaced-slug rewrite map.
+	 *
+	 * @return array<mixed> The manifest; empty when the rewrite does not give an array.
+	 *
+	 * @spec openspec/changes/github-app-sync/specs/github-app-sync/spec.md
+	 */
+	private function draftManifest(array $template, array $rewriteMap): array {
+		$manifest = $this->rewriteSchemaRefs(node: $template['manifest'], map: $rewriteMap);
+		if (is_array($manifest) === false) {
+			return [];
+		}
+
+		return $manifest;
+	}//end draftManifest()
+
+	/**
+	 * The pulled template's semantic version, or 0.1.0 when it carries none.
+	 *
+	 * @param array<string,mixed> $template The parsed clone-seam array.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/github-app-sync/specs/github-app-sync/spec.md
+	 */
+	private static function semverOf(array $template): string {
+		$semver = (string)($template['version'] ?? '');
+		if (preg_match('/^[0-9]+\.[0-9]+\.[0-9]+/', $semver) !== 1) {
+			return '0.1.0';
+		}
+
+		return $semver;
+	}//end semverOf()
 
 	/**
 	 * Ensure a linked repo exists — create it via the broker when unlinked.
