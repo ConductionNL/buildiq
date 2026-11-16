@@ -495,6 +495,22 @@ namespace OCA\OpenRegister\Db {
 			protected ?array $configuration = null;
 
 			/**
+			 * Stub source column: the Source (id or uuid) that serves this register's objects, or null.
+			 *
+			 * @var string|null
+			 */
+			protected ?string $source = null;
+
+			/**
+			 * Return the backing source id or uuid.
+			 *
+			 * @return string|null
+			 */
+			public function getSource(): ?string {
+				return $this->source;
+			}//end getSource()
+
+			/**
 			 * Return the entity id.
 			 *
 			 * @return int
@@ -1518,6 +1534,63 @@ namespace OCA\OpenRegister\Db {
 				return $entity;
 			}//end update()
 		}//end class
+	}//end if
+
+	if (class_exists(Source::class, autoload: false) === false) {
+		/**
+		 * Stub Source — `getType()` and `getAuthConfig()` declared so mocks and
+		 * real stub objects agree; the real OR class resolves them via Entity::__call.
+		 */
+		class Source extends \OCP\AppFramework\Db\Entity {
+
+			/**
+			 * Stub type column (`database`, `api`, ...).
+			 *
+			 * @var string|null
+			 */
+			protected ?string $type = null;
+
+			/**
+			 * Stub auth configuration column.
+			 *
+			 * @var array<string, mixed>|null
+			 */
+			protected ?array $authConfig = null;
+
+			/**
+			 * Return the source type.
+			 *
+			 * @return string|null
+			 */
+			public function getType(): ?string {
+				return $this->type;
+			}//end getType()
+
+			/**
+			 * Return the auth configuration.
+			 *
+			 * @return array<string, mixed>|null
+			 */
+			public function getAuthConfig(): ?array {
+				return $this->authConfig;
+			}//end getAuthConfig()
+		}//end class
+	}//end if
+
+	if (interface_exists(SourceMapperInterface::class, autoload: false) === false) {
+		/**
+		 * Stub SourceMapperInterface — the one method buildiq calls.
+		 */
+		interface SourceMapperInterface {
+			/**
+			 * Find a source by id or uuid without the caller's access filter.
+			 *
+			 * @param string $sourceId The Source id (digits) or uuid.
+			 *
+			 * @return Source|null
+			 */
+			public function findForSystem(string $sourceId): ?Source;
+		}//end interface
 	}//end if
 
 	if (class_exists(Organisation::class, autoload: false) === false) {

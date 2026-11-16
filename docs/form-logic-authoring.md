@@ -175,6 +175,43 @@ the stale reference lives, so you can decide what to do — re-add the
 field, or edit the condition/step yourself. The reference stays in the
 manifest until you resolve it.
 
+## Letting another app call a rule set
+
+A rule set can also decide a value for another app — for example a portal
+form step that asks "which permit applies?" on the server, where the
+resident has no Nextcloud account. By default nobody outside buildiq may
+call a rule set; you allow it per rule set:
+
+1. Open **Business rules**, find the rule set and choose **Callers**.
+2. Under **May be called by** pick the apps that may call it (the enabled
+   apps are offered; an app id can also be typed). Save.
+3. Activate the rule set. Only the active version answers.
+
+What the other app gets:
+
+- The outputs, the ids of the rules that matched and the version — never
+  the decision table itself.
+- Its form designer can list the rule sets it may use with
+  `GET /api/rules?callableBy=<app>`: slug, title, version, inputs and
+  outputs.
+- Its server asks through the typed command
+  `OCA\Buildiq\Event\RuleEvaluationRequestedEvent` (app, rule set slug,
+  inputs). The answer is `{ ok: true, result, triggeredRules, version }`, or
+  `{ ok: false, reason }` with `unknown-rule-set`, `not-allowed`,
+  `invalid-input`, `timeout` or `evaluation-failed`.
+
+What buildiq does with the call:
+
+- Only the declared inputs of the table are used; anything else the app
+  sends is dropped, a declared input that is missing counts as empty, and
+  an input of the wrong type is refused as `invalid-input`.
+- No action runs: a rule that would send a notification or start a flow
+  only answers. Each call writes one line in the rule execution log, with
+  the calling app and the version, so an auditor can see which app used
+  which version.
+- Remove an app from **May be called by** and its next call is refused as
+  `not-allowed`.
+
 ## See also
 
 - [Buildiq Runtime](./openbuild-runtime.md) — how a virtual app renders

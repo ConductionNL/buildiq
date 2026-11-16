@@ -664,6 +664,13 @@
         }
     },
     {
+        "method": "registerEventListener",
+        "args": {
+            "event": "OCA\\Buildiq\\Event\\RuleEvaluationRequestedEvent",
+            "listener": "OCA\\Buildiq\\Listener\\RuleEvaluationListener"
+        }
+    },
+    {
         "method": "registerServiceAlias",
         "args": {
             "alias": "OCA\\OpenRegister\\Mcp\\IMcpToolProvider::buildiq",
