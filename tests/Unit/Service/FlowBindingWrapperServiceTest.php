@@ -204,8 +204,7 @@ class FlowBindingWrapperServiceTest extends TestCase {
 		$definition = $this->saved[0];
 		$name = FlowBindingWrapperService::wrapperName(
 			appSlug: 'permits',
-			flow: self::BOUND,
-			entry: ['schema' => 'vergunning', 'event' => 'object.updated']
+			wanted: ['flow' => self::BOUND, 'entry' => ['schema' => 'vergunning', 'event' => 'object.updated']]
 		);
 		$this->assertSame(expected: $name, actual: $definition['name']);
 		$this->assertStringStartsWith(prefix: 'aut-attach-permits-', string: $name);
@@ -282,8 +281,8 @@ class FlowBindingWrapperServiceTest extends TestCase {
 		);
 		$this->assertCount(expectedCount: 3, haystack: $both['flows']);
 		$byLabel = array_column($both['flows'], 'flow', 'label');
-		$updated = $byLabel[FlowBindingWrapperService::wrapperName('permits', self::BOUND, ['schema' => 'vergunning', 'event' => 'object.updated'])];
-		$fromRecord = $byLabel[FlowBindingWrapperService::wrapperName('permits', self::BOUND, ['schema' => 'zaak', 'mode' => 'from-record'])];
+		$updated = $byLabel[FlowBindingWrapperService::wrapperName('permits', ['flow' => self::BOUND, 'entry' => ['schema' => 'vergunning', 'event' => 'object.updated']])];
+		$fromRecord = $byLabel[FlowBindingWrapperService::wrapperName('permits', ['flow' => self::BOUND, 'entry' => ['schema' => 'zaak', 'mode' => 'from-record']])];
 		$deleted = [];
 		$this->flows->method('delete')->willReturnCallback(
 			static function (string $uuid) use (&$deleted): void {
@@ -402,7 +401,7 @@ class FlowBindingWrapperServiceTest extends TestCase {
 
 		$result = $service->sync(self::APP, self::app([['schema' => 'vergunning', 'event' => 'object.updated']]), 'r');
 
-		$this->assertSame(expected: [['name' => FlowBindingWrapperService::wrapperName('permits', self::BOUND, ['schema' => 'vergunning', 'event' => 'object.updated']), 'reason' => 'save_failed']], actual: $result['failed']);
+		$this->assertSame(expected: [['name' => FlowBindingWrapperService::wrapperName('permits', ['flow' => self::BOUND, 'entry' => ['schema' => 'vergunning', 'event' => 'object.updated']]), 'reason' => 'save_failed']], actual: $result['failed']);
 		$this->assertCount(expectedCount: 1, haystack: $result['flows']);
 		$this->assertSame(expected: [], actual: $this->applications);
 
@@ -432,11 +431,11 @@ class FlowBindingWrapperServiceTest extends TestCase {
 		$this->assertSame(expected: [['flow' => self::BOUND, 'entry' => ['schema' => 'vergunning', 'event' => 'object.created']]], actual: array_values($plan));
 
 		$names = [
-			FlowBindingWrapperService::wrapperName('permits', self::BOUND, ['schema' => 'vergunning', 'event' => 'object.created']),
-			FlowBindingWrapperService::wrapperName('permits', self::BOUND, ['schema' => 'vergunning', 'event' => 'object.updated']),
-			FlowBindingWrapperService::wrapperName('permits', self::BOUND, ['schema' => 'zaak', 'event' => 'object.created']),
-			FlowBindingWrapperService::wrapperName('permits', 'other', ['schema' => 'vergunning', 'event' => 'object.created']),
-			FlowBindingWrapperService::wrapperName('subsidies', self::BOUND, ['schema' => 'vergunning', 'event' => 'object.created']),
+			FlowBindingWrapperService::wrapperName('permits', ['flow' => self::BOUND, 'entry' => ['schema' => 'vergunning', 'event' => 'object.created']]),
+			FlowBindingWrapperService::wrapperName('permits', ['flow' => self::BOUND, 'entry' => ['schema' => 'vergunning', 'event' => 'object.updated']]),
+			FlowBindingWrapperService::wrapperName('permits', ['flow' => self::BOUND, 'entry' => ['schema' => 'zaak', 'event' => 'object.created']]),
+			FlowBindingWrapperService::wrapperName('permits', ['flow' => 'other', 'entry' => ['schema' => 'vergunning', 'event' => 'object.created']]),
+			FlowBindingWrapperService::wrapperName('subsidies', ['flow' => self::BOUND, 'entry' => ['schema' => 'vergunning', 'event' => 'object.created']]),
 		];
 		$this->assertCount(expectedCount: 5, haystack: array_unique($names));
 

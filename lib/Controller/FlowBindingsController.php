@@ -107,19 +107,7 @@ class FlowBindingsController extends Controller {
 			return new JSONResponse(data: ['error' => 'not_found'], statusCode: Http::STATUS_NOT_FOUND);
 		}
 
-		$permissions = ($application['permissions'] ?? []);
-		if (is_array($permissions) === false) {
-			$permissions = [];
-		}
-
-		$isOwner = $this->permissionResolver->matchesCaller(
-			permissions: $permissions,
-			caller: $user,
-			userGroups: $this->permissionResolver->resolveUserGroups($user),
-			allowAdminBypass: true,
-			roles: ['owners']
-		);
-		if ($isOwner === false) {
+		if ($this->callerOwns(application: $application, user: $user) === false) {
 			return new JSONResponse(data: ['error' => 'forbidden'], statusCode: Http::STATUS_FORBIDDEN);
 		}
 
@@ -139,6 +127,29 @@ class FlowBindingsController extends Controller {
 
 		return new JSONResponse(data: $result);
 	}//end sync()
+
+	/**
+	 * Whether the caller is in the app's `owners`, with the administrator bypass.
+	 *
+	 * @param array<string,mixed> $application The Application object.
+	 * @param IUser               $user        The caller.
+	 *
+	 * @return bool True for an owner or an administrator.
+	 */
+	private function callerOwns(array $application, IUser $user): bool {
+		$permissions = ($application['permissions'] ?? []);
+		if (is_array($permissions) === false) {
+			$permissions = [];
+		}
+
+		return $this->permissionResolver->matchesCaller(
+			permissions: $permissions,
+			caller: $user,
+			userGroups: $this->permissionResolver->resolveUserGroups($user),
+			allowAdminBypass: true,
+			roles: ['owners']
+		);
+	}//end callerOwns()
 
 	/**
 	 * The production version's register, or '' when the app has none yet.

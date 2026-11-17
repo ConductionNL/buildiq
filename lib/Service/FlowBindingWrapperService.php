@@ -114,7 +114,6 @@ class FlowBindingWrapperService {
 		return str_starts_with((string)($binding['label'] ?? ''), self::NAME_PREFIX) === true
 			&& (string)($binding['sourceUuid'] ?? '') !== '';
 	}//end isWrapper()
-
 	/**
 	 * The wrappers an application's bindings ask for, by wrapper name.
 	 *
@@ -132,11 +131,7 @@ class FlowBindingWrapperService {
 	public static function plan(string $appSlug, array $bindings): array {
 		$plan = [];
 		foreach ($bindings as $binding) {
-			if (is_array($binding) === false || self::isWrapper(binding: $binding) === true) {
-				continue;
-			}
-
-			$flow = trim((string)($binding['flow'] ?? ''));
+			$flow = self::boundFlow(binding: $binding);
 			if ($flow === '') {
 				continue;
 			}
@@ -147,7 +142,8 @@ class FlowBindingWrapperService {
 					continue;
 				}
 
-				$plan[self::wrapperName(appSlug: $appSlug, flow: $flow, entry: $entry)] = ['flow' => $flow, 'entry' => $entry];
+				$wanted = ['flow' => $flow, 'entry' => $entry];
+				$plan[self::wrapperName(appSlug: $appSlug, wanted: $wanted)] = $wanted;
 			}
 		}
 
@@ -158,54 +154,54 @@ class FlowBindingWrapperService {
 	/**
 	 * The wrapper flow's name for one entry of one bound flow.
 	 *
-	 * @param string                                          $appSlug The application's slug.
-	 * @param string                                          $flow    The bound flow's uuid.
-	 * @param array{schema:string,event?:string,mode?:string} $entry   The `runOn` entry.
+	 * @param string                                                                     $appSlug The application's slug.
+	 * @param array{flow:string,entry:array{schema:string,event?:string,mode?:string}} $wanted  The bound flow's uuid and its `runOn` entry.
 	 *
 	 * @return string `aut-attach-<app>-<key>`.
 	 *
 	 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-binding-runs-the-flow-on-the-apps-records-req-bqsf-002
 	 */
-	public static function wrapperName(string $appSlug, string $flow, array $entry): string {
+	public static function wrapperName(string $appSlug, array $wanted): string {
+		$entry = $wanted['entry'];
 		$on = (string)($entry['event'] ?? ($entry['mode'] ?? ''));
-		return self::NAME_PREFIX . $appSlug . '-' . substr(hash('sha256', $flow . '|' . $entry['schema'] . '|' . $on), 0, 12);
+		return self::NAME_PREFIX . $appSlug . '-' . substr(hash('sha256', $wanted['flow'] . '|' . $entry['schema'] . '|' . $on), 0, 12);
 	}//end wrapperName()
 
 	/**
 	 * The flow definition of one wrapper.
 	 *
-	 * @param string                                          $name     The wrapper's name.
-	 * @param string                                          $appSlug  The application's slug.
-	 * @param string                                          $register The app version's register.
-	 * @param string                                          $flow     The bound flow's uuid.
-	 * @param array{schema:string,event?:string,mode?:string} $entry    The `runOn` entry.
+	 * The wrapper's name is {@see self::wrapperName()} of the bound flow and its entry.
+	 *
+	 * @param array{slug:string,register:string}                                         $target The application's slug and its app version's register.
+	 * @param array{flow:string,entry:array{schema:string,event?:string,mode?:string}} $wanted The bound flow and its `runOn` entry.
 	 *
 	 * @return array<string,mixed> What {@see FlowService::save()} takes.
 	 *
 	 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-binding-runs-the-flow-on-the-apps-records-req-bqsf-002
 	 */
-	public static function definition(string $name, string $appSlug, string $register, string $flow, array $entry): array {
+	public static function definition(array $target, array $wanted): array {
+		$entry   = $wanted['entry'];
 		$trigger = ['id' => 'trigger', 'type' => 'openregister.trigger-manual', 'config' => []];
-		$where = 'from a record of ' . $entry['schema'];
+		$where   = 'from a record of ' . $entry['schema'];
 		if (isset($entry['event']) === true) {
 			$trigger = [
 				'id' => 'trigger',
 				'type' => 'openregister.trigger-object',
-				'config' => ['event' => $entry['event'], 'register' => $register, 'schema' => $entry['schema']],
+				'config' => ['event' => $entry['event'], 'register' => $target['register'], 'schema' => $entry['schema']],
 			];
 			$where = 'on ' . $entry['schema'] . ' ' . $entry['event'];
 		}
 
 		return [
-			'name' => $name,
-			'description' => 'Starts flow ' . $flow . ' ' . $where . ' for app ' . $appSlug
+			'name' => self::wrapperName(appSlug: $target['slug'], wanted: $wanted),
+			'description' => 'Starts flow ' . $wanted['flow'] . ' ' . $where . ' for app ' . $target['slug']
 				. '. Kept by buildiq from the app\'s flow binding; change the binding in the app settings, not this flow.',
 			'app' => self::OWNING_APP,
-			'applicationSlug' => $appSlug,
+			'applicationSlug' => $target['slug'],
 			'enabled' => true,
 			'nodes' => [
 				$trigger,
-				['id' => 'run', 'type' => 'openregister.sub-flow', 'config' => ['flowId' => $flow, 'wait' => false]],
+				['id' => 'run', 'type' => 'openregister.sub-flow', 'config' => ['flowId' => $wanted['flow'], 'wait' => false]],
 			],
 			'edges' => [['id' => 'trigger-run', 'from' => 'trigger', 'to' => 'run']],
 		];
@@ -229,11 +225,44 @@ class FlowBindingWrapperService {
 	 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-binding-runs-the-flow-on-the-apps-records-req-bqsf-002
 	 */
 	public function sync(string $applicationUuid, array $application, string $register): array {
-		$appSlug = (string)($application['slug'] ?? '');
+		$slug     = (string)($application['slug'] ?? '');
 		$bindings = array_values(array_filter((array)($application['flows'] ?? []), 'is_array'));
-		$plan = self::plan(appSlug: $appSlug, bindings: $bindings);
+		$target   = ['slug' => $slug, 'register' => $register];
+		$plan     = self::plan(appSlug: $slug, bindings: $bindings);
 
-		$result = ['flows' => [], 'created' => 0, 'removed' => 0, 'failed' => []];
+		[$result, $present] = $this->keepOrRemove(target: $target + ['plan' => $plan], bindings: $bindings);
+		foreach (array_diff_key($plan, $present) as $wanted) {
+			$made = $this->createWrapper(target: $target, wanted: $wanted);
+			array_push($result['failed'], ...$made['failed']);
+			if ($made['binding'] !== null) {
+				$result['flows'][] = $made['binding'];
+				$result['created']++;
+			}
+		}
+
+		if ($result['flows'] !== $bindings) {
+			$application['flows'] = $result['flows'];
+			$this->saveApplication(uuid: $applicationUuid, application: $application);
+		}
+
+		return $result;
+	}//end sync()
+
+	/**
+	 * Keep the bindings that stay, and delete and unbind the wrappers that go.
+	 *
+	 * A maker's own binding always stays. A wrapper stays when the plan still
+	 * asks for it, once per name; any other wrapper is removed, or stays bound
+	 * when it cannot be.
+	 *
+	 * @param array{slug:string,register:string,plan:array<string,mixed>} $target   The application's slug, register and plan.
+	 * @param list<array<string,mixed>>                                   $bindings The application's bindings.
+	 *
+	 * @return array{0:array{flows:list<array<string,mixed>>,created:int,removed:int,failed:list<array{name:string,reason:string}>},1:array<string,true>}
+	 *         The running result, and the wrapper names that are already bound.
+	 */
+	private function keepOrRemove(array $target, array $bindings): array {
+		$result  = ['flows' => [], 'created' => 0, 'removed' => 0, 'failed' => []];
 		$present = [];
 		foreach ($bindings as $binding) {
 			if (self::isWrapper(binding: $binding) === false) {
@@ -242,72 +271,58 @@ class FlowBindingWrapperService {
 			}
 
 			$name = (string)$binding['label'];
-			if (isset($plan[$name]) === true && isset($present[$name]) === false) {
-				$present[$name] = true;
+			if (isset($target['plan'][$name]) === true && isset($present[$name]) === false) {
+				$present[$name]    = true;
 				$result['flows'][] = $binding;
 				continue;
 			}
 
-			$this->removeWrapper(binding: $binding, appSlug: $appSlug, result: $result);
-		}
-
-		foreach ($plan as $name => $wanted) {
-			if (isset($present[$name]) === true) {
+			$reason = $this->removeWrapper(binding: $binding, appSlug: $target['slug']);
+			if ($reason === null) {
+				$result['removed']++;
 				continue;
 			}
 
-			$this->createWrapper(name: $name, appSlug: $appSlug, register: $register, wanted: $wanted, result: $result);
+			$result['failed'][] = ['name' => $name, 'reason' => $reason];
+			$result['flows'][]  = $binding;
 		}
 
-		if ($result['flows'] !== $bindings) {
-			$application['flows'] = $result['flows'];
-			$this->objectService->saveObject(
-				object: $application,
-				options: new ObjectSaveOptions(
-					target: new ObjectFindTarget(
-						register: VersionPromotionServiceInterface::REGISTER_SLUG,
-						schema: VersionPromotionServiceInterface::APPLICATION_SCHEMA
-					),
-					uuid: $applicationUuid
-				),
-				_rbac: false,
-				_multitenancy: false
-			);
-		}
-
-		return $result;
-	}//end sync()
+		return [$result, $present];
+	}//end keepOrRemove()
 
 	/**
-	 * Save, publish and bind one wrapper.
+	 * Save, publish and describe one wrapper.
 	 *
-	 * @param string                                                                     $name     The wrapper's name.
-	 * @param string                                                                     $appSlug  The application's slug.
-	 * @param string                                                                     $register The app version's register.
-	 * @param array{flow:string,entry:array{schema:string,event?:string,mode?:string}} $wanted   The bound flow and its entry.
-	 * @param array<string,mixed>                                                        $result   The running result.
+	 * The wrapper's name is {@see self::wrapperName()} of the bound flow and its entry.
 	 *
-	 * @return void
+	 * @param array{slug:string,register:string}                                         $target The application's slug and its app version's register.
+	 * @param array{flow:string,entry:array{schema:string,event?:string,mode?:string}} $wanted The bound flow and its entry.
+	 *
+	 * @return array{binding:array<string,string>|null,failed:list<array{name:string,reason:string}>}
+	 *         The new binding, null when the wrapper was not saved, and what failed.
 	 */
-	private function createWrapper(string $name, string $appSlug, string $register, array $wanted, array &$result): void {
-		if (isset($wanted['entry']['event']) === true && $register === '') {
-			$result['failed'][] = ['name' => $name, 'reason' => 'no_register'];
-			return;
+	private function createWrapper(array $target, array $wanted): array {
+		$name = self::wrapperName(appSlug: $target['slug'], wanted: $wanted);
+		if (isset($wanted['entry']['event']) === true && $target['register'] === '') {
+			return ['binding' => null, 'failed' => [['name' => $name, 'reason' => 'no_register']]];
 		}
 
 		try {
-			$flow = $this->flowService->save(
-				data: self::definition(name: $name, appSlug: $appSlug, register: $register, flow: $wanted['flow'], entry: $wanted['entry'])
-			);
+			$flow = $this->flowService->save(data: self::definition(target: $target, wanted: $wanted));
 		} catch (Throwable $e) {
 			$this->logger->warning('Buildiq: wrapper flow "' . $name . '" could not be saved: ' . $e->getMessage());
-			$result['failed'][] = ['name' => $name, 'reason' => 'save_failed'];
-			return;
+			return ['binding' => null, 'failed' => [['name' => $name, 'reason' => 'save_failed']]];
 		}
 
-		$this->publish(flow: $flow, name: $name, result: $result);
-		$result['flows'][] = ['flow' => (string)$flow->getUuid(), 'label' => $name, 'sourceUuid' => $wanted['flow']];
-		$result['created']++;
+		$failed = [];
+		if ($this->publish(flow: $flow, name: $name) === false) {
+			$failed[] = ['name' => $name, 'reason' => 'not_published'];
+		}
+
+		return [
+			'binding' => ['flow' => (string)$flow->getUuid(), 'label' => $name, 'sourceUuid' => $wanted['flow']],
+			'failed' => $failed,
+		];
 	}//end createWrapper()
 
 	/**
@@ -317,30 +332,30 @@ class FlowBindingWrapperService {
 	 * A wrapper left a draft is saved and bound but never fires, so a failure
 	 * here is reported rather than passed over.
 	 *
-	 * @param \OCA\OpenRegister\Db\Flow $flow   The saved wrapper.
-	 * @param string                    $name   The wrapper's name.
-	 * @param array<string,mixed>       $result The running result.
+	 * @param \OCA\OpenRegister\Db\Flow $flow The saved wrapper.
+	 * @param string                    $name The wrapper's name.
 	 *
-	 * @return void
+	 * @return bool True when the wrapper was published.
 	 */
-	private function publish(\OCA\OpenRegister\Db\Flow $flow, string $name, array &$result): void {
+	private function publish(\OCA\OpenRegister\Db\Flow $flow, string $name): bool {
 		if (interface_exists(FlowVersionServiceInterface::class) === false
 			|| $this->container->has(FlowVersionServiceInterface::class) === false
 		) {
-			$result['failed'][] = ['name' => $name, 'reason' => 'not_published'];
-			return;
+			return false;
 		}
 
 		try {
 			$this->container->get(FlowVersionServiceInterface::class)->publish(flow: $flow);
 		} catch (Throwable $e) {
 			$this->logger->warning('Buildiq: wrapper flow "' . $name . '" could not be published: ' . $e->getMessage());
-			$result['failed'][] = ['name' => $name, 'reason' => 'not_published'];
+			return false;
 		}
+
+		return true;
 	}//end publish()
 
 	/**
-	 * Delete and unbind one wrapper, or keep it bound when it cannot be deleted.
+	 * Delete one wrapper's flow, or say why it stays bound.
 	 *
 	 * Only a flow this app keeps as a wrapper of this application is deleted: a
 	 * binding's label alone does not make its flow ours. A binding naming any
@@ -348,34 +363,80 @@ class FlowBindingWrapperService {
 	 *
 	 * @param array<string,mixed> $binding The wrapper's binding.
 	 * @param string              $appSlug The application's slug.
-	 * @param array<string,mixed> $result  The running result.
 	 *
-	 * @return void
+	 * @return string|null Null when the wrapper is gone, else `not_a_wrapper` or `remove_failed`.
 	 *
 	 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md
 	 */
-	private function removeWrapper(array $binding, string $appSlug, array &$result): void {
+	private function removeWrapper(array $binding, string $appSlug): ?string {
 		$uuid = (string)($binding['flow'] ?? '');
-		try {
-			if ($uuid !== '') {
-				$flow = $this->flowService->find(uuid: $uuid);
-				if ($flow->getApp() !== self::OWNING_APP || $appSlug === '' || $flow->getApplicationSlug() !== $appSlug) {
-					$result['failed'][] = ['name' => (string)$binding['label'], 'reason' => 'not_a_wrapper'];
-					$result['flows'][] = $binding;
-					return;
-				}
-
-				$this->flowService->delete(uuid: $uuid);
-			}
-		} catch (Throwable $e) {
-			$this->logger->warning('Buildiq: wrapper flow "' . (string)$binding['label'] . '" could not be removed: ' . $e->getMessage());
-			$result['failed'][] = ['name' => (string)$binding['label'], 'reason' => 'remove_failed'];
-			$result['flows'][] = $binding;
-			return;
+		if ($uuid === '') {
+			return null;
 		}
 
-		$result['removed']++;
+		try {
+			if (self::ownWrapper(flow: $this->flowService->find(uuid: $uuid), appSlug: $appSlug) === false) {
+				return 'not_a_wrapper';
+			}
+
+			$this->flowService->delete(uuid: $uuid);
+		} catch (Throwable $e) {
+			$this->logger->warning('Buildiq: wrapper flow "' . (string)$binding['label'] . '" could not be removed: ' . $e->getMessage());
+			return 'remove_failed';
+		}
+
+		return null;
 	}//end removeWrapper()
+
+	/**
+	 * Whether a flow is a wrapper this app keeps for this application.
+	 *
+	 * @param \OCA\OpenRegister\Db\Flow $flow    The flow a wrapper binding names.
+	 * @param string                    $appSlug The application's slug.
+	 *
+	 * @return bool True when the flow is ours to delete.
+	 */
+	private static function ownWrapper(\OCA\OpenRegister\Db\Flow $flow, string $appSlug): bool {
+		return $flow->getApp() === self::OWNING_APP && $appSlug !== '' && $flow->getApplicationSlug() === $appSlug;
+	}//end ownWrapper()
+
+	/**
+	 * Save the Application with its new bindings.
+	 *
+	 * @param string              $uuid        The Application's uuid.
+	 * @param array<string,mixed> $application The Application with its new `flows`.
+	 *
+	 * @return void
+	 */
+	private function saveApplication(string $uuid, array $application): void {
+		$this->objectService->saveObject(
+			object: $application,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(
+					register: VersionPromotionServiceInterface::REGISTER_SLUG,
+					schema: VersionPromotionServiceInterface::APPLICATION_SCHEMA
+				),
+				uuid: $uuid
+			),
+			_rbac: false,
+			_multitenancy: false
+		);
+	}//end saveApplication()
+
+	/**
+	 * The flow uuid a maker's binding names, or '' for a wrapper or an unusable binding.
+	 *
+	 * @param mixed $binding One `Application.flows` entry.
+	 *
+	 * @return string The bound flow's uuid.
+	 */
+	private static function boundFlow(mixed $binding): string {
+		if (is_array($binding) === false || self::isWrapper(binding: $binding) === true) {
+			return '';
+		}
+
+		return trim((string)($binding['flow'] ?? ''));
+	}//end boundFlow()
 
 	/**
 	 * One usable `runOn` entry, or null.

@@ -360,6 +360,7 @@ import NcSelect from '@nextcloud/vue/components/NcSelect'
 import NcTextField from '@nextcloud/vue/components/NcTextField'
 import AppEmbedSettings from '../components/AppEmbedSettings.vue'
 import { fetchConnectedDatabases } from '../composables/useConnectedDatabases.js'
+import { normaliseOffline, OFFLINE_LIMIT_DEFAULT, OFFLINE_TTL_DEFAULT } from '../services/offlineManifest.js'
 import {
 	FROM_RECORD,
 	isWrapperBinding,
@@ -369,7 +370,6 @@ import {
 	withRunOn,
 	WRAPPER_PREFIX,
 } from '../utils/flowBindings.js'
-import { normaliseOffline, OFFLINE_LIMIT_DEFAULT, OFFLINE_TTL_DEFAULT } from '../services/offlineManifest.js'
 
 export default {
 	name: 'AppSettingsModal',

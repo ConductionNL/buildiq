@@ -185,7 +185,8 @@ class AutomationWriteService implements AutomationWriteServiceInterface {
 			versionUuid: (string)($payload['versionUuid'] ?? ''),
 			roles: $roles,
 			action: function (array $application) use ($payload): JSONResponse {
-				$refusal = $this->sharingRefusal(automation: $payload, wasShared: false, application: $application);
+				$refusal = $this->shareChangeRefusal(changes: self::isShared(automation: $payload), application: $application)
+					?? $this->shareabilityRefusal(automation: $payload);
 				if ($refusal !== null) {
 					return $refusal;
 				}
@@ -224,16 +225,14 @@ class AutomationWriteService implements AutomationWriteServiceInterface {
 
 		// A body without `shared` keeps the stored value: a definition edit by
 		// an editor must not unshare the automation as a side effect.
-		$wasShared = (($automation['shared'] ?? false) === true);
 		if (array_key_exists('shared', $payload) === false) {
-			$payload['shared'] = $wasShared;
+			$payload['shared'] = self::isShared(automation: $automation);
 		}
 
-		$refusal = $this->sharingRefusal(
-			automation: $payload,
-			wasShared: $wasShared,
-			application: $this->loadApplication(slug: (string)($payload['applicationSlug'] ?? ''))
-		);
+		$application = $this->loadApplication(slug: (string)($payload['applicationSlug'] ?? ''));
+		$changes     = self::isShared(automation: $payload) !== self::isShared(automation: $automation);
+		$refusal     = $this->shareChangeRefusal(changes: $changes, application: $application)
+			?? $this->shareabilityRefusal(automation: $payload);
 		if ($refusal !== null) {
 			return $refusal;
 		}
@@ -502,37 +501,49 @@ class AutomationWriteService implements AutomationWriteServiceInterface {
 	}//end orArray()
 
 	/**
-	 * Why this save may not set `shared` as it does, or null when it may (REQ-BQSF-003).
+	 * The refusal of a save that shares or unshares the automation, or null (REQ-BQSF-003).
 	 *
 	 * Changing `shared` either way takes an `owners` member of the automation's
 	 * app; an editor's save that changes it is refused and the automation stays
-	 * as it was. A shared automation may not write a record of its own app:
-	 * other apps run it, and it would write into a register they have no say
-	 * over. The refusal names the step.
+	 * as it was.
 	 *
-	 * @param array<string,mixed>      $automation  The automation as it would be saved.
-	 * @param bool                     $wasShared   Whether the stored automation is shared.
+	 * @param bool                     $changes     Whether the save changes `shared`.
 	 * @param array<string,mixed>|null $application The automation's Application.
 	 *
 	 * @return JSONResponse|null The refusal.
 	 *
 	 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-be-shared-with-other-apps-req-bqsf-003
 	 */
-	private function sharingRefusal(array $automation, bool $wasShared, ?array $application): ?JSONResponse {
-		$shared = (($automation['shared'] ?? false) === true);
-		if ($shared !== $wasShared && $this->callerOwns(application: $application) === false) {
-			return $this->error(
-				code: 'insufficient_permission',
-				detail: 'Only an owner of the app may share or unshare an automation.',
-				status: Http::STATUS_FORBIDDEN
-			);
-		}
-
-		if ($shared === false) {
+	private function shareChangeRefusal(bool $changes, ?array $application): ?JSONResponse {
+		if ($changes === false || $this->callerOwns(application: $application) === true) {
 			return null;
 		}
 
-		$step = self::stepWritingOwnRecords(actions: $this->orArray(value: $automation['actions'] ?? null));
+		return $this->error(
+			code: 'insufficient_permission',
+			detail: 'Only an owner of the app may share or unshare an automation.',
+			status: Http::STATUS_FORBIDDEN
+		);
+	}//end shareChangeRefusal()
+
+	/**
+	 * The refusal of a shared automation that writes a record of its own app, or null (REQ-BQSF-003).
+	 *
+	 * Other apps run a shared automation, and it would write into a register
+	 * they have no say over. The refusal names the step.
+	 *
+	 * @param array<string,mixed> $automation The automation as it would be saved.
+	 *
+	 * @return JSONResponse|null The refusal.
+	 *
+	 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-be-shared-with-other-apps-req-bqsf-003
+	 */
+	private function shareabilityRefusal(array $automation): ?JSONResponse {
+		$step = null;
+		if (self::isShared(automation: $automation) === true) {
+			$step = self::stepWritingOwnRecords(actions: $this->orArray(value: $automation['actions'] ?? null));
+		}
+
 		if ($step === null) {
 			return null;
 		}
@@ -543,7 +554,18 @@ class AutomationWriteService implements AutomationWriteServiceInterface {
 				. 'A shared automation may not write records of its own app.',
 			status: Http::STATUS_UNPROCESSABLE_ENTITY
 		);
-	}//end sharingRefusal()
+	}//end shareabilityRefusal()
+
+	/**
+	 * Whether an automation is shared with other apps.
+	 *
+	 * @param array<string,mixed> $automation The automation.
+	 *
+	 * @return bool True only for `shared: true`.
+	 */
+	private static function isShared(array $automation): bool {
+		return ($automation['shared'] ?? false) === true;
+	}//end isShared()
 
 	/**
 	 * Whether the caller is an `owners` member of the Application.
