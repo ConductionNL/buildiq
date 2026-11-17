@@ -174,6 +174,26 @@ final class AbstractToolHandlerWriteGuardTest extends TestCase {
 	}//end testALostSessionOrUnreadablePermissionsIsForbidden()
 
 	/**
+	 * Without a resolver, empty or non-string principals grant nothing.
+	 *
+	 * @return void
+	 */
+	public function testEmptyPrincipalsGrantNoWriteRoleWithoutAResolver(): void {
+		$this->objects->method('searchObjectsBySlug')->willReturn(
+			[['uuid' => 'u1', 'permissions' => ['owners' => ['user:', 'group:', '', 7], 'editors' => 'alice']]]
+		);
+
+		$groups = $this->createMock(IGroupManager::class);
+		$groups->method('isAdmin')->with('alice')->willReturn(false);
+		$groups->expects($this->once())->method('getUserGroups')->willReturn([]);
+
+		$this->assertSame(
+			['isError' => true, 'error' => 'forbidden', 'message' => "You do not have owner or editor access to application 'permits'."],
+			$this->handler(users: [$this->user('alice')], groups: $groups)->call('requireWriteRole', ['permits'])
+		);
+	}//end testEmptyPrincipalsGrantNoWriteRoleWithoutAResolver()
+
+	/**
 	 * A slug is two to 48 lowercase letters, digits or inner hyphens.
 	 *
 	 * @return void
