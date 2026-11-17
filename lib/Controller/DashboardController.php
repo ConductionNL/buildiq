@@ -33,9 +33,12 @@ namespace OCA\Buildiq\Controller;
 use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Kernel\Contracts\AppNavigationServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\DeviceFeaturesInterface;
+use OCA\Buildiq\Kernel\Contracts\ManifestResolverServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\PublishedApplicationProviderInterface;
 use OCA\Buildiq\Service\AppOrganisationGuard;
+use OCA\Buildiq\Service\EmbedOrigins;
 use OCP\AppFramework\Controller;
+use OCP\AppFramework\Http\ContentSecurityPolicy;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\FeaturePolicy;
@@ -66,6 +69,8 @@ class DashboardController extends Controller {
 	 * @param PublishedApplicationProviderInterface|null $publishedApps The published apps, to read a served app's device features
 	 * @param DeviceFeaturesInterface|null $deviceFeatures Turns device features into the page's feature policy
 	 * @param AppOrganisationGuard|null $organisationGuard Tells the settings whether an app can be kept to its organisation
+	 * @param ManifestResolverServiceInterface|null $manifestResolver Reads an app's embedding setting; null serves no embed
+	 * @param EmbedOrigins|null $embedOrigins The sites an embedded app may be framed by; null serves no embed
 	 *
 	 * @return void
 	 */
@@ -78,6 +83,8 @@ class DashboardController extends Controller {
 		private readonly ?PublishedApplicationProviderInterface $publishedApps=null,
 		private readonly ?DeviceFeaturesInterface $deviceFeatures=null,
 		private readonly ?AppOrganisationGuard $organisationGuard=null,
+		private readonly ?ManifestResolverServiceInterface $manifestResolver=null,
+		private readonly ?EmbedOrigins $embedOrigins=null,
 	) {
 		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
@@ -153,14 +160,52 @@ class DashboardController extends Controller {
 			'builderVersion',
 			(string)$this->request->getParam('_version', '')
 		);
-		$response = new TemplateResponse(AppIdentity::APP_ID, 'builder');
-		$policy   = $this->deviceFeaturePolicy(slug: $slug);
+
+		// Change apps-embed-in-other-sites D2: `embed=1` on an app with embedding on
+		// renders without the Nextcloud header and lets exactly the listed
+		// sites frame it. Anything else is served as before, framing refused.
+		$origins = $this->embedOriginsFor(slug: $slug);
+		$this->initialState->provideInitialState('builderEmbed', $origins !== []);
+		if ($origins === []) {
+			$response = new TemplateResponse(AppIdentity::APP_ID, 'builder');
+		} else {
+			$response = new TemplateResponse(AppIdentity::APP_ID, 'builder', [], TemplateResponse::RENDER_AS_BASE);
+			$framing  = new ContentSecurityPolicy();
+			foreach ($origins as $origin) {
+				$framing->addAllowedFrameAncestorDomain($origin);
+			}
+
+			$response->setContentSecurityPolicy($framing);
+		}
+
+		$policy = $this->deviceFeaturePolicy(slug: $slug);
 		if ($policy !== null) {
 			$response->setFeaturePolicy($policy);
 		}
 
 		return $response;
 	}//end builder()
+
+	/**
+	 * The sites an `embed=1` request for this app may be framed by: none when
+	 * the request is no embed request or the app has embedding off.
+	 *
+	 * @param string $slug The virtual app slug.
+	 *
+	 * @return array<int,string> The origins.
+	 *
+	 * @spec openspec/changes/apps-embed-in-other-sites/specs/app-embedding/spec.md#requirement-only-listed-sites-can-frame-the-app-req-bqem-002
+	 */
+	private function embedOriginsFor(string $slug): array {
+		if ((string)$this->request->getParam('embed', '') !== '1'
+			|| $this->manifestResolver === null
+			|| $this->embedOrigins === null
+		) {
+			return [];
+		}
+
+		return $this->embedOrigins->allowedFor(application: $this->manifestResolver->findApplication(appSlug: $slug));
+	}//end embedOriginsFor()
 
 	/**
 	 * The feature policy a built app's page needs: `'self'` for the devices its
