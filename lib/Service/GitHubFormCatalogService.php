@@ -192,16 +192,7 @@ class GitHubFormCatalogService implements GitHubFormCatalogServiceInterface {
 			actingUserId: $actingUserId
 		);
 
-		$export = null;
-		if ($contents !== null) {
-			$decoded = json_decode($contents, true);
-			if (is_array($decoded) === true
-				&& ($decoded['kind'] ?? null) === self::FORM_EXPORT_KIND
-				&& is_array($decoded['form'] ?? null) === true
-			) {
-				$export = $decoded;
-			}
-		}
+		$export = $this->formExport(contents: $contents);
 
 		$form = [];
 		if ($export !== null) {
@@ -222,4 +213,29 @@ class GitHubFormCatalogService implements GitHubFormCatalogServiceInterface {
 			'export' => $export,
 		];
 	}//end buildFormCard()
+
+	/**
+	 * The form export a repository's form.json holds, when it is one.
+	 *
+	 * @param string|null $contents The file contents, or null when it could not be read.
+	 *
+	 * @return array<string, mixed>|null The decoded export, or null for anything else.
+	 *
+	 * @spec openspec/changes/reuse-gallery-categories-and-form-library/specs/form-library/spec.md#requirement-forms-travel-between-organisations-req-bqgl-005
+	 */
+	private function formExport(?string $contents): ?array {
+		if ($contents === null) {
+			return null;
+		}
+
+		$decoded = json_decode($contents, true);
+		if (is_array($decoded) === true
+			&& ($decoded['kind'] ?? null) === self::FORM_EXPORT_KIND
+			&& is_array($decoded['form'] ?? null) === true
+		) {
+			return $decoded;
+		}
+
+		return null;
+	}//end formExport()
 }//end class

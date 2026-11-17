@@ -54,6 +54,8 @@ use OCA\Buildiq\Kernel\Contracts\PageLayoutLeafProviderInterface;
 use OCA\Buildiq\Kernel\Contracts\PageLayoutPresenterInterface;
 use OCA\Buildiq\Service\PageLayoutParts;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -352,8 +354,7 @@ final class PageLayoutLeafProvider extends AppLocalLeafProvider implements PageL
 		try {
 			$this->objectService->saveObject(
 				object: $layer,
-				register: $this->registerSlug(),
-				schema: self::SCHEMA,
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->registerSlug(), schema: self::SCHEMA))
 			);
 		} catch (\Throwable $e) {
 			$this->logger->warning(

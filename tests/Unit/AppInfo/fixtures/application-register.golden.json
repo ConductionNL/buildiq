@@ -22,6 +22,13 @@
     {
         "method": "registerServiceAlias",
         "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\AppCatalogueInterface",
+            "target": "OCA\\Buildiq\\Service\\AppCatalogue"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
             "alias": "OCA\\Buildiq\\Kernel\\Contracts\\AppChannelApplierInterface",
             "target": "OCA\\Buildiq\\Service\\AppChannelApplier"
         }
@@ -36,6 +43,13 @@
     {
         "method": "registerServiceAlias",
         "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\AutomationRunRecorderInterface",
+            "target": "OCA\\Buildiq\\Service\\AutomationRunRecorder"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
             "alias": "OCA\\Buildiq\\Kernel\\Contracts\\AppNavigationServiceInterface",
             "target": "OCA\\Buildiq\\Service\\AppNavigationService"
         }
@@ -45,6 +59,13 @@
         "args": {
             "alias": "OCA\\Buildiq\\Kernel\\Contracts\\AppOverrideServiceInterface",
             "target": "OCA\\Buildiq\\Service\\AppOverrideService"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\AppPackageImportServiceInterface",
+            "target": "OCA\\Buildiq\\Service\\AppPackageImportService"
         }
     },
     {
@@ -134,6 +155,13 @@
     {
         "method": "registerServiceAlias",
         "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\DeviceFeaturesInterface",
+            "target": "OCA\\Buildiq\\Service\\DeviceFeatures"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
             "alias": "OCA\\Buildiq\\Kernel\\Contracts\\DocumentGenerationServiceInterface",
             "target": "OCA\\Buildiq\\Service\\DocumentGenerationService"
         }
@@ -141,8 +169,22 @@
     {
         "method": "registerServiceAlias",
         "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\DutchFormatValidatorInterface",
+            "target": "OCA\\Buildiq\\Service\\DutchFormatValidator"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
             "alias": "OCA\\Buildiq\\Kernel\\Contracts\\ExportAppContentBundlerInterface",
             "target": "OCA\\Buildiq\\Service\\ExportAppContentBundler"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\ExportArchiveStoreInterface",
+            "target": "OCA\\Buildiq\\Service\\ExportArchiveStore"
         }
     },
     {
@@ -218,6 +260,20 @@
     {
         "method": "registerServiceAlias",
         "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\JourneyStoreInterface",
+            "target": "OCA\\Buildiq\\Service\\JourneyStore"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\JourneyWritesCheckInterface",
+            "target": "OCA\\Buildiq\\Service\\JourneyWritesCheck"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
             "alias": "OCA\\Buildiq\\Kernel\\Contracts\\LayoutDeltaServiceInterface",
             "target": "OCA\\Buildiq\\Service\\LayoutDeltaService"
         }
@@ -288,6 +344,13 @@
     {
         "method": "registerServiceAlias",
         "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\PublishedApplicationProviderInterface",
+            "target": "OCA\\Buildiq\\Service\\PublishedApplicationProvider"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
             "alias": "OCA\\Buildiq\\Kernel\\Contracts\\RegistrationFormAuthoringServiceInterface",
             "target": "OCA\\Buildiq\\Service\\RegistrationFormAuthoringService"
         }
@@ -351,6 +414,13 @@
     {
         "method": "registerServiceAlias",
         "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\VersionMergeRunnerInterface",
+            "target": "OCA\\Buildiq\\Service\\Branch\\VersionMergeRunner"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
             "alias": "OCA\\Buildiq\\Kernel\\Contracts\\VersionPromotionServiceInterface",
             "target": "OCA\\Buildiq\\Service\\VersionPromotionService"
         }
@@ -374,6 +444,20 @@
         "args": {
             "alias": "OCA\\Buildiq\\Kernel\\Contracts\\PageLayoutLeafProviderInterface",
             "target": "OCA\\Buildiq\\Integration\\PageLayoutLeafProvider"
+        }
+    },
+    {
+        "method": "registerService",
+        "args": {
+            "name": "OCA\\Buildiq\\Listener\\BuiltAppDeepLinkListener",
+            "factory": "factory:OCA\\Buildiq\\Listener\\BuiltAppDeepLinkListener"
+        }
+    },
+    {
+        "method": "registerEventListener",
+        "args": {
+            "event": "OCA\\OpenRegister\\Event\\DeepLinkRegistrationEvent",
+            "listener": "OCA\\Buildiq\\Listener\\BuiltAppDeepLinkListener"
         }
     },
     {
@@ -423,6 +507,13 @@
         "args": {
             "name": "OCA\\Buildiq\\Controller\\PreferencesController",
             "factory": "factory:OCA\\Buildiq\\Controller\\PreferencesController"
+        }
+    },
+    {
+        "method": "registerServiceAlias",
+        "args": {
+            "alias": "OCA\\Buildiq\\Kernel\\Contracts\\TemplateInstallSeamInterface",
+            "target": "OCA\\Buildiq\\Controller\\ApplicationsController"
         }
     },
     {
@@ -505,6 +596,20 @@
     {
         "method": "registerEventListener",
         "args": {
+            "event": "OCA\\OpenRegister\\Event\\ObjectCreatingEvent",
+            "listener": "OCA\\Buildiq\\Listener\\DeviceFeaturesListener"
+        }
+    },
+    {
+        "method": "registerEventListener",
+        "args": {
+            "event": "OCA\\OpenRegister\\Event\\ObjectUpdatingEvent",
+            "listener": "OCA\\Buildiq\\Listener\\DeviceFeaturesListener"
+        }
+    },
+    {
+        "method": "registerEventListener",
+        "args": {
             "event": "OCA\\OpenRegister\\Event\\ObjectCreatedEvent",
             "listener": "OCA\\Buildiq\\Listener\\AutomationApprovalTriggerListener"
         }
@@ -570,6 +675,13 @@
         "args": {
             "event": "OCA\\OpenRegister\\Event\\ObjectTransitionedEvent",
             "listener": "OCA\\Buildiq\\Listener\\DocumentGenerationListener"
+        }
+    },
+    {
+        "method": "registerEventListener",
+        "args": {
+            "event": "OCA\\Buildiq\\Event\\RuleEvaluationRequestedEvent",
+            "listener": "OCA\\Buildiq\\Listener\\RuleEvaluationListener"
         }
     },
     {

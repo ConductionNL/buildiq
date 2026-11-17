@@ -41,6 +41,9 @@ use OCA\Buildiq\Kernel\Contracts\VersionPromotionServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\VirtualAppCredentialRegistrarInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -337,9 +340,13 @@ class ApplicationPublishController extends Controller {
 		$application['status'] = $status;
 		$saved = $this->objectService->saveObject(
 			object: $application,
-			register: VersionPromotionServiceInterface::REGISTER_SLUG,
-			schema: VersionPromotionServiceInterface::APPLICATION_SCHEMA,
-			uuid: $appUuid
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(
+						register: VersionPromotionServiceInterface::REGISTER_SLUG,
+						schema: VersionPromotionServiceInterface::APPLICATION_SCHEMA
+					),
+				uuid: $appUuid
+			)
 		);
 
 		// On go-live, onboard the app to the credential broker when its
@@ -435,8 +442,10 @@ class ApplicationPublishController extends Controller {
 		try {
 			$existing = $this->objectService->find(
 				id: $slug,
-				register: VersionPromotionServiceInterface::REGISTER_SLUG,
-				schema: 'built-app-route'
+				options: new ObjectFindOptions(
+					register: VersionPromotionServiceInterface::REGISTER_SLUG,
+					schema: 'built-app-route'
+				)
 			);
 			$existingData = ObjectRecord::toArray(object: $existing);
 			$existingTarget = (string)($existingData['applicationUuid'] ?? '');
@@ -450,8 +459,10 @@ class ApplicationPublishController extends Controller {
 		try {
 			$this->objectService->saveObject(
 				object: ['slug' => $slug, 'applicationUuid' => $applicationUuid],
-				register: VersionPromotionServiceInterface::REGISTER_SLUG,
-				schema: 'built-app-route'
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(
+						register: VersionPromotionServiceInterface::REGISTER_SLUG,
+						schema: 'built-app-route'
+					))
 			);
 		} catch (Throwable $e) {
 			$this->logger->error(
@@ -486,8 +497,10 @@ class ApplicationPublishController extends Controller {
 		try {
 			$entity = $this->objectService->find(
 				id: $uuid,
-				register: VersionPromotionServiceInterface::REGISTER_SLUG,
-				schema: VersionPromotionServiceInterface::APPLICATION_SCHEMA
+				options: new ObjectFindOptions(
+					register: VersionPromotionServiceInterface::REGISTER_SLUG,
+					schema: VersionPromotionServiceInterface::APPLICATION_SCHEMA
+				)
 			);
 		} catch (Throwable $e) {
 			$this->logger->debug(

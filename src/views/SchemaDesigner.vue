@@ -26,12 +26,65 @@
 	<div class="buildiq-schema-designer" data-walkthrough-id="schema-designer">
 		<!-- List mode -->
 		<template v-if="!schemaId">
-			<div v-if="canImport" class="buildiq-schema-designer__toolbar">
-				<NcButton variant="secondary" @click="showImportWizard = true">
+			<div class="buildiq-schema-designer__toolbar">
+				<!-- REQ-BQMD-001: the list and the diagram are two views of the
+				     same register; the choice lives in `?view=diagram`. -->
+				<div
+					class="buildiq-schema-designer__views"
+					role="group"
+					:aria-label="t('buildiq', 'Show schemas as')">
+					<NcButton
+						class="buildiq-schema-designer__view-list"
+						:variant="isDiagram ? 'tertiary' : 'secondary'"
+						:aria-pressed="isDiagram ? 'false' : 'true'"
+						@click="setView('list')">
+						{{ t('buildiq', 'List') }}
+					</NcButton>
+					<NcButton
+						class="buildiq-schema-designer__view-diagram"
+						:variant="isDiagram ? 'secondary' : 'tertiary'"
+						:aria-pressed="isDiagram ? 'true' : 'false'"
+						@click="setView('diagram')">
+						{{ t('buildiq', 'Diagram') }}
+					</NcButton>
+				</div>
+				<NcButton v-if="canImport" variant="secondary" @click="showImportWizard = true">
 					{{ t('buildiq', 'Import data') }}
 				</NcButton>
+				<!-- REQ-BQDB-005/006: administrators only; OpenRegister refuses
+				     everyone else server side, so this is a convenience. -->
+				<NcButton
+					v-if="isAdministrator"
+					data-testid="add-query-table"
+					variant="secondary"
+					@click="showQueryDialog = true">
+					{{ t('buildiq', 'Add a query table') }}
+				</NcButton>
 			</div>
+			<template v-if="isDiagram">
+				<!-- REQ-BQMD-005: the version's own register and the app's data registers. -->
+				<div v-if="diagramRegisters.length > 1" class="buildiq-schema-designer__register">
+					<label for="buildiq-diagram-register">{{ t('buildiq', 'Register') }}</label>
+					<select
+						id="buildiq-diagram-register"
+						:value="activeDiagramRegister"
+						@change="onDiagramRegisterChange($event.target.value)">
+						<option
+							v-for="option in diagramRegisters"
+							:key="option.register"
+							:value="option.register">
+							{{ option.label }}
+						</option>
+					</select>
+				</div>
+				<DataModelDiagram
+					:model="model"
+					:loading="modelLoading || loadingList || versionLoading"
+					:error="modelError"
+					@open="openSchema" />
+			</template>
 			<SchemaListPanel
+				v-else
 				:schemas="schemas"
 				:loading="loadingList || versionLoading"
 				@add="addSchema"
@@ -201,6 +254,11 @@
 			:initialSchema="schemaId || ''"
 			@imported="onSchemaImported"
 			@close="showImportWizard = false" />
+
+		<SqlQueryDialog
+			v-if="showQueryDialog"
+			v-model:open="showQueryDialog"
+			@saved="onSchemaImported" />
 	</div>
 </template>
 
@@ -218,6 +276,7 @@ import AccessEditor, {
 } from '../components/schema-editor/AccessEditor.vue'
 import AggregationEditor from '../components/schema-editor/AggregationEditor.vue'
 import CalculationEditor from '../components/schema-editor/CalculationEditor.vue'
+import DataModelDiagram from '../components/schema-editor/DataModelDiagram.vue'
 import FieldEditor, {
 	fieldsToSchema,
 	schemaToFields,
@@ -239,6 +298,7 @@ import WidgetEditor, {
 } from '../components/schema-editor/WidgetEditor.vue'
 import BreakingSchemaChangeDialog from '../dialogs/BreakingSchemaChangeDialog.vue'
 import ImportDataWizard from '../dialogs/ImportDataWizard.vue'
+import SqlQueryDialog from '../dialogs/SqlQueryDialog.vue'
 import { useApplicationVersion } from '../composables/useApplicationVersion.js'
 import { getCurrentUserGroups, useRole } from '../composables/useRole.js'
 import { useSessionHistory } from '../composables/useSessionHistory.js'
@@ -272,6 +332,7 @@ export default {
 		UndoIcon,
 		RedoIcon,
 		CalculationEditor,
+		DataModelDiagram,
 		FieldEditor,
 		LifecycleEditor,
 		NcButton,
@@ -285,6 +346,7 @@ export default {
 		WidgetEditor,
 		BreakingSchemaChangeDialog,
 		ImportDataWizard,
+		SqlQueryDialog,
 	},
 
 	/**
@@ -326,11 +388,21 @@ export default {
 			// Import-data wizard state (buildiq-data-import-wizard).
 			applicationRecord: null,
 			showImportWizard: false,
+			showQueryDialog: false,
 			// The instance's groups, offered in the Access group picker.
 			instanceGroups: [],
 			// Plain-language breaking changes awaiting confirmation; null when
 			// no confirmation is pending.
 			breakingChanges: null,
+			// Diagram view (data-model-diagram): the register model, the
+			// register it was read for, and the register the maker picked
+			// ('' = the version's own register).
+			model: null,
+			modelFor: '',
+			modelLoading: false,
+			modelPending: '',
+			modelError: '',
+			diagramRegister: '',
 		}
 	},
 
@@ -407,6 +479,56 @@ export default {
 		},
 
 		/**
+		 * Whether the list mode shows the diagram (`?view=diagram`).
+		 *
+		 * @spec openspec/changes/data-model-diagram/tasks.md#T05
+		 * @return {boolean}
+		 */
+		isDiagram() {
+			return Boolean(this.$route.query && this.$route.query.view === 'diagram')
+		},
+
+		/**
+		 * The registers the diagram can draw: the version's own register first,
+		 * then each of the app's `dataRegisters` bindings.
+		 *
+		 * @spec openspec/changes/data-model-diagram/tasks.md#T05
+		 * @return {Array<{register: string, label: string}>}
+		 */
+		diagramRegisters() {
+			const options = []
+			if (this.registerSlug) {
+				options.push({
+					register: this.registerSlug,
+					label: this.t('buildiq', 'This version ({register})', { register: this.registerSlug }),
+				})
+			}
+			const bound = (this.applicationRecord && this.applicationRecord.dataRegisters) || []
+			for (const binding of Array.isArray(bound) ? bound : []) {
+				const register = binding && typeof binding.register === 'string' ? binding.register : ''
+				if (register && !options.some((option) => option.register === register)) {
+					options.push({ register, label: binding.label || register })
+				}
+			}
+			return options
+		},
+
+		/**
+		 * The register the diagram draws: the one picked, while it is still on
+		 * offer, else the version's own.
+		 *
+		 * @spec openspec/changes/data-model-diagram/tasks.md#T05
+		 * @return {string} Register slug, or '' until the version resolves.
+		 */
+		activeDiagramRegister() {
+			if (this.diagramRegister
+				&& this.diagramRegisters.some((option) => option.register === this.diagramRegister)) {
+				return this.diagramRegister
+			}
+			return this.registerSlug
+		},
+
+		/**
 		 * @spec openspec/changes/archive/2026-07-07-openbuild-data-import-wizard/tasks.md#2.2
 		 * @return {string} Register slug.
 		 */
@@ -426,6 +548,17 @@ export default {
 		canImport() {
 			const role = useRole(this.applicationRecord)
 			return role === 'owner' || role === 'editor'
+		},
+
+		/**
+		 * Whether the caller is a Nextcloud administrator. Gates "Add a query
+		 * table"; OpenRegister refuses a non-administrator's preview and save.
+		 *
+		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-only-a-safe-query-from-an-administrator-runs-req-bqdb-006
+		 * @return {boolean}
+		 */
+		isAdministrator() {
+			return !!(typeof OC !== 'undefined' && OC.isUserAdmin && OC.isUserAdmin())
 		},
 
 		/**
@@ -688,6 +821,20 @@ export default {
 	},
 
 	watch: {
+		/**
+		 * Load the model when the address switches to the diagram (back and
+		 * forward included).
+		 *
+		 * @spec openspec/changes/data-model-diagram/tasks.md#T05
+		 * @param {boolean} shown Whether the diagram is shown.
+		 * @return {void}
+		 */
+		isDiagram(shown) {
+			if (shown) {
+				this.loadModel()
+			}
+		},
+
 		schemaId: {
 			/**
 			 * Reload schema detail when the route schema id changes.
@@ -915,6 +1062,91 @@ export default {
 			} finally {
 				this.loadingList = false
 			}
+			// The diagram draws the same register: redraw it with the list.
+			if (this.isDiagram && !this.schemaId) {
+				await this.loadModel({ force: true })
+			}
+		},
+
+		/**
+		 * Read the chosen register's model from OpenRegister
+		 * (`GET /api/registers/{id}/model`): its schemas as nodes and their
+		 * links as edges. OpenRegister resolves references and decides which
+		 * external schema the maker may see; the diagram only draws it.
+		 *
+		 * @spec openspec/changes/data-model-diagram/tasks.md#T05
+		 * @param {{force?: boolean}} [options] `force` reloads a register already read.
+		 * @return {Promise<void>}
+		 */
+		async loadModel({ force = false } = {}) {
+			const register = this.activeDiagramRegister
+			if (!register) {
+				this.model = null
+				this.modelFor = ''
+				return
+			}
+			if (!force && this.modelFor === register && this.model) {
+				return
+			}
+			// A second ask for the register already being read waits for nothing new.
+			if (this.modelLoading && this.modelPending === register) {
+				return
+			}
+			this.modelPending = register
+			this.modelLoading = true
+			this.modelError = ''
+			try {
+				const url = generateUrl(
+					`/apps/openregister/api/registers/${encodeURIComponent(register)}/model`,
+				)
+				const { data } = await axios.get(url)
+				this.model = data && typeof data === 'object' ? data : { nodes: [], edges: [] }
+				this.modelFor = register
+			} catch (e) {
+				this.model = null
+				this.modelFor = ''
+				this.modelError = this.errorMessage(e)
+			} finally {
+				this.modelLoading = false
+				this.modelPending = ''
+			}
+		},
+
+		/**
+		 * Switch between the list and the diagram, keeping the choice in the
+		 * address (`?view=diagram`) next to `?_version=`.
+		 *
+		 * @spec openspec/changes/data-model-diagram/tasks.md#T05
+		 * @param {string} view `list` or `diagram`.
+		 * @return {Promise<void>}
+		 */
+		async setView(view) {
+			const query = { ...(this.$route.query || {}) }
+			if (view === 'diagram') {
+				query.view = 'diagram'
+			} else {
+				delete query.view
+			}
+			try {
+				await this.$router.replace({ query })
+			} catch {
+				// A duplicate navigation is no failure.
+			}
+			if (view === 'diagram') {
+				await this.loadModel()
+			}
+		},
+
+		/**
+		 * Draw another register picked in the register switch.
+		 *
+		 * @spec openspec/changes/data-model-diagram/tasks.md#T05
+		 * @param {string} register The register slug.
+		 * @return {Promise<void>}
+		 */
+		async onDiagramRegisterChange(register) {
+			this.diagramRegister = register
+			await this.loadModel()
 		},
 
 		/**
@@ -1763,7 +1995,29 @@ export default {
 
 .buildiq-schema-designer__toolbar {
 	display: flex;
-	justify-content: flex-end;
+	justify-content: space-between;
+	align-items: center;
+	gap: 8px;
 	margin-bottom: 12px;
+}
+
+.buildiq-schema-designer__views {
+	display: flex;
+	gap: 4px;
+}
+
+.buildiq-schema-designer__register {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 12px;
+}
+
+.buildiq-schema-designer__register select {
+	min-width: 240px;
+	color: var(--color-main-text);
+	background-color: var(--color-main-background);
+	border: 1px solid var(--color-border-maxcontrast);
+	border-radius: var(--border-radius-element, var(--border-radius));
 }
 </style>

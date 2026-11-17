@@ -23,7 +23,7 @@ the registry connection is an admin app-config value.
 
 **Status**: done
 
-@e2e exclude consume-only remote store — the proxy/search/install backend is covered by the RemoteTemplateStoreService + StoreController PHPUnit suites and the UI by the TemplateGallery/CloneTemplateDialog Vitest specs; there is no live remote catalogue to drive a Playwright flow in CI.
+@e2e exclude consume-only remote marketplace — the proxy/search/install backend is covered by the RemoteTemplateStoreService + StoreController PHPUnit suites and the UI by the TemplateGallery/CloneTemplateDialog Vitest specs; there is no live remote catalogue to drive a Playwright flow in CI.
 
 ## Requirements
 
@@ -78,7 +78,7 @@ the registry URL or token; it SHALL only call the local store endpoints.
 
 #### Scenario: Search returns normalised remote template cards
 
-- **WHEN** the store search runs against a reachable configured registry that
+- **WHEN** the marketplace search runs against a reachable configured registry that
   returns three `application-template` objects
 - **THEN** the service returns three card-shaped entries with `slug`, `title`,
   `description`, `useCase`, `category`, and `version`
@@ -86,7 +86,7 @@ the registry URL or token; it SHALL only call the local store endpoints.
 
 #### Scenario: A search term is forwarded as the remote search filter
 
-- **WHEN** the store search runs with the query `permit`
+- **WHEN** the marketplace search runs with the query `permit`
 - **THEN** the outbound request carries the URL-encoded `permit` term as the
   remote `_search` filter
 
@@ -116,7 +116,7 @@ without attempting any network call.
 
 #### Scenario: No registry configured performs no network call
 
-- **WHEN** `registry_url` is empty and the store search is invoked
+- **WHEN** `registry_url` is empty and the marketplace search is invoked
 - **THEN** the service reports "not configured"
 - **AND** no outbound HTTP request is made
 
@@ -210,7 +210,7 @@ resolved SHALL yield a generic not-found error and SHALL create nothing locally.
 When no registry is configured (`registry_url` empty), the system SHALL keep the
 local template catalogue fully functional and SHALL NOT attempt any remote
 fetch. The settings load surfaced to the Templates page SHALL expose a
-`storeConfigured` flag so the frontend can hide the store section (or show a
+`storeConfigured` flag so the frontend can hide the marketplace section (or show a
 "configure a registry" hint to admins) without breaking the local-template
 listing. This change SHALL be additive: with no registry configured, the
 Templates page behaves exactly as before this change.
@@ -220,5 +220,5 @@ Templates page behaves exactly as before this change.
 - **WHEN** a user opens the Templates page on an instance with no `registry_url`
   set
 - **THEN** the locally seeded templates are listed as before
-- **AND** the store section is not rendered
+- **AND** the marketplace section is not rendered
 - **AND** no outbound registry request is made

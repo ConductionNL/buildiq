@@ -41,6 +41,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * Tests for MigrateToVersionedModel.
@@ -303,7 +304,8 @@ class MigrateToVersionedModelTest extends TestCase {
 
 		$deletedUuids = [];
 		$this->objectService->method('deleteObject')->willReturnCallback(
-			static function (string $uuid) use (&$deletedUuids): bool {
+			static function (ObjectDeletion $deletion) use (&$deletedUuids): bool {
+				$uuid = $deletion->uuid;
 				$deletedUuids[] = $uuid;
 				return true;
 			}

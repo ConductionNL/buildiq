@@ -24,6 +24,7 @@ description:
       project management, permit tracking, and built-environment administration for
       municipalities and construction organisations. Buildiq integrates with Dutch
       government standards and open data sources for the built environment.
+      Conduction maintains this component within the Nextcloud ISV programme.
     features:
       - Construction project management
       - Permit tracking and administration
@@ -39,6 +40,7 @@ description:
       vergunningenbewaking en omgevingsadministratie voor gemeenten en bouworganisaties.
       Buildiq integreert met Nederlandse overheidsstandaarden en open databronnen
       voor de gebouwde omgeving.
+      Conduction onderhoudt dit component binnen het Nextcloud ISV-programma.
     features:
       - Bouwprojectbeheer
       - Vergunningenbewaking en -administratie
@@ -51,7 +53,12 @@ legal:
   repoOwner: "Conduction B.V."
 
 maintenance:
-  type: community
+  type: contract
+  contractors:
+    - name: Conduction B.V.
+      until: "2028-12-31"
+      email: info@conduction.nl
+      website: https://conduction.nl
   contacts:
     - name: Conduction B.V.
       email: info@conduction.nl
