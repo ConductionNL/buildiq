@@ -112,12 +112,14 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Exception\UnsupportedAutomationCombinationException;
+use OCA\Buildiq\Service\Automation\AiStepNodes;
 use OCA\Buildiq\Service\Automation\ApprovalFormDeclaration;
 use OCA\Buildiq\Kernel\Contracts\AutomationCompilerServiceInterface;
 use OCA\Buildiq\Service\Automation\AutomationFlowBackend;
 use OCA\Buildiq\Service\Automation\AutomationFlowBuilder;
 use OCA\Buildiq\Service\Automation\AutomationRuleSets;
 use OCA\Buildiq\Service\Automation\CompileInput;
+use OCA\Buildiq\Service\Automation\FlowNodeAvailability;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -148,12 +150,12 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 	 * @var array<string,array<int,string>>
 	 */
 	private const MATRIX = [
-		'object-created' => ['send-notification', 'approval', 'generateDocument'],
-		'object-updated' => ['send-notification', 'approval', 'generateDocument'],
+		'object-created' => ['send-notification', 'approval', 'generateDocument', 'ai-step'],
+		'object-updated' => ['send-notification', 'approval', 'generateDocument', 'ai-step'],
 		'object-deleted' => ['send-notification', 'approval', 'generateDocument'],
 		'lifecycle-transition' => ['send-notification', 'object-op', 'webhook', 'approval', 'generateDocument'],
 		'schedule' => ['run-synchronization'],
-		'manual' => ['send-notification', 'object-op', 'webhook'],
+		'manual' => ['send-notification', 'object-op', 'webhook', 'ai-step'],
 	];
 
 	/**
@@ -235,6 +237,8 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 	 * @param AutomationFlowBuilder|null $flowBuilder Builds that flow; a default one when null.
 	 * @param AutomationRuleSets|null $ruleSets Resolves the rule sets of rule-decision steps;
 	 *                                          resolved from the container when null.
+	 * @param FlowNodeAvailability|null $flowNodes Whether the flow engine has a node type
+	 *                                            (ai-llm-steps-and-computed-fields D6); built on the container when null.
 	 *
 	 * @return void
 	 */
@@ -247,6 +251,7 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 		private readonly ?AutomationFlowBackend $flowBackend = null,
 		private readonly ?AutomationFlowBuilder $flowBuilder = null,
 		private readonly ?AutomationRuleSets $ruleSets = null,
+		private readonly ?FlowNodeAvailability $flowNodes = null,
 	) {
 
 	}//end __construct()
@@ -413,7 +418,20 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 			$ruleSets = ($this->ruleSets ?? $this->container->get(AutomationRuleSets::class))->ruleSets(slugs: $slugs);
 		}
 
-		$plan['flow'] = $this->flowBuilder()->build(input: $input, register: $scope['register'], schemas: $scope['schemas'], ruleSets: $ruleSets);
+		// Ai-llm-steps-and-computed-fields D4: a classify step checks its labels
+		// against the trigger schema's choice list.
+		$properties = null;
+		if (AiStepNodes::holdsAiStep(actions: $input->actions) === true) {
+			$properties = $this->loadSchema(slug: (string)($input->trigger['schema'] ?? ''))?->getProperties();
+		}
+
+		$plan['flow'] = $this->flowBuilder()->build(
+			input: $input,
+			register: $scope['register'],
+			schemas: $scope['schemas'],
+			ruleSets: $ruleSets,
+			schemaProperties: $properties
+		);
 		$plan['hash'] = $this->hashPlan(plan: $plan);
 
 		// D7: which version of each rule set the flow runs, for provenance. Not
@@ -440,7 +458,7 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 		}
 
 		foreach ($input->actions as $action) {
-			if (is_array($action) === true && ($action['type'] ?? '') === 'object-op') {
+			if (is_array($action) === true && in_array(($action['type'] ?? ''), ['object-op', AiStepNodes::ACTION], true) === true) {
 				return true;
 			}
 		}
@@ -458,9 +476,21 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 	 *
 	 * @return array<string,mixed> The new `provenance` block.
 	 *
+	 * @throws UnsupportedAutomationCombinationException When the plan runs an AI step and the engine lacks Hermiq's node.
+	 *
 	 * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#2.2
+	 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-ai-steps-need-the-hermiq-node-req-bqls-005
 	 */
 	public function apply(array $automation, array $plan, array $priorProvenance = []): array {
+		// Ai-llm-steps-and-computed-fields D6: an AI step needs Hermiq's node in
+		// the engine; checked again here, before anything is written.
+		$flowNodes = ($this->flowNodes ?? new FlowNodeAvailability(container: $this->container));
+		if (AiStepNodes::flowRunsAgent(flow: $this->orArray(value: $plan['flow'] ?? null)) === true
+			&& $flowNodes->has(type: AiStepNodes::AGENT_NODE) === false
+		) {
+			throw new UnsupportedAutomationCombinationException(message: AiStepNodes::MISSING_NODE_REFUSAL);
+		}
+
 		$slug = (string)($automation['slug'] ?? '');
 		$versionUuid = (string)($automation['versionUuid'] ?? '');
 

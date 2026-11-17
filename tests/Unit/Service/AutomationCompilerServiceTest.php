@@ -31,6 +31,7 @@ use OCA\Buildiq\Exception\UnsupportedAutomationCombinationException;
 use OCA\Buildiq\Service\Automation\AutomationFlowBackend;
 use OCA\Buildiq\Service\Automation\AutomationFlowBuilder;
 use OCA\Buildiq\Service\Automation\AutomationRuleSets;
+use OCA\Buildiq\Service\Automation\FlowNodeAvailability;
 use OCA\Buildiq\Service\AutomationCompilerService;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -1460,4 +1461,264 @@ final class AutomationCompilerServiceTest extends TestCase {
 		$this->assertSame('flow-9', $provenance['flowUuid']);
 
 	}//end testRuleDecisionRecordsTheRuleSetVersion()
+
+	/**
+	 * Let the schema mapper answer `claim` with a `categorie` choice list.
+	 *
+	 * @return void
+	 */
+	private function claimWithCategories(): void {
+		$schema = $this->createMock(Schema::class);
+		$schema->method('getProperties')->willReturn([
+			'omschrijving' => ['type' => 'string'],
+			'toelichting' => ['type' => 'string'],
+			'categorie' => ['type' => 'string', 'enum' => ['afval', 'verlichting', 'overig']],
+			'samenvatting' => ['type' => 'string', 'readOnly' => true],
+		]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+	}//end claimWithCategories()
+
+	/**
+	 * An automation with one AI step.
+	 *
+	 * @param string               $trigger The trigger type.
+	 * @param array<string, mixed> $step    What differs from the classify step.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private static function aiAutomation(string $trigger, array $step = []): array {
+		return [
+			'id' => 'auto-ai',
+			'slug' => 'categorise',
+			'versionUuid' => 'version-3',
+			'trigger' => ['type' => $trigger, 'schema' => 'claim'],
+			'actions' => [
+				array_merge(
+					[
+						'type' => 'ai-step',
+						'preset' => 'classify',
+						'agent' => 'agent-1',
+						'sourceFields' => ['omschrijving'],
+						'targetField' => 'categorie',
+						'labels' => ['afval', 'verlichting', 'overig'],
+					],
+					$step
+				),
+			],
+		];
+	}//end aiAutomation()
+
+	/**
+	 * A compiler whose container serves OpenRegister's node registry with these node types.
+	 *
+	 * @param array<int, string> $types The registered node types.
+	 *
+	 * @return AutomationCompilerService
+	 */
+	private function compilerWithNodes(array $types): AutomationCompilerService {
+		$registry = new class ($types) {
+			/**
+			 * @param array<int, string> $types The registered types.
+			 */
+			public function __construct(private readonly array $types) {
+			}
+
+			/**
+			 * @param string $type The type.
+			 *
+			 * @return object
+			 */
+			public function get(string $type): object {
+				if (in_array($type, $this->types, true) === false) {
+					throw new \UnexpectedValueException('Unknown node type "' . $type . '".');
+				}
+
+				return new \stdClass();
+			}
+		};
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturnCallback(
+			fn (string $id): object => match ($id) {
+				FlowNodeAvailability::REGISTRY => $registry,
+				default => $this->objectService,
+			}
+		);
+
+		return new AutomationCompilerService(
+			$this->container,
+			$this->objectService,
+			$this->schemaMapper,
+			$this->appManager,
+			new NullLogger(),
+			$this->flowBackend,
+			null,
+			null,
+			new FlowNodeAvailability(container: $container),
+		);
+	}//end compilerWithNodes()
+
+	/**
+	 * REQ-BQLS-002: a classify step on object created compiles to the object
+	 * trigger, Hermiq's agent step and a write of the label onto the record.
+	 *
+	 * @return void
+	 */
+	public function testAiClassifyCompilesToTriggerAgentAndWrite(): void {
+		$this->claimWithCategories();
+
+		$plan = $this->compiler->compile(self::aiAutomation(trigger: 'object-created'));
+		$nodes = $plan['flow']['nodes'];
+
+		$this->assertSame(['openregister.trigger-object', 'hermiq.agent-step', 'openregister.object-write'], array_column($nodes, 'type'));
+		$this->assertSame('created', $nodes[0]['config']['event']);
+		$this->assertSame('agent-1', $nodes[1]['config']['agentId']);
+		$this->assertTrue($nodes[1]['config']['expectJson']);
+		preg_match_all('/\{\{\s*([^}]*?)\s*\}\}/', $nodes[1]['config']['prompt'], $placeholders);
+		$this->assertSame(['omschrijving'], array_values(array_unique($placeholders[1])));
+		$this->assertSame('update', $nodes[2]['config']['operation']);
+		$this->assertSame(['categorie' => '{{json.aiAnswer.label}}'], $nodes[2]['config']['fields']);
+		$this->assertSame(['uuid' => '{{json.uuid}}'], $nodes[2]['config']['match']);
+		$this->assertSame(['id' => 'e2', 'from' => ['step-1'], 'to' => ['step-1-write']], $plan['flow']['edges'][1]);
+		$this->assertSame($plan['hash'], $this->compiler->compile(self::aiAutomation(trigger: 'object-created'))['hash']);
+	}//end testAiClassifyCompilesToTriggerAgentAndWrite()
+
+	/**
+	 * REQ-BQLS-002: each preset compiles with a prompt that reads its source fields only.
+	 *
+	 * @return void
+	 */
+	public function testEveryAiPresetCompilesWithItsSourcesOnly(): void {
+		$this->claimWithCategories();
+		$presets = [
+			'summarise' => ['preset' => 'summarise', 'targetField' => 'samenvatting'],
+			'translate' => ['preset' => 'translate', 'targetField' => 'samenvatting', 'language' => 'English'],
+			'extract' => ['preset' => 'extract', 'fields' => ['samenvatting']],
+			'prompt' => ['preset' => 'prompt', 'targetField' => 'samenvatting', 'prompt' => 'Explain {{toelichting}} simply.'],
+		];
+
+		foreach ($presets as $name => $step) {
+			$step['sourceFields'] = ['omschrijving', 'toelichting'];
+			$nodes = $this->compiler->compile(self::aiAutomation(trigger: 'manual', step: $step))['flow']['nodes'];
+
+			$this->assertSame('openregister.trigger-manual', $nodes[0]['type'], $name);
+			$this->assertSame('hermiq.agent-step', $nodes[1]['type'], $name);
+			preg_match_all('/\{\{\s*([^}]*?)\s*\}\}/', $nodes[1]['config']['prompt'], $placeholders);
+			$read = array_values(array_unique($placeholders[1]));
+			sort($read);
+			$this->assertSame(['omschrijving', 'toelichting'], $read, $name);
+			$this->assertSame(['samenvatting'], array_keys($nodes[2]['config']['fields']), $name);
+		}
+	}//end testEveryAiPresetCompilesWithItsSourcesOnly()
+
+	/**
+	 * REQ-BQLS-003: a classify step onto a plain string field is refused at save.
+	 *
+	 * @return void
+	 */
+	public function testAiClassifyOntoAPlainFieldIsRefused(): void {
+		$this->claimWithCategories();
+
+		$this->expectException(UnsupportedAutomationCombinationException::class);
+		$this->expectExceptionMessage('Make samenvatting a choice list of your labels first.');
+
+		$this->compiler->compile(self::aiAutomation(trigger: 'object-created', step: ['targetField' => 'samenvatting']));
+	}//end testAiClassifyOntoAPlainFieldIsRefused()
+
+	/**
+	 * An AI step on a deletion is refused: there is no record left to write to.
+	 *
+	 * @return void
+	 */
+	public function testAiStepOnADeletionIsRefused(): void {
+		$this->claimWithCategories();
+
+		$this->expectException(UnsupportedAutomationCombinationException::class);
+		$this->expectExceptionMessage('not on "object-deleted"');
+
+		$this->compiler->compile(self::aiAutomation(trigger: 'object-deleted'));
+	}//end testAiStepOnADeletionIsRefused()
+
+	/**
+	 * REQ-BQLS-005: without Hermiq's node in the engine apply refuses and no flow is saved.
+	 *
+	 * @return void
+	 */
+	public function testApplyRefusesAnAiStepWithoutTheHermiqNode(): void {
+		$this->claimWithCategories();
+		$compiler = $this->compilerWithNodes(types: ['openregister.object-write']);
+		$plan = $compiler->compile(self::aiAutomation(trigger: 'object-created'));
+
+		$this->flowBackend->expects($this->never())->method('apply');
+		$this->objectService->expects($this->never())->method('saveObject');
+		$this->schemaMapper->expects($this->never())->method('update');
+
+		$this->expectException(UnsupportedAutomationCombinationException::class);
+		$this->expectExceptionMessage('Install Hermiq to use AI steps.');
+
+		$compiler->apply(self::aiAutomation(trigger: 'object-created'), $plan, []);
+	}//end testApplyRefusesAnAiStepWithoutTheHermiqNode()
+
+	/**
+	 * REQ-BQLS-005: with the node, the AI flow is saved like any other flow; the
+	 * default container (no registry) also refuses.
+	 *
+	 * @return void
+	 */
+	public function testApplySavesAnAiFlowWhenTheNodeExists(): void {
+		$this->claimWithCategories();
+		$compiler = $this->compilerWithNodes(types: ['hermiq.agent-step']);
+		$plan = $compiler->compile(self::aiAutomation(trigger: 'object-created'));
+
+		$this->flowBackend->expects($this->once())->method('apply')->with($plan['flow'], null, true, 'version-3')->willReturn('flow-ai');
+
+		$this->assertSame('flow-ai', $compiler->apply(self::aiAutomation(trigger: 'object-created'), $plan, [])['flowUuid']);
+
+		$this->expectExceptionMessage('Install Hermiq to use AI steps.');
+		$this->compiler->apply(self::aiAutomation(trigger: 'object-created'), $plan, []);
+	}//end testApplySavesAnAiFlowWhenTheNodeExists()
+
+	/**
+	 * T07: on object updated, the compiled trigger names the source fields, so
+	 * writing the answer does not start the flow again.
+	 *
+	 * @return void
+	 */
+	public function testAiStepOnUpdateWatchesItsSourceFields(): void {
+		$this->claimWithCategories();
+
+		$nodes = $this->compiler->compile(self::aiAutomation(trigger: 'object-updated', step: ['sourceFields' => ['toelichting', 'omschrijving']]))['flow']['nodes'];
+
+		$this->assertSame(
+			[
+				'id' => 'trigger',
+				'type' => 'openregister.trigger-object',
+				'config' => [
+					'event' => 'object.updated',
+					'register' => 'openbuild-claims-production',
+					'schema' => 'claim',
+					'changedFields' => ['omschrijving', 'toelichting'],
+				],
+			],
+			$nodes[0]
+		);
+	}//end testAiStepOnUpdateWatchesItsSourceFields()
+
+	/**
+	 * REQ-BQLS-004 with T07: an AI field fills on create and follows edits of its sources.
+	 *
+	 * @return void
+	 */
+	public function testAiFieldAlsoFollowsEditsOfItsSources(): void {
+		$this->claimWithCategories();
+		$automation = self::aiAutomation(trigger: 'object-created');
+		$automation['origin'] = 'ai-field';
+
+		$flow = $this->compiler->compile($automation)['flow'];
+		$last = $flow['nodes'][(count($flow['nodes']) - 1)];
+
+		$this->assertSame('trigger-edit', $last['id']);
+		$this->assertSame(['omschrijving'], $last['config']['changedFields']);
+		$this->assertSame(['id' => 'e-edit', 'from' => ['trigger-edit'], 'to' => ['step-1']], $flow['edges'][(count($flow['edges']) - 1)]);
+		$this->assertSame('created', $flow['nodes'][0]['config']['event']);
+	}//end testAiFieldAlsoFollowsEditsOfItsSources()
 }//end class

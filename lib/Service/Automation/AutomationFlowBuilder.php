@@ -46,7 +46,7 @@ final class AutomationFlowBuilder {
 	 *
 	 * @var array<int, string>
 	 */
-	public const FLOW_ACTIONS = ['object-op', 'webhook', 'rule-decision'];
+	public const FLOW_ACTIONS = ['object-op', 'webhook', 'rule-decision', AiStepNodes::ACTION];
 
 	/**
 	 * Action kinds that keep their own backend and cannot share a flow (D1).
@@ -122,24 +122,35 @@ final class AutomationFlowBuilder {
 	 * @param array<int, string>                  $schemas  The app version's schema slugs.
 	 * @param array<string, array<string, mixed>> $ruleSets The rule sets the rule-decision steps name, by slug:
 	 *                                                      `ruleType`, `tableRef`, `outputs` (D7).
+	 * @param array<string, mixed>|null           $schemaProperties The trigger schema's properties, which an AI
+	 *                                                              classify step checks its labels against.
 	 *
 	 * @return array{name: string, nodes: list<array<string, mixed>>, edges: list<array<string, mixed>>}
 	 *
 	 * @throws UnsupportedAutomationCombinationException When a trigger, action or condition cannot run in a flow.
 	 *
 	 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-declarative-primitives-or-one-openregister-flow-req-bqar-001
+	 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-an-ai-step-compiles-to-a-flow-that-writes-the-answer-back-req-bqls-002
 	 */
-	public function build(CompileInput $input, string $register, array $schemas, array $ruleSets = []): array {
+	public function build(CompileInput $input, string $register, array $schemas, array $ruleSets = [], ?array $schemaProperties = null): array {
 		$this->assertNoOwnBackend(input: $input);
-		$nodes = [$this->triggerNode(input: $input, register: $register)];
+		$schema = (string)($input->trigger['schema'] ?? '');
+		$ai = new AiStepNodes(register: $register, schema: $schema, properties: $schemaProperties);
+		$nodes = [$this->aiTrigger(input: $input, ai: $ai) ?? $this->triggerNode(input: $input, register: $register)];
 
 		array_push($nodes, ...$this->conditionNodes(condition: $input->condition, ruleSets: $ruleSets));
 
-		$decisions = new RuleDecisionNodes(register: $register, schema: (string)($input->trigger['schema'] ?? ''), ruleSets: $ruleSets);
+		$decisions = new RuleDecisionNodes(register: $register, schema: $schema, ruleSets: $ruleSets);
 		foreach ($input->actions as $index => $action) {
 			$action = (array)$action;
 			if ((string)($action['type'] ?? '') === 'rule-decision') {
 				array_push($nodes, ...$decisions->build(action: $action, index: (int)$index));
+				continue;
+			}
+
+			if ((string)($action['type'] ?? '') === AiStepNodes::ACTION) {
+				AiStepNodes::assertTrigger(triggerType: $input->triggerType);
+				array_push($nodes, ...$ai->build(action: $action, index: (int)$index));
 				continue;
 			}
 
@@ -152,8 +163,34 @@ final class AutomationFlowBuilder {
 			$edges[] = ['id' => 'e' . $i, 'from' => [$nodes[($i - 1)]['id']], 'to' => [$nodes[$i]['id']]];
 		}
 
+		// An AI field also follows edits of its source fields: a second trigger
+		// into the same steps (ai-llm-steps-and-computed-fields REQ-BQLS-004).
+		if (($input->automation['origin'] ?? '') === 'ai-field' && $input->triggerType === 'object-created' && $count > 1) {
+			$nodes[] = ['id' => 'trigger-edit', 'type' => 'openregister.trigger-object', 'config' => $ai->updateTrigger(actions: $input->actions)];
+			$edges[] = ['id' => 'e-edit', 'from' => ['trigger-edit'], 'to' => [$nodes[1]['id']]];
+		}
+
 		return ['name' => 'aut-' . $input->slug, 'nodes' => $nodes, 'edges' => $edges];
 	}//end build()
+
+	/**
+	 * The trigger of an update automation with an AI step: it starts only when
+	 * a source field changed, so writing the answer does not start it again.
+	 *
+	 * @param CompileInput $input The automation.
+	 * @param AiStepNodes  $ai    The AI step nodes.
+	 *
+	 * @return array<string, mixed>|null Null when the usual trigger applies.
+	 *
+	 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-an-ai-step-compiles-to-a-flow-that-writes-the-answer-back-req-bqls-002
+	 */
+	private function aiTrigger(CompileInput $input, AiStepNodes $ai): ?array {
+		if ($input->triggerType !== 'object-updated' || AiStepNodes::holdsAiStep(actions: $input->actions) === false) {
+			return null;
+		}
+
+		return ['id' => 'trigger', 'type' => 'openregister.trigger-object', 'config' => $ai->updateTrigger(actions: $input->actions)];
+	}//end aiTrigger()
 
 	/**
 	 * Refuse an approval or document action beside a flow (D1).
