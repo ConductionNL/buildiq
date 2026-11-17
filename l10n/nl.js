@@ -2633,7 +2633,24 @@ OC.L10N.register(
         "`from-record`: an app user starts the flow from a record of the schema. Absent on an event entry.": "`from-record`: een appgebruiker start de flow vanuit een record van het schema. Ontbreekt bij een gebeurtenisregel.",
         "`side` beside the tabs, `tab` as a tab of its own, `none` no task list on this case type.": "`side` naast de tabbladen, `tab` als eigen tabblad, `none` geen takenlijst op dit zaaktype.",
         "approval: the fields the approver fills in before approving, in order (logic-approval-task-form). Each is a scalar property of the trigger schema that is neither read-only nor hidden; the compiler refuses any other, naming it. Empty or absent: the approver only approves or rejects.": "approval: de velden die de goedkeurder invult voordat die goedkeurt, op volgorde (logic-approval-task-form). Elk is een scalaire eigenschap van het schema van de trigger die niet alleen-lezen en niet verborgen is; de compiler weigert elk ander veld en noemt het. Leeg of afwezig: de goedkeurder kiest alleen goedkeuren of afwijzen.",
-        "provenance.compiledHash at run time, so a run of an older definition shows as such.": "provenance.compiledHash op het moment van uitvoeren, zodat een uitvoering van een oudere definitie als zodanig te zien is."
+        "provenance.compiledHash at run time, so a run of an older definition shows as such.": "provenance.compiledHash op het moment van uitvoeren, zodat een uitvoering van een oudere definitie als zodanig te zien is.",
+        "A site is a scheme and a host only, without a path.": "Een site is alleen een schema en een host, zonder pad.",
+        "A site must start with https://.": "Een site moet met https:// beginnen.",
+        "A wildcard is not allowed: list each site separately.": "Een jokerteken is niet toegestaan: noem elke site afzonderlijk.",
+        "Add site": "Site toevoegen",
+        "Allow other sites to show this app": "Andere sites deze app laten tonen",
+        "Allowed site, e.g. https://intranet.example.nl": "Toegestane site, bijv. https://intranet.example.nl",
+        "Copied": "Gekopieerd",
+        "Copy snippet": "Fragment kopiëren",
+        "Embed": "Insluiten",
+        "Only people who can already sign in to Nextcloud can use the embedded app; embedding never makes it public. It works on sites that share this Nextcloud's site, such as an intranet on a sibling subdomain.": "Alleen mensen die al bij Nextcloud kunnen inloggen, kunnen de ingesloten app gebruiken; insluiten maakt de app nooit openbaar. Het werkt op sites die dezelfde site delen als deze Nextcloud, zoals een intranet op een zusterdomein.",
+        "Remove site": "Site verwijderen",
+        "Sign in to Nextcloud (opens in a new tab)": "Inloggen bij Nextcloud (opent in een nieuw tabblad)",
+        "Sign in to use this app": "Log in om deze app te gebruiken",
+        "Snippet to paste into the other site": "Fragment om in de andere site te plakken",
+        "The whole app": "De hele app",
+        "This is not a valid site address.": "Dit is geen geldig siteadres.",
+        "What to embed": "Wat insluiten"
     },
     "nplurals=2; plural=(n != 1);"
 )
