@@ -141,15 +141,9 @@ class MobileProjectWriter {
 	 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T08
 	 */
 	public function write(string $rootDir, string $slug, string $appName, string $bundleId=''): array {
-		$runUrl = $this->urlGenerator->linkToRouteAbsolute('buildiq.dashboard.run', ['slug' => $slug]);
-		$host   = (string)parse_url($runUrl, PHP_URL_HOST);
-		if ($bundleId === '') {
-			$bundleId = self::defaultBundleId(host: $host, slug: $slug);
-		}
-
-		if (self::isValidBundleId(bundleId: $bundleId) === false) {
-			throw new InvalidArgumentException('The bundle id "' . $bundleId . '" is not valid: use parts like nl.example.app.');
-		}
+		$runUrl   = $this->urlGenerator->linkToRouteAbsolute('buildiq.dashboard.run', ['slug' => $slug]);
+		$host     = (string)parse_url($runUrl, PHP_URL_HOST);
+		$bundleId = self::resolveBundleId(bundleId: $bundleId, host: $host, slug: $slug);
 
 		$name = trim($appName);
 		if ($name === '') {
@@ -157,11 +151,7 @@ class MobileProjectWriter {
 		}
 
 		$dir = rtrim($rootDir, '/') . '/' . self::DIRECTORY;
-		foreach (['', '/www', '/resources'] as $sub) {
-			if (is_dir($dir . $sub) === false) {
-				mkdir($dir . $sub, 0o755, true);
-			}
-		}
+		self::makeDirectories(dir: $dir);
 
 		$json = JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE;
 		$config = $this->config(bundleId: $bundleId, name: $name, runUrl: $runUrl, host: $host);
@@ -173,6 +163,48 @@ class MobileProjectWriter {
 
 		return ['bundleId' => $bundleId, 'runUrl' => $runUrl, 'icons' => $icons];
 	}//end write()
+
+	/**
+	 * The bundle id to write: the given one, else the default for this host and slug.
+	 *
+	 * @param string $bundleId The bundle id as given; '' for the default.
+	 * @param string $host     The instance host.
+	 * @param string $slug     The app slug.
+	 *
+	 * @return string
+	 *
+	 * @throws InvalidArgumentException When the bundle id has a shape the stores refuse.
+	 *
+	 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T08
+	 */
+	private static function resolveBundleId(string $bundleId, string $host, string $slug): string {
+		if ($bundleId === '') {
+			$bundleId = self::defaultBundleId(host: $host, slug: $slug);
+		}
+
+		if (self::isValidBundleId(bundleId: $bundleId) === false) {
+			throw new InvalidArgumentException('The bundle id "' . $bundleId . '" is not valid: use parts like nl.example.app.');
+		}
+
+		return $bundleId;
+	}//end resolveBundleId()
+
+	/**
+	 * Create the project folder with its `www/` and `resources/` folders when missing.
+	 *
+	 * @param string $dir The project folder.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T08
+	 */
+	private static function makeDirectories(string $dir): void {
+		foreach (['', '/www', '/resources'] as $sub) {
+			if (is_dir($dir . $sub) === false) {
+				mkdir($dir . $sub, 0o755, true);
+			}
+		}
+	}//end makeDirectories()
 
 	/**
 	 * The Capacitor configuration: the run URL as the only content, this instance as the only allowed origin.
@@ -254,34 +286,17 @@ class MobileProjectWriter {
 	 * @return bool Whether the PNG icon and splash image were written.
 	 */
 	private function writeImages(string $dir, string $slug): bool {
-		try {
-			['stream' => $stream, 'mimeType' => $mimeType] = $this->iconService->getIconStream(slug: $slug, dark: false);
-			$bytes = null;
-			if (is_resource($stream) === true) {
-				$bytes = stream_get_contents($stream);
-			}
-		} catch (Throwable) {
+		$icon = $this->readIcon(slug: $slug);
+		if ($icon === null) {
 			return false;
 		}
 
-		if (is_string($bytes) === false || $bytes === '') {
-			return false;
+		[$bytes, $mimeType] = $icon;
+		if ($mimeType === 'image/svg+xml') {
+			return $this->writeSvgImages(dir: $dir, svg: $bytes);
 		}
 
-		if ((string)$mimeType === 'image/svg+xml') {
-			$icon   = $this->rasteriser->toPng(svg: $bytes, size: self::ICON_SIZE);
-			$splash = $this->rasteriser->toPng(svg: $bytes, size: self::SPLASH_SIZE);
-			if ($icon !== null && $splash !== null) {
-				file_put_contents($dir . '/icon.png', $icon);
-				file_put_contents($dir . '/splash.png', $splash);
-				return true;
-			}
-
-			file_put_contents($dir . '/icon.svg', $bytes);
-			return false;
-		}
-
-		if ((string)$mimeType === 'image/png') {
+		if ($mimeType === 'image/png') {
 			file_put_contents($dir . '/icon.png', $bytes);
 			file_put_contents($dir . '/splash.png', $bytes);
 			return true;
@@ -289,6 +304,75 @@ class MobileProjectWriter {
 
 		return false;
 	}//end writeImages()
+
+	/**
+	 * The app's light icon as bytes and MIME type, or null when it cannot be read or is empty.
+	 *
+	 * @param string $slug The app slug.
+	 *
+	 * @return array{0: string, 1: string}|null
+	 *
+	 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T08
+	 */
+	private function readIcon(string $slug): ?array {
+		try {
+			['stream' => $stream, 'mimeType' => $mimeType] = $this->iconService->getIconStream(slug: $slug, dark: false);
+			$bytes = self::streamBytes(stream: $stream);
+		} catch (Throwable) {
+			return null;
+		}
+
+		if ($bytes === null) {
+			return null;
+		}
+
+		return [$bytes, (string)$mimeType];
+	}//end readIcon()
+
+	/**
+	 * The contents of a stream, or null when it is no stream or holds nothing.
+	 *
+	 * @param mixed $stream The stream.
+	 *
+	 * @return string|null
+	 *
+	 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T08
+	 */
+	private static function streamBytes(mixed $stream): ?string {
+		$bytes = null;
+		if (is_resource($stream) === true) {
+			$bytes = stream_get_contents($stream);
+		}
+
+		if (is_string($bytes) === false || $bytes === '') {
+			return null;
+		}
+
+		return $bytes;
+	}//end streamBytes()
+
+	/**
+	 * The PNG icon and splash image rasterised from an SVG icon; the SVG itself when that fails.
+	 *
+	 * @param string $dir The resources folder.
+	 * @param string $svg The SVG icon.
+	 *
+	 * @return bool Whether the PNG icon and splash image were written.
+	 *
+	 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T08
+	 */
+	private function writeSvgImages(string $dir, string $svg): bool {
+		$icon   = $this->rasteriser->toPng(svg: $svg, size: self::ICON_SIZE);
+		$splash = $this->rasteriser->toPng(svg: $svg, size: self::SPLASH_SIZE);
+		if ($icon !== null && $splash !== null) {
+			file_put_contents($dir . '/icon.png', $icon);
+			file_put_contents($dir . '/splash.png', $splash);
+			return true;
+		}
+
+		file_put_contents($dir . '/icon.svg', $svg);
+		return false;
+	}//end writeSvgImages()
 
 	/**
 	 * The README: what the project is, and how the organisation builds, signs and publishes it.

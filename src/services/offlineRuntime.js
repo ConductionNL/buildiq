@@ -54,6 +54,23 @@ export function takeAlongQuery(entry) {
 }
 
 /**
+ * The app's normalised offline block, or null when offline does not apply:
+ * the instance does not allow it, the app declares nothing, or it has no slug.
+ *
+ * @param {string} slug - the app slug.
+ * @param {object} manifest - the app's manifest.
+ * @param {boolean} allowed - whether the instance lets apps work offline.
+ * @return {{takeAlong: Array<object>, forms: Array<string>}|null}
+ */
+function activeOffline(slug, manifest, allowed) {
+	const offline = normaliseOffline(manifest && manifest.offline)
+	if (allowed !== true || offline === null || !slug) {
+		return null
+	}
+	return offline
+}
+
+/**
  * Start offline for a booting app.
  *
  * @param {object} args - the boot facts and the library calls.
@@ -84,8 +101,8 @@ export async function startOffline({
 	clearCollection,
 }) {
 	const result = { registered: false, stored: 0, cleared: false }
-	const offline = normaliseOffline(manifest && manifest.offline)
-	if (allowed !== true || offline === null || !slug) {
+	const offline = activeOffline(slug, manifest, allowed)
+	if (offline === null) {
 		return result
 	}
 
@@ -98,22 +115,41 @@ export async function startOffline({
 	result.registered = (await registerOfflineWorker(workerUrls(slug, generateUrl))) !== null
 
 	for (const entry of offline.takeAlong) {
-		try {
-			const items = await fetchObjects({ register, schema: entry.schema, query: takeAlongQuery(entry) })
-			const list = (Array.isArray(items) ? items : []).slice(0, entry.limit)
-			await storePlanning({
-				register,
-				schema: entry.schema,
-				items: list,
-				collection: collectionFor(slug),
-				ttlMs: entry.ttlHours * 60 * 60 * 1000,
-			})
-			result.stored += list.length
-		} catch (error) {
-			// One schema that cannot be read leaves the others on the device.
-			// eslint-disable-next-line no-console
-			console.warn('[buildiq:offline] a take-along was not downloaded', entry.schema, error)
-		}
+		result.stored += await takeAlongOne({ slug, register, entry, storePlanning, fetchObjects })
 	}
 	return result
+}
+
+/**
+ * Download one take-along into the offline cache.
+ *
+ * A schema that cannot be read is logged and counts zero: it leaves the
+ * others on the device.
+ *
+ * @param {object} args - the take-along and the library calls.
+ * @param {string} args.slug - the app slug.
+ * @param {string} args.register - the app's register.
+ * @param {{schema: string, filter: object, limit: number, ttlHours: number}} args.entry - the take-along.
+ * @param {(args: object) => Promise<void>} args.storePlanning - the library's cache write.
+ * @param {(args: object) => Promise<Array<object>>} args.fetchObjects - reads `{register, schema, query}` and resolves the records.
+ * @return {Promise<number>} The number of records stored.
+ */
+async function takeAlongOne({ slug, register, entry, storePlanning, fetchObjects }) {
+	try {
+		const items = await fetchObjects({ register, schema: entry.schema, query: takeAlongQuery(entry) })
+		const list = (Array.isArray(items) ? items : []).slice(0, entry.limit)
+		await storePlanning({
+			register,
+			schema: entry.schema,
+			items: list,
+			collection: collectionFor(slug),
+			ttlMs: entry.ttlHours * 60 * 60 * 1000,
+		})
+		return list.length
+	} catch (error) {
+		// One schema that cannot be read leaves the others on the device.
+		// eslint-disable-next-line no-console
+		console.warn('[buildiq:offline] a take-along was not downloaded', entry.schema, error)
+		return 0
+	}
 }

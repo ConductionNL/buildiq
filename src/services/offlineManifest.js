@@ -51,6 +51,36 @@ function clampCount(value, max, fallback) {
 }
 
 /**
+ * The value when it is an array, else an empty array.
+ *
+ * @param {unknown} value - the value.
+ * @return {Array}
+ */
+function arrayOr(value) {
+	return Array.isArray(value) ? value : []
+}
+
+/**
+ * A trimmed string of the value; '' for a missing or empty one.
+ *
+ * @param {unknown} value - the value.
+ * @return {string}
+ */
+function trimmed(value) {
+	return String(value || '').trim()
+}
+
+/**
+ * A shallow copy of the value when it is a plain object, else an empty object.
+ *
+ * @param {unknown} value - the value.
+ * @return {object}
+ */
+function plainCopy(value) {
+	return value && typeof value === 'object' && !Array.isArray(value) ? { ...value } : {}
+}
+
+/**
  * One take-along entry with its caps applied, or null when it names no schema.
  *
  * @param {object} entry - the entry as entered.
@@ -59,16 +89,13 @@ function clampCount(value, max, fallback) {
  * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-a-maker-declares-what-goes-offline-req-bqom-003
  */
 export function normaliseTakeAlong(entry) {
-	const schema = String((entry && entry.schema) || '').trim()
+	const schema = trimmed(entry && entry.schema)
 	if (schema === '') {
 		return null
 	}
-	const filter = entry.filter && typeof entry.filter === 'object' && !Array.isArray(entry.filter)
-		? { ...entry.filter }
-		: {}
 	return {
 		schema,
-		filter,
+		filter: plainCopy(entry.filter),
 		limit: clampCount(entry.limit, OFFLINE_LIMIT_MAX, OFFLINE_LIMIT_DEFAULT),
 		ttlHours: clampCount(entry.ttlHours, OFFLINE_TTL_MAX, OFFLINE_TTL_DEFAULT),
 	}
@@ -88,14 +115,10 @@ export function normaliseOffline(block) {
 	if (!block || typeof block !== 'object') {
 		return null
 	}
-	const takeAlong = (Array.isArray(block.takeAlong) ? block.takeAlong : [])
+	const takeAlong = arrayOr(block.takeAlong)
 		.map(normaliseTakeAlong)
 		.filter(Boolean)
-	const forms = [...new Set(
-		(Array.isArray(block.forms) ? block.forms : [])
-			.map((id) => String(id || '').trim())
-			.filter(Boolean),
-	)]
+	const forms = [...new Set(arrayOr(block.forms).map(trimmed).filter(Boolean))]
 	if (takeAlong.length === 0 && forms.length === 0) {
 		return null
 	}
@@ -134,6 +157,17 @@ export function withOffline(manifest, block) {
 }
 
 /**
+ * The manifest's take-along entries as stored; [] when it has none.
+ *
+ * @param {object} manifest - the manifest.
+ * @return {Array<object>}
+ */
+function currentTakeAlong(manifest) {
+	const current = (manifest && manifest.offline) || {}
+	return current.takeAlong || []
+}
+
+/**
  * A copy of the manifest with one form page switched to work offline, or not.
  *
  * @param {object} manifest - the manifest.
@@ -144,16 +178,15 @@ export function withOffline(manifest, block) {
  * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-a-maker-declares-what-goes-offline-req-bqom-003
  */
 export function withFormOffline(manifest, pageId, on) {
-	const id = String(pageId || '').trim()
+	const id = trimmed(pageId)
 	if (id === '') {
 		return { ...(manifest || {}) }
 	}
-	const current = (manifest && manifest.offline) || {}
 	const forms = offlineForms(manifest).filter((form) => form !== id)
 	if (on) {
 		forms.push(id)
 	}
-	return withOffline(manifest, { takeAlong: current.takeAlong || [], forms })
+	return withOffline(manifest, { takeAlong: currentTakeAlong(manifest), forms })
 }
 
 /**
@@ -171,25 +204,65 @@ export function withFormOffline(manifest, pageId, on) {
 export function withSyncQueuePage(manifest) {
 	const next = { ...(manifest || {}) }
 	const wanted = offlineForms(next).length > 0
-	const pages = (Array.isArray(next.pages) ? next.pages : []).filter((page) => !page || page.id !== SYNC_QUEUE_PAGE_ID)
-	const menu = (Array.isArray(next.menu) ? next.menu : []).filter((item) => !item || item.id !== SYNC_QUEUE_PAGE_ID)
+	const pages = withoutSyncQueue(next.pages)
+	const menu = withoutSyncQueue(next.menu)
 	if (wanted) {
-		pages.push({
-			id: SYNC_QUEUE_PAGE_ID,
-			route: '/' + SYNC_QUEUE_PAGE_ID,
-			type: 'custom',
-			title: 'Waiting to sync',
-			component: SYNC_QUEUE_COMPONENT,
-			config: {},
-		})
-		const order = menu.reduce((max, item) => Math.max(max, Number(item && item.order) || 0), 0) + 10
-		menu.push({ id: SYNC_QUEUE_PAGE_ID, label: 'Waiting to sync', icon: 'CloudSyncOutline', route: SYNC_QUEUE_PAGE_ID, order })
+		pages.push(syncQueuePage())
+		menu.push(syncQueueMenuItem(menu))
 	}
-	if (Array.isArray(next.pages) || wanted) {
-		next.pages = pages
-	}
-	if (Array.isArray(next.menu) || wanted) {
-		next.menu = menu
-	}
+	keepList(next, 'pages', pages, wanted)
+	keepList(next, 'menu', menu, wanted)
 	return next
+}
+
+/**
+ * Store a rebuilt list on the manifest when it had one or the sync page is wanted.
+ *
+ * @param {object} next - the manifest copy, changed in place.
+ * @param {string} key - `pages` or `menu`.
+ * @param {Array<object>} list - the rebuilt list.
+ * @param {boolean} wanted - whether the sync page is wanted.
+ * @return {void}
+ */
+function keepList(next, key, list, wanted) {
+	if (Array.isArray(next[key]) || wanted) {
+		next[key] = list
+	}
+}
+
+/**
+ * A copy of a page or menu list without the generated sync entry.
+ *
+ * @param {unknown} list - the pages or menu entries.
+ * @return {Array<object>}
+ */
+function withoutSyncQueue(list) {
+	return arrayOr(list).filter((item) => !item || item.id !== SYNC_QUEUE_PAGE_ID)
+}
+
+/**
+ * The generated "Waiting to sync" page.
+ *
+ * @return {object}
+ */
+function syncQueuePage() {
+	return {
+		id: SYNC_QUEUE_PAGE_ID,
+		route: '/' + SYNC_QUEUE_PAGE_ID,
+		type: 'custom',
+		title: 'Waiting to sync',
+		component: SYNC_QUEUE_COMPONENT,
+		config: {},
+	}
+}
+
+/**
+ * The generated menu entry of the sync page, ordered after every other entry.
+ *
+ * @param {Array<object>} menu - the other menu entries.
+ * @return {object}
+ */
+function syncQueueMenuItem(menu) {
+	const order = menu.reduce((max, item) => Math.max(max, Number(item && item.order) || 0), 0) + 10
+	return { id: SYNC_QUEUE_PAGE_ID, label: 'Waiting to sync', icon: 'CloudSyncOutline', route: SYNC_QUEUE_PAGE_ID, order }
 }
