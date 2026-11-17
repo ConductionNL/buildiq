@@ -579,8 +579,9 @@
           "deviceFeatures": {
             "title": "Device features",
             "type": "array",
-            "items": {"type": "string", "enum": ["camera"]},
-            "description": "Browser features the built app's pages use, derived from the manifest on every save (pages-qr-and-barcodes REQ-BQQR-004): `camera` when an index page scans or a form has a scan field. The pages allow these for the page itself only; never set by hand."
+            "items": {"type": "string", "enum": ["camera", "geolocation", "microphone"]},
+            "default": [],
+            "description": "Browser features the built app's pages use, derived from the manifest on every save (pages-qr-and-barcodes REQ-BQQR-004): `camera` when an index page scans or a form has a scan field, `microphone` for an audio form field, `geolocation` for a location field or a map showing the user. The pages allow these for the page itself only; never set by hand."
           },
           "manifest": {
             "title": "App Manifest",
