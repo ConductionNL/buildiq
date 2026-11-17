@@ -177,6 +177,7 @@ export default {
 		 * Another page closes the panel.
 		 *
 		 * @return {void}
+		 * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-the-authored-behaviour-is-fixed-for-the-renderer-req-bqsp-003
 		 */
 		page() {
 			this.open = false
