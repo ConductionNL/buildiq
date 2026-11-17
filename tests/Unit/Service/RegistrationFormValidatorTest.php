@@ -330,4 +330,37 @@ final class RegistrationFormValidatorTest extends TestCase {
 
 		$this->validator->validate($this->form(['isPublic' => true, 'minTrust' => 'substantial']));
 	}//end testAPublicFormThatRequiresASignInIsRefused()
+
+	/**
+	 * A permit with a fee and sign-in at level substantial is saved
+	 * (REQ-OBRF-010, scenario "A permit with a fee").
+	 *
+	 * @return void
+	 */
+	public function testAFormWithAFeeAndSubstantialSignInIsAccepted(): void {
+		foreach (['substantial', 'high'] as $level) {
+			$this->validator->validate(
+				$this->form(['minTrust' => $level, 'fee' => ['amount' => 25, 'currency' => 'EUR', 'description' => 'Leges evenementenvergunning']])
+			);
+		}
+
+		self::assertTrue(true, 'A paid form signed in at substantial or high was not refused.');
+	}//end testAFormWithAFeeAndSubstantialSignInIsAccepted()
+
+	/**
+	 * A fee on an anonymous form, or on one signed in at level low, is
+	 * refused with the reason (REQ-OBRF-010, scenario "A fee on an anonymous form").
+	 *
+	 * @return void
+	 */
+	public function testAFeeBelowSubstantialSignInIsRefused(): void {
+		foreach ([[], ['minTrust' => 'low'], ['minTrust' => '']] as $signIn) {
+			try {
+				$this->validator->validate($this->form(array_merge($signIn, ['fee' => ['amount' => 25]])));
+				self::fail('A fee with sign-in ' . var_export($signIn, true) . ' was accepted');
+			} catch (InvalidArgumentException $e) {
+				self::assertStringContainsString('needs sign-in at level substantial', $e->getMessage());
+			}
+		}
+	}//end testAFeeBelowSubstantialSignInIsRefused()
 }//end class
