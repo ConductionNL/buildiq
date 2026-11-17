@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\Mcp\Handler;
 
 use OCA\Buildiq\Mcp\Handler\AbstractToolHandler;
+use OCA\Buildiq\Service\AppOrganisationGuard;
 use OCA\Buildiq\Service\PermissionResolver;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
@@ -48,6 +49,7 @@ use OCA\Buildiq\Tests\Support\LegacyObjectArgs;
  */
 #[CoversClass(AbstractToolHandler::class)]
 #[UsesClass(ObjectRecord::class)]
+#[UsesClass(AppOrganisationGuard::class)]
 final class AbstractToolHandlerWriteGuardTest extends TestCase {
 
 	/**
