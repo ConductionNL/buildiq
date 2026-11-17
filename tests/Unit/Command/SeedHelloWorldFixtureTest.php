@@ -47,6 +47,7 @@ use PHPUnit\Framework\TestCase;
 use Symfony\Component\Console\Command\Command;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Symfony\Component\Console\Tester\CommandTester;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Tests for the SeedHelloWorldFixture occ command.
@@ -194,13 +195,11 @@ class SeedHelloWorldFixtureTest extends TestCase {
 		);
 
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (
-				array|ObjectEntity $object,
-				?array $extend = [],
-				Register|string|int|null $register = null,
-				Schema|string|int|null $schema = null,
-				?string $uuid = null,
-			): ObjectEntity {
+			function (array|ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions()): ObjectEntity {
+				$extend = $options->extend ?? [];
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				// The identifier the store hands back: the caller-supplied one
 				// when the caller minted it, otherwise a deterministic stand-in
 				// so a test can name it.

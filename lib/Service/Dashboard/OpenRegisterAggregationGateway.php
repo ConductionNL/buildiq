@@ -113,6 +113,19 @@ class OpenRegisterAggregationGateway implements AggregationGateway {
 			return null;
 		}
 
+		return self::scalarOf(envelope: $envelope);
+	}//end value()
+
+	/**
+	 * The aggregated number in a runner's envelope, or null when it holds none.
+	 *
+	 * @param mixed $envelope The runner's answer: `{value: number|numeric-string, ...}`.
+	 *
+	 * @return int|float|null
+	 *
+	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-each-openregister-endpoint-is-queried-in-its-own-filter-grammar
+	 */
+	private static function scalarOf(mixed $envelope): int|float|null {
 		if (is_array($envelope) === false) {
 			return null;
 		}
@@ -127,5 +140,5 @@ class OpenRegisterAggregationGateway implements AggregationGateway {
 		}
 
 		return null;
-	}//end value()
+	}//end scalarOf()
 }//end class

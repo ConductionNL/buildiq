@@ -36,6 +36,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\Buildiq\Tests\Support\LegacyObjectArgs;
 
 /**
  * The connectors channel of a serialised application repository.
@@ -160,6 +161,7 @@ class AppRepoConnectorExportTest extends TestCase {
 		$objectService = $this->createMock(ObjectServiceInterface::class);
 		$objectService->method('find')->willReturnCallback(
 			function (...$args): ?ObjectEntityInterface {
+				$args = LegacyObjectArgs::positional(method: 'find', args: $args);
 				$this->lookups[] = (string)$args[0];
 				return $this->entity(id: (string)$args[0]);
 			}

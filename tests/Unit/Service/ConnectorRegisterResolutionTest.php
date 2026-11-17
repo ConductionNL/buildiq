@@ -39,6 +39,7 @@ use OCA\OpenRegister\Service\Flow\FlowService;
 use OCP\App\IAppManager;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\Buildiq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Migrated and unmigrated instances, told apart.
@@ -190,6 +191,7 @@ class ConnectorRegisterResolutionTest extends TestCase {
 		$objectService = $this->createMock(ObjectServiceInterface::class);
 		$objectService->method('saveObject')->willReturnCallback(
 			function (...$args) {
+				$args = LegacyObjectArgs::positional(method: 'saveObject', args: $args);
 				$this->writeCount++;
 				// Positional: named arguments reach a mock callback in
 				// declaration order, and `register` is the third parameter of

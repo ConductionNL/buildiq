@@ -40,6 +40,8 @@ namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Kernel\Contracts\TemplateSeedServiceInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
@@ -199,9 +201,10 @@ class TemplateSeedService implements TemplateSeedServiceInterface {
 	private function saveTemplate(array $data, ?string $uuid): void {
 		$this->objectService->saveObject(
 			object: $data,
-			register: 'buildiq',
-			schema: 'application-template',
-			uuid: $uuid,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'buildiq', schema: 'application-template'),
+				uuid: $uuid
+			),
 			_rbac: false,
 			_multitenancy: false
 		);

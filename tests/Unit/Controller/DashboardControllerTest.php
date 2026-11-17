@@ -111,8 +111,8 @@ class DashboardControllerTest extends TestCase {
 			$this->userSession,
 			$this->groupManager,
 			$this->navigationManager,
-			$this->createMock(ManifestResolverServiceInterface::class),
-			new EmbedOrigins()
+			manifestResolver: $this->createMock(ManifestResolverServiceInterface::class),
+			embedOrigins: new EmbedOrigins()
 		);
 	}//end setUp()
 
@@ -163,6 +163,39 @@ class DashboardControllerTest extends TestCase {
 		$this->assertSame('spectr', $published['builderSlug']);
 	}//end testBuilderRendersStandaloneTemplateAndPublishesSlug()
 
+	/**
+	 * page() tells the settings whether the organisation scope can be offered:
+	 * only while OpenRegister's multitenancy is on, and never without a guard.
+	 *
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-an-app-has-an-organisation-scope-req-bqos-001
+	 *
+	 * @return void
+	 */
+	public function testPagePublishesWhetherTheOrganisationScopeIsAvailable(): void {
+		foreach ([true, false] as $on) {
+			$this->setUp();
+			$guard = $this->createMock(\OCA\Buildiq\Service\AppOrganisationGuard::class);
+			$guard->expects($this->once())->method('multitenancyOn')->willReturn($on);
+			$published = $this->captureInitialState();
+			$controller = new DashboardController(
+				$this->request,
+				$this->initialState,
+				$this->userSession,
+				$this->groupManager,
+				$this->navigationManager,
+				organisationGuard: $guard
+			);
+
+			$this->assertSame('index', $controller->page()->getTemplateName());
+			$this->assertSame($on, $published['organisationScopeAvailable']);
+		}
+
+		$this->setUp();
+		$published = $this->captureInitialState();
+		$this->controller->page();
+		$this->assertFalse($published['organisationScopeAvailable']);
+	}//end testPagePublishesWhetherTheOrganisationScopeIsAvailable()
+
 	// -------------------------------------------------------------------------
 	// builderSlash() — trailing-slash alias
 	// -------------------------------------------------------------------------
@@ -181,6 +214,41 @@ class DashboardControllerTest extends TestCase {
 		$this->assertSame('builder', $response->getTemplateName());
 		$this->assertSame('spectr', $published['builderSlug']);
 	}//end testBuilderSlashDelegatesToBuilder()
+
+	/**
+	 * run() serves the same runtime at the installable path, and tells the template to link the web app manifest.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-a-maker-makes-an-app-installable-req-bqom-001
+	 */
+	public function testRunServesTheRuntimeAndLinksTheManifest(): void {
+		$published = $this->captureInitialState();
+
+		$response = $this->controller->run('spectr');
+
+		$this->assertSame('builder', $response->getTemplateName());
+		$this->assertSame('spectr', $published['builderSlug']);
+		$this->assertSame(['webManifest' => true], $response->getParams());
+		$this->assertSame([], $this->controller->builder('spectr')->getParams(), 'the /builder runtime links no manifest');
+	}//end testRunServesTheRuntimeAndLinksTheManifest()
+
+	/**
+	 * The run routes are signed-in routes: no public run or manifest route exists.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-a-maker-makes-an-app-installable-req-bqom-001
+	 */
+	public function testTheRunRoutesAreNotPublic(): void {
+		$routes = require __DIR__ . '/../../../appinfo/routes.php';
+		$run = array_values(array_filter($routes['routes'], static fn (array $route): bool => str_starts_with($route['url'], '/run/')));
+
+		$this->assertSame(['/run/{slug}/', '/run/{slug}/manifest.webmanifest'], array_column($run, 'url'));
+		foreach ([[\OCA\Buildiq\Controller\DashboardController::class, 'run'], [\OCA\Buildiq\Controller\ApplicationsController::class, 'webManifest']] as [$class, $method]) {
+			$this->assertSame([], (new \ReflectionMethod($class, $method))->getAttributes(\OCP\AppFramework\Http\Attribute\PublicPage::class));
+		}
+	}//end testTheRunRoutesAreNotPublic()
 
 	// -------------------------------------------------------------------------
 	// builderPath() — generic virtual-app deep link (#100)

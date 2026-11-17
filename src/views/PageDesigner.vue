@@ -84,7 +84,7 @@
 			<section class="page-designer__centre">
 				<div v-if="selectedPage" class="page-designer__sub-editor">
 					<component
-						:is="subEditorFor(selectedPage.type)"
+						:is="subEditorFor(selectedPage.type, selectedPage)"
 						:config="selectedPage.config || {}"
 						:pageType="selectedPage.type"
 						:appSlug="slug"
@@ -233,6 +233,7 @@ import DebugLogPanel from '../components/page-editor/DebugLogPanel.vue'
 import DetailPageEditor from '../components/page-editor/DetailPageEditor.vue'
 import FilesPageEditor from '../components/page-editor/FilesPageEditor.vue'
 import FormPageEditor from '../components/page-editor/FormPageEditor.vue'
+import GridPageEditor from '../components/page-editor/GridPageEditor.vue'
 import IndexPageEditor from '../components/page-editor/IndexPageEditor.vue'
 import LogsPageEditor from '../components/page-editor/LogsPageEditor.vue'
 import MapPageEditor from '../components/page-editor/MapPageEditor.vue'
@@ -305,6 +306,7 @@ export default {
 		ChatPageEditor,
 		FilesPageEditor,
 		CustomPageEditor,
+		GridPageEditor,
 		MapPageEditor,
 		RoadmapPageEditor,
 		SearchPageEditor,
@@ -913,12 +915,19 @@ export default {
 		 *
 		 * @param {string} type - The selected page's `page.type` (a canonical v2 page
 		 *   type such as `index`, `detail`, `form`).
+		 * @param {?object} [page] - The selected page itself. A `custom` page
+		 *   whose `component` is `record-grid` gets the grid editor instead of
+		 *   the raw custom-page editor.
 		 * @return {string} Registered component name for that page type, or
 		 *   `'StubPageEditor'` for a type this build ships no visual editor for.
 		 *
 		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
+		 * @spec openspec/changes/data-index-grid-and-saved-views/tasks.md#t04
 		 */
-		subEditorFor(type) {
+		subEditorFor(type, page = null) {
+			if (type === 'custom' && page && page.component === 'record-grid') {
+				return 'GridPageEditor'
+			}
 			return SUB_EDITOR_MAP[type] || 'StubPageEditor'
 		},
 

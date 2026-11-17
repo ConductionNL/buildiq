@@ -34,6 +34,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\Buildiq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Parent loading of ApplicationVersionOwnerGuard.
@@ -106,7 +107,13 @@ final class ApplicationVersionOwnerGuardParentTest extends TestCase {
 	public function testTheParentIsLookedUpInTheApplicationSchema(): void {
 		$guard = $this->guard();
 		$this->objects->expects($this->once())->method('find')
-			->with('app-A', [], false, 'buildiq', 'built-app')
+			->with(...LegacyObjectArgs::with(method: 'find', expected: [
+				'id' => 'app-A',
+				'_extend' => [],
+				'files' => false,
+				'register' => 'buildiq',
+				'schema' => 'built-app',
+			]))
 			->willReturn($this->parent(['permissions' => ['owners' => ['user:alice'], 'editors' => [], 'viewers' => []]]));
 
 		self::assertTrue($guard->check(['application' => 'app-A'], 'publish', 'alice')->isAllowed());

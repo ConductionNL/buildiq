@@ -189,8 +189,8 @@ final class DashboardControllerEmbedTest extends TestCase {
 			$userSession,
 			$groupManager,
 			$this->createMock(INavigationManager::class),
-			$this->resolver,
-			new EmbedOrigins()
+			manifestResolver: $this->resolver,
+			embedOrigins: new EmbedOrigins()
 		);
 
 	}//end controller()
