@@ -49,6 +49,7 @@ use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Kernel\Contracts\ApplicationVersionServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\VersionMergeRunnerInterface;
 use OCA\Buildiq\Service\Branch\VersionBranchRefused;
+use OCA\Buildiq\Service\PageCodeGuard;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
@@ -66,6 +67,7 @@ use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\UserRateLimit;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
@@ -136,6 +138,8 @@ class ApplicationVersionsController extends Controller {
 	 * @param ApplicationVersionServiceInterface $versionService Owner of the imperative logic
 	 * @param AuditTrailMapper|null $auditTrailMapper Optional OR audit-trail writer (null until OR loaded)
 	 * @param VersionMergeRunnerInterface|null $merges Starts a branch, previews and applies a merge (lifecycle-git-branches)
+	 * @param IAppConfig|null $appConfig Reads the instance setting "Allow code on pages"; without it code stays refused
+	 * @param PageCodeGuard $codeGuard Finds the code-bearing keys of a manifest (pages-custom-code D6)
 	 *
 	 * @return void
 	 */
@@ -150,6 +154,8 @@ class ApplicationVersionsController extends Controller {
 		private readonly ApplicationVersionServiceInterface $versionService,
 		private readonly ?AuditTrailMapper $auditTrailMapper = null,
 		private readonly ?VersionMergeRunnerInterface $merges = null,
+		private readonly ?IAppConfig $appConfig = null,
+		private readonly PageCodeGuard $codeGuard = new PageCodeGuard(),
 	) {
 		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
@@ -408,6 +414,16 @@ class ApplicationVersionsController extends Controller {
 			);
 		}
 
+		// A merge writes the source's code into the target: the code-write rule of a save applies (REQ-BQCC-005).
+		$codeRefusal = $this->refuseCodeChange(
+			application: $application,
+			before: $this->manifestOf(version: $versions['target']),
+			after: ($this->manifestOf(version: $versions['source']) ?? [])
+		);
+		if ($codeRefusal !== null) {
+			return $codeRefusal;
+		}
+
 		return $this->branchRun(
 			run: fn (): array => $this->merges->applyMerge(
 				application: $application,
@@ -493,6 +509,16 @@ class ApplicationVersionsController extends Controller {
 			$currentUuid = (string)($current['id'] ?? $current['uuid'] ?? '');
 			$payload = $this->buildUpdatePayload(current: $current, currentUuid: $currentUuid);
 
+			// An editor may save a version, but not add, change or remove its code (REQ-BQCC-005).
+			$codeRefusal = $this->refuseCodeChange(
+				application: (array)$this->loadApplication(slug: $appSlug),
+				before: $this->manifestOf(version: $current),
+				after: ($this->manifestOf(version: $payload) ?? [])
+			);
+			if ($codeRefusal !== null) {
+				return $codeRefusal;
+			}
+
 			// Acquire an optimistic lock before the read-modify-write to prevent
 			// concurrent UI / MCP writes silently losing each other's changes (issue #159).
 			$locked = $this->lockForUpdate(currentUuid: $currentUuid, versionSlug: $versionSlug);
@@ -561,6 +587,66 @@ class ApplicationVersionsController extends Controller {
 
 		return $this->versionService->onSave(current: $current, next: $payload);
 	}//end buildUpdatePayload()
+
+	/**
+	 * The manifest of a version row, or null when it holds none.
+	 *
+	 * @param array<string,mixed> $version The version row.
+	 *
+	 * @return array<mixed>|null
+	 */
+	private function manifestOf(array $version): ?array {
+		$manifest = ($version['manifest'] ?? null);
+		if (is_array($manifest) === true) {
+			return $manifest;
+		}
+
+		return null;
+	}//end manifestOf()
+
+	/**
+	 * Refuse a write that adds, changes or removes code unless an app owner
+	 * makes it and the instance allows code on pages (pages-custom-code D6).
+	 *
+	 * A write that leaves every code-bearing key as it was passes. There is no
+	 * admin bypass: a Nextcloud administrator who is not an owner of the app
+	 * cannot write code into it, the same rule as the manifest save.
+	 *
+	 * @param array<string,mixed> $application The parent Application.
+	 * @param array<mixed>|null   $before      The stored manifest, or null when there is none.
+	 * @param array<mixed>        $after       The manifest being written.
+	 *
+	 * @return JSONResponse|null The 403, or null when the write may proceed.
+	 *
+	 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-only-owners-write-code-and-only-when-allowed-req-bqcc-005
+	 */
+	private function refuseCodeChange(array $application, ?array $before, array $after): ?JSONResponse {
+		if ($this->codeGuard->changesCode(before: $before, after: $after) === false) {
+			return null;
+		}
+
+		if ($this->appConfig?->getValueBool(AppIdentity::APP_ID, PageCodeGuard::SETTING, false) !== true) {
+			return new JSONResponse(
+				data: ['error' => 'forbidden', 'code' => 'buildiq.code.disabled', 'message' => 'Code on pages is switched off for this instance.'],
+				statusCode: Http::STATUS_FORBIDDEN
+			);
+		}
+
+		$user = $this->userSession->getUser();
+		if ($user !== null) {
+			$owners = $this->collectAuthorisedPrincipals(application: $application, roles: ['owners']);
+			if (in_array($user->getUID(), $owners['users'], true) === true
+				|| count(array_intersect($this->getUserGroupIds(user: $user), $owners['groups'])) > 0
+			) {
+				return null;
+			}
+		}
+
+		return new JSONResponse(
+			data: ['error' => 'forbidden', 'code' => 'buildiq.code.owners_only', 'message' => 'Only app owners can add code to a page.'],
+			statusCode: Http::STATUS_FORBIDDEN
+		);
+	}//end refuseCodeChange()
 
 	/**
 	 * Refuse a promotesTo target that would close a promotion cycle.
