@@ -1494,6 +1494,20 @@ namespace OCA\OpenRegister\Db {
 			 * @var array|null
 			 */
 			protected ?array $limits = null;
+
+			/**
+			 * Stub owning-app column.
+			 *
+			 * @var string|null
+			 */
+			protected ?string $app = null;
+
+			/**
+			 * Stub application-slug column.
+			 *
+			 * @var string|null
+			 */
+			protected ?string $applicationSlug = null;
 		}//end class
 	}//end if
 

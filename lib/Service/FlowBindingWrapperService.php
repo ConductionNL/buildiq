@@ -248,7 +248,7 @@ class FlowBindingWrapperService {
 				continue;
 			}
 
-			$this->removeWrapper(binding: $binding, result: $result);
+			$this->removeWrapper(binding: $binding, appSlug: $appSlug, result: $result);
 		}
 
 		foreach ($plan as $name => $wanted) {
@@ -342,15 +342,29 @@ class FlowBindingWrapperService {
 	/**
 	 * Delete and unbind one wrapper, or keep it bound when it cannot be deleted.
 	 *
+	 * Only a flow this app keeps as a wrapper of this application is deleted: a
+	 * binding's label alone does not make its flow ours. A binding naming any
+	 * other flow stays bound and is reported, and that flow is left alone.
+	 *
 	 * @param array<string,mixed> $binding The wrapper's binding.
+	 * @param string              $appSlug The application's slug.
 	 * @param array<string,mixed> $result  The running result.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md
 	 */
-	private function removeWrapper(array $binding, array &$result): void {
+	private function removeWrapper(array $binding, string $appSlug, array &$result): void {
 		$uuid = (string)($binding['flow'] ?? '');
 		try {
 			if ($uuid !== '') {
+				$flow = $this->flowService->find(uuid: $uuid);
+				if ($flow->getApp() !== self::OWNING_APP || $appSlug === '' || $flow->getApplicationSlug() !== $appSlug) {
+					$result['failed'][] = ['name' => (string)$binding['label'], 'reason' => 'not_a_wrapper'];
+					$result['flows'][] = $binding;
+					return;
+				}
+
 				$this->flowService->delete(uuid: $uuid);
 			}
 		} catch (Throwable $e) {

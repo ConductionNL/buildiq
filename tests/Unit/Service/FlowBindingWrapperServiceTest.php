@@ -91,6 +91,13 @@ class FlowBindingWrapperServiceTest extends TestCase {
 	private array $saved = [];
 
 	/**
+	 * The flows the flow service holds, by uuid.
+	 *
+	 * @var array<string,Flow>
+	 */
+	private array $stored = [];
+
+	/**
 	 * The Application payloads saved, in order.
 	 *
 	 * @var list<array<string,mixed>>
@@ -110,7 +117,19 @@ class FlowBindingWrapperServiceTest extends TestCase {
 				$this->saved[] = $data;
 				$flow = new Flow();
 				$flow->setUuid('wrapper-' . count($this->saved));
+				$flow->setApp($data['app'] ?? null);
+				$flow->setApplicationSlug($data['applicationSlug'] ?? null);
+				$this->stored[$flow->getUuid()] = $flow;
 				return $flow;
+			}
+		);
+		$this->flows->method('find')->willReturnCallback(
+			function (string $uuid): Flow {
+				if (isset($this->stored[$uuid]) === false) {
+					throw new RuntimeException('No such flow');
+				}
+
+				return $this->stored[$uuid];
 			}
 		);
 
@@ -339,6 +358,37 @@ class FlowBindingWrapperServiceTest extends TestCase {
 		$this->assertSame(expected: $flows, actual: $result['flows']);
 
 	}//end testFailuresAreReportedAndAnUndeletableWrapperStaysBound()
+
+	/**
+	 * A binding with a wrapper's label that names a flow buildiq does not keep for
+	 * this application is never deleted: it stays bound and is reported.
+	 *
+	 * @return void
+	 */
+	public function testOnlyThisAppsOwnWrapperFlowIsDeleted(): void {
+		$foreign = new Flow();
+		$foreign->setUuid('foreign-flow');
+		$foreign->setApp('hermiq');
+		$foreign->setApplicationSlug('permits');
+		$this->stored['foreign-flow'] = $foreign;
+		$otherApp = new Flow();
+		$otherApp->setUuid('other-application-wrapper');
+		$otherApp->setApp('buildiq');
+		$otherApp->setApplicationSlug('licences');
+		$this->stored['other-application-wrapper'] = $otherApp;
+		$this->flows->expects($this->never())->method('delete');
+
+		$forged = [
+			['flow' => 'foreign-flow', 'label' => FlowBindingWrapperService::NAME_PREFIX . 'permits-aaaaaaaaaaaa', 'sourceUuid' => self::BOUND],
+			['flow' => 'other-application-wrapper', 'label' => FlowBindingWrapperService::NAME_PREFIX . 'permits-bbbbbbbbbbbb', 'sourceUuid' => self::BOUND],
+		];
+		$result = $this->service()->sync(self::APP, self::app([], $forged), 'r');
+
+		$this->assertSame(expected: 0, actual: $result['removed']);
+		$this->assertSame(expected: ['not_a_wrapper', 'not_a_wrapper'], actual: array_column($result['failed'], 'reason'));
+		$this->assertSame(expected: [self::BOUND, 'foreign-flow', 'other-application-wrapper'], actual: array_column($result['flows'], 'flow'));
+
+	}//end testOnlyThisAppsOwnWrapperFlowIsDeleted()
 
 	/**
 	 * A flow service that refuses the save is reported, and nothing is bound for it.
