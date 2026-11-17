@@ -154,4 +154,51 @@ describe('FormStepsManager', () => {
 		// The stale reference is still rendered as a chip (never silently dropped).
 		expect(wrapper.text()).toContain('ghost')
 	})
+	it('shows no phase input unless asked', () => {
+		const wrapper = mountManager([{ id: 'a', title: 'A', fields: [] }])
+		expect(wrapper.find('[data-testid="form-step-phase"]').exists()).toBe(false)
+	})
+
+	it('writes a phase label per step and keeps the other keys', async () => {
+		const wrapper = mount(FormStepsManager, {
+			propsData: {
+				steps: [{ id: 'a', title: 'A', fields: ['email'], custom: 1 }],
+				fields: FIELDS,
+				withPhase: true,
+			},
+		})
+		await wrapper.find('[data-testid="form-step-phase"]').setValue('Aanvrager')
+		const emitted = wrapper.emitted('update:steps').at(-1)[0]
+		expect(emitted).toEqual([
+			{ id: 'a', title: 'A', fields: ['email'], custom: 1, phase: 'Aanvrager' },
+		])
+	})
+
+	it('removes the phase key when the label is cleared', async () => {
+		const wrapper = mount(FormStepsManager, {
+			propsData: {
+				steps: [{ id: 'a', title: 'A', fields: [], phase: 'Bouwwerk' }],
+				fields: FIELDS,
+				withPhase: true,
+			},
+		})
+		const input = wrapper.find('[data-testid="form-step-phase"]')
+		expect(input.element.value).toBe('Bouwwerk')
+		await input.setValue('  ')
+		expect(wrapper.emitted('update:steps').at(-1)[0]).toEqual([
+			{ id: 'a', title: 'A', fields: [] },
+		])
+	})
+
+	it('does not promise to fold unassigned fields in when the caller does not', () => {
+		const wrapper = mount(FormStepsManager, {
+			propsData: {
+				steps: [{ id: 'a', title: 'A', fields: [] }],
+				fields: FIELDS,
+				leavesUnassigned: true,
+			},
+		})
+		expect(wrapper.find('.form-steps-manager__pool').exists()).toBe(true)
+		expect(wrapper.find('.form-steps-manager__pool-note').exists()).toBe(false)
+	})
 })

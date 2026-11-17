@@ -37,7 +37,7 @@ By the end you will have opened your app in the builder host, clicked through it
 
    ![A form page in the running app](/screenshots/tutorials/user/06-preview-app-04.png)
 
-6. Spot a bug? Click **Back to apps** at the top of the left navigation, open the app, fix the page, and hit **Save & open preview** again. The cycle is short on purpose: the host reads the manifest on every load.
+6. Spot a bug? Click **Back to virtual apps** at the top of the left navigation, open the app, fix the page, and hit **Save & open preview** again. The cycle is short on purpose: the host reads the manifest on every load.
 
    ![Back to apps](/screenshots/tutorials/user/06-preview-app-05.png)
 

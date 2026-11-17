@@ -33,6 +33,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Controller;
 
 use OCA\Buildiq\Kernel\AppIdentity;
+use OCA\Buildiq\Kernel\Contracts\ExportArchiveStoreInterface;
 use OCA\Buildiq\Kernel\Contracts\ExportJobServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\ServerBundleWriterInterface;
 use OCA\Buildiq\Support\ObjectRecord;
@@ -80,6 +81,7 @@ class ExportsController extends Controller {
 	 * @param ContainerInterface $container Container for optional OR services.
 	 * @param LoggerInterface $logger Logger.
 	 * @param IGroupManager $groupManager Group membership resolver (RBAC, issue #158).
+	 * @param ExportArchiveStoreInterface|null $archives The archives kept in app data, for a download on another server (REQ-PLAT-010).
 	 */
 	public function __construct(
 		IRequest $request,
@@ -88,6 +90,7 @@ class ExportsController extends Controller {
 		private ContainerInterface $container,
 		private LoggerInterface $logger,
 		private IGroupManager $groupManager,
+		private ?ExportArchiveStoreInterface $archives = null,
 	) {
 		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
@@ -753,6 +756,7 @@ class ExportsController extends Controller {
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
 	 * @spec openspec/changes/archive/2026-11-12-openbuild-export-csrf-hardening/tasks.md#task-1.3
+	 * @spec openspec/specs/platform-properties/spec.md#REQ-PLAT-010
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
@@ -768,19 +772,61 @@ class ExportsController extends Controller {
 		}
 
 		$resolved = $this->exportJobService->resolveDownload($uuid);
-		if ($resolved === null) {
-			return new JSONResponse(['error' => 'Unknown export job.'], Http::STATUS_NOT_FOUND);
-		}
-
-		if ($resolved['expired'] === true) {
+		if ($resolved !== null && $resolved['expired'] === true) {
 			return new JSONResponse(['error' => 'Export has expired.'], Http::STATUS_GONE);
 		}
 
-		$body = file_get_contents($resolved['path']);
+		$body = $this->archiveBytes(resolved: $resolved, uuid: $uuid);
 		if ($body === false) {
+			if ($resolved === null) {
+				return new JSONResponse(['error' => 'Unknown export job.'], Http::STATUS_NOT_FOUND);
+			}
+
 			return new JSONResponse(['error' => 'Unable to read export.'], Http::STATUS_INTERNAL_SERVER_ERROR);
 		}
 
-		return new DataDownloadResponse($body, basename($resolved['path']), 'application/zip');
+		return new DataDownloadResponse($body, self::downloadName(resolved: $resolved, uuid: $uuid), 'application/zip');
 	}//end download()
+
+	/**
+	 * The file name the download carries: the staging file's own name, or the
+	 * job's archive name when only app data holds it.
+	 *
+	 * @param array{path:string,expired:bool}|null $resolved The staging copy, if any.
+	 * @param string                                $uuid     ExportJob UUID.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/specs/platform-properties/spec.md#REQ-PLAT-010
+	 */
+	private static function downloadName(?array $resolved, string $uuid): string {
+		if ($resolved !== null) {
+			return basename($resolved['path']);
+		}
+
+		return $uuid . '.zip';
+	}//end downloadName()
+
+	/**
+	 * The bytes of a job's archive: this server's staging copy, or, when it is
+	 * gone or unreadable, the copy kept in app data, which any web server can
+	 * read (REQ-PLAT-010).
+	 *
+	 * @param array{path:string,expired:bool}|null $resolved The staging copy, if any.
+	 * @param string                                $uuid     ExportJob UUID.
+	 *
+	 * @return string|false The archive, or false when neither copy is there.
+	 *
+	 * @spec openspec/specs/platform-properties/spec.md#REQ-PLAT-010
+	 */
+	private function archiveBytes(?array $resolved, string $uuid): string|false {
+		if ($resolved !== null && is_readable($resolved['path']) === true) {
+			$body = file_get_contents($resolved['path']);
+			if ($body !== false) {
+				return $body;
+			}
+		}
+
+		return ($this->archives?->read(jobUuid: $uuid) ?? false);
+	}//end archiveBytes()
 }//end class

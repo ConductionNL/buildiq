@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\CompanionSchemaCollectorInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
 use Psr\Log\LoggerInterface;
@@ -39,7 +40,7 @@ use Throwable;
  *
  * @spec openspec/changes/github-app-repo-format/specs/github-app-repo-format/spec.md
  */
-class CompanionSchemaCollector {
+class CompanionSchemaCollector implements CompanionSchemaCollectorInterface {
 	/**
 	 * Constructor.
 	 *

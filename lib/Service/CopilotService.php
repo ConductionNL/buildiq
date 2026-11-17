@@ -40,8 +40,11 @@ namespace OCA\Buildiq\Service;
 use OCA\Buildiq\Exception\CopilotException;
 use OCA\Buildiq\Kernel\Contracts\BuildiqToolProviderInterface;
 use OCA\Buildiq\Kernel\Contracts\CopilotServiceInterface;
+use OCA\Buildiq\Service\Copilot\AgentKnowledgeReader;
 use OCA\Buildiq\Service\Copilot\CopilotPlanValidator;
 use OCA\Buildiq\Service\Copilot\CopilotPromptBuilder;
+use OCA\Buildiq\Service\Copilot\CopilotTextTask;
+use OCA\Buildiq\Service\Copilot\ModelStep;
 use OCA\Buildiq\Support\ManifestEntryList;
 use OCA\Buildiq\Support\ManifestPageShape;
 use OCA\Buildiq\Support\ManifestRoute;
@@ -52,27 +55,22 @@ use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserManager;
-use OCP\TaskProcessing\Task;
-use OCP\TaskProcessing\TaskTypes\TextToText;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
-
-// NOTE: OCP\TaskProcessing\Task and OCP\TaskProcessing\TaskTypes\TextToText
-// ship only on NC 30+. A `use` import merely aliases the name — PHP does not
-// resolve/autoload it until the class is actually referenced — so importing
-// them here is safe even on NC 28/29; every call site that constructs or
-// references them is reached only after health()/assertAvailable() has
-// already confirmed `OCP\TaskProcessing\IManager` exists.
 
 /**
  * Prompt-to-app copilot orchestrator (REQ-OBAIC-001 through REQ-OBAIC-007).
  *
  * @spec openspec/specs/ai-copilot/spec.md
  * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
+ * @spec openspec/specs/platform-properties/spec.md#REQ-PLAT-002
  */
 class CopilotService implements CopilotServiceInterface {
 
@@ -94,20 +92,6 @@ class CopilotService implements CopilotServiceInterface {
 	 * @var string
 	 */
 	private const TEXT_TO_TEXT_TASK_TYPE_ID = 'core:text2text';
-
-	/**
-	 * Hard timeout for the synchronous plan-call poll loop (design.md Decision 2).
-	 *
-	 * @var float
-	 */
-	private const LLM_TIMEOUT_SECONDS = 120.0;
-
-	/**
-	 * Poll interval while waiting for the TaskProcessing task to finish.
-	 *
-	 * @var int
-	 */
-	private const POLL_INTERVAL_MICROSECONDS = 500000;
 
 	/**
 	 * Roles that grant write access to an Application (mirrors AbstractToolHandler).
@@ -153,6 +137,41 @@ class CopilotService implements CopilotServiceInterface {
 	];
 
 	/**
+	 * The model steps of the plan request in progress (REQ-BQAG-004).
+	 *
+	 * @var array<int, array<string, mixed>>
+	 */
+	private array $modelSteps = [];
+
+	/**
+	 * The text-to-text task seam shared with the builder assist.
+	 *
+	 * @var CopilotTextTask
+	 */
+	private readonly CopilotTextTask $textTask;
+
+	/**
+	 * Reads an agent's knowledge files into its plan prompt (REQ-BQAG-002).
+	 *
+	 * @var AgentKnowledgeReader
+	 */
+	private readonly AgentKnowledgeReader $knowledgeReader;
+
+	/**
+	 * The knowledge files the plan request in progress puts in its prompt (REQ-BQAG-002).
+	 *
+	 * @var array<int, array{fileName: string, text: string}>
+	 */
+	private array $knowledge = [];
+
+	/**
+	 * The trace id the execute request in progress echoes back (REQ-BQAG-004).
+	 *
+	 * @var string|null
+	 */
+	private ?string $traceId = null;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ContainerInterface $container DI container, used to lazily resolve
@@ -174,6 +193,8 @@ class CopilotService implements CopilotServiceInterface {
 	 *                                       every agent-scoped plan/execute/discard
 	 *                                       turn.
 	 * @param AuditTrailMapper|null $auditTrailMapper Optional OR audit-trail writer for admin-bypass parity (L2).
+	 * @param CopilotTextTask|null $textTask The text-to-text task seam; built from the container and logger when not given.
+	 * @param AgentKnowledgeReader|null $knowledgeReader Reads an agent's knowledge files; built from the container and logger when not given.
 	 *
 	 * @return void
 	 */
@@ -190,7 +211,11 @@ class CopilotService implements CopilotServiceInterface {
 		private readonly ApplicationDeletionService $appDeletionService,
 		private readonly AgentRunLogger $agentRunLogger,
 		private readonly ?AuditTrailMapper $auditTrailMapper = null,
+		?CopilotTextTask $textTask = null,
+		?AgentKnowledgeReader $knowledgeReader = null,
 	) {
+		$this->textTask = ($textTask ?? new CopilotTextTask(container: $container, logger: $logger));
+		$this->knowledgeReader = ($knowledgeReader ?? new AgentKnowledgeReader(container: $container, logger: $logger));
 	}//end __construct()
 
 	/**
@@ -261,8 +286,10 @@ class CopilotService implements CopilotServiceInterface {
 			$appSlug = (string)($agent['applicationSlug'] ?? '');
 		}
 
+		$this->modelSteps = [];
+		$this->knowledge = [];
 		try {
-			return $this->planWithinContext(brief: $brief, appSlug: $appSlug, userId: $userId, agent: $agent, versionSlug: $versionSlug);
+			$result = $this->planWithinContext(brief: $brief, appSlug: $appSlug, userId: $userId, agent: $agent, versionSlug: $versionSlug);
 		} catch (CopilotException $e) {
 			if ($agent !== null) {
 				$this->agentRunLogger->log(
@@ -271,13 +298,36 @@ class CopilotService implements CopilotServiceInterface {
 					prompt: $brief,
 					plan: [],
 					toolCalls: [],
-					outcome: 'plan-rejected'
+					outcome: 'plan-rejected',
+					trace: $this->currentTrace()
 				);
 			}
 
 			throw $e;
 		}//end try
+
+		// REQ-BQAG-004: the steps wait for the run under an id the client echoes back.
+		if ($agent !== null) {
+			$result['traceId'] = $this->agentRunLogger->rememberTrace(agent: $agent, userId: $userId, trace: $this->currentTrace());
+		}
+
+		return $result;
 	}//end plan()
+
+	/**
+	 * The model steps of the plan request just made, as a run keeps them.
+	 *
+	 * @return array{modelSteps: array<int, array<string, mixed>>, knowledgeUsed: array<int, string>, durationMs: int}
+	 *
+	 * @spec openspec/changes/ai-agents-knowledge-and-run-trace/specs/agent-workspace/spec.md#requirement-a-run-keeps-its-model-steps-req-bqag-004
+	 */
+	private function currentTrace(): array {
+		return [
+			'modelSteps' => $this->modelSteps,
+			'knowledgeUsed' => array_column($this->knowledge, 'fileName'),
+			'durationMs' => array_sum(array_column($this->modelSteps, 'durationMs')),
+		];
+	}//end currentTrace()
 
 	/**
 	 * Core plan logic, wrapped by {@see plan()} so an agent-scoped failure
@@ -312,6 +362,8 @@ class CopilotService implements CopilotServiceInterface {
 			$agentEnabledTools = (array)($agent['enabledTools'] ?? []);
 			$effectiveDescriptors = $this->narrowDescriptors(descriptors: $effectiveDescriptors, enabledTools: $agentEnabledTools);
 			$instructionsPrefix = (string)($agent['instructions'] ?? '');
+			// REQ-BQAG-002: read only after the caller's role on the agent's app is confirmed above.
+			$this->knowledge = $this->knowledgeReader->read(agent: $agent);
 		}
 
 		$plan = $this->requestPlanFromLlm(
@@ -359,6 +411,7 @@ class CopilotService implements CopilotServiceInterface {
 	 * @param string $userId Acting user's UID.
 	 * @param string $prompt The user's natural-language brief for this turn.
 	 * @param array<string, mixed> $plan The plan `{summary, steps[]}` that was reviewed and discarded.
+	 * @param string|null $traceId The trace id the plan returned, so the run keeps its model steps (REQ-BQAG-004).
 	 *
 	 * @return array<string, mixed> The persisted `AgentRun` record.
 	 *
@@ -366,7 +419,7 @@ class CopilotService implements CopilotServiceInterface {
 	 *
 	 * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/agent-workspace/spec.md
 	 */
-	public function discard(string $agentId, string $userId, string $prompt, array $plan): array {
+	public function discard(string $agentId, string $userId, string $prompt, array $plan, ?string $traceId = null): array {
 		$agent = $this->requireAgent(agentId: $agentId);
 		$appSlug = (string)($agent['applicationSlug'] ?? '');
 		if ($appSlug !== '') {
@@ -380,7 +433,8 @@ class CopilotService implements CopilotServiceInterface {
 			prompt: $prompt,
 			plan: $plan,
 			toolCalls: [],
-			outcome: 'discarded'
+			outcome: 'discarded',
+			traceId: $traceId
 		);
 	}//end discard()
 
@@ -622,7 +676,7 @@ class CopilotService implements CopilotServiceInterface {
 	 * `CnFormPage: handler "loan" not registered`.
 	 *
 	 * Naming the schema on the page instead lets
-	 * {@see ManifestPageShape::withSubmitDestination()} point the form at the
+	 * {@see FormPageConfig::normalise()} point the form at the
 	 * collection it belongs to, which is what it already does for a form that
 	 * named no destination at all. Proven on the deployed instance: the same
 	 * page with its schema named posted 201 Created and the record appeared on
@@ -878,6 +932,7 @@ class CopilotService implements CopilotServiceInterface {
 	 * @param string $prompt The original user brief for this turn, echoed back so the
 	 *                       resulting `AgentRun` record carries it. Ignored when
 	 *                       `$agentId` is null.
+	 * @param string|null $traceId The trace id the plan returned, so the run keeps its model steps (REQ-BQAG-004).
 	 *
 	 * @return array{results: array<int, array<string, mixed>>}
 	 *
@@ -886,11 +941,12 @@ class CopilotService implements CopilotServiceInterface {
 	 * @spec openspec/specs/ai-copilot/spec.md
 	 * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
 	 */
-	public function execute(array $plan, string $userId, ?string $agentId = null, string $prompt = ''): array {
+	public function execute(array $plan, string $userId, ?string $agentId = null, string $prompt = '', ?string $traceId = null): array {
 		// The server never trusts the client's review, so it re-normalises for
 		// the same reason it re-validates: a plan posted straight at this
 		// endpoint gets the routes and data bindings the review screen showed.
 		$plan = $this->normalisePlan(plan: $plan);
+		$this->traceId = $traceId;
 
 		$agent = $this->resolveAgentForExecute(plan: $plan, userId: $userId, prompt: $prompt, agentId: $agentId);
 
@@ -908,11 +964,7 @@ class CopilotService implements CopilotServiceInterface {
 
 		return $this->dispatchOrderedSteps(
 			ordered: $ordered,
-			snapshots: $snapshots,
-			agent: $agent,
-			userId: $userId,
-			prompt: $prompt,
-			plan: $plan
+			turn: ['snapshots' => $snapshots, 'agent' => $agent, 'userId' => $userId, 'prompt' => $prompt, 'plan' => $plan]
 		);
 	}//end execute()
 
@@ -960,7 +1012,15 @@ class CopilotService implements CopilotServiceInterface {
 			}
 		} catch (CopilotException $e) {
 			if ($agent !== null) {
-				$this->agentRunLogger->log(agent: $agent, userId: $userId, prompt: $prompt, plan: $plan, toolCalls: [], outcome: 'plan-rejected');
+				$this->agentRunLogger->log(
+					agent: $agent,
+					userId: $userId,
+					prompt: $prompt,
+					plan: $plan,
+					toolCalls: [],
+					outcome: 'plan-rejected',
+					traceId: $this->traceId
+				);
 			}
 
 			throw $e;
@@ -977,83 +1037,135 @@ class CopilotService implements CopilotServiceInterface {
 	 * keep its own complexity within the project's PHPMD thresholds.
 	 *
 	 * @param array<int, array<string, mixed>> $ordered Plan steps in dispatch order.
-	 * @param array<int, array<string, mixed>> $snapshots Manifest snapshots to restore on failure.
-	 * @param array<string, mixed>|null $agent The resolved `Agent` record, or null for the bare copilot path.
-	 * @param string $userId Acting user's UID.
-	 * @param string $prompt The original user brief for this turn (for the AgentRun log).
-	 * @param array<string, mixed> $plan The reviewed plan (for the AgentRun log).
+	 * @param array<string, mixed>             $turn    The turn: `snapshots` to restore on failure, the resolved
+	 *                                                  `agent` (null for the bare copilot path), the acting
+	 *                                                  `userId`, and the `prompt` and `plan` for the AgentRun log.
 	 *
 	 * @return array{results: array<int, array<string, mixed>>}
 	 *
 	 * @throws CopilotException On a mid-plan step failure.
 	 */
-	private function dispatchOrderedSteps(array $ordered, array $snapshots, ?array $agent, string $userId, string $prompt, array $plan): array {
-		$results = [];
-		$toolCalls = [];
-		$createdAppUuid = null;
-		$createdAppSlug = null;
+	private function dispatchOrderedSteps(array $ordered, array $turn): array {
+		$dispatch = ['results' => [], 'toolCalls' => [], 'createdAppUuid' => null, 'createdAppSlug' => null];
 
 		try {
 			foreach ($ordered as $index => $step) {
-				$tool = (string)($step['tool'] ?? '');
-				$args = (array)($step['arguments'] ?? []);
-				$result = $this->toolProvider->invokeTool($tool, $args);
-				$toolCalls[] = ['tool' => $tool, 'arguments' => $args, 'result' => $result];
+				$call = $this->invokeStep(step: $step);
+				$dispatch['toolCalls'][] = $call;
 
-				if (($result['isError'] ?? false) === true) {
+				if (($call['result']['isError'] ?? false) === true) {
 					throw new CopilotException(
 						errorCode: 'execution_failed',
-						message: (string)($result['message'] ?? 'A plan step failed.'),
+						message: (string)($call['result']['message'] ?? 'A plan step failed.'),
 						httpStatus: 422,
 						stepIndex: $index,
-						context: ['step' => $step, 'handler' => $result]
+						context: ['step' => $step, 'handler' => $call['result']]
 					);
 				}
 
-				if ($tool === 'buildiq.createApp') {
-					$createdAppUuid = (string)($result['app']['uuid'] ?? '');
-					$createdAppSlug = (string)($result['app']['slug'] ?? ($args['slug'] ?? ''));
-				}
-
-				$results[] = $result;
+				$dispatch = self::withStepResult(dispatch: $dispatch, call: $call);
 			}//end foreach
 
-			if ($agent !== null) {
-				$this->agentRunLogger->log(agent: $agent, userId: $userId, prompt: $prompt, plan: $plan, toolCalls: $toolCalls, outcome: 'applied');
-			}
+			$this->logAgentRun(turn: $turn + ['toolCalls' => $dispatch['toolCalls']], outcome: 'applied');
 
-			return ['results' => $results];
+			return ['results' => $dispatch['results']];
 		} catch (Throwable $e) {
-			$rollback = $this->rollback(snapshots: $snapshots, createdAppUuid: $createdAppUuid, createdAppSlug: $createdAppSlug);
-
-			if ($agent !== null) {
-				$this->agentRunLogger->log(
-					agent: $agent,
-					userId: $userId,
-					prompt: $prompt,
-					plan: $plan,
-					toolCalls: $toolCalls,
-					outcome: 'rolled-back'
-				);
-			}
-
-			if ($e instanceof CopilotException) {
-				// The reader is told what the rollback removed and, when
-				// something resisted, exactly which resource is still there —
-				// the names come from the plan, so they are known, not guessed.
-				throw $e->withContext(extra: ['rollback' => $rollback]);
-			}
-
-			$this->logger->error('Buildiq Copilot: execute failed: ' . $e->getMessage(), ['exception' => $e]);
-			throw new CopilotException(
-				errorCode: 'execution_failed',
-				message: 'Failed to execute the plan. See server logs for details.',
-				httpStatus: 422,
-				context: ['rollback' => $rollback],
-				previous: $e
+			$rollback = $this->rollback(
+				snapshots: $turn['snapshots'],
+				createdAppUuid: $dispatch['createdAppUuid'],
+				createdAppSlug: $dispatch['createdAppSlug']
 			);
+
+			$this->logAgentRun(turn: $turn + ['toolCalls' => $dispatch['toolCalls']], outcome: 'rolled-back');
+
+			throw $this->dispatchFailure(error: $e, rollback: $rollback);
 		}//end try
 	}//end dispatchOrderedSteps()
+
+	/**
+	 * Invoke one plan step's tool.
+	 *
+	 * @param array<string, mixed> $step The plan step: `{tool, arguments}`.
+	 *
+	 * @return array{tool: string, arguments: array<mixed>, result: mixed} The call as the AgentRun log records it.
+	 */
+	private function invokeStep(array $step): array {
+		$tool = (string)($step['tool'] ?? '');
+		$args = (array)($step['arguments'] ?? []);
+
+		return ['tool' => $tool, 'arguments' => $args, 'result' => $this->toolProvider->invokeTool($tool, $args)];
+	}//end invokeStep()
+
+	/**
+	 * The dispatch with a succeeded step's result added; a created app is remembered for the rollback.
+	 *
+	 * @param array<string, mixed>                                         $dispatch The dispatch so far: `results`,
+	 *                                                                               `toolCalls`, `createdAppUuid`, `createdAppSlug`.
+	 * @param array{tool: string, arguments: array<mixed>, result: mixed} $call     The succeeded call.
+	 *
+	 * @return array<string, mixed> The dispatch with the step recorded.
+	 */
+	private static function withStepResult(array $dispatch, array $call): array {
+		if ($call['tool'] === 'buildiq.createApp') {
+			$dispatch['createdAppUuid'] = (string)($call['result']['app']['uuid'] ?? '');
+			$dispatch['createdAppSlug'] = (string)($call['result']['app']['slug'] ?? ($call['arguments']['slug'] ?? ''));
+		}
+
+		$dispatch['results'][] = $call['result'];
+
+		return $dispatch;
+	}//end withStepResult()
+
+	/**
+	 * Persist the transparent `AgentRun` record of a turn that ran through an agent.
+	 *
+	 * @param array<string, mixed> $turn    The turn: `agent` (or null), `userId`, `prompt`, `plan` and `toolCalls`.
+	 * @param string               $outcome `applied` or `rolled-back`.
+	 *
+	 * @return void
+	 */
+	private function logAgentRun(array $turn, string $outcome): void {
+		if ($turn['agent'] === null) {
+			return;
+		}
+
+		$this->agentRunLogger->log(
+			agent: $turn['agent'],
+			userId: $turn['userId'],
+			prompt: $turn['prompt'],
+			plan: $turn['plan'],
+			toolCalls: $turn['toolCalls'],
+			outcome: $outcome,
+			traceId: $this->traceId
+		);
+	}//end logAgentRun()
+
+	/**
+	 * The exception a failed dispatch ends in, carrying what the rollback did.
+	 *
+	 * @param Throwable            $error    What stopped the dispatch.
+	 * @param array<string, mixed> $rollback The rollback's report.
+	 *
+	 * @return CopilotException
+	 */
+	private function dispatchFailure(Throwable $error, array $rollback): CopilotException {
+		if ($error instanceof CopilotException) {
+			// The reader is told what the rollback removed and, when
+			// something resisted, exactly which resource is still there —
+			// the names come from the plan, so they are known, not guessed.
+			return $error->withContext(extra: ['rollback' => $rollback]);
+		}
+
+		$this->logger->error('Buildiq Copilot: execute failed: ' . $error->getMessage(), ['exception' => $error]);
+
+		return new CopilotException(
+			errorCode: 'execution_failed',
+			message: 'Failed to execute the plan. See server logs for details.',
+			httpStatus: 422,
+			context: ['rollback' => $rollback],
+			previous: $error
+		);
+	}//end dispatchFailure()
 
 	/**
 	 * Assert the copilot is available, throwing the health-mapped exception otherwise.
@@ -1164,7 +1276,7 @@ class CopilotService implements CopilotServiceInterface {
 	 */
 	private function requireAgent(string $agentId): array {
 		try {
-			$entity = $this->objectService->find(id: $agentId, register: self::REGISTER_SLUG, schema: self::AGENT_SCHEMA);
+			$entity = $this->objectService->find(id: $agentId, options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: self::AGENT_SCHEMA));
 		} catch (Throwable $e) {
 			$entity = null;
 		}
@@ -1335,11 +1447,7 @@ class CopilotService implements CopilotServiceInterface {
 	 * @return object|null
 	 */
 	private function resolveTaskProcessingManager(): ?object {
-		try {
-			return $this->container->get('OCP\\TaskProcessing\\IManager');
-		} catch (Throwable $e) {
-			return null;
-		}
+		return $this->textTask->manager();
 	}//end resolveTaskProcessingManager()
 
 	/**
@@ -1371,19 +1479,24 @@ class CopilotService implements CopilotServiceInterface {
 			throw new CopilotException(errorCode: 'unsupported_server', message: 'The AI copilot is not available.', httpStatus: 503);
 		}
 
-		$prompt = $this->promptBuilder->build(
+		// REQ-BQAG-002: the agent's knowledge files go after its instructions.
+		$builder = $this->promptBuilder->withKnowledge(knowledge: $this->knowledge);
+		$prompt = $builder->build(
 			brief: $brief,
 			targetContext: $targetContext,
 			toolDescriptors: $toolDescriptors,
 			instructionsPrefix: $instructionsPrefix
 		);
-		[$plan, $raw, $parseError] = $this->runPlanAttempt(manager: $manager, prompt: $prompt, userId: $userId, appSlug: $appSlug);
+		[$plan, $raw, $parseError] = $this->recordedPlanAttempt(
+			step: new ModelStep(attempt: 1, prompt: $prompt),
+			run: fn (): array => $this->runPlanAttempt(manager: $manager, prompt: $prompt, userId: $userId, appSlug: $appSlug)
+		);
 		if ($plan !== null) {
 			return $plan;
 		}
 
 		// Exactly one repair round-trip (spec REQ-OBAIC-002) — never a third LLM call.
-		$repairPrompt = $this->promptBuilder->buildRepairPrompt(
+		$repairPrompt = $builder->buildRepairPrompt(
 			brief: $brief,
 			previousOutput: $raw,
 			parseError: $parseError,
@@ -1391,7 +1504,10 @@ class CopilotService implements CopilotServiceInterface {
 			toolDescriptors: $toolDescriptors,
 			instructionsPrefix: $instructionsPrefix
 		);
-		[$plan, , $parseError] = $this->runPlanAttempt(manager: $manager, prompt: $repairPrompt, userId: $userId, appSlug: $appSlug);
+		[$plan, , $parseError] = $this->recordedPlanAttempt(
+			step: new ModelStep(attempt: 2, prompt: $repairPrompt),
+			run: fn (): array => $this->runPlanAttempt(manager: $manager, prompt: $repairPrompt, userId: $userId, appSlug: $appSlug)
+		);
 		if ($plan !== null) {
 			return $plan;
 		}
@@ -1402,6 +1518,35 @@ class CopilotService implements CopilotServiceInterface {
 			httpStatus: 422
 		);
 	}//end requestPlanFromLlm()
+
+	/**
+	 * Run one plan attempt and keep its model step (REQ-BQAG-004).
+	 *
+	 * A failed first attempt is `repair-needed` (a repair follows), a failed
+	 * second one `failed`. A provider error is kept as `error` before it is
+	 * rethrown, so a rejected run still shows where the model call stopped.
+	 *
+	 * @param ModelStep $step The step record, started just before the call.
+	 * @param callable  $run  Runs the attempt; returns `[plan|null, rawOutput, parseError]`.
+	 *
+	 * @return array{0: array<string, mixed>|null, 1: string, 2: string} `[plan|null, rawOutput, parseError]`.
+	 *
+	 * @throws CopilotException When the provider fails.
+	 *
+	 * @spec openspec/changes/ai-agents-knowledge-and-run-trace/specs/agent-workspace/spec.md#requirement-a-run-keeps-its-model-steps-req-bqag-004
+	 */
+	private function recordedPlanAttempt(ModelStep $step, callable $run): array {
+		try {
+			$result = $run();
+		} catch (CopilotException $e) {
+			$this->modelSteps[] = $step->error(message: $e->getMessage());
+			throw $e;
+		}
+
+		$this->modelSteps[] = $step->answered(result: $result);
+
+		return $result;
+	}//end recordedPlanAttempt()
 
 	/**
 	 * Run a single LLM call attempt and try to decode the result as a plan object.
@@ -1468,7 +1613,7 @@ class CopilotService implements CopilotServiceInterface {
 	 * @param string $userId Acting user's UID.
 	 * @param string|null $appSlug Optional target app slug, carried as the task's customId.
 	 * @param float|null $timeoutSeconds How long to wait for a worker, defaulting to
-	 *                                   {@see LLM_TIMEOUT_SECONDS}. Only a test passes
+	 *                                   {@see CopilotTextTask::TIMEOUT_SECONDS}. Only a test passes
 	 *                                   this, so the give-up path can be exercised
 	 *                                   without waiting two minutes for it.
 	 *
@@ -1477,128 +1622,8 @@ class CopilotService implements CopilotServiceInterface {
 	 * @throws CopilotException (502) On provider failure, cancellation, or timeout.
 	 */
 	private function runTextToTextTask(object $manager, string $prompt, string $userId, ?string $appSlug = null, ?float $timeoutSeconds = null): string {
-		$task = new Task(
-			TextToText::ID,
-			['input' => $prompt],
-			'buildiq',
-			$userId,
-			$appSlug,
-		);
-
-		if ($this->preferredProviderRunsInline(manager: $manager) === true) {
-			return $this->readTaskOutput(task: $manager->runTask($task));
-		}
-
-		$manager->scheduleTask($task);
-		$taskId = $task->getId();
-		if ($taskId === null) {
-			throw $this->providerError(message: 'The AI provider did not accept the request.', detail: 'TaskProcessing did not assign a task id.');
-		}
-
-		$budget = ($timeoutSeconds ?? self::LLM_TIMEOUT_SECONDS);
-		$deadline = microtime(as_float: true) + $budget;
-
-		while (true) {
-			$current = $manager->getTask($taskId);
-			$status = $current->getStatus();
-
-			if ($status === Task::STATUS_SUCCESSFUL || $status === Task::STATUS_FAILED || $status === Task::STATUS_CANCELLED) {
-				return $this->readTaskOutput(task: $current);
-			}
-
-			if (microtime(as_float: true) > $deadline) {
-				$this->cancelAbandonedTask(manager: $manager, taskId: $taskId);
-				throw $this->providerError(
-					message: 'No AI worker picked up the request in time. Ask an administrator to check the AI settings.',
-					detail: 'TaskProcessing task ' . $taskId . ' was still waiting after ' . ((int)$budget) . 's.'
-				);
-			}
-
-			usleep(self::POLL_INTERVAL_MICROSECONDS);
-		}//end while
+		return $this->textTask->run(manager: $manager, prompt: $prompt, userId: $userId, appSlug: $appSlug, timeoutSeconds: $timeoutSeconds);
 	}//end runTextToTextTask()
-
-	/**
-	 * Whether the preferred provider for `core:text2text` can run in this
-	 * request (`ISynchronousProvider`), rather than needing a worker.
-	 *
-	 * @param object $manager `OCP\TaskProcessing\IManager` instance.
-	 *
-	 * @return boolean
-	 */
-	private function preferredProviderRunsInline(object $manager): bool {
-		if (interface_exists('OCP\\TaskProcessing\\ISynchronousProvider') === false || method_exists($manager, 'runTask') === false) {
-			return false;
-		}
-
-		try {
-			$provider = $manager->getPreferredProvider(self::TEXT_TO_TEXT_TASK_TYPE_ID);
-		} catch (Throwable $e) {
-			$this->logger->warning('Buildiq Copilot: could not resolve the preferred text2text provider: ' . $e->getMessage());
-			return false;
-		}
-
-		return $provider instanceof \OCP\TaskProcessing\ISynchronousProvider;
-	}//end preferredProviderRunsInline()
-
-	/**
-	 * Read a finished task's output, turning a failed one into a provider error
-	 * that carries the provider's own message (e.g. "Chat provider is not
-	 * configured"), so the panel never reports a missing provider as bad wording.
-	 *
-	 * @param Task $task The finished task.
-	 *
-	 * @return string The task's `output` text.
-	 *
-	 * @throws CopilotException (502) When the task did not succeed.
-	 */
-	private function readTaskOutput(Task $task): string {
-		if ($task->getStatus() === Task::STATUS_SUCCESSFUL) {
-			$output = $task->getOutput();
-			return (string)($output['output'] ?? '');
-		}
-
-		throw $this->providerError(
-			message: 'The AI provider could not answer. Ask an administrator to check the AI settings.',
-			detail: (string)$task->getErrorMessage()
-		);
-	}//end readTaskOutput()
-
-	/**
-	 * Cancel a task this request has stopped waiting for. Best effort: a failed
-	 * cancel must never replace the timeout the caller is about to report.
-	 *
-	 * @param object $manager `OCP\TaskProcessing\IManager` instance.
-	 * @param integer $taskId The abandoned task's id.
-	 *
-	 * @return void
-	 */
-	private function cancelAbandonedTask(object $manager, int $taskId): void {
-		try {
-			$manager->cancelTask($taskId);
-		} catch (Throwable $e) {
-			$this->logger->warning('Buildiq Copilot: could not cancel abandoned task ' . $taskId . ': ' . $e->getMessage());
-		}
-	}//end cancelAbandonedTask()
-
-	/**
-	 * Build the 502 envelope for a provider-side failure.
-	 *
-	 * @param string $message User-facing message.
-	 * @param string $detail The provider's own message, carried for the panel's detail line.
-	 *
-	 * @return CopilotException
-	 */
-	private function providerError(string $message, string $detail): CopilotException {
-		$this->logger->warning('Buildiq Copilot: provider error: ' . $detail);
-
-		return new CopilotException(
-			errorCode: 'provider_error',
-			message: $message,
-			httpStatus: 502,
-			context: ['providerMessage' => $detail]
-		);
-	}//end providerError()
 
 	/**
 	 * Strip ```json ... ``` / ``` ... ``` code fences from an LLM response, if present.
@@ -2005,7 +2030,24 @@ class CopilotService implements CopilotServiceInterface {
 	 *         What the rollback removed, and what it could not.
 	 */
 	private function rollback(array $snapshots, ?string $createdAppUuid, ?string $createdAppSlug): array {
-		$report = ['deletedApp' => '', 'restoreFailures' => [], 'orphaned' => []];
+		$report = ['deletedApp' => '', 'restoreFailures' => $this->restoreSnapshots(snapshots: $snapshots), 'orphaned' => []];
+
+		if ($createdAppUuid === null || $createdAppUuid === '') {
+			return $report;
+		}
+
+		return $this->deleteCreatedApp(report: $report, created: ['uuid' => $createdAppUuid, 'slug' => $createdAppSlug]);
+	}//end rollback()
+
+	/**
+	 * Restore every snapshotted manifest (best-effort).
+	 *
+	 * @param array<int, array<string, mixed>> $snapshots Manifest snapshots, each `{appSlug, versionSlug, version, manifest}`.
+	 *
+	 * @return array<int, string> The `app@version` of every manifest that could not be restored.
+	 */
+	private function restoreSnapshots(array $snapshots): array {
+		$failures = [];
 
 		foreach ($snapshots as $snapshot) {
 			$version = $snapshot['version'];
@@ -2021,13 +2063,17 @@ class CopilotService implements CopilotServiceInterface {
 
 				$this->objectService->saveObject(
 					object: $payload,
-					register: self::REGISTER_SLUG,
-					schema: self::APPLICATION_VERSION_SCHEMA,
-					uuid: $versionUuid,
+					options: new ObjectSaveOptions(
+						target: new ObjectFindTarget(
+								register: self::REGISTER_SLUG,
+								schema: self::APPLICATION_VERSION_SCHEMA
+							),
+						uuid: $versionUuid
+					)
 				);
 			} catch (Throwable $e) {
 				$target = $snapshot['appSlug'] . '@' . $snapshot['versionSlug'];
-				$report['restoreFailures'][] = $target;
+				$failures[] = $target;
 				$this->logger->error(
 					'Buildiq Copilot: rollback failed to restore manifest for '
 						. $target . ': ' . $e->getMessage()
@@ -2035,10 +2081,18 @@ class CopilotService implements CopilotServiceInterface {
 			}//end try
 		}//end foreach
 
-		if ($createdAppUuid === null || $createdAppUuid === '') {
-			return $report;
-		}
+		return $failures;
+	}//end restoreSnapshots()
 
+	/**
+	 * Delete the application a failed plan created, with everything under it (best-effort).
+	 *
+	 * @param array{deletedApp: string, restoreFailures: array<int, string>, orphaned: array<int, string>} $report  The rollback's report so far.
+	 * @param array{uuid: string, slug: string|null}                                                    $created The created application.
+	 *
+	 * @return array{deletedApp: string, restoreFailures: array<int, string>, orphaned: array<int, string>}
+	 */
+	private function deleteCreatedApp(array $report, array $created): array {
 		try {
 			// Note deleteData: TRUE. Everything under a plan-created app was
 			// made by this same plan seconds ago: its per-version registers by
@@ -2051,18 +2105,18 @@ class CopilotService implements CopilotServiceInterface {
 			// to reach them by, against a spec that says in as many words that
 			// a failed plan leaves no plan-created state behind.
 			$report['orphaned'] = $this->appDeletionService->deleteApplication(
-				appUuid: $createdAppUuid,
-				appSlug: (string)$createdAppSlug,
+				appUuid: $created['uuid'],
+				appSlug: (string)$created['slug'],
 				deleteData: true
 			);
-			$report['deletedApp'] = (string)$createdAppSlug;
+			$report['deletedApp'] = (string)$created['slug'];
 		} catch (Throwable $e) {
-			$report['orphaned'][] = 'application ' . (string)$createdAppSlug;
-			$this->logger->error('Buildiq Copilot: rollback failed to delete created app ' . $createdAppUuid . ': ' . $e->getMessage());
+			$report['orphaned'][] = 'application ' . (string)$created['slug'];
+			$this->logger->error('Buildiq Copilot: rollback failed to delete created app ' . $created['uuid'] . ': ' . $e->getMessage());
 		}
 
 		return $report;
-	}//end rollback()
+	}//end deleteCreatedApp()
 
 	/**
 	 * Extract a UUID from a normalised OR object array.
