@@ -26,8 +26,10 @@
  * @e2e screen-override-layers/requirement-drift-is-loud-and-the-page-still-renders-req-obso-003/the-stored-patch-survives-the-drift
  */
 import { expect, test } from '@playwright/test'
+import { anonymousContext } from './support/anonymous.ts'
+import { createLeafHost } from './support/leafHost.ts'
 
-const CATALOGUE = '/index.php/apps/openregister/api/integrations'
+const OBJECTS = '/index.php/apps/openregister/api/objects'
 const LEAF_ID = 'buildiq-page-layout'
 const HEADERS = { 'OCS-APIRequest': 'true' }
 
@@ -35,12 +37,16 @@ test.describe('screen overrides', () => {
 	test('the layout answer carries the layers it composed and what it withheld', async ({
 		request,
 	}) => {
-		const response = await request.get(
-			`${CATALOGUE}/${LEAF_ID}/dossiq/Zaak/zaak-e2e`,
-			{ headers: HEADERS },
-		)
+		// The provider returns both keys, but OpenRegister's object-integration
+		// route answers PaginatedResult's `{items, results, total, nextCursor}`
+		// envelope and drops every other key, so no consumer receives them.
+		// Marked as an expected failure so it turns red once they arrive.
+		test.fail(true, 'OpenRegister drops appliedLayers and withheld from the leaf answer')
 
-		test.skip(response.status() === 404, 'OpenRegister is not installed here')
+		const host = await createLeafHost(request)
+		const response = await request.get(host.leafPath(LEAF_ID), { headers: HEADERS })
+		await host.dispose()
+
 		test.skip(
 			response.status() === 501,
 			'the leaf is not reachable on this topology',
@@ -66,12 +72,10 @@ test.describe('screen overrides', () => {
 		// An override bound to a group, a team or a user is internal. The least
 		// privileged principal that should be refused those is a visitor with
 		// no account, and the fall-back is the base layout, never the handler's.
-		const anonymous = await playwright.request.newContext({
-			baseURL: process.env.BASE_URL ?? process.env.NC_BASE_URL,
-		})
+		const anonymous = await anonymousContext(playwright)
 
 		const response = await anonymous.get(
-			`${CATALOGUE}/${LEAF_ID}/dossiq/Zaak/zaak-e2e`,
+			`${OBJECTS}/dossiq/Zaak/zaak-e2e/integrations/${LEAF_ID}`,
 			{ headers: HEADERS },
 		)
 

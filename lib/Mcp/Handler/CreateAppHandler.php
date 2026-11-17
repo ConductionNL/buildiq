@@ -26,6 +26,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Mcp\Handler;
 
 use OCA\Buildiq\Kernel\Contracts\ApplicationCreationServiceInterface;
+use OCA\Buildiq\Support\ApplicationStories;
 
 /**
  * Handles the buildiq.createApp tool invocation.
@@ -69,6 +70,7 @@ class CreateAppHandler extends AbstractToolHandler {
 					'name' => $name,
 					'description' => $description,
 					'preset' => $preset,
+					'stories' => ApplicationStories::sanitise(stories: ($args['stories'] ?? [])),
 				]
 			);
 

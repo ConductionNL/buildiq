@@ -24,9 +24,6 @@
  * `finally`. The CI seed sets `registry_url` to an `.invalid` host, which no
  * search can reach, so the restore leaves the instance as the seed left it.
  *
- * Written, not yet run: the CI instance needs integriq with hydra#674 first
- * (tasks.md 5.1).
- *
  * Locale: nothing forces the E2E language, so statuses are read from the API
  * and rows are found by their declared titles, which are not translated.
  *

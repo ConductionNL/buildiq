@@ -52,6 +52,7 @@ namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Exception\WizardCreationException;
 use OCA\Buildiq\Kernel\Contracts\ApplicationCreationServiceInterface;
+use OCA\Buildiq\Support\ApplicationStories;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
@@ -243,6 +244,7 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 			'name' => (string)($payload['name'] ?? ''),
 			'description' => (string)($payload['description'] ?? ''),
 			'versions' => $this->resolveVersionChain(payload: $payload),
+			'stories' => ApplicationStories::sanitise(stories: ($payload['stories'] ?? [])),
 		];
 
 		// ---- State tracker for rollback -------------------------------------
@@ -280,6 +282,25 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 	}//end runCreation()
 
 	/**
+	 * The Application payload with the plan's stories, when the plan has any;
+	 * a plan without stories leaves the payload as it is.
+	 *
+	 * @param array<string, mixed> $payload The Application payload.
+	 * @param array<string, mixed> $plan    The resolved creation plan.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot/spec.md#requirement-the-created-app-keeps-its-stories-req-bqch-007
+	 */
+	private function withStories(array $payload, array $plan): array {
+		if (($plan['stories'] ?? []) !== []) {
+			$payload['stories'] = $plan['stories'];
+		}
+
+		return $payload;
+	}//end withStories()
+
+	/**
 	 * Create the Application record with the caller as sole owner.
 	 *
 	 * @param array<string,mixed> $plan The validated slug, name, description and versions
@@ -303,6 +324,7 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 			'description' => $plan['description'],
 			'permissions' => $permissions,
 		];
+		$applicationPayload = $this->withStories(payload: $applicationPayload, plan: $plan);
 
 		if ($plan['database'] !== null) {
 			// REQ-BQDB-003: the database is bound as a data register; whether it
@@ -615,6 +637,7 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 				],
 				'productionVersion' => $terminalUuid,
 			];
+			$fullPayload = $this->withStories(payload: $fullPayload, plan: $plan);
 
 			$this->store->objectService->saveObject(
 				object: $fullPayload,
