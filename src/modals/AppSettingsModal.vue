@@ -55,6 +55,40 @@
 				</p>
 			</div>
 
+			<div v-if="organisationScopeAvailable && isOwner" class="app-settings__row" data-testid="organisation-scope">
+				<NcCheckboxRadioSwitch
+					type="switch"
+					:modelValue="organisationScope === 'holder'"
+					:disabled="busy || confirmingShare"
+					@update:modelValue="onOrganisationScope">
+					{{ t('buildiq', 'This organisation only') }}
+				</NcCheckboxRadioSwitch>
+				<p class="app-settings__hint">
+					{{
+						t(
+							'buildiq',
+							'Only members of the organisation that holds this app see it, open it and read its records. Rule sets and data registers stay shared.',
+						)
+					}}
+				</p>
+				<div v-if="confirmingShare" class="app-settings__confirm" role="alert" data-testid="organisation-scope-confirm">
+					<p>
+						{{
+							t(
+								'buildiq',
+								'Every organisation will see this app. Its records stay with this organisation.',
+							)
+						}}
+					</p>
+					<NcButton variant="primary" data-testid="organisation-scope-share" @click="shareWithAll">
+						{{ t('buildiq', 'Share with all organisations') }}
+					</NcButton>
+					<NcButton variant="tertiary" data-testid="organisation-scope-keep" @click="confirmingShare = false">
+						{{ t('buildiq', 'Keep it to this organisation') }}
+					</NcButton>
+				</div>
+			</div>
+
 			<div class="app-settings__row">
 				<h4 class="app-settings__subtitle">
 					{{ t('buildiq', 'Data registers') }}
@@ -265,6 +299,12 @@ export default {
 		schemas: { type: Array, default: () => [] },
 		/** Whether an action is in flight (disables the switches). */
 		busy: { type: Boolean, default: false },
+		/** The app's organisation scope, `holder` or `all` (absent means `all`). */
+		organisationScope: { type: String, default: 'all' },
+		/** Whether OpenRegister's multitenancy is on, so the scope can be offered. */
+		organisationScopeAvailable: { type: Boolean, default: false },
+		/** Whether the caller owns the app; only owners set the scope. */
+		isOwner: { type: Boolean, default: false },
 	},
 
 	emits: [
@@ -273,10 +313,13 @@ export default {
 		'update:allow-overrides',
 		'update:data-registers',
 		'update:flows',
+		'update:organisationScope',
 	],
 
 	data() {
 		return {
+			// Whether the "share with all organisations" confirmation is shown.
+			confirmingShare: false,
 			// Staged editing rows, kept in sync with the `dataRegisters` prop
 			// (see the watcher below). `register`/`label` default to '' so
 			// NcTextField always receives a string, never undefined.
@@ -409,6 +452,36 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Switch the organisation scope. Keeping the app to the organisation
+		 * applies at once; sharing it with every organisation asks first.
+		 *
+		 * @param {boolean} holderOnly Whether the switch is now on.
+		 * @return {void}
+		 *
+		 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-an-app-has-an-organisation-scope-req-bqos-001
+		 */
+		onOrganisationScope(holderOnly) {
+			if (holderOnly) {
+				this.confirmingShare = false
+				this.$emit('update:organisationScope', 'holder')
+				return
+			}
+			this.confirmingShare = true
+		},
+
+		/**
+		 * Confirmed: share the app with every organisation.
+		 *
+		 * @return {void}
+		 *
+		 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-an-app-has-an-organisation-scope-req-bqos-001
+		 */
+		shareWithAll() {
+			this.confirmingShare = false
+			this.$emit('update:organisationScope', 'all')
+		},
+
 		/**
 		 * Fetch the registers OpenRegister serves from a database source.
 		 *

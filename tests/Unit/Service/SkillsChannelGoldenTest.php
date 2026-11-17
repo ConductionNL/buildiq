@@ -41,6 +41,7 @@ use OCP\App\IAppManager;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\Buildiq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Pins the skills channel over every combination of repo coordinates,
@@ -292,6 +293,7 @@ class SkillsChannelGoldenTest extends TestCase {
 		$objectService = $this->createMock(ObjectServiceInterface::class);
 		$objectService->method('find')->willReturnCallback(
 			function (...$args) use ($lookup, $trace): ?ObjectEntityInterface {
+				$args = LegacyObjectArgs::positional(method: 'find', args: $args);
 				$trace->finds[] = $args[0];
 				if ($lookup === 'throws') {
 					throw new RuntimeException('broker unavailable');

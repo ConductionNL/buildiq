@@ -58,6 +58,7 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Tests for ApplicationsController::createFromTemplate.
@@ -295,9 +296,9 @@ class CreateFromTemplateTest extends TestCase {
 	 *
 	 * PHPUnit resolves the controller's NAMED arguments against
 	 * `ObjectServiceInterface::saveObject()`'s OWN signature and then invokes
-	 * this callback POSITIONALLY, so the parameters below must mirror that
-	 * signature's order exactly: (object, extend, register, schema, uuid, …).
-	 * Verified against the live interface with ReflectionMethod.
+	 * this callback POSITIONALLY, so the parameters below mirror that
+	 * signature's order: (object, options, …). The register, schema and uuid
+	 * travel in the ObjectSaveOptions.
 	 *
 	 * The expected call count is configured on THIS matcher, never as a second
 	 * `expects()` on the same method: PHPUnit answers a call from the first
@@ -315,13 +316,10 @@ class CreateFromTemplateTest extends TestCase {
 			: $this->objectService->expects($matcher)->method('saveObject');
 
 		$stub->willReturnCallback(
-			function (
-				array $object,
-				?array $extend = [],
-				string|int|null $register = null,
-				string|int|null $schema = null,
-				?string $uuid = null,
-			) use (&$calls): ObjectEntity {
+			function (array $object, ?ObjectSaveOptions $options = null) use (&$calls): ObjectEntity {
+				$register = $options?->target->register;
+				$schema   = $options?->target->schema;
+				$uuid     = $options?->uuid;
 				$calls[] = [
 					'object' => $object,
 					'register' => $register,
@@ -562,6 +560,49 @@ class CreateFromTemplateTest extends TestCase {
 			);
 		}
 	}//end testTheStoredApplicationRecordsNameOwnerAndOrigin()
+
+	/**
+	 * An installed app starts with the same organisation scope as a new app:
+	 * the guard's default, `holder` while multitenancy is on (REQ-BQOS-005).
+	 *
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-installs-land-in-the-installer-s-organisation-req-bqos-005
+	 *
+	 * @return void
+	 */
+	public function testAnInstalledAppStartsWithTheDefaultOrganisationScope(): void {
+		$guard = $this->createMock(\OCA\Buildiq\Service\AppOrganisationGuard::class);
+		$guard->expects(self::once())->method('defaultScope')->willReturn('holder');
+		$controller = new ApplicationsController(
+			request: $this->request,
+			logger: $this->logger,
+			store: new RegisterStore(
+				objectService: $this->objectService,
+				registerMapper: $this->registerMapper,
+				schemaMapper: $this->schemaMapper,
+				auditTrailMapper: null
+			),
+			caller: new CallerContext(
+				userSession: $this->userSession,
+				groupManager: $this->groupManager,
+				permissionResolver: new PermissionResolver($this->groupManager, $this->logger),
+				organisationGuard: $guard
+			),
+			manifestResolver: $this->manifestResolver,
+			channelApplier: $this->channelApplier,
+		);
+		$this->authenticateAs('alice');
+		$this->withRequestParams(['name' => 'Meldingen Zuid', 'slug' => 'meldingen-zuid']);
+		$this->objectService->method('searchObjects')->willReturnOnConsecutiveCalls([$this->templateRecord(self::TEMPLATE_SLUG)], []);
+		$this->schemaMapper->method('createFromArray')->willReturn($this->schemaWithId(7777));
+		$calls = [];
+		$this->recordSaves($calls);
+
+		$controller->createFromTemplate(templateSlug: self::TEMPLATE_SLUG);
+
+		self::assertSame('meldingen-zuid', $calls[0]['object']['slug']);
+		self::assertSame('holder', $calls[0]['object']['organisationScope']);
+		self::assertSame(['user:alice'], $calls[0]['object']['permissions']['owners']);
+	}//end testAnInstalledAppStartsWithTheDefaultOrganisationScope()
 
 	/**
 	 * The install hands the channel applier the template, the acting user
@@ -847,13 +888,11 @@ class CreateFromTemplateTest extends TestCase {
 
 		$seen = 0;
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (
-				array $object,
-				?array $extend = [],
-				string|int|null $register = null,
-				string|int|null $schema = null,
-				?string $uuid = null,
-			) use (&$seen): ObjectEntity {
+			function (array $object, ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$seen): ObjectEntity {
+				$extend = $options->extend ?? [];
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$seen++;
 				if ($schema === 'applicationVersion') {
 					throw new \RuntimeException('OR unavailable');
@@ -892,13 +931,11 @@ class CreateFromTemplateTest extends TestCase {
 
 		$calls = [];
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (
-				array $object,
-				?array $extend = [],
-				string|int|null $register = null,
-				string|int|null $schema = null,
-				?string $uuid = null,
-			) use (&$calls): ObjectEntity {
+			function (array $object, ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$calls): ObjectEntity {
+				$extend = $options->extend ?? [];
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$calls[] = $schema;
 				if ($schema === 'applicationVersion') {
 					// An entity carrying neither `uuid` nor `id`.

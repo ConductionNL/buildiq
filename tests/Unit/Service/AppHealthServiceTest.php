@@ -15,6 +15,7 @@ use OCA\Buildiq\Service\AppHealthService;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OCA\Buildiq\Tests\Support\LegacyObjectArgs;
 
 /**
  * REQ-BQDM-005, REQ-BQDM-006: samples are stored with the server's ids and read per window.
@@ -24,6 +25,7 @@ final class AppHealthServiceTest extends TestCase {
 		$saved = [];
 		$objects = $this->createMock(ObjectServiceInterface::class);
 		$objects->method('saveObject')->willReturnCallback(function (array $object, ...$args) use (&$saved) {
+			$args = array_slice(LegacyObjectArgs::positional(method: 'saveObject', args: [$object, ...$args]), 1);
 			$saved[] = ['object' => $object, 'args' => $args];
 			return $this->createMock(\OCA\OpenRegister\Contract\ObjectEntityInterface::class);
 		});

@@ -51,6 +51,10 @@ use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\RegisterService;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -348,8 +352,7 @@ class ApplicationVersionService implements ApplicationVersionServiceInterface {
 	public function guardProductionVersionOwnership(string $applicationUuid, string $proposedVersionUuid): void {
 		$version = $this->objectService->find(
 			id: $proposedVersionUuid,
-			register: self::REGISTER_SLUG,
-			schema: self::APPLICATION_VERSION_SCHEMA
+			options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: self::APPLICATION_VERSION_SCHEMA)
 		);
 
 		if ($version === null) {
@@ -419,8 +422,7 @@ class ApplicationVersionService implements ApplicationVersionServiceInterface {
 
 		$application = $this->objectService->find(
 			id: $applicationUuid,
-			register: self::REGISTER_SLUG,
-			schema: self::APPLICATION_SCHEMA
+			options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: self::APPLICATION_SCHEMA)
 		);
 		if ($application === null) {
 			throw new RuntimeException(message: sprintf('Application %s does not exist.', $applicationUuid));
@@ -432,8 +434,7 @@ class ApplicationVersionService implements ApplicationVersionServiceInterface {
 		// 2. Publish the chosen version (draft → published) — fires the lifecycle.
 		$version = $this->objectService->find(
 			id: $versionUuid,
-			register: self::REGISTER_SLUG,
-			schema: self::APPLICATION_VERSION_SCHEMA
+			options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: self::APPLICATION_VERSION_SCHEMA)
 		);
 		if ($version === null) {
 			throw new RuntimeException(message: sprintf('ApplicationVersion %s does not exist.', $versionUuid));
@@ -444,9 +445,10 @@ class ApplicationVersionService implements ApplicationVersionServiceInterface {
 		$versionData['status'] = 'published';
 		$this->objectService->saveObject(
 			object: $versionData,
-			register: self::REGISTER_SLUG,
-			schema: self::APPLICATION_VERSION_SCHEMA,
-			uuid: $versionUuid
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::APPLICATION_VERSION_SCHEMA),
+				uuid: $versionUuid
+			)
 		);
 
 		// 3. Move the single production pointer (single-production invariant).
@@ -454,9 +456,10 @@ class ApplicationVersionService implements ApplicationVersionServiceInterface {
 		$applicationData['productionVersion'] = $versionUuid;
 		$this->objectService->saveObject(
 			object: $applicationData,
-			register: self::REGISTER_SLUG,
-			schema: self::APPLICATION_SCHEMA,
-			uuid: $applicationUuid
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::APPLICATION_SCHEMA),
+				uuid: $applicationUuid
+			)
 		);
 
 		// 4. Demote the previous production. The single-production invariant is
@@ -520,8 +523,7 @@ class ApplicationVersionService implements ApplicationVersionServiceInterface {
 	private function archiveIfPublished(string $versionUuid): ?string {
 		$previous = $this->objectService->find(
 			id: $versionUuid,
-			register: self::REGISTER_SLUG,
-			schema: self::APPLICATION_VERSION_SCHEMA
+			options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: self::APPLICATION_VERSION_SCHEMA)
 		);
 		if ($previous === null) {
 			return null;
@@ -536,9 +538,10 @@ class ApplicationVersionService implements ApplicationVersionServiceInterface {
 		$previousData['status'] = 'archived';
 		$this->objectService->saveObject(
 			object: $previousData,
-			register: self::REGISTER_SLUG,
-			schema: self::APPLICATION_VERSION_SCHEMA,
-			uuid: $versionUuid
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::APPLICATION_VERSION_SCHEMA),
+				uuid: $versionUuid
+			)
 		);
 
 		return $versionUuid;
@@ -602,8 +605,7 @@ class ApplicationVersionService implements ApplicationVersionServiceInterface {
 
 		$version = $this->objectService->find(
 			id: $versionUuid,
-			register: self::REGISTER_SLUG,
-			schema: self::APPLICATION_VERSION_SCHEMA
+			options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: self::APPLICATION_VERSION_SCHEMA)
 		);
 
 		if ($version === null) {
@@ -638,7 +640,7 @@ class ApplicationVersionService implements ApplicationVersionServiceInterface {
 
 		$this->applyRegisterStrategy(strategy: $effectiveStrategy, registerSlug: $registerSlug, versionUuid: $versionUuid);
 
-		$this->objectService->deleteObject(uuid: $versionUuid);
+		$this->objectService->deleteObject(new ObjectDeletion(uuid: $versionUuid));
 	}//end deleteVersion()
 
 	/**
@@ -717,8 +719,7 @@ class ApplicationVersionService implements ApplicationVersionServiceInterface {
 
 		$application = $this->objectService->find(
 			id: $applicationUuid,
-			register: self::REGISTER_SLUG,
-			schema: self::APPLICATION_SCHEMA
+			options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: self::APPLICATION_SCHEMA)
 		);
 
 		if ($application === null) {
@@ -766,8 +767,7 @@ class ApplicationVersionService implements ApplicationVersionServiceInterface {
 
 		$application = $this->objectService->find(
 			id: $applicationUuid,
-			register: self::REGISTER_SLUG,
-			schema: self::APPLICATION_SCHEMA
+			options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: self::APPLICATION_SCHEMA)
 		);
 		if ($application === null) {
 			return false;
@@ -786,8 +786,10 @@ class ApplicationVersionService implements ApplicationVersionServiceInterface {
 			if ($productionUuid !== '') {
 				$prod = $this->objectService->find(
 					id: $productionUuid,
-					register: self::REGISTER_SLUG,
-					schema: self::APPLICATION_VERSION_SCHEMA
+					options: new ObjectFindOptions(
+						register: self::REGISTER_SLUG,
+						schema: self::APPLICATION_VERSION_SCHEMA
+					)
 				);
 				if ($prod !== null) {
 					$productionRegister = (string)(ObjectRecord::toArray(object: $prod)['register'] ?? '');
@@ -912,8 +914,7 @@ class ApplicationVersionService implements ApplicationVersionServiceInterface {
 		try {
 			$entity = $this->objectService->find(
 				id: $versionUuid,
-				register: self::REGISTER_SLUG,
-				schema: self::APPLICATION_VERSION_SCHEMA
+				options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: self::APPLICATION_VERSION_SCHEMA)
 			);
 		} catch (Throwable $e) {
 			$this->logger->debug(
@@ -1054,7 +1055,10 @@ class ApplicationVersionService implements ApplicationVersionServiceInterface {
 		unset($payload['id'], $payload['uuid'], $payload['@self'], $payload['provenance']);
 		$payload['versionUuid'] = $newVersionUuid;
 
-		$created = $this->objectService->saveObject(object: $payload, register: self::REGISTER_SLUG, schema: 'automation');
+		$created = $this->objectService->saveObject(
+			object: $payload,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: 'automation'))
+		);
 		$createdArray = ObjectRecord::toArray(object: $created);
 
 		// Prefer the entity's own uuid (NC Entity's magic getUuid() — not
@@ -1088,7 +1092,10 @@ class ApplicationVersionService implements ApplicationVersionServiceInterface {
 		$provenance = $this->automationCompiler->apply(automation: $createdArray, plan: $plan, priorProvenance: []);
 
 		$createdArray['provenance'] = $provenance;
-		$this->objectService->saveObject(object: $createdArray, register: self::REGISTER_SLUG, schema: 'automation', uuid: $newUuid);
+		$this->objectService->saveObject(
+			object: $createdArray,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: 'automation'), uuid: $newUuid)
+		);
 	}//end cloneOneAutomation()
 
 	/**

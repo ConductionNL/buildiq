@@ -1965,8 +1965,8 @@
       "type": "library",
       "name": "sourcemap-codec",
       "group": "@jridgewell",
-      "version": "1.5.5",
-      "bom-ref": "buildiq@0.2.0|@jridgewell/sourcemap-codec@1.5.5",
+      "version": "1.6.0",
+      "bom-ref": "buildiq@0.2.0|@jridgewell/sourcemap-codec@1.6.0",
       "licenses": [
         {
           "license": {
@@ -1974,15 +1974,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40jridgewell/sourcemap-codec@1.5.5",
+      "purl": "pkg:npm/%40jridgewell/sourcemap-codec@1.6.0",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@jridgewell/sourcemap-codec/-/sourcemap-codec-1.5.5.tgz",
+          "url": "https://registry.npmjs.org/@jridgewell/sourcemap-codec/-/sourcemap-codec-1.6.0.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "71843ddf5d20aeac6e7966e5f96b885086a251a0dc8fb58eab97d58449633558117ce52163d7f2db34ef7e8a96b2779b87c4a5ef45527056c80af2672ca0743a"
+              "content": "4fb8dffb9ce0b191f0349e25bd0eff69ecdbca4d27357fb32555a998703b558b04c7b6bbaabe5183921bb4916a920cdee58dacaeeab545463c43cdfb39dee217"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
