@@ -294,13 +294,7 @@ class CopilotService implements CopilotServiceInterface {
 		?int $documentFileId = null,
 	): array {
 		$this->assertAvailable();
-		$document = null;
-		if ($documentFileId !== null) {
-			$document = $this->readDocument(fileId: $documentFileId, userId: $userId);
-		}
-
-		$this->assertValidBrief(brief: $brief, allowEmpty: $document !== null);
-		$promptBrief = $this->briefWithDocument(brief: $brief, document: $document);
+		[$document, $promptBrief] = $this->prepareBrief(brief: $brief, documentFileId: $documentFileId, userId: $userId);
 
 		$agent = null;
 		if ($agentId !== null && $agentId !== '') {
@@ -312,22 +306,9 @@ class CopilotService implements CopilotServiceInterface {
 		$this->knowledge = [];
 		try {
 			$result = $this->planWithinContext(brief: $promptBrief, appSlug: $appSlug, userId: $userId, agent: $agent, versionSlug: $versionSlug);
-			if ($document !== null) {
-				$result['document'] = ['fileId' => $document['fileId'], 'name' => $document['name']];
-			}
+			$result = $this->withDocument(result: $result, document: $document);
 		} catch (CopilotException $e) {
-			if ($agent !== null) {
-				$this->agentRunLogger->log(
-					agent: $agent,
-					userId: $userId,
-					prompt: $brief,
-					plan: [],
-					toolCalls: [],
-					outcome: 'plan-rejected',
-					trace: $this->currentTrace()
-				);
-			}
-
+			$this->logRejectedPlan(agent: $agent, userId: $userId, brief: $brief);
 			throw $e;
 		}//end try
 
@@ -338,6 +319,75 @@ class CopilotService implements CopilotServiceInterface {
 
 		return $result;
 	}//end plan()
+
+	/**
+	 * Write the one `AgentRun` audit record of an agent-scoped plan that was
+	 * rejected; the bare copilot path logs nothing.
+	 *
+	 * @param array<string, mixed>|null $agent  The resolved `Agent` record, or null.
+	 * @param string                    $userId Acting user's UID.
+	 * @param string                    $brief  The user's brief.
+	 *
+	 * @return void
+	 */
+	private function logRejectedPlan(?array $agent, string $userId, string $brief): void {
+		if ($agent === null) {
+			return;
+		}
+
+		$this->agentRunLogger->log(
+			agent: $agent,
+			userId: $userId,
+			prompt: $brief,
+			plan: [],
+			toolCalls: [],
+			outcome: 'plan-rejected',
+			trace: $this->currentTrace()
+		);
+	}//end logRejectedPlan()
+
+	/**
+	 * Read the picked requirements document as the user (when one is given),
+	 * check the brief against it and build the brief the prompt carries.
+	 *
+	 * @param string   $brief          The user's brief.
+	 * @param int|null $documentFileId Optional Files id of a requirements document.
+	 * @param string   $userId         Acting user's UID.
+	 *
+	 * @return array{0: array<string, mixed>|null, 1: string} The document (or null) and the prompt brief.
+	 *
+	 * @throws CopilotException On an unreadable document or an invalid brief.
+	 *
+	 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot/spec.md#requirement-the-wizard-reads-a-document-from-files-req-bqch-005
+	 */
+	private function prepareBrief(string $brief, ?int $documentFileId, string $userId): array {
+		$document = null;
+		if ($documentFileId !== null) {
+			$document = $this->readDocument(fileId: $documentFileId, userId: $userId);
+		}
+
+		$this->assertValidBrief(brief: $brief, allowEmpty: $document !== null);
+
+		return [$document, $this->briefWithDocument(brief: $brief, document: $document)];
+	}//end prepareBrief()
+
+	/**
+	 * Name the document a plan was made from on the plan result.
+	 *
+	 * @param array<string, mixed>      $result   The plan result.
+	 * @param array<string, mixed>|null $document The document read, or null.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot/spec.md#requirement-the-wizard-reads-a-document-from-files-req-bqch-005
+	 */
+	private function withDocument(array $result, ?array $document): array {
+		if ($document !== null) {
+			$result['document'] = ['fileId' => $document['fileId'], 'name' => $document['name']];
+		}
+
+		return $result;
+	}//end withDocument()
 
 	/**
 	 * Resolve a virtual app by slug and require the caller to be one of its

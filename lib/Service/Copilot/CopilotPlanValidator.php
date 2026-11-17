@@ -112,6 +112,20 @@ class CopilotPlanValidator {
 			return ['is not an object.'];
 		}
 
+		return array_merge(
+			$this->storyTextProblems(story: $story),
+			$this->servedByProblems(servedBy: ($story['servedBy'] ?? []), steps: $steps)
+		);
+	}//end storyProblems()
+
+	/**
+	 * What is wrong with a story's role, goal and benefit.
+	 *
+	 * @param array<array-key, mixed> $story The story entry.
+	 *
+	 * @return string[]
+	 */
+	private function storyTextProblems(array $story): array {
 		$problems = [];
 		foreach (['role', 'goal'] as $key) {
 			if (is_string($story[$key] ?? null) === false || trim($story[$key]) === '') {
@@ -123,12 +137,24 @@ class CopilotPlanValidator {
 			$problems[] = 'benefit must be a string.';
 		}
 
-		$servedBy = ($story['servedBy'] ?? []);
+		return $problems;
+	}//end storyTextProblems()
+
+	/**
+	 * What is wrong with a story's `servedBy`: it must be a list of indexes of
+	 * schema or page steps.
+	 *
+	 * @param mixed             $servedBy The story's servedBy value.
+	 * @param array<int, mixed> $steps    The plan's steps, in order.
+	 *
+	 * @return string[]
+	 */
+	private function servedByProblems(mixed $servedBy, array $steps): array {
 		if (is_array($servedBy) === false || ($servedBy !== [] && array_is_list($servedBy) === false)) {
-			$problems[] = 'servedBy must be a list of step indexes.';
-			return $problems;
+			return ['servedBy must be a list of step indexes.'];
 		}
 
+		$problems = [];
 		foreach ($servedBy as $stepIndex) {
 			$tool = '';
 			if (is_int($stepIndex) === true && is_array($steps[$stepIndex] ?? null) === true) {
@@ -141,7 +167,7 @@ class CopilotPlanValidator {
 		}
 
 		return $problems;
-	}//end storyProblems()
+	}//end servedByProblems()
 
 	/**
 	 * The violations of every step, in step order.

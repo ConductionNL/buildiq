@@ -99,7 +99,22 @@ class CopilotDocumentReader {
 	public function read(int $fileId, string $userId): array {
 		$file = $this->findFile(fileId: $fileId, userId: $userId);
 		$name = $file->getName();
+		$this->assertReadable(file: $file);
+		$text = $this->readText(file: $file);
 
+		return ['fileId' => $fileId, 'name' => $name, 'text' => $text];
+	}//end read()
+
+	/**
+	 * Refuse a document this reader cannot take: not plain text, or too big.
+	 *
+	 * @param File $file The picked file.
+	 *
+	 * @return void
+	 *
+	 * @throws CopilotException (422) For an unsupported type or a document that is too long.
+	 */
+	private function assertReadable(File $file): void {
 		if ($this->isPlainText(file: $file) === false) {
 			throw new CopilotException(
 				errorCode: 'unsupported_document',
@@ -112,7 +127,18 @@ class CopilotDocumentReader {
 		if ($file->getSize() > self::MAX_BYTES) {
 			throw $this->tooLong();
 		}
+	}//end assertReadable()
 
+	/**
+	 * The document's text: UTF-8, within the character cap, not empty.
+	 *
+	 * @param File $file The picked file.
+	 *
+	 * @return string
+	 *
+	 * @throws CopilotException (404, 422) When the file cannot be read or its text cannot be used.
+	 */
+	private function readText(File $file): string {
 		try {
 			$text = (string)$file->getContent();
 		} catch (Throwable $e) {
@@ -139,8 +165,8 @@ class CopilotDocumentReader {
 			);
 		}
 
-		return ['fileId' => $fileId, 'name' => $name, 'text' => $text];
-	}//end read()
+		return $text;
+	}//end readText()
 
 	/**
 	 * The file with this id in the user's own folder.

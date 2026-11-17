@@ -152,19 +152,7 @@ class CopilotAssistService {
 			$names['properties'] = $this->targetSchemaProperties(app: $app, context: $context);
 		}
 
-		$health = $this->copilotService->health();
-		$manager = null;
-		if (($health['available'] ?? false) === true) {
-			$manager = $this->textTask->manager();
-		}
-
-		if ($manager === null) {
-			throw new CopilotException(
-				errorCode: (string)($health['reason'] ?? 'unsupported_server'),
-				message: 'The AI copilot is not available on this server.',
-				httpStatus: 503
-			);
-		}
+		$manager = $this->requireManager();
 
 		$prompt = $this->buildPrompt(target: $target, mode: $mode, request: $request, current: $current, names: $names);
 		$raw = $this->textTask->run(manager: $manager, prompt: $prompt, userId: $userId, appSlug: $appSlug);
@@ -189,6 +177,31 @@ class CopilotAssistService {
 	}//end assist()
 
 	/**
+	 * The text-task manager, or a 503 when the copilot is not available here.
+	 *
+	 * @return mixed The manager the text task runs on.
+	 *
+	 * @throws CopilotException (503) When the copilot is not available on this server.
+	 */
+	private function requireManager(): mixed {
+		$health = $this->copilotService->health();
+		$manager = null;
+		if (($health['available'] ?? false) === true) {
+			$manager = $this->textTask->manager();
+		}
+
+		if ($manager === null) {
+			throw new CopilotException(
+				errorCode: (string)($health['reason'] ?? 'unsupported_server'),
+				message: 'The AI copilot is not available on this server.',
+				httpStatus: 503
+			);
+		}
+
+		return $manager;
+	}//end requireManager()
+
+	/**
 	 * Check one model answer and shape it for the dialog.
 	 *
 	 * @param string                  $target The editor field.
@@ -202,16 +215,11 @@ class CopilotAssistService {
 	 */
 	public function checkAnswer(string $target, string $mode, string $raw, array $names): array {
 		$decoded = $this->decodeObject(text: $raw);
-		if ($decoded === null) {
-			return [null, 'The answer was not a JSON object.'];
+		[$explanation, $error] = $this->explanationOf(decoded: $decoded);
+		if ($explanation === null) {
+			return [null, $error];
 		}
 
-		$explanation = $decoded['explanation'] ?? '';
-		if (is_string($explanation) === false || trim($explanation) === '') {
-			return [null, 'The answer has no explanation.'];
-		}
-
-		$explanation = trim($explanation);
 		if ($mode === 'explain') {
 			return [['mode' => 'explain', 'explanation' => $explanation], ''];
 		}
@@ -235,6 +243,26 @@ class CopilotAssistService {
 	}//end checkAnswer()
 
 	/**
+	 * The trimmed explanation of a decoded answer, or null and why not.
+	 *
+	 * @param array<string, mixed>|null $decoded The decoded answer, null when it was not a JSON object.
+	 *
+	 * @return array{0: string|null, 1: string} The explanation (or null) and the error.
+	 */
+	private function explanationOf(?array $decoded): array {
+		if ($decoded === null) {
+			return [null, 'The answer was not a JSON object.'];
+		}
+
+		$explanation = $decoded['explanation'] ?? '';
+		if (is_string($explanation) === false || trim($explanation) === '') {
+			return [null, 'The answer has no explanation.'];
+		}
+
+		return [trim($explanation), ''];
+	}//end explanationOf()
+
+	/**
 	 * Refuse a target, mode, request or app slug the assist cannot take.
 	 *
 	 * @param string $target  The editor field.
@@ -248,25 +276,65 @@ class CopilotAssistService {
 	 * @throws CopilotException (422 invalid_arguments).
 	 */
 	private function assertArguments(string $target, string $mode, string $request, string $current, string $appSlug): void {
-		$problem = null;
-		if (in_array($target, self::TARGETS, true) === false) {
-			$problem = 'target must be one of: ' . implode(', ', self::TARGETS) . '.';
-		} else if (in_array($mode, self::MODES, true) === false) {
-			$problem = 'mode must be write or explain.';
-		} else if ($appSlug === '') {
-			$problem = 'appSlug is required.';
-		} else if ($mode === 'write' && (trim($request) === '' || mb_strlen($request) > self::MAX_TEXT_LENGTH)) {
-			$problem = 'The request must be between 1 and ' . self::MAX_TEXT_LENGTH . ' characters.';
-		} else if ($mode === 'explain' && trim($current) === '') {
-			$problem = 'There is nothing to explain yet.';
-		} else if (mb_strlen($current) > self::MAX_TEXT_LENGTH) {
-			$problem = 'The current value is longer than ' . self::MAX_TEXT_LENGTH . ' characters.';
+		$problem = $this->shapeProblem(target: $target, mode: $mode, appSlug: $appSlug);
+		if ($problem === null) {
+			$problem = $this->textProblem(mode: $mode, request: $request, current: $current);
 		}
 
 		if ($problem !== null) {
 			throw new CopilotException(errorCode: 'invalid_arguments', message: $problem, httpStatus: 422);
 		}
 	}//end assertArguments()
+
+	/**
+	 * What is wrong with the target, mode or app slug, or null.
+	 *
+	 * @param string $target  The editor field.
+	 * @param string $mode    `write` or `explain`.
+	 * @param string $appSlug The app slug.
+	 *
+	 * @return string|null
+	 */
+	private function shapeProblem(string $target, string $mode, string $appSlug): ?string {
+		if (in_array($target, self::TARGETS, true) === false) {
+			return 'target must be one of: ' . implode(', ', self::TARGETS) . '.';
+		}
+
+		if (in_array($mode, self::MODES, true) === false) {
+			return 'mode must be write or explain.';
+		}
+
+		if ($appSlug === '') {
+			return 'appSlug is required.';
+		}
+
+		return null;
+	}//end shapeProblem()
+
+	/**
+	 * What is wrong with the request or the current value for the mode, or null.
+	 *
+	 * @param string $mode    `write` or `explain`.
+	 * @param string $request The maker's request.
+	 * @param string $current The current value.
+	 *
+	 * @return string|null
+	 */
+	private function textProblem(string $mode, string $request, string $current): ?string {
+		if ($mode === 'write' && (trim($request) === '' || mb_strlen($request) > self::MAX_TEXT_LENGTH)) {
+			return 'The request must be between 1 and ' . self::MAX_TEXT_LENGTH . ' characters.';
+		}
+
+		if ($mode === 'explain' && trim($current) === '') {
+			return 'There is nothing to explain yet.';
+		}
+
+		if (mb_strlen($current) > self::MAX_TEXT_LENGTH) {
+			return 'The current value is longer than ' . self::MAX_TEXT_LENGTH . ' characters.';
+		}
+
+		return null;
+	}//end textProblem()
 
 	/**
 	 * The names the prompt may carry, read from the request context: strings
@@ -400,10 +468,52 @@ class CopilotAssistService {
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function appRegisterSlugs(array $app): array {
+		$registers = $this->versionRegisterSlugs(app: $app);
+		foreach ((array)($app['dataRegisters'] ?? []) as $binding) {
+			if (is_array($binding) === true) {
+				$registers[] = (string)($binding['register'] ?? '');
+			}
+		}
+
+		return array_values(array_unique(array_filter($registers, static fn (string $slug): bool => $slug !== '')));
+	}//end appRegisterSlugs()
+
+	/**
+	 * The register slug of each of the app's versions: the version's own
+	 * register, else the one its slug names.
+	 *
+	 * @param array<string, mixed> $app The Application record.
+	 *
+	 * @return string[] Register slugs, '' for a version that names none.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
+	 */
+	private function versionRegisterSlugs(array $app): array {
 		$registers = [];
 		$appSlug = (string)($app['slug'] ?? '');
-		$appUuid = (string)($app['uuid'] ?? ($app['id'] ?? ''));
+		foreach ($this->appVersions(app: $app) as $item) {
+			$version = ObjectRecord::castArray(object: $item);
+			$register = (string)($version['register'] ?? '');
+			if ($register === '' && (string)($version['slug'] ?? '') !== '') {
+				$register = ApplicationVersionServiceInterface::VERSION_REGISTER_PREFIX . $appSlug . '-' . (string)$version['slug'];
+			}
 
+			$registers[] = $register;
+		}
+
+		return $registers;
+	}//end versionRegisterSlugs()
+
+	/**
+	 * The app's ApplicationVersion objects the caller may read; none when the
+	 * app has no id or the search fails.
+	 *
+	 * @param array<string, mixed> $app The Application record.
+	 *
+	 * @return array<int, mixed>
+	 */
+	private function appVersions(array $app): array {
+		$appUuid = (string)($app['uuid'] ?? ($app['id'] ?? ''));
 		$versions = [];
 		if ($appUuid !== '') {
 			try {
@@ -420,27 +530,11 @@ class CopilotAssistService {
 		}
 
 		if (is_array($versions) === false) {
-			$versions = [];
+			return [];
 		}
 
-		foreach ($versions as $item) {
-			$version = ObjectRecord::castArray(object: $item);
-			$register = (string)($version['register'] ?? '');
-			if ($register === '' && (string)($version['slug'] ?? '') !== '') {
-				$register = ApplicationVersionServiceInterface::VERSION_REGISTER_PREFIX . $appSlug . '-' . (string)$version['slug'];
-			}
-
-			$registers[] = $register;
-		}
-
-		foreach ((array)($app['dataRegisters'] ?? []) as $binding) {
-			if (is_array($binding) === true) {
-				$registers[] = (string)($binding['register'] ?? '');
-			}
-		}
-
-		return array_values(array_unique(array_filter($registers, static fn (string $slug): bool => $slug !== '')));
-	}//end appRegisterSlugs()
+		return $versions;
+	}//end appVersions()
 
 	/**
 	 * Build the prompt for one target and mode.
