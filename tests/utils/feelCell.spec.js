@@ -6,8 +6,21 @@
  * REQ-BRE-002 / REQ-BRE-012 — decision-table cell validation in the editor).
  */
 
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { isCellConditionValid } from '../../src/utils/feelCell.js'
+
+// The same table drives the PHP mirror (lib/Service/FeelCellCondition.php,
+// tests/Unit/Service/FeelCellConditionTest.php), so the two cannot drift.
+const fixture = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../fixtures/feel-cell-conditions.json'), 'utf8'))
+
+describe('isCellConditionValid against the shared fixture', () => {
+	it.each(fixture.cases.map((c) => [JSON.stringify(c.cell), c.cell, c.valid]))('%s', (_label, cell, valid) => {
+		expect(isCellConditionValid(cell)).toBe(valid)
+	})
+})
 
 describe('isCellConditionValid', () => {
 	it("accepts don't-care tokens", () => {

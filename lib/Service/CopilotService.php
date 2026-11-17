@@ -41,10 +41,12 @@ use OCA\Buildiq\Exception\CopilotException;
 use OCA\Buildiq\Kernel\Contracts\BuildiqToolProviderInterface;
 use OCA\Buildiq\Kernel\Contracts\CopilotServiceInterface;
 use OCA\Buildiq\Service\Copilot\AgentKnowledgeReader;
+use OCA\Buildiq\Service\Copilot\CopilotDocumentReader;
 use OCA\Buildiq\Service\Copilot\CopilotPlanValidator;
 use OCA\Buildiq\Service\Copilot\CopilotPromptBuilder;
 use OCA\Buildiq\Service\Copilot\CopilotTextTask;
 use OCA\Buildiq\Service\Copilot\ModelStep;
+use OCA\Buildiq\Support\ApplicationStories;
 use OCA\Buildiq\Support\ManifestEntryList;
 use OCA\Buildiq\Support\ManifestPageShape;
 use OCA\Buildiq\Support\ManifestRoute;
@@ -194,6 +196,7 @@ class CopilotService implements CopilotServiceInterface {
 	 *                                       turn.
 	 * @param AuditTrailMapper|null $auditTrailMapper Optional OR audit-trail writer for admin-bypass parity (L2).
 	 * @param CopilotTextTask|null $textTask The text-to-text task seam; built from the container and logger when not given.
+	 * @param CopilotDocumentReader|null $documentReader Reads a picked requirements document as the user.
 	 * @param AgentKnowledgeReader|null $knowledgeReader Reads an agent's knowledge files; built from the container and logger when not given.
 	 *
 	 * @return void
@@ -212,6 +215,7 @@ class CopilotService implements CopilotServiceInterface {
 		private readonly AgentRunLogger $agentRunLogger,
 		private readonly ?AuditTrailMapper $auditTrailMapper = null,
 		?CopilotTextTask $textTask = null,
+		private readonly ?CopilotDocumentReader $documentReader = null,
 		?AgentKnowledgeReader $knowledgeReader = null,
 	) {
 		$this->textTask = ($textTask ?? new CopilotTextTask(container: $container, logger: $logger));
@@ -268,17 +272,29 @@ class CopilotService implements CopilotServiceInterface {
 	 *                                 filled in on any step that leaves `versionSlug` out, so a
 	 *                                 plan lands on the version the user is looking at rather
 	 *                                 than on the tools' `development` default.
+	 * @param int|null $documentFileId Optional Files id of a requirements document, read as the user;
+	 *                                 with one, the typed brief may be empty.
 	 *
-	 * @return array{summary: string, steps: array<int, array<string, mixed>>, manifests: array<string, array{current: array, predicted: array}>}
+	 * @return array{summary: string, stories: array<int, array<string, mixed>>, steps: array<int, array<string, mixed>>,
+	 *               manifests: array<string, array{current: array, predicted: array}>,
+	 *               document?: array{fileId: int, name: string}}
 	 *
-	 * @throws CopilotException On unavailability, invalid input, RBAC denial, an unknown agent, or an unparsable/invalid plan.
+	 * @throws CopilotException On unavailability, invalid input, RBAC denial, an unknown agent, an unreadable document, or an unparsable/invalid plan.
 	 *
 	 * @spec openspec/specs/ai-copilot/spec.md
 	 * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
+	 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot/spec.md#requirement-the-wizard-reads-a-document-from-files-req-bqch-005
 	 */
-	public function plan(string $brief, ?string $appSlug, string $userId, ?string $agentId = null, ?string $versionSlug = null): array {
+	public function plan(
+		string $brief,
+		?string $appSlug,
+		string $userId,
+		?string $agentId = null,
+		?string $versionSlug = null,
+		?int $documentFileId = null,
+	): array {
 		$this->assertAvailable();
-		$this->assertValidBrief(brief: $brief);
+		[$document, $promptBrief] = $this->prepareBrief(brief: $brief, documentFileId: $documentFileId, userId: $userId);
 
 		$agent = null;
 		if ($agentId !== null && $agentId !== '') {
@@ -289,20 +305,10 @@ class CopilotService implements CopilotServiceInterface {
 		$this->modelSteps = [];
 		$this->knowledge = [];
 		try {
-			$result = $this->planWithinContext(brief: $brief, appSlug: $appSlug, userId: $userId, agent: $agent, versionSlug: $versionSlug);
+			$result = $this->planWithinContext(brief: $promptBrief, appSlug: $appSlug, userId: $userId, agent: $agent, versionSlug: $versionSlug);
+			$result = $this->withDocument(result: $result, document: $document);
 		} catch (CopilotException $e) {
-			if ($agent !== null) {
-				$this->agentRunLogger->log(
-					agent: $agent,
-					userId: $userId,
-					prompt: $brief,
-					plan: [],
-					toolCalls: [],
-					outcome: 'plan-rejected',
-					trace: $this->currentTrace()
-				);
-			}
-
+			$this->logRejectedPlan(agent: $agent, userId: $userId, brief: $brief);
 			throw $e;
 		}//end try
 
@@ -313,6 +319,96 @@ class CopilotService implements CopilotServiceInterface {
 
 		return $result;
 	}//end plan()
+
+	/**
+	 * Write the one `AgentRun` audit record of an agent-scoped plan that was
+	 * rejected; the bare copilot path logs nothing.
+	 *
+	 * @param array<string, mixed>|null $agent  The resolved `Agent` record, or null.
+	 * @param string                    $userId Acting user's UID.
+	 * @param string                    $brief  The user's brief.
+	 *
+	 * @return void
+	 */
+	private function logRejectedPlan(?array $agent, string $userId, string $brief): void {
+		if ($agent === null) {
+			return;
+		}
+
+		$this->agentRunLogger->log(
+			agent: $agent,
+			userId: $userId,
+			prompt: $brief,
+			plan: [],
+			toolCalls: [],
+			outcome: 'plan-rejected',
+			trace: $this->currentTrace()
+		);
+	}//end logRejectedPlan()
+
+	/**
+	 * Read the picked requirements document as the user (when one is given),
+	 * check the brief against it and build the brief the prompt carries.
+	 *
+	 * @param string   $brief          The user's brief.
+	 * @param int|null $documentFileId Optional Files id of a requirements document.
+	 * @param string   $userId         Acting user's UID.
+	 *
+	 * @return array{0: array<string, mixed>|null, 1: string} The document (or null) and the prompt brief.
+	 *
+	 * @throws CopilotException On an unreadable document or an invalid brief.
+	 *
+	 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot/spec.md#requirement-the-wizard-reads-a-document-from-files-req-bqch-005
+	 */
+	private function prepareBrief(string $brief, ?int $documentFileId, string $userId): array {
+		$document = null;
+		if ($documentFileId !== null) {
+			$document = $this->readDocument(fileId: $documentFileId, userId: $userId);
+		}
+
+		$this->assertValidBrief(brief: $brief, allowEmpty: $document !== null);
+
+		return [$document, $this->briefWithDocument(brief: $brief, document: $document)];
+	}//end prepareBrief()
+
+	/**
+	 * Name the document a plan was made from on the plan result.
+	 *
+	 * @param array<string, mixed>      $result   The plan result.
+	 * @param array<string, mixed>|null $document The document read, or null.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot/spec.md#requirement-the-wizard-reads-a-document-from-files-req-bqch-005
+	 */
+	private function withDocument(array $result, ?array $document): array {
+		if ($document !== null) {
+			$result['document'] = ['fileId' => $document['fileId'], 'name' => $document['name']];
+		}
+
+		return $result;
+	}//end withDocument()
+
+	/**
+	 * Resolve a virtual app by slug and require the caller to be one of its
+	 * owners or editors, with the same check and admin-bypass audit the plan
+	 * runs. The builder assist calls this before it schedules any text task.
+	 *
+	 * @param string $appSlug Target app slug.
+	 * @param string $userId  Acting user's UID.
+	 *
+	 * @return array<string, mixed> The Application record.
+	 *
+	 * @throws CopilotException (404 not_found, 422 unsupported_target, 403 forbidden).
+	 *
+	 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-builder-assist/spec.md#requirement-the-assist-writes-nothing-and-respects-app-access-req-bqch-004
+	 */
+	public function requireWritableApp(string $appSlug, string $userId): array {
+		$app = $this->requireExistingVirtualApp(appSlug: $appSlug);
+		$this->assertWriteRoleOnApp(app: $app, userId: $userId);
+
+		return $app;
+	}//end requireWritableApp()
 
 	/**
 	 * The model steps of the plan request just made, as a run keeps them.
@@ -340,7 +436,8 @@ class CopilotService implements CopilotServiceInterface {
 	 * @param array<string, mixed>|null $agent The resolved `Agent` record, or null for the bare copilot path.
 	 * @param string|null $versionSlug The version the caller is editing, or null.
 	 *
-	 * @return array{summary: string, steps: array<int, array<string, mixed>>, manifests: array<string, array{current: array, predicted: array}>}
+	 * @return array{summary: string, stories: array<int, array<string, mixed>>, steps: array<int, array<string, mixed>>,
+	 *               manifests: array<string, array{current: array, predicted: array}>}
 	 *
 	 * @throws CopilotException On RBAC denial or an unparsable/invalid/over-cap plan.
 	 */
@@ -392,14 +489,49 @@ class CopilotService implements CopilotServiceInterface {
 			$this->assertWithinMaxActionsPerRun(agent: $agent, plan: $plan);
 		}
 
+		$plan = $this->attachStoriesToCreateApp(plan: $plan);
 		$manifests = $this->predictManifests(plan: $plan, appSlug: $appSlug);
 
 		return [
 			'summary' => (string)($plan['summary'] ?? ''),
+			'stories' => array_values((array)($plan['stories'] ?? [])),
 			'steps' => (array)($plan['steps'] ?? []),
 			'manifests' => $manifests,
 		];
 	}//end planWithinContext()
+
+	/**
+	 * Give the plan's `buildiq.createApp` step the plan's stories, with each
+	 * `servedBy` index named as the schema or page it points at, so the created
+	 * Application keeps them. A plan without stories or without a createApp
+	 * step is returned as it came.
+	 *
+	 * @param array<string, mixed> $plan The validated plan.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ApplicationStories is a pure conversion with no collaborators.
+	 *
+	 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot/spec.md#requirement-the-created-app-keeps-its-stories-req-bqch-007
+	 */
+	private function attachStoriesToCreateApp(array $plan): array {
+		$stories = (array)($plan['stories'] ?? []);
+		if ($stories === []) {
+			return $plan;
+		}
+
+		$steps = array_values((array)($plan['steps'] ?? []));
+		foreach ($steps as $index => $step) {
+			if (is_array($step) === true && ($step['tool'] ?? '') === 'buildiq.createApp') {
+				$steps[$index]['arguments'] = (array)($step['arguments'] ?? []);
+				$steps[$index]['arguments']['stories'] = ApplicationStories::fromPlan(stories: array_values($stories), steps: $steps);
+				$plan['steps'] = $steps;
+				return $plan;
+			}
+		}
+
+		return $plan;
+	}//end attachStoriesToCreateApp()
 
 	/**
 	 * Discard a reviewed proposal without executing it — still writes a transparent
@@ -1188,17 +1320,23 @@ class CopilotService implements CopilotServiceInterface {
 	}//end assertAvailable()
 
 	/**
-	 * Validate the brief length (1-2000 chars).
+	 * Validate the brief length (1-2000 chars; 0-2000 next to a document).
 	 *
-	 * @param string $brief The user's brief.
+	 * @param string $brief      The user's brief.
+	 * @param bool   $allowEmpty Whether an empty brief is fine because a document carries the request.
 	 *
 	 * @return void
 	 *
 	 * @throws CopilotException (422) When the brief is empty or too long.
 	 */
-	private function assertValidBrief(string $brief): void {
+	private function assertValidBrief(string $brief, bool $allowEmpty = false): void {
 		$length = mb_strlen($brief);
-		if ($length < 1 || $length > 2000) {
+		$minimum = 1;
+		if ($allowEmpty === true) {
+			$minimum = 0;
+		}
+
+		if ($length < $minimum || $length > 2000) {
 			throw new CopilotException(
 				errorCode: 'invalid_arguments',
 				message: 'Brief must be between 1 and 2000 characters.',
@@ -1206,6 +1344,45 @@ class CopilotService implements CopilotServiceInterface {
 			);
 		}
 	}//end assertValidBrief()
+
+	/**
+	 * Read a picked requirements document as the user.
+	 *
+	 * @param int    $fileId The picked file's id.
+	 * @param string $userId Acting user's UID.
+	 *
+	 * @return array{fileId: int, name: string, text: string}
+	 *
+	 * @throws CopilotException (404 when no reader or the user cannot read it, 422 for a refused type or size).
+	 */
+	private function readDocument(int $fileId, string $userId): array {
+		if ($this->documentReader === null) {
+			throw new CopilotException(errorCode: 'not_found', message: 'The document could not be found.', httpStatus: 404);
+		}
+
+		return $this->documentReader->read(fileId: $fileId, userId: $userId);
+	}//end readDocument()
+
+	/**
+	 * The brief the prompt carries: the typed brief, then the document text under its name.
+	 *
+	 * @param string                                             $brief    The typed brief.
+	 * @param array{fileId: int, name: string, text: string}|null $document The read document, if any.
+	 *
+	 * @return string
+	 */
+	private function briefWithDocument(string $brief, ?array $document): string {
+		if ($document === null) {
+			return $brief;
+		}
+
+		$lead = trim($brief);
+		if ($lead === '') {
+			$lead = 'Build the app this requirements document describes.';
+		}
+
+		return $lead . "\n\nRequirements document \"" . $document['name'] . "\":\n" . $document['text'];
+	}//end briefWithDocument()
 
 	/**
 	 * Resolve an existing virtual (non-hybrid) app by slug, or throw.

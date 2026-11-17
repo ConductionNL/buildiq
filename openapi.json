@@ -2858,6 +2858,80 @@
                 }
             }
         },
+        "/copilot/assist": {
+            "post": {
+                "operationId": "copilot-assist",
+                "summary": "POST /api/copilot/assist — propose or explain one builder expression",
+                "description": "POST /api/copilot/assist — propose or explain one builder expression: a FEEL condition, a decision table row, a field mapping or a webhook payload template. Body: `{ target, mode, request, current, appSlug, context }`, where `target` is `feel-condition`, `decision-rule`, `field-mapping` or `payload-template`, `mode` is `write` or `explain`, and `context` carries names only. The answer is checked before it is returned; after one failed repair it answers 422 `assist_invalid`. Performs zero writes. Needs a signed-in Nextcloud user who is an owner or editor of `appSlug`.",
+                "tags": [
+                    "copilot"
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "target": {
+                                        "description": "The editor field."
+                                    },
+                                    "mode": {
+                                        "description": "write or explain."
+                                    },
+                                    "request": {
+                                        "description": "The plain request."
+                                    },
+                                    "current": {
+                                        "description": "The current value."
+                                    },
+                                    "appSlug": {
+                                        "description": "The app slug."
+                                    },
+                                    "context": {
+                                        "description": "Names only: columns, paths, register, targetSchema, triggerSchema."
+                                    }
+                                },
+                                "additionalProperties": false
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Problem422"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/Problem503"
+                    }
+                }
+            }
+        },
         "/copilot/discard": {
             "post": {
                 "operationId": "copilot-discard",
@@ -2996,7 +3070,7 @@
             "post": {
                 "operationId": "copilot-plan",
                 "summary": "POST /api/copilot/plan — turn a brief into a validated, reviewable plan",
-                "description": "POST /api/copilot/plan — turn a brief into a validated, reviewable plan. Body: `{ brief: string, appSlug?: string, agentId?: string, versionSlug?: string }`. Performs zero builder writes (an agent-scoped rejected plan still writes one `AgentRun` audit record — see `CopilotService::plan()`). Needs a signed-in Nextcloud user.",
+                "description": "POST /api/copilot/plan — turn a brief into a validated, reviewable plan. Body: `{ brief: string, appSlug?: string, agentId?: string, versionSlug?: string, documentFileId?: int }`. Performs zero builder writes (an agent-scoped rejected plan still writes one `AgentRun` audit record — see `CopilotService::plan()`). Needs a signed-in Nextcloud user.",
                 "tags": [
                     "copilot"
                 ],
@@ -3018,6 +3092,9 @@
                                     },
                                     "versionSlug": {
                                         "description": "The version slug."
+                                    },
+                                    "documentFileId": {
+                                        "description": "Files id of a requirements document, read as the caller (plain text or Markdown, at most 60,000 characters)."
                                     }
                                 },
                                 "additionalProperties": false
@@ -3041,6 +3118,12 @@
                     },
                     "401": {
                         "$ref": "#/components/responses/Problem401"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Problem422"
                     },
                     "500": {
                         "$ref": "#/components/responses/Problem500"
