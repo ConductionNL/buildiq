@@ -135,6 +135,7 @@ export default {
 		 * What the code is: a change here reruns it.
 		 *
 		 * @return {string}
+		 * @spec openspec/changes/pages-custom-code/tasks.md#t07
 		 */
 		codeSignature() {
 			return JSON.stringify(this.components.map((item) => [item.key, item.code]))
@@ -144,6 +145,7 @@ export default {
 		 * What the expressions are: a change here re-evaluates them.
 		 *
 		 * @return {string}
+		 * @spec openspec/changes/pages-custom-code/tasks.md#t07
 		 */
 		expressionSignature() {
 			return JSON.stringify(this.expressions)
@@ -166,6 +168,7 @@ export default {
 		 * The preview frames then show the server's placeholder themselves.
 		 *
 		 * @return {boolean}
+		 * @spec openspec/changes/pages-custom-code/tasks.md#t07
 		 */
 		disabled() {
 			return this.evaluatorDisabled
@@ -173,6 +176,9 @@ export default {
 	},
 
 	watch: {
+		/**
+		 * @spec openspec/changes/pages-custom-code/tasks.md#t07
+		 */
 		codeSignature() {
 			this.schedule('_codeTimer', () => {
 				this.errors = {}
@@ -180,11 +186,17 @@ export default {
 			})
 		},
 
+		/**
+		 * @spec openspec/changes/pages-custom-code/tasks.md#t07
+		 */
 		expressionSignature() {
 			this.schedule('_expressionTimer', () => this.evaluateAll())
 		},
 	},
 
+	/**
+	 * @spec openspec/changes/pages-custom-code/tasks.md#t07
+	 */
 	created() {
 		this._frames = new Map()
 		this._codeTimer = null
@@ -196,6 +208,9 @@ export default {
 		window.addEventListener('message', this.onFrameMessage)
 	},
 
+	/**
+	 * @spec openspec/changes/pages-custom-code/tasks.md#t07
+	 */
 	beforeUnmount() {
 		window.removeEventListener('message', this.onFrameMessage)
 		clearTimeout(this._codeTimer)
@@ -212,6 +227,7 @@ export default {
 		 *
 		 * @param {string} timer - the instance field holding the timer.
 		 * @param {() => void} run - what to run.
+		 * @spec openspec/changes/pages-custom-code/tasks.md#t07
 		 */
 		schedule(timer, run) {
 			clearTimeout(this[timer])
@@ -222,6 +238,7 @@ export default {
 		 * The signed-in user, as a code component or expression sees it.
 		 *
 		 * @return {{id: string, name: string}}
+		 * @spec openspec/changes/pages-custom-code/tasks.md#t07
 		 */
 		currentUser() {
 			const user = getCurrentUser()
@@ -262,6 +279,9 @@ export default {
 		},
 
 		/** Evaluate once the evaluator frame has loaded. */
+		/**
+		 * @spec openspec/changes/pages-custom-code/tasks.md#t07
+		 */
 		evaluatorLoaded() {
 			this.evaluateAll()
 		},
@@ -286,6 +306,7 @@ export default {
 		 *
 		 * @param {string} error - the evaluator's error.
 		 * @return {string}
+		 * @spec openspec/changes/pages-custom-code/tasks.md#t07
 		 */
 		errorText(error) {
 			if (error === 'timeout') {

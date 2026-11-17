@@ -177,6 +177,7 @@ export function createEvaluatorClient(frameWindow, { timeout = EVALUATE_TIMEOUT_
 		 * @param {Array<{key: string, expression: string}>} items - the expressions.
 		 * @param {object} scope - `{row, values, user, route}`.
 		 * @return {Promise<object>} the results by key.
+		 * @spec openspec/changes/pages-custom-code/tasks.md#t07
 		 */
 		evaluate(items, scope) {
 			const target = frameWindow()
@@ -200,6 +201,9 @@ export function createEvaluatorClient(frameWindow, { timeout = EVALUATE_TIMEOUT_
 		},
 
 		/** Stop listening and drop unanswered batches. */
+		/**
+		 * @spec openspec/changes/pages-custom-code/tasks.md#t07
+		 */
 		dispose() {
 			host.removeEventListener('message', onMessage)
 			pending.forEach((entry) => clearTimeout(entry.timer))
