@@ -55,7 +55,10 @@ return \OCA\Buildiq\Middleware\Support\ApiPathAliases::withVersionedAliases(\OCA
         // Application in the shared `buildiq` register tagged with the caller's UID.
         ['name' => 'applications#createFromTemplate', 'url' => '/api/applications/from-template/{templateSlug}', 'verb' => 'POST'],
         // Copy an app (apps-copy-app-and-page REQ-BQCP-001/002): same gates as from-template.
-        ['name' => 'applications#copy', 'url' => '/api/applications/{slug}/copy', 'verb' => 'POST', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        [
+            'name' => 'applications#copy', 'url' => '/api/applications/{sourceSlug}/copy', 'verb' => 'POST',
+            'requirements' => ['sourceSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]'],
+        ],
 
         // Manifest endpoint — returns the stored manifest JSON blob for a given virtual-app slug.
         // Per ADR-016 routes.php is the only registration path; #[NoAdminRequired] is set on the
@@ -324,7 +327,10 @@ return \OCA\Buildiq\Middleware\Support\ApiPathAliases::withVersionedAliases(\OCA
         // install resolves a remote template by slug and clones it locally via the
         // shared ApplicationsController install seam.
         ['name' => 'store#search',  'url' => '/api/store/templates',                  'verb' => 'GET'],
-        ['name' => 'store#install', 'url' => '/api/store/templates/{slug}/install',   'verb' => 'POST', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        [
+            'name' => 'store#install', 'url' => '/api/store/templates/{templateSlug}/install', 'verb' => 'POST',
+            'requirements' => ['templateSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]'],
+        ],
         // Also in OpenRegister's canonical table; declared here so it is
         // visible where this app's routes are read, and it overrides by name.
         ['name' => 'store#publish', 'url' => '/api/store/publish',                    'verb' => 'POST'],

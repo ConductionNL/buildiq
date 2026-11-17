@@ -2123,7 +2123,7 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 	 * app; a viewer is refused even when they are an administrator. A taken
 	 * slug is the seam's 409.
 	 *
-	 * @param string $slug The source app's slug
+	 * @param string $sourceSlug The source app's slug. Not `slug`: the JSON body's `slug` (the copy's) would override it.
 	 *
 	 * @return JSONResponse 201 with the new app; 400, 401, 403, 404 or 409 otherwise
 	 *
@@ -2132,7 +2132,7 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 	 */
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 10, period: 3600)]
-	public function copy(string $slug): JSONResponse {
+	public function copy(string $sourceSlug): JSONResponse {
 		$admitted = $this->admitClone(refusal: 'Copying an app requires Nextcloud admin privileges.');
 		if ($admitted instanceof JSONResponse) {
 			return $admitted;
@@ -2140,7 +2140,7 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 
 		[$user, $name, $newSlug] = $admitted;
 
-		$resolved = $this->resolveApplicationBySlug(slug: $slug);
+		$resolved = $this->resolveApplicationBySlug(slug: $sourceSlug);
 		if ($resolved instanceof JSONResponse) {
 			return $resolved;
 		}
