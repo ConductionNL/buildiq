@@ -218,6 +218,14 @@
 					:fieldNames="fieldNames"
 					:refusals="calculationRefusals"
 					@update:propertyCalculations="onPropertyCalculationsChange" />
+				<AiFieldEditor
+					ref="aiFields"
+					:schemaSlug="staged.slug"
+					:applicationSlug="appSlug"
+					:versionUuid="applicationVersionUuid"
+					:fieldNames="fieldNames"
+					@declare="onAiFieldDeclare"
+					@remove="onAiFieldRemove" />
 				<NotificationEditor :notifications="staged.notifications" />
 			</template>
 
@@ -273,6 +281,7 @@ import AccessEditor, {
 	editorToAccess,
 } from '../components/schema-editor/AccessEditor.vue'
 import AggregationEditor from '../components/schema-editor/AggregationEditor.vue'
+import AiFieldEditor from '../components/schema-editor/AiFieldEditor.vue'
 import CalculationEditor from '../components/schema-editor/CalculationEditor.vue'
 import DataModelDiagram from '../components/schema-editor/DataModelDiagram.vue'
 import FieldEditor, {
@@ -322,6 +331,7 @@ export default {
 	components: {
 		AccessEditor,
 		AggregationEditor,
+		AiFieldEditor,
 		ArrowLeftIcon,
 		UndoIcon,
 		RedoIcon,
@@ -592,6 +602,17 @@ export default {
 		 * @spec openspec/specs/data-scopes-authoring/spec.md#req-obdsa-001
 		 * @return {string[]} Staged field names.
 		 */
+		/**
+		 * The uuid of the resolved ApplicationVersion, '' while it loads.
+		 *
+		 * @return {string}
+		 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-a-schema-field-can-be-filled-by-ai-req-bqls-004
+		 */
+		applicationVersionUuid() {
+			const version = this.applicationVersion || {}
+			return String(version.uuid || version.id || (version['@self'] && version['@self'].id) || '')
+		},
+
 		fieldNames() {
 			if (!this.staged) {
 				return []
@@ -1341,6 +1362,29 @@ export default {
 		},
 
 		/**
+		 * Declare an AI field's read-only property on the staged schema (REQ-BQLS-004).
+		 *
+		 * @param {{name: string, property: object}} declared The field and its property.
+		 * @return {void}
+		 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-a-schema-field-can-be-filled-by-ai-req-bqls-004
+		 */
+		onAiFieldDeclare({ name, property }) {
+			const [field] = schemaToFields({ properties: { [name]: property } })
+			this.commitStaged({ ...this.staged, fields: [...this.staged.fields, field] })
+		},
+
+		/**
+		 * Take a removed AI field's property off the staged schema (REQ-BQLS-004).
+		 *
+		 * @param {string} name The field name.
+		 * @return {void}
+		 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-a-schema-field-can-be-filled-by-ai-req-bqls-004
+		 */
+		onAiFieldRemove(name) {
+			this.commitStaged({ ...this.staged, fields: this.staged.fields.filter((field) => field.name !== name) })
+		},
+
+		/**
 		 * Apply a states change into the staged model.
 		 *
 		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
@@ -1751,6 +1795,11 @@ export default {
 						version: data.version || this.staged.version,
 					}),
 				)
+				// REQ-BQLS-004: the AI field automations compile against the
+				// saved schema, so they are written after it.
+				if (this.$refs.aiFields) {
+					await this.$refs.aiFields.persist()
+				}
 			} catch (e) {
 				this.saveError = this.errorMessage(e)
 			} finally {

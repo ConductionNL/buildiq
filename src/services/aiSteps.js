@@ -243,3 +243,79 @@ export function toPersistedAiStep(action) {
 	}
 	return stored
 }
+
+/**
+ * The AI step an AI field runs (D5): the five presets plus `sentiment`, a
+ * classify over positive, neutral and negative, and `clean`, a prompt with a
+ * fixed instruction.
+ *
+ * @param {object} draft The AI field: field, operation, sourceFields, agent, language, labels, prompt.
+ * @return {object} The stored AI step.
+ * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-a-schema-field-can-be-filled-by-ai-req-bqls-004
+ */
+export function aiFieldStep(draft) {
+	const base = { agent: draft.agent, sourceFields: draft.sourceFields, targetField: draft.field }
+	const byOperation = {
+		translate: { preset: 'translate', language: draft.language },
+		categorise: { preset: 'classify', labels: draft.labels },
+		sentiment: { preset: 'classify', labels: [...SENTIMENT_LABELS] },
+		clean: { preset: 'prompt', prompt: CLEAN_INSTRUCTION },
+		summarise: { preset: 'summarise' },
+		prompt: { preset: 'prompt', prompt: draft.prompt },
+	}
+	return toPersistedAiStep({ ...base, ...(byOperation[draft.operation] || byOperation.summarise) })
+}
+
+/**
+ * The operation of a stored AI field step, read back from its preset.
+ *
+ * @param {object} step The stored AI step.
+ * @return {string} The operation.
+ * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-a-schema-field-can-be-filled-by-ai-req-bqls-004
+ */
+export function operationOfStep(step) {
+	if (step.preset === 'classify') {
+		const labels = namesOf(step.labels)
+		const sentiment = labels.length === SENTIMENT_LABELS.length && SENTIMENT_LABELS.every((label) => labels.includes(label))
+		return sentiment ? 'sentiment' : 'categorise'
+	}
+	if (step.preset === 'prompt' && String(step.prompt || '').trim() === CLEAN_INSTRUCTION) {
+		return 'clean'
+	}
+	return step.preset || 'summarise'
+}
+
+/**
+ * The read-only property an AI field declares on its schema; a categorise
+ * or sentiment field is a choice list of exactly its labels (D4, D5).
+ *
+ * @param {object} draft The AI field.
+ * @return {object} The JSON Schema property.
+ * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-a-schema-field-can-be-filled-by-ai-req-bqls-004
+ */
+export function aiFieldProperty(draft) {
+	const step = aiFieldStep(draft)
+	const property = {
+		type: 'string',
+		readOnly: true,
+		description: t('buildiq', 'Filled in by the AI from {fields}.', { fields: namesOf(step.sourceFields).join(', ') }),
+	}
+	if (step.preset === 'classify') {
+		property.enum = namesOf(step.labels)
+	}
+	return property
+}
+
+/**
+ * What an AI field still needs, or ''.
+ *
+ * @param {object} draft The AI field.
+ * @return {string} The message.
+ * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-a-schema-field-can-be-filled-by-ai-req-bqls-004
+ */
+export function aiFieldIncomplete(draft) {
+	if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(String(draft.field || ''))) {
+		return t('buildiq', 'Name the field with letters, digits and underscores.')
+	}
+	return aiStepIncomplete(aiFieldStep(draft))
+}
