@@ -50,6 +50,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\Buildiq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Tests for {@see AutomationWriteService}.
@@ -177,7 +178,7 @@ final class AutomationWriteServiceTest extends TestCase {
 	 * @return int
 	 */
 	private function argumentIndex(string $method, string $name): int {
-		$parameters = (new ReflectionMethod(ObjectService::class, $method))->getParameters();
+		$parameters = LegacyObjectArgs::parameters(ObjectService::class, $method);
 		foreach ($parameters as $index => $parameter) {
 			if ($parameter->getName() === $name) {
 				return $index;
@@ -267,6 +268,7 @@ final class AutomationWriteServiceTest extends TestCase {
 		$this->objectService->expects($this->once())
 			->method('saveObject')
 			->willReturnCallback(function (...$arguments) use (&$captured): ObjectEntity {
+				$arguments = LegacyObjectArgs::positional(method: 'saveObject', args: $arguments);
 				$captured = $arguments;
 				return $this->buildEntity(['id' => 'a-new', 'slug' => 'nag']);
 			});
@@ -302,6 +304,7 @@ final class AutomationWriteServiceTest extends TestCase {
 		$this->objectService->expects($this->once())
 			->method('saveObject')
 			->willReturnCallback(function (...$arguments) use (&$captured): ObjectEntity {
+				$arguments = LegacyObjectArgs::positional(method: 'saveObject', args: $arguments);
 				$captured = $arguments;
 				return $this->buildEntity(['id' => 'a-1']);
 			});
@@ -356,6 +359,7 @@ final class AutomationWriteServiceTest extends TestCase {
 		$this->objectService->expects($this->once())
 			->method('deleteObject')
 			->willReturnCallback(function (...$arguments) use (&$order, &$captured): bool {
+				$arguments = LegacyObjectArgs::positional(method: 'deleteObject', args: $arguments);
 				$order[] = 'deleteObject';
 				$captured = $arguments;
 				return true;

@@ -27,6 +27,7 @@ use OCA\Buildiq\Service\AutomationRunRecorder;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\UsesClass;
@@ -98,10 +99,9 @@ final class AutomationRunLogTest extends TestCase {
 
 		$this->objectService = $this->createMock(ObjectServiceInterface::class);
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (...$arguments): ObjectEntity {
-				// The arguments are saveObject(object, extend, register, schema, uuid, ...).
-				$this->saved[] = [$arguments[0], ($arguments[4] ?? null)];
-				return self::entity(payload: ['@self' => ['id' => ($arguments[4] ?? 'run-new')]] + $arguments[0]);
+			function (array $object, ObjectSaveOptions $options = new ObjectSaveOptions()): ObjectEntity {
+				$this->saved[] = [$object, $options->uuid];
+				return self::entity(payload: ['@self' => ['id' => ($options->uuid ?? 'run-new')]] + $object);
 			}
 		);
 

@@ -36,6 +36,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 
 /**
  * @covers \OCA\Buildiq\Controller\VersionPromotionController
@@ -128,7 +129,11 @@ class VersionPromotionControllerLookupTest extends TestCase {
 	 */
 	private function rows(mixed $application, mixed $version): void {
 		$this->objectService->method('find')->willReturnCallback(
-			function (int|string $id, ?array $_extend = [], bool $files = false, string|int|null $register = null, string|int|null $schema = null) use ($application, $version): ?ObjectEntity {
+			function (int|string $id, ?ObjectFindOptions $options = null) use ($application, $version): ?ObjectEntity {
+				$_extend = $options?->extend ?? [];
+				$files = $options?->files ?? false;
+				$register = $options?->register;
+				$schema = $options?->schema;
 				$answer = $version;
 				if ($schema === VersionPromotionService::APPLICATION_SCHEMA) {
 					$answer = $application;
