@@ -73,6 +73,13 @@ final class PageLayoutBodyRules {
 	 */
 	public const CONDITION_OPERATORS = ['equals', 'notEquals', 'isEmpty', 'isNotEmpty', 'contains'];
 
+	/**
+	 * Where a case type's task list may be shown (REQ-BQTP-001).
+	 *
+	 * @var array<int, string>
+	 */
+	public const PANEL_PLACEMENTS = ['side', 'tab', 'none'];
+
 
 	/**
 	 * Refuse a tab whose kind is unknown, or that is missing the reference its
@@ -262,4 +269,72 @@ final class PageLayoutBodyRules {
 			}
 		}
 	}//end assertUploadFields()
+	/**
+	 * Refuse a task panel with an unknown placement, or one that names a tab
+	 * the layout does not declare (REQ-BQTP-001, REQ-BQTP-002).
+	 *
+	 * The panel names tabs by id, so a relabelled tab keeps it; a removed tab
+	 * makes the save fail with the id named, rather than the panel quietly
+	 * vanishing from that tab. An override is checked for its placement only:
+	 * its tabs are the base's, merged at read time, and this layer alone cannot
+	 * tell which ids exist.
+	 *
+	 * @param array<string, mixed> $layout The layout.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidArgumentException When the panel is not one a consumer can place.
+	 *
+	 * @spec openspec/changes/pages-task-panel-beside-case-tabs/specs/page-layout-task-panel/spec.md (REQ-BQTP-001, REQ-BQTP-002)
+	 */
+	public function assertTaskPanel(array $layout): void {
+		$taskList = ($layout['taskList'] ?? null);
+		if (is_array($taskList) === false || array_key_exists('panel', $taskList) === false) {
+			return;
+		}
+
+		$panel = $taskList['panel'];
+		if (is_array($panel) === false) {
+			throw new InvalidArgumentException('The task panel has to be an object with a placement.');
+		}
+
+		$placement = (string)($panel['placement'] ?? '');
+		if (in_array($placement, self::PANEL_PLACEMENTS, true) === false) {
+			throw new InvalidArgumentException(
+				sprintf('The task panel has an unknown placement "%s"; expected one of %s.', $placement, implode(', ', self::PANEL_PLACEMENTS))
+			);
+		}
+
+		$delta = ($layout['layoutDelta'] ?? null);
+		if (is_array($delta) === true && $delta !== []) {
+			return;
+		}
+
+		$declared = $this->tabIds(layout: $layout);
+		foreach ((array)($panel['tabs'] ?? []) as $tabId) {
+			if (in_array((string)$tabId, $declared, true) === false) {
+				throw new InvalidArgumentException(
+					sprintf('The task panel names a tab that no longer exists: "%s".', (string)$tabId)
+				);
+			}
+		}
+	}//end assertTaskPanel()
+
+	/**
+	 * The ids of the tabs a layout declares.
+	 *
+	 * @param array<string, mixed> $layout The layout.
+	 *
+	 * @return array<int, string> The ids.
+	 */
+	private function tabIds(array $layout): array {
+		$ids = [];
+		foreach ((array)($layout['tabs'] ?? []) as $tab) {
+			if (is_array($tab) === true && (string)($tab['id'] ?? '') !== '') {
+				$ids[] = (string)$tab['id'];
+			}
+		}
+
+		return $ids;
+	}//end tabIds()
 }//end class

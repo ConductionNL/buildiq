@@ -5,7 +5,10 @@
  * Vitest spec for DetailPageEditor (buildiq#9 task 7.1).
  *
  * Covers:
- *  - validatedConfigKeys is exactly [register, schema, sidebar, sidebarProps]
+ *  - validatedConfigKeys is exactly [register, schema, sidebar, sidebarProps,
+ *    relatedCollections, relationLinks]
+ *  - the Files choice writes sidebar.hiddenTabs from both sidebar shapes
+ *    (pages-detail-related-items T03)
  *  - update(register, ...) emits with `register` set and clears any stale schema
  *  - update(schema, ...) emits with `schema` set
  *  - setSidebarShape('none' | 'boolean' | 'object') drives sidebar shape transitions
@@ -54,12 +57,14 @@ function mountEditor(config = {}, propsOverrides = {}) {
 }
 
 describe('DetailPageEditor', () => {
-	it('validatedConfigKeys is [register, schema, sidebar, sidebarProps]', () => {
+	it('validatedConfigKeys covers the bound keys and the related items', () => {
 		expect(mountEditor().vm.validatedConfigKeys).toEqual([
 			'register',
 			'schema',
 			'sidebar',
 			'sidebarProps',
+			'relatedCollections',
+			'relationLinks',
 		])
 	})
 
@@ -163,5 +168,55 @@ describe('DetailPageEditor', () => {
 		expect(mountEditor({ sidebar: { enabled: true } }).vm.sidebarShape).toBe(
 			'object',
 		)
+	})
+
+	it('switching Files off converts a boolean sidebar to the object form', async () => {
+		const wrapper = mountEditor({ sidebar: true })
+		expect(wrapper.vm.filesShown).toBe(true)
+
+		await wrapper.find('.detail-page-editor__files input').setValue(false)
+		expect(wrapper.emitted('update:config').slice(-1)[0][0].sidebar).toEqual({
+			enabled: true,
+			hiddenTabs: ['files'],
+		})
+	})
+
+	it('Files writes hiddenTabs on an object sidebar and keeps other hidden tabs', async () => {
+		const wrapper = mountEditor({ sidebar: { enabled: true, show: false } })
+
+		wrapper.vm.setFilesShown(false)
+		expect(wrapper.emitted('update:config').slice(-1)[0][0].sidebar).toEqual({
+			enabled: true,
+			show: false,
+			hiddenTabs: ['files'],
+		})
+
+		const hidden = mountEditor({ sidebar: { enabled: true, hiddenTabs: ['audit', 'files'] } })
+		expect(hidden.vm.filesShown).toBe(false)
+		hidden.vm.setFilesShown(true)
+		expect(hidden.emitted('update:config').slice(-1)[0][0].sidebar).toEqual({
+			enabled: true,
+			hiddenTabs: ['audit'],
+		})
+
+		const only = mountEditor({ sidebar: { enabled: true, hiddenTabs: ['files'] } })
+		only.vm.setFilesShown(true)
+		expect(only.emitted('update:config').slice(-1)[0][0].sidebar).toEqual({ enabled: true })
+	})
+
+	it('shows the Files choice only when a sidebar is set', () => {
+		expect(mountEditor({}).find('.detail-page-editor__files').exists()).toBe(false)
+		expect(mountEditor({ sidebar: { enabled: true } }).find('.detail-page-editor__files').exists()).toBe(true)
+	})
+
+	it('updateList writes related items and removes the key when emptied', () => {
+		const list = [{ title: 'Requests', register: 'crm', schema: 'requests', filter: { client: '@objectId' } }]
+		const wrapper = mountEditor({ register: 'crm', relationLinks: [{ register: 'crm' }] })
+
+		wrapper.vm.updateList('relatedCollections', list)
+		expect(wrapper.emitted('update:config').slice(-1)[0][0].relatedCollections).toEqual(list)
+
+		wrapper.vm.updateList('relationLinks', [])
+		expect(wrapper.emitted('update:config').slice(-1)[0][0]).not.toHaveProperty('relationLinks')
 	})
 })

@@ -786,6 +786,159 @@
 			]
 		}
 	},
+	"GridPageEditor.vue": {
+		"props": {
+			"appRegister": "own",
+			"appSlug": "my-app",
+			"config": {
+				"keep": "me",
+				"register": "reg-a",
+				"schema": "sch-a",
+				"sidebarSchema": "side-a",
+				"x": "old"
+			},
+			"dataRegisters": [
+				{
+					"slug": "data"
+				}
+			],
+			"pageType": "custom",
+			"parentRoute": ""
+		},
+		"emits": [
+			"update:config"
+		],
+		"picker": [
+			[
+				"useRegisterPicker",
+				"my-app",
+				"own",
+				[
+					{
+						"slug": "data"
+					}
+				]
+			],
+			[
+				"fetchSchemas",
+				"reg-a"
+			],
+			[
+				"fetchSchemaProperties",
+				"reg-a",
+				"sch-a"
+			],
+			[
+				"fetchRegisters"
+			]
+		],
+		"handlers": {
+			"update": [
+				{
+					"args": [
+						"x",
+						"new"
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a",
+								"x": "new"
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"x",
+						""
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a"
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"x",
+						null
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a"
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"x",
+						[]
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a",
+								"x": []
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"y",
+						0
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a",
+								"x": "old",
+								"y": 0
+							}
+						]
+					]
+				},
+				{
+					"args": [
+						"y",
+						false
+					],
+					"emitted": [
+						[
+							{
+								"keep": "me",
+								"register": "reg-a",
+								"schema": "sch-a",
+								"sidebarSchema": "side-a",
+								"x": "old",
+								"y": false
+							}
+						]
+					]
+				}
+			]
+		}
+	},
 	"IndexPageEditor.vue": {
 		"props": {
 			"appRegister": "own",

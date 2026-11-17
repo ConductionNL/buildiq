@@ -45,6 +45,10 @@ use DateTimeInterface;
 use OCA\Buildiq\Kernel\Contracts\AppOverrideServiceInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCP\App\IAppManager;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -140,26 +144,13 @@ class AppOverrideService implements AppOverrideServiceInterface {
 			return null;
 		}
 
-		$adminVersion = $this->findHybridProductionVersion(appId: $appId, application: $application);
-		$adminDelta = [];
-		if ($adminVersion !== null) {
-			$candidate = ($adminVersion['manifestDelta'] ?? []);
-			if (is_array($candidate) === true) {
-				$adminDelta = $candidate;
-			}
-		}
-
-		$resolved = $adminDelta;
+		$adminDelta = $this->deltaOf(version: $this->findHybridProductionVersion(appId: $appId, application: $application));
+		$resolved   = $adminDelta;
 
 		// Layer the caller's own user delta on top, gated by the per-app flag.
-		if ($uid !== null && $uid !== '' && $this->appAllowsUserOverrides(application: $application) === true) {
-			$userVersion = $this->findUserDeltaForApp(application: $application, uid: $uid);
-			if ($userVersion !== null) {
-				$userDelta = ($userVersion['manifestDelta'] ?? []);
-				if (is_array($userDelta) === true && $userDelta !== []) {
-					$resolved = $this->deepMergeDelta(base: $adminDelta, overlay: $userDelta);
-				}
-			}
+		$userDelta = $this->callerDeltaOf(application: $application, uid: $uid);
+		if ($userDelta !== []) {
+			$resolved = $this->deepMergeDelta(base: $adminDelta, overlay: $userDelta);
 		}
 
 		return [
@@ -168,6 +159,38 @@ class AppOverrideService implements AppOverrideServiceInterface {
 		];
 
 	}//end resolveLayeredDelta()
+
+	/**
+	 * The `manifestDelta` of a delta version.
+	 *
+	 * @param array<string,mixed>|null $version The version, or null when there is none.
+	 *
+	 * @return array<string,mixed> The delta, empty when the version is missing or carries no array.
+	 */
+	private function deltaOf(?array $version): array {
+		$delta = ($version['manifestDelta'] ?? []);
+		if (is_array($delta) === false) {
+			return [];
+		}
+
+		return $delta;
+	}//end deltaOf()
+
+	/**
+	 * The caller's own user delta for an app that allows user overrides.
+	 *
+	 * @param array<string,mixed> $application The parent Application.
+	 * @param string|null         $uid         The calling user's UID, or null for an anonymous caller.
+	 *
+	 * @return array<string,mixed> The user delta, empty when there is none to layer.
+	 */
+	private function callerDeltaOf(array $application, ?string $uid): array {
+		if ($uid === null || $uid === '' || $this->appAllowsUserOverrides(application: $application) === false) {
+			return [];
+		}
+
+		return $this->deltaOf(version: $this->findUserDeltaForApp(application: $application, uid: $uid));
+	}//end callerDeltaOf()
 
 	/**
 	 * Read the caller's own user-scoped delta record for a fleet app, for editing.
@@ -282,9 +305,13 @@ class AppOverrideService implements AppOverrideServiceInterface {
 
 			$saved = $this->objectService->saveObject(
 				object: $existing,
-				register: self::REGISTER_SLUG,
-				schema: self::APPLICATION_VERSION_SCHEMA,
-				uuid: $versionUuid,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(
+							register: self::REGISTER_SLUG,
+							schema: self::APPLICATION_VERSION_SCHEMA
+						),
+					uuid: $versionUuid
+				),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -305,8 +332,10 @@ class AppOverrideService implements AppOverrideServiceInterface {
 					'status' => 'draft',
 					'application' => $appUuid,
 				],
-				register: self::REGISTER_SLUG,
-				schema: self::APPLICATION_VERSION_SCHEMA,
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(
+						register: self::REGISTER_SLUG,
+						schema: self::APPLICATION_VERSION_SCHEMA
+					)),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -621,8 +650,7 @@ class AppOverrideService implements AppOverrideServiceInterface {
 		try {
 			$entity = $this->objectService->find(
 				id: $versionUuid,
-				register: self::REGISTER_SLUG,
-				schema: self::APPLICATION_VERSION_SCHEMA
+				options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: self::APPLICATION_VERSION_SCHEMA)
 			);
 		} catch (Throwable $e) {
 			$this->logger->error(
@@ -661,8 +689,7 @@ class AppOverrideService implements AppOverrideServiceInterface {
 				'appType' => 'hybrid',
 				'baseRef' => $baseRefObject,
 			],
-			register: self::REGISTER_SLUG,
-			schema: self::APPLICATION_SCHEMA,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::APPLICATION_SCHEMA)),
 			_rbac: $rbac,
 			_multitenancy: $rbac
 		);
@@ -683,8 +710,7 @@ class AppOverrideService implements AppOverrideServiceInterface {
 				'status' => 'published',
 				'application' => $applicationUuid,
 			],
-			register: self::REGISTER_SLUG,
-			schema: self::APPLICATION_VERSION_SCHEMA,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::APPLICATION_VERSION_SCHEMA)),
 			_rbac: $rbac,
 			_multitenancy: $rbac
 		);
@@ -701,9 +727,10 @@ class AppOverrideService implements AppOverrideServiceInterface {
 			$applicationData['productionVersion'] = $versionUuid;
 			$this->objectService->saveObject(
 				object: $applicationData,
-				register: self::REGISTER_SLUG,
-				schema: self::APPLICATION_SCHEMA,
-				uuid: $applicationUuid,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::APPLICATION_SCHEMA),
+					uuid: $applicationUuid
+				),
 				_rbac: $rbac,
 				_multitenancy: $rbac
 			);
@@ -749,9 +776,13 @@ class AppOverrideService implements AppOverrideServiceInterface {
 
 			$this->objectService->saveObject(
 				object: $version,
-				register: self::REGISTER_SLUG,
-				schema: self::APPLICATION_VERSION_SCHEMA,
-				uuid: $versionUuid,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(
+							register: self::REGISTER_SLUG,
+							schema: self::APPLICATION_VERSION_SCHEMA
+						),
+					uuid: $versionUuid
+				),
 				_rbac: $rbac,
 				_multitenancy: $rbac
 			);
@@ -811,7 +842,7 @@ class AppOverrideService implements AppOverrideServiceInterface {
 	 */
 	private function deleteObjectSafely(string $uuid, string $context): void {
 		try {
-			$this->objectService->deleteObject(uuid: $uuid);
+			$this->objectService->deleteObject(new ObjectDeletion(uuid: $uuid));
 		} catch (Throwable $e) {
 			$this->logger->error(
 				'Buildiq: failed to delete ' . $context . ': ' . $e->getMessage(),

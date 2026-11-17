@@ -103,6 +103,45 @@ class RuleObjectReader implements RuleObjectReaderInterface {
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	public function findScoped(string $schema, array $filters, ?int $limit = null): array {
+		return $this->find(schema: $schema, filters: $filters, limit: $limit, scoped: true);
+
+	}//end findScoped()
+
+	/**
+	 * Objects of a rule-engine schema matching equality filters, read as the system.
+	 *
+	 * For the one path that serves another app rather than a person
+	 * (rules-evaluation-for-other-apps D1): neither schema RBAC nor an
+	 * organisation applies, so the caller MUST check what it may hand out
+	 * before using a row. Read only; nothing is written this way.
+	 *
+	 * @param string              $schema  The schema slug.
+	 * @param array<string,mixed> $filters Equality filters on object fields.
+	 * @param int|null            $limit   Optional row cap.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 *
+	 * @spec openspec/changes/rules-evaluation-for-other-apps/specs/rules-evaluation-for-other-apps/spec.md#requirement-another-app-evaluates-a-rule-set-through-a-typed-command-req-bqrx-002
+	 */
+	public function findAsSystem(string $schema, array $filters, ?int $limit = null): array {
+		return $this->find(schema: $schema, filters: $filters, limit: $limit, scoped: false);
+
+	}//end findAsSystem()
+
+	/**
+	 * The search behind findScoped() and findAsSystem().
+	 *
+	 * @param string              $schema  The schema slug.
+	 * @param array<string,mixed> $filters Equality filters on object fields.
+	 * @param int|null            $limit   Optional row cap.
+	 * @param bool                $scoped  Whether schema RBAC and the caller's organisation apply.
+	 *
+	 * @return array<int,array<string,mixed>>
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
+	 * @SuppressWarnings(PHPMD.BooleanArgumentFlag) The flag is private and named at each call.
+	 */
+	private function find(string $schema, array $filters, ?int $limit, bool $scoped): array {
 		$scope = $this->scopeOf(schema: $schema);
 		if ($scope === null) {
 			return [];
@@ -111,7 +150,7 @@ class RuleObjectReader implements RuleObjectReaderInterface {
 		$filters['@self'] = ['register' => $scope[0], 'schema' => $scope[1]];
 
 		try {
-			$results = $this->objectService->searchObjects(query: $filters, _rbac: true, _multitenancy: true);
+			$results = $this->objectService->searchObjects(query: $filters, _rbac: $scoped, _multitenancy: $scoped);
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				'Buildiq: rule-engine search failed',
@@ -138,7 +177,7 @@ class RuleObjectReader implements RuleObjectReaderInterface {
 
 		return $rows;
 
-	}//end findScoped()
+	}//end find()
 
 	/**
 	 * The `buildiq` register id and the id of one of its schemas.
