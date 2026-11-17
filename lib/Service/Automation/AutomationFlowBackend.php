@@ -35,6 +35,9 @@ use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\Flow\FlowVersionServiceInterface;
 use Psr\Container\ContainerInterface;
@@ -368,8 +371,7 @@ class AutomationFlowBackend {
 		try {
 			$found = $this->objectService->find(
 				id: $applicationUuid,
-				register: self::REGISTER_SLUG,
-				schema: self::APPLICATION_SCHEMA,
+				options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: self::APPLICATION_SCHEMA),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -396,9 +398,10 @@ class AutomationFlowBackend {
 	private function saveApplication(string $applicationUuid, array $application): void {
 		$this->objectService->saveObject(
 			object: $application,
-			register: self::REGISTER_SLUG,
-			schema: self::APPLICATION_SCHEMA,
-			uuid: $applicationUuid,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::APPLICATION_SCHEMA),
+				uuid: $applicationUuid
+			),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -421,7 +424,12 @@ class AutomationFlowBackend {
 		}
 
 		try {
-			$found = $this->objectService->find(id: $uuid, register: self::REGISTER_SLUG, schema: 'applicationVersion', _rbac: false, _multitenancy: false);
+			$found = $this->objectService->find(
+				id: $uuid,
+				options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: 'applicationVersion'),
+				_rbac: false,
+				_multitenancy: false
+			);
 		} catch (Throwable $e) {
 			$found = null;
 			$this->logger->warning('Buildiq: AutomationFlowBackend could not load version "' . $uuid . '": ' . $e->getMessage());

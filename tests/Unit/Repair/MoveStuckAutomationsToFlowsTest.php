@@ -163,7 +163,7 @@ final class MoveStuckAutomationsToFlowsTest extends TestCase {
 		$entity = $this->createMock(ObjectEntityInterface::class);
 		$this->objects->method('saveObject')->willReturnCallback(
 			static function (...$args) use (&$saved, $entity) {
-				$saved[$args[4]] = $args[0];
+				$saved[$args[1]->uuid] = $args[0];
 				return $entity;
 			}
 		);
