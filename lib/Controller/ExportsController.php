@@ -36,6 +36,7 @@ use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Kernel\Contracts\ExportArchiveStoreInterface;
 use OCA\Buildiq\Kernel\Contracts\ExportJobServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\ServerBundleWriterInterface;
+use OCA\Buildiq\Service\AppOrganisationGuard;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCP\AppFramework\Controller;
@@ -82,6 +83,7 @@ class ExportsController extends Controller {
 	 * @param LoggerInterface $logger Logger.
 	 * @param IGroupManager $groupManager Group membership resolver (RBAC, issue #158).
 	 * @param ExportArchiveStoreInterface|null $archives The archives kept in app data, for a download on another server (REQ-PLAT-010).
+	 * @param AppOrganisationGuard|null $organisationGuard Hides another organisation's scoped app; without it a scoped app is hidden from everyone.
 	 */
 	public function __construct(
 		IRequest $request,
@@ -91,9 +93,28 @@ class ExportsController extends Controller {
 		private LoggerInterface $logger,
 		private IGroupManager $groupManager,
 		private ?ExportArchiveStoreInterface $archives = null,
+		private ?AppOrganisationGuard $organisationGuard = null,
 	) {
 		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
+
+	/**
+	 * Whether the caller may see this Application at all; without the guard a
+	 * scoped app is hidden from everyone (REQ-BQOS-002).
+	 *
+	 * @param array<string, mixed> $application The Application.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002
+	 */
+	private function visibleToOrganisation(array $application): bool {
+		if (AppOrganisationGuard::isShared(application: $application) === true) {
+			return true;
+		}
+
+		return $this->organisationGuard?->canSee(application: $application, user: $this->userSession->getUser()) === true;
+	}//end visibleToOrganisation()
 
 	/**
 	 * Which slug Buildiq's own register answers to on THIS instance.
@@ -150,7 +171,8 @@ class ExportsController extends Controller {
 	 *
 	 * Checks (in order):
 	 *   1. Caller is authenticated.
-	 *   2. Application exists in OR.
+	 *   2. Application exists in OR, and is not another organisation's
+	 *      scoped app (REQ-BQOS-002; admins included).
 	 *   3. Caller's UID appears in owners|editors|viewers, OR caller is an
 	 *      NC admin (same bypass policy as ApplicationsController).
 	 *
@@ -169,17 +191,32 @@ class ExportsController extends Controller {
 
 		$uid = $user->getUID();
 
-		// NC admin bypass FIRST — same policy as ApplicationsController
-		// (REQ-OBRBAC-006). An NC admin may export any application regardless
+		// NC admin bypass right after the organisation scope — same policy as
+		// ApplicationsController (REQ-OBRBAC-006). An NC admin may export any
+		// application of their organisation regardless
 		// of whether the OR slug lookup resolves: wizard-built apps may not be
 		// indexed by searchObjectsBySlug(), and returning false on an empty
 		// lookup before the bypass wrongly 403s the owning admin.
-		if ($this->groupManager->isInGroup($uid, 'admin') === true) {
+		$isAdmin = $this->groupManager->isInGroup($uid, 'admin') === true;
+
+		try {
+			$app = $this->exportApplicationBySlug(applicationSlug: $applicationSlug);
+		} catch (\Throwable $e) {
+			$this->logger->debug('Buildiq export: authz lookup failed: ' . $e->getMessage());
+			return $isAdmin;
+		}
+
+		// Organisation scope before any role, admins included: another
+		// organisation's scoped app answers as an unknown one (REQ-BQOS-002).
+		if ($app !== [] && $this->visibleToOrganisation(application: $app) === false) {
+			return false;
+		}
+
+		if ($isAdmin === true) {
 			return true;
 		}
 
 		try {
-			$app = $this->exportApplicationBySlug(applicationSlug: $applicationSlug);
 			if ($app === []) {
 				return false;
 			}

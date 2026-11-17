@@ -28,6 +28,7 @@ namespace OCA\Buildiq\Tests\Unit\Controller;
 
 use InvalidArgumentException;
 use OCA\Buildiq\Controller\ExportsController;
+use OCA\Buildiq\Service\AppOrganisationGuard;
 use OCA\Buildiq\Service\ExportJobService;
 use OCA\Buildiq\Tests\Unit\Support\FakeSlugResolver;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
@@ -79,6 +80,13 @@ final class ExportsControllerAccessTest extends TestCase {
 	private array $registers = ['buildiq'];
 
 	/**
+	 * The organisation guard the controller gets, or none.
+	 *
+	 * @var AppOrganisationGuard|null
+	 */
+	private ?AppOrganisationGuard $guard = null;
+
+	/**
 	 * Fresh doubles per test.
 	 *
 	 * @return void
@@ -88,6 +96,7 @@ final class ExportsControllerAccessTest extends TestCase {
 		$this->groups = [];
 		$this->objects = ['app' => null, 'job' => null];
 		$this->registers = ['buildiq'];
+		$this->guard = null;
 	}//end setUp()
 
 	/**
@@ -322,6 +331,50 @@ final class ExportsControllerAccessTest extends TestCase {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParams')->willReturn(['target' => 'zip', 'applicationVersion' => '1.0.0']);
 
-		return new ExportsController($request, $this->jobs, $session, $container, new NullLogger(), $groupManager);
+		return new ExportsController($request, $this->jobs, $session, $container, new NullLogger(), $groupManager, null, $this->guard);
 	}//end controller()
+
+	/**
+	 * Another organisation's scoped app cannot be exported, by an admin neither,
+	 * and refuses exactly as an unknown slug does; without the guard a scoped app
+	 * is refused to everyone; a member of the holder passes on to the role check
+	 * (REQ-BQOS-002).
+	 *
+	 * @return void
+	 */
+	public function testAnotherOrganisationsScopedAppRefusesLikeAnUnknownOne(): void {
+		$this->jobs->method('queue')->willReturn('job-1');
+		$this->groups = ['root' => ['admin']];
+		$this->objects['app'] = ['id' => 'app-uuid', 'organisationScope' => 'holder', 'permissions' => ['owners' => ['user:alice']]];
+
+		$this->guard = $this->createMock(AppOrganisationGuard::class);
+		$this->guard->method('canSee')->willReturn(false);
+		$this->assertSame(Http::STATUS_FORBIDDEN, $this->controller('alice')->submit('toezicht')->getStatus());
+		$this->assertSame(Http::STATUS_FORBIDDEN, $this->controller('root')->submit('toezicht')->getStatus());
+
+		$this->guard = null;
+		$this->assertSame(Http::STATUS_FORBIDDEN, $this->controller('alice')->submit('toezicht')->getStatus());
+
+		$this->guard = $this->createMock(AppOrganisationGuard::class);
+		$this->guard->method('canSee')->willReturn(true);
+		$this->assertSame(Http::STATUS_ACCEPTED, $this->controller('alice')->submit('toezicht')->getStatus());
+		$this->assertSame(Http::STATUS_ACCEPTED, $this->controller('root')->submit('toezicht')->getStatus());
+		$this->assertSame(Http::STATUS_FORBIDDEN, $this->controller('eve')->submit('toezicht')->getStatus());
+	}//end testAnotherOrganisationsScopedAppRefusesLikeAnUnknownOne()
+
+	/**
+	 * An admin still passes the access check for an app the slug lookup does not
+	 * find (the bypass is kept), and reaches the unknown-application answer
+	 * instead of a 403.
+	 *
+	 * @return void
+	 */
+	public function testAnAdminStillPassesTheAccessCheckForAnAppTheLookupMisses(): void {
+		$this->groups = ['root' => ['admin']];
+		$this->objects['app'] = null;
+
+		$response = $this->controller('root')->submit('wizard-app');
+		$this->assertSame(Http::STATUS_UNPROCESSABLE_ENTITY, $response->getStatus());
+		$this->assertSame('Unknown application: wizard-app', $response->getData()['error']);
+	}//end testAnAdminStillPassesTheAccessCheckForAnAppTheLookupMisses()
 }//end class
