@@ -2044,13 +2044,13 @@ function relationFromField(raw, v) {
 </script>
 
 <style scoped lang="scss">
+@use '../../assets/editor-controls.scss' as c;
+
 .buildiq-field-editor__format {
 	display: flex;
 	flex-direction: column;
 	gap: 4px;
 }
-
-@use '../../assets/editor-controls.scss' as c;
 
 .buildiq-field-editor {
 	display: flex;
@@ -2118,24 +2118,29 @@ function relationFromField(raw, v) {
 	border: 1px solid var(--color-border);
 	border-radius: var(--border-radius);
 }
+
 .buildiq-field-editor__source-heading {
 	font-weight: 600;
 }
+
 .buildiq-field-editor__source-lead,
 .buildiq-field-editor__source-note,
 .buildiq-field-editor__source-summary {
 	margin: 0;
 	color: var(--color-text-maxcontrast);
 }
+
 .buildiq-field-editor__source-choice {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 16px;
 }
+
 .buildiq-field-editor__source-refusal {
 	margin: 0;
 	color: var(--color-error-text, var(--color-error));
 }
+
 .buildiq-field-editor__row--refused {
 	border-color: var(--color-error);
 }

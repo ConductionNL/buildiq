@@ -276,4 +276,25 @@ class RoutesTest extends TestCase {
 			);
 		}
 	}//end testManifestDesignerRoutesAllResolveToTheDesigner()
+
+	/**
+	 * The routes that clone into a new app read its `name` and `slug` from the
+	 * JSON body, and Nextcloud merges a JSON body over the URL parameters. A
+	 * placeholder with either name would be replaced by the new app's value,
+	 * so the source would be looked up under the slug of the copy.
+	 *
+	 * @return void
+	 */
+	public function testCloneRoutesDoNotNameAPlaceholderAfterABodyKey(): void {
+		foreach (['applications#copy', 'applications#createFromTemplate', 'store#install'] as $name) {
+			$route = $this->routes[$this->indexOf(name: $name)];
+			preg_match_all('/\{(\w+)\}/', (string)$route['url'], $matches);
+
+			$this->assertSame(
+				expected: [],
+				actual: array_values(array_intersect($matches[1], ['name', 'slug'])),
+				message: sprintf('Route "%s" (%s) names a URL placeholder after a body key.', $name, $route['url'])
+			);
+		}
+	}//end testCloneRoutesDoNotNameAPlaceholderAfterABodyKey()
 }//end class
