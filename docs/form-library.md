@@ -50,6 +50,33 @@ When that schema lacks properties the form needs, the dialog lists them. Tick
 carries. Nothing is written until you choose **Add to the app**. A registration
 form arrives as a draft, so you can check it before it goes live.
 
+## Request several products in one form
+
+A resident can ask for several products in one go, for example a parking
+permit and a waste container, and each product starts its own process.
+
+1. In the form builder, add a **Product list** field. Enter the products a
+   resident can choose, the details asked for each product, and the most rows
+   one submission may hold (at most 25).
+2. Use the form on a step of a journey. In the journey designer, open the
+   writes of the last step and choose **Once per item of** the product list.
+3. Enter the item field that picks the target (usually `product`) and add a
+   target for every product: the register, the schema and the type value its
+   request is written with. Map `item.<detail>` to the fields of the request.
+4. To keep the requests together, mark an earlier write as the one the parts
+   hang under, and fix a field of the request to the id of that write.
+
+The designer refuses to save while a product has no target, or while the
+mapping writes a field one of the target schemas does not have. It names the
+product and the field. Next to each target it shows the processes that start
+when a request is created there, and "This product starts no process." when
+there are none. That is a warning: a product may start its process another
+way.
+
+Until OpenRegister runs repeating writes and the product list widget is
+available, a journey with a repeating write can be designed and saved but not
+submitted.
+
 ## Share forms with other organisations
 
 ### As a file

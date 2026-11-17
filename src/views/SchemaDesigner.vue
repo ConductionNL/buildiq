@@ -51,6 +51,15 @@
 				<NcButton v-if="canImport" variant="secondary" @click="showImportWizard = true">
 					{{ t('buildiq', 'Import data') }}
 				</NcButton>
+				<!-- REQ-BQDB-005/006: administrators only; OpenRegister refuses
+				     everyone else server side, so this is a convenience. -->
+				<NcButton
+					v-if="isAdministrator"
+					data-testid="add-query-table"
+					variant="secondary"
+					@click="showQueryDialog = true">
+					{{ t('buildiq', 'Add a query table') }}
+				</NcButton>
 			</div>
 			<template v-if="isDiagram">
 				<!-- REQ-BQMD-005: the version's own register and the app's data registers. -->
@@ -243,6 +252,11 @@
 			:initialSchema="schemaId || ''"
 			@imported="onSchemaImported"
 			@close="showImportWizard = false" />
+
+		<SqlQueryDialog
+			v-if="showQueryDialog"
+			v-model:open="showQueryDialog"
+			@saved="onSchemaImported" />
 	</div>
 </template>
 
@@ -282,6 +296,7 @@ import WidgetEditor, {
 } from '../components/schema-editor/WidgetEditor.vue'
 import BreakingSchemaChangeDialog from '../dialogs/BreakingSchemaChangeDialog.vue'
 import ImportDataWizard from '../dialogs/ImportDataWizard.vue'
+import SqlQueryDialog from '../dialogs/SqlQueryDialog.vue'
 import { useApplicationVersion } from '../composables/useApplicationVersion.js'
 import { getCurrentUserGroups, useRole } from '../composables/useRole.js'
 import { useSessionHistory } from '../composables/useSessionHistory.js'
@@ -325,6 +340,7 @@ export default {
 		WidgetEditor,
 		BreakingSchemaChangeDialog,
 		ImportDataWizard,
+		SqlQueryDialog,
 	},
 
 	/**
@@ -362,6 +378,7 @@ export default {
 			// Import-data wizard state (buildiq-data-import-wizard).
 			applicationRecord: null,
 			showImportWizard: false,
+			showQueryDialog: false,
 			// The instance's groups, offered in the Access group picker.
 			instanceGroups: [],
 			// Plain-language breaking changes awaiting confirmation; null when
@@ -521,6 +538,17 @@ export default {
 		canImport() {
 			const role = useRole(this.applicationRecord)
 			return role === 'owner' || role === 'editor'
+		},
+
+		/**
+		 * Whether the caller is a Nextcloud administrator. Gates "Add a query
+		 * table"; OpenRegister refuses a non-administrator's preview and save.
+		 *
+		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-only-a-safe-query-from-an-administrator-runs-req-bqdb-006
+		 * @return {boolean}
+		 */
+		isAdministrator() {
+			return !!(typeof OC !== 'undefined' && OC.isUserAdmin && OC.isUserAdmin())
 		},
 
 		/**

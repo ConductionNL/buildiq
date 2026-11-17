@@ -51,6 +51,8 @@ use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionClass;
 use RuntimeException;
+use OCA\Buildiq\Tests\Support\LegacyObjectArgs;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * Tests for ApplicationDeletionService.
@@ -201,7 +203,8 @@ class ApplicationDeletionServiceTest extends TestCase {
 
 		$deleted = [];
 		$this->objectService->method('deleteObject')->willReturnCallback(
-			function (string $uuid) use (&$deleted): bool {
+			function (ObjectDeletion $deletion) use (&$deleted): bool {
+				$uuid = $deletion->uuid;
 				$deleted[] = $uuid;
 				return true;
 			}
@@ -232,7 +235,8 @@ class ApplicationDeletionServiceTest extends TestCase {
 
 		$order = [];
 		$this->objectService->method('deleteObject')->willReturnCallback(
-			function (string $uuid) use (&$order): bool {
+			function (ObjectDeletion $deletion) use (&$order): bool {
+				$uuid = $deletion->uuid;
 				$order[] = 'obj:' . $uuid;
 				return true;
 			}
@@ -523,7 +527,8 @@ class ApplicationDeletionServiceTest extends TestCase {
 
 		// The register object can never be deleted; version + app succeed.
 		$this->objectService->method('deleteObject')->willReturnCallback(
-			function (string $uuid): bool {
+			function (ObjectDeletion $deletion): bool {
+				$uuid = $deletion->uuid;
 				if ($uuid === 'stuck-1') {
 					throw new RuntimeException('object is locked');
 				}
@@ -651,6 +656,7 @@ class ApplicationDeletionServiceTest extends TestCase {
 		);
 		$this->objectService->method('deleteObject')->willReturnCallback(
 			static function (...$args) use ($record): bool {
+				$args = LegacyObjectArgs::positional(method: 'deleteObject', args: $args);
 				// A uuid string, or a deletion value object carrying one.
 				$uuid = '?';
 				if (is_string($args[0] ?? null) === true) {

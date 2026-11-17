@@ -37,6 +37,8 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\Buildiq\Tests\Support\LegacyObjectArgs;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * Tests for AppOverrideService on the unified app model.
@@ -174,11 +176,13 @@ class AppOverrideServiceTest extends TestCase {
 		$this->objectService->method('find')->willReturn($existingVersion);
 
 		// Exactly one saveObject — the version delta update (uuid reused). The
-		// uuid is the 5th positional arg of OR's saveObject signature
-		// (object, extend, register, schema, uuid, …); match it there.
+		// uuid travels in the ObjectSaveOptions; match it there.
 		$this->objectService->expects(self::once())
 			->method('saveObject')
-			->with(self::anything(), self::anything(), self::anything(), self::anything(), 'ver-1')
+			->with(...LegacyObjectArgs::with(method: 'saveObject', expected: [
+					'object' => self::anything(),
+					'uuid' => 'ver-1',
+				]))
 			->willReturn($existingVersion);
 
 		$result = $this->service->upsert(
@@ -225,7 +229,8 @@ class AppOverrideServiceTest extends TestCase {
 		$deleted = [];
 		$this->objectService->expects(self::exactly(2))
 			->method('deleteObject')
-			->willReturnCallback(static function ($uuid) use (&$deleted): void {
+			->willReturnCallback(static function (ObjectDeletion $deletion) use (&$deleted): void {
+				$uuid = $deletion->uuid;
 				$deleted[] = $uuid;
 			});
 

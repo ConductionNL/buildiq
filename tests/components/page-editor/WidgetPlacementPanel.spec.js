@@ -606,4 +606,73 @@ describe('WidgetPlacementPanel', () => {
 			expect(emittedWidgets(wrapper)[0]).not.toHaveProperty('props')
 		})
 	})
+
+	describe('promoting to the Nextcloud dashboard (publish-widgets-to-nc-dashboard 8.1)', () => {
+		it('is off for every existing widget, and a page left alone emits nothing', () => {
+			const page = dashboardPage([bodyWidget(), bodyWidget({ id: 'second', gridX: 6 })])
+			const before = JSON.stringify(page)
+			const wrapper = mountPanel(page)
+
+			const toggles = wrapper.findAll('[data-testid="placement-promote"]')
+			expect(toggles).toHaveLength(2)
+			toggles.forEach((toggle) => expect(toggle.element.checked).toBe(false))
+			expect(wrapper.find('[data-testid="placement-panel-title"]').exists()).toBe(false)
+			expect(wrapper.emitted('update:widgets')).toBeFalsy()
+			expect(JSON.stringify(page)).toBe(before)
+		})
+
+		it('promoting writes ncDashboard, mints an id when there is none, and shows the panel fields', async () => {
+			const unnamed = bodyWidget()
+			delete unnamed.id
+			const wrapper = mountPanel(dashboardPage([unnamed]))
+
+			await wrapper.find('[data-testid="placement-promote"]').setValue(true)
+			const [promoted] = emittedWidgets(wrapper)
+
+			expect(promoted.ncDashboard).toEqual({})
+			expect(promoted.id).toMatch(new RegExp('^' + ANY_SURFACE_TYPE + '-[a-z0-9]+$'))
+			expect(promoted.widgetKey).toBe(ANY_SURFACE_TYPE)
+			expect(promoted.gridWidth).toBe(6)
+
+			await wrapper.setProps({ page: dashboardPage([promoted]) })
+			expect(wrapper.find('[data-testid="placement-panel-title"]').exists()).toBe(true)
+			expect(wrapper.find('[data-testid="placement-panel-icon"]').exists()).toBe(true)
+		})
+
+		it('promoting keeps an id the placement already has', async () => {
+			const wrapper = mountPanel(dashboardPage([bodyWidget()]))
+			await wrapper.find('[data-testid="placement-promote"]').setValue(true)
+
+			expect(emittedWidgets(wrapper)[0].id).toBe('first')
+		})
+
+		it('writes the panel title and only an icon from the shared set', async () => {
+			const wrapper = mountPanel(dashboardPage([bodyWidget({ ncDashboard: {} })]))
+
+			await wrapper.find('[data-testid="placement-panel-title"]').setValue('Open requests')
+			expect(emittedWidgets(wrapper)[0].ncDashboard).toEqual({ title: 'Open requests' })
+
+			const icons = wrapper.findAll('[data-testid="placement-panel-icon"] option').map((option) => option.element.value)
+			expect(icons).toEqual(['', 'ViewDashboard', 'ChartBar', 'Calendar'])
+			await wrapper.find('[data-testid="placement-panel-icon"]').setValue('ChartBar')
+			expect(emittedWidgets(wrapper)[0].ncDashboard).toEqual({ icon: 'ChartBar' })
+
+			const count = wrapper.emitted('update:widgets').length
+			wrapper.vm.updatePanel(0, 'icon', 'NotAnIcon')
+			expect(wrapper.emitted('update:widgets')).toHaveLength(count)
+		})
+
+		it('demoting removes ncDashboard and keeps the id, so promoting again gives the same id', async () => {
+			const wrapper = mountPanel(dashboardPage([bodyWidget({ id: 'open-requests-ab12cd', ncDashboard: { title: 'Open requests' } })]))
+
+			await wrapper.find('[data-testid="placement-promote"]').setValue(false)
+			const [demoted] = emittedWidgets(wrapper)
+			expect(demoted).not.toHaveProperty('ncDashboard')
+			expect(demoted.id).toBe('open-requests-ab12cd')
+
+			await wrapper.setProps({ page: dashboardPage([demoted]) })
+			await wrapper.find('[data-testid="placement-promote"]').setValue(true)
+			expect(emittedWidgets(wrapper)[0]).toMatchObject({ id: 'open-requests-ab12cd', ncDashboard: {} })
+		})
+	})
 })

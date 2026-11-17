@@ -174,9 +174,10 @@ class CopilotController extends Controller {
 		$plan = $this->collectPlanPayload();
 		$agentId = $this->resolveOptionalString(raw: $this->request->getParam('agentId', null));
 		$prompt = (string)$this->request->getParam('prompt', '');
+		$traceId = $this->resolveOptionalString(raw: $this->request->getParam('traceId', null));
 
 		try {
-			$result = $this->copilotService->execute(plan: $plan, userId: $user->getUID(), agentId: $agentId, prompt: $prompt);
+			$result = $this->copilotService->execute(plan: $plan, userId: $user->getUID(), agentId: $agentId, prompt: $prompt, traceId: $traceId);
 			return new JSONResponse(data: $result, statusCode: Http::STATUS_OK);
 		} catch (CopilotException $e) {
 			return $this->mapExceptionToResponse(error: $e);
@@ -222,7 +223,8 @@ class CopilotController extends Controller {
 		$plan = $this->collectPlanPayload();
 
 		try {
-			$this->copilotService->discard(agentId: $agentId, userId: $user->getUID(), prompt: $prompt, plan: $plan);
+			$traceId = $this->resolveOptionalString(raw: $this->request->getParam('traceId', null));
+			$this->copilotService->discard(agentId: $agentId, userId: $user->getUID(), prompt: $prompt, plan: $plan, traceId: $traceId);
 			return new JSONResponse(data: ['status' => 'logged'], statusCode: Http::STATUS_OK);
 		} catch (CopilotException $e) {
 			return $this->mapExceptionToResponse(error: $e);

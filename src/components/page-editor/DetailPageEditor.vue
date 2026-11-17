@@ -3,6 +3,8 @@
   - DetailPageEditor — register + schema picker, route-param derivation
   - from parent page route, sidebar config (boolean OR object shape both
   - supported), `sidebarProps.tabs` list. Implements REQ-OBPD-005.
+  - Related items (`relatedCollections`, `relationLinks`) and the sidebar's
+  - Files choice: REQ-BQRI-001..003 (pages-detail-related-items).
   -->
 <template>
 	<div class="detail-page-editor">
@@ -14,8 +16,14 @@
 				:config="config"
 				:registers="registers"
 				:schemas="schemas"
+				:databaseRegisters="databaseRegisters"
 				@register="update('register', $event)"
 				@schema="update('schema', $event)" />
+			<WriteActionSwitches
+				:config="config"
+				:actions="writeActions"
+				:readOnly="databaseReadOnly"
+				@set="setWriteAction" />
 		</div>
 
 		<p v-if="!routeHasParam" class="detail-page-editor__warn" role="alert">
@@ -91,7 +99,41 @@
 					:modelValue="(config.sidebar && config.sidebar.tabs) || []"
 					@update:modelValue="updateSidebarKey('tabs', $event)" />
 			</div>
+			<label
+				v-if="sidebarShape !== 'none'"
+				class="detail-page-editor__inline detail-page-editor__files">
+				<input
+					type="checkbox"
+					:checked="filesShown"
+					@change="setFilesShown($event.target.checked)" />
+				{{ t('buildiq', 'Files') }}
+			</label>
 			<InlineFieldMark :error="markFor('sidebar')" />
+		</fieldset>
+
+		<fieldset class="detail-page-editor__fieldset">
+			<legend>{{ t('buildiq', 'Related items') }}</legend>
+			<p class="detail-page-editor__note">
+				{{ t('buildiq', 'Lists of records that point at the open record.') }}
+			</p>
+			<RelatedCollectionBuilder
+				:modelValue="config.relatedCollections || []"
+				:registers="registers"
+				:picker="picker"
+				:defaultRegister="config.register || ''"
+				@update:modelValue="updateList('relatedCollections', $event)" />
+			<InlineFieldMark :error="markFor('relatedCollections')" />
+			<p class="detail-page-editor__note">
+				{{ t('buildiq', 'Buttons that link an existing record to the open record.') }}
+			</p>
+			<RelationLinkBuilder
+				:modelValue="config.relationLinks || []"
+				:registers="registers"
+				:picker="picker"
+				:hostRegister="config.register || ''"
+				:hostSchema="config.schema || ''"
+				@update:modelValue="updateList('relationLinks', $event)" />
+			<InlineFieldMark :error="markFor('relationLinks')" />
 		</fieldset>
 
 		<fieldset class="detail-page-editor__fieldset">
@@ -210,8 +252,11 @@ import AppliesToPanel from './fields/AppliesToPanel.vue'
 import InlineFieldMark from './fields/InlineFieldMark.vue'
 import RegisterSchemaFields from './fields/RegisterSchemaFields.vue'
 import RegistrationFormList from './fields/RegistrationFormList.vue'
+import RelatedCollectionBuilder from './fields/RelatedCollectionBuilder.vue'
+import RelationLinkBuilder from './fields/RelationLinkBuilder.vue'
 import ScreenOverrideList from './fields/ScreenOverrideList.vue'
 import SidebarTabBuilder from './fields/SidebarTabBuilder.vue'
+import WriteActionSwitches from './fields/WriteActionSwitches.vue'
 import { useEditorRegisterPicker } from '../../composables/useEditorRegisterPicker.js'
 import {
 	pageEditorBaseMixin,
@@ -219,6 +264,7 @@ import {
 	pageEditorRegisterPropsMixin,
 	pageEditorRegisterWatchMixin,
 } from '../../mixins/pageEditorBase.js'
+import { pageEditorDatabaseMixin } from '../../mixins/pageEditorDatabase.js'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 
 export default {
@@ -229,8 +275,11 @@ export default {
 		InlineFieldMark,
 		RegisterSchemaFields,
 		RegistrationFormList,
+		RelatedCollectionBuilder,
+		RelationLinkBuilder,
 		ScreenOverrideList,
 		SidebarTabBuilder,
+		WriteActionSwitches,
 	},
 
 	mixins: [
@@ -239,6 +288,7 @@ export default {
 		pageEditorValidationMixin,
 		pageEditorPickerMixin,
 		pageEditorRegisterWatchMixin,
+		pageEditorDatabaseMixin,
 	],
 
 	props: {
@@ -264,12 +314,41 @@ export default {
 
 	computed: {
 		/**
+		 * The config key a read-only database switches off on a detail page.
+		 *
+		 * @return {string[]}
+		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-pages-follow-the-databases-write-setting-req-bqdb-002
+		 */
+		writeActionKeys() {
+			return ['showEditAction']
+		},
+
+		/**
+		 * The write action switch of a detail page.
+		 *
+		 * @return {Array<{key: string, label: string}>}
+		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-pages-follow-the-databases-write-setting-req-bqdb-002
+		 */
+		writeActions() {
+			return [{ key: 'showEditAction', label: this.t('buildiq', 'Edit button') }]
+		},
+
+		/**
 		 * Observed behaviour of `validatedConfigKeys` (retrofit annotation).
 		 *
 		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		validatedConfigKeys() {
-			return ['register', 'schema', 'sidebar', 'sidebarProps', 'headerActions', 'lifecycleActions']
+			return [
+				'register',
+				'schema',
+				'sidebar',
+				'sidebarProps',
+				'relatedCollections',
+				'relationLinks',
+				'headerActions',
+				'lifecycleActions',
+			]
 		},
 
 		/**
@@ -340,6 +419,18 @@ export default {
 			}
 			return 'object'
 		},
+
+		/**
+		 * Whether the sidebar's files tab shows: on unless `files` is in
+		 * `sidebar.hiddenTabs`.
+		 *
+		 * @spec openspec/changes/pages-detail-related-items/tasks.md#task-T03
+		 */
+		filesShown() {
+			const s = this.config.sidebar
+			const hidden = (s && typeof s === 'object' && s.hiddenTabs) || []
+			return !(Array.isArray(hidden) && hidden.includes('files'))
+		},
 	},
 
 	methods: {
@@ -399,6 +490,52 @@ export default {
 				enabled: true,
 			}
 			next.sidebar = { ...current, [key]: value }
+			this.$emit('update:config', next)
+		},
+
+		/**
+		 * Write a list key of the config; an empty list removes the key, so a
+		 * page that never had related items round-trips unchanged.
+		 *
+		 * @param {'relatedCollections'|'relationLinks'} key - the config key.
+		 * @param {Array<object>} list - the rebuilt list from its builder.
+		 * @spec openspec/changes/pages-detail-related-items/tasks.md#task-T01
+		 */
+		updateList(key, list) {
+			const next = { ...this.config }
+			if (!Array.isArray(list) || list.length === 0) {
+				delete next[key]
+			} else {
+				next[key] = list
+			}
+			this.$emit('update:config', next)
+		},
+
+		/**
+		 * Show or hide the sidebar's files tab through `sidebar.hiddenTabs`.
+		 *
+		 * Hiding it from the boolean form converts the sidebar to the object
+		 * form (`true` becomes `{ enabled: true, hiddenTabs: ['files'] }`), so
+		 * the choice survives (design D4). Showing it removes `files`, and
+		 * `hiddenTabs` itself when nothing else is hidden.
+		 *
+		 * @param {boolean} shown - the Files checkbox state.
+		 * @spec openspec/changes/pages-detail-related-items/tasks.md#task-T03
+		 */
+		setFilesShown(shown) {
+			const next = { ...this.config }
+			const current =
+				typeof next.sidebar === 'object' && next.sidebar
+					? next.sidebar
+					: { enabled: next.sidebar !== false }
+			const hidden = (Array.isArray(current.hiddenTabs) ? current.hiddenTabs : []).filter(
+				(tab) => tab !== 'files',
+			)
+			if (!shown) {
+				hidden.push('files')
+			}
+			const { hiddenTabs: _h, ...rest } = current
+			next.sidebar = hidden.length === 0 ? rest : { ...rest, hiddenTabs: hidden }
 			this.$emit('update:config', next)
 		},
 
