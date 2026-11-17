@@ -72,9 +72,10 @@ class AppHealthSamples {
 	 *
 	 * @param mixed $pages The posted `pages` list.
 	 *
-	 * @return list<array<string, int|string>> One `{pageId, ...counts}` per kept page.
+	 * @return list<array<string, int|string>> One `{pageId, ...counts, failures}` per kept page.
 	 *
 	 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-the-server-scopes-and-bounds-samples-req-bqdm-005
+	 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-operators-read-the-same-numbers-as-metrics-req-bqdm-007
 	 */
 	public function sanitise(mixed $pages): array {
 		if (is_array($pages) === false) {
@@ -95,6 +96,9 @@ class AppHealthSamples {
 			}
 
 			if ($total > 0) {
+				// Derived here, never taken from the post: the request failure
+				// metric sums one field (REQ-BQDM-007).
+				$sample['failures'] = ($sample['failures4xx'] + $sample['failures5xx']);
 				$kept[] = $sample;
 			}
 		}
@@ -124,6 +128,32 @@ class AppHealthSamples {
 			}
 		}
 
+		$rows = $this->pageRows(pages: $pages);
+
+		$failures = $total['failures4xx'] + $total['failures5xx'];
+		$overOneSecond = $total['durationUnder3000'] + $total['durationOver3000'];
+
+		return [
+			'requests' => $total['requests'],
+			'failures' => $failures,
+			'failureShare' => $this->share(part: $failures, whole: $total['requests']),
+			'slowRequestShare' => $this->share(part: $overOneSecond, whole: $total['requests']),
+			'loads' => $total['loads'],
+			'averageLoadMs' => $this->average(sum: $total['loadMsSum'], count: $total['loads']),
+			'slowLoadShare' => $this->share(part: $total['slowLoads'], whole: $total['loads']),
+			'clientErrors' => $total['clientErrors'],
+			'slowestPages' => array_slice($rows, 0, self::SLOWEST),
+		];
+	}//end aggregate()
+
+	/**
+	 * One row per page that loaded at least once, slowest average first.
+	 *
+	 * @param array<string, array<string, int>> $pages Summed counts per page id.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 */
+	private function pageRows(array $pages): array {
 		$rows = [];
 		foreach ($pages as $pageId => $counts) {
 			if ($pageId === '' || $counts['loads'] === 0) {
@@ -141,21 +171,8 @@ class AppHealthSamples {
 
 		usort($rows, static fn (array $a, array $b): int => $b['averageLoadMs'] <=> $a['averageLoadMs']);
 
-		$failures = $total['failures4xx'] + $total['failures5xx'];
-		$overOneSecond = $total['durationUnder3000'] + $total['durationOver3000'];
-
-		return [
-			'requests' => $total['requests'],
-			'failures' => $failures,
-			'failureShare' => $this->share(part: $failures, whole: $total['requests']),
-			'slowRequestShare' => $this->share(part: $overOneSecond, whole: $total['requests']),
-			'loads' => $total['loads'],
-			'averageLoadMs' => $this->average(sum: $total['loadMsSum'], count: $total['loads']),
-			'slowLoadShare' => $this->share(part: $total['slowLoads'], whole: $total['loads']),
-			'clientErrors' => $total['clientErrors'],
-			'slowestPages' => array_slice($rows, 0, self::SLOWEST),
-		];
-	}//end aggregate()
+		return $rows;
+	}//end pageRows()
 
 	/**
 	 * The cap of one count: the total load time may be MAX_COUNT loads of a minute.

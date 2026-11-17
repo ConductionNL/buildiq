@@ -62,6 +62,15 @@
 				</ul>
 
 				<p
+					v-for="(line, index) in approvalFormLines"
+					v-show="result.conditionMatched"
+					:key="'form-' + index"
+					class="automation-test-panel__approval-form"
+					data-testid="dry-run-approval-form">
+					{{ line }}
+				</p>
+
+				<p
 					v-if="result.errors && result.errors.length > 0"
 					class="automation-test-panel__errors">
 					{{ result.errors.join(', ') }}
@@ -90,6 +99,7 @@
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcModal, NcNoteCard, NcTextArea } from '@nextcloud/vue'
+import { formFieldsOf } from '../dialogs/approvalFormFields.js'
 
 export default {
 	name: 'AutomationTestPanelModal',
@@ -112,6 +122,28 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * One line per approval step that asks the approver for fields:
+		 * "asks for 2 fields: bedrag, motivering" (logic-approval-task-form).
+		 *
+		 * @return {Array<string>}
+		 * @spec openspec/changes/logic-approval-task-form/design.md
+		 */
+		approvalFormLines() {
+			const actions = Array.isArray(this.automation.actions) ? this.automation.actions : []
+			return actions
+				.filter((action) => action && action.type === 'approval')
+				.map((action) => formFieldsOf(action).map((entry) => entry.field))
+				.filter((fields) => fields.length > 0)
+				.map((fields) => n(
+					'buildiq',
+					'asks for {count} field: {fields}',
+					'asks for {count} fields: {fields}',
+					fields.length,
+					{ count: fields.length, fields: fields.join(', ') },
+				))
+		},
+
 		/**
 		 * Human label for the automation's live approval state
 		 * (spec REQ-AUTD-007 — dry-run reports the aggregate state alongside
@@ -203,6 +235,11 @@ export default {
 .automation-test-panel__duration {
 	color: var(--color-text-maxcontrast);
 	font-size: 0.85em;
+}
+
+.automation-test-panel__approval-form {
+	margin: 0 0 8px;
+	color: var(--color-text-maxcontrast);
 }
 
 .automation-test-panel__approval-state {

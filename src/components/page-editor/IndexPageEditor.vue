@@ -17,6 +17,7 @@
 				:config="config"
 				:registers="registers"
 				:schemas="schemas"
+				:databaseRegisters="databaseRegisters"
 				@register="update('register', $event)"
 				@schema="update('schema', $event)" />
 			<label>
@@ -40,6 +41,27 @@
 			<InlineFieldMark :error="markFor('columns')" />
 		</fieldset>
 
+		<fieldset class="index-page-editor__fieldset" data-testid="index-page-search">
+			<legend>{{ t('buildiq', 'Search') }}</legend>
+			<label class="index-page-editor__inline">
+				<input
+					type="checkbox"
+					data-testid="index-page-inline-search"
+					:checked="config.inlineSearch === true"
+					@change="onInlineSearchToggle($event.target.checked)" />
+				{{ t('buildiq', 'Show the search box above the list') }}
+			</label>
+			<label>
+				{{ t('buildiq', 'Search placeholder') }}
+				<input
+					type="text"
+					data-testid="index-page-search-placeholder"
+					:value="config.searchPlaceholder || ''"
+					:placeholder="t('buildiq', 'Search permits')"
+					@input="update('searchPlaceholder', $event.target.value)" />
+			</label>
+		</fieldset>
+
 		<fieldset class="index-page-editor__fieldset">
 			<legend>{{ t('buildiq', 'Views') }}</legend>
 			<IndexViewModesBuilder
@@ -58,6 +80,11 @@
 
 		<fieldset class="index-page-editor__fieldset">
 			<legend>{{ t('buildiq', 'Actions') }}</legend>
+			<WriteActionSwitches
+				:config="config"
+				:actions="writeActions"
+				:readOnly="databaseReadOnly"
+				@set="setWriteAction" />
 			<ActionBuilder
 				:modelValue="config.actions || []"
 				@update:modelValue="update('actions', $event)" />
@@ -79,6 +106,30 @@
 				:modelValue="(config.sidebar && config.sidebar.columnGroups) || []"
 				@update:modelValue="updateSidebar('columnGroups', $event)" />
 		</fieldset>
+
+		<fieldset class="index-page-editor__fieldset">
+			<legend>{{ t('buildiq', 'Saved views') }}</legend>
+			<label class="index-page-editor__inline">
+				<input
+					type="checkbox"
+					:checked="config.allowSavedViews === true"
+					@change="onSavedViewsToggle($event.target.checked)" />
+				{{ t('buildiq', 'Let app users save their own views') }}
+			</label>
+			<p class="index-page-editor__hint">
+				{{
+					t(
+						'buildiq',
+						'Views for everyone: every app user of this page finds these in the views list.',
+					)
+				}}
+			</p>
+			<SavedViewsBuilder
+				:modelValue="config.defaultSavedViews || []"
+				:schemaProperties="schemaProperties"
+				@update:modelValue="update('defaultSavedViews', $event)" />
+			<InlineFieldMark :error="markFor('defaultSavedViews')" />
+		</fieldset>
 	</div>
 </template>
 
@@ -89,12 +140,15 @@ import ColumnBuilder from './fields/ColumnBuilder.vue'
 import IndexViewModesBuilder from './fields/IndexViewModesBuilder.vue'
 import InlineFieldMark from './fields/InlineFieldMark.vue'
 import RegisterSchemaFields from './fields/RegisterSchemaFields.vue'
+import SavedViewsBuilder from './fields/SavedViewsBuilder.vue'
 import SidebarSectionBuilder from './fields/SidebarSectionBuilder.vue'
+import WriteActionSwitches from './fields/WriteActionSwitches.vue'
 import { useEditorRegisterPicker } from '../../composables/useEditorRegisterPicker.js'
 import {
 	pageEditorBaseMixin,
 	pageEditorSchemaBoundMixin,
 } from '../../mixins/pageEditorBase.js'
+import { pageEditorDatabaseMixin } from '../../mixins/pageEditorDatabase.js'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 
 export default {
@@ -107,12 +161,15 @@ export default {
 		RegisterSchemaFields,
 		DataSourceOriginToggle,
 		IndexViewModesBuilder,
+		SavedViewsBuilder,
+		WriteActionSwitches,
 	},
 
 	mixins: [
 		pageEditorBaseMixin,
 		pageEditorValidationMixin,
 		pageEditorSchemaBoundMixin,
+		pageEditorDatabaseMixin,
 	],
 
 	props: {
@@ -134,6 +191,30 @@ export default {
 
 	computed: {
 		/**
+		 * The config keys a read-only database switches off on an index page.
+		 *
+		 * @return {string[]}
+		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-pages-follow-the-databases-write-setting-req-bqdb-002
+		 */
+		writeActionKeys() {
+			return ['showAdd', 'showEditAction', 'showDeleteAction']
+		},
+
+		/**
+		 * The write action switches of an index page.
+		 *
+		 * @return {Array<{key: string, label: string}>}
+		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-pages-follow-the-databases-write-setting-req-bqdb-002
+		 */
+		writeActions() {
+			return [
+				{ key: 'showAdd', label: this.t('buildiq', 'Add button') },
+				{ key: 'showEditAction', label: this.t('buildiq', 'Edit button') },
+				{ key: 'showDeleteAction', label: this.t('buildiq', 'Delete button') },
+			]
+		},
+
+		/**
 		 * Observed behaviour of `validatedConfigKeys` (retrofit annotation).
 		 *
 		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
@@ -150,6 +231,7 @@ export default {
 				'calendar',
 				'board',
 				'dateAxis',
+				'defaultSavedViews',
 			]
 		},
 
@@ -225,6 +307,44 @@ export default {
 				const current =
 					(typeof next.sidebar === 'object' && next.sidebar) || {}
 				next.sidebar = { ...current, enabled: true }
+			}
+			this.$emit('update:config', next)
+		},
+
+		/**
+		 * Show the list's search box above the table instead of in the
+		 * sidebar. Off deletes `config.inlineSearch`, the library default.
+		 *
+		 * @param {boolean} enabled - the checkbox's new state.
+		 * @return {void}
+		 * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer/spec.md#requirement-a-list-page-searches-its-records-by-keyword-req-bqcv-005
+		 */
+		onInlineSearchToggle(enabled) {
+			const next = { ...this.config }
+			if (enabled) {
+				next.inlineSearch = true
+			} else {
+				delete next.inlineSearch
+			}
+			this.$emit('update:config', next)
+		},
+
+		/**
+		 * Let app users save their own views on this page, or not. Off
+		 * deletes `config.allowSavedViews` rather than storing `false`, which
+		 * nextcloud-vue reads as "turn the Views tab off" and so would also
+		 * hide the views the maker defined for everyone.
+		 *
+		 * @param {boolean} enabled - the switch's new state.
+		 * @return {void}
+		 * @spec openspec/changes/data-index-grid-and-saved-views/tasks.md#t05
+		 */
+		onSavedViewsToggle(enabled) {
+			const next = { ...this.config }
+			if (enabled) {
+				next.allowSavedViews = true
+			} else {
+				delete next.allowSavedViews
 			}
 			this.$emit('update:config', next)
 		},
@@ -360,6 +480,12 @@ export default {
 .index-page-editor__fieldset legend {
 	padding: 0 6px;
 	font-weight: 600;
+	font-size: 13px;
+}
+
+.index-page-editor__hint {
+	margin: 0 0 6px;
+	color: var(--color-text-maxcontrast);
 	font-size: 13px;
 }
 

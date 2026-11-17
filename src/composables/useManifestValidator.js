@@ -35,6 +35,7 @@ import { validateDocumentAttachments } from '../services/manifestValidation/docu
 import { validateExternalForms } from '../services/manifestValidation/externalForms.js'
 import { validateFormLogic } from '../services/manifestValidation/formLogic.js'
 import { validateIndexViews } from '../services/manifestValidation/indexViews.js'
+import { validateLabels } from '../services/manifestValidation/labels.js'
 import { validateSchedules } from '../services/manifestValidation/schedules.js'
 import { validateWorkflowAttachments } from '../services/manifestValidation/workflowAttachments.js'
 
@@ -86,6 +87,8 @@ export function useManifestValidator() {
 					.concat(validateFormLogic(manifest))
 					.concat(validateExternalForms(manifest))
 					.concat(validateIndexViews(manifest))
+					// An empty label on an action, widget or form field (REQ-PLAT-005).
+					.concat(validateLabels(manifest))
 				errors.value = libErrors.concat(appErrors)
 			} catch (e) {
 				errors.value = [`validator threw: ${e && e.message ? e.message : e}`]

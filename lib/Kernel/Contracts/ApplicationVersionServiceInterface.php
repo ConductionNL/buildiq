@@ -175,6 +175,19 @@ interface ApplicationVersionServiceInterface {
 	public function onSave(?array $current, array $next): array;
 
 	/**
+	 * Return the SHA-256 hex digest of the canonicalised manifest.
+	 *
+	 * @param array<string,mixed> $manifest The manifest blob
+	 *
+	 * @return string 64-char lowercase hexadecimal digest
+	 *
+	 * @throws \JsonException When the manifest contains non-encodable values
+	 *
+	 * @spec openspec/changes/lifecycle-git-branches/tasks.md
+	 */
+	public function hashManifest(array $manifest): string;
+
+	/**
 	 * Release a version: publish it, point production at it, archive the previous
 	 * production (spec REQ-OBV-110 / design Decision 3).
 	 *

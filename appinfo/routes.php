@@ -26,6 +26,9 @@ return \OCA\Buildiq\Middleware\Support\ApiPathAliases::withVersionedAliases(\OCA
         // defence in depth. The caller becomes the sole owner of the new Application.
         // Must precede the {slug} + collection routes so it does not shadow them.
         ['name' => 'applicationCreation#wizard', 'url' => '/api/applications/wizard', 'verb' => 'POST'],
+        // lifecycle-import-app-and-cli: an exported archive imported as a new app (REQ-BQIC-001).
+        ['name' => 'applicationImport#import', 'url' => '/api/applications/import', 'verb' => 'POST'],
+        ['name' => 'applicationImport#preview', 'url' => '/api/applications/import/preview', 'verb' => 'POST'],
 
         // First-time-setup contract (buildiq-first-time-setup, ADR-042) — the
         // fleet-wide CnSetupWizard endpoints. Admin-only via
@@ -93,6 +96,9 @@ return \OCA\Buildiq\Middleware\Support\ApiPathAliases::withVersionedAliases(\OCA
         ['name' => 'applicationVersions#destroy', 'url' => '/api/applications/{appSlug}/versions/{versionSlug}',  'verb' => 'DELETE', 'requirements' => ['appSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'versionSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         // Owner-only release: set-as-production + publish + demote previous production
         // (`application-versions` REQ-OBV-110). Single-production invariant; NO admin bypass.
+        // lifecycle-git-branches: start a branch from a version, and preview / apply a merge into a draft version.
+        ['name' => 'applicationVersions#branch',   'url' => '/api/applications/{appSlug}/versions/{versionSlug}/branch', 'verb' => 'POST', 'requirements' => ['appSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'versionSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        ['name' => 'applicationVersions#merge',    'url' => '/api/applications/{appSlug}/versions/{source}/merge/{target}', 'verb' => 'POST', 'requirements' => ['appSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'source' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'target' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'applicationVersions#release',  'url' => '/api/applications/{appSlug}/versions/{versionSlug}/release', 'verb' => 'POST', 'requirements' => ['appSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'versionSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
         // Insights endpoint (buildiq-app-detail-overview REQ-OBAI-001 / REQ-OBAI-007).
@@ -138,6 +144,11 @@ return \OCA\Buildiq\Middleware\Support\ApiPathAliases::withVersionedAliases(\OCA
         // do. MUST use a DISTINCT route name (dashboard#builderSlash, a thin alias of
         // builder()) — the AppHost Routes::standard() guard throws on duplicate names.
         ['name' => 'dashboard#builderSlash', 'url' => '/builder/{slug}/', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        // pages-installable-offline-and-mobile D1/D2: the installable runtime has a
+        // path of its own, so a service worker scoped to it controls one app's
+        // runtime and nothing else; its web app manifest is signed-in only.
+        ['name' => 'dashboard#run', 'url' => '/run/{slug}/', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        ['name' => 'applications#webManifest', 'url' => '/run/{slug}/manifest.webmanifest', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
         // Reserved Buildiq designer sub-paths (buildiq-deep-links #100 fix).
         // `pages`, `schemas`, `schemas/{schemaId}` and `walkthrough` are
@@ -200,6 +211,8 @@ return \OCA\Buildiq\Middleware\Support\ApiPathAliases::withVersionedAliases(\OCA
         // the schema). evaluate/test-all are POST so they cannot collide
         // with the GET SPA catch-all; the GET schema route's `/schema` suffix makes it
         // strictly more specific than `/{path}`. Slugs are kebab-case.
+        // The rule sets another app may call (rules-evaluation-for-other-apps REQ-BQRX-001): `?callableBy={app}`.
+        ['name' => 'rules#index',    'url' => '/api/rules',                        'verb' => 'GET'],
         ['name' => 'rules#evaluate', 'url' => '/api/rules/{ruleSetSlug}/evaluate', 'verb' => 'POST', 'requirements' => ['ruleSetSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'rules#schema',   'url' => '/api/rules/{ruleSetSlug}/schema',   'verb' => 'GET',  'requirements' => ['ruleSetSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'rules#testAll',  'url' => '/api/rules/{ruleSetSlug}/test-all', 'verb' => 'POST', 'requirements' => ['ruleSetSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
@@ -244,7 +257,10 @@ return \OCA\Buildiq\Middleware\Support\ApiPathAliases::withVersionedAliases(\OCA
         ['name' => 'automations#enable',   'url' => '/api/automations/{uuid}/enable',   'verb' => 'POST', 'requirements' => ['uuid' => '[a-f0-9-]{8,}']],
         ['name' => 'automations#disable',  'url' => '/api/automations/{uuid}/disable',  'verb' => 'POST', 'requirements' => ['uuid' => '[a-f0-9-]{8,}']],
         ['name' => 'automations#dryRun',   'url' => '/api/automations/{uuid}/dry-run',  'verb' => 'POST', 'requirements' => ['uuid' => '[a-f0-9-]{8,}']],
+        // The run log (logic-automation-run-log D3): the summary route comes first so `runs` is never read as a uuid.
+        ['name' => 'automations#runsSummary', 'url' => '/api/automations/runs/summary', 'verb' => 'GET'],
         ['name' => 'automations#status',   'url' => '/api/automations/{uuid}/status',   'verb' => 'GET',  'requirements' => ['uuid' => '[a-f0-9-]{8,}']],
+        ['name' => 'automations#runs',     'url' => '/api/automations/{uuid}/runs',     'verb' => 'GET',  'requirements' => ['uuid' => '[a-f0-9-]{8,}']],
 
         // App-override store-and-serve (buildiq-inline-edit-persistence,
         // spec app-override-persistence). Per-instance shared manifest delta for
@@ -296,6 +312,9 @@ return \OCA\Buildiq\Middleware\Support\ApiPathAliases::withVersionedAliases(\OCA
         ['name' => 'registrationForm#target', 'url' => '/api/registration-forms/target', 'verb' => 'GET'],
         // Decision 179/189: the page designer checks its form pages against their destinations on save.
         ['name' => 'formDestination#check', 'url' => '/api/forms/destination-check', 'verb' => 'POST'],
+        // journey-designer: a journey's writes judged by OpenRegister's form destination validator; administrators only.
+        ['name' => 'journeyDesigner#check', 'url' => '/api/journeys/check', 'verb' => 'POST'],
+        ['name' => 'journeyDesigner#save', 'url' => '/api/journeys', 'verb' => 'POST'],
 
         // Remote template store (buildiq-remote-template-store). Consume-only:
         // search proxies the configured remote OpenRegister catalogue server-side;

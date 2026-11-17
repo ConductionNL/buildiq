@@ -47,6 +47,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\Buildiq\Tests\Support\LegacyObjectArgs;
 
 /**
  * @covers \OCA\Buildiq\Controller\ApplicationVersionsController
@@ -497,7 +498,12 @@ class ApplicationVersionsControllerBehaviourTest extends TestCase {
 			->willReturnArgument(1);
 		$this->versionService->expects($this->once())->method('guardNoCycle')->with('__pending_create__', 'v-prod');
 		$this->objectService->expects($this->once())->method('saveObject')
-			->with($expected, [], 'buildiq', 'applicationVersion')
+			->with(...LegacyObjectArgs::with(method: 'saveObject', expected: [
+				'object' => $expected,
+				'extend' => [],
+				'register' => 'buildiq',
+				'schema' => 'applicationVersion',
+			]))
 			->willReturn($this->entity(payload: ['id' => 'v-new'] + $expected));
 
 		$response = $this->controller()->create('shop');
@@ -538,7 +544,13 @@ class ApplicationVersionsControllerBehaviourTest extends TestCase {
 		$this->body(params: ['slug' => 'v2']);
 
 		$this->objectService->expects($this->once())->method('find')
-			->with('v-prod', [], false, 'buildiq', 'applicationVersion')
+			->with(...LegacyObjectArgs::with(method: 'find', expected: [
+				'id' => 'v-prod',
+				'_extend' => [],
+				'files' => false,
+				'register' => 'buildiq',
+				'schema' => 'applicationVersion',
+			]))
 			->willReturn($this->entity(payload: ['register' => 'reg-from-row']));
 		$this->versionService->expects($this->once())->method('onSave')
 			->with(null, ['slug' => 'v2', 'application' => 'app-uuid', 'register' => 'reg-from-row'])
@@ -628,7 +640,7 @@ class ApplicationVersionsControllerBehaviourTest extends TestCase {
 
 		$order = [];
 		$this->objectService->expects($this->once())->method('lockObject')
-			->with('v-1', 'buildiq.controller-update', 15)
+			->with(self::callback(static fn ($request): bool => $request->identifier === 'v-1' && $request->process === 'buildiq.controller-update' && $request->duration === 15))
 			->willReturnCallback(
 				static function () use (&$order): array {
 					$order[] = 'lock';
@@ -636,14 +648,20 @@ class ApplicationVersionsControllerBehaviourTest extends TestCase {
 				}
 			);
 		$this->objectService->expects($this->once())->method('saveObject')
-			->with($expected, [], 'buildiq', 'applicationVersion', 'v-1')
+			->with(...LegacyObjectArgs::with(method: 'saveObject', expected: [
+				'object' => $expected,
+				'extend' => [],
+				'register' => 'buildiq',
+				'schema' => 'applicationVersion',
+				'uuid' => 'v-1',
+			]))
 			->willReturnCallback(
 				function () use (&$order, $expected): ObjectEntity {
 					$order[] = 'save';
 					return $this->entity(payload: $expected);
 				}
 			);
-		$this->objectService->expects($this->once())->method('unlockObject')->with('v-1')
+		$this->objectService->expects($this->once())->method('unlockObject')->with(self::callback(static fn ($request): bool => $request->identifier === 'v-1'))
 			->willReturnCallback(
 				static function () use (&$order): bool {
 					$order[] = 'unlock';

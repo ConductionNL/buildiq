@@ -1,7 +1,7 @@
 ---
 sidebar_position: 2
 title: Create an application from a template
-description: Clone a template from the Store to bootstrap a new app with sensible schemas and pages.
+description: Clone a template from the Marketplace to bootstrap a new app with sensible schemas and pages.
 ---
 
 # Create an application from a template
@@ -16,11 +16,11 @@ By the end you will have cloned a template into an editable draft app, named it,
 
 - You completed [Open Buildiq for the first time](./01-first-launch.md).
 - Nextcloud admin rights. Cloning provisions an OpenRegister register, which only an admin may do, so a regular account gets a clear refusal instead.
-- At least one template in the Store. Buildiq ships four: **Permit Tracker**, **Stakeholder Consultation**, **Employee Onboarding** and **Incident Reporter**. Admins add more via [Manage the template catalogue](../admin/02-template-catalogue.md).
+- At least one template in the Marketplace. Buildiq ships four: **Permit Tracker**, **Stakeholder Consultation**, **Employee Onboarding** and **Incident Reporter**. Admins add more via [Manage the template catalogue](../admin/02-template-catalogue.md).
 
 ## Steps
 
-1. Click **Store** in the left navigation. The page is titled **App store** and opens on the **Templates** tab, with **Built-in templates** first and **Apps on GitHub** below it. The second tab, **Blocks**, is for browsing reusable page blocks and has no clone action.
+1. Click **Marketplace** in the left navigation. The page is titled **Marketplace** and opens on the **Templates** tab, with **Built-in templates** first and **Apps on GitHub** below it. The second tab, **Blocks**, is for browsing reusable page blocks and has no clone action.
 
    ![App store](/screenshots/tutorials/user/02-create-from-template-01.png)
 

@@ -73,10 +73,13 @@ const L10N = {
 	'l10n/README.md': 'not a catalogue',
 }
 
+// What build-l10n-js.js writes before every catalogue.
+const SPDX_JS = '/**\n * SPDX-FileCopyrightText: 2026 Conduction B.V.\n * SPDX-License-Identifier: EUPL-1.2\n */\n'
+
 const NL_JS =
-	'OC.L10N.register(\n    "buildiq",\n    {\n        "Hello": "Hallo"\n    },\n    "nplurals=2; plural=(n > 1);"\n)\n'
+	SPDX_JS + 'OC.L10N.register(\n    "buildiq",\n    {\n        "Hello": "Hallo"\n    },\n    "nplurals=2; plural=(n > 1);"\n)\n'
 const EN_JS =
-	'OC.L10N.register(\n    "buildiq",\n    {\n        "Hello": "Hello",\n        "Say \\"hi\\"": "Say \\"hi\\""\n    },\n    "nplurals=2; plural=(n != 1);"\n)\n'
+	SPDX_JS + 'OC.L10N.register(\n    "buildiq",\n    {\n        "Hello": "Hello",\n        "Say \\"hi\\"": "Say \\"hi\\""\n    },\n    "nplurals=2; plural=(n != 1);"\n)\n'
 
 /**
  * Write every file of a fixture under a root directory.

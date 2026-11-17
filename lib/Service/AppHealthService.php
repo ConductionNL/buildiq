@@ -29,6 +29,8 @@ use DateTimeZone;
 use OCA\Buildiq\Kernel\Contracts\AppHealthServiceInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -80,8 +82,7 @@ class AppHealthService implements AppHealthServiceInterface {
 			try {
 				$this->objectService->saveObject(
 					['applicationUuid' => $applicationUuid, 'versionUuid' => $versionUuid, 'windowStart' => $windowStart] + $sample,
-					register: self::REGISTER_SLUG,
-					schema: self::SCHEMA_SLUG,
+					new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::SCHEMA_SLUG)),
 					_rbac: false,
 					_multitenancy: false
 				);

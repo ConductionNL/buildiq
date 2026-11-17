@@ -55,6 +55,40 @@
 				</p>
 			</div>
 
+			<div v-if="organisationScopeAvailable && isOwner" class="app-settings__row" data-testid="organisation-scope">
+				<NcCheckboxRadioSwitch
+					type="switch"
+					:modelValue="organisationScope === 'holder'"
+					:disabled="busy || confirmingShare"
+					@update:modelValue="onOrganisationScope">
+					{{ t('buildiq', 'This organisation only') }}
+				</NcCheckboxRadioSwitch>
+				<p class="app-settings__hint">
+					{{
+						t(
+							'buildiq',
+							'Only members of the organisation that holds this app see it, open it and read its records. Rule sets and data registers stay shared.',
+						)
+					}}
+				</p>
+				<div v-if="confirmingShare" class="app-settings__confirm" role="alert" data-testid="organisation-scope-confirm">
+					<p>
+						{{
+							t(
+								'buildiq',
+								'Every organisation will see this app. Its records stay with this organisation.',
+							)
+						}}
+					</p>
+					<NcButton variant="primary" data-testid="organisation-scope-share" @click="shareWithAll">
+						{{ t('buildiq', 'Share with all organisations') }}
+					</NcButton>
+					<NcButton variant="tertiary" data-testid="organisation-scope-keep" @click="confirmingShare = false">
+						{{ t('buildiq', 'Keep it to this organisation') }}
+					</NcButton>
+				</div>
+			</div>
+
 			<div class="app-settings__row">
 				<h4 class="app-settings__subtitle">
 					{{ t('buildiq', 'Data registers') }}
@@ -64,6 +98,27 @@
 						t(
 							'buildiq',
 							'Shared, non-versioned OpenRegister registers this app binds to alongside its own per-version register (e.g. a dataset fed by OpenConnector). Not owned by this app — promotion and export treat them as reference-only.',
+						)
+					}}
+				</p>
+				<!-- Wrapper carries the test hook; NcSelect does not forward
+				     stray attributes to the DOM. -->
+				<div data-test="app-settings-database-picker">
+					<NcSelect
+						:modelValue="null"
+						:options="databaseOptions"
+						:disabled="busy || loadingDatabases"
+						:loading="loadingDatabases"
+						:inputLabel="t('buildiq', 'Connect a database')"
+						@update:modelValue="onDatabasePicked" />
+				</div>
+				<p
+					v-if="!loadingDatabases && !databaseOptions.length"
+					class="app-settings__hint">
+					{{
+						t(
+							'buildiq',
+							'No connected database to add. An administrator connects one in OpenRegister under Sources.',
 						)
 					}}
 				</p>
@@ -140,6 +195,7 @@ import NcCheckboxRadioSwitch from '@nextcloud/vue/components/NcCheckboxRadioSwit
 import NcModal from '@nextcloud/vue/components/NcModal'
 import NcSelect from '@nextcloud/vue/components/NcSelect'
 import NcTextField from '@nextcloud/vue/components/NcTextField'
+import { fetchConnectedDatabases } from '../composables/useConnectedDatabases.js'
 
 export default {
 	name: 'AppSettingsModal',
@@ -178,6 +234,12 @@ export default {
 		loadingFlows: { type: Boolean, default: false },
 		/** Whether an action is in flight (disables the switches). */
 		busy: { type: Boolean, default: false },
+		/** The app's organisation scope, `holder` or `all` (absent means `all`). */
+		organisationScope: { type: String, default: 'all' },
+		/** Whether OpenRegister's multitenancy is on, so the scope can be offered. */
+		organisationScopeAvailable: { type: Boolean, default: false },
+		/** Whether the caller owns the app; only owners set the scope. */
+		isOwner: { type: Boolean, default: false },
 	},
 
 	emits: [
@@ -186,18 +248,39 @@ export default {
 		'update:allow-overrides',
 		'update:data-registers',
 		'update:flows',
+		'update:organisationScope',
 	],
 
 	data() {
 		return {
+			// Whether the "share with all organisations" confirmation is shown.
+			confirmingShare: false,
 			// Staged editing rows, kept in sync with the `dataRegisters` prop
 			// (see the watcher below). `register`/`label` default to '' so
 			// NcTextField always receives a string, never undefined.
 			rows: this.toRows(this.dataRegisters),
+			// The registers OpenRegister serves from a database source, read
+			// again every time the modal opens (REQ-BQDB-001).
+			databases: [],
+			loadingDatabases: false,
 		}
 	},
 
 	computed: {
+		/**
+		 * The connected databases not bound yet, as picker options.
+		 *
+		 * @return {Array<{label: string, value: string}>} Options.
+		 *
+		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-an-app-binds-a-connected-database-req-bqdb-001
+		 */
+		databaseOptions() {
+			const bound = new Set(this.rows.map((row) => (row.register || '').trim()))
+			return this.databases
+				.filter((database) => !bound.has(database.register))
+				.map((database) => ({ label: database.label, value: database.register }))
+		},
+
 		/**
 		 * The bound flows, as picker options.
 		 *
@@ -232,6 +315,23 @@ export default {
 	},
 
 	watch: {
+		open: {
+			immediate: true,
+			/**
+			 * Read the connected databases again whenever the modal opens.
+			 *
+			 * @param {boolean} isOpen Whether the modal is shown.
+			 * @return {void}
+			 *
+			 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-an-app-binds-a-connected-database-req-bqdb-001
+			 */
+			handler(isOpen) {
+				if (isOpen) {
+					this.loadDatabases()
+				}
+			},
+		},
+
 		dataRegisters: {
 			deep: true,
 			/**
@@ -250,6 +350,68 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Switch the organisation scope. Keeping the app to the organisation
+		 * applies at once; sharing it with every organisation asks first.
+		 *
+		 * @param {boolean} holderOnly Whether the switch is now on.
+		 * @return {void}
+		 *
+		 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-an-app-has-an-organisation-scope-req-bqos-001
+		 */
+		onOrganisationScope(holderOnly) {
+			if (holderOnly) {
+				this.confirmingShare = false
+				this.$emit('update:organisationScope', 'holder')
+				return
+			}
+			this.confirmingShare = true
+		},
+
+		/**
+		 * Confirmed: share the app with every organisation.
+		 *
+		 * @return {void}
+		 *
+		 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-an-app-has-an-organisation-scope-req-bqos-001
+		 */
+		shareWithAll() {
+			this.confirmingShare = false
+			this.$emit('update:organisationScope', 'all')
+		},
+
+		/**
+		 * Fetch the registers OpenRegister serves from a database source.
+		 *
+		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-an-app-binds-a-connected-database-req-bqdb-001
+		 */
+		async loadDatabases() {
+			this.loadingDatabases = true
+			try {
+				this.databases = await fetchConnectedDatabases()
+			} finally {
+				this.loadingDatabases = false
+			}
+		},
+
+		/**
+		 * Bind a picked database as a new data register row and emit it.
+		 *
+		 * @param {{label: string, value: string}|null} option The picked database.
+		 * @return {void}
+		 *
+		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-an-app-binds-a-connected-database-req-bqdb-001
+		 */
+		onDatabasePicked(option) {
+			if (!option || !option.value) {
+				return
+			}
+			this.rows = [...this.rows, { register: option.value, label: option.label || '' }]
+			this.emitRows()
+		},
+
 		/**
 		 * Emit the new bindings when the picker changes.
 		 *

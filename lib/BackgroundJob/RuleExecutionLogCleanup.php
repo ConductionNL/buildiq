@@ -33,6 +33,7 @@ namespace OCA\Buildiq\BackgroundJob;
 use OCA\Buildiq\Kernel\Contracts\RuleEngineServiceInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\BackgroundJob\TimedJob;
 use Psr\Log\LoggerInterface;
@@ -140,7 +141,7 @@ class RuleExecutionLogCleanup extends TimedJob {
 		}
 
 		try {
-			$this->objectService->deleteObject(uuid: $uuid);
+			$this->objectService->deleteObject(new ObjectDeletion(uuid: $uuid));
 			return 1;
 		} catch (Throwable $e) {
 			$this->logger->warning(

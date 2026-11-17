@@ -64,6 +64,10 @@
 			:availableFlows="availableFlows"
 			:loadingFlows="loadingFlows"
 			:busy="publishing"
+			:organisationScope="(obApp && obApp.organisationScope) || 'all'"
+			:organisationScopeAvailable="organisationScopeAvailable"
+			:isOwner="obAppRole === 'owner'"
+			@update:organisationScope="setOrganisationScope"
 			@update:open="onSettingsOpen"
 			@setPublished="setPublished"
 			@update:allowOverrides="setAllowOverrides"
@@ -110,6 +114,7 @@
 // this file imports no icon components of its own any more.
 import { CnActionButtons } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
+import { loadState } from '@nextcloud/initial-state'
 import { generateUrl } from '@nextcloud/router'
 import { defineAsyncComponent } from 'vue'
 import DeleteAppDialog from '../dialogs/DeleteAppDialog.vue'
@@ -283,6 +288,9 @@ export default {
 
 	data() {
 		return {
+			// Whether OpenRegister's multitenancy is on, so the settings can
+			// offer the organisation scope (REQ-BQOS-001).
+			organisationScopeAvailable: loadState('buildiq', 'organisationScopeAvailable', false) === true,
 			versions: [],
 			publishing: false,
 			deleting: false,
@@ -710,6 +718,12 @@ export default {
 					icon: 'Sitemap',
 					onSelect: () => this.openAutomations(),
 				},
+				{
+					id: 'app-agents',
+					label: t('buildiq', 'Agents'),
+					icon: 'RobotOutline',
+					onSelect: () => this.openAgents(),
+				},
 			]
 		},
 
@@ -918,6 +932,26 @@ export default {
 		},
 
 		/**
+		 * Set the app's organisation scope, `holder` or `all` (owners only).
+		 *
+		 * @param {string} scope The new scope.
+		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-an-app-has-an-organisation-scope-req-bqos-001
+		 */
+		async setOrganisationScope(scope) {
+			if (this.obAppRole !== 'owner' || !this.obApp) {
+				return
+			}
+			this.error = ''
+			try {
+				await this.obPatchApp({ organisationScope: scope })
+			} catch (e) {
+				this.error = `${t('buildiq', 'Failed to save settings')}: ${e.message || e}`
+			}
+		},
+
+		/**
 		 * Persist an add/remove/edit of the app's `dataRegisters` bindings
 		 * from the settings modal — same shape as `setAllowOverrides()`
 		 * (data-registers-runtime task 5.2).
@@ -1051,6 +1085,26 @@ export default {
 
 			const query = this.automationsQuery(slug)
 			this.$router.push({ name: 'Automations', query }).catch(() => {})
+		},
+
+		/**
+		 * Open the Agents page on this app (REQ-BQAG-003).
+		 *
+		 * Like automations, agents belong to an app and have no menu entry of
+		 * their own, so the app is the way in. The page preselects the app
+		 * named in `?app=`.
+		 *
+		 * @return {void}
+		 *
+		 * @spec openspec/changes/ai-agents-knowledge-and-run-trace/specs/agent-workspace/spec.md#requirement-the-app-detail-page-leads-to-its-agents-req-bqag-003
+		 */
+		openAgents() {
+			const slug = this.obApp && this.obApp.slug
+			if (!slug) {
+				return
+			}
+
+			this.$router.push({ name: 'Agents', query: { app: slug } }).catch(() => {})
 		},
 
 		/**
