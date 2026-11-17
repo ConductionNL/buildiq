@@ -122,6 +122,7 @@ export function sourceSummary(source, providers) {
 /**
  * The label of a provider, or its id when integriq did not publish it.
  *
+ * @spec openspec/changes/data-registry-backed-field-option/specs/schema-designer-ui/spec.md#requirement-the-fields-table-shows-the-registry-source-and-a-refusal-lands-on-its-field-req-bqrf-003
  * @param {string} id The provider id.
  * @param {Array<object>} providers The providers integriq publishes.
  * @return {string} The label.
