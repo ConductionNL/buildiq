@@ -40,6 +40,8 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\Buildiq\Tests\Support\LegacyObjectArgs;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Tests for RepairValidationViolations.
@@ -121,7 +123,11 @@ class RepairValidationViolationsTest extends TestCase {
 			}
 		);
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (array $object, ?array $extend = [], mixed $register = null, mixed $schema = null, mixed $uuid = null, bool $rbac = true, bool $multitenancy = true): ObjectEntityInterface {
+			function (array $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $rbac = true, bool $multitenancy = true): ObjectEntityInterface {
+				$extend = $options->extend ?? [];
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$this->assertSame([false, false], [$rbac, $multitenancy], 'saveObject runs without RBAC and multitenancy');
 				$this->saves[] = [$schema, $uuid, $object, $register];
 				$this->store[(string)$schema][(string)$uuid] = $object;
@@ -303,13 +309,13 @@ class RepairValidationViolationsTest extends TestCase {
 		$objectService = $this->createMock(ObjectServiceInterface::class);
 		$objectService->method('runAsSystem')->willReturnCallback(static fn (callable $operation): mixed => $operation());
 		$objectService->method('findAll')->willReturnCallback(static fn (array $config): array => ($config['filters']['schema'] === 'built-app' ? [$entity] : []));
-		$objectService->expects($this->once())->method('saveObject')->with(
-			['slug' => 'talk', 'appType' => 'hybrid', 'baseRef' => ['kind' => 'fleet-app', 'id' => 'talk']],
-			$this->anything(),
-			'buildiq',
-			'built-app',
-			'a-entity'
-		)->willReturn($entity);
+		$objectService->expects($this->once())->method('saveObject')->with(...LegacyObjectArgs::with(method: 'saveObject', expected: [
+				'object' => ['slug' => 'talk', 'appType' => 'hybrid', 'baseRef' => ['kind' => 'fleet-app', 'id' => 'talk']],
+				'extend' => $this->anything(),
+				'register' => 'buildiq',
+				'schema' => 'built-app',
+				'uuid' => 'a-entity',
+			]))->willReturn($entity);
 
 		$this->runStep(objectService: $objectService);
 

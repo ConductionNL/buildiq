@@ -34,6 +34,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\Buildiq\Tests\Support\LegacyObjectArgs;
 
 /**
  * @covers \OCA\Buildiq\Repair\MigrateAppOverridesToHybrid
@@ -259,7 +260,11 @@ class MigrateAppOverridesToHybridEdgeCasesTest extends TestCase {
 			->with('docudesk', [], null, '', true)
 			->willReturn([]);
 		$this->objectService->expects($this->once())->method('deleteObject')
-			->with('self-uuid', false, false);
+			->with(...LegacyObjectArgs::with(method: 'deleteObject', expected: [
+				'uuid' => 'self-uuid',
+				'_rbac' => false,
+				'_multitenancy' => false,
+			]));
 
 		$this->step()->run($this->output);
 

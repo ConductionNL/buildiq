@@ -74,40 +74,13 @@ class DatabaseManifestBuilder {
 			throw new InvalidArgumentException('A database register is required.');
 		}
 
-		$menu  = [];
-		$pages = [];
-		$seen  = [];
-		foreach ($schemas as $schema) {
-			$slug    = $this->slugOf(schema: $schema);
-			$segment = $this->routeSegmentOf(slug: $slug);
-			// A table whose slug gives no route, or the same route as one before it, gets no pages.
-			if ($segment === '' || isset($seen[$segment]) === true) {
-				continue;
-			}
-
-			$seen[$segment] = true;
-			$title          = $this->titleOf(schema: $schema, slug: $slug);
-			$pageId         = $this->pageIdOf(slug: $slug);
-			$route          = '/' . $segment;
-
-			$pages[] = $this->indexPage(
-				page: ['id' => $pageId . 'Index', 'route' => $route, 'title' => $title],
-				binding: ['register' => $register, 'schema' => $slug],
-				columns: $this->columnsOf(schema: $schema),
-				writable: $writable
-			);
-			$pages[] = $this->detailPage(
-				page: ['id' => $pageId . 'Detail', 'route' => $route . '/:id', 'title' => $title],
-				binding: ['register' => $register, 'schema' => $slug],
-				writable: $writable
-			);
-			$menu[]  = [
-				'id' => $segment,
-				'label' => $title,
-				'route' => $pageId . 'Index',
-				'order' => (10 * (count($menu) + 1)),
-			];
-		}//end foreach
+		$menu   = [];
+		$pages  = [];
+		$source = ['register' => $register, 'writable' => $writable];
+		foreach ($this->distinctTables(schemas: $schemas) as $table) {
+			array_push($pages, ...$this->tablePages(table: $table, source: $source));
+			$menu[] = $this->menuEntry(table: $table, order: (10 * (count($menu) + 1)));
+		}
 
 		if ($pages === []) {
 			throw new InvalidArgumentException('Choose at least one table of the database.');
@@ -115,6 +88,86 @@ class DatabaseManifestBuilder {
 
 		return ['version' => '1.0.0', 'menu' => $menu, 'pages' => $pages];
 	}//end build()
+
+	/**
+	 * The chosen tables that get pages, in menu order.
+	 *
+	 * A table whose slug gives no route, or the same route as one before it, gets no pages.
+	 *
+	 * @param list<array<string, mixed>> $schemas The chosen tables.
+	 *
+	 * @return list<array{schema: array<string, mixed>, slug: string, segment: string, title: string, pageId: string}>
+	 *
+	 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
+	 */
+	private function distinctTables(array $schemas): array {
+		$tables = [];
+		foreach ($schemas as $schema) {
+			$slug    = $this->slugOf(schema: $schema);
+			$segment = $this->routeSegmentOf(slug: $slug);
+			if ($segment === '' || isset($tables[$segment]) === true) {
+				continue;
+			}
+
+			$tables[$segment] = [
+				'schema'  => $schema,
+				'slug'    => $slug,
+				'segment' => $segment,
+				'title'   => $this->titleOf(schema: $schema, slug: $slug),
+				'pageId'  => $this->pageIdOf(slug: $slug),
+			];
+		}
+
+		return array_values($tables);
+	}//end distinctTables()
+
+	/**
+	 * The index and detail page of one table.
+	 *
+	 * @param array{schema: array<string, mixed>, slug: string, segment: string, title: string, pageId: string} $table  The table.
+	 * @param array{register: string, writable: bool}                                                       $source The register; writable.
+	 *
+	 * @return list<array<string, mixed>>
+	 *
+	 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
+	 */
+	private function tablePages(array $table, array $source): array {
+		$route   = '/' . $table['segment'];
+		$binding = ['register' => $source['register'], 'schema' => $table['slug']];
+
+		return [
+			$this->indexPage(
+				page: ['id' => $table['pageId'] . 'Index', 'route' => $route, 'title' => $table['title']],
+				binding: $binding,
+				columns: $this->columnsOf(schema: $table['schema']),
+				writable: $source['writable']
+			),
+			$this->detailPage(
+				page: ['id' => $table['pageId'] . 'Detail', 'route' => $route . '/:id', 'title' => $table['title']],
+				binding: $binding,
+				writable: $source['writable']
+			),
+		];
+	}//end tablePages()
+
+	/**
+	 * The menu entry of one table.
+	 *
+	 * @param array{schema: array<string, mixed>, slug: string, segment: string, title: string, pageId: string} $table The table.
+	 * @param int                                                                                             $order The entry's place in the menu.
+	 *
+	 * @return array{id: string, label: string, route: string, order: int}
+	 *
+	 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
+	 */
+	private function menuEntry(array $table, int $order): array {
+		return [
+			'id' => $table['segment'],
+			'label' => $table['title'],
+			'route' => $table['pageId'] . 'Index',
+			'order' => $order,
+		];
+	}//end menuEntry()
 
 	/**
 	 * An index page over one table.

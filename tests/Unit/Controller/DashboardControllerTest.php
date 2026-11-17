@@ -174,6 +174,39 @@ class DashboardControllerTest extends TestCase {
 		$this->assertSame('spectr', $published['builderSlug']);
 	}//end testBuilderRendersStandaloneTemplateAndPublishesSlug()
 
+	/**
+	 * page() tells the settings whether the organisation scope can be offered:
+	 * only while OpenRegister's multitenancy is on, and never without a guard.
+	 *
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-an-app-has-an-organisation-scope-req-bqos-001
+	 *
+	 * @return void
+	 */
+	public function testPagePublishesWhetherTheOrganisationScopeIsAvailable(): void {
+		foreach ([true, false] as $on) {
+			$this->setUp();
+			$guard = $this->createMock(\OCA\Buildiq\Service\AppOrganisationGuard::class);
+			$guard->expects($this->once())->method('multitenancyOn')->willReturn($on);
+			$published = $this->captureInitialState();
+			$controller = new DashboardController(
+				$this->request,
+				$this->initialState,
+				$this->userSession,
+				$this->groupManager,
+				$this->navigationManager,
+				organisationGuard: $guard
+			);
+
+			$this->assertSame('index', $controller->page()->getTemplateName());
+			$this->assertSame($on, $published['organisationScopeAvailable']);
+		}
+
+		$this->setUp();
+		$published = $this->captureInitialState();
+		$this->controller->page();
+		$this->assertFalse($published['organisationScopeAvailable']);
+	}//end testPagePublishesWhetherTheOrganisationScopeIsAvailable()
+
 	// -------------------------------------------------------------------------
 	// builderSlash() — trailing-slash alias
 	// -------------------------------------------------------------------------

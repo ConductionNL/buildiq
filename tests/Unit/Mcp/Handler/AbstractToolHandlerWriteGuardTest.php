@@ -39,6 +39,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\Buildiq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Tests for the AbstractToolHandler write gate and version helpers.
@@ -233,12 +234,18 @@ final class AbstractToolHandlerWriteGuardTest extends TestCase {
 		$saved = $this->createMock(ObjectEntity::class);
 		$saved->method('jsonSerialize')->willReturn(['slug' => 'v1', 'manifest' => ['pages' => []]]);
 
-		$this->objects->expects($this->once())->method('lockObject')->with('ver-1', 'buildiq.mcp-manifest-edit', 30)->willReturn([]);
+		$this->objects->expects($this->once())->method('lockObject')->with(self::callback(static fn ($request): bool => $request->identifier === 'ver-1' && $request->process === 'buildiq.mcp-manifest-edit' && $request->duration === 30))->willReturn([]);
 		$this->objects->expects($this->once())
 			->method('saveObject')
-			->with(['slug' => 'v1', 'manifest' => ['pages' => []]], [], 'buildiq', 'applicationVersion', 'ver-1')
+			->with(...LegacyObjectArgs::with(method: 'saveObject', expected: [
+					'object' => ['slug' => 'v1', 'manifest' => ['pages' => []]],
+					'extend' => [],
+					'register' => 'buildiq',
+					'schema' => 'applicationVersion',
+					'uuid' => 'ver-1',
+				]))
 			->willReturn($saved);
-		$this->objects->expects($this->once())->method('unlockObject')->with('ver-1')->willThrowException(new RuntimeException('lock lost'));
+		$this->objects->expects($this->once())->method('unlockObject')->with(self::callback(static fn ($request): bool => $request->identifier === 'ver-1'))->willThrowException(new RuntimeException('lock lost'));
 
 		$result = $this->handler(users: [null])->call(
 			'saveVersionManifest',

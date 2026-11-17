@@ -50,8 +50,8 @@ describe('useConnectedDatabases', () => {
 		const databases = await fetchConnectedDatabases(client(urls))
 
 		expect(databases).toEqual([
-			{ register: 'permits-db', label: 'Permits database', source: '7', writable: true },
-			{ register: 'archive-db', label: 'archive-db', source: 'src-archive', writable: false },
+			{ register: 'permits-db', label: 'Permits database', source: '7', sourceId: '7', writable: true },
+			{ register: 'archive-db', label: 'archive-db', source: 'src-archive', sourceId: '8', writable: false },
 		])
 		expect(urls.sort()).toEqual(['/apps/openregister/api/registers', '/apps/openregister/api/sources'])
 	})

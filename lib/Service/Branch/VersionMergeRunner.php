@@ -32,16 +32,19 @@ namespace OCA\Buildiq\Service\Branch;
 
 use InvalidArgumentException;
 use OCA\Buildiq\Kernel\Contracts\ApplicationVersionServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\VersionMergeRunnerInterface;
 use OCA\Buildiq\Service\VersionMergeService;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Runs a version merge: preview first, write once.
  *
  * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-merge-only-writes-a-draft-that-has-not-moved-req-bqgb-004
  */
-class VersionMergeRunner {
+class VersionMergeRunner implements VersionMergeRunnerInterface {
 
 	/**
 	 * Constructor.
@@ -60,6 +63,61 @@ class VersionMergeRunner {
 		private readonly ObjectServiceInterface $objects,
 	) {
 	}//end __construct()
+
+	/**
+	 * A new draft version branched from the source version.
+	 *
+	 * @param array<string,mixed> $application The Application.
+	 * @param array<string,mixed> $source      The version to branch from.
+	 * @param string              $name        The new version's slug.
+	 *
+	 * @return array<string,mixed> The new version.
+	 *
+	 * @throws VersionBranchRefused When the name is not a valid slug (400) or its register is taken (409).
+	 *
+	 * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-starts-a-branch-from-a-version-req-bqgb-001
+	 */
+	public function startBranch(array $application, array $source, string $name): array {
+		return $this->branches->start(application: $application, source: $source, name: $name);
+	}//end startBranch()
+
+	/**
+	 * The merge of the source version into the target version, written nowhere.
+	 *
+	 * @param array<string,mixed> $application The Application (`productionVersion`).
+	 * @param array<string,mixed> $source      The version merged in.
+	 * @param array<string,mixed> $target      The version merged into.
+	 *
+	 * @return array<string,mixed> `manifest`, `schemas`, `conflicts`, `breaking` and the target's `targetHash`.
+	 *
+	 * @throws VersionBranchRefused When the target cannot take a merge or the pair has no common base.
+	 *
+	 * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-merges-a-branch-and-picks-a-side-per-conflict-req-bqgb-003
+	 */
+	public function previewMerge(array $application, array $source, array $target): array {
+		return $this->preview(application: $application, request: new VersionMergeRequest(source: $source, target: $target));
+	}//end previewMerge()
+
+	/**
+	 * Apply the merge of the source version into the target version and write the target.
+	 *
+	 * @param array<string,mixed> $application The Application (`productionVersion`).
+	 * @param array<string,mixed> $source      The version merged in.
+	 * @param array<string,mixed> $target      The version merged into.
+	 * @param array<string,mixed> $resolution  `choices`, the previewed `targetHash` and `acknowledgeBreaking`.
+	 *
+	 * @return array<string,mixed> The saved target version.
+	 *
+	 * @throws VersionBranchRefused When anything would make the write wrong; nothing is written then.
+	 *
+	 * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-merge-only-writes-a-draft-that-has-not-moved-req-bqgb-004
+	 */
+	public function applyMerge(array $application, array $source, array $target, array $resolution): array {
+		return $this->apply(
+			application: $application,
+			request: new VersionMergeRequest(source: $source, target: $target, resolution: $resolution)
+		);
+	}//end applyMerge()
 
 	/**
 	 * The merge of the request's source into its target, written nowhere.
@@ -142,9 +200,13 @@ class VersionMergeRunner {
 		return ObjectRecord::toArray(
 			object: $this->objects->saveObject(
 				object: $this->branches->versions->onSave(current: $current, next: $next),
-				register: ApplicationVersionServiceInterface::REGISTER_SLUG,
-				schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA,
-				uuid: $uuid
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(
+							register: ApplicationVersionServiceInterface::REGISTER_SLUG,
+							schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
+						),
+					uuid: $uuid
+				)
 			)
 		);
 	}//end saveTarget()

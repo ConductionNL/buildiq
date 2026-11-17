@@ -40,6 +40,7 @@ import BackToVirtualApps, {
 	declaresPrimaryAction,
 	showBackToVirtualApps,
 } from './components/runtime/BackToVirtualApps.vue'
+import BuildiqFormPage from './components/runtime/BuildiqFormPage.vue'
 import { registerScope, useRegisterPicker } from './composables/useRegisterPicker.js'
 import pinia from './pinia.js'
 import { registerDirectives } from './registerDirectives.js'
@@ -537,7 +538,9 @@ async function boot() {
 		// registry-only widget key (e.g. `connector-data`) renders as
 		// CnUnknownWidget on the published path.
 		registry: getRuntimeRegistry(),
-		pageTypes: { ...defaultPageTypes },
+		// A form page gets buildiq's live values: calculated fields and the
+		// eligibility check (forms-live-values-and-checks).
+		pageTypes: { ...defaultPageTypes, form: BuildiqFormPage },
 		// App registers/schemas so the Edit-pages modal offers Register /
 		// Schema / Columns dropdowns for index/detail pages. Re-run on every
 		// modal open, so schemas created after boot appear without a reload.

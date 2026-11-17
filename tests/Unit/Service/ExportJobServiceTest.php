@@ -40,6 +40,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Local double contract for OR's `TransitionEngine`. Production code
@@ -508,7 +509,11 @@ final class ExportJobServiceTest extends TestCase {
 		$objectService
 			->expects(self::once())
 			->method('saveObject')
-			->willReturnCallback(function ($job, $extend = [], $register = null, $schema = null, $uuid = null) use (&$capturedArgs): ObjectEntity {
+			->willReturnCallback(function ($job, ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$capturedArgs): ObjectEntity {
+				$extend = $options->extend ?? [];
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$capturedArgs = ['job' => $job, 'register' => $register, 'schema' => $schema, 'uuid' => $uuid];
 				return new ObjectEntity();
 			});
@@ -566,7 +571,11 @@ final class ExportJobServiceTest extends TestCase {
 		$objectService
 			->expects(self::once())
 			->method('saveObject')
-			->willReturnCallback(function ($job, $extend = [], $register = null, $schema = null, $uuid = null) use (&$capturedArgs): ObjectEntity {
+			->willReturnCallback(function ($job, ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$capturedArgs): ObjectEntity {
+				$extend = $options->extend ?? [];
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$capturedArgs = ['job' => $job, 'register' => $register, 'schema' => $schema, 'uuid' => $uuid];
 				return new ObjectEntity();
 			});
