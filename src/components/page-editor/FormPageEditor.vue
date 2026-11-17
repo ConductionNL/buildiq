@@ -11,6 +11,21 @@
 			{{ t('buildiq', 'Form page') }}
 		</h3>
 
+		<div
+			v-if="offlineAllowed && pageId"
+			class="form-page-editor__offline"
+			data-test="form-page-editor-offline">
+			<NcCheckboxRadioSwitch
+				type="switch"
+				:modelValue="worksOffline"
+				@update:modelValue="onWorksOffline">
+				{{ t('buildiq', 'Works offline') }}
+			</NcCheckboxRadioSwitch>
+			<p class="form-page-editor__hint">
+				{{ t('buildiq', 'Submissions made without a connection wait on the device and are sent when it returns. The app gets a "Waiting to sync" page.') }}
+			</p>
+		</div>
+
 		<fieldset class="form-page-editor__fieldset">
 			<legend>{{ t('buildiq', 'Submit') }}</legend>
 			<div class="form-page-editor__submit-shape">
@@ -326,6 +341,7 @@
 </template>
 
 <script>
+import NcCheckboxRadioSwitch from '@nextcloud/vue/components/NcCheckboxRadioSwitch'
 import ExternalFormAccessDialog from '../../dialogs/ExternalFormAccessDialog.vue'
 import SaveFormToLibraryDialog from '../../dialogs/SaveFormToLibraryDialog.vue'
 import EligibilityCheckBuilder from './fields/EligibilityCheckBuilder.vue'
@@ -347,6 +363,7 @@ const OR_OBJECTS_ENDPOINT =
 export default {
 	name: 'FormPageEditor',
 	components: {
+		NcCheckboxRadioSwitch,
 		FormFieldBuilder,
 		EligibilityCheckBuilder,
 		FormStepsManager,
@@ -382,6 +399,19 @@ export default {
 			default: () => [],
 		},
 
+		// Whether the instance lets apps work offline (REQ-BQOM-002); the
+		// "Works offline" switch is hidden when it does not.
+		offlineAllowed: {
+			type: Boolean,
+			default: false,
+		},
+
+		// The manifest's `offline.forms` page ids (REQ-BQOM-003).
+		offlineForms: {
+			type: Array,
+			default: () => [],
+		},
+
 		// Decision 179/189: this page's destination findings from the last save.
 		destinationFindings: {
 			type: Array,
@@ -389,7 +419,7 @@ export default {
 		},
 	},
 
-	emits: ['update:config', 'update:runtimeExternalForms'],
+	emits: ['update:config', 'update:runtimeExternalForms', 'update:offlineForms'],
 
 	/**
 	 * Build the register/schema picker the "Save to a register" choice uses.
@@ -424,6 +454,16 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * Whether this form page is one of the manifest's offline forms.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T04
+		 */
+		worksOffline() {
+			return this.offlineForms.includes(this.pageId)
+		},
+
 		/**
 		 * This page's destination findings.
 		 *
@@ -668,6 +708,22 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Switch this page in or out of the offline forms; the page designer
+		 * writes the list onto the manifest.
+		 *
+		 * @param {boolean} on Whether the page works offline.
+		 * @return {void}
+		 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T04
+		 */
+		onWorksOffline(on) {
+			const forms = this.offlineForms.filter((id) => id !== this.pageId)
+			if (on) {
+				forms.push(this.pageId)
+			}
+			this.$emit('update:offlineForms', forms)
+		},
+
 		/**
 		 * Add the properties a device field writes to the schema the form
 		 * saves into, then put the stored schema back in the list so the
