@@ -26,6 +26,8 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Tests\Unit\Service;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use InvalidArgumentException;
 use OCA\Buildiq\Service\ApplicationTestsService;
 use OCA\Buildiq\Service\RuleObjectReader;
@@ -136,8 +138,8 @@ final class ApplicationTestsServiceTest extends TestCase {
 	public function testARecordTestIsStoredOnTheApp(): void {
 		$stored = null;
 		$this->objectService->expects(self::once())->method('saveObject')->willReturnCallback(
-			function (array $object, ?array $extend = [], mixed $register = null, mixed $schema = null, ?string $uuid = null, bool $rbac = true) use (&$stored): ObjectEntity {
-				$stored = ['object' => $object, 'register' => $register, 'schema' => $schema, 'uuid' => $uuid, 'rbac' => $rbac];
+			function (array $object, ObjectSaveOptions $options, bool $rbac = true) use (&$stored): ObjectEntity {
+				$stored = ['object' => $object, 'register' => $options->target->register, 'schema' => $options->target->schema, 'uuid' => $options->uuid, 'rbac' => $rbac];
 				$entity = $this->createMock(ObjectEntity::class);
 				$entity->method('jsonSerialize')->willReturn(['id' => 't-new'] + $object);
 				return $entity;
@@ -236,10 +238,17 @@ final class ApplicationTestsServiceTest extends TestCase {
 	public function testTheAppsOwnRecordTestIsChangedAndRemoved(): void {
 		$this->rows['app-record-test'] = [['id' => 't-1', 'application' => 'uuid-app']];
 		$this->objectService->expects(self::once())->method('saveObject')
-			->with(self::anything(), self::anything(), 'buildiq', 'app-record-test', 't-1')
+			->with(
+				self::anything(),
+				self::callback(static fn (ObjectSaveOptions $o): bool => $o->target->register === 'buildiq' && $o->target->schema === 'app-record-test' && $o->uuid === 't-1')
+			)
 			->willReturn($this->createMock(ObjectEntity::class));
 		$this->objectService->expects(self::once())->method('deleteObject')
-			->with('t-1', 'buildiq', 'app-record-test', false, false)
+			->with(
+				self::callback(static fn (ObjectDeletion $d): bool => $d->uuid === 't-1' && $d->target->register === 'buildiq' && $d->target->schema === 'app-record-test'),
+				false,
+				false
+			)
 			->willReturn(true);
 
 		$input = ['name' => 'N', 'schema' => 'permit', 'record' => ['a' => 1], 'expect' => 'accept'];

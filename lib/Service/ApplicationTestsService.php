@@ -37,6 +37,9 @@ use OCA\Buildiq\Kernel\Contracts\ApplicationVersionServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\RuleEngineServiceInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * The data behind the Tests tab.
@@ -144,9 +147,13 @@ class ApplicationTestsService {
 
 		$saved = $this->objectService->saveObject(
 			object: self::recordTestFrom(input: $input, appId: $appId),
-			register: ApplicationVersionServiceInterface::REGISTER_SLUG,
-			schema: AppTestSuiteService::RECORD_TEST_SCHEMA,
-			uuid: $id,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(
+					register: ApplicationVersionServiceInterface::REGISTER_SLUG,
+					schema: AppTestSuiteService::RECORD_TEST_SCHEMA
+				),
+				uuid: $id
+			),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -170,9 +177,13 @@ class ApplicationTestsService {
 		}
 
 		return $this->objectService->deleteObject(
-			uuid: $id,
-			register: ApplicationVersionServiceInterface::REGISTER_SLUG,
-			schema: AppTestSuiteService::RECORD_TEST_SCHEMA,
+			new ObjectDeletion(
+				uuid: $id,
+				target: new ObjectFindTarget(
+					register: ApplicationVersionServiceInterface::REGISTER_SLUG,
+					schema: AppTestSuiteService::RECORD_TEST_SCHEMA
+				)
+			),
 			_rbac: false,
 			_multitenancy: false
 		);

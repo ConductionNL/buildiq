@@ -63,6 +63,7 @@ use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCP\ICache;
 use OCP\ICacheFactory;
 use OCP\IUser;
@@ -799,8 +800,7 @@ class ApplicationInsightsService implements ApplicationInsightsServiceInterface 
 		try {
 			$entity = $this->objectService->find(
 				id: $uuid,
-				register: self::REGISTER_SLUG,
-				schema: self::APPLICATION_SCHEMA
+				options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: self::APPLICATION_SCHEMA)
 			);
 
 			if ($entity === null) {
@@ -829,8 +829,7 @@ class ApplicationInsightsService implements ApplicationInsightsServiceInterface 
 		try {
 			$entity = $this->objectService->find(
 				id: $uuid,
-				register: self::REGISTER_SLUG,
-				schema: self::APPLICATION_VERSION_SCHEMA
+				options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: self::APPLICATION_VERSION_SCHEMA)
 			);
 
 			if ($entity === null) {

@@ -40,6 +40,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\Buildiq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Tests for ApplicationVersionService.
@@ -396,7 +397,9 @@ class ApplicationVersionServiceTest extends TestCase {
 		$this->registerMapper->method('find')->with('openbuild-foo-staging')->willReturn($register);
 
 		$this->registerService->expects(self::once())->method('delete')->with($register);
-		$this->objectService->expects(self::once())->method('deleteObject')->with('uuid-v');
+		$this->objectService->expects(self::once())->method('deleteObject')->with(...LegacyObjectArgs::with(method: 'deleteObject', expected: [
+				'uuid' => 'uuid-v',
+			]));
 
 		$this->service->deleteVersion(
 			versionUuid: 'uuid-v',
@@ -423,7 +426,9 @@ class ApplicationVersionServiceTest extends TestCase {
 			});
 
 		$this->registerService->expects(self::never())->method('delete');
-		$this->objectService->expects(self::once())->method('deleteObject')->with('uuid-v');
+		$this->objectService->expects(self::once())->method('deleteObject')->with(...LegacyObjectArgs::with(method: 'deleteObject', expected: [
+				'uuid' => 'uuid-v',
+			]));
 
 		$this->service->deleteVersion(
 			versionUuid: 'uuid-v',
@@ -616,7 +621,9 @@ class ApplicationVersionServiceTest extends TestCase {
 
 		// Shared register → delete-now downgraded → register is NOT dropped.
 		$this->registerService->expects(self::never())->method('delete');
-		$this->objectService->expects(self::once())->method('deleteObject')->with('uuid-v');
+		$this->objectService->expects(self::once())->method('deleteObject')->with(...LegacyObjectArgs::with(method: 'deleteObject', expected: [
+				'uuid' => 'uuid-v',
+			]));
 
 		$this->service->deleteVersion(
 			versionUuid: 'uuid-v',

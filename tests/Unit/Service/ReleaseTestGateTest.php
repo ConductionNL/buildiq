@@ -26,6 +26,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Tests\Unit\Service;
 
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use DateTime;
 use OCA\Buildiq\Exception\ReleaseOverrideRefusedException;
 use OCA\Buildiq\Exception\ReleaseTestsFailedException;
@@ -98,8 +99,8 @@ final class ReleaseTestGateTest extends TestCase {
 		$this->suite = $this->createMock(AppTestSuiteService::class);
 		$this->objectService = $this->createMock(ObjectServiceInterface::class);
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (array $object, ?array $extend = [], mixed $register = null, mixed $schema = null): ObjectEntity {
-				$this->stored[] = ['object' => $object, 'register' => $register, 'schema' => $schema];
+			function (array $object, ObjectSaveOptions $options): ObjectEntity {
+				$this->stored[] = ['object' => $object, 'register' => $options->target->register, 'schema' => $options->target->schema];
 				$entity = $this->createMock(ObjectEntity::class);
 				$entity->method('getUuid')->willReturn('run-' . count($this->stored));
 				return $entity;

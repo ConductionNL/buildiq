@@ -47,6 +47,10 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\Buildiq\Tests\Support\LegacyObjectArgs;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
 
 /**
  * Tests for VersionPromotionService.
@@ -303,7 +307,9 @@ class VersionPromotionServiceTest extends TestCase {
 		$this->objectService
 			->expects(self::once())
 			->method('lockObject')
-			->with('u-tgt', 'buildiq.version-promotion', 60);
+			->with(self::callback(static fn ($request): bool => $request->identifier === 'u-tgt'
+				&& $request->process === 'buildiq.version-promotion'
+				&& $request->duration === 60));
 
 		// RegisterMapper::update should be invoked for the schema-set forwarding.
 		$this->registerMapper
@@ -342,7 +348,7 @@ class VersionPromotionServiceTest extends TestCase {
 		$this->objectService
 			->expects(self::once())
 			->method('unlockObject')
-			->with('u-tgt');
+			->with(self::callback(static fn ($request): bool => $request->identifier === 'u-tgt'));
 
 		$result = $this->service->promote(
 			source: $source,
@@ -416,7 +422,7 @@ class VersionPromotionServiceTest extends TestCase {
 		$this->objectService
 			->expects(self::once())
 			->method('unlockObject')
-			->with('u-tgt');
+			->with(self::callback(static fn ($request): bool => $request->identifier === 'u-tgt'));
 
 		$this->expectException(PromotionFailedException::class);
 
@@ -489,6 +495,7 @@ class VersionPromotionServiceTest extends TestCase {
 			->method('saveObject')
 			->willReturnCallback(
 				static function (...$args) use (&$callCount, &$savedPayloads, $savedArchived): ObjectEntity {
+					$args = LegacyObjectArgs::positional(method: 'saveObject', args: $args);
 					$callCount++;
 					$savedPayloads[] = $args[0];
 					if ($callCount === 1) {
@@ -578,7 +585,9 @@ class VersionPromotionServiceTest extends TestCase {
 		$this->objectService
 			->expects(self::once())
 			->method('deleteObject')
-			->with('r-tgt-1');
+			->with(...LegacyObjectArgs::with(method: 'deleteObject', expected: [
+					'uuid' => 'r-tgt-1',
+				]));
 
 		// saveObject is called once per source row (2 copies) + once for the manifest write.
 		$savedTarget = $this->buildObjectEntity(
@@ -734,7 +743,8 @@ class VersionPromotionServiceTest extends TestCase {
 
 		$deleted = [];
 		$this->objectService->method('deleteObject')->willReturnCallback(
-			static function (string $uuid) use (&$deleted): bool {
+			static function (ObjectDeletion $deletion) use (&$deleted): bool {
+				$uuid = $deletion->uuid;
 				$deleted[] = $uuid;
 				return true;
 			}
@@ -830,7 +840,8 @@ class VersionPromotionServiceTest extends TestCase {
 
 		$this->objectService
 			->method('deleteObject')
-			->willReturnCallback(function (string $uuid): bool {
+			->willReturnCallback(function (ObjectDeletion $deletion): bool {
+				$uuid = $deletion->uuid;
 				self::assertNotSame('spectr', $uuid);
 				return true;
 			});
@@ -987,7 +998,8 @@ class VersionPromotionServiceTest extends TestCase {
 
 		$this->objectService
 			->method('deleteObject')
-			->willReturnCallback(function (string $uuid): bool {
+			->willReturnCallback(function (ObjectDeletion $deletion): bool {
+				$uuid = $deletion->uuid;
 				self::assertNotSame('spectr', $uuid);
 				return true;
 			});
@@ -1090,7 +1102,8 @@ class VersionPromotionServiceTest extends TestCase {
 				}
 			);
 
-		$this->objectService->method('unlockObject')->willReturnCallback(function ($uuid) {
+		$this->objectService->method('unlockObject')->willReturnCallback(function (UnlockRequest $request) {
+			$uuid = $request->identifier;
 			self::assertNotSame('spectr', $uuid);
 			return true;
 		});
@@ -1349,7 +1362,10 @@ class VersionPromotionServiceTest extends TestCase {
 		$rowSchemas = [];
 		$savedManifest = null;
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (array $object, mixed $extend = [], mixed $register = null, mixed $schema = null) use (&$rowSchemas, &$savedManifest): ObjectEntity {
+			function (array $object, ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$rowSchemas, &$savedManifest): ObjectEntity {
+				$extend = $options->extend ?? [];
+				$register = $options->target->register;
+				$schema = $options->target->schema;
 				if ($register === 'openbuild-shop-production') {
 					$rowSchemas[] = $schema;
 				} else {

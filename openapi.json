@@ -656,7 +656,7 @@
             "post": {
                 "operationId": "application-import-import",
                 "summary": "Import an exported app archive as a new app owned by the caller",
-                "description": "Import an exported app archive, uploaded as multipart field `archive`, as a new app owned by the caller. Only the package files are read; the archive's code is never run. Returns 201 with the app, 400 without an archive or with a bad slug, 401 when signed out, 409 when the slug is taken, 413 for an archive over the size or entry limits, 422 with the parser's code and the file at fault.",
+                "description": "Import an exported app archive, uploaded as multipart field `archive`, as a new app owned by the caller. Only the package files are read; the archive's code is never run. With `records` set to 1, true or on, the archive's records come along, schema by schema, and the answer's `records` lists per schema what arrived and what failed. Returns 201 with the app, 400 without an archive or with a bad slug, 401 when signed out, 409 when the slug is taken, 413 for an archive over the size or entry limits, 422 with the parser's code and the file at fault.",
                 "tags": [
                     "application-import"
                 ],
@@ -676,6 +676,10 @@
                                     },
                                     "slug": {
                                         "type": "string"
+                                    },
+                                    "records": {
+                                        "type": "string",
+                                        "description": "1, true or on to import the archive's records too; anything else leaves them behind."
                                     }
                                 },
                                 "required": [
@@ -710,6 +714,84 @@
                     },
                     "409": {
                         "$ref": "#/components/responses/Problem409"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Problem422"
+                    }
+                }
+            }
+        },
+        "/applications/import/preview": {
+            "post": {
+                "operationId": "application-import-preview",
+                "summary": "Say what an app archive would import, without importing it",
+                "description": "Read an exported app archive, uploaded as multipart field `archive`, with the same checks and parse as the import, and answer its name, slug and how many pages, schemas and records it holds. Nothing is created. Returns 200 with the summary, 400 without an archive, 401 when signed out, 413 for an archive over the size or entry limits, 422 with the parser's code and the file at fault.",
+                "tags": [
+                    "application-import"
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "archive": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    }
+                                },
+                                "required": [
+                                    "archive"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "What the archive holds.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "name": {
+                                            "type": "string"
+                                        },
+                                        "slug": {
+                                            "type": "string"
+                                        },
+                                        "pages": {
+                                            "type": "integer"
+                                        },
+                                        "schemas": {
+                                            "type": "integer"
+                                        },
+                                        "records": {
+                                            "type": "integer"
+                                        },
+                                        "recordsBySchema": {
+                                            "type": "object",
+                                            "additionalProperties": {
+                                                "type": "integer"
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
                     },
                     "422": {
                         "$ref": "#/components/responses/Problem422"
@@ -1100,65 +1182,20 @@
                 }
             }
         },
-        "/applications/{appSlug}/tests": {
-            "get": {
-                "operationId": "application-tests-index",
-                "summary": "The app's record tests, owned rule sets and latest run per version",
-                "description": "The Tests tab's content: the app's record tests, the rule sets it owns and the latest test run of each version. Needs an owner, editor or viewer role on the app.",
-                "tags": [
-                    "application-tests"
-                ],
-                "parameters": [
-                    {
-                        "name": "appSlug",
-                        "in": "path",
-                        "required": true,
-                        "description": "Application slug.",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "The request succeeded.",
-                        "headers": {
-                            "API-Version": {
-                                "$ref": "#/components/headers/API-Version"
-                            }
-                        },
-                        "content": {
-                            "application/json": {
-                                "schema": {}
-                            }
-                        }
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/Problem401"
-                    },
-                    "403": {
-                        "$ref": "#/components/responses/Problem403"
-                    },
-                    "404": {
-                        "$ref": "#/components/responses/Problem404"
-                    }
-                }
-            }
-        },
-        "/applications/{appSlug}/versions/{versionSlug}/tests": {
+        "/applications/{appSlug}/versions/{versionSlug}/branch": {
             "post": {
-                "operationId": "application-tests-run",
-                "summary": "Run a version's test suite now and keep the run",
-                "description": "Runs the version's test suite (structure, rule-set and record checks) and stores the run as an app-test-run with trigger manual. Answers the run, failures included. Needs an owner or editor role.",
+                "operationId": "application-versions-branch",
+                "summary": "Start a branch from a version",
+                "description": "Start a branch from a version: a new draft version named `name` with its own register, a copy of the source's schemas (no records) and manifest, a `branchBase` recording where it started and, when the app is linked to GitHub, a `githubBranch`. Owner or editor (lifecycle-git-branches REQ-BQGB-001). Needs a signed-in Nextcloud user.",
                 "tags": [
-                    "application-tests"
+                    "application-versions"
                 ],
                 "parameters": [
                     {
                         "name": "appSlug",
                         "in": "path",
                         "required": true,
-                        "description": "Application slug.",
+                        "description": "Parent Application slug.",
                         "schema": {
                             "type": "string"
                         }
@@ -1167,52 +1204,7 @@
                         "name": "versionSlug",
                         "in": "path",
                         "required": true,
-                        "description": "ApplicationVersion slug.",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "The request succeeded.",
-                        "headers": {
-                            "API-Version": {
-                                "$ref": "#/components/headers/API-Version"
-                            }
-                        },
-                        "content": {
-                            "application/json": {
-                                "schema": {}
-                            }
-                        }
-                    },
-                    "401": {
-                        "$ref": "#/components/responses/Problem401"
-                    },
-                    "403": {
-                        "$ref": "#/components/responses/Problem403"
-                    },
-                    "404": {
-                        "$ref": "#/components/responses/Problem404"
-                    }
-                }
-            }
-        },
-        "/applications/{appSlug}/record-tests": {
-            "post": {
-                "operationId": "application-tests-create-record-test",
-                "summary": "Add a record test to the app",
-                "description": "Adds a record test: a sample record a schema of the app should accept or refuse. Needs an owner or editor role.",
-                "tags": [
-                    "application-tests"
-                ],
-                "parameters": [
-                    {
-                        "name": "appSlug",
-                        "in": "path",
-                        "required": true,
-                        "description": "Application slug.",
+                        "description": "The version branched from.",
                         "schema": {
                             "type": "string"
                         }
@@ -1225,37 +1217,13 @@
                             "schema": {
                                 "type": "object",
                                 "required": [
-                                    "name",
-                                    "schema",
-                                    "record",
-                                    "expect"
+                                    "name"
                                 ],
                                 "properties": {
                                     "name": {
                                         "type": "string",
-                                        "description": "What the test checks."
-                                    },
-                                    "schema": {
-                                        "type": "string",
-                                        "description": "The schema slug the record is checked against."
-                                    },
-                                    "record": {
-                                        "type": "object",
-                                        "description": "The sample record; checked, never saved."
-                                    },
-                                    "expect": {
-                                        "type": "string",
-                                        "enum": [
-                                            "accept",
-                                            "refuse"
-                                        ]
-                                    },
-                                    "expectedFields": {
-                                        "type": "array",
-                                        "items": {
-                                            "type": "string"
-                                        },
-                                        "description": "For a refusal: the fields it should be refused on."
+                                        "pattern": "^[a-z0-9][a-z0-9-]{0,46}[a-z0-9]$",
+                                        "description": "The branch name, also the new version's slug."
                                     }
                                 }
                             }
@@ -1264,7 +1232,7 @@
                 },
                 "responses": {
                     "201": {
-                        "description": "The record test was added.",
+                        "description": "The version was created.",
                         "headers": {
                             "API-Version": {
                                 "$ref": "#/components/headers/API-Version"
@@ -1287,76 +1255,78 @@
                     },
                     "404": {
                         "$ref": "#/components/responses/Problem404"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Problem409"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Problem422"
                     }
                 }
             }
         },
-        "/applications/{appSlug}/record-tests/{id}": {
-            "put": {
-                "operationId": "application-tests-update-record-test",
-                "summary": "Change a record test of the app",
-                "description": "Changes one of the app's record tests; a test of another app answers 404. Needs an owner or editor role.",
+        "/applications/{appSlug}/versions/{source}/merge/{target}": {
+            "post": {
+                "operationId": "application-versions-merge",
+                "summary": "Preview or apply the merge of a version into a draft version",
+                "description": "Merge `source` into the draft version `target`. With `preview: true` it returns the merged manifest and schemas, the conflicts, the breaking schema changes and the target's `targetHash`, and writes nothing. An apply sends `choices` (conflict unit to `source` or `target`), the previewed `targetHash` and, for a breaking schema change, `acknowledgeBreaking`; it is refused when the target is production or not a draft (422), when the target changed since the preview, a conflict has no side or a breaking change is not confirmed (409). Owner or editor (lifecycle-git-branches REQ-BQGB-003, REQ-BQGB-004). Needs a signed-in Nextcloud user.",
                 "tags": [
-                    "application-tests"
+                    "application-versions"
                 ],
                 "parameters": [
                     {
                         "name": "appSlug",
                         "in": "path",
                         "required": true,
-                        "description": "Application slug.",
+                        "description": "Parent Application slug.",
                         "schema": {
                             "type": "string"
                         }
                     },
                     {
-                        "name": "id",
+                        "name": "source",
                         "in": "path",
                         "required": true,
-                        "description": "Record test uuid.",
+                        "description": "The version merged in.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "target",
+                        "in": "path",
+                        "required": true,
+                        "description": "The draft version merged into.",
                         "schema": {
                             "type": "string"
                         }
                     }
                 ],
                 "requestBody": {
-                    "required": true,
+                    "required": false,
                     "content": {
                         "application/json": {
                             "schema": {
                                 "type": "object",
-                                "required": [
-                                    "name",
-                                    "schema",
-                                    "record",
-                                    "expect"
-                                ],
                                 "properties": {
-                                    "name": {
-                                        "type": "string",
-                                        "description": "What the test checks."
+                                    "preview": {
+                                        "type": "boolean"
                                     },
-                                    "schema": {
-                                        "type": "string",
-                                        "description": "The schema slug the record is checked against."
-                                    },
-                                    "record": {
+                                    "choices": {
                                         "type": "object",
-                                        "description": "The sample record; checked, never saved."
+                                        "additionalProperties": {
+                                            "type": "string",
+                                            "enum": [
+                                                "source",
+                                                "target"
+                                            ]
+                                        }
                                     },
-                                    "expect": {
-                                        "type": "string",
-                                        "enum": [
-                                            "accept",
-                                            "refuse"
-                                        ]
+                                    "targetHash": {
+                                        "type": "string"
                                     },
-                                    "expectedFields": {
-                                        "type": "array",
-                                        "items": {
-                                            "type": "string"
-                                        },
-                                        "description": "For a refusal: the fields it should be refused on."
+                                    "acknowledgeBreaking": {
+                                        "type": "boolean"
                                     }
                                 }
                             }
@@ -1377,9 +1347,6 @@
                             }
                         }
                     },
-                    "400": {
-                        "$ref": "#/components/responses/Problem400"
-                    },
                     "401": {
                         "$ref": "#/components/responses/Problem401"
                     },
@@ -1388,53 +1355,12 @@
                     },
                     "404": {
                         "$ref": "#/components/responses/Problem404"
-                    }
-                }
-            },
-            "delete": {
-                "operationId": "application-tests-destroy-record-test",
-                "summary": "Remove a record test of the app",
-                "description": "Removes one of the app's record tests; a test of another app answers 404. Needs an owner or editor role.",
-                "tags": [
-                    "application-tests"
-                ],
-                "parameters": [
-                    {
-                        "name": "appSlug",
-                        "in": "path",
-                        "required": true,
-                        "description": "Application slug.",
-                        "schema": {
-                            "type": "string"
-                        }
                     },
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "description": "Record test uuid.",
-                        "schema": {
-                            "type": "string"
-                        }
-                    }
-                ],
-                "responses": {
-                    "204": {
-                        "description": "The record test was removed.",
-                        "headers": {
-                            "API-Version": {
-                                "$ref": "#/components/headers/API-Version"
-                            }
-                        }
+                    "409": {
+                        "$ref": "#/components/responses/Problem409"
                     },
-                    "401": {
-                        "$ref": "#/components/responses/Problem401"
-                    },
-                    "403": {
-                        "$ref": "#/components/responses/Problem403"
-                    },
-                    "404": {
-                        "$ref": "#/components/responses/Problem404"
+                    "422": {
+                        "$ref": "#/components/responses/Problem422"
                     }
                 }
             }
@@ -3323,6 +3249,62 @@
                 }
             }
         },
+        "/journeys": {
+            "post": {
+                "operationId": "journey-designer-save",
+                "summary": "Save a journey",
+                "description": "Save a journey of the Journey Designer as a `journey` object in the buildiq register. Every write is judged first by the same check as `/journeys/check`; a journey with a refused write is answered 422 with the findings and not stored. A form step is stored with its `formId` reference only. Body: `{ journey }` (with `id` to update one). Answer: `{ id, journey }`. Needs a Nextcloud administrator: authoring a journey can write into any register.",
+                "tags": [
+                    "journey-designer"
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "journey": {
+                                        "description": "The journey: `id` (empty for a new one), `title`, `description` and `steps[]`."
+                                    }
+                                },
+                                "additionalProperties": false
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Problem422"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                }
+            }
+        },
         "/openapi.json": {
             "get": {
                 "operationId": "open-api-show",
@@ -3677,6 +3659,48 @@
                     },
                     "403": {
                         "$ref": "#/components/responses/Problem403"
+                    }
+                }
+            }
+        },
+        "/rules": {
+            "get": {
+                "operationId": "rules-index",
+                "summary": "List the active rule sets another app may call",
+                "description": "The active rule sets whose callableBy lists the app, projected to slug, title, version, inputs and outputs; the decision table is not returned (rules-evaluation-for-other-apps REQ-BQRX-001). Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "rules"
+                ],
+                "parameters": [
+                    {
+                        "name": "callableBy",
+                        "in": "query",
+                        "required": true,
+                        "description": "The app id to list the callable rule sets for.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
                     }
                 }
             }
@@ -4407,6 +4431,345 @@
                     },
                     "401": {
                         "$ref": "#/components/responses/Problem401"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    }
+                }
+            }
+        },
+        "/applications/{appSlug}/tests": {
+            "get": {
+                "operationId": "application-tests-index",
+                "summary": "The app's record tests, owned rule sets and latest run per version",
+                "description": "The Tests tab's content: the app's record tests, the rule sets it owns and the latest test run of each version. Needs an owner, editor or viewer role on the app.",
+                "tags": [
+                    "application-tests"
+                ],
+                "parameters": [
+                    {
+                        "name": "appSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "Application slug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    }
+                }
+            }
+        },
+        "/applications/{appSlug}/versions/{versionSlug}/tests": {
+            "post": {
+                "operationId": "application-tests-run",
+                "summary": "Run a version's test suite now and keep the run",
+                "description": "Runs the version's test suite (structure, rule-set and record checks) and stores the run as an app-test-run with trigger manual. Answers the run, failures included. Needs an owner or editor role.",
+                "tags": [
+                    "application-tests"
+                ],
+                "parameters": [
+                    {
+                        "name": "appSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "Application slug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "versionSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "ApplicationVersion slug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    }
+                }
+            }
+        },
+        "/applications/{appSlug}/record-tests": {
+            "post": {
+                "operationId": "application-tests-create-record-test",
+                "summary": "Add a record test to the app",
+                "description": "Adds a record test: a sample record a schema of the app should accept or refuse. Needs an owner or editor role.",
+                "tags": [
+                    "application-tests"
+                ],
+                "parameters": [
+                    {
+                        "name": "appSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "Application slug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "name",
+                                    "schema",
+                                    "record",
+                                    "expect"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "description": "What the test checks."
+                                    },
+                                    "schema": {
+                                        "type": "string",
+                                        "description": "The schema slug the record is checked against."
+                                    },
+                                    "record": {
+                                        "type": "object",
+                                        "description": "The sample record; checked, never saved."
+                                    },
+                                    "expect": {
+                                        "type": "string",
+                                        "enum": [
+                                            "accept",
+                                            "refuse"
+                                        ]
+                                    },
+                                    "expectedFields": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        },
+                                        "description": "For a refusal: the fields it should be refused on."
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "The record test was added.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    }
+                }
+            }
+        },
+        "/applications/{appSlug}/record-tests/{id}": {
+            "put": {
+                "operationId": "application-tests-update-record-test",
+                "summary": "Change a record test of the app",
+                "description": "Changes one of the app's record tests; a test of another app answers 404. Needs an owner or editor role.",
+                "tags": [
+                    "application-tests"
+                ],
+                "parameters": [
+                    {
+                        "name": "appSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "Application slug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "description": "Record test uuid.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "name",
+                                    "schema",
+                                    "record",
+                                    "expect"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string",
+                                        "description": "What the test checks."
+                                    },
+                                    "schema": {
+                                        "type": "string",
+                                        "description": "The schema slug the record is checked against."
+                                    },
+                                    "record": {
+                                        "type": "object",
+                                        "description": "The sample record; checked, never saved."
+                                    },
+                                    "expect": {
+                                        "type": "string",
+                                        "enum": [
+                                            "accept",
+                                            "refuse"
+                                        ]
+                                    },
+                                    "expectedFields": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        },
+                                        "description": "For a refusal: the fields it should be refused on."
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "application-tests-destroy-record-test",
+                "summary": "Remove a record test of the app",
+                "description": "Removes one of the app's record tests; a test of another app answers 404. Needs an owner or editor role.",
+                "tags": [
+                    "application-tests"
+                ],
+                "parameters": [
+                    {
+                        "name": "appSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "Application slug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "description": "Record test uuid.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "The record test was removed.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
                     },
                     "404": {
                         "$ref": "#/components/responses/Problem404"

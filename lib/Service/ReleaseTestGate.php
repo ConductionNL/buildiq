@@ -44,6 +44,8 @@ use OCA\Buildiq\Support\ObjectRecord;
 use OCA\Buildiq\Support\ReleaseOverride;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCP\AppFramework\Utility\ITimeFactory;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -200,8 +202,12 @@ class ReleaseTestGate {
 		try {
 			$saved = $this->objectService->saveObject(
 				object: $run,
-				register: ApplicationVersionServiceInterface::REGISTER_SLUG,
-				schema: self::TEST_RUN_SCHEMA
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(
+						register: ApplicationVersionServiceInterface::REGISTER_SLUG,
+						schema: self::TEST_RUN_SCHEMA
+					)
+				)
 			);
 			$run['id'] = self::savedId(saved: $saved);
 		} catch (Throwable $e) {

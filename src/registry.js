@@ -47,6 +47,7 @@ import ApplicationDetailHeader from './components/applicationDetail/ApplicationD
 // virtual app.
 import ApplicationDetailActions from './components/ApplicationDetailActions.vue'
 // VirtualAppDetail sidebar tab: manifest diff between versions.
+import ApplicationApiTab from './components/tabs/ApplicationApiTab.vue'
 import ApplicationDiffTab from './components/tabs/ApplicationDiffTab.vue'
 // ── Virtual apps — actions components ────────────────────────────────────────
 // VirtualAppDetail sidebar tab: icon upload and preview.
@@ -81,6 +82,7 @@ import BuilderHostView from './views/BuilderHost.vue'
 // modelled on the DocuDesk dashboard pattern; mounted via the type:"custom"
 // Dashboard manifest page to avoid the dashboard-in-dashboard antipattern.
 import DashboardIndex from './views/DashboardIndex.vue'
+import JourneyDesignerView from './views/JourneyDesigner.vue'
 // ManifestLayersDetail — routed Manifest detail page (delta layers + per-layer
 // OR version history + rollback), reached from the app-detail Manifest widget
 // (layered-versioned-app-deltas).
@@ -216,6 +218,7 @@ export default {
 	ApplicationManifestTab: tab(ApplicationManifestTab),
 	ApplicationVersionsTab: tab(ApplicationVersionsTab),
 	ApplicationDiffTab: tab(ApplicationDiffTab),
+	ApplicationApiTab: tab(ApplicationApiTab),
 	ApplicationIconTab: tab(ApplicationIconTab),
 	ApplicationTestsTab: tab(ApplicationTestsTab),
 
@@ -232,6 +235,7 @@ export default {
 	// Custom page components — resolved by CnPageRenderer for type:"custom" pages.
 	SchemaDesignerView: page(SchemaDesignerView),
 	PageDesignerView: page(PageDesignerView),
+	JourneyDesignerView: page(JourneyDesignerView),
 	WalkthroughDesignerView: page(WalkthroughDesignerView),
 	BuilderHostView: page(BuilderHostView),
 	DashboardIndex: page(DashboardIndex),

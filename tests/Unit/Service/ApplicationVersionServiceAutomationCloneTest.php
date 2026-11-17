@@ -35,6 +35,7 @@ use OCA\OpenRegister\Service\RegisterService;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Tests for {@see ApplicationVersionService::cloneAutomationsToVersion()}.
@@ -110,7 +111,11 @@ final class ApplicationVersionServiceAutomationCloneTest extends TestCase {
 
 		$savedPayloads = [];
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (array $object, $extend = [], $register = null, $schema = null, $uuid = null) use (&$savedPayloads) {
+			function (array $object, ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$savedPayloads) {
+				$extend = $options->extend ?? [];
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$savedPayloads[] = ['object' => $object, 'uuid' => $uuid];
 
 				$entity = new ObjectEntity();

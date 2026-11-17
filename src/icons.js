@@ -13,6 +13,7 @@
 // vue-material-design-icons.
 
 import AccountMultipleOutline from 'vue-material-design-icons/AccountMultipleOutline.vue'
+import Api from 'vue-material-design-icons/Api.vue'
 import AppsBox from 'vue-material-design-icons/AppsBox.vue'
 import ArrowUpBoldCircleOutline from 'vue-material-design-icons/ArrowUpBoldCircleOutline.vue'
 import BookOpenVariantOutline from 'vue-material-design-icons/BookOpenVariantOutline.vue'
@@ -56,38 +57,40 @@ import ViewDashboardOutline from 'vue-material-design-icons/ViewDashboardOutline
 import ViewGridOutline from 'vue-material-design-icons/ViewGridOutline.vue'
 
 export default {
-	// ApplicationDetailActions declares its whole action cluster as,
-	// CnActionButtons descriptors, which name icons as STRINGS resolved by,
-	// CnIcon — so every icon it names has to be registered here or it renders,
-	// the help-circle fallback.,
+	// ApplicationDetailActions declares its whole action cluster as
+	// CnActionButtons descriptors, which name icons as STRINGS resolved by
+	// CnIcon — so every icon it names has to be registered here or it renders
+	// the help-circle fallback.
 	AccountMultipleOutline,
-	AppsBox,
+	CogOutline,
+	ContentCopy,
+	ContentSaveOutline,
+	DeleteOutline,
+	Github,
+	HeartOutline,
+	HelpCircleOutline,
+	OpenInNew,
+	PencilRulerOutline,
+	TrayArrowDown,
 	ArrowUpBoldCircleOutline,
+	Api,
+	AppsBox,
 	BookOpenVariantOutline,
 	ChartBoxOutline,
 	CheckCircle,
 	ClipboardCheckOutline,
 	ClipboardText,
-	CogOutline,
-	ContentCopy,
 	ContentSaveEditOutline,
-	ContentSaveOutline,
 	DatabaseExportOutline,
-	DeleteOutline,
 	FileDocumentMultipleOutline,
 	Flash,
 	FormSelect,
-	Github,
-	HeartOutline,
-	HelpCircleOutline,
 	History,
 	ImageOutline,
 	MapMarkerPath,
 	MessageTextOutline,
-	OpenInNew,
 	PackageVariant,
 	PencilOutline,
-	PencilRulerOutline,
 	PowerPlugOutline,
 	PuzzleOutline,
 	Robot,
@@ -98,7 +101,6 @@ export default {
 	StoreOutline,
 	Table,
 	TestTube,
-	TrayArrowDown,
 	VectorPolylinePlus,
 	ViewDashboardOutline,
 	ViewGridOutline,
