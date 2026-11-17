@@ -359,6 +359,10 @@ return \OCA\Buildiq\Middleware\Support\ApiPathAliases::withVersionedAliases(\OCA
         ['name' => 'copilot#plan',    'url' => '/api/copilot/plan',    'verb' => 'POST'],
         ['name' => 'copilot#execute', 'url' => '/api/copilot/execute', 'verb' => 'POST'],
         ['name' => 'copilot#discard', 'url' => '/api/copilot/discard', 'verb' => 'POST'],
+        // Builder assist (ai-copilot-documents-and-code-help REQ-BQCH-002/004):
+        // #[NoAdminRequired], owners/editors of the body's appSlug only, enforced
+        // inside CopilotAssistService. Zero writes.
+        ['name' => 'copilot#assist',  'url' => '/api/copilot/assist',  'verb' => 'POST'],
 
         // Agent run-history (spec `agent-workspace`). #[NoAdminRequired] with a
         // per-object owners/editors guard enforced inside AgentsController —
