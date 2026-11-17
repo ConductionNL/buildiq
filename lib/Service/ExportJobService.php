@@ -121,6 +121,7 @@ class ExportJobService implements ExportJobServiceInterface {
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-33
 	 * @spec openspec/changes/archive/2026-10-07-data-registers-runtime/tasks.md#task-4.3
+	 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T08
 	 */
 	public function queue(
 		string $applicationSlug,
@@ -145,6 +146,8 @@ class ExportJobService implements ExportJobServiceInterface {
 			$githubVisibility = (string)$payload['githubVisibility'];
 		}
 
+		$mobile = $this->mobileProjectChoice(payload: $payload);
+
 		$job = [
 			'uuid' => $jobUuid,
 			'applicationSlug' => $applicationSlug,
@@ -163,6 +166,9 @@ class ExportJobService implements ExportJobServiceInterface {
 			'includeSeedData' => (bool)($payload['includeSeedData'] ?? false),
 			// Only an own-server export carries the server bundle.
 			'includeServerBundle' => $target === 'server' && (bool)($payload['includeServerBundle'] ?? true),
+			// The app-store wrapper project, for any target (REQ-BQOM-006).
+			'includeMobileProject' => $mobile['include'],
+			'mobileBundleId' => $mobile['bundleId'],
 			'dataRegisters' => $this->sanitiser->dataRegisters(raw: $payload['dataRegisters'] ?? []),
 			'flows' => $this->sanitiser->flows(raw: $payload['flows'] ?? []),
 			'license' => (string)($payload['license'] ?? 'EUPL-1.2'),
@@ -177,6 +183,31 @@ class ExportJobService implements ExportJobServiceInterface {
 
 		return $jobUuid;
 	}//end queue()
+
+	/**
+	 * The mobile app project choice of a payload: whether to write it, and its bundle id (empty for the default).
+	 *
+	 * @param array<string,mixed> $payload The payload.
+	 *
+	 * @return array{include: bool, bundleId: string}
+	 *
+	 * @throws \InvalidArgumentException When a bundle id is given in a shape the app stores refuse.
+	 *
+	 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T08
+	 */
+	private function mobileProjectChoice(array $payload): array {
+		$include = ($payload['includeMobileProject'] ?? false) === true;
+		$bundleId = '';
+		if ($include === true && is_string($payload['mobileBundleId'] ?? null) === true) {
+			$bundleId = trim($payload['mobileBundleId']);
+		}
+
+		if ($bundleId !== '' && MobileProjectWriter::isValidBundleId(bundleId: $bundleId) === false) {
+			throw new \InvalidArgumentException('The bundle id "' . $bundleId . '" is not valid: use parts like nl.example.app.');
+		}
+
+		return ['include' => $include, 'bundleId' => $bundleId];
+	}//end mobileProjectChoice()
 
 	/**
 	 * Run a queued export now, in this request, instead of waiting for cron.

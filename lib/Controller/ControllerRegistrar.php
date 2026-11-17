@@ -83,6 +83,7 @@ final class ControllerRegistrar {
 				userSession: $c->get('OCP\\IUserSession'),
 				groupManager: $c->get('OCP\\IGroupManager'),
 				navigationManager: $c->get('OCP\\INavigationManager'),
+				settings: $c->get(SettingsServiceInterface::class),
 				manifestResolver: $c->get('OCA\\Buildiq\\Kernel\\Contracts\\ManifestResolverServiceInterface'),
 				embedOrigins: $c->get('OCA\\Buildiq\\Service\\EmbedOrigins')
 			)
