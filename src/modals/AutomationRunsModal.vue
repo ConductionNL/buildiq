@@ -44,11 +44,11 @@
 				<table v-else class="automation-runs__table" data-testid="runs-table">
 					<thead>
 						<tr>
-							<th>{{ t('buildiq', 'Time') }}</th>
-							<th>{{ t('buildiq', 'Trigger') }}</th>
-							<th>{{ t('buildiq', 'Object') }}</th>
-							<th>{{ t('buildiq', 'Outcome') }}</th>
-							<th>{{ t('buildiq', 'Duration') }}</th>
+							<th scope="col">{{ t('buildiq', 'Time') }}</th>
+							<th scope="col">{{ t('buildiq', 'Trigger') }}</th>
+							<th scope="col">{{ t('buildiq', 'Object') }}</th>
+							<th scope="col">{{ t('buildiq', 'Outcome') }}</th>
+							<th scope="col">{{ t('buildiq', 'Duration') }}</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -82,8 +82,8 @@
 									<table class="automation-runs__steps">
 										<thead>
 											<tr>
-												<th>{{ t('buildiq', 'Action') }}</th>
-												<th>{{ t('buildiq', 'Outcome') }}</th>
+												<th scope="col">{{ t('buildiq', 'Action') }}</th>
+												<th scope="col">{{ t('buildiq', 'Outcome') }}</th>
 											</tr>
 										</thead>
 										<tbody>
@@ -168,6 +168,11 @@ export default {
 		},
 	},
 
+	/**
+	 * Pick the default outcome filter and read the runs, unless the automation runs entirely in OpenRegister.
+	 *
+	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-the-automations-page-shows-the-last-run-and-opens-the-run-log-req-bqrl-003
+	 */
 	mounted() {
 		this.outcomeFilter = this.outcomeOptions[0]
 		if (!this.entirelyInOpenRegister) {
