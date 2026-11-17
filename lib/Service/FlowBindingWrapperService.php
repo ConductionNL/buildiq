@@ -36,7 +36,10 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\VersionPromotionServiceInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\Flow\FlowVersionServiceInterface;
 use Psr\Container\ContainerInterface;
@@ -70,20 +73,6 @@ class FlowBindingWrapperService {
 	 * @var string
 	 */
 	public const MODE_FROM_RECORD = 'from-record';
-
-	/**
-	 * The register the Application objects live in.
-	 *
-	 * @var string
-	 */
-	private const REGISTER_SLUG = 'buildiq';
-
-	/**
-	 * The Application schema.
-	 *
-	 * @var string
-	 */
-	private const APPLICATION_SCHEMA = 'built-app';
 
 	/**
 	 * The app a wrapper flow is stored under.
@@ -274,9 +263,13 @@ class FlowBindingWrapperService {
 			$application['flows'] = $result['flows'];
 			$this->objectService->saveObject(
 				object: $application,
-				register: self::REGISTER_SLUG,
-				schema: self::APPLICATION_SCHEMA,
-				uuid: $applicationUuid,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(
+						register: VersionPromotionServiceInterface::REGISTER_SLUG,
+						schema: VersionPromotionServiceInterface::APPLICATION_SCHEMA
+					),
+					uuid: $applicationUuid
+				),
 				_rbac: false,
 				_multitenancy: false
 			);

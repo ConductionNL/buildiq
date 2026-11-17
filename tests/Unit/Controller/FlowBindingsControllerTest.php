@@ -24,6 +24,7 @@ namespace OCA\Buildiq\Tests\Unit\Controller;
 
 use OCA\Buildiq\Controller\FlowBindingsController;
 use OCA\Buildiq\Kernel\Contracts\PermissionResolverInterface;
+use OCA\Buildiq\Service\AppOrganisationGuard;
 use OCA\Buildiq\Service\FlowBindingWrapperService;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
@@ -40,6 +41,8 @@ use RuntimeException;
  * Tests who may wire an application's flow bindings, and with which register.
  *
  * @covers \OCA\Buildiq\Controller\FlowBindingsController
+ * @uses   \OCA\Buildiq\Service\AppOrganisationGuard
+ * @uses   \OCA\Buildiq\Support\ObjectRecord
  */
 class FlowBindingsControllerTest extends TestCase {
 
@@ -130,11 +133,12 @@ class FlowBindingsControllerTest extends TestCase {
 	/**
 	 * The controller, signed in as `$uid` (or nobody).
 	 *
-	 * @param string|null $uid The caller.
+	 * @param string|null               $uid   The caller.
+	 * @param AppOrganisationGuard|null $guard The organisation guard, if any.
 	 *
 	 * @return FlowBindingsController The controller.
 	 */
-	private function controller(?string $uid): FlowBindingsController {
+	private function controller(?string $uid, ?AppOrganisationGuard $guard=null): FlowBindingsController {
 		$user = null;
 		if ($uid !== null) {
 			$user = $this->createMock(IUser::class);
@@ -149,7 +153,8 @@ class FlowBindingsControllerTest extends TestCase {
 			$this->objects,
 			$this->session,
 			$this->permissions,
-			$this->createMock(LoggerInterface::class)
+			$this->createMock(LoggerInterface::class),
+			$guard
 		);
 
 	}//end controller()
@@ -221,4 +226,44 @@ class FlowBindingsControllerTest extends TestCase {
 		$this->assertSame(expected: ['error' => 'internal_error'], actual: $response->getData());
 
 	}//end testAFailingSyncAnswersAnInternalError()
+
+	/**
+	 * Another organisation's scoped app answers as an unknown one, even to its owner, and nothing is synced.
+	 *
+	 * @return void
+	 */
+	public function testAScopedAppOfAnotherOrganisationIsNotFound(): void {
+		$this->stored[self::APP]['organisationScope'] = 'holder';
+		$guard = $this->createMock(AppOrganisationGuard::class);
+		$guard->expects($this->once())->method('canSee')->willReturn(false);
+		$this->wrappers->expects($this->never())->method('sync');
+
+		$response = $this->controller('sanne', $guard)->sync(self::APP);
+
+		$this->assertSame(expected: Http::STATUS_NOT_FOUND, actual: $response->getStatus());
+		$this->assertSame(expected: ['error' => 'not_found'], actual: $response->getData());
+
+	}//end testAScopedAppOfAnotherOrganisationIsNotFound()
+
+	/**
+	 * A scoped app the guard lets the owner see syncs; without a guard it stays out of reach.
+	 *
+	 * @return void
+	 */
+	public function testAScopedAppSyncsOnlyThroughTheGuard(): void {
+		$this->stored[self::APP]['organisationScope'] = 'holder';
+		$guard = $this->createMock(AppOrganisationGuard::class);
+		$guard->method('canSee')->willReturn(true);
+		$this->wrappers->expects($this->once())->method('sync')
+			->with(self::APP, $this->anything(), 'permits-register')
+			->willReturn(['flows' => [], 'created' => 0, 'removed' => 0, 'failed' => []]);
+
+		$this->assertSame(expected: Http::STATUS_OK, actual: $this->controller('sanne', $guard)->sync(self::APP)->getStatus());
+
+		$this->setUp();
+		$this->stored[self::APP]['organisationScope'] = 'holder';
+		$this->wrappers->expects($this->never())->method('sync');
+		$this->assertSame(expected: Http::STATUS_NOT_FOUND, actual: $this->controller('sanne')->sync(self::APP)->getStatus());
+
+	}//end testAScopedAppSyncsOnlyThroughTheGuard()
 }//end class

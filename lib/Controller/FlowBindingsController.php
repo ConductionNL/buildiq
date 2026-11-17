@@ -30,15 +30,18 @@ namespace OCA\Buildiq\Controller;
 use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Kernel\Contracts\PermissionResolverInterface;
 use OCA\Buildiq\Kernel\Contracts\VersionPromotionServiceInterface;
+use OCA\Buildiq\Service\AppOrganisationGuard;
 use OCA\Buildiq\Service\FlowBindingWrapperService;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\UserRateLimit;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCP\IUser;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -59,6 +62,7 @@ class FlowBindingsController extends Controller {
 	 * @param IUserSession                $userSession        The caller.
 	 * @param PermissionResolverInterface $permissionResolver Matches the caller against the app's owners.
 	 * @param LoggerInterface             $logger             Records a failed sync.
+	 * @param AppOrganisationGuard|null   $organisationGuard  Keeps another organisation's scoped app out of reach.
 	 */
 	public function __construct(
 		IRequest $request,
@@ -67,6 +71,7 @@ class FlowBindingsController extends Controller {
 		private readonly IUserSession $userSession,
 		private readonly PermissionResolverInterface $permissionResolver,
 		private readonly LoggerInterface $logger,
+		private readonly ?AppOrganisationGuard $organisationGuard=null,
 	) {
 		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
@@ -93,6 +98,12 @@ class FlowBindingsController extends Controller {
 
 		$application = $this->load(uuid: $appUuid, schema: VersionPromotionServiceInterface::APPLICATION_SCHEMA);
 		if ($application === null) {
+			return new JSONResponse(data: ['error' => 'not_found'], statusCode: Http::STATUS_NOT_FOUND);
+		}
+
+		// Organisation scope before any role: another organisation's scoped app
+		// answers exactly as an unknown one does (REQ-BQOS-002).
+		if ($this->visibleToOrganisation(application: $application, user: $user) === false) {
 			return new JSONResponse(data: ['error' => 'not_found'], statusCode: Http::STATUS_NOT_FOUND);
 		}
 
@@ -147,6 +158,27 @@ class FlowBindingsController extends Controller {
 	}//end productionRegister()
 
 	/**
+	 * Whether the caller may see the app at all: a shared app always, a scoped
+	 * one only through the organisation guard.
+	 *
+	 * @param array<string,mixed> $application The Application object.
+	 * @param IUser               $user        The caller.
+	 *
+	 * @return bool True when the app is visible to the caller.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) AppOrganisationGuard::isShared is pure.
+	 *
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002
+	 */
+	private function visibleToOrganisation(array $application, IUser $user): bool {
+		if (AppOrganisationGuard::isShared(application: $application) === true) {
+			return true;
+		}
+
+		return $this->organisationGuard?->canSee(application: $application, user: $user) === true;
+	}//end visibleToOrganisation()
+
+	/**
 	 * One object of the buildiq register, or null.
 	 *
 	 * @param string $uuid   The object's uuid.
@@ -162,7 +194,10 @@ class FlowBindingsController extends Controller {
 		}
 
 		try {
-			$entity = $this->objectService->find(id: $uuid, register: VersionPromotionServiceInterface::REGISTER_SLUG, schema: $schema);
+			$entity = $this->objectService->find(
+				id: $uuid,
+				options: new ObjectFindOptions(register: VersionPromotionServiceInterface::REGISTER_SLUG, schema: $schema)
+			);
 		} catch (Throwable $e) {
 			return null;
 		}
