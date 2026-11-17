@@ -56,6 +56,18 @@ const DEFAULT_PLURAL_FORM = 'nplurals=2; plural=(n != 1);'
 const L10N_DIR = path.join(REPO_ROOT, 'l10n')
 
 /**
+ * The licence header every generated catalogue opens with. The catalogues
+ * carried it by hand (chore(licensing)), so a rebuild that left it out stripped
+ * it again and `check:l10n-js` read every catalogue as stale.
+ */
+const SPDX_HEADER = [
+	'/**',
+	' * SPDX-FileCopyrightText: 2026 Conduction B.V.',
+	' * SPDX-License-Identifier: EUPL-1.2',
+	' */',
+]
+
+/**
  * The app id the browser catalogue must register under. Read from
  * appinfo/info.xml rather than hard-coded: this app has already been renamed
  * once (hrmq -> humaniq), and a catalogue registered under the old id is
@@ -90,6 +102,7 @@ function renderJs(id, doc) {
 		)
 		.join(',\n')
 	return [
+		...SPDX_HEADER,
 		'OC.L10N.register(',
 		`    ${JSON.stringify(id)},`,
 		'    {',

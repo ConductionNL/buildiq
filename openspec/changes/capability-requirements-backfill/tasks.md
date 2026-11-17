@@ -1,7 +1,8 @@
 # Tasks: capability-requirements-backfill
 
 - [ ] **T01**: Check that the built behaviour of row `app-create-from-spreadsheet` meets REQ-BQCV-001 in `data-import-wizard`; add a test that asserts each scenario, and close any gap the scenarios name.
-- [ ] **T02**: Check that the built behaviour of row `app-publish` meets REQ-BQCV-002 in `openbuild-runtime`; add a test that asserts each scenario, and close any gap the scenarios name.
+- [x] **T02**: Check that the built behaviour of row `app-publish` meets REQ-BQCV-002 in `openbuild-runtime`; add a test that asserts each scenario, and close any gap the scenarios name.
+  - Built behaviour meets the scenarios (owner-only publish/unpublish in ApplicationPublishController, navigation lists published apps only in AppNavigationService). `ApplicationPublishScenariosTest` asserts that unpublish writes only the Application's status (versions, pages, permissions unchanged, nothing deleted) and that a viewer is refused with 403 on publish and unpublish with nothing written. No gap.
 - [ ] **T03**: Check that the built behaviour of row `data-relations` meets REQ-BQCV-003 in `openbuild-schema-designer`; add a test that asserts each scenario, and close any gap the scenarios name.
 - [ ] **T04**: Check that the built behaviour of row `data-export-records` meets REQ-BQCV-004 in `openbuild-page-designer`; add a test that asserts each scenario, and close any gap the scenarios name.
 - [x] **T05**: Check that the built behaviour of row `data-search` meets REQ-BQCV-005 in `openbuild-page-designer`; add a test that asserts each scenario, and close any gap the scenarios name.

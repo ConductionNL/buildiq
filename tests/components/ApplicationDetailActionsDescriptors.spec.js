@@ -45,6 +45,7 @@ const CALLS = [
 	'promoteVersion',
 	'openWalkthroughDesigner',
 	'openAutomations',
+	'openAgents',
 	'openSaveAsTemplate',
 	'openSupportEditor',
 ]

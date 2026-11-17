@@ -59,6 +59,7 @@ use OCA\Buildiq\Kernel\Contracts\ApplicationVersionServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\ManifestResolverServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\PermissionResolverInterface;
 use OCA\Buildiq\Kernel\Contracts\TemplateInstallSeamInterface;
+use OCA\Buildiq\Service\AppOrganisationGuard;
 use OCA\Buildiq\Service\CallerContext;
 use OCA\Buildiq\Service\HelperFactory;
 use OCA\Buildiq\Kernel\Values\LocalApplicationRef;
@@ -73,6 +74,9 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -152,6 +156,13 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 	private readonly PermissionResolverInterface $permissionResolver;
 
 	/**
+	 * Organisation scope guard; null hides every scoped app.
+	 *
+	 * @var AppOrganisationGuard|null
+	 */
+	private readonly ?AppOrganisationGuard $organisationGuard;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IRequest $request The current HTTP request
@@ -178,6 +189,7 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 		$this->userSession = $caller->userSession;
 		$this->groupManager = $caller->groupManager;
 		$this->permissionResolver = $caller->permissionResolver;
+		$this->organisationGuard = $caller->organisationGuard;
 		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
@@ -674,8 +686,7 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 			$applicationArray['productionVersion']['manifest'] = $manifest;
 			$this->objectService->saveObject(
 				object: $applicationArray,
-				register: 'buildiq',
-				schema: 'built-app'
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: 'buildiq', schema: 'built-app'))
 			);
 			return new JSONResponse(data: ['status' => 'ok', 'target' => 'embedded'], statusCode: Http::STATUS_OK);
 		}
@@ -684,8 +695,7 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 		$applicationArray['manifest'] = $manifest;
 		$this->objectService->saveObject(
 			object: $applicationArray,
-			register: 'buildiq',
-			schema: 'built-app'
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: 'buildiq', schema: 'built-app'))
 		);
 		return new JSONResponse(data: ['status' => 'ok', 'target' => 'application'], statusCode: Http::STATUS_OK);
 	}//end writeManifest()
@@ -720,16 +730,20 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 	private function writeVersionManifest(string $versionUuid, array $manifest): ?JSONResponse {
 		$versionEntity = $this->objectService->find(
 			id: $versionUuid,
-			register: 'buildiq',
-			schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
+			options: new ObjectFindOptions(
+				register: 'buildiq',
+				schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
+			)
 		);
 		if ($versionEntity !== null) {
 			$versionArray = ObjectRecord::toArray(object: $versionEntity);
 			$versionArray['manifest'] = $manifest;
 			$this->objectService->saveObject(
 				object: $versionArray,
-				register: 'buildiq',
-				schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(
+						register: 'buildiq',
+						schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
+					))
 			);
 			return new JSONResponse(data: ['status' => 'ok', 'target' => 'version'], statusCode: Http::STATUS_OK);
 		}
@@ -1059,8 +1073,10 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 		try {
 			$version = $this->objectService->find(
 				id: $token,
-				register: 'buildiq',
-				schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
+				options: new ObjectFindOptions(
+					register: 'buildiq',
+					schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
+				)
 			);
 		} catch (Throwable $e) {
 			$version = null;
@@ -1199,8 +1215,7 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 		// Step 2 — load the Application object.
 		$application = $this->objectService->find(
 			id: $applicationUuid,
-			register: 'buildiq',
-			schema: 'built-app'
+			options: new ObjectFindOptions(register: 'buildiq', schema: 'built-app')
 		);
 
 		if ($application === null) {
@@ -1211,8 +1226,59 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 			);
 		}
 
-		return [$application, ObjectRecord::toArray(object: $application), (string)$applicationUuid];
+		$applicationArray = ObjectRecord::toArray(object: $application);
+
+		// Organisation scope before any role: another organisation's scoped app
+		// answers exactly as an unknown slug does (REQ-BQOS-002).
+		if ($this->visibleToOrganisation(application: $applicationArray) === false) {
+			return new JSONResponse(
+				data: ['error' => 'not_found', 'message' => 'No virtual app found for slug ' . $slug],
+				statusCode: Http::STATUS_NOT_FOUND
+			);
+		}
+
+		return [$application, $applicationArray, (string)$applicationUuid];
 	}//end resolveApplicationBySlug()
+
+	/**
+	 * The organisation scope an installed app starts with, as a payload fragment.
+	 *
+	 * The same default as an app made in the wizard: "This organisation only"
+	 * while multitenancy is on, held by the installer's active organisation,
+	 * which OpenRegister stamps on save (REQ-BQOS-005). Without the guard the
+	 * scope stays absent, which means all organisations.
+	 *
+	 * @return array<string, string> `['organisationScope' => ...]`, or [] without a guard.
+	 *
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-installs-land-in-the-installer-s-organisation-req-bqos-005
+	 */
+	private function newAppScope(): array {
+		if ($this->organisationGuard === null) {
+			return [];
+		}
+
+		return ['organisationScope' => $this->organisationGuard->defaultScope()];
+	}//end newAppScope()
+
+	/**
+	 * Whether the caller may see the Application at all, by its organisation scope.
+	 *
+	 * A shared app passes without a lookup; a scoped one needs the guard to admit
+	 * the caller, and a missing guard fails closed.
+	 *
+	 * @param array<string, mixed> $application The Application.
+	 *
+	 * @return bool True when the app is visible to the caller.
+	 *
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002
+	 */
+	private function visibleToOrganisation(array $application): bool {
+		if (AppOrganisationGuard::isShared(application: $application) === true) {
+			return true;
+		}
+
+		return $this->organisationGuard?->canSee(application: $application, user: $this->userSession->getUser()) === true;
+	}//end visibleToOrganisation()
 
 	/**
 	 * The BuiltAppRoute entry for a slug, or a stand-in built from the Application.
@@ -1424,6 +1490,11 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 		foreach ($results as $entry) {
 			$app = ObjectRecord::toArray(object: $entry);
 			if ($app === []) {
+				continue;
+			}
+
+			// Organisation scope before any role, admins included (REQ-BQOS-002).
+			if ($this->visibleToOrganisation(application: $app) === false) {
 				continue;
 			}
 
@@ -2054,8 +2125,10 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 			$version = ObjectRecord::toArray(
 				object: $this->objectService->find(
 					id: $versionId,
-					register: 'buildiq',
-					schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
+					options: new ObjectFindOptions(
+						register: 'buildiq',
+						schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
+					)
 				)
 			);
 		}
@@ -2415,9 +2488,8 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 						'editors' => [],
 						'viewers' => [],
 					],
-				],
-				register: $ctx['register'],
-				schema: $ctx['applicationSchema']
+				] + $this->newAppScope(),
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $ctx['register'], schema: $ctx['applicationSchema']))
 			);
 		} catch (Throwable $e) {
 			$this->logger->error('Buildiq: application save failed', ['exception' => $e->getMessage()]);
@@ -2482,8 +2554,10 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 
 			$createdVersion = $this->objectService->saveObject(
 				object: $versionPayload,
-				register: ApplicationVersionServiceInterface::REGISTER_SLUG,
-				schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(
+						register: ApplicationVersionServiceInterface::REGISTER_SLUG,
+						schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
+					))
 			);
 			$versionData = ObjectRecord::toArray(object: $createdVersion);
 			$versionUuid = (string)($versionData['uuid'] ?? $versionData['id'] ?? '');
@@ -2507,9 +2581,13 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 
 			$this->objectService->saveObject(
 				object: $application,
-				register: ApplicationVersionServiceInterface::REGISTER_SLUG,
-				schema: ApplicationVersionServiceInterface::APPLICATION_SCHEMA,
-				uuid: $appUuid
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(
+							register: ApplicationVersionServiceInterface::REGISTER_SLUG,
+							schema: ApplicationVersionServiceInterface::APPLICATION_SCHEMA
+						),
+					uuid: $appUuid
+				)
 			);
 		} catch (Throwable $e) {
 			$this->logger->error(

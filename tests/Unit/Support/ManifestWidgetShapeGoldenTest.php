@@ -34,6 +34,8 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\Buildiq\Support\ManifestWidgetShape
  * @uses   \OCA\Buildiq\Support\WidgetSpec
+ * @uses   \OCA\Buildiq\Support\WidgetIdAllocator
+ * @uses   \OCA\Buildiq\Support\WidgetDataBinding
  */
 class ManifestWidgetShapeGoldenTest extends TestCase {
 

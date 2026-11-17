@@ -1147,7 +1147,7 @@
         "exception": {
             "errorCode": "app_slug_conflict",
             "failedAtStep": "validate",
-            "message": "An Application with slug \"permit-tracker\" already exists.",
+            "message": "This slug is taken. Choose another.",
             "rollbackStatus": "none",
             "orphaned": [],
             "previous": null
@@ -1252,7 +1252,7 @@
         "exception": {
             "errorCode": "app_slug_conflict",
             "failedAtStep": "validate",
-            "message": "An Application with slug \"permit-tracker\" already exists.",
+            "message": "This slug is taken. Choose another.",
             "rollbackStatus": "none",
             "orphaned": [],
             "previous": {
@@ -1324,7 +1324,7 @@
         "exception": {
             "errorCode": "app_slug_conflict",
             "failedAtStep": "validate",
-            "message": "An Application with slug \"permit-tracker\" already exists.",
+            "message": "This slug is taken. Choose another.",
             "rollbackStatus": "none",
             "orphaned": [],
             "previous": {
@@ -1396,7 +1396,7 @@
         "exception": {
             "errorCode": "app_slug_conflict",
             "failedAtStep": "validate",
-            "message": "An Application with slug \"permit-tracker\" already exists.",
+            "message": "This slug is taken. Choose another.",
             "rollbackStatus": "none",
             "orphaned": [],
             "previous": {
@@ -1468,7 +1468,7 @@
         "exception": {
             "errorCode": "app_slug_conflict",
             "failedAtStep": "validate",
-            "message": "An Application with slug \"permit-tracker\" already exists.",
+            "message": "This slug is taken. Choose another.",
             "rollbackStatus": "none",
             "orphaned": [],
             "previous": {

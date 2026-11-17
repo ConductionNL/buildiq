@@ -49,6 +49,7 @@ use ZipArchive;
  * @uses   \OCA\Buildiq\Service\ExportTreeFiles
  * @uses   \OCA\Buildiq\Service\PlaceholderResolver
  * @uses   \OCA\Buildiq\Service\ExportBundlers
+ * @uses   \OCA\Buildiq\Service\ExportArchiveStore
  */
 class ExportZipGoldenTest extends TestCase {
 
