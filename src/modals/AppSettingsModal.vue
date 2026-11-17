@@ -537,6 +537,8 @@ export default {
 		 *
 		 * @param {Array<{label: string, value: string}>} picked The chosen options.
 		 * @return {void}
+		 *
+		 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-bound-flow-declares-where-it-runs-req-bqsf-001
 		 */
 		onFlowsPicked(picked) {
 			// A flow that stays picked keeps its binding as it was, `runOn`
@@ -562,6 +564,8 @@ export default {
 		 *
 		 * @param {object} binding The binding.
 		 * @return {string} The flow's name.
+		 *
+		 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-bound-flow-declares-where-it-runs-req-bqsf-001
 		 */
 		flowLabel(binding) {
 			const known = this.availableFlows.find((option) => option.value === binding.flow)
@@ -573,6 +577,8 @@ export default {
 		 *
 		 * @param {string} slug The schema slug.
 		 * @return {?{label: string, value: string}} The option.
+		 *
+		 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-bound-flow-declares-where-it-runs-req-bqsf-001
 		 */
 		schemaOption(slug) {
 			if (!slug) {
@@ -586,6 +592,8 @@ export default {
 		 *
 		 * @param {string} when The event or `from-record`.
 		 * @return {?{label: string, value: string}} The option.
+		 *
+		 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-bound-flow-declares-where-it-runs-req-bqsf-001
 		 */
 		whenOption(when) {
 			return this.whenOptions.find((option) => option.value === when) || null

@@ -75,6 +75,11 @@ export default {
 	watch: {
 		flows: {
 			immediate: true,
+			/**
+			 * Reload the last runs whenever the bound flows change.
+			 *
+			 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-the-app-shows-where-its-flows-run-req-bqsf-005
+			 */
 			handler() {
 				this.loadLastRuns()
 			},
