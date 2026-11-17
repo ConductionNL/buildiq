@@ -110,4 +110,87 @@ describe('JourneyWritesEditor', () => {
 		await wrapper.findAll('[data-testid="journey-write-remove"]')[0].trigger('click')
 		expect(lastEmit(wrapper)).toEqual([contact])
 	})
+
+	describe('a write repeated per product (forms-multi-product-request)', () => {
+		const bundle = { as: 'bundel', register: 'zaken', schema: 'aanvraagbundel', mapping: { fields: [], fixed: {} } }
+		const request = {
+			as: 'aanvraag',
+			register: 'zaken',
+			schema: 'zaak',
+			forEach: 'producten',
+			targetBy: 'product',
+			targets: {
+				parkeervergunning: { register: 'zaken', schema: 'zaak', typeValue: 'PV' },
+				afvalcontainer: { register: 'zaken', schema: 'zaak-afval', typeValue: 'AC' },
+			},
+			mapping: { fields: [], fixed: {} },
+		}
+		const listFields = [{ key: 'producten', columns: ['product', 'toelichting'] }]
+		const flows = [{ name: 'Parkeervergunning behandelen', trigger: { type: 'object.created', register: 'zaken', schema: 'zaak' } }]
+
+		function repeating(props = {}) {
+			return mount(JourneyWritesEditor, { props: { modelValue: [bundle, request], fields: ['naam'], listFields, flows, ...props } })
+		}
+
+		it('repeats a write over a list answer and maps the item\'s own fields', async () => {
+			const wrapper = mount(JourneyWritesEditor, { props: { modelValue: [{ ...bundle }], fields: ['naam'], listFields } })
+			const options = wrapper.find('[data-testid="journey-write-foreach"]').findAll('option').map((o) => o.attributes('value'))
+			expect(options).toEqual(['', 'producten'])
+
+			await wrapper.find('[data-testid="journey-write-foreach"]').setValue('producten')
+			expect(lastEmit(wrapper)[0]).toMatchObject({ forEach: 'producten', bundle: false })
+
+			await wrapper.setProps({ modelValue: [{ ...bundle, forEach: 'producten', mapping: { fields: [{ field: '', property: 'omschrijving' }], fixed: {} } }] })
+			const fieldOptions = wrapper.find('[data-testid="journey-write-field"] select').findAll('option').map((o) => o.attributes('value'))
+			expect(fieldOptions).toEqual(['', 'naam', 'item.product', 'item.toelichting'])
+
+			await wrapper.find('[data-testid="journey-write-field"] select').setValue('item.toelichting')
+			expect(lastEmit(wrapper)[0].mapping.fields).toEqual([{ field: 'item.toelichting', property: 'omschrijving' }])
+		})
+
+		it('writes once again without its targets', async () => {
+			const wrapper = repeating()
+			await wrapper.findAll('[data-testid="journey-write-foreach"]')[1].setValue('')
+			const once = lastEmit(wrapper)[1]
+			expect(once).not.toHaveProperty('forEach')
+			expect(once).not.toHaveProperty('targetBy')
+			expect(once).not.toHaveProperty('targets')
+		})
+
+		it('edits the target of each product', async () => {
+			const wrapper = repeating()
+			const rows = wrapper.findAll('[data-testid="journey-write-target"]')
+			expect(rows).toHaveLength(2)
+
+			await rows[1].find('[data-testid="journey-write-target-typeValue"]').setValue('AFV')
+			expect(lastEmit(wrapper)[1].targets.afvalcontainer).toEqual({ register: 'zaken', schema: 'zaak-afval', typeValue: 'AFV' })
+
+			await wrapper.find('[data-testid="journey-write-add-target"]').trigger('click')
+			expect(Object.keys(lastEmit(wrapper)[1].targets)).toEqual(['parkeervergunning', 'afvalcontainer', 'product3'])
+
+			await rows[0].find('button').trigger('click')
+			expect(Object.keys(lastEmit(wrapper)[1].targets)).toEqual(['afvalcontainer'])
+		})
+
+		it('keeps one bundle: marking a write unmarks the other', async () => {
+			const wrapper = mount(JourneyWritesEditor, { props: { modelValue: [{ ...bundle, bundle: true }, { ...org }] } })
+			await wrapper.findAll('[data-testid="journey-write-bundle"]')[1].setValue(true)
+			expect(lastEmit(wrapper).map((w) => w.bundle)).toEqual([false, true])
+		})
+
+		it('says which product starts no process', () => {
+			const wrapper = repeating()
+			const rows = wrapper.findAll('[data-testid="journey-write-target"]')
+			expect(rows[0].find('[data-testid="journey-write-flows"]').exists()).toBe(true)
+			expect(wrapper.vm.creationFlowsOf(wrapper.vm.targetRows(request)[0]).map(wrapper.vm.flowName)).toEqual(['Parkeervergunning behandelen'])
+			expect(rows[0].find('[data-testid="journey-write-no-process"]').exists()).toBe(false)
+			expect(rows[1].find('[data-testid="journey-write-no-process"]').text()).toBe('This product starts no process.')
+		})
+
+		it('warns about nothing while the flows are not read', () => {
+			const wrapper = repeating({ flows: null })
+			expect(wrapper.find('[data-testid="journey-write-no-process"]').exists()).toBe(false)
+			expect(wrapper.find('[data-testid="journey-write-flows"]').exists()).toBe(false)
+		})
+	})
 })

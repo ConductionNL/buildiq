@@ -51,6 +51,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 
 /**
  * Tests for AgentsController::runs.
@@ -169,7 +170,11 @@ class AgentsControllerTest extends TestCase {
 		// so the callback must destructure by POSITION, not by whatever
 		// parameter names it declares.
 		$this->objectService->method('find')->willReturnCallback(
-			function (string|int $id, mixed $extend, mixed $files, mixed $register, mixed $schema, mixed ...$rest) use ($agent, $application, $agentEntity, $applicationEntity) {
+			function (string|int $id, ?ObjectFindOptions $options = null, bool $_rbac = true, bool $_multitenancy = true, mixed ...$rest) use ($agent, $application, $agentEntity, $applicationEntity) {
+				$extend = $options?->extend;
+				$files = $options?->files;
+				$register = $options?->register;
+				$schema = $options?->schema;
 				// `buildAgent`: #686 namespaced this app's agent slug so it stops
 				// colliding with hermiq's. AgentsController::AGENT_SCHEMA moved
 				// with it; this fake still answered to the old name, so every

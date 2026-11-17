@@ -30,6 +30,8 @@ namespace OCA\Buildiq\Service\Branch;
 use OCA\Buildiq\Kernel\Contracts\ApplicationVersionServiceInterface;
 use OCA\Buildiq\Service\RegisterStore;
 use OCA\Buildiq\Support\ObjectRecord;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Starts a branch from a version.
@@ -91,8 +93,10 @@ class VersionBranchService {
 		return ObjectRecord::toArray(
 			object: $this->store->objectService->saveObject(
 				object: $payload,
-				register: ApplicationVersionServiceInterface::REGISTER_SLUG,
-				schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(
+						register: ApplicationVersionServiceInterface::REGISTER_SLUG,
+						schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
+					))
 			)
 		);
 	}//end start()

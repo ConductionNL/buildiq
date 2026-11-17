@@ -25,6 +25,7 @@ export const FIELD_TYPES = Object.freeze([
 	'date',
 	'file',
 	'child-records',
+	'product-list',
 ])
 
 /** The palette's name and icon per field type. */
@@ -37,6 +38,7 @@ const TYPE_META = Object.freeze({
 	date: { label: () => t('buildiq', 'Date'), icon: '📅' },
 	file: { label: () => t('buildiq', 'File'), icon: '📎' },
 	'child-records': { label: () => t('buildiq', 'Table of records'), icon: '▦' },
+	'product-list': { label: () => t('buildiq', 'Product list'), icon: '⊞' },
 	// The device fields only the field builder offers (forms-signature-audio-and-location).
 	signature: { label: () => t('buildiq', 'Signature'), icon: '✍' },
 	audio: { label: () => t('buildiq', 'Audio recording'), icon: '🎤' },
@@ -206,4 +208,37 @@ export function moveToSlot(list, from, to) {
 	const slot = to > from ? to - 1 : to
 	next.splice(Math.max(0, Math.min(slot, next.length)), 0, item)
 	return next
+}
+
+/** How many rows a product list holds by default, and at most (forms-multi-product-request D4). */
+export const PRODUCT_LIST_DEFAULT_ITEMS = 10
+export const PRODUCT_LIST_MAX_ITEMS = 25
+
+/**
+ * A product list field: the sub-objects widget over one answer key, whose
+ * first column chooses a product and whose other columns are the details,
+ * bounded by `maxItems` (default 10, at most 25). `forEach` names its key.
+ *
+ * @param {object} field - the field as stored, possibly without settings yet.
+ * @param {{products?: Array<string>, details?: Array<string>, maxItems?: number|string}} [patch] - changed settings.
+ * @return {object} The field.
+ * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-the-parts-can-hang-under-one-bundle-req-bqmp-003
+ */
+export function productListField(field, patch = {}) {
+	const columns = Array.isArray(field.columns) ? field.columns : []
+	const productColumn = columns.find((col) => col && col.key === 'product') || {}
+	const products = patch.products ?? (Array.isArray(productColumn.options) ? productColumn.options : [])
+	const details = patch.details ?? columns.filter((col) => col && col.key !== 'product').map((col) => col.key)
+	const wanted = Number(patch.maxItems ?? field.maxItems ?? PRODUCT_LIST_DEFAULT_ITEMS)
+	const maxItems = Number.isFinite(wanted) ? Math.min(PRODUCT_LIST_MAX_ITEMS, Math.max(1, Math.round(wanted))) : PRODUCT_LIST_DEFAULT_ITEMS
+	return {
+		...field,
+		type: 'product-list',
+		widget: 'sub-objects',
+		columns: [
+			{ key: 'product', label: t('buildiq', 'Product'), options: products.map(String).filter((p) => p !== '') },
+			...details.map(String).filter((d) => d !== '' && d !== 'product').map((key) => ({ key, label: key })),
+		],
+		maxItems,
+	}
 }

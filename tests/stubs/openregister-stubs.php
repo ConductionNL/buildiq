@@ -180,7 +180,7 @@ namespace OCA\OpenRegister\Kernel\Contracts {
 
 			public function isAutoCreateTableEnabledForSchema(int $schemaId, ?string $schemaSlug = null): bool;
 
-			public function enableMagicMappingForSchema(int $schemaId, bool $autoCreateTable = true, ?string $comment = null): static;
+			public function enableMagicMappingForSchema(int $schemaId, ?\OCA\OpenRegister\Kernel\Contracts\Value\MagicMappingOptions $options = null): static;
 
 			public function disableMagicMappingForSchema(int $schemaId): static;
 
@@ -224,7 +224,7 @@ namespace OCA\OpenRegister\Kernel\Contracts {
 
 			public function validateAuthorization(): bool;
 
-			public function hasPermission(string $groupId, string $action, ?string $userId = null, ?string $userGroup = null, ?string $objectOwner = null, ?array $objectData = null, ?string $objectOrganisation = null, ?string $activeOrganisation = null): bool;
+			public function hasPermission(\OCA\OpenRegister\Kernel\Contracts\Value\GrantQuery $query): bool;
 
 			public function getAuthorizedGroups(string $action): array;
 
@@ -674,13 +674,14 @@ namespace OCA\OpenRegister\Db {
 			}//end isAutoCreateTableEnabledForSchema()
 
 			/**
-			 * @param int         $schemaId        The schema id.
-			 * @param bool        $autoCreateTable Whether to create the table.
-			 * @param string|null $comment         Optional note.
+			 * @param int                                                          $schemaId The schema id.
+			 * @param \OCA\OpenRegister\Kernel\Contracts\Value\MagicMappingOptions|null $options  Table creation and note.
 			 *
 			 * @return static This register.
 			 */
-			public function enableMagicMappingForSchema(int $schemaId, bool $autoCreateTable = true, ?string $comment = null): static {
+			public function enableMagicMappingForSchema(int $schemaId, ?\OCA\OpenRegister\Kernel\Contracts\Value\MagicMappingOptions $options = null): static {
+				$autoCreateTable = $options?->autoCreateTable ?? true;
+				$comment         = $options?->comment;
 				$config = $this->getConfiguration();
 				$config['schemas'][$schemaId] = array_filter(
 					['magicMapping' => true, 'autoCreateTable' => $autoCreateTable, 'comment' => $comment],
@@ -1038,31 +1039,32 @@ namespace OCA\OpenRegister\Db {
 			}//end validateAuthorization()
 
 			/**
-			 * @param string      $groupId            The group.
-			 * @param string      $action             The CRUD action.
-			 * @param string|null $userId             The user.
-			 * @param string|null $userGroup          The user's group.
-			 * @param string|null $objectOwner        The object owner.
-			 * @param array|null  $objectData         The object data.
-			 * @param string|null $objectOrganisation The object organisation.
-			 * @param string|null $activeOrganisation The active organisation.
+			 * @param \OCA\OpenRegister\Kernel\Contracts\Value\GrantQuery $query The grant question.
 			 *
 			 * @return bool Always true: a schema without authorization is open.
-			 *
-			 * @SuppressWarnings(PHPMD.ExcessiveParameterList)
 			 */
-			public function hasPermission(
-				string $groupId,
-				string $action,
-				?string $userId = null,
-				?string $userGroup = null,
-				?string $objectOwner = null,
-				?array $objectData = null,
-				?string $objectOrganisation = null,
-				?string $activeOrganisation = null
-			): bool {
+			public function hasPermission(\OCA\OpenRegister\Kernel\Contracts\Value\GrantQuery $query): bool {
 				return true;
 			}//end hasPermission()
+
+			/**
+			 * @return bool True when the configuration marks the schema federatable.
+			 */
+			public function isFederatable(): bool {
+				return (($this->getConfiguration() ?? [])['federatable'] ?? false) === true;
+			}//end isFederatable()
+
+			/**
+			 * @return bool True when the schema declares preservation as enabled.
+			 */
+			public function isPreservationEnabled(): bool {
+				$annotation = (($this->getConfiguration() ?? [])['x-openregister-preserve'] ?? null);
+				if (is_array($annotation) === false) {
+					return false;
+				}
+
+				return ($annotation['enabled'] ?? false) === true;
+			}//end isPreservationEnabled()
 
 			/**
 			 * @param string $action The CRUD action.
@@ -2420,6 +2422,12 @@ namespace OCA\OpenRegister\Service\Task {
 
 namespace OCA\OpenRegister\Service {
 
+	use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
+	use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+	use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+	use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+	use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
+
 	if (class_exists(ObjectService::class, autoload: false) === false) {
 		/**
 		 * Stub ObjectService — call surface only; tests mock the methods.
@@ -2457,7 +2465,7 @@ namespace OCA\OpenRegister\Service {
 			 *
 			 * @return \OCA\OpenRegister\Db\ObjectEntity|null
 			 */
-			public function find(int|string $id, ?array $_extend = [], bool $files = false, \OCA\OpenRegister\Db\Register|string|int|null $register = null, \OCA\OpenRegister\Db\Schema|string|int|null $schema = null, bool $_rbac = true, bool $_multitenancy = true): ?\OCA\OpenRegister\Db\ObjectEntity {
+			public function find(int|string $id, ?ObjectFindOptions $options = null, bool $_rbac = true, bool $_multitenancy = true): ?\OCA\OpenRegister\Db\ObjectEntity {
 				return null;
 			}//end find()
 
@@ -2477,28 +2485,28 @@ namespace OCA\OpenRegister\Service {
 			 *
 			 * @return \OCA\OpenRegister\Db\ObjectEntity
 			 */
-			public function saveObject(array|\OCA\OpenRegister\Db\ObjectEntity $object, ?array $extend = [], \OCA\OpenRegister\Db\Register|string|int|null $register = null, \OCA\OpenRegister\Db\Schema|string|int|null $schema = null, ?string $uuid = null, bool $_rbac = true, bool $_multitenancy = true, bool $silent = false, ?array $uploadedFiles = null, ?\OCP\IUser $currentUser = null, bool $failIfExists = false): \OCA\OpenRegister\Db\ObjectEntity {
+			public function saveObject(array|\OCA\OpenRegister\Db\ObjectEntity $object, ObjectSaveOptions $options = new ObjectSaveOptions(), bool $_rbac = true, bool $_multitenancy = true): \OCA\OpenRegister\Db\ObjectEntity {
 				return new \OCA\OpenRegister\Db\ObjectEntity();
 			}//end saveObject()
 
 			/**
 			 * @return bool
 			 */
-			public function deleteObject(string $uuid, \OCA\OpenRegister\Db\Register|string|int|null $register = null, \OCA\OpenRegister\Db\Schema|string|int|null $schema = null, bool $_rbac = true, bool $_multitenancy = true, bool $_retentionSweep = false): bool {
+			public function deleteObject(ObjectDeletion $deletion, bool $_rbac = true, bool $_multitenancy = true, bool $_retentionSweep = false): bool {
 				return true;
 			}//end deleteObject()
 
 			/**
 			 * @return array<string, mixed>
 			 */
-			public function lockObject(string $identifier, ?string $process = null, ?int $duration = null, bool $advisory = false): array {
+			public function lockObject(LockRequest $request, bool $advisory = false): array {
 				return [];
 			}//end lockObject()
 
 			/**
 			 * @return bool
 			 */
-			public function unlockObject(string|int $identifier): bool {
+			public function unlockObject(UnlockRequest $request): bool {
 				return true;
 			}//end unlockObject()
 

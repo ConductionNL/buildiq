@@ -54,6 +54,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\Buildiq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Tests for copying an app.
@@ -152,6 +153,7 @@ class CopyApplicationTest extends TestCase {
 		$this->objectService->method('searchObjects')->willReturn([['slug' => 'permit-tracker', 'applicationUuid' => 'app-1']]);
 		$this->objectService->method('find')->willReturnCallback(
 			static function (...$args): ?ObjectEntity {
+				$args = LegacyObjectArgs::flatten(args: $args);
 				$id = (string)($args['id'] ?? $args[0]);
 				$entity = new ObjectEntity();
 				$entity->setUuid($id);
