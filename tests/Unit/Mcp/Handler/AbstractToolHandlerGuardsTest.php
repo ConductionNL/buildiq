@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\Mcp\Handler;
 
 use OCA\Buildiq\Mcp\Handler\AbstractToolHandler;
+use OCA\Buildiq\Service\AppOrganisationGuard;
 use OCA\Buildiq\Service\PermissionResolver;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
@@ -34,6 +35,7 @@ use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\Attributes\CoversClass;
+use PHPUnit\Framework\Attributes\UsesClass;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -43,6 +45,7 @@ use RuntimeException;
  * Tests for the AbstractToolHandler guards.
  */
 #[CoversClass(AbstractToolHandler::class)]
+#[UsesClass(AppOrganisationGuard::class)]
 final class AbstractToolHandlerGuardsTest extends TestCase {
 
 	/**

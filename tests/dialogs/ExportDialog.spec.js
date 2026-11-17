@@ -79,7 +79,7 @@ describe('ExportDialog — Data registers includeData toggle (data-registers-run
 	it('renders no Data registers section when the Application has no bindings', () => {
 		const wrapper = mountDialog({ dataRegisters: [] })
 		expect(wrapper.find('.export-dialog__section-title').exists()).toBe(false)
-		expect(wrapper.findAll('.nc-checkbox-stub')).toHaveLength(1) // only "Include seed data"
+		expect(wrapper.findAll('.nc-checkbox-stub')).toHaveLength(2) // only "Include seed data" and "Mobile app project"
 	})
 
 	it('renders one toggle per binding, choice carries binding.label ?? binding.register for the template to display', () => {
@@ -103,7 +103,7 @@ describe('ExportDialog — Data registers includeData toggle (data-registers-run
 			{ register: 'bag-adressen', label: undefined, includeData: false },
 		])
 		// One toggle per binding, plus the pre-existing "Include seed data" switch.
-		expect(wrapper.findAll('.nc-checkbox-stub')).toHaveLength(3)
+		expect(wrapper.findAll('.nc-checkbox-stub')).toHaveLength(4) // seed data, two registers, mobile app project
 	})
 
 	it('every per-binding toggle defaults to unchecked (schema-defs-only)', () => {
@@ -210,5 +210,40 @@ describe('ExportDialog — Own server target (apps-standalone-deploy, board BqEx
 		await wrapper.vm.submit()
 		;[, payload] = axiosPostMock.mock.calls[0]
 		expect(payload).not.toHaveProperty('includeServerBundle')
+	})
+})
+
+describe('ExportDialog — Mobile app project (pages-installable-offline-and-mobile T08)', () => {
+	beforeEach(() => {
+		axiosPostMock.mockReset()
+		axiosPostMock.mockResolvedValue({ data: { uuid: 'job-uuid' } })
+	})
+
+	it('sends no mobile project unless it is switched on', async () => {
+		const wrapper = mountDialog()
+		expect(wrapper.find('[data-test="export-mobile-bundle-id"]').exists()).toBe(false)
+		await wrapper.vm.submit()
+		const [, payload] = axiosPostMock.mock.calls[0]
+		expect(payload).not.toHaveProperty('includeMobileProject')
+		expect(payload).not.toHaveProperty('mobileBundleId')
+	})
+
+	it('sends the project and the trimmed bundle id for any target', async () => {
+		const wrapper = mountDialog()
+		wrapper.vm.form.includeMobileProject = true
+		await wrapper.vm.$nextTick()
+		expect(wrapper.find('[data-test="export-mobile-bundle-id"]').exists()).toBe(true)
+		wrapper.vm.form.mobileBundleId = ' nl.gemeente.spectr '
+		await wrapper.vm.submit()
+		const [, payload] = axiosPostMock.mock.calls[0]
+		expect(payload.target).toBe('zip')
+		expect(payload.includeMobileProject).toBe(true)
+		expect(payload.mobileBundleId).toBe('nl.gemeente.spectr')
+	})
+
+	it('names the default bundle id the server would take', () => {
+		const wrapper = mountDialog({ applicationSlug: '9-spectr-app' })
+		const host = window.location.hostname.toLowerCase().replace(/[^a-z0-9]+/g, '') || 'instance'
+		expect(wrapper.vm.defaultBundleId).toBe('nl.' + (/^[a-z]/.test(host) ? host : 'a' + host) + '.a9spectrapp')
 	})
 })

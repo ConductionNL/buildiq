@@ -55,6 +55,12 @@ webpackConfig.entry = {
 		import: path.join(__dirname, 'src', 'ncDashboard.js'),
 		filename: appId + '-ncDashboard.js',
 	},
+	// The offline worker a running app registers under its run scope; served
+	// by GET /run/{slug}/offline-worker.js (pages-installable-offline-and-mobile T05).
+	offlineWorker: {
+		import: path.join(__dirname, 'src', 'offlineWorker.js'),
+		filename: appId + '-offline-worker.js',
+	},
 }
 
 // Use local source when available (monorepo dev), otherwise fall back to npm

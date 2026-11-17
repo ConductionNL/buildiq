@@ -9,6 +9,7 @@
  * Endpoints:
  *   GET /apps/buildiq/icons/{slug}.svg      → iconLight
  *   GET /apps/buildiq/icons/{slug}-dark.svg → iconDark
+ *   GET /apps/buildiq/icons/{slug}-touch.png → touchIcon (a PNG of the light icon, when the server can rasterise SVG)
  *
  * Both methods:
  *   - Require any valid NC session (#[NoAdminRequired]).
@@ -45,10 +46,12 @@ namespace OCA\Buildiq\Controller;
 
 use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Kernel\Contracts\IconServiceInterface;
+use OCA\Buildiq\Service\Icon\SvgRasteriser;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
+use OCP\AppFramework\Http\DataDisplayResponse;
 use OCP\AppFramework\Http\Response;
 use OCP\AppFramework\Http\StreamResponse;
 use OCP\IRequest;
@@ -82,6 +85,7 @@ class IconController extends Controller {
 	 * @param IconServiceInterface $iconService The icon-resolution service.
 	 * @param IUserSession $userSession User session for authentication guard.
 	 * @param LoggerInterface $logger PSR logger.
+	 * @param SvgRasteriser $rasteriser Turns the SVG icon into the PNG touch icon.
 	 *
 	 * @return void
 	 */
@@ -90,6 +94,7 @@ class IconController extends Controller {
 		private readonly IconServiceInterface $iconService,
 		private readonly IUserSession $userSession,
 		private readonly LoggerInterface $logger,
+		private readonly SvgRasteriser $rasteriser=new SvgRasteriser(),
 	) {
 		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
@@ -147,6 +152,79 @@ class IconController extends Controller {
 
 		return $this->buildIconResponse(slug: $slug, dark: true);
 	}//end iconDark()
+
+	/**
+	 * GET /icons/{slug}-touch.png — the installed app's touch icon: the light
+	 * icon as a PNG of 180 by 180 pixels. 404 when the server cannot
+	 * rasterise SVG or the app has no icon, so the page and the web app
+	 * manifest keep the SVG (pages-installable-offline-and-mobile T02).
+	 *
+	 * @param string $slug The app slug (path param).
+	 *
+	 * @return Response
+	 *
+	 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T02
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function touchIcon(string $slug): Response {
+		if ($this->userSession->getUser() === null) {
+			$response = new Response();
+			$response->setStatus(Http::STATUS_UNAUTHORIZED);
+			return $response;
+		}
+
+		$png = null;
+		try {
+			['stream' => $stream, 'mimeType' => $mimeType] = $this->iconService->getIconStream(slug: $slug, dark: false);
+			$png = $this->pngOf(stream: $stream, mimeType: (string)$mimeType);
+		} catch (\Throwable $e) {
+			$this->logger->warning('IconController: no touch icon for slug "' . $slug . '": ' . $e->getMessage());
+		}
+
+		if ($png === null) {
+			$response = new Response();
+			$response->setStatus(Http::STATUS_NOT_FOUND);
+			return $response;
+		}
+
+		$response = new DataDisplayResponse($png, Http::STATUS_OK, ['Content-Type' => 'image/png']);
+		$response->addHeader('Cache-Control', self::CACHE_CONTROL);
+		$response->addHeader('X-Content-Type-Options', 'nosniff');
+
+		return $response;
+	}//end touchIcon()
+
+	/**
+	 * The icon as PNG bytes: a PNG as it is, an SVG rasterised, else null.
+	 *
+	 * @param mixed  $stream   The icon stream, or null.
+	 * @param string $mimeType Its media type.
+	 *
+	 * @return string|null
+	 *
+	 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T02
+	 */
+	private function pngOf(mixed $stream, string $mimeType): ?string {
+		if (is_resource($stream) === false) {
+			return null;
+		}
+
+		$bytes = stream_get_contents($stream);
+		if (is_string($bytes) === false || $bytes === '') {
+			return null;
+		}
+
+		if ($mimeType === 'image/png') {
+			return $bytes;
+		}
+
+		if ($mimeType !== 'image/svg+xml') {
+			return null;
+		}
+
+		return $this->rasteriser->toPng(svg: $bytes);
+	}//end pngOf()
 
 	/**
 	 * Shared icon-response builder.
