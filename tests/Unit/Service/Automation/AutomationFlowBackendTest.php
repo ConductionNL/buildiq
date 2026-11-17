@@ -54,6 +54,7 @@ use RuntimeException;
  * @covers \OCA\Buildiq\Service\Automation\AutomationFlowBackend
  * @uses \OCA\Buildiq\Exception\UnsupportedAutomationCombinationException
  * @uses \OCA\Buildiq\Support\ObjectRecord
+ * @uses \OCA\Buildiq\Service\Automation\AutomationRecords
  */
 final class AutomationFlowBackendTest extends TestCase {
 

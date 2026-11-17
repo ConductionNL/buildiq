@@ -35,6 +35,7 @@ use RuntimeException;
  *
  * @covers \OCA\Buildiq\Service\Automation\RuleSetActivationRecompiler
  * @uses   \OCA\Buildiq\Support\ObjectRecord
+ * @uses   \OCA\Buildiq\Service\Automation\AutomationRecords
  * @uses   \OCA\Buildiq\Exception\UnsupportedAutomationCombinationException
  */
 final class RuleSetActivationRecompilerTest extends TestCase {

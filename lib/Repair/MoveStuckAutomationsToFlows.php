@@ -36,7 +36,7 @@ namespace OCA\Buildiq\Repair;
 
 use OCA\Buildiq\Exception\UnsupportedAutomationCombinationException;
 use OCA\Buildiq\Kernel\Contracts\AutomationCompilerServiceInterface;
-use OCA\Buildiq\Support\ObjectRecord;
+use OCA\Buildiq\Service\Automation\AutomationRecords;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
@@ -65,13 +65,6 @@ class MoveStuckAutomationsToFlows implements IRepairStep {
 	 * @var string
 	 */
 	private const AUTOMATION_SCHEMA = 'automation';
-
-	/**
-	 * The most automations read in one run.
-	 *
-	 * @var int
-	 */
-	private const LIMIT = 10000;
 
 	/**
 	 * The action kinds that compiled to lifecycle records nothing ran.
@@ -114,15 +107,11 @@ class MoveStuckAutomationsToFlows implements IRepairStep {
 	 *
 	 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-stuck-automations-are-moved-or-disabled-with-a-reason-req-bqar-007
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
+	 * @SuppressWarnings(PHPMD.StaticAccess) AutomationRecords is a pure coercion with no collaborators.
 	 */
 	public function run(IOutput $output): void {
 		try {
-			$rows = $this->objectService->findAll(
-				config: ['filters' => ['register' => self::REGISTER_SLUG, 'schema' => self::AUTOMATION_SCHEMA], 'limit' => self::LIMIT],
-				_rbac: false,
-				_multitenancy: false
-			);
+			$automations = AutomationRecords::all(objectService: $this->objectService);
 		} catch (Throwable $e) {
 			$this->logger->warning('MoveStuckAutomationsToFlows: automations could not be read: ' . $e->getMessage());
 			$output->warning('MoveStuckAutomationsToFlows: automations could not be read; nothing moved.');
@@ -131,8 +120,7 @@ class MoveStuckAutomationsToFlows implements IRepairStep {
 
 		$moved = 0;
 		$disabled = 0;
-		foreach ($rows as $row) {
-			$automation = ObjectRecord::toArray(object: $row);
+		foreach ($automations as $automation) {
 			if (self::isStuck(automation: $automation) === false) {
 				continue;
 			}

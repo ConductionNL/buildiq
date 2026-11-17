@@ -58,6 +58,7 @@ use Psr\Log\LoggerInterface;
  * @uses   \OCA\Buildiq\Service\CallerContext
  * @uses   \OCA\Buildiq\Service\PermissionResolver
  * @uses   \OCA\Buildiq\Support\ObjectRecord
+ * @uses   \OCA\Buildiq\Service\Automation\AutomationRecords
  */
 final class AutomationsControllerManualRunTest extends TestCase {
 

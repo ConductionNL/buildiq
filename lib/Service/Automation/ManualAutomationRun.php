@@ -30,7 +30,6 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service\Automation;
 
-use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Service\Flow\FlowRunOptions;
@@ -103,7 +102,7 @@ class ManualAutomationRun {
 	 * @return array<int,array{uuid:string,name:string}>
 	 *
 	 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-app-users-run-manual-automations-from-a-record-req-bqar-006
-	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
+	 * @SuppressWarnings(PHPMD.StaticAccess) AutomationRecords is a pure coercion with no collaborators.
 	 */
 	public function listFor(string $applicationSlug, string $schemaSlug): array {
 		$results = $this->objectService->findAll(
@@ -120,7 +119,7 @@ class ManualAutomationRun {
 
 		$out = [];
 		foreach ($results as $result) {
-			$automation = ObjectRecord::toArray(object: $result);
+			$automation = AutomationRecords::toArray(object: $result);
 			if ($this->isRunnable(automation: $automation) === false || (string)($automation['trigger']['schema'] ?? '') !== $schemaSlug) {
 				continue;
 			}
@@ -147,7 +146,7 @@ class ManualAutomationRun {
 	 * @return array{uuid:string,register:string,schema:string}|null
 	 *
 	 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-app-users-run-manual-automations-from-a-record-req-bqar-006
-	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
+	 * @SuppressWarnings(PHPMD.StaticAccess) AutomationRecords is a pure coercion with no collaborators.
 	 */
 	public function readableSubject(string $objectUuid, string $schemaSlug): ?array {
 		if ($objectUuid === '') {
@@ -164,7 +163,7 @@ class ManualAutomationRun {
 			return null;
 		}
 
-		$data   = ObjectRecord::toArray(object: $record);
+		$data   = AutomationRecords::toArray(object: $record);
 		$schema = (string)($record->getSchema() ?? '');
 		if ($schemaSlug !== '' && $schema !== $schemaSlug && (string)($data['@self']['schema'] ?? '') !== $schemaSlug) {
 			return null;
@@ -194,15 +193,9 @@ class ManualAutomationRun {
 		}
 
 		$flowUuid = self::flowUuidOf(automation: $automation);
-		$run      = $flows->runForAction(
-			uuid: $flowUuid,
-			options: new FlowRunOptions(
-				subject: $subject,
-				context: ['automation' => (string)($automation['id'] ?? $automation['uuid'] ?? '')],
-				sync: false,
-				trigger: Flow::TRIGGER_MANUAL
-			)
-		);
+		$context  = ['automation' => (string)($automation['id'] ?? $automation['uuid'] ?? '')];
+		$options  = new FlowRunOptions(subject: $subject, context: $context, sync: false, trigger: Flow::TRIGGER_MANUAL);
+		$run      = $flows->runForAction(uuid: $flowUuid, options: $options);
 
 		return ['flowUuid' => $flowUuid, 'run' => $run->jsonSerialize()['uuid'] ?? null];
 	}//end start()

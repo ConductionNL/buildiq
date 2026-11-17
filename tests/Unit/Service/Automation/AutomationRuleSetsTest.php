@@ -37,6 +37,7 @@ use Psr\Log\NullLogger;
  *
  * @covers \OCA\Buildiq\Service\Automation\AutomationRuleSets
  * @uses \OCA\Buildiq\Support\ObjectRecord
+ * @uses \OCA\Buildiq\Service\Automation\AutomationRecords
  */
 final class AutomationRuleSetsTest extends TestCase {
 

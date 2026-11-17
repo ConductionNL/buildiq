@@ -30,7 +30,6 @@ namespace OCA\Buildiq\Service\Automation;
 
 use OCA\Buildiq\Kernel\Contracts\RuleEngineServiceInterface;
 use OCA\Buildiq\Service\StoredDecisionTables;
-use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -111,7 +110,7 @@ class AutomationRuleSets {
 	 *
 	 * @return array<string, mixed>|null
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
+	 * @SuppressWarnings(PHPMD.StaticAccess) AutomationRecords is a pure coercion with no collaborators.
 	 */
 	private function findRuleSet(string $slug): ?array {
 		try {
@@ -127,7 +126,7 @@ class AutomationRuleSets {
 			return null;
 		}
 
-		return ObjectRecord::toArray(object: $found[0]);
+		return AutomationRecords::toArray(object: $found[0]);
 	}//end findRuleSet()
 
 	/**
