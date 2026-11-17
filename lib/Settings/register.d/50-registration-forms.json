@@ -5,7 +5,7 @@
 			"registrationForm": {
 				"slug": "registrationForm",
 				"icon": "FormSelect",
-				"version": "0.4.0",
+				"version": "0.5.0",
 				"title": "Registration Form",
 				"description": "A form bound to one type value of one object in one app: the intake form for a bouwvergunning, the desk form for the same type, the form an architect fills in on a client's behalf. One type carries SEVERAL forms, each named, each for an audience and a channel, and at most one of them is the default for its audience and channel. The form owns the order and the grouping of its fields, so what a filer sees is what an administrator arranged and not whatever order the schema happens to list its properties in.",
 				"x-openregister-audit-trail": {
@@ -78,6 +78,37 @@
 						"example": "substantial",
 						"title": "Sign-in Level",
 						"description": "The sign-in a filer needs before the portal shows or accepts this form: DigiD for citizens or eHerkenning for businesses, at level low, substantial or high. Left empty, anyone may fill the form in. The portal enforces it; buildiq only records the maker's choice, and refuses a public form that also asks for a sign-in."
+					},
+					"fee": {
+						"type": "object",
+						"title": "Fee on Submit",
+						"description": "The fee the filer pays after sending the form: the portal shows \"Pay {amount} now\" and forwards to the payment provider (REQ-OBRF-010). Left empty, the form costs nothing. A form with a fee needs sign-in at level substantial or high; buildiq refuses to save it otherwise.",
+						"required": [
+							"amount"
+						],
+						"properties": {
+							"amount": {
+								"type": "number",
+								"exclusiveMinimum": 0,
+								"example": 25,
+								"title": "Amount",
+								"description": "What the filer pays, in the currency below. Greater than zero."
+							},
+							"currency": {
+								"type": "string",
+								"pattern": "^[A-Z]{3}$",
+								"default": "EUR",
+								"example": "EUR",
+								"title": "Currency",
+								"description": "The ISO 4217 code of the currency. EUR when left empty."
+							},
+							"description": {
+								"type": "string",
+								"example": "Leges evenementenvergunning",
+								"title": "Description",
+								"description": "The line the filer sees on the payment."
+							}
+						}
 					},
 					"confirmationText": {
 						"type": "string",
