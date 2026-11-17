@@ -420,3 +420,77 @@ describe('PreviewSandbox', () => {
 		expect(host.childNodes.length).toBe(0)
 	})
 })
+
+// @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-the-authored-behaviour-is-fixed-for-the-renderer-req-bqsp-003
+describe('PreviewSandbox: smart paste with a sample answer', () => {
+	const formPage = (config) => ({
+		pages: [
+			{ id: 'dashboard', type: 'dashboard', route: '/' },
+			{
+				id: 'nieuwe-klant',
+				type: 'form',
+				route: '/nieuwe-klant',
+				config: {
+					fields: [
+						{ key: 'naam', label: 'Naam', type: 'string' },
+						{ key: 'adres', label: 'Adres', type: 'textarea' },
+						{ key: 'telefoon', label: 'Telefoon', type: 'string' },
+						{ key: 'opmerking', label: 'Opmerking', type: 'string' },
+						{ key: 'soort', label: 'Soort', type: 'select', options: [{ value: 'b', label: 'Bedrijf' }] },
+					],
+					...config,
+				},
+			},
+		],
+		menu: [],
+	})
+
+	async function onFormPage(manifest) {
+		const wrapper = mountSandbox(manifest)
+		await flushPromises()
+		await wrapper.vm._sandboxRouter.push('/nieuwe-klant')
+		await flushPromises()
+		return wrapper
+	}
+
+	it('shows Paste to fill on the form and proposes sample values for the allowed fields only', async () => {
+		const wrapper = await onFormPage(
+			formPage({ mode: 'create', smartPaste: { enabled: true, fields: ['naam', 'adres', 'telefoon', 'soort'], hint: 'Plak een e-mail' } }),
+		)
+		const host = wrapper.element
+		const toggle = host.querySelector('[data-testid="smart-paste-preview-toggle"]')
+		expect(toggle).not.toBe(null)
+		expect(toggle.getAttribute('aria-expanded')).toBe('false')
+		expect(host.querySelector('[data-testid="smart-paste-proposal-naam"]')).toBe(null)
+
+		// The preview's guard lets the disclosure through, unlike an action button.
+		toggle.dispatchEvent(new window.MouseEvent('click', { bubbles: true, cancelable: true }))
+		await flushPromises()
+
+		expect(toggle.getAttribute('aria-expanded')).toBe('true')
+		expect(host.querySelector('#smart-paste-preview-panel').textContent).toContain('Plak een e-mail')
+		expect(host.querySelector('[data-testid="smart-paste-proposal-naam"]').textContent).toContain('Sample value')
+		expect(host.querySelector('[data-testid="smart-paste-proposal-naam"]').textContent).toContain('Suggestion')
+		expect(host.querySelector('[data-testid="smart-paste-proposal-adres"]').textContent).toContain('Sample text from the pasted message')
+		expect(host.querySelector('[data-testid="smart-paste-proposal-soort"]').textContent).toContain('Bedrijf')
+		expect(host.querySelector('[data-testid="smart-paste-proposal-opmerking"]')).toBe(null)
+		wrapper.unmount()
+	})
+
+	it('does not show the control on a public form, a switched-off one, or another page', async () => {
+		for (const config of [
+			{ mode: 'public', smartPaste: { enabled: true, fields: ['naam'] } },
+			{ smartPaste: { enabled: true, fields: ['naam'] } },
+			{ mode: 'create', smartPaste: { enabled: false, fields: ['naam'] } },
+		]) {
+			const wrapper = await onFormPage(formPage(config))
+			expect(wrapper.element.querySelector('[data-testid="smart-paste-preview"]')).toBe(null)
+			wrapper.unmount()
+		}
+
+		const wrapper = mountSandbox(formPage({ mode: 'create', smartPaste: { enabled: true, fields: ['naam'] } }))
+		await flushPromises()
+		expect(wrapper.element.querySelector('[data-testid="smart-paste-preview"]')).toBe(null)
+		wrapper.unmount()
+	})
+})
