@@ -63,12 +63,14 @@ export async function fetchCopilotHealth() {
  *   (spec `agent-workspace`).
  * @param {string} [params.versionSlug] - the version the caller is editing; every
  *   step that omits `versionSlug` is settled on it server-side.
+ * @param {number} [params.documentFileId] - Files id of a requirements document the
+ *   server reads as the caller; with one, the brief may be empty.
  * @return {Promise<{summary: string, steps: Array, manifests: object}>}
  * @throws {{status: number, error: string, message: string}} Normalised error envelope.
  * @spec openspec/specs/ai-copilot/spec.md
  * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
  */
-export async function requestPlan({ brief, appSlug, agentId, versionSlug } = {}) {
+export async function requestPlan({ brief, appSlug, agentId, versionSlug, documentFileId } = {}) {
 	try {
 		const url = generateUrl('/apps/buildiq/api/copilot/plan')
 		const { data } = await axios.post(url, {
@@ -76,6 +78,7 @@ export async function requestPlan({ brief, appSlug, agentId, versionSlug } = {})
 			appSlug,
 			agentId,
 			versionSlug,
+			documentFileId,
 		})
 		return data
 	} catch (err) {
@@ -127,5 +130,29 @@ export async function discardRun({ agentId, prompt, plan } = {}) {
 		await axios.post(url, { agentId, prompt, ...plan })
 	} catch (err) {
 		// Best-effort: a failed audit-log write must not surface as a user-facing error.
+	}
+}
+
+/**
+ * POST /api/copilot/assist — propose or explain one builder expression.
+ *
+ * @param {object} params - request params.
+ * @param {string} params.target - `feel-condition` | `decision-rule` | `field-mapping` | `payload-template`.
+ * @param {string} params.mode - `write` (turn `request` into a value) or `explain` (describe `current`).
+ * @param {string} [params.request] - the maker's plain request (write mode).
+ * @param {string} [params.current] - the editor's current value.
+ * @param {string} params.appSlug - the app being edited; the caller must be an owner or editor.
+ * @param {object} [params.context] - names only: `columns`, `paths`, `register`, `targetSchema`, `triggerSchema`.
+ * @return {Promise<{mode: string, value?: (string|object), explanation: string}>} The server-checked answer.
+ * @throws {{status: number, error: string, message: string}} Normalised error envelope.
+ * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-builder-assist/spec.md#requirement-the-assist-proposes-a-checked-value-req-bqch-002
+ */
+export async function assist({ target, mode, request = '', current = '', appSlug, context = {} } = {}) {
+	try {
+		const url = generateUrl('/apps/buildiq/api/copilot/assist')
+		const { data } = await axios.post(url, { target, mode, request, current, appSlug, context })
+		return data
+	} catch (err) {
+		throw normaliseError(err)
 	}
 }
