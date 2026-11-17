@@ -474,14 +474,14 @@ import DeleteIcon from 'vue-material-design-icons/Delete.vue'
 import PlusIcon from 'vue-material-design-icons/Plus.vue'
 import DeleteFieldDialog from '../../modals/DeleteFieldDialog.vue'
 import GeneratedNumberSettings from './GeneratedNumberSettings.vue'
+import { listConceptSchemes, listSchemeOptions } from '../../services/conceptSchemes.js'
+import { dutchFormatOptions, isDutchFormat } from '../../services/dutchFormats.js'
 import {
 	formatProblem,
 	GENERATED_KEY,
 	generatedFromProperty,
 	generatedKeyword,
 } from './generatedNumber.js'
-import { listConceptSchemes, listSchemeOptions } from '../../services/conceptSchemes.js'
-import { dutchFormatOptions, isDutchFormat } from '../../services/dutchFormats.js'
 
 // The JSON Schema string formats the schema field editor lists before the Dutch ones.
 const JSON_SCHEMA_FORMATS = ['email', 'uri', 'date', 'date-time', 'time', 'uuid', 'hostname', 'ipv4', 'ipv6']
