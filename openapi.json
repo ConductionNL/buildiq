@@ -1699,7 +1699,7 @@
                 }
             }
         },
-        "/applications/{slug}/copy": {
+        "/applications/{sourceSlug}/copy": {
             "post": {
                 "operationId": "applications-copy",
                 "summary": "Copy an app into a new one, owned by the caller (REQ-BQCP-001)",
@@ -1709,7 +1709,7 @@
                 ],
                 "parameters": [
                     {
-                        "name": "slug",
+                        "name": "sourceSlug",
                         "in": "path",
                         "required": true,
                         "description": "The source app's slug.",
@@ -4460,7 +4460,7 @@
                 }
             }
         },
-        "/store/templates/{slug}/install": {
+        "/store/templates/{templateSlug}/install": {
             "post": {
                 "operationId": "store-install",
                 "summary": "Resolve a remote template by slug and install it locally (clone)",
@@ -4470,7 +4470,7 @@
                 ],
                 "parameters": [
                     {
-                        "name": "slug",
+                        "name": "templateSlug",
                         "in": "path",
                         "required": true,
                         "description": "The remote template slug to install.",

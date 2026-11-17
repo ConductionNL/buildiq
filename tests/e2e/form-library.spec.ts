@@ -87,7 +87,8 @@ test.describe('form library', () => {
 		expect(stored.records ?? stored.objects).toBeUndefined()
 
 		await openForms(page)
-		await page.getByTestId('form-library-search').locator('input').fill(suffix)
+		// NcTextField puts the data-testid on the input itself.
+		await page.getByTestId('form-library-search').fill(suffix)
 		const cards = page.getByTestId('library-form-card')
 		await expect(cards).toHaveCount(1, { timeout: 30_000 })
 		await expect(cards.first()).toContainText(subsidyForm.name)
@@ -161,7 +162,6 @@ test.describe('form library', () => {
 
 		await page
 			.getByTestId('form-library-search')
-			.locator('input')
 			.fill(`Geimporteerd ${suffix}`)
 		const card = page.getByTestId('library-form-card').first()
 		await expect(card).toContainText('Gemeente Ander')

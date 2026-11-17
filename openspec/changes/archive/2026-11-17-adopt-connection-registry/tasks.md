@@ -29,4 +29,4 @@
 
 ## 5. After integriq ships hydra#674
 
-- [ ] 5.1 Run the e2e spec against an instance with both apps, then archive this change.
+- [x] 5.1 Run the e2e spec against an instance with both apps, then archive this change. Run 2026-11-17 on a throwaway NC 34 rig with openregister main and integriq development: 4 of 4 passed.
