@@ -255,6 +255,16 @@
 						@update="replaceField(index, $event)" />
 				</div>
 				<div
+					v-if="field.type === 'product-list'"
+					class="form-field-builder__section">
+					<span class="form-field-builder__section-label">{{
+						t('buildiq', 'Product list')
+					}}</span>
+					<ProductListFieldSettings
+						:field="field"
+						@update="replaceField(index, $event)" />
+				</div>
+				<div
 					v-if="field.type === 'child-records'"
 					class="form-field-builder__section">
 					<span class="form-field-builder__section-label">{{
@@ -364,6 +374,7 @@ import FieldDefaultBuilder from './FieldDefaultBuilder.vue'
 import FieldValidationBuilder from './FieldValidationBuilder.vue'
 import FileFieldSettings from './FileFieldSettings.vue'
 import InlineFieldMark from './InlineFieldMark.vue'
+import ProductListFieldSettings from './ProductListFieldSettings.vue'
 import VisibleWhenBuilder from './VisibleWhenBuilder.vue'
 import {
 	AUDIO_MAX_SECONDS,
@@ -383,6 +394,7 @@ import {
 	fieldTypeLabel,
 	insertAt,
 	moveToSlot,
+	productListField,
 } from './fieldTypes.js'
 
 /**
@@ -481,6 +493,7 @@ export default {
 	name: 'FormFieldBuilder',
 	components: {
 		ChildRecordsFieldSettings,
+		ProductListFieldSettings,
 		FieldAssignBuilder,
 		FileFieldSettings,
 		VisibleWhenBuilder,
@@ -777,9 +790,11 @@ export default {
 		 *
 		 * @param {string} type - the type.
 		 * @return {object}
+		 * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-the-parts-can-hang-under-one-bundle-req-bqmp-003
 		 */
 		newField(type) {
-			return { key: '', label: '', type }
+			// A product list starts as the sub-objects widget with its product column.
+			return type === 'product-list' ? productListField({ key: '', label: '' }) : { key: '', label: '', type }
 		},
 
 		/**
