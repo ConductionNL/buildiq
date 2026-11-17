@@ -26,6 +26,7 @@
  * @e2e registration-form-builder/requirement-the-leaf-serves-by-channel-and-the-channel-comes-back-with-the-form-req-obrf-009/dossiq-writes-the-channel-the-form-declared
  */
 import { expect, test } from '@playwright/test'
+import { anonymousContext } from './support/anonymous.ts'
 
 const CATALOGUE = '/index.php/apps/openregister/api/integrations'
 const LEAF_ID = 'buildiq-registration-form'
@@ -41,7 +42,7 @@ test.describe('registration-form leaf', () => {
 		expect(response.ok()).toBeTruthy()
 
 		const body = await response.json()
-		const entries = (body.items ?? body.results ?? body ?? []) as Array<
+		const entries = (body.integrations ?? body.items ?? body.results ?? body ?? []) as Array<
 			Record<string, unknown>
 		>
 
@@ -54,12 +55,10 @@ test.describe('registration-form leaf', () => {
 		// A draft holds a person's own half-written answers, often personal
 		// data. The least privileged principal that should be refused is nobody
 		// at all: there is no one for the draft to belong to.
-		const anonymous = await playwright.request.newContext({
-			baseURL: process.env.BASE_URL ?? process.env.NC_BASE_URL,
-		})
+		const anonymous = await anonymousContext(playwright)
 
 		const response = await anonymous.post(
-			`${CATALOGUE}/${LEAF_ID}/dossiq/Zaak/bouwvergunning`,
+			`/index.php/apps/openregister/api/objects/dossiq/Zaak/bouwvergunning/integrations/${LEAF_ID}`,
 			{
 				headers: HEADERS,
 				data: { registrationFormId: 'rf-1', values: { voornaam: 'Jan' } },

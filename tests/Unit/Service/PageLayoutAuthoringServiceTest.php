@@ -40,6 +40,7 @@ use OCA\Buildiq\Service\PageLayoutPresenter;
 use OCA\Buildiq\Service\PageLayoutValidator;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Exception\ValidationException;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IUser;
@@ -592,7 +593,7 @@ final class PageLayoutAuthoringServiceTest extends TestCase {
 
 		self::assertSame(['mine-1', 'mine-2'], array_column($layouts, 'id'));
 		self::assertSame([false, false], array_column($layouts, 'drifted'));
-		$read = [['setRegister', $register], ['setSchema', 'pageLayout'], ['findAll', ['filters' => ['register' => 'dossiq'], 'limit' => 500]]];
+		$read = [['setRegister', $register], ['setSchema', 'pageLayout'], ['findAll', ['limit' => 500]]];
 		self::assertSame($read, $calls);
 	}//end testListForReadsTheTargetRows()
 
@@ -610,6 +611,32 @@ final class PageLayoutAuthoringServiceTest extends TestCase {
 		$this->expectException(InvalidArgumentException::class);
 		$this->service->save(layout: ['id' => 'pl-tweede'] + $this->schemaWide(), author: 'beheerder');
 	}//end testALayoutIsNotItsOwnCollision()
+
+	/**
+	 * A layout the schema refuses is a refusal, not a failure, so the
+	 * controller can answer it as one.
+	 *
+	 * @return void
+	 */
+	public function testASchemaRefusalIsARefusal(): void {
+		$calls = [];
+		$objectService = $this->recordingObjectService(rows: [], calls: $calls);
+		$objectService->method('saveObject')->willThrowException(
+			new ValidationException('The required property (targetApp) is missing.')
+		);
+		$service = new PageLayoutAuthoringService(
+			objectService: $objectService,
+			appConfig: $this->appConfigReading(setting: 'buildiq'),
+			validator: new PageLayoutValidator(),
+			deltas: $this->deltas,
+			provider: $this->provider,
+		);
+
+		$this->expectException(exception: InvalidArgumentException::class);
+		$this->expectExceptionMessage(message: 'The required property (targetApp) is missing.');
+
+		$service->save(layout: $this->schemaWide(), author: 'beheerder');
+	}//end testASchemaRefusalIsARefusal()
 
 	/**
 	 * An object service that records what it was asked and answers these rows.
@@ -674,7 +701,21 @@ final class PageLayoutAuthoringServiceTest extends TestCase {
 			['id' => 'other-register', 'register' => 'elders', 'schema' => 'Zaak'],
 			['id' => 'other-schema', 'register' => 'dossiq', 'schema' => 'Besluit'],
 			['id' => 'mine-1', 'register' => 'dossiq', 'schema' => 'Zaak'],
-			['id' => 'mine-2', 'register' => 'dossiq', 'schema' => 'Zaak'],
+			$this->entity(object: ['id' => 'mine-2', 'register' => 'dossiq', 'schema' => 'Zaak']),
 		];
 	}//end mixedRows()
+
+	/**
+	 * A row as findAll() renders it: an entity, not an array.
+	 *
+	 * @param array<string, mixed> $object The object data.
+	 *
+	 * @return ObjectEntityInterface The entity.
+	 */
+	private function entity(array $object): ObjectEntityInterface {
+		$entity = $this->createMock(originalClassName: ObjectEntityInterface::class);
+		$entity->method('getObject')->willReturn($object);
+
+		return $entity;
+	}//end entity()
 }//end class

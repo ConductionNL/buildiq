@@ -9,4 +9,4 @@
 - [x] **T07**: Show the model steps and knowledge used in `src/components/agents/AgentRunHistory.vue` above the tool calls (REQ-BQAG-005). Verify: vitest `tests/components/AgentRunHistory.spec.js` for a run with a repair and a run with `traceMissing`.
 - [ ] **T08**: When OpenRegister publishes its vector facade, switch D2 from whole files to ranked passages and drop the budget refusal (REQ-BQAG-002). Verify: PHPUnit case with a knowledge set larger than the budget.
 - [x] **T09**: Strings and docs: English and Dutch for "Agents", "Knowledge", the budget message and the step labels (`l10n/en.json`, `l10n/nl.json`), and a page in `docs/` on giving an agent knowledge and reading its runs.
-- [ ] **T10**: Run `openspec validate ai-agents-knowledge-and-run-trace --strict`.
+- [x] **T10**: Run `openspec validate ai-agents-knowledge-and-run-trace --strict`. Valid, 2026-11-17.

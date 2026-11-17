@@ -3621,6 +3621,15 @@ namespace OCA\OpenRegister\Exception {
 		class ObjectExistsException extends \Exception {
 		}//end class
 	}
+
+	if (class_exists('OCA\OpenRegister\Exception\ValidationException', false) === false) {
+		/**
+		 * Schema validation refusal: thrown by ObjectService::saveObject() when
+		 * the object does not satisfy its schema.
+		 */
+		class ValidationException extends \Exception {
+		}//end class
+	}
 }
 
 namespace OCA\OpenRegister\Lifecycle {
