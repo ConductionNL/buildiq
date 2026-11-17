@@ -66,18 +66,29 @@ function embeddedProperties(manifest, slug) {
 	if (!isFilledString(slug)) {
 		return null
 	}
-	const schemas = manifest && manifest.schemas
-	let entry = null
-	if (Array.isArray(schemas)) {
-		entry = schemas.find((s) => isPlainObject(s) && schemaName(s) === slug) || null
-	} else if (isPlainObject(schemas)) {
-		entry = isPlainObject(schemas[slug]) ? schemas[slug] : null
-	}
+	const entry = schemaEntry(manifest && manifest.schemas, slug)
 	if (!entry) {
 		return null
 	}
 	const properties = entry.properties || (entry.schema && entry.schema.properties)
 	return isPlainObject(properties) ? properties : null
+}
+
+/**
+ * The embedded schema with this slug, from a list or a map of schemas, or null.
+ *
+ * @param {unknown} schemas - the manifest's schemas.
+ * @param {string} slug - the schema slug.
+ * @return {?object} The schema entry.
+ */
+function schemaEntry(schemas, slug) {
+	if (Array.isArray(schemas)) {
+		return schemas.find((s) => isPlainObject(s) && schemaName(s) === slug) || null
+	}
+	if (isPlainObject(schemas)) {
+		return isPlainObject(schemas[slug]) ? schemas[slug] : null
+	}
+	return null
 }
 
 /**
@@ -184,18 +195,30 @@ function codeWidgetErrors(widget, ctx) {
 		}
 		return errors
 	}
+	return errors.concat(codeFieldErrors(widget, ctx))
+}
+
+/**
+ * Errors of the field a `code` widget with a field source shows.
+ *
+ * @param {object} widget - the widget.
+ * @param {{pointer: string, properties: ?object}} ctx - where it sits and the schema's properties.
+ * @return {string[]}
+ */
+function codeFieldErrors(widget, ctx) {
 	if (!isFilledString(widget.field)) {
-		errors.push(`${ctx.pointer}/field: ${ERROR}code-field-required`)
-		return errors
+		return [`${ctx.pointer}/field: ${ERROR}code-field-required`]
 	}
-	if (ctx.properties) {
-		if (!Object.hasOwn(ctx.properties, widget.field)) {
-			errors.push(`${ctx.pointer}/field: ${ERROR}code-field-unknown`)
-		} else if (widget.format === 'ean13' && !holdsDigits(ctx.properties[widget.field])) {
-			errors.push(`${ctx.pointer}/field: ${ERROR}ean13-field-not-digits`)
-		}
+	if (!ctx.properties) {
+		return []
 	}
-	return errors
+	if (!Object.hasOwn(ctx.properties, widget.field)) {
+		return [`${ctx.pointer}/field: ${ERROR}code-field-unknown`]
+	}
+	if (widget.format === 'ean13' && !holdsDigits(ctx.properties[widget.field])) {
+		return [`${ctx.pointer}/field: ${ERROR}ean13-field-not-digits`]
+	}
+	return []
 }
 
 /**
@@ -213,19 +236,42 @@ function pageErrors(manifest, page, pointer) {
 		return scanErrors(config.scan, { pointer: `${pointer}/config/scan`, properties })
 	}
 	if (page.type === 'form' && Array.isArray(config.fields)) {
-		const isPublic = (config.mode || 'public') === 'public'
-		return config.fields.flatMap((field, index) =>
-			isPlainObject(field) && field.type === 'scan'
-				? scanFieldErrors(field, { pointer: `${pointer}/config/fields/${index}`, isPublic })
-				: [])
+		return formScanErrors(config, pointer)
 	}
 	if (page.type === 'detail' && Array.isArray(config.widgets)) {
-		return config.widgets.flatMap((widget, index) =>
-			isPlainObject(widget) && widget.type === 'code'
-				? codeWidgetErrors(widget, { pointer: `${pointer}/config/widgets/${index}`, properties })
-				: [])
+		return detailCodeErrors(config.widgets, pointer, properties)
 	}
 	return []
+}
+
+/**
+ * Errors of a form page's scan fields.
+ *
+ * @param {object} config - the form page's config, with a `fields` list.
+ * @param {string} pointer - the page's pointer.
+ * @return {string[]}
+ */
+function formScanErrors(config, pointer) {
+	const isPublic = (config.mode || 'public') === 'public'
+	return config.fields.flatMap((field, index) =>
+		isPlainObject(field) && field.type === 'scan'
+			? scanFieldErrors(field, { pointer: `${pointer}/config/fields/${index}`, isPublic })
+			: [])
+}
+
+/**
+ * Errors of a detail page's code widgets.
+ *
+ * @param {Array} widgets - the detail page's widgets.
+ * @param {string} pointer - the page's pointer.
+ * @param {?object} properties - the schema's properties.
+ * @return {string[]}
+ */
+function detailCodeErrors(widgets, pointer, properties) {
+	return widgets.flatMap((widget, index) =>
+		isPlainObject(widget) && widget.type === 'code'
+			? codeWidgetErrors(widget, { pointer: `${pointer}/config/widgets/${index}`, properties })
+			: [])
 }
 
 /**
