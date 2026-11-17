@@ -958,12 +958,14 @@
 				}
 			],
 			"flows": [],
+			"manualOrder": false,
 			"pageType": "index",
 			"pages": [],
 			"parentRoute": ""
 		},
 		"emits": [
-			"update:config"
+			"update:config",
+			"update:manualOrder"
 		],
 		"picker": [
 			[

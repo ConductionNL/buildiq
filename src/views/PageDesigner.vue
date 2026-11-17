@@ -968,7 +968,18 @@ export default {
 					),
 				}
 			}
-			if (type === 'index' || type === 'detail') {
+			if (type === 'index') {
+				// pages-action-buttons: the pages and flows a typed action can point at.
+				// REQ-PEC-009: drag ordering is a key on the page itself, not in
+				// its config, so the index editor gets it and its update apart.
+				return {
+					pages: this.actionPages,
+					flows: this.applicationFlows,
+					manualOrder: !!(this.selectedPage && this.selectedPage.manualOrder === true),
+					'onUpdate:manualOrder': this.onManualOrderUpdate,
+				}
+			}
+			if (type === 'detail') {
 				// pages-action-buttons: the pages and flows a typed action can point at.
 				return { pages: this.actionPages, flows: this.applicationFlows }
 			}
@@ -1137,6 +1148,30 @@ export default {
 			pages[this.selectedIndex] = { ...pages[this.selectedIndex], config }
 			const next = { ...(this.manifest || {}), pages }
 			this.emitManifest(next)
+		},
+
+		/**
+		 * Switch drag ordering on the selected page: `manualOrder: true` on the
+		 * page when on, the key removed when off. Each user's order itself is
+		 * kept by the built app, never by buildiq.
+		 *
+		 * @param {boolean} on - whether users may order rows by dragging.
+		 * @return {void}
+		 * @spec openspec/changes/pages-index-calendar-and-manual-order/specs/page-editor-coverage/spec.md#requirement-an-index-page-can-let-users-order-rows-by-dragging-req-pec-009
+		 */
+		onManualOrderUpdate(on) {
+			if (this.selectedIndex < 0) {
+				return
+			}
+			const pages = this.pages.slice()
+			const page = { ...pages[this.selectedIndex] }
+			if (on === true) {
+				page.manualOrder = true
+			} else {
+				delete page.manualOrder
+			}
+			pages[this.selectedIndex] = page
+			this.emitManifest({ ...(this.manifest || {}), pages })
 		},
 
 		/**
