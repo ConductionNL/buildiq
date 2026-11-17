@@ -393,6 +393,25 @@ final class RegistrationFormLeafProviderTest extends TestCase {
 	}//end testAnotherPersonsDraftIsNeverListed()
 
 	/**
+	 * findAll() renders its rows as entities, and forms and drafts are read
+	 * from them.
+	 *
+	 * @return void
+	 */
+	public function testRenderedRowsAreRead(): void {
+		$form = $this->createMock(originalClassName: ObjectEntityInterface::class);
+		$form->method('getObject')->willReturn($this->form());
+		$draft = $this->createMock(originalClassName: ObjectEntityInterface::class);
+		$draft->method('getObject')->willReturn(['id' => 'd-1', 'registrationFormId' => 'rf-1', 'userId' => 'filer']);
+		$provider = $this->makeProvider(rows: ['registrationForm' => [$form], 'formDraft' => [$draft]]);
+
+		$listed = $provider->list('dossiq', 'Zaak', 'bouwvergunning');
+
+		self::assertSame(expected: 'rf-1', actual: $listed['items'][0]['id']);
+		self::assertSame(expected: 'd-1', actual: $listed['drafts'][0]['id']);
+	}//end testRenderedRowsAreRead()
+
+	/**
 	 * The leaf reads and appends drafts. A form is edited in buildiq, where the
 	 * rules that validate it live.
 	 *

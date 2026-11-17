@@ -17,20 +17,24 @@
  *
  * WHAT A PASS HERE DOES NOT PROVE
  * -------------------------------
- * Not the served layout. No published pageLayout exists on a CI stack, so the
- * high-contrast mark, the task-list column and the locked upload field are
- * asserted in the unit suite, which can build those fixtures.
+ * The served layout only for the task panel: that test makes its own host
+ * case and layout. The high-contrast mark, the task-list column and the locked
+ * upload field are asserted in the unit suite.
  *
  * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md
  * @e2e page-layout-per-type/requirement-a-widget-carries-display-conditions-and-a-high-contrast-flag-req-obpl-006/a-high-contrast-widget-reaches-the-consumer-marked
  * @e2e page-layout-per-type/requirement-a-case-type-declares-its-task-list-columns-and-search-fields-req-obpl-008/building-permits-show-the-address-column-on-the-task-list
  * @e2e page-layout-per-type/requirement-a-case-type-declares-its-document-upload-fields-req-obpl-009/the-upload-dialog-defaults-the-confidentiality-and-locks-it
+ * @e2e openspec/changes/pages-task-panel-beside-case-tabs/specs/page-layout-task-panel/spec.md#dossiq-asks-for-the-layout-of-a-building-permit-case
  */
 import { expect, test } from '@playwright/test'
+import { createLeafHost } from './support/leafHost.ts'
 
 const CATALOGUE = '/index.php/apps/openregister/api/integrations'
 const LEAF_ID = 'buildiq-page-layout'
 const HEADERS = { 'OCS-APIRequest': 'true' }
+const LAYOUTS = '/index.php/apps/buildiq/api/page-layouts'
+const LAYOUT_OBJECTS = '/index.php/apps/openregister/api/objects/buildiq/pageLayout'
 
 test.describe('page-layout leaf', () => {
 	test("the leaf is on OpenRegister's catalogue under its own id", async ({
@@ -42,7 +46,7 @@ test.describe('page-layout leaf', () => {
 		expect(response.ok()).toBeTruthy()
 
 		const body = await response.json()
-		const entries = (body.items ?? body.results ?? body ?? []) as Array<
+		const entries = (body.integrations ?? body.items ?? body.results ?? body ?? []) as Array<
 			Record<string, unknown>
 		>
 
@@ -53,14 +57,62 @@ test.describe('page-layout leaf', () => {
 		// A layout is authored in buildiq, where the rules that validate it
 		// live. A consumer that could append one could publish a second layout
 		// for a type and nothing would know which of the two to render.
-		const response = await request.post(
-			`${CATALOGUE}/${LEAF_ID}/dossiq/Zaak/zaak-e2e`,
-			{ headers: HEADERS, data: { tabs: [] } },
-		)
+		const host = await createLeafHost(request)
+		try {
+			const response = await request.post(host.leafPath(LEAF_ID), {
+				headers: HEADERS,
+				data: { tabs: [] },
+			})
 
-		test.skip(response.status() === 404, 'OpenRegister is not installed here')
+			expect(response.status()).not.toBe(200)
+			expect(response.status()).not.toBe(201)
+		} finally {
+			await host.dispose()
+		}
+	})
 
-		expect(response.status()).not.toBe(200)
-		expect(response.status()).not.toBe(201)
+	test('a published layout serves its task panel to the case it is for', async ({
+		request,
+	}) => {
+		const host = await createLeafHost(request)
+		const layoutId = `pl-e2e-${Date.now().toString(36)}`
+		try {
+			const saved = await request.put(LAYOUTS, {
+				headers: HEADERS,
+				data: {
+					id: layoutId,
+					name: 'Bouwvergunning e2e',
+					targetApp: 'dossiq',
+					register: host.register,
+					schema: host.schema,
+					typeProperty: 'caseType',
+					typeValue: 'bouwvergunning',
+					status: 'published',
+					tabs: [
+						{ id: 'overzicht', label: 'Overzicht', kind: 'fieldGroup', fields: ['title'] },
+						{ id: 'documenten', label: 'Documenten', kind: 'leaf', ref: 'files' },
+					],
+					taskList: {
+						columns: [{ field: 'title' }],
+						panel: { placement: 'side', tabs: ['overzicht'], collapsed: true },
+					},
+				},
+			})
+			expect(saved.status(), await saved.text()).toBe(200)
+
+			const served = await request.get(host.leafPath(LEAF_ID), { headers: HEADERS })
+			expect(served.ok()).toBeTruthy()
+			const body = await served.json()
+
+			expect(body.total).toBe(1)
+			expect(body.items[0].taskList.panel).toEqual({
+				placement: 'side',
+				tabs: ['overzicht'],
+				collapsed: true,
+			})
+		} finally {
+			await request.delete(`${LAYOUT_OBJECTS}/${layoutId}`, { headers: HEADERS })
+			await host.dispose()
+		}
 	})
 })

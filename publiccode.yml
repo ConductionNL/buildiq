@@ -2,50 +2,92 @@ publiccodeYmlVersion: "0.4"
 
 name: Buildiq
 url: "https://github.com/ConductionNL/buildiq"
-softwareVersion: "0.3.7"
-releaseDate: "2026-05-26"
+landingURL: "https://apps.nextcloud.com/apps/buildiq"
+roadmap: "https://github.com/ConductionNL/buildiq/blob/development/openspec/ROADMAP.md"
+logo: img/app-store.svg
+softwareVersion: "0.7.0"
+releaseDate: "2026-09-06"
 developmentStatus: beta
-softwareType: "standalone/other"
+softwareType: "addon"
 
 platforms:
-  - nextcloud
+  - web
 
 categories:
-  - project-management
-  - it-service-management
+  - application-development
+  - business-process-management
+  - workflow-management
+
+dependsOn:
+  open:
+    - name: Nextcloud
+      versionMin: "32"
+      versionMax: "35"
+    - name: OpenRegister
+
+intendedAudience:
+  countries:
+    - nl
+  scope:
+    - government
+    - local-authorities
 
 description:
   en:
     shortDescription: >
-      Construction project management and built environment administration for Nextcloud.
+      App builder for Nextcloud: compose apps from registers, connectors,
+      workflows and documents without code.
     longDescription: >
-      Buildiq is a project management and administration application for the built
-      environment, built on Nextcloud and Open Register. It supports construction
-      project management, permit tracking, and built-environment administration for
-      municipalities and construction organisations. Buildiq integrates with Dutch
-      government standards and open data sources for the built environment.
+      Buildiq is an app builder for Nextcloud. It lets non-technical users
+      compose apps from OpenRegister schemas, OpenConnector APIs, workflows,
+      documents and NL Design themes through a visual interface, without
+      writing PHP for each new app. Each built app is described by a manifest
+      stored in OpenRegister and rendered at runtime, with its behaviour
+      declared as schema metadata instead of service code. Built apps start as
+      virtual apps inside Buildiq and can be exported to a real Nextcloud app.
+      Buildiq is available in the Nextcloud App Store at
+      https://apps.nextcloud.com/apps/buildiq.
       Conduction maintains this component within the Nextcloud ISV programme.
     features:
-      - Construction project management
-      - Permit tracking and administration
-      - Built environment data management
-      - Integration with Dutch government open data
+      - App creation wizard with identity, versions and permissions steps
+      - Versioned app deployment with development, staging and production versions
+      - Version promotion with a choice of how existing data is migrated
+      - Bookmarkable preview of a version through the address
+      - Maintainer dashboard per app with usage figures and activity
+      - One Nextcloud navigation entry per published app
+      - Templates marketplace with starter apps
+      - Visual schema designer and page designer
+      - Authoring tools for AI assistants over MCP
+      - Export of a built app to a real Nextcloud app
 
   nl:
     shortDescription: >
-      Bouwprojectbeheer en omgevingsadministratie voor Nextcloud.
+      App builder voor Nextcloud: stel apps samen uit registers, connectors,
+      processen en documenten zonder code.
     longDescription: >
-      Buildiq is een projectbeheers- en administratietoepassing voor de gebouwde
-      omgeving, gebouwd op Nextcloud en Open Register. Het ondersteunt bouwprojectbeheer,
-      vergunningenbewaking en omgevingsadministratie voor gemeenten en bouworganisaties.
-      Buildiq integreert met Nederlandse overheidsstandaarden en open databronnen
-      voor de gebouwde omgeving.
+      Buildiq is een app builder voor Nextcloud. Niet-technische gebruikers
+      stellen apps samen uit OpenRegister-schema's, OpenConnector-API's,
+      processen, documenten en NL Design-thema's via een visuele interface,
+      zonder voor elke nieuwe app PHP te schrijven. Elke gebouwde app wordt
+      beschreven door een manifest dat in OpenRegister staat en tijdens
+      gebruik wordt weergegeven; het gedrag staat als schema-metadata
+      vastgelegd in plaats van als servicecode. Gebouwde apps beginnen als
+      virtuele apps binnen Buildiq en kunnen worden geëxporteerd naar een
+      echte Nextcloud-app.
+      Buildiq is beschikbaar in de Nextcloud App Store op
+      https://apps.nextcloud.com/apps/buildiq.
       Conduction onderhoudt dit component binnen het Nextcloud ISV-programma.
     features:
-      - Bouwprojectbeheer
-      - Vergunningenbewaking en -administratie
-      - Databeheer gebouwde omgeving
-      - Integratie met open data van de Nederlandse overheid
+      - Wizard voor een nieuwe app met stappen voor identiteit, versies en rechten
+      - Versiebeheer met ontwikkel-, test- en productieversies
+      - Promotie van een versie met een keuze hoe bestaande gegevens meegaan
+      - Een versie vooraf bekijken via een deelbaar adres
+      - Beheeroverzicht per app met gebruikscijfers en activiteit
+      - Eén Nextcloud-menu-item per gepubliceerde app
+      - Sjablonenmarkt met startapps
+      - Visuele schema-ontwerper en pagina-ontwerper
+      - Bouwgereedschap voor AI-assistenten via MCP
+      - Export van een gebouwde app naar een echte Nextcloud-app
 
 legal:
   license: EUPL-1.2
@@ -67,8 +109,36 @@ maintenance:
 localisation:
   localisationReady: true
   availableLanguages:
-    - nl
+    - be
+    - bg
+    - ca
+    - da
+    - de
+    - el
     - en
+    - en-US
+    - es
+    - et
+    - fi
+    - fr
+    - ga
+    - hr
+    - hu
+    - is
+    - it
+    - lt
+    - lv
+    - mt
+    - nb
+    - nl
+    - pl
+    - pt
+    - rm
+    - ro
+    - ru
+    - sq
+    - tr
+    - uk
 
 # Common Ground layer (nl.vng profile), as a standard supports entry.
 supports:

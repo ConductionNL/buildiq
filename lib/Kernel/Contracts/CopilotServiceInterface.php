@@ -117,13 +117,22 @@ interface CopilotServiceInterface {
 	 *                                 filled in on any step that leaves `versionSlug` out, so a
 	 *                                 plan lands on the version the user is looking at rather
 	 *                                 than on the tools' `development` default.
+	 * @param int|null $documentFileId Optional Files id of a requirements document, read as the user.
 	 *
-	 * @return array{summary: string, steps: array<int, array<string, mixed>>, manifests: array<string, array{current: array, predicted: array}>}
+	 * @return array{summary: string, stories: array<int, array<string, mixed>>, steps: array<int, array<string, mixed>>,
+	 *               manifests: array<string, array{current: array, predicted: array}>, document?: array{fileId: int, name: string}}
 	 *
 	 * @throws CopilotException On unavailability, invalid input, RBAC denial, an unknown agent, or an unparsable/invalid plan.
 	 *
 	 * @spec openspec/specs/ai-copilot/spec.md
 	 * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
 	 */
-	public function plan(string $brief, ?string $appSlug, string $userId, ?string $agentId = null, ?string $versionSlug = null): array;
+	public function plan(
+		string $brief,
+		?string $appSlug,
+		string $userId,
+		?string $agentId = null,
+		?string $versionSlug = null,
+		?int $documentFileId = null,
+	): array;
 }//end interface

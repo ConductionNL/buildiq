@@ -82,6 +82,18 @@ class SettingsService implements SettingsServiceInterface {
 	];
 
 	/**
+	 * Boolean config keys and their defaults. `allow_offline_apps` is the
+	 * instance setting "Let apps work offline": while it is off no app gets an
+	 * offline worker, whatever its manifest declares (pages-installable-offline-
+	 * and-mobile, REQ-BQOM-002).
+	 *
+	 * @var array<string, bool>
+	 */
+	private const BOOL_KEYS = [
+		'allow_offline_apps' => false,
+	];
+
+	/**
 	 * Write-only config keys — accepted on update but NEVER returned by
 	 * getSettings(). The remote registry read token lives here.
 	 *
@@ -143,6 +155,17 @@ class SettingsService implements SettingsServiceInterface {
 	}//end isOpenRegisterAvailable()
 
 	/**
+	 * Whether the instance lets apps work offline ("Let apps work offline", off by default).
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-offline-is-the-administrators-choice-first-req-bqom-002
+	 */
+	public function offlineAppsAllowed(): bool {
+		return $this->appConfig->getValueBool(AppIdentity::APP_ID, 'allow_offline_apps', self::BOOL_KEYS['allow_offline_apps']);
+	}//end offlineAppsAllowed()
+
+	/**
 	 * Retrieve all current settings.
 	 *
 	 * Returns a flat array containing all app config values plus metadata
@@ -162,6 +185,10 @@ class SettingsService implements SettingsServiceInterface {
 			}
 
 			$settings[$key] = $value;
+		}
+
+		foreach (self::BOOL_KEYS as $key => $default) {
+			$settings[$key] = $this->appConfig->getValueBool(AppIdentity::APP_ID, $key, $default);
 		}
 
 		$user = $this->userSession->getUser();
@@ -203,6 +230,13 @@ class SettingsService implements SettingsServiceInterface {
 		foreach (self::CONFIG_KEYS as $key) {
 			if (isset($data[$key]) === true) {
 				$this->appConfig->setValueString(AppIdentity::APP_ID, $key, (string)$data[$key]);
+				$written[] = $key;
+			}
+		}
+
+		foreach (array_keys(self::BOOL_KEYS) as $key) {
+			if (array_key_exists($key, $data) === true) {
+				$this->appConfig->setValueBool(AppIdentity::APP_ID, $key, filter_var($data[$key], FILTER_VALIDATE_BOOLEAN));
 				$written[] = $key;
 			}
 		}
