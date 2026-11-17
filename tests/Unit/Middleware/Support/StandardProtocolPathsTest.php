@@ -42,6 +42,8 @@ class StandardProtocolPathsTest extends TestCase {
 			'request without index' => ['/apps/buildiq/api/v1/things', '/api/v1/things'],
 			'other app'             => ['/apps/other/api/health', '/apps/other/api/health'],
 			'app root without path' => ['/apps/buildiq', '/apps/buildiq'],
+			'lookalike app root'    => ['/apps/buildiqx/api/health', '/apps/buildiqx/api/health'],
+			'repeated app root'     => ['/apps/buildiq/apps/buildiq/api/health', '/apps/buildiq/api/health'],
 		];
 	}//end relativePaths()
 
@@ -74,6 +76,8 @@ class StandardProtocolPathsTest extends TestCase {
 			'health of another app' => ['/apps/other/api/health', false],
 			'resource'              => ['/api/things', false],
 			'empty'                 => ['', false],
+			'lookalike app root'    => ['/apps/buildiqx/api/health', false],
+			'metrics with query'    => ['/api/metrics?format=text', false],
 		];
 	}//end protocolPaths()
 

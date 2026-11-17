@@ -54,6 +54,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
 use stdClass;
+use OCA\Buildiq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Tests for {@see DocumentGenerationService}.
@@ -294,13 +295,13 @@ final class DocumentGenerationServiceTest extends TestCase {
 		// positional arguments, not 4.
 		$this->objectService->expects($this->once())
 			->method('saveObject')
-			->with(
-				$this->equalTo([DocumentGenerationService::ATTACHMENT_FIELD => ['ref' => '42']]),
-				$this->equalTo([]),
-				$this->equalTo('buildiq'),
-				$this->equalTo('permit'),
-				$this->equalTo('obj-uuid-9')
-			);
+			->with(...LegacyObjectArgs::with(method: 'saveObject', expected: [
+					'object' => $this->equalTo([DocumentGenerationService::ATTACHMENT_FIELD => ['ref' => '42']]),
+					'extend' => $this->equalTo([]),
+					'register' => $this->equalTo('buildiq'),
+					'schema' => $this->equalTo('permit'),
+					'uuid' => $this->equalTo('obj-uuid-9'),
+				]));
 
 		$result = $this->service->generate(self::AUTOMATION, ['templateId' => 'tpl-1', 'output' => ['attach']], 'permit', 'obj-uuid-9');
 
@@ -516,6 +517,7 @@ final class DocumentGenerationServiceTest extends TestCase {
 
 		$this->objectService->method('saveObject')->willReturnCallback(
 			static function (...$args) use (&$trace) {
+				$args = LegacyObjectArgs::positional(method: 'saveObject', args: $args);
 				$trace[] = 'saveObject ' . json_encode($args[0]);
 				return null;
 			}

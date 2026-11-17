@@ -59,6 +59,10 @@ use OCA\Buildiq\Kernel\Values\LocalApplicationRef;
 use OCA\Buildiq\Kernel\Values\RepoSource;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Exception\ObjectExistsException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\SavePolicy;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -336,8 +340,7 @@ class AppChannelApplier implements AppChannelApplierInterface {
 		try {
 			$credential = $this->objectService->find(
 				id: $credentialId,
-				register: self::CREDENTIAL_REGISTER,
-				schema: self::CREDENTIAL_SCHEMA,
+				options: new ObjectFindOptions(register: self::CREDENTIAL_REGISTER, schema: self::CREDENTIAL_SCHEMA),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -519,12 +522,13 @@ class AppChannelApplier implements AppChannelApplierInterface {
 			// check-then-write would both race and drift.
 			$this->objectService->saveObject(
 				object: $blob,
-				register: $registerSlug,
-				schema: $kind,
-				uuid: $uuid,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: $registerSlug, schema: $kind),
+					uuid: $uuid,
+					policy: new SavePolicy(failIfExists: true)
+				),
 				_rbac: false,
-				_multitenancy: false,
-				failIfExists: true
+				_multitenancy: false
 			);
 
 			$report->recordCreated(channel: 'connectors', item: $item);

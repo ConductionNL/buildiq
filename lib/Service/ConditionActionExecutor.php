@@ -158,34 +158,19 @@ class ConditionActionExecutor implements ConditionActionExecutorInterface {
 
 		foreach (($rule['actions'] ?? []) as $action) {
 			$type = (string)($action['type'] ?? '');
-			$params = ($action['parameters'] ?? []);
 
 			try {
-				if ($type === 'set-field') {
-					$field = (string)($params['field'] ?? '');
-					if ($field !== '') {
-						$working[$field] = ($params['value'] ?? null);
-					}
-
-					$executed[] = $type;
+				$outcome = $this->applyAction(
+					action: $action,
+					run: ['payload' => $working, 'dryRun' => $dryRun, 'dispatcher' => $dispatcher]
+				);
+				$working = $outcome['payload'];
+				if ($outcome['executed'] === null) {
+					$errors[] = 'Unknown action type "' . $type . '" in rule "' . (string)($rule['name'] ?? '') . '".';
 					continue;
 				}
 
-				if (in_array($type, self::SIDE_EFFECT_ACTIONS, true) === true) {
-					if ($dryRun === true) {
-						$executed[] = $type . ' (dry-run, skipped)';
-						continue;
-					}
-
-					if ($dispatcher !== null) {
-						$dispatcher($type, $params, $working);
-					}
-
-					$executed[] = $type;
-					continue;
-				}
-
-				$errors[] = 'Unknown action type "' . $type . '" in rule "' . (string)($rule['name'] ?? '') . '".';
+				$executed[] = $outcome['executed'];
 			} catch (Throwable $e) {
 				$errors[] = 'Action "' . $type . '" failed in rule "' . (string)($rule['name'] ?? '') . '": ' . $e->getMessage();
 				if ($continueOnError === false) {
@@ -201,6 +186,54 @@ class ConditionActionExecutor implements ConditionActionExecutorInterface {
 		];
 
 	}//end runActions()
+
+	/**
+	 * Apply one action to the working payload: `set-field` writes a field, a
+	 * side-effect action goes to the dispatcher (skipped in a dry run).
+	 *
+	 * @param mixed                                                                   $action The action: `{type, parameters}`.
+	 * @param array{payload: array<string,mixed>, dryRun: bool, dispatcher: callable|null} $run    The payload, dry run, dispatcher.
+	 *
+	 * @return array{payload: array<string,mixed>, executed: string|null} The payload after the action and what ran; null for an unknown type.
+	 */
+	private function applyAction(mixed $action, array $run): array {
+		$type   = (string)($action['type'] ?? '');
+		$params = ($action['parameters'] ?? []);
+		if ($type === 'set-field') {
+			return ['payload' => self::withField(payload: $run['payload'], params: $params), 'executed' => $type];
+		}
+
+		if (in_array($type, self::SIDE_EFFECT_ACTIONS, true) === false) {
+			return ['payload' => $run['payload'], 'executed' => null];
+		}
+
+		if ($run['dryRun'] === true) {
+			return ['payload' => $run['payload'], 'executed' => $type . ' (dry-run, skipped)'];
+		}
+
+		if ($run['dispatcher'] !== null) {
+			($run['dispatcher'])($type, $params, $run['payload']);
+		}
+
+		return ['payload' => $run['payload'], 'executed' => $type];
+	}//end applyAction()
+
+	/**
+	 * The payload with a `set-field` action's field set; a nameless field changes nothing.
+	 *
+	 * @param array<string,mixed> $payload The working payload.
+	 * @param mixed               $params  The action's parameters: `{field, value}`.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private static function withField(array $payload, mixed $params): array {
+		$field = (string)($params['field'] ?? '');
+		if ($field !== '') {
+			$payload[$field] = ($params['value'] ?? null);
+		}
+
+		return $payload;
+	}//end withField()
 
 	/**
 	 * Sort rules by priority DESC, salience DESC, declaration order.

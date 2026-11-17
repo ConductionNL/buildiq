@@ -41,6 +41,7 @@ final class CallerContext {
 	 * @param IUserSession $userSession Session of the calling user.
 	 * @param IGroupManager $groupManager Group memberships and admin check.
 	 * @param PermissionResolver $permissionResolver Shared role and group matcher.
+	 * @param AppOrganisationGuard|null $organisationGuard Hides another organisation's scoped app; without it a scoped app is hidden from everyone.
 	 *
 	 * @return void
 	 */
@@ -48,6 +49,7 @@ final class CallerContext {
 		public readonly IUserSession $userSession,
 		public readonly IGroupManager $groupManager,
 		public readonly PermissionResolver $permissionResolver,
+		public readonly ?AppOrganisationGuard $organisationGuard = null,
 	) {
 	}//end __construct()
 }//end class

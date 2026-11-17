@@ -52,13 +52,13 @@ When `SettingsService::updateSettings()` writes `registry_url`, `registry_regist
 
 ### Requirement: REQ-BIQ-CONN-003 Buildiq reports what its connection calls met
 
-Buildiq SHALL report with `ConnectionStatusReportedEvent` what a store search, a GitHub catalogue search, a GitHub push or pull, a document generation call and a rule webhook met, mapped as in the change's design D2. It SHALL report only outcomes about the connection, and SHALL NOT report outcomes about one credential, one app or one request. A message SHALL carry at most the host of an address. It SHALL report a different status only after five minutes have passed since the last report, and the same status only after an hour. Without integriq it SHALL read, store, send and log nothing. A report SHALL never throw into the call it observes or change that call's response.
+Buildiq SHALL report with `ConnectionStatusReportedEvent` what a marketplace search, a GitHub catalogue search, a GitHub push or pull, a document generation call and a rule webhook met, mapped as in the change's design D2. It SHALL report only outcomes about the connection, and SHALL NOT report outcomes about one credential, one app or one request. A message SHALL carry at most the host of an address. It SHALL report a different status only after five minutes have passed since the last report, and the same status only after an hour. Without integriq it SHALL read, store, send and log nothing. A report SHALL never throw into the call it observes or change that call's response.
 
 #### Scenario: A store that cannot be reached reads error
 @e2e tests/e2e/integrations-page.spec.ts
 
 - **GIVEN** an admin saved a registry URL where nothing answers
-- **WHEN** a user searches the template store
+- **WHEN** a user searches the template marketplace
 - **THEN** Buildiq SHALL report `store` as `error` with a message naming the host
 - **AND** the search SHALL answer with the same outcome as before this change
 
@@ -88,7 +88,7 @@ Buildiq SHALL report with `ConnectionStatusReportedEvent` what a store search, a
 #### Scenario: Calls that meet the same thing report once an hour
 @e2e exclude Timing is not observable from a browser; tests/Unit/Service/Connection/ConnectionReporterTest.php drives the clock.
 
-- **GIVEN** a store search reported `configured` ten minutes ago
+- **GIVEN** a marketplace search reported `configured` ten minutes ago
 - **WHEN** another search gets an answer
 - **THEN** Buildiq SHALL send no report
 
@@ -96,7 +96,7 @@ Buildiq SHALL report with `ConnectionStatusReportedEvent` what a store search, a
 @e2e exclude The CI instance installs integriq; tests/Unit/Service/Connection/ConnectionReporterTest.php asserts that nothing is sent, stored or logged when the class is absent.
 
 - **GIVEN** integriq is not installed
-- **WHEN** a store search runs or an admin saves `registry_url`
+- **WHEN** a marketplace search runs or an admin saves `registry_url`
 - **THEN** no event SHALL be sent and nothing SHALL be logged
 - **AND** no report memory SHALL be written to app config
 

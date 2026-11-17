@@ -1,10 +1,12 @@
 # Tasks: capability-requirements-backfill
 
 - [ ] **T01**: Check that the built behaviour of row `app-create-from-spreadsheet` meets REQ-BQCV-001 in `data-import-wizard`; add a test that asserts each scenario, and close any gap the scenarios name.
-- [ ] **T02**: Check that the built behaviour of row `app-publish` meets REQ-BQCV-002 in `openbuild-runtime`; add a test that asserts each scenario, and close any gap the scenarios name.
+- [x] **T02**: Check that the built behaviour of row `app-publish` meets REQ-BQCV-002 in `openbuild-runtime`; add a test that asserts each scenario, and close any gap the scenarios name.
+  - Built behaviour meets the scenarios (owner-only publish/unpublish in ApplicationPublishController, navigation lists published apps only in AppNavigationService). `ApplicationPublishScenariosTest` asserts that unpublish writes only the Application's status (versions, pages, permissions unchanged, nothing deleted) and that a viewer is refused with 403 on publish and unpublish with nothing written. No gap.
 - [ ] **T03**: Check that the built behaviour of row `data-relations` meets REQ-BQCV-003 in `openbuild-schema-designer`; add a test that asserts each scenario, and close any gap the scenarios name.
 - [ ] **T04**: Check that the built behaviour of row `data-export-records` meets REQ-BQCV-004 in `openbuild-page-designer`; add a test that asserts each scenario, and close any gap the scenarios name.
-- [ ] **T05**: Check that the built behaviour of row `data-search` meets REQ-BQCV-005 in `openbuild-page-designer`; add a test that asserts each scenario, and close any gap the scenarios name.
+- [x] **T05**: Check that the built behaviour of row `data-search` meets REQ-BQCV-005 in `openbuild-page-designer`; add a test that asserts each scenario, and close any gap the scenarios name.
+  - Gap closed: the list page editor had no way to set the search placeholder. `IndexPageEditor` gains a Search block that writes `config.searchPlaceholder` and `config.inlineSearch` (show the search box above the list). nextcloud-vue's CnIndexPage reads both keys. Vitest `IndexPageEditorSearch.spec.js`. The keyword query and the clear-to-all behaviour are CnIndexPage's own search over OpenRegister and are not tested again here.
 - [ ] **T06**: Check that the built behaviour of row `pg-list-table` meets REQ-BQCV-006 in `openbuild-page-designer`; add a test that asserts each scenario, and close any gap the scenarios name.
 - [ ] **T07**: Check that the built behaviour of row `pg-dashboard` meets REQ-BQCV-007 in `openbuild-page-designer`; add a test that asserts each scenario, and close any gap the scenarios name.
 - [ ] **T08**: Check that the built behaviour of row `pg-files-page` meets REQ-BQCV-008 in `openbuild-page-designer`; add a test that asserts each scenario, and close any gap the scenarios name.
@@ -20,7 +22,7 @@
 - [ ] **T18**: Check that the built behaviour of row `logic-running-case-keeps-version` meets REQ-BQCV-018 in `automation-designer`; add a test that asserts each scenario, and close any gap the scenarios name.
 - [ ] **T19**: Check that the built behaviour of row `form-digid-login` meets REQ-BQCV-019 in `external-form-provisioning`; add a test that asserts each scenario, and close any gap the scenarios name.
 - [ ] **T20**: Check that the built behaviour of row `form-usage-stats` meets REQ-BQCV-020 in `external-form-provisioning`; add a test that asserts each scenario, and close any gap the scenarios name.
-- [ ] **T21**: Check that the built behaviour of row `data-required-validation` meets REQ-BQCV-021 in `openbuild-schema-designer`; add a test that asserts each scenario, and close any gap the scenarios name.
+- [x] **T21**: Check that the built behaviour of row `data-required-validation` meets REQ-BQCV-021 in `openbuild-schema-designer`; add a test that asserts each scenario, and close any gap the scenarios name.
 - [ ] **T22**: Check that the built behaviour of row `data-import-rollback` meets REQ-BQCV-022 in `data-import-wizard`; add a test that asserts each scenario, and close any gap the scenarios name.
 - [ ] **T23**: Check that the built behaviour of row `data-schema-reuse` meets REQ-BQCV-023 in `page-designer-ui`; add a test that asserts each scenario, and close any gap the scenarios name.
 - [ ] **T24**: Check that the built behaviour of row `form-builder` meets REQ-BQCV-024 in `openbuild-page-designer`; add a test that asserts each scenario, and close any gap the scenarios name.
