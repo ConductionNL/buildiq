@@ -170,6 +170,7 @@
 						:inputLabel="t('buildiq', 'Action type')"
 						:options="actionTypeOptions"
 						:clearable="false"
+						:selectable="(option) => !option.disabled"
 						label="label"
 						@update:modelValue="onActionTypeChange(index, $event)" />
 
@@ -323,6 +324,18 @@
 							" />
 					</template>
 
+					<template v-else-if="action.type === 'ai-step'">
+						<!-- ai-llm-steps-and-computed-fields D1, D3: Hermiq
+						     answers over the named fields and the answer is
+						     written onto the record. -->
+						<AiStepForm
+							:modelValue="action"
+							:fieldOptions="aiFieldOptions"
+							:agentOptions="aiAgentOptions"
+							:agentsLoading="aiAgentsLoading"
+							@update="updateAction(index, $event.key, $event.value)" />
+					</template>
+
 					<template v-else-if="action.type === 'approval'">
 						<NcSelect
 							v-if="groupPickerAvailable"
@@ -435,6 +448,7 @@ import {
 	NcTextArea,
 	NcTextField,
 } from '@nextcloud/vue'
+import AiStepForm from '../components/AiStepForm.vue'
 import ApprovalFormFieldsEditor from '../components/ApprovalFormFieldsEditor.vue'
 import AutomationActionListEditor from '../components/AutomationActionListEditor.vue'
 import { useAppStatus } from '../composables/useAppStatus.js'
@@ -442,6 +456,13 @@ import {
 	fetchDocudeskTemplates,
 	templateToOption,
 } from '../composables/useDocudeskTemplates.js'
+import {
+	aiStepIncomplete,
+	aiStepToEditor,
+	fetchAgentNodeAvailable,
+	fetchToolFreeAgents,
+	missingNodeReason,
+} from '../services/aiSteps.js'
 import {
 	blockedActionReason,
 	blockedConditionReason,
@@ -482,6 +503,7 @@ export default {
 		NcTextArea,
 		NcTextField,
 		AutomationActionListEditor,
+		AiStepForm,
 		ApprovalFormFieldsEditor,
 	},
 
@@ -545,6 +567,11 @@ export default {
 			ruleSetOptions: [],
 			ruleSetsLoading: false,
 			ruleSetsFetchFailed: false,
+			// Ai-llm-steps-and-computed-fields D6: off until the node catalogue says Hermiq's node is there.
+			agentNodeAvailable: false,
+			aiAgentOptions: [],
+			aiAgentsLoading: false,
+			aiFieldOptions: [],
 			docudeskTemplatesLoading: false,
 			docudeskTemplatesFetchFailed: false,
 			saving: false,
@@ -679,7 +706,37 @@ export default {
 					value: 'rule-decision',
 					label: t('buildiq', 'Decide with a rule set'),
 				},
+				this.aiStepTypeOption,
 			]
+		},
+
+		/**
+		 * The "Ask AI" kind: disabled, with its reason, without Hermiq's node (REQ-BQLS-005).
+		 *
+		 * @return {{value: string, label: string, disabled: boolean}}
+		 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-ai-steps-need-the-hermiq-node-req-bqls-005
+		 */
+		aiStepTypeOption() {
+			if (this.agentNodeAvailable) {
+				return { value: 'ai-step', label: t('buildiq', 'Ask AI'), disabled: false }
+			}
+			return {
+				value: 'ai-step',
+				label: t('buildiq', 'Ask AI') + ' (' + missingNodeReason() + ')',
+				disabled: true,
+			}
+		},
+
+		/**
+		 * The trigger schema whose fields an AI step reads and writes: set only
+		 * while the automation has an AI step.
+		 *
+		 * @return {string}
+		 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-the-composer-offers-an-ask-ai-step-req-bqls-001
+		 */
+		aiFieldSchema() {
+			const hasAiStep = this.actions.some((action) => action && action.type === 'ai-step')
+			return hasAiStep ? this.triggerSchema || '' : ''
 		},
 
 		/**
@@ -726,6 +783,9 @@ export default {
 		 */
 		incompleteStepMessage() {
 			for (const action of this.actions) {
+				if (action.type === 'ai-step' && aiStepIncomplete(action) !== '') {
+					return aiStepIncomplete(action)
+				}
 				if (action.type === 'webhook' && String(action.source || '').trim() === '') {
 					return t('buildiq', 'Pick a source for this webhook.')
 				}
@@ -891,6 +951,18 @@ export default {
 		},
 
 		/**
+		 * Reload the fields an AI step can read and write when the trigger
+		 * schema changes or an AI step appears.
+		 *
+		 * @param {string} schema - the trigger schema while an AI step exists, else ''.
+		 * @return {void}
+		 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-the-composer-offers-an-ask-ai-step-req-bqls-001
+		 */
+		aiFieldSchema(schema) {
+			this.fetchAiFieldOptions(schema)
+		},
+
+		/**
 		 * Re-hydrate and refresh every live picker's options whenever the
 		 * dialog opens.
 		 *
@@ -907,6 +979,7 @@ export default {
 				this.docudeskStatus.check()
 				this.fetchDocudeskTemplateOptions()
 				this.fetchStepSources()
+				this.fetchAiStepSupport()
 			}
 		},
 	},
@@ -1002,6 +1075,7 @@ export default {
 				onReject: Array.isArray(action.onReject) ? action.onReject : [],
 				formFields: formFieldsOf(action),
 				templateId: action.templateId || '',
+				...aiStepToEditor(action),
 				output: Array.isArray(action.output)
 					? action.output
 					: action.output
@@ -1174,6 +1248,55 @@ export default {
 		 * @return {Promise<void>}
 		 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-webhook-step-calls-a-configured-source-req-bqar-003
 		 */
+		/**
+		 * Ask the node catalogue for Hermiq's agent node and, when it is there,
+		 * load the agents an AI step can name (REQ-BQLS-001, REQ-BQLS-005).
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-ai-steps-need-the-hermiq-node-req-bqls-005
+		 */
+		async fetchAiStepSupport() {
+			this.agentNodeAvailable = await fetchAgentNodeAvailable()
+			if (!this.agentNodeAvailable) {
+				this.aiAgentOptions = []
+				return
+			}
+			this.aiAgentsLoading = true
+			try {
+				this.aiAgentOptions = await fetchToolFreeAgents()
+			} catch {
+				this.aiAgentOptions = []
+			} finally {
+				this.aiAgentsLoading = false
+			}
+		},
+
+		/**
+		 * Load the trigger schema's fields for the AI step pickers; a failed
+		 * read offers none (the compiler still checks every name).
+		 *
+		 * @param {string} schema - the trigger schema slug or id.
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-the-composer-offers-an-ask-ai-step-req-bqls-001
+		 */
+		async fetchAiFieldOptions(schema) {
+			if (!schema) {
+				this.aiFieldOptions = []
+				return
+			}
+			try {
+				const { data } = await axios.get(
+					generateUrl(`/apps/openregister/api/schemas/${encodeURIComponent(schema)}`),
+				)
+				if (schema === this.aiFieldSchema) {
+					this.aiFieldOptions = Object.entries((data && data.properties) || {})
+						.map(([name, property]) => ({ value: name, label: (property && property.title) || name }))
+				}
+			} catch {
+				this.aiFieldOptions = []
+			}
+		},
+
 		async fetchStepSources() {
 			this.sourcesLoading = true
 			this.ruleSetsLoading = true
@@ -1423,6 +1546,9 @@ export default {
 					'Docudesk is not installed — document-generation actions are unavailable.',
 				)
 			}
+			if (type === 'ai-step' && !this.agentNodeAvailable) {
+				return missingNodeReason()
+			}
 			if (type === 'webhook' && !this.integriqAvailable) {
 				return t(
 					'buildiq',
@@ -1571,7 +1697,11 @@ export default {
 				}
 				this.$emit('saved')
 			} catch (error) {
-				this.errorMessage = t('buildiq', 'Could not save the automation.')
+				// A refused shape (422) says what to change, e.g. "Make categorie a
+				// choice list of your labels first." (REQ-BQLS-003).
+				const response = error && error.response
+				const detail = response && response.status === 422 && response.data && response.data.detail
+				this.errorMessage = detail || t('buildiq', 'Could not save the automation.')
 			} finally {
 				this.saving = false
 			}

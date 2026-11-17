@@ -30,8 +30,10 @@ describe('automationMatrix — MATRIX cell-for-cell', () => {
 			'approval',
 			'generateDocument',
 		]
-		expect(MATRIX['object-created']).toEqual(row)
-		expect(MATRIX['object-updated']).toEqual(row)
+		// Ai-llm-steps-and-computed-fields: an AI step runs on created and on
+		// updated (watching its source fields), never on a deletion.
+		expect(MATRIX['object-created']).toEqual([...row, 'ai-step'])
+		expect(MATRIX['object-updated']).toEqual([...row, 'ai-step'])
 		expect(MATRIX['object-deleted']).toEqual(row)
 	})
 
@@ -49,8 +51,8 @@ describe('automationMatrix — MATRIX cell-for-cell', () => {
 		expect(MATRIX.schedule).toEqual(['run-synchronization'])
 	})
 
-	it('manual allows send-notification, object-op, webhook, rule-decision — NOT run-synchronization (documented deviation)', () => {
-		expect(MATRIX.manual).toEqual(['send-notification', 'object-op', 'webhook', 'rule-decision'])
+	it('manual allows send-notification, object-op, webhook, rule-decision, ai-step — NOT run-synchronization (documented deviation)', () => {
+		expect(MATRIX.manual).toEqual(['send-notification', 'object-op', 'webhook', 'rule-decision', 'ai-step'])
 		expect(MATRIX.manual).not.toContain('run-synchronization')
 	})
 
@@ -102,6 +104,15 @@ describe('isActionAllowed', () => {
 		)
 		expect(isActionAllowed('schedule', 'generateDocument')).toBe(false)
 		expect(isActionAllowed('manual', 'generateDocument')).toBe(false)
+	})
+
+	it('ai-step is allowed on created, updated and manual, blocked elsewhere', () => {
+		expect(isActionAllowed('object-created', 'ai-step')).toBe(true)
+		expect(isActionAllowed('object-updated', 'ai-step')).toBe(true)
+		expect(isActionAllowed('manual', 'ai-step')).toBe(true)
+		expect(isActionAllowed('object-deleted', 'ai-step')).toBe(false)
+		expect(isActionAllowed('lifecycle-transition', 'ai-step')).toBe(false)
+		expect(isActionAllowed('schedule', 'ai-step')).toBe(false)
 	})
 
 	it('blocks an unknown trigger type', () => {

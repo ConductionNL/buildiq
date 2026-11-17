@@ -48,6 +48,7 @@ export const ACTION_TYPES = Object.freeze([
 	'approval',
 	'generateDocument',
 	'rule-decision',
+	'ai-step',
 ])
 
 /**
@@ -75,6 +76,7 @@ export const MATRIX = Object.freeze({
 		'rule-decision',
 		'approval',
 		'generateDocument',
+		'ai-step',
 	]),
 	'object-updated': Object.freeze([
 		'send-notification',
@@ -83,6 +85,7 @@ export const MATRIX = Object.freeze({
 		'rule-decision',
 		'approval',
 		'generateDocument',
+		'ai-step',
 	]),
 	'object-deleted': Object.freeze([
 		'send-notification',
@@ -105,6 +108,7 @@ export const MATRIX = Object.freeze({
 		'object-op',
 		'webhook',
 		'rule-decision',
+		'ai-step',
 	]),
 })
 

@@ -724,6 +724,148 @@ describe('AutomationEditDialog', () => {
 		})
 	})
 
+	describe('ai-llm-steps-and-computed-fields: the Ask AI step', () => {
+		/**
+		 * Answer the node catalogue, the hermiq agents and the melding schema.
+		 *
+		 * @param {boolean} withNode Whether the catalogue lists Hermiq's node.
+		 * @return {void}
+		 */
+		function serveAi(withNode) {
+			axios.get.mockImplementation((url) => {
+				const path = String(url)
+				if (path.includes('/flow/node-catalog')) {
+					const results = [{ id: 'openregister.object-write' }]
+					if (withNode) {
+						results.push({ id: 'hermiq.agent-step' })
+					}
+					return Promise.resolve({ data: { results } })
+				}
+				if (path.includes('/agent')) {
+					return Promise.resolve({
+						data: {
+							results: [
+								{ uuid: 'ag-1', name: 'Classifier', tools: [] },
+								{ uuid: 'ag-2', name: 'Actor', tools: ['openregister.objects.*'] },
+								{ uuid: 'ag-3', name: 'Retired', active: false },
+							],
+						},
+					})
+				}
+				if (path.includes('/schemas/melding')) {
+					return Promise.resolve({
+						data: {
+							properties: {
+								omschrijving: { type: 'string', title: 'Omschrijving' },
+								categorie: { type: 'string', enum: ['afval', 'verlichting', 'overig'] },
+							},
+						},
+					})
+				}
+				return Promise.resolve({ data: { results: [] } })
+			})
+		}
+
+		/**
+		 * The REQ-BQLS-001 classify automation, in the editor.
+		 *
+		 * @param {object} wrapper The mounted dialog.
+		 * @return {Promise<void>}
+		 */
+		async function composeClassify(wrapper) {
+			wrapper.vm.name = 'Categorise reports'
+			wrapper.vm.triggerType = 'object-created'
+			wrapper.vm.triggerSchema = 'melding'
+			wrapper.vm.actions = [wrapper.vm.actionToEditor({ type: 'ai-step' })]
+			wrapper.vm.updateAction(0, 'preset', 'classify')
+			wrapper.vm.updateAction(0, 'agent', 'ag-1')
+			wrapper.vm.updateAction(0, 'sourceFields', ['omschrijving'])
+			wrapper.vm.updateAction(0, 'targetField', 'categorie')
+			wrapper.vm.updateAction(0, 'labels', ['afval', 'verlichting', 'overig'])
+			await flush()
+			await flush()
+		}
+
+		it('REQ-BQLS-001: a maker classifies incoming requests and sees which fields are sent', async () => {
+			serveAi(true)
+			const wrapper = factory()
+			await openDialog(wrapper)
+
+			expect(wrapper.vm.actionTypeOption('ai-step')).toEqual({ value: 'ai-step', label: 'Ask AI', disabled: false })
+			expect(wrapper.vm.aiAgentOptions).toEqual([{ id: 'ag-1', label: 'Classifier' }])
+
+			await composeClassify(wrapper)
+
+			expect(wrapper.vm.aiFieldOptions).toEqual([
+				{ value: 'omschrijving', label: 'Omschrijving' },
+				{ value: 'categorie', label: 'categorie' },
+			])
+			expect(wrapper.find('[data-testid="ai-step-form"]').exists()).toBe(true)
+			expect(wrapper.find('[data-testid="ai-step-summary"]').text()).toBe('Sends omschrijving to the AI')
+			expect(wrapper.vm.valid).toBe(true)
+			expect(wrapper.vm.buildActions()).toEqual([
+				{
+					type: 'ai-step',
+					preset: 'classify',
+					agent: 'ag-1',
+					sourceFields: ['omschrijving'],
+					targetField: 'categorie',
+					labels: ['afval', 'verlichting', 'overig'],
+				},
+			])
+		})
+
+		it('REQ-BQLS-001: an incomplete step is refused on save with what it still needs', async () => {
+			serveAi(true)
+			const wrapper = factory()
+			await openDialog(wrapper)
+			await composeClassify(wrapper)
+
+			wrapper.vm.updateAction(0, 'targetField', 'omschrijving')
+			await wrapper.vm.$nextTick()
+			expect(wrapper.vm.valid).toBe(false)
+			expect(wrapper.vm.validationMessage).toBe('The AI step reads omschrijving, so it cannot also write its answer there.')
+
+			wrapper.vm.updateAction(0, 'preset', 'translate')
+			wrapper.vm.updateAction(0, 'targetField', 'categorie')
+			await wrapper.vm.$nextTick()
+			expect(wrapper.vm.validationMessage).toBe('Pick the language the AI step translates into.')
+
+			await wrapper.vm.onSave()
+			expect(axios.post.mock.calls.find(([url]) => url.includes('/automations'))).toBeUndefined()
+		})
+
+		it('REQ-BQLS-003: the compiler refusal is shown, not a generic error', async () => {
+			serveAi(true)
+			const error = new Error('unprocessable')
+			error.response = { status: 422, data: { error: 'unsupported_automation_combination', detail: 'Make categorie a choice list of your labels first.' } }
+			axios.post.mockImplementation((url) => (String(url).endsWith('/compile') ? Promise.reject(error) : Promise.resolve({ data: { id: 'aut-1' } })))
+			const wrapper = factory()
+			await openDialog(wrapper)
+			await composeClassify(wrapper)
+
+			await wrapper.vm.onSave()
+
+			expect(wrapper.vm.errorMessage).toBe('Make categorie a choice list of your labels first.')
+		})
+
+		it('REQ-BQLS-005: without Hermiq the kind is disabled with its reason and cannot be saved', async () => {
+			serveAi(false)
+			const wrapper = factory()
+			await openDialog(wrapper)
+
+			const option = wrapper.vm.actionTypeOptions.find((o) => o.value === 'ai-step')
+			expect(option.disabled).toBe(true)
+			expect(option.label).toContain('Install Hermiq to use AI steps.')
+			expect(wrapper.vm.aiAgentOptions).toEqual([])
+
+			await composeClassify(wrapper)
+
+			expect(wrapper.find('[data-testid="action-blocked"]').text()).toBe('Install Hermiq to use AI steps.')
+			expect(wrapper.vm.valid).toBe(false)
+		})
+	})
+
 	describe('schedule cadence', () => {
 		it('offers the six cadences with their labels', async () => {
 			const wrapper = factory()

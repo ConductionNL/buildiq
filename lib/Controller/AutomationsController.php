@@ -682,14 +682,15 @@ class AutomationsController extends Controller {
 	 * @return JSONResponse
 	 */
 	private function recompileAndRespond(array $automation): JSONResponse {
+		// Apply refuses too: an AI step without Hermiq's node in the engine
+		// (ai-llm-steps-and-computed-fields REQ-BQLS-005) is a 422, not a 500.
 		try {
 			$plan = $this->compiler->compile(automation: $automation);
+			$priorProvenance = $this->orArray(value: $automation['provenance'] ?? null);
+			$provenance = $this->compiler->apply(automation: $automation, plan: $plan, priorProvenance: $priorProvenance);
 		} catch (UnsupportedAutomationCombinationException $e) {
 			return $this->error(code: $e->getErrorCode(), detail: $e->getMessage(), status: Http::STATUS_UNPROCESSABLE_ENTITY);
 		}
-
-		$priorProvenance = $this->orArray(value: $automation['provenance'] ?? null);
-		$provenance = $this->compiler->apply(automation: $automation, plan: $plan, priorProvenance: $priorProvenance);
 
 		$automation['provenance'] = $provenance;
 		$uuid = (string)($automation['id'] ?? $automation['uuid'] ?? '');

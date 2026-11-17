@@ -375,6 +375,35 @@ final class AutomationsControllerTest extends TestCase {
 	}//end testCompileReturns422OnUnsupportedCombination()
 
 	/**
+	 * REQ-BQLS-005: an apply refusal (an AI step without Hermiq's node) maps to
+	 * 422 with its message, and nothing is stored.
+	 *
+	 * @return void
+	 */
+	public function testCompileReturns422WhenApplyRefuses(): void {
+		$this->wireUser(uid: 'bob');
+		$this->wireLookup(
+			automation: ['id' => 'a-1', 'applicationSlug' => 'permit-tracker', 'versionUuid' => 'draft-version'],
+			application: [
+				'id' => 'app-1',
+				'slug' => 'permit-tracker',
+				'permissions' => ['owners' => ['user:alice'], 'editors' => ['user:bob']],
+			]
+		);
+
+		$this->compiler->method('compile')->willReturn(['hash' => 'h', 'flow' => ['nodes' => [['type' => 'hermiq.agent-step']]]]);
+		$this->compiler->method('apply')->willThrowException(
+			new \OCA\Buildiq\Exception\UnsupportedAutomationCombinationException('Install Hermiq to use AI steps.')
+		);
+		$this->objectService->expects($this->never())->method('saveObject');
+
+		$response = $this->controller->compile(uuid: 'a-1');
+
+		$this->assertSame(Http::STATUS_UNPROCESSABLE_ENTITY, $response->getStatus());
+		$this->assertStringContainsString('Install Hermiq to use AI steps.', (string)json_encode($response->getData()));
+	}//end testCompileReturns422WhenApplyRefuses()
+
+	/**
 	 * REQ-AUTD-007: dry-run compiles the automation in-memory and evaluates
 	 * it via the rules engine with dryRun:true, returning the condition
 	 * match + would-be actions without dispatching any side effect.
