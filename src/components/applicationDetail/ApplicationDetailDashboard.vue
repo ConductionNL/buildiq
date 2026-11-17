@@ -201,6 +201,7 @@
 		     SchemasWidget were implemented for REQ-OBADO-009 and mounted
 		     nowhere; FlowsWidget completes the set. -->
 		<section class="ob-detail-dashboard__structure">
+			<StoriesWidget v-if="activeStories.length > 0" :stories="activeStories" />
 			<PagesWidget
 				:appSlug="appSlug"
 				:versionSlug="activeVersionSlug"
@@ -253,6 +254,7 @@ import MenuWidget from './widgets/MenuWidget.vue'
 import PagesWidget from './widgets/PagesWidget.vue'
 import RegisterWidget from './widgets/RegisterWidget.vue'
 import SchemasWidget from './widgets/SchemasWidget.vue'
+import StoriesWidget from './widgets/StoriesWidget.vue'
 import { useInsightsWindow } from '../../composables/useInsightsWindow.js'
 import { useRegisterPicker } from '../../composables/useRegisterPicker.js'
 import { useRole } from '../../composables/useRole.js'
@@ -285,6 +287,7 @@ export default {
 		PagesWidget,
 		RegisterWidget,
 		SchemasWidget,
+		StoriesWidget,
 		UserDeltaEditModal,
 		ImportDataWizard,
 	},
@@ -529,6 +532,17 @@ export default {
 		activeFlows() {
 			const flows = this.application && this.application.flows
 			return Array.isArray(flows) ? flows : []
+		},
+
+		/**
+		 * The user stories the app keeps from the plan it was created from.
+		 *
+		 * @return {Array<object>}
+		 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot/spec.md#requirement-the-created-app-keeps-its-stories-req-bqch-007
+		 */
+		activeStories() {
+			const stories = this.application && this.application.stories
+			return Array.isArray(stories) ? stories : []
 		},
 
 		/**
