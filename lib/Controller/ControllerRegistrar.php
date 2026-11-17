@@ -86,7 +86,9 @@ final class ControllerRegistrar {
 				groupManager: $c->get('OCP\\IGroupManager'),
 				navigationManager: $c->get('OCP\\INavigationManager'),
 				publishedApps: $c->get(PublishedApplicationProviderInterface::class),
-				deviceFeatures: $c->get(DeviceFeaturesInterface::class)
+				deviceFeatures: $c->get(DeviceFeaturesInterface::class),
+				manifestResolver: $c->get('OCA\\Buildiq\\Kernel\\Contracts\\ManifestResolverServiceInterface'),
+				embedOrigins: $c->get('OCA\\Buildiq\\Service\\EmbedOrigins')
 			)
 		);
 		$context->registerService(
