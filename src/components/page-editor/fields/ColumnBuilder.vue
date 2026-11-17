@@ -270,6 +270,7 @@ export default {
 		 *
 		 * @param {string|object} existing - the column entry.
 		 * @return {object}
+		 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-an-owner-writes-expressions-for-columns-and-form-fields-req-bqcc-002
 		 */
 		withExpression(existing) {
 			const column = typeof existing === 'object' && existing ? { ...existing } : { key: this.rowKey(existing) }

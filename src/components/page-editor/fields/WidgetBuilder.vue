@@ -210,6 +210,7 @@ export default {
 		 *
 		 * @param {object} widget - the widget.
 		 * @return {object}
+		 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-an-owner-writes-a-code-component-req-bqcc-001
 		 */
 		configOf(widget) {
 			return (widget.config && typeof widget.config === 'object') ? widget.config : {}
