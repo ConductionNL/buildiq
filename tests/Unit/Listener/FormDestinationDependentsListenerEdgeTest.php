@@ -40,6 +40,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\Buildiq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Edge cases of FormDestinationDependentsListener.
@@ -174,15 +175,15 @@ final class FormDestinationDependentsListenerEdgeTest extends TestCase {
 		$this->objects->method('findAll')->willReturn([$this->form(['id' => 'rf-3'])]);
 		$this->objects->expects($this->once())
 			->method('saveObject')
-			->with(
-				$this->callback(static fn (array $object): bool => $object['status'] === 'draft' && $object['id'] === 'rf-3'),
-				[],
-				'buildiq',
-				'registrationForm',
-				'rf-3',
-				false,
-				false
-			)
+			->with(...LegacyObjectArgs::with(method: 'saveObject', expected: [
+					'object' => $this->callback(static fn (array $object): bool => $object['status'] === 'draft' && $object['id'] === 'rf-3'),
+					'extend' => [],
+					'register' => 'buildiq',
+					'schema' => 'registrationForm',
+					'uuid' => 'rf-3',
+					'_rbac' => false,
+					'_multitenancy' => false,
+				]))
 			->willReturn($this->createMock(ObjectEntityInterface::class));
 		$event = new FormDestinationDependentsEvent($this->schema(slug: 'case'));
 

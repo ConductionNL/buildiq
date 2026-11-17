@@ -39,6 +39,8 @@ use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Event\FormDestinationDependentsEvent;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\Form\FormDependent;
 use OCA\OpenRegister\Service\Form\PublishedForm;
 use OCP\EventDispatcher\Event;
@@ -143,11 +145,12 @@ final class FormDestinationDependentsListener implements IEventListener {
 		unset($form['@self']);
 		$this->objectService->saveObject(
 			object: $form,
-			register: $this->registerSlug(),
-			schema: self::SCHEMA,
-			uuid: (string)($form['id'] ?? ''),
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: $this->registerSlug(), schema: self::SCHEMA),
+				uuid: (string)($form['id'] ?? '')
+			),
 			_rbac: false,
-			_multitenancy: false,
+			_multitenancy: false
 		);
 	}//end unpublish()
 

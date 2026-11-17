@@ -39,6 +39,8 @@ namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Kernel\Contracts\ExportJobServiceInterface;
 use OCA\Buildiq\Support\UuidV4;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCP\BackgroundJob\IJobList;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -254,9 +256,10 @@ class ExportJobService implements ExportJobServiceInterface {
 
 				$service->saveObject(
 					$job,
-					register: self::REGISTER_SLUG,
-					schema: self::EXPORT_JOB_SCHEMA,
-					uuid: $explicitUuid
+					new ObjectSaveOptions(
+						target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::EXPORT_JOB_SCHEMA),
+						uuid: $explicitUuid
+					)
 				);
 			}
 		} catch (\Throwable $e) {
@@ -422,9 +425,10 @@ class ExportJobService implements ExportJobServiceInterface {
 				// existing record.
 				$service->saveObject(
 					$merged,
-					register: self::REGISTER_SLUG,
-					schema: self::EXPORT_JOB_SCHEMA,
-					uuid: $jobUuid
+					new ObjectSaveOptions(
+						target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::EXPORT_JOB_SCHEMA),
+						uuid: $jobUuid
+					)
 				);
 			}
 		} catch (\Throwable $e) {

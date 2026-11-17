@@ -35,6 +35,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\Buildiq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Tests for the user-scoped delta methods of AppOverrideService.
@@ -292,6 +293,7 @@ class AppOverrideServiceUserDeltaTest extends TestCase {
 		$captured = null;
 		$this->objectService->expects(self::once())->method('saveObject')->willReturnCallback(
 			function (array $object, ...$rest) use (&$captured) {
+				$rest = array_slice(LegacyObjectArgs::positional(method: 'saveObject', args: [$object, ...$rest]), 1);
 				// PHPUnit passes the arguments positionally: extend, register, schema, uuid, _rbac.
 				$captured = ['object' => $object, 'uuid' => $rest[3], '_rbac' => $rest[4]];
 				return $this->entity(data: ['id' => 'new-row']);
@@ -360,6 +362,7 @@ class AppOverrideServiceUserDeltaTest extends TestCase {
 		$captured = null;
 		$this->objectService->expects(self::once())->method('saveObject')->willReturnCallback(
 			function (array $object, ...$rest) use (&$captured) {
+				$rest = array_slice(LegacyObjectArgs::positional(method: 'saveObject', args: [$object, ...$rest]), 1);
 				// PHPUnit passes the arguments positionally: extend, register, schema, uuid, _rbac.
 				$captured = ['object' => $object, 'uuid' => $rest[3], '_rbac' => $rest[4]];
 				return $this->entity(data: ['id' => 'alice-row']);
@@ -386,7 +389,9 @@ class AppOverrideServiceUserDeltaTest extends TestCase {
 			userRows: [['id' => 'alice-row', 'owner' => 'alice', 'application' => 'app-A']]
 		);
 		$this->objectService->expects(self::once())->method('deleteObject')
-			->with(self::callback(callback: static fn ($uuid): bool => $uuid === 'alice-row'))
+			->with(...LegacyObjectArgs::with(method: 'deleteObject', expected: [
+				'uuid' => 'alice-row',
+			]))
 			->willReturn(true);
 
 		$this->service->deleteUserDelta(appId: 'demo', uid: 'alice');

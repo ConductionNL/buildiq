@@ -24,6 +24,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Listener;
 
+use OCA\Buildiq\Event\RuleEvaluationRequestedEvent;
 use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Kernel\Contracts\ManifestResolverServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\PublishedApplicationProviderInterface;
@@ -117,6 +118,17 @@ final class ListenerRegistrar {
 		$context->registerEventListener(
 			event: ObjectUpdatingEvent::class,
 			listener: FormLiveValuesListener::class
+		);
+		// Device features (forms-signature-audio-and-location, REQ-BQSA-004):
+		// every ApplicationVersion save stores the browser devices its manifest
+		// uses, which the page serving the app allows and nothing else.
+		$context->registerEventListener(
+			event: ObjectCreatingEvent::class,
+			listener: DeviceFeaturesListener::class
+		);
+		$context->registerEventListener(
+			event: ObjectUpdatingEvent::class,
+			listener: DeviceFeaturesListener::class
 		);
 	}//end registerObjectGuardListeners()
 
@@ -249,6 +261,22 @@ final class ListenerRegistrar {
 			listener: DocumentGenerationListener::class
 		);
 	}//end registerDocumentListeners()
+
+	/**
+	 * Register the listener that answers another app's request to evaluate a rule set.
+	 *
+	 * @param IRegistrationContext $context The registration context
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/rules-evaluation-for-other-apps/specs/rules-evaluation-for-other-apps/spec.md#requirement-another-app-evaluates-a-rule-set-through-a-typed-command-req-bqrx-002
+	 */
+	public function registerRuleCommandListeners(IRegistrationContext $context): void {
+		$context->registerEventListener(
+			event: RuleEvaluationRequestedEvent::class,
+			listener: RuleEvaluationListener::class
+		);
+	}//end registerRuleCommandListeners()
 
 	/**
 	 * Register the deep-link listener for buildiq's own schemas and the records of built apps.

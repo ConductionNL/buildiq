@@ -20,7 +20,7 @@ A rule set SHALL carry `callableBy`, a list of app ids, empty by default. The ru
 
 ### Requirement: Another app evaluates a rule set through a typed command (REQ-BQRX-002)
 
-Buildiq SHALL offer `OCA\Buildiq\Event\RuleEvaluationRequestedEvent` carrying the calling app, a rule set slug and inputs. The listener SHALL evaluate the active version of that rule set when the app is in its `callableBy`, with every action suppressed, and SHALL answer the result, the triggered rule ids and the version. It SHALL refuse with `unknown-rule-set`, `not-allowed`, `invalid-input`, `timeout` or `evaluation-failed`, and SHALL NOT throw to the caller. Each evaluation SHALL write one execution log line naming the calling app and the version.
+Buildiq SHALL offer `OCA\Buildiq\Event\RuleEvaluationRequestedEvent` carrying the calling app, a rule set slug and inputs. The listener SHALL evaluate the active version of that rule set when the app is in its `callableBy`, with every action suppressed, and SHALL answer the result, the triggered rule ids and the version. Each evaluation SHALL write one execution log line naming the calling app and the version.
 
 #### Scenario: the portal decides which permit step comes next
 - **WHEN** portaliq dispatches the command for `parkeren-soort-vergunning` with `woonplaats` Zuiddrecht and `auto` true
@@ -35,4 +35,18 @@ Buildiq SHALL offer `OCA\Buildiq\Event\RuleEvaluationRequestedEvent` carrying th
 #### Scenario: a rule set with a notification action
 - **WHEN** a rule set that sends a notification when it matches is evaluated through the command
 - **THEN** the outcome is answered and no notification is sent
+- @e2e exclude backend command without a UI; covered by PHPUnit
+
+### Requirement: A refused call is answered, never thrown (REQ-BQRX-003)
+
+The listener SHALL answer a call it cannot evaluate with one of `unknown-rule-set`, `not-allowed`, `invalid-input`, `timeout` or `evaluation-failed`, and SHALL NOT throw to the calling app.
+
+#### Scenario: an input of the wrong type
+- **WHEN** portaliq dispatches the command for `parkeren-soort-vergunning` with `auto` as the text "ja" where the table expects a yes or no
+- **THEN** the answer is `{ ok: false, reason: "invalid-input" }` and nothing is evaluated
+- @e2e exclude backend command without a UI; covered by PHPUnit
+
+#### Scenario: the engine fails
+- **WHEN** the evaluation throws
+- **THEN** the calling app gets `{ ok: false, reason: "evaluation-failed" }` and no exception
 - @e2e exclude backend command without a UI; covered by PHPUnit

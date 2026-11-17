@@ -49,6 +49,7 @@ use OCA\Buildiq\Kernel\Contracts\PermissionResolverInterface;
 use OCA\Buildiq\Kernel\Contracts\VersionPromotionServiceInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -287,8 +288,10 @@ class VersionPromotionController extends Controller {
 		try {
 			$entity = $this->objectService->find(
 				id: $uuid,
-				register: VersionPromotionServiceInterface::REGISTER_SLUG,
-				schema: VersionPromotionServiceInterface::APPLICATION_SCHEMA
+				options: new ObjectFindOptions(
+					register: VersionPromotionServiceInterface::REGISTER_SLUG,
+					schema: VersionPromotionServiceInterface::APPLICATION_SCHEMA
+				)
 			);
 		} catch (Throwable $e) {
 			$this->logger->debug(
@@ -321,8 +324,10 @@ class VersionPromotionController extends Controller {
 		try {
 			$entity = $this->objectService->find(
 				id: $uuid,
-				register: VersionPromotionServiceInterface::REGISTER_SLUG,
-				schema: VersionPromotionServiceInterface::APPLICATION_VERSION_SCHEMA
+				options: new ObjectFindOptions(
+					register: VersionPromotionServiceInterface::REGISTER_SLUG,
+					schema: VersionPromotionServiceInterface::APPLICATION_VERSION_SCHEMA
+				)
 			);
 		} catch (Throwable $e) {
 			$this->logger->debug(

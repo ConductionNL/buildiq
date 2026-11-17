@@ -39,6 +39,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\NullLogger;
 use RuntimeException;
+use OCA\Buildiq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Pins the non-destructive pull model of github-app-sync (REQ-GHAS-003): a
@@ -245,6 +246,7 @@ class GitHubAppSyncPullDraftTest extends TestCase {
 		$objects = $this->createMock(ObjectServiceInterface::class);
 		$objects->method('saveObject')->willReturnCallback(
 			function (...$args) use ($saved): ObjectEntityInterface {
+				$args = LegacyObjectArgs::flatten(args: $args);
 				$this->saves[] = [($args['object'] ?? $args[0] ?? null), ($args['register'] ?? $args[2] ?? null), ($args['schema'] ?? $args[3] ?? null)];
 				return $saved;
 			}
