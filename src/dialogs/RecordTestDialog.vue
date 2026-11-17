@@ -139,6 +139,7 @@ export default {
 		 * The two outcomes a record test can expect.
 		 *
 		 * @return {Array<{id: string, label: string}>}
+		 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-a-maker-writes-record-tests-req-bqrt-003
 		 */
 		expectOptions() {
 			return [
@@ -149,6 +150,12 @@ export default {
 	},
 
 	watch: {
+		/**
+		 * React to the dialog opening.
+		 *
+		 * @param {boolean} isOpen Whether the dialog is open.
+		 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-a-maker-writes-record-tests-req-bqrt-003
+		 */
 		open(isOpen) {
 			if (isOpen) {
 				this.draft = draftOf(this.test)

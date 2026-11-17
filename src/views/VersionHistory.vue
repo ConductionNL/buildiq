@@ -693,6 +693,7 @@ export default {
 		 * @param {string} versionSlug The row's slug.
 		 * @param {object} body The request body: `{}`, or `{ override: { reason } }`.
 		 * @return {Promise<void>}
+		 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
 		 */
 		async postRelease(row, versionSlug, body = {}) {
 			const url = generateUrl(
