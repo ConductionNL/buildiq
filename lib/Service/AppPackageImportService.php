@@ -157,17 +157,10 @@ class AppPackageImportService implements AppPackageImportServiceInterface {
 			return self::refusal(exception: $exception);
 		}
 
-		$codeRefusal = $this->refuseCode(template: $template);
-		if ($codeRefusal !== null) {
-			return $codeRefusal;
-		}
-
 		$slug = self::orDefault(value: (string)($target['slug'] ?? ''), default: (string)($template['slug'] ?? ''));
-		if (preg_match(AppRepoParser::SLUG_PATTERN, $slug) !== 1) {
-			return [
-				'status' => Http::STATUS_BAD_REQUEST,
-				'data' => ['error' => 'invalid_slug', 'detail' => 'A slug is lowercase letters, digits and hyphens.'],
-			];
+		$refusal = ($this->refuseCode(template: $template) ?? self::refuseSlug(slug: $slug));
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
 		$result = $this->install->installFromTemplateArray(
@@ -189,6 +182,24 @@ class AppPackageImportService implements AppPackageImportServiceInterface {
 	}//end importWithRecords()
 
 	/**
+	 * Refuse a slug that is not lowercase letters, digits and hyphens.
+	 *
+	 * @param string $slug The slug the new app would get.
+	 *
+	 * @return array{status:int,data:array<string,mixed>}|null The 400, or null for a valid slug.
+	 */
+	private static function refuseSlug(string $slug): array|null {
+		if (preg_match(AppRepoParser::SLUG_PATTERN, $slug) === 1) {
+			return null;
+		}
+
+		return [
+			'status' => Http::STATUS_BAD_REQUEST,
+			'data' => ['error' => 'invalid_slug', 'detail' => 'A slug is lowercase letters, digits and hyphens.'],
+		];
+	}//end refuseSlug()
+
+	/**
 	 * Refuse an archive whose pages hold code while the instance does not allow
 	 * code on pages (REQ-BQCC-005). The importer becomes the new app's owner,
 	 * so the owner half of the rule holds already.
@@ -199,7 +210,7 @@ class AppPackageImportService implements AppPackageImportServiceInterface {
 	 *
 	 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-only-owners-write-code-and-only-when-allowed-req-bqcc-005
 	 */
-	private function refuseCode(array $template): ?array {
+	private function refuseCode(array $template): array|null {
 		$manifest = ($template['manifest'] ?? null);
 		if (is_array($manifest) === false || $this->codeGuard->codeKeys(manifest: $manifest) === []) {
 			return null;

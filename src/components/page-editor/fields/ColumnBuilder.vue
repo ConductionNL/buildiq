@@ -97,6 +97,18 @@ const SELF_VIRTUAL_KEYS = [
 ]
 
 /**
+ * A computed column without its expression: the typed column while it keeps
+ * a label, else its key as the string shorthand.
+ *
+ * @param {{key?: string, label?: string, expression?: string}} column - the computed column.
+ * @return {string|object} the key, or the column without `expression`.
+ */
+function withoutExpression(column) {
+	const { expression, ...rest } = column
+	return rest.label ? rest : (rest.key || '')
+}
+
+/**
  * A typed column without its label, collapsed back to the string shorthand
  * when only a (non-empty) key is left.
  *
@@ -249,14 +261,19 @@ export default {
 		toggleExpression(index) {
 			const next = this.localColumns.slice()
 			const existing = next[index]
-			if (this.isComputed(existing)) {
-				const { expression, ...rest } = existing
-				next[index] = rest.label ? rest : (rest.key || '')
-			} else {
-				const column = typeof existing === 'object' && existing ? { ...existing } : { key: this.rowKey(existing) }
-				next[index] = { ...column, expression: '' }
-			}
+			next[index] = this.isComputed(existing) ? withoutExpression(existing) : this.withExpression(existing)
 			this.$emit('update:modelValue', next)
+		},
+
+		/**
+		 * A column made computed: the typed column with an empty expression.
+		 *
+		 * @param {string|object} existing - the column entry.
+		 * @return {object}
+		 */
+		withExpression(existing) {
+			const column = typeof existing === 'object' && existing ? { ...existing } : { key: this.rowKey(existing) }
+			return { ...column, expression: '' }
 		},
 
 		/**

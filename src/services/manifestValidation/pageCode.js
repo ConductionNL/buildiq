@@ -49,33 +49,45 @@ export function codeBlockErrors(code, path) {
 		return [`${path}: buildiq.pageCode.error.codeNotObject`]
 	}
 
-	const errors = []
-	for (const part of CODE_PARTS) {
-		if (code[part] !== undefined && typeof code[part] !== 'string') {
-			errors.push(`${path}/${part}: buildiq.pageCode.error.partNotText`)
-		}
-	}
+	const errors = CODE_PARTS
+		.filter((part) => code[part] !== undefined && typeof code[part] !== 'string')
+		.map((part) => `${path}/${part}: buildiq.pageCode.error.partNotText`)
 
 	const hasText = CODE_PARTS.some((part) => typeof code[part] === 'string' && code[part].trim() !== '')
 	if (!hasText) {
 		errors.push(`${path}: buildiq.pageCode.error.empty`)
 	}
 
-	if (code.inputs !== undefined) {
-		if (!Array.isArray(code.inputs)) {
-			errors.push(`${path}/inputs: buildiq.pageCode.error.inputsNotList`)
-		} else {
-			const seen = new Set()
-			code.inputs.forEach((input, index) => {
-				if (!CODE_INPUTS.includes(input)) {
-					errors.push(`${path}/inputs/${index}: buildiq.pageCode.error.unknownInput`)
-				} else if (seen.has(input)) {
-					errors.push(`${path}/inputs/${index}: buildiq.pageCode.error.duplicateInput`)
-				}
-				seen.add(input)
-			})
-		}
+	errors.push(...codeInputsErrors(code.inputs, `${path}/inputs`))
+
+	return errors
+}
+
+/**
+ * The errors of a code block's `inputs` list.
+ *
+ * @param {*} inputs - the `code.inputs` value.
+ * @param {string} path - its pointer.
+ * @return {string[]} - `<pointer>: <code>` error strings.
+ */
+function codeInputsErrors(inputs, path) {
+	if (inputs === undefined) {
+		return []
 	}
+	if (!Array.isArray(inputs)) {
+		return [`${path}: buildiq.pageCode.error.inputsNotList`]
+	}
+
+	const errors = []
+	const seen = new Set()
+	inputs.forEach((input, index) => {
+		if (!CODE_INPUTS.includes(input)) {
+			errors.push(`${path}/${index}: buildiq.pageCode.error.unknownInput`)
+		} else if (seen.has(input)) {
+			errors.push(`${path}/${index}: buildiq.pageCode.error.duplicateInput`)
+		}
+		seen.add(input)
+	})
 
 	return errors
 }
@@ -131,50 +143,77 @@ function codeConfigErrors(config, path) {
  * @spec openspec/changes/pages-custom-code/specs
  */
 export function validatePageCode(manifest) {
-	const errors = []
 	const pages = manifest && Array.isArray(manifest.pages) ? manifest.pages : []
 
-	pages.forEach((page, pIndex) => {
-		const config = page && isPlainObject(page.config) ? page.config : null
-		if (config === null) {
-			return
-		}
-		const base = `/pages/${pIndex}/config`
+	return pages.flatMap((page, pIndex) => pageErrors(page, `/pages/${pIndex}/config`))
+}
 
-		if (page.type === 'custom') {
-			errors.push(...codeConfigErrors(config, base))
-		} else if (config.code !== undefined) {
-			errors.push(`${base}/code: buildiq.pageCode.error.codeOnWrongPage`)
-		}
+/**
+ * Each plain-object entry of a list, with its index.
+ *
+ * @param {*} list - a config list (widgets, columns, fields).
+ * @return {Array<[object, number]>} - the object entries and their indexes.
+ */
+function objectEntries(list) {
+	if (!Array.isArray(list)) {
+		return []
+	}
 
-		if (Array.isArray(config.widgets)) {
-			config.widgets.forEach((widget, wIndex) => {
-				if (isPlainObject(widget)) {
-					errors.push(...codeConfigErrors(widget.config, `${base}/widgets/${wIndex}/config`))
-				}
-			})
-		}
+	return list.map((entry, index) => [entry, index]).filter(([entry]) => isPlainObject(entry))
+}
 
-		if (Array.isArray(config.columns)) {
-			config.columns.forEach((column, cIndex) => {
-				if (isPlainObject(column)) {
-					errors.push(...expressionErrors(column.expression, `${base}/columns/${cIndex}/expression`))
-				}
-			})
-		}
+/**
+ * The code and expression errors of one page.
+ *
+ * @param {*} page - a manifest page.
+ * @param {string} base - the pointer of its config.
+ * @return {string[]} - `<pointer>: <code>` error strings.
+ */
+function pageErrors(page, base) {
+	const config = page && isPlainObject(page.config) ? page.config : null
+	if (config === null) {
+		return []
+	}
 
-		if (Array.isArray(config.fields)) {
-			config.fields.forEach((field, fIndex) => {
-				if (!isPlainObject(field)) {
-					return
-				}
-				errors.push(...expressionErrors(field.expressionDefault, `${base}/fields/${fIndex}/expressionDefault`))
-				if (isPlainObject(field.visibleWhen)) {
-					errors.push(...expressionErrors(field.visibleWhen.expression, `${base}/fields/${fIndex}/visibleWhen/expression`))
-				}
-			})
-		}
-	})
+	return [
+		...pageCodeErrors(page.type, config, base),
+		...objectEntries(config.widgets).flatMap(([widget, wIndex]) => codeConfigErrors(widget.config, `${base}/widgets/${wIndex}/config`)),
+		...objectEntries(config.columns).flatMap(([column, cIndex]) => expressionErrors(column.expression, `${base}/columns/${cIndex}/expression`)),
+		...objectEntries(config.fields).flatMap(([field, fIndex]) => fieldExpressionErrors(field, `${base}/fields/${fIndex}`)),
+	]
+}
+
+/**
+ * The errors of a page's own code block: allowed on a custom page only.
+ *
+ * @param {string} type - the page type.
+ * @param {object} config - the page's config.
+ * @param {string} base - the config's pointer.
+ * @return {string[]} - `<pointer>: <code>` error strings.
+ */
+function pageCodeErrors(type, config, base) {
+	if (type === 'custom') {
+		return codeConfigErrors(config, base)
+	}
+	if (config.code !== undefined) {
+		return [`${base}/code: buildiq.pageCode.error.codeOnWrongPage`]
+	}
+
+	return []
+}
+
+/**
+ * The expression errors of one form field: its expression default and its condition.
+ *
+ * @param {object} field - a form field.
+ * @param {string} path - its pointer.
+ * @return {string[]} - `<pointer>: <code>` error strings.
+ */
+function fieldExpressionErrors(field, path) {
+	const errors = expressionErrors(field.expressionDefault, `${path}/expressionDefault`)
+	if (isPlainObject(field.visibleWhen)) {
+		errors.push(...expressionErrors(field.visibleWhen.expression, `${path}/visibleWhen/expression`))
+	}
 
 	return errors
 }

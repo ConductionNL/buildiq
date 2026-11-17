@@ -231,15 +231,31 @@ class SettingsService implements SettingsServiceInterface {
 			}
 		}
 
-		if (array_key_exists(PageCodeGuard::SETTING, $data) === true) {
-			$this->appConfig->setValueBool(AppIdentity::APP_ID, PageCodeGuard::SETTING, $this->isOn(value: $data[PageCodeGuard::SETTING]));
-			$written[] = PageCodeGuard::SETTING;
-		}
+		$written = [...$written, ...$this->writePageCodeSetting(data: $data)];
 
 		$this->connectionReporter?->refreshFromSave(savedKeys: $written);
 
 		return $this->getSettings();
 	}//end updateSettings()
+
+	/**
+	 * Write "Allow code on pages" when the submission carries it.
+	 *
+	 * @param array<string,mixed> $data The submitted settings.
+	 *
+	 * @return list<string> The key written, or none.
+	 *
+	 * @spec openspec/changes/pages-custom-code/tasks.md#t01
+	 */
+	private function writePageCodeSetting(array $data): array {
+		if (array_key_exists(PageCodeGuard::SETTING, $data) === false) {
+			return [];
+		}
+
+		$this->appConfig->setValueBool(AppIdentity::APP_ID, PageCodeGuard::SETTING, $this->isOn(value: $data[PageCodeGuard::SETTING]));
+
+		return [PageCodeGuard::SETTING];
+	}//end writePageCodeSetting()
 
 	/**
 	 * Whether a submitted toggle value means "on".

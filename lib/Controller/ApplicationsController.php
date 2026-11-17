@@ -519,15 +519,9 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 			// Never let a manifest body inject/overwrite the permissions roster.
 			unset($manifest['permissions']);
 
-			$storedManifest = $this->storedManifest(slug: $slug, applicationArray: $applicationArray);
-			if ($this->codeGuard->changesCode(before: $storedManifest, after: $manifest) === true) {
-				$codeRefusal = $this->refuseCodeChange(applicationArray: $applicationArray);
-				if ($codeRefusal !== null) {
-					return $codeRefusal;
-				}
-			}
-
-			return $this->writeManifest(applicationArray: $applicationArray, manifest: $manifest);
+			// A save that adds, changes or removes code is refused unless the code-write rule allows it.
+			return $this->refuseCodeSave(slug: $slug, applicationArray: $applicationArray, manifest: $manifest)
+				?? $this->writeManifest(applicationArray: $applicationArray, manifest: $manifest);
 		} catch (Throwable $e) {
 			$correlationId = bin2hex(random_bytes(8));
 			$this->logger->error(
@@ -596,6 +590,27 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 
 		return $stored;
 	}//end storedManifest()
+
+	/**
+	 * The refusal of a manifest save that changes code against the stored
+	 * manifest, or null when it changes none or the code-write rule allows it.
+	 *
+	 * @param string              $slug             The virtual-app slug.
+	 * @param array<string,mixed> $applicationArray The resolved Application.
+	 * @param array<mixed>        $manifest         The manifest being saved.
+	 *
+	 * @return JSONResponse|null The 403, or null when the save may proceed.
+	 *
+	 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-only-owners-write-code-and-only-when-allowed-req-bqcc-005
+	 */
+	private function refuseCodeSave(string $slug, array $applicationArray, array $manifest): JSONResponse|null {
+		$storedManifest = $this->storedManifest(slug: $slug, applicationArray: $applicationArray);
+		if ($this->codeGuard->changesCode(before: $storedManifest, after: $manifest) === false) {
+			return null;
+		}
+
+		return $this->refuseCodeChange(applicationArray: $applicationArray);
+	}//end refuseCodeSave()
 
 	/**
 	 * Refuse a save that adds, changes or removes code unless an app owner makes

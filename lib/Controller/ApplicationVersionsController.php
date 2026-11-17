@@ -420,11 +420,8 @@ class ApplicationVersionsController extends Controller {
 			before: $this->manifestOf(version: $versions['target']),
 			after: ($this->manifestOf(version: $versions['source']) ?? [])
 		);
-		if ($codeRefusal !== null) {
-			return $codeRefusal;
-		}
 
-		return $this->branchRun(
+		return $codeRefusal ?? $this->branchRun(
 			run: fn (): array => $this->merges->applyMerge(
 				application: $application,
 				source: $versions['source'],
@@ -515,13 +512,11 @@ class ApplicationVersionsController extends Controller {
 				before: $this->manifestOf(version: $current),
 				after: ($this->manifestOf(version: $payload) ?? [])
 			);
-			if ($codeRefusal !== null) {
-				return $codeRefusal;
-			}
 
 			// Acquire an optimistic lock before the read-modify-write to prevent
 			// concurrent UI / MCP writes silently losing each other's changes (issue #159).
-			$locked = $this->lockForUpdate(currentUuid: $currentUuid, versionSlug: $versionSlug);
+			// A refused code change returns before any lock is taken.
+			$locked = ($codeRefusal ?? $this->lockForUpdate(currentUuid: $currentUuid, versionSlug: $versionSlug));
 			if ($locked instanceof JSONResponse) {
 				return $locked;
 			}
@@ -620,7 +615,7 @@ class ApplicationVersionsController extends Controller {
 	 *
 	 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-only-owners-write-code-and-only-when-allowed-req-bqcc-005
 	 */
-	private function refuseCodeChange(array $application, ?array $before, array $after): ?JSONResponse {
+	private function refuseCodeChange(array $application, array|null $before, array $after): JSONResponse|null {
 		if ($this->codeGuard->changesCode(before: $before, after: $after) === false) {
 			return null;
 		}
@@ -632,14 +627,8 @@ class ApplicationVersionsController extends Controller {
 			);
 		}
 
-		$user = $this->userSession->getUser();
-		if ($user !== null) {
-			$owners = $this->collectAuthorisedPrincipals(application: $application, roles: ['owners']);
-			if (in_array($user->getUID(), $owners['users'], true) === true
-				|| count(array_intersect($this->getUserGroupIds(user: $user), $owners['groups'])) > 0
-			) {
-				return null;
-			}
+		if ($this->isOwner(application: $application, user: $this->userSession->getUser()) === true) {
+			return null;
 		}
 
 		return new JSONResponse(
@@ -647,6 +636,25 @@ class ApplicationVersionsController extends Controller {
 			statusCode: Http::STATUS_FORBIDDEN
 		);
 	}//end refuseCodeChange()
+
+	/**
+	 * Whether the user is an owner of the Application, by name or by group. No admin bypass.
+	 *
+	 * @param array<string,mixed> $application The parent Application.
+	 * @param IUser|null          $user        The caller, or null when nobody is signed in.
+	 *
+	 * @return bool True for an owner.
+	 */
+	private function isOwner(array $application, IUser|null $user): bool {
+		if ($user === null) {
+			return false;
+		}
+
+		$owners = $this->collectAuthorisedPrincipals(application: $application, roles: ['owners']);
+
+		return in_array($user->getUID(), $owners['users'], true) === true
+			|| count(array_intersect($this->getUserGroupIds(user: $user), $owners['groups'])) > 0;
+	}//end isOwner()
 
 	/**
 	 * Refuse a promotesTo target that would close a promotion cycle.

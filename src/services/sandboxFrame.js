@@ -46,33 +46,64 @@ export function sandboxDocumentUrl(name) {
  * @spec openspec/changes/pages-custom-code/tasks.md#t07
  */
 export function codeComponentsOf(manifest) {
-	const found = []
-	const pages = manifest && Array.isArray(manifest.pages) ? manifest.pages : []
-	pages.forEach((page, pIndex) => {
-		const config = page && isPlainObject(page.config) ? page.config : null
-		if (config === null) {
-			return
-		}
+	return pageConfigsOf(manifest).flatMap(({ page, config, pIndex }) => {
 		const pageId = String(page.id || pIndex)
 		const pageLabel = page.title || pageId
+		const found = []
 		if (page.type === 'custom' && isPlainObject(config.code)) {
 			found.push({ key: `/pages/${pIndex}/config/code`, pageId, id: pageId, label: pageLabel, code: config.code })
 		}
-		const widgets = Array.isArray(config.widgets) ? config.widgets : []
-		widgets.forEach((widget, wIndex) => {
-			if (isPlainObject(widget) && isPlainObject(widget.config) && isPlainObject(widget.config.code)) {
-				const id = String(widget.id || wIndex)
-				found.push({
-					key: `/pages/${pIndex}/config/widgets/${wIndex}/config/code`,
-					pageId,
-					id,
-					label: `${pageLabel} › ${widget.title || id}`,
-					code: widget.config.code,
-				})
+		objectsOf(config.widgets).forEach(([widget, wIndex]) => {
+			if (!hasCodeConfig(widget)) {
+				return
 			}
+			const id = String(widget.id || wIndex)
+			found.push({
+				key: `/pages/${pIndex}/config/widgets/${wIndex}/config/code`,
+				pageId,
+				id,
+				label: `${pageLabel} › ${widget.title || id}`,
+				code: widget.config.code,
+			})
 		})
+		return found
 	})
-	return found
+}
+
+/**
+ * The pages of a manifest whose config is an object, with their index.
+ *
+ * @param {object} manifest - the manifest under edit.
+ * @return {Array<{page: object, config: object, pIndex: number}>}
+ */
+function pageConfigsOf(manifest) {
+	const pages = manifest && Array.isArray(manifest.pages) ? manifest.pages : []
+	return pages
+		.map((page, pIndex) => ({ page, config: page && isPlainObject(page.config) ? page.config : null, pIndex }))
+		.filter(({ config }) => config !== null)
+}
+
+/**
+ * The plain-object entries of a list, with their index.
+ *
+ * @param {*} list - a config list.
+ * @return {Array<[object, number]>}
+ */
+function objectsOf(list) {
+	if (!Array.isArray(list)) {
+		return []
+	}
+	return list.map((entry, index) => [entry, index]).filter(([entry]) => isPlainObject(entry))
+}
+
+/**
+ * Whether a widget carries a code block in its config.
+ *
+ * @param {object} widget - a widget.
+ * @return {boolean}
+ */
+function hasCodeConfig(widget) {
+	return isPlainObject(widget.config) && isPlainObject(widget.config.code)
 }
 
 /**
@@ -84,34 +115,28 @@ export function codeComponentsOf(manifest) {
  * @spec openspec/changes/pages-custom-code/tasks.md#t07
  */
 export function expressionsOf(manifest) {
-	const found = []
-	const add = (key, expression) => {
-		if (typeof expression === 'string' && expression.trim() !== '') {
-			found.push({ key, expression })
-		}
-	}
-	const pages = manifest && Array.isArray(manifest.pages) ? manifest.pages : []
-	pages.forEach((page, pIndex) => {
-		const config = page && isPlainObject(page.config) ? page.config : null
-		if (config === null) {
-			return
-		}
+	const found = pageConfigsOf(manifest).flatMap(({ config, pIndex }) => {
 		const base = `/pages/${pIndex}/config`
-		;(Array.isArray(config.columns) ? config.columns : []).forEach((column, cIndex) => {
-			if (isPlainObject(column)) {
-				add(`${base}/columns/${cIndex}/expression`, column.expression)
-			}
-		})
-		;(Array.isArray(config.fields) ? config.fields : []).forEach((field, fIndex) => {
-			if (!isPlainObject(field)) {
-				return
-			}
-			add(`${base}/fields/${fIndex}/expressionDefault`, field.expressionDefault)
-			if (isPlainObject(field.visibleWhen)) {
-				add(`${base}/fields/${fIndex}/visibleWhen/expression`, field.visibleWhen.expression)
-			}
-		})
+		return [
+			...objectsOf(config.columns).map(([column, cIndex]) => ({ key: `${base}/columns/${cIndex}/expression`, expression: column.expression })),
+			...objectsOf(config.fields).flatMap(([field, fIndex]) => fieldExpressionsOf(field, `${base}/fields/${fIndex}`)),
+		]
 	})
+	return found.filter(({ expression }) => typeof expression === 'string' && expression.trim() !== '')
+}
+
+/**
+ * A form field's expression default and visibility expression, keyed by pointer.
+ *
+ * @param {object} field - a form field.
+ * @param {string} path - its pointer.
+ * @return {Array<{key: string, expression: *}>}
+ */
+function fieldExpressionsOf(field, path) {
+	const found = [{ key: `${path}/expressionDefault`, expression: field.expressionDefault }]
+	if (isPlainObject(field.visibleWhen)) {
+		found.push({ key: `${path}/visibleWhen/expression`, expression: field.visibleWhen.expression })
+	}
 	return found
 }
 
@@ -137,6 +162,18 @@ export function previewInputs(code, user) {
 }
 
 /**
+ * Whether a message event is an evaluator answer from the given frame.
+ *
+ * @param {MessageEvent} event - the message event.
+ * @param {?Window} source - the evaluator frame's window.
+ * @return {boolean}
+ */
+function isEvaluatedFrom(event, source) {
+	const message = event.data
+	return Boolean(message) && message.type === 'evaluated' && event.source === source
+}
+
+/**
  * A client for the evaluator frame (the protocol of SandboxController::evaluator).
  *
  * Each `evaluate()` posts one batch with its own id and resolves with the
@@ -157,10 +194,7 @@ export function createEvaluatorClient(frameWindow, { timeout = EVALUATE_TIMEOUT_
 
 	const onMessage = (event) => {
 		const message = event.data
-		if (!message || message.type !== 'evaluated' || event.source !== frameWindow()) {
-			return
-		}
-		const entry = pending.get(message.id)
+		const entry = isEvaluatedFrom(event, frameWindow()) ? pending.get(message.id) : undefined
 		if (!entry) {
 			return
 		}

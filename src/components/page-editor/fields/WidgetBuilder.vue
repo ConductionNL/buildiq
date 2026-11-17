@@ -97,6 +97,27 @@ import CodeComponentEditor from './CodeComponentEditor.vue'
 import { CONNECTOR_WIDGET_TYPE } from '../../../services/connectorPages.js'
 import { chartFormInput, widgetWithChartContent } from './chartWidget.js'
 
+/**
+ * Whether a value is a plain (non-array) object.
+ *
+ * @param {*} value - the value.
+ * @return {boolean}
+ */
+function isObjectValue(value) {
+	return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+}
+
+/**
+ * The key a widget's switched-off code is kept under: its id, else its position.
+ *
+ * @param {object} widget - the widget.
+ * @param {number} index - its position in the `widgets` array.
+ * @return {string}
+ */
+function stashKeyOf(widget, index) {
+	return widget.id || String(index)
+}
+
 export default {
 	name: 'WidgetBuilder',
 	components: {
@@ -180,8 +201,18 @@ export default {
 		 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-an-owner-writes-a-code-component-req-bqcc-001
 		 */
 		hasCode(widget) {
-			const config = widget && widget.config
-			return Boolean(config) && typeof config === 'object' && Boolean(config.code) && typeof config.code === 'object' && !Array.isArray(config.code)
+			const config = widget ? widget.config : undefined
+			return isObjectValue(config) && isObjectValue(config.code)
+		},
+
+		/**
+		 * A widget's config when it is an object, else an empty one.
+		 *
+		 * @param {object} widget - the widget.
+		 * @return {object}
+		 */
+		configOf(widget) {
+			return (widget.config && typeof widget.config === 'object') ? widget.config : {}
 		},
 
 		/**
@@ -198,8 +229,8 @@ export default {
 			if (on === this.hasCode(current)) {
 				return
 			}
-			const stashKey = current.id || String(index)
-			const config = { ...((current.config && typeof current.config === 'object') ? current.config : {}) }
+			const stashKey = stashKeyOf(current, index)
+			const config = { ...this.configOf(current) }
 			if (on) {
 				config.code = this.stashedCode[stashKey] || {}
 			} else {

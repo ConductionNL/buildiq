@@ -72,21 +72,30 @@ class SandboxController extends Controller {
 	 */
 	private const EVALUATOR_SCRIPT = <<<'JS'
 'use strict';
+function isBatch(message) {
+	return Boolean(message) && message.type === 'evaluate' && Array.isArray(message.items);
+}
+function errorText(error) {
+	return String(error && error.message ? error.message : error);
+}
+function evaluateOne(item, scope) {
+	try {
+		var run = new Function('row', 'values', 'user', 'route', '"use strict"; return (' + String(item.expression) + ');');
+		var value = run(scope.row, scope.values, scope.user, scope.route);
+		return { value: value === undefined ? null : JSON.parse(JSON.stringify(value)) };
+	} catch (error) {
+		return { error: errorText(error) };
+	}
+}
 window.addEventListener('message', function (event) {
 	var message = event.data;
-	if (!message || message.type !== 'evaluate' || !Array.isArray(message.items)) {
+	if (!isBatch(message)) {
 		return;
 	}
 	var scope = message.scope || {};
 	var results = {};
 	message.items.forEach(function (item) {
-		try {
-			var run = new Function('row', 'values', 'user', 'route', '"use strict"; return (' + String(item.expression) + ');');
-			var value = run(scope.row, scope.values, scope.user, scope.route);
-			results[item.key] = { value: value === undefined ? null : JSON.parse(JSON.stringify(value)) };
-		} catch (error) {
-			results[item.key] = { error: String(error && error.message ? error.message : error) };
-		}
+		results[item.key] = evaluateOne(item, scope);
 	});
 	event.source.postMessage({ type: 'evaluated', id: message.id, results: results }, '*');
 });
@@ -125,11 +134,18 @@ JS;
 	 */
 	private const PREVIEW_SCRIPT = <<<'JS'
 'use strict';
-window.addEventListener('message', function (event) {
+function isRender(event) {
 	var message = event.data;
-	if (event.source !== window.parent || !message || message.type !== 'render' || !message.code || typeof message.code !== 'object') {
+	if (event.source !== window.parent || !message || message.type !== 'render') {
+		return false;
+	}
+	return Boolean(message.code) && typeof message.code === 'object';
+}
+window.addEventListener('message', function (event) {
+	if (!isRender(event)) {
 		return;
 	}
+	var message = event.data;
 	var text = function (value) { return typeof value === 'string' ? value : ''; };
 	var css = text(message.code.css).replace(/<\/style/gi, '<\\/style');
 	var js = text(message.code.js).replace(/<\/script/gi, '<\\/script');
@@ -184,22 +200,13 @@ JS;
 	#[NoCSRFRequired]
 	public function code(string $slug, string $version, string $codeId): DataDisplayResponse {
 		$user = $this->userSession->getUser();
-		if ($user === null) {
-			return $this->document(body: '', status: Http::STATUS_UNAUTHORIZED, evaluator: false);
-		}
-
-		$refusal = $this->refusal(slug: $slug, user: $user);
-		if ($refusal !== null) {
-			return $this->document(body: '', status: $refusal, evaluator: false);
-		}
-
-		$versionSlug = $version;
-		if ($version === self::PRODUCTION) {
-			$versionSlug = null;
+		$refusal = $this->callerRefusal(slug: $slug, user: $user);
+		if ($refusal !== null || $user === null) {
+			return $this->document(body: '', status: ($refusal ?? Http::STATUS_UNAUTHORIZED), evaluator: false);
 		}
 
 		$code = $this->findCode(
-			node: ($this->manifestResolver->resolve(appSlug: $slug, versionSlug: $versionSlug, caller: $user) ?? []),
+			node: ($this->manifestResolver->resolve(appSlug: $slug, versionSlug: self::versionSlug(version: $version), caller: $user) ?? []),
 			codeId: $codeId
 		);
 		if ($code === null) {
@@ -266,6 +273,38 @@ JS;
 	}//end preview()
 
 	/**
+	 * The status that refuses this caller the app: 401 without a signed-in user,
+	 * else what refusal() answers; null when they may use it.
+	 *
+	 * @param string     $slug The app slug.
+	 * @param IUser|null $user The caller, or null when nobody is signed in.
+	 *
+	 * @return Http::STATUS_UNAUTHORIZED|Http::STATUS_NOT_FOUND|null The refusal status, or null.
+	 */
+	private function callerRefusal(string $slug, IUser|null $user): int|null {
+		if ($user === null) {
+			return Http::STATUS_UNAUTHORIZED;
+		}
+
+		return $this->refusal(slug: $slug, user: $user);
+	}//end callerRefusal()
+
+	/**
+	 * The version slug the manifest resolver takes: null for `production`.
+	 *
+	 * @param string $version The version slug from the route.
+	 *
+	 * @return string|null The version slug, or null for production.
+	 */
+	private static function versionSlug(string $version): string|null {
+		if ($version === self::PRODUCTION) {
+			return null;
+		}
+
+		return $version;
+	}//end versionSlug()
+
+	/**
 	 * The status that refuses this caller the app, or null when they may use it.
 	 *
 	 * An unknown app and an app the caller has no role on both answer 404,
@@ -276,7 +315,7 @@ JS;
 	 *
 	 * @return Http::STATUS_NOT_FOUND|null The refusal status, or null.
 	 */
-	private function refusal(string $slug, IUser $user): ?int {
+	private function refusal(string $slug, IUser $user): int|null {
 		$application = $this->manifestResolver->findApplication(appSlug: $slug);
 		if ($application === null) {
 			return Http::STATUS_NOT_FOUND;
@@ -318,14 +357,14 @@ JS;
 	 *
 	 * @return array<string, mixed>|null The code, or null.
 	 */
-	private function findCode(mixed $node, string $codeId): ?array {
+	private function findCode(mixed $node, string $codeId): array|null {
 		if (is_array($node) === false) {
 			return null;
 		}
 
-		$code = ($node['config'][PageCodeGuard::CODE_KEY] ?? null);
-		if (($node['id'] ?? null) === $codeId && is_array($code) === true) {
-			return $code;
+		$own = self::ownCode(node: $node, codeId: $codeId);
+		if ($own !== null) {
+			return $own;
 		}
 
 		foreach ($node as $child) {
@@ -337,6 +376,27 @@ JS;
 
 		return null;
 	}//end findCode()
+
+	/**
+	 * The `config.code` of this node itself when its id is the one asked for.
+	 *
+	 * @param array<mixed> $node   A manifest node.
+	 * @param string       $codeId The page or widget id.
+	 *
+	 * @return array<string, mixed>|null The code, or null.
+	 */
+	private static function ownCode(array $node, string $codeId): array|null {
+		if (($node['id'] ?? null) !== $codeId) {
+			return null;
+		}
+
+		$code = ($node['config'][PageCodeGuard::CODE_KEY] ?? null);
+		if (is_array($code) === false) {
+			return null;
+		}
+
+		return $code;
+	}//end ownCode()
 
 	/**
 	 * The body of a code component's document: its style, markup and script.
