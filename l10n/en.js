@@ -2677,7 +2677,8 @@ OC.L10N.register(
         "Snippet to paste into the other site": "Snippet to paste into the other site",
         "The whole app": "The whole app",
         "This is not a valid site address.": "This is not a valid site address.",
-        "What to embed": "What to embed"
+        "What to embed": "What to embed",
+        "Text and Markdown files this agent reads before it plans. Its knowledge is searched for the passages that match each request, so files of any size can be added.": "Text and Markdown files this agent reads before it plans. Its knowledge is searched for the passages that match each request, so files of any size can be added."
     },
     "nplurals=2; plural=(n != 1);"
 )

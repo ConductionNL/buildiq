@@ -2760,7 +2760,8 @@ OC.L10N.register(
         "Snippet to paste into the other site": "Fragment om in de andere site te plakken",
         "The whole app": "De hele app",
         "This is not a valid site address.": "Dit is geen geldig siteadres.",
-        "What to embed": "Wat insluiten"
+        "What to embed": "Wat insluiten",
+        "Text and Markdown files this agent reads before it plans. Its knowledge is searched for the passages that match each request, so files of any size can be added.": "Tekst- en Markdown-bestanden die deze agent leest voordat hij een plan maakt. Zijn kennis wordt doorzocht op de passages die bij elk verzoek passen, dus bestanden van elke grootte kunnen worden toegevoegd."
     },
     "nplurals=2; plural=(n != 1);"
 )
