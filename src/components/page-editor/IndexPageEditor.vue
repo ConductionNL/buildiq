@@ -63,6 +63,22 @@
 		</fieldset>
 
 		<fieldset class="index-page-editor__fieldset">
+			<legend>{{ t('buildiq', 'Views') }}</legend>
+			<IndexViewModesBuilder
+				:config="config"
+				:schemaProperties="schemaProperties"
+				@update:config="$emit('update:config', $event)" />
+			<label class="index-page-editor__inline">
+				<input
+					type="checkbox"
+					data-manual-order
+					:checked="manualOrder"
+					@change="$emit('update:manualOrder', $event.target.checked)" />
+				{{ t('buildiq', 'Users can order rows by dragging') }}
+			</label>
+		</fieldset>
+
+		<fieldset class="index-page-editor__fieldset">
 			<legend>{{ t('buildiq', 'Actions') }}</legend>
 			<WriteActionSwitches
 				:config="config"
@@ -121,6 +137,7 @@
 import DataSourceOriginToggle from './DataSourceOriginToggle.vue'
 import ActionBuilder from './fields/ActionBuilder.vue'
 import ColumnBuilder from './fields/ColumnBuilder.vue'
+import IndexViewModesBuilder from './fields/IndexViewModesBuilder.vue'
 import InlineFieldMark from './fields/InlineFieldMark.vue'
 import RegisterSchemaFields from './fields/RegisterSchemaFields.vue'
 import SavedViewsBuilder from './fields/SavedViewsBuilder.vue'
@@ -143,6 +160,7 @@ export default {
 		InlineFieldMark,
 		RegisterSchemaFields,
 		DataSourceOriginToggle,
+		IndexViewModesBuilder,
 		SavedViewsBuilder,
 		WriteActionSwitches,
 	},
@@ -159,7 +177,15 @@ export default {
 			type: String,
 			default: 'index',
 		},
+
+		/** Whether users of the built app may order rows by dragging (`page.manualOrder`, REQ-PEC-009). */
+		manualOrder: {
+			type: Boolean,
+			default: false,
+		},
 	},
+
+	emits: ['update:config', 'update:manualOrder'],
 
 	setup: useEditorRegisterPicker,
 
@@ -201,6 +227,10 @@ export default {
 				'columns',
 				'actions',
 				'sidebar',
+				'viewModes',
+				'calendar',
+				'board',
+				'dateAxis',
 				'defaultSavedViews',
 			]
 		},

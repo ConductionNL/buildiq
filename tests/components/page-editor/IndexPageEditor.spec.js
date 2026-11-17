@@ -287,4 +287,26 @@ describe('IndexPageEditor', () => {
 		await wrapper.setProps({ appRegister: 'openbuild-hello-world-development' })
 		expect(getter()).toBe('openbuild-hello-world-development')
 	})
+
+	it('the drag order switch emits manualOrder for the page, not a config key (REQ-PEC-009)', async () => {
+		const wrapper = mount(IndexPageEditor, {
+			propsData: { config: { columns: ['title'] }, appSlug: 'hello-world', manualOrder: false },
+		})
+		const toggle = wrapper.find('input[data-manual-order]')
+		expect(toggle.element.checked).toBe(false)
+		await toggle.setValue(true)
+		expect(wrapper.emitted('update:manualOrder').at(-1)).toEqual([true])
+		expect(wrapper.emitted('update:config')).toBeUndefined()
+
+		await wrapper.setProps({ manualOrder: true })
+		expect(toggle.element.checked).toBe(true)
+		await toggle.setValue(false)
+		expect(wrapper.emitted('update:manualOrder').at(-1)).toEqual([false])
+	})
+
+	it('a view change from the Views section reaches update:config (REQ-PEC-008)', async () => {
+		const wrapper = mountEditor({ columns: ['title'] })
+		await wrapper.find('input[data-mode="calendar"]').setValue(true)
+		expect(wrapper.emitted('update:config').at(-1)[0]).toEqual({ columns: ['title'], viewModes: ['table', 'calendar'] })
+	})
 })
