@@ -31,6 +31,9 @@ parameters:
         # so SettingsSection and AdminSettings resolve their parent constructors during
         # static analysis when the openregister sibling app is absent (ADR-040).
         - tests/stubs/openregister-apphost.stub.php
+        # AppHost deep-link listener base class, extended by
+        # BuiltAppDeepLinkListener (apps-unified-search-deep-links).
+        - tests/stubs/openregister-apphost-listener.stub.php
         # OpenRegister's leaf-provider contract (IntegrationProvider,
         # LeafDescriptor, RegisterLeafProvidersEvent) so the providers in
         # lib/Integration/ resolve the interface they implement and the event

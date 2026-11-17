@@ -472,3 +472,191 @@ describe('SchemaDesigner data loaders', () => {
 		expect(refresh).toHaveBeenCalledTimes(1)
 	})
 })
+
+describe('SchemaDesigner computed guards', () => {
+	const c = SchemaDesigner.computed
+
+	it('otherSchemaSlugs reads slug, @self.slug or id and leaves out the open schema', () => {
+		const slugs = c.otherSchemaSlugs.call({
+			schemaId: 'pets',
+			schemas: [{ slug: 'pets' }, { '@self': { slug: 'owners' } }, { id: 'vets' }, {}],
+		})
+		expect(slugs).toEqual(['owners', 'vets'])
+	})
+
+	it('headerValue and fieldNames are empty without a staged schema', () => {
+		expect(c.headerValue.call({ staged: null })).toEqual({ slug: '', title: '', description: '', version: '0.1.0' })
+		expect(c.fieldNames.call({ staged: null })).toEqual([])
+		expect(c.fieldNames.call({ staged: { fields: [{ name: 'a' }, { name: '' }, { name: 'b' }] } })).toEqual(['a', 'b'])
+	})
+
+	it('fieldNamesUnique refuses a missing or repeated name and passes without a staged schema', () => {
+		expect(c.fieldNamesUnique.call({ staged: null })).toBe(true)
+		expect(c.fieldNamesUnique.call({ staged: { fields: [{ name: 'a' }, { name: '' }] } })).toBe(false)
+		expect(c.fieldNamesUnique.call({ staged: { fields: [{ name: 'a' }, { name: 'a' }] } })).toBe(false)
+		expect(c.fieldNamesUnique.call({ staged: { fields: [{ name: 'a' }, { name: 'b' }] } })).toBe(true)
+	})
+
+	it('canSave is false while saving, on a lifecycle or name error, or on a widget config error', () => {
+		const ok = {
+			staged: { widgets: [] },
+			saving: false,
+			hasInitialLifecycleState: true,
+			fieldNamesUnique: true,
+			hasStagedChanges: true,
+		}
+		expect(c.canSave.call(ok)).toBe(true)
+		expect(c.canSave.call({ ...ok, saving: true })).toBe(false)
+		expect(c.canSave.call({ ...ok, hasInitialLifecycleState: false })).toBe(false)
+		expect(c.canSave.call({ ...ok, fieldNamesUnique: false })).toBe(false)
+		expect(c.canSave.call({ ...ok, staged: { widgets: [{ configError: 'bad json' }] } })).toBe(false)
+		expect(c.canSave.call({ ...ok, hasStagedChanges: false })).toBe(false)
+	})
+})
+
+describe('SchemaDesigner loadDetail', () => {
+	/**
+	 * A stand-in `this` for loadDetail.
+	 *
+	 * @param {object} overrides Fields to replace.
+	 * @return {object} The context.
+	 */
+	function context(overrides = {}) {
+		return {
+			schemaId: 'pets',
+			staged: null,
+			persisted: null,
+			loadingDetail: false,
+			detailAttempted: false,
+			saveError: 'old',
+			history: { reset: vi.fn() },
+			store: storeMocks,
+			persistedSlug: () => '',
+			bodyToStaged: (body) => ({ slug: body.slug, staged: true }),
+			errorMessage: (e) => e.message,
+			t: (app, text, vars) => (vars ? text.replace('{error}', vars.error) : text),
+			...overrides,
+		}
+	}
+
+	it('resets to an empty session without a schema id', async () => {
+		const ctx = context({ schemaId: '', staged: { slug: 'x' }, persisted: { slug: 'x' } })
+		await SchemaDesigner.methods.loadDetail.call(ctx)
+		expect(ctx.staged).toBeNull()
+		expect(ctx.persisted).toBeNull()
+		expect(ctx.history.reset).toHaveBeenCalledWith(null)
+		expect(storeMocks.fetchObject).not.toHaveBeenCalled()
+	})
+
+	it('skips the fetch when the staged schema is already the one asked for', async () => {
+		const staged = { slug: 'pets' }
+		const ctx = context({ staged, persistedSlug: () => 'pets' })
+		await SchemaDesigner.methods.loadDetail.call(ctx)
+		expect(storeMocks.fetchObject).not.toHaveBeenCalled()
+		expect(ctx.detailAttempted).toBe(true)
+		expect(ctx.staged).toBe(staged)
+	})
+
+	it('stages what the store returns', async () => {
+		storeMocks.fetchObject.mockResolvedValue({ slug: 'pets' })
+		const ctx = context()
+		await SchemaDesigner.methods.loadDetail.call(ctx)
+		expect(storeMocks.fetchObject).toHaveBeenCalledWith('schema', 'pets')
+		expect(ctx.persisted).toEqual({ slug: 'pets' })
+		expect(ctx.staged).toEqual({ slug: 'pets', staged: true })
+		expect(ctx.saveError).toBe('')
+		expect([ctx.loadingDetail, ctx.detailAttempted]).toEqual([false, true])
+	})
+
+	it('shows the store error when nothing comes back', async () => {
+		storeMocks.fetchObject.mockResolvedValue(null)
+		storeMocks.errors = { schema: 'not allowed' }
+		const ctx = context()
+		await SchemaDesigner.methods.loadDetail.call(ctx)
+		expect(ctx.staged).toBeNull()
+		expect(dialogMocks.showError).toHaveBeenCalledWith('Failed to load schema: not allowed')
+		expect(ctx.detailAttempted).toBe(true)
+	})
+
+	it('stays silent when nothing comes back and the store has no error', async () => {
+		storeMocks.fetchObject.mockResolvedValue(null)
+		const ctx = context()
+		await SchemaDesigner.methods.loadDetail.call(ctx)
+		expect(ctx.staged).toBeNull()
+		expect(dialogMocks.showError).not.toHaveBeenCalled()
+	})
+
+	it('shows the thrown error and clears the staged schema', async () => {
+		storeMocks.fetchObject.mockRejectedValue(new Error('network down'))
+		const ctx = context({ staged: { slug: 'old' }, persistedSlug: () => 'old' })
+		await SchemaDesigner.methods.loadDetail.call(ctx)
+		expect(ctx.staged).toBeNull()
+		expect(ctx.persisted).toBeNull()
+		expect(dialogMocks.showError).toHaveBeenCalledWith('Failed to load schema: network down')
+		expect(ctx.loadingDetail).toBe(false)
+	})
+})
+
+describe('SchemaDesigner body, create fallback and lifecycle hooks', () => {
+	it('composeSchemaBody passes aggregations, calculations and notifications through unchanged', async () => {
+		const wrapper = await mountDesigner()
+		const aggregations = { total: { field: 'amount', op: 'sum' } }
+		const calculations = { vat: { expression: 'amount * 0.21' } }
+		const notifications = [{ on: 'create', to: 'admin' }]
+		const staged = wrapper.vm.bodyToStaged({
+			slug: 'pets',
+			title: 'Pets',
+			version: '0.1.0',
+			properties: {},
+			'x-openregister-aggregations': aggregations,
+			'x-openregister-calculations': calculations,
+			'x-openregister-notifications': notifications,
+		})
+
+		const body = wrapper.vm.composeSchemaBody(staged)
+
+		expect(body['x-openregister-aggregations']).toEqual(aggregations)
+		expect(body['x-openregister-calculations']).toEqual(calculations)
+		expect(body['x-openregister-notifications']).toEqual(notifications)
+		const bare = wrapper.vm.composeSchemaBody(wrapper.vm.bodyToStaged({ slug: 'p', title: 'P', version: '0.1.0', properties: {} }))
+		expect('x-openregister-aggregations' in bare).toBe(false)
+		expect('x-openregister-notifications' in bare).toBe(false)
+	})
+
+	it('addSchema throws the store error text when the create fails without a duplicate', async () => {
+		const wrapper = await mountDesigner()
+		storeMocks.saveObject.mockResolvedValue(null)
+		storeMocks.errors = { schema: 'quota reached' }
+		await expect(wrapper.vm.addSchema({ slug: 'pets', title: 'Pets', version: '0.1.0' })).rejects.toThrow('quota reached')
+		expect(wrapper.vm.$router.push).not.toHaveBeenCalled()
+	})
+
+	it('addSchema still navigates to the new schema when staging after the create fails', async () => {
+		const wrapper = await mountDesigner()
+		storeMocks.saveObject.mockResolvedValue({ id: 7, slug: 'buildiq-hello-world-pets' })
+		vi.spyOn(wrapper.vm, 'attachSchemaToRegister').mockRejectedValue(new Error('patch failed'))
+		wrapper.vm.staged = { slug: 'previous' }
+
+		await wrapper.vm.addSchema({ slug: 'pets', title: 'Pets', version: '0.1.0' })
+
+		expect(wrapper.vm.staged).toBeNull()
+		expect(wrapper.vm.persisted).toBeNull()
+		expect(wrapper.vm.$router.push).toHaveBeenCalledTimes(1)
+		expect(JSON.stringify(wrapper.vm.$router.push.mock.calls[0][0])).toContain('buildiq-hello-world-pets')
+	})
+
+	it('a new schema id clears the previous attempt and loads again', () => {
+		const ctx = { detailAttempted: true, loadDetail: vi.fn() }
+		SchemaDesigner.watch.schemaId.handler.call(ctx)
+		expect(ctx.detailAttempted).toBe(false)
+		expect(ctx.loadDetail).toHaveBeenCalledTimes(1)
+	})
+
+	it('unmounting removes the keydown listener', async () => {
+		const wrapper = await mountDesigner()
+		const remove = vi.spyOn(document, 'removeEventListener')
+		wrapper.unmount()
+		expect(remove).toHaveBeenCalledWith('keydown', expect.any(Function))
+		remove.mockRestore()
+	})
+})

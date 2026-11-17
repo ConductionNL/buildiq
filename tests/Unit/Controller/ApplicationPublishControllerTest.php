@@ -47,6 +47,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Tests for ApplicationPublishController.
@@ -189,13 +190,11 @@ class ApplicationPublishControllerTest extends TestCase {
 		$calls = [];
 		$this->objectService->expects($this->exactly(2))
 			->method('saveObject')
-			->willReturnCallback(function (
-				array $object,
-				?array $extend = [],
-				string|int|null $register = null,
-				string|int|null $schema = null,
-				?string $uuid = null,
-			) use (&$calls): ObjectEntity {
+			->willReturnCallback(function (array $object, ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$calls): ObjectEntity {
+				$extend = $options->extend ?? [];
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$calls[] = ['object' => $object, 'schema' => $schema, 'uuid' => $uuid];
 				return $this->buildEntity(payload: $object);
 			});

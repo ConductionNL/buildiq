@@ -141,6 +141,24 @@ The seeded `hello-world` Application is the canonical reference. Its manifest ex
 
 See [`lib/Command/SeedHelloWorldFixture.php`](https://github.com/ConductionNL/buildiq/blob/development/lib/Command/SeedHelloWorldFixture.php) for the full JSON.
 
+## Reading an app's API
+
+Every app has an **API** tab on its detail page, for each of its versions. Owners, editors and viewers of the app see it. It answers what a supplier or an integration needs to know: which records the app holds, which calls read and change them, and which fields those calls take.
+
+What the tab shows, for the version you pick:
+
+- **The base address** of the calls on this instance: this server's address followed by `/apps/openregister/api`. An app has no API of its own; its records live in OpenRegister and are read and written through OpenRegister's objects API.
+- **How to sign in**: with your Nextcloud user name and an **app password**, which you create under *Personal settings → Security*. Never put your own password in an integration.
+- **One block per schema the version's pages and widgets use**, with its list, read, create, update and delete calls and its fields, each with its type and rules (format, pattern, length and value limits, and the allowed values). Schemas come from the version's own register and from the app's data registers.
+- **Only what the app uses.** A shared data register can hold many schemas; the tab keeps the ones this version binds and leaves the rest out.
+- **Not documented here**: pages that read from a connector instead of an OpenRegister schema, with their endpoint path. Their API is the connector's, not OpenRegister's.
+
+**Download OpenAPI file** saves the same document as an OpenAPI 3 JSON file, titled after the app and carrying the version (for example `vergunningen-1.4.0.openapi.json`). Hand that file to a supplier or load it in an API client.
+
+The tab reads only from this instance: it fetches OpenRegister's description of each register through `/apps/...` and cuts it down in the browser. Nothing is loaded from outside the server while it is open.
+
+If a schema shows "Its register did not describe this schema", OpenRegister's description of that register had no entry for it; check that the schema still exists in the register. If the tab says "The pages of this version use no OpenRegister schema", bind a page to a register and schema first.
+
 ## When you hit a limit
 
 The closed `type` enum can't be extended from a manifest — adding a new page type requires a library-level openspec change in `@conduction/nextcloud-vue`. If you need something the four built-in types can't express:

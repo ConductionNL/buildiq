@@ -16,14 +16,50 @@
   -->
 <template>
 	<div class="form-field-builder">
+		<!-- REQ-BQFK-005: the palette; drag a type onto the form, or Enter adds it at the end. -->
 		<div
+			v-if="showLogic"
+			class="form-field-builder__palette"
+			role="group"
+			:aria-label="t('buildiq', 'Field types')">
+			<button
+				v-for="type in FIELD_TYPES"
+				:key="'palette-' + type"
+				type="button"
+				draggable="true"
+				class="form-field-builder__palette-item"
+				:data-testid="'palette-' + type"
+				:title="t('buildiq', 'Drag onto the form, or press Enter to add at the end')"
+				@dragstart="startDrag({ kind: 'type', type }, $event)"
+				@dragend="endDrag"
+				@click="addOfType(type)">
+				<span class="form-field-builder__palette-icon" aria-hidden="true">{{ typeIcon(type) }}</span>
+				{{ typeLabel(type) }}
+			</button>
+		</div>
+		<template
 			v-for="(field, index) in localFields"
-			:key="index"
-			class="form-field-builder__row">
+			:key="index">
+		<div
+			v-if="showLogic"
+			class="form-field-builder__slot"
+			:class="{ 'form-field-builder__slot--active': dragging !== null }"
+			:data-testid="'drop-slot-' + index"
+			@dragover.prevent
+			@drop.prevent="dropAt(index)" />
+		<div class="form-field-builder__row">
+			<span
+				v-if="showLogic"
+				class="form-field-builder__handle"
+				draggable="true"
+				aria-hidden="true"
+				:title="t('buildiq', 'Drag to reorder')"
+				@dragstart="startDrag({ kind: 'row', index }, $event)"
+				@dragend="endDrag">⠿</span>
 			<input
 				:value="field.key || ''"
 				type="text"
-				class="form-field-builder__field"
+				class="form-field-builder__field form-field-builder__key"
 				:placeholder="t('buildiq', 'Key')"
 				:aria-label="t('buildiq', 'Key')"
 				@input="updateField(index, 'key', $event.target.value)" />
@@ -38,8 +74,8 @@
 				:value="field.type || 'string'"
 				class="form-field-builder__field form-field-builder__field--narrow"
 				@change="updateField(index, 'type', $event.target.value)">
-				<option v-for="t in FIELD_TYPES" :key="t" :value="t">
-					{{ t }}
+				<option v-for="type in FIELD_TYPES" :key="type" :value="type">
+					{{ type }}
 				</option>
 			</select>
 
@@ -73,6 +109,24 @@
 					{{ isExpanded(index) ? '▲' : '▼' }}
 					{{ t('buildiq', 'Details') }}
 				</button>
+				<button
+					type="button"
+					class="form-field-builder__move"
+					:disabled="index === 0"
+					:aria-label="t('buildiq', 'Move field up')"
+					:title="t('buildiq', 'Move field up')"
+					@click="moveField(index, -1)">
+					↑
+				</button>
+				<button
+					type="button"
+					class="form-field-builder__move"
+					:disabled="index === localFields.length - 1"
+					:aria-label="t('buildiq', 'Move field down')"
+					:title="t('buildiq', 'Move field down')"
+					@click="moveField(index, 1)">
+					↓
+				</button>
 			</template>
 
 			<button
@@ -89,9 +143,139 @@
 				class="form-field-builder__finding"
 				:error="{ hasError: true, message: finding.message }" />
 
+			<!-- REQ-BQSA-001: the options of a signature, audio or location field. -->
+			<div
+				v-if="isDeviceField(field)"
+				class="form-field-builder__device"
+				:data-testid="'device-options-' + index">
+				<template v-if="field.type === 'signature'">
+					<label class="form-field-builder__inline">
+						<input
+							type="checkbox"
+							data-testid="signature-allow-drawn"
+							:checked="field.allowDrawn !== false"
+							@change="updateOption(index, 'allowDrawn', $event.target.checked)" />
+						{{ t('buildiq', 'Allow drawing') }}
+					</label>
+					<label class="form-field-builder__inline">
+						<input
+							type="checkbox"
+							data-testid="signature-allow-typed"
+							:checked="field.allowTyped !== false"
+							@change="updateOption(index, 'allowTyped', $event.target.checked)" />
+						{{ t('buildiq', 'Allow typing a name') }}
+					</label>
+				</template>
+				<template v-else-if="field.type === 'audio'">
+					<label class="form-field-builder__inline">
+						{{ t('buildiq', 'Maximum length (seconds)') }}
+						<input
+							type="number"
+							data-testid="audio-max-seconds"
+							class="form-field-builder__field form-field-builder__field--narrow"
+							:min="AUDIO_MIN_SECONDS"
+							:max="AUDIO_MAX_SECONDS"
+							:value="audioSeconds(field)"
+							@input="updateOption(index, 'maxSeconds', Number.parseInt($event.target.value, 10))" />
+					</label>
+					<span class="form-field-builder__hint" data-testid="audio-size">{{ audioSizeHint(field) }}</span>
+				</template>
+				<template v-else-if="field.type === 'location'">
+					<input
+						:value="field.latField || ''"
+						type="text"
+						data-testid="location-lat-field"
+						class="form-field-builder__field form-field-builder__field--narrow"
+						:placeholder="t('buildiq', 'Latitude property')"
+						:aria-label="t('buildiq', 'Latitude property')"
+						@input="updateOption(index, 'latField', $event.target.value.trim() || null)" />
+					<input
+						:value="field.lngField || ''"
+						type="text"
+						data-testid="location-lng-field"
+						class="form-field-builder__field form-field-builder__field--narrow"
+						:placeholder="t('buildiq', 'Longitude property')"
+						:aria-label="t('buildiq', 'Longitude property')"
+						@input="updateOption(index, 'lngField', $event.target.value.trim() || null)" />
+					<input
+						:value="field.accuracyField || ''"
+						type="text"
+						data-testid="location-accuracy-field"
+						class="form-field-builder__field form-field-builder__field--narrow"
+						:placeholder="t('buildiq', 'Accuracy property (optional)')"
+						:aria-label="t('buildiq', 'Accuracy property (optional)')"
+						@input="updateOption(index, 'accuracyField', $event.target.value.trim() || null)" />
+					<label class="form-field-builder__inline">
+						<input
+							type="checkbox"
+							data-testid="location-allow-map-pick"
+							:checked="field.allowMapPick !== false"
+							@change="updateOption(index, 'allowMapPick', $event.target.checked ? null : false)" />
+						{{ t('buildiq', 'Let the user place a pin on a map instead') }}
+					</label>
+				</template>
+				<p
+					v-if="Object.keys(missingTargets(field)).length"
+					class="form-field-builder__hint"
+					data-testid="device-missing-properties">
+					{{
+						t('buildiq', '{schema} has no property for this yet: {properties}.', {
+							schema: targetSchemaEntry.title || targetSchemaEntry.slug || parentSchema,
+							properties: Object.keys(missingTargets(field)).join(', '),
+						})
+					}}
+					<button
+						type="button"
+						data-testid="device-add-properties"
+						@click="offerProperties(field)">
+						{{
+							t('buildiq', 'Add the property to {schema}', {
+								schema: targetSchemaEntry.title || targetSchemaEntry.slug || parentSchema,
+							})
+						}}
+					</button>
+				</p>
+				<InlineFieldMark
+					v-for="(problem, problemIndex) in deviceProblemMarks(field)"
+					:key="'device-' + problemIndex"
+					:error="{ hasError: true, message: problem }" />
+			</div>
+
 			<div
 				v-if="showLogic && isExpanded(index)"
 				class="form-field-builder__details">
+				<div
+					v-if="field.type === 'file'"
+					class="form-field-builder__section">
+					<span class="form-field-builder__section-label">{{
+						t('buildiq', 'File')
+					}}</span>
+					<FileFieldSettings
+						:field="field"
+						@update="replaceField(index, $event)" />
+				</div>
+				<div
+					v-if="field.type === 'product-list'"
+					class="form-field-builder__section">
+					<span class="form-field-builder__section-label">{{
+						t('buildiq', 'Product list')
+					}}</span>
+					<ProductListFieldSettings
+						:field="field"
+						@update="replaceField(index, $event)" />
+				</div>
+				<div
+					v-if="field.type === 'child-records'"
+					class="form-field-builder__section">
+					<span class="form-field-builder__section-label">{{
+						t('buildiq', 'Table of records')
+					}}</span>
+					<ChildRecordsFieldSettings
+						:field="field"
+						:schemas="schemas"
+						:parentSchema="parentSchema"
+						@update="replaceField(index, $event)" />
+				</div>
 				<div class="form-field-builder__section">
 					<span class="form-field-builder__section-label">{{
 						t('buildiq', 'Conditions')
@@ -110,7 +294,10 @@
 						:modelValue="field.validation || null"
 						:legacyRequired="!!field.required"
 						:legacyPattern="field.pattern || ''"
-						@update:modelValue="updateValidation(index, $event)" />
+						:format="field.format || ''"
+						:inheritedFormat="inheritedFormat(field)"
+						@update:modelValue="updateValidation(index, $event)"
+						@update:format="updateField(index, 'format', $event)" />
 				</div>
 				<div class="form-field-builder__section">
 					<span class="form-field-builder__section-label">{{
@@ -133,8 +320,26 @@
 							updateLive(index, 'calculate', $event)
 						" />
 				</div>
+				<div class="form-field-builder__section">
+					<span class="form-field-builder__section-label">{{
+						t('buildiq', 'Fill in from another answer')
+					}}</span>
+					<FieldAssignBuilder
+						:modelValue="Array.isArray(field.assign) ? field.assign : null"
+						:fieldKey="field.key || ''"
+						:fieldOptions="declaredKeys"
+						@update:modelValue="updateLive(index, 'assign', $event)" />
+				</div>
 			</div>
 		</div>
+		</template>
+		<div
+			v-if="showLogic"
+			class="form-field-builder__slot"
+			:class="{ 'form-field-builder__slot--active': dragging !== null }"
+			:data-testid="'drop-slot-' + localFields.length"
+			@dragover.prevent
+			@drop.prevent="dropAt(localFields.length)" />
 		<button type="button" class="form-field-builder__add" @click="addField">
 			+ {{ t('buildiq', 'Add field') }}
 		</button>
@@ -142,13 +347,65 @@
 </template>
 
 <script>
+import ChildRecordsFieldSettings from './ChildRecordsFieldSettings.vue'
+import FieldAssignBuilder from './FieldAssignBuilder.vue'
 import FieldCalculationBuilder from './FieldCalculationBuilder.vue'
 import FieldDefaultBuilder from './FieldDefaultBuilder.vue'
 import FieldValidationBuilder from './FieldValidationBuilder.vue'
+import FileFieldSettings from './FileFieldSettings.vue'
 import InlineFieldMark from './InlineFieldMark.vue'
+import ProductListFieldSettings from './ProductListFieldSettings.vue'
 import VisibleWhenBuilder from './VisibleWhenBuilder.vue'
+import {
+	AUDIO_MAX_SECONDS,
+	AUDIO_MIN_SECONDS,
+	audioClipBytes,
+	audioSecondsOf,
+	DEVICE_FIELD_TYPES,
+	deviceFieldProblems,
+	inlineCapOf,
+	longestAudioSeconds,
+	missingDeviceTargets,
+} from '../../../services/deviceFields.js'
+import { isDutchFormat } from '../../../services/dutchFormats.js'
+import {
+	FIELD_TYPES as BASE_FIELD_TYPES,
+	fieldTypeIcon,
+	fieldTypeLabel,
+	insertAt,
+	moveToSlot,
+	productListField,
+} from './fieldTypes.js'
 
-const FIELD_TYPES = ['string', 'number', 'boolean', 'select', 'textarea', 'date']
+/**
+ * The field types this builder offers: the shared ones and the device fields
+ * (forms-signature-audio-and-location, REQ-BQSA-001).
+ */
+const FIELD_TYPES = [...BASE_FIELD_TYPES, ...DEVICE_FIELD_TYPES]
+
+
+/**
+ * The maker-facing sentence of each device field problem (REQ-BQSA-002, REQ-BQSA-004).
+ */
+const DEVICE_PROBLEM_TEXT = {
+	'device-field-on-public-form': () => t('buildiq', 'A public form cannot use the microphone or the position: public forms belong to the portal.'),
+	'signature-without-mode': () => t('buildiq', 'Allow drawing, typing or both.'),
+	'audio-length-out-of-range': () => t('buildiq', 'Choose a length from {min} to {max} seconds.', { min: AUDIO_MIN_SECONDS, max: AUDIO_MAX_SECONDS }),
+	'location-without-fields': () => t('buildiq', 'Name the latitude and the longitude property.'),
+	'location-same-fields': () => t('buildiq', 'The latitude and the longitude need two different properties.'),
+}
+
+/**
+ * Where each old position lands after a list operation, given the new order
+ * of old positions (null for an inserted item).
+ *
+ * @param {Array<number|null>} order - old index per new position.
+ * @param {number[]} indices - old indices to remap.
+ * @return {number[]}
+ */
+function remapIndices(order, indices) {
+	return indices.map((i) => order.indexOf(i)).filter((i) => i !== -1)
+}
 
 /**
  * Whether a `visibleWhen` condition points at a field of this form (not an
@@ -206,11 +463,19 @@ const SUMMARY_MARKS = [
 		applies: (field) => !!(field && field.calculate),
 		label: () => t('buildiq', 'calculated'),
 	},
+	{
+		applies: (field) => !!(field && Array.isArray(field.assign) && field.assign.length),
+		label: () => t('buildiq', 'filled in from another answer'),
+	},
 ]
 
 export default {
 	name: 'FormFieldBuilder',
 	components: {
+		ChildRecordsFieldSettings,
+		ProductListFieldSettings,
+		FieldAssignBuilder,
+		FileFieldSettings,
 		VisibleWhenBuilder,
 		FieldValidationBuilder,
 		InlineFieldMark,
@@ -238,17 +503,60 @@ export default {
 			type: Object,
 			default: () => ({}),
 		},
+
+		// The schemas of the form's register (with their properties), for
+		// the child-records settings (REQ-BQFK-003).
+		schemas: {
+			type: Array,
+			default: () => [],
+		},
+
+		// The slug or id of the schema the form saves into.
+		parentSchema: {
+			type: String,
+			default: '',
+		},
+
+		// REQ-BQSA-004: the form's mode, so a device field a public form may
+		// not use is marked while the maker edits. Empty outside form pages.
+		formMode: {
+			type: String,
+			default: '',
+		},
 	},
 
-	emits: ['update:modelValue'],
+	emits: ['update:modelValue', 'addProperties'],
 	data() {
 		return {
 			FIELD_TYPES,
+			AUDIO_MIN_SECONDS,
+			AUDIO_MAX_SECONDS,
 			expandedIndices: [],
+			// What is being dragged: { kind: 'type', type } or { kind: 'row', index }.
+			dragging: null,
+			// The row whose key gets focus once rendered (keyboard add).
+			pendingFocus: null,
 		}
 	},
 
 	computed: {
+		/**
+		 * The schema the form saves into, from the register's list, or null
+		 * when it is not known (no schema picked, or the list not loaded).
+		 *
+		 * @return {?object}
+		 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-value-lands-in-a-matching-property-req-bqsa-002
+		 */
+		targetSchemaEntry() {
+			if (!this.parentSchema) {
+				return null
+			}
+			return (this.schemas || []).find(
+				(entry) => entry
+					&& (String(entry.slug) === this.parentSchema || String(entry.id) === this.parentSchema),
+			) || null
+		},
+
 		/**
 		 * Observed behaviour of `localFields` (retrofit annotation).
 		 *
@@ -271,6 +579,17 @@ export default {
 		},
 	},
 
+	watch: {
+		/**
+		 * A keyboard-added field gets focus when the parent renders it.
+		 *
+		 * @return {void}
+		 */
+		localFields() {
+			this.$nextTick(() => this.applyPendingFocus())
+		},
+	},
+
 	methods: {
 		/**
 		 * Observed behaviour of `updateField` (retrofit annotation).
@@ -286,6 +605,22 @@ export default {
 		 * @return {void}
 		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
+		/**
+		 * The Dutch format of the schema property a field is bound to, or ''
+		 * (form-dutch-field-formats D2): the form shows it and never drops it.
+		 *
+		 * @param {object} field The form field.
+		 * @return {string}
+		 * @spec openspec/changes/form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-the-form-designer-offers-dutch-formats-for-a-field-req-bqdf-001
+		 */
+		inheritedFormat(field) {
+			const schema = (this.schemas || []).find((entry) => entry && this.parentSchema
+				&& (entry.slug === this.parentSchema || String(entry.id) === String(this.parentSchema)))
+			const property = schema && schema.properties && field && field.key ? schema.properties[field.key] : null
+			const format = property && typeof property === 'object' ? property.format : ''
+			return isDutchFormat(format) ? format : ''
+		},
+
 		updateField(index, key, value) {
 			const next = this.localFields.slice()
 			const current = next[index] || {}
@@ -372,6 +707,169 @@ export default {
 		},
 
 		/**
+		 * Replace a whole field entry (the file and child-records settings
+		 * emit the next entry).
+		 *
+		 * @param {number} index - the field index.
+		 * @param {object} field - the next entry.
+		 * @return {void}
+		 */
+		replaceField(index, field) {
+			const next = this.localFields.slice()
+			next[index] = field
+			this.$emit('update:modelValue', next)
+		},
+
+		/**
+		 * The palette name of a field type.
+		 *
+		 * @param {string} type - the type.
+		 * @return {string}
+		 */
+		typeLabel(type) {
+			return fieldTypeLabel(type)
+		},
+
+		/**
+		 * The palette icon of a field type.
+		 *
+		 * @param {string} type - the type.
+		 * @return {string}
+		 */
+		typeIcon(type) {
+			return fieldTypeIcon(type)
+		},
+
+		/**
+		 * A new, empty field of a type.
+		 *
+		 * @param {string} type - the type.
+		 * @return {object}
+		 * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-the-parts-can-hang-under-one-bundle-req-bqmp-003
+		 */
+		newField(type) {
+			// A product list starts as the sub-objects widget with its product column.
+			return type === 'product-list' ? productListField({ key: '', label: '' }) : { key: '', label: '', type }
+		},
+
+		/**
+		 * Add a field of a type at the end and focus its key (the keyboard
+		 * path: pick the type in the palette, press Enter).
+		 *
+		 * @param {string} type - the type.
+		 * @return {void}
+		 * @spec openspec/changes/forms-designer-file-camera-children-and-assign/specs/form-field-kinds/spec.md#requirement-a-maker-builds-a-form-by-dragging-field-types-from-a-palette-req-bqfk-005
+		 */
+		addOfType(type) {
+			const next = this.localFields.slice()
+			next.push(this.newField(type))
+			this.$emit('update:modelValue', next)
+			this.focusKey(next.length - 1)
+		},
+
+		/**
+		 * Focus a row's key input once it is rendered.
+		 *
+		 * @param {number} index - the row index.
+		 * @return {void}
+		 */
+		focusKey(index) {
+			this.pendingFocus = index
+			this.$nextTick(() => this.applyPendingFocus())
+		},
+
+		/**
+		 * Focus the row waiting for focus, once the parent has rendered it.
+		 *
+		 * @return {void}
+		 */
+		applyPendingFocus() {
+			if (this.pendingFocus === null) {
+				return
+			}
+			const inputs = this.$el.querySelectorAll('.form-field-builder__key')
+			if (inputs[this.pendingFocus]) {
+				inputs[this.pendingFocus].focus()
+				this.pendingFocus = null
+			}
+		},
+
+		/**
+		 * Start dragging a palette type or a row.
+		 *
+		 * @param {object} payload - what is dragged.
+		 * @param {DragEvent} event - the drag event.
+		 * @return {void}
+		 */
+		startDrag(payload, event) {
+			this.dragging = payload
+			if (event && event.dataTransfer) {
+				event.dataTransfer.effectAllowed = payload.kind === 'row' ? 'move' : 'copy'
+				event.dataTransfer.setData('text/plain', JSON.stringify(payload))
+			}
+		},
+
+		/**
+		 * End a drag without a drop.
+		 *
+		 * @return {void}
+		 */
+		endDrag() {
+			this.dragging = null
+		},
+
+		/**
+		 * Drop at a slot (0 = before the first field, length = after the
+		 * last): a palette type inserts a new field there, a row moves there.
+		 *
+		 * @param {number} slot - the drop slot.
+		 * @return {void}
+		 * @spec openspec/changes/forms-designer-file-camera-children-and-assign/specs/form-field-kinds/spec.md#requirement-a-maker-builds-a-form-by-dragging-field-types-from-a-palette-req-bqfk-005
+		 */
+		dropAt(slot) {
+			const dragged = this.dragging
+			this.dragging = null
+			if (!dragged) {
+				return
+			}
+			const positions = this.localFields.map((_, i) => i)
+			if (dragged.kind === 'type') {
+				this.expandedIndices = remapIndices(insertAt(positions, slot, null), this.expandedIndices)
+				this.$emit('update:modelValue', insertAt(this.localFields, slot, this.newField(dragged.type)))
+				return
+			}
+			this.reorder(dragged.index, slot)
+		},
+
+		/**
+		 * Move a row one place up (-1) or down (+1).
+		 *
+		 * @param {number} index - the row.
+		 * @param {-1|1} step - the direction.
+		 * @return {void}
+		 */
+		moveField(index, step) {
+			this.reorder(index, step < 0 ? index - 1 : index + 2)
+		},
+
+		/**
+		 * Move a row to a slot, keeping open details pinned to their fields.
+		 *
+		 * @param {number} from - the row.
+		 * @param {number} slot - the drop slot.
+		 * @return {void}
+		 */
+		reorder(from, slot) {
+			const positions = this.localFields.map((_, i) => i)
+			const order = moveToSlot(positions, from, slot)
+			if (order.every((old, i) => old === i)) {
+				return
+			}
+			this.expandedIndices = remapIndices(order, this.expandedIndices)
+			this.$emit('update:modelValue', moveToSlot(this.localFields, from, slot))
+		},
+
+		/**
 		 * Observed behaviour of `addField` (retrofit annotation).
 		 *
 		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
@@ -380,6 +878,114 @@ export default {
 			const next = this.localFields.slice()
 			next.push({ key: '', label: '', type: 'string' })
 			this.$emit('update:modelValue', next)
+		},
+
+		/**
+		 * Write one device field option as given (a `false` is kept, unlike
+		 * updateField), or delete it on `null` / `NaN`.
+		 *
+		 * @param {number} index - the field index.
+		 * @param {string} key - the option key.
+		 * @param {boolean|number|string|null} value - the value, or null to delete.
+		 * @return {void}
+		 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-forms-offer-signature-audio-and-location-fields-req-bqsa-001
+		 */
+		updateOption(index, key, value) {
+			const next = this.localFields.slice()
+			const current = { ...next[index] }
+			if (value === null || Number.isNaN(value)) {
+				delete current[key]
+			} else {
+				current[key] = value
+			}
+			next[index] = current
+			this.$emit('update:modelValue', next)
+		},
+
+		/**
+		 * Whether a field uses a device: signature, audio or location.
+		 *
+		 * @param {object} field - the field entry.
+		 * @return {boolean}
+		 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-forms-offer-signature-audio-and-location-fields-req-bqsa-001
+		 */
+		isDeviceField(field) {
+			return !!field && DEVICE_FIELD_TYPES.includes(field.type)
+		},
+
+		/**
+		 * The audio length shown in the builder, the default when unset.
+		 *
+		 * @param {object} field - the audio field.
+		 * @return {number} the stored length, as stored.
+		 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-forms-offer-signature-audio-and-location-fields-req-bqsa-001
+		 */
+		audioSeconds(field) {
+			return audioSecondsOf(field)
+		},
+
+		/**
+		 * The size a clip of the chosen length takes, or the longest length
+		 * that fits when it passes the inline file cap (REQ-BQSA-002).
+		 *
+		 * @param {object} field - the audio field.
+		 * @return {string}
+		 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-value-lands-in-a-matching-property-req-bqsa-002
+		 */
+		audioSizeHint(field) {
+			const seconds = audioSecondsOf(field)
+			if (!Number.isInteger(seconds)) {
+				return ''
+			}
+			const longest = longestAudioSeconds(inlineCapOf(field))
+			if (seconds > longest) {
+				return t('buildiq', 'Too long to store with the record: at most {seconds} seconds fit.', { seconds: longest })
+			}
+			const kilobytes = Math.ceil(audioClipBytes(seconds) / 1024)
+			return t('buildiq', 'A clip of {seconds} seconds takes about {size} KB.', { seconds, size: kilobytes })
+		},
+
+		/**
+		 * The properties a device field writes that its target schema lacks.
+		 * Empty while the schema is unknown: nothing is offered then.
+		 *
+		 * @param {object} field - the field entry.
+		 * @return {{[name: string]: {type: string}}}
+		 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-value-lands-in-a-matching-property-req-bqsa-002
+		 */
+		missingTargets(field) {
+			const schema = this.targetSchemaEntry
+			return schema ? missingDeviceTargets(field, schema.properties || {}) : {}
+		},
+
+		/**
+		 * Ask the page editor to add a device field's missing properties to
+		 * the target schema. The builder holds no network; the editor saves.
+		 *
+		 * @param {object} field - the field entry.
+		 * @return {void}
+		 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-value-lands-in-a-matching-property-req-bqsa-002
+		 */
+		offerProperties(field) {
+			const additions = this.missingTargets(field)
+			if (!this.targetSchemaEntry || Object.keys(additions).length === 0) {
+				return
+			}
+			this.$emit('addProperties', { schema: this.targetSchemaEntry, additions })
+		},
+
+		/**
+		 * The maker-facing problems of a device field's options, in this form's mode.
+		 * The too-long length is told by audioSizeHint instead.
+		 *
+		 * @param {object} field - the field entry.
+		 * @return {Array<string>}
+		 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
+		 */
+		deviceProblemMarks(field) {
+			return deviceFieldProblems(field, this.formMode)
+				.filter((code) => Object.hasOwn(DEVICE_PROBLEM_TEXT, code))
+				.map((code) => DEVICE_PROBLEM_TEXT[code]())
 		},
 
 		/**
@@ -522,6 +1128,20 @@ export default {
 	align-items: center;
 }
 
+.form-field-builder__device {
+	flex-basis: 100%;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	align-items: center;
+	padding-inline-start: 8px;
+}
+
+.form-field-builder__hint {
+	font-size: 12px;
+	color: var(--color-text-maxcontrast);
+}
+
 .form-field-builder__summary {
 	flex: 1 1 auto;
 	font-size: 11px;
@@ -534,6 +1154,45 @@ export default {
 
 .form-field-builder__remove {
 	@include c.danger-button;
+}
+
+.form-field-builder__move {
+	@include c.ghost-button;
+}
+
+.form-field-builder__palette {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+
+.form-field-builder__palette-item {
+	display: inline-flex;
+	gap: 4px;
+	align-items: center;
+	cursor: grab;
+	@include c.ghost-button;
+}
+
+.form-field-builder__palette-icon {
+	min-width: 1.2em;
+	text-align: center;
+}
+
+.form-field-builder__handle {
+	cursor: grab;
+	color: var(--color-text-maxcontrast);
+	user-select: none;
+}
+
+.form-field-builder__slot {
+	height: 4px;
+	border-radius: var(--border-radius);
+}
+
+.form-field-builder__slot--active {
+	height: 12px;
+	border: 1px dashed var(--color-primary-element);
 }
 
 .form-field-builder__add {

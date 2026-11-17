@@ -47,6 +47,8 @@ use InvalidArgumentException;
 use OCA\Buildiq\Kernel\Contracts\PageLayoutAuthoringServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\PageLayoutLeafProviderInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCP\IAppConfig;
 use RuntimeException;
 
@@ -407,8 +409,7 @@ class PageLayoutAuthoringService implements PageLayoutAuthoringServiceInterface 
 	private function store(array $layout): array {
 		$this->objectService->saveObject(
 			object: $layout,
-			register: $this->registerSlug(),
-			schema: self::SCHEMA,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->registerSlug(), schema: self::SCHEMA))
 		);
 
 		return $layout;

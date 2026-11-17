@@ -71,6 +71,8 @@ use OCA\Buildiq\Kernel\Contracts\RuleActionDispatcherInterface;
 use OCA\Buildiq\Service\Connection\ConnectionReporter;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\SecurityService;
 use OCP\Http\Client\IClientService;
 use OCP\IUserSession;
@@ -165,19 +167,7 @@ class RuleActionDispatcher implements RuleActionDispatcherInterface {
 			$subject = 'Automation notification';
 		}
 
-		$recipients = [];
-		if (isset($params['recipientUid']) === true && is_string($params['recipientUid']) === true && $params['recipientUid'] !== '') {
-			$recipients[] = $params['recipientUid'];
-		}
-
-		if (isset($params['recipientUids']) === true && is_array($params['recipientUids']) === true) {
-			foreach ($params['recipientUids'] as $uid) {
-				if (is_string($uid) === true && $uid !== '') {
-					$recipients[] = $uid;
-				}
-			}
-		}
-
+		$recipients = $this->notificationRecipients(params: $params);
 		if ($recipients === []) {
 			$this->logger->info('Buildiq: send-notification action had no resolvable recipient — skipped.');
 			return 0;
@@ -198,6 +188,27 @@ class RuleActionDispatcher implements RuleActionDispatcherInterface {
 
 		return $sent;
 	}//end dispatchNotification()
+
+	/**
+	 * The recipients of a send-notification action: `recipientUid`, then every `recipientUids` entry.
+	 *
+	 * @param array<string,mixed> $params Action parameters.
+	 *
+	 * @return array<int,string> The non-empty uids, in order, duplicates kept.
+	 */
+	private function notificationRecipients(array $params): array {
+		$candidates = [$params['recipientUid'] ?? null];
+		if (is_array($params['recipientUids'] ?? null) === true) {
+			$candidates = array_merge($candidates, array_values($params['recipientUids']));
+		}
+
+		return array_values(
+			array_filter(
+				$candidates,
+				static fn (mixed $uid): bool => is_string($uid) === true && $uid !== ''
+			)
+		);
+	}//end notificationRecipients()
 
 	/**
 	 * Object-op — create or update an object via OpenRegister's ObjectService.
@@ -230,10 +241,16 @@ class RuleActionDispatcher implements RuleActionDispatcherInterface {
 
 		$write = function () use ($object, $register, $schema, $operation, $id) {
 			if ($operation === 'update') {
-				return $this->objectService->saveObject(object: $object, register: $register, schema: $schema, uuid: $id);
+				return $this->objectService->saveObject(
+					object: $object,
+					options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: $id)
+				);
 			}
 
-			return $this->objectService->saveObject(object: $object, register: $register, schema: $schema);
+			return $this->objectService->saveObject(
+				object: $object,
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema))
+			);
 		};
 
 		if ($this->userSession->getUser() === null && $id !== '') {

@@ -40,12 +40,14 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\RegistrationFormPresenterInterface;
+
 /**
  * Turns a stored registration form into the shape a consumer renders.
  *
  * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-005)
  */
-final class RegistrationFormPresenter {
+final class RegistrationFormPresenter implements RegistrationFormPresenterInterface {
 	/**
 	 * Turn a stored form into what the consumer renders.
 	 *

@@ -38,11 +38,16 @@ import BackToVirtualApps, {
 	declaresPrimaryAction,
 	showBackToVirtualApps,
 } from './components/runtime/BackToVirtualApps.vue'
+import BuildiqFormPage from './components/runtime/BuildiqFormPage.vue'
 import { registerScope, useRegisterPicker } from './composables/useRegisterPicker.js'
 import pinia from './pinia.js'
 import { registerDirectives } from './registerDirectives.js'
-import { runtimeRegistry } from './runtimeRegistry.js'
+import { getRuntimeRegistry } from './runtimeRegistry.js'
 import { fetchAppRegister } from './services/appRegister.js'
+import {
+	normalizeConnectorPages,
+	restoreConnectorPages,
+} from './services/connectorPages.js'
 import { startHealthReporting } from './services/healthReporting.js'
 import { normalizeManifestPages } from './services/manifestPageDefaults.js'
 import { normalizeManifestRouting } from './services/manifestRouting.js'
@@ -340,6 +345,8 @@ function rebuildRoutes(router, manifest) {
  * @param {object} manifest The manifest the shell edits in place.
  * @param {{router: object, shellState: object}} shell The app's router and the shell's reactive state.
  * @return {() => Promise<void>} The `persistManifestDelta` handler.
+ *
+ * @spec openspec/specs/openbuild-page-designer/spec.md#REQ-OBPD-012
  */
 function manifestPersister(manifest, shell) {
 	const { router, shellState } = shell
@@ -348,7 +355,9 @@ function manifestPersister(manifest, shell) {
 		const saveUrl = generateUrl(
 			`/apps/buildiq/api/applications/${slug}/manifest`,
 		)
-		await axios.put(saveUrl, { manifest })
+		// Store the pages as the maker authored them: a connector-bound page
+		// is rewritten for the renderer in memory only (REQ-BQCB-001).
+		await axios.put(saveUrl, { manifest: restoreConnectorPages(manifest) })
 		// Only touch the router when the PAGE SET actually changed — a
 		// menu / settings / sidebar / actions edit leaves routes intact.
 		const sig = pageSignature(manifest)
@@ -397,6 +406,7 @@ function navSlots(manifest, router) {
 /**
  * Fetch the app manifest, build its router, and mount the standalone shell.
  *
+ * @spec openspec/changes/openbuild-connector-widget-runtime/specs/connector-widget-runtime/spec.md#requirement-req-cwr-001-single-runtime-registry-seam-for-every-virtual-app-host
  * @return {Promise<void>}
  */
 async function boot() {
@@ -406,14 +416,18 @@ async function boot() {
 	if (slug) {
 		brandTopBar(humaniseSlug(slug), slug)
 	}
-	const manifest = await loadManifest()
+	const loaded = await loadManifest()
 
 	// Normalise pages (config-as-object guard + inline page titles for data pages).
-	normalizeManifestPages(manifest)
+	normalizeManifestPages(loaded)
 	// Name every page and point every menu entry at one, so a manifest written
 	// before page ids existed — or one whose menu carries paths — still opens
 	// with its navigation instead of an empty shell.
-	normalizeManifestRouting(manifest)
+	normalizeManifestRouting(loaded)
+	// Pages bound to an integriq endpoint become pages the renderer draws, in
+	// memory only; the persister restores the authored shape (REQ-BQCB-001).
+	// BuilderHost.vue runs the same normaliser for the preview (REQ-BQCB-004).
+	const manifest = normalizeConnectorPages(loaded)
 
 	// Registers/schemas (+ columns) for the in-app pages editor, passed to CnAppRoot
 	// as a LOADER rather than a pre-fetched snapshot. The modals re-invoke it every
@@ -463,8 +477,13 @@ async function boot() {
 		manifest,
 		permissions: runtimePermissions(manifest),
 		isLoading: false,
-		registry: { ...runtimeRegistry },
-		pageTypes: { ...defaultPageTypes },
+		// The canonical runtime registry (REQ-CWR-001): without it every
+		// registry-only widget key (e.g. `connector-data`) renders as
+		// CnUnknownWidget on the published path.
+		registry: getRuntimeRegistry(),
+		// A form page gets buildiq's live values: calculated fields and the
+		// eligibility check (forms-live-values-and-checks).
+		pageTypes: { ...defaultPageTypes, form: BuildiqFormPage },
 		// App registers/schemas so the Edit-pages modal offers Register /
 		// Schema / Columns dropdowns for index/detail pages. Re-run on every
 		// modal open, so schemas created after boot appear without a reload.
