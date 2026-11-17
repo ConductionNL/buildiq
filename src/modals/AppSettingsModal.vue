@@ -90,6 +90,15 @@
 			</div>
 
 			<div class="app-settings__row">
+				<AppEmbedSettings
+					:embed="embed"
+					:slug="appSlug"
+					:appName="appName"
+					:busy="busy"
+					@update:embed="$emit('update:embed', $event)" />
+			</div>
+
+			<div class="app-settings__row">
 				<h4 class="app-settings__subtitle">
 					{{ t('buildiq', 'Data registers') }}
 				</h4>
@@ -246,6 +255,7 @@ import NcCheckboxRadioSwitch from '@nextcloud/vue/components/NcCheckboxRadioSwit
 import NcModal from '@nextcloud/vue/components/NcModal'
 import NcSelect from '@nextcloud/vue/components/NcSelect'
 import NcTextField from '@nextcloud/vue/components/NcTextField'
+import AppEmbedSettings from '../components/AppEmbedSettings.vue'
 import { fetchConnectedDatabases } from '../composables/useConnectedDatabases.js'
 import {
 	FROM_RECORD,
@@ -260,6 +270,7 @@ import {
 export default {
 	name: 'AppSettingsModal',
 	components: {
+		AppEmbedSettings,
 		NcModal,
 		NcButton,
 		NcCheckboxRadioSwitch,
@@ -276,6 +287,8 @@ export default {
 		isPublished: { type: Boolean, default: false },
 		/** Whether per-user overrides are enabled. */
 		allowUserOverrides: { type: Boolean, default: false },
+		appSlug: { type: String, default: '' },
+		embed: { type: Object, default: null },
 		/** The Application's declared `dataRegisters` bindings (`{register, label?}`). */
 		dataRegisters: { type: Array, default: () => [] },
 		/**
@@ -311,6 +324,7 @@ export default {
 		'update:open',
 		'set-published',
 		'update:allow-overrides',
+		'update:embed',
 		'update:data-registers',
 		'update:flows',
 		'update:organisationScope',
