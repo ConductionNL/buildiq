@@ -126,6 +126,8 @@ export default {
 		 * The current value as the text sent to the server.
 		 *
 		 * @return {string}
+		 *
+		 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-builder-assist/spec.md#requirement-the-assist-proposes-a-checked-value-req-bqch-002
 		 */
 		currentText() {
 			if (this.current && typeof this.current === 'object') {
@@ -147,6 +149,8 @@ export default {
 		 * The proposed value as shown to the maker.
 		 *
 		 * @return {string}
+		 *
+		 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-builder-assist/spec.md#requirement-the-assist-proposes-a-checked-value-req-bqch-002
 		 */
 		displayValue() {
 			const value = this.answer ? this.answer.value : ''
@@ -163,6 +167,8 @@ export default {
 		 *
 		 * @param {boolean} shown Whether the dialog just opened.
 		 * @return {void}
+		 *
+		 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-builder-assist/spec.md#requirement-the-assist-proposes-a-checked-value-req-bqch-002
 		 */
 		open(shown) {
 			if (shown) {
@@ -176,6 +182,8 @@ export default {
 		 * Clear the request, the answer and the error.
 		 *
 		 * @return {void}
+		 *
+		 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-builder-assist/spec.md#requirement-the-assist-proposes-a-checked-value-req-bqch-002
 		 */
 		reset() {
 			this.request = ''
@@ -240,6 +248,8 @@ export default {
 		 * Close the dialog.
 		 *
 		 * @return {void}
+		 *
+		 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-builder-assist/spec.md#requirement-the-assist-writes-nothing-and-respects-app-access-req-bqch-004
 		 */
 		close() {
 			this.$emit('update:open', false)

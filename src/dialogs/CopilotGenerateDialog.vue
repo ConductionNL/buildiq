@@ -420,6 +420,12 @@ export default {
 	},
 
 	watch: {
+		/**
+		 * Start every opening of the wizard from a clean state.
+		 *
+		 * @param {boolean} value Whether the wizard just opened.
+		 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot/spec.md#requirement-the-wizard-reads-a-document-from-files-req-bqch-005
+		 */
 		open(value) {
 			if (value) {
 				this.brief = ''
@@ -448,6 +454,8 @@ export default {
 		 *
 		 * @param {{role: string, goal: string, benefit?: string}} story - the story.
 		 * @return {string}
+		 *
+		 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot/spec.md#requirement-the-plan-carries-user-stories-req-bqch-006
 		 */
 		storySentence(story) {
 			if (story.benefit) {
@@ -461,6 +469,8 @@ export default {
 		 *
 		 * @param {object|undefined} step - a plan step.
 		 * @return {string}
+		 *
+		 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot/spec.md#requirement-the-plan-carries-user-stories-req-bqch-006
 		 */
 		stepName(step) {
 			if (!step || !step.arguments) {

@@ -52,6 +52,11 @@ export default {
 	},
 
 	emits: ['accept'],
+	/**
+	 * Expose the copilot health probe to the template.
+	 *
+	 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-builder-assist/spec.md#requirement-expression-editors-offer-an-ask-ai-button-req-bqch-001
+	 */
 	setup() {
 		return { copilot: useCopilot() }
 	},

@@ -21,7 +21,8 @@
 								"id": {
 									"title": "Story id",
 									"type": "string",
-									"maxLength": 64
+									"maxLength": 64,
+									"description": "A stable id of the story within this app."
 								},
 								"role": {
 									"title": "Role",
@@ -57,20 +58,25 @@
 										"additionalProperties": false,
 										"properties": {
 											"kind": {
+												"title": "Kind",
 												"type": "string",
 												"enum": [
 													"schema",
 													"page"
-												]
+												],
+												"description": "Whether a schema or a page serves the story."
 											},
 											"id": {
+												"title": "Schema or page id",
 												"type": "string",
 												"maxLength": 64,
 												"description": "The schema slug or the page id."
 											},
 											"title": {
+												"title": "Display name",
 												"type": "string",
-												"maxLength": 120
+												"maxLength": 120,
+												"description": "The schema's or page's name as the plan showed it."
 											}
 										}
 									},

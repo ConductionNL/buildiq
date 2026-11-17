@@ -284,6 +284,8 @@ export default {
 		 *
 		 * @param {object} rule - a staged rule row.
 		 * @return {{conditions: object, decision: string}}
+		 *
+		 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-builder-assist/spec.md#requirement-expression-editors-offer-an-ask-ai-button-req-bqch-001
 		 */
 		assistRow(rule) {
 			return {
@@ -298,6 +300,8 @@ export default {
 		 * @param {{conditions: object, decision: string}} proposal - the accepted value.
 		 * @param {string} [label] - the row's label to keep.
 		 * @return {object}
+		 *
+		 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-builder-assist/spec.md#requirement-the-assist-proposes-a-checked-value-req-bqch-002
 		 */
 		ruleFromProposal(proposal, label = '') {
 			return {
