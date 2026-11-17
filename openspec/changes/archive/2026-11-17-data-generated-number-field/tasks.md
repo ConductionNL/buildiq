@@ -4,5 +4,5 @@
 - [x] **T02**: `FieldEditor.vue` property mapping (the `x-openregister-relation` round trip at `:718-773`): read `x-openregister-generated` into the field and write it back only when the switch is on; add the key to the list of preserved `x-openregister-*` keys (REQ-OBSD-009). Verify: vitest round trip, and a switch turned off removes the key.
 - [x] **T03**: A format without `{seq` is refused in the designer with the reason OpenRegister would give (REQ-OBSD-009). Verify: vitest.
 - [x] **T04**: English and Dutch strings in `l10n/en.json` and `l10n/nl.json`.
-- [ ] **T05**: Live check: give the seeded app's schema a number field `INV-{year}-{seq:4}`, create two records in the built app, and see `INV-2026-0001` and `INV-2026-0002`.
-- [ ] **T06**: When done, set `data-auto-number` to `built` in `openspec/parity/capabilities.json` and archive this change.
+- [x] **T05**: Live check: give the seeded app's schema a number field `INV-{year}-{seq:4}`, create two records in the built app, and see `INV-2026-0001` and `INV-2026-0002`. Run 2026-11-17 on a throwaway NC 34 rig with OpenRegister main: the keyword set on the seeded hello-world app's `hello-message` schema, two records created through the OpenRegister objects API the built app's create form posts to, numbered INV-2026-0001 and INV-2026-0002. The designer switch itself is covered by vitest.
+- [x] **T06**: When done, set `data-auto-number` to `built` in `openspec/parity/capabilities.json` and archive this change. Row set to built 2026-11-17.
