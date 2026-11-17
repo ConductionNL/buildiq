@@ -27,6 +27,7 @@ use PHPUnit\Framework\TestCase;
  * Pins how unusable form field entries are dropped or repaired.
  *
  * @covers \OCA\Buildiq\Support\ManifestPageShape
+ * @uses   \OCA\Buildiq\Support\FormPageConfig
  */
 class ManifestPageShapeFieldEdgesTest extends TestCase {
 

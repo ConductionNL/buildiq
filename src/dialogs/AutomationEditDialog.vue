@@ -288,6 +288,12 @@
 							@update:modelValue="
 								updateAction(index, 'assigneeGroup', $event)
 							" />
+						<ApprovalFormFieldsEditor
+							:modelValue="action.formFields"
+							:options="formFieldOptions"
+							@update:modelValue="
+								updateAction(index, 'formFields', $event)
+							" />
 
 						<AutomationActionListEditor
 							:modelValue="action.onApprove"
@@ -378,6 +384,7 @@ import {
 	NcTextArea,
 	NcTextField,
 } from '@nextcloud/vue'
+import ApprovalFormFieldsEditor from '../components/ApprovalFormFieldsEditor.vue'
 import AutomationActionListEditor from '../components/AutomationActionListEditor.vue'
 import CopilotAssistButton from '../components/copilot/CopilotAssistButton.vue'
 import { useAppStatus } from '../composables/useAppStatus.js'
@@ -393,6 +400,7 @@ import {
 } from '../services/automationMatrix.js'
 import { fetchConnectorSynchronizations } from '../services/connectorSynchronizations.js'
 import { slugify } from '../utils/slugify.js'
+import { askableFieldOptions, formFieldsOf } from './approvalFormFields.js'
 import { toPersistedAction } from './automationPersistedActions.js'
 import {
 	cadenceById,
@@ -421,6 +429,7 @@ export default {
 		NcTextField,
 		AutomationActionListEditor,
 		CopilotAssistButton,
+		ApprovalFormFieldsEditor,
 	},
 
 	props: {
@@ -471,6 +480,7 @@ export default {
 			syncLoading: false,
 			syncFetchFailed: false,
 			groupOptions: [],
+			formFieldOptions: [],
 			groupLoading: false,
 			groupFetchFailed: false,
 			docudeskTemplateOptions: [],
@@ -491,6 +501,18 @@ export default {
 		 */
 		assistAppSlug() {
 			return (this.automation && this.automation.applicationSlug) || ''
+		},
+
+		/**
+		 * The trigger schema whose fields an approval form can ask for: set
+		 * only while the automation has an approval action.
+		 *
+		 * @return {string}
+		 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
+		 */
+		formFieldSchema() {
+			const hasApproval = this.actions.some((action) => action && action.type === 'approval')
+			return hasApproval ? this.triggerSchema || '' : ''
 		},
 
 		editing() {
@@ -736,6 +758,18 @@ export default {
 
 	watch: {
 		/**
+		 * Reload the fields an approver can fill in when the trigger schema
+		 * changes or an approval action appears (REQ-BQTF-001).
+		 *
+		 * @param {string} schema - the trigger schema while an approval action exists, else ''.
+		 * @return {void}
+		 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
+		 */
+		formFieldSchema(schema) {
+			this.fetchFormFieldOptions(schema)
+		},
+
+		/**
 		 * Re-hydrate and refresh every live picker's options whenever the
 		 * dialog opens.
 		 *
@@ -839,6 +873,7 @@ export default {
 				assigneeGroup: action.assigneeGroup || '',
 				onApprove: Array.isArray(action.onApprove) ? action.onApprove : [],
 				onReject: Array.isArray(action.onReject) ? action.onReject : [],
+				formFields: formFieldsOf(action),
 				templateId: action.templateId || '',
 				output: Array.isArray(action.output)
 					? action.output
@@ -939,6 +974,31 @@ export default {
 				this.transitionFetchFailed = true
 			} finally {
 				this.transitionLoading = false
+			}
+		},
+
+		/**
+		 * Load the trigger schema's properties an approver can fill in;
+		 * no schema, or a failed read, offers none (the compiler still checks).
+		 *
+		 * @param {string} schema - the trigger schema slug or id.
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
+		 */
+		async fetchFormFieldOptions(schema) {
+			if (!schema) {
+				this.formFieldOptions = []
+				return
+			}
+			try {
+				const { data } = await axios.get(
+					generateUrl(`/apps/openregister/api/schemas/${encodeURIComponent(schema)}`),
+				)
+				if (schema === this.formFieldSchema) {
+					this.formFieldOptions = askableFieldOptions(data && data.properties)
+				}
+			} catch {
+				this.formFieldOptions = []
 			}
 		},
 

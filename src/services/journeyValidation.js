@@ -129,6 +129,37 @@ export function fieldsAskedBy(journey, forms, index) {
 }
 
 /**
+ * The list answers asked by the step at `index` and every step before it, each
+ * with the keys of its item fields: what a write may repeat over and what its
+ * mapping may read as `item.<key>` (forms-multi-product-request D1, D4).
+ *
+ * @param {{steps?: Array<object>}} journey - the journey.
+ * @param {{[id: string]: object}} forms - the form objects by id.
+ * @param {number} index - the position of the write's step.
+ * @return {Array<{key: string, columns: Array<string>}>} The list answers, each once.
+ * @spec openspec/changes/forms-multi-product-request/specs/journey-designer/spec.md#requirement-a-write-can-repeat-per-list-item-req-bqmp-001
+ */
+export function listFieldsAskedBy(journey, forms, index) {
+	const lists = []
+	journeySteps(journey).slice(0, index + 1).forEach((step) => {
+		if (step.type !== 'form') {
+			return
+		}
+		for (const field of fieldsOf(forms && forms[String(step.formId || '')])) {
+			const key = String(field.key || field.name || '')
+			if (key === '' || !isListField(field) || lists.some((list) => list.key === key)) {
+				continue
+			}
+			const columns = Array.isArray(field.columns)
+				? field.columns.map((col) => String((col && (col.key || col.name)) || '')).filter((col) => col !== '')
+				: Object.keys((field.items && field.items.properties) || {})
+			lists.push({ key, columns })
+		}
+	})
+	return lists
+}
+
+/**
  * Findings on the steps themselves: an unknown type, a form step without a
  * form, one whose form no longer exists, and one that carries its own field
  * definitions instead of a reference.

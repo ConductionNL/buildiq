@@ -40,6 +40,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 
 /**
  * Tests for the version lookups.
@@ -141,7 +142,11 @@ final class ManifestResolverVersionLookupTest extends TestCase {
 		$entity->method('jsonSerialize')->willReturn(['uuid' => 'v-prod', 'manifest' => ['pages' => ['p1']]]);
 		$asked = [];
 		$this->objectService->expects($this->once())->method('find')->willReturnCallback(
-			static function (int|string $id, ?array $_extend = [], bool $files = false, string|int|null $register = null, string|int|null $schema = null) use (&$asked, $entity) {
+			static function (int|string $id, ?ObjectFindOptions $options = null) use (&$asked, $entity) {
+				$_extend = $options?->extend ?? [];
+				$files = $options?->files ?? false;
+				$register = $options?->register;
+				$schema = $options?->schema;
 				$asked = [$id, $register, $schema];
 				return $entity;
 			}

@@ -11,7 +11,11 @@ exports[`l10n build and check scripts > l10n-js: --check when current 1`] = `
   "uncovered": 3
 }",
     "l10n/README.md": "not a catalogue",
-    "l10n/en.js": "OC.L10N.register(
+    "l10n/en.js": "/**
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ */
+OC.L10N.register(
     "buildiq",
     {
         "Hello": "Hello",
@@ -26,7 +30,11 @@ exports[`l10n build and check scripts > l10n-js: --check when current 1`] = `
     "Say \\"hi\\"": "Say \\"hi\\""
   }
 }",
-    "l10n/nl.js": "OC.L10N.register(
+    "l10n/nl.js": "/**
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ */
+OC.L10N.register(
     "buildiq",
     {
         "Hello": "Hallo"
@@ -103,7 +111,11 @@ exports[`l10n build and check scripts > l10n-js: --check with one stale 1`] = `
     "Say \\"hi\\"": "Say \\"hi\\""
   }
 }",
-    "l10n/nl.js": "OC.L10N.register(
+    "l10n/nl.js": "/**
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ */
+OC.L10N.register(
     "buildiq",
     {
         "Hello": "Hallo"
@@ -139,7 +151,11 @@ exports[`l10n build and check scripts > l10n-js: catalogue does not parse 1`] = 
   "uncovered": 3
 }",
     "l10n/README.md": "not a catalogue",
-    "l10n/en.js": "OC.L10N.register(
+    "l10n/en.js": "/**
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ */
+OC.L10N.register(
     "buildiq",
     {
         "Hello": "Hello",
@@ -175,7 +191,11 @@ exports[`l10n build and check scripts > l10n-js: catalogue without translations 
   "uncovered": 3
 }",
     "l10n/README.md": "not a catalogue",
-    "l10n/en.js": "OC.L10N.register(
+    "l10n/en.js": "/**
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ */
+OC.L10N.register(
     "buildiq",
     {
         "Hello": "Hello",
@@ -206,7 +226,11 @@ exports[`l10n build and check scripts > l10n-js: empty translations 1`] = `
 {
   "files": {
     "appinfo/info.xml": "<id>buildiq</id>",
-    "l10n/de.js": "OC.L10N.register(
+    "l10n/de.js": "/**
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ */
+OC.L10N.register(
     "buildiq",
     {
 
@@ -277,7 +301,11 @@ exports[`l10n build and check scripts > l10n-js: rewrites only the stale one 1`]
   "uncovered": 3
 }",
     "l10n/README.md": "not a catalogue",
-    "l10n/en.js": "OC.L10N.register(
+    "l10n/en.js": "/**
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ */
+OC.L10N.register(
     "buildiq",
     {
         "Hello": "Hello",
@@ -292,7 +320,11 @@ exports[`l10n build and check scripts > l10n-js: rewrites only the stale one 1`]
     "Say \\"hi\\"": "Say \\"hi\\""
   }
 }",
-    "l10n/nl.js": "OC.L10N.register(
+    "l10n/nl.js": "/**
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ */
+OC.L10N.register(
     "buildiq",
     {
         "Hello": "Hallo"
@@ -326,7 +358,11 @@ exports[`l10n build and check scripts > l10n-js: writes every catalogue 1`] = `
   "uncovered": 3
 }",
     "l10n/README.md": "not a catalogue",
-    "l10n/en.js": "OC.L10N.register(
+    "l10n/en.js": "/**
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ */
+OC.L10N.register(
     "buildiq",
     {
         "Hello": "Hello",
@@ -341,7 +377,11 @@ exports[`l10n build and check scripts > l10n-js: writes every catalogue 1`] = `
     "Say \\"hi\\"": "Say \\"hi\\""
   }
 }",
-    "l10n/nl.js": "OC.L10N.register(
+    "l10n/nl.js": "/**
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ */
+OC.L10N.register(
     "buildiq",
     {
         "Hello": "Hallo"

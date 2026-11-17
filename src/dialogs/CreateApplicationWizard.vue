@@ -82,14 +82,17 @@ const STEP_CHECKS = new Map([
 ])
 
 /**
- * The message of a failed create: the API's message or detail, else the
- * error's message, else a generic one.
+ * The message of a failed create: a taken slug in the user's language, else
+ * the API's message or detail, else the error's message, else a generic one.
  *
  * @param {object} data The error payload from the API.
  * @param {Error} [err] The original error, for a message fallback.
  * @return {string}
  */
 function createFailureMessage(data, err) {
+	if (data.code === 'app_slug_conflict') {
+		return t('buildiq', 'This slug is taken. Choose another.')
+	}
 	const message = data.message || data.detail || (err && err.message)
 	return message || t('buildiq', 'Failed to create the application.')
 }
@@ -167,6 +170,7 @@ export default {
 		 * Seed values for the wizard's shared stepData.
 		 *
 		 * @return {object}
+		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
 		 */
 		defaults() {
 			return {
@@ -177,6 +181,7 @@ export default {
 				iconDarkValue: null,
 				preset: '',
 				versions: [],
+				fromDatabase: null,
 				_step1Valid: false,
 				_step2Valid: false,
 				_step3Valid: true,
@@ -257,6 +262,13 @@ export default {
 				description: stepData.description,
 				preset: stepData.preset,
 				versions: stepData.versions,
+			}
+			// REQ-BQDB-003: the server checks the database and tables again.
+			if (stepData.fromDatabase && stepData.fromDatabase.register) {
+				body.fromDatabase = {
+					register: stepData.fromDatabase.register,
+					schemas: stepData.fromDatabase.schemas || [],
+				}
 			}
 
 			try {

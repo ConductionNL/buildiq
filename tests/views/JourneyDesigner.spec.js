@@ -65,7 +65,9 @@ describe('JourneyDesigner', () => {
 		const fake = client()
 		const wrapper = await mountWith(fake, 'new')
 
-		expect(fake.get).toHaveBeenCalledTimes(1)
+		// The form library and OpenRegister's flows; no journey is asked for.
+		expect(fake.get).toHaveBeenCalledTimes(2)
+		expect(fake.get.mock.calls[1][0]).toContain('/apps/openregister/api/flows')
 		expect(wrapper.vm.journey.steps).toEqual([])
 		expect(wrapper.vm.selectedId).toBe('')
 	})
