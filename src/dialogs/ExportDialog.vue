@@ -403,6 +403,8 @@ export default {
 		 * in the characters a bundle id may hold (MobileProjectWriter::defaultBundleId).
 		 *
 		 * @return {string} The default bundle id.
+		 *
+		 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T08
 		 */
 		defaultBundleId() {
 			const part = (raw, fallback) => {
@@ -649,6 +651,8 @@ export default {
 		 * data choices, plus the server bundle flag for the own-server target.
 		 *
 		 * @return {object} The payload.
+		 *
+		 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T08
 		 */
 		exportPayload() {
 			const payload = {

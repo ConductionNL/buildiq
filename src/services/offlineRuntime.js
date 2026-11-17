@@ -26,6 +26,8 @@ export const COLLECTION_PREFIX = 'buildiq:'
  *
  * @param {string} slug - the app slug.
  * @return {string}
+ *
+ * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-app-users-work-offline-and-sync-later-req-bqom-004
  */
 export function collectionFor(slug) {
 	return COLLECTION_PREFIX + slug
@@ -37,6 +39,8 @@ export function collectionFor(slug) {
  * @param {string} slug - the app slug.
  * @param {(path: string) => string} generateUrl - Nextcloud's URL builder.
  * @return {{scriptUrl: string, scope: string}}
+ *
+ * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-app-users-work-offline-and-sync-later-req-bqom-004
  */
 export function workerUrls(slug, generateUrl) {
 	const base = generateUrl(`/apps/buildiq/run/${encodeURIComponent(slug)}/`)
@@ -48,6 +52,8 @@ export function workerUrls(slug, generateUrl) {
  *
  * @param {{schema: string, filter: object, limit: number}} entry - the take-along.
  * @return {object}
+ *
+ * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-app-users-work-offline-and-sync-later-req-bqom-004
  */
 export function takeAlongQuery(entry) {
 	return { ...entry.filter, _limit: entry.limit }

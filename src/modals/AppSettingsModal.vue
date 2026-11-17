@@ -475,10 +475,26 @@ export default {
 			},
 		},
 
+		/**
+		 * Re-stage the install short name when the saved one changes.
+		 *
+		 * @param {string} next The new short name.
+		 * @return {void}
+		 *
+		 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T02
+		 */
 		shortName(next) {
 			this.installShortName = next
 		},
 
+		/**
+		 * Re-stage the install theme colour when the saved one changes.
+		 *
+		 * @param {string} next The new theme colour.
+		 * @return {void}
+		 *
+		 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T02
+		 */
 		themeColor(next) {
 			this.installThemeColor = next
 		},
@@ -490,6 +506,8 @@ export default {
 			 *
 			 * @param {object|null} next The new offline block.
 			 * @return {void}
+			 *
+			 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T04
 			 */
 			handler(next) {
 				this.takeAlongRows = this.toTakeAlongRows(next)

@@ -130,6 +130,8 @@ export function normaliseOffline(block) {
  *
  * @param {object} manifest - the manifest.
  * @return {Array<string>}
+ *
+ * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-a-maker-declares-what-goes-offline-req-bqom-003
  */
 export function offlineForms(manifest) {
 	const forms = manifest && manifest.offline && manifest.offline.forms
