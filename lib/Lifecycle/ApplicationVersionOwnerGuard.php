@@ -48,6 +48,7 @@ namespace OCA\Buildiq\Lifecycle;
 use OCA\Buildiq\Kernel\Contracts\ApplicationVersionServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\PermissionResolverInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Lifecycle\GuardResult;
 use OCA\OpenRegister\Lifecycle\LifecycleGuardInterface;
 use OCP\IUser;
@@ -289,8 +290,10 @@ class ApplicationVersionOwnerGuard implements LifecycleGuardInterface {
 		try {
 			$entity = $this->objectService->find(
 				id: $applicationUuid,
-				register: ApplicationVersionServiceInterface::REGISTER_SLUG,
-				schema: ApplicationVersionServiceInterface::APPLICATION_SCHEMA
+				options: new ObjectFindOptions(
+					register: ApplicationVersionServiceInterface::REGISTER_SLUG,
+					schema: ApplicationVersionServiceInterface::APPLICATION_SCHEMA
+				)
 			);
 		} catch (\Throwable $e) {
 			$this->logger->warning(

@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\Listener;
 
 use OCA\Buildiq\Kernel\Contracts\ManifestResolverServiceInterface;
+use OCA\Buildiq\Kernel\Values\VersionRegisterSlug;
 use OCA\Buildiq\Listener\BuiltAppDeepLinkListener;
 use OCA\Buildiq\Service\ManifestDataBinding;
 use OCA\Buildiq\Service\PublishedApplicationProvider;
@@ -41,6 +42,7 @@ use RuntimeException;
  */
 #[CoversClass(BuiltAppDeepLinkListener::class)]
 #[UsesClass(ManifestDataBinding::class)]
+#[UsesClass(VersionRegisterSlug::class)]
 final class BuiltAppDeepLinkListenerTest extends TestCase {
 	/**
 	 * The entry src/manifest.json declares for buildiq's own Application schema.

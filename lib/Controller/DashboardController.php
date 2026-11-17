@@ -32,8 +32,9 @@ namespace OCA\Buildiq\Controller;
 
 use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Kernel\Contracts\AppNavigationServiceInterface;
-use OCA\Buildiq\Kernel\Contracts\ManifestResolverServiceInterface;
-use OCA\Buildiq\Service\DeviceFeatures;
+use OCA\Buildiq\Kernel\Contracts\DeviceFeaturesInterface;
+use OCA\Buildiq\Kernel\Contracts\PublishedApplicationProviderInterface;
+use OCA\Buildiq\Service\AppOrganisationGuard;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
@@ -62,7 +63,9 @@ class DashboardController extends Controller {
 	 * @param IUserSession $userSession Current Nextcloud user session
 	 * @param IGroupManager $groupManager Group membership resolver
 	 * @param INavigationManager $navigationManager Top-bar navigation manager
-	 * @param ManifestResolverServiceInterface|null $manifests Resolves the served version, for its device features
+	 * @param PublishedApplicationProviderInterface|null $publishedApps The published apps, to read a served app's device features
+	 * @param DeviceFeaturesInterface|null $deviceFeatures Turns device features into the page's feature policy
+	 * @param AppOrganisationGuard|null $organisationGuard Tells the settings whether an app can be kept to its organisation
 	 *
 	 * @return void
 	 */
@@ -72,7 +75,9 @@ class DashboardController extends Controller {
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
 		private readonly INavigationManager $navigationManager,
-		private readonly ?ManifestResolverServiceInterface $manifests = null,
+		private readonly ?PublishedApplicationProviderInterface $publishedApps=null,
+		private readonly ?DeviceFeaturesInterface $deviceFeatures=null,
+		private readonly ?AppOrganisationGuard $organisationGuard=null,
 	) {
 		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
@@ -93,6 +98,12 @@ class DashboardController extends Controller {
 	#[NoCSRFRequired]
 	public function page(): TemplateResponse {
 		$this->publishCurrentUserGroups();
+		// The organisation scope is only offered while OpenRegister's
+		// multitenancy is on (REQ-BQOS-001).
+		$this->initialState->provideInitialState(
+			'organisationScopeAvailable',
+			$this->organisationGuard?->multitenancyOn() === true
+		);
 		return new TemplateResponse(AppIdentity::APP_ID, 'index');
 	}//end page()
 
@@ -143,42 +154,83 @@ class DashboardController extends Controller {
 			(string)$this->request->getParam('_version', '')
 		);
 		$response = new TemplateResponse(AppIdentity::APP_ID, 'builder');
-		$this->allowDeviceFeatures(response: $response, slug: $slug);
+		$policy   = $this->deviceFeaturePolicy(slug: $slug);
+		if ($policy !== null) {
+			$response->setFeaturePolicy($policy);
+		}
 
 		return $response;
 	}//end builder()
 
 	/**
-	 * Allow the camera for the page itself when the served version scans (REQ-BQQR-004).
+	 * The feature policy a built app's page needs: `'self'` for the devices its
+	 * production version uses, or null to keep Nextcloud's default policy.
 	 *
-	 * An app that uses no device feature keeps Nextcloud's default policy,
-	 * which refuses the camera. Only `'self'` is added, never another origin.
+	 * The version's stored `deviceFeatures` are read; a version saved before
+	 * they were stored has them derived from its manifest.
 	 *
-	 * @param TemplateResponse $response The built app's page.
-	 * @param string           $slug     The virtual app slug.
+	 * @param string $slug The built app's slug.
 	 *
-	 * @return void
+	 * @return FeaturePolicy|null
 	 *
-	 * @spec openspec/changes/pages-qr-and-barcodes/tasks.md#task-T05
+	 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
 	 */
-	private function allowDeviceFeatures(TemplateResponse $response, string $slug): void {
-		if ($this->manifests === null) {
-			return;
+	private function deviceFeaturePolicy(string $slug): ?FeaturePolicy {
+		if ($this->publishedApps === null || $this->deviceFeatures === null) {
+			return null;
 		}
 
-		$features = $this->manifests->deviceFeaturesForCaller(
-			appSlug: $slug,
-			versionSlug: (string)$this->request->getParam('_version', ''),
-			caller: $this->userSession->getUser()
-		);
-		if (DeviceFeatures::includes(features: $features, feature: DeviceFeatures::CAMERA) === false) {
-			return;
+		try {
+			$applications = $this->publishedApps->getPublishedApplications();
+		} catch (\Throwable) {
+			// The page still renders; it only keeps Nextcloud's default policy.
+			return null;
 		}
 
-		$policy = new FeaturePolicy();
-		$policy->addAllowedCameraDomain("'self'");
-		$response->setFeaturePolicy($policy);
-	}//end allowDeviceFeatures()
+		$version = $this->productionVersionOf(applications: $applications, slug: $slug);
+		if ($version === null) {
+			return null;
+		}
+
+		return $this->deviceFeatures->policyFor(features: $this->deviceFeaturesOf(version: $version));
+	}//end deviceFeaturePolicy()
+
+	/**
+	 * The production version of the first published application with this slug that has one.
+	 *
+	 * @param array<mixed> $applications The published applications.
+	 * @param string       $slug         The virtual app slug.
+	 *
+	 * @return array<string,mixed>|null
+	 *
+	 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
+	 */
+	private function productionVersionOf(array $applications, string $slug): ?array {
+		foreach ($applications as $application) {
+			if (($application['slug'] ?? null) === $slug && is_array($application['productionVersion'] ?? null) === true) {
+				return $application['productionVersion'];
+			}
+		}
+
+		return null;
+	}//end productionVersionOf()
+
+	/**
+	 * The device features a version uses: its stored list, else derived from its manifest.
+	 *
+	 * @param array<string,mixed> $version The production version.
+	 *
+	 * @return array<int,string>
+	 *
+	 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-page-allows-only-the-devices-the-app-uses-req-bqsa-004
+	 */
+	private function deviceFeaturesOf(array $version): array {
+		if (array_key_exists('deviceFeatures', $version) === true) {
+			return $this->deviceFeatures->normalise(features: $version['deviceFeatures']);
+		}
+
+		return $this->deviceFeatures->fromManifest(manifest: ($version['manifest'] ?? null));
+	}//end deviceFeaturesOf()
 
 	/**
 	 * The installable runtime of a virtual app, under a path of its own.

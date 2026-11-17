@@ -70,7 +70,16 @@ class ManifestFormDestinations implements ManifestFormDestinationsInterface {
 		'select' => 'choice',
 		'textarea' => 'textarea',
 		'date' => 'date',
+		'signature' => 'file',
+		'audio' => 'file',
 	];
+
+	/**
+	 * The properties a location field writes, besides none under its own key.
+	 *
+	 * @var array<int, string>
+	 */
+	private const LOCATION_TARGETS = ['latField', 'lngField', 'accuracyField'];
 
 	/**
 	 * Field limits passed on as the field's own constraints.
@@ -152,6 +161,11 @@ class ManifestFormDestinations implements ManifestFormDestinationsInterface {
 	public function mappingOf(array $config): array {
 		$fields = [];
 		foreach ((array)($config['fields'] ?? []) as $field) {
+			if (is_array($field) === true && ($field['type'] ?? null) === 'location') {
+				array_push($fields, ...$this->locationEntries(field: $field));
+				continue;
+			}
+
 			$entry = $this->fieldEntry(field: $field);
 			if ($entry !== null) {
 				$fields[] = $entry;
@@ -186,6 +200,42 @@ class ManifestFormDestinations implements ManifestFormDestinationsInterface {
 
 		return array_merge($entry, $this->constraintsOf(field: $field));
 	}//end fieldEntry()
+
+	/**
+	 * A location field as the validator reads it: one number entry for each
+	 * property it writes (latitude, longitude and an optional accuracy), each
+	 * reported on the location field itself. A location field writes nothing
+	 * under its own key, so its key is not checked as a property.
+	 *
+	 * @param array<string, mixed> $field The location field as authored.
+	 *
+	 * @return array<int, array<string, mixed>> The mapping entries.
+	 *
+	 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-value-lands-in-a-matching-property-req-bqsa-002
+	 */
+	private function locationEntries(array $field): array {
+		$key = trim((string)($field['key'] ?? ''));
+		$entries = [];
+		$reportOn = $key;
+		foreach (self::LOCATION_TARGETS as $option) {
+			$property = trim((string)($field[$option] ?? ''));
+			if ($property === '') {
+				continue;
+			}
+
+			if ($key === '') {
+				$reportOn = $property;
+			}
+
+			$entries[] = [
+				'field' => $reportOn,
+				'property' => $property,
+				'type' => 'number',
+			];
+		}
+
+		return $entries;
+	}//end locationEntries()
 
 	/**
 	 * The options and limits a field declares of its own.

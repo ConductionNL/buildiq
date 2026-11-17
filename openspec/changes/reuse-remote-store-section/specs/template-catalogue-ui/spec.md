@@ -50,7 +50,7 @@ their `category`, as it narrows the GitHub cards. An empty result SHALL show
 
 - **GIVEN** a configured catalogue with a template "Vergunningen volgen"
 - **WHEN** a maker types "vergunning" in "Search the catalogue"
-- **THEN** the page calls the store search with `q=vergunning`
+- **THEN** the page calls the marketplace search with `q=vergunning`
 - **AND** the section shows "Vergunningen volgen"
 
 #### Scenario: The category filter narrows the catalogue
@@ -61,7 +61,7 @@ their `category`, as it narrows the GitHub cards. An empty result SHALL show
 
 ### Requirement: Store errors stay inside the section (REQ-BQRS-003)
 
-When the store search returns `store_unreachable` or `store_invalid_response`,
+When the marketplace search returns `store_unreachable` or `store_invalid_response`,
 the section SHALL show a warning note "The shared catalogue could not be
 reached. Try again later." and SHALL NOT show the registry URL, the token or
 the underlying error. The built-in and GitHub sections SHALL keep working.
@@ -101,7 +101,7 @@ catalogue." in the dialog and SHALL refresh the section.
 
 ### Requirement: Admins without a catalogue are pointed to the setup (REQ-BQRS-005)
 
-When the store search returns `not_configured` and the user is a Nextcloud
+When the marketplace search returns `not_configured` and the user is a Nextcloud
 admin, the built-in section SHALL show one note "Connect a shared template
 catalogue in the Buildiq setup." with a button that opens the setup wizard at
 the step `store`. Non-admin users SHALL NOT see the note.
@@ -113,7 +113,7 @@ the step `store`. Non-admin users SHALL NOT see the note.
 - **GIVEN** no catalogue is configured
 - **WHEN** an admin opens the app store
 - **THEN** the note "Connect a shared template catalogue in the Buildiq setup." shows
-- **AND** its button opens the setup wizard at "Remote template store"
+- **AND** its button opens the setup wizard at "Remote template marketplace"
 
 #### Scenario: A maker does not see the setup hint
 
@@ -127,9 +127,9 @@ the step `store`. Non-admin users SHALL NOT see the note.
 
 **Reason**: The app store was rebuilt with built-in templates, a category
 filter, GitHub apps, blocks and forms, and the design board `BqStore` draws
-every source as an equal section. A remote store as the primary surface
+every source as an equal section. A remote marketplace as the primary surface
 contradicts both.
 
-**Migration**: REQ-BQRS-001 renders the remote store as the "Shared
+**Migration**: REQ-BQRS-001 renders the remote marketplace as the "Shared
 catalogue" section. The search and install behaviour moves to REQ-BQRS-002 and
 REQ-BQRS-004.

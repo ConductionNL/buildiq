@@ -92,6 +92,9 @@ require_once __DIR__ . '/stubs/openregister-form.stub.php';
 // Leaf-provider contract (ADR-066). Same guards.
 require_once __DIR__ . '/stubs/openregister-leaf.stub.php';
 
+// Object import contract (records of an imported app archive). Same guards.
+require_once __DIR__ . '/stubs/openregister-import.stub.php';
+
 // OCP\Files\IRootFolder extends OC\Hooks\Emitter (NC server core, not part
 // of the nextcloud/ocp stub package) — see the stub's own docblock for why
 // this is needed to mock IRootFolder in this out-of-container run.
