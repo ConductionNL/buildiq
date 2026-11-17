@@ -9,13 +9,17 @@
   - Done: without integriq the manifest's endpoint paths are listed with no status and `healthNeedsIntegriq: true`, and integriq is not read.
 
 ## 2. Interface
-- [ ] 2.1 Add a Connections tab to the application detail page (BqAppWerking) that renders the list with the `connectionStatus` formatter, all seven integriq statuses and "Not checked".
-- [ ] 2.2 Each row links to the source or connection in integriq.
+- [x] 2.1 Add a Connections tab to the application detail page (BqAppWerking) that renders the list with the `connectionStatus` formatter, all seven integriq statuses and "Not checked".
+  - Done: `src/components/applicationDetail/ApplicationConnectionsSection.vue` in the detail dashboard (shown to owners, editors and admins): kind, name, status with message, last check. The library's `connectionStatus` formatter is not exported, so `src/services/appConnections.js` renders the same seven labels plus "Not checked" from buildiq's catalogue, and says that health needs integriq when it is absent.
+- [x] 2.2 Each row links to the source or connection in integriq.
+  - Done: a source links to `/apps/integriq/sources/{uuid}`, an integration to `/apps/integriq/connections?app={slug}`; a source without an integriq record has no link.
 
 ## 3. Tests
 - [x] 3.1 PHPUnit for 1.1 to 1.3: rows of another app are never returned; a user who may not edit the app gets 403; without integriq the sources are listed with no status.
   - Done: `tests/Unit/Service/ApplicationConnectionsServiceTest.php` (4) and `tests/Unit/Controller/ApplicationConnectionsControllerTest.php` (4).
-- [ ] 3.2 Vitest for the tab's status labels in English and Dutch.
+- [x] 3.2 Vitest for the tab's status labels in English and Dutch.
+  - Done: `tests/components/applicationDetail/ApplicationConnectionsSection.spec.js` (4), the Dutch labels read from `l10n/nl.json`.
 
 ## 4. Capability row
 - [ ] 4.1 When 1 to 3 are done, set `int-connection-registry` to built with this change's evidence and archive the change.
+  - Left for after merge: flipping the capability and archiving belong to the merged change.
