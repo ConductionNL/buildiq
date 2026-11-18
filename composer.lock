@@ -516,16 +516,16 @@
         },
         {
             "name": "conduction/hydra-gates",
-            "version": "v1.18.0",
+            "version": "v1.19.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/ConductionNL/.github.git",
-                "reference": "477f930e84f1b3e709d2fb645d7c303d8d39a994"
+                "reference": "9e35872e977a619df71b1956eb8a5418106349ec"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/ConductionNL/.github/zipball/477f930e84f1b3e709d2fb645d7c303d8d39a994",
-                "reference": "477f930e84f1b3e709d2fb645d7c303d8d39a994",
+                "url": "https://api.github.com/repos/ConductionNL/.github/zipball/9e35872e977a619df71b1956eb8a5418106349ec",
+                "reference": "9e35872e977a619df71b1956eb8a5418106349ec",
                 "shasum": ""
             },
             "require": {
@@ -564,9 +564,9 @@
             "support": {
                 "docs": "https://github.com/ConductionNL/.github/blob/main/hydra-gates/README.md",
                 "issues": "https://github.com/ConductionNL/.github/issues",
-                "source": "https://github.com/ConductionNL/.github/tree/v1.18.0"
+                "source": "https://github.com/ConductionNL/.github/tree/v1.19.0"
             },
-            "time": "2026-09-10T10:15:53+00:00"
+            "time": "2026-11-03T13:10:23+00:00"
         },
         {
             "name": "consolidation/annotated-command",
@@ -1929,16 +1929,16 @@
         },
         {
             "name": "nextcloud/ocp",
-            "version": "v35.0.1",
+            "version": "v35.0.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/nextcloud-deps/ocp.git",
-                "reference": "088e38c04842e027ff255d90b689817b74a54e60"
+                "reference": "1f372f9d20bc38860d1d11a55c1c16293b759e6c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nextcloud-deps/ocp/zipball/088e38c04842e027ff255d90b689817b74a54e60",
-                "reference": "088e38c04842e027ff255d90b689817b74a54e60",
+                "url": "https://api.github.com/repos/nextcloud-deps/ocp/zipball/1f372f9d20bc38860d1d11a55c1c16293b759e6c",
+                "reference": "1f372f9d20bc38860d1d11a55c1c16293b759e6c",
                 "shasum": ""
             },
             "require": {
@@ -1976,9 +1976,9 @@
             "description": "Composer package containing Nextcloud's public OCP API and the unstable NCU API",
             "support": {
                 "issues": "https://github.com/nextcloud-deps/ocp/issues",
-                "source": "https://github.com/nextcloud-deps/ocp/tree/v35.0.1"
+                "source": "https://github.com/nextcloud-deps/ocp/tree/v35.0.2"
             },
-            "time": "2026-09-23T02:18:13+00:00"
+            "time": "2026-10-09T03:32:50+00:00"
         },
         {
             "name": "nikic/php-parser",
@@ -3228,11 +3228,11 @@
         },
         {
             "name": "phpstan/phpstan",
-            "version": "2.3.1",
+            "version": "2.3.5",
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/6155239b488e95d26d1ebd95c6b4bb294d7f09db",
-                "reference": "6155239b488e95d26d1ebd95c6b4bb294d7f09db",
+                "url": "https://api.github.com/repos/phpstan/phpstan/zipball/645a1bd6bead15fc1b8474137467961d0fa30a79",
+                "reference": "645a1bd6bead15fc1b8474137467961d0fa30a79",
                 "shasum": ""
             },
             "require": {
@@ -3288,7 +3288,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2026-10-08T21:09:11+00:00"
+            "time": "2026-11-03T12:14:22+00:00"
         },
         {
             "name": "phpunit/php-code-coverage",
@@ -7550,16 +7550,16 @@
         },
         {
             "name": "symfony/polyfill-php85",
-            "version": "v1.43.0",
+            "version": "v1.44.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/polyfill-php85.git",
-                "reference": "86a42cbcc07adc331481a5ab310a4024bfc227f6"
+                "reference": "94c794cb5ba51784bc259f11e9f128593297d8dc"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/polyfill-php85/zipball/86a42cbcc07adc331481a5ab310a4024bfc227f6",
-                "reference": "86a42cbcc07adc331481a5ab310a4024bfc227f6",
+                "url": "https://api.github.com/repos/symfony/polyfill-php85/zipball/94c794cb5ba51784bc259f11e9f128593297d8dc",
+                "reference": "94c794cb5ba51784bc259f11e9f128593297d8dc",
                 "shasum": ""
             },
             "require": {
@@ -7606,7 +7606,7 @@
                 "shim"
             ],
             "support": {
-                "source": "https://github.com/symfony/polyfill-php85/tree/v1.43.0"
+                "source": "https://github.com/symfony/polyfill-php85/tree/v1.44.0"
             },
             "funding": [
                 {
@@ -7626,7 +7626,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2026-09-25T15:46:47+00:00"
+            "time": "2026-10-30T15:20:09+00:00"
         },
         {
             "name": "symfony/polyfill-php86",
