@@ -1026,31 +1026,9 @@ class ApplicationVersionsController extends Controller {
 	 * @param string $slug Parent Application slug
 	 *
 	 * @return array<string,mixed>|null Application record or null when missing
-	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function loadApplication(string $slug): ?array {
-		$ids = $this->resolveRegisterAndSchema(schemaSlug: ApplicationVersionServiceInterface::APPLICATION_SCHEMA);
-		if ($ids === null) {
-			return null;
-		}
-
-		[$registerId, $schemaId] = $ids;
-
-		$rows = $this->objectService->searchObjects(
-			query: [
-				'@self' => [
-					'register' => $registerId,
-					'schema' => $schemaId,
-				],
-				'slug' => $slug,
-			]
-		);
-
-		if (is_array($rows) === false || $rows === []) {
-			return null;
-		}
-
-		return ObjectRecord::toArray(object: $rows[0]);
+		return $this->findFirst(schemaSlug: ApplicationVersionServiceInterface::APPLICATION_SCHEMA, filters: ['slug' => $slug]);
 	}//end loadApplication()
 
 	/**
@@ -1066,7 +1044,6 @@ class ApplicationVersionsController extends Controller {
 	 * @return array<string,mixed>|null Version record or null on miss
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-24
-	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function findVersionForApplication(string $slug, string $versionSlug): ?array {
 		$application = $this->loadApplication(slug: $slug);
@@ -1076,7 +1053,23 @@ class ApplicationVersionsController extends Controller {
 
 		$applicationUuid = (string)($application['id'] ?? $application['uuid'] ?? '');
 
-		$ids = $this->resolveRegisterAndSchema(schemaSlug: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA);
+		return $this->findFirst(
+			schemaSlug: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA,
+			filters: ['slug' => $versionSlug, 'application' => $applicationUuid]
+		);
+	}//end findVersionForApplication()
+
+	/**
+	 * The first object of a schema in buildiq's register matching the filters.
+	 *
+	 * @param string $schemaSlug The schema to search.
+	 * @param array<string,string> $filters Property filters, added after the `@self` scope.
+	 *
+	 * @return array<string,mixed>|null The normalised object, or null on a miss
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
+	 */
+	private function findFirst(string $schemaSlug, array $filters): ?array {
+		$ids = $this->resolveRegisterAndSchema(schemaSlug: $schemaSlug);
 		if ($ids === null) {
 			return null;
 		}
@@ -1084,14 +1077,7 @@ class ApplicationVersionsController extends Controller {
 		[$registerId, $schemaId] = $ids;
 
 		$rows = $this->objectService->searchObjects(
-			query: [
-				'@self' => [
-					'register' => $registerId,
-					'schema' => $schemaId,
-				],
-				'slug' => $versionSlug,
-				'application' => $applicationUuid,
-			]
+			query: ['@self' => ['register' => $registerId, 'schema' => $schemaId]] + $filters
 		);
 
 		if (is_array($rows) === false || $rows === []) {
@@ -1099,7 +1085,7 @@ class ApplicationVersionsController extends Controller {
 		}
 
 		return ObjectRecord::toArray(object: $rows[0]);
-	}//end findVersionForApplication()
+	}//end findFirst()
 
 	/**
 	 * Verify the current user has any of the named roles on the parent Application.
