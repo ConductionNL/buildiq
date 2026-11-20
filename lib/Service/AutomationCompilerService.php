@@ -156,10 +156,12 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 		'object-deleted' => ['send-notification', 'approval', 'generateDocument'],
 		'lifecycle-transition' => ['send-notification', 'object-op', 'webhook', 'approval', 'generateDocument'],
 		'schedule' => ['run-synchronization'],
-		'manual' => ['send-notification', 'object-op', 'webhook', 'ai-step'],
+		// Logic-script-step D1: a script step runs on the flow triggers, and the
+		// flow builder refuses it until it compiles to OpenRegister's code step.
+		'manual' => ['send-notification', 'object-op', 'webhook', 'ai-step', 'script-step'],
 		// Logic-email-and-webhook-triggers D1: flow actions only, compiled through the flow backend.
-		'email-received' => ['send-notification', 'object-op', 'webhook', 'rule-decision'],
-		'webhook-called' => ['send-notification', 'object-op', 'webhook', 'rule-decision'],
+		'email-received' => ['send-notification', 'object-op', 'webhook', 'rule-decision', 'script-step'],
+		'webhook-called' => ['send-notification', 'object-op', 'webhook', 'rule-decision', 'script-step'],
 	];
 
 	/**
