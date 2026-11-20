@@ -37,8 +37,6 @@ database". When its source does not take writes, the index page editor SHALL set
 `showAdd`, `showEditAction` and `showDeleteAction` to `false`, the detail page
 editor SHALL set `showEditAction` to `false`, and both SHALL lock those controls
 with the note "This database is read only. Ask an administrator to allow writes."
-The write setting SHALL be read from OpenRegister each time the editor opens and
-SHALL NOT be stored on the Application.
 
 #### Scenario: A read-only database gets no add button
 
@@ -51,6 +49,12 @@ SHALL NOT be stored on the Application.
 - **GIVEN** an index page bound to `permits-db` saved while writes were off
 - **WHEN** an administrator turns on "Allow writes" for the source and the maker opens the page editor again
 - **THEN** the action controls are unlocked and the note is gone
+
+#### Scenario: The write setting is read each time, never stored
+
+- **GIVEN** an Application with an index page bound to `permits-db`
+- **WHEN** the maker opens the page editor
+- **THEN** the editor reads the source's write setting from OpenRegister at that moment, and the saved Application holds no copy of it
 
 ### Requirement: Generate an app from a connected database (REQ-BQDB-003)
 
