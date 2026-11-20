@@ -2431,7 +2431,6 @@
         "Date axis end field": "Date axis end field",
         "Date axis lane field (optional)": "Date axis lane field (optional)",
         "Date axis start field": "Date axis start field",
-        "Pick a field": "Pick a field",
         "Table": "Table",
         "The board needs a status field.": "The board needs a status field.",
         "The calendar needs a date field.": "The calendar needs a date field.",
@@ -2508,7 +2507,6 @@
         "Registry lookups need the integriq app.": "Registry lookups need the integriq app.",
         "{label}, live": "{label}, live",
         "{label}, starting value": "{label}, starting value",
-        "Format": "Format",
         "BSN": "BSN",
         "IBAN": "IBAN",
         "Licence plate": "Licence plate",
@@ -2713,7 +2711,15 @@
         "Snippet to paste into the other site": "Snippet to paste into the other site",
         "The whole app": "The whole app",
         "This is not a valid site address.": "This is not a valid site address.",
-        "What to embed": "What to embed"
+        "What to embed": "What to embed",
+        "Connections": "Connections",
+        "Health checks need integriq. Install it to see whether these sources answer.": "Health checks need integriq. Install it to see whether these sources answer.",
+        "Integration": "Integration",
+        "Not checked": "Not checked",
+        "Switched off": "Switched off",
+        "The connections could not be loaded.": "The connections could not be loaded.",
+        "The outside systems this app reads from, and whether they answered the last time they were checked.": "The outside systems this app reads from, and whether they answered the last time they were checked.",
+        "This app reads from no outside system.": "This app reads from no outside system."
     },
     "plurals": "",
     "pluralForm": "nplurals=2; plural=(n != 1);"
