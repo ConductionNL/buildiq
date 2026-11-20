@@ -2943,7 +2943,18 @@ OC.L10N.register(
         "The tests could not be run.": "De tests konden niet worden uitgevoerd.",
         "This app owns no rule sets.": "Deze app heeft geen eigen regelsets.",
         "This version has not been tested yet.": "Deze versie is nog niet getest.",
-        "_{count} check failed, so production is unchanged._::_{count} checks failed, so production is unchanged._": ["{count} controle mislukt, dus productie is ongewijzigd.","{count} controles mislukt, dus productie is ongewijzigd."]
+        "_{count} check failed, so production is unchanged._::_{count} checks failed, so production is unchanged._": ["{count} controle mislukt, dus productie is ongewijzigd.","{count} controles mislukt, dus productie is ongewijzigd."],
+        "Could not load the runs.": "De uitvoeringen konden niet worden geladen.",
+        "Last run {time}, {outcome}": "Laatst uitgevoerd {time}, {outcome}",
+        "Last run failed: {reason}": "Laatste uitvoering mislukt: {reason}",
+        "No run in the last 90 days": "Geen uitvoering in de afgelopen 90 dagen",
+        "Outcome": "Uitkomst",
+        "Runs": "Uitvoeringen",
+        "Runs in OpenRegister. No per-run record yet.": "Draait in OpenRegister. Nog geen verslag per uitvoering.",
+        "succeeded": "geslaagd",
+        "This automation runs entirely in OpenRegister": "Deze automatisering draait helemaal in OpenRegister",
+        "Time": "Tijd",
+        "waiting": "wacht"
     },
     "nplurals=2; plural=(n != 1);"
 )

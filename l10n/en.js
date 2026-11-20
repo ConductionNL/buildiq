@@ -2860,7 +2860,18 @@ OC.L10N.register(
         "The tests could not be run.": "The tests could not be run.",
         "This app owns no rule sets.": "This app owns no rule sets.",
         "This version has not been tested yet.": "This version has not been tested yet.",
-        "_{count} check failed, so production is unchanged._::_{count} checks failed, so production is unchanged._": ["{count} check failed, so production is unchanged.","{count} checks failed, so production is unchanged."]
+        "_{count} check failed, so production is unchanged._::_{count} checks failed, so production is unchanged._": ["{count} check failed, so production is unchanged.","{count} checks failed, so production is unchanged."],
+        "Could not load the runs.": "Could not load the runs.",
+        "Last run {time}, {outcome}": "Last run {time}, {outcome}",
+        "Last run failed: {reason}": "Last run failed: {reason}",
+        "No run in the last 90 days": "No run in the last 90 days",
+        "Outcome": "Outcome",
+        "Runs": "Runs",
+        "Runs in OpenRegister. No per-run record yet.": "Runs in OpenRegister. No per-run record yet.",
+        "succeeded": "succeeded",
+        "This automation runs entirely in OpenRegister": "This automation runs entirely in OpenRegister",
+        "Time": "Time",
+        "waiting": "waiting"
     },
     "nplurals=2; plural=(n != 1);"
 )
