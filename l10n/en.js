@@ -2693,7 +2693,15 @@ OC.L10N.register(
         "Snippet to paste into the other site": "Snippet to paste into the other site",
         "The whole app": "The whole app",
         "This is not a valid site address.": "This is not a valid site address.",
-        "What to embed": "What to embed"
+        "What to embed": "What to embed",
+        "Connections": "Connections",
+        "Health checks need integriq. Install it to see whether these sources answer.": "Health checks need integriq. Install it to see whether these sources answer.",
+        "Integration": "Integration",
+        "Not checked": "Not checked",
+        "Switched off": "Switched off",
+        "The connections could not be loaded.": "The connections could not be loaded.",
+        "The outside systems this app reads from, and whether they answered the last time they were checked.": "The outside systems this app reads from, and whether they answered the last time they were checked.",
+        "This app reads from no outside system.": "This app reads from no outside system."
     },
     "nplurals=2; plural=(n != 1);"
 )
