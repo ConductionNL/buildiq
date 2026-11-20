@@ -51,6 +51,7 @@ namespace OCA\Buildiq\Listener;
 
 use OCA\Buildiq\Kernel\Contracts\AutomationCompilerServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\RuleActionDispatcherInterface;
+use OCA\Buildiq\Service\AutomationRunLog;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Event\TaskSequenceCompletedEvent;
 use OCA\OpenRegister\Event\TaskTerminalEvent;
@@ -90,6 +91,7 @@ class ApprovalOutcomeListener implements IEventListener {
 	 *                                            action→typed-action mapping the rules backend uses.
 	 * @param RuleActionDispatcherInterface $actionDispatcher Shared side-effect dispatcher (same one `RuleEngineService` wires).
 	 * @param LoggerInterface $logger PSR logger.
+	 * @param AutomationRunLog|null $runLog Completes the automation's waiting run with the decision; built at use time when not given.
 	 *
 	 * @return void
 	 */
@@ -98,6 +100,7 @@ class ApprovalOutcomeListener implements IEventListener {
 		private readonly AutomationCompilerServiceInterface $compiler,
 		private readonly RuleActionDispatcherInterface $actionDispatcher,
 		private readonly LoggerInterface $logger,
+		private ?AutomationRunLog $runLog = null,
 	) {
 		$this->objects = new LazyObjectService(container: $container);
 	}//end __construct()
@@ -237,9 +240,17 @@ class ApprovalOutcomeListener implements IEventListener {
 			return;
 		}
 
+		$steps = [];
 		foreach ($this->collectFollowUps(automation: $automation, outcomeKey: $outcomeKey) as $followUp) {
-			$this->dispatchOne(action: $followUp, objectUuid: $objectUuid);
+			$steps[] = $this->dispatchOne(action: $followUp, objectUuid: $objectUuid);
 		}
+
+		$this->runLog()?->approvalDecided(
+			automation: $automation,
+			objectUuid: $objectUuid,
+			approved: $outcomeKey === 'onApprove',
+			followUps: $steps
+		);
 
 	}//end dispatchFollowUp()
 
@@ -291,14 +302,14 @@ class ApprovalOutcomeListener implements IEventListener {
 	 * @param array<string,mixed> $action The raw follow-up action record.
 	 * @param string $objectUuid The approved/rejected object's uuid.
 	 *
-	 * @return void
+	 * @return array{action: string, outcome: string, message: string} What the follow-up did, for the run log.
 	 */
-	private function dispatchOne(array $action, string $objectUuid): void {
+	private function dispatchOne(array $action, string $objectUuid): array {
 		try {
 			$mapped = $this->compiler->mapActionToRuleAction(action: $action);
 		} catch (Throwable $e) {
 			$this->logger->error('Buildiq: ApprovalOutcomeListener could not map follow-up action: ' . $e->getMessage());
-			return;
+			return ['action' => (string)($action['type'] ?? ''), 'outcome' => 'failed', 'message' => $e->getMessage()];
 		}
 
 		$type = (string)($mapped['type'] ?? '');
@@ -315,7 +326,10 @@ class ApprovalOutcomeListener implements IEventListener {
 			($this->actionDispatcher)($type, $params, []);
 		} catch (Throwable $e) {
 			$this->logger->error('Buildiq: ApprovalOutcomeListener follow-up dispatch failed for action "' . $type . '": ' . $e->getMessage());
+			return ['action' => (string)($action['type'] ?? $type), 'outcome' => 'failed', 'message' => $e->getMessage()];
 		}
+
+		return ['action' => (string)($action['type'] ?? $type), 'outcome' => 'succeeded', 'message' => ''];
 
 	}//end dispatchOne()
 
@@ -351,4 +365,32 @@ class ApprovalOutcomeListener implements IEventListener {
 
 		return ObjectRecord::toArray(object: $results[0]);
 	}//end findAutomationBySlug()
+	/**
+	 * The run log, resolved from the container at use time: a listener cannot
+	 * constructor-inject the recorder's published dependencies (see
+	 * LazyObjectService). Null when it cannot be resolved.
+	 *
+	 * @return AutomationRunLog|null
+	 *
+	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
+	 */
+	private function runLog(): ?AutomationRunLog {
+		if ($this->runLog !== null) {
+			return $this->runLog;
+		}
+
+		try {
+			$runLog = $this->container->get(AutomationRunLog::class);
+			if (($runLog instanceof AutomationRunLog) === false) {
+				return null;
+			}
+
+			$this->runLog = $runLog;
+		} catch (Throwable $e) {
+			$this->logger->error('Buildiq: automation runs cannot be recorded: ' . $e->getMessage());
+			return null;
+		}
+
+		return $this->runLog;
+	}//end runLog()
 }//end class

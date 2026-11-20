@@ -34,6 +34,7 @@ use OCA\Buildiq\Exception\NoPromoteTargetException;
 use OCA\Buildiq\Exception\PromotionFailedException;
 use OCA\Buildiq\Exception\VersionLockedException;
 use OCA\Buildiq\Service\RegisterRowReader;
+use OCA\Buildiq\Service\ReleaseTestGate;
 use OCA\Buildiq\Service\VersionPromotionService;
 use OCA\Buildiq\Service\VersionSchemaCarrier;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
@@ -107,6 +108,7 @@ class VersionPromotionServiceTest extends TestCase {
 			// behind a double: the point is that the query reaching
 			// searchObjects() names a schema.
 			rowReader: new RegisterRowReader($this->objectService),
+			testGate: $this->createMock(ReleaseTestGate::class),
 		);
 	}//end setUp()
 
@@ -212,6 +214,7 @@ class VersionPromotionServiceTest extends TestCase {
 	 */
 	public function testPromoteRaises409WhenLockHeld(): void {
 		$source = [
+			'application' => 'u-app',
 			'id' => 'u-src',
 			'register' => 'openbuild-app-staging',
 			'manifest' => ['version' => '1.0.0'],
@@ -240,6 +243,7 @@ class VersionPromotionServiceTest extends TestCase {
 	 */
 	public function testPromoteLockedExceptionCarriesHolderFromStoredLock(): void {
 		$source = [
+			'application' => 'u-app',
 			'id' => 'u-src',
 			'register' => 'openbuild-app-staging',
 			'manifest' => ['version' => '1.0.0'],
@@ -275,6 +279,7 @@ class VersionPromotionServiceTest extends TestCase {
 	 */
 	public function testPromoteMigrateExistingDataAppliesSourceManifestAndSemverAndUnlocks(): void {
 		$source = [
+			'application' => 'u-app',
 			'id' => 'u-src',
 			'register' => 'openbuild-app-staging',
 			'manifest' => ['version' => '1.5.0', 'pages' => []],
@@ -361,6 +366,7 @@ class VersionPromotionServiceTest extends TestCase {
 	 */
 	public function testPromoteFailureArchivesTargetAndReleasesLock(): void {
 		$source = [
+			'application' => 'u-app',
 			'id' => 'u-src',
 			'register' => 'openbuild-app-staging',
 			'manifest' => ['version' => '1.5.0'],
@@ -448,6 +454,7 @@ class VersionPromotionServiceTest extends TestCase {
 	 */
 	public function testPromoteFailureLeavesSourceUnmodified(): void {
 		$source = [
+			'application' => 'u-app',
 			'id' => 'u-src',
 			'register' => 'openbuild-app-staging',
 			'manifest' => ['version' => '1.5.0', 'pages' => []],
@@ -534,6 +541,7 @@ class VersionPromotionServiceTest extends TestCase {
 	 */
 	public function testStartWithSourceDataWipesAndCopies(): void {
 		$source = [
+			'application' => 'u-app',
 			'id' => 'u-src',
 			'register' => 'openbuild-app-staging',
 			'manifest' => ['version' => '2.0.0'],
@@ -613,6 +621,7 @@ class VersionPromotionServiceTest extends TestCase {
 	 */
 	public function testEmptyStartWipesButDoesNotCopy(): void {
 		$source = [
+			'application' => 'u-app',
 			'id' => 'u-src',
 			'register' => 'openbuild-app-staging',
 			'manifest' => ['version' => '2.0.0'],
@@ -695,6 +704,7 @@ class VersionPromotionServiceTest extends TestCase {
 	 */
 	public function testEmptyStartDeletesTheRowsHeldInTheTargetRegistersSchemas(): void {
 		$source = [
+			'application' => 'u-app',
 			'id' => 'u-src',
 			'register' => 'openbuild-app-staging',
 			'manifest' => ['version' => '2.0.0'],
@@ -784,6 +794,7 @@ class VersionPromotionServiceTest extends TestCase {
 		$boundDataRegisters = [['register' => 'spectr', 'label' => 'Spectr market intelligence data']];
 
 		$source = [
+			'application' => 'u-app',
 			'id' => 'u-src',
 			'register' => 'openbuild-app-staging',
 			'manifest' => ['version' => '2.0.0'],
@@ -878,6 +889,7 @@ class VersionPromotionServiceTest extends TestCase {
 		$boundDataRegisters = [['register' => 'spectr']];
 
 		$source = [
+			'application' => 'u-app',
 			'id' => 'u-src',
 			'register' => 'openbuild-app-staging',
 			'manifest' => ['version' => '1.5.0', 'pages' => []],
@@ -947,6 +959,7 @@ class VersionPromotionServiceTest extends TestCase {
 		$boundDataRegisters = [['register' => 'spectr']];
 
 		$source = [
+			'application' => 'u-app',
 			'id' => 'u-src',
 			'register' => 'openbuild-app-staging',
 			'manifest' => ['version' => '2.0.0'],
@@ -1033,6 +1046,7 @@ class VersionPromotionServiceTest extends TestCase {
 		$boundDataRegisters = [['register' => 'spectr']];
 
 		$source = [
+			'application' => 'u-app',
 			'id' => 'u-src',
 			'register' => 'openbuild-app-staging',
 			'manifest' => ['version' => '1.5.0'],
@@ -1172,6 +1186,7 @@ class VersionPromotionServiceTest extends TestCase {
 	 */
 	public function testMigrateRewiresManifestAndCarriesSchemaChangesToTargetSchemas(): void {
 		$source = [
+			'application' => 'u-app',
 			'id' => 'u-dev',
 			'register' => 'openbuild-shop-development',
 			'semver' => '0.2.0',
@@ -1281,6 +1296,7 @@ class VersionPromotionServiceTest extends TestCase {
 	 */
 	public function testStartWithSourceDataCreatesMissingTargetSchemaAndCopiesRowsIntoIt(): void {
 		$source = [
+			'application' => 'u-app',
 			'id' => 'u-dev',
 			'register' => 'openbuild-shop-development',
 			'semver' => '0.2.0',
