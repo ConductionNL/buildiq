@@ -194,6 +194,32 @@ import {
 	filterLibraryForms,
 } from '../../services/formLibrary.js'
 
+/**
+ * The form cards of a GitHub search response, or none.
+ *
+ * @param {object|null} data The response body.
+ * @return {Array<object>}
+ */
+function githubFormCards(data) {
+	return Array.isArray(data && data.cards) ? data.cards : []
+}
+
+/**
+ * Why an import was refused: an incomplete form in a form export, or a file
+ * that is not a form export at all.
+ *
+ * @param {Error} refusal What `parseFormImport` threw.
+ * @return {string}
+ */
+function importRefusalText(refusal) {
+	return refusal instanceof FormImportError && refusal.code === 'invalid-form'
+		? t(
+				'buildiq',
+				'This file is a form export, but the form in it is not complete.',
+			)
+		: t('buildiq', 'This file is not a form export.')
+}
+
 export default {
 	name: 'FormLibraryView',
 
@@ -351,15 +377,8 @@ export default {
 		async searchGithub() {
 			this.githubLoading = true
 			try {
-				const { data } = await axios.get(
-					generateUrl('/apps/buildiq/api/shop/github/forms'),
-					{
-						params: { q: this.query.trim() },
-					},
-				)
-				this.githubCards = Array.isArray(data && data.cards)
-					? data.cards
-					: []
+				const data = await this.fetchGithubForms()
+				this.githubCards = githubFormCards(data)
 				this.githubOutcome = (data && data.outcome) || 'ok'
 			} catch {
 				this.githubCards = []
@@ -367,6 +386,21 @@ export default {
 			} finally {
 				this.githubLoading = false
 			}
+		},
+
+		/**
+		 * Fetch the GitHub forms matching the query.
+		 *
+		 * @return {Promise<object|null>} The response body.
+		 */
+		async fetchGithubForms() {
+			const { data } = await axios.get(
+				generateUrl('/apps/buildiq/api/shop/github/forms'),
+				{
+					params: { q: this.query.trim() },
+				},
+			)
+			return data
 		},
 
 		/**
@@ -433,28 +467,53 @@ export default {
 		async importText(input) {
 			this.notice = ''
 			this.error = ''
-			let record
+			const parsed = this.parseImport(input)
+			if (!parsed || this.refuseDuplicate(parsed.record)) {
+				return
+			}
+			await this.addImportedForm(parsed.record)
+		},
+
+		/**
+		 * Parse a form export, or show why it is refused.
+		 *
+		 * @param {string|object} input The file's text or content.
+		 * @return {?{record: object}} The parsed record, or null when refused.
+		 */
+		parseImport(input) {
 			try {
-				record = parseFormImport(input)
+				return { record: parseFormImport(input) }
 			} catch (refusal) {
-				this.error =
-					refusal instanceof FormImportError
-					&& refusal.code === 'invalid-form'
-						? t(
-								'buildiq',
-								'This file is a form export, but the form in it is not complete.',
-							)
-						: t('buildiq', 'This file is not a form export.')
-				return
+				this.error = importRefusalText(refusal)
+				return null
 			}
-			if (this.forms.some((form) => form && form.slug === record.slug)) {
-				this.error = t(
-					'buildiq',
-					'Your library already has a form with the slug {slug}.',
-					{ slug: record.slug },
-				)
-				return
+		},
+
+		/**
+		 * Refuse a record whose slug the library already has.
+		 *
+		 * @param {object} record The parsed library form.
+		 * @return {boolean} True when it was refused.
+		 */
+		refuseDuplicate(record) {
+			if (!this.forms.some((form) => form && form.slug === record.slug)) {
+				return false
 			}
+			this.error = t(
+				'buildiq',
+				'Your library already has a form with the slug {slug}.',
+				{ slug: record.slug },
+			)
+			return true
+		},
+
+		/**
+		 * Create the library form, say so and reload the library.
+		 *
+		 * @param {object} record The parsed library form.
+		 * @return {Promise<void>}
+		 */
+		async addImportedForm(record) {
 			try {
 				await createLibraryForm(record)
 				this.notice = t('buildiq', '{name} is in your form library.', {

@@ -29,12 +29,12 @@ namespace OCA\Buildiq\Tests\Unit\BackgroundJob;
 
 use OCA\Buildiq\BackgroundJob\RunExportJob;
 use OCA\Buildiq\Service\ExportAppContentBundler;
-use OCA\Buildiq\Service\ExportContents;
+use OCA\Buildiq\Kernel\Values\ExportContents;
 use OCA\Buildiq\Service\ExportJobService;
 use OCA\Buildiq\Service\ExportService;
-use OCA\Buildiq\Service\ExportTarget;
-use OCA\Buildiq\Service\GitHub\BrokerAccess;
-use OCA\Buildiq\Service\GitHub\PushTarget;
+use OCA\Buildiq\Kernel\Values\ExportTarget;
+use OCA\Buildiq\Kernel\Values\BrokerAccess;
+use OCA\Buildiq\Kernel\Values\PushTarget;
 use OCA\Buildiq\Service\GitHubPushService;
 use OCP\AppFramework\Utility\ITimeFactory;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -273,6 +273,39 @@ final class RunExportJobTest extends TestCase {
 			self::assertSame($bundle, $includeServerBundle, $name);
 		}
 	}//end testHandsEveryJobFieldToTheExporter()
+
+	/**
+	 * The mobile app project reaches the exporter as a bundle id only when the job asks for it by a literal true:
+	 * empty for the default, null for no project (REQ-BQOM-006).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T08
+	 */
+	public function testHandsTheMobileProjectChoiceToTheExporter(): void {
+		$cases = [
+			'project with id' => [['includeMobileProject' => true, 'mobileBundleId' => 'nl.gemeente.toezicht'], 'nl.gemeente.toezicht'],
+			'project, default id' => [['includeMobileProject' => true], ''],
+			'truthy is not true' => [['includeMobileProject' => 1, 'mobileBundleId' => 'nl.gemeente.toezicht'], null],
+			'no project' => [[], null],
+		];
+		foreach ($cases as $name => [$extra, $expected]) {
+			$this->setUp();
+			$this->exportJobService->method('loadJob')->willReturn($extra + $this->jobFixture('app-uuid-mobile'));
+			$this->exportJobService->method('transitionJob')->willReturn(true);
+			$captured = 'unset';
+			$this->exportService->expects(self::once())->method('generateAppZip')->willReturnCallback(
+				function (ExportTarget $target, ExportContents $contents, bool $includeServerBundle, ?string $mobileBundleId) use (&$captured): string {
+					$captured = $mobileBundleId;
+					return '/tmp/x.zip';
+				}
+			);
+
+			$this->invokeRun($this->buildJob(), ['jobUuid' => 'job-mobile']);
+
+			self::assertSame($expected, $captured, $name);
+		}
+	}//end testHandsTheMobileProjectChoiceToTheExporter()
 
 	/**
 	 * An application that cannot be read fails the job instead of exporting

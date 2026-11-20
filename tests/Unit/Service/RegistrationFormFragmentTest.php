@@ -22,6 +22,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Tests\Unit\Service;
 
+use Opis\JsonSchema\Validator;
 use PHPUnit\Framework\TestCase;
 
 /**
@@ -78,6 +79,7 @@ final class RegistrationFormFragmentTest extends TestCase {
 				'channel',
 				'isPublic',
 				'minTrust',
+				'fee',
 				'confirmationText',
 				'targetApp',
 				'register',
@@ -147,6 +149,61 @@ final class RegistrationFormFragmentTest extends TestCase {
 	}//end testADraftIsTiedToAFormAndAPerson()
 
 	/**
+	 * A draft is the owner's alone: a signed-in user may start one, only the user
+	 * it belongs to reads it, and update and delete are left out so only the owner
+	 * may change it. It expires 30 days after it was created (REQ-OBRF-001).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/registration-form-builder/specs/registration-form-builder/spec.md#requirement-a-registration-form-is-bound-to-one-type-value-req-obrf-001
+	 */
+	public function testADraftIsOwnerOnlyAndExpiresAfterThirtyDays(): void {
+		$draft = $this->schemas()['formDraft'];
+
+		self::assertSame(
+			[
+				'create' => ['authenticated'],
+				'read' => [['group' => 'authenticated', 'match' => ['userId' => '$userId']]],
+			],
+			$draft['authorization']
+		);
+		self::assertSame(['retention' => ['default' => 'P30D']], $draft['x-openregister-archival']);
+	}//end testADraftIsOwnerOnlyAndExpiresAfterThirtyDays()
+
+	/**
+	 * The demo data's published client form for the dossiq bouwvergunning case
+	 * type (one per audience, forms-per-case-type) has two phases and one
+	 * visibleWhen rule over a field it asks.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/registration-form-builder/specs/registration-form-builder/spec.md#requirement-the-form-builder-groups-questions-per-phase-with-rules-and-steps-req-obrf-002
+	 */
+	public function testABouwvergunningFormIsSeededWithTwoPhasesAndARule(): void {
+		$demo = json_decode((string)file_get_contents(__DIR__ . '/../../../lib/Settings/buildiq_mock_register.json'), true);
+		$forms = array_values(
+			array_filter(
+				$demo['components']['objects'],
+				static fn (array $object): bool => ($object['@self']['schema'] ?? '') === 'registrationForm'
+					&& ($object['typeValue'] ?? '') === 'bouwvergunning'
+					&& ($object['audience'] ?? '') === 'client'
+			)
+		);
+
+		self::assertCount(1, $forms);
+		$form = $forms[0];
+		self::assertSame(['published', 'dossiq', 'dossiq', 'case', 'caseType'], [$form['status'], $form['targetApp'], $form['register'], $form['schema'], $form['typeProperty']]);
+		self::assertSame(['Aanvrager', 'Bouwwerk'], array_column($form['steps'], 'phase'));
+
+		$names = array_column($form['fields'], 'name');
+		$stepFields = array_merge(...array_column($form['steps'], 'fields'));
+		self::assertSame($names, $stepFields, 'Every field sits in exactly one step.');
+		$rules = array_values(array_filter(array_column($form['fields'], 'visibleWhen')));
+		self::assertCount(1, $rules);
+		self::assertContains($rules[0]['field'], $names);
+	}//end testABouwvergunningFormIsSeededWithTwoPhasesAndARule()
+
+	/**
 	 * Both schemas are audited: one is what a citizen was asked, the other holds
 	 * their answers.
 	 *
@@ -171,4 +228,27 @@ final class RegistrationFormFragmentTest extends TestCase {
 		self::assertSame(['low', 'substantial', 'high'], $property['enum']);
 		self::assertNotContains('minTrust', $this->schemas()['registrationForm']['required']);
 	}//end testTheSignInLevelIsPortaliqsValueSet()
+
+	/**
+	 * The fee is optional, and its declaration accepts a fee of 25 EUR and
+	 * refuses a negative or zero amount and a lower-case currency
+	 * (REQ-OBRF-010).
+	 *
+	 * @return void
+	 */
+	public function testTheFeeAcceptsAPositiveAmountAndRefusesANegativeOne(): void {
+		$form = $this->schemas()['registrationForm'];
+		self::assertNotContains('fee', $form['required']);
+
+		$schema = json_decode((string)json_encode($form['properties']['fee']));
+		$valid = static fn (array $fee): bool => (new Validator())->validate(json_decode((string)json_encode($fee)), $schema)->isValid();
+
+		self::assertTrue($valid(['amount' => 25, 'currency' => 'EUR', 'description' => 'Leges evenementenvergunning']));
+		self::assertTrue($valid(['amount' => 12.5]));
+		self::assertFalse($valid(['amount' => -25, 'currency' => 'EUR']));
+		self::assertFalse($valid(['amount' => 0]));
+		self::assertFalse($valid(['currency' => 'EUR']));
+		self::assertFalse($valid(['amount' => 25, 'currency' => 'eur']));
+		self::assertSame('EUR', $form['properties']['fee']['properties']['currency']['default']);
+	}//end testTheFeeAcceptsAPositiveAmountAndRefusesANegativeOne()
 }//end class

@@ -237,7 +237,7 @@ class StoreControllerTest extends TestCase {
 		$this->storeService->expects(self::never())->method('resolve');
 		$this->appsController->expects(self::never())->method('installFromTemplateArray');
 
-		$response = $this->controller()->install(slug: 'permit-tracker');
+		$response = $this->controller()->install(templateSlug: 'permit-tracker');
 
 		self::assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
 
@@ -294,7 +294,7 @@ class StoreControllerTest extends TestCase {
 		$this->storeService->method('resolve')->willReturn(null);
 		$this->appsController->expects(self::never())->method('installFromTemplateArray');
 
-		$response = $this->controller()->install(slug: 'permit-tracker');
+		$response = $this->controller()->install(templateSlug: 'permit-tracker');
 
 		self::assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
 
@@ -326,7 +326,7 @@ class StoreControllerTest extends TestCase {
 			->with($template, 'My Permits', 'my-permits', 'alice')
 			->willReturn(['status' => Http::STATUS_CREATED, 'data' => ['uuid' => 'new-app', 'slug' => 'my-permits']]);
 
-		$response = $this->controller()->install(slug: 'permit-tracker');
+		$response = $this->controller()->install(templateSlug: 'permit-tracker');
 
 		self::assertSame(Http::STATUS_CREATED, $response->getStatus());
 		self::assertSame('new-app', $response->getData()['uuid']);
@@ -342,7 +342,7 @@ class StoreControllerTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn($this->mockUser('alice'));
 		$this->storeService->expects(self::never())->method('resolve');
 
-		$response = $this->controller()->install(slug: 'Not_Valid');
+		$response = $this->controller()->install(templateSlug: 'Not_Valid');
 
 		self::assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
 
@@ -358,9 +358,46 @@ class StoreControllerTest extends TestCase {
 		$this->request->method('getParam')->willReturn(null);
 		$this->storeService->expects(self::never())->method('resolve');
 
-		$response = $this->controller()->install(slug: 'permit-tracker');
+		$response = $this->controller()->install(templateSlug: 'permit-tracker');
 
 		self::assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
 
 	}//end testInstallMissingNameIsBadRequest()
+	/**
+	 * The search answer names the catalogue by its host only: no scheme, path
+	 * or token. A store that is not configured gets no `source` (REQ-BQRS-001, design D5).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/reuse-remote-store-section/specs/template-catalogue-ui/spec.md#requirement-the-app-store-shows-the-shared-catalogue-as-a-section-req-bqrs-001
+	 */
+	public function testTheSearchNamesTheCatalogueByItsHostOnly(): void {
+		$this->userSession->method('getUser')->willReturn($this->mockUser('alice'));
+		$this->request->method('getParam')->willReturn(null);
+		$appConfig = $this->createMock(\OCP\IAppConfig::class);
+		$appConfig->method('getValueString')->with('buildiq', 'registry_url', '')->willReturn('https://store.example.nl/x?token=y');
+		$this->storeService->method('search')->willReturnOnConsecutiveCalls(
+			['outcome' => GenericStoreService::OUTCOME_OK, 'cards' => []],
+			['outcome' => GenericStoreService::OUTCOME_NOT_CONFIGURED, 'cards' => []],
+			$this->throwException(new \RuntimeException('timeout talking to https://store.example.nl/x?token=y'))
+		);
+		$controller = new StoreController(
+			request: $this->request,
+			logger: $this->logger,
+			userSession: $this->userSession,
+			store: new StoreClient(storeService: $this->storeService, actionAuthorizer: $this->actionAuthorizer),
+			appsController: $this->appsController,
+			appConfig: $appConfig
+		);
+
+		$ok = $controller->search()->getData();
+		$notConfigured = $controller->search()->getData();
+		$unreachable = $controller->search()->getData();
+
+		self::assertSame('store.example.nl', $ok['source']);
+		self::assertArrayNotHasKey('source', $notConfigured);
+		self::assertSame(['outcome' => GenericStoreService::OUTCOME_UNREACHABLE, 'cards' => [], 'source' => 'store.example.nl'], $unreachable);
+		self::assertStringNotContainsString('token', json_encode([$ok, $unreachable]));
+	}//end testTheSearchNamesTheCatalogueByItsHostOnly()
+
 }//end class

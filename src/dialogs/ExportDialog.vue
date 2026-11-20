@@ -170,6 +170,30 @@
 				</p>
 			</section>
 
+			<div data-test="export-mobile-project">
+				<NcCheckboxRadioSwitch
+					v-model="form.includeMobileProject"
+					:disabled="submitting">
+					{{ t('buildiq', 'Mobile app project') }}
+				</NcCheckboxRadioSwitch>
+				<p class="export-dialog__scope-hint">
+					{{
+						t(
+							'buildiq',
+							'Adds a project your organisation turns into iOS and Android apps that open this app. Buildiq does not build, sign or publish them.',
+						)
+					}}
+				</p>
+				<NcTextField
+					v-if="form.includeMobileProject"
+					v-model="form.mobileBundleId"
+					data-test="export-mobile-bundle-id"
+					:label="t('buildiq', 'Bundle id')"
+					:placeholder="defaultBundleId"
+					:helperText="t('buildiq', 'Leave empty for {bundleId}. The stores do not let you change it after the first release.', { bundleId: defaultBundleId })"
+					:disabled="submitting" />
+			</div>
+
 			<template v-if="form.target && form.target.value === 'github'">
 				<NcTextField
 					v-model="form.githubOrg"
@@ -310,6 +334,8 @@ export default {
 				license: { label: 'EUPL-1.2', value: 'EUPL-1.2' },
 				includeSeedData: false,
 				includeServerBundle: true,
+				includeMobileProject: false,
+				mobileBundleId: '',
 				githubOrg: '',
 				githubRepo: '',
 				githubVisibility: {
@@ -345,7 +371,7 @@ export default {
 		/**
 		 * Observed behaviour of `versionOptions` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-exporter-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-exporter-ui/tasks.md#task-1
 		 */
 		versionOptions() {
 			return this.loadedVersions.length
@@ -356,7 +382,7 @@ export default {
 		/**
 		 * Observed behaviour of `targetOptions` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-exporter-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-exporter-ui/tasks.md#task-1
 		 */
 		targetOptions() {
 			return [
@@ -372,6 +398,25 @@ export default {
 		 * @spec openspec/changes/apps-standalone-deploy/specs/standalone-server-bundle/spec.md#requirement-the-export-offers-its-own-server-as-a-target-req-bqsd-001
 		 * @return {boolean} True for the Own server target.
 		 */
+		/**
+		 * The bundle id the server uses when none is given: nl.<instance-host>.<slug>,
+		 * in the characters a bundle id may hold (MobileProjectWriter::defaultBundleId).
+		 *
+		 * @return {string} The default bundle id.
+		 *
+		 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T08
+		 */
+		defaultBundleId() {
+			const part = (raw, fallback) => {
+				const reduced = String(raw || '').toLowerCase().replace(/[^a-z0-9]+/g, '')
+				if (reduced === '') {
+					return fallback
+				}
+				return /^[a-z]/.test(reduced) ? reduced : 'a' + reduced
+			}
+			return 'nl.' + part(window.location.hostname, 'instance') + '.' + part(this.applicationSlug, 'app')
+		},
+
 		isServerTarget() {
 			return this.form.target?.value === 'server'
 		},
@@ -420,7 +465,7 @@ export default {
 		/**
 		 * Observed behaviour of `licenseOptions` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-exporter-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-exporter-ui/tasks.md#task-1
 		 */
 		licenseOptions() {
 			return [
@@ -433,7 +478,7 @@ export default {
 		/**
 		 * Observed behaviour of `visibilityOptions` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-exporter-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-exporter-ui/tasks.md#task-1
 		 */
 		visibilityOptions() {
 			return [
@@ -571,7 +616,7 @@ export default {
 		/**
 		 * Observed behaviour of `onClose` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-exporter-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-exporter-ui/tasks.md#task-1
 		 */
 		onClose() {
 			if (this.submitting) {
@@ -583,72 +628,149 @@ export default {
 		/**
 		 * Observed behaviour of `submit` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-exporter-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-exporter-ui/tasks.md#task-1
 		 */
 		async submit() {
 			this.submitting = true
 			this.errorMessage = ''
 			try {
-				const payload = {
-					applicationVersion: this.form.version.value,
-					// Which version row: the semver alone is shared by draft and production.
-					...(this.form.version.slug
-						? { applicationVersionSlug: this.form.version.slug }
-						: {}),
-
-					target: this.form.target.value,
-					license: this.form.license.value,
-					includeSeedData: this.form.includeSeedData,
-					// Mirrors the source Application's dataRegisters bindings
-					// 1:1, each carrying the resolved includeData flag
-					// (data-registers-runtime design.md Decision 5).
-					dataRegisters: this.dataRegisterChoices.map((choice) => ({
-						register: choice.register,
-						includeData: choice.includeData,
-					})),
-
-					// Only the chosen flows, and only their UUIDs — `label` is
-					// a picker convenience, and the exporter writes the flow's
-					// own name into the bundle rather than trusting this one.
-					flows: this.flowChoices
-						.filter((choice) => choice.include)
-						.map((choice) => ({ flow: choice.flow })),
+				const payload = this.exportPayload()
+				if (!this.addGithubTarget(payload)) {
+					return
 				}
-				if (this.isServerTarget) {
-					payload.includeServerBundle = this.form.includeServerBundle
-				}
-				if (this.form.target.value === 'github') {
-					if (!this.form.githubCredential) {
-						this.errorMessage = this.t(
-							'buildiq',
-							'Pick a GitHub credential to push with.',
-						)
-						this.submitting = false
-						return
-					}
-					payload.githubOrg = this.form.githubOrg
-					payload.githubRepo = this.form.githubRepo
-					payload.githubVisibility = this.form.githubVisibility.value
-					// A broker credential UUID, not a token. The secret never leaves the vault.
-					payload.githubCredentialId = this.form.githubCredential.value
-				}
-				const url = generateUrl(
-					`/apps/buildiq/api/applications/${encodeURIComponent(this.applicationSlug)}/exports`,
-				)
-				const response = await axios.post(url, payload)
-				this.startNow(response.data.uuid)
-				this.$emit('queued', response.data.uuid)
-				this.$emit('close')
+				await this.queueExport(payload)
 			} catch (err) {
-				this.errorMessage =
-					err?.response?.data?.error
-					|| this.t(
-						'buildiq',
-						'GitHub authentication failed. Please check the token scope and try again.',
-					)
+				this.errorMessage = this.exportFailureMessage(err)
 			} finally {
 				this.submitting = false
 			}
+		},
+
+		/**
+		 * The export request for every target: the version, target, license and
+		 * data choices, plus the server bundle flag for the own-server target.
+		 *
+		 * @return {object} The payload.
+		 *
+		 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T08
+		 */
+		exportPayload() {
+			const payload = {
+				applicationVersion: this.form.version.value,
+				// Which version row: the semver alone is shared by draft and production.
+				...(this.form.version.slug
+					? { applicationVersionSlug: this.form.version.slug }
+					: {}),
+
+				target: this.form.target.value,
+				license: this.form.license.value,
+				includeSeedData: this.form.includeSeedData,
+				dataRegisters: this.dataRegisterPayload(),
+				flows: this.flowPayload(),
+			}
+			if (this.isServerTarget) {
+				payload.includeServerBundle = this.form.includeServerBundle
+			}
+			if (this.form.includeMobileProject) {
+				payload.includeMobileProject = true
+				payload.mobileBundleId = this.form.mobileBundleId.trim()
+			}
+			return payload
+		},
+
+		/**
+		 * Mirrors the source Application's dataRegisters bindings 1:1, each
+		 * carrying the resolved includeData flag (data-registers-runtime
+		 * design.md Decision 5).
+		 *
+		 * @return {Array<{register: string, includeData: boolean}>}
+		 */
+		dataRegisterPayload() {
+			return this.dataRegisterChoices.map((choice) => ({
+				register: choice.register,
+				includeData: choice.includeData,
+			}))
+		},
+
+		/**
+		 * Only the chosen flows, and only their UUIDs — `label` is a picker
+		 * convenience, and the exporter writes the flow's own name into the
+		 * bundle rather than trusting this one.
+		 *
+		 * @return {Array<{flow: string}>}
+		 */
+		flowPayload() {
+			return this.flowChoices
+				.filter((choice) => choice.include)
+				.map((choice) => ({ flow: choice.flow }))
+		},
+
+		/**
+		 * Refuse to queue a GitHub export that has no credential to push with.
+		 *
+		 * @return {void}
+		 */
+		refuseWithoutCredential() {
+			this.errorMessage = this.t(
+				'buildiq',
+				'Pick a GitHub credential to push with.',
+			)
+			this.submitting = false
+		},
+
+		/**
+		 * Add the GitHub repository and credential to a GitHub export's
+		 * payload; refuse a GitHub export that has no credential.
+		 *
+		 * @param {object} payload The export request.
+		 * @return {boolean} false when the export is refused.
+		 */
+		addGithubTarget(payload) {
+			if (this.form.target.value !== 'github') {
+				return true
+			}
+			if (!this.form.githubCredential) {
+				this.refuseWithoutCredential()
+				return false
+			}
+			payload.githubOrg = this.form.githubOrg
+			payload.githubRepo = this.form.githubRepo
+			payload.githubVisibility = this.form.githubVisibility.value
+			// A broker credential UUID, not a token. The secret never leaves the vault.
+			payload.githubCredentialId = this.form.githubCredential.value
+			return true
+		},
+
+		/**
+		 * POST the export, start it right away and close.
+		 *
+		 * @param {object} payload The export request.
+		 * @return {Promise<void>}
+		 */
+		async queueExport(payload) {
+			const url = generateUrl(
+				`/apps/buildiq/api/applications/${encodeURIComponent(this.applicationSlug)}/exports`,
+			)
+			const response = await axios.post(url, payload)
+			this.startNow(response.data.uuid)
+			this.$emit('queued', response.data.uuid)
+			this.$emit('close')
+		},
+
+		/**
+		 * What to say when queueing the export failed.
+		 *
+		 * @param {Error|object} err The failure.
+		 * @return {string}
+		 */
+		exportFailureMessage(err) {
+			return (
+				err?.response?.data?.error
+				|| this.t(
+					'buildiq',
+					'GitHub authentication failed. Please check the token scope and try again.',
+				)
+			)
 		},
 	},
 }

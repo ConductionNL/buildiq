@@ -35,19 +35,20 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
-use OCA\Buildiq\AppInfo\Application;
+use OCA\Buildiq\Kernel\AppIdentity;
+use OCA\Buildiq\Kernel\Contracts\FormLiveBindingIndexInterface;
 use OCP\IAppConfig;
 use Psr\Log\LoggerInterface;
 
 /**
  * The live-form bindings of every app version, by register and schema.
  *
- * @psalm-type LiveCalc = array{field:string,ruleSet:string,output:string,inputs:list<string>}
- * @psalm-type LiveBinding = array{register:string,schema:string,calculate:list<LiveCalc>,eligibility:array<string,mixed>|null}
- * @phpstan-type LiveCalc array{field:string,ruleSet:string,output:string,inputs:list<string>}
- * @phpstan-type LiveBinding array{register:string,schema:string,calculate:list<LiveCalc>,eligibility:array<string,mixed>|null}
+ * @psalm-import-type LiveCalc from FormLiveBindingIndexInterface
+ * @psalm-import-type LiveBinding from FormLiveBindingIndexInterface
+ * @phpstan-import-type LiveCalc from FormLiveBindingIndexInterface
+ * @phpstan-import-type LiveBinding from FormLiveBindingIndexInterface
  */
-class FormLiveBindingIndex {
+class FormLiveBindingIndex implements FormLiveBindingIndexInterface {
 
 	/**
 	 * The app config key holding the index.
@@ -177,7 +178,8 @@ class FormLiveBindingIndex {
 
 			$calculate = $this->calculations(fields: (array)($config['fields'] ?? []));
 			$eligibility = $this->blockingCheck(check: ($config['eligibility'] ?? null));
-			if ($calculate === [] && $eligibility === null) {
+			$formats = self::formats(fields: (array)($config['fields'] ?? []));
+			if ($calculate === [] && $eligibility === null && $formats === []) {
 				continue;
 			}
 
@@ -186,6 +188,7 @@ class FormLiveBindingIndex {
 				'schema' => $target[1],
 				'calculate' => $calculate,
 				'eligibility' => $eligibility,
+				'formats' => $formats,
 			];
 		}//end foreach
 
@@ -216,6 +219,34 @@ class FormLiveBindingIndex {
 
 		return [$register, $match[2]];
 	}//end target()
+
+	/**
+	 * The fields of a form that carry a `format`, by field key (form-dutch-field-formats T04).
+	 *
+	 * Every named format is kept; the listener checks only the ones
+	 * DutchFormatValidator knows.
+	 *
+	 * @param array<int,mixed> $fields The form's fields
+	 *
+	 * @return array<string,string> The format per field key.
+	 *
+	 * @spec openspec/changes/form-dutch-field-formats/specs/form-dutch-field-formats/spec.md#requirement-buildiqs-own-forms-check-the-dutch-formats-on-save-req-bqdf-002
+	 */
+	private static function formats(array $fields): array {
+		$out = [];
+		foreach ($fields as $field) {
+			if (is_array($field) === false || is_string($field['key'] ?? null) === false || $field['key'] === '') {
+				continue;
+			}
+
+			$format = trim((string)($field['format'] ?? ''));
+			if ($format !== '') {
+				$out[$field['key']] = $format;
+			}
+		}
+
+		return $out;
+	}//end formats()
 
 	/**
 	 * The calculated fields of a form.
@@ -285,7 +316,7 @@ class FormLiveBindingIndex {
 	 * @return array<string,list<LiveBinding>>
 	 */
 	private function read(): array {
-		$raw = $this->appConfig->getValueString(Application::APP_ID, self::CONFIG_KEY, '');
+		$raw = $this->appConfig->getValueString(AppIdentity::APP_ID, self::CONFIG_KEY, '');
 		if ($raw === '') {
 			return [];
 		}
@@ -311,7 +342,7 @@ class FormLiveBindingIndex {
 	 */
 	private function write(array $index): void {
 		$this->appConfig->setValueString(
-			Application::APP_ID,
+			AppIdentity::APP_ID,
 			self::CONFIG_KEY,
 			(string)json_encode($index, JSON_UNESCAPED_SLASHES)
 		);

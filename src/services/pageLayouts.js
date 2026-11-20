@@ -16,6 +16,7 @@
  */
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
+import { requestRefusal } from './requestRefusal.js'
 
 const BASE = '/apps/buildiq/api/page-layouts'
 
@@ -35,13 +36,7 @@ const SERVER_OWNED = ['baseFingerprint', 'baseCutAt', 'drifted', 'orphanedPaths'
  * @return {{status: number, error: string, message: string}} The refusal.
  */
 function normaliseError(err) {
-	const response = err && err.response
-	const data = (response && response.data) || {}
-	return {
-		status: response ? response.status : 0,
-		error: data.error || 'network_error',
-		message: data.message || (err && err.message) || 'Request failed.',
-	}
+	return requestRefusal(err)
 }
 
 /**

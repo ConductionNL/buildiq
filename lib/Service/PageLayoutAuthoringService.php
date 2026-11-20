@@ -3,6 +3,9 @@
 /**
  * Page Layout Authoring Service
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * The write half of the page-layout and screen-override feature. The leaf
  * provider refuses every write with "a page layout is authored in buildiq,
  * where the rules that validate it live"; this is where they live.
@@ -34,9 +37,6 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-002, REQ-OBSO-003)
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -44,8 +44,13 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use InvalidArgumentException;
-use OCA\Buildiq\Integration\PageLayoutLeafProvider;
+use OCA\Buildiq\Kernel\Contracts\PageLayoutAuthoringServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\PageLayoutLeafProviderInterface;
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCP\IAppConfig;
 use RuntimeException;
 
@@ -53,8 +58,11 @@ use RuntimeException;
  * Saves and re-cuts page layouts and the overrides that patch them.
  *
  * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-002, REQ-OBSO-003)
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Most of the count is OpenRegister's value objects and
+ *     exceptions; the collaborators are injected.
  */
-class PageLayoutAuthoringService {
+class PageLayoutAuthoringService implements PageLayoutAuthoringServiceInterface {
 	/**
 	 * The schema holding layouts, equal to the leaf provider's.
 	 *
@@ -71,13 +79,20 @@ class PageLayoutAuthoringService {
 	public const REGISTRY_CLASS = 'OCA\\OpenRegister\\Service\\Integration\\IntegrationRegistry';
 
 	/**
+	 * The stored rows of this service's schema.
+	 *
+	 * @var AuthoredRowReader
+	 */
+	private readonly AuthoredRowReader $rows;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param ObjectServiceInterface $objectService OpenRegister's object service.
 	 * @param IAppConfig $appConfig App config, for the register slug.
 	 * @param PageLayoutValidator $validator The rules a layout has to pass.
 	 * @param LayoutDeltaService $deltas The fingerprint and the orphan report.
-	 * @param PageLayoutLeafProvider $provider The resolver, which owns what the base is.
+	 * @param PageLayoutLeafProviderInterface $provider The resolver, which owns what the base is.
 	 * @param ContainerLocator|null $locator Resolves OpenRegister's integration registry when it is installed.
 	 *
 	 * @return void
@@ -87,9 +102,10 @@ class PageLayoutAuthoringService {
 		private readonly IAppConfig $appConfig,
 		private readonly PageLayoutValidator $validator,
 		private readonly LayoutDeltaService $deltas,
-		private readonly PageLayoutLeafProvider $provider,
+		private readonly PageLayoutLeafProviderInterface $provider,
 		private readonly ?ContainerLocator $locator=null,
 	) {
+		$this->rows = new AuthoredRowReader(objectService: $objectService, appConfig: $appConfig, schema: self::SCHEMA);
 	}//end __construct()
 
 	/**
@@ -350,24 +366,8 @@ class PageLayoutAuthoringService {
 	 * @return array<int, array<string, mixed>> The stored layouts.
 	 */
 	private function storedFor(string $register, string $schema, string $exceptId): array {
-		$rows = $this->objectService
-			->setRegister($this->registerSlug())
-			->setSchema(self::SCHEMA)
-			->findAll(['filters' => ['register' => $register], 'limit' => 500]);
-
-		if (is_array($rows) === false) {
-			return [];
-		}
-
 		$mine = [];
-		foreach ($rows as $row) {
-			if (is_array($row) === false
-				|| (string)($row['register'] ?? '') !== $register
-				|| (string)($row['schema'] ?? '') !== $schema
-			) {
-				continue;
-			}
-
+		foreach ($this->rows->storedFor(register: $register, schema: $schema) as $row) {
 			if ($exceptId !== '' && (string)($row['id'] ?? '') === $exceptId) {
 				continue;
 			}
@@ -384,6 +384,7 @@ class PageLayoutAuthoringService {
 	 * @param string $layoutId The id.
 	 *
 	 * @return array<string, mixed>|null The layout, or null.
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function byId(string $layoutId): ?array {
 		$rows = $this->objectService
@@ -396,7 +397,8 @@ class PageLayoutAuthoringService {
 		}
 
 		foreach ($rows as $row) {
-			if (is_array($row) === true && (string)($row['id'] ?? '') === $layoutId) {
+			$row = ObjectRecord::toArray(object: $row);
+			if ((string)($row['id'] ?? '') === $layoutId) {
 				return $row;
 			}
 		}
@@ -410,13 +412,18 @@ class PageLayoutAuthoringService {
 	 * @param array<string, mixed> $layout The layout.
 	 *
 	 * @return array<string, mixed> The layout as stored.
+	 *
+	 * @throws InvalidArgumentException When the schema refuses it.
 	 */
 	private function store(array $layout): array {
-		$this->objectService->saveObject(
-			object: $layout,
-			register: $this->registerSlug(),
-			schema: self::SCHEMA,
-		);
+		try {
+			$this->objectService->saveObject(
+				object: $layout,
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->registerSlug(), schema: self::SCHEMA))
+			);
+		} catch (ValidationException $e) {
+			throw new InvalidArgumentException($e->getMessage(), 0, $e);
+		}
 
 		return $layout;
 	}//end store()
@@ -427,14 +434,6 @@ class PageLayoutAuthoringService {
 	 * @return string The slug.
 	 */
 	private function registerSlug(): string {
-		$slug = $this->appConfig->getValueString('buildiq', 'register', 'buildiq');
-		if ($slug === '') {
-			// A setting emptied by hand is a misconfiguration, and reading on
-			// with no register names every register at once. Buildiq's own
-			// register is where these objects live, so that is what is used.
-			return 'buildiq';
-		}
-
-		return $slug;
+		return $this->rows->registerSlug();
 	}//end registerSlug()
 }//end class

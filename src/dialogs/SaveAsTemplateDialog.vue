@@ -183,19 +183,15 @@ import {
 	bumpMinor,
 	captureTemplate,
 	resolveSaveTarget,
-	SlugCollisionError,
+	slugCollisionMessage,
 	suggestSlug,
-	TEMPLATE_CATEGORIES,
 } from '../services/templateCapture.js'
-
-const OR_TEMPLATES = '/apps/openregister/api/objects/buildiq/application-template'
-
-const CATEGORY_LABELS = {
-	'government-services': 'Government services',
-	'internal-operations': 'Internal operations',
-	'citizen-engagement': 'Citizen engagement',
-	'field-work': 'Field work',
-}
+import { requestErrorMessage } from '../utils/requestErrorMessage.js'
+import {
+	OR_TEMPLATES,
+	templateCategoryOptions,
+	templateRecordUrl,
+} from './templateRecords.js'
 
 export default {
 	name: 'SaveAsTemplateDialog',
@@ -237,19 +233,16 @@ export default {
 		/**
 		 * Category picker options over the REQ-OBTC-001 enum.
 		 *
-		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+		 * @spec openspec/specs/save-as-template/spec.md
 		 */
 		categoryOptions() {
-			return TEMPLATE_CATEGORIES.map((value) => ({
-				id: value,
-				label: t('buildiq', CATEGORY_LABELS[value] || value),
-			}))
+			return templateCategoryOptions()
 		},
 
 		/**
 		 * The selected category id (or '' when none picked).
 		 *
-		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+		 * @spec openspec/specs/save-as-template/spec.md
 		 */
 		selectedCategory() {
 			return this.categoryOption?.id ?? this.categoryOption ?? ''
@@ -259,7 +252,7 @@ export default {
 		 * The capture result — record + summary — or null when capture
 		 * throws a de-namespace collision (surfaced via `collisionError`).
 		 *
-		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+		 * @spec openspec/specs/save-as-template/spec.md
 		 */
 		capture() {
 			try {
@@ -285,7 +278,7 @@ export default {
 		/**
 		 * Capture summary (companion schema list) for the dialog body.
 		 *
-		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+		 * @spec openspec/specs/save-as-template/spec.md
 		 */
 		captureSummary() {
 			return this.capture ? this.capture.summary.companionSchemas : []
@@ -295,7 +288,7 @@ export default {
 		 * Validation errors of the CAPTURED (de-namespaced) manifest — the
 		 * exact blob a clone will consume (REQ-SAT-003).
 		 *
-		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+		 * @spec openspec/specs/save-as-template/spec.md
 		 */
 		validationErrors() {
 			if (!this.capture) {
@@ -315,7 +308,7 @@ export default {
 		 * Resolve what saving this slug does (create / update / error)
 		 * against the visible templates (REQ-SAT-004).
 		 *
-		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+		 * @spec openspec/specs/save-as-template/spec.md
 		 */
 		saveTarget() {
 			return resolveSaveTarget(this.form.slug, this.existingTemplates, (tpl) =>
@@ -326,7 +319,7 @@ export default {
 		/**
 		 * The slug-collision error code (`seeded-slug` / `slug-taken`) or ''.
 		 *
-		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+		 * @spec openspec/specs/save-as-template/spec.md
 		 */
 		slugError() {
 			return this.saveTarget.error || ''
@@ -335,7 +328,7 @@ export default {
 		/**
 		 * True when saving will update an existing own template in place.
 		 *
-		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+		 * @spec openspec/specs/save-as-template/spec.md
 		 */
 		updateMode() {
 			return this.saveTarget.mode === 'update'
@@ -344,7 +337,7 @@ export default {
 		/**
 		 * Slug well-formedness (mirrors the clone dialog's pattern).
 		 *
-		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+		 * @spec openspec/specs/save-as-template/spec.md
 		 */
 		slugValid() {
 			return (
@@ -356,7 +349,7 @@ export default {
 		/**
 		 * Whether Save is allowed (REQ-SAT-002/003/004 gates).
 		 *
-		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+		 * @spec openspec/specs/save-as-template/spec.md
 		 */
 		canSave() {
 			return (
@@ -373,7 +366,7 @@ export default {
 		/**
 		 * Save button label — varies for create vs update-in-place.
 		 *
-		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+		 * @spec openspec/specs/save-as-template/spec.md
 		 */
 		saveLabel() {
 			if (this.saving) {
@@ -393,7 +386,7 @@ export default {
 		 *   into "open" is acted on, so a close leaves the form untouched and the next
 		 *   open starts from the source Application again rather than from whatever
 		 *   the user last typed.
-		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+		 * @spec openspec/specs/save-as-template/spec.md
 		 */
 		open(value) {
 			if (value) {
@@ -405,11 +398,11 @@ export default {
 		 * Keep the de-namespace collision message in sync with the capture
 		 * attempt (capture throws when two schemas collide).
 		 *
-		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+		 * @spec openspec/specs/save-as-template/spec.md
 		 */
 		schemas: {
 			/**
-			 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+			 * @spec openspec/specs/save-as-template/spec.md
 			 */
 			handler() {
 				this.recomputeCollision()
@@ -419,7 +412,7 @@ export default {
 		},
 
 		/**
-		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+		 * @spec openspec/specs/save-as-template/spec.md
 		 */
 		'form.slug': function () {
 			this.slugEditedManually = true
@@ -431,7 +424,7 @@ export default {
 	 * with `v-if="open"`, so `created` fires with `open: true`).
 	 *
 	 * @return {void}
-	 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+	 * @spec openspec/specs/save-as-template/spec.md
 	 */
 	created() {
 		if (this.open) {
@@ -444,7 +437,7 @@ export default {
 		 * Prefill the form from the source Application.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+		 * @spec openspec/specs/save-as-template/spec.md
 		 */
 		resetForm() {
 			const app = this.application || {}
@@ -471,7 +464,7 @@ export default {
 		 *
 		 * @param {string} value The new title value.
 		 * @return {void}
-		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+		 * @spec openspec/specs/save-as-template/spec.md
 		 */
 		onTitleInput(value) {
 			this.form.title = value
@@ -487,10 +480,10 @@ export default {
 		 * capture; SlugCollisionError names both colliding schemas.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+		 * @spec openspec/specs/save-as-template/spec.md
 		 */
 		recomputeCollision() {
-			try {
+			this.collisionError = slugCollisionMessage(() =>
 				captureTemplate(
 					this.application || {},
 					this.schemas,
@@ -500,15 +493,8 @@ export default {
 						slug: this.form.slug,
 						category: this.selectedCategory,
 					},
-				)
-				this.collisionError = ''
-			} catch (e) {
-				if (e instanceof SlugCollisionError) {
-					this.collisionError = e.sourceSlugs.join(', ')
-				} else {
-					this.collisionError = ''
-				}
-			}
+				),
+			)
 		},
 
 		/**
@@ -519,7 +505,7 @@ export default {
 		 *
 		 * @param {object} tpl A template record.
 		 * @return {boolean} Whether the caller may write it.
-		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+		 * @spec openspec/specs/save-as-template/spec.md
 		 */
 		isWritable(tpl) {
 			const self = (tpl && tpl['@self']) || {}
@@ -534,7 +520,7 @@ export default {
 		 * Close the dialog.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+		 * @spec openspec/specs/save-as-template/spec.md
 		 */
 		onClose() {
 			if (this.saving) {
@@ -548,7 +534,7 @@ export default {
 		 * update-in-place per `saveTarget` (REQ-SAT-004, REQ-SAT-006).
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/save-as-template/specs/save-as-template/spec.md
+		 * @spec openspec/specs/save-as-template/spec.md
 		 */
 		async save() {
 			if (!this.canSave || this.saving) {
@@ -561,27 +547,21 @@ export default {
 				const record = { ...this.capture.record }
 				if (target.mode === 'update') {
 					const existing = target.record
-					const uuid =
-						(existing['@self'] && existing['@self'].id)
-						|| existing.uuid
-						|| existing.id
 					record.version = bumpMinor(existing.version)
-					const url = generateUrl(
-						`${OR_TEMPLATES}/${encodeURIComponent(uuid)}`,
-					)
-					await axios.put(url, { ...existing, ...record })
+					await axios.put(templateRecordUrl(existing), {
+						...existing,
+						...record,
+					})
 				} else {
 					await axios.post(generateUrl(OR_TEMPLATES), record)
 				}
 				this.$emit('saved', { slug: record.slug, mode: target.mode })
 				this.$emit('update:open', false)
 			} catch (e) {
-				const data = e?.response?.data
-				this.saveError =
-					data?.detail
-					|| data?.error
-					|| e?.message
-					|| t('buildiq', 'Saving the template failed.')
+				this.saveError = requestErrorMessage(
+					e,
+					t('buildiq', 'Saving the template failed.'),
+				)
 			} finally {
 				this.saving = false
 			}

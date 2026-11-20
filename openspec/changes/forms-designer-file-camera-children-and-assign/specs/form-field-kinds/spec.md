@@ -49,3 +49,17 @@ Every field SHALL have a "Fill in from another answer" editor that writes `assig
 #### Scenario: A rule on itself
 - **WHEN** the maker writes a rule on `currency` whose condition reads `currency`
 - **THEN** the designer refuses the rule and says a field cannot fill itself
+
+### Requirement: A maker builds a form by dragging field types from a palette (REQ-BQFK-005)
+
+The form designer SHALL show a palette of the field types it offers (the one `FIELD_TYPES` list of T01), each with its name and icon. A maker SHALL add a field by dragging a type from the palette onto the form, at the place where it is dropped, and SHALL reorder fields by dragging them. Every type SHALL also be addable with the keyboard: pick it in the palette and press Enter to add it at the end, then move it with the move up and move down actions. No step SHALL ask the maker for code or raw JSON.
+
+#### Scenario: A date field dropped between two fields
+- **GIVEN** a form with the fields "Naam" and "E-mailadres"
+- **WHEN** the maker drags "Datum" from the palette and drops it between them
+- **THEN** the manifest lists "Naam", the new date field and "E-mailadres" in that order
+
+#### Scenario: Adding a field without a mouse
+- **GIVEN** a maker on the palette with the keyboard
+- **WHEN** she selects "Bestand" and presses Enter
+- **THEN** a file field is added at the end of the form and gets focus

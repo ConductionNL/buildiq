@@ -26,12 +26,65 @@
 	<div class="buildiq-schema-designer" data-walkthrough-id="schema-designer">
 		<!-- List mode -->
 		<template v-if="!schemaId">
-			<div v-if="canImport" class="buildiq-schema-designer__toolbar">
-				<NcButton variant="secondary" @click="showImportWizard = true">
+			<div class="buildiq-schema-designer__toolbar">
+				<!-- REQ-BQMD-001: the list and the diagram are two views of the
+				     same register; the choice lives in `?view=diagram`. -->
+				<div
+					class="buildiq-schema-designer__views"
+					role="group"
+					:aria-label="t('buildiq', 'Show schemas as')">
+					<NcButton
+						class="buildiq-schema-designer__view-list"
+						:variant="isDiagram ? 'tertiary' : 'secondary'"
+						:aria-pressed="isDiagram ? 'false' : 'true'"
+						@click="setView('list')">
+						{{ t('buildiq', 'List') }}
+					</NcButton>
+					<NcButton
+						class="buildiq-schema-designer__view-diagram"
+						:variant="isDiagram ? 'secondary' : 'tertiary'"
+						:aria-pressed="isDiagram ? 'true' : 'false'"
+						@click="setView('diagram')">
+						{{ t('buildiq', 'Diagram') }}
+					</NcButton>
+				</div>
+				<NcButton v-if="canImport" variant="secondary" @click="showImportWizard = true">
 					{{ t('buildiq', 'Import data') }}
 				</NcButton>
+				<!-- REQ-BQDB-005/006: administrators only; OpenRegister refuses
+				     everyone else server side, so this is a convenience. -->
+				<NcButton
+					v-if="isAdministrator"
+					data-testid="add-query-table"
+					variant="secondary"
+					@click="showQueryDialog = true">
+					{{ t('buildiq', 'Add a query table') }}
+				</NcButton>
 			</div>
+			<template v-if="isDiagram">
+				<!-- REQ-BQMD-005: the version's own register and the app's data registers. -->
+				<div v-if="diagramRegisters.length > 1" class="buildiq-schema-designer__register">
+					<label for="buildiq-diagram-register">{{ t('buildiq', 'Register') }}</label>
+					<select
+						id="buildiq-diagram-register"
+						:value="activeDiagramRegister"
+						@change="onDiagramRegisterChange($event.target.value)">
+						<option
+							v-for="option in diagramRegisters"
+							:key="option.register"
+							:value="option.register">
+							{{ option.label }}
+						</option>
+					</select>
+				</div>
+				<DataModelDiagram
+					:model="model"
+					:loading="modelLoading || loadingList || versionLoading"
+					:error="modelError"
+					@open="openSchema" />
+			</template>
 			<SchemaListPanel
+				v-else
 				:schemas="schemas"
 				:loading="loadingList || versionLoading"
 				@add="addSchema"
@@ -125,6 +178,9 @@
 				<FieldEditor
 					:fields="staged.fields"
 					:schemaSlugs="otherSchemaSlugs"
+					:schemaSlug="staged.slug || ''"
+					:propertySources="propertySources"
+					:sourceRefusals="sourceRefusals"
 					@update:fields="onFieldsChange" />
 
 				<LifecycleEditor
@@ -199,6 +255,11 @@
 			:initialSchema="schemaId || ''"
 			@imported="onSchemaImported"
 			@close="showImportWizard = false" />
+
+		<SqlQueryDialog
+			v-if="showQueryDialog"
+			v-model:open="showQueryDialog"
+			@saved="onSchemaImported" />
 	</div>
 </template>
 
@@ -216,6 +277,7 @@ import AccessEditor, {
 } from '../components/schema-editor/AccessEditor.vue'
 import AggregationEditor from '../components/schema-editor/AggregationEditor.vue'
 import CalculationEditor from '../components/schema-editor/CalculationEditor.vue'
+import DataModelDiagram from '../components/schema-editor/DataModelDiagram.vue'
 import FieldEditor, {
 	fieldsToSchema,
 	schemaToFields,
@@ -237,6 +299,7 @@ import WidgetEditor, {
 } from '../components/schema-editor/WidgetEditor.vue'
 import BreakingSchemaChangeDialog from '../dialogs/BreakingSchemaChangeDialog.vue'
 import ImportDataWizard from '../dialogs/ImportDataWizard.vue'
+import SqlQueryDialog from '../dialogs/SqlQueryDialog.vue'
 import { useApplicationVersion } from '../composables/useApplicationVersion.js'
 import { getCurrentUserGroups, useRole } from '../composables/useRole.js'
 import { useSessionHistory } from '../composables/useSessionHistory.js'
@@ -246,9 +309,14 @@ import {
 	calculationsFromProperties,
 	refusalsByProperty,
 } from '../services/calculations.js'
+import {
+	listPropertySources,
+	sourceRefusalsByField,
+} from '../services/propertySources.js'
 import { describeBreakingChanges } from '../services/schemaChanges.js'
 import { registerSlugForApp, useSchemasStore } from '../store/schemas.js'
 import { isEditableTarget } from '../utils/isEditableTarget.js'
+import { mirrorVersionLoad } from '../utils/mirrorVersionLoad.js'
 
 /**
  * Schema object type slug as registered with the store factory.
@@ -265,6 +333,7 @@ export default {
 		UndoIcon,
 		RedoIcon,
 		CalculationEditor,
+		DataModelDiagram,
 		FieldEditor,
 		LifecycleEditor,
 		NcButton,
@@ -278,6 +347,7 @@ export default {
 		WidgetEditor,
 		BreakingSchemaChangeDialog,
 		ImportDataWizard,
+		SqlQueryDialog,
 	},
 
 	/**
@@ -306,6 +376,10 @@ export default {
 			saveError: '',
 			// Save refusals of property calculations, by calculation name (REQ-BQCF-004).
 			calculationRefusals: {},
+			// Save refusals of registry-source declarations, by field name (REQ-BQRF-003).
+			sourceRefusals: {},
+			// The registry providers integriq publishes, fetched once per session (design D2).
+			propertySources: { loaded: false, available: false, results: [] },
 			staged: null,
 			persisted: null,
 			// REQ-OBVR-004: reactive version state resolved by useApplicationVersion.
@@ -315,11 +389,21 @@ export default {
 			// Import-data wizard state (buildiq-data-import-wizard).
 			applicationRecord: null,
 			showImportWizard: false,
+			showQueryDialog: false,
 			// The instance's groups, offered in the Access group picker.
 			instanceGroups: [],
 			// Plain-language breaking changes awaiting confirmation; null when
 			// no confirmation is pending.
 			breakingChanges: null,
+			// Diagram view (data-model-diagram): the register model, the
+			// register it was read for, and the register the maker picked
+			// ('' = the version's own register).
+			model: null,
+			modelFor: '',
+			modelLoading: false,
+			modelPending: '',
+			modelError: '',
+			diagramRegister: '',
 		}
 	},
 
@@ -327,7 +411,7 @@ export default {
 		/**
 		 * Resolve the active application slug from the route (seed fallback).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @return {string} App slug.
 		 */
 		appSlug() {
@@ -339,7 +423,7 @@ export default {
 		/**
 		 * Resolve the active schema id from the route.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @return {string} Schema id.
 		 */
 		schemaId() {
@@ -351,7 +435,7 @@ export default {
 		 * The underscore-prefix param name is Buildiq's system-reserved marker
 		 * to avoid colliding with user-defined `?version=` params.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @return {string|undefined}
 		 */
 		versionSlug() {
@@ -361,7 +445,7 @@ export default {
 		/**
 		 * Resolve the schemas store bound to the active app/version register.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @return {object} Pinia store instance.
 		 */
 		store() {
@@ -396,7 +480,57 @@ export default {
 		},
 
 		/**
-		 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.2
+		 * Whether the list mode shows the diagram (`?view=diagram`).
+		 *
+		 * @spec openspec/changes/data-model-diagram/tasks.md#T05
+		 * @return {boolean}
+		 */
+		isDiagram() {
+			return Boolean(this.$route.query && this.$route.query.view === 'diagram')
+		},
+
+		/**
+		 * The registers the diagram can draw: the version's own register first,
+		 * then each of the app's `dataRegisters` bindings.
+		 *
+		 * @spec openspec/changes/data-model-diagram/tasks.md#T05
+		 * @return {Array<{register: string, label: string}>}
+		 */
+		diagramRegisters() {
+			const options = []
+			if (this.registerSlug) {
+				options.push({
+					register: this.registerSlug,
+					label: this.t('buildiq', 'This version ({register})', { register: this.registerSlug }),
+				})
+			}
+			const bound = (this.applicationRecord && this.applicationRecord.dataRegisters) || []
+			for (const binding of Array.isArray(bound) ? bound : []) {
+				const register = binding && typeof binding.register === 'string' ? binding.register : ''
+				if (register && !options.some((option) => option.register === register)) {
+					options.push({ register, label: binding.label || register })
+				}
+			}
+			return options
+		},
+
+		/**
+		 * The register the diagram draws: the one picked, while it is still on
+		 * offer, else the version's own.
+		 *
+		 * @spec openspec/changes/data-model-diagram/tasks.md#T05
+		 * @return {string} Register slug, or '' until the version resolves.
+		 */
+		activeDiagramRegister() {
+			if (this.diagramRegister
+				&& this.diagramRegisters.some((option) => option.register === this.diagramRegister)) {
+				return this.diagramRegister
+			}
+			return this.registerSlug
+		},
+
+		/**
+		 * @spec openspec/changes/archive/2026-07-07-openbuild-data-import-wizard/tasks.md#2.2
 		 * @return {string} Register slug.
 		 */
 		importRegisterId() {
@@ -409,7 +543,7 @@ export default {
 		 * independently re-gated server-side by OpenRegister's own register
 		 * manage-permission.
 		 *
-		 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.2
+		 * @spec openspec/changes/archive/2026-07-07-openbuild-data-import-wizard/tasks.md#2.2
 		 * @return {boolean}
 		 */
 		canImport() {
@@ -418,9 +552,20 @@ export default {
 		},
 
 		/**
+		 * Whether the caller is a Nextcloud administrator. Gates "Add a query
+		 * table"; OpenRegister refuses a non-administrator's preview and save.
+		 *
+		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-only-a-safe-query-from-an-administrator-runs-req-bqdb-006
+		 * @return {boolean}
+		 */
+		isAdministrator() {
+			return !!(typeof OC !== 'undefined' && OC.isUserAdmin && OC.isUserAdmin())
+		},
+
+		/**
 		 * List the slugs of the other schemas (relation targets).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @return {Array<string>} Other schema slugs.
 		 */
 		otherSchemaSlugs() {
@@ -432,7 +577,7 @@ export default {
 		/**
 		 * Project the staged schema header fields for the header form.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @return {object} Header value object.
 		 */
 		headerValue() {
@@ -585,7 +730,7 @@ export default {
 		/**
 		 * Validate that exactly one initial lifecycle state is set.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @return {boolean} True when valid (or no lifecycle states).
 		 */
 		hasInitialLifecycleState() {
@@ -598,7 +743,7 @@ export default {
 		/**
 		 * Validate that all staged field names are present and unique.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @return {boolean} True when unique.
 		 */
 		fieldNamesUnique() {
@@ -621,7 +766,7 @@ export default {
 		/**
 		 * Gate Save on dirty-state plus all validation gates.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @return {boolean} True when the staged schema may be saved.
 		 */
 		canSave() {
@@ -644,7 +789,7 @@ export default {
 		/**
 		 * Detect whether the staged body differs from the persisted one.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @return {boolean} True when there are unsaved changes.
 		 */
 		hasStagedChanges() {
@@ -677,11 +822,25 @@ export default {
 	},
 
 	watch: {
+		/**
+		 * Load the model when the address switches to the diagram (back and
+		 * forward included).
+		 *
+		 * @spec openspec/changes/data-model-diagram/tasks.md#T05
+		 * @param {boolean} shown Whether the diagram is shown.
+		 * @return {void}
+		 */
+		isDiagram(shown) {
+			if (shown) {
+				this.loadModel()
+			}
+		},
+
 		schemaId: {
 			/**
 			 * Reload schema detail when the route schema id changes.
 			 *
-			 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+			 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 			 * @return {void}
 			 */
 			handler() {
@@ -699,7 +858,7 @@ export default {
 			 * REQ-BUR-004: an app switch is a session boundary — reset the
 			 * undo/redo history (design.md D3/D5).
 			 *
-			 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+			 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 			 * @spec openspec/specs/builder-undo-redo/spec.md#req-bur-005
 			 * @return {void}
 			 */
@@ -718,7 +877,7 @@ export default {
 			 * REQ-BUR-004: a version switch is a session boundary — reset the
 			 * undo/redo history (design.md D3/D5).
 			 *
-			 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+			 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 			 * @spec openspec/specs/builder-undo-redo/spec.md#req-bur-005
 			 * @return {void}
 			 */
@@ -736,7 +895,7 @@ export default {
 	 * On mount: resolve version, load the list, and load detail if a schema
 	 * is selected in the route.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+	 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 	 * @return {Promise<void>}
 	 */
 	async mounted() {
@@ -744,6 +903,7 @@ export default {
 		const versionReady = this.resolveVersion()
 		this.loadApplicationRecord()
 		this.loadInstanceGroups()
+		this.loadPropertySources()
 		// Load the SELECTED SCHEMA FIRST, then the list: the detail is what the
 		// user is looking at, and it needs no version to resolve.
 		if (this.schemaId) {
@@ -765,6 +925,19 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Load the registry providers integriq publishes, once per designer
+		 * session. Without integriq the list is unavailable and existing
+		 * declarations are kept as they are (REQ-BQRF-002).
+		 *
+		 * @spec openspec/changes/data-registry-backed-field-option/specs/schema-designer-ui/spec.md#requirement-an-existing-declaration-survives-a-session-without-integriq-req-bqrf-002
+		 * @return {Promise<void>}
+		 */
+		async loadPropertySources() {
+			const list = await listPropertySources()
+			this.propertySources = { loaded: true, ...list }
+		},
+
 		/**
 		 * Load the instance's groups for the Access group picker.
 		 *
@@ -794,7 +967,7 @@ export default {
 		 * build/manage role. The list only returns apps the caller has a role
 		 * on; `useRole` then derives owner/editor/viewer from its permissions.
 		 *
-		 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.2
+		 * @spec openspec/changes/archive/2026-07-07-openbuild-data-import-wizard/tasks.md#2.2
 		 * @return {Promise<void>}
 		 */
 		async loadApplicationRecord() {
@@ -816,7 +989,7 @@ export default {
 		 * Refresh the schema list after a successful import (a create-from-file
 		 * import may have added a new schema to the register).
 		 *
-		 * @spec openspec/changes/openbuild-data-import-wizard/tasks.md#2.2
+		 * @spec openspec/changes/archive/2026-07-07-openbuild-data-import-wizard/tasks.md#2.2
 		 * @return {Promise<void>}
 		 */
 		async onSchemaImported() {
@@ -835,7 +1008,7 @@ export default {
 		 * Returns the composable's `ready` promise: `refreshList()` needs the
 		 * resolved version's register, not merely a reactive render of it.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @return {Promise<void>}
 		 */
 		resolveVersion() {
@@ -845,25 +1018,7 @@ export default {
 			this.applicationVersion = applicationVersion.value
 			this.versionLoading = loading.value
 			this.versionError = error.value
-			// Set up watchers to keep component data in sync as the fetch resolves.
-			const unwatch = this.$watch(
-				() => applicationVersion.value,
-				(v) => {
-					this.applicationVersion = v
-				},
-			)
-			const unwatchLoading = this.$watch(
-				() => loading.value,
-				(v) => {
-					this.versionLoading = v
-					if (!v) {
-						// Fetch complete — clean up watchers to avoid leaks.
-						unwatch()
-						unwatchLoading()
-						this.versionError = error.value
-					}
-				},
-			)
+			mirrorVersionLoad(this, { applicationVersion, loading, error })
 
 			return ready
 		},
@@ -880,7 +1035,7 @@ export default {
 		 * times"). `register.schemas` is the authoritative set — and it costs one
 		 * scoped request instead of ~1900 rows.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @return {Promise<void>}
 		 */
 		async refreshList() {
@@ -908,12 +1063,97 @@ export default {
 			} finally {
 				this.loadingList = false
 			}
+			// The diagram draws the same register: redraw it with the list.
+			if (this.isDiagram && !this.schemaId) {
+				await this.loadModel({ force: true })
+			}
+		},
+
+		/**
+		 * Read the chosen register's model from OpenRegister
+		 * (`GET /api/registers/{id}/model`): its schemas as nodes and their
+		 * links as edges. OpenRegister resolves references and decides which
+		 * external schema the maker may see; the diagram only draws it.
+		 *
+		 * @spec openspec/changes/data-model-diagram/tasks.md#T05
+		 * @param {{force?: boolean}} [options] `force` reloads a register already read.
+		 * @return {Promise<void>}
+		 */
+		async loadModel({ force = false } = {}) {
+			const register = this.activeDiagramRegister
+			if (!register) {
+				this.model = null
+				this.modelFor = ''
+				return
+			}
+			if (!force && this.modelFor === register && this.model) {
+				return
+			}
+			// A second ask for the register already being read waits for nothing new.
+			if (this.modelLoading && this.modelPending === register) {
+				return
+			}
+			this.modelPending = register
+			this.modelLoading = true
+			this.modelError = ''
+			try {
+				const url = generateUrl(
+					`/apps/openregister/api/registers/${encodeURIComponent(register)}/model`,
+				)
+				const { data } = await axios.get(url)
+				this.model = data && typeof data === 'object' ? data : { nodes: [], edges: [] }
+				this.modelFor = register
+			} catch (e) {
+				this.model = null
+				this.modelFor = ''
+				this.modelError = this.errorMessage(e)
+			} finally {
+				this.modelLoading = false
+				this.modelPending = ''
+			}
+		},
+
+		/**
+		 * Switch between the list and the diagram, keeping the choice in the
+		 * address (`?view=diagram`) next to `?_version=`.
+		 *
+		 * @spec openspec/changes/data-model-diagram/tasks.md#T05
+		 * @param {string} view `list` or `diagram`.
+		 * @return {Promise<void>}
+		 */
+		async setView(view) {
+			const query = { ...(this.$route.query || {}) }
+			if (view === 'diagram') {
+				query.view = 'diagram'
+			} else {
+				delete query.view
+			}
+			try {
+				await this.$router.replace({ query })
+			} catch {
+				// A duplicate navigation is no failure.
+			}
+			if (view === 'diagram') {
+				await this.loadModel()
+			}
+		},
+
+		/**
+		 * Draw another register picked in the register switch.
+		 *
+		 * @spec openspec/changes/data-model-diagram/tasks.md#T05
+		 * @param {string} register The register slug.
+		 * @return {Promise<void>}
+		 */
+		async onDiagramRegisterChange(register) {
+			this.diagramRegister = register
+			await this.loadModel()
 		},
 
 		/**
 		 * Load a single schema's detail and stage it for editing.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @return {Promise<void>}
 		 */
 		async loadDetail() {
@@ -982,7 +1222,7 @@ export default {
 		/**
 		 * Convert a persisted schema body into the staged editor model.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @param {object} body Persisted schema body.
 		 * @return {object} Staged editor model.
 		 */
@@ -1021,12 +1261,12 @@ export default {
 		/**
 		 * Compose a canonical schema body from the staged editor model.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @param {object} staged Staged editor model.
 		 * @return {object} Canonical schema body.
 		 */
 		composeSchemaBody(staged) {
-			const composed = fieldsToSchema(staged.fields)
+			const composed = fieldsToSchema(staged.fields, staged.slug)
 			const { required } = composed
 			// REQ-BQCF-001: property calculations ride on their property.
 			const { properties, order } = applyCalculations(
@@ -1100,7 +1340,7 @@ export default {
 		/**
 		 * Apply a header-form change into the staged model (slug locked).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @param {object} value Header values.
 		 * @return {void}
 		 */
@@ -1117,7 +1357,7 @@ export default {
 		/**
 		 * Apply a fields-editor change into the staged model.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @param {Array} fields Updated fields.
 		 * @return {void}
 		 */
@@ -1128,7 +1368,7 @@ export default {
 		/**
 		 * Apply a states change into the staged model.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @param {Array} states Updated states.
 		 * @return {void}
 		 */
@@ -1139,7 +1379,7 @@ export default {
 		/**
 		 * Apply a transitions change into the staged model.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @param {Array} transitions Updated transitions.
 		 * @return {void}
 		 */
@@ -1150,7 +1390,7 @@ export default {
 		/**
 		 * Apply a relations change into the staged model.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @param {Array} relations Updated relations.
 		 * @return {void}
 		 */
@@ -1178,7 +1418,7 @@ export default {
 		/**
 		 * Apply a widgets change into the staged model.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @param {Array} widgets Updated widgets.
 		 * @return {void}
 		 */
@@ -1304,7 +1544,7 @@ export default {
 		/**
 		 * Create a new schema via the store, surfacing duplicate-slug errors.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @param {object} payload New schema payload.
 		 * @return {Promise<void>}
 		 */
@@ -1396,7 +1636,7 @@ export default {
 		/**
 		 * Navigate to a schema's detail, preserving ?_version=.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @param {string} slug Schema slug.
 		 * @return {void}
 		 */
@@ -1414,7 +1654,7 @@ export default {
 		/**
 		 * Navigate back to the schema list, preserving ?_version=.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @return {void}
 		 */
 		goToList() {
@@ -1431,7 +1671,7 @@ export default {
 		/**
 		 * Delete a schema via the store and refresh the list.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @param {string} slug Schema slug.
 		 * @return {Promise<void>}
 		 */
@@ -1472,7 +1712,7 @@ export default {
 		 * When OpenRegister refuses a breaking change, the designer asks the
 		 * author to confirm and calls this again with `acknowledgeBreaking`.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @param {object} [options] Save options.
 		 * @param {boolean} [options.acknowledgeBreaking] Whether the author confirmed a breaking change.
 		 * @return {Promise<void>}
@@ -1485,6 +1725,7 @@ export default {
 			this.saving = true
 			this.saveError = ''
 			this.calculationRefusals = {}
+			this.sourceRefusals = {}
 			try {
 				const body = this.writeBody(this.staged, acknowledgeBreaking)
 				// `saveObject` switches to PUT when `id` is present, and the
@@ -1519,6 +1760,11 @@ export default {
 					this.calculationRefusals = refusalsByProperty(
 						err && typeof err === 'object' ? err.fields : null,
 						Object.keys(this.staged.propertyCalculations || {}),
+					)
+					// REQ-BQRF-003: a refused registry source shows on its own field.
+					this.sourceRefusals = sourceRefusalsByField(
+						err,
+						(this.staged.fields || []).map((field) => field.name),
 					)
 					return
 				}
@@ -1614,7 +1860,7 @@ export default {
 		 * is recorded as exactly one history entry — a single undo brings
 		 * the discarded staged edits back.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @spec openspec/specs/builder-undo-redo/spec.md#req-bur-005
 		 * @return {void}
 		 */
@@ -1687,7 +1933,7 @@ export default {
 		/**
 		 * Extract a human-readable message from an error/response.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
 		 * @param {*} e Error.
 		 * @return {string} Message.
 		 */
@@ -1750,7 +1996,29 @@ export default {
 
 .buildiq-schema-designer__toolbar {
 	display: flex;
-	justify-content: flex-end;
+	justify-content: space-between;
+	align-items: center;
+	gap: 8px;
 	margin-bottom: 12px;
+}
+
+.buildiq-schema-designer__views {
+	display: flex;
+	gap: 4px;
+}
+
+.buildiq-schema-designer__register {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin-bottom: 12px;
+}
+
+.buildiq-schema-designer__register select {
+	min-width: 240px;
+	color: var(--color-main-text);
+	background-color: var(--color-main-background);
+	border: 1px solid var(--color-border-maxcontrast);
+	border-radius: var(--border-radius-element, var(--border-radius));
 }
 </style>

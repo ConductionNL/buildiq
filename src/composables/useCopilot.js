@@ -9,7 +9,7 @@ import { validateManifest } from '@conduction/nextcloud-vue'
  * (`@conduction/nextcloud-vue`, ADR-024) — a failed layer means nothing can
  * be applied, matching the server-side layers enforced in CopilotService.
  *
- * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+ * @spec openspec/specs/ai-copilot/spec.md
  */
 import { computed, ref } from 'vue'
 import {
@@ -26,7 +26,7 @@ let healthCache = null
  * Test helper — clear the module-level health cache.
  *
  * @return {void}
- * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+ * @spec openspec/specs/ai-copilot/spec.md
  */
 export function clearCopilotHealthCache() {
 	healthCache = null
@@ -38,7 +38,7 @@ export function clearCopilotHealthCache() {
  *
  * @param {object} manifests - `{ versionKey: { current, predicted } }` from the plan response.
  * @return {Map<string, Array<string>>} versionKey -> validation error list (empty when valid).
- * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+ * @spec openspec/specs/ai-copilot/spec.md
  */
 function validatePredictedManifests(manifests) {
 	const result = new Map()
@@ -65,10 +65,29 @@ function validatePredictedManifests(manifests) {
 }
 
 /**
+ * The validator messages of a plan's predicted manifests, flattened in
+ * first-seen order and de-duplicated; only non-empty strings are kept.
+ *
+ * @param {Map<string, Array<string>|null>} errorsByManifest - the messages per predicted manifest.
+ * @return {Array<string>} the messages.
+ */
+export function uniqueValidatorMessages(errorsByManifest) {
+	const seen = new Set()
+	for (const errors of errorsByManifest.values()) {
+		for (const line of errors || []) {
+			if (typeof line === 'string' && line.length > 0) {
+				seen.add(line)
+			}
+		}
+	}
+	return [...seen]
+}
+
+/**
  * Own the copilot plan/review/approve/execute state machine.
  *
  * @return {object} Reactive copilot state + actions.
- * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+ * @spec openspec/specs/ai-copilot/spec.md
  */
 export function useCopilot() {
 	const state = ref('idle')
@@ -114,7 +133,7 @@ export function useCopilot() {
 	 * Probe (and cache for the session) copilot availability.
 	 *
 	 * @return {Promise<{available: boolean, reason?: string}>}
-	 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+	 * @spec openspec/specs/ai-copilot/spec.md
 	 */
 	async function checkHealth() {
 		if (healthCache) {
@@ -138,11 +157,12 @@ export function useCopilot() {
 	 *   (spec `agent-workspace`).
 	 * @param {string} [versionSlug] - the version the caller is editing; steps that
 	 *   omit a version are settled on it server-side.
+	 * @param {number} [documentFileId] - Files id of a requirements document read server-side.
 	 * @return {Promise<void>}
-	 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+	 * @spec openspec/specs/ai-copilot/spec.md
 	 * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
 	 */
-	async function generatePlan(brief, appSlug, agentId, versionSlug) {
+	async function generatePlan(brief, appSlug, agentId, versionSlug, documentFileId) {
 		const thisTurn = ++turn
 		state.value = 'planning'
 		errorMessage.value = ''
@@ -156,6 +176,7 @@ export function useCopilot() {
 				appSlug,
 				agentId,
 				versionSlug,
+				documentFileId,
 			})
 			if (thisTurn !== turn) {
 				return
@@ -183,7 +204,7 @@ export function useCopilot() {
 	 *   (spec `agent-workspace`) — threaded through so the resulting AgentRun
 	 *   record captures the full turn.
 	 * @return {Promise<void>}
-	 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+	 * @spec openspec/specs/ai-copilot/spec.md
 	 * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
 	 */
 	async function approve(agentId) {
@@ -195,7 +216,8 @@ export function useCopilot() {
 		errorDetail.value = ''
 		try {
 			const result = await executePlan(
-				{ summary: plan.value.summary, steps: plan.value.steps },
+				// traceId: the run keeps this plan's model steps (REQ-BQAG-004).
+				{ summary: plan.value.summary, steps: plan.value.steps, traceId: plan.value.traceId },
 				{ agentId, prompt: lastPrompt.value },
 			)
 			executeResult.value = result
@@ -217,7 +239,7 @@ export function useCopilot() {
 	 *
 	 * @param {string} [agentId] - optional Agent id this plan was planned with.
 	 * @return {void}
-	 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+	 * @spec openspec/specs/ai-copilot/spec.md
 	 * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/agent-workspace/spec.md
 	 */
 	function discard(agentId) {
@@ -226,7 +248,7 @@ export function useCopilot() {
 			discardRun({
 				agentId,
 				prompt: lastPrompt.value,
-				plan: { summary: plan.value.summary, steps: plan.value.steps },
+				plan: { summary: plan.value.summary, steps: plan.value.steps, traceId: plan.value.traceId },
 			})
 		}
 		state.value = 'idle'

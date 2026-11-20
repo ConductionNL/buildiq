@@ -74,7 +74,7 @@ const useSchemasStoreRaw = createObjectStore(STORE_ID, {
  * @param {string|undefined} [versionSlug] Optional version slug (e.g. `staging`).
  * @return {string} Register slug (e.g. `openbuild-hello-world-staging`).
  *
- * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+ * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
  */
 export function registerSlugForApp(appSlug, versionSlug) {
 	if (versionSlug && versionSlug !== '') {
@@ -98,7 +98,7 @@ export function registerSlugForApp(appSlug, versionSlug) {
  * @param {string|undefined} [versionSlug] Optional version slug.
  * @return {object} Pinia store instance.
  *
- * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
+ * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-5
  */
 export function useSchemasStore(appSlug, versionSlug) {
 	const store = useSchemasStoreRaw()

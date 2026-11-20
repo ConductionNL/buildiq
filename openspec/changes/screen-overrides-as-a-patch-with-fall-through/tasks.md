@@ -14,6 +14,7 @@
 - [x] 2.4 Compare `baseFingerprint` against the normalised base, withhold on drift and serve the base (REQ-OBSO-002, REQ-OBSO-003)
 - [x] 2.5 Return `appliedLayers[]` and `withheld[]` beside the resolved layout (REQ-OBSO-006)
 - [ ] 2.6 Cache on the composing layers' ids and fingerprints
+- [ ] 2.7 Add the `organisation` audience kind to `pageLayout` in `lib/Settings/openbuild_register.json`, resolve it from the caller's active OpenRegister organisation in `lib/Service/PageLayoutLayerStack.php`, and place it between the type layout and the group and team overrides; offer it in the "applies to" panel of `DetailPageEditor.vue` (REQ-OBSO-007). Verify: a PHPUnit case for two organisations and a team override in one of them
 
 ## 3. Editor
 

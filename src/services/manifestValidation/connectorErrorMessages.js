@@ -16,20 +16,22 @@
  * Anything it does not recognise is returned untouched, so the other
  * validators in the pipeline keep whatever they already produce.
  *
- * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-001
+ * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-001
  */
 
 import { translate as t } from '@nextcloud/l10n'
+import { indexViewMessages } from './indexViews.js'
 
 /**
  * One sentence per code the connector validator can emit, saying what is
  * wrong and, where there is one, what to do instead.
  *
  * @return {Record<string, string>} Code to message.
- * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-001
+ * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-001
  */
 function messages() {
 	return {
+		...indexViewMessages(),
 		'buildiq.connector.error.invalid-shape': t(
 			'buildiq',
 			'The connector settings must be a block of keys and values.',
@@ -86,6 +88,11 @@ function messages() {
 			'buildiq',
 			'Cache lifetime is a whole number of seconds, from 0 to 3600.',
 		),
+		// experience-multilingual-apps (REQ-BQML-001): the i18n validator.
+		'buildiq.i18n.error.unknown-language': t(
+			'buildiq',
+			'This is not a Nextcloud language code. Pick the language from the list in the app settings.',
+		),
 	}
 }
 
@@ -97,7 +104,7 @@ function messages() {
  *
  * @param {string} error - an error as the validators return it.
  * @return {string} The same error with a known code replaced by its sentence.
- * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-001
+ * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-001
  */
 export function resolveValidationMessage(error) {
 	if (typeof error !== 'string') {

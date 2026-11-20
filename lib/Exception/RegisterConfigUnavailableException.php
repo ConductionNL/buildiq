@@ -31,7 +31,7 @@ use RuntimeException;
 /**
  * The base register configuration could not be loaded.
  *
- * @spec openspec/changes/retrofit-2026-05-25-settings-and-observability/tasks.md#task-3
+ * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-settings-and-observability/tasks.md#task-3
  */
 final class RegisterConfigUnavailableException extends RuntimeException {
 }//end class

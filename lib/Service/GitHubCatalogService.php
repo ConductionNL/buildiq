@@ -41,8 +41,10 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\GitHubCatalogServiceInterface;
+use OCA\Buildiq\Kernel\Values\RepoSource;
+use OCA\Buildiq\Service\GitHub\ShortLivedCache;
 use OCP\Http\Client\IClientService;
-use OCP\ICache;
 use OCP\ICacheFactory;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -53,7 +55,7 @@ use Throwable;
  *
  * @spec openspec/changes/github-shop-catalogue/specs/github-shop-catalogue/spec.md
  */
-class GitHubCatalogService {
+class GitHubCatalogService implements GitHubCatalogServiceInterface {
 	/**
 	 * The fixed GitHub API host — compile-time constant, no SSRF surface.
 	 */
@@ -167,16 +169,18 @@ class GitHubCatalogService {
 	public const OUTCOME_RATE_LIMITED = 'github_rate_limited';
 
 	/**
-	 * Outcome: transport failure / non-2xx that is not a rate limit.
+	 * Search results, kept for {@see SEARCH_TTL} seconds.
+	 *
+	 * @var ShortLivedCache
 	 */
-	public const OUTCOME_UNREACHABLE = 'github_unreachable';
+	private readonly ShortLivedCache $searchCache;
 
 	/**
-	 * The distributed cache, or null when no cache backend is available.
+	 * Repository descriptors, kept for {@see DESCRIPTOR_TTL} seconds.
 	 *
-	 * @var ICache|null
+	 * @var ShortLivedCache
 	 */
-	private readonly ?ICache $cache;
+	private readonly ShortLivedCache $descriptorCache;
 
 	/**
 	 * Constructor.
@@ -200,7 +204,8 @@ class GitHubCatalogService {
 			$cache = $cacheFactory->createDistributed(self::CACHE_NS);
 		}
 
-		$this->cache = $cache;
+		$this->searchCache = new ShortLivedCache(cache: $cache, ttl: self::SEARCH_TTL);
+		$this->descriptorCache = new ShortLivedCache(cache: $cache, ttl: self::DESCRIPTOR_TTL);
 	}//end __construct()
 
 	/**
@@ -230,7 +235,7 @@ class GitHubCatalogService {
 		$normalise = strtolower($term);
 		$cacheKey = 'search:' . md5($normalise . '|' . ((string)$credentialId));
 
-		$cached = $this->cacheGet(key: $cacheKey);
+		$cached = $this->searchCache->get(key: $cacheKey);
 		if (is_array($cached) === true) {
 			return $cached;
 		}
@@ -246,17 +251,7 @@ class GitHubCatalogService {
 			// this is not an empty catalogue. Returning here also skips the
 			// cache write below, so one bad round is not served to every later
 			// caller for the whole TTL.
-			$failure = self::OUTCOME_UNREACHABLE;
-			if ($hits['rateLimited'] === true) {
-				$failure = self::OUTCOME_RATE_LIMITED;
-			}
-
-			return [
-				'outcome' => $failure,
-				'cards' => [],
-				'brokerUsed' => $hits['brokerUsed'],
-				'rateLimited' => $hits['rateLimited'],
-			];
+			return self::failedSearch(hits: $hits);
 		}
 
 		$payload = [
@@ -272,11 +267,31 @@ class GitHubCatalogService {
 			// more honest than reporting a clean result.
 			'rateLimited' => $hits['rateLimited'],
 		];
-		$this->cacheSet(key: $cacheKey, value: $payload, ttl: self::SEARCH_TTL);
+		$this->searchCache->set(key: $cacheKey, value: $payload);
 
 		return $payload;
 	}//end search()
 
+	/**
+	 * The answer to a search in which no topic answered: unreachable, or rate-limited when that was why.
+	 *
+	 * @param array<string, mixed> $hits The collected topic hits, with `brokerUsed` and `rateLimited`.
+	 *
+	 * @return array<string, mixed> The `{outcome, cards, brokerUsed, rateLimited}` answer, with no cards.
+	 */
+	private static function failedSearch(array $hits): array {
+		$failure = self::OUTCOME_UNREACHABLE;
+		if ($hits['rateLimited'] === true) {
+			$failure = self::OUTCOME_RATE_LIMITED;
+		}
+
+		return [
+			'outcome' => $failure,
+			'cards' => [],
+			'brokerUsed' => $hits['brokerUsed'],
+			'rateLimited' => $hits['rateLimited'],
+		];
+	}//end failedSearch()
 
 	/**
 	 * Query every accepted discovery topic and merge the hits.
@@ -321,15 +336,7 @@ class GitHubCatalogService {
 			}
 
 			$anyOk = true;
-			foreach ($page['items'] as $item) {
-				$key = strtolower((string)($item['full_name'] ?? ''));
-				if ($key === '' || isset($seen[$key]) === true) {
-					continue;
-				}
-
-				$seen[$key] = true;
-				$items[] = $item;
-			}
+			$items = array_merge($items, $this->unseenHits(hits: $page['items'], seen: $seen));
 		}
 
 		return [
@@ -340,6 +347,28 @@ class GitHubCatalogService {
 		];
 	}//end collectTopicHits()
 
+	/**
+	 * The hits of one topic page not seen on an earlier page, keyed by lower-cased full_name.
+	 *
+	 * @param array<int, array<string, mixed>> $hits The page's items.
+	 * @param array<string, bool>              $seen Full names already taken; updated in place.
+	 *
+	 * @return array<int, array<string, mixed>> The new hits, in page order.
+	 */
+	private function unseenHits(array $hits, array &$seen): array {
+		$fresh = [];
+		foreach ($hits as $item) {
+			$key = strtolower((string)($item['full_name'] ?? ''));
+			if ($key === '' || isset($seen[$key]) === true) {
+				continue;
+			}
+
+			$seen[$key] = true;
+			$fresh[] = $item;
+		}
+
+		return $fresh;
+	}//end unseenHits()
 
 	/**
 	 * Run one topic's repository search and return its usable items.
@@ -378,25 +407,10 @@ class GitHubCatalogService {
 			return $failed;
 		}
 
-		$decoded = json_decode($result['body'], true);
-		if (is_array($decoded) === false || is_array($decoded['items'] ?? null) === false) {
-			// A 200 whose body is not the documented search shape means GitHub
-			// never actually answered this query: a proxy error page, a
-			// truncated response, an HTML interstitial. Counting it as an empty
-			// success would make the UI say "no apps match your search", telling
-			// the user their query found nothing when in fact the lookup failed.
-			// A lookup failure must not wear the words of a judgement, so this
-			// query counts as failed.
+		$items = self::searchItems(body: $result['body']);
+		if ($items === null) {
 			return $failed;
 		}
-
-		// Shape-check here so the caller's merge loop can trust every entry.
-		$items = array_values(
-			array_filter(
-				$decoded['items'],
-				static fn ($item): bool => is_array($item)
-			)
-		);
 
 		return [
 			'ok' => true,
@@ -406,6 +420,35 @@ class GitHubCatalogService {
 		];
 	}//end fetchTopic()
 
+	/**
+	 * The repository entries of a search response body, or null when the body is not the search shape.
+	 *
+	 * A 200 whose body is not the documented search shape means GitHub
+	 * never actually answered this query: a proxy error page, a
+	 * truncated response, an HTML interstitial. Counting it as an empty
+	 * success would make the UI say "no apps match your search", telling
+	 * the user their query found nothing when in fact the lookup failed.
+	 * A lookup failure must not wear the words of a judgement, so this
+	 * query counts as failed.
+	 *
+	 * @param string $body The response body.
+	 *
+	 * @return array<int, array<mixed>>|null The entries that are objects, or null.
+	 */
+	private static function searchItems(string $body): ?array {
+		$decoded = json_decode($body, true);
+		if (is_array($decoded) === false || is_array($decoded['items'] ?? null) === false) {
+			return null;
+		}
+
+		// Shape-check here so the caller's merge loop can trust every entry.
+		return array_values(
+			array_filter(
+				$decoded['items'],
+				static fn ($item): bool => is_array($item)
+			)
+		);
+	}//end searchItems()
 
 	/**
 	 * Build the installable cards for the merged hits.
@@ -451,7 +494,7 @@ class GitHubCatalogService {
 		}
 
 		$cacheKey = 'descriptor:' . $source->owner . '/' . $source->repo . '@' . ((string)$source->ref) . '|' . ((string)$source->credentialId);
-		$cached = $this->cacheGet(key: $cacheKey);
+		$cached = $this->descriptorCache->get(key: $cacheKey);
 		if (is_array($cached) === true) {
 			return $cached;
 		}
@@ -466,7 +509,7 @@ class GitHubCatalogService {
 			return null;
 		}
 
-		$this->cacheSet(key: $cacheKey, value: $decoded, ttl: self::DESCRIPTOR_TTL);
+		$this->descriptorCache->set(key: $cacheKey, value: $decoded);
 
 		return $decoded;
 	}//end fetchDescriptor()
@@ -562,7 +605,7 @@ class GitHubCatalogService {
 	 *
 	 * @return array<string,string> The `path => contents` map for the v2 channels.
 	 *
-	 * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-app-s-whole-configuration
+	 * @spec openspec/changes/archive/2026-10-07-app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-app-s-whole-configuration
 	 */
 	private function fetchChannelFiles(RepoSource $source, ?string $actingUserId): array {
 		$files = [];
@@ -664,8 +707,42 @@ class GitHubCatalogService {
 	 * @return array<string,mixed>|null The card, or null when the item lacks an owner/name.
 	 */
 	private function buildCard(array $item, ?string $actingUserId, ?string $credentialId): ?array {
-		$fullName = (string)($item['full_name'] ?? '');
-		$nameParts = explode('/', $fullName);
+		$coordinates = $this->repoCoordinates(item: $item);
+		if ($coordinates === null) {
+			return null;
+		}
+
+		[$owner, $repo] = $coordinates;
+		$card = [
+			'owner' => $owner,
+			'repo' => $repo,
+			'stars' => (int)($item['stargazers_count'] ?? 0),
+		];
+		$descriptor = $this->fetchDescriptor(
+			source: new RepoSource(owner: $owner, repo: $repo, ref: null, credentialId: $credentialId),
+			actingUserId: $actingUserId
+		);
+
+		if ($descriptor === null) {
+			return $card + [
+				'installable' => false,
+				'unparseable' => true,
+			];
+		}
+
+		return $card + $this->descriptorFields(descriptor: $descriptor, repo: $repo);
+	}//end buildCard()
+
+	/**
+	 * The owner and repository a search hit names, read from its `owner` and
+	 * `name`, else from `full_name`.
+	 *
+	 * @param array<string,mixed> $item A GitHub search-result item.
+	 *
+	 * @return array{0: string, 1: string}|null Owner and repository, or null when either is missing.
+	 */
+	private function repoCoordinates(array $item): ?array {
+		$nameParts = explode('/', (string)($item['full_name'] ?? ''));
 		$owner = (string)($item['owner']['login'] ?? '');
 		if ($owner === '') {
 			$owner = (string)($nameParts[0] ?? '');
@@ -680,31 +757,24 @@ class GitHubCatalogService {
 			return null;
 		}
 
-		$stars = (int)($item['stargazers_count'] ?? 0);
-		$descriptor = $this->fetchDescriptor(
-			source: new RepoSource(owner: $owner, repo: $repo, ref: null, credentialId: $credentialId),
-			actingUserId: $actingUserId
-		);
+		return [$owner, $repo];
+	}//end repoCoordinates()
 
-		if ($descriptor === null) {
-			return [
-				'owner' => $owner,
-				'repo' => $repo,
-				'stars' => $stars,
-				'installable' => false,
-				'unparseable' => true,
-			];
-		}
-
+	/**
+	 * The card fields of an installable hit, read from its descriptor.
+	 *
+	 * @param array<string,mixed> $descriptor The parsed descriptor.
+	 * @param string $repo The repository name, the name fallback.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function descriptorFields(array $descriptor, string $repo): array {
 		$credentials = [];
 		if (is_array($descriptor['credentials'] ?? null) === true) {
 			$credentials = $descriptor['credentials'];
 		}
 
 		return [
-			'owner' => $owner,
-			'repo' => $repo,
-			'stars' => $stars,
 			'installable' => true,
 			'unparseable' => false,
 			'slug' => (string)($descriptor['slug'] ?? ''),
@@ -715,7 +785,7 @@ class GitHubCatalogService {
 			'version' => (string)($descriptor['version'] ?? ''),
 			'credentials' => $credentials,
 		];
-	}//end buildCard()
+	}//end descriptorFields()
 
 	/**
 	 * List `schemas/*.json` paths via the contents API directory listing.
@@ -922,36 +992,4 @@ class GitHubCatalogService {
 
 		return true;
 	}//end validRepo()
-
-	/**
-	 * Read a value from the short-TTL cache (no-op when no cache backend).
-	 *
-	 * @param string $key The cache key.
-	 *
-	 * @return mixed The cached value, or null on a miss / no cache.
-	 */
-	private function cacheGet(string $key): mixed {
-		if ($this->cache === null) {
-			return null;
-		}
-
-		return $this->cache->get($key);
-	}//end cacheGet()
-
-	/**
-	 * Write a value to the short-TTL cache (no-op when no cache backend).
-	 *
-	 * @param string $key The cache key.
-	 * @param mixed $value The value to cache.
-	 * @param int $ttl The TTL in seconds.
-	 *
-	 * @return void
-	 */
-	private function cacheSet(string $key, mixed $value, int $ttl): void {
-		if ($this->cache === null) {
-			return;
-		}
-
-		$this->cache->set($key, $value, $ttl);
-	}//end cacheSet()
 }//end class

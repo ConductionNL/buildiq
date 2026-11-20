@@ -35,7 +35,7 @@
  * principal for the callable only. The `_rbac`/`_multitenancy` bypass on the
  * save call remains as defence in depth.
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-30
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-30
  */
 
 declare(strict_types=1);
@@ -44,6 +44,8 @@ namespace OCA\Buildiq\Repair;
 
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
 use Psr\Log\LoggerInterface;
@@ -88,7 +90,7 @@ class PopulateApplicationPermissions implements IRepairStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-30
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-30
 	 */
 	public function run(IOutput $output): void {
 		$output->info('Populating permissions on pre-existing Applications...');
@@ -145,7 +147,7 @@ class PopulateApplicationPermissions implements IRepairStep {
 	 *
 	 * @return integer|null Number of Applications patched, or null when none were found
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-30
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-30
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function patchApplicationsMissingPermissions(IOutput $output): ?int {
@@ -230,8 +232,7 @@ class PopulateApplicationPermissions implements IRepairStep {
 			// the Anonymous repair-step caller.
 			$this->objectService->saveObject(
 				object: $application,
-				register: 'buildiq',
-				schema: 'built-app',
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: 'buildiq', schema: 'built-app')),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -256,7 +257,7 @@ class PopulateApplicationPermissions implements IRepairStep {
 	 *
 	 * @return bool True when the Application should be patched
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-30
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-30
 	 */
 	private function needsMigration(array $application): bool {
 		$permissions = ($application['permissions'] ?? null);

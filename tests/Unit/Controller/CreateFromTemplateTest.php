@@ -37,7 +37,7 @@ use OCA\Buildiq\Service\CallerContext;
 use OCA\Buildiq\Service\ManifestResolverService;
 use OCA\Buildiq\Service\PermissionResolver;
 use OCA\Buildiq\Service\RegisterStore;
-use OCA\Buildiq\Service\RepoSource;
+use OCA\Buildiq\Kernel\Values\RepoSource;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -54,9 +54,11 @@ use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\MockObject\Rule\InvocationOrder;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 
 /**
  * Tests for ApplicationsController::createFromTemplate.
@@ -294,9 +296,9 @@ class CreateFromTemplateTest extends TestCase {
 	 *
 	 * PHPUnit resolves the controller's NAMED arguments against
 	 * `ObjectServiceInterface::saveObject()`'s OWN signature and then invokes
-	 * this callback POSITIONALLY, so the parameters below must mirror that
-	 * signature's order exactly: (object, extend, register, schema, uuid, …).
-	 * Verified against the live interface with ReflectionMethod.
+	 * this callback POSITIONALLY, so the parameters below mirror that
+	 * signature's order: (object, options, …). The register, schema and uuid
+	 * travel in the ObjectSaveOptions.
 	 *
 	 * The expected call count is configured on THIS matcher, never as a second
 	 * `expects()` on the same method: PHPUnit answers a call from the first
@@ -314,13 +316,10 @@ class CreateFromTemplateTest extends TestCase {
 			: $this->objectService->expects($matcher)->method('saveObject');
 
 		$stub->willReturnCallback(
-			function (
-				array $object,
-				?array $extend = [],
-				string|int|null $register = null,
-				string|int|null $schema = null,
-				?string $uuid = null,
-			) use (&$calls): ObjectEntity {
+			function (array $object, ?ObjectSaveOptions $options = null) use (&$calls): ObjectEntity {
+				$register = $options?->target->register;
+				$schema   = $options?->target->schema;
+				$uuid     = $options?->uuid;
 				$calls[] = [
 					'object' => $object,
 					'register' => $register,
@@ -561,6 +560,49 @@ class CreateFromTemplateTest extends TestCase {
 			);
 		}
 	}//end testTheStoredApplicationRecordsNameOwnerAndOrigin()
+
+	/**
+	 * An installed app starts with the same organisation scope as a new app:
+	 * the guard's default, `holder` while multitenancy is on (REQ-BQOS-005).
+	 *
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-installs-land-in-the-installer-s-organisation-req-bqos-005
+	 *
+	 * @return void
+	 */
+	public function testAnInstalledAppStartsWithTheDefaultOrganisationScope(): void {
+		$guard = $this->createMock(\OCA\Buildiq\Service\AppOrganisationGuard::class);
+		$guard->expects(self::once())->method('defaultScope')->willReturn('holder');
+		$controller = new ApplicationsController(
+			request: $this->request,
+			logger: $this->logger,
+			store: new RegisterStore(
+				objectService: $this->objectService,
+				registerMapper: $this->registerMapper,
+				schemaMapper: $this->schemaMapper,
+				auditTrailMapper: null
+			),
+			caller: new CallerContext(
+				userSession: $this->userSession,
+				groupManager: $this->groupManager,
+				permissionResolver: new PermissionResolver($this->groupManager, $this->logger),
+				organisationGuard: $guard
+			),
+			manifestResolver: $this->manifestResolver,
+			channelApplier: $this->channelApplier,
+		);
+		$this->authenticateAs('alice');
+		$this->withRequestParams(['name' => 'Meldingen Zuid', 'slug' => 'meldingen-zuid']);
+		$this->objectService->method('searchObjects')->willReturnOnConsecutiveCalls([$this->templateRecord(self::TEMPLATE_SLUG)], []);
+		$this->schemaMapper->method('createFromArray')->willReturn($this->schemaWithId(7777));
+		$calls = [];
+		$this->recordSaves($calls);
+
+		$controller->createFromTemplate(templateSlug: self::TEMPLATE_SLUG);
+
+		self::assertSame('meldingen-zuid', $calls[0]['object']['slug']);
+		self::assertSame('holder', $calls[0]['object']['organisationScope']);
+		self::assertSame(['user:alice'], $calls[0]['object']['permissions']['owners']);
+	}//end testAnInstalledAppStartsWithTheDefaultOrganisationScope()
 
 	/**
 	 * The install hands the channel applier the template, the acting user
@@ -846,13 +888,11 @@ class CreateFromTemplateTest extends TestCase {
 
 		$seen = 0;
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (
-				array $object,
-				?array $extend = [],
-				string|int|null $register = null,
-				string|int|null $schema = null,
-				?string $uuid = null,
-			) use (&$seen): ObjectEntity {
+			function (array $object, ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$seen): ObjectEntity {
+				$extend = $options->extend ?? [];
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$seen++;
 				if ($schema === 'applicationVersion') {
 					throw new \RuntimeException('OR unavailable');
@@ -891,13 +931,11 @@ class CreateFromTemplateTest extends TestCase {
 
 		$calls = [];
 		$this->objectService->method('saveObject')->willReturnCallback(
-			function (
-				array $object,
-				?array $extend = [],
-				string|int|null $register = null,
-				string|int|null $schema = null,
-				?string $uuid = null,
-			) use (&$calls): ObjectEntity {
+			function (array $object, ObjectSaveOptions $options = new ObjectSaveOptions()) use (&$calls): ObjectEntity {
+				$extend = $options->extend ?? [];
+				$register = $options->target->register;
+				$schema = $options->target->schema;
+				$uuid = $options->uuid;
 				$calls[] = $schema;
 				if ($schema === 'applicationVersion') {
 					// An entity carrying neither `uuid` nor `id`.
@@ -959,6 +997,98 @@ class CreateFromTemplateTest extends TestCase {
 		$result = $this->controller->createFromTemplate(templateSlug: self::TEMPLATE_SLUG);
 		self::assertSame(Http::STATUS_FORBIDDEN, $result->getStatus());
 	}//end testNonAdminIsForbidden()
+
+	/**
+	 * The two clone endpoints and the admin-only refusal detail each answers with.
+	 *
+	 * @return array<string, array{0: string, 1: string}>
+	 */
+	public static function cloneEndpoints(): array {
+		return [
+			'from template' => ['createFromTemplate', 'Cloning an app from a template requires Nextcloud admin privileges.'],
+			'copy'          => ['copy', 'Copying an app requires Nextcloud admin privileges.'],
+		];
+	}//end cloneEndpoints()
+
+	/**
+	 * Call a clone endpoint.
+	 *
+	 * @param string $endpoint The controller method.
+	 *
+	 * @return array{0: int, 1: mixed} Status and body.
+	 */
+	private function callClone(string $endpoint): array {
+		$response = $this->controller->$endpoint(self::TEMPLATE_SLUG);
+		return [$response->getStatus(), $response->getData()];
+	}//end callClone()
+
+	/**
+	 * An anonymous caller is refused with 401 before anything else is read.
+	 *
+	 * @param string $endpoint The controller method.
+	 *
+	 * @return void
+	 */
+	#[DataProvider('cloneEndpoints')]
+	public function testCloneRefusesAnAnonymousCaller(string $endpoint): void {
+		$this->userSession->method('getUser')->willReturn(null);
+		$this->groupManager->expects(self::never())->method('isInGroup');
+		$this->request->expects(self::never())->method('getParams');
+
+		self::assertSame([401, ['error' => 'unauthenticated']], $this->callClone(endpoint: $endpoint));
+	}//end testCloneRefusesAnAnonymousCaller()
+
+	/**
+	 * A caller outside the admin group is refused with 403 before the body is read.
+	 *
+	 * @param string $endpoint The controller method.
+	 * @param string $detail   The refusal detail.
+	 *
+	 * @return void
+	 */
+	#[DataProvider('cloneEndpoints')]
+	public function testCloneRefusesANonAdmin(string $endpoint, string $detail): void {
+		$this->authenticateAs(uid: 'bob', admin: false);
+		$this->request->expects(self::never())->method('getParams');
+
+		self::assertSame([403, ['error' => 'forbidden', 'detail' => $detail]], $this->callClone(endpoint: $endpoint));
+	}//end testCloneRefusesANonAdmin()
+
+	/**
+	 * Request bodies the clone endpoints refuse, and the answer.
+	 *
+	 * @return array<string, array{0: string, 1: array<string, mixed>, 2: array<string, string>}>
+	 */
+	public static function invalidCloneBodies(): array {
+		$invalid = ['error' => 'invalid_request', 'detail' => 'name and kebab-case slug required'];
+		$long = ['error' => 'slug_too_long', 'detail' => 'slug must be <= 32 chars'];
+		$cases = [];
+		foreach (['createFromTemplate', 'copy'] as $endpoint) {
+			$cases[$endpoint . ' no name'] = [$endpoint, ['slug' => 'my-app'], $invalid];
+			$cases[$endpoint . ' bad slug'] = [$endpoint, ['name' => 'X', 'slug' => 'My App'], $invalid];
+			$cases[$endpoint . ' long slug'] = [$endpoint, ['name' => 'X', 'slug' => str_repeat('a', 33)], $long];
+		}
+
+		return $cases;
+	}//end invalidCloneBodies()
+
+	/**
+	 * An admin with an invalid body is refused with 400 and the validation envelope.
+	 *
+	 * @param string               $endpoint The controller method.
+	 * @param array<string, mixed> $body     The request body.
+	 * @param array<string, string> $answer  The expected envelope.
+	 *
+	 * @return void
+	 */
+	#[DataProvider('invalidCloneBodies')]
+	public function testCloneRefusesAnInvalidBody(string $endpoint, array $body, array $answer): void {
+		$this->authenticateAs(uid: 'admin-user', admin: true);
+		$this->withRequestParams($body);
+		$this->objectService->expects(self::never())->method('saveObject');
+
+		self::assertSame([400, $answer], $this->callClone(endpoint: $endpoint));
+	}//end testCloneRefusesAnInvalidBody()
 
 	/**
 	 * The endpoint carries a UserRateLimit attribute (amplification guard).

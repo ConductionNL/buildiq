@@ -33,6 +33,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\Controller;
 
 use OCA\Buildiq\Controller\AgentsController;
+use OCA\Buildiq\Service\AppOrganisationGuard;
 use OCA\Buildiq\Service\CallerContext;
 use OCA\Buildiq\Service\PermissionResolver;
 use OCA\Buildiq\Service\RegisterStore;
@@ -51,6 +52,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 
 /**
  * Tests for AgentsController::runs.
@@ -169,7 +171,11 @@ class AgentsControllerTest extends TestCase {
 		// so the callback must destructure by POSITION, not by whatever
 		// parameter names it declares.
 		$this->objectService->method('find')->willReturnCallback(
-			function (string|int $id, mixed $extend, mixed $files, mixed $register, mixed $schema, mixed ...$rest) use ($agent, $application, $agentEntity, $applicationEntity) {
+			function (string|int $id, ?ObjectFindOptions $options = null, bool $_rbac = true, bool $_multitenancy = true, mixed ...$rest) use ($agent, $application, $agentEntity, $applicationEntity) {
+				$extend = $options?->extend;
+				$files = $options?->files;
+				$register = $options?->register;
+				$schema = $options?->schema;
 				// `buildAgent`: #686 namespaced this app's agent slug so it stops
 				// colliding with hermiq's. AgentsController::AGENT_SCHEMA moved
 				// with it; this fake still answered to the old name, so every
@@ -308,4 +314,91 @@ class AgentsControllerTest extends TestCase {
 		$response = $this->controller->runs(uuid: 'agent-1');
 		self::assertSame(Http::STATUS_OK, $response->getStatus());
 	}//end testRunsAllowsAdminBypass()
+
+	/**
+	 * Rebuild the controller with an admin caller and the given organisation guard.
+	 *
+	 * @param AppOrganisationGuard|null $guard The guard, or none.
+	 *
+	 * @return void
+	 */
+	private function adminControllerWithGuard(?AppOrganisationGuard $guard): void {
+		$this->groupManager = $this->createMock(originalClassName: IGroupManager::class);
+		$this->groupManager->method('isAdmin')->willReturn(true);
+		$this->groupManager->method('getUserGroups')->willReturn([]);
+		$permissionResolver = new PermissionResolver(groupManager: $this->groupManager, logger: $this->createMock(originalClassName: LoggerInterface::class));
+		$this->controller = new AgentsController(
+			request: $this->request,
+			logger: $this->createMock(originalClassName: LoggerInterface::class),
+			store: new RegisterStore(
+				objectService: $this->objectService,
+				registerMapper: $this->registerMapper,
+				schemaMapper: $this->schemaMapper
+			),
+			caller: new CallerContext(
+				userSession: $this->userSession,
+				groupManager: $this->groupManager,
+				permissionResolver: $permissionResolver,
+				organisationGuard: $guard
+			),
+		);
+	}//end adminControllerWithGuard()
+
+	/**
+	 * Another organisation's scoped app answers 404 before any role, an admin
+	 * included, and its runs are never read (REQ-BQOS-002).
+	 *
+	 * @return void
+	 */
+	public function testRunsHidesAnotherOrganisationsScopedAppFromAnAdmin(): void {
+		$this->wireUser(uid: 'admin-1');
+		$guard = $this->createMock(originalClassName: AppOrganisationGuard::class);
+		$guard->expects(self::once())->method('canSee')->willReturn(false);
+		$this->adminControllerWithGuard(guard: $guard);
+		$this->wireAgentAndApplication(
+			agent: ['id' => 'agent-1', 'applicationSlug' => 'toezicht'],
+			application: ['slug' => 'toezicht', 'organisationScope' => 'holder', 'permissions' => ['owners' => ['user:admin-1']]]
+		);
+		$this->objectService->expects(self::never())->method('searchObjects');
+
+		$response = $this->controller->runs(uuid: 'agent-1');
+		self::assertSame(expected: Http::STATUS_NOT_FOUND, actual: $response->getStatus());
+		self::assertSame(expected: 'not_found', actual: $response->getData()['error']);
+	}//end testRunsHidesAnotherOrganisationsScopedAppFromAnAdmin()
+
+	/**
+	 * Without the guard a scoped app is hidden from everyone: fail closed.
+	 *
+	 * @return void
+	 */
+	public function testRunsHidesAScopedAppWithoutTheGuard(): void {
+		$this->wireUser(uid: 'alice');
+		$this->wireAgentAndApplication(
+			agent: ['id' => 'agent-1', 'applicationSlug' => 'toezicht'],
+			application: ['slug' => 'toezicht', 'organisationScope' => 'holder', 'permissions' => ['owners' => ['user:alice']]]
+		);
+
+		$response = $this->controller->runs(uuid: 'agent-1');
+		self::assertSame(expected: Http::STATUS_NOT_FOUND, actual: $response->getStatus());
+	}//end testRunsHidesAScopedAppWithoutTheGuard()
+
+	/**
+	 * A member of the holding organisation reaches the role check as before.
+	 *
+	 * @return void
+	 */
+	public function testRunsLetsAMemberOfTheHolderThrough(): void {
+		$this->wireUser(uid: 'admin-1');
+		$guard = $this->createMock(originalClassName: AppOrganisationGuard::class);
+		$guard->method('canSee')->willReturn(true);
+		$this->adminControllerWithGuard(guard: $guard);
+		$this->wireAgentAndApplication(
+			agent: ['id' => 'agent-1', 'applicationSlug' => 'toezicht'],
+			application: ['slug' => 'toezicht', 'organisationScope' => 'holder', 'permissions' => ['owners' => ['user:admin-1']]]
+		);
+		$this->objectService->method('searchObjects')->willReturn([]);
+
+		$response = $this->controller->runs(uuid: 'agent-1');
+		self::assertSame(expected: Http::STATUS_OK, actual: $response->getStatus());
+	}//end testRunsLetsAMemberOfTheHolderThrough()
 }//end class

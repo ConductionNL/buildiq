@@ -206,4 +206,23 @@ describe('AgentsPage', () => {
 		// presence, not truthiness, is what says "disabled".
 		expect(newButton.attributes('disabled')).toBeDefined()
 	})
+
+	it('preselects the app named in ?app= and lists its agents (REQ-BQAG-003)', async () => {
+		const wrapper = mount(AgentsPage, { stubs, mocks: { $route: { query: { app: 'tool-library' } } } })
+		await flush()
+		await flush()
+		await flush()
+
+		expect(wrapper.vm.selectedApp).toEqual(application)
+		expect(wrapper.findAll('[data-testid="agent-row"]')).toHaveLength(1)
+	})
+
+	it('ignores an ?app= the caller cannot see', async () => {
+		const wrapper = mount(AgentsPage, { stubs, mocks: { $route: { query: { app: 'someone-elses-app' } } } })
+		await flush()
+		await flush()
+
+		expect(wrapper.vm.selectedApp).toBe(null)
+		expect(axios.get).not.toHaveBeenCalledWith(expect.stringContaining('/buildAgent'))
+	})
 })

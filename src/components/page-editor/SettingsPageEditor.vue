@@ -132,6 +132,31 @@ import SettingsSectionBuilder from './fields/SettingsSectionBuilder.vue'
 import { pageEditorBaseMixin } from '../../mixins/pageEditorBase.js'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 
+/**
+ * Whether a config value is blank: `''`, `null` or `undefined`.
+ *
+ * @param {string|Array<object>|null|undefined} value - the new value.
+ * @return {boolean}
+ */
+function isBlank(value) {
+	return value === '' || value === null || value === undefined
+}
+
+/**
+ * Whether a write deletes its config key: a blank value, or an empty list
+ * for `saveEndpoint`. An empty `sections` list is kept on purpose.
+ *
+ * @param {string} key - the config key being written.
+ * @param {string|Array<object>|null|undefined} value - the new value.
+ * @return {boolean}
+ */
+function deletesKey(key, value) {
+	return (
+		isBlank(value)
+		|| (Array.isArray(value) && value.length === 0 && key === 'saveEndpoint')
+	)
+}
+
 export default {
 	name: 'SettingsPageEditor',
 	components: { SettingsSectionBuilder, InlineFieldMark },
@@ -147,7 +172,7 @@ export default {
 		/**
 		 * Observed behaviour of `validatedConfigKeys` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		validatedConfigKeys() {
 			return ['saveEndpoint', 'sections', 'tabs']
@@ -156,7 +181,7 @@ export default {
 		/**
 		 * Observed behaviour of `layoutShape` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		layoutShape() {
 			// `tabs` wins only when there is no `sections` array so a
@@ -173,7 +198,7 @@ export default {
 		/**
 		 * Observed behaviour of `tabs` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		tabs() {
 			return Array.isArray(this.config.tabs) ? this.config.tabs : []
@@ -190,18 +215,11 @@ export default {
 		 *
 		 * @param {string} key - the config key being written: `saveEndpoint` or `sections`.
 		 * @param {string|Array<object>} value - the new value: the free-text save endpoint, or the rebuilt section list from SettingsSectionBuilder. `''`, `null` and `undefined` delete the key.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		update(key, value) {
 			const next = { ...this.config }
-			if (
-				value === ''
-				|| value === null
-				|| value === undefined
-				|| (Array.isArray(value)
-					&& value.length === 0
-					&& key === 'saveEndpoint')
-			) {
+			if (deletesKey(key, value)) {
 				delete next[key]
 			} else {
 				next[key] = value
@@ -217,7 +235,7 @@ export default {
 		 * is dropped.
 		 *
 		 * @param {'sections'|'tabs'} shape - the radio's value: `tabs` drops `sections` and seeds `tabs: []`, anything else does the reverse.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		setLayoutShape(shape) {
 			const next = { ...this.config }
@@ -242,7 +260,7 @@ export default {
 		 * @param {number} index - position of the tab in `config.tabs`.
 		 * @param {string} key - the tab key being written: `id`, `label`, `icon` or `sections`.
 		 * @param {string|Array<object>} value - the new value: text from the tab's header inputs, or that tab's rebuilt section list from SettingsSectionBuilder. `''`, `null` and `undefined` delete the key.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		updateTabField(index, key, value) {
 			const next = { ...this.config }
@@ -261,7 +279,7 @@ export default {
 		/**
 		 * Observed behaviour of `addTab` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		addTab() {
 			const next = { ...this.config }
@@ -276,7 +294,7 @@ export default {
 		 * branch of the XOR rather than silently flipping to flat sections.
 		 *
 		 * @param {number} index - position of the tab to remove in `config.tabs`.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		removeTab(index) {
 			const next = { ...this.config }

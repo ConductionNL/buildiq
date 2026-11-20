@@ -52,6 +52,9 @@ const APP_SLUG = `e2e-copilot-lib-${Date.now().toString(36)}`
 function stubbedPlan(slug: string) {
 	return {
 		summary: 'A tool library where members can borrow and return tools.',
+		stories: [
+			{ id: 's1', role: 'a member', goal: 'see which tools I can borrow', servedBy: [1] },
+		],
 		steps: [
 			{
 				tool: 'buildiq.createApp',
@@ -165,6 +168,14 @@ test.describe('Wizard "Generate with AI" (spec: ai-copilot)', () => {
 		await expect(review).toContainText(
 			'A tool library where members can borrow and return tools.',
 		)
+		// ai-copilot-documents-and-code-help REQ-BQCH-006: stories come first,
+		// each with the pages that serve it.
+		const stories = review.locator('[data-testid="copilot-plan-stories"]')
+		await expect(stories).toBeVisible()
+		await expect(stories.locator('h3')).toHaveText('User stories')
+		await expect(review.locator('.copilot-generate__group h3').first()).toHaveText('User stories')
+		await expect(stories.locator('[data-testid="copilot-plan-story"]')).toHaveCount(1)
+		await expect(stories).toContainText('Home')
 
 		await page.locator('[data-testid="copilot-confirm"]').click()
 
