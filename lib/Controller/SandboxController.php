@@ -80,6 +80,8 @@ function errorText(error) {
 }
 function evaluateOne(item, scope) {
 	try {
+		// Dynamic code by design (pages-custom-code D1/D4): this runs only in an iframe
+		// sandboxed without same-origin, expressions are admin-gated, and a setting switches it off.
 		var run = new Function('row', 'values', 'user', 'route', '"use strict"; return (' + String(item.expression) + ');');
 		var value = run(scope.row, scope.values, scope.user, scope.route);
 		return { value: value === undefined ? null : JSON.parse(JSON.stringify(value)) };
