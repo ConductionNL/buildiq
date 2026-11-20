@@ -1553,6 +1553,7 @@ final class AutomationCompilerServiceTest extends TestCase {
 			$this->flowBackend,
 			null,
 			null,
+			null,
 			new FlowNodeAvailability(container: $container),
 		);
 	}//end compilerWithNodes()
