@@ -75,7 +75,7 @@ function defaultField(overrides = {}) {
 }
 
 describe('FieldEditor', () => {
-	it('REQ-OBSD-003: addField emits update:fields with a new default-string row', async () => {
+	it('REQ-OBSD-003 + REQ-BQFT-001: addField emits update:fields with a new text row', async () => {
 		const wrapper = mount(FieldEditor, {
 			propsData: { fields: [], schemaSlugs: [] },
 			stubs,
@@ -85,7 +85,7 @@ describe('FieldEditor', () => {
 		expect(emitted).toBeTruthy()
 		const next = emitted[0][0]
 		expect(next).toHaveLength(1)
-		expect(next[0].type).toBe('string')
+		expect(next[0].type).toBe('text')
 		expect(next[0].required).toBe(false)
 		expect(next[0].validation).toEqual({})
 		expect(typeof next[0]._key).toBe('string')
@@ -358,5 +358,21 @@ describe('FieldEditor', () => {
 			])
 			expect(properties.note).toEqual({ type: 'string', maxLength: 10 })
 		})
+	})
+})
+
+describe('FieldEditor file properties (forms-signature-audio-and-location, REQ-BQSA-002)', () => {
+	it('offers the file type and writes it as an OpenRegister file property that loads back', () => {
+		const wrapper = mount(FieldEditor, {
+			propsData: { fields: [], schemaSlugs: [] },
+			stubs,
+		})
+		expect(wrapper.vm.typeOptions.map((option) => option.value)).toContain('file')
+
+		const fields = schemaToFields({ properties: { handtekening: { type: 'file', description: 'Signature' } } })
+		expect(fields[0].type).toBe('file')
+		const { properties } = fieldsToSchema(fields)
+		expect(properties.handtekening.type).toBe('file')
+		expect(properties.handtekening.description).toBe('Signature')
 	})
 })

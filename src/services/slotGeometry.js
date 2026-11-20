@@ -19,7 +19,7 @@
  * clamp is testable across the default counts and a widened `slotColumns`
  * without a browser.
  *
- * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+ * @spec openspec/specs/openbuild-page-designer/spec.md
  */
 
 import { resolveSlotColumns } from '@conduction/nextcloud-vue'
@@ -48,7 +48,7 @@ export const SLOT_DISPLAY_ORDER = Object.freeze([
  *
  * @param {string} slot - the slot name to test.
  * @return {boolean} true when the schema would accept it.
- * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+ * @spec openspec/specs/openbuild-page-designer/spec.md
  */
 export function isValidSlot(slot) {
 	if (typeof slot !== 'string' || slot === '') {
@@ -65,7 +65,7 @@ export function isValidSlot(slot) {
  * @param {object|null} page - the page the placement lives on; only
  *   `config.slotColumns` is read.
  * @return {number} the effective column count (always a positive integer).
- * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+ * @spec openspec/specs/openbuild-page-designer/spec.md
  */
 export function columnsForSlot(slot, page) {
 	const slotColumns =
@@ -82,7 +82,7 @@ export function columnsForSlot(slot, page) {
  *
  * @param {string} slot - the placement's slot.
  * @return {boolean} true when `gridY` is the author's to set.
- * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+ * @spec openspec/specs/openbuild-page-designer/spec.md
  */
 export function slotOffersRow(slot) {
 	return slot !== 'header-actions'
@@ -96,7 +96,7 @@ export function slotOffersRow(slot) {
  * @param {string} slot - the placement's slot.
  * @param {object|null} page - the page, read for `config.slotColumns`.
  * @return {boolean} true when `gridX` / `gridWidth` are the author's to set.
- * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+ * @spec openspec/specs/openbuild-page-designer/spec.md
  */
 export function slotOffersSpan(slot, page) {
 	return columnsForSlot(slot, page) > 1
@@ -140,7 +140,7 @@ function toInt(value, min) {
  * @param {object|null} page - the page it lives on, read for
  *   `config.slotColumns`.
  * @return {object} a new placement with the rules applied.
- * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+ * @spec openspec/specs/openbuild-page-designer/spec.md
  */
 export function applySlotRules(entry, page) {
 	const source = entry && typeof entry === 'object' ? entry : {}
@@ -177,7 +177,7 @@ export function applySlotRules(entry, page) {
  *   read to stack the new placement below the slot's occupied rows.
  * @return {{slot: string, gridX: number, gridY: number, gridWidth: number, gridHeight: number}}
  *   the starting geometry, already through {@link applySlotRules}.
- * @spec openspec/changes/v2-widget-placement-editor/specs/openbuild-page-designer/spec.md
+ * @spec openspec/specs/openbuild-page-designer/spec.md
  */
 export function defaultGeometryFor(slot, page, existingWidgets) {
 	const columns = columnsForSlot(slot, page)

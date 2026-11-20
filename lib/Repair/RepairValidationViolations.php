@@ -39,9 +39,11 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Repair;
 
-use OCA\Buildiq\Service\AppOverrideService;
+use OCA\Buildiq\Kernel\Contracts\AppOverrideServiceInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCP\Migration\IOutput;
 use OCP\Migration\IRepairStep;
 use Psr\Log\LoggerInterface;
@@ -75,8 +77,8 @@ class RepairValidationViolations implements IRepairStep {
 	 * @var array<string,string>
 	 */
 	private const SCHEMA_OF = [
-		'baseRefBackfilled' => AppOverrideService::APPLICATION_SCHEMA,
-		'selfPromotionCleared' => AppOverrideService::APPLICATION_VERSION_SCHEMA,
+		'baseRefBackfilled' => AppOverrideServiceInterface::APPLICATION_SCHEMA,
+		'selfPromotionCleared' => AppOverrideServiceInterface::APPLICATION_VERSION_SCHEMA,
 	];
 
 	/**
@@ -150,11 +152,11 @@ class RepairValidationViolations implements IRepairStep {
 	 * @return void
 	 */
 	private function repairAll(): void {
-		foreach ($this->rows(schema: AppOverrideService::APPLICATION_SCHEMA) as $row) {
+		foreach ($this->rows(schema: AppOverrideServiceInterface::APPLICATION_SCHEMA) as $row) {
 			$this->repairApplication(row: $row);
 		}
 
-		foreach ($this->rows(schema: AppOverrideService::APPLICATION_VERSION_SCHEMA) as $row) {
+		foreach ($this->rows(schema: AppOverrideServiceInterface::APPLICATION_VERSION_SCHEMA) as $row) {
 			$this->repairVersion(row: $row);
 		}
 	}//end repairAll()
@@ -218,9 +220,13 @@ class RepairValidationViolations implements IRepairStep {
 		try {
 			$this->objectService->saveObject(
 				object: $row,
-				register: AppOverrideService::REGISTER_SLUG,
-				schema: self::SCHEMA_OF[$counter],
-				uuid: $uuid,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(
+							register: AppOverrideServiceInterface::REGISTER_SLUG,
+							schema: self::SCHEMA_OF[$counter]
+						),
+					uuid: $uuid
+				),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -243,7 +249,7 @@ class RepairValidationViolations implements IRepairStep {
 	private function rows(string $schema): array {
 		try {
 			$found = $this->objectService->findAll(
-				config: ['filters' => ['register' => AppOverrideService::REGISTER_SLUG, 'schema' => $schema]],
+				config: ['filters' => ['register' => AppOverrideServiceInterface::REGISTER_SLUG, 'schema' => $schema]],
 				_rbac: false,
 				_multitenancy: false
 			);

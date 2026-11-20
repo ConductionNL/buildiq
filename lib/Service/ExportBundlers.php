@@ -28,7 +28,7 @@ namespace OCA\Buildiq\Service;
 /**
  * The writers that bundle registers, flows/agents, content and the server bundle.
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-35
  */
 final class ExportBundlers {
 	/**
@@ -38,6 +38,7 @@ final class ExportBundlers {
 	 * @param FlowAndAgentExportBundler $flowAndAgentBundler Bundles flows and agents.
 	 * @param ExportAppContentBundler|null $contentBundler Writes the application's own content, when wired.
 	 * @param ServerBundleWriter|null $serverBundleWriter Writes the server bundle, when wired.
+	 * @param MobileProjectWriter|null $mobileProjectWriter Writes the app-store wrapper project, when wired.
 	 *
 	 * @return void
 	 */
@@ -46,6 +47,7 @@ final class ExportBundlers {
 		public readonly FlowAndAgentExportBundler $flowAndAgentBundler,
 		public readonly ?ExportAppContentBundler $contentBundler = null,
 		public readonly ?ServerBundleWriter $serverBundleWriter = null,
+		public readonly ?MobileProjectWriter $mobileProjectWriter = null,
 	) {
 	}//end __construct()
 }//end class

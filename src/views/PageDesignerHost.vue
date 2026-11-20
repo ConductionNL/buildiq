@@ -185,6 +185,7 @@ import {
 	stripDependencyMarker,
 } from '../services/manifestDependencies.js'
 import { assignUnassignedFieldsToFinalStep } from '../services/manifestValidation/formLogic.js'
+import { mirrorVersionLoad } from '../utils/mirrorVersionLoad.js'
 import { navigateTo } from '../utils/navigate.js'
 
 const EMPTY_MANIFEST = { version: '1.0.0', menu: [], pages: [] }
@@ -275,7 +276,7 @@ export default {
 		 * and hidden for hybrid apps (the copilot edits virtual apps only).
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		copilotToggleVisible() {
 			const isHybrid = !!(
@@ -290,7 +291,7 @@ export default {
 		 * `schemas` (array or map); empty when none are embedded.
 		 *
 		 * @return {Array<{slug: string, title: string, properties: object}>}
-		 * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002
+		 * @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-002
 		 */
 		appSchemas() {
 			const schemas = this.manifest && this.manifest.schemas
@@ -316,7 +317,7 @@ export default {
 		 * The virtual-app slug from the route (/builder/:slug/pages).
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 */
 		routeSlug() {
 			return this.$route.params.slug || ''
@@ -327,7 +328,7 @@ export default {
 		 * The underscore-prefix form avoids colliding with user-defined `?version=` params.
 		 *
 		 * @return {string|undefined}
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 */
 		versionSlug() {
 			return this.$route.query._version || undefined
@@ -339,7 +340,7 @@ export default {
 		 * identical for both "doesn't exist" and "you can't see it" cases.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 */
 		versionNotFound() {
 			return (
@@ -353,7 +354,7 @@ export default {
 		 * Full-page link into the virtual app, if it has ever been published.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 */
 		builderUrl() {
 			if (!this.application) {
@@ -401,7 +402,7 @@ export default {
 		/**
 		 * Observed behaviour of `routeSlug` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 */
 		async routeSlug() {
 			await this.resolveVersion()
@@ -420,7 +421,7 @@ export default {
 		 * paper, since resolveVersion() returned while its fetch was still in
 		 * flight.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 * @spec openspec/specs/builder-undo-redo/spec.md#req-bur-004
 		 */
 		async versionSlug() {
@@ -432,7 +433,7 @@ export default {
 	/**
 	 * Observed behaviour of `created` (retrofit annotation).
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
+	 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 	 */
 	async created() {
 		// REQ-OBVR-004: resolve the active ApplicationVersion on created.
@@ -544,7 +545,7 @@ export default {
 		 * (REQ-OBVR-004 / REQ-OBVR-005). Called on created and when slug/versionSlug change.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 */
 		async resolveVersion() {
 			this.versionError = null
@@ -552,23 +553,7 @@ export default {
 				useApplicationVersion(this.routeSlug, this.versionSlug)
 			this.applicationVersion = applicationVersion.value
 			this.versionLoading = loading.value
-			const unwatch = this.$watch(
-				() => applicationVersion.value,
-				(v) => {
-					this.applicationVersion = v
-				},
-			)
-			const unwatchLoading = this.$watch(
-				() => loading.value,
-				(v) => {
-					this.versionLoading = v
-					if (!v) {
-						unwatch()
-						unwatchLoading()
-						this.versionError = error.value
-					}
-				},
-			)
+			mirrorVersionLoad(this, { applicationVersion, loading, error })
 			// AWAIT the in-flight fetch (#174). Every caller pairs this with load(),
 			// which seeds the editor manifest FROM `applicationVersion` exactly once
 			// — so returning before it settles left the designer showing "No pages
@@ -596,7 +581,7 @@ export default {
 		 *
 		 * @param {object} next The new manifest.
 		 * @return {void}
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 */
 		onManifestUpdate(next) {
 			this.manifest = next
@@ -685,7 +670,7 @@ export default {
 		 * Persist the edited manifest onto the Application object.
 		 *
 		 * @return {Promise<boolean>} true when the manifest was saved.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 */
 		async save() {
 			if (!this.application || !this.applicationUuid || this.saving) {

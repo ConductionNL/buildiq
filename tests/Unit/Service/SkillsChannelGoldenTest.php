@@ -13,6 +13,9 @@
  * @version GIT: <git-id>
  *
  * @link https://conduction.nl
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -26,7 +29,7 @@ use OCA\Buildiq\Service\ConnectorRegisterAvailability;
 use OCA\Buildiq\Service\ContainerLocator;
 use OCA\Buildiq\Service\DataRegisterProvisioner;
 use OCA\Buildiq\Service\FlowChannelProvisioner;
-use OCA\Buildiq\Service\RepoSource;
+use OCA\Buildiq\Kernel\Values\RepoSource;
 use OCA\Buildiq\Service\SkillChannelDelegate;
 use OCA\Buildiq\Tests\Unit\Support\FakeSlugResolver;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
@@ -38,6 +41,7 @@ use OCP\App\IAppManager;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\Buildiq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Pins the skills channel over every combination of repo coordinates,
@@ -48,7 +52,7 @@ use RuntimeException;
  *
  * @covers \OCA\Buildiq\Service\AppChannelApplier
  * @covers \OCA\Buildiq\Service\SkillChannelDelegate
- * @uses   \OCA\Buildiq\Service\RepoSource
+ * @uses   \OCA\Buildiq\Kernel\Values\RepoSource
  * @uses   \OCA\Buildiq\Service\AgentChannelProvisioner
  * @uses   \OCA\Buildiq\Service\ChannelApplyReport
  * @uses   \OCA\Buildiq\Service\ConnectorRegisterAvailability
@@ -289,6 +293,7 @@ class SkillsChannelGoldenTest extends TestCase {
 		$objectService = $this->createMock(ObjectServiceInterface::class);
 		$objectService->method('find')->willReturnCallback(
 			function (...$args) use ($lookup, $trace): ?ObjectEntityInterface {
+				$args = LegacyObjectArgs::positional(method: 'find', args: $args);
 				$trace->finds[] = $args[0];
 				if ($lookup === 'throws') {
 					throw new RuntimeException('broker unavailable');

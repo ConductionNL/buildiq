@@ -53,13 +53,24 @@ function locationWithVersion(to, versionSlug) {
  * @spec openspec/specs/version-routing/spec.md#requirement-browser-reload-preserves-_version-bookmarkability
  */
 export function withVersion(to, versionSlug) {
-	if (!versionSlug || to === null || to === undefined) {
+	if (isUnversioned(to, versionSlug)) {
 		return to
 	}
 	if (typeof to === 'string') {
 		return pathWithVersion(to, versionSlug)
 	}
 	return typeof to === 'object' ? locationWithVersion(to, versionSlug) : to
+}
+
+/**
+ * Whether there is no version to add, or no location to add it to.
+ *
+ * @param {string|object} to - a vue-router location.
+ * @param {string} versionSlug - the version to keep.
+ * @return {boolean}
+ */
+function isUnversioned(to, versionSlug) {
+	return !versionSlug || to === null || to === undefined
 }
 
 /**

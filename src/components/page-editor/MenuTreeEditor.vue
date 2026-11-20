@@ -271,7 +271,7 @@ export default {
 		 * `order` integers can never drift from the visual order.
 		 *
 		 * @param {Array<{id: string, label: string, icon?: string, route?: string, href?: string, target?: string, action?: string, permission?: string, order?: number, children?: object[]}>} menu - the complete replacement list of top-level menu entries; any `order` already on an entry is overwritten with its array position.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		emit(menu) {
 			// Re-assign monotonic `order` integers per top-level entry.
@@ -287,7 +287,7 @@ export default {
 		 * @param {number} index - position of the entry in the `menu` prop, taken from the vuedraggable `#item` slot.
 		 * @param {string} key - the entry key being written: `id`, `label`, `icon`, `route`, `href`, `target` or `permission`.
 		 * @param {string} value - the new value from the bound input/select (for `permission` the `group:<gid>` string from PermissionGroupField); `''` deletes the key.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		updateField(index, key, value) {
 			const next = this.menu.slice()
@@ -309,7 +309,7 @@ export default {
 		 *
 		 * @param {number} index - position of the entry in the `menu` prop.
 		 * @param {string} value - the selected action id (currently only `user-settings`); `''` means "no action" and only deletes `action`, leaving `route`/`href` editable again.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		updateActionField(index, value) {
 			const next = this.menu.slice()
@@ -329,7 +329,7 @@ export default {
 		/**
 		 * Observed behaviour of `addEntry` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		addEntry() {
 			const next = this.menu.slice()
@@ -341,7 +341,7 @@ export default {
 		 * Drop a top-level entry (and, with it, any children it owns).
 		 *
 		 * @param {number} index - position of the entry to remove in the `menu` prop.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		removeEntry(index) {
 			const next = this.menu.slice()
@@ -355,7 +355,7 @@ export default {
 		 * the tree at the depth-2 cap.
 		 *
 		 * @param {number} index - position of the parent entry in the `menu` prop.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		addChild(index) {
 			const next = this.menu.slice()
@@ -379,7 +379,7 @@ export default {
 		 * @param {number} cIndex - position of the child inside that parent's `children` array.
 		 * @param {string} key - the child key being written: `id`, `label`, `icon` or `route`; the literal `children` is rejected as a depth violation.
 		 * @param {string} value - the new value from the bound input; `''` deletes the key.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		updateChildField(index, cIndex, key, value) {
 			const next = this.menu.slice()
@@ -410,7 +410,7 @@ export default {
 		 *
 		 * @param {number} index - position of the parent entry in the `menu` prop.
 		 * @param {number} cIndex - position of the child to remove inside that parent's `children` array.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		removeChild(index, cIndex) {
 			const next = this.menu.slice()
@@ -432,7 +432,7 @@ export default {
 		 * `menu` prop), so this just renumbers `order` and emits.
 		 *
 		 * @param {Array<object>} newOrder - the top-level entries in their new visual order, as emitted by vuedraggable.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		onTopLevelReorder(newOrder) {
 			this.emit(newOrder)
@@ -445,7 +445,7 @@ export default {
 		 *
 		 * @param {number} index - position of the parent entry whose children were reordered.
 		 * @param {Array<object>} newOrder - that parent's children in their new visual order, as emitted by vuedraggable.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-4
 		 */
 		onChildrenReorder(index, newOrder) {
 			const next = this.menu.slice()

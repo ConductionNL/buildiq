@@ -39,6 +39,30 @@
 						)
 					"
 					:rows="4" />
+				<div class="copilot-generate__document">
+					<template v-if="document">
+						<span data-testid="copilot-document-name" class="copilot-generate__document-name">
+							{{ document.name }}
+						</span>
+						<NcButton
+							variant="tertiary"
+							data-testid="copilot-document-remove"
+							:disabled="state === 'planning'"
+							@click="document = null">
+							{{ t('buildiq', 'Remove document') }}
+						</NcButton>
+					</template>
+					<NcButton
+						v-else
+						data-testid="copilot-document-add"
+						:disabled="state === 'planning'"
+						@click="onAddDocument">
+						{{ t('buildiq', 'Add a document') }}
+					</NcButton>
+					<p class="copilot-generate__hint">
+						{{ t('buildiq', 'Plain text (.txt) and Markdown (.md) documents of up to 60,000 characters can be read.') }}
+					</p>
+				</div>
 				<p v-if="state === 'planning'" class="copilot-generate__waiting">
 					{{
 						t(
@@ -62,6 +86,26 @@
 					<p class="copilot-generate__summary">
 						{{ plan && plan.summary }}
 					</p>
+
+					<div
+						v-if="stories.length"
+						class="copilot-generate__group"
+						data-testid="copilot-plan-stories">
+						<h3>{{ t('buildiq', 'User stories') }}</h3>
+						<ul>
+							<li
+								v-for="(story, idx) in stories"
+								:key="'story-' + idx"
+								data-testid="copilot-plan-story">
+								<span class="copilot-generate__story">{{ story.text }}</span>
+								<ul v-if="story.servedBy.length" class="copilot-generate__served-by">
+									<li v-for="(name, sIdx) in story.servedBy" :key="'served-' + idx + '-' + sIdx">
+										{{ name }}
+									</li>
+								</ul>
+							</li>
+						</ul>
+					</div>
 
 					<div v-if="schemaSteps.length" class="copilot-generate__group">
 						<h3>{{ t('buildiq', 'Schemas') }}</h3>
@@ -155,7 +199,7 @@
 						state === 'idle' || state === 'planning' || state === 'error'
 					"
 					variant="primary"
-					:disabled="!brief.trim() || state === 'planning'"
+					:disabled="!canGenerate || state === 'planning'"
 					@click="onGenerate">
 					{{
 						state === 'planning'
@@ -182,7 +226,8 @@
 
 <script>
 import { NcButton, NcModal, NcTextArea } from '@nextcloud/vue'
-import { useCopilot } from '../composables/useCopilot.js'
+import { uniqueValidatorMessages, useCopilot } from '../composables/useCopilot.js'
+import { pickRequirementsDocument } from '../services/documentPicker.js'
 
 /**
  * How many validator messages the review screen lists before it stops and
@@ -214,15 +259,27 @@ export default {
 	data() {
 		return {
 			brief: '',
+			// The requirements document picked from Files: `{id, name}`, or null.
+			document: null,
 		}
 	},
 
 	computed: {
 		/**
+		 * Whether there is something to generate from: a brief or a document.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot/spec.md#requirement-the-wizard-reads-a-document-from-files-req-bqch-005
+		 */
+		canGenerate() {
+			return this.brief.trim() !== '' || this.document !== null
+		},
+
+		/**
 		 * The copilot state machine's current state.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		state() {
 			return this.copilot.state.value
@@ -232,7 +289,7 @@ export default {
 		 * The current plan response, or null before one has been generated.
 		 *
 		 * @return {object|null}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		plan() {
 			return this.copilot.plan.value
@@ -242,7 +299,7 @@ export default {
 		 * Whether every predicted manifest passes the canonical validator.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		canApprove() {
 			return this.copilot.canApprove.value
@@ -252,7 +309,7 @@ export default {
 		 * The current error message, or '' when there is none.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		errorMessage() {
 			return this.copilot.errorMessage.value
@@ -263,7 +320,7 @@ export default {
 		 * message so a missing provider does not read as a bad brief.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		errorDetail() {
 			return this.copilot.errorDetail.value
@@ -281,7 +338,7 @@ export default {
 		 * below it are what a reader can act on.
 		 *
 		 * @return {Array<string>}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		validationErrors() {
 			return this.allValidationErrors.slice(0, VALIDATION_ERRORS_SHOWN)
@@ -292,7 +349,7 @@ export default {
 		 * says how long it really is.
 		 *
 		 * @return {number}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		hiddenValidationErrorCount() {
 			return Math.max(
@@ -305,25 +362,37 @@ export default {
 		 * The uncapped, de-duplicated validator message list.
 		 *
 		 * @return {Array<string>}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		allValidationErrors() {
-			const seen = new Set()
-			for (const errors of this.copilot.manifestErrors.value.values()) {
-				for (const line of errors || []) {
-					if (typeof line === 'string' && line.length > 0) {
-						seen.add(line)
-					}
-				}
-			}
-			return [...seen]
+			return uniqueValidatorMessages(this.copilot.manifestErrors.value)
+		},
+
+		/**
+		 * The plan's user stories as the review lists them: one sentence each,
+		 * with the names of the schemas and pages that serve it.
+		 *
+		 * @return {Array<{text: string, servedBy: Array<string>}>}
+		 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot/spec.md#requirement-the-plan-carries-user-stories-req-bqch-006
+		 */
+		stories() {
+			const stories = (this.plan && Array.isArray(this.plan.stories)) ? this.plan.stories : []
+			const steps = (this.plan && this.plan.steps) || []
+			return stories
+				.filter((story) => story && story.role && story.goal)
+				.map((story) => ({
+					text: this.storySentence(story),
+					servedBy: (Array.isArray(story.servedBy) ? story.servedBy : [])
+						.map((index) => this.stepName(steps[index]))
+						.filter(Boolean),
+				}))
 		},
 
 		/**
 		 * Proposed `upsertSchema` steps, for the "Schemas" review group.
 		 *
 		 * @return {Array<object>}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		schemaSteps() {
 			return this.stepsByTool('buildiq.upsertSchema')
@@ -333,7 +402,7 @@ export default {
 		 * Proposed `upsertPage` steps, for the "Pages" review group.
 		 *
 		 * @return {Array<object>}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		pageSteps() {
 			return this.stepsByTool('buildiq.upsertPage')
@@ -343,7 +412,7 @@ export default {
 		 * Proposed `upsertMenuItem` steps, for the "Menu items" review group.
 		 *
 		 * @return {Array<object>}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		menuSteps() {
 			return this.stepsByTool('buildiq.upsertMenuItem')
@@ -351,9 +420,16 @@ export default {
 	},
 
 	watch: {
+		/**
+		 * Start every opening of the wizard from a clean state.
+		 *
+		 * @param {boolean} value Whether the wizard just opened.
+		 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot/spec.md#requirement-the-wizard-reads-a-document-from-files-req-bqch-005
+		 */
 		open(value) {
 			if (value) {
 				this.brief = ''
+				this.document = null
 				this.copilot.discard()
 				this.copilot.checkHealth()
 			}
@@ -366,7 +442,7 @@ export default {
 		 *
 		 * @param {string} tool - the tool id, e.g. `buildiq.upsertPage`.
 		 * @return {Array<object>}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		stepsByTool(tool) {
 			const steps = (this.plan && this.plan.steps) || []
@@ -374,16 +450,69 @@ export default {
 		},
 
 		/**
+		 * One story as a sentence.
+		 *
+		 * @param {{role: string, goal: string, benefit?: string}} story - the story.
+		 * @return {string}
+		 *
+		 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot/spec.md#requirement-the-plan-carries-user-stories-req-bqch-006
+		 */
+		storySentence(story) {
+			if (story.benefit) {
+				return t('buildiq', 'As {role} I want to {goal}, so that {benefit}', { role: story.role, goal: story.goal, benefit: story.benefit })
+			}
+			return t('buildiq', 'As {role} I want to {goal}', { role: story.role, goal: story.goal })
+		},
+
+		/**
+		 * The display name of a schema or page step, '' for any other step.
+		 *
+		 * @param {object|undefined} step - a plan step.
+		 * @return {string}
+		 *
+		 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot/spec.md#requirement-the-plan-carries-user-stories-req-bqch-006
+		 */
+		stepName(step) {
+			if (!step || !step.arguments) {
+				return ''
+			}
+			if (step.tool === 'buildiq.upsertSchema') {
+				return step.arguments.title || step.arguments.slug || ''
+			}
+			if (step.tool === 'buildiq.upsertPage') {
+				return step.arguments.title || step.arguments.pageId || ''
+			}
+			return ''
+		},
+
+		/**
 		 * Request a plan for the current brief.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		async onGenerate() {
-			if (!this.brief.trim()) {
+			if (!this.canGenerate) {
 				return
 			}
-			await this.copilot.generatePlan(this.brief.trim())
+			if (!this.document) {
+				await this.copilot.generatePlan(this.brief.trim())
+				return
+			}
+			await this.copilot.generatePlan(this.brief.trim(), undefined, undefined, undefined, this.document.id)
+		},
+
+		/**
+		 * Pick a requirements document from Files; the server reads it as the maker.
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot/spec.md#requirement-the-wizard-reads-a-document-from-files-req-bqch-005
+		 */
+		async onAddDocument() {
+			const picked = await pickRequirementsDocument()
+			if (picked) {
+				this.document = picked
+			}
 		},
 
 		/**
@@ -391,7 +520,7 @@ export default {
 		 * the new app's slug and close the dialog.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		async onConfirm() {
 			await this.copilot.approve()
@@ -414,7 +543,7 @@ export default {
 		 * Discard the dialog without sending any execute request.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		onCancel() {
 			this.copilot.discard()
@@ -479,5 +608,21 @@ export default {
 	justify-content: flex-end;
 	gap: 8px;
 	margin-top: 8px;
+}
+
+.copilot-generate__document {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+}
+
+.copilot-generate__document-name {
+	font-weight: 600;
+	color: var(--color-main-text);
+}
+
+.copilot-generate__served-by {
+	color: var(--color-text-maxcontrast);
 }
 </style>

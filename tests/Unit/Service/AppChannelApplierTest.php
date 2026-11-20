@@ -42,8 +42,8 @@ use OCA\Buildiq\Service\ConnectorRegisterAvailability;
 use OCA\Buildiq\Service\ContainerLocator;
 use OCA\Buildiq\Service\DataRegisterProvisioner;
 use OCA\Buildiq\Service\FlowChannelProvisioner;
-use OCA\Buildiq\Service\LocalApplicationRef;
-use OCA\Buildiq\Service\RepoSource;
+use OCA\Buildiq\Kernel\Values\LocalApplicationRef;
+use OCA\Buildiq\Kernel\Values\RepoSource;
 use OCA\Buildiq\Service\SkillChannelDelegate;
 use OCA\Buildiq\Tests\Unit\Support\FakeSlugResolver;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
@@ -58,6 +58,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\Buildiq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Tests for the v2 channel applier.
@@ -305,33 +306,33 @@ class AppChannelApplierTest extends TestCase {
 
 		$this->objectService->expects(self::once())
 			->method('saveObject')
-			// Positional, because that is how the mock reports a named-argument
-			// call. The list must name EVERY parameter of
-			// ObjectServiceInterface::saveObject — the contract carries a
-			// `$_validation` parameter between `$silent` and `$uploadedFiles`
-			// that the pre-contract signature did not, and a list one short
-			// silently shifts `failIfExists` onto `$currentUser`, so the
-			// expectation never matches and the never-overwrite guarantee below
-			// stops being asserted.
+			// The release's argument names, matched against main's option
+			// objects. `failIfExists` is the never-overwrite guarantee asserted
+			// below.
 			->with(
-				self::anything(), // object
-				self::anything(), // extend
-				// The RESOLVED slug, not a literal. This assertion used to read
-				// 'openconnector' and passed for as long as the code pinned the
-				// same word, which is what an assertion that copies the
-				// implementation buys you. The applier is now built with a
-				// migrated instance, so this is the one that reddens if the
-				// resolution is dropped.
-				'integriq',       // register
-				'source',         // schema
-				self::NIL_UUID,   // uuid
-				false,            // _rbac
-				false,            // _multitenancy
-				false,            // silent
-				true,             // _validation (contract default)
-				null,             // uploadedFiles
-				null,             // currentUser
-				true              // failIfExists — the never-overwrite guarantee
+				...LegacyObjectArgs::with(
+					method: 'saveObject',
+					expected: [
+						'object' => self::anything(),
+						'extend' => self::anything(),
+						// The RESOLVED slug, not a literal. This assertion used to read
+						// 'openconnector' and passed for as long as the code pinned the
+						// same word, which is what an assertion that copies the
+						// implementation buys you. The applier is now built with a
+						// migrated instance, so this is the one that reddens if the
+						// resolution is dropped.
+						'register' => 'integriq',
+						'schema' => 'source',
+						'uuid' => self::NIL_UUID,
+						'_rbac' => false,
+						'_multitenancy' => false,
+						'silent' => false,
+						'_validation' => true,
+						'uploadedFiles' => null,
+						'currentUser' => null,
+						'failIfExists' => true,
+					]
+				)
 			);
 
 		$report = $this->applier()->apply(
@@ -848,8 +849,8 @@ class AppChannelApplierTest extends TestCase {
 			->willReturn($this->mockedFlow(uuid: $mintedUuid));
 
 		$this->objectService->expects(self::once())->method('saveObject')
-			->with(
-				self::callback(
+			->with(...LegacyObjectArgs::with(method: 'saveObject', expected: [
+				'object' => self::callback(
 					static function (array $object) use ($mintedUuid, $sourceUuid): bool {
 						$bindings = ($object['flows'] ?? []);
 						return count($bindings) === 1
@@ -857,18 +858,18 @@ class AppChannelApplierTest extends TestCase {
 							&& $bindings[0]['sourceUuid'] === $sourceUuid;
 					}
 				),
-				self::anything(),
-				'buildiq',
-				'built-app',
-				$applicationUuid,
-				false,
-				false,
-				false,
-				true,
-				null,
-				null,
-				false
-			);
+				'extend' => self::anything(),
+				'register' => 'buildiq',
+				'schema' => 'built-app',
+				'uuid' => $applicationUuid,
+				'_rbac' => false,
+				'_multitenancy' => false,
+				'silent' => false,
+				'_validation' => true,
+				'uploadedFiles' => null,
+				'currentUser' => null,
+				'failIfExists' => false,
+			]));
 
 		$report = $this->applier()->apply(
 			template: [
@@ -928,20 +929,20 @@ class AppChannelApplierTest extends TestCase {
 		$uuid = self::NIL_UUID;
 
 		$this->objectService->expects(self::once())->method('saveObject')
-			->with(
-				self::callback(static fn (array $object): bool => ($object['applicationSlug'] ?? null) === 'local-app'),
-				self::anything(),
-				'buildiq',
-				'buildAgent',
-				$uuid,
-				false,
-				false,
-				false,
-				true,
-				null,
-				null,
-				true
-			);
+			->with(...LegacyObjectArgs::with(method: 'saveObject', expected: [
+				'object' => self::callback(static fn (array $object): bool => ($object['applicationSlug'] ?? null) === 'local-app'),
+				'extend' => self::anything(),
+				'register' => 'buildiq',
+				'schema' => 'buildAgent',
+				'uuid' => $uuid,
+				'_rbac' => false,
+				'_multitenancy' => false,
+				'silent' => false,
+				'_validation' => true,
+				'uploadedFiles' => null,
+				'currentUser' => null,
+				'failIfExists' => true,
+			]));
 
 		$report = $this->applier()->apply(
 			template: [

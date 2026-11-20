@@ -34,9 +34,9 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-24
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-25
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-47
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-24
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-25
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-47
  */
 
 declare(strict_types=1);
@@ -45,20 +45,29 @@ namespace OCA\Buildiq\Controller;
 
 use DateTimeImmutable;
 use DateTimeInterface;
-use OCA\Buildiq\AppInfo\Application;
-use OCA\Buildiq\Service\ApplicationVersionService;
+use OCA\Buildiq\Kernel\AppIdentity;
+use OCA\Buildiq\Kernel\Contracts\ApplicationVersionServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\VersionMergeRunnerInterface;
+use OCA\Buildiq\Service\Branch\VersionBranchRefused;
+use OCA\Buildiq\Service\PageCodeGuard;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
-use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
+use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\UserRateLimit;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
@@ -126,8 +135,11 @@ class ApplicationVersionsController extends Controller {
 	 * @param SchemaMapper $schemaMapper Resolves schema slugs
 	 * @param IUserSession $userSession Current Nextcloud user session
 	 * @param IGroupManager $groupManager Group membership resolver
-	 * @param ApplicationVersionService $versionService Owner of the imperative logic
+	 * @param ApplicationVersionServiceInterface $versionService Owner of the imperative logic
 	 * @param AuditTrailMapper|null $auditTrailMapper Optional OR audit-trail writer (null until OR loaded)
+	 * @param VersionMergeRunnerInterface|null $merges Starts a branch, previews and applies a merge (lifecycle-git-branches)
+	 * @param IAppConfig|null $appConfig Reads the instance setting "Allow code on pages"; without it code stays refused
+	 * @param PageCodeGuard $codeGuard Finds the code-bearing keys of a manifest (pages-custom-code D6)
 	 *
 	 * @return void
 	 */
@@ -139,10 +151,13 @@ class ApplicationVersionsController extends Controller {
 		private readonly SchemaMapper $schemaMapper,
 		private readonly IUserSession $userSession,
 		private readonly IGroupManager $groupManager,
-		private readonly ApplicationVersionService $versionService,
+		private readonly ApplicationVersionServiceInterface $versionService,
 		private readonly ?AuditTrailMapper $auditTrailMapper = null,
+		private readonly ?VersionMergeRunnerInterface $merges = null,
+		private readonly ?IAppConfig $appConfig = null,
+		private readonly PageCodeGuard $codeGuard = new PageCodeGuard(),
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -152,7 +167,7 @@ class ApplicationVersionsController extends Controller {
 	 *
 	 * @return JSONResponse Versions array on 200, error envelope on miss
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-24
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-24
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	#[NoAdminRequired]
@@ -168,46 +183,12 @@ class ApplicationVersionsController extends Controller {
 				return $this->errorResponse(code: 'not_found', detail: 'Application ' . $appSlug . ' not found', status: Http::STATUS_NOT_FOUND);
 			}
 
-			$applicationUuid = (string)($application['id'] ?? $application['uuid'] ?? '');
-
-			$ids = $this->resolveRegisterAndSchema(schemaSlug: ApplicationVersionService::APPLICATION_VERSION_SCHEMA);
-			if ($ids === null) {
+			$versions = $this->versionRowsOf(application: $application);
+			if ($versions === null) {
 				return $this->errorResponse(code: 'not_found', detail: 'Application ' . $appSlug . ' not found', status: Http::STATUS_NOT_FOUND);
 			}
 
-			[$registerId, $schemaId] = $ids;
-
-			// OR's searchObjects doesn't reliably filter by relation-string equality
-			// on the `application` field (the value is stored both inline AND in
-			// @self.relations, and the matcher matches neither shape consistently).
-			// Fetch every ApplicationVersion row and filter client-side by the
-			// parent Application UUID. Cheap — we expect ~3 rows per app.
-			$rows = $this->objectService->searchObjects(
-				query: [
-					'@self' => [
-						'register' => $registerId,
-						'schema' => $schemaId,
-					],
-				]
-			);
-
-			$rowsList = [];
-			if (is_array($rows) === true) {
-				$rowsList = $rows;
-			}
-
-			$normalised = [];
-			foreach ($rowsList as $row) {
-				$normalisedRow = ObjectRecord::toArray(object: $row);
-				$rowAppUuid = (string)($normalisedRow['application'] ?? '');
-				if ($rowAppUuid !== $applicationUuid) {
-					continue;
-				}
-
-				$normalised[] = $normalisedRow;
-			}
-
-			return new JSONResponse(data: $normalised, statusCode: Http::STATUS_OK);
+			return new JSONResponse(data: $versions, statusCode: Http::STATUS_OK);
 		} catch (Throwable $e) {
 			$this->logger->error(
 				'Buildiq: ApplicationVersionsController::index failed for slug ' . $appSlug . ': ' . $e->getMessage(),
@@ -225,7 +206,7 @@ class ApplicationVersionsController extends Controller {
 	 *
 	 * @return JSONResponse The version on 200, error envelope on miss
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-24
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-24
 	 */
 	#[NoAdminRequired]
 	public function show(string $appSlug, string $versionSlug): JSONResponse {
@@ -249,7 +230,7 @@ class ApplicationVersionsController extends Controller {
 	 *
 	 * @return JSONResponse 201 with the created version, or error envelope
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-24
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-24
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	#[NoAdminRequired]
@@ -279,36 +260,21 @@ class ApplicationVersionsController extends Controller {
 			// register so the new version SHARES production's data — no
 			// per-version register is minted. An explicitly-supplied register is
 			// honoured unchanged (the wizard / promotion paths keep that option).
-			$suppliedRegister = (string)($payload['register'] ?? '');
-			if ($suppliedRegister === '') {
-				$inheritedRegister = $this->resolveProductionRegister(application: $application);
-				if ($inheritedRegister === null) {
-					return $this->errorResponse(
-						code: 'no_register_to_inherit',
-						detail: 'Application ' . $appSlug . ' has no production version to inherit a register from; supply an explicit `register`.',
-						status: Http::STATUS_UNPROCESSABLE_ENTITY
-					);
-				}
-
-				$payload['register'] = $inheritedRegister;
+			$payload = $this->withInheritedRegister(payload: $payload, application: $application, appSlug: $appSlug);
+			if ($payload instanceof JSONResponse) {
+				return $payload;
 			}
 
 			$payload = $this->versionService->onSave(current: null, next: $payload);
 
-			$promotesTo = (string)($payload['promotesTo'] ?? '');
-			if ($promotesTo !== '') {
-				// Cycle guard requires a uuid; for a brand-new row use a stable
-				// placeholder string that cannot occur in OR's actual UUID space.
-				$this->versionService->guardNoCycle(
-					currentUuid: '__pending_create__',
-					proposedTargetUuid: $promotesTo
-				);
-			}
+			$this->guardCreatePromotesTo(payload: $payload);
 
 			$created = $this->objectService->saveObject(
 				object: $payload,
-				register: ApplicationVersionService::REGISTER_SLUG,
-				schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(
+						register: ApplicationVersionServiceInterface::REGISTER_SLUG,
+						schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
+					))
 			);
 
 			return new JSONResponse(
@@ -329,6 +295,190 @@ class ApplicationVersionsController extends Controller {
 	}//end create()
 
 	/**
+	 * The create payload with production's register when none is supplied, or
+	 * the 422 response when there is no production register to inherit.
+	 *
+	 * @param array<string,mixed> $payload     The create payload.
+	 * @param array<string,mixed> $application The parent Application.
+	 * @param string              $appSlug     The Application slug.
+	 *
+	 * @return array<string,mixed>|JSONResponse
+	 */
+	private function withInheritedRegister(array $payload, array $application, string $appSlug): array|JSONResponse {
+		$suppliedRegister = (string)($payload['register'] ?? '');
+		if ($suppliedRegister === '') {
+			$inheritedRegister = $this->resolveProductionRegister(application: $application);
+			if ($inheritedRegister === null) {
+				return $this->errorResponse(
+					code: 'no_register_to_inherit',
+					detail: 'Application ' . $appSlug . ' has no production version to inherit a register from; supply an explicit `register`.',
+					status: Http::STATUS_UNPROCESSABLE_ENTITY
+				);
+			}
+
+			$payload['register'] = $inheritedRegister;
+		}
+
+		return $payload;
+	}//end withInheritedRegister()
+
+	/**
+	 * Refuse a new version whose promotesTo target closes a promotion cycle.
+	 *
+	 * @param array<string,mixed> $payload The create payload.
+	 *
+	 * @return void
+	 *
+	 * @throws \RuntimeException When the target closes a cycle.
+	 */
+	private function guardCreatePromotesTo(array $payload): void {
+		$promotesTo = (string)($payload['promotesTo'] ?? '');
+		if ($promotesTo !== '') {
+			// Cycle guard requires a uuid; for a brand-new row use a stable
+			// placeholder string that cannot occur in OR's actual UUID space.
+			$this->versionService->guardNoCycle(
+				currentUuid: '__pending_create__',
+				proposedTargetUuid: $promotesTo
+			);
+		}
+	}//end guardCreatePromotesTo()
+
+	/**
+	 * Start a branch from a version: a new draft version with its own copy of
+	 * the source's manifest and schemas (lifecycle-git-branches, REQ-BQGB-001).
+	 *
+	 * @param string $appSlug     Parent Application slug
+	 * @param string $versionSlug The version branched from
+	 *
+	 * @return JSONResponse 201 with the new version, or an error envelope
+	 *
+	 * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-starts-a-branch-from-a-version-req-bqgb-001
+	 */
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 10, period: 60)]
+	public function branch(string $appSlug, string $versionSlug): JSONResponse {
+		$authError = $this->requireRole(slug: $appSlug, roles: self::WRITE_ROLES);
+		if ($authError !== null || $this->merges === null) {
+			return $authError ?? $this->errorResponse(code: 'unavailable', status: Http::STATUS_SERVICE_UNAVAILABLE);
+		}
+
+		$application = $this->loadApplication(slug: $appSlug);
+		$source      = $this->findVersionRowBySlug(application: (array)$application, versionSlug: $versionSlug);
+		if ($application === null || $source === null) {
+			return $this->errorResponse(code: 'not_found', detail: $versionSlug, status: Http::STATUS_NOT_FOUND);
+		}
+
+		$name = trim((string)$this->request->getParam('name', ''));
+		if ($this->findVersionRowBySlug(application: $application, versionSlug: $name) !== null) {
+			return $this->errorResponse(code: 'name_taken', detail: 'A version named "' . $name . '" already exists.', status: Http::STATUS_CONFLICT);
+		}
+
+		return $this->branchRun(
+			run: fn (): array => $this->merges->startBranch(application: $application, source: $source, name: $name),
+			status: Http::STATUS_CREATED
+		);
+	}//end branch()
+
+	/**
+	 * Preview or apply the merge of one version into a draft version
+	 * (lifecycle-git-branches, REQ-BQGB-003 / REQ-BQGB-004). `preview: true`
+	 * writes nothing; an apply sends `choices`, the previewed `targetHash` and,
+	 * for a breaking schema change, `acknowledgeBreaking`.
+	 *
+	 * @param string $appSlug Parent Application slug
+	 * @param string $source  The version merged in
+	 * @param string $target  The version merged into
+	 *
+	 * @return JSONResponse 200 with the preview or the saved target, 409/422 when refused
+	 *
+	 * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-merge-only-writes-a-draft-that-has-not-moved-req-bqgb-004
+	 */
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 30, period: 60)]
+	public function merge(string $appSlug, string $source, string $target): JSONResponse {
+		$authError = $this->requireRole(slug: $appSlug, roles: self::WRITE_ROLES);
+		if ($authError !== null || $this->merges === null) {
+			return $authError ?? $this->errorResponse(code: 'unavailable', status: Http::STATUS_SERVICE_UNAVAILABLE);
+		}
+
+		$application = $this->loadApplication(slug: $appSlug);
+		$versions    = $this->mergeVersions(application: (array)$application, source: $source, target: $target);
+		if ($application === null || $versions === null) {
+			return $this->errorResponse(code: 'not_found', detail: $source . ' / ' . $target, status: Http::STATUS_NOT_FOUND);
+		}
+
+		if ($this->request->getParam('preview') === true || $this->request->getParam('preview') === 'true') {
+			return $this->branchRun(
+				run: fn (): array => $this->merges->previewMerge(application: $application, source: $versions['source'], target: $versions['target']),
+				status: Http::STATUS_OK
+			);
+		}
+
+		// A merge writes the source's code into the target: the code-write rule of a save applies (REQ-BQCC-005).
+		$codeRefusal = $this->refuseCodeChange(
+			application: $application,
+			before: $this->manifestOf(version: $versions['target']),
+			after: ($this->manifestOf(version: $versions['source']) ?? [])
+		);
+
+		return $codeRefusal ?? $this->branchRun(
+			run: fn (): array => $this->merges->applyMerge(
+				application: $application,
+				source: $versions['source'],
+				target: $versions['target'],
+				resolution: [
+					'choices' => $this->request->getParam('choices', []),
+					'targetHash' => $this->request->getParam('targetHash', ''),
+					'acknowledgeBreaking' => $this->request->getParam('acknowledgeBreaking'),
+				]
+			),
+			status: Http::STATUS_OK
+		);
+	}//end merge()
+
+	/**
+	 * The two versions of the Application to merge, or null when either is missing.
+	 *
+	 * @param array<string,mixed> $application The Application.
+	 * @param string              $source      The source version slug.
+	 * @param string              $target      The target version slug.
+	 *
+	 * @return array{source: array<string,mixed>, target: array<string,mixed>}|null
+	 */
+	private function mergeVersions(array $application, string $source, string $target): ?array {
+		$from = $this->findVersionRowBySlug(application: $application, versionSlug: $source);
+		$into = $this->findVersionRowBySlug(application: $application, versionSlug: $target);
+		if ($from === null || $into === null || $source === $target) {
+			return null;
+		}
+
+		return ['source' => $from, 'target' => $into];
+	}//end mergeVersions()
+
+	/**
+	 * Run a branch or merge step, answering a refusal with its own code and status.
+	 *
+	 * @param callable(): array<string,mixed> $run    The step.
+	 * @param int                             $status The status of a success.
+	 *
+	 * @return JSONResponse
+	 */
+	private function branchRun(callable $run, int $status): JSONResponse {
+		try {
+			return new JSONResponse(data: $run(), statusCode: $status);
+		} catch (VersionBranchRefused $e) {
+			return $this->errorResponse(code: $e->errorCode, detail: $e->getMessage(), status: $e->status);
+		} catch (Throwable $e) {
+			$this->logger->error('Buildiq: version branch or merge failed: ' . $e->getMessage(), ['exception' => $e]);
+			return $this->errorResponse(
+				code: 'branch_failed',
+				detail: 'The branch or merge could not be completed.',
+				status: Http::STATUS_UNPROCESSABLE_ENTITY
+			);
+		}
+	}//end branchRun()
+
+	/**
 	 * Update an ApplicationVersion (spec REQ-OBV-103 / REQ-OBV-104 / REQ-OBV-107).
 	 *
 	 * @param string $appSlug Parent Application slug
@@ -336,7 +486,7 @@ class ApplicationVersionsController extends Controller {
 	 *
 	 * @return JSONResponse 200 with the updated version, or error envelope
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-24
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-24
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	#[NoAdminRequired]
@@ -354,74 +504,36 @@ class ApplicationVersionsController extends Controller {
 			}
 
 			$currentUuid = (string)($current['id'] ?? $current['uuid'] ?? '');
+			$payload = $this->buildUpdatePayload(current: $current, currentUuid: $currentUuid);
 
-			// WF2: strip caller input to the explicit MUTABLE_FIELDS allowlist
-			// before merging, so new schema properties added in future cannot
-			// become unintended write channels via implicit array_merge.
-			$clientInput = array_intersect_key($this->collectPayload(), array_flip(self::MUTABLE_FIELDS));
-			$payload = array_merge($current, $clientInput);
-			unset($payload['@self']);
-
-			// Preserve immutable fields.
-			$payload['application'] = $current['application'] ?? null;
-			$payload['id'] = $currentUuid;
-
-			// Cycle guard on cross-row.
-			$proposedPromotesTo = $payload['promotesTo'] ?? null;
-			if (is_string($proposedPromotesTo) === true) {
-				$cycleTarget = $proposedPromotesTo;
-				if ($cycleTarget === '') {
-					$cycleTarget = null;
-				}
-
-				$this->versionService->guardNoCycle(
-					currentUuid: $currentUuid,
-					proposedTargetUuid: $cycleTarget
-				);
-			}
-
-			$payload = $this->versionService->onSave(current: $current, next: $payload);
+			// An editor may save a version, but not add, change or remove its code (REQ-BQCC-005).
+			$codeRefusal = $this->refuseCodeChange(
+				application: (array)$this->loadApplication(slug: $appSlug),
+				before: $this->manifestOf(version: $current),
+				after: ($this->manifestOf(version: $payload) ?? [])
+			);
 
 			// Acquire an optimistic lock before the read-modify-write to prevent
 			// concurrent UI / MCP writes silently losing each other's changes (issue #159).
-			// `lockObject()`/`unlockObject()` are declared on
-			// ObjectServiceInterface, so the method_exists() probes that used to
-			// guard both calls could never be false.
-			$locked = false;
-			if ($currentUuid !== '') {
-				try {
-					$this->objectService->lockObject(
-						identifier: $currentUuid,
-						process: 'buildiq.controller-update',
-						duration: 15
-					);
-					$locked = true;
-				} catch (Throwable $lockError) {
-					return $this->errorResponse(
-						code: 'version_locked',
-						detail: 'Version ' . $versionSlug . ' is currently locked by another writer. Retry after a moment.',
-						status: Http::STATUS_CONFLICT
-					);
-				}
+			// A refused code change returns before any lock is taken.
+			$locked = ($codeRefusal ?? $this->lockForUpdate(currentUuid: $currentUuid, versionSlug: $versionSlug));
+			if ($locked instanceof JSONResponse) {
+				return $locked;
 			}
 
 			try {
 				$updated = $this->objectService->saveObject(
 					object: $payload,
-					register: ApplicationVersionService::REGISTER_SLUG,
-					schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA,
-					uuid: $currentUuid
+					options: new ObjectSaveOptions(
+						target: new ObjectFindTarget(
+								register: ApplicationVersionServiceInterface::REGISTER_SLUG,
+								schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
+							),
+						uuid: $currentUuid
+					)
 				);
 			} finally {
-				if ($locked === true) {
-					try {
-						$this->objectService->unlockObject(identifier: $currentUuid);
-					} catch (Throwable $unlockErr) {
-						$this->logger->warning(
-							'Buildiq: failed to release update lock on ' . $currentUuid . ': ' . $unlockErr->getMessage()
-						);
-					}
-				}
+				$this->releaseUpdateLock(currentUuid: $currentUuid, locked: $locked);
 			}
 
 			return new JSONResponse(
@@ -442,6 +554,188 @@ class ApplicationVersionsController extends Controller {
 	}//end update()
 
 	/**
+	 * The version payload of an update: the caller's mutable fields merged onto
+	 * the current version, its immutable fields kept, the promotion cycle guarded
+	 * and the save hook applied.
+	 *
+	 * @param array<string,mixed> $current     The current version.
+	 * @param string              $currentUuid The current version uuid.
+	 *
+	 * @return array<string,mixed>
+	 *
+	 * @throws \RuntimeException When the proposed promotion target closes a cycle.
+	 */
+	private function buildUpdatePayload(array $current, string $currentUuid): array {
+		// WF2: strip caller input to the explicit MUTABLE_FIELDS allowlist
+		// before merging, so new schema properties added in future cannot
+		// become unintended write channels via implicit array_merge.
+		$clientInput = array_intersect_key($this->collectPayload(), array_flip(self::MUTABLE_FIELDS));
+		$payload = array_merge($current, $clientInput);
+		unset($payload['@self']);
+
+		// Preserve immutable fields.
+		$payload['application'] = $current['application'] ?? null;
+		$payload['id'] = $currentUuid;
+
+		// Cycle guard on cross-row.
+		$this->guardPromotesTo(currentUuid: $currentUuid, proposedPromotesTo: ($payload['promotesTo'] ?? null));
+
+		return $this->versionService->onSave(current: $current, next: $payload);
+	}//end buildUpdatePayload()
+
+	/**
+	 * The manifest of a version row, or null when it holds none.
+	 *
+	 * @param array<string,mixed> $version The version row.
+	 *
+	 * @return array<mixed>|null
+	 */
+	private function manifestOf(array $version): ?array {
+		$manifest = ($version['manifest'] ?? null);
+		if (is_array($manifest) === true) {
+			return $manifest;
+		}
+
+		return null;
+	}//end manifestOf()
+
+	/**
+	 * Refuse a write that adds, changes or removes code unless an app owner
+	 * makes it and the instance allows code on pages (pages-custom-code D6).
+	 *
+	 * A write that leaves every code-bearing key as it was passes. There is no
+	 * admin bypass: a Nextcloud administrator who is not an owner of the app
+	 * cannot write code into it, the same rule as the manifest save.
+	 *
+	 * @param array<string,mixed> $application The parent Application.
+	 * @param array<mixed>|null   $before      The stored manifest, or null when there is none.
+	 * @param array<mixed>        $after       The manifest being written.
+	 *
+	 * @return JSONResponse|null The 403, or null when the write may proceed.
+	 *
+	 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-only-owners-write-code-and-only-when-allowed-req-bqcc-005
+	 */
+	private function refuseCodeChange(array $application, array|null $before, array $after): JSONResponse|null {
+		if ($this->codeGuard->changesCode(before: $before, after: $after) === false) {
+			return null;
+		}
+
+		if ($this->appConfig?->getValueBool(AppIdentity::APP_ID, PageCodeGuard::SETTING, false) !== true) {
+			return new JSONResponse(
+				data: ['error' => 'forbidden', 'code' => 'buildiq.code.disabled', 'message' => 'Code on pages is switched off for this instance.'],
+				statusCode: Http::STATUS_FORBIDDEN
+			);
+		}
+
+		if ($this->isOwner(application: $application, user: $this->userSession->getUser()) === true) {
+			return null;
+		}
+
+		return new JSONResponse(
+			data: ['error' => 'forbidden', 'code' => 'buildiq.code.owners_only', 'message' => 'Only app owners can add code to a page.'],
+			statusCode: Http::STATUS_FORBIDDEN
+		);
+	}//end refuseCodeChange()
+
+	/**
+	 * Whether the user is an owner of the Application, by name or by group. No admin bypass.
+	 *
+	 * @param array<string,mixed> $application The parent Application.
+	 * @param IUser|null          $user        The caller, or null when nobody is signed in.
+	 *
+	 * @return bool True for an owner.
+	 */
+	private function isOwner(array $application, IUser|null $user): bool {
+		if ($user === null) {
+			return false;
+		}
+
+		$owners = $this->collectAuthorisedPrincipals(application: $application, roles: ['owners']);
+
+		return in_array($user->getUID(), $owners['users'], true) === true
+			|| count(array_intersect($this->getUserGroupIds(user: $user), $owners['groups'])) > 0;
+	}//end isOwner()
+
+	/**
+	 * Refuse a promotesTo target that would close a promotion cycle.
+	 *
+	 * @param string $currentUuid        The current version uuid.
+	 * @param mixed  $proposedPromotesTo The proposed promotesTo value.
+	 *
+	 * @return void
+	 *
+	 * @throws \RuntimeException When the target closes a cycle.
+	 */
+	private function guardPromotesTo(string $currentUuid, mixed $proposedPromotesTo): void {
+		if (is_string($proposedPromotesTo) === false) {
+			return;
+		}
+
+		$cycleTarget = $proposedPromotesTo;
+		if ($cycleTarget === '') {
+			$cycleTarget = null;
+		}
+
+		$this->versionService->guardNoCycle(
+			currentUuid: $currentUuid,
+			proposedTargetUuid: $cycleTarget
+		);
+	}//end guardPromotesTo()
+
+	/**
+	 * Take the update lock on a version.
+	 *
+	 * `lockObject()` is declared on ObjectServiceInterface, so no
+	 * method_exists() probe guards it.
+	 *
+	 * @param string $currentUuid The version uuid; empty skips the lock.
+	 * @param string $versionSlug The version slug, for the conflict message.
+	 *
+	 * @return bool|JSONResponse Whether a lock was taken, or the 409 response.
+	 */
+	private function lockForUpdate(string $currentUuid, string $versionSlug): bool|JSONResponse {
+		if ($currentUuid === '') {
+			return false;
+		}
+
+		try {
+			$this->objectService->lockObject(
+				new LockRequest(identifier: $currentUuid, process: 'buildiq.controller-update', duration: 15)
+			);
+		} catch (Throwable $lockError) {
+			return $this->errorResponse(
+				code: 'version_locked',
+				detail: 'Version ' . $versionSlug . ' is currently locked by another writer. Retry after a moment.',
+				status: Http::STATUS_CONFLICT
+			);
+		}
+
+		return true;
+	}//end lockForUpdate()
+
+	/**
+	 * Release the update lock when one was taken; a failed release is logged.
+	 *
+	 * @param string $currentUuid The version uuid.
+	 * @param bool   $locked      Whether the lock was taken.
+	 *
+	 * @return void
+	 */
+	private function releaseUpdateLock(string $currentUuid, bool $locked): void {
+		if ($locked === false) {
+			return;
+		}
+
+		try {
+			$this->objectService->unlockObject(new UnlockRequest(identifier: $currentUuid));
+		} catch (Throwable $unlockErr) {
+			$this->logger->warning(
+				'Buildiq: failed to release update lock on ' . $currentUuid . ': ' . $unlockErr->getMessage()
+			);
+		}
+	}//end releaseUpdateLock()
+
+	/**
 	 * Delete an ApplicationVersion using the requested strategy (spec REQ-OBV-108).
 	 *
 	 * Accepts the `strategy` query parameter (`delete-now |
@@ -454,7 +748,7 @@ class ApplicationVersionsController extends Controller {
 	 *
 	 * @return JSONResponse 204 on success, error envelope otherwise
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-25
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-25
 	 */
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 10, period: 60)]
@@ -514,7 +808,7 @@ class ApplicationVersionsController extends Controller {
 	 *
 	 * @return JSONResponse 200 with the release result, or an error envelope
 	 *
-	 * @spec openspec/changes/version-lifecycle-and-switcher/specs/application-versions/spec.md
+	 * @spec openspec/specs/application-versions/spec.md
 	 */
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 10, period: 60)]
@@ -596,8 +890,10 @@ class ApplicationVersionsController extends Controller {
 		try {
 			$version = $this->objectService->find(
 				id: $versionUuid,
-				register: ApplicationVersionService::REGISTER_SLUG,
-				schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
+				options: new ObjectFindOptions(
+					register: ApplicationVersionServiceInterface::REGISTER_SLUG,
+					schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
+				)
 			);
 		} catch (Throwable $e) {
 			return null;
@@ -631,7 +927,7 @@ class ApplicationVersionsController extends Controller {
 		try {
 			return [
 				$this->registerMapper->find(
-					ApplicationVersionService::REGISTER_SLUG,
+					ApplicationVersionServiceInterface::REGISTER_SLUG,
 					_multitenancy: false
 				)->getId(),
 				$this->schemaMapper->find($schemaSlug, _multitenancy: false)->getId(),
@@ -655,38 +951,53 @@ class ApplicationVersionsController extends Controller {
 	 * @param string $versionSlug The version slug to find
 	 *
 	 * @return array<string,mixed>|null The version row, or null on miss
-	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function findVersionRowBySlug(array $application, string $versionSlug): ?array {
-		$applicationUuid = (string)($application['id'] ?? $application['uuid'] ?? '');
-
-		$ids = $this->resolveRegisterAndSchema(schemaSlug: ApplicationVersionService::APPLICATION_VERSION_SCHEMA);
-		if ($ids === null) {
-			return null;
-		}
-
-		[$registerId, $schemaId] = $ids;
-
-		$rows = $this->objectService->searchObjects(
-			query: ['@self' => ['register' => $registerId, 'schema' => $schemaId]]
-		);
-		if (is_array($rows) === false) {
-			return null;
-		}
-
-		foreach ($rows as $row) {
-			$normalised = ObjectRecord::toArray(object: $row);
-			if ((string)($normalised['application'] ?? '') !== $applicationUuid) {
-				continue;
-			}
-
-			if ((string)($normalised['slug'] ?? '') === $versionSlug) {
-				return $normalised;
+		foreach (($this->versionRowsOf(application: $application) ?? []) as $version) {
+			if ((string)($version['slug'] ?? '') === $versionSlug) {
+				return $version;
 			}
 		}
 
 		return null;
 	}//end findVersionRowBySlug()
+
+	/**
+	 * Every ApplicationVersion row of an Application, normalised, in stored order.
+	 *
+	 * OR's searchObjects doesn't reliably filter by relation-string equality on
+	 * the `application` field (the value is stored both inline AND in the
+	 * `@self.relations` block, and the matcher matches neither shape
+	 * consistently). Fetch every ApplicationVersion row and filter client-side
+	 * by the parent Application UUID. Cheap — we expect ~3 rows per app.
+	 *
+	 * @param array<string,mixed> $application Normalised Application data
+	 *
+	 * @return array<int,array<string,mixed>>|null The rows, or null when the version schema cannot be resolved
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
+	 */
+	private function versionRowsOf(array $application): ?array {
+		$ids = $this->resolveRegisterAndSchema(schemaSlug: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA);
+		if ($ids === null) {
+			return null;
+		}
+
+		$applicationUuid = (string)($application['id'] ?? $application['uuid'] ?? '');
+		$rows = $this->objectService->searchObjects(query: ['@self' => ['register' => $ids[0], 'schema' => $ids[1]]]);
+		if (is_array($rows) === false) {
+			$rows = [];
+		}
+
+		$mine = [];
+		foreach ($rows as $row) {
+			$version = ObjectRecord::toArray(object: $row);
+			if ((string)($version['application'] ?? '') === $applicationUuid) {
+				$mine[] = $version;
+			}
+		}
+
+		return $mine;
+	}//end versionRowsOf()
 
 	/**
 	 * Owner-only check with NO admin bypass (REQ-OBV-110).
@@ -718,7 +1029,7 @@ class ApplicationVersionsController extends Controller {
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function loadApplication(string $slug): ?array {
-		$ids = $this->resolveRegisterAndSchema(schemaSlug: ApplicationVersionService::APPLICATION_SCHEMA);
+		$ids = $this->resolveRegisterAndSchema(schemaSlug: ApplicationVersionServiceInterface::APPLICATION_SCHEMA);
 		if ($ids === null) {
 			return null;
 		}
@@ -754,7 +1065,7 @@ class ApplicationVersionsController extends Controller {
 	 *
 	 * @return array<string,mixed>|null Version record or null on miss
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-24
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-24
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function findVersionForApplication(string $slug, string $versionSlug): ?array {
@@ -765,7 +1076,7 @@ class ApplicationVersionsController extends Controller {
 
 		$applicationUuid = (string)($application['id'] ?? $application['uuid'] ?? '');
 
-		$ids = $this->resolveRegisterAndSchema(schemaSlug: ApplicationVersionService::APPLICATION_VERSION_SCHEMA);
+		$ids = $this->resolveRegisterAndSchema(schemaSlug: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA);
 		if ($ids === null) {
 			return null;
 		}
@@ -802,7 +1113,7 @@ class ApplicationVersionsController extends Controller {
 	 *
 	 * @return JSONResponse|null Null on allow, 401/403/404 envelope on deny
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-47
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-47
 	 */
 	private function requireRole(string $slug, array $roles): ?JSONResponse {
 		$user = $this->userSession->getUser();
@@ -867,11 +1178,11 @@ class ApplicationVersionsController extends Controller {
 				$appEntity = null;
 				try {
 					$registerId = $this->registerMapper->find(
-						ApplicationVersionService::REGISTER_SLUG,
+						ApplicationVersionServiceInterface::REGISTER_SLUG,
 						_multitenancy: false
 					)->getId();
 					$schemaId = $this->schemaMapper->find(
-						ApplicationVersionService::APPLICATION_SCHEMA,
+						ApplicationVersionServiceInterface::APPLICATION_SCHEMA,
 						_multitenancy: false
 					)->getId();
 					$rows = $this->objectService->searchObjects(

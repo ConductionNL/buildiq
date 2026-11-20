@@ -13,6 +13,9 @@
  * @version GIT: <git-id>
  *
  * @link https://conduction.nl
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -39,6 +42,8 @@ use RuntimeException;
  * outcomes with their log lines, and the fragment merge rules.
  *
  * @covers \OCA\Buildiq\Service\SettingsService
+ * @uses \OCA\Buildiq\Service\CallerContext
+ * @uses \OCA\Buildiq\Service\RegisterConfigImport
  */
 final class SettingsServiceConfigurationImportTest extends TestCase {
 

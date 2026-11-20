@@ -431,4 +431,168 @@ final class AutomationApprovalTriggerListenerTest extends TestCase {
 
 	}//end testProvisionFailureDoesNotBreakTheWrite()
 
+	/**
+	 * Build a listener whose logger is a mock, so a test can assert what is logged.
+	 *
+	 * @param \Psr\Log\LoggerInterface $logger The logger to inject.
+	 *
+	 * @return AutomationApprovalTriggerListener
+	 */
+	private function listenerWithLogger(\Psr\Log\LoggerInterface $logger): AutomationApprovalTriggerListener {
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturnCallback(
+			fn (string $id): object => match ($id) {
+				'OCA\\OpenRegister\\Service\\ApprovalChainAnnotationInstaller' => $this->annotationInstaller,
+				'OCA\\OpenRegister\\Db\\TaskSequenceMapper' => $this->sequenceMapper,
+				'OCA\\OpenRegister\\Service\\Task\\TaskSequenceService' => $this->sequenceService,
+				default => $this->objectService,
+			}
+		);
+
+		$userSession = $this->createMock(\OCP\IUserSession::class);
+		$userSession->method('getUser')->willReturn(null);
+
+		return new AutomationApprovalTriggerListener($container, $this->schemaMapper, $userSession, $logger);
+	}//end listenerWithLogger()
+
+	/**
+	 * A matching automation carrying the given provenance.
+	 *
+	 * @param mixed $provenance The provenance value.
+	 *
+	 * @return array<string, mixed> The automation row.
+	 */
+	private function automationWithProvenance(mixed $provenance): array {
+		return [
+			'enabled' => true,
+			'trigger' => ['type' => 'object-created', 'schema' => 'permit-application'],
+			'actions' => [['type' => 'approval', 'assigneeGroup' => 'permit-reviewers']],
+			'provenance' => $provenance,
+		];
+	}//end automationWithProvenance()
+
+	/**
+	 * An event that is not an object event never scans automations.
+	 *
+	 * @return void
+	 */
+	public function testUnrelatedEventScansNothing(): void {
+		$this->objectService->expects($this->never())->method('findAll');
+		$this->sequenceService->expects($this->never())->method('provision');
+
+		$this->listener->handle(new \OCP\EventDispatcher\Event());
+
+	}//end testUnrelatedEventScansNothing()
+
+	/**
+	 * A failing automation scan is logged as a warning and opens nothing.
+	 *
+	 * @return void
+	 */
+	public function testAutomationScanFailureIsLoggedAndOpensNothing(): void {
+		$this->objectService->method('findAll')->willThrowException(new \RuntimeException('register offline'));
+		$this->schemaMapper->expects($this->never())->method('find');
+		$this->sequenceService->expects($this->never())->method('provision');
+
+		$logger = $this->createMock(\Psr\Log\LoggerInterface::class);
+		$logger->expects($this->once())->method('warning')->with(
+			'Buildiq: AutomationApprovalTriggerListener could not scan automations: register offline'
+		);
+
+		$this->listenerWithLogger($logger)->handle(
+			new ObjectCreatedEvent($this->objectEntity('permit-application', 'object-uuid-1'))
+		);
+
+	}//end testAutomationScanFailureIsLoggedAndOpensNothing()
+
+	/**
+	 * A non-array provenance counts as no chain name: nothing is resolved.
+	 *
+	 * @return void
+	 */
+	public function testNonArrayProvenanceResolvesNothing(): void {
+		$this->objectService->method('findAll')->willReturn([$this->automationWithProvenance('aut-x')]);
+		$this->schemaMapper->expects($this->never())->method('find');
+		$this->sequenceService->expects($this->never())->method('provision');
+
+		$this->listener->handle(
+			new ObjectCreatedEvent($this->objectEntity('permit-application', 'object-uuid-1'))
+		);
+
+	}//end testNonArrayProvenanceResolvesNothing()
+
+	/**
+	 * An empty approval chain name resolves nothing.
+	 *
+	 * @return void
+	 */
+	public function testEmptyChainNameResolvesNothing(): void {
+		$this->objectService->method('findAll')->willReturn(
+			[$this->automationWithProvenance(['approvalChainName' => ''])]
+		);
+		$this->schemaMapper->expects($this->never())->method('find');
+		$this->sequenceService->expects($this->never())->method('provision');
+
+		$this->listener->handle(
+			new ObjectCreatedEvent($this->objectEntity('permit-application', 'object-uuid-1'))
+		);
+
+	}//end testEmptyChainNameResolvesNothing()
+
+	/**
+	 * A failing schema lookup is logged and nothing is compiled or opened.
+	 *
+	 * @return void
+	 */
+	public function testSchemaLookupFailureIsLoggedAndOpensNothing(): void {
+		$this->objectService->method('findAll')->willReturn(
+			[$this->automationWithProvenance(['approvalChainName' => 'aut-x'])]
+		);
+		$this->schemaMapper->expects($this->once())->method('find')
+			->with('permit-application', self::anything(), self::anything(), false)
+			->willThrowException(new \RuntimeException('no such schema'));
+		$this->annotationInstaller->expects($this->never())->method('compile');
+		$this->sequenceService->expects($this->never())->method('provision');
+
+		$logger = $this->createMock(\Psr\Log\LoggerInterface::class);
+		$logger->expects($this->once())->method('warning')->with(
+			'Buildiq: AutomationApprovalTriggerListener could not load schema "permit-application": no such schema'
+		);
+
+		$this->listenerWithLogger($logger)->handle(
+			new ObjectCreatedEvent($this->objectEntity('permit-application', 'object-uuid-1'))
+		);
+
+	}//end testSchemaLookupFailureIsLoggedAndOpensNothing()
+
+	/**
+	 * A failing dedupe lookup is treated as "no existing sequence": the chain is
+	 * still provisioned for the object.
+	 *
+	 * @return void
+	 */
+	public function testDedupeLookupFailureStillProvisions(): void {
+		$this->objectService->method('findAll')->willReturn(
+			[$this->automationWithProvenance(['approvalChainName' => 'aut-x'])]
+		);
+		$this->schemaMapper->method('find')->willReturn($this->schemaWithId(42));
+		$template = $this->templateFor('tpl-permit-7');
+		$this->annotationInstaller->method('compile')->willReturn($template);
+		$this->sequenceMapper->expects($this->once())->method('findForAnchor')
+			->with('object-uuid-1', 'tpl-permit-7')
+			->willThrowException(new \RuntimeException('sequence table missing'));
+
+		$this->sequenceService->expects($this->once())
+			->method('provision')
+			->with(
+				self::callback(callback: static fn (ResolvedChain $chain): bool => $chain->template === $template),
+				self::callback(callback: static fn (SequenceAnchor $anchor): bool => $anchor->objectUuid === 'object-uuid-1')
+			);
+
+		$this->listener->handle(
+			new ObjectCreatedEvent($this->objectEntity('permit-application', 'object-uuid-1'))
+		);
+
+	}//end testDedupeLookupFailureStillProvisions()
+
 }//end class

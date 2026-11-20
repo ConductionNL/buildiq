@@ -24,8 +24,9 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
-use OCA\Buildiq\AppInfo\Application;
 use OCA\Buildiq\Exception\RegisterConfigUnavailableException;
+use OCA\Buildiq\Kernel\AppIdentity;
+use OCA\Buildiq\Kernel\Contracts\SettingsServiceInterface;
 use OCA\Buildiq\Service\Connection\ConnectionReporter;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
@@ -37,9 +38,9 @@ use Psr\Log\LoggerInterface;
 /**
  * Service for managing Buildiq application configuration and settings.
  *
- * @spec openspec/changes/openbuild-remote-template-store/specs/openbuild-remote-template-store/spec.md
+ * @spec openspec/specs/openbuild-remote-template-store/spec.md
  */
-class SettingsService {
+class SettingsService implements SettingsServiceInterface {
 
 	/**
 	 * Configuration keys managed by this service (plain read/write).
@@ -78,6 +79,18 @@ class SettingsService {
 	 */
 	private const EMPTY_MEANS_DEFAULT = [
 		'register',
+	];
+
+	/**
+	 * Boolean config keys and their defaults. `allow_offline_apps` is the
+	 * instance setting "Let apps work offline": while it is off no app gets an
+	 * offline worker, whatever its manifest declares (pages-installable-offline-
+	 * and-mobile, REQ-BQOM-002).
+	 *
+	 * @var array<string, bool>
+	 */
+	private const BOOL_KEYS = [
+		'allow_offline_apps' => false,
 	];
 
 	/**
@@ -135,11 +148,22 @@ class SettingsService {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-25-settings-and-observability/tasks.md#task-1
+	 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-settings-and-observability/tasks.md#task-1
 	 */
 	public function isOpenRegisterAvailable(): bool {
 		return $this->appManager->isInstalled('openregister');
 	}//end isOpenRegisterAvailable()
+
+	/**
+	 * Whether the instance lets apps work offline ("Let apps work offline", off by default).
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-offline-is-the-administrators-choice-first-req-bqom-002
+	 */
+	public function offlineAppsAllowed(): bool {
+		return $this->appConfig->getValueBool(AppIdentity::APP_ID, 'allow_offline_apps', self::BOOL_KEYS['allow_offline_apps']);
+	}//end offlineAppsAllowed()
 
 	/**
 	 * Retrieve all current settings.
@@ -149,13 +173,13 @@ class SettingsService {
 	 *
 	 * @return array<string,mixed>
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-25-settings-and-observability/tasks.md#task-1
+	 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-settings-and-observability/tasks.md#task-1
 	 */
 	public function getSettings(): array {
 		$settings = [];
 		foreach (self::CONFIG_KEYS as $key) {
 			$default = (self::CONFIG_DEFAULTS[$key] ?? '');
-			$value = $this->appConfig->getValueString(Application::APP_ID, $key, $default);
+			$value = $this->appConfig->getValueString(AppIdentity::APP_ID, $key, $default);
 			if ($value === '' && in_array($key, self::EMPTY_MEANS_DEFAULT, true) === true) {
 				$value = $default;
 			}
@@ -163,12 +187,16 @@ class SettingsService {
 			$settings[$key] = $value;
 		}
 
+		foreach (self::BOOL_KEYS as $key => $default) {
+			$settings[$key] = $this->appConfig->getValueBool(AppIdentity::APP_ID, $key, $default);
+		}
+
 		$user = $this->userSession->getUser();
 		$isAdmin = ($user !== null && $this->groupManager->isAdmin($user->getUID()));
 
 		// Remote template store (buildiq-remote-template-store): expose a
 		// token-presence flag + a storeConfigured flag, but NEVER the token value.
-		$registryToken = $this->appConfig->getValueString(Application::APP_ID, 'registry_token', '');
+		$registryToken = $this->appConfig->getValueString(AppIdentity::APP_ID, 'registry_token', '');
 
 		return array_merge(
 			$settings,
@@ -179,6 +207,9 @@ class SettingsService {
 				// `registry_url` is one of self::CONFIG_KEYS, so the loop above
 				// always set it — the `?? ''` this replaces was unreachable.
 				'storeConfigured' => (trim($settings['registry_url']) !== ''),
+				// "Allow code on pages" (pages-custom-code, REQ-BQCC-005): off by
+				// default, read as a boolean, the same read saveManifest() makes.
+				PageCodeGuard::SETTING => $this->appConfig->getValueBool(AppIdentity::APP_ID, PageCodeGuard::SETTING, false),
 			]
 		);
 	}//end getSettings()
@@ -194,14 +225,21 @@ class SettingsService {
 	 *
 	 * @return array<string,mixed> The updated settings
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-25-settings-and-observability/tasks.md#task-2
+	 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-settings-and-observability/tasks.md#task-2
 	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md#requirement-req-biq-conn-002-a-store-settings-save-asks-integriq-to-look-again
 	 */
 	public function updateSettings(array $data): array {
 		$written = [];
 		foreach (self::CONFIG_KEYS as $key) {
 			if (isset($data[$key]) === true) {
-				$this->appConfig->setValueString(Application::APP_ID, $key, (string)$data[$key]);
+				$this->appConfig->setValueString(AppIdentity::APP_ID, $key, (string)$data[$key]);
+				$written[] = $key;
+			}
+		}
+
+		foreach (array_keys(self::BOOL_KEYS) as $key) {
+			if (array_key_exists($key, $data) === true) {
+				$this->appConfig->setValueBool(AppIdentity::APP_ID, $key, filter_var($data[$key], FILTER_VALIDATE_BOOLEAN));
 				$written[] = $key;
 			}
 		}
@@ -218,7 +256,7 @@ class SettingsService {
 		foreach (self::SECRET_KEYS as $key) {
 			if (isset($data[$key]) === true && (string)$data[$key] !== '') {
 				$this->appConfig->setValueString(
-					Application::APP_ID,
+					AppIdentity::APP_ID,
 					$key,
 					(string)$data[$key],
 					sensitive: true
@@ -227,10 +265,55 @@ class SettingsService {
 			}
 		}
 
+		$written = [...$written, ...$this->writePageCodeSetting(data: $data)];
+
 		$this->connectionReporter?->refreshFromSave(savedKeys: $written);
 
 		return $this->getSettings();
 	}//end updateSettings()
+
+	/**
+	 * Write "Allow code on pages" when the submission carries it.
+	 *
+	 * @param array<string,mixed> $data The submitted settings.
+	 *
+	 * @return list<string> The key written, or none.
+	 *
+	 * @spec openspec/changes/pages-custom-code/tasks.md#t01
+	 */
+	private function writePageCodeSetting(array $data): array {
+		if (array_key_exists(PageCodeGuard::SETTING, $data) === false) {
+			return [];
+		}
+
+		$this->appConfig->setValueBool(AppIdentity::APP_ID, PageCodeGuard::SETTING, $this->isOn(value: $data[PageCodeGuard::SETTING]));
+
+		return [PageCodeGuard::SETTING];
+	}//end writePageCodeSetting()
+
+	/**
+	 * Whether a submitted toggle value means "on".
+	 *
+	 * A JSON body carries a boolean; a form or query string carries "true",
+	 * "1" or "on". Anything else, including null, is off.
+	 *
+	 * @param mixed $value The submitted value.
+	 *
+	 * @return bool True when the value means on.
+	 *
+	 * @spec openspec/changes/pages-custom-code/tasks.md#t01
+	 */
+	private function isOn(mixed $value): bool {
+		if (is_bool($value) === true) {
+			return $value;
+		}
+
+		if (is_scalar($value) === false) {
+			return false;
+		}
+
+		return in_array(strtolower(trim((string)$value)), ['true', '1', 'on'], true);
+	}//end isOn()
 
 	/**
 	 * Load configuration from openbuild_register.json via OpenRegister.
@@ -241,7 +324,7 @@ class SettingsService {
 	 *
 	 * @return array<string,mixed> Result with success flag, message, and version.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-25-settings-and-observability/tasks.md#task-3
+	 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-settings-and-observability/tasks.md#task-3
 	 */
 	public function loadConfiguration(): array {
 		return $this->doLoadConfiguration(force: false);
@@ -255,7 +338,7 @@ class SettingsService {
 	 *
 	 * @return array<string,mixed> Result with success flag, message, and version.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-25-settings-and-observability/tasks.md#task-3
+	 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-settings-and-observability/tasks.md#task-3
 	 */
 	public function reloadConfiguration(): array {
 		return $this->doLoadConfiguration(force: true);
@@ -449,7 +532,7 @@ class SettingsService {
 	private function callImportFromApp(RegisterConfigImport $import, bool $force): mixed {
 		$configurationService = $this->container->get('OCA\OpenRegister\Service\ConfigurationService');
 		return $configurationService->importFromApp(
-			appId: Application::APP_ID,
+			appId: AppIdentity::APP_ID,
 			data: $import->data,
 			version: $import->version,
 			force: $force

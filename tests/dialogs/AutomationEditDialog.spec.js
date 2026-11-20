@@ -375,6 +375,127 @@ describe('AutomationEditDialog', () => {
 		})
 	})
 
+	describe('logic-approval-task-form REQ-BQTF-001: the fields the approver fills in', () => {
+		const schemaWithFields = {
+			properties: {
+				bedrag: { type: 'number', title: 'Bedrag' },
+				motivering: { type: 'string' },
+				status: { type: 'string', readOnly: true },
+				intern: { type: 'string', visible: false },
+				bijlagen: { type: 'array' },
+				aanvrager: { type: 'object', $ref: 'person' },
+				zaak: { type: 'string', objectConfiguration: { handling: 'related-object' } },
+			},
+		}
+
+		async function approvalDialog(stored = { type: 'approval', assigneeGroup: 'reviewers' }) {
+			axios.get.mockImplementation((url) => {
+				if (url === '/apps/openregister/api/schemas/permit-application') {
+					return Promise.resolve({ data: schemaWithFields })
+				}
+				return Promise.resolve({ data: { results: [] } })
+			})
+			const wrapper = factory({
+				...baseAutomation(),
+				slug: 'route-permit',
+				name: 'Route permit',
+				trigger: { type: 'object-created', schema: 'permit-application' },
+				actions: [stored],
+			})
+			await openDialog(wrapper)
+			await flush()
+			return wrapper
+		}
+
+		function editor(wrapper) {
+			return wrapper.findComponent({ name: 'ApprovalFormFieldsEditor' })
+		}
+
+		it('offers only the trigger schema fields an approver can fill in', async () => {
+			const wrapper = await approvalDialog()
+
+			expect(editor(wrapper).exists()).toBe(true)
+			expect(editor(wrapper).props('options')).toEqual([
+				{ value: 'bedrag', label: 'Bedrag' },
+				{ value: 'motivering', label: 'motivering' },
+			])
+			const select = editor(wrapper).findComponent({ name: 'NcSelect' })
+			expect(select.props('inputLabel')).toBe('Fields the approver fills in')
+		})
+
+		it('adds picked fields in order, optional by default, and stores them as form.fields', async () => {
+			const wrapper = await approvalDialog()
+
+			editor(wrapper).vm.addField({ value: 'bedrag' })
+			await wrapper.vm.$nextTick()
+			editor(wrapper).vm.addField({ value: 'motivering' })
+			await wrapper.vm.$nextTick()
+			editor(wrapper).vm.addField({ value: 'bedrag' })
+			await wrapper.vm.$nextTick()
+			editor(wrapper).vm.setRequired(0, true)
+			await wrapper.vm.$nextTick()
+
+			expect(wrapper.findAll('[data-testid="approval-form-field-row"]')).toHaveLength(2)
+			expect(editor(wrapper).vm.availableOptions).toEqual([])
+			await wrapper.vm.onSave()
+			const [, payload] = axios.post.mock.calls.find(([url]) => url === '/apps/buildiq/api/automations')
+			expect(payload.actions[0]).toEqual({
+				type: 'approval',
+				assigneeGroup: 'reviewers',
+				onApprove: [],
+				onReject: [],
+				form: { fields: [{ field: 'bedrag', required: true }, { field: 'motivering', required: false }] },
+			})
+		})
+
+		it('reorders and removes a stored form\'s fields', async () => {
+			const wrapper = await approvalDialog({
+				type: 'approval',
+				assigneeGroup: 'reviewers',
+				form: { fields: [{ field: 'bedrag', required: true }, { field: 'motivering' }] },
+			})
+			expect(wrapper.vm.actions[0].formFields).toEqual([
+				{ field: 'bedrag', required: true },
+				{ field: 'motivering', required: false },
+			])
+
+			await wrapper.findAll('[data-testid="approval-form-field-down"]')[0].trigger('click')
+			expect(wrapper.vm.actions[0].formFields.map((f) => f.field)).toEqual(['motivering', 'bedrag'])
+			editor(wrapper).vm.move(0, -1)
+			await wrapper.vm.$nextTick()
+			expect(wrapper.vm.actions[0].formFields.map((f) => f.field)).toEqual(['motivering', 'bedrag'])
+			editor(wrapper).vm.move(0, 1)
+			await wrapper.vm.$nextTick()
+			expect(wrapper.vm.actions[0].formFields.map((f) => f.field)).toEqual(['bedrag', 'motivering'])
+
+			await wrapper.findAll('[data-testid="approval-form-field-remove"]')[0].trigger('click')
+			expect(wrapper.vm.actions[0].formFields).toEqual([{ field: 'motivering', required: false }])
+			await wrapper.findAll('[data-testid="approval-form-field-remove"]')[0].trigger('click')
+
+			await wrapper.vm.onSave()
+			const [, payload] = axios.post.mock.calls.find(([url]) => url === '/apps/buildiq/api/automations')
+			expect(payload.actions[0]).toEqual({ type: 'approval', assigneeGroup: 'reviewers', onApprove: [], onReject: [] })
+			expect(payload.actions[0]).not.toHaveProperty('form')
+		})
+
+		it('offers no fields when the trigger schema cannot be read', async () => {
+			axios.get.mockImplementation((url) => (url.includes('/api/schemas/')
+				? Promise.reject(new Error('down'))
+				: Promise.resolve({ data: { results: [] } })))
+			const wrapper = factory({
+				...baseAutomation(),
+				slug: 'route-permit',
+				name: 'Route permit',
+				trigger: { type: 'object-created', schema: 'permit-application' },
+				actions: [{ type: 'approval', assigneeGroup: 'reviewers' }],
+			})
+			await openDialog(wrapper)
+			await flush()
+
+			expect(editor(wrapper).props('options')).toEqual([])
+		})
+	})
+
 	it('automation-approval-steps REQ-AUTD-003: approval action on a schedule trigger is blocked', async () => {
 		const wrapper = factory()
 		await openDialog(wrapper)
@@ -474,5 +595,114 @@ describe('AutomationEditDialog', () => {
 		expect(wrapper.vm.docudeskAvailable).toBe(false)
 		expect(wrapper.vm.actionBlockedReason('generateDocument')).not.toBe('')
 		expect(wrapper.vm.valid).toBe(false)
+	})
+
+	describe('schedule cadence', () => {
+		it('offers the six cadences with their labels', async () => {
+			const wrapper = factory()
+			await openDialog(wrapper)
+
+			expect(wrapper.vm.cadenceOptions).toEqual([
+				{ id: 'hourly', label: 'Hourly' },
+				{ id: 'daily', label: 'Daily' },
+				{ id: 'weekly', label: 'Weekly' },
+				{ id: 'monthly', label: 'Monthly' },
+				{ id: 'custom-cron', label: 'Custom (cron)' },
+				{ id: 'custom-interval', label: 'Custom interval (seconds)' },
+			])
+		})
+
+		it.each([
+			[{ type: 'schedule', cron: '0 3 * * 1', interval: 3600 }, 'custom-cron'],
+			[{ type: 'schedule', cron: '', interval: 604800 }, 'weekly'],
+			[{ type: 'schedule', interval: 2592000 }, 'monthly'],
+			[{ type: 'schedule', interval: 43200 }, 'custom-interval'],
+			[{ type: 'manual' }, 'custom-interval'],
+		])('maps the stored trigger %j to the %s cadence', async (trigger, id) => {
+			const wrapper = factory({ ...baseAutomation(), slug: 'a', trigger })
+			await openDialog(wrapper)
+
+			expect(wrapper.vm.cadenceOption).toEqual(
+				wrapper.vm.cadenceOptions.find((o) => o.id === id),
+			)
+		})
+
+		it.each([
+			['hourly', { type: 'schedule', interval: 3600 }],
+			['monthly', { type: 'schedule', interval: 2592000 }],
+			[null, { type: 'schedule', interval: 86400 }],
+		])('writes the %s preset as its interval', async (id, expected) => {
+			const wrapper = factory()
+			await openDialog(wrapper)
+			wrapper.vm.triggerType = 'schedule'
+			wrapper.vm.cadenceOption = wrapper.vm.cadenceOptions.find((o) => o.id === id) || null
+
+			expect(wrapper.vm.buildTrigger()).toEqual(expected)
+		})
+
+		it('derives the slug from the name', async () => {
+			const wrapper = factory()
+			await openDialog(wrapper)
+			wrapper.vm.name = '  Nightly  Sync -- Run! '
+
+			expect(wrapper.vm.derivedSlug).toBe('nightly-sync-run')
+		})
+	})
+})
+
+describe('AutomationEditDialog Ask AI (ai-copilot-documents-and-code-help REQ-BQCH-001/004)', () => {
+	const AssistStub = {
+		name: 'CopilotAssistButton',
+		props: ['target', 'appSlug', 'current', 'context'],
+		emits: ['accept'],
+		template: '<span class="assist-stub" :data-target="target" />',
+	}
+
+	beforeEach(() => {
+		axios.get.mockReset()
+		axios.post.mockReset()
+		axios.get.mockResolvedValue({ data: { results: [] } })
+		clearAppStatusCache()
+	})
+
+	async function openWith(actions) {
+		const wrapper = mount(AutomationEditDialog, {
+			propsData: { open: false, automation: baseAutomation(), register: 'openbuild-permit-tracker-main' },
+			stubs: { ...stubs, CopilotAssistButton: AssistStub },
+		})
+		await openDialog(wrapper)
+		wrapper.vm.triggerSchema = 'application'
+		wrapper.vm.actions = actions.map((a) => wrapper.vm.actionToEditor(a))
+		await wrapper.vm.$nextTick()
+		return wrapper
+	}
+
+	it('puts Ask AI beside the field mapping, scoped to the app with names only', async () => {
+		const wrapper = await openWith([{ type: 'object-op', operation: 'create', schema: 'permit', fieldMapping: { name: 'x' } }])
+
+		const button = wrapper.findAllComponents(AssistStub).find((b) => b.props('target') === 'field-mapping')
+		expect(button.props('appSlug')).toBe('permit-tracker')
+		expect(button.props('context')).toEqual({ register: 'openbuild-permit-tracker-main', targetSchema: 'permit', triggerSchema: 'application' })
+		expect(JSON.parse(button.props('current'))).toEqual({ name: 'x' })
+	})
+
+	it('stages an accepted mapping and payload template without saving', async () => {
+		const wrapper = await openWith([
+			{ type: 'object-op', operation: 'create', schema: 'permit' },
+			{ type: 'webhook', url: 'https://hooks.test/a', payloadTemplateText: '' },
+		])
+		const buttons = wrapper.findAllComponents(AssistStub)
+		const mapping = buttons.find((b) => b.props('target') === 'field-mapping')
+		const payload = buttons.find((b) => b.props('target') === 'payload-template')
+		expect(payload.props('context')).toEqual({ triggerSchema: 'application' })
+
+		mapping.vm.$emit('accept', '{\n    "name": "{{ object.title }}"\n}')
+		payload.vm.$emit('accept', '{\n    "id": "{{ object.uuid }}"\n}')
+		await wrapper.vm.$nextTick()
+
+		expect(wrapper.vm.actions[0].fieldMappingText).toBe('{\n    "name": "{{ object.title }}"\n}')
+		expect(wrapper.vm.actions[1].payloadTemplateText).toBe('{\n    "id": "{{ object.uuid }}"\n}')
+		expect(axios.post).not.toHaveBeenCalled()
+		expect(axios.put).not.toHaveBeenCalled()
 	})
 })

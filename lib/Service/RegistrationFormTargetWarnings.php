@@ -3,6 +3,9 @@
 /**
  * Registration Form Target Warnings
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * What a registration form's destination says about it. Until decision 179
  * this class warned about presets and fields naming a property the target
  * schema lacks, and the save went ahead (REQ-OBRF-005, "Saving SHALL warn").
@@ -41,21 +44,20 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/forms-are-valid-against-their-destination/specs/form-destination-authoring/spec.md#requirement-a-registration-forms-presets-are-checked-against-its-destination
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\RegistrationFormTargetWarningsInterface;
+
 /**
  * Maps a registration form onto its destination and returns OpenRegister's findings.
  *
  * @spec openspec/changes/forms-are-valid-against-their-destination/specs/form-destination-authoring/spec.md#requirement-a-registration-forms-presets-are-checked-against-its-destination
  */
-final class RegistrationFormTargetWarnings {
+final class RegistrationFormTargetWarnings implements RegistrationFormTargetWarningsInterface {
 	/**
 	 * Findings a field that declares no options or bounds of its own cannot earn.
 	 *

@@ -89,14 +89,7 @@ export function ensureProductionVersionsLoaded(uuid = '') {
 	// (the app was created or changed since, or the load failed) asks once
 	// more. Without this the cards read "Draft / Version —" after in-app
 	// navigation until a full reload.
-	if (
-		inflight
-		&& settled
-		&& typeof uuid === 'string'
-		&& uuid !== ''
-		&& !(uuid in productionVersions)
-		&& !retried.has(uuid)
-	) {
+	if (needsReload(uuid)) {
 		retried.add(uuid)
 		inflight = null
 	}
@@ -104,37 +97,81 @@ export function ensureProductionVersionsLoaded(uuid = '') {
 		return inflight
 	}
 	settled = false
-	inflight = (async () => {
-		try {
-			const url = generateUrl('/apps/buildiq/api/applications')
-			const { data } = await axios.get(url)
-			const rows = Array.isArray(data) ? data : (data?.results ?? [])
-			for (const row of rows) {
-				const uuid = row?.productionVersion
-				const detail = row?.productionVersionDetail
-				if (
-					typeof uuid === 'string'
-					&& uuid !== ''
-					&& detail
-					&& typeof detail === 'object'
-				) {
-					productionVersions[uuid] = detail
-				}
-			}
-		} catch (e) {
-			// eslint-disable-next-line no-console
-			console.warn(
-				'[buildiq] could not resolve production versions; app cards will show '
-					+ 'their placeholder status/version until this succeeds',
-				e,
-			)
-			// Let the next card try again instead of pinning the failure.
-			inflight = null
-		}
-		settled = true
-		return productionVersions
-	})()
+	inflight = loadProductionVersions()
 	return inflight
+}
+
+/**
+ * Whether the settled index lacks a uuid a card needs, and no reload was tried
+ * for it yet.
+ *
+ * @param {unknown} uuid The production version UUID the caller needs.
+ * @return {boolean}
+ */
+function needsReload(uuid) {
+	return Boolean(inflight && settled && isUnknownUuid(uuid) && !retried.has(uuid))
+}
+
+/**
+ * Whether a uuid is a non-empty string the index does not hold.
+ *
+ * @param {unknown} uuid The production version UUID.
+ * @return {boolean}
+ */
+function isUnknownUuid(uuid) {
+	return typeof uuid === 'string' && uuid !== '' && !(uuid in productionVersions)
+}
+
+/**
+ * Load the caller's applications and index their production versions. A failed
+ * load is logged and lets the next card try again.
+ *
+ * @return {Promise<object>} The uuid -> version map.
+ */
+async function loadProductionVersions() {
+	try {
+		const url = generateUrl('/apps/buildiq/api/applications')
+		const { data } = await axios.get(url)
+		indexProductionVersions(Array.isArray(data) ? data : (data?.results ?? []))
+	} catch (e) {
+		// eslint-disable-next-line no-console
+		console.warn(
+			'[buildiq] could not resolve production versions; app cards will show '
+				+ 'their placeholder status/version until this succeeds',
+			e,
+		)
+		// Let the next card try again instead of pinning the failure.
+		inflight = null
+	}
+	settled = true
+	return productionVersions
+}
+
+/**
+ * Index the resolved production version of every application row by its UUID.
+ *
+ * @param {Array<object>} rows The application rows.
+ * @return {void}
+ */
+function indexProductionVersions(rows) {
+	for (const row of rows) {
+		const uuid = row?.productionVersion
+		const detail = row?.productionVersionDetail
+		if (isResolvedVersion(uuid, detail)) {
+			productionVersions[uuid] = detail
+		}
+	}
+}
+
+/**
+ * Whether a row carries a production version UUID and its resolved detail.
+ *
+ * @param {unknown} uuid The row's productionVersion.
+ * @param {unknown} detail The row's productionVersionDetail.
+ * @return {boolean}
+ */
+function isResolvedVersion(uuid, detail) {
+	return typeof uuid === 'string' && uuid !== '' && Boolean(detail) && typeof detail === 'object'
 }
 
 /**

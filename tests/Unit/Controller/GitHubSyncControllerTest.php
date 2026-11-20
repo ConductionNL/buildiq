@@ -24,10 +24,10 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\Controller;
 
 use OCA\Buildiq\Controller\GitHubSyncController;
-use OCA\Buildiq\Service\GitHub\AppPushRequest;
-use OCA\Buildiq\Service\GitHub\BrokerAccess;
-use OCA\Buildiq\Service\GitHub\BrokeredRepo;
-use OCA\Buildiq\Service\GitHub\PushTarget;
+use OCA\Buildiq\Kernel\Values\AppPushRequest;
+use OCA\Buildiq\Kernel\Values\BrokerAccess;
+use OCA\Buildiq\Kernel\Values\BrokeredRepo;
+use OCA\Buildiq\Kernel\Values\PushTarget;
 use OCA\Buildiq\Service\GitHubAppSyncService;
 use OCA\Buildiq\Service\PermissionResolver;
 use OCP\AppFramework\Http;

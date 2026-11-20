@@ -14,8 +14,11 @@ declare(strict_types=1);
 //
 // This file references no OpenRegister symbol at top level — Routes::standard()
 // is a pure array builder — so requiring it is safe even when OR is disabled.
-return \OCA\OpenRegister\AppHost\Routes::standard(
+// Every unversioned API route is also served under /api/v1/; see ApiPathAliases.
+return \OCA\Buildiq\Middleware\Support\ApiPathAliases::withVersionedAliases(\OCA\OpenRegister\AppHost\Routes::standard(
     [
+        // The OpenAPI document of buildiq's own API, public, served under /api/v1/ too.
+        ['name' => 'openApi#show', 'url' => '/api/openapi.json', 'verb' => 'GET'],
         // App-creation wizard endpoint (buildiq-app-creation-wizard REQ-OBWIZ-001).
         // POST /api/applications/wizard — atomic creation of Application + N versions + N registers.
         // ADMIN-ONLY (issue #157): #[AuthorizedAdminSetting(AdminSettings::class)] on the controller
@@ -23,6 +26,9 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         // defence in depth. The caller becomes the sole owner of the new Application.
         // Must precede the {slug} + collection routes so it does not shadow them.
         ['name' => 'applicationCreation#wizard', 'url' => '/api/applications/wizard', 'verb' => 'POST'],
+        // lifecycle-import-app-and-cli: an exported archive imported as a new app (REQ-BQIC-001).
+        ['name' => 'applicationImport#import', 'url' => '/api/applications/import', 'verb' => 'POST'],
+        ['name' => 'applicationImport#preview', 'url' => '/api/applications/import/preview', 'verb' => 'POST'],
 
         // First-time-setup contract (buildiq-first-time-setup, ADR-042) — the
         // fleet-wide CnSetupWizard endpoints. Admin-only via
@@ -49,13 +55,18 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         // Application in the shared `buildiq` register tagged with the caller's UID.
         ['name' => 'applications#createFromTemplate', 'url' => '/api/applications/from-template/{templateSlug}', 'verb' => 'POST'],
         // Copy an app (apps-copy-app-and-page REQ-BQCP-001/002): same gates as from-template.
-        ['name' => 'applications#copy', 'url' => '/api/applications/{slug}/copy', 'verb' => 'POST', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        [
+            'name' => 'applications#copy', 'url' => '/api/applications/{sourceSlug}/copy', 'verb' => 'POST',
+            'requirements' => ['sourceSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]'],
+        ],
 
         // Manifest endpoint — returns the stored manifest JSON blob for a given virtual-app slug.
         // Per ADR-016 routes.php is the only registration path; #[NoAdminRequired] is set on the
         // controller method so auth-required-but-non-admin users can hit it (per design.md Decision 6).
         // Slug matches the kebab-case pattern declared in openbuild_register.json on the Application
         // and BuiltAppRoute schemas (^[a-z0-9][a-z0-9-]*[a-z0-9]$, min 2 max 48 chars).
+        // built-app-connections-page REQ-BIQ-CONN-005: an app's sources and integrations with their health.
+        ['name' => 'applicationConnections#index', 'url' => '/api/applications/{id}/connections', 'verb' => 'GET', 'requirements' => ['id' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'applications#getManifest', 'url' => '/api/applications/{slug}/manifest', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
         // Symmetric write counterpart — the standalone runtime's in-app edit shell
@@ -63,6 +74,13 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         // audited admin bypass live in the controller. Without this, in-app edits
         // (pages/menu/settings/sidebar/actions) were computed but never persisted.
         ['name' => 'applications#saveManifest', 'url' => '/api/applications/{slug}/manifest', 'verb' => 'PUT', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+
+        // Sandbox documents for maker code (pages-custom-code D2, REQ-BQCC-003):
+        // loaded into an iframe with sandbox="allow-scripts" and no
+        // allow-same-origin, answered with a policy that allows no requests.
+        ['name' => 'sandbox#evaluator', 'url' => '/sandbox/evaluator', 'verb' => 'GET'],
+        ['name' => 'sandbox#preview', 'url' => '/sandbox/preview', 'verb' => 'GET'],
+        ['name' => 'sandbox#code', 'url' => '/sandbox/{slug}/{version}/{codeId}', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
         // Versioning — diff endpoint (chain spec #6 buildiq-versioning, REQ-OBV-005). Returns
         // two ApplicationVersion manifest blobs in one round-trip so the client diff component
@@ -90,6 +108,9 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         ['name' => 'applicationVersions#destroy', 'url' => '/api/applications/{appSlug}/versions/{versionSlug}',  'verb' => 'DELETE', 'requirements' => ['appSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'versionSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         // Owner-only release: set-as-production + publish + demote previous production
         // (`application-versions` REQ-OBV-110). Single-production invariant; NO admin bypass.
+        // lifecycle-git-branches: start a branch from a version, and preview / apply a merge into a draft version.
+        ['name' => 'applicationVersions#branch',   'url' => '/api/applications/{appSlug}/versions/{versionSlug}/branch', 'verb' => 'POST', 'requirements' => ['appSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'versionSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        ['name' => 'applicationVersions#merge',    'url' => '/api/applications/{appSlug}/versions/{source}/merge/{target}', 'verb' => 'POST', 'requirements' => ['appSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'source' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'target' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'applicationVersions#release',  'url' => '/api/applications/{appSlug}/versions/{versionSlug}/release', 'verb' => 'POST', 'requirements' => ['appSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]', 'versionSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
         // Insights endpoint (buildiq-app-detail-overview REQ-OBAI-001 / REQ-OBAI-007).
@@ -124,6 +145,10 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         // Owner-only full delete (Application + versions + per-version registers + routes).
         ['name' => 'applicationPublish#destroy', 'url' => '/api/applications/{appUuid}', 'verb' => 'DELETE', 'requirements' => ['appUuid' => '[a-f0-9-]{8,}']],
 
+        // Wrapper flows for the app's flow bindings (logic-shared-flows-and-automations REQ-BQSF-002):
+        // saves, publishes and binds one wrapper per `runOn` entry and removes stale ones. Owners only.
+        ['name' => 'flowBindings#sync', 'url' => '/api/applications/{appUuid}/flow-wrappers', 'verb' => 'POST', 'requirements' => ['appUuid' => '[a-f0-9-]{8,}']],
+
         // Standalone runtime page for a published virtual app — the bare
         // /builder/{slug} (no sub-path). Placed before the catch-all
         // (Routes::standard appends it) so this specific page wins.
@@ -135,6 +160,13 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         // do. MUST use a DISTINCT route name (dashboard#builderSlash, a thin alias of
         // builder()) — the AppHost Routes::standard() guard throws on duplicate names.
         ['name' => 'dashboard#builderSlash', 'url' => '/builder/{slug}/', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        // pages-installable-offline-and-mobile D1/D2: the installable runtime has a
+        // path of its own, so a service worker scoped to it controls one app's
+        // runtime and nothing else; its web app manifest is signed-in only.
+        ['name' => 'dashboard#run', 'url' => '/run/{slug}/', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        ['name' => 'applications#webManifest', 'url' => '/run/{slug}/manifest.webmanifest', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        // Its offline worker, scoped to the run path; 404 unless the instance allows offline and the app declares it.
+        ['name' => 'applications#offlineWorker', 'url' => '/run/{slug}/offline-worker.js', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
         // Reserved Buildiq designer sub-paths (buildiq-deep-links #100 fix).
         // `pages`, `schemas`, `schemas/{schemaId}` and `walkthrough` are
@@ -180,6 +212,7 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         // exports so slug patterns don't collide.
         ['name' => 'icon#iconDark',  'url' => '/icons/{slug}-dark.svg', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'icon#iconLight', 'url' => '/icons/{slug}.svg',      'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        ['name' => 'icon#touchIcon', 'url' => '/icons/{slug}-touch.png', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
         // Export pipeline (Phase-2 graduation).
         ['name' => 'exports#submit',   'url' => '/api/applications/{slug}/exports', 'verb' => 'POST', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
@@ -197,6 +230,8 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         // the schema). evaluate/test-all are POST so they cannot collide
         // with the GET SPA catch-all; the GET schema route's `/schema` suffix makes it
         // strictly more specific than `/{path}`. Slugs are kebab-case.
+        // The rule sets another app may call (rules-evaluation-for-other-apps REQ-BQRX-001): `?callableBy={app}`.
+        ['name' => 'rules#index',    'url' => '/api/rules',                        'verb' => 'GET'],
         ['name' => 'rules#evaluate', 'url' => '/api/rules/{ruleSetSlug}/evaluate', 'verb' => 'POST', 'requirements' => ['ruleSetSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'rules#schema',   'url' => '/api/rules/{ruleSetSlug}/schema',   'verb' => 'GET',  'requirements' => ['ruleSetSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'rules#testAll',  'url' => '/api/rules/{ruleSetSlug}/test-all', 'verb' => 'POST', 'requirements' => ['ruleSetSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
@@ -241,7 +276,10 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         ['name' => 'automations#enable',   'url' => '/api/automations/{uuid}/enable',   'verb' => 'POST', 'requirements' => ['uuid' => '[a-f0-9-]{8,}']],
         ['name' => 'automations#disable',  'url' => '/api/automations/{uuid}/disable',  'verb' => 'POST', 'requirements' => ['uuid' => '[a-f0-9-]{8,}']],
         ['name' => 'automations#dryRun',   'url' => '/api/automations/{uuid}/dry-run',  'verb' => 'POST', 'requirements' => ['uuid' => '[a-f0-9-]{8,}']],
+        // The run log (logic-automation-run-log D3): the summary route comes first so `runs` is never read as a uuid.
+        ['name' => 'automations#runsSummary', 'url' => '/api/automations/runs/summary', 'verb' => 'GET'],
         ['name' => 'automations#status',   'url' => '/api/automations/{uuid}/status',   'verb' => 'GET',  'requirements' => ['uuid' => '[a-f0-9-]{8,}']],
+        ['name' => 'automations#runs',     'url' => '/api/automations/{uuid}/runs',     'verb' => 'GET',  'requirements' => ['uuid' => '[a-f0-9-]{8,}']],
 
         // App-override store-and-serve (buildiq-inline-edit-persistence,
         // spec app-override-persistence). Per-instance shared manifest delta for
@@ -293,13 +331,19 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         ['name' => 'registrationForm#target', 'url' => '/api/registration-forms/target', 'verb' => 'GET'],
         // Decision 179/189: the page designer checks its form pages against their destinations on save.
         ['name' => 'formDestination#check', 'url' => '/api/forms/destination-check', 'verb' => 'POST'],
+        // journey-designer: a journey's writes judged by OpenRegister's form destination validator; administrators only.
+        ['name' => 'journeyDesigner#check', 'url' => '/api/journeys/check', 'verb' => 'POST'],
+        ['name' => 'journeyDesigner#save', 'url' => '/api/journeys', 'verb' => 'POST'],
 
         // Remote template store (buildiq-remote-template-store). Consume-only:
         // search proxies the configured remote OpenRegister catalogue server-side;
         // install resolves a remote template by slug and clones it locally via the
         // shared ApplicationsController install seam.
         ['name' => 'store#search',  'url' => '/api/store/templates',                  'verb' => 'GET'],
-        ['name' => 'store#install', 'url' => '/api/store/templates/{slug}/install',   'verb' => 'POST', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        [
+            'name' => 'store#install', 'url' => '/api/store/templates/{templateSlug}/install', 'verb' => 'POST',
+            'requirements' => ['templateSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]'],
+        ],
         // Also in OpenRegister's canonical table; declared here so it is
         // visible where this app's routes are read, and it overrides by name.
         ['name' => 'store#publish', 'url' => '/api/store/publish',                    'verb' => 'POST'],
@@ -337,6 +381,10 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         ['name' => 'copilot#plan',    'url' => '/api/copilot/plan',    'verb' => 'POST'],
         ['name' => 'copilot#execute', 'url' => '/api/copilot/execute', 'verb' => 'POST'],
         ['name' => 'copilot#discard', 'url' => '/api/copilot/discard', 'verb' => 'POST'],
+        // Builder assist (ai-copilot-documents-and-code-help REQ-BQCH-002/004):
+        // #[NoAdminRequired], owners/editors of the body's appSlug only, enforced
+        // inside CopilotAssistService. Zero writes.
+        ['name' => 'copilot#assist',  'url' => '/api/copilot/assist',  'verb' => 'POST'],
 
         // Agent run-history (spec `agent-workspace`). #[NoAdminRequired] with a
         // per-object owners/editors guard enforced inside AgentsController —
@@ -358,4 +406,4 @@ return \OCA\OpenRegister\AppHost\Routes::standard(
         // NB: the SPA catch-all (dashboard#catchAll) is appended by
         // \OCA\OpenRegister\AppHost\Routes::standard() — do NOT add it here.
     ]
-);
+));

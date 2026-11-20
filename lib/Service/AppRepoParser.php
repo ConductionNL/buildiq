@@ -41,13 +41,14 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Exception\AppRepoParseException;
+use OCA\Buildiq\Kernel\Contracts\AppRepoParserInterface;
 
 /**
  * Strict, all-or-nothing parser for the canonical GitHub app-repo layout.
  *
  * @spec openspec/changes/github-app-repo-format/specs/github-app-repo-format/spec.md
  */
-class AppRepoParser {
+class AppRepoParser implements AppRepoParserInterface {
 	/**
 	 * The descriptor filename that anchors a conforming repo.
 	 */
@@ -431,7 +432,7 @@ class AppRepoParser {
 	 *
 	 * @return array<string,mixed> The parsed channels.
 	 *
-	 * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-every-channel-path-is-validated-before-use
+	 * @spec openspec/specs/github-app-repo-format/spec.md#requirement-every-channel-path-is-validated-before-use
 	 */
 	private function parseChannels(array $files): array {
 		return (new AppRepoChannelReader(files: $files))->read();

@@ -7,8 +7,8 @@
  * whether it edits, closing, and the id a saved entry gets. Each dialog
  * declares its own `update:open` and `save` events.
  *
- * @spec openspec/changes/docudesk-document-templates/specs/docudesk-document-templates/spec.md#req-ddt-002
- * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-002
+ * @spec openspec/specs/docudesk-document-templates/spec.md#req-ddt-002
+ * @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-002
  */
 export const attachmentDialogMixin = {
 	props: {

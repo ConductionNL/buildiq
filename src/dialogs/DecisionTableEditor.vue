@@ -58,6 +58,9 @@
 						<th scope="col">
 							{{ t('buildiq', 'Decision') }}
 						</th>
+						<th scope="col">
+							<span class="hidden-visually">{{ t('buildiq', 'Ask AI') }}</span>
+						</th>
 					</tr>
 				</thead>
 				<tbody>
@@ -81,12 +84,28 @@
 								class="decision-table-editor__cell"
 								:aria-label="t('buildiq', 'Decision')" />
 						</td>
+						<td>
+							<CopilotAssistButton
+								target="decision-rule"
+								:appSlug="ruleSet.ownerApp || ''"
+								:current="assistRow(rule)"
+								:context="assistContext"
+								@accept="replaceRule(rIndex, $event)" />
+						</td>
 					</tr>
 				</tbody>
 			</table>
-			<NcButton variant="secondary" @click="addRule">
-				{{ t('buildiq', 'Add rule') }}
-			</NcButton>
+			<div class="decision-table-editor__add-rule">
+				<NcButton variant="secondary" @click="addRule">
+					{{ t('buildiq', 'Add rule') }}
+				</NcButton>
+				<CopilotAssistButton
+					target="decision-rule"
+					:appSlug="ruleSet.ownerApp || ''"
+					:context="assistContext"
+					data-testid="decision-table-propose-rule"
+					@accept="appendRule($event)" />
+			</div>
 
 			<div v-if="warnings.length" class="decision-table-editor__warnings">
 				<NcNoteCard
@@ -103,12 +122,10 @@
 		</div>
 
 		<template #actions>
-			<NcButton @click="$emit('close')">
-				{{ t('buildiq', 'Cancel') }}
-			</NcButton>
-			<NcButton variant="primary" :disabled="saving" @click="save">
-				{{ saving ? t('buildiq', 'Saving…') : t('buildiq', 'Save') }}
-			</NcButton>
+			<SaveCancelActions
+				:saving="saving"
+				@cancel="$emit('close')"
+				@save="save" />
 		</template>
 	</NcDialog>
 </template>
@@ -123,16 +140,21 @@ import {
 	NcSelect,
 	NcTextField,
 } from '@nextcloud/vue'
+import CopilotAssistButton from '../components/copilot/CopilotAssistButton.vue'
+import SaveCancelActions from '../components/SaveCancelActions.vue'
 import { isCellConditionValid } from '../utils/feelCell.js'
+import { saveRuleSetRecord } from './ruleSetRecords.js'
 
 export default {
 	name: 'DecisionTableEditor',
 	components: {
+		CopilotAssistButton,
 		NcButton,
 		NcDialog,
 		NcNoteCard,
 		NcSelect,
 		NcTextField,
+		SaveCancelActions,
 	},
 
 	props: {
@@ -174,6 +196,18 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * The names the Ask AI help may see: input column names and payload paths, never values.
+		 *
+		 * @return {{columns: Array<string>, paths: Array<string>}}
+		 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-builder-assist/spec.md#requirement-expression-editors-offer-an-ask-ai-button-req-bqch-001
+		 */
+		assistContext() {
+			const columns = this.staged.inputColumns.map((col) => (col.name || '').trim()).filter(Boolean)
+			const paths = this.staged.inputColumns.map((col) => (col.expressionPath || '').trim()).filter(Boolean)
+			return { columns, paths }
+		},
+
 		/**
 		 * Editor feedback: flag a catch-all rule that makes later rules unreachable.
 		 *
@@ -246,6 +280,62 @@ export default {
 		},
 
 		/**
+		 * One row as the Ask AI help reads it: its cells and its decision.
+		 *
+		 * @param {object} rule - a staged rule row.
+		 * @return {{conditions: object, decision: string}}
+		 *
+		 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-builder-assist/spec.md#requirement-expression-editors-offer-an-ask-ai-button-req-bqch-001
+		 */
+		assistRow(rule) {
+			return {
+				conditions: { ...(rule.conditions || {}) },
+				decision: (rule.values && rule.values.decision) || '',
+			}
+		},
+
+		/**
+		 * A staged row from an accepted proposal `{conditions, decision}`.
+		 *
+		 * @param {{conditions: object, decision: string}} proposal - the accepted value.
+		 * @param {string} [label] - the row's label to keep.
+		 * @return {object}
+		 *
+		 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-builder-assist/spec.md#requirement-the-assist-proposes-a-checked-value-req-bqch-002
+		 */
+		ruleFromProposal(proposal, label = '') {
+			return {
+				conditions: { ...((proposal && proposal.conditions) || {}) },
+				values: { decision: (proposal && proposal.decision) || '' },
+				label,
+			}
+		},
+
+		/**
+		 * Stage an accepted proposal as a new row; only Save persists it.
+		 *
+		 * @param {{conditions: object, decision: string}} proposal - the accepted value.
+		 * @return {void}
+		 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-builder-assist/spec.md#requirement-the-assist-writes-nothing-and-respects-app-access-req-bqch-004
+		 */
+		appendRule(proposal) {
+			this.staged.rules.push(this.ruleFromProposal(proposal))
+		},
+
+		/**
+		 * Stage an accepted proposal in place of one row; only Save persists it.
+		 *
+		 * @param {number} index - the row to replace.
+		 * @param {{conditions: object, decision: string}} proposal - the accepted value.
+		 * @return {void}
+		 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-builder-assist/spec.md#requirement-the-assist-writes-nothing-and-respects-app-access-req-bqch-004
+		 */
+		replaceRule(index, proposal) {
+			const previous = this.staged.rules[index] || {}
+			this.staged.rules.splice(index, 1, this.ruleFromProposal(proposal, previous.label || ''))
+		},
+
+		/**
 		 * Persist the RuleSet via OpenRegister and its decision table through buildiq,
 		 * which stores it in OpenRegister's decision-tables register.
 		 *
@@ -257,10 +347,7 @@ export default {
 			this.saving = true
 			this.errorMessage = ''
 			try {
-				const ruleSetUrl = generateUrl(
-					'/apps/openregister/api/objects/buildiq/rule-set',
-				)
-				await axios.post(ruleSetUrl, {
+				await saveRuleSetRecord({
 					slug: this.staged.slug,
 					name: this.staged.name,
 					ruleType: 'decision-table',
@@ -320,5 +407,11 @@ export default {
 
 .decision-table-editor__cell--invalid {
 	outline: 2px solid var(--color-error);
+}
+
+.decision-table-editor__add-rule {
+	display: flex;
+	align-items: center;
+	gap: var(--default-grid-baseline);
 }
 </style>

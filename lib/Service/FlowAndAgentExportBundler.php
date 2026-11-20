@@ -3,6 +3,9 @@
 /**
  * Bundles an Application's flows and agents into an export tree.
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Sibling to {@see DataRegisterExportBundler}: same "write JSON into the
  * scaffold, skip what does not resolve" shape, different stores and different
  * failure modes.
@@ -64,8 +67,6 @@
  * (`hermiq.workload-step`, `hermiq.workload-collect`) is an ORDINARY
  * OpenRegister flow. This class does not branch on node type, does not
  * special-case hermiq, and emits one file shape for every flow.
- *
- * SPDX-License-Identifier: EUPL-1.2
  *
  * @category Service
  * @package  OCA\Buildiq\Service
@@ -179,8 +180,8 @@ class FlowAndAgentExportBundler {
 	 *
 	 * @return array<int, array{kind: string, ref: string, reason: string}> What was skipped, for the job result.
 	 *
-	 * @spec openspec/changes/openbuild-exports-flows-and-agents/specs/app-composition-bindings/spec.md#requirement-a-binding-must-be-resolved-against-the-openregister-flow-entity
-	 * @spec openspec/changes/openbuild-exports-flows-and-agents/specs/app-export-completeness/spec.md#requirement-an-unresolvable-binding-must-be-reported-not-silently-dropped
+	 * @spec openspec/specs/app-composition-bindings/spec.md#requirement-a-binding-must-be-resolved-against-the-openregister-flow-entity
+	 * @spec openspec/specs/app-export-completeness/spec.md#requirement-an-unresolvable-binding-must-be-reported-not-silently-dropped
 	 */
 	public function bundle(string $rootDir, array $flows, string $applicationSlug): array {
 		$skipped = $this->bundleFlows(rootDir: $rootDir, flows: $flows);
@@ -195,6 +196,8 @@ class FlowAndAgentExportBundler {
 	 * @param array<int,mixed> $flows The bindings.
 	 *
 	 * @return array<int, array{kind: string, ref: string, reason: string}> Skips.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) FlowBindingWrapperService::isWrapper() is a pure predicate on the binding.
 	 */
 	private function bundleFlows(string $rootDir, array $flows): array {
 		$skipped = [];
@@ -205,59 +208,93 @@ class FlowAndAgentExportBundler {
 		$targetDir = $rootDir . '/lib/Settings/flows';
 
 		foreach ($flows as $binding) {
-			if (is_array($binding) === false) {
+			// A wrapper is buildiq's own wiring of a `runOn` entry, rebuilt from
+			// the binding it serves wherever the app is installed. Exporting it
+			// would duplicate it beside the one the install builds (REQ-BQSF-002).
+			if (FlowBindingWrapperService::isWrapper(binding: $binding) === true) {
 				continue;
 			}
 
-			$uuid = trim((string)($binding['flow'] ?? ''));
+			$uuid = self::boundFlowUuid(binding: $binding);
 			if ($uuid === '') {
 				continue;
 			}
 
-			try {
-				// THE ENTITY, not the `agentflow` object mirror. See the class docblock.
-				$flow = $this->flowMapper->findByUuid($uuid);
-			} catch (Throwable $e) {
-				// Dangling reference. Skipped rather than fatal — deleting a
-				// flow is ordinary — but RETURNED rather than only logged,
-				// because an operator reads the finished job, not the log.
-				$this->logger->info(
-					'Buildiq export: flows binding "' . $uuid . '" did not resolve to a flow — not bundled: '
-					. $e->getMessage()
-				);
-				$skipped[] = ['kind' => 'flow', 'ref' => $uuid, 'reason' => 'no flow with that UUID'];
-				continue;
+			$skip = $this->bundleFlow(targetDir: $targetDir, uuid: $uuid);
+			if ($skip !== null) {
+				$skipped[] = $skip;
 			}
-
-			if (is_dir($targetDir) === false) {
-				mkdir($targetDir, 0o755, true);
-			}
-
-			$this->writeJson(
-				path: $targetDir . '/' . $uuid . '.json',
-				payload: [
-					// The UUID travels WITH the definition. The importing side
-					// seeds it verbatim: mint a new one and every binding in
-					// the imported application points at nothing, while every
-					// file in the ZIP still looks correct.
-					'uuid' => $uuid,
-					'name' => (string)$flow->getName(),
-					'description' => (string)$flow->getDescription(),
-					'enabled' => (bool)$flow->getEnabled(),
-					'trigger' => $flow->getTrigger(),
-					'triggerRegister' => $flow->getTriggerRegister(),
-					'triggerSchema' => $flow->getTriggerSchema(),
-					'cron' => $flow->getCron(),
-					'executionMode' => $flow->getExecutionMode(),
-					'nodes' => (array)$flow->getNodes(),
-					'edges' => (array)$flow->getEdges(),
-					'limits' => $flow->getLimits(),
-				]
-			);
-		}//end foreach
+		}
 
 		return $skipped;
 	}//end bundleFlows()
+
+	/**
+	 * The flow UUID a binding names, or an empty string when it names none.
+	 *
+	 * @param mixed $binding One entry of the application's `flows` bindings.
+	 *
+	 * @return string The trimmed UUID, or ''.
+	 */
+	private static function boundFlowUuid(mixed $binding): string {
+		if (is_array($binding) === false) {
+			return '';
+		}
+
+		return trim((string)($binding['flow'] ?? ''));
+	}//end boundFlowUuid()
+
+	/**
+	 * Resolve one bound flow and write its definition into the tree.
+	 *
+	 * @param string $targetDir The tree's flows directory.
+	 * @param string $uuid      The bound flow's UUID.
+	 *
+	 * @return array{kind: string, ref: string, reason: string}|null The skip, or null when the flow was written.
+	 */
+	private function bundleFlow(string $targetDir, string $uuid): ?array {
+		try {
+			// THE ENTITY, not the `agentflow` object mirror. See the class docblock.
+			$flow = $this->flowMapper->findByUuid($uuid);
+		} catch (Throwable $e) {
+			// Dangling reference. Skipped rather than fatal — deleting a
+			// flow is ordinary — but RETURNED rather than only logged,
+			// because an operator reads the finished job, not the log.
+			$this->logger->info(
+				'Buildiq export: flows binding "' . $uuid . '" did not resolve to a flow — not bundled: '
+				. $e->getMessage()
+			);
+			return ['kind' => 'flow', 'ref' => $uuid, 'reason' => 'no flow with that UUID'];
+		}
+
+		if (is_dir($targetDir) === false) {
+			mkdir($targetDir, 0o755, true);
+		}
+
+		$this->writeJson(
+			path: $targetDir . '/' . $uuid . '.json',
+			payload: [
+				// The UUID travels WITH the definition. The importing side
+				// seeds it verbatim: mint a new one and every binding in
+				// the imported application points at nothing, while every
+				// file in the ZIP still looks correct.
+				'uuid' => $uuid,
+				'name' => (string)$flow->getName(),
+				'description' => (string)$flow->getDescription(),
+				'enabled' => (bool)$flow->getEnabled(),
+				'trigger' => $flow->getTrigger(),
+				'triggerRegister' => $flow->getTriggerRegister(),
+				'triggerSchema' => $flow->getTriggerSchema(),
+				'cron' => $flow->getCron(),
+				'executionMode' => $flow->getExecutionMode(),
+				'nodes' => (array)$flow->getNodes(),
+				'edges' => (array)$flow->getEdges(),
+				'limits' => $flow->getLimits(),
+			]
+		);
+
+		return null;
+	}//end bundleFlow()
 
 	/**
 	 * Write the agents that point at this application.

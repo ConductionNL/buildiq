@@ -28,6 +28,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\GitHubShopSearchInterface;
 use OCA\Buildiq\Service\Connection\ConnectionReporter;
 use OCA\Buildiq\Service\GitHub\TokenScrubber;
 use Psr\Log\LoggerInterface;
@@ -38,7 +39,7 @@ use Throwable;
  *
  * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md#requirement-req-biq-conn-003-buildiq-reports-what-its-connection-calls-met
  */
-class GitHubShopSearch {
+class GitHubShopSearch implements GitHubShopSearchInterface {
 
 	/**
 	 * Constructor.
