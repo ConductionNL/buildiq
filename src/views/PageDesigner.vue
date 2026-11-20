@@ -453,6 +453,8 @@ export default {
 			// small, dedicated fetch (see fetchApplicationDataRegisters()) and
 			// threaded down to the mounted sub-editor's register picker.
 			applicationDataRegisters: [],
+			// pages-action-buttons: the app's declared flows, for "start a flow" buttons.
+			applicationFlows: [],
 			// component-blocks: block-library NcAppSidebar open state (toolbar
 			// "Blocks" button), the current app's companion schema slugs (for
 			// insert-time remap mismatch detection), and the blocks already
@@ -523,6 +525,17 @@ export default {
 			return Array.isArray(this.manifest && this.manifest.pages)
 				? this.manifest.pages
 				: []
+		},
+
+		/**
+		 * The app's pages as a typed action's "go to a page" options.
+		 *
+		 * @spec openspec/changes/pages-action-buttons/specs/page-action-authoring/spec.md#requirement-the-action-editor-authors-typed-actions-req-bqab-001
+		 */
+		actionPages() {
+			return this.pages
+				.filter((page) => page && page.id)
+				.map((page) => ({ id: page.id, title: page.title || '' }))
 		},
 
 		/**
@@ -901,8 +914,11 @@ export default {
 				const app = apps.find((a) => a && a.slug === this.slug) || null
 				this.applicationDataRegisters =
 					app && Array.isArray(app.dataRegisters) ? app.dataRegisters : []
+				this.applicationFlows =
+					app && Array.isArray(app.flows) ? app.flows : []
 			} catch (e) {
 				this.applicationDataRegisters = []
+				this.applicationFlows = []
 			}
 		},
 
@@ -1035,12 +1051,19 @@ export default {
 				}
 			}
 			if (type === 'index') {
+				// pages-action-buttons: the pages and flows a typed action can point at.
 				// REQ-PEC-009: drag ordering is a key on the page itself, not in
 				// its config, so the index editor gets it and its update apart.
 				return {
+					pages: this.actionPages,
+					flows: this.applicationFlows,
 					manualOrder: !!(this.selectedPage && this.selectedPage.manualOrder === true),
 					'onUpdate:manualOrder': this.onManualOrderUpdate,
 				}
+			}
+			if (type === 'detail') {
+				// pages-action-buttons: the pages and flows a typed action can point at.
+				return { pages: this.actionPages, flows: this.applicationFlows }
 			}
 			if (this.subEditorFor(type) !== 'StubPageEditor') {
 				return {}
