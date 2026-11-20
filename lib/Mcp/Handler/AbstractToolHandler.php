@@ -558,6 +558,28 @@ abstract class AbstractToolHandler {
 	}//end isValidSlug()
 
 	/**
+	 * The first refusal for the app slug or a missing required argument, checked in the order given.
+	 *
+	 * @param string                $appSlug  The `appSlug` argument.
+	 * @param array<string, string> $required The required arguments by name, in the order they are checked.
+	 *
+	 * @return string|null The refusal, or null when the slug is valid and every required argument is set.
+	 */
+	protected function firstArgumentRefusal(string $appSlug, array $required): ?string {
+		if ($appSlug === '' || $this->isValidSlug(candidate: $appSlug) === false) {
+			return "Invalid appSlug '{$appSlug}'.";
+		}
+
+		foreach ($required as $name => $value) {
+			if ($value === '') {
+				return $name . ' is required.';
+			}
+		}
+
+		return null;
+	}//end firstArgumentRefusal()
+
+	/**
 	 * Check manifest-size growth caps before a write.
 	 *
 	 * Enforces H4 caps:

@@ -28,6 +28,9 @@
 
 - [x] 4.1 PHPUnit for the provider: published form per type, drafts scoped to the caller, `create` refuses a draft for another user
       `RegistrationFormLeafProviderTest` / `...ContractTest` (already on development); `RegistrationFormFragmentTest` now also pins the draft's owner-only rule, its retention and the seeded form.
-- [ ] 4.2 Playwright `tests/e2e/registration-form-builder.spec.ts` for building a two-phase form and publishing it
+- [x] 4.2 Playwright `tests/e2e/registration-form-builder.spec.ts` for building a two-phase form and publishing it
+      Saves the scenario's form through the builder's route as a draft, publishes it, reads it back (one form, both
+      phase labels, the `visibleWhen` rule intact) and checks that a caller with no account cannot publish. The
+      publish skips with the destination's reason on a stack without dossiq. Written, not run here (no live stack).
 - [ ] 4.3 Dutch and English strings; docs with screenshots
 - [ ] 4.4 Hand the leaf id and the `{form, drafts}` shape to dossiq for `friendly-case-create-form`
