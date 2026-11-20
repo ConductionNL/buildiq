@@ -163,8 +163,8 @@ class FlowBindingWrapperService {
 	 */
 	public static function wrapperName(string $appSlug, array $wanted): string {
 		$entry = $wanted['entry'];
-		$on = (string)($entry['event'] ?? ($entry['mode'] ?? ''));
-		return self::NAME_PREFIX . $appSlug . '-' . substr(hash('sha256', $wanted['flow'] . '|' . $entry['schema'] . '|' . $on), 0, 12);
+		$trigger = (string)($entry['event'] ?? ($entry['mode'] ?? ''));
+		return self::NAME_PREFIX . $appSlug . '-' . substr(hash('sha256', $wanted['flow'] . '|' . $entry['schema'] . '|' . $trigger), 0, 12);
 	}//end wrapperName()
 
 	/**

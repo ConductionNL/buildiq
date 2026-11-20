@@ -28,9 +28,9 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Controller;
 
 use OCA\Buildiq\Kernel\AppIdentity;
-use OCA\Buildiq\Kernel\Contracts\PermissionResolverInterface;
 use OCA\Buildiq\Kernel\Contracts\VersionPromotionServiceInterface;
 use OCA\Buildiq\Service\AppOrganisationGuard;
+use OCA\Buildiq\Service\CallerContext;
 use OCA\Buildiq\Service\FlowBindingWrapperService;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
@@ -41,8 +41,6 @@ use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\UserRateLimit;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
-use OCP\IUser;
-use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -59,19 +57,15 @@ class FlowBindingsController extends Controller {
 	 * @param IRequest                    $request            The request.
 	 * @param FlowBindingWrapperService   $wrappers           Keeps the wrapper flows in step.
 	 * @param ObjectServiceInterface      $objectService      Loads the Application and its production version.
-	 * @param IUserSession                $userSession        The caller.
-	 * @param PermissionResolverInterface $permissionResolver Matches the caller against the app's owners.
+	 * @param CallerContext               $caller             The caller's session, the owner matcher and the organisation guard.
 	 * @param LoggerInterface             $logger             Records a failed sync.
-	 * @param AppOrganisationGuard|null   $organisationGuard  Keeps another organisation's scoped app out of reach.
 	 */
 	public function __construct(
 		IRequest $request,
 		private readonly FlowBindingWrapperService $wrappers,
 		private readonly ObjectServiceInterface $objectService,
-		private readonly IUserSession $userSession,
-		private readonly PermissionResolverInterface $permissionResolver,
+		private readonly CallerContext $caller,
 		private readonly LoggerInterface $logger,
-		private readonly ?AppOrganisationGuard $organisationGuard=null,
 	) {
 		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
@@ -91,8 +85,7 @@ class FlowBindingsController extends Controller {
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 30, period: 60)]
 	public function sync(string $appUuid): JSONResponse {
-		$user = $this->userSession->getUser();
-		if ($user === null) {
+		if ($this->caller->userSession->getUser() === null) {
 			return new JSONResponse(data: ['error' => 'unauthenticated'], statusCode: Http::STATUS_UNAUTHORIZED);
 		}
 
@@ -103,11 +96,11 @@ class FlowBindingsController extends Controller {
 
 		// Organisation scope before any role: another organisation's scoped app
 		// answers exactly as an unknown one does (REQ-BQOS-002).
-		if ($this->visibleToOrganisation(application: $application, user: $user) === false) {
+		if ($this->visibleToOrganisation(application: $application) === false) {
 			return new JSONResponse(data: ['error' => 'not_found'], statusCode: Http::STATUS_NOT_FOUND);
 		}
 
-		if ($this->callerOwns(application: $application, user: $user) === false) {
+		if ($this->callerOwns(application: $application) === false) {
 			return new JSONResponse(data: ['error' => 'forbidden'], statusCode: Http::STATUS_FORBIDDEN);
 		}
 
@@ -132,20 +125,25 @@ class FlowBindingsController extends Controller {
 	 * Whether the caller is in the app's `owners`, with the administrator bypass.
 	 *
 	 * @param array<string,mixed> $application The Application object.
-	 * @param IUser               $user        The caller.
 	 *
 	 * @return bool True for an owner or an administrator.
 	 */
-	private function callerOwns(array $application, IUser $user): bool {
+	private function callerOwns(array $application): bool {
+		$user = $this->caller->userSession->getUser();
+		if ($user === null) {
+			return false;
+		}
+
 		$permissions = ($application['permissions'] ?? []);
 		if (is_array($permissions) === false) {
 			$permissions = [];
 		}
 
-		return $this->permissionResolver->matchesCaller(
+		$resolver = $this->caller->permissionResolver;
+		return $resolver->matchesCaller(
 			permissions: $permissions,
 			caller: $user,
-			userGroups: $this->permissionResolver->resolveUserGroups($user),
+			userGroups: $resolver->resolveUserGroups($user),
 			allowAdminBypass: true,
 			roles: ['owners']
 		);
@@ -173,7 +171,6 @@ class FlowBindingsController extends Controller {
 	 * one only through the organisation guard.
 	 *
 	 * @param array<string,mixed> $application The Application object.
-	 * @param IUser               $user        The caller.
 	 *
 	 * @return bool True when the app is visible to the caller.
 	 *
@@ -181,12 +178,12 @@ class FlowBindingsController extends Controller {
 	 *
 	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002
 	 */
-	private function visibleToOrganisation(array $application, IUser $user): bool {
+	private function visibleToOrganisation(array $application): bool {
 		if (AppOrganisationGuard::isShared(application: $application) === true) {
 			return true;
 		}
 
-		return $this->organisationGuard?->canSee(application: $application, user: $user) === true;
+		return $this->caller->organisationGuard?->canSee(application: $application, user: $this->caller->userSession->getUser()) === true;
 	}//end visibleToOrganisation()
 
 	/**

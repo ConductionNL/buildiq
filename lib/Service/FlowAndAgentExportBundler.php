@@ -196,6 +196,8 @@ class FlowAndAgentExportBundler {
 	 * @param array<int,mixed> $flows The bindings.
 	 *
 	 * @return array<int, array{kind: string, ref: string, reason: string}> Skips.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) FlowBindingWrapperService::isWrapper() is a pure predicate on the binding.
 	 */
 	private function bundleFlows(string $rootDir, array $flows): array {
 		$skipped = [];

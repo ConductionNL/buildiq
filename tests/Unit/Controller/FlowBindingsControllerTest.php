@@ -23,12 +23,14 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\Controller;
 
 use OCA\Buildiq\Controller\FlowBindingsController;
-use OCA\Buildiq\Kernel\Contracts\PermissionResolverInterface;
 use OCA\Buildiq\Service\AppOrganisationGuard;
+use OCA\Buildiq\Service\CallerContext;
 use OCA\Buildiq\Service\FlowBindingWrapperService;
+use OCA\Buildiq\Service\PermissionResolver;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\AppFramework\Http;
+use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
@@ -77,9 +79,9 @@ class FlowBindingsControllerTest extends TestCase {
 	/**
 	 * The permission resolver.
 	 *
-	 * @var PermissionResolverInterface&MockObject
+	 * @var PermissionResolver&MockObject
 	 */
-	private PermissionResolverInterface&MockObject $permissions;
+	private PermissionResolver&MockObject $permissions;
 
 	/**
 	 * The session.
@@ -120,7 +122,7 @@ class FlowBindingsControllerTest extends TestCase {
 		);
 
 		$this->wrappers = $this->createMock(FlowBindingWrapperService::class);
-		$this->permissions = $this->createMock(PermissionResolverInterface::class);
+		$this->permissions = $this->createMock(PermissionResolver::class);
 		$this->permissions->method('resolveUserGroups')->willReturn([]);
 		$this->permissions->method('matchesCaller')->willReturnCallback(
 			static fn (array $permissions, IUser $caller, array $userGroups, ?bool $allowAdminBypass, array $roles): bool => $roles === ['owners']
@@ -151,10 +153,13 @@ class FlowBindingsControllerTest extends TestCase {
 			$this->createMock(IRequest::class),
 			$this->wrappers,
 			$this->objects,
-			$this->session,
-			$this->permissions,
-			$this->createMock(LoggerInterface::class),
-			$guard
+			new CallerContext(
+				userSession: $this->session,
+				groupManager: $this->createMock(IGroupManager::class),
+				permissionResolver: $this->permissions,
+				organisationGuard: $guard
+			),
+			$this->createMock(LoggerInterface::class)
 		);
 
 	}//end controller()
