@@ -1719,4 +1719,35 @@ final class AutomationCompilerServiceTest extends TestCase {
 		$this->assertSame(['id' => 'e-edit', 'from' => ['trigger-edit'], 'to' => ['step-1']], $flow['edges'][(count($flow['edges']) - 1)]);
 		$this->assertSame('created', $flow['nodes'][0]['config']['event']);
 	}//end testAiFieldAlsoFollowsEditsOfItsSources()
+	/**
+	 * A script step compiles to nothing until it compiles to OpenRegister's
+	 * code step: on a flow trigger the flow builder refuses it, on an object
+	 * trigger the matrix does (logic-script-step D2).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-script-runs-only-in-the-code-runner-req-bqss-003
+	 */
+	public function testAScriptStepDoesNotCompileYet(): void {
+		$automation = [
+			'id' => 'auto-script',
+			'slug' => 'join-names',
+			'applicationSlug' => 'permit-tracker',
+			'versionUuid' => 'version-1',
+			'enabled' => true,
+			'trigger' => ['type' => 'manual'],
+			'condition' => null,
+			'actions' => [['type' => 'script-step', 'code' => 'return items;', 'timeoutSeconds' => 10]],
+		];
+
+		foreach (['manual', 'webhook-called', 'object-created'] as $trigger) {
+			$automation['trigger'] = ['type' => $trigger, 'schema' => 'permit'];
+			try {
+				$this->compiler->compile(automation: $automation);
+				$this->fail(message: 'A script step must not compile on ' . $trigger . '.');
+			} catch (UnsupportedAutomationCombinationException $e) {
+				$this->assertStringContainsString(needle: 'script-step', haystack: $e->getMessage());
+			}
+		}
+	}//end testAScriptStepDoesNotCompileYet()
 }//end class

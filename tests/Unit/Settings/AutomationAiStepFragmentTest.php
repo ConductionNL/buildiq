@@ -145,7 +145,7 @@ final class AutomationAiStepFragmentTest extends TestCase {
 	public function testTheSchemaVersionIsBumped(): void {
 		$schema = $this->automationSchema();
 
-		$this->assertSame(expected: '1.2.0', actual: $schema->version);
+		$this->assertTrue(condition: version_compare(version1: $schema->version, version2: '1.2.0', operator: '>='));
 		$this->assertContains(needle: 'ai-step', haystack: $schema->properties->actions->items->properties->type->enum);
 	}//end testTheSchemaVersionIsBumped()
 }//end class

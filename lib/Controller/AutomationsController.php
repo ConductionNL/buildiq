@@ -84,6 +84,7 @@ use OCA\Buildiq\Kernel\Contracts\AutomationWriteServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\ConditionActionExecutorInterface;
 use OCA\Buildiq\Kernel\Contracts\PermissionResolverInterface;
 use OCA\Buildiq\Service\Automation\ManualAutomationRun;
+use OCA\Buildiq\Service\Automation\ScriptSteps;
 use OCA\Buildiq\Service\CallerContext;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -270,6 +271,7 @@ class AutomationsController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#3.1
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-only-app-owners-change-script-steps-req-bqss-002
 	 */
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 30, period: 60)]
@@ -279,7 +281,9 @@ class AutomationsController extends Controller {
 			roles: self::WRITE_ROLES,
 			productionRoles: null,
 			action: function (array $automation): JSONResponse {
-				return $this->recompileAndRespond(automation: $automation);
+				// Logic-script-step REQ-BQSS-002: a script step is compiled by an app owner only.
+				return $this->writeService->compileRefusal(automation: $automation)
+					?? $this->recompileAndRespond(automation: $automation);
 			}
 		);
 
@@ -294,6 +298,7 @@ class AutomationsController extends Controller {
 	 * @return JSONResponse
 	 *
 	 * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#3.1
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-only-app-owners-change-script-steps-req-bqss-002
 	 */
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 30, period: 60)]
@@ -304,7 +309,9 @@ class AutomationsController extends Controller {
 			productionRoles: self::PRODUCTION_ENABLE_ROLES,
 			action: function (array $automation): JSONResponse {
 				$automation['enabled'] = true;
-				return $this->recompileAndRespond(automation: $automation);
+				// Logic-script-step REQ-BQSS-002: enabling compiles the script step too.
+				return $this->writeService->compileRefusal(automation: $automation)
+					?? $this->recompileAndRespond(automation: $automation);
 			}
 		);
 
@@ -680,6 +687,8 @@ class AutomationsController extends Controller {
 	 * @param array<string,mixed> $automation The (possibly enabled/disabled-mutated) automation.
 	 *
 	 * @return JSONResponse
+	 *
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-script-runs-only-in-the-code-runner-req-bqss-003
 	 */
 	private function recompileAndRespond(array $automation): JSONResponse {
 		$priorProvenance = $this->orArray(value: $automation['provenance'] ?? null);
@@ -694,7 +703,8 @@ class AutomationsController extends Controller {
 			return $this->error(code: $e->getErrorCode(), detail: $e->getMessage(), status: Http::STATUS_UNPROCESSABLE_ENTITY);
 		}
 
-		$automation['provenance'] = $provenance;
+		// Logic-script-step D6: the author of the last code change outlives a recompile.
+		$automation['provenance'] = $provenance + array_intersect_key($priorProvenance, [ScriptSteps::AUTHOR_KEY => true]);
 		$uuid = (string)($automation['id'] ?? $automation['uuid'] ?? '');
 
 		// SYSTEM CONTEXT (`_rbac: false`). Every caller of this method has

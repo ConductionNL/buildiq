@@ -26,7 +26,7 @@
 					}
 				},
 				"icon": "VectorPolylinePlus",
-				"version": "1.2.0",
+				"version": "1.3.0",
 				"title": "Automation",
 				"description": "A single trigger→condition→actions declarative automation, compiled on demand to Buildiq's existing declarative primitives (notifications dialect, lifecycle actions, schedules, rules engine). One automation is managed as one unit: list/edit/enable/disable/dry-run/delete.",
 				"authorization": {
@@ -213,7 +213,8 @@
 										"approval",
 										"generateDocument",
 										"rule-decision",
-										"ai-step"
+										"ai-step",
+										"script-step"
 									],
 									"description": "`approval` (automation-approval-steps) is selectable only on object-created|object-updated|object-deleted|lifecycle-transition triggers: compiles to an OpenRegister ApprovalChain; blocked fail-closed on schedule/manual. `generateDocument` (automation-document-action) is selectable on the same four event/lifecycle-transition triggers. Dispatches an owner-impersonated call to Docudesk's pinned `correspondence/generate` route; blocked fail-closed on schedule/manual."
 								},
@@ -455,6 +456,24 @@
 									"title": "Prompt",
 									"type": "string",
 									"description": "ai-step prompt: the maker's instruction. `{{field}}` placeholders may only name source fields."
+								},
+								"code": {
+									"title": "Script",
+									"type": "string",
+									"description": "script-step (logic-script-step): the JavaScript body of a function `(items) => items`. It runs only in OpenRegister's sandboxed code runner; buildiq never evaluates it. Only an app owner may add, change or remove it."
+								},
+								"timeoutSeconds": {
+									"title": "Timeout (seconds)",
+									"type": "integer",
+									"minimum": 1,
+									"maximum": 30,
+									"default": 10,
+									"description": "script-step: how long the code runner may run the script, 1 to 30 seconds."
+								},
+								"note": {
+									"title": "Note",
+									"type": "string",
+									"description": "script-step: what the script does, in words, for the people who read the automation."
 								}
 							}
 						}
