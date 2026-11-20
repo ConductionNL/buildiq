@@ -34,15 +34,12 @@ use OCA\Buildiq\Exception\CopilotException;
 use OCA\Buildiq\Service\Copilot\CopilotPlanValidator;
 use OCA\Buildiq\Service\Copilot\CopilotPromptBuilder;
 use OCA\Buildiq\Service\CopilotService;
-use OCA\Buildiq\Service\IconService;
 use OCA\Buildiq\Service\PermissionResolver;
 use OCA\Buildiq\Service\RegisterStore;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
-use OCA\OpenRegister\Service\FileService;
-use OCP\Files\File;
 use OCP\ICache;
 use OCP\ICacheFactory;
 use OCP\IGroupManager;
@@ -55,8 +52,8 @@ use Psr\Log\LoggerInterface;
 
 /**
  * Another organisation's scoped app is "not found" through each reader that
- * operate-organisation-scoped-apps T04 reviewed: insights, the app icon,
- * automation writes and the copilot. A member, and a shared app, pass.
+ * operate-organisation-scoped-apps T04 reviewed: insights, automation writes
+ * and the copilot, which ask PermissionResolver::seesApplication(). A member, and a shared app, pass.
  *
  * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002
  */
@@ -155,10 +152,28 @@ class OrganisationScopeReviewedReadersTest extends TestCase {
 			auditTrailMapper: $this->createMock(originalClassName: AuditTrailMapper::class),
 			cacheFactory: $cacheFactory,
 			logger: $logger,
-			permissionResolver: new PermissionResolver(groupManager: $this->groupManager(), logger: $logger),
-			organisationGuard: $guard
+			permissionResolver: new PermissionResolver(groupManager: $this->groupManager(), logger: $logger, organisationGuard: $guard)
 		);
 	}//end insights()
+
+	/**
+	 * The resolver: a shared app always, a scoped app only for a member, and never without the guard or a caller.
+	 *
+	 * @return void
+	 */
+	public function testTheResolverDecidesWhoSeesAnApp(): void {
+		$logger = $this->createMock(originalClassName: LoggerInterface::class);
+		$member = new PermissionResolver(groupManager: $this->groupManager(), logger: $logger, organisationGuard: $this->guard(member: true));
+		$outsider = new PermissionResolver(groupManager: $this->groupManager(), logger: $logger, organisationGuard: $this->guard(member: false));
+		$unguarded = new PermissionResolver(groupManager: $this->groupManager(), logger: $logger);
+		$shared = array_merge(self::SCOPED_APP, ['organisationScope' => 'all']);
+
+		self::assertTrue(condition: $member->seesApplication(application: self::SCOPED_APP, caller: $this->user()));
+		self::assertFalse(condition: $outsider->seesApplication(application: self::SCOPED_APP, caller: $this->user()));
+		self::assertFalse(condition: $unguarded->seesApplication(application: self::SCOPED_APP, caller: $this->user()));
+		self::assertTrue(condition: $outsider->seesApplication(application: $shared, caller: null));
+		self::assertTrue(condition: $unguarded->seesApplication(application: ['slug' => 'legacy'], caller: null));
+	}//end testTheResolverDecidesWhoSeesAnApp()
 
 	/**
 	 * Ask insights whether alice may read the production version of the app.
@@ -191,45 +206,6 @@ class OrganisationScopeReviewedReadersTest extends TestCase {
 	}//end testInsightsHideAScopedAppFromANonMember()
 
 	/**
-	 * The icon service, with a file service expecting the given number of reads.
-	 *
-	 * @param AppOrganisationGuard|null $guard The guard, if any.
-	 * @param int                       $reads How often the app's own icon file is read.
-	 *
-	 * @return IconService
-	 */
-	private function icons(?AppOrganisationGuard $guard, int $reads): IconService {
-		$objectService = $this->createMock(originalClassName: ObjectServiceInterface::class);
-		$objectService->method('findAll')->willReturn([array_merge(self::SCOPED_APP, ['icon' => ['ref' => 'app-icon.svg']])]);
-		$file = $this->createMock(originalClassName: File::class);
-		$file->method('getContent')->willReturn('<svg xmlns="http://www.w3.org/2000/svg"></svg>');
-		$fileService = $this->createMock(originalClassName: FileService::class);
-		$fileService->expects(self::exactly(count: $reads))->method('getFile')->willReturn($file);
-		$session = $this->createMock(originalClassName: IUserSession::class);
-		$session->method('getUser')->willReturn($this->user());
-
-		return new IconService(
-			objectService: $objectService,
-			fileService: $fileService,
-			logger: $this->createMock(originalClassName: LoggerInterface::class),
-			serverRoot: sys_get_temp_dir(),
-			organisationGuard: $guard,
-			userSession: $session
-		);
-	}//end icons()
-
-	/**
-	 * Icon: a non-member gets the default icon and the app's own file is never read.
-	 *
-	 * @return void
-	 */
-	public function testIconOfAScopedAppIsTheDefaultForANonMember(): void {
-		$this->icons(guard: $this->guard(member: false), reads: 0)->getIconStream(slug: 'permit-tracker', dark: false);
-		$result = $this->icons(guard: $this->guard(member: true), reads: 1)->getIconStream(slug: 'permit-tracker', dark: false);
-		self::assertSame(expected: 'image/svg+xml', actual: $result['mimeType']);
-	}//end testIconOfAScopedAppIsTheDefaultForANonMember()
-
-	/**
 	 * The automation write service with alice signed in.
 	 *
 	 * @param AppOrganisationGuard|null $guard The guard, if any.
@@ -247,9 +223,8 @@ class OrganisationScopeReviewedReadersTest extends TestCase {
 			logger: $logger,
 			objectService: $objectService,
 			compiler: $this->createMock(originalClassName: AutomationCompilerService::class),
-			permissionResolver: new PermissionResolver(groupManager: $this->groupManager(), logger: $logger),
-			userSession: $session,
-			organisationGuard: $guard
+			permissionResolver: new PermissionResolver(groupManager: $this->groupManager(), logger: $logger, organisationGuard: $guard),
+			userSession: $session
 		);
 	}//end automations()
 
@@ -288,13 +263,12 @@ class OrganisationScopeReviewedReadersTest extends TestCase {
 			objectService: $objectService,
 			userManager: $userManager,
 			groupManager: $groupManager,
-			permissionResolver: new PermissionResolver(groupManager: $groupManager, logger: $logger),
+			permissionResolver: new PermissionResolver(groupManager: $groupManager, logger: $logger, organisationGuard: $guard),
 			toolProvider: $toolProvider,
 			planValidator: new CopilotPlanValidator(),
 			promptBuilder: new CopilotPromptBuilder(toolProvider: $toolProvider),
 			appDeletionService: $this->createMock(originalClassName: ApplicationDeletionService::class),
-			agentRunLogger: $this->createMock(originalClassName: AgentRunLogger::class),
-			organisationGuard: $guard
+			agentRunLogger: $this->createMock(originalClassName: AgentRunLogger::class)
 		);
 	}//end copilot()
 

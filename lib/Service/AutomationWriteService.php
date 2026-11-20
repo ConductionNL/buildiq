@@ -70,7 +70,6 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
-use OCP\IUser;
 use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -110,7 +109,6 @@ class AutomationWriteService implements AutomationWriteServiceInterface {
 	 * @param AutomationCompilerService $compiler Compiler/apply/remove/status service.
 	 * @param PermissionResolver $permissionResolver Shared permission-grammar resolver.
 	 * @param IUserSession $userSession Current user session.
-	 * @param AppOrganisationGuard|null $organisationGuard Hides another organisation's scoped app; without it a scoped app is hidden from everyone.
 	 *
 	 * @return void
 	 */
@@ -120,7 +118,6 @@ class AutomationWriteService implements AutomationWriteServiceInterface {
 		private readonly AutomationCompilerService $compiler,
 		private readonly PermissionResolver $permissionResolver,
 		private readonly IUserSession $userSession,
-		private readonly ?AppOrganisationGuard $organisationGuard = null,
 	) {
 
 	}//end __construct()
@@ -486,35 +483,26 @@ class AutomationWriteService implements AutomationWriteServiceInterface {
 			return null;
 		}
 
-		$application = ObjectRecord::toArray(object: $entity);
-		// Another organisation's scoped app is not found, before any role (REQ-BQOS-002).
-		if ($this->visibleToOrganisation(application: $application, caller: $this->userSession->getUser()) === false) {
+		return $this->visibleOrNull(application: ObjectRecord::toArray(object: $entity));
+	}//end loadApplication()
+
+	/**
+	 * The app, or null when it is another organisation's scoped app, so it is
+	 * not found before any role (REQ-BQOS-002).
+	 *
+	 * @param array<string,mixed> $application The Application.
+	 *
+	 * @return array<string,mixed>|null
+	 *
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002
+	 */
+	private function visibleOrNull(array $application): ?array {
+		if ($this->permissionResolver->seesApplication(application: $application, caller: $this->userSession->getUser()) === false) {
 			return null;
 		}
 
 		return $application;
-	}//end loadApplication()
-
-	/**
-	 * Whether the app is shared, or the caller belongs to the organisation that
-	 * holds it; without the guard a scoped app is hidden from everyone.
-	 *
-	 * @param array<string, mixed> $application The Application.
-	 * @param IUser|null           $caller      The caller.
-	 *
-	 * @return bool
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) AppOrganisationGuard::isShared() is a pure scope check with no collaborators.
-	 *
-	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002
-	 */
-	private function visibleToOrganisation(array $application, ?IUser $caller): bool {
-		if (AppOrganisationGuard::isShared(application: $application) === true) {
-			return true;
-		}
-
-		return $this->organisationGuard?->canSee(application: $application, user: $caller) === true;
-	}//end visibleToOrganisation()
+	}//end visibleOrNull()
 
 	/**
 	 * Return `$value` when it is an array, otherwise an empty array.

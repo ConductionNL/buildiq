@@ -61,12 +61,14 @@ class PermissionResolver implements PermissionResolverInterface {
 	 *
 	 * @param IGroupManager $groupManager Group membership resolver.
 	 * @param LoggerInterface $logger PSR logger for bare-principal warnings.
+	 * @param AppOrganisationGuard|null $organisationGuard Hides another organisation's scoped app; without it a scoped app is hidden from everyone.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly IGroupManager $groupManager,
 		private readonly LoggerInterface $logger,
+		private readonly ?AppOrganisationGuard $organisationGuard = null,
 	) {
 	}//end __construct()
 
@@ -223,6 +225,31 @@ class PermissionResolver implements PermissionResolverInterface {
 	public function isAdmin(IUser $caller): bool {
 		return $this->groupManager->isAdmin($caller->getUID());
 	}//end isAdmin()
+
+	/**
+	 * Whether the caller may see this Application at all, before any role.
+	 *
+	 * A shared app is visible to everyone; a scoped app only to members of the
+	 * organisation that holds it (or a child of it). Administrators get no
+	 * bypass. Without the guard a scoped app is hidden from everyone, so the
+	 * check fails closed.
+	 *
+	 * @param array<string, mixed> $application The Application, as OpenRegister renders it.
+	 * @param IUser|null           $caller      The caller; null sees only shared apps.
+	 *
+	 * @return bool
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) AppOrganisationGuard::isShared() is a pure scope check with no collaborators.
+	 *
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002
+	 */
+	public function seesApplication(array $application, ?IUser $caller): bool {
+		if (AppOrganisationGuard::isShared(application: $application) === true) {
+			return true;
+		}
+
+		return $this->organisationGuard?->canSee(application: $application, user: $caller) === true;
+	}//end seesApplication()
 
 	/**
 	 * Classify a single principal string into the UID or GID accumulator maps.

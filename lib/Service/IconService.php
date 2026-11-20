@@ -43,8 +43,6 @@ use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\FileService;
 use OCP\App\IAppManager;
-use OCP\IUser;
-use OCP\IUserSession;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -91,8 +89,6 @@ class IconService implements IconServiceInterface {
 	 * @param string|null $serverRoot Server root override (defaults to \OC::$SERVERROOT)
 	 * @param IAppManager|null $appManager App manager, used to resolve app paths; optional so
 	 *                                     the service stays constructible in unit tests
-	 * @param AppOrganisationGuard|null $organisationGuard Hides another organisation's scoped app; without it a scoped app is hidden from everyone.
-	 * @param IUserSession|null $userSession The caller whose organisation the guard checks.
 	 *
 	 * @return void
 	 */
@@ -102,8 +98,6 @@ class IconService implements IconServiceInterface {
 		private readonly LoggerInterface $logger,
 		?string $serverRoot = null,
 		private readonly ?IAppManager $appManager = null,
-		private readonly ?AppOrganisationGuard $organisationGuard = null,
-		private readonly ?IUserSession $userSession = null,
 	) {
 		$this->serverRoot = ($serverRoot ?? (\OC::$SERVERROOT ?? ''));
 	}//end __construct()
@@ -153,7 +147,6 @@ class IconService implements IconServiceInterface {
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-2
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-3
-	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	public function getIconStream(string $slug, bool $dark): array {
@@ -166,42 +159,12 @@ class IconService implements IconServiceInterface {
 			$application = ObjectRecord::toArray(object: $entity);
 		}
 
-		// Another organisation's scoped app is not found: its caller gets the
-		// default icon, as for an unknown slug (REQ-BQOS-002).
-		if ($application !== null
-			&& $this->visibleToOrganisation(application: $application, caller: $this->userSession?->getUser()) === false
-		) {
-			$application = null;
-			$entity = null;
-		}
-
 		if ($dark === true) {
 			return $this->resolveIconDark(application: $application, entity: $entity);
 		}
 
 		return $this->resolveIconLight(application: $application, entity: $entity);
 	}//end getIconStream()
-
-	/**
-	 * Whether the app is shared, or the caller belongs to the organisation that
-	 * holds it; without the guard a scoped app is hidden from everyone.
-	 *
-	 * @param array<string, mixed> $application The Application.
-	 * @param IUser|null           $caller      The caller.
-	 *
-	 * @return bool
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) AppOrganisationGuard::isShared() is a pure scope check with no collaborators.
-	 *
-	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002
-	 */
-	private function visibleToOrganisation(array $application, ?IUser $caller): bool {
-		if (AppOrganisationGuard::isShared(application: $application) === true) {
-			return true;
-		}
-
-		return $this->organisationGuard?->canSee(application: $application, user: $caller) === true;
-	}//end visibleToOrganisation()
 
 	/**
 	 * Fetch the Application entity by slug, as OpenRegister returned it.

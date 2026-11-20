@@ -71,8 +71,11 @@ class GitHubSyncControllerOrganisationScopeTest extends TestCase {
 			request: $this->createMock(originalClassName: IRequest::class),
 			userSession: $session,
 			syncService: $sync,
-			permissionResolver: new PermissionResolver(groupManager: $groupManager, logger: $this->createMock(originalClassName: LoggerInterface::class)),
-			organisationGuard: $guard
+			permissionResolver: new PermissionResolver(
+				groupManager: $groupManager,
+				logger: $this->createMock(originalClassName: LoggerInterface::class),
+				organisationGuard: $guard
+			)
 		);
 	}//end controller()
 
