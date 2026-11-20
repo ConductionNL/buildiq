@@ -1632,9 +1632,19 @@ namespace OCA\OpenRegister\Db {
 	if (class_exists(OrganisationMapper::class, autoload: false) === false) {
 		/**
 		 * Stub OrganisationMapper — the membership and hierarchy reads
-		 * AppOrganisationGuard makes, with the real mapper's signatures.
+		 * AppOrganisationGuard makes and the active-organisation read
+		 * PageLayoutLayerStack makes, with the real mapper's signatures.
 		 */
 		class OrganisationMapper {
+			/**
+			 * @param string $userId The user.
+			 *
+			 * @return string|null The active organisation uuid.
+			 */
+			public function getActiveOrganisationUuidForUser(string $userId): ?string {
+				return null;
+			}//end getActiveOrganisationUuidForUser()
+
 			/**
 			 * @param string $userId The user.
 			 *
