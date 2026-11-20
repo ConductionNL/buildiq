@@ -195,16 +195,9 @@ class AddWidgetHandler extends AbstractToolHandler {
 		$widgetId = trim((string)($args['widgetId'] ?? ''));
 		$title = trim((string)($args['title'] ?? ''));
 
-		if ($appSlug === '' || $this->isValidSlug(candidate: $appSlug) === false) {
-			return ['error' => "Invalid appSlug '{$appSlug}'."];
-		}
-
-		if ($pageId === '') {
-			return ['error' => 'pageId is required.'];
-		}
-
-		if ($widgetType === '') {
-			return ['error' => 'widgetType is required.'];
+		$refusal = $this->firstArgumentRefusal(appSlug: $appSlug, required: ['pageId' => $pageId, 'widgetType' => $widgetType]);
+		if ($refusal !== null) {
+			return ['error' => $refusal];
 		}
 
 		// Validate widgetType against the known widget registry (issue #167).

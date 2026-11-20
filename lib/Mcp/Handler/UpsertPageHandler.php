@@ -150,33 +150,18 @@ class UpsertPageHandler extends AbstractToolHandler {
 		$route = ManifestRoute::normalise(route: (string)($args['route'] ?? ''));
 		$config = $args['config'] ?? [];
 
-		if ($appSlug === '' || $this->isValidSlug(candidate: $appSlug) === false) {
-			return ['error' => "Invalid appSlug '{$appSlug}'."];
-		}
-
-		if ($pageId === '') {
-			return ['error' => 'pageId is required.'];
-		}
-
-		if ($title === '') {
-			return ['error' => 'title is required.'];
+		$refusal = $this->firstArgumentRefusal(appSlug: $appSlug, required: ['pageId' => $pageId, 'title' => $title]);
+		if ($refusal !== null) {
+			return ['error' => $refusal];
 		}
 
 		if (in_array(needle: $type, haystack: self::PAGE_TYPES, strict: true) === false) {
 			return ['error' => "Invalid page type '{$type}'."];
 		}
 
-		if ($route === '') {
-			return ['error' => 'route is required.'];
-		}
-
-		// Validate route to a safe path pattern: must start with '/' and contain
-		// only path-safe characters (issue #167 — route injection guard).
-		if (ManifestRoute::isValid(route: $route) === false) {
-			return [
-				'error' => "Invalid route '{$route}'. "
-				. "Routes must start with '/' and contain only safe path characters.",
-			];
+		$routeRefusal = self::routeRefusal(route: $route);
+		if ($routeRefusal !== null) {
+			return ['error' => $routeRefusal];
 		}
 
 		if (is_array($config) === false) {
@@ -197,6 +182,31 @@ class UpsertPageHandler extends AbstractToolHandler {
 		];
 
 	}//end validateArgs()
+
+	/**
+	 * The refusal for a missing or unsafe page route, or null when the route is usable.
+	 *
+	 * @param string $route The normalised route.
+	 *
+	 * @return string|null The refusal.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ManifestRoute is a pure rule with
+	 * no collaborators and no state.
+	 */
+	private static function routeRefusal(string $route): ?string {
+		if ($route === '') {
+			return 'route is required.';
+		}
+
+		// Validate route to a safe path pattern: must start with '/' and contain
+		// only path-safe characters (issue #167 — route injection guard).
+		if (ManifestRoute::isValid(route: $route) === false) {
+			return "Invalid route '{$route}'. "
+				. "Routes must start with '/' and contain only safe path characters.";
+		}
+
+		return null;
+	}//end routeRefusal()
 
 	/**
 	 * Upsert a page into the pages list using case-insensitive id matching ({@see ManifestEntryList}).
