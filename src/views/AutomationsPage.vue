@@ -84,6 +84,21 @@
 						{{ triggerSummary(automation) }} ·
 						{{ actionSummary(automation) }}
 					</span>
+					<!-- logic-automation-actions-that-run REQ-BQAR-007: why the
+					     upgrade disabled it, as the compiler refused it. -->
+					<span
+						v-if="disabledReasonFor(automation)"
+						class="automations-page__disabled-reason"
+						data-testid="disabled-reason">
+						<strong>{{ t('buildiq', 'Disabled') }}</strong>
+						{{ disabledReasonFor(automation) }}
+					</span>
+					<span
+						class="automations-page__item-meta automations-page__last-run"
+						:class="{ 'automations-page__last-run--failed': lastRunFailed(automation.id) }"
+						data-testid="last-run">
+						{{ lastRunLine(automation.id) }}
+					</span>
 					<span
 						v-if="driftFor(automation.id)"
 						class="automations-page__drift-badge"
@@ -111,6 +126,9 @@
 					<NcButton variant="tertiary" @click="openTestPanel(automation)">
 						{{ t('buildiq', 'Test') }}
 					</NcButton>
+					<NcButton variant="tertiary" data-testid="runs-button" @click="openRuns(automation)">
+						{{ t('buildiq', 'Runs') }}
+					</NcButton>
 					<NcButton variant="tertiary" @click="openEdit(automation)">
 						{{ t('buildiq', 'Edit') }}
 					</NcButton>
@@ -135,6 +153,11 @@
 			v-if="testPanelOpen"
 			:automation="testingAutomation"
 			@close="testPanelOpen = false" />
+
+		<AutomationRunsModal
+			v-if="runsAutomation"
+			:automation="runsAutomation"
+			@close="runsAutomation = null" />
 
 		<!--
 		  flow-engine-unification task 6.4: flows are scoped to this built
@@ -178,8 +201,10 @@ import {
 import AutomationEditDialog from '../dialogs/AutomationEditDialog.vue'
 import ConfirmActionDialog from '../dialogs/ConfirmActionDialog.vue'
 import FlowPickerDialog from '../dialogs/FlowPickerDialog.vue'
+import AutomationRunsModal from '../modals/AutomationRunsModal.vue'
 import AutomationTestPanelModal from '../modals/AutomationTestPanelModal.vue'
 import { applicationPickerMixin } from '../mixins/applicationPicker.js'
+import { lastRunText } from '../utils/automationRuns.js'
 import { listResults } from '../utils/listResults.js'
 
 export default {
@@ -192,6 +217,7 @@ export default {
 		NcNoteCard,
 		NcSelect,
 		AutomationEditDialog,
+		AutomationRunsModal,
 		AutomationTestPanelModal,
 		ConfirmActionDialog,
 		FlowPickerDialog,
@@ -208,6 +234,8 @@ export default {
 			selectedVersion: null,
 			automations: [],
 			statusByUuid: {},
+			runSummaries: {},
+			runsAutomation: null,
 			errorMessage: '',
 			editDialogOpen: false,
 			flowPickerOpen: false,
@@ -387,12 +415,68 @@ export default {
 						a.applicationSlug === this.selectedApp.slug
 						&& a.versionUuid === this.selectedVersionId,
 				)
-				await this.refreshStatuses()
+				await Promise.all([this.refreshStatuses(), this.refreshRunSummaries()])
 			} catch (error) {
 				this.errorMessage = t('buildiq', 'Could not load automations.')
 			} finally {
 				this.loading = false
 			}
+		},
+
+		/**
+		 * Read the last run of every listed automation in one call. The
+		 * server leaves out an automation the viewer may not edit, which then
+		 * reads as having no run.
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-the-automations-page-shows-the-last-run-and-opens-the-run-log-req-bqrl-003
+		 */
+		async refreshRunSummaries() {
+			const uuids = this.automations.map((automation) => automation.id).filter(Boolean)
+			if (uuids.length === 0) {
+				this.runSummaries = {}
+				return
+			}
+			try {
+				const url = generateUrl('/apps/buildiq/api/automations/runs/summary')
+				const { data } = await axios.get(url, { params: { uuids: uuids.join(',') } })
+				this.runSummaries = (data && typeof data.summaries === 'object' && data.summaries) || {}
+			} catch {
+				this.runSummaries = {}
+			}
+		},
+
+		/**
+		 * The last-run line of an automation row.
+		 *
+		 * @param {string} uuid - the automation's uuid.
+		 * @return {string}
+		 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#scenario-a-failed-last-run-is-visible-on-the-list
+		 */
+		lastRunLine(uuid) {
+			return lastRunText(this.runSummaries[uuid] || null)
+		},
+
+		/**
+		 * Whether an automation's last run failed.
+		 *
+		 * @param {string} uuid - the automation's uuid.
+		 * @return {boolean}
+		 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#scenario-a-failed-last-run-is-visible-on-the-list
+		 */
+		lastRunFailed(uuid) {
+			return this.runSummaries[uuid]?.lastOutcome === 'failed'
+		},
+
+		/**
+		 * Open the run log of an automation.
+		 *
+		 * @param {object} automation - the automation.
+		 * @return {void}
+		 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-the-automations-page-shows-the-last-run-and-opens-the-run-log-req-bqrl-003
+		 */
+		openRuns(automation) {
+			this.runsAutomation = automation
 		},
 
 		/**
@@ -588,6 +672,24 @@ export default {
 		},
 
 		/**
+		 * Why a disabled automation is off, as recorded when it could not be
+		 * compiled; empty for an enabled one or one without a reason.
+		 *
+		 * @param {object} automation - the automation row.
+		 * @return {string} The reason, or ''.
+		 *
+		 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-stuck-automations-are-moved-or-disabled-with-a-reason-req-bqar-007
+		 */
+		disabledReasonFor(automation) {
+			if (!automation || automation.enabled !== false) {
+				return ''
+			}
+			return typeof automation.disabledReason === 'string'
+				? automation.disabledReason.trim()
+				: ''
+		},
+
+		/**
 		 * Enable or disable an automation (spec REQ-AUTD-006).
 		 *
 		 * @param {object} automation - the automation row.
@@ -759,6 +861,11 @@ export default {
 	gap: 8px;
 }
 
+.automations-page__disabled-reason {
+	color: var(--color-text-maxcontrast);
+	font-size: 0.85em;
+}
+
 .automations-page__drift-badge {
 	display: inline-flex;
 	align-items: center;
@@ -785,5 +892,9 @@ export default {
 
 .automations-page__approval-badge--rejected {
 	color: var(--color-error-text, var(--color-error));
+}
+
+.automations-page__last-run--failed {
+	color: var(--color-error-text);
 }
 </style>

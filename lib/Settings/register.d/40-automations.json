@@ -88,6 +88,11 @@
 						"default": true,
 						"description": "Whether the automation is active. Disabling recompiles with every artifact's own enabled switch off; artifacts stay in place (design.md Decision 5)."
 					},
+					"disabledReason": {
+						"title": "Disabled Reason",
+						"type": "string",
+						"description": "Why buildiq switched this automation off: the step it could not run, for example a record step on a lifecycle transition (logic-automation-actions-that-run D9). Shown on the automations page. Absent while the automation runs."
+					},
 					"trigger": {
 						"title": "Trigger",
 						"type": "object",
@@ -176,7 +181,8 @@
 										"object-op",
 										"webhook",
 										"approval",
-										"generateDocument"
+										"generateDocument",
+										"rule-decision"
 									],
 									"description": "`approval` (automation-approval-steps) is selectable only on object-created|object-updated|object-deleted|lifecycle-transition triggers: compiles to an OpenRegister ApprovalChain; blocked fail-closed on schedule/manual. `generateDocument` (automation-document-action) is selectable on the same four event/lifecycle-transition triggers. Dispatches an owner-impersonated call to Docudesk's pinned `correspondence/generate` route; blocked fail-closed on schedule/manual."
 								},
@@ -258,6 +264,36 @@
 									"title": "Webhook Payload Template",
 									"type": "object",
 									"description": "webhook: payload body template with `{{payload}}` placeholders."
+								},
+								"source": {
+									"title": "Source",
+									"type": "string",
+									"description": "webhook: the integriq source the step calls (logic-automation-actions-that-run D5). A webhook without a source is refused on save."
+								},
+								"path": {
+									"title": "Path",
+									"type": "string",
+									"description": "webhook: the path on that source the payload is posted to, e.g. /intake."
+								},
+								"ruleSetSlug": {
+									"title": "Rule Set",
+									"type": "string",
+									"description": "rule-decision: the decision table rule set that decides (logic-automation-actions-that-run D7). A condition-action rule set is refused."
+								},
+								"inputMapping": {
+									"title": "Input Mapping",
+									"type": "object",
+									"description": "rule-decision: which record field each table input reads, as input column to field. An input without an entry reads the field with its own name."
+								},
+								"outputField": {
+									"title": "Output Field",
+									"type": "string",
+									"description": "rule-decision: the record field the decision is written to, for a table with one output."
+								},
+								"outputMapping": {
+									"title": "Output Mapping",
+									"type": "object",
+									"description": "rule-decision: the record field each table output is written to, as output column to field. Needed when the table has more than one output."
 								},
 								"assigneeGroup": {
 									"title": "Assignee Group",
@@ -410,6 +446,23 @@
 									"type": "string"
 								},
 								"description": "Reserved for future OpenConnector-materialised artifacts (e.g. webhook call configs)."
+							},
+							"ruleSetVersions": {
+								"title": "Rule Set Versions",
+								"type": "array",
+								"items": {
+									"type": "object",
+									"properties": {
+										"slug": {"title": "Rule Set", "type": "string", "description": "The rule set a rule decision step runs."},
+										"version": {"title": "Version", "type": "string", "description": "Its version when the automation was last compiled."}
+									}
+								},
+								"description": "Each rule set the flow's rule decision steps run, with its version at the last compile (logic-automation-actions-that-run D7)."
+							},
+							"flowUuid": {
+								"title": "Flow UUID",
+								"type": "string",
+								"description": "The uuid of the OpenRegister flow `aut-<slug>` this automation compiled to: a manual trigger, or a record, webhook or rule step (logic-automation-actions-that-run). Absent for an automation without a flow. Disable switches that flow off; delete removes it and its Application.flows binding."
 							},
 							"compiledHash": {
 								"title": "Compiled Hash",

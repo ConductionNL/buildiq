@@ -24,7 +24,7 @@
 		<NcLoadingIcon v-if="loading" :size="32" />
 
 		<NcEmptyContent
-			v-else-if="ruleSets.length === 0"
+			v-else-if="shownRuleSets.length === 0"
 			:name="t('buildiq', 'No rule sets yet')"
 			:description="
 				t(
@@ -63,7 +63,7 @@
 				</tr>
 			</thead>
 			<tbody>
-				<tr v-for="rs in ruleSets" :key="rs.slug" data-testid="rule-set-row">
+				<tr v-for="rs in shownRuleSets" :key="rs.slug" data-testid="rule-set-row">
 					<td>{{ rs.name }}</td>
 					<td>{{ rs.ruleType }}</td>
 					<td>
@@ -169,6 +169,38 @@ export default {
 			showCallers: false,
 			testResults: {},
 		}
+	},
+
+	computed: {
+		/**
+		 * The app the page was opened for (`?app=`), or '' for every rule set.
+		 *
+		 * @return {string}
+		 *
+		 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-the-app-leads-to-its-business-rules-req-bqar-008
+		 */
+		appFilter() {
+			const app = this.$route && this.$route.query ? this.$route.query.app : ''
+			return typeof app === 'string' ? app.trim() : ''
+		},
+
+		/**
+		 * The rule sets listed: for an app, the ones it owns and the global
+		 * ones (no owner app); otherwise all of them.
+		 *
+		 * @return {Array<object>}
+		 *
+		 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-the-app-leads-to-its-business-rules-req-bqar-008
+		 */
+		shownRuleSets() {
+			if (this.appFilter === '') {
+				return this.ruleSets
+			}
+			return this.ruleSets.filter((rs) => {
+				const owner = rs && typeof rs.ownerApp === 'string' ? rs.ownerApp.trim() : ''
+				return owner === '' || owner === this.appFilter
+			})
+		},
 	},
 
 	mounted() {

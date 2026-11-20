@@ -44,6 +44,9 @@ import ProcestCaseStatusPanel from './components/runtime/ProcestCaseStatusPanel.
 // Runtime page — a "Grid" page (`type: "custom"`, `component: "record-grid"`)
 // that edits one schema's records cell by cell (REQ-BQIX-001/002).
 import RecordGridPage from './components/runtime/RecordGridPage.vue'
+// Detail-page action that runs the app's manual automations on the record
+// (logic-automation-actions-that-run D8).
+import RunAutomationAction from './components/runtime/RunAutomationAction.vue'
 // Runtime action — Detail-page `actionsComponent` letting staff mint a
 // "track your case" link for the object they are viewing
 // (external-form-provisioning REQ-EFP-006). Owner-context only; self-gates
@@ -143,6 +146,9 @@ export const runtimeRegistry = {
 	// Detail-page `config.actionsComponent: "TrackLinkAction"` — mint a
 	// "track your case" link (external-form-provisioning REQ-EFP-006).
 	TrackLinkAction: actions(TrackLinkAction),
+	// Detail-page `config.actionsComponent: "RunAutomationAction"` — run one of
+	// the app's manual automations on the record (REQ-BQAR-006).
+	RunAutomationAction: actions(RunAutomationAction),
 	// @custom-widget-ratchet exclude data-index-grid-and-saved-views: a grid
 	// page edits records cell by cell, which no built-in page type does.
 	// @custom-widget-ratchet exclude pages-installable-offline-and-mobile: the

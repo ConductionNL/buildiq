@@ -25,6 +25,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Tests\Unit\Service;
 
+use OCA\Buildiq\Service\Automation\RuleSetActivationRecompiler;
 use OCA\Buildiq\Service\RuleEngineService;
 use OCA\Buildiq\Service\RuleSetVersioningService;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
@@ -122,4 +123,58 @@ final class RuleSetVersioningServiceTest extends TestCase {
 		$this->service->promoteToActive($ruleSet, $tests, 'patch');
 
 	}//end testPromoteBlockedByFailingTest()
+
+	/**
+	 * Activating a version recompiles the automations that copy the rule set,
+	 * with the version just activated (logic-automation-actions-that-run REQ-BQAR-005).
+	 *
+	 * @return void
+	 */
+	public function testPromotionRecompilesTheAutomationsThatUseTheRuleSet(): void {
+		$this->ruleEngine->method('evaluate')->willReturn(
+			['result' => ['decision' => 'approve'], 'triggeredRules' => [], 'executionTime' => 1, 'errors' => []]
+		);
+		$recompiler = $this->createMock(RuleSetActivationRecompiler::class);
+		$recompiler->expects($this->once())->method('recompileReferencing')
+			->with('leges-categorie', '1.1.0')
+			->willReturn(['recompiled' => 1, 'failed' => 0]);
+		$service = new RuleSetVersioningService(
+			$this->objectService,
+			$this->ruleEngine,
+			$this->createMock(LoggerInterface::class),
+			$recompiler,
+		);
+
+		$ruleSet = ['slug' => 'leges-categorie', 'version' => '1.0.3', 'status' => 'test'];
+		$tests = [['name' => 't1', 'inputPayload' => [], 'expectedResult' => ['decision' => 'approve']]];
+
+		self::assertSame('1.1.0', $service->promoteToActive($ruleSet, $tests, 'minor')['version']);
+	}//end testPromotionRecompilesTheAutomationsThatUseTheRuleSet()
+
+	/**
+	 * A blocked or unsaved promotion recompiles nothing.
+	 *
+	 * @return void
+	 */
+	public function testAFailedPromotionRecompilesNothing(): void {
+		$this->ruleEngine->method('evaluate')->willReturn(
+			['result' => ['decision' => 'approve'], 'triggeredRules' => [], 'executionTime' => 1, 'errors' => []]
+		);
+		$this->objectService->method('saveObject')->willThrowException(new RuntimeException('down'));
+		$recompiler = $this->createMock(RuleSetActivationRecompiler::class);
+		$recompiler->expects($this->never())->method('recompileReferencing');
+		$service = new RuleSetVersioningService(
+			$this->objectService,
+			$this->ruleEngine,
+			$this->createMock(LoggerInterface::class),
+			$recompiler,
+		);
+
+		$ruleSet = ['slug' => 'leges-categorie', 'version' => '1.0.3', 'status' => 'test'];
+		$tests = [['name' => 't1', 'inputPayload' => [], 'expectedResult' => ['decision' => 'approve']]];
+
+		$this->expectException(RuntimeException::class);
+		$this->expectExceptionMessage('Failed to persist promoted RuleSet');
+		$service->promoteToActive($ruleSet, $tests, 'patch');
+	}//end testAFailedPromotionRecompilesNothing()
 }//end class

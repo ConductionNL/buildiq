@@ -570,6 +570,7 @@ import DeleteIcon from 'vue-material-design-icons/Delete.vue'
 import PlusIcon from 'vue-material-design-icons/Plus.vue'
 import DeleteFieldDialog from '../../modals/DeleteFieldDialog.vue'
 import GeneratedNumberSettings from './GeneratedNumberSettings.vue'
+import { relationPickerMixin } from '../../mixins/relationPicker.js'
 import { listConceptSchemes, listSchemeOptions } from '../../services/conceptSchemes.js'
 import { dutchFormatOptions, isDutchFormat } from '../../services/dutchFormats.js'
 import {
@@ -627,7 +628,6 @@ const JSON_TYPES = ['string', 'number', 'integer', 'boolean', 'array', 'object']
 /** The user reference key nextcloud-vue renders as a user picker (design D3). */
 const USER_REFERENCE = 'nextcloud-user'
 const ITEMS_TYPES = ['string', 'number', 'integer', 'boolean', 'object']
-const CARDINALITIES = ['one', 'many']
 
 let keyCounter = 0
 /**
@@ -653,9 +653,10 @@ export default {
 		PlusIcon,
 	},
 
+	mixins: [relationPickerMixin],
+
 	props: {
 		fields: { type: Array, default: () => [] },
-		schemaSlugs: { type: Array, default: () => [] },
 		/** The schema's own slug, the default counter name of an automatic number. */
 		schemaSlug: { type: String, default: '' },
 		/**
@@ -727,16 +728,6 @@ export default {
 		},
 
 		/**
-		 * Build relation target-schema picker options.
-		 *
-		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
-		 * @return {Array} Option objects.
-		 */
-		schemaOptions() {
-			return this.schemaSlugs.map((slug) => ({ value: slug, label: slug }))
-		},
-
-		/**
 		 * The registry picker options: the provider label, with the identifier
 		 * it keys on as the secondary line.
 		 *
@@ -752,22 +743,6 @@ export default {
 							identifier: provider.identifier,
 						})
 					: '',
-			}))
-		},
-
-		/**
-		 * Build cardinality picker options (one/many).
-		 *
-		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
-		 * @return {Array} Option objects.
-		 */
-		cardinalityOptions() {
-			return CARDINALITIES.map((value) => ({
-				value,
-				label:
-					value === 'one'
-						? this.t('buildiq', 'One')
-						: this.t('buildiq', 'Many'),
 			}))
 		},
 	},
@@ -1147,31 +1122,6 @@ export default {
 			current.validation = validation
 			next[index] = current
 			this.emitFields(next)
-		},
-
-		/**
-		 * Resolve the selected target-schema option.
-		 *
-		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
-		 * @param {string} value Schema slug.
-		 * @return {object|null} Matching option.
-		 */
-		schemaOption(value) {
-			return this.schemaOptions.find((o) => o.value === value) || null
-		},
-
-		/**
-		 * Resolve the selected cardinality option.
-		 *
-		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
-		 * @param {string} value Cardinality.
-		 * @return {object} Matching option.
-		 */
-		cardinalityOption(value) {
-			return (
-				this.cardinalityOptions.find((o) => o.value === value)
-				|| this.cardinalityOptions[0]
-			)
 		},
 
 		/**

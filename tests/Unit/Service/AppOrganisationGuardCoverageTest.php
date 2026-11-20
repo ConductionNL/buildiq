@@ -60,14 +60,18 @@ class AppOrganisationGuardCoverageTest extends TestCase {
 	 * Files that name the Application schema but are no door for a user, so the
 	 * organisation scope does not apply: contracts that only declare the slug as
 	 * a constant, listener wiring that filters events by schema, the repair step
-	 * that runs during an upgrade, and the occ commands' catalogue, which the
-	 * instance administrator runs from the command line.
+	 * that runs during an upgrade, the occ commands' catalogue, which the
+	 * instance administrator runs from the command line, and the automation
+	 * flow backend, which only writes a flow binding into `Application.flows`
+	 * while compiling an automation whose caller already passed the app's
+	 * role check, and returns nothing of the Application to anyone.
 	 *
 	 * @var array<int, string>
 	 */
 	private const NO_USER_DOOR = [
 		'lib/Kernel/Contracts/AppOverrideServiceInterface.php',
 		'lib/Kernel/Contracts/ApplicationVersionServiceInterface.php',
+		'lib/Service/Automation/AutomationFlowBackend.php',
 		'lib/Listener/ListenerRegistrar.php',
 		'lib/Repair/PopulateApplicationPermissions.php',
 		'lib/Service/AppCatalogue.php',

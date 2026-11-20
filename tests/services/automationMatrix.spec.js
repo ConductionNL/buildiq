@@ -21,22 +21,18 @@ import {
 } from '../../src/services/automationMatrix.js'
 
 describe('automationMatrix — MATRIX cell-for-cell', () => {
-	it('object-created/updated/deleted allow send-notification, approval and generateDocument', () => {
-		expect(MATRIX['object-created']).toEqual([
+	it('object-created/updated/deleted allow notification, the flow actions, approval and generateDocument', () => {
+		const row = [
 			'send-notification',
+			'object-op',
+			'webhook',
+			'rule-decision',
 			'approval',
 			'generateDocument',
-		])
-		expect(MATRIX['object-updated']).toEqual([
-			'send-notification',
-			'approval',
-			'generateDocument',
-		])
-		expect(MATRIX['object-deleted']).toEqual([
-			'send-notification',
-			'approval',
-			'generateDocument',
-		])
+		]
+		expect(MATRIX['object-created']).toEqual(row)
+		expect(MATRIX['object-updated']).toEqual(row)
+		expect(MATRIX['object-deleted']).toEqual(row)
 	})
 
 	it('lifecycle-transition allows send-notification, object-op, webhook, approval, generateDocument', () => {
@@ -53,8 +49,8 @@ describe('automationMatrix — MATRIX cell-for-cell', () => {
 		expect(MATRIX.schedule).toEqual(['run-synchronization'])
 	})
 
-	it('manual allows send-notification, object-op, webhook — NOT run-synchronization (documented deviation)', () => {
-		expect(MATRIX.manual).toEqual(['send-notification', 'object-op', 'webhook'])
+	it('manual allows send-notification, object-op, webhook, rule-decision — NOT run-synchronization (documented deviation)', () => {
+		expect(MATRIX.manual).toEqual(['send-notification', 'object-op', 'webhook', 'rule-decision'])
 		expect(MATRIX.manual).not.toContain('run-synchronization')
 	})
 
@@ -82,7 +78,8 @@ describe('isActionAllowed', () => {
 	})
 
 	it('blocks an unlisted combination', () => {
-		expect(isActionAllowed('object-created', 'webhook')).toBe(false)
+		expect(isActionAllowed('object-created', 'run-synchronization')).toBe(false)
+		expect(isActionAllowed('lifecycle-transition', 'rule-decision')).toBe(false)
 		expect(isActionAllowed('schedule', 'send-notification')).toBe(false)
 		expect(isActionAllowed('manual', 'run-synchronization')).toBe(false)
 	})
@@ -135,7 +132,8 @@ describe('blockedActionReason / blockedConditionReason', () => {
 	})
 
 	it('returns a non-empty reason for a blocked combination', () => {
-		expect(blockedActionReason('object-created', 'webhook')).not.toBe('')
+		expect(blockedActionReason('object-created', 'run-synchronization')).not.toBe('')
+		expect(blockedActionReason('object-created', 'webhook')).toBe('')
 		expect(blockedActionReason('manual', 'approval')).not.toBe('')
 		expect(blockedActionReason('schedule', 'generateDocument')).not.toBe('')
 		expect(blockedConditionReason('schedule')).not.toBe('')
