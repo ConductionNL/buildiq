@@ -135,7 +135,7 @@
   },
   "src/dialogs/AutomationEditDialog.vue": {
     "@typescript-eslint/no-unused-vars": {
-      "count": 5
+      "count": 4
     }
   },
   "src/dialogs/ConditionActionRuleEditor.vue": {
