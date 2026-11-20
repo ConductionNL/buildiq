@@ -211,7 +211,7 @@ final class ExportAppContentBundlerTest extends TestCase {
 		file_put_contents($this->root . '/l10n/nl.json', json_encode(['translations' => ['Configuration' => 'Configuratie']]));
 		$bundler = $this->bundler();
 		$source = $bundler->resolveSource(applicationUuid: self::APP_UUID, semver: '0.1.0', versionSlug: 'development');
-		self::assertNotNull($source);
+		self::assertNotNull(actual: $source);
 		$source['version']['manifest']['i18n'] = [
 			'sourceLanguage' => 'en',
 			'languages' => ['nl', 'de'],
@@ -224,11 +224,11 @@ final class ExportAppContentBundlerTest extends TestCase {
 		$bundler->bundle(rootDir: $this->root, source: $source, appId: 'demo-app', semver: '0.1.0');
 
 		self::assertSame(
-			['Configuration' => 'Configuratie', 'Messages' => 'Berichten', 'Password' => 'Wachtwoord'],
-			$this->json('l10n/nl.json')['translations']
+			expected: ['Configuration' => 'Configuratie', 'Messages' => 'Berichten', 'Password' => 'Wachtwoord'],
+			actual: $this->json('l10n/nl.json')['translations']
 		);
-		self::assertSame(['Messages' => 'Nachrichten'], $this->json('l10n/de.json')['translations']);
-		self::assertSame(['nl', 'de'], $this->json('src/manifest.json')['i18n']['languages'], 'the manifest keeps its i18n block');
+		self::assertSame(expected: ['Messages' => 'Nachrichten'], actual: $this->json('l10n/de.json')['translations']);
+		self::assertSame(expected: ['nl', 'de'], actual: $this->json('src/manifest.json')['i18n']['languages'], message: 'the manifest keeps its i18n block');
 	}//end testBundleWritesTheAppsLabelTranslationsAsL10nFiles()
 
 	/**

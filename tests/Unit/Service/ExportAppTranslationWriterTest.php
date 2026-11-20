@@ -57,13 +57,13 @@ final class ExportAppTranslationWriterTest extends TestCase {
 	public function testWritesOneCataloguePerLanguageMergedWithTheTemplate(): void {
 		$written = (new ExportAppTranslationWriter())->write(rootDir: $this->root, i18n: $this->i18n());
 
-		self::assertSame(['de', 'nl'], $written);
+		self::assertSame(expected: ['de', 'nl'], actual: $written);
 		self::assertSame(
-			['Configuration' => 'Configuratie', 'Permits' => 'Vergunningen', 'Applicant' => 'Aanvrager'],
-			$this->catalogue('nl')
+			expected: ['Configuration' => 'Configuratie', 'Permits' => 'Vergunningen', 'Applicant' => 'Aanvrager'],
+			actual: $this->catalogue('nl')
 		);
-		self::assertSame(['Permits' => 'Genehmigungen'], $this->catalogue('de'));
-		self::assertFileDoesNotExist($this->root . '/l10n/en.json', 'the written language is the source, not a catalogue');
+		self::assertSame(expected: ['Permits' => 'Genehmigungen'], actual: $this->catalogue('de'));
+		self::assertFileDoesNotExist(filename: $this->root . '/l10n/en.json', message: 'the written language is the source, not a catalogue');
 	}//end testWritesOneCataloguePerLanguageMergedWithTheTemplate()
 
 	/**
@@ -82,15 +82,15 @@ final class ExportAppTranslationWriterTest extends TestCase {
 			],
 		]);
 
-		self::assertSame(['nl' => ['Permits' => 'Vergunningen']], $catalogues);
+		self::assertSame(expected: ['nl' => ['Permits' => 'Vergunningen']], actual: $catalogues);
 	}//end testCataloguesKeepOnlyDeclaredLanguagesAndRealTranslations()
 
 	/**
 	 * A manifest without an i18n block writes nothing.
 	 */
 	public function testNoI18nWritesNothing(): void {
-		self::assertSame([], (new ExportAppTranslationWriter())->write(rootDir: $this->root, i18n: []));
-		self::assertSame(['Configuration' => 'Configuratie', 'Permits' => 'Template value'], $this->catalogue('nl'));
+		self::assertSame(expected: [], actual: (new ExportAppTranslationWriter())->write(rootDir: $this->root, i18n: []));
+		self::assertSame(expected: ['Configuration' => 'Configuratie', 'Permits' => 'Template value'], actual: $this->catalogue('nl'));
 	}//end testNoI18nWritesNothing()
 
 	/**
@@ -118,7 +118,7 @@ final class ExportAppTranslationWriterTest extends TestCase {
 	 */
 	private function catalogue(string $language): array {
 		$path = $this->root . '/l10n/' . $language . '.json';
-		self::assertFileExists($path);
+		self::assertFileExists(filename: $path);
 		return json_decode((string)file_get_contents($path), true)['translations'];
 	}//end catalogue()
 }//end class
