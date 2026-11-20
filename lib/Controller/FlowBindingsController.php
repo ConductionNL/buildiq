@@ -29,7 +29,6 @@ namespace OCA\Buildiq\Controller;
 
 use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Kernel\Contracts\VersionPromotionServiceInterface;
-use OCA\Buildiq\Service\AppOrganisationGuard;
 use OCA\Buildiq\Service\CallerContext;
 use OCA\Buildiq\Service\FlowBindingWrapperService;
 use OCA\Buildiq\Support\ObjectRecord;
@@ -96,7 +95,7 @@ class FlowBindingsController extends Controller {
 
 		// Organisation scope before any role: another organisation's scoped app
 		// answers exactly as an unknown one does (REQ-BQOS-002).
-		if ($this->visibleToOrganisation(application: $application) === false) {
+		if ($this->caller->seesApplication(application: $application) === false) {
 			return new JSONResponse(data: ['error' => 'not_found'], statusCode: Http::STATUS_NOT_FOUND);
 		}
 
@@ -166,25 +165,6 @@ class FlowBindingsController extends Controller {
 		return (string)($version['register'] ?? '');
 	}//end productionRegister()
 
-	/**
-	 * Whether the caller may see the app at all: a shared app always, a scoped
-	 * one only through the organisation guard.
-	 *
-	 * @param array<string,mixed> $application The Application object.
-	 *
-	 * @return bool True when the app is visible to the caller.
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) AppOrganisationGuard::isShared is pure.
-	 *
-	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002
-	 */
-	private function visibleToOrganisation(array $application): bool {
-		if (AppOrganisationGuard::isShared(application: $application) === true) {
-			return true;
-		}
-
-		return $this->caller->organisationGuard?->canSee(application: $application, user: $this->caller->userSession->getUser()) === true;
-	}//end visibleToOrganisation()
 
 	/**
 	 * One object of the buildiq register, or null.
