@@ -54,6 +54,11 @@ class AppOrganisationGuardCoverageTest extends TestCase {
 		'lib/Controller/AgentsController.php' => 'seesApplication(',
 		'lib/Controller/ExportsController.php' => 'visibleToOrganisation(',
 		'lib/Service/AgentPlanService.php' => 'visibleToOrganisation(',
+		'lib/Service/ApplicationInsightsService.php' => 'visibleToOrganisation(',
+		'lib/Service/AutomationWriteService.php' => 'visibleToOrganisation(',
+		'lib/Service/CopilotService.php' => 'visibleToOrganisation(',
+		'lib/Service/IconService.php' => 'visibleToOrganisation(',
+		'lib/Controller/GitHubSyncController.php' => 'visibleToOrganisation(',
 	];
 
 	/**
@@ -66,6 +71,15 @@ class AppOrganisationGuardCoverageTest extends TestCase {
 	 * while compiling an automation whose caller already passed the app's
 	 * role check, and returns nothing of the Application to anyone.
 	 *
+	 * Reviewed for operate-organisation-scoped-apps T04: document generation
+	 * resolves the app of an automation that is already running and runs as the
+	 * app's owner; the export job service only names the schema in a comment;
+	 * the flow channel provisioner writes bindings into the app an install just
+	 * created; the GitHub sync service loads an app for GitHubSyncController,
+	 * whose requireRole() is the door and consults the guard; and the published
+	 * application provider is the shared read behind the navigation (guarded)
+	 * and the dashboard, which reads only a served app's device features.
+	 *
 	 * @var array<int, string>
 	 */
 	private const NO_USER_DOOR = [
@@ -75,25 +89,21 @@ class AppOrganisationGuardCoverageTest extends TestCase {
 		'lib/Listener/ListenerRegistrar.php',
 		'lib/Repair/PopulateApplicationPermissions.php',
 		'lib/Service/AppCatalogue.php',
-	];
-
-	/**
-	 * Readers of the Application schema not yet reviewed for the organisation
-	 * scope (operate-organisation-scoped-apps, T04 follow-up). Shrink this list;
-	 * never grow it.
-	 *
-	 * @var array<int, string>
-	 */
-	private const NOT_YET_REVIEWED = [
-		'lib/Service/ApplicationInsightsService.php',
-		'lib/Service/AutomationWriteService.php',
-		'lib/Service/CopilotService.php',
 		'lib/Service/DocumentGenerationService.php',
 		'lib/Service/ExportJobService.php',
 		'lib/Service/FlowChannelProvisioner.php',
 		'lib/Service/GitHubAppSyncService.php',
-		'lib/Service/IconService.php',
 		'lib/Service/PublishedApplicationProvider.php',
+	];
+
+	/**
+	 * Readers of the Application schema not yet reviewed for the organisation
+	 * scope (operate-organisation-scoped-apps, T04 follow-up). Empty since every
+	 * reader was reviewed; never grow it.
+	 *
+	 * @var array<int, string>
+	 */
+	private const NOT_YET_REVIEWED = [
 	];
 
 	/**

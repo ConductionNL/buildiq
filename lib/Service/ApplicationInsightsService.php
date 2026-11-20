@@ -144,6 +144,7 @@ class ApplicationInsightsService implements ApplicationInsightsServiceInterface 
 	 * @param LoggerInterface $logger PSR logger
 	 * @param PermissionResolver|null $permissionResolver Shared role/group matcher (group-aware insights authz, L9)
 	 * @param VersionDataSourceResolver|null $dataSourceResolver Finds the (register, schema) pairs holding a version's data
+	 * @param AppOrganisationGuard|null $organisationGuard Hides another organisation's scoped app; without it a scoped app is hidden from everyone.
 	 *
 	 * @return void
 	 */
@@ -154,6 +155,7 @@ class ApplicationInsightsService implements ApplicationInsightsServiceInterface 
 		private readonly LoggerInterface $logger,
 		private readonly ?PermissionResolver $permissionResolver = null,
 		?VersionDataSourceResolver $dataSourceResolver = null,
+		private readonly ?AppOrganisationGuard $organisationGuard = null,
 	) {
 		$this->objectService = $store->objectService;
 		$this->registerMapper = $store->registerMapper;
@@ -698,9 +700,15 @@ class ApplicationInsightsService implements ApplicationInsightsServiceInterface 
 	 * @return bool True when authorised, false otherwise.
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-17
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002
 	 */
 	private function isAuthorised(array $application, array $version, ?IUser $caller): bool {
 		if ($caller === null) {
+			return false;
+		}
+
+		// Another organisation's scoped app is not found, before any role (REQ-BQOS-002).
+		if ($this->visibleToOrganisation(application: $application, caller: $caller) === false) {
 			return false;
 		}
 
@@ -737,6 +745,27 @@ class ApplicationInsightsService implements ApplicationInsightsServiceInterface 
 			roles: ['owners', 'editors']
 		);
 	}//end isAuthorised()
+
+	/**
+	 * Whether the app is shared, or the caller belongs to the organisation that
+	 * holds it; without the guard a scoped app is hidden from everyone.
+	 *
+	 * @param array<string, mixed> $application The Application.
+	 * @param IUser|null           $caller      The caller.
+	 *
+	 * @return bool
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) AppOrganisationGuard::isShared() is a pure scope check with no collaborators.
+	 *
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002
+	 */
+	private function visibleToOrganisation(array $application, ?IUser $caller): bool {
+		if (AppOrganisationGuard::isShared(application: $application) === true) {
+			return true;
+		}
+
+		return $this->organisationGuard?->canSee(application: $application, user: $caller) === true;
+	}//end visibleToOrganisation()
 
 	/**
 	 * Check whether the caller appears in any of the named permission roles.

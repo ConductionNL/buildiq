@@ -51,6 +51,8 @@ use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IRequest;
+use OCA\Buildiq\Service\AppOrganisationGuard;
+use OCP\IUser;
 use OCP\IUserSession;
 
 /**
@@ -77,6 +79,7 @@ class GitHubSyncController extends Controller {
 	 * @param GitHubAppSyncServiceInterface $syncService The link/push/pull service.
 	 * @param PermissionResolverInterface $permissionResolver Shared RBAC grammar resolver.
 	 * @param ConnectionReporterInterface|null $connectionReporter Tells integriq what a push or pull met, or nothing when absent.
+	 * @param AppOrganisationGuard|null $organisationGuard Hides another organisation's scoped app; without it a scoped app is hidden from everyone.
 	 *
 	 * @return void
 	 *
@@ -88,6 +91,7 @@ class GitHubSyncController extends Controller {
 		private readonly GitHubAppSyncServiceInterface $syncService,
 		private readonly PermissionResolverInterface $permissionResolver,
 		private readonly ?ConnectionReporterInterface $connectionReporter = null,
+		private readonly ?AppOrganisationGuard $organisationGuard = null,
 	) {
 		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
@@ -256,6 +260,8 @@ class GitHubSyncController extends Controller {
 	 * @param array<int,string> $roles The role buckets that authorise the call.
 	 *
 	 * @return array<string,mixed>|JSONResponse The Application object, or an error response.
+	 *
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002
 	 */
 	private function requireRole(string $slug, array $roles): array|JSONResponse {
 		$caller = $this->userSession->getUser();
@@ -264,7 +270,8 @@ class GitHubSyncController extends Controller {
 		}
 
 		$application = $this->syncService->loadApplicationBySlug(slug: $slug);
-		if ($application === null) {
+		// Another organisation's scoped app answers like an unknown one, before any role (REQ-BQOS-002).
+		if ($application === null || $this->visibleToOrganisation(application: $application, caller: $caller) === false) {
 			return $this->error(code: 'application_not_found', status: Http::STATUS_NOT_FOUND);
 		}
 
@@ -286,6 +293,27 @@ class GitHubSyncController extends Controller {
 
 		return $application;
 	}//end requireRole()
+
+	/**
+	 * Whether the app is shared, or the caller belongs to the organisation that
+	 * holds it; without the guard a scoped app is hidden from everyone.
+	 *
+	 * @param array<string, mixed> $application The Application.
+	 * @param IUser|null           $caller      The caller.
+	 *
+	 * @return bool
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) AppOrganisationGuard::isShared() is a pure scope check with no collaborators.
+	 *
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002
+	 */
+	private function visibleToOrganisation(array $application, ?IUser $caller): bool {
+		if (AppOrganisationGuard::isShared(application: $application) === true) {
+			return true;
+		}
+
+		return $this->organisationGuard?->canSee(application: $application, user: $caller) === true;
+	}//end visibleToOrganisation()
 
 	/**
 	 * Map a service outcome array to a JSONResponse (ok → okStatus, else 4xx).

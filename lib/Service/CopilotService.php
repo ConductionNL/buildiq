@@ -198,6 +198,7 @@ class CopilotService implements CopilotServiceInterface {
 	 * @param CopilotTextTask|null $textTask The text-to-text task seam; built from the container and logger when not given.
 	 * @param CopilotDocumentReader|null $documentReader Reads a picked requirements document as the user.
 	 * @param AgentKnowledgeReader|null $knowledgeReader Reads an agent's knowledge files; built from the container and logger when not given.
+	 * @param AppOrganisationGuard|null $organisationGuard Hides another organisation's scoped app; without it a scoped app is hidden from everyone.
 	 *
 	 * @return void
 	 */
@@ -217,6 +218,7 @@ class CopilotService implements CopilotServiceInterface {
 		?CopilotTextTask $textTask = null,
 		private readonly ?CopilotDocumentReader $documentReader = null,
 		?AgentKnowledgeReader $knowledgeReader = null,
+		private readonly ?AppOrganisationGuard $organisationGuard = null,
 	) {
 		$this->textTask = ($textTask ?? new CopilotTextTask(container: $container, logger: $logger));
 		$this->knowledgeReader = ($knowledgeReader ?? new AgentKnowledgeReader(container: $container, logger: $logger));
@@ -1547,6 +1549,16 @@ class CopilotService implements CopilotServiceInterface {
 			throw new CopilotException(errorCode: 'forbidden', message: 'You must be signed in.', httpStatus: 403);
 		}
 
+		// Another organisation's scoped app is not found, before any role and
+		// for administrators too (REQ-BQOS-002).
+		if ($this->visibleToOrganisation(application: $app, caller: $caller) === false) {
+			throw new CopilotException(
+				errorCode: 'not_found',
+				message: "Application '" . (string)($app['slug'] ?? '') . "' does not exist.",
+				httpStatus: 404
+			);
+		}
+
 		$permissions = (array)($app['permissions'] ?? []);
 		$userGroups = $this->permissionResolver->resolveUserGroups(user: $caller);
 		$allowed = $this->permissionResolver->matchesCaller(
@@ -1583,6 +1595,27 @@ class CopilotService implements CopilotServiceInterface {
 			$this->recordCopilotBypass(app: $app, userId: $userId);
 		}
 	}//end assertWriteRoleOnApp()
+
+	/**
+	 * Whether the app is shared, or the caller belongs to the organisation that
+	 * holds it; without the guard a scoped app is hidden from everyone.
+	 *
+	 * @param array<string, mixed> $application The Application.
+	 * @param IUser|null           $caller      The caller.
+	 *
+	 * @return bool
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) AppOrganisationGuard::isShared() is a pure scope check with no collaborators.
+	 *
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002
+	 */
+	private function visibleToOrganisation(array $application, ?IUser $caller): bool {
+		if (AppOrganisationGuard::isShared(application: $application) === true) {
+			return true;
+		}
+
+		return $this->organisationGuard?->canSee(application: $application, user: $caller) === true;
+	}//end visibleToOrganisation()
 
 	/**
 	 * Record a genuine admin bypass to the OpenRegister audit trail, or to the
