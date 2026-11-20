@@ -106,13 +106,9 @@ final class AutomationFlowBuilder {
 			return true;
 		}
 
-		foreach ($input->actions as $action) {
-			if (in_array((string)($action['type'] ?? ''), self::FLOW_ACTIONS, true) === true) {
-				return true;
-			}
-		}
+		$types = array_map(static fn (mixed $action): string => (string)($action['type'] ?? ''), $input->actions);
 
-		return false;
+		return array_intersect($types, self::FLOW_ACTIONS) !== [];
 	}//end wantsFlow()
 
 	/**

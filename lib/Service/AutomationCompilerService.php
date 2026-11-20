@@ -542,6 +542,21 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 			$provenance['ruleSetVersions'] = $plan['ruleSetVersions'];
 		}
 
+		return self::withNames(provenance: $provenance, ruleSetSlug: $ruleSetSlug, approvalChainName: $approvalChainName);
+	}//end apply()
+
+	/**
+	 * The provenance with the rule set and approval chain names, each only when it is set.
+	 *
+	 * @param array<string,mixed> $provenance        The provenance so far.
+	 * @param string|null         $ruleSetSlug       The applied rule set, or null.
+	 * @param string|null         $approvalChainName The applied approval chain, or null.
+	 *
+	 * @return array<string,mixed>
+	 *
+	 * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#2.2
+	 */
+	private static function withNames(array $provenance, ?string $ruleSetSlug, ?string $approvalChainName): array {
 		// `ruleSetSlug` and `approvalChainName` are declared `"type": "string"`
 		// in 40-automations.json even though both descriptions say "or null",
 		// and both applyX() helpers legitimately return null — approvalChainName
@@ -572,7 +587,7 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 		}
 
 		return $provenance;
-	}//end apply()
+	}//end withNames()
 
 	/**
 	 * The provenance with the integriq declarations of an inbound automation,
