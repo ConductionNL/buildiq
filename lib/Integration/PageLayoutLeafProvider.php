@@ -53,7 +53,9 @@ use OCA\Buildiq\Kernel\Contracts\PageLayoutLayerStackInterface;
 use OCA\Buildiq\Kernel\Contracts\PageLayoutLeafProviderInterface;
 use OCA\Buildiq\Kernel\Contracts\PageLayoutPresenterInterface;
 use OCA\Buildiq\Service\PageLayoutParts;
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCP\IAppConfig;
@@ -64,6 +66,9 @@ use RuntimeException;
  * Resolves and serves the detail-page layout for a host object.
  *
  * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-003)
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Most of the count is OpenRegister's value objects and
+ *     the layout parts, which are injected; the class itself only reads and composes.
  */
 final class PageLayoutLeafProvider extends AppLocalLeafProvider implements PageLayoutLeafProviderInterface {
 	/**
@@ -507,22 +512,24 @@ final class PageLayoutLeafProvider extends AppLocalLeafProvider implements PageL
 	 * @param string $objectId The object id.
 	 *
 	 * @return array<string, mixed>|null The object, or null.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function readHost(string $register, string $schema, string $objectId): ?array {
 		try {
-			$rows = $this->objectService
-				->setRegister($register)
-				->setSchema($schema)
-				->findAll(['filters' => ['id' => $objectId], 'limit' => 1]);
+			$host = $this->objectService->find(
+				id: $objectId,
+				options: new ObjectFindOptions(register: $register, schema: $schema)
+			);
 		} catch (\Throwable $e) {
 			return null;
 		}
 
-		if (is_array($rows) === false || $rows === [] || is_array($rows[0]) === false) {
+		if ($host === null) {
 			return null;
 		}
 
-		return $rows[0];
+		return ObjectRecord::toArray(object: $host);
 	}//end readHost()
 
 	/**
@@ -532,12 +539,16 @@ final class PageLayoutLeafProvider extends AppLocalLeafProvider implements PageL
 	 * @param string $schema The schema.
 	 *
 	 * @return array<int, array<string, mixed>> The layouts.
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function publishedLayoutsFor(string $register, string $schema): array {
+		// No `register` filter: findAll() reads `filters.register` as the register
+		// to query, not as a property, so it would look for these rows in the
+		// host's register. The loop below matches the property instead.
 		$rows = $this->objectService
 			->setRegister($this->registerSlug())
 			->setSchema(self::SCHEMA)
-			->findAll(['filters' => ['register' => $register], 'limit' => 500]);
+			->findAll(['limit' => 500]);
 
 		if (is_array($rows) === false) {
 			return [];
@@ -545,8 +556,8 @@ final class PageLayoutLeafProvider extends AppLocalLeafProvider implements PageL
 
 		$mine = [];
 		foreach ($rows as $row) {
-			if (is_array($row) === false
-				|| (string)($row['status'] ?? '') !== 'published'
+			$row = ObjectRecord::toArray(object: $row);
+			if ((string)($row['status'] ?? '') !== 'published'
 				|| (string)($row['register'] ?? '') !== $register
 				|| (string)($row['schema'] ?? '') !== $schema
 			) {

@@ -59,10 +59,16 @@
 			:appName="(obApp && (obApp.name || obApp.slug)) || ''"
 			:isPublished="(obApp && obApp.status) === 'published'"
 			:allowUserOverrides="!!(obApp && obApp.allowUserOverrides)"
+			:appSlug="(obApp && obApp.slug) || ''"
+			:embed="(obApp && obApp.embed) || null"
 			:data-registers="(obApp && obApp.dataRegisters) || []"
 			:flows="(obApp && obApp.flows) || []"
+			:shortName="(obApp && obApp.shortName) || ''"
+			:themeColor="(obApp && obApp.themeColor) || ''"
 			:availableFlows="availableFlows"
 			:loadingFlows="loadingFlows"
+			:offlineAllowed="offlineAllowed"
+			:offline="offlineBlock"
 			:busy="publishing"
 			:organisationScope="(obApp && obApp.organisationScope) || 'all'"
 			:organisationScopeAvailable="organisationScopeAvailable"
@@ -71,8 +77,11 @@
 			@update:open="onSettingsOpen"
 			@setPublished="setPublished"
 			@update:allowOverrides="setAllowOverrides"
+			@update:embed="setEmbed"
 			@update:dataRegisters="setDataRegisters"
-			@update:flows="setFlows" />
+			@update:flows="setFlows"
+			@update:installable="setInstallable"
+			@update:offline="setOffline" />
 		<DeleteAppDialog
 			:open="deleteOpen"
 			:appName="(obApp && (obApp.name || obApp.slug)) || ''"
@@ -131,6 +140,7 @@ import { getCurrentUserGroups } from '../composables/useRole.js'
 import applicationContext from '../mixins/applicationContext.js'
 import { buildVersionedRoute } from '../router/helpers.js'
 import { fetchProductionRegister } from '../services/appRegister.js'
+import { withOffline } from '../services/offlineManifest.js'
 
 // Vue 3 requires `defineAsyncComponent()` around a lazy import. The bare
 // `() => import(…)` form is Vue 2 syntax: Vue 3 accepts a plain function as a
@@ -296,6 +306,10 @@ export default {
 			deleting: false,
 			githubOpen: false,
 			settingsOpen: false,
+			// Whether this instance lets apps work offline (REQ-BQOM-002), and
+			// the active version's offline block, read when the settings open.
+			offlineAllowed: loadState('buildiq', 'offlineAppsAllowed', false) === true,
+			offlineBlock: null,
 			// The support-note editor mutates a working manifest copy in place
 			// and emits `close`, so it needs its own copy to edit and a flag to
 			// mount it. Held here rather than in the modal so a cancel simply
@@ -932,6 +946,27 @@ export default {
 		},
 
 		/**
+		 * Persist the app's embedding setting (apps-embed-in-other-sites):
+		 * owners only, like the other app settings.
+		 *
+		 * @param {{enabled: boolean, origins: string[]}} embed The setting.
+		 * @return {Promise<void>}
+		 *
+		 * @spec openspec/changes/apps-embed-in-other-sites/specs/app-embedding/spec.md#requirement-a-maker-switches-embedding-on-and-lists-the-allowed-sites-req-bqem-001
+		 */
+		async setEmbed(embed) {
+			if (this.obAppRole !== 'owner' || !this.obApp) {
+				return
+			}
+			this.error = ''
+			try {
+				await this.obPatchApp({ embed })
+			} catch (e) {
+				this.error = `${t('buildiq', 'Failed to save settings')}: ${e.message || e}`
+			}
+		},
+
+		/**
 		 * Set the app's organisation scope, `holder` or `all` (owners only).
 		 *
 		 * @param {string} scope The new scope.
@@ -1139,6 +1174,9 @@ export default {
 		 */
 		async onSettingsOpen(open) {
 			this.settingsOpen = open
+			if (open && this.offlineAllowed) {
+				this.loadOfflineBlock()
+			}
 			if (!open || this.availableFlows.length || this.loadingFlows) {
 				return
 			}
@@ -1194,6 +1232,81 @@ export default {
 		 * @return {Promise<void>}
 		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
+		/**
+		 * Persist the Installable section: the installed app's short name and
+		 * theme colour, read by the run route's web app manifest. Owner-only.
+		 *
+		 * @param {{shortName: string, themeColor: string}} installable The section's values.
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T02
+		 */
+		async setInstallable(installable) {
+			if (this.obAppRole !== 'owner' || !this.obApp) {
+				return
+			}
+			const patch = {
+				shortName: String(installable?.shortName || ''),
+				themeColor: String(installable?.themeColor || ''),
+			}
+			if (patch.shortName === (this.obApp.shortName || '') && patch.themeColor === (this.obApp.themeColor || '')) {
+				return
+			}
+			this.error = ''
+			try {
+				await this.obPatchApp(patch)
+			} catch (e) {
+				this.error = `${t('buildiq', 'Failed to save settings')}: ${e.message || e}`
+			}
+		},
+
+		/**
+		 * Read the active version's offline block for the settings' Offline section.
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T04
+		 */
+		async loadOfflineBlock() {
+			if (!this.obApp || !this.obApp.slug) {
+				return
+			}
+			try {
+				const { data } = await axios.get(
+					generateUrl(`/apps/buildiq/api/applications/${encodeURIComponent(this.obApp.slug)}/manifest`),
+				)
+				this.offlineBlock = (data && data.offline) || null
+			} catch (e) {
+				this.error = `${t('buildiq', 'Failed to load settings')}: ${e.message || e}`
+			}
+		},
+
+		/**
+		 * Save the Offline section into the active version's manifest.
+		 *
+		 * The manifest is read fresh and only its `offline` block (and the
+		 * "Waiting to sync" page that follows the offline forms) is replaced,
+		 * so edits made elsewhere since the settings opened are kept.
+		 * Owner and editor only, as the manifest endpoint itself checks.
+		 *
+		 * @param {object|null} offline The new offline block, or null for none.
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T04
+		 */
+		async setOffline(offline) {
+			if (!this.obApp || !this.obApp.slug || !this.offlineAllowed) {
+				return
+			}
+			this.error = ''
+			try {
+				const url = generateUrl(`/apps/buildiq/api/applications/${encodeURIComponent(this.obApp.slug)}/manifest`)
+				const { data } = await axios.get(url)
+				const manifest = withOffline(data || {}, offline)
+				await axios.put(url, { manifest })
+				this.offlineBlock = manifest.offline || null
+			} catch (e) {
+				this.error = `${t('buildiq', 'Failed to save settings')}: ${e.message || e}`
+			}
+		},
+
 		async setDataRegisters(dataRegisters) {
 			if (this.obAppRole !== 'owner' || !this.obApp) {
 				return

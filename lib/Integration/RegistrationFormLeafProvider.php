@@ -42,6 +42,7 @@ namespace OCA\Buildiq\Integration;
 
 use OCA\Buildiq\Kernel\Contracts\RegistrationFormPresenterInterface;
 use OCA\Buildiq\Service\HelperFactory;
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
@@ -372,6 +373,7 @@ final class RegistrationFormLeafProvider extends AppLocalLeafProvider {
 	 * @param array<int, array<string, mixed>> $forms The served forms.
 	 *
 	 * @return array<int, array<string, mixed>> The drafts.
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function draftsOfCaller(array $forms): array {
 		$user = $this->userSession->getUser();
@@ -393,7 +395,8 @@ final class RegistrationFormLeafProvider extends AppLocalLeafProvider {
 
 		$mine = [];
 		foreach ($rows as $row) {
-			if (is_array($row) === false) {
+			$row = ObjectRecord::toArray(object: $row);
+			if ($row === []) {
 				continue;
 			}
 
@@ -420,12 +423,16 @@ final class RegistrationFormLeafProvider extends AppLocalLeafProvider {
 	 * @param string $objectId The host object's id, read as the type value.
 	 *
 	 * @return array<int, array<string, mixed>> The forms.
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function publishedFormsFor(string $register, string $schema, string $objectId): array {
+		// No `register` filter: findAll() reads `filters.register` as the register
+		// to query, not as a property, so it would look for these rows in the
+		// host's register. The loop below matches the property instead.
 		$rows = $this->objectService
 			->setRegister($this->registerSlug())
 			->setSchema(self::SCHEMA_FORM)
-			->findAll(['filters' => ['register' => $register], 'limit' => 500]);
+			->findAll(['limit' => 500]);
 
 		if (is_array($rows) === false) {
 			return [];
@@ -433,8 +440,8 @@ final class RegistrationFormLeafProvider extends AppLocalLeafProvider {
 
 		$mine = [];
 		foreach ($rows as $row) {
-			if (is_array($row) === false
-				|| (string)($row['status'] ?? '') !== 'published'
+			$row = ObjectRecord::toArray(object: $row);
+			if ((string)($row['status'] ?? '') !== 'published'
 				|| (string)($row['register'] ?? '') !== $register
 				|| (string)($row['schema'] ?? '') !== $schema
 				|| (string)($row['typeValue'] ?? '') !== $objectId

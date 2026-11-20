@@ -21,8 +21,10 @@ import {
 	defaultPageTypes,
 	registerBuiltinDashboardWidgets,
 	registerIcons,
+	registerOfflineWorker,
 	registerTranslations,
 } from '@conduction/nextcloud-vue'
+import { getCurrentUser } from '@nextcloud/auth'
 import axios from '@nextcloud/axios'
 import { loadState } from '@nextcloud/initial-state'
 import {
@@ -51,8 +53,10 @@ import {
 import { startHealthReporting } from './services/healthReporting.js'
 import { normalizeManifestPages } from './services/manifestPageDefaults.js'
 import { normalizeManifestRouting } from './services/manifestRouting.js'
+import { startOffline } from './services/offlineRuntime.js'
 import { brandTopBar } from './services/topBarBrand.js'
 import { keepVersionQuery } from './services/versionQuery.js'
+import { embedSlots, needsSignIn, signInNotice } from './utils/appEmbed.js'
 import { virtualAppSupportDialog } from './utils/virtualAppSupportDialog.js'
 
 import '@conduction/nextcloud-vue/css/index.css'
@@ -88,6 +92,9 @@ try {
 
 const slug = loadState('buildiq', 'builderSlug', '')
 const versionSlug = loadState('buildiq', 'builderVersion', '')
+// apps-embed-in-other-sites: the server answered `?embed=1` for an app with
+// embedding on, so the page sits in another site's frame.
+const embedded = loadState('buildiq', 'builderEmbed', false) === true
 
 // Best-effort l10n load — boot must not depend on it (see main.js).
 try {
@@ -257,10 +264,35 @@ async function loadManifest() {
 		// array as "show everything").
 		brandFromManifest(manifest)
 	} catch (e) {
+		// A frame on another site carries no Nextcloud session: say how to
+		// sign in instead of showing an empty app (REQ-BQEM-003).
+		if (needsSignIn(embedded, e)) {
+			manifest.signInRequired = true
+			return manifest
+		}
 		// eslint-disable-next-line no-console
 		console.error('[buildiq:builder] failed to load manifest for ' + slug, e)
 	}
 	return manifest
+}
+
+/**
+ * Mount the sign-in notice of an embedded app without a session: a link that
+ * opens Nextcloud in a new tab, never a login form inside the frame.
+ *
+ * @return {void}
+ *
+ * @spec openspec/changes/apps-embed-in-other-sites/specs/app-embedding/spec.md#requirement-the-frame-never-asks-for-a-password-req-bqem-003
+ */
+function mountSignInNotice() {
+	const notice = signInNotice(window.location.href)
+	createApp({
+		name: 'BuildiqEmbedSignIn',
+		render: () =>
+			h(NcEmptyContent, { name: notice.text }, {
+				action: () => h('a', { href: notice.href, target: notice.target, rel: notice.rel, class: 'button primary' }, notice.link),
+			}),
+	}).mount('#content')
 }
 
 /**
@@ -409,6 +441,55 @@ function navSlots(manifest, router) {
  * @spec openspec/changes/openbuild-connector-widget-runtime/specs/connector-widget-runtime/spec.md#requirement-req-cwr-001-single-runtime-registry-seam-for-every-virtual-app-host
  * @return {Promise<void>}
  */
+/**
+ * Start offline for this app: register its worker and take its records
+ * along, or clear them when the app opened without a session.
+ *
+ * The offline core is loaded only when the app declares offline, so an app
+ * without it never loads the cache library.
+ *
+ * @param {object} manifest The app's manifest.
+ * @return {Promise<void>}
+ *
+ * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-app-users-work-offline-and-sync-later-req-bqom-004
+ */
+async function bootOffline(manifest) {
+	const allowed = loadState('buildiq', 'offlineAppsAllowed', false) === true
+	if (!allowed || !manifest || !manifest.offline) {
+		return
+	}
+	try {
+		const offline = await import('@conduction/nextcloud-vue/src/integrations/offline/index.js')
+		await startOffline({
+			slug,
+			manifest,
+			allowed,
+			signedIn: getCurrentUser() !== null,
+			register: await fetchAppRegister(slug, versionSlug),
+			generateUrl,
+			registerOfflineWorker,
+			storePlanning: offline.storePlanning,
+			fetchObjects: async ({ register, schema, query }) => {
+				const url = generateUrl(`/apps/openregister/api/objects/${encodeURIComponent(register)}/${encodeURIComponent(schema)}`)
+				const { data } = await axios.get(url, { params: query })
+				return (data && data.results) || []
+			},
+			clearCollection: async (collection) => {
+				const db = await offline.openDb()
+				await db.objectCache.where('collection').equals(collection).delete()
+				await db.meta.filter((row) => row.collection === collection).delete()
+			},
+		})
+	} catch (error) {
+		// Offline never stops the app from opening online.
+		// eslint-disable-next-line no-console
+		console.warn('[buildiq:builder] offline did not start', error)
+	}
+}
+
+/**
+ *
+ */
 async function boot() {
 	// Flip the top-bar off the host "Buildiq" identity immediately using the
 	// slug, so there's no visible "Buildiq" flash while the manifest (which
@@ -417,6 +498,10 @@ async function boot() {
 		brandTopBar(humaniseSlug(slug), slug)
 	}
 	const loaded = await loadManifest()
+	if (loaded.signInRequired === true) {
+		mountSignInNotice()
+		return
+	}
 
 	// Normalise pages (config-as-object guard + inline page titles for data pages).
 	normalizeManifestPages(loaded)
@@ -440,6 +525,11 @@ async function boot() {
 		useRegisterPicker({ appSlug: slug }).fetchDataSources(
 			registerScope(await fetchAppRegister(slug, versionSlug), manifest),
 		)
+
+	// Offline (REQ-BQOM-002..004): nothing unless the instance allows it and
+	// the app declares an `offline` block. Not awaited: the app opens while
+	// the take-along downloads.
+	bootOffline(manifest)
 
 	const router = createRouter({
 		history: createWebHistory(generateUrl(`/apps/buildiq/builder/${slug}`)),
@@ -496,7 +586,8 @@ async function boot() {
 
 	// A thin root whose render re-runs on `routerEpoch`, so bumping it remounts
 	// the routed view (CnAppRoot keys its <router-view> on `routerViewKey`).
-	const slots = navSlots(manifest, router)
+	// Embedded: no app navigation, so an embedded page shows only that page.
+	const slots = embedSlots(embedded, navSlots(manifest, router))
 
 	const app = createApp({
 		name: 'BuildiqBuilderRoot',

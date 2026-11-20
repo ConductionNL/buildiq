@@ -16,6 +16,7 @@
  * @e2e registration-form-builder/requirement-a-case-type-carries-several-forms-req-obrf-004/two-forms-cannot-share-a-name-on-one-type
  */
 import { expect, test } from '@playwright/test'
+import { anonymousContext } from './support/anonymous.ts'
 
 const API = '/index.php/apps/buildiq/api/registration-forms'
 const HEADERS = { 'OCS-APIRequest': 'true' }
@@ -63,9 +64,7 @@ test.describe('registration form authoring', () => {
 	test('a caller with no account cannot read another app data model', async ({
 		playwright,
 	}) => {
-		const anonymous = await playwright.request.newContext({
-			baseURL: process.env.BASE_URL ?? process.env.NC_BASE_URL,
-		})
+		const anonymous = await anonymousContext(playwright)
 
 		const response = await anonymous.get(
 			`${API}/target?register=dossiq&schema=Zaak`,
@@ -86,9 +85,7 @@ test.describe('registration form authoring', () => {
 		// The least privileged principal that should be refused. A preset on a
 		// form can carry a value the citizen never sees, so an anonymous write
 		// must never reach the rules.
-		const anonymous = await playwright.request.newContext({
-			baseURL: process.env.BASE_URL ?? process.env.NC_BASE_URL,
-		})
+		const anonymous = await anonymousContext(playwright)
 
 		const response = await anonymous.put(API, {
 			headers: HEADERS,

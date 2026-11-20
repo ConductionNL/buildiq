@@ -9,6 +9,11 @@ Util::addScript($appId, $appId . '-builder');
 // the page, and with the session, since the manifest is signed-in only.
 if (($_['webManifest'] ?? false) === true) {
 	Util::addHeader('link', ['rel' => 'manifest', 'href' => 'manifest.webmanifest', 'crossorigin' => 'use-credentials']);
+	// iOS reads its home-screen icon from this link, as a PNG only.
+	$slug = (string)($_['slug'] ?? '');
+	if (($_['touchIcon'] ?? false) === true && preg_match('/^[a-z0-9][a-z0-9-]*[a-z0-9]$/', $slug) === 1) {
+		Util::addHeader('link', ['rel' => 'apple-touch-icon', 'href' => '../../icons/' . $slug . '-touch.png']);
+	}
 }
 ?>
 <div id="content"></div>
