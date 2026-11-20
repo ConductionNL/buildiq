@@ -135,7 +135,7 @@ class AppOrganisationGuardCoverageTest extends TestCase {
 			}
 		}
 
-		$this->assertSame(expected: [], actual: $unknown, 'New readers of the Application schema must consult AppOrganisationGuard');
+		$this->assertSame(expected: [], actual: $unknown, message: 'New readers of the Application schema must consult AppOrganisationGuard');
 	}//end testNoNewReaderSkipsTheDecision()
 
 	/**
