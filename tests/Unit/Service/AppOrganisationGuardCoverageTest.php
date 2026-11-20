@@ -48,6 +48,7 @@ class AppOrganisationGuardCoverageTest extends TestCase {
 		'lib/Service/AppNavigationService.php' => 'visibleToOrganisation(',
 		'lib/Mcp/Handler/AbstractToolHandler.php' => 'visibleToOrganisation(',
 		'lib/Controller/ApplicationsController.php' => 'visibleToOrganisation(',
+		'lib/Controller/FlowBindingsController.php' => 'seesApplication(',
 		'lib/Mcp/Handler/ListAppsHandler.php' => 'requireAnyRoleOnApp(',
 		'lib/Mcp/Handler/GetAppManifestHandler.php' => 'requireAnyRoleOnApp(',
 		'lib/Controller/AgentsController.php' => 'seesApplication(',
