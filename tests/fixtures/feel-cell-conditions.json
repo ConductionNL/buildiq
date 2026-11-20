@@ -1,0 +1,32 @@
+{
+	"_comment": "Shared cell-condition table for src/utils/feelCell.js (isCellConditionValid) and its PHP mirror lib/Service/FeelCellCondition.php. Both test suites read this file so the two checks cannot drift (ai-copilot-documents-and-code-help D2).",
+	"cases": [
+		{ "cell": "", "valid": true },
+		{ "cell": "-", "valid": true },
+		{ "cell": "*", "valid": true },
+		{ "cell": null, "valid": true },
+		{ "cell": "  ANY ", "valid": true },
+		{ "cell": ">=18", "valid": true },
+		{ "cell": "== 'open'", "valid": true },
+		{ "cell": "< 100", "valid": true },
+		{ "cell": "  >= 3  ", "valid": true },
+		{ "cell": "18..65", "valid": true },
+		{ "cell": "a..b..c", "valid": true },
+		{ "cell": "in (1, 2, 3)", "valid": true },
+		{ "cell": "in ('NL', 'BE')", "valid": true },
+		{ "cell": "IN(a)", "valid": true },
+		{ "cell": "open", "valid": true },
+		{ "cell": "42", "valid": true },
+		{ "cell": 18, "valid": true },
+		{ "cell": ">=", "valid": true },
+		{ "cell": "a..", "valid": true },
+		{ "cell": "'a (b)'", "valid": true },
+		{ "cell": "==x", "valid": true },
+		{ "cell": "=18", "valid": false },
+		{ "cell": "=", "valid": false },
+		{ "cell": "= x", "valid": false },
+		{ "cell": "foo(bar", "valid": false },
+		{ "cell": "in (a", "valid": false },
+		{ "cell": "max(a, b)", "valid": false }
+	]
+}

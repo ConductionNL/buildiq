@@ -1,0 +1,23 @@
+{
+	"_comment": "ADR-037 register fragment, pages-installable-offline-and-mobile (T08, REQ-BQOM-006). Declares exportJob.includeMobileProject and exportJob.mobileBundleId, set by ExportJobService::queue(). OpenRegister drops a property a schema does not declare, so without this the choice never reaches RunExportJob.",
+	"components": {
+		"schemas": {
+			"exportJob": {
+				"properties": {
+					"includeMobileProject": {
+						"title": "Include mobile app project",
+						"type": "boolean",
+						"default": false,
+						"description": "Whether the exported tree gets mobile/: a Capacitor wrapper project for the iOS and Android app stores that opens this instance's run page of the app. Buildiq builds, signs and publishes nothing."
+					},
+					"mobileBundleId": {
+						"title": "Mobile bundle id",
+						"type": "string",
+						"default": "",
+						"description": "The bundle id of the mobile app project, such as nl.example.toezicht. Empty means nl.<instance-host>.<slug>."
+					}
+				}
+			}
+		}
+	}
+}
