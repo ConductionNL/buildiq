@@ -484,7 +484,7 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 
 		// Logic-email-and-webhook-triggers D6: refuse before anything is written
 		// when integriq cannot take the trigger's declarations.
-		if (InboundTriggerDeclarations::isInbound(triggerType: (string)($automation['trigger']['type'] ?? '')) === true) {
+		if (in_array((string)($automation['trigger']['type'] ?? ''), InboundTriggerDeclarations::TRIGGERS, true) === true) {
 			$this->inbound()->assertReady(trigger: (array)$automation['trigger']);
 		}
 
@@ -536,13 +536,7 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 
 		// Logic-email-and-webhook-triggers D2/D3: the integriq objects that start
 		// the flow from a mailbox or a webhook call, and removal of the prior ones.
-		$priorInbound = $this->orArray(value: $priorProvenance['inbound'] ?? null);
-		if ($priorInbound !== [] || InboundTriggerDeclarations::isInbound(triggerType: (string)($automation['trigger']['type'] ?? '')) === true) {
-			$inbound = $this->inbound()->apply(automation: $automation, flowUuid: $flowUuid, prior: $priorInbound);
-			if ($inbound !== []) {
-				$provenance['inbound'] = $inbound;
-			}
-		}
+		$provenance = $this->withInbound(provenance: $provenance, automation: $automation, flowUuid: $flowUuid, priorProvenance: $priorProvenance);
 
 		if (($plan['ruleSetVersions'] ?? []) !== []) {
 			$provenance['ruleSetVersions'] = $plan['ruleSetVersions'];
@@ -579,6 +573,34 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 
 		return $provenance;
 	}//end apply()
+
+	/**
+	 * The provenance with the integriq declarations of an inbound automation,
+	 * written or replaced; the prior ones are removed when it is no longer inbound.
+	 *
+	 * @param array<string,mixed> $provenance      The provenance so far.
+	 * @param array<string,mixed> $automation      The Automation object.
+	 * @param string|null         $flowUuid        The compiled flow, or null without one.
+	 * @param array<string,mixed> $priorProvenance The provenance of the last apply, whose `inbound` entry is replaced.
+	 *
+	 * @return array<string,mixed>
+	 *
+	 * @spec openspec/changes/logic-email-and-webhook-triggers/specs/automation-inbound-triggers/spec.md#requirement-a-webhook-starts-the-automations-flow-req-bqtr-003
+	 */
+	private function withInbound(array $provenance, array $automation, ?string $flowUuid, array $priorProvenance): array {
+		$prior = $this->orArray(value: $priorProvenance['inbound'] ?? null);
+		$isInbound = in_array((string)($automation['trigger']['type'] ?? ''), InboundTriggerDeclarations::TRIGGERS, true);
+		if ($prior === [] && $isInbound === false) {
+			return $provenance;
+		}
+
+		$inbound = $this->inbound()->apply(automation: $automation, flowUuid: $flowUuid, prior: $prior);
+		if ($inbound !== []) {
+			$provenance['inbound'] = $inbound;
+		}
+
+		return $provenance;
+	}//end withInbound()
 
 	/**
 	 * Remove exactly the provenance-listed artifacts (design.md Decision 4 —

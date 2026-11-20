@@ -102,7 +102,7 @@ final class AutomationFlowBuilder {
 	 */
 	public function wantsFlow(CompileInput $input): bool {
 		// Logic-email-and-webhook-triggers D1: the inbound triggers run only as a flow.
-		if ($input->triggerType === 'manual' || InboundTriggerDeclarations::isInbound(triggerType: $input->triggerType) === true) {
+		if (in_array($input->triggerType, ['manual', ...InboundTriggerDeclarations::TRIGGERS], true) === true) {
 			return true;
 		}
 
@@ -185,6 +185,8 @@ final class AutomationFlowBuilder {
 	 * @return array<string, mixed>
 	 *
 	 * @throws UnsupportedAutomationCombinationException For a lifecycle transition or an unknown trigger.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) InboundTriggerDeclarations::check() is a pure settings check with no collaborators.
 	 */
 	private function triggerNode(CompileInput $input, string $register): array {
 		$type = $input->triggerType;
@@ -199,7 +201,7 @@ final class AutomationFlowBuilder {
 
 		// Logic-email-and-webhook-triggers D1: integriq starts the run, with the
 		// mail or the request body as input, so the flow itself is started manually.
-		if (InboundTriggerDeclarations::isInbound(triggerType: $type) === true) {
+		if (in_array($type, InboundTriggerDeclarations::TRIGGERS, true) === true) {
 			InboundTriggerDeclarations::check(trigger: $input->trigger);
 			return ['id' => 'trigger', 'type' => 'openregister.trigger-manual', 'config' => ['startedBy' => 'integriq', 'trigger' => $type]];
 		}
