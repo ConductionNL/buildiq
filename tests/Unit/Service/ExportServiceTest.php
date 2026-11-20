@@ -19,6 +19,10 @@ use OCA\Buildiq\Service\PlaceholderResolver;
 use OCA\Buildiq\Service\RegisterRowReader;
 use OCA\Buildiq\Service\ScaffoldOptions;
 use OCA\Buildiq\Service\ServerBundleWriter;
+use OCA\Buildiq\Service\MobileProjectWriter;
+use OCA\Buildiq\Service\IconService;
+use OCA\Buildiq\Service\Icon\SvgRasteriser;
+use OCP\IURLGenerator;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -578,13 +582,15 @@ final class ExportServiceTest extends TestCase {
 		?ExportService $service = null,
 		?array $source = null,
 		bool $includeServerBundle = false,
+		?string $mobileBundleId = null,
 	): array {
 		$jobUuid = 'unit-' . bin2hex(random_bytes(6));
 
 		$zipPath = ($service ?? $this->buildService())->generateAppZip(
-			target: new ExportTarget(applicationUuid: 'app-uuid', versionSlug: '1.2.3', jobUuid: $jobUuid),
+			target: new ExportTarget(applicationUuid: 'app-uuid', versionSlug: '1.2.3', jobUuid: $jobUuid, applicationSlug: 'toezicht'),
 			contents: new ExportContents(context: $this->context(), dataRegisters: $dataRegisters, source: $source),
-			includeServerBundle: $includeServerBundle
+			includeServerBundle: $includeServerBundle,
+			mobileBundleId: $mobileBundleId
 		);
 
 		$this->litter[] = $zipPath;
@@ -643,6 +649,7 @@ final class ExportServiceTest extends TestCase {
 		?ObjectServiceInterface $objectService = null,
 		?ExportAppContentBundler $contentBundler = null,
 		?ServerBundleWriter $serverBundleWriter = null,
+		?MobileProjectWriter $mobileProjectWriter = null,
 	): ExportService {
 		$appData = $this->createStub(IAppData::class);
 		$bundler = new DataRegisterExportBundler(
@@ -665,7 +672,8 @@ final class ExportServiceTest extends TestCase {
 					logger: new NullLogger()
 				),
 				contentBundler: $contentBundler,
-				serverBundleWriter: $serverBundleWriter
+				serverBundleWriter: $serverBundleWriter,
+				mobileProjectWriter: $mobileProjectWriter
 			)
 		);
 	}//end buildService()
@@ -723,4 +731,59 @@ final class ExportServiceTest extends TestCase {
 
 		rmdir($dir);
 	}//end rrmdir()
+	/**
+	 * A mobile app project writer for https://cloud.example.nl, whose icon is a PNG.
+	 *
+	 * @return MobileProjectWriter
+	 */
+	private function mobileWriter(): MobileProjectWriter {
+		$urls = $this->createMock(IURLGenerator::class);
+		$urls->method('linkToRouteAbsolute')->with('buildiq.dashboard.run', ['slug' => 'toezicht'])
+			->willReturn('https://cloud.example.nl/index.php/apps/buildiq/run/toezicht/');
+		$stream = fopen('php://memory', 'r+');
+		fwrite($stream, "\x89PNG-icon");
+		rewind($stream);
+		$icons = $this->createMock(IconService::class);
+		$icons->method('getIconStream')->with('toezicht', false)->willReturn(['stream' => $stream, 'mimeType' => 'image/png']);
+
+		return new MobileProjectWriter($urls, $icons, $this->createMock(SvgRasteriser::class));
+	}//end mobileWriter()
+
+	/**
+	 * REQ-BQOM-006: with "Mobile app project" on, the archive holds mobile/ with the project, the icons and a
+	 * README, and the project's only allowed origin is this instance.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T08
+	 */
+	public function testTheMobileAppProjectLandsInMobileWithThisInstanceAsItsOnlyOrigin(): void {
+		$entries = $this->export(service: $this->buildService(mobileProjectWriter: $this->mobileWriter()), mobileBundleId: '');
+
+		foreach (['capacitor.config.json', 'package.json', 'README.md', 'www/index.html', 'resources/icon.png', 'resources/splash.png'] as $file) {
+			self::assertArrayHasKey('mobile/' . $file, $entries);
+		}
+
+		$config = json_decode($entries['mobile/capacitor.config.json'], true);
+		self::assertSame('nl.cloudexamplenl.toezicht', $config['appId']);
+		self::assertSame('Demo App', $config['appName']);
+		self::assertSame('https://cloud.example.nl/index.php/apps/buildiq/run/toezicht/', $config['server']['url']);
+		self::assertSame(['cloud.example.nl'], $config['server']['allowNavigation']);
+		self::assertFalse($config['server']['cleartext']);
+		self::assertSame("\x89PNG-icon", $entries['mobile/resources/icon.png']);
+		self::assertStringContainsString('Sign and publish', $entries['mobile/README.md']);
+	}//end testTheMobileAppProjectLandsInMobileWithThisInstanceAsItsOnlyOrigin()
+
+	/**
+	 * Without the choice there is no mobile/ folder, even when the writer is wired.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T08
+	 */
+	public function testExportWithoutTheMobileProjectHasNoMobileFolder(): void {
+		$entries = $this->export(service: $this->buildService(mobileProjectWriter: $this->mobileWriter()));
+
+		self::assertSame([], array_values(array_filter(array_keys($entries), static fn (string $path): bool => str_starts_with($path, 'mobile/'))));
+	}//end testExportWithoutTheMobileProjectHasNoMobileFolder()
 }//end class

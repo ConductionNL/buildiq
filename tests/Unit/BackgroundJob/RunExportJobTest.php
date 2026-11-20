@@ -275,6 +275,39 @@ final class RunExportJobTest extends TestCase {
 	}//end testHandsEveryJobFieldToTheExporter()
 
 	/**
+	 * The mobile app project reaches the exporter as a bundle id only when the job asks for it by a literal true:
+	 * empty for the default, null for no project (REQ-BQOM-006).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T08
+	 */
+	public function testHandsTheMobileProjectChoiceToTheExporter(): void {
+		$cases = [
+			'project with id' => [['includeMobileProject' => true, 'mobileBundleId' => 'nl.gemeente.toezicht'], 'nl.gemeente.toezicht'],
+			'project, default id' => [['includeMobileProject' => true], ''],
+			'truthy is not true' => [['includeMobileProject' => 1, 'mobileBundleId' => 'nl.gemeente.toezicht'], null],
+			'no project' => [[], null],
+		];
+		foreach ($cases as $name => [$extra, $expected]) {
+			$this->setUp();
+			$this->exportJobService->method('loadJob')->willReturn($extra + $this->jobFixture('app-uuid-mobile'));
+			$this->exportJobService->method('transitionJob')->willReturn(true);
+			$captured = 'unset';
+			$this->exportService->expects(self::once())->method('generateAppZip')->willReturnCallback(
+				function (ExportTarget $target, ExportContents $contents, bool $includeServerBundle, ?string $mobileBundleId) use (&$captured): string {
+					$captured = $mobileBundleId;
+					return '/tmp/x.zip';
+				}
+			);
+
+			$this->invokeRun($this->buildJob(), ['jobUuid' => 'job-mobile']);
+
+			self::assertSame($expected, $captured, $name);
+		}
+	}//end testHandsTheMobileProjectChoiceToTheExporter()
+
+	/**
 	 * An application that cannot be read fails the job instead of exporting
 	 * the empty template as a success.
 	 *

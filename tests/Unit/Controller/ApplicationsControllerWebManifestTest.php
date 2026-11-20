@@ -21,6 +21,7 @@ namespace OCA\Buildiq\Tests\Unit\Controller;
 use OCA\Buildiq\Controller\ApplicationsController;
 use OCA\Buildiq\Service\AppChannelApplier;
 use OCA\Buildiq\Service\CallerContext;
+use OCA\Buildiq\Service\Icon\SvgRasteriser;
 use OCA\Buildiq\Service\ManifestResolverService;
 use OCA\Buildiq\Service\PermissionResolver;
 use OCA\Buildiq\Service\RegisterStore;
@@ -136,6 +137,44 @@ class ApplicationsControllerWebManifestTest extends TestCase {
 	}//end testAViewerGetsTheManifestScopedToTheRunPath()
 
 	/**
+	 * The Installable settings reach the manifest: the short name, a hex theme
+	 * colour, and a PNG icon next to the SVG when the server can rasterise.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T02
+	 */
+	public function testTheInstallableSettingsAndAPngIconReachTheManifest(): void {
+		$this->resolvable(caller: 'vera', admin: false);
+		$this->objectService->method('find')->willReturn($this->application(extra: ['shortName' => 'Toez', 'themeColor' => '#1f6feb']));
+
+		$data = $this->controller(rasterises: true)->webManifest(slug: 'hello-world')->getData();
+
+		self::assertSame(['Toez', '#1f6feb'], [$data['short_name'], $data['theme_color']]);
+		self::assertSame(
+			[
+				['src' => '../../icons/hello-world.svg', 'type' => 'image/svg+xml', 'sizes' => 'any', 'purpose' => 'any'],
+				['src' => '../../icons/hello-world-touch.png', 'type' => 'image/png', 'sizes' => '180x180', 'purpose' => 'any'],
+			],
+			$data['icons']
+		);
+	}//end testTheInstallableSettingsAndAPngIconReachTheManifest()
+
+	/**
+	 * A theme colour that is not six-digit hex is left out.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T02
+	 */
+	public function testANonHexThemeColourIsLeftOut(): void {
+		$this->resolvable(caller: 'vera', admin: false);
+		$this->objectService->method('find')->willReturn($this->application(extra: ['themeColor' => 'red']));
+
+		self::assertArrayNotHasKey('theme_color', $this->controller()->webManifest(slug: 'hello-world')->getData());
+	}//end testANonHexThemeColourIsLeftOut()
+
+	/**
 	 * A signed-in user who may not open the app, and an anonymous caller, get 404 and no manifest.
 	 *
 	 * @return void
@@ -204,13 +243,13 @@ class ApplicationsControllerWebManifestTest extends TestCase {
 	 *
 	 * @return ObjectEntity The Application entity.
 	 */
-	private function application(): ObjectEntity {
+	private function application(array $extra=[]): ObjectEntity {
 		return $this->entity(payload: [
 			'id' => 'app-uuid-1',
 			'slug' => 'hello-world',
 			'name' => 'Toezicht',
 			'permissions' => ['owners' => ['user:bob'], 'editors' => [], 'viewers' => ['user:vera']],
-		]);
+		] + $extra);
 	}//end application()
 
 	/**
@@ -259,8 +298,10 @@ class ApplicationsControllerWebManifestTest extends TestCase {
 	 *
 	 * @return ApplicationsController
 	 */
-	private function controller(): ApplicationsController {
+	private function controller(bool $rasterises=false): ApplicationsController {
 		$logger = $this->createMock(LoggerInterface::class);
+		$rasteriser = $this->createMock(SvgRasteriser::class);
+		$rasteriser->method('available')->willReturn($rasterises);
 		return new ApplicationsController(
 			request: $this->createMock(IRequest::class),
 			logger: $logger,
@@ -276,7 +317,8 @@ class ApplicationsControllerWebManifestTest extends TestCase {
 				permissionResolver: new PermissionResolver($this->groupManager, $logger)
 			),
 			manifestResolver: $this->createMock(ManifestResolverService::class),
-			channelApplier: $this->createMock(AppChannelApplier::class)
+			channelApplier: $this->createMock(AppChannelApplier::class),
+			rasteriser: $rasteriser
 		);
 	}//end controller()
 }//end class
