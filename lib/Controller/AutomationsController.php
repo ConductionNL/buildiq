@@ -683,8 +683,10 @@ class AutomationsController extends Controller {
 	 */
 	private function recompileAndRespond(array $automation): JSONResponse {
 		$priorProvenance = $this->orArray(value: $automation['provenance'] ?? null);
-		// Apply refuses too: an email or webhook trigger integriq cannot take
-		// fails closed before anything is written (logic-email-and-webhook-triggers D6).
+		// Apply refuses too, as a 422 rather than a 500: an AI step without
+		// Hermiq's node in the engine (ai-llm-steps-and-computed-fields
+		// REQ-BQLS-005), or an email or webhook trigger integriq cannot take,
+		// which fails closed before anything is written (logic-email-and-webhook-triggers D6).
 		try {
 			$plan = $this->compiler->compile(automation: $automation);
 			$provenance = $this->compiler->apply(automation: $automation, plan: $plan, priorProvenance: $priorProvenance);

@@ -410,10 +410,13 @@ export default {
 					},
 				})
 				const all = listResults(data)
+				// An AI field's automation is edited in the schema designer, not
+				// here (ai-llm-steps-and-computed-fields D5).
 				this.automations = all.filter(
 					(a) =>
 						a.applicationSlug === this.selectedApp.slug
-						&& a.versionUuid === this.selectedVersionId,
+						&& a.versionUuid === this.selectedVersionId
+						&& a.origin !== 'ai-field',
 				)
 				await Promise.all([this.refreshStatuses(), this.refreshRunSummaries()])
 			} catch (error) {

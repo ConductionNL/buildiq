@@ -26,7 +26,7 @@
 					}
 				},
 				"icon": "VectorPolylinePlus",
-				"version": "1.1.0",
+				"version": "1.2.0",
 				"title": "Automation",
 				"description": "A single trigger→condition→actions declarative automation, compiled on demand to Buildiq's existing declarative primitives (notifications dialect, lifecycle actions, schedules, rules engine). One automation is managed as one unit: list/edit/enable/disable/dry-run/delete.",
 				"authorization": {
@@ -212,7 +212,8 @@
 										"webhook",
 										"approval",
 										"generateDocument",
-										"rule-decision"
+										"rule-decision",
+										"ai-step"
 									],
 									"description": "`approval` (automation-approval-steps) is selectable only on object-created|object-updated|object-deleted|lifecycle-transition triggers: compiles to an OpenRegister ApprovalChain; blocked fail-closed on schedule/manual. `generateDocument` (automation-document-action) is selectable on the same four event/lifecycle-transition triggers. Dispatches an owner-impersonated call to Docudesk's pinned `correspondence/generate` route; blocked fail-closed on schedule/manual."
 								},
@@ -397,9 +398,75 @@
 										]
 									},
 									"description": "generateDocument: one or more of `attach` (writes the rendered document to Nextcloud Files and sets a `{ ref: <fileId> }` reference on the triggering object's `generatedDocument` field), `download-link` (generates a short-lived, ~24h, signed download URL without persisting a file) and `notify` (dispatches a notification referencing the generated document). `notify` MUST be combined with `attach` and/or `download-link`: `[\"notify\"]` alone is rejected as incomplete."
+								},
+								"preset": {
+									"title": "AI Preset",
+									"type": "string",
+									"enum": [
+										"classify",
+										"summarise",
+										"extract",
+										"translate",
+										"prompt"
+									],
+									"description": "ai-step (ai-llm-steps-and-computed-fields): what the AI does with the source fields. `classify` picks one of `labels`, `summarise` and `translate` write text, `extract` fills `fields`, `prompt` answers the maker's own `prompt`."
+								},
+								"agent": {
+									"title": "Hermiq Agent",
+									"type": "string",
+									"description": "ai-step: the uuid of the Hermiq agent that runs the turn. Pick one without enabled tools."
+								},
+								"sourceFields": {
+									"title": "Source Fields",
+									"type": "array",
+									"minItems": 1,
+									"items": {
+										"type": "string"
+									},
+									"description": "ai-step: the record fields the AI reads. Only these fields are sent; the whole record never is."
+								},
+								"targetField": {
+									"title": "Target Field",
+									"type": "string",
+									"description": "ai-step: the record field the answer is written to. For `classify` it must be a choice list of exactly `labels`."
+								},
+								"labels": {
+									"title": "Labels",
+									"type": "array",
+									"items": {
+										"type": "string"
+									},
+									"description": "ai-step classify: the labels the AI picks one of."
+								},
+								"fields": {
+									"title": "Extracted Fields",
+									"type": "array",
+									"items": {
+										"type": "string"
+									},
+									"description": "ai-step extract: the record fields the AI fills from the source text, each under its own name."
+								},
+								"language": {
+									"title": "Target Language",
+									"type": "string",
+									"description": "ai-step translate: the language the source text is translated into, e.g. English."
+								},
+								"prompt": {
+									"title": "Prompt",
+									"type": "string",
+									"description": "ai-step prompt: the maker's instruction. `{{field}}` placeholders may only name source fields."
 								}
 							}
 						}
+					},
+					"origin": {
+						"title": "Origin",
+						"type": "string",
+						"enum": [
+							"composer",
+							"ai-field"
+						],
+						"description": "Who authored the automation. `ai-field` automations are written by the schema designer for an AI field, hidden from the automations list, and edited there."
 					},
 					"provenance": {
 						"title": "Provenance",

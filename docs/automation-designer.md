@@ -128,6 +128,15 @@ compiles to a flow, where the condition gates the steps.
 > docblock for the full rationale. This is a documented v1.1 follow-up, not a
 > silent gap.
 
+## Ask AI steps
+
+The *Ask AI* action lets a language model classify, summarise, extract,
+translate or follow an instruction over named fields of the record, and writes
+the answer back onto it. It runs on *Object created*, on *Object updated*
+(only when a source field changed) and on *Manual*, and needs Hermiq. Which
+fields are sent, the presets and AI fields in the schema designer are on
+[AI steps and AI fields](ai-steps-and-fields.md).
+
 ## Provenance and drift
 
 Every compiled artifact's id/key carries an `aut-<slug>` prefix (rule sets

@@ -11,6 +11,7 @@
  * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#3.1
  */
 
+import { toPersistedAiStep } from '../services/aiSteps.js'
 import { storedForm } from './approvalFormFields.js'
 
 /**
@@ -108,6 +109,7 @@ const BUILDERS = Object.freeze({
 		templateId: action.templateId,
 		output: listOrEmpty(action.output),
 	}),
+	'ai-step': toPersistedAiStep,
 	'rule-decision': (action) => withOptionalObject(
 		{
 			type: 'rule-decision',
