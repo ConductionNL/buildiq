@@ -85,6 +85,10 @@ final class VirtualAppCredentialRegistrarCallsTest extends TestCase {
 
 			/**
 			 * Whether the app already has a broker key; records the asked id.
+			 *
+			 * @param string $appId The app id.
+			 *
+			 * @return bool
 			 */
 			public function isRegistered(string $appId): bool {
 				$this->isRegisteredCalls[] = $appId;
@@ -93,6 +97,10 @@ final class VirtualAppCredentialRegistrarCallsTest extends TestCase {
 
 			/**
 			 * Register the app's broker key, or throw when told to.
+			 *
+			 * @param string $appId The app id.
+			 *
+			 * @return string The broker secret.
 			 */
 			public function registerApp(string $appId): string {
 				if ($this->throwOnRegister === true) {
@@ -110,6 +118,11 @@ final class VirtualAppCredentialRegistrarCallsTest extends TestCase {
 
 			/**
 			 * Record one Doriath registration.
+			 *
+			 * @param string      $appId       The app id.
+			 * @param string|null $description The description.
+			 *
+			 * @return void
 			 */
 			public function registerApplication(string $appId, ?string $description = null): void {
 				$this->calls[] = [$appId, $description];
@@ -128,6 +141,12 @@ final class VirtualAppCredentialRegistrarCallsTest extends TestCase {
 		return new class($this->manifestResolver, $this->logger, $container, $this->tokenFake, $this->registrarFake) extends VirtualAppCredentialRegistrar {
 			/**
 			 * Keep the fakes next to the real collaborators.
+			 *
+			 * @param ManifestResolverService $manifestResolver The manifest resolver.
+			 * @param LoggerInterface         $logger           The logger.
+			 * @param ContainerInterface      $container        The container.
+			 * @param object                  $tokenFake        The token service fake.
+			 * @param object                  $registrarFake    The registrar fake.
 			 */
 			public function __construct(
 				ManifestResolverService $manifestResolver,
@@ -141,6 +160,10 @@ final class VirtualAppCredentialRegistrarCallsTest extends TestCase {
 
 			/**
 			 * Hand out the fakes instead of container services.
+			 *
+			 * @param string $fqcn The service class.
+			 *
+			 * @return object|null The fake.
 			 */
 			protected function resolveService(string $fqcn): ?object {
 				if (str_contains($fqcn, 'CredentialAppTokenService') === true) {
