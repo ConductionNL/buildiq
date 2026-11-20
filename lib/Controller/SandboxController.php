@@ -416,10 +416,10 @@ JS;
 			}
 		}
 
-		$css = str_ireplace('</style', '<\\/style', $parts['css']);
-		$js  = str_ireplace('</script', '<\\/script', $parts['js']);
+		$css    = str_ireplace('</style', '<\\/style', $parts['css']);
+		$script = str_ireplace('</script', '<\\/script', $parts['js']);
 
-		return '<style>' . $css . '</style>' . $parts['html'] . '<script>' . $js . '</script>';
+		return '<style>' . $css . '</style>' . $parts['html'] . '<script>' . $script . '</script>';
 	}//end codeBody()
 
 	/**
