@@ -65,6 +65,8 @@ final class CallerContext {
 	 * @return bool
 	 *
 	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) AppOrganisationGuard::isShared() is a pure scope check with no collaborators.
 	 */
 	public function seesApplication(array $application): bool {
 		if (AppOrganisationGuard::isShared(application: $application) === true) {
