@@ -54,7 +54,13 @@ final class SettingsServiceScriptStepTest extends TestCase {
 	private function service(bool $stored, int $sweeps, array &$written): SettingsService {
 		$appConfig = $this->createMock(originalClassName: IAppConfig::class);
 		$appConfig->method('getValueBool')->willReturnCallback(
-			static fn (string $app, string $key, bool $default = false): bool => ($key === ScriptStepSweep::SETTING) ? $stored : $default
+			static function (string $app, string $key, bool $default = false) use ($stored): bool {
+				if ($key === ScriptStepSweep::SETTING) {
+					return $stored;
+				}
+
+				return $default;
+			}
 		);
 		$appConfig->method('getValueString')->willReturn('');
 		$appConfig->method('setValueBool')->willReturnCallback(
@@ -67,7 +73,7 @@ final class SettingsServiceScriptStepTest extends TestCase {
 			}
 		);
 		$sweep = $this->createMock(originalClassName: ScriptStepSweep::class);
-		$sweep->expects(self::exactly($sweeps))->method('disableAll')->willReturn(['disabled' => 2, 'failed' => 0]);
+		$sweep->expects(self::exactly(count: $sweeps))->method('disableAll')->willReturn(['disabled' => 2, 'failed' => 0]);
 		$container = $this->createMock(originalClassName: ContainerInterface::class);
 		$container->method('get')->willReturn($sweep);
 		$appManager = $this->createMock(originalClassName: IAppManager::class);

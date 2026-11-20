@@ -29,7 +29,6 @@ use OCA\Buildiq\Kernel\Contracts\AutomationCompilerServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\AutomationWriteServiceInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use Psr\Log\LoggerInterface;
-use Throwable;
 
 /**
  * The disable sweep of logic-script-step D3.
@@ -81,7 +80,7 @@ class ScriptStepSweep {
 		$counts = ['disabled' => 0, 'failed' => 0];
 		try {
 			$automations = AutomationRecords::all(objectService: $this->objectService);
-		} catch (Throwable $e) {
+		} catch (\Throwable $e) {
 			$this->logger->warning('ScriptStepSweep: automations could not be read: ' . $e->getMessage());
 			return $counts;
 		}
@@ -119,7 +118,7 @@ class ScriptStepSweep {
 			$automation['provenance'] = array_intersect_key($provenance, [ScriptSteps::AUTHOR_KEY => true])
 				+ ['notificationKeys' => [], 'lifecycleActions' => [], 'scheduleIds' => [], 'openconnectorObjects' => []];
 			$this->writeService->saveCompiled(automation: $automation, uuid: $uuid);
-		} catch (Throwable $e) {
+		} catch (\Throwable $e) {
 			$this->logger->warning('ScriptStepSweep: could not disable "' . $uuid . '": ' . $e->getMessage());
 			return false;
 		}
