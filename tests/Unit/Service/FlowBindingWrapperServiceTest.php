@@ -111,7 +111,7 @@ class FlowBindingWrapperServiceTest extends TestCase {
 	 */
 	protected function setUp(): void {
 		parent::setUp();
-		$this->flows = $this->createMock(FlowService::class);
+		$this->flows = $this->createMock(originalClassName: FlowService::class);
 		$this->flows->method('save')->willReturnCallback(
 			function (array $data): Flow {
 				$this->saved[] = $data;
@@ -133,16 +133,16 @@ class FlowBindingWrapperServiceTest extends TestCase {
 			}
 		);
 
-		$this->objects = $this->createMock(ObjectServiceInterface::class);
+		$this->objects = $this->createMock(originalClassName: ObjectServiceInterface::class);
 		$this->objects->method('saveObject')->willReturnCallback(
 			function (array $object): ObjectEntityInterface {
 				$this->applications[] = $object;
-				return $this->createMock(ObjectEntityInterface::class);
+				return $this->createMock(originalClassName: ObjectEntityInterface::class);
 			}
 		);
 
-		$this->versions = $this->createMock(FlowVersionServiceInterface::class);
-		$this->container = $this->createMock(ContainerInterface::class);
+		$this->versions = $this->createMock(originalClassName: FlowVersionServiceInterface::class);
+		$this->container = $this->createMock(originalClassName: ContainerInterface::class);
 		$this->container->method('has')->willReturnCallback(static fn (string $id): bool => $id === FlowVersionServiceInterface::class);
 		$this->container->method('get')->willReturnCallback(fn (): object => $this->versions);
 
@@ -158,7 +158,7 @@ class FlowBindingWrapperServiceTest extends TestCase {
 			flowService: $this->flows,
 			objectService: $this->objects,
 			container: $this->container,
-			logger: $this->createMock(LoggerInterface::class)
+			logger: $this->createMock(originalClassName: LoggerInterface::class)
 		);
 
 	}//end service()
@@ -395,9 +395,9 @@ class FlowBindingWrapperServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testARefusedSaveBindsNothing(): void {
-		$flows = $this->createMock(FlowService::class);
+		$flows = $this->createMock(originalClassName: FlowService::class);
 		$flows->method('save')->willThrowException(new RuntimeException('trigger invalid'));
-		$service = new FlowBindingWrapperService($flows, $this->objects, $this->container, $this->createMock(LoggerInterface::class));
+		$service = new FlowBindingWrapperService($flows, $this->objects, $this->container, $this->createMock(originalClassName: LoggerInterface::class));
 
 		$result = $service->sync(self::APP, self::app([['schema' => 'vergunning', 'event' => 'object.updated']]), 'r');
 
@@ -447,10 +447,10 @@ class FlowBindingWrapperServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testWhatCountsAsAWrapper(): void {
-		$this->assertTrue(FlowBindingWrapperService::isWrapper(['flow' => 'w', 'label' => 'aut-attach-permits-1', 'sourceUuid' => 'b']));
-		$this->assertFalse(FlowBindingWrapperService::isWrapper(['flow' => 'w', 'label' => 'aut-attach-permits-1']));
-		$this->assertFalse(FlowBindingWrapperService::isWrapper(['flow' => 'w', 'label' => 'Archiveer', 'sourceUuid' => 'published-uuid']));
-		$this->assertFalse(FlowBindingWrapperService::isWrapper('aut-attach-permits-1'));
+		$this->assertTrue(condition: FlowBindingWrapperService::isWrapper(['flow' => 'w', 'label' => 'aut-attach-permits-1', 'sourceUuid' => 'b']));
+		$this->assertFalse(condition: FlowBindingWrapperService::isWrapper(['flow' => 'w', 'label' => 'aut-attach-permits-1']));
+		$this->assertFalse(condition: FlowBindingWrapperService::isWrapper(['flow' => 'w', 'label' => 'Archiveer', 'sourceUuid' => 'published-uuid']));
+		$this->assertFalse(condition: FlowBindingWrapperService::isWrapper('aut-attach-permits-1'));
 
 	}//end testWhatCountsAsAWrapper()
 }//end class

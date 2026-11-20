@@ -108,27 +108,27 @@ class FlowBindingsControllerTest extends TestCase {
 			self::APP => ['slug' => 'permits', 'productionVersion' => self::VERSION, 'permissions' => ['owners' => ['user:sanne']], 'flows' => []],
 			self::VERSION => ['register' => 'permits-register'],
 		];
-		$this->objects = $this->createMock(ObjectServiceInterface::class);
+		$this->objects = $this->createMock(originalClassName: ObjectServiceInterface::class);
 		$this->objects->method('find')->willReturnCallback(
 			function (int|string $id): ?ObjectEntityInterface {
 				if (isset($this->stored[$id]) === false) {
 					return null;
 				}
 
-				$entity = $this->createMock(ObjectEntityInterface::class);
+				$entity = $this->createMock(originalClassName: ObjectEntityInterface::class);
 				$entity->method('jsonSerialize')->willReturn($this->stored[$id]);
 				return $entity;
 			}
 		);
 
-		$this->wrappers = $this->createMock(FlowBindingWrapperService::class);
-		$this->permissions = $this->createMock(PermissionResolver::class);
+		$this->wrappers = $this->createMock(originalClassName: FlowBindingWrapperService::class);
+		$this->permissions = $this->createMock(originalClassName: PermissionResolver::class);
 		$this->permissions->method('resolveUserGroups')->willReturn([]);
 		$this->permissions->method('matchesCaller')->willReturnCallback(
 			static fn (array $permissions, IUser $caller, array $userGroups, ?bool $allowAdminBypass, array $roles): bool => $roles === ['owners']
 				&& in_array('user:' . $caller->getUID(), (array)($permissions['owners'] ?? []), true)
 		);
-		$this->session = $this->createMock(IUserSession::class);
+		$this->session = $this->createMock(originalClassName: IUserSession::class);
 
 	}//end setUp()
 
@@ -143,23 +143,23 @@ class FlowBindingsControllerTest extends TestCase {
 	private function controller(?string $uid, ?AppOrganisationGuard $guard=null): FlowBindingsController {
 		$user = null;
 		if ($uid !== null) {
-			$user = $this->createMock(IUser::class);
+			$user = $this->createMock(originalClassName: IUser::class);
 			$user->method('getUID')->willReturn($uid);
 		}
 
 		$this->session->method('getUser')->willReturn($user);
 
 		return new FlowBindingsController(
-			$this->createMock(IRequest::class),
-			$this->wrappers,
-			$this->objects,
-			new CallerContext(
+			request: $this->createMock(originalClassName: IRequest::class),
+			wrappers: $this->wrappers,
+			objectService: $this->objects,
+			caller: new CallerContext(
 				userSession: $this->session,
-				groupManager: $this->createMock(IGroupManager::class),
+				groupManager: $this->createMock(originalClassName: IGroupManager::class),
 				permissionResolver: $this->permissions,
 				organisationGuard: $guard
 			),
-			$this->createMock(LoggerInterface::class)
+			logger: $this->createMock(originalClassName: LoggerInterface::class)
 		);
 
 	}//end controller()
@@ -175,7 +175,7 @@ class FlowBindingsControllerTest extends TestCase {
 			->with(self::APP, $this->stored[self::APP], 'permits-register')
 			->willReturn($answer);
 
-		$response = $this->controller('sanne')->sync(self::APP);
+		$response = $this->controller(uid: 'sanne')->sync(appUuid: self::APP);
 
 		$this->assertSame(expected: Http::STATUS_OK, actual: $response->getStatus());
 		$this->assertSame(expected: $answer, actual: $response->getData());
@@ -193,7 +193,7 @@ class FlowBindingsControllerTest extends TestCase {
 			->with(self::APP, $this->anything(), 'embedded-register')
 			->willReturn(['flows' => [], 'created' => 0, 'removed' => 0, 'failed' => []]);
 
-		$this->controller('sanne')->sync(self::APP);
+		$this->controller(uid: 'sanne')->sync(appUuid: self::APP);
 
 	}//end testAnEmbeddedProductionVersionGivesItsRegister()
 
@@ -205,15 +205,18 @@ class FlowBindingsControllerTest extends TestCase {
 	public function testOnlyAnOwnerOfAKnownAppMaySync(): void {
 		$this->wrappers->expects($this->never())->method('sync');
 
-		$this->assertSame(expected: Http::STATUS_FORBIDDEN, actual: $this->controller('colleague')->sync(self::APP)->getStatus());
+		$this->assertSame(expected: Http::STATUS_FORBIDDEN, actual: $this->controller(uid: 'colleague')->sync(appUuid: self::APP)->getStatus());
 
 		$this->setUp();
 		$this->wrappers->expects($this->never())->method('sync');
-		$this->assertSame(expected: Http::STATUS_NOT_FOUND, actual: $this->controller('sanne')->sync('ffffffff-0000-4000-8000-000000000000')->getStatus());
+		$this->assertSame(
+			expected: Http::STATUS_NOT_FOUND,
+			actual: $this->controller(uid: 'sanne')->sync(appUuid: 'ffffffff-0000-4000-8000-000000000000')->getStatus()
+		);
 
 		$this->setUp();
 		$this->wrappers->expects($this->never())->method('sync');
-		$this->assertSame(expected: Http::STATUS_UNAUTHORIZED, actual: $this->controller(null)->sync(self::APP)->getStatus());
+		$this->assertSame(expected: Http::STATUS_UNAUTHORIZED, actual: $this->controller(uid: null)->sync(appUuid: self::APP)->getStatus());
 
 	}//end testOnlyAnOwnerOfAKnownAppMaySync()
 
@@ -225,7 +228,7 @@ class FlowBindingsControllerTest extends TestCase {
 	public function testAFailingSyncAnswersAnInternalError(): void {
 		$this->wrappers->method('sync')->willThrowException(new RuntimeException('database at db.internal is gone'));
 
-		$response = $this->controller('sanne')->sync(self::APP);
+		$response = $this->controller(uid: 'sanne')->sync(appUuid: self::APP);
 
 		$this->assertSame(expected: Http::STATUS_INTERNAL_SERVER_ERROR, actual: $response->getStatus());
 		$this->assertSame(expected: ['error' => 'internal_error'], actual: $response->getData());
@@ -239,11 +242,11 @@ class FlowBindingsControllerTest extends TestCase {
 	 */
 	public function testAScopedAppOfAnotherOrganisationIsNotFound(): void {
 		$this->stored[self::APP]['organisationScope'] = 'holder';
-		$guard = $this->createMock(AppOrganisationGuard::class);
+		$guard = $this->createMock(originalClassName: AppOrganisationGuard::class);
 		$guard->expects($this->once())->method('canSee')->willReturn(false);
 		$this->wrappers->expects($this->never())->method('sync');
 
-		$response = $this->controller('sanne', $guard)->sync(self::APP);
+		$response = $this->controller(uid: 'sanne', guard: $guard)->sync(appUuid: self::APP);
 
 		$this->assertSame(expected: Http::STATUS_NOT_FOUND, actual: $response->getStatus());
 		$this->assertSame(expected: ['error' => 'not_found'], actual: $response->getData());
@@ -257,18 +260,18 @@ class FlowBindingsControllerTest extends TestCase {
 	 */
 	public function testAScopedAppSyncsOnlyThroughTheGuard(): void {
 		$this->stored[self::APP]['organisationScope'] = 'holder';
-		$guard = $this->createMock(AppOrganisationGuard::class);
+		$guard = $this->createMock(originalClassName: AppOrganisationGuard::class);
 		$guard->method('canSee')->willReturn(true);
 		$this->wrappers->expects($this->once())->method('sync')
 			->with(self::APP, $this->anything(), 'permits-register')
 			->willReturn(['flows' => [], 'created' => 0, 'removed' => 0, 'failed' => []]);
 
-		$this->assertSame(expected: Http::STATUS_OK, actual: $this->controller('sanne', $guard)->sync(self::APP)->getStatus());
+		$this->assertSame(expected: Http::STATUS_OK, actual: $this->controller(uid: 'sanne', guard: $guard)->sync(appUuid: self::APP)->getStatus());
 
 		$this->setUp();
 		$this->stored[self::APP]['organisationScope'] = 'holder';
 		$this->wrappers->expects($this->never())->method('sync');
-		$this->assertSame(expected: Http::STATUS_NOT_FOUND, actual: $this->controller('sanne')->sync(self::APP)->getStatus());
+		$this->assertSame(expected: Http::STATUS_NOT_FOUND, actual: $this->controller(uid: 'sanne')->sync(appUuid: self::APP)->getStatus());
 
 	}//end testAScopedAppSyncsOnlyThroughTheGuard()
 }//end class
