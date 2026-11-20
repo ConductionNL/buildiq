@@ -2920,7 +2920,20 @@ OC.L10N.register(
         "UUID of the mailbox subscription.": "UUID of the mailbox subscription.",
         "UUID of the webhook endpoint.": "UUID of the webhook endpoint.",
         "UUID of the endpoint rule that starts the flow.": "UUID of the endpoint rule that starts the flow.",
-        "UUID of the consumer whose credential integriq checks.": "UUID of the consumer whose credential integriq checks."
+        "UUID of the consumer whose credential integriq checks.": "UUID of the consumer whose credential integriq checks.",
+        "Plans from outside agents": "Plans from outside agents",
+        "Plan id": "Plan id",
+        "Open plan": "Open plan",
+        "For {app}, submitted by {user}.": "For {app}, submitted by {user}.",
+        "Approve plan": "Approve plan",
+        "Reject plan": "Reject plan",
+        "Waiting for a decision": "Waiting for a decision",
+        "The plan is approved. The agent can now make these changes.": "The plan is approved. The agent can now make these changes.",
+        "The plan is rejected. Nothing was changed.": "The plan is rejected. Nothing was changed.",
+        "Only an owner or editor of this app can see and decide its plans.": "Only an owner or editor of this app can see and decide its plans.",
+        "There is no plan with this id.": "There is no plan with this id.",
+        "This plan was already approved or rejected.": "This plan was already approved or rejected.",
+        "The plan could not be loaded or saved. Try again.": "The plan could not be loaded or saved. Try again."
     },
     "nplurals=2; plural=(n != 1);"
 )

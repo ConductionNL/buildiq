@@ -1238,7 +1238,7 @@ class CopilotService implements CopilotServiceInterface {
 		$tool = (string)($step['tool'] ?? '');
 		$args = (array)($step['arguments'] ?? []);
 
-		return ['tool' => $tool, 'arguments' => $args, 'result' => $this->toolProvider->invokeTool($tool, $args)];
+		return ['tool' => $tool, 'arguments' => $args, 'result' => $this->toolProvider->invokeApprovedTool($tool, $args)];
 	}//end invokeStep()
 
 	/**

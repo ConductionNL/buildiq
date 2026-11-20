@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+- Outside AI agents may build apps through the eight builder tools over MCP,
+  under the app's roles and a plan a person approved (openbuild-mcp-adoption).
+  A write over MCP without an approved plan writes nothing and is stored as a
+  pending `agent-plan`; an owner or editor approves or rejects it through
+  `/api/agent-plans/{id}`. The copilot's own plan, preview, execute and
+  rollback are unchanged.
+- A read-only `x-openregister-mcp` dialect (`search` + `get`) on Application,
+  ApplicationVersion, ApplicationTemplate, exportJob and Automation.
+
 ## [0.10.0] - 2026-08-05
 
 ### Added

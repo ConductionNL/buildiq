@@ -8,8 +8,8 @@
 - **acceptance_criteria**:
   - GIVEN an MCP client WHEN it lists the `buildiq` tools THEN the eight builder tools are there
   - GIVEN a caller with only a viewers role WHEN their agent calls any write tool THEN it is refused
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 2: An approved plan before every MCP write
 - **spec_ref**: `openspec/changes/openbuild-mcp-adoption/specs/openbuild-mcp-surface/spec.md#requirement-a-builder-tool-shall-write-only-under-a-plan-a-person-approved`
@@ -18,8 +18,10 @@
   - GIVEN an agent WHEN it submits a plan THEN nothing is written and a person with a write role can approve or reject it in buildiq
   - GIVEN a write call without an approved plan, or one that differs from the approved step WHEN it runs THEN it is refused
   - GIVEN `buildiq.promoteVersion` WHEN called THEN it follows the same rule
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+  - Server side in #1624 (`AgentPlanService`, `AgentPlanController`). The person's side: `src/components/copilot/AgentPlanReview.vue` in the copilot panel ("Plans from outside agents"): open a plan by the id the agent was given, read every step's tool and arguments, approve or reject; the server decides who may. The MCP refusal names where to approve it.
+- [x] Test
+  - Vitest `tests/components/copilot/AgentPlanReview.spec.js` (open, approve, reject, a decided plan, the forbidden, missing and already-decided refusals).
 
 ### Task 3: Confirm `exportJob.githubCredentialId` carries no secret, then declare the dialect on the four base schemas
 - **spec_ref**: `openspec/changes/openbuild-mcp-adoption/specs/buildiq-mcp-surface/spec.md#requirement-a-curated-read-only-dialect-on-five-schemas`
@@ -28,8 +30,8 @@
   - GIVEN `exportJob.githubCredentialId` WHEN inspected THEN it MUST be a credential-broker reference and never an inlined token; if it can inline one, `exportJob` drops to OFF
   - GIVEN the dialect on `Application`, `ApplicationVersion`, `ApplicationTemplate`, `exportJob` WHEN imported THEN `McpAnnotationValidator` MUST accept it, with `search` + `get` only and every filter a real property
   - GIVEN each verb WHEN emitted THEN it MUST carry `scope: 'read'`, `readOnlyHint: true` and useful agent-facing `description` prose
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 4: Declare the dialect on `Automation` and verify the `register.d` union merge preserves it
 - **spec_ref**: `openspec/changes/openbuild-mcp-adoption/specs/buildiq-mcp-surface/spec.md#requirement-a-curated-read-only-dialect-on-five-schemas`
@@ -37,7 +39,7 @@
 - **acceptance_criteria**:
   - GIVEN `Automation` WHEN declared THEN `search` + `get` only, filters `applicationSlug`, `enabled`, `trigger`
   - GIVEN overlays `20-data-registers.json` and `31-export-job-broker-credential.json` re-declare `Application` and `exportJob` WHEN the register is imported THEN the `x-openregister-mcp` block MUST survive the union merge on both — assert against the live imported schema, do not assume
-- [ ] Implement
+- [x] Implement
 - [ ] Test
 
 ### Task 5: Assert the catalog shape
@@ -45,8 +47,8 @@
 - **files**: `tests/Unit/Mcp/`
 - **acceptance_criteria**:
   - GIVEN the `buildiq` catalog WHEN enumerated THEN it holds the eight builder tools and ten derived read tools, and no derived id ends in `.create`, `.update` or `.delete`
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 6: Tests for the approval rule
 - **spec_ref**: `openspec/changes/openbuild-mcp-adoption/specs/ai-copilot/spec.md#requirement-an-approved-plan-executes-atomically-through-the-mcp-handler-layer`
@@ -54,16 +56,16 @@
 - **acceptance_criteria**:
   - GIVEN each write tool WHEN called without an approved plan THEN a test shows it is refused
   - GIVEN the Copilot flow WHEN the suite runs THEN its existing tests pass unchanged in substance
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ### Task 7: Update the CHANGELOG and the docs
 - **spec_ref**: `openspec/changes/openbuild-mcp-adoption/specs/openbuild-mcp-surface/spec.md#requirement-a-builder-tool-shall-write-only-under-a-plan-a-person-approved`
 - **files**: `CHANGELOG.md`, `docs/`
 - **acceptance_criteria**:
   - GIVEN the docs WHEN this change lands THEN they say outside agents build through the eight tools, under the app's roles and an approved plan
-- [ ] Implement
-- [ ] Test
+- [x] Implement
+- [x] Test
 
 ## Verification
 
@@ -78,5 +80,5 @@
 - PHP verified the CI way in a container, against a baseline measured first — zero new failures
 - Scoped PHPCS clean on every touched `lib/` file; `python3 -m json.tool` after every JSON edit
 - `@spec` tags point at `openspec/specs/...`, never an archived change path (gate-46)
-- No new user-facing strings — i18n N/A
+- New user-facing strings (the plan review) in `l10n/en` and `l10n/nl`, `.json` and `.js`
 - `openspec validate` passes
