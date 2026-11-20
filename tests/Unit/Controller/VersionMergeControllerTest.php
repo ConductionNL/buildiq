@@ -36,6 +36,7 @@ use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
@@ -58,6 +59,7 @@ use Psr\Log\NullLogger;
  * @uses   \OCA\Buildiq\Service\VersionMergeService
  * @uses   \OCA\Buildiq\Service\ApplicationVersionService
  * @uses   \OCA\Buildiq\Service\RegisterStore
+ * @uses   \OCA\Buildiq\Service\PageCodeGuard
  * @uses   \OCA\Buildiq\Support\ObjectRecord
  *
  * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-merge-only-writes-a-draft-that-has-not-moved-req-bqgb-004
@@ -137,12 +139,13 @@ final class VersionMergeControllerTest extends TestCase {
 	/**
 	 * The controller for a signed-in user, with the request carrying $params.
 	 *
-	 * @param string              $uid    The caller.
-	 * @param array<string,mixed> $params The request parameters.
+	 * @param string              $uid       The caller.
+	 * @param array<string,mixed> $params    The request parameters.
+	 * @param bool|null           $allowCode The instance setting "Allow code on pages"; null for no app config.
 	 *
 	 * @return ApplicationVersionsController
 	 */
-	private function controller(string $uid, array $params): ApplicationVersionsController {
+	private function controller(string $uid, array $params, ?bool $allowCode = null): ApplicationVersionsController {
 		$request = $this->createMock(IRequest::class);
 		$request->method('getParams')->willReturn($params);
 		$request->method('getParam')->willReturnCallback(static fn (string $key, mixed $default = null): mixed => ($params[$key] ?? $default));
@@ -175,9 +178,29 @@ final class VersionMergeControllerTest extends TestCase {
 			userSession: $session,
 			groupManager: $groups,
 			versionService: $versions,
-			merges: new VersionMergeRunner(merger: new VersionMergeService(), schemas: $writer, branches: $branches, objects: $objects)
+			merges: new VersionMergeRunner(merger: new VersionMergeService(), schemas: $writer, branches: $branches, objects: $objects),
+			appConfig: $this->appConfig(allowCode: $allowCode)
 		);
 	}//end controller()
+
+	/**
+	 * An app config answering the setting "Allow code on pages", or null.
+	 *
+	 * @param bool|null $allowCode The setting; null for no app config.
+	 *
+	 * @return IAppConfig|null
+	 */
+	private function appConfig(?bool $allowCode): ?IAppConfig {
+		if ($allowCode === null) {
+			return null;
+		}
+
+		$config = $this->createMock(IAppConfig::class);
+		$config->method('getValueBool')->willReturnCallback(
+			static fn (string $app, string $key, bool $default = false): bool => ($app === 'buildiq' && $key === 'allow_page_code') ? $allowCode : $default
+		);
+		return $config;
+	}//end appConfig()
 
 	/**
 	 * An object service answering the application and its versions, recording saves.
@@ -193,7 +216,7 @@ final class VersionMergeControllerTest extends TestCase {
 						'id' => 'app-1',
 						'slug' => 'vergunningen',
 						'productionVersion' => 'v-prod',
-						'permissions' => ['owners' => ['user:olga'], 'viewers' => ['user:vic']],
+						'permissions' => ['owners' => ['user:olga'], 'editors' => ['user:eddie'], 'viewers' => ['user:vic']],
 					]];
 				}
 
@@ -394,4 +417,112 @@ final class VersionMergeControllerTest extends TestCase {
 		$this->assertSame(409, $taken->getStatus());
 		$this->assertSame('name_taken', $taken->getData()['error']);
 	}//end testAnOwnerStartsABranchAndATakenNameIs409()
+	/**
+	 * A merge that brings code into the target is refused for an editor, and for
+	 * an owner while code is switched off; an owner with code allowed merges it.
+	 *
+	 * @return void
+	 */
+	public function testAMergeThatBringsCodeFollowsTheCodeWriteRule(): void {
+		$this->versions[1]['manifest']['pages'][1]['config'] = ['code' => 'return 1;'];
+		$hash = $this->previewHash();
+
+		$editor = $this->controller(uid: 'eddie', params: ['targetHash' => $hash], allowCode: true)->merge(appSlug: 'vergunningen', source: 'permit-fees', target: 'development');
+		$this->assertSame(403, $editor->getStatus());
+		$this->assertSame('buildiq.code.owners_only', $editor->getData()['code']);
+		$this->assertSame('Only app owners can add code to a page.', $editor->getData()['message']);
+
+		$switchedOff = $this->controller(uid: 'olga', params: ['targetHash' => $hash], allowCode: false)->merge(appSlug: 'vergunningen', source: 'permit-fees', target: 'development');
+		$this->assertSame(403, $switchedOff->getStatus());
+		$this->assertSame('buildiq.code.disabled', $switchedOff->getData()['code']);
+
+		$noConfig = $this->controller(uid: 'olga', params: ['targetHash' => $hash])->merge(appSlug: 'vergunningen', source: 'permit-fees', target: 'development');
+		$this->assertSame(403, $noConfig->getStatus());
+		$this->assertSame([], $this->saved);
+
+		$owner = $this->controller(uid: 'olga', params: ['targetHash' => $hash, 'choices' => []], allowCode: true)->merge(appSlug: 'vergunningen', source: 'permit-fees', target: 'development');
+		$this->assertSame(200, $owner->getStatus());
+		$this->assertSame(['code' => 'return 1;'], $this->saved[0]['manifest']['pages'][1]['config']);
+	}//end testAMergeThatBringsCodeFollowsTheCodeWriteRule()
+
+	/**
+	 * A preview writes nothing, so an editor may preview a merge that brings code.
+	 *
+	 * @return void
+	 */
+	public function testAnEditorMayPreviewAMergeThatBringsCode(): void {
+		$this->versions[1]['manifest']['pages'][1]['config'] = ['code' => 'return 1;'];
+
+		$preview = $this->controller(uid: 'eddie', params: ['preview' => true])->merge(appSlug: 'vergunningen', source: 'permit-fees', target: 'development');
+
+		$this->assertSame(200, $preview->getStatus());
+		$this->assertSame([], $this->saved);
+	}//end testAnEditorMayPreviewAMergeThatBringsCode()
+
+	/**
+	 * An editor merges a branch whose code is the same as the target's.
+	 *
+	 * @return void
+	 */
+	public function testAnEditorMergesABranchThatLeavesCodeAlone(): void {
+		$hash = $this->previewHash();
+
+		$response = $this->controller(uid: 'eddie', params: ['targetHash' => $hash, 'choices' => []])->merge(appSlug: 'vergunningen', source: 'permit-fees', target: 'development');
+
+		$this->assertSame(200, $response->getStatus());
+		$this->assertCount(1, $this->saved);
+	}//end testAnEditorMergesABranchThatLeavesCodeAlone()
+
+	/**
+	 * An editor's version save that adds an expression is refused and writes nothing.
+	 *
+	 * @return void
+	 */
+	public function testAnEditorCannotAddCodeThroughAVersionSave(): void {
+		$manifest = $this->versions[0]['manifest'];
+		$manifest['pages'][0]['config']['columns'] = [['key' => 'total', 'expression' => 'row.a + row.b']];
+
+		$response = $this->controller(uid: 'eddie', params: ['manifest' => $manifest], allowCode: true)->update(appSlug: 'vergunningen', versionSlug: 'development');
+
+		$this->assertSame(403, $response->getStatus());
+		$this->assertSame('buildiq.code.owners_only', $response->getData()['code']);
+		$this->assertSame([], $this->saved);
+	}//end testAnEditorCannotAddCodeThroughAVersionSave()
+
+	/**
+	 * An owner cannot save code into a version while code on pages is switched off.
+	 *
+	 * @return void
+	 */
+	public function testAnOwnerCannotAddCodeThroughAVersionSaveWhileSwitchedOff(): void {
+		$manifest = $this->versions[0]['manifest'];
+		$manifest['pages'][0]['config']['code'] = 'return 1;';
+
+		$response = $this->controller(uid: 'olga', params: ['manifest' => $manifest], allowCode: false)->update(appSlug: 'vergunningen', versionSlug: 'development');
+
+		$this->assertSame(403, $response->getStatus());
+		$this->assertSame('buildiq.code.disabled', $response->getData()['code']);
+		$this->assertSame([], $this->saved);
+	}//end testAnOwnerCannotAddCodeThroughAVersionSaveWhileSwitchedOff()
+
+	/**
+	 * An editor's version save that leaves the code alone is stored; an owner with code allowed stores code.
+	 *
+	 * @return void
+	 */
+	public function testVersionSavesThatMayWriteAreStored(): void {
+		$this->versions[0]['manifest']['pages'][0]['config']['code'] = 'return 1;';
+		$plain = $this->versions[0]['manifest'];
+		$plain['title'] = 'Permits';
+
+		$editor = $this->controller(uid: 'eddie', params: ['manifest' => $plain])->update(appSlug: 'vergunningen', versionSlug: 'development');
+		$this->assertSame(200, $editor->getStatus());
+		$this->assertSame('Permits', $this->saved[0]['manifest']['title']);
+
+		$coded = $plain;
+		$coded['pages'][0]['config']['code'] = 'return 2;';
+		$owner = $this->controller(uid: 'olga', params: ['manifest' => $coded], allowCode: true)->update(appSlug: 'vergunningen', versionSlug: 'development');
+		$this->assertSame(200, $owner->getStatus());
+		$this->assertSame('return 2;', $this->saved[1]['manifest']['pages'][0]['config']['code']);
+	}//end testVersionSavesThatMayWriteAreStored()
 }//end class

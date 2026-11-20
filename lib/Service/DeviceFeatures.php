@@ -5,7 +5,8 @@
  *
  * The browser devices a built app uses, read from its manifest: the
  * microphone for an `audio` form field, the position for a `location` form
- * field or a map page that shows the user's position. The page that serves
+ * field or a map page that shows the user's position, and the camera for an
+ * index page that scans or a `scan` field (pages-qr-and-barcodes REQ-BQQR-004). The page that serves
  * the app allows `'self'` for exactly those features and leaves Nextcloud's
  * default policy for every other one.
  *
@@ -51,7 +52,7 @@ class DeviceFeatures implements DeviceFeaturesInterface {
 	public const GEOLOCATION = 'geolocation';
 
 	/**
-	 * The camera, declared by other changes through the same list.
+	 * The camera, for an index page that finds records by scanning or a scan form field (REQ-BQQR-004).
 	 */
 	public const CAMERA = 'camera';
 
@@ -158,12 +159,57 @@ class DeviceFeatures implements DeviceFeaturesInterface {
 			$features[] = self::GEOLOCATION;
 		}
 
+		if ($this->scans(page: $page, config: $config) === true) {
+			$features[] = self::CAMERA;
+		}
+
 		foreach ((array) ($config['fields'] ?? []) as $field) {
 			$features[] = $this->featureOfField(field: $field);
 		}
 
 		return array_values(array_filter($features, 'is_string'));
 	}//end featuresOfPage()
+
+	/**
+	 * Whether a page scans a code: an index page with `config.scan`, or a scan field anywhere in its config.
+	 *
+	 * @param array<string,mixed> $page   The page entry.
+	 * @param array<mixed>        $config The page's config.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/pages-qr-and-barcodes/tasks.md#task-T05
+	 */
+	private function scans(array $page, array $config): bool {
+		if (($page['type'] ?? '') === 'index' && is_array($config['scan'] ?? null) === true && $config['scan'] !== []) {
+			return true;
+		}
+
+		return $this->hasScanField(node: $config);
+	}//end scans()
+
+	/**
+	 * Whether a config node holds a field of type `scan`, at any depth.
+	 *
+	 * @param array<mixed> $node The config node.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/pages-qr-and-barcodes/tasks.md#task-T05
+	 */
+	private function hasScanField(array $node): bool {
+		if (($node['type'] ?? null) === 'scan' && (array_key_exists('key', $node) === true || array_key_exists('name', $node) === true)) {
+			return true;
+		}
+
+		foreach ($node as $value) {
+			if (is_array($value) === true && $this->hasScanField(node: $value) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end hasScanField()
 
 	/**
 	 * The feature one form field uses, or null for none.

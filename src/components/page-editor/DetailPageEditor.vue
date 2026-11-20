@@ -5,6 +5,8 @@
   - supported), `sidebarProps.tabs` list. Implements REQ-OBPD-005.
   - Related items (`relatedCollections`, `relationLinks`) and the sidebar's
   - Files choice: REQ-BQRI-001..003 (pages-detail-related-items).
+  - Widgets (`config.widgets`), one of which may be a code component:
+  - REQ-BQCC-001 (pages-custom-code).
   -->
 <template>
 	<div class="detail-page-editor">
@@ -137,6 +139,18 @@
 		</fieldset>
 
 		<fieldset class="detail-page-editor__fieldset">
+			<legend>{{ t('buildiq', 'Widgets') }}</legend>
+			<p class="detail-page-editor__note">
+				{{ t('buildiq', 'Widgets shown with the open record. A custom widget can be written by hand.') }}
+			</p>
+			<WidgetBuilder
+				:modelValue="config.widgets || []"
+				withoutConnectors
+				@update:modelValue="updateList('widgets', $event)" />
+			<InlineFieldMark :error="markFor('widgets')" />
+		</fieldset>
+
+		<fieldset class="detail-page-editor__fieldset">
 			<legend>{{ t('buildiq', 'Record history') }}</legend>
 			<label class="detail-page-editor__inline">
 				<input
@@ -173,6 +187,14 @@
 				:modelValue="(config.sidebarProps && config.sidebarProps.tabs) || []"
 				@update:modelValue="updateSidebarPropsTabs($event)" />
 			<InlineFieldMark :error="markFor('sidebarProps')" />
+		</fieldset>
+
+		<fieldset class="detail-page-editor__fieldset" data-testid="detail-page-codes">
+			<legend>{{ t('buildiq', 'Codes') }}</legend>
+			<CodeWidgetBuilder
+				:modelValue="config.widgets || []"
+				@update:modelValue="updateWidgets($event)" />
+			<InlineFieldMark :error="markFor('widgets')" />
 		</fieldset>
 
 		<fieldset class="detail-page-editor__fieldset detail-page-editor__buttons">
@@ -278,6 +300,7 @@
 <script>
 import ActionBuilder from './fields/ActionBuilder.vue'
 import AppliesToPanel from './fields/AppliesToPanel.vue'
+import CodeWidgetBuilder from './fields/CodeWidgetBuilder.vue'
 import InlineFieldMark from './fields/InlineFieldMark.vue'
 import RegisterSchemaFields from './fields/RegisterSchemaFields.vue'
 import RegistrationFormList from './fields/RegistrationFormList.vue'
@@ -285,6 +308,7 @@ import RelatedCollectionBuilder from './fields/RelatedCollectionBuilder.vue'
 import RelationLinkBuilder from './fields/RelationLinkBuilder.vue'
 import ScreenOverrideList from './fields/ScreenOverrideList.vue'
 import SidebarTabBuilder from './fields/SidebarTabBuilder.vue'
+import WidgetBuilder from './fields/WidgetBuilder.vue'
 import WriteActionSwitches from './fields/WriteActionSwitches.vue'
 import { useEditorRegisterPicker } from '../../composables/useEditorRegisterPicker.js'
 import {
@@ -334,6 +358,7 @@ export default {
 	components: {
 		ActionBuilder,
 		AppliesToPanel,
+		CodeWidgetBuilder,
 		InlineFieldMark,
 		RegisterSchemaFields,
 		RegistrationFormList,
@@ -341,6 +366,7 @@ export default {
 		RelationLinkBuilder,
 		ScreenOverrideList,
 		SidebarTabBuilder,
+		WidgetBuilder,
 		WriteActionSwitches,
 	},
 
@@ -408,6 +434,7 @@ export default {
 				'sidebarProps',
 				'relatedCollections',
 				'relationLinks',
+				'widgets',
 				'headerActions',
 				'lifecycleActions',
 			]
@@ -531,6 +558,22 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Write the page's widget list; an empty list deletes `config.widgets`.
+		 *
+		 * @param {Array<object>} widgets - the whole widget list.
+		 * @spec openspec/changes/pages-qr-and-barcodes/specs/page-codes/spec.md#requirement-detail-pages-can-show-a-code-req-bqqr-003
+		 */
+		updateWidgets(widgets) {
+			const next = { ...this.config }
+			if (Array.isArray(widgets) && widgets.length > 0) {
+				next.widgets = widgets
+			} else {
+				delete next.widgets
+			}
+			this.$emit('update:config', next)
+		},
+
 		/**
 		 * Write one key on the page's `config` block and emit the whole block
 		 * back to PageDesigner. Only the named key is touched, so config keys

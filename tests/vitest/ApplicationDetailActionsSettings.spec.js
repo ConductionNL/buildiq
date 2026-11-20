@@ -84,6 +84,8 @@ beforeEach(() => {
 	}
 	axiosMock.get.mockResolvedValue({ data: [] })
 	axiosMock.put.mockImplementation(async (url, body) => ({ data: { results: body } }))
+	// setFlows asks the server to wire the "Run on" entries after the PUT.
+	axiosMock.post.mockResolvedValue({ data: {} })
 })
 
 describe('owner-only settings patches', () => {
