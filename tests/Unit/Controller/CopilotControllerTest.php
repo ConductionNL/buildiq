@@ -26,6 +26,7 @@ namespace OCA\Buildiq\Tests\Unit\Controller;
 
 use OCA\Buildiq\Controller\CopilotController;
 use OCA\Buildiq\Exception\CopilotException;
+use OCA\Buildiq\Service\Copilot\CopilotAssistService;
 use OCA\Buildiq\Service\CopilotService;
 use OCP\AppFramework\Http;
 use OCP\IRequest;
@@ -62,6 +63,11 @@ class CopilotControllerTest extends TestCase {
 	private IUserSession&MockObject $userSession;
 
 	/**
+	 * @var CopilotAssistService&MockObject
+	 */
+	private CopilotAssistService&MockObject $assistService;
+
+	/**
 	 * Controller under test.
 	 */
 	private CopilotController $controller;
@@ -78,12 +84,14 @@ class CopilotControllerTest extends TestCase {
 		$this->logger = $this->createMock(LoggerInterface::class);
 		$this->copilotService = $this->createMock(CopilotService::class);
 		$this->userSession = $this->createMock(IUserSession::class);
+		$this->assistService = $this->createMock(CopilotAssistService::class);
 
 		$this->controller = new CopilotController(
 			request: $this->request,
 			logger: $this->logger,
 			copilotService: $this->copilotService,
 			userSession: $this->userSession,
+			assistService: $this->assistService,
 		);
 	}//end setUp()
 
@@ -111,7 +119,7 @@ class CopilotControllerTest extends TestCase {
 	 */
 	public function testEveryActionHasNoAdminRequiredAttribute(): void {
 		$reflection = new ReflectionClass(CopilotController::class);
-		foreach (['health', 'plan', 'execute', 'discard'] as $method) {
+		foreach (['health', 'plan', 'execute', 'discard', 'assist'] as $method) {
 			$attributes = $reflection->getMethod($method)->getAttributes();
 			$names = array_map(static fn ($a) => $a->getName(), $attributes);
 			self::assertContains(
@@ -251,6 +259,43 @@ class CopilotControllerTest extends TestCase {
 		$response = $this->controller->plan();
 		self::assertSame(Http::STATUS_OK, $response->getStatus());
 	}//end testPlanPassesAgentIdThrough()
+
+	/**
+	 * plan() passes a picked document id through, and a non-numeric one as id 0 (a file nobody can read).
+	 *
+	 * @return void
+	 */
+	public function testPlanPassesTheDocumentFileIdThrough(): void {
+		$this->wireUser(uid: 'alice');
+		$calls = [];
+		$this->copilotService->method('plan')->willReturnCallback(
+			static function (string $brief, ?string $appSlug, string $userId, ?string $agentId = null, ?string $versionSlug = null, ?int $documentFileId = null) use (&$calls): array {
+				$calls[] = $documentFileId;
+				return ['summary' => 'x', 'steps' => [], 'manifests' => []];
+			}
+		);
+
+		foreach (['42' => 42, '' => null, 'abc' => 0] as $raw => $expected) {
+			$request = $this->createMock(IRequest::class);
+			$request->method('getParam')->willReturnCallback(
+				static fn (string $name, mixed $default): mixed => match ($name) {
+					'brief' => '',
+					'documentFileId' => ($raw === '' ? null : (string)$raw),
+					default => $default,
+				}
+			);
+			$controller = new CopilotController(
+				request: $request,
+				logger: $this->logger,
+				copilotService: $this->copilotService,
+				userSession: $this->userSession,
+				assistService: $this->assistService,
+			);
+			self::assertSame(Http::STATUS_OK, $controller->plan()->getStatus());
+		}
+
+		self::assertSame([42, null, 0], $calls);
+	}//end testPlanPassesTheDocumentFileIdThrough()
 
 	// -------------------------------------------------------------------
 	// execute()
@@ -468,4 +513,168 @@ class CopilotControllerTest extends TestCase {
 		self::assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
 		self::assertSame('not_found', $response->getData()['error']);
 	}//end testDiscardMapsExceptionStatuses()
+
+	// -------------------------------------------------------------------
+	// assist()
+	// -------------------------------------------------------------------
+
+	/**
+	 * The assist request body, as getParam reads it.
+	 *
+	 * @param array<string, mixed> $context The context names.
+	 *
+	 * @return void
+	 */
+	private function wireAssistBody(array $context = []): void {
+		$this->request->method('getParam')->willReturnMap(
+			[
+				['context', [], $context],
+				['target', '', 'field-mapping'],
+				['mode', '', 'write'],
+				['request', '', 'copy the title'],
+				['current', '', ''],
+				['appSlug', '', 'permits'],
+			]
+		);
+	}//end wireAssistBody()
+
+	/**
+	 * assist() is rate limited at 60 an hour.
+	 *
+	 * @return void
+	 */
+	public function testAssistIsRateLimitedAt60AnHour(): void {
+		$attributes = (new ReflectionClass(CopilotController::class))->getMethod('assist')
+			->getAttributes('OCP\\AppFramework\\Http\\Attribute\\UserRateLimit');
+		self::assertCount(1, $attributes);
+		self::assertSame(['limit' => 60, 'period' => 3600], $attributes[0]->getArguments());
+	}//end testAssistIsRateLimitedAt60AnHour()
+
+	/**
+	 * assist() answers 401 without a user and never reaches the service.
+	 *
+	 * @return void
+	 */
+	public function testAssistReturns401WhenUnauthenticated(): void {
+		$this->userSession->method('getUser')->willReturn(null);
+		$this->assistService->expects($this->never())->method('assist');
+
+		self::assertSame(Http::STATUS_UNAUTHORIZED, $this->controller->assist()->getStatus());
+	}//end testAssistReturns401WhenUnauthenticated()
+
+	/**
+	 * assist() hands the body and the caller to the service and returns its answer, writing nothing.
+	 *
+	 * @return void
+	 */
+	public function testAssistPassesTheBodyThroughAndWritesNothing(): void {
+		$this->wireUser(uid: 'alice');
+		$this->wireAssistBody(context: ['targetSchema' => 'permit']);
+		$this->assistService->expects($this->once())->method('assist')
+			->with('field-mapping', 'write', 'copy the title', '', 'permits', ['targetSchema' => 'permit'], 'alice')
+			->willReturn(['mode' => 'write', 'value' => '{}', 'explanation' => 'Copies the title.']);
+		$this->copilotService->expects($this->never())->method('execute');
+		$this->copilotService->expects($this->never())->method('plan');
+
+		$response = $this->controller->assist();
+
+		self::assertSame(Http::STATUS_OK, $response->getStatus());
+		self::assertSame(['mode' => 'write', 'value' => '{}', 'explanation' => 'Copies the title.'], $response->getData());
+	}//end testAssistPassesTheBodyThroughAndWritesNothing()
+
+	/**
+	 * A context that is not an object reaches the service as no context.
+	 *
+	 * @return void
+	 */
+	public function testAssistDropsANonArrayContext(): void {
+		$this->wireUser(uid: 'alice');
+		$request = $this->createMock(IRequest::class);
+		$request->method('getParam')->willReturnCallback(
+			static fn (string $name, mixed $default): mixed => ($name === 'context' ? 'columns' : $default)
+		);
+		$controller = new CopilotController(
+			request: $request,
+			logger: $this->logger,
+			copilotService: $this->copilotService,
+			userSession: $this->userSession,
+			assistService: $this->assistService,
+		);
+		$this->assistService->expects($this->once())->method('assist')
+			->with('', '', '', '', '', [], 'alice')
+			->willThrowException(new CopilotException(errorCode: 'invalid_arguments', message: 'target must be one of', httpStatus: 422));
+
+		self::assertSame(Http::STATUS_UNPROCESSABLE_ENTITY, $controller->assist()->getStatus());
+	}//end testAssistDropsANonArrayContext()
+
+	/**
+	 * A viewer gets the 403 envelope from the write-role check.
+	 *
+	 * @return void
+	 */
+	public function testAssistReturns403ForAViewer(): void {
+		$this->wireUser(uid: 'bob');
+		$this->wireAssistBody();
+		$this->assistService->method('assist')->willThrowException(
+			new CopilotException(errorCode: 'forbidden', message: "You do not have owner or editor access to application 'permits'.", httpStatus: 403)
+		);
+
+		$response = $this->controller->assist();
+
+		self::assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+		self::assertSame('forbidden', $response->getData()['error']);
+	}//end testAssistReturns403ForAViewer()
+
+	/**
+	 * A schema slug outside the app is the 404 envelope.
+	 *
+	 * @return void
+	 */
+	public function testAssistReturns404ForAForeignSchema(): void {
+		$this->wireUser(uid: 'alice');
+		$this->wireAssistBody(context: ['targetSchema' => 'salary', 'register' => 'openbuild-hr-main']);
+		$this->assistService->method('assist')->willThrowException(
+			new CopilotException(errorCode: 'not_found', message: "This app has no schema 'salary'.", httpStatus: 404)
+		);
+
+		$response = $this->controller->assist();
+
+		self::assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+		self::assertSame("This app has no schema 'salary'.", $response->getData()['message']);
+	}//end testAssistReturns404ForAForeignSchema()
+
+	/**
+	 * A twice-refused answer is the 422 assist_invalid envelope with the checker's message.
+	 *
+	 * @return void
+	 */
+	public function testAssistReturns422AssistInvalid(): void {
+		$this->wireUser(uid: 'alice');
+		$this->wireAssistBody();
+		$this->assistService->method('assist')->willThrowException(
+			new CopilotException(errorCode: 'assist_invalid', message: 'The target schema has no property ownerEmail.', httpStatus: 422)
+		);
+
+		$response = $this->controller->assist();
+
+		self::assertSame(Http::STATUS_UNPROCESSABLE_ENTITY, $response->getStatus());
+		self::assertSame(['error' => 'assist_invalid', 'message' => 'The target schema has no property ownerEmail.'], $response->getData());
+	}//end testAssistReturns422AssistInvalid()
+
+	/**
+	 * An unmodelled failure is a generic 500 without its detail.
+	 *
+	 * @return void
+	 */
+	public function testAssistReturns500OnAnUnhandledException(): void {
+		$this->wireUser(uid: 'alice');
+		$this->wireAssistBody();
+		$this->assistService->method('assist')->willThrowException(new \RuntimeException('db gone'));
+
+		$response = $this->controller->assist();
+
+		self::assertSame(Http::STATUS_INTERNAL_SERVER_ERROR, $response->getStatus());
+		self::assertSame('internal_error', $response->getData()['error']);
+		self::assertStringNotContainsString('db gone', (string)$response->getData()['message']);
+	}//end testAssistReturns500OnAnUnhandledException()
 }//end class

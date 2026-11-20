@@ -242,3 +242,33 @@ describe('onTemplateSaved', () => {
 		expect(wrapper.vm.toast).toBe(toast)
 	})
 })
+
+describe('setInstallable (pages-installable-offline-and-mobile T02)', () => {
+	it('PUTs the short name and theme colour for an owner', async () => {
+		const wrapper = mountActions('owner')
+		await flushPromises()
+		await wrapper.vm.setInstallable({ shortName: 'Permits', themeColor: '#1f6feb' })
+		expect(axiosMock.put).toHaveBeenCalledTimes(1)
+		const [url, body] = axiosMock.put.mock.calls[0]
+		expect(url).toBe(OBJECTS_URL)
+		expect(body).toEqual({ ...application, shortName: 'Permits', themeColor: '#1f6feb' })
+	})
+
+	it('writes nothing when the values did not change, or for an editor', async () => {
+		const owner = mountActions('owner')
+		await flushPromises()
+		await owner.vm.setInstallable({ shortName: '', themeColor: '' })
+		const editor = mountActions('editor')
+		await flushPromises()
+		await editor.vm.setInstallable({ shortName: 'Permits', themeColor: '' })
+		expect(axiosMock.put).not.toHaveBeenCalled()
+	})
+
+	it('reports a failed save', async () => {
+		axiosMock.put.mockRejectedValue(new Error('boom'))
+		const wrapper = mountActions('owner')
+		await flushPromises()
+		await wrapper.vm.setInstallable({ shortName: 'Permits', themeColor: '' })
+		expect(wrapper.vm.error).toBe('Failed to save settings: boom')
+	})
+})

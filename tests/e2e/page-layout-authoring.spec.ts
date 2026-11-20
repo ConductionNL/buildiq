@@ -25,6 +25,7 @@
  * @e2e screen-override-layers/requirement-an-override-records-the-base-it-was-cut-against-req-obso-002/an-override-without-a-base-is-refused
  */
 import { expect, test } from '@playwright/test'
+import { anonymousContext } from './support/anonymous.ts'
 
 const API = '/index.php/apps/buildiq/api/page-layouts'
 const HEADERS = { 'OCS-APIRequest': 'true' }
@@ -57,9 +58,7 @@ test.describe('page layout authoring', () => {
 		// The least privileged principal that should be refused. A layout
 		// decides what everyone using a case type sees, so an anonymous write
 		// must never reach the rules, let alone the store.
-		const anonymous = await playwright.request.newContext({
-			baseURL: process.env.BASE_URL ?? process.env.NC_BASE_URL,
-		})
+		const anonymous = await anonymousContext(playwright)
 
 		const response = await anonymous.put(API, {
 			headers: HEADERS,

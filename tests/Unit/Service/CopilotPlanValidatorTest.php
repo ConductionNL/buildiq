@@ -285,4 +285,95 @@ class CopilotPlanValidatorTest extends TestCase {
 			$messages
 		);
 	}//end testEveryViolationInOrder()
+
+	/**
+	 * A two-step plan: a page at index 0 and a menu item at index 1, plus these stories.
+	 *
+	 * @param mixed $stories The stories.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function planWithStories(mixed $stories): array {
+		return [
+			'summary' => 'Permits',
+			'stories' => $stories,
+			'steps' => [
+				['tool' => 'buildiq.upsertPage', 'arguments' => ['appSlug' => 'permits', 'pageId' => 'mine', 'title' => 'Mijn aanvragen', 'type' => 'index', 'route' => '/mine']],
+				['tool' => 'buildiq.upsertMenuItem', 'arguments' => []],
+			],
+		];
+	}//end planWithStories()
+
+	/**
+	 * The story messages only, without the step messages of the shared plan.
+	 *
+	 * @param array<string, mixed> $plan The plan.
+	 *
+	 * @return string[]
+	 */
+	private function storyMessages(array $plan): array {
+		$descriptors = array_merge($this->descriptors, [['id' => 'buildiq.upsertMenuItem']]);
+		return array_values(
+			array_filter(
+				array_column($this->validator->validate(plan: $plan, toolDescriptors: $descriptors), 'message'),
+				static fn (string $message): bool => str_starts_with($message, 'Story') || str_starts_with($message, 'Plan "stories"')
+			)
+		);
+	}//end storyMessages()
+
+	/**
+	 * A story with a role, a goal and a page it is served by passes; so does a plan without stories.
+	 *
+	 * @return void
+	 */
+	public function testAValidStoryPasses(): void {
+		$story = ['id' => 's1', 'role' => 'applicant', 'goal' => 'track my permit', 'benefit' => 'I know where it stands', 'servedBy' => [0]];
+
+		$this->assertSame([], $this->storyMessages($this->planWithStories([$story])));
+		$plan = $this->planWithStories([]);
+		unset($plan['stories']);
+		$this->assertSame([], $this->storyMessages($plan));
+	}//end testAValidStoryPasses()
+
+	/**
+	 * A story without a goal, or with a blank role, is refused.
+	 *
+	 * @return void
+	 */
+	public function testAStoryWithoutAGoalIsRefused(): void {
+		$this->assertSame(
+			['Story 0: has no goal.', 'Story 1: has no role.'],
+			$this->storyMessages($this->planWithStories([['role' => 'applicant', 'servedBy' => [0]], ['role' => '  ', 'goal' => 'apply']]))
+		);
+	}//end testAStoryWithoutAGoalIsRefused()
+
+	/**
+	 * servedBy pointing at a menu step, a missing step or a non-integer is refused.
+	 *
+	 * @return void
+	 */
+	public function testServedByMustPointAtASchemaOrPageStep(): void {
+		$this->assertSame(
+			[
+				'Story 0: servedBy 1 does not point at a schema or page step.',
+				'Story 0: servedBy 5 does not point at a schema or page step.',
+				'Story 0: servedBy "0" does not point at a schema or page step.',
+			],
+			$this->storyMessages($this->planWithStories([['role' => 'applicant', 'goal' => 'apply', 'servedBy' => [1, 5, '0']]]))
+		);
+	}//end testServedByMustPointAtASchemaOrPageStep()
+
+	/**
+	 * Stories that are not a list, a story that is not an object, and bad field types are refused.
+	 *
+	 * @return void
+	 */
+	public function testMalformedStoriesAreRefused(): void {
+		$this->assertSame(['Plan "stories" must be a list.'], $this->storyMessages($this->planWithStories('none')));
+		$this->assertSame(['Plan "stories" must be a list.'], $this->storyMessages($this->planWithStories(['a' => []])));
+		$this->assertSame(
+			['Story 0: is not an object.', 'Story 1: benefit must be a string.', 'Story 1: servedBy must be a list of step indexes.'],
+			$this->storyMessages($this->planWithStories(['x', ['role' => 'r', 'goal' => 'g', 'benefit' => 3, 'servedBy' => 0]]))
+		);
+	}//end testMalformedStoriesAreRefused()
 }//end class

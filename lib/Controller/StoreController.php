@@ -9,7 +9,7 @@
  * HTTP surface for the remote template "store" (buildiq-remote-template-
  * store):
  *   - GET  /api/store/templates            — search remote templates (cards).
- *   - POST /api/store/templates/{slug}/install — resolve the remote template by
+ *   - POST /api/store/templates/{templateSlug}/install — resolve the remote template by
  *            slug and install it LOCALLY by cloning through the shared
  *            ApplicationsController::installFromTemplateArray seam (so an
  *            installed store app is a normal local Application + per-app
@@ -318,7 +318,7 @@ class StoreController extends Controller {
 	 * resolved by the inherited helper; this action owns only the local clone
 	 * and its response.
 	 *
-	 * @param string $slug The remote template slug to install.
+	 * @param string $templateSlug The remote template slug to install. Not `slug`: the JSON body's `slug` (the new app's) would override it.
 	 *
 	 * @return JSONResponse 201 with the new app; 400/401/404/5xx on failure.
 	 *
@@ -331,13 +331,13 @@ class StoreController extends Controller {
 	 *   an existing one.
 	 */
 	#[NoAdminRequired]
-	public function install(string $slug): JSONResponse {
+	public function install(string $templateSlug): JSONResponse {
 		$user = $this->userSession->getUser();
 		if ($user === null) {
 			return $this->storeError(code: 'unauthenticated', status: Http::STATUS_UNAUTHORIZED);
 		}
 
-		if (preg_match(self::SLUG_PATTERN, $slug) !== 1) {
+		if (preg_match(self::SLUG_PATTERN, $templateSlug) !== 1) {
 			return $this->storeError(code: 'invalid_template_slug', status: Http::STATUS_BAD_REQUEST);
 		}
 
@@ -353,7 +353,7 @@ class StoreController extends Controller {
 
 		// Resolves the FULL payload (manifest + companionSchemas) the clone
 		// path needs; returns null on an unresolvable slug or a store error.
-		$template = $this->resolveForInstall(slug: $slug);
+		$template = $this->resolveForInstall(slug: $templateSlug);
 		if ($template === null) {
 			return $this->storeError(code: 'template_not_found', status: Http::STATUS_NOT_FOUND);
 		}

@@ -35,6 +35,8 @@ use OCA\Buildiq\Kernel\Contracts\AppNavigationServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\DeviceFeaturesInterface;
 use OCA\Buildiq\Kernel\Contracts\ManifestResolverServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\PublishedApplicationProviderInterface;
+use OCA\Buildiq\Kernel\Contracts\SettingsServiceInterface;
+use OCA\Buildiq\Service\Icon\SvgRasteriser;
 use OCA\Buildiq\Service\AppOrganisationGuard;
 use OCA\Buildiq\Service\EmbedOrigins;
 use OCP\AppFramework\Controller;
@@ -68,6 +70,8 @@ class DashboardController extends Controller {
 	 * @param INavigationManager $navigationManager Top-bar navigation manager
 	 * @param PublishedApplicationProviderInterface|null $publishedApps The published apps, to read a served app's device features
 	 * @param DeviceFeaturesInterface|null $deviceFeatures Turns device features into the page's feature policy
+	 * @param SvgRasteriser $rasteriser Whether the run page can offer a PNG touch icon
+	 * @param SettingsServiceInterface|null $settings Whether the instance lets apps work offline.
 	 * @param AppOrganisationGuard|null $organisationGuard Tells the settings whether an app can be kept to its organisation
 	 * @param ManifestResolverServiceInterface|null $manifestResolver Reads an app's embedding setting; null serves no embed
 	 * @param EmbedOrigins|null $embedOrigins The sites an embedded app may be framed by; null serves no embed
@@ -82,6 +86,8 @@ class DashboardController extends Controller {
 		private readonly INavigationManager $navigationManager,
 		private readonly ?PublishedApplicationProviderInterface $publishedApps=null,
 		private readonly ?DeviceFeaturesInterface $deviceFeatures=null,
+		private readonly SvgRasteriser $rasteriser=new SvgRasteriser(),
+		private readonly ?SettingsServiceInterface $settings=null,
 		private readonly ?AppOrganisationGuard $organisationGuard=null,
 		private readonly ?ManifestResolverServiceInterface $manifestResolver=null,
 		private readonly ?EmbedOrigins $embedOrigins=null,
@@ -105,6 +111,7 @@ class DashboardController extends Controller {
 	#[NoCSRFRequired]
 	public function page(): TemplateResponse {
 		$this->publishCurrentUserGroups();
+		$this->publishOfflineAllowed();
 		// The organisation scope is only offered while OpenRegister's
 		// multitenancy is on (REQ-BQOS-001).
 		$this->initialState->provideInitialState(
@@ -155,6 +162,7 @@ class DashboardController extends Controller {
 		// shows Buildiq's name and icon instead of the virtual app's.
 		$this->navigationManager->setActiveEntry(AppNavigationServiceInterface::ENTRY_ID_PREFIX . $slug);
 		$this->publishCurrentUserGroups();
+		$this->publishOfflineAllowed();
 		$this->initialState->provideInitialState('builderSlug', $slug);
 		$this->initialState->provideInitialState(
 			'builderVersion',
@@ -295,7 +303,9 @@ class DashboardController extends Controller {
 	#[NoCSRFRequired]
 	public function run(string $slug): TemplateResponse {
 		$response = $this->builder(slug: $slug);
-		$response->setParams(['webManifest' => true]);
+		// A PNG touch icon only when the server can rasterise the app's SVG
+		// icon; otherwise the page offers none and iOS shows a screenshot tile.
+		$response->setParams(['webManifest' => true, 'touchIcon' => $this->rasteriser->available(), 'slug' => $slug]);
 
 		return $response;
 	}//end run()
@@ -416,4 +426,27 @@ class DashboardController extends Controller {
 
 		$this->initialState->provideInitialState('currentUserGroups', $gids);
 	}//end publishCurrentUserGroups()
+
+	/**
+	 * Publish whether this instance lets apps work offline.
+	 *
+	 * The app settings show the maker's Offline section only when it is on,
+	 * and the runtime registers no worker while it is off (design D3). Off
+	 * when the setting cannot be read: nothing is kept on a device unless an
+	 * administrator said so.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-offline-is-the-administrators-choice-first-req-bqom-002
+	 */
+	private function publishOfflineAllowed(): void {
+		$allowed = false;
+		try {
+			$allowed = ($this->settings?->offlineAppsAllowed() === true);
+		} catch (\Throwable $e) {
+			$allowed = false;
+		}
+
+		$this->initialState->provideInitialState('offlineAppsAllowed', $allowed);
+	}//end publishOfflineAllowed()
 }//end class

@@ -31,6 +31,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\Controller;
 
 use OCA\Buildiq\Controller\CopilotController;
+use OCA\Buildiq\Service\Copilot\CopilotAssistService;
 use OCA\Buildiq\Service\CopilotService;
 use OCP\AppFramework\Http;
 use OCP\IRequest;
@@ -103,6 +104,7 @@ class CopilotControllerUnhandledTest extends TestCase {
 			logger: $this->logger,
 			copilotService: $this->copilotService,
 			userSession: $this->userSession,
+			assistService: $this->createMock(CopilotAssistService::class),
 		);
 	}//end setUp()
 
