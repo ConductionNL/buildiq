@@ -115,7 +115,7 @@ class AgentPlanService {
 		}
 
 		$normalised = AgentPlanSteps::normalisedSteps(steps: $steps);
-		$planId = $this->store->create(
+		$planId = $this->store->put(
 			object: ['appSlug' => $appSlug, 'steps' => $normalised, 'status' => self::STATUS_PENDING, 'submittedBy' => $userId, 'usedSteps' => []]
 		);
 		if ($planId === null) {
@@ -153,7 +153,7 @@ class AgentPlanService {
 
 		$plan['data']['decidedBy'] = $caller->getUID();
 		$data = $this->decided(plan: $plan, approve: $approve);
-		if ($this->store->save(data: $data, uuid: $plan['uuid']) === false) {
+		if ($this->store->put(object: $data, uuid: $plan['uuid']) === null) {
 			return self::error(error: 'plan_store_failed', message: 'The plan could not be updated.');
 		}
 
@@ -269,7 +269,7 @@ class AgentPlanService {
 	private function markUsed(array $plan, int $index): ?array {
 		$data = $plan['data'];
 		$data['usedSteps'] = array_values(array_merge((array)($data['usedSteps'] ?? []), [$index]));
-		if ($this->store->save(data: $data, uuid: $plan['uuid']) === false) {
+		if ($this->store->put(object: $data, uuid: $plan['uuid']) === null) {
 			return self::error(error: 'plan_store_failed', message: 'The plan could not be updated.');
 		}
 

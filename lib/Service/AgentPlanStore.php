@@ -57,19 +57,20 @@ class AgentPlanStore {
 	}//end __construct()
 
 	/**
-	 * Store a new plan.
+	 * Store a plan: a new one without a uuid, or the plan with that uuid.
 	 *
-	 * @param array<string, mixed> $object The plan.
+	 * @param array<string, mixed> $object The plan's fields.
+	 * @param string|null          $uuid   The plan to update, or null for a new plan.
 	 *
-	 * @return string|null The plan id, or null when it could not be stored.
+	 * @return string|null The plan uuid, or null when it could not be stored.
 	 *
 	 * @spec openspec/changes/openbuild-mcp-adoption/specs/openbuild-mcp-surface/spec.md#requirement-a-builder-tool-shall-write-only-under-a-plan-a-person-approved
 	 */
-	public function create(array $object): ?string {
+	public function put(array $object, ?string $uuid=null): ?string {
 		try {
 			$saved = $this->objectService->saveObject(
 				object: $object,
-				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::PLAN_SCHEMA)),
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::PLAN_SCHEMA), uuid: $uuid),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -79,7 +80,7 @@ class AgentPlanStore {
 		}
 
 		return (string)$saved->getUuid();
-	}//end create()
+	}//end put()
 
 	/**
 	 * Load a plan by uuid.
@@ -114,32 +115,6 @@ class AgentPlanStore {
 		$data = array_intersect_key($data, array_flip(['appSlug', 'steps', 'status', 'submittedBy', 'decidedBy', 'usedSteps', 'approval']));
 		return ['uuid' => (string)$entity->getUuid(), 'data' => $data];
 	}//end load()
-
-	/**
-	 * Save a plan's fields back.
-	 *
-	 * @param array<string,mixed> $data The plan fields.
-	 * @param string              $uuid The plan uuid.
-	 *
-	 * @return bool Whether it was saved.
-	 *
-	 * @spec openspec/changes/openbuild-mcp-adoption/specs/openbuild-mcp-surface/spec.md#requirement-a-builder-tool-shall-write-only-under-a-plan-a-person-approved
-	 */
-	public function save(array $data, string $uuid): bool {
-		try {
-			$this->objectService->saveObject(
-				object: $data,
-				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::PLAN_SCHEMA), uuid: $uuid),
-				_rbac: false,
-				_multitenancy: false
-			);
-		} catch (Throwable $e) {
-			$this->logger->warning('Buildiq: updating an agent plan failed: ' . $e->getMessage());
-			return false;
-		}
-
-		return true;
-	}//end save()
 
 	/**
 	 * An object as an array.
