@@ -52,6 +52,7 @@ use OCA\Buildiq\Tests\Support\LegacyObjectArgs;
  * @uses   \OCA\Buildiq\Service\PageLayoutLayerStack
  * @uses   \OCA\Buildiq\Service\PageLayoutParts
  * @uses   \OCA\Buildiq\Service\PageLayoutPresenter
+ * @uses   \OCA\Buildiq\Support\ObjectRecord
  */
 final class PageLayoutLeafProviderContractTest extends TestCase {
 	/**

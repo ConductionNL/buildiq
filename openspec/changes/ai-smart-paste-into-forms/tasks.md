@@ -6,5 +6,6 @@
 - [ ] **T04**: File the renderer half with nextcloud-vue: `config.smartPaste` in the manifest schema and the `CnFormPage` control of D4, with this spec as the contract. Verify: the nextcloud-vue change exists and cites REQ-BQSP-003.
 - [ ] **T05**: File the fill endpoint with hermiq as a governed AI feature, with the request and response shape of D4. Verify: the hermiq change exists and cites REQ-BQSP-003.
 - [ ] **T06**: Playwright `tests/e2e/form-smart-paste.spec.ts`: author smart paste on a form, and, once the renderer and endpoint ship, fill the form from pasted text with a stub endpoint (REQ-BQSP-001, REQ-BQSP-003).
+  - Spec written, not run: `tests/e2e/form-smart-paste.spec.ts` (non-admin editor, empty storage state, `PLAYWRIGHT_BASE_URL`) authors smart paste, checks the public-form refusal, the unknown-field mark and the preview's sample answer; the rendered-app fill stubs the endpoint and skips until `SMART_PASTE_FILL_ROUTE` names it (T04, T05). Left unticked until it has run on an instance.
 - [x] **T07**: Strings and docs: English and Dutch for the fieldset, the hint placeholder and the refusals (`l10n/en.json`, `l10n/nl.json`), and a paragraph in `docs/` on letting users fill a form from pasted text.
 - [ ] **T08**: Run `openspec validate ai-smart-paste-into-forms --strict`.
