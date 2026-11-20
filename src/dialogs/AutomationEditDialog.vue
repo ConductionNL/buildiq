@@ -50,9 +50,18 @@
 					v-model="triggerOption"
 					:inputLabel="t('buildiq', 'When')"
 					:options="triggerOptions"
+					:selectable="(option) => !option.disabled"
 					:clearable="false"
 					label="label"
 					@update:modelValue="onTriggerChange" />
+
+				<!-- logic-email-and-webhook-triggers D6: why an inbound trigger cannot be used. -->
+				<NcNoteCard
+					v-if="inboundReason"
+					type="warning"
+					data-testid="inbound-trigger-blocked">
+					{{ inboundReason }}
+				</NcNoteCard>
 
 				<template
 					v-if="isObjectTrigger || triggerType === 'lifecycle-transition'">
@@ -105,6 +114,82 @@
 						:label="t('buildiq', 'Interval (seconds)')"
 						@update:modelValue="triggerInterval = Number($event)" />
 				</template>
+
+				<!-- logic-email-and-webhook-triggers D2: the mailbox and its filters. -->
+				<template v-if="triggerType === 'email-received'">
+					<NcSelect
+						v-if="mailboxPickerAvailable"
+						:modelValue="mailboxOption"
+						:inputLabel="t('buildiq', 'Mailbox')"
+						:options="mailboxOptions"
+						:loading="mailboxesLoading"
+						label="label"
+						data-testid="mailbox-select"
+						@update:modelValue="triggerSource = $event ? $event.id : ''" />
+					<NcTextField
+						v-else
+						:modelValue="triggerSource"
+						:label="t('buildiq', 'Mailbox source')"
+						data-testid="mailbox-text"
+						@update:modelValue="triggerSource = $event" />
+					<NcTextField
+						:modelValue="triggerFrom"
+						:label="t('buildiq', 'Only mail from (optional)')"
+						data-testid="mail-from"
+						@update:modelValue="triggerFrom = $event" />
+					<NcTextField
+						:modelValue="triggerSubjectContains"
+						:label="t('buildiq', 'Only when the subject contains (optional)')"
+						data-testid="mail-subject"
+						@update:modelValue="triggerSubjectContains = $event" />
+					<p class="automation-edit__hint" data-testid="inbound-runs-as">
+						{{ t('buildiq', 'Runs started by mail act as you, with your rights.') }}
+					</p>
+				</template>
+
+				<!-- logic-email-and-webhook-triggers D3: how the caller signs in, and the address. -->
+				<template v-if="triggerType === 'webhook-called'">
+					<NcSelect
+						:modelValue="authorizationOption"
+						:inputLabel="t('buildiq', 'How the calling system signs in')"
+						:options="authorizationOptions"
+						:clearable="false"
+						label="label"
+						data-testid="webhook-authorization"
+						@update:modelValue="triggerAuthorization = $event ? $event.id : 'api-key'" />
+					<NcTextArea
+						:modelValue="triggerBodyExample"
+						:label="t('buildiq', 'Example request body (JSON, optional)')"
+						:error="!bodyExampleValid"
+						:helperText="bodyExampleValid ? '' : t('buildiq', 'The example must be a JSON object.')"
+						data-testid="webhook-body-example"
+						@update:modelValue="triggerBodyExample = $event" />
+					<div v-if="webhookUrl" class="automation-edit__address" data-testid="webhook-address">
+						<span>{{ t('buildiq', 'Address') }}</span>
+						<code>{{ webhookUrl }}</code>
+					</div>
+					<p v-else class="automation-edit__hint" data-testid="webhook-address-pending">
+						{{ t('buildiq', 'The address appears once the automation has a name.') }}
+					</p>
+					<a
+						v-if="consumerUrl"
+						:href="consumerUrl"
+						target="_blank"
+						rel="noopener noreferrer"
+						data-testid="webhook-show-key">
+						{{ t('buildiq', 'Show key in Integriq') }}
+					</a>
+					<p class="automation-edit__hint" data-testid="inbound-runs-as">
+						{{ t('buildiq', 'Integriq issues the key and checks every call. Runs act as the account bound to that key, which is you.') }}
+					</p>
+				</template>
+
+				<p
+					v-if="inboundFields.length > 0"
+					class="automation-edit__hint"
+					data-testid="inbound-input-fields">
+					{{ t('buildiq', 'Steps can use these input fields: {fields}', { fields: inboundFields.join(', ') }) }}
+				</p>
 			</section>
 
 			<!-- Condition -->
@@ -467,11 +552,21 @@ import {
 } from '../services/automationMatrix.js'
 import {
 	fetchDecisionRuleSets,
+	fetchIntegriqMailboxes,
 	fetchIntegriqSources,
 } from '../services/automationStepSources.js'
 import { fetchConnectorSynchronizations } from '../services/connectorSynchronizations.js'
+import { resolveFleetAppId } from '../services/fleetAppId.js'
 import { slugify } from '../utils/slugify.js'
 import { askableFieldOptions, formFieldsOf } from './approvalFormFields.js'
+import {
+	inboundInputFields,
+	inboundTriggerReason,
+	isBodyExampleValid,
+	isInboundTrigger,
+	webhookAddress,
+	withInboundSettings,
+} from './automationInboundTrigger.js'
 import { toPersistedAction } from './automationPersistedActions.js'
 import {
 	cadenceById,
@@ -535,6 +630,15 @@ export default {
 			triggerTransition: '',
 			triggerInterval: 86400,
 			triggerCron: '',
+			triggerSource: '',
+			triggerFrom: '',
+			triggerSubjectContains: '',
+			triggerAuthorization: 'api-key',
+			triggerBodyExample: '',
+			mailboxOptions: [],
+			mailboxesLoading: false,
+			mailboxesLoaded: false,
+			mailboxesFetchFailed: false,
 			cadenceOption: null,
 			conditionKindOption: null,
 			conditionExpression: '',
@@ -619,7 +723,97 @@ export default {
 				},
 				{ value: 'schedule', label: t('buildiq', 'Cron schedule') },
 				{ value: 'manual', label: t('buildiq', 'Manual') },
+				// logic-email-and-webhook-triggers D1/D6: disabled without integriq.
+				{
+					value: 'email-received',
+					label: t('buildiq', 'Email received'),
+					disabled: !this.integriqAvailable,
+				},
+				{
+					value: 'webhook-called',
+					label: t('buildiq', 'Webhook called'),
+					disabled: !this.integriqAvailable,
+				},
 			]
+		},
+
+		/**
+		 * Why the chosen email or webhook trigger cannot be used, or ''.
+		 *
+		 * @return {string}
+		 * @spec openspec/changes/logic-email-and-webhook-triggers/specs/automation-inbound-triggers/spec.md#requirement-the-composer-offers-email-and-webhook-triggers-req-bqtr-001
+		 */
+		inboundReason() {
+			return inboundTriggerReason({
+				type: this.triggerType,
+				integriqAvailable: this.integriqAvailable,
+				mailboxesLoaded: this.mailboxesLoaded && !this.mailboxesFetchFailed,
+				mailboxCount: this.mailboxOptions.length,
+			})
+		},
+
+		/**
+		 * Whether the mailbox list loaded; otherwise the source is typed.
+		 *
+		 * @return {boolean}
+		 */
+		mailboxPickerAvailable() {
+			return !this.mailboxesFetchFailed && this.mailboxOptions.length > 0
+		},
+
+		mailboxOption() {
+			return this.mailboxOptions.find((o) => o.id === this.triggerSource) || null
+		},
+
+		/**
+		 * The webhook sign-in kinds integriq checks on an inbound call.
+		 *
+		 * @return {Array<{id: string, label: string}>}
+		 */
+		authorizationOptions() {
+			return [{ id: 'api-key', label: t('buildiq', 'API key') }]
+		},
+
+		authorizationOption() {
+			return this.authorizationOptions.find((o) => o.id === this.triggerAuthorization)
+				|| this.authorizationOptions[0]
+		},
+
+		bodyExampleValid() {
+			return isBodyExampleValid(this.triggerBodyExample)
+		},
+
+		/**
+		 * The address integriq serves this webhook automation at (D3).
+		 *
+		 * @return {string}
+		 * @spec openspec/changes/logic-email-and-webhook-triggers/specs/automation-inbound-triggers/spec.md#requirement-a-webhook-starts-the-automations-flow-req-bqtr-003
+		 */
+		webhookUrl() {
+			return webhookAddress({
+				origin: window.location.origin,
+				generateUrl,
+				integriqId: resolveFleetAppId('integriq'),
+				appSlug: (this.automation && this.automation.applicationSlug) || '',
+				automationSlug: this.derivedSlug,
+			})
+		},
+
+		/**
+		 * Integriq's page of the consumer the last apply wrote, where the key is shown.
+		 *
+		 * @return {string}
+		 */
+		consumerUrl() {
+			const inbound = (this.automation && this.automation.provenance && this.automation.provenance.inbound) || {}
+			if (!inbound.consumer) {
+				return ''
+			}
+			return generateUrl(`/apps/${resolveFleetAppId('integriq')}/consumers/${encodeURIComponent(inbound.consumer)}`)
+		},
+
+		inboundFields() {
+			return inboundInputFields(this.triggerType, this.triggerBodyExample)
 		},
 
 		triggerOption: {
@@ -858,6 +1052,14 @@ export default {
 			if (this.derivedSlug === '' || this.name.trim() === '') {
 				return false
 			}
+			if (isInboundTrigger(this.triggerType)) {
+				if (this.inboundReason !== '' || !this.bodyExampleValid) {
+					return false
+				}
+				if (this.triggerType === 'email-received' && this.triggerSource.trim() === '') {
+					return false
+				}
+			}
 			if (
 				this.conditionKind !== 'none'
 				&& !isConditionAllowed(this.triggerType)
@@ -935,6 +1137,7 @@ export default {
 				this.docudeskStatus.check()
 				this.fetchDocudeskTemplateOptions()
 				this.fetchStepSources()
+				this.fetchMailboxes()
 			}
 		},
 	},
@@ -956,6 +1159,11 @@ export default {
 			this.triggerTransition = trigger.transition || ''
 			this.triggerCron = trigger.cron || ''
 			this.triggerInterval = trigger.interval || 86400
+			this.triggerSource = trigger.source || ''
+			this.triggerFrom = trigger.from || ''
+			this.triggerSubjectContains = trigger.subjectContains || ''
+			this.triggerAuthorization = trigger.authorization || 'api-key'
+			this.triggerBodyExample = trigger.bodyExample || ''
 			const preset = presetForInterval(trigger.interval)
 			if (trigger.cron) {
 				this.cadenceOption = cadenceById(this.cadenceOptions, 'custom-cron')
@@ -1416,6 +1624,26 @@ export default {
 			this.name = value
 		},
 
+		/**
+		 * Load the integriq mailboxes the maker can read (D2).
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/logic-email-and-webhook-triggers/specs/automation-inbound-triggers/spec.md#requirement-the-composer-offers-email-and-webhook-triggers-req-bqtr-001
+		 */
+		async fetchMailboxes() {
+			this.mailboxesLoading = true
+			this.mailboxesFetchFailed = false
+			try {
+				const available = await this.integriqStatus.check()
+				this.mailboxOptions = available ? await fetchIntegriqMailboxes() : []
+			} catch {
+				this.mailboxOptions = []
+				this.mailboxesFetchFailed = true
+			}
+			this.mailboxesLoaded = true
+			this.mailboxesLoading = false
+		},
+
 		onTriggerChange() {
 			if (this.triggerType === 'lifecycle-transition' && this.triggerSchema) {
 				this.fetchTransitions()
@@ -1527,7 +1755,14 @@ export default {
 					trigger.interval = preset ? preset.interval : 86400
 				}
 			}
-			return trigger
+			// logic-email-and-webhook-triggers D2/D3: mailbox and filters, or the sign-in kind.
+			return withInboundSettings(trigger, {
+				source: this.triggerSource,
+				from: this.triggerFrom,
+				subjectContains: this.triggerSubjectContains,
+				authorization: this.triggerAuthorization,
+				bodyExample: this.triggerBodyExample,
+			})
 		},
 
 		/**
@@ -1629,6 +1864,20 @@ export default {
 	color: var(--color-text-maxcontrast);
 	margin: 0;
 	font-size: 0.9em;
+}
+
+.automation-edit__address {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.automation-edit__address code {
+	overflow-wrap: anywhere;
+	padding: 4px 8px;
+	border-radius: var(--border-radius);
+	background-color: var(--color-background-dark);
+	color: var(--color-main-text);
 }
 
 .automation-edit__section {

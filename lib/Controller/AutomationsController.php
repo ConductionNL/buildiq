@@ -682,14 +682,15 @@ class AutomationsController extends Controller {
 	 * @return JSONResponse
 	 */
 	private function recompileAndRespond(array $automation): JSONResponse {
+		$priorProvenance = $this->orArray(value: $automation['provenance'] ?? null);
+		// Apply refuses too: an email or webhook trigger integriq cannot take
+		// fails closed before anything is written (logic-email-and-webhook-triggers D6).
 		try {
 			$plan = $this->compiler->compile(automation: $automation);
+			$provenance = $this->compiler->apply(automation: $automation, plan: $plan, priorProvenance: $priorProvenance);
 		} catch (UnsupportedAutomationCombinationException $e) {
 			return $this->error(code: $e->getErrorCode(), detail: $e->getMessage(), status: Http::STATUS_UNPROCESSABLE_ENTITY);
 		}
-
-		$priorProvenance = $this->orArray(value: $automation['provenance'] ?? null);
-		$provenance = $this->compiler->apply(automation: $automation, plan: $plan, priorProvenance: $priorProvenance);
 
 		$automation['provenance'] = $provenance;
 		$uuid = (string)($automation['id'] ?? $automation['uuid'] ?? '');

@@ -78,3 +78,28 @@ export async function fetchDecisionRuleSets() {
 		.filter((row) => row && row.ruleType === 'decision-table' && typeof row.slug === 'string' && row.slug !== '')
 		.map((row) => ({ id: row.slug, label: String(row.name || row.slug) }))
 }
+
+/**
+ * The integriq mailbox sources the maker can read, for the "Email received"
+ * trigger (logic-email-and-webhook-triggers D2). The option id is the source
+ * uuid, which the mail subscription filters on.
+ *
+ * @return {Promise<Array<{id: string, label: string}>>} The options.
+ * @spec openspec/changes/logic-email-and-webhook-triggers/specs/automation-inbound-triggers/spec.md#requirement-the-composer-offers-email-and-webhook-triggers-req-bqtr-001
+ */
+export async function fetchIntegriqMailboxes() {
+	const register = resolveFleetAppId('integriq')
+	const { data } = await axios.get(
+		generateUrl(`/apps/openregister/api/objects/${register}/source`),
+		{ params: { _limit: 500, type: 'mailbox' } },
+	)
+
+	return rowsOf(data)
+		.filter((row) => row && row.type === 'mailbox')
+		.map((row) => {
+			const self = row['@self'] || {}
+			const id = String(row.uuid || self.id || row.id || '')
+			return { id, label: String(row.name || row.title || id) }
+		})
+		.filter((option) => option.id !== '')
+}
