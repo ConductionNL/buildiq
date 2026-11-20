@@ -563,7 +563,7 @@ export default {
 		 * unreachable) — drives the non-blocking hint.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/github-shop-catalogue/specs/template-catalogue-ui/spec.md
+		 * @spec openspec/changes/archive/2026-11-20-github-shop-catalogue/specs/template-catalogue-ui/spec.md
 		 */
 		githubUnavailable() {
 			return (
@@ -754,7 +754,7 @@ export default {
 		 *
 		 * @param {string} value The new query.
 		 * @return {void}
-		 * @spec openspec/changes/github-shop-catalogue/specs/template-catalogue-ui/spec.md
+		 * @spec openspec/changes/archive/2026-11-20-github-shop-catalogue/specs/template-catalogue-ui/spec.md
 		 */
 		onGithubQuery(value) {
 			this.githubQuery = value
@@ -772,7 +772,7 @@ export default {
 		 * private repos + the raised rate limit apply; anonymous otherwise.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/github-shop-catalogue/specs/template-catalogue-ui/spec.md
+		 * @spec openspec/changes/archive/2026-11-20-github-shop-catalogue/specs/template-catalogue-ui/spec.md
 		 */
 		async searchGithub() {
 			this.githubLoading = true
@@ -804,7 +804,7 @@ export default {
 		 * add-a-credential pointer.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/github-shop-catalogue/specs/template-catalogue-ui/spec.md
+		 * @spec openspec/changes/archive/2026-11-20-github-shop-catalogue/specs/template-catalogue-ui/spec.md
 		 */
 		async fetchGithubCredentials() {
 			try {
@@ -830,7 +830,7 @@ export default {
 		 *
 		 * @param {object} card The GitHub result card.
 		 * @return {void}
-		 * @spec openspec/changes/github-shop-catalogue/specs/template-catalogue-ui/spec.md
+		 * @spec openspec/changes/archive/2026-11-20-github-shop-catalogue/specs/template-catalogue-ui/spec.md
 		 */
 		openGithubInstall(card) {
 			this.cloneMode = 'github'
@@ -877,7 +877,7 @@ export default {
 		 *
 		 * @param {object} created The created application payload.
 		 * @return {void}
-		 * @spec openspec/changes/github-shop-catalogue/specs/template-catalogue-ui/spec.md
+		 * @spec openspec/changes/archive/2026-11-20-github-shop-catalogue/specs/template-catalogue-ui/spec.md
 		 */
 		onInstalled(created) {
 			this.cloneOpen = false

@@ -250,7 +250,7 @@ export default {
 		 * The config keys a read-only database switches off on an index page.
 		 *
 		 * @return {string[]}
-		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-pages-follow-the-databases-write-setting-req-bqdb-002
+		 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-pages-follow-the-databases-write-setting-req-bqdb-002
 		 */
 		writeActionKeys() {
 			return ['showAdd', 'showEditAction', 'showDeleteAction']
@@ -260,7 +260,7 @@ export default {
 		 * The write action switches of an index page.
 		 *
 		 * @return {Array<{key: string, label: string}>}
-		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-pages-follow-the-databases-write-setting-req-bqdb-002
+		 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-pages-follow-the-databases-write-setting-req-bqdb-002
 		 */
 		writeActions() {
 			return [

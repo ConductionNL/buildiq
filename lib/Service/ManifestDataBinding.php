@@ -111,7 +111,7 @@ final class ManifestDataBinding {
 	 *
 	 * @return array<int, string>
 	 *
-	 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generated-pages-keep-the-database-register-req-bqdb-004
+	 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-generated-pages-keep-the-database-register-req-bqdb-004
 	 */
 	public static function dataRegisterSlugs(mixed $bindings): array {
 		if (is_array($bindings) === false) {
@@ -151,7 +151,7 @@ final class ManifestDataBinding {
 	 * @return array<string, mixed>
 	 *
 	 * @spec openspec/specs/ai-copilot/spec.md
-	 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generated-pages-keep-the-database-register-req-bqdb-004
+	 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-generated-pages-keep-the-database-register-req-bqdb-004
 	 */
 	public static function bindBlock(array $config, string $appSlug, string $versionSlug, array $dataRegisters = []): array {
 		return self::bindBlockTo(
@@ -214,7 +214,7 @@ final class ManifestDataBinding {
 	 * @return mixed The block with its bindings pointed at this version's data.
 	 *
 	 * @spec openspec/specs/ai-copilot/spec.md
-	 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generated-pages-keep-the-database-register-req-bqdb-004
+	 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-generated-pages-keep-the-database-register-req-bqdb-004
 	 */
 	public static function bind(mixed $node, VersionBinding $binding): mixed {
 		if (is_array($node) === false || $binding->isComplete() === false) {

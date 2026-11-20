@@ -259,7 +259,7 @@ class CopilotService implements CopilotServiceInterface {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/ai-agents-knowledge-and-run-trace/specs/agent-knowledge-base/spec.md#requirement-a-maker-attaches-knowledge-files-to-an-agent-req-bqag-001
+	 * @spec openspec/changes/archive/2026-11-20-ai-agents-knowledge-and-run-trace/specs/agent-knowledge-base/spec.md#requirement-a-maker-attaches-knowledge-files-to-an-agent-req-bqag-001
 	 */
 	public function knowledgeRetrieval(): bool {
 		return $this->knowledgeReader->retrievalAvailable();
@@ -427,7 +427,7 @@ class CopilotService implements CopilotServiceInterface {
 	 *
 	 * @return array{modelSteps: array<int, array<string, mixed>>, knowledgeUsed: array<int, string>, durationMs: int}
 	 *
-	 * @spec openspec/changes/ai-agents-knowledge-and-run-trace/specs/agent-workspace/spec.md#requirement-a-run-keeps-its-model-steps-req-bqag-004
+	 * @spec openspec/changes/archive/2026-11-20-ai-agents-knowledge-and-run-trace/specs/agent-workspace/spec.md#requirement-a-run-keeps-its-model-steps-req-bqag-004
 	 */
 	private function currentTrace(): array {
 		return [
@@ -700,7 +700,7 @@ class CopilotService implements CopilotServiceInterface {
 	 * @SuppressWarnings(PHPMD.StaticAccess) ManifestDataBinding is a pure rule
 	 * with no collaborators and no state.
 	 *
-	 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generated-pages-keep-the-database-register-req-bqdb-004
+	 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-generated-pages-keep-the-database-register-req-bqdb-004
 	 */
 	private function dataRegistersByApp(array $steps): array {
 		$created = $this->collectCreatedAppSlugs(steps: $steps);
@@ -1723,7 +1723,7 @@ class CopilotService implements CopilotServiceInterface {
 	 *
 	 * @throws CopilotException When the provider fails.
 	 *
-	 * @spec openspec/changes/ai-agents-knowledge-and-run-trace/specs/agent-workspace/spec.md#requirement-a-run-keeps-its-model-steps-req-bqag-004
+	 * @spec openspec/changes/archive/2026-11-20-ai-agents-knowledge-and-run-trace/specs/agent-workspace/spec.md#requirement-a-run-keeps-its-model-steps-req-bqag-004
 	 */
 	private function recordedPlanAttempt(ModelStep $step, callable $run): array {
 		try {

@@ -34,7 +34,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/github-shop-catalogue/specs/github-shop-catalogue/spec.md
+ * @spec openspec/changes/archive/2026-11-20-github-shop-catalogue/specs/github-shop-catalogue/spec.md
  */
 
 declare(strict_types=1);
@@ -53,7 +53,7 @@ use Throwable;
 /**
  * Fixed-host, SSRF-safe GitHub catalogue source with optional broker upgrade.
  *
- * @spec openspec/changes/github-shop-catalogue/specs/github-shop-catalogue/spec.md
+ * @spec openspec/changes/archive/2026-11-20-github-shop-catalogue/specs/github-shop-catalogue/spec.md
  */
 class GitHubCatalogService implements GitHubCatalogServiceInterface {
 	/**
@@ -213,7 +213,7 @@ class GitHubCatalogService implements GitHubCatalogServiceInterface {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/github-shop-catalogue/specs/github-shop-catalogue/spec.md
+	 * @spec openspec/changes/archive/2026-11-20-github-shop-catalogue/specs/github-shop-catalogue/spec.md
 	 */
 	public function isBrokerAvailable(): bool {
 		return class_exists(self::BROKER_CLASS) === true;
@@ -228,7 +228,7 @@ class GitHubCatalogService implements GitHubCatalogServiceInterface {
 	 *
 	 * @return array{outcome:string,cards:array<int,array<string,mixed>>,brokerUsed:bool,rateLimited:bool}
 	 *
-	 * @spec openspec/changes/github-shop-catalogue/specs/github-shop-catalogue/spec.md
+	 * @spec openspec/changes/archive/2026-11-20-github-shop-catalogue/specs/github-shop-catalogue/spec.md
 	 */
 	public function search(?string $query, ?string $actingUserId, ?string $credentialId = null): array {
 		$term = trim((string)$query);
@@ -380,7 +380,7 @@ class GitHubCatalogService implements GitHubCatalogServiceInterface {
 	 *
 	 * @return array{ok: bool, items: array<int, array>, brokerUsed: bool, rateLimited: bool}
 	 *
-	 * @spec openspec/changes/github-shop-catalogue/specs/github-shop-catalogue/spec.md
+	 * @spec openspec/changes/archive/2026-11-20-github-shop-catalogue/specs/github-shop-catalogue/spec.md
 	 */
 	public function fetchTopic(
 		string $topic,
@@ -486,7 +486,7 @@ class GitHubCatalogService implements GitHubCatalogServiceInterface {
 	 *
 	 * @return array<string,mixed>|null The parsed descriptor, or null when missing/unparseable.
 	 *
-	 * @spec openspec/changes/github-shop-catalogue/specs/github-shop-catalogue/spec.md
+	 * @spec openspec/changes/archive/2026-11-20-github-shop-catalogue/specs/github-shop-catalogue/spec.md
 	 */
 	public function fetchDescriptor(RepoSource $source, ?string $actingUserId): ?array {
 		if ($this->validRepo(owner: $source->owner, repo: $source->repo, ref: $source->ref) === false) {
@@ -558,7 +558,7 @@ class GitHubCatalogService implements GitHubCatalogServiceInterface {
 	 *
 	 * @return array<string,string> The file map (may be empty when the repo is unreachable).
 	 *
-	 * @spec openspec/changes/github-shop-catalogue/specs/github-shop-catalogue/spec.md
+	 * @spec openspec/changes/archive/2026-11-20-github-shop-catalogue/specs/github-shop-catalogue/spec.md
 	 */
 	public function fetchRepoFiles(RepoSource $source, ?string $actingUserId): array {
 		if ($this->validRepo(owner: $source->owner, repo: $source->repo, ref: $source->ref) === false) {
@@ -835,7 +835,7 @@ class GitHubCatalogService implements GitHubCatalogServiceInterface {
 	 *
 	 * @return string|null The decoded file contents, or null when absent/unreadable.
 	 *
-	 * @spec openspec/changes/github-shop-catalogue/specs/github-shop-catalogue/spec.md
+	 * @spec openspec/changes/archive/2026-11-20-github-shop-catalogue/specs/github-shop-catalogue/spec.md
 	 */
 	public function fetchFileContents(RepoSource $source, string $path, ?string $actingUserId): ?string {
 		$apiPath = '/repos/' . rawurlencode($source->owner) . '/' . rawurlencode($source->repo) . '/contents/'
@@ -979,7 +979,7 @@ class GitHubCatalogService implements GitHubCatalogServiceInterface {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/github-shop-catalogue/specs/github-shop-catalogue/spec.md
+	 * @spec openspec/changes/archive/2026-11-20-github-shop-catalogue/specs/github-shop-catalogue/spec.md
 	 */
 	public function validRepo(string $owner, string $repo, ?string $ref): bool {
 		if (preg_match(self::OWNER_REPO_PATTERN, $owner) !== 1 || preg_match(self::OWNER_REPO_PATTERN, $repo) !== 1) {

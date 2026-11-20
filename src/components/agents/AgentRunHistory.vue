@@ -219,7 +219,7 @@ export default {
 		 *
 		 * @param {object} step - one entry of `run.modelSteps`.
 		 * @return {string}
-		 * @spec openspec/changes/ai-agents-knowledge-and-run-trace/specs/agent-workspace/spec.md#requirement-the-run-history-shows-the-model-steps-req-bqag-005
+		 * @spec openspec/changes/archive/2026-11-20-ai-agents-knowledge-and-run-trace/specs/agent-workspace/spec.md#requirement-the-run-history-shows-the-model-steps-req-bqag-005
 		 */
 		stepLabel(step) {
 			const statuses = {
@@ -235,7 +235,7 @@ export default {
 		 *
 		 * @param {object} step - one entry of `run.modelSteps`.
 		 * @return {string}
-		 * @spec openspec/changes/ai-agents-knowledge-and-run-trace/specs/agent-workspace/spec.md#requirement-the-run-history-shows-the-model-steps-req-bqag-005
+		 * @spec openspec/changes/archive/2026-11-20-ai-agents-knowledge-and-run-trace/specs/agent-workspace/spec.md#requirement-the-run-history-shows-the-model-steps-req-bqag-005
 		 */
 		durationLabel(step) {
 			return t('buildiq', '{duration} ms', { duration: step.durationMs || 0 })
@@ -246,7 +246,7 @@ export default {
 		 *
 		 * @param {object} run - one run.
 		 * @return {string}
-		 * @spec openspec/changes/ai-agents-knowledge-and-run-trace/specs/agent-workspace/spec.md#requirement-the-run-history-shows-the-model-steps-req-bqag-005
+		 * @spec openspec/changes/archive/2026-11-20-ai-agents-knowledge-and-run-trace/specs/agent-workspace/spec.md#requirement-the-run-history-shows-the-model-steps-req-bqag-005
 		 */
 		knowledgeLabel(run) {
 			return t('buildiq', 'Knowledge used: {files}', { files: (run.knowledgeUsed || []).join(', ') })

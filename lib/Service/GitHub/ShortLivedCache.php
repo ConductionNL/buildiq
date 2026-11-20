@@ -33,7 +33,7 @@ use OCP\ICache;
 /**
  * Reads and writes one kind of answer with a fixed TTL.
  *
- * @spec openspec/changes/github-shop-catalogue/specs/github-shop-catalogue/spec.md
+ * @spec openspec/changes/archive/2026-11-20-github-shop-catalogue/specs/github-shop-catalogue/spec.md
  */
 final class ShortLivedCache {
 	/**
@@ -57,7 +57,7 @@ final class ShortLivedCache {
 	 *
 	 * @return mixed The cached value, or null.
 	 *
-	 * @spec openspec/changes/github-shop-catalogue/specs/github-shop-catalogue/spec.md
+	 * @spec openspec/changes/archive/2026-11-20-github-shop-catalogue/specs/github-shop-catalogue/spec.md
 	 */
 	public function get(string $key): mixed {
 		if ($this->cache === null) {
@@ -75,7 +75,7 @@ final class ShortLivedCache {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/github-shop-catalogue/specs/github-shop-catalogue/spec.md
+	 * @spec openspec/changes/archive/2026-11-20-github-shop-catalogue/specs/github-shop-catalogue/spec.md
 	 */
 	public function set(string $key, mixed $value): void {
 		if ($this->cache === null) {

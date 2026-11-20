@@ -565,7 +565,7 @@ export default {
 		 * Whether the caller is a Nextcloud administrator. Gates "Add a query
 		 * table"; OpenRegister refuses a non-administrator's preview and save.
 		 *
-		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-only-a-safe-query-from-an-administrator-runs-req-bqdb-006
+		 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-only-a-safe-query-from-an-administrator-runs-req-bqdb-006
 		 * @return {boolean}
 		 */
 		isAdministrator() {

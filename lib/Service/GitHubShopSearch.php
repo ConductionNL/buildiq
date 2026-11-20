@@ -21,7 +21,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/github-shop-catalogue/specs/github-shop-catalogue/spec.md
+ * @spec openspec/changes/archive/2026-11-20-github-shop-catalogue/specs/github-shop-catalogue/spec.md
  */
 
 declare(strict_types=1);
@@ -66,7 +66,7 @@ class GitHubShopSearch implements GitHubShopSearchInterface {
 	 *
 	 * @return array<string,mixed> `{outcome, cards, brokerCredentialAvailable, rateLimited}`.
 	 *
-	 * @spec openspec/changes/github-shop-catalogue/specs/github-shop-catalogue/spec.md
+	 * @spec openspec/changes/archive/2026-11-20-github-shop-catalogue/specs/github-shop-catalogue/spec.md
 	 */
 	public function failed(Throwable $error): array {
 		$this->logger->error('Buildiq shop: GitHub search failed: ' . TokenScrubber::scrub(message: $error->getMessage()));
@@ -91,7 +91,7 @@ class GitHubShopSearch implements GitHubShopSearchInterface {
 	 *
 	 * @return array<string,mixed> `{outcome, cards, brokerCredentialAvailable, brokerUsed, rateLimited}`.
 	 *
-	 * @spec openspec/changes/github-shop-catalogue/specs/github-shop-catalogue/spec.md
+	 * @spec openspec/changes/archive/2026-11-20-github-shop-catalogue/specs/github-shop-catalogue/spec.md
 	 */
 	public function answered(array $result): array {
 		$this->connectionReporter?->reportGitHubSearch(

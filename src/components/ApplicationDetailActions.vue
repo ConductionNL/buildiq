@@ -1186,7 +1186,7 @@ export default {
 		 *
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/ai-agents-knowledge-and-run-trace/specs/agent-workspace/spec.md#requirement-the-app-detail-page-leads-to-its-agents-req-bqag-003
+		 * @spec openspec/changes/archive/2026-11-20-ai-agents-knowledge-and-run-trace/specs/agent-workspace/spec.md#requirement-the-app-detail-page-leads-to-its-agents-req-bqag-003
 		 */
 		openAgents() {
 			const slug = this.obApp && this.obApp.slug
