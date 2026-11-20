@@ -34,6 +34,7 @@ import { validateManifestConnectors } from '../services/manifestValidation/conne
 import { validateDocumentAttachments } from '../services/manifestValidation/documentAttachments.js'
 import { validateExternalForms } from '../services/manifestValidation/externalForms.js'
 import { validateFormLogic } from '../services/manifestValidation/formLogic.js'
+import { validateI18n } from '../services/manifestValidation/i18n.js'
 import { validateIndexViews } from '../services/manifestValidation/indexViews.js'
 import { validateLabels } from '../services/manifestValidation/labels.js'
 import { validateOffline } from '../services/manifestValidation/offline.js'
@@ -89,6 +90,7 @@ export function useManifestValidator() {
 					.concat(validateFormLogic(manifest))
 					.concat(validateExternalForms(manifest))
 					.concat(validatePageCodes(manifest))
+					.concat(validateI18n(manifest))
 					.concat(validateIndexViews(manifest))
 					// An empty label on an action, widget or form field (REQ-PLAT-005).
 					.concat(validateLabels(manifest))

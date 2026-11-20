@@ -6,7 +6,7 @@
  *
  * Covers:
  *  - validatedConfigKeys is exactly [register, schema, sidebar, sidebarProps,
- *    relatedCollections, relationLinks, widgets]
+ *    relatedCollections, relationLinks, widgets, headerActions, lifecycleActions]
  *  - the Files choice writes sidebar.hiddenTabs from both sidebar shapes
  *    (pages-detail-related-items T03)
  *  - update(register, ...) emits with `register` set and clears any stale schema
@@ -58,7 +58,7 @@ function mountEditor(config = {}, propsOverrides = {}) {
 }
 
 describe('DetailPageEditor', () => {
-	it('validatedConfigKeys covers the bound keys, the related items and the widgets', () => {
+	it('validatedConfigKeys covers the config keys this editor writes', () => {
 		expect(mountEditor().vm.validatedConfigKeys).toEqual([
 			'register',
 			'schema',
@@ -67,6 +67,8 @@ describe('DetailPageEditor', () => {
 			'relatedCollections',
 			'relationLinks',
 			'widgets',
+			'headerActions',
+			'lifecycleActions',
 		])
 	})
 

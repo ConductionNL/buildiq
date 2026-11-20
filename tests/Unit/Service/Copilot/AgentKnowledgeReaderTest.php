@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\Service\Copilot;
 
 use OCA\Buildiq\Service\Copilot\AgentKnowledgeReader;
+use OCA\Buildiq\Service\Copilot\KnowledgePassages;
 use OCA\OpenRegister\Service\FileService;
 use OCP\Files\File;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -234,4 +235,148 @@ final class AgentKnowledgeReaderTest extends TestCase {
 
 		self::assertSame([], $this->reader()->read(agent: ['knowledge' => [['fileName' => 'a.md']]]));
 	}//end testAnAgentWithoutAnIdReadsNothing()
+
+	/**
+	 * Serve attached files with ids: name => [id, content].
+	 *
+	 * @param array<string, array{0: int, 1: string}> $files The files.
+	 *
+	 * @return void
+	 */
+	private function serveWithIds(array $files): void {
+		$this->fileService->method('getFile')->willReturnCallback(
+			function (mixed $object = null, string|int $file = '') use ($files): ?File {
+				if (array_key_exists((string)$file, $files) === false) {
+					return null;
+				}
+
+				$node = $this->createMock(File::class);
+				$node->method('getId')->willReturn($files[(string)$file][0]);
+				$node->method('getContent')->willReturn($files[(string)$file][1]);
+				return $node;
+			}
+		);
+	}//end serveWithIds()
+
+	/**
+	 * A reader whose passages come from a facade answering these rows.
+	 *
+	 * @param array<int, array<string, mixed>> $rows      The facade's search rows.
+	 * @param bool                             $available What the facade reports.
+	 * @param array<int, string>               $queries   Collects the queries searched.
+	 *
+	 * @return AgentKnowledgeReader
+	 */
+	private function readerWithFacade(array $rows, bool $available = true, array &$queries = []): AgentKnowledgeReader {
+		$facade = new class ($rows, $available, $queries) {
+			/**
+			 * @param array<int, array<string, mixed>> $rows      Rows.
+			 * @param bool                             $available Availability.
+			 * @param array<int, string>               $queries   Collected queries.
+			 */
+			public function __construct(private array $rows, private bool $available, public array &$queries) {
+			}
+
+			/**
+			 * @return bool
+			 */
+			public function isAvailable(): bool {
+				return $this->available;
+			}
+
+			/**
+			 * @param string $query The query.
+			 * @param int    $limit The limit.
+			 *
+			 * @return array<int, array<string, mixed>>
+			 */
+			public function searchHybrid(string $query, int $limit = 10): array {
+				$this->queries[] = $query . '|' . $limit;
+				return $this->rows;
+			}
+		};
+		$facadeContainer = $this->createMock(ContainerInterface::class);
+		$facadeContainer->method('get')->with(KnowledgePassages::FACADE)->willReturn($facade);
+
+		return new AgentKnowledgeReader(
+			container: $this->container,
+			logger: $this->createMock(LoggerInterface::class),
+			passages: new KnowledgePassages(container: $facadeContainer, logger: $this->createMock(LoggerInterface::class))
+		);
+	}//end readerWithFacade()
+
+	/**
+	 * T08: a knowledge set larger than the budget is searched for the passages
+	 * that match the request, of the agent's own files only, best first, and
+	 * within the budget; nothing is refused for its size.
+	 *
+	 * @return void
+	 */
+	public function testAKnowledgeSetLargerThanTheBudgetIsSearched(): void {
+		$this->serveWithIds(
+			[
+				'handboek.md' => [11, str_repeat('a', 38000)],
+				'beleid.md' => [12, str_repeat('b', 30000)],
+				'scan.pdf' => [13, 'binary'],
+			]
+		);
+		$queries = [];
+		$reader = $this->readerWithFacade(
+			rows: [
+				['entity_type' => 'file', 'entity_id' => 12, 'chunk_text' => 'Leges worden per aanvraag geheven.'],
+				['entity_type' => 'object', 'entity_id' => 12, 'chunk_text' => 'An object row, not a file.'],
+				['entity_type' => 'file', 'entity_id' => 99, 'chunk_text' => 'Another file the caller may open.'],
+				['entity_type' => 'file', 'entity_id' => 11, 'chunk_text' => str_repeat('x', 40001)],
+				['entity_type' => 'file', 'entity_id' => 11, 'chunk_text' => 'Een aanvraag heeft een zaaknummer.'],
+				['entity_type' => 'file', 'entity_id' => 12, 'chunk_text' => ' Bezwaar kan binnen zes weken. '],
+			],
+			queries: $queries
+		);
+
+		$knowledge = $reader->read(agent: $this->agent(['handboek.md', 'beleid.md', 'scan.pdf']), query: 'Bouw een leges-app');
+
+		self::assertSame(
+			[
+				['fileName' => 'beleid.md', 'text' => "Leges worden per aanvraag geheven.\n\n[...]\n\nBezwaar kan binnen zes weken."],
+				['fileName' => 'handboek.md', 'text' => 'Een aanvraag heeft een zaaknummer.'],
+			],
+			$knowledge
+		);
+		self::assertSame(['Bouw een leges-app|50'], $queries);
+		self::assertTrue($reader->retrievalAvailable());
+	}//end testAKnowledgeSetLargerThanTheBudgetIsSearched()
+
+	/**
+	 * T08: without a match in the agent's files, or without a request, the whole files are read under the budget.
+	 *
+	 * @return void
+	 */
+	public function testWithoutAMatchOrARequestTheWholeFilesAreRead(): void {
+		$this->serveWithIds(['big.md' => [1, str_repeat('a', 38000)], 'small.md' => [2, 'kort']]);
+		$queries = [];
+		$reader = $this->readerWithFacade(rows: [['entity_type' => 'file', 'entity_id' => 7, 'chunk_text' => 'elsewhere']], queries: $queries);
+
+		$searched = $reader->read(agent: $this->agent(['big.md', 'small.md']), query: 'iets');
+		$unasked = $reader->read(agent: $this->agent(['big.md', 'small.md']));
+
+		self::assertSame(['big.md', 'small.md'], array_column($searched, 'fileName'));
+		self::assertSame(str_repeat('a', 38000), $searched[0]['text']);
+		self::assertSame($searched, $unasked);
+		self::assertSame(['iets|50'], $queries);
+	}//end testWithoutAMatchOrARequestTheWholeFilesAreRead()
+
+	/**
+	 * T08: a facade that reports itself unavailable is not searched, and the editor keeps its budget.
+	 *
+	 * @return void
+	 */
+	public function testAnUnavailableFacadeKeepsTheBudget(): void {
+		$this->serveWithIds(['a.md' => [1, 'tekst']]);
+		$queries = [];
+		$reader = $this->readerWithFacade(rows: [['entity_type' => 'file', 'entity_id' => 1, 'chunk_text' => 'passage']], available: false, queries: $queries);
+
+		self::assertSame([['fileName' => 'a.md', 'text' => 'tekst']], $reader->read(agent: $this->agent(['a.md']), query: 'iets'));
+		self::assertSame([], $queries);
+		self::assertFalse($reader->retrievalAvailable());
+	}//end testAnUnavailableFacadeKeepsTheBudget()
 }//end class

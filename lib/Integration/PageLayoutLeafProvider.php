@@ -199,79 +199,118 @@ final class PageLayoutLeafProvider extends AppLocalLeafProvider implements PageL
 
 		$published = $this->publishedLayoutsFor(register: $register, schema: $schema);
 		$stack = $this->layers->orderLayers(published: $published, object: $object);
+		$state = $this->composeStack(stack: $stack);
 
-		$composed = [];
-		$applied = [];
-		$withheld = [];
-
-		// The base an override is cut against is the stack of WHOLE layouts
-		// beneath it, frozen before the first patch lands. Checking each patch
-		// against the running composition instead would make an override's base
-		// depend on which OTHER overrides the caller happens to match, so the
-		// same override would read as drifted for one colleague and current for
-		// the next, and stacking two overrides could never work at all.
-		$overrideBase = [];
-
-		foreach ($stack as $layer) {
-			$delta = ($layer['layoutDelta'] ?? null);
-
-			if (is_array($delta) === false || $delta === []) {
-				// A whole layout, not a patch: this is the pre-override shape and
-				// it keeps working exactly as it did.
-				$composed = $this->composeWhole(composed: $composed, layer: $layer);
-
-				// Only a layout for EVERYONE redefines the base an override is
-				// pinned to. A whole layout bound to one group still composes
-				// into what that group is served, but letting it move the frozen
-				// base would make the same override read as current for one
-				// colleague and drifted for the next, which is the caller
-				// dependence this design exists to remove.
-				if ((string)($this->layers->audienceOf(layout: $layer)['kind'] ?? 'everyone') === 'everyone') {
-					$overrideBase = $composed;
-				}
-
-				$applied[] = $this->layers->describeLayer(layer: $layer);
-				continue;
-			}
-
-			if ($this->deltas->isCurrent($overrideBase, (string)($layer['baseFingerprint'] ?? '')) === false) {
-				// Drift. The override is neither applied nor dropped: the base is
-				// served, the answer says so, and the stored patch survives so a
-				// maintainer can re-cut it.
-				$withheld[] = [
-					'id' => (string)($layer['id'] ?? ''),
-					'name' => (string)($layer['name'] ?? ''),
-					'audience' => $this->layers->audienceOf(layout: $layer),
-					'reason' => 'drift',
-					'orphanedPaths' => $this->deltas->orphanedPaths($overrideBase, $delta),
-				];
-
-				$this->flagForReview(layer: $layer);
-				continue;
-			}
-
-			$composed = $this->deltas->merge($composed, $delta);
-			$applied[] = $this->layers->describeLayer(layer: $layer);
-		}
-
-		if ($composed === []) {
+		if ($state['composed'] === []) {
 			// Nothing answers, and the consumer renders its manifest unchanged.
 			// This is the path an instance without any layout takes, and it is
 			// the reason buildiq can be absent entirely.
-			return ['items' => [], 'total' => 0, 'nextCursor' => null, 'appliedLayers' => [], 'withheld' => $withheld];
+			return ['items' => [], 'total' => 0, 'nextCursor' => null, 'appliedLayers' => [], 'withheld' => $state['withheld']];
 		}
 
 		return [
-			'items' => [$this->presenter->serve(layout: $composed, schemaWide: $this->layers->schemaWideOf(layers: $stack), object: $object)],
+			'items' => [$this->presenter->serve(layout: $state['composed'], schemaWide: $this->layers->schemaWideOf(layers: $stack), object: $object)],
 			'total' => 1,
 			'nextCursor' => null,
 			// A handler who sees fewer tabs than a colleague has no way to learn
 			// why, and neither has the administrator who is asked about it. This
 			// is that answer. A consumer is never required to read it to render.
-			'appliedLayers' => $applied,
-			'withheld' => $withheld,
+			'appliedLayers' => $state['applied'],
+			'withheld' => $state['withheld'],
 		];
 	}//end list()
+
+	/**
+	 * Compose the ordered layers into the layout this caller is served.
+	 *
+	 * The base an override is cut against is the stack of WHOLE layouts
+	 * beneath it, frozen before the first patch lands. Checking each patch
+	 * against the running composition instead would make an override's base
+	 * depend on which OTHER overrides the caller happens to match, so the
+	 * same override would read as drifted for one colleague and current for
+	 * the next, and stacking two overrides could never work at all.
+	 *
+	 * @param array<int, array<string, mixed>> $stack The layers, lowest first.
+	 *
+	 * @return array<string, array<mixed>> The composition: composed, applied, withheld, overrideBase.
+	 *
+	 * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-002)
+	 */
+	private function composeStack(array $stack): array {
+		$state = ['composed' => [], 'applied' => [], 'withheld' => [], 'overrideBase' => []];
+		foreach ($stack as $layer) {
+			$state = $this->composeLayer(state: $state, layer: $layer);
+		}
+
+		return $state;
+	}//end composeStack()
+
+	/**
+	 * Add one layer to the composition: a whole layout, a current patch, or a drifted patch that is withheld.
+	 *
+	 * @param array<string, array<mixed>> $state The composition so far: composed, applied, withheld, overrideBase.
+	 * @param array<string, mixed>        $layer The layer.
+	 *
+	 * @return array<string, array<mixed>> The composition: composed, applied, withheld, overrideBase.
+	 *
+	 * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-002)
+	 */
+	private function composeLayer(array $state, array $layer): array {
+		$delta = ($layer['layoutDelta'] ?? null);
+
+		if (is_array($delta) === false || $delta === []) {
+			// A whole layout, not a patch: this is the pre-override shape and
+			// it keeps working exactly as it did.
+			return $this->composeWholeLayer(state: $state, layer: $layer);
+		}
+
+		if ($this->deltas->isCurrent($state['overrideBase'], (string)($layer['baseFingerprint'] ?? '')) === false) {
+			// Drift. The override is neither applied nor dropped: the base is
+			// served, the answer says so, and the stored patch survives so a
+			// maintainer can re-cut it.
+			$state['withheld'][] = [
+				'id' => (string)($layer['id'] ?? ''),
+				'name' => (string)($layer['name'] ?? ''),
+				'audience' => $this->layers->audienceOf(layout: $layer),
+				'reason' => 'drift',
+				'orphanedPaths' => $this->deltas->orphanedPaths($state['overrideBase'], $delta),
+			];
+
+			$this->flagForReview(layer: $layer);
+			return $state;
+		}
+
+		$state['composed'] = $this->deltas->merge($state['composed'], $delta);
+		$state['applied'][] = $this->layers->describeLayer(layer: $layer);
+		return $state;
+	}//end composeLayer()
+
+	/**
+	 * Compose a whole layout, and freeze it as the override base when it is for everyone.
+	 *
+	 * @param array<string, array<mixed>> $state The composition so far: composed, applied, withheld, overrideBase.
+	 * @param array<string, mixed>        $layer The whole layout.
+	 *
+	 * @return array<string, array<mixed>> The composition: composed, applied, withheld, overrideBase.
+	 *
+	 * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-002)
+	 */
+	private function composeWholeLayer(array $state, array $layer): array {
+		$state['composed'] = $this->composeWhole(composed: $state['composed'], layer: $layer);
+
+		// Only a layout for EVERYONE redefines the base an override is
+		// pinned to. A whole layout bound to one group still composes
+		// into what that group is served, but letting it move the frozen
+		// base would make the same override read as current for one
+		// colleague and drifted for the next, which is the caller
+		// dependence this design exists to remove.
+		if ((string)($this->layers->audienceOf(layout: $layer)['kind'] ?? 'everyone') === 'everyone') {
+			$state['overrideBase'] = $state['composed'];
+		}
+
+		$state['applied'][] = $this->layers->describeLayer(layer: $layer);
+		return $state;
+	}//end composeWholeLayer()
 
 	/**
 	 * The base an override is cut against, composed the way resolution composes

@@ -50,6 +50,8 @@ class AppOrganisationGuardCoverageTest extends TestCase {
 		'lib/Controller/ApplicationsController.php' => 'visibleToOrganisation(',
 		'lib/Mcp/Handler/ListAppsHandler.php' => 'requireAnyRoleOnApp(',
 		'lib/Mcp/Handler/GetAppManifestHandler.php' => 'requireAnyRoleOnApp(',
+		'lib/Controller/AgentsController.php' => 'seesApplication(',
+		'lib/Controller/ExportsController.php' => 'visibleToOrganisation(',
 	];
 
 	/**
@@ -77,8 +79,6 @@ class AppOrganisationGuardCoverageTest extends TestCase {
 	 * @var array<int, string>
 	 */
 	private const NOT_YET_REVIEWED = [
-		'lib/Controller/AgentsController.php',
-		'lib/Controller/ExportsController.php',
 		'lib/Service/ApplicationInsightsService.php',
 		'lib/Service/AutomationWriteService.php',
 		'lib/Service/CopilotService.php',
