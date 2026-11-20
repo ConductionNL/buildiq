@@ -69,6 +69,8 @@ class RuleSetActivationRecompiler {
 	 *
 	 * @return array{recompiled: int, failed: int}
 	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) AutomationRecords is a pure coercion with no collaborators.
+	 *
 	 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-step-decides-with-a-rule-set-req-bqar-005
 	 */
 	public function recompileReferencing(string $slug, string $version): array {

@@ -210,6 +210,15 @@ Vrij en open source onder de EUPL-1.2-licentie.
                 back-fill rather than rename. Idempotent; safe to re-run.
             -->
             <step>OCA\Buildiq\Repair\RenameDutchRuleColumns</step>
+            <!--
+                AFTER InitializeSettings, so the Automation schema carries
+                `disabledReason` and `provenance.flowUuid`: moves automations
+                whose provenance lists lifecycle records or a manual-trigger rule
+                set nothing ran onto OpenRegister flows, and disables the ones that
+                cannot run as a flow with the reason (logic-automation-actions-that-run
+                D9). Idempotent; never throws.
+            -->
+            <step>OCA\Buildiq\Repair\MoveStuckAutomationsToFlows</step>
         </post-migration>
         <install>
             <!--
