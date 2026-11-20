@@ -1494,6 +1494,20 @@ namespace OCA\OpenRegister\Db {
 			 * @var array|null
 			 */
 			protected ?array $limits = null;
+
+			/**
+			 * Stub owning-app column.
+			 *
+			 * @var string|null
+			 */
+			protected ?string $app = null;
+
+			/**
+			 * Stub application-slug column.
+			 *
+			 * @var string|null
+			 */
+			protected ?string $applicationSlug = null;
 		}//end class
 	}//end if
 
@@ -2886,7 +2900,36 @@ namespace OCA\OpenRegister\Service\Flow {
 			public function find(string $uuid): \OCA\OpenRegister\Db\Flow {
 				return new \OCA\OpenRegister\Db\Flow();
 			}//end find()
+
+			/**
+			 * Delete a flow by uuid.
+			 *
+			 * @param string $uuid The flow's uuid.
+			 *
+			 * @return void
+			 */
+			public function delete(string $uuid): void {
+			}//end delete()
 		}//end class
+	}//end if
+
+	if (interface_exists(FlowVersionServiceInterface::class, autoload: false) === false) {
+		/**
+		 * Stub FlowVersionServiceInterface — publishing a flow's head, so its
+		 * triggers subscribe. Mirrors the real `publish()` signature.
+		 */
+		interface FlowVersionServiceInterface {
+			/**
+			 * Publish the flow's current definition as a new version.
+			 *
+			 * @param \OCA\OpenRegister\Db\Flow $flow        The flow.
+			 * @param string|null                $publishedBy Who published it.
+			 * @param string|null                $bump        The semver part to bump.
+			 *
+			 * @return object The published version.
+			 */
+			public function publish(\OCA\OpenRegister\Db\Flow $flow, ?string $publishedBy = null, ?string $bump = null): object;
+		}//end interface
 	}//end if
 }
 
