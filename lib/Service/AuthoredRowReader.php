@@ -29,6 +29,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\IAppConfig;
 
@@ -63,12 +64,16 @@ final class AuthoredRowReader {
 	 * @return array<int, array<string, mixed>> The rows.
 	 *
 	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004)
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	public function storedFor(string $register, string $schema): array {
+		// No `register` filter: findAll() reads `filters.register` as the register
+		// to query, not as a property, so it would look for these rows in the
+		// host's register. The loop below matches the property instead.
 		$rows = $this->objectService
 			->setRegister($this->registerSlug())
 			->setSchema($this->schema)
-			->findAll(['filters' => ['register' => $register], 'limit' => 500]);
+			->findAll(['limit' => 500]);
 
 		if (is_array($rows) === false) {
 			return [];
@@ -76,8 +81,8 @@ final class AuthoredRowReader {
 
 		$mine = [];
 		foreach ($rows as $row) {
-			if (is_array($row) === false
-				|| (string)($row['register'] ?? '') !== $register
+			$row = ObjectRecord::toArray(object: $row);
+			if ((string)($row['register'] ?? '') !== $register
 				|| (string)($row['schema'] ?? '') !== $schema
 			) {
 				continue;

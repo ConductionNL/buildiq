@@ -43,6 +43,7 @@ use RuntimeException;
  * @covers \OCA\Buildiq\Mcp\Handler\ListAppsHandler
  * @uses   \OCA\Buildiq\Mcp\Handler\AbstractToolHandler
  * @uses   \OCA\Buildiq\Support\ObjectRecord
+ * @uses   \OCA\Buildiq\Service\AppOrganisationGuard
  */
 class ListAppsHandlerTest extends TestCase {
 

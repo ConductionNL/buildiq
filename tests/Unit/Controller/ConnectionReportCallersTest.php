@@ -66,6 +66,7 @@ use RuntimeException;
  * @uses   \OCA\Buildiq\Service\StoreClient
  * @uses \OCA\Buildiq\Controller\GitHubRequestParams
  * @uses \OCA\Buildiq\Service\GitHub\TokenScrubber
+ * @uses   \OCA\Buildiq\Service\HelperFactory
  */
 class ConnectionReportCallersTest extends TestCase {
 

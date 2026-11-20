@@ -62,8 +62,112 @@ class CopilotPlanValidator {
 			return [['stepIndex' => -1, 'message' => 'Plan has no steps.']];
 		}
 
-		return $this->stepViolations(steps: $steps, descriptorsById: $this->descriptorsById(toolDescriptors: $toolDescriptors));
+		return array_merge(
+			$this->stepViolations(steps: $steps, descriptorsById: $this->descriptorsById(toolDescriptors: $toolDescriptors)),
+			$this->storyViolations(stories: ($plan['stories'] ?? null), steps: array_values($steps))
+		);
 	}//end validate()
+
+	/**
+	 * The violations of the plan's user stories: each needs a role and a goal,
+	 * and every `servedBy` index must point at an upsertSchema or upsertPage step.
+	 * A plan without stories has none to check.
+	 *
+	 * @param mixed             $stories The plan's `stories`, if any.
+	 * @param array<int, mixed> $steps   The plan's steps, in order.
+	 *
+	 * @return array<int, array{stepIndex: int, message: string}>
+	 *
+	 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot/spec.md#requirement-the-plan-carries-user-stories-req-bqch-006
+	 */
+	private function storyViolations(mixed $stories, array $steps): array {
+		if ($stories === null) {
+			return [];
+		}
+
+		if (is_array($stories) === false || ($stories !== [] && array_is_list($stories) === false)) {
+			return [['stepIndex' => -1, 'message' => 'Plan "stories" must be a list.']];
+		}
+
+		$violations = [];
+		foreach ($stories as $index => $story) {
+			foreach ($this->storyProblems(story: $story, steps: $steps) as $problem) {
+				$violations[] = ['stepIndex' => -1, 'message' => "Story {$index}: {$problem}"];
+			}
+		}
+
+		return $violations;
+	}//end storyViolations()
+
+	/**
+	 * What is wrong with one story.
+	 *
+	 * @param mixed             $story The story entry.
+	 * @param array<int, mixed> $steps The plan's steps, in order.
+	 *
+	 * @return string[]
+	 */
+	private function storyProblems(mixed $story, array $steps): array {
+		if (is_array($story) === false) {
+			return ['is not an object.'];
+		}
+
+		return array_merge(
+			$this->storyTextProblems(story: $story),
+			$this->servedByProblems(servedBy: ($story['servedBy'] ?? []), steps: $steps)
+		);
+	}//end storyProblems()
+
+	/**
+	 * What is wrong with a story's role, goal and benefit.
+	 *
+	 * @param array<array-key, mixed> $story The story entry.
+	 *
+	 * @return string[]
+	 */
+	private function storyTextProblems(array $story): array {
+		$problems = [];
+		foreach (['role', 'goal'] as $key) {
+			if (is_string($story[$key] ?? null) === false || trim($story[$key]) === '') {
+				$problems[] = "has no {$key}.";
+			}
+		}
+
+		if (isset($story['benefit']) === true && is_string($story['benefit']) === false) {
+			$problems[] = 'benefit must be a string.';
+		}
+
+		return $problems;
+	}//end storyTextProblems()
+
+	/**
+	 * What is wrong with a story's `servedBy`: it must be a list of indexes of
+	 * schema or page steps.
+	 *
+	 * @param mixed             $servedBy The story's servedBy value.
+	 * @param array<int, mixed> $steps    The plan's steps, in order.
+	 *
+	 * @return string[]
+	 */
+	private function servedByProblems(mixed $servedBy, array $steps): array {
+		if (is_array($servedBy) === false || ($servedBy !== [] && array_is_list($servedBy) === false)) {
+			return ['servedBy must be a list of step indexes.'];
+		}
+
+		$problems = [];
+		foreach ($servedBy as $stepIndex) {
+			$tool = '';
+			if (is_int($stepIndex) === true && is_array($steps[$stepIndex] ?? null) === true) {
+				$tool = (string)($steps[$stepIndex]['tool'] ?? '');
+			}
+
+			if (in_array($tool, ['buildiq.upsertSchema', 'buildiq.upsertPage'], true) === false) {
+				$problems[] = 'servedBy ' . json_encode($stepIndex) . ' does not point at a schema or page step.';
+			}
+		}
+
+		return $problems;
+	}//end servedByProblems()
 
 	/**
 	 * The violations of every step, in step order.

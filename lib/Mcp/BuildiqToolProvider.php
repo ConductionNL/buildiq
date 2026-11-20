@@ -121,6 +121,22 @@ class BuildiqToolProvider implements IMcpToolProvider, BuildiqToolProviderInterf
 					'name' => ['type' => 'string', 'minLength' => 2, 'maxLength' => 80],
 					'description' => ['type' => 'string', 'maxLength' => 500],
 					'preset' => ['type' => 'string', 'enum' => ['single', 'dev-prod', 'dev-staging-prod'], 'default' => 'dev-prod'],
+					'stories' => [
+						'type' => 'array',
+						'maxItems' => 20,
+						'description' => 'User stories the app serves, kept on the Application. Filled in from the plan\'s stories; leave it out.',
+						'items' => [
+							'type' => 'object',
+							'required' => ['role', 'goal'],
+							'properties' => [
+								'id' => ['type' => 'string', 'maxLength' => 64],
+								'role' => ['type' => 'string', 'maxLength' => 120],
+								'goal' => ['type' => 'string', 'maxLength' => 300],
+								'benefit' => ['type' => 'string', 'maxLength' => 300],
+								'servedBy' => ['type' => 'array', 'items' => ['type' => 'object']],
+							],
+						],
+					],
 				],
 				'required' => ['slug', 'name'],
 			],

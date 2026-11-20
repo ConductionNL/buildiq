@@ -59,6 +59,9 @@ use OCA\Buildiq\Kernel\Contracts\ApplicationVersionServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\ManifestResolverServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\PermissionResolverInterface;
 use OCA\Buildiq\Kernel\Contracts\TemplateInstallSeamInterface;
+use OCA\Buildiq\Kernel\Contracts\SettingsServiceInterface;
+use OCA\Buildiq\Service\Icon\SvgRasteriser;
+use OCA\Buildiq\Service\Offline\OfflineWorkerScript;
 use OCA\Buildiq\Service\AppOrganisationGuard;
 use OCA\Buildiq\Service\CallerContext;
 use OCA\Buildiq\Service\HelperFactory;
@@ -82,6 +85,7 @@ use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\UserRateLimit;
+use OCP\AppFramework\Http\DataDisplayResponse;
 use OCP\AppFramework\Http\JSONResponse;
 use OCP\IGroupManager;
 use OCP\IRequest;
@@ -171,6 +175,9 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 	 * @param CallerContext $caller The caller's session, group memberships and the shared permission matcher.
 	 * @param ManifestResolverServiceInterface $manifestResolver Version-aware manifest resolver (REQ-OBVR-002)
 	 * @param AppChannelApplierInterface $channelApplier Applies the v2 repo channels (apply-v2-channels)
+	 * @param SvgRasteriser $rasteriser Whether a PNG touch icon can be offered (pages-installable-offline-and-mobile T02)
+	 * @param SettingsServiceInterface|null $settings Whether the instance lets apps work offline (T05)
+	 * @param OfflineWorkerScript $workerScript The built offline worker (T05)
 	 *
 	 * @return void
 	 */
@@ -181,6 +188,9 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 		CallerContext $caller,
 		private readonly ManifestResolverServiceInterface $manifestResolver,
 		private readonly AppChannelApplierInterface $channelApplier,
+		private readonly SvgRasteriser $rasteriser=new SvgRasteriser(),
+		private readonly ?SettingsServiceInterface $settings=null,
+		private readonly OfflineWorkerScript $workerScript=new OfflineWorkerScript(),
 	) {
 		$this->objectService = $store->objectService;
 		$this->registerMapper = $store->registerMapper;
@@ -310,16 +320,25 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 			return new JSONResponse(['error' => 'not_found'], Http::STATUS_NOT_FOUND);
 		}
 
-		$application = $resolved[1];
-		$name = trim((string)($application['name'] ?? ''));
-		if ($name === '') {
-			$name = $slug;
-		}
+		$response = new JSONResponse($this->webManifestBody(application: $resolved[1], slug: $slug));
+		$response->addHeader('Content-Type', 'application/manifest+json; charset=utf-8');
 
-		$shortName = trim((string)($application['shortName'] ?? ''));
-		if ($shortName === '') {
-			$shortName = $name;
-		}
+		return $response;
+	}//end webManifest()
+
+	/**
+	 * The web app manifest of one app: its names, icons and theme colour.
+	 *
+	 * @param array<string, mixed> $application The application object.
+	 * @param string               $slug        The virtual app slug.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-a-maker-makes-an-app-installable-req-bqom-001
+	 */
+	private function webManifestBody(array $application, string $slug): array {
+		$name      = self::textOr(value: $application['name'] ?? '', fallback: $slug);
+		$shortName = self::textOr(value: $application['shortName'] ?? '', fallback: $name);
 
 		$manifest = [
 			'id' => './',
@@ -328,18 +347,135 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 			'start_url' => './',
 			'scope' => './',
 			'display' => 'standalone',
-			'icons' => [['src' => '../../icons/' . $slug . '.svg', 'type' => 'image/svg+xml', 'sizes' => 'any', 'purpose' => 'any']],
+			'icons' => $this->webManifestIcons(slug: $slug),
 		];
 		$themeColor = (string)($application['themeColor'] ?? '');
 		if (preg_match('/^#[0-9a-fA-F]{6}$/', $themeColor) === 1) {
 			$manifest['theme_color'] = $themeColor;
 		}
 
-		$response = new JSONResponse($manifest);
-		$response->addHeader('Content-Type', 'application/manifest+json; charset=utf-8');
+		return $manifest;
+	}//end webManifestBody()
+
+	/**
+	 * The trimmed text of a value, or the fallback when that is empty.
+	 *
+	 * @param mixed  $value    The value.
+	 * @param string $fallback The fallback.
+	 *
+	 * @return string
+	 */
+	private static function textOr(mixed $value, string $fallback): string {
+		$text = trim((string)$value);
+		if ($text === '') {
+			return $fallback;
+		}
+
+		return $text;
+	}//end textOr()
+
+	/**
+	 * The web app manifest icons: the SVG, plus a PNG for platforms that ignore
+	 * SVG icons, only when the server can make one (pages-installable-offline-and-mobile T02).
+	 *
+	 * @param string $slug The virtual app slug.
+	 *
+	 * @return array<int, array<string, string>>
+	 *
+	 * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-a-maker-makes-an-app-installable-req-bqom-001
+	 */
+	private function webManifestIcons(string $slug): array {
+		$icons = [['src' => '../../icons/' . $slug . '.svg', 'type' => 'image/svg+xml', 'sizes' => 'any', 'purpose' => 'any']];
+		if ($this->rasteriser->available() === true) {
+			$size    = SvgRasteriser::TOUCH_ICON_SIZE;
+			$icons[] = ['src' => '../../icons/' . $slug . '-touch.png', 'type' => 'image/png', 'sizes' => $size . 'x' . $size, 'purpose' => 'any'];
+		}
+
+		return $icons;
+	}//end webManifestIcons()
+
+	/**
+	 * Serve the app's offline worker, scoped to its run path.
+	 *
+	 * Answered only when the instance lets apps work offline, the caller may
+	 * open the app, and the app's production manifest declares an `offline`
+	 * block; every other case is 404, the same as an app that does not exist.
+	 * `Service-Worker-Allowed: ./` caps the scope at `/run/{slug}/`: this app's
+	 * runtime and nothing else (design D1).
+	 *
+	 * @param string $slug The virtual app slug.
+	 *
+	 * @return DataDisplayResponse|JSONResponse The script, or 404.
+	 *
+	 * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-a-maker-declares-what-goes-offline-req-bqom-003
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function offlineWorker(string $slug): DataDisplayResponse|JSONResponse {
+		$notFound = new JSONResponse(['error' => 'not_found'], Http::STATUS_NOT_FOUND);
+		try {
+			$script = $this->offlineWorkerScript(slug: $slug);
+		} catch (Throwable $e) {
+			$this->logger->error('Buildiq: offline worker failed for slug ' . $slug . ': ' . $e->getMessage(), ['exception' => $e]);
+			return $notFound;
+		}
+
+		if ($script === null) {
+			return $notFound;
+		}
+
+		$response = new DataDisplayResponse($script, Http::STATUS_OK, ['Content-Type' => 'text/javascript; charset=utf-8']);
+		$response->addHeader('Service-Worker-Allowed', './');
+		$response->addHeader('Cache-Control', 'no-cache');
 
 		return $response;
-	}//end webManifest()
+	}//end offlineWorker()
+
+	/**
+	 * The offline worker script of one app, or null when offline does not apply:
+	 * the instance does not allow it, the caller may not open the app, or its
+	 * production manifest declares no `offline` block.
+	 *
+	 * @param string $slug The virtual app slug.
+	 *
+	 * @return string|null
+	 *
+	 * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-a-maker-declares-what-goes-offline-req-bqom-003
+	 */
+	private function offlineWorkerScript(string $slug): ?string {
+		if ($this->settings?->offlineAppsAllowed() !== true) {
+			return null;
+		}
+
+		if ($this->resolvePermittedApplication(slug: $slug) instanceof JSONResponse) {
+			return null;
+		}
+
+		if ($this->declaresOffline(slug: $slug) === true) {
+			return $this->workerScript->script();
+		}
+
+		return null;
+	}//end offlineWorkerScript()
+
+	/**
+	 * Whether the app's production manifest, as the caller sees it, declares an `offline` block.
+	 *
+	 * @param string $slug The virtual app slug.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-a-maker-declares-what-goes-offline-req-bqom-003
+	 */
+	private function declaresOffline(string $slug): bool {
+		$manifest = $this->manifestResolver->resolve(
+			appSlug: $slug,
+			versionSlug: null,
+			caller: $this->userSession->getUser()
+		);
+
+		return is_array($manifest) === true && is_array($manifest['offline'] ?? null) === true;
+	}//end declaresOffline()
 
 	/**
 	 * The `?_version=` query parameter, or null when it is absent or empty.
@@ -2053,7 +2189,7 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 	 * app; a viewer is refused even when they are an administrator. A taken
 	 * slug is the seam's 409.
 	 *
-	 * @param string $slug The source app's slug
+	 * @param string $sourceSlug The source app's slug. Not `slug`: the JSON body's `slug` (the copy's) would override it.
 	 *
 	 * @return JSONResponse 201 with the new app; 400, 401, 403, 404 or 409 otherwise
 	 *
@@ -2062,7 +2198,7 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 	 */
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 10, period: 3600)]
-	public function copy(string $slug): JSONResponse {
+	public function copy(string $sourceSlug): JSONResponse {
 		$admitted = $this->admitClone(refusal: 'Copying an app requires Nextcloud admin privileges.');
 		if ($admitted instanceof JSONResponse) {
 			return $admitted;
@@ -2070,7 +2206,7 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 
 		[$user, $name, $newSlug] = $admitted;
 
-		$resolved = $this->resolveApplicationBySlug(slug: $slug);
+		$resolved = $this->resolveApplicationBySlug(slug: $sourceSlug);
 		if ($resolved instanceof JSONResponse) {
 			return $resolved;
 		}
