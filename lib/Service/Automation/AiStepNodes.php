@@ -83,6 +83,13 @@ final class AiStepNodes {
 	public const ANSWER_KEY = 'aiAnswer';
 
 	/**
+	 * Writes the prompt of a step.
+	 *
+	 * @var AiStepPrompt
+	 */
+	private readonly AiStepPrompt $prompts;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param string                    $register   The register the answer is written to.
@@ -94,6 +101,7 @@ final class AiStepNodes {
 		private readonly string $schema,
 		private readonly ?array $properties,
 	) {
+		$this->prompts = new AiStepPrompt();
 	}//end __construct()
 
 	/**
@@ -220,7 +228,7 @@ final class AiStepNodes {
 				'type' => self::AGENT_NODE,
 				'config' => [
 					'agentId' => $agent,
-					'prompt' => self::prompt(action: $action, preset: $preset, sources: $sources),
+					'prompt' => $this->prompts->prompt(action: $action, preset: $preset, sources: $sources),
 					'output' => self::ANSWER_KEY,
 					'expectJson' => in_array($preset, ['classify', 'extract'], true),
 				],
@@ -291,7 +299,7 @@ final class AiStepNodes {
 	private function writtenFields(array $action, string $preset, array $sources): array {
 		if ($preset === 'extract') {
 			$fields = [];
-			foreach (self::names(values: (array)($action['fields'] ?? [])) as $field) {
+			foreach ($this->prompts->names(values: (array)($action['fields'] ?? [])) as $field) {
 				self::assertNotSource(field: $field, sources: $sources);
 				$fields[$field] = '{{json.' . self::ANSWER_KEY . '.' . $field . '}}';
 			}
@@ -311,7 +319,7 @@ final class AiStepNodes {
 
 		self::assertNotSource(field: $target, sources: $sources);
 		if ($preset === 'classify') {
-			$this->assertLabelsTarget(target: $target, labels: self::names(values: (array)($action['labels'] ?? [])));
+			$this->assertLabelsTarget(target: $target, labels: $this->prompts->names(values: (array)($action['labels'] ?? [])));
 			return [$target => '{{json.' . self::ANSWER_KEY . '.label}}'];
 		}
 
@@ -354,7 +362,7 @@ final class AiStepNodes {
 			throw new UnsupportedAutomationCombinationException(message: 'Add the labels the AI step picks from.');
 		}
 
-		$enum = self::names(values: (array)(($this->properties[$target] ?? [])['enum'] ?? []));
+		$enum = $this->prompts->names(values: (array)(($this->properties[$target] ?? [])['enum'] ?? []));
 		$wanted = $labels;
 		sort($enum);
 		sort($wanted);
@@ -364,123 +372,61 @@ final class AiStepNodes {
 	}//end assertLabelsTarget()
 
 	/**
-	 * The prompt of a step: a fixed English instruction per preset, then one
-	 * placeholder per source field (D2, D3).
+	 * The trigger of an update automation with an AI step: it starts only when
+	 * a source field changed, so writing the answer does not start it again.
 	 *
-	 * @param array<string, mixed> $action  The action.
-	 * @param string               $preset  The preset.
-	 * @param list<string>         $sources The source fields.
+	 * @param string                   $triggerType The automation's trigger type.
+	 * @param array<int|string, mixed> $actions     The actions.
 	 *
-	 * @return string
-	 *
-	 * @throws UnsupportedAutomationCombinationException For an empty instruction or one that reads another field.
+	 * @return array<string, mixed>|null Null when the usual trigger applies.
 	 *
 	 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-an-ai-step-compiles-to-a-flow-that-writes-the-answer-back-req-bqls-002
 	 */
-	private static function prompt(array $action, string $preset, array $sources): string {
-		$instruction = match ($preset) {
-			'classify' => 'Classify the text below as exactly one of these labels: '
-				. implode(', ', self::names(values: (array)($action['labels'] ?? [])))
-				. '. Answer as JSON with one key "label" holding that label, written exactly as listed.',
-			'summarise' => 'Summarise the text below in a few sentences. Answer with the summary only.',
-			'extract' => 'Extract these fields from the text below: '
-				. implode(', ', self::names(values: (array)($action['fields'] ?? [])))
-				. '. Answer as JSON with exactly these keys, and null for a field the text does not give.',
-			'translate' => self::translateInstruction(action: $action),
-			default => self::ownInstruction(action: $action),
-		};
-
-		self::assertOnlySources(text: $instruction, sources: $sources);
-
-		$parts = [$instruction];
-		foreach ($sources as $field) {
-			$parts[] = $field . ":\n{{" . $field . '}}';
+	public function updateTriggerNode(string $triggerType, array $actions): ?array {
+		if ($triggerType !== 'object-updated' || self::holdsAiStep(actions: $actions) === false) {
+			return null;
 		}
 
-		return implode("\n\n", $parts);
-	}//end prompt()
+		return ['id' => 'trigger', 'type' => 'openregister.trigger-object', 'config' => $this->updateTrigger(actions: $actions)];
+	}//end updateTriggerNode()
 
 	/**
-	 * Refuse an instruction that names any field but a source (D3): Hermiq
-	 * renders every `{{...}}` in the prompt from the record, so a placeholder in
-	 * a label, a language or the maker's own prompt would send that field too.
+	 * The second trigger of an AI field: it also follows edits of its source
+	 * fields, into the same steps (REQ-BQLS-004).
 	 *
-	 * @param string       $text    The instruction.
-	 * @param list<string> $sources The source fields.
+	 * @param array<string, mixed>     $automation  The automation.
+	 * @param string                   $triggerType Its trigger type.
+	 * @param array<int|string, mixed> $actions     Its actions.
+	 * @param int                      $nodeCount   The nodes of the flow so far.
 	 *
-	 * @return void
+	 * @return array<string, mixed>|null Null for anything but an AI field with steps.
 	 *
-	 * @throws UnsupportedAutomationCombinationException For a placeholder outside the sources.
+	 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-a-schema-field-can-be-filled-by-ai-req-bqls-004
+	 */
+	public function editTriggerNode(array $automation, string $triggerType, array $actions, int $nodeCount): ?array {
+		if (($automation['origin'] ?? '') !== 'ai-field' || $triggerType !== 'object-created' || $nodeCount < 2) {
+			return null;
+		}
+
+		return ['id' => 'trigger-edit', 'type' => 'openregister.trigger-object', 'config' => $this->updateTrigger(actions: $actions)];
+	}//end editTriggerNode()
+
+	/**
+	 * The nodes of one AI step, refused on a trigger it cannot run on.
+	 *
+	 * @param array<string, mixed> $action      The action.
+	 * @param int                  $index       Its position.
+	 * @param string               $triggerType The automation's trigger type.
+	 *
+	 * @return list<array<string, mixed>>
+	 *
+	 * @throws UnsupportedAutomationCombinationException When the step cannot run.
 	 *
 	 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-an-ai-step-compiles-to-a-flow-that-writes-the-answer-back-req-bqls-002
 	 */
-	private static function assertOnlySources(string $text, array $sources): void {
-		preg_match_all('/\{\{\s*([^}]*?)\s*\}\}/', $text, $matches);
-		foreach ($matches[1] as $name) {
-			if (in_array($name, $sources, true) === false) {
-				throw new UnsupportedAutomationCombinationException(
-					message: 'The instruction reads {{' . $name . '}}, which is not a field the AI step sends.'
-				);
-			}
-		}
-	}//end assertOnlySources()
+	public function stepNodes(array $action, int $index, string $triggerType): array {
+		self::assertTrigger(triggerType: $triggerType);
 
-	/**
-	 * The instruction of a translate step.
-	 *
-	 * @param array<string, mixed> $action The action.
-	 *
-	 * @return string
-	 *
-	 * @throws UnsupportedAutomationCombinationException Without a language.
-	 */
-	private static function translateInstruction(array $action): string {
-		$language = trim((string)($action['language'] ?? ''));
-		if ($language === '') {
-			throw new UnsupportedAutomationCombinationException(message: 'Pick the language the AI step translates into.');
-		}
-
-		return 'Translate the text below into ' . $language . '. Answer with the translation only.';
-	}//end translateInstruction()
-
-	/**
-	 * The maker's own instruction.
-	 *
-	 * @param array<string, mixed> $action The action.
-	 *
-	 * @return string
-	 *
-	 * @throws UnsupportedAutomationCombinationException For an empty prompt.
-	 */
-	private static function ownInstruction(array $action): string {
-		$prompt = trim((string)($action['prompt'] ?? ''));
-		if ($prompt === '') {
-			throw new UnsupportedAutomationCombinationException(message: 'Write the instruction the AI step follows.');
-		}
-
-		return $prompt;
-	}//end ownInstruction()
-
-	/**
-	 * The trimmed, non-empty, distinct strings of a list.
-	 *
-	 * @param array<int|string, mixed> $values The values.
-	 *
-	 * @return list<string>
-	 */
-	private static function names(array $values): array {
-		$names = [];
-		foreach ($values as $value) {
-			if (is_scalar($value) === false) {
-				continue;
-			}
-
-			$value = trim((string)$value);
-			if ($value !== '' && in_array($value, $names, true) === false) {
-				$names[] = $value;
-			}
-		}
-
-		return $names;
-	}//end names()
+		return $this->build(action: $action, index: $index);
+	}//end stepNodes()
 }//end class

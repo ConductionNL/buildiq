@@ -244,8 +244,6 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 	 * @param InboundTriggerDeclarations|null $inbound Writes the integriq declarations of the
 	 *                                                 email and webhook triggers; resolved from
 	 *                                                 the container when null.
-	 * @param FlowNodeAvailability|null $flowNodes Whether the flow engine has a node type
-	 *                                            (ai-llm-steps-and-computed-fields D6); built on the container when null.
 	 *
 	 * @return void
 	 */
@@ -259,7 +257,6 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 		private readonly ?AutomationFlowBuilder $flowBuilder = null,
 		private readonly ?AutomationRuleSets $ruleSets = null,
 		private readonly ?InboundTriggerDeclarations $inbound = null,
-		private readonly ?FlowNodeAvailability $flowNodes = null,
 	) {
 
 	}//end __construct()
@@ -411,6 +408,8 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 	 * @throws UnsupportedAutomationCombinationException When the shape cannot run in a flow.
 	 *
 	 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-declarative-primitives-or-one-openregister-flow-req-bqar-001
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) AiStepNodes::holdsAiStep() is a pure check of the actions.
 	 */
 	private function compileFlowBackend(CompileInput $input): array {
 		// The register and schemas are read only when a node needs them, so a
@@ -498,11 +497,13 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 	 *
 	 * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#2.2
 	 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-ai-steps-need-the-hermiq-node-req-bqls-005
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) AiStepNodes::flowRunsAgent() is a pure check of the compiled flow.
 	 */
 	public function apply(array $automation, array $plan, array $priorProvenance = []): array {
 		// Ai-llm-steps-and-computed-fields D6: an AI step needs Hermiq's node in
 		// the engine; checked again here, before anything is written.
-		$flowNodes = ($this->flowNodes ?? new FlowNodeAvailability(container: $this->container));
+		$flowNodes = new FlowNodeAvailability(container: $this->container);
 		if (AiStepNodes::flowRunsAgent(flow: $this->orArray(value: $plan['flow'] ?? null)) === true
 			&& $flowNodes->has(type: AiStepNodes::AGENT_NODE) === false
 		) {

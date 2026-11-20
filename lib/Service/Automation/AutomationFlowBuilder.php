@@ -132,8 +132,9 @@ final class AutomationFlowBuilder {
 	public function build(CompileInput $input, string $register, array $schemas, array $ruleSets = [], ?array $schemaProperties = null): array {
 		$this->assertNoOwnBackend(input: $input);
 		$schema = (string)($input->trigger['schema'] ?? '');
-		$ai = new AiStepNodes(register: $register, schema: $schema, properties: $schemaProperties);
-		$nodes = [$this->aiTrigger(input: $input, ai: $ai) ?? $this->triggerNode(input: $input, register: $register)];
+		$aiSteps = new AiStepNodes(register: $register, schema: $schema, properties: $schemaProperties);
+		$trigger = $aiSteps->updateTriggerNode(triggerType: $input->triggerType, actions: $input->actions);
+		$nodes = [$trigger ?? $this->triggerNode(input: $input, register: $register)];
 
 		array_push($nodes, ...$this->conditionNodes(condition: $input->condition, ruleSets: $ruleSets));
 
@@ -146,8 +147,7 @@ final class AutomationFlowBuilder {
 			}
 
 			if ((string)($action['type'] ?? '') === AiStepNodes::ACTION) {
-				AiStepNodes::assertTrigger(triggerType: $input->triggerType);
-				array_push($nodes, ...$ai->build(action: $action, index: (int)$index));
+				array_push($nodes, ...$aiSteps->stepNodes(action: $action, index: (int)$index, triggerType: $input->triggerType));
 				continue;
 			}
 
@@ -162,32 +162,19 @@ final class AutomationFlowBuilder {
 
 		// An AI field also follows edits of its source fields: a second trigger
 		// into the same steps (ai-llm-steps-and-computed-fields REQ-BQLS-004).
-		if (($input->automation['origin'] ?? '') === 'ai-field' && $input->triggerType === 'object-created' && $count > 1) {
-			$nodes[] = ['id' => 'trigger-edit', 'type' => 'openregister.trigger-object', 'config' => $ai->updateTrigger(actions: $input->actions)];
+		$editTrigger = $aiSteps->editTriggerNode(
+			automation: $input->automation,
+			triggerType: $input->triggerType,
+			actions: $input->actions,
+			nodeCount: $count
+		);
+		if ($editTrigger !== null) {
+			$nodes[] = $editTrigger;
 			$edges[] = ['id' => 'e-edit', 'from' => ['trigger-edit'], 'to' => [$nodes[1]['id']]];
 		}
 
 		return ['name' => 'aut-' . $input->slug, 'nodes' => $nodes, 'edges' => $edges];
 	}//end build()
-
-	/**
-	 * The trigger of an update automation with an AI step: it starts only when
-	 * a source field changed, so writing the answer does not start it again.
-	 *
-	 * @param CompileInput $input The automation.
-	 * @param AiStepNodes  $ai    The AI step nodes.
-	 *
-	 * @return array<string, mixed>|null Null when the usual trigger applies.
-	 *
-	 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-an-ai-step-compiles-to-a-flow-that-writes-the-answer-back-req-bqls-002
-	 */
-	private function aiTrigger(CompileInput $input, AiStepNodes $ai): ?array {
-		if ($input->triggerType !== 'object-updated' || AiStepNodes::holdsAiStep(actions: $input->actions) === false) {
-			return null;
-		}
-
-		return ['id' => 'trigger', 'type' => 'openregister.trigger-object', 'config' => $ai->updateTrigger(actions: $input->actions)];
-	}//end aiTrigger()
 
 	/**
 	 * Refuse an approval or document action beside a flow (D1).

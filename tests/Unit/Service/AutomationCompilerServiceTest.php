@@ -1540,21 +1540,18 @@ final class AutomationCompilerServiceTest extends TestCase {
 		$container->method('get')->willReturnCallback(
 			fn (string $id): object => match ($id) {
 				FlowNodeAvailability::REGISTRY => $registry,
-				default => $this->objectService,
+				default => $this->container->get($id),
 			}
 		);
 
+		// The compiler builds its FlowNodeAvailability on this container.
 		return new AutomationCompilerService(
-			$this->container,
+			$container,
 			$this->objectService,
 			$this->schemaMapper,
 			$this->appManager,
 			new NullLogger(),
 			$this->flowBackend,
-			null,
-			null,
-			null,
-			new FlowNodeAvailability(container: $container),
 		);
 	}//end compilerWithNodes()
 
