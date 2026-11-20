@@ -39,6 +39,7 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\Buildiq\Service\Automation\AutomationFlowBuilder
  * @uses \OCA\Buildiq\Service\Automation\CompileInput
+ * @uses \OCA\Buildiq\Service\Automation\InboundTriggerDeclarations
  * @uses \OCA\Buildiq\Service\FeelToJsonLogic
  * @uses \OCA\Buildiq\Service\FeelParser
  * @uses \OCA\Buildiq\Service\Automation\RuleDecisionNodes
