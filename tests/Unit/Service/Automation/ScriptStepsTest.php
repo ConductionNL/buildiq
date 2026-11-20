@@ -53,7 +53,7 @@ final class ScriptStepsTest extends TestCase {
 
 		self::assertSame(
 			expected: [['code' => 'return items;', 'timeoutSeconds' => 10, 'note' => '']],
-			actual: ScriptSteps::of(actions: $actions)
+			actual: ScriptSteps::stepsOf(actions: $actions)
 		);
 		self::assertTrue(condition: ScriptSteps::holds(automation: self::automation(actions: $actions)));
 		self::assertFalse(condition: ScriptSteps::holds(automation: self::automation(actions: [['type' => 'webhook']])));
@@ -78,6 +78,23 @@ final class ScriptStepsTest extends TestCase {
 			condition: ScriptSteps::changed(before: $stored, after: self::automation(actions: [['type' => 'send-notification'], $script]))
 		);
 	}//end testItSeesAddChangeAndRemove()
+
+	/**
+	 * Stamping names the caller on a change and leaves an automation that never had a script alone.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-script-runs-only-in-the-code-runner-req-bqss-003
+	 */
+	public function testStampingNamesTheCallerOnlyOnAChange(): void {
+		$script = ['type' => 'script-step', 'code' => 'return items;'];
+
+		$created = ScriptSteps::stamp(payload: self::automation(actions: [$script]), before: [], caller: 'alice');
+		self::assertSame(expected: ['scriptAuthor' => 'alice'], actual: $created['provenance']);
+
+		$plain = self::automation(actions: [['type' => 'webhook']]);
+		self::assertSame(expected: $plain, actual: ScriptSteps::stamp(payload: $plain, before: $plain, caller: 'bob'));
+	}//end testStampingNamesTheCallerOnlyOnAChange()
 
 	/**
 	 * The caller is named for a change, the stored author otherwise, and the body's word never.

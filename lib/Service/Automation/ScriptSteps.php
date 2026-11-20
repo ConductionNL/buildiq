@@ -79,7 +79,7 @@ final class ScriptSteps {
 	 *
 	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-only-app-owners-change-script-steps-req-bqss-002
 	 */
-	public static function of(array $actions): array {
+	public static function stepsOf(array $actions): array {
 		$steps = [];
 		foreach ($actions as $action) {
 			if (is_array($action) === false || ($action['type'] ?? null) !== self::ACTION) {
@@ -94,7 +94,7 @@ final class ScriptSteps {
 		}
 
 		return $steps;
-	}//end of()
+	}//end stepsOf()
 
 	/**
 	 * Whether an automation holds a script step.
@@ -106,7 +106,7 @@ final class ScriptSteps {
 	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-script-runs-only-in-the-code-runner-req-bqss-003
 	 */
 	public static function holds(array $automation): bool {
-		return self::of(actions: self::actionsOf(automation: $automation)) !== [];
+		return self::stepsOf(actions: self::actionsOf(automation: $automation)) !== [];
 	}//end holds()
 
 	/**
@@ -120,7 +120,7 @@ final class ScriptSteps {
 	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-only-app-owners-change-script-steps-req-bqss-002
 	 */
 	public static function changed(array $before, array $after): bool {
-		return self::of(actions: self::actionsOf(automation: $before)) !== self::of(actions: self::actionsOf(automation: $after));
+		return self::stepsOf(actions: self::actionsOf(automation: $before)) !== self::stepsOf(actions: self::actionsOf(automation: $after));
 	}//end changed()
 
 	/**
@@ -148,6 +148,52 @@ final class ScriptSteps {
 	}//end authored()
 
 	/**
+	 * The automation to save, with the author of its last script change in its provenance (D6).
+	 *
+	 * A save that changes a script names the caller; any other save keeps the
+	 * stored author; the body's own word for it is never taken. An automation
+	 * that never had a script keeps its provenance as sent.
+	 *
+	 * @param array<string, mixed> $payload The automation as it would be saved.
+	 * @param array<string, mixed> $before  The stored automation, [] for a new one.
+	 * @param string               $caller  The caller's uid.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-script-runs-only-in-the-code-runner-req-bqss-003
+	 */
+	public static function stamp(array $payload, array $before, string $caller): array {
+		$provenance = self::arrayOf(value: $payload['provenance'] ?? null);
+		$stored     = (string)(self::arrayOf(value: $before['provenance'] ?? null)[self::AUTHOR_KEY] ?? '');
+		$author     = null;
+		if (self::changed(before: $before, after: $payload) === true) {
+			$author = $caller;
+		}
+
+		if ($author === null && $stored === '' && array_key_exists(self::AUTHOR_KEY, $provenance) === false) {
+			return $payload;
+		}
+
+		$payload['provenance'] = self::authored(provenance: $provenance, stored: $stored, caller: $author);
+		return $payload;
+	}//end stamp()
+
+	/**
+	 * A value when it is an array, else [].
+	 *
+	 * @param mixed $value The value.
+	 *
+	 * @return array<mixed>
+	 */
+	private static function arrayOf(mixed $value): array {
+		if (is_array($value) === true) {
+			return $value;
+		}
+
+		return [];
+	}//end arrayOf()
+
+	/**
 	 * The actions of an automation, [] when absent or malformed.
 	 *
 	 * @param array<string, mixed> $automation The automation.
@@ -155,11 +201,6 @@ final class ScriptSteps {
 	 * @return array<int|string, mixed>
 	 */
 	private static function actionsOf(array $automation): array {
-		$actions = ($automation['actions'] ?? []);
-		if (is_array($actions) === false) {
-			return [];
-		}
-
-		return $actions;
+		return self::arrayOf(value: $automation['actions'] ?? null);
 	}//end actionsOf()
 }//end class

@@ -179,6 +179,7 @@ class AutomationWriteService implements AutomationWriteServiceInterface {
 	 *
 	 * @spec openspec/specs/automation-designer/spec.md#req-autd-008
 	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-only-app-owners-change-script-steps-req-bqss-002
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-script-runs-only-in-the-code-runner-req-bqss-003
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	public function create(array $payload, array $roles): JSONResponse {
@@ -189,14 +190,16 @@ class AutomationWriteService implements AutomationWriteServiceInterface {
 			action: function (array $application) use ($payload): JSONResponse {
 				$refusal = $this->shareChangeRefusal(changes: self::isShared(automation: $payload), application: $application)
 					?? $this->shareabilityRefusal(automation: $payload)
-					?? $this->scriptRefusal(before: [], after: $payload, application: $application);
+					?? $this->ownerOnlyRefusal(touches: ScriptSteps::changed(before: [], after: $payload), application: $application);
 				if ($refusal !== null) {
 					return $refusal;
 				}
 
 				// No uuid — OR mints one. `_rbac: false` for the reason
 				// documented on saveAuthorised().
-				$saved = $this->saveAuthorised(automation: $this->withScriptAuthor(payload: $payload, before: []), uuid: null);
+				// Logic-script-step D6: who wrote the code last, never the body's word for it.
+				$stamped = ScriptSteps::stamp(payload: $payload, before: [], caller: (string)$this->userSession->getUser()?->getUID());
+				$saved   = $this->saveAuthorised(automation: $stamped, uuid: null);
 
 				return new JSONResponse(data: ObjectRecord::toArray(object: $saved), statusCode: Http::STATUS_CREATED);
 			}
@@ -221,6 +224,7 @@ class AutomationWriteService implements AutomationWriteServiceInterface {
 	 *
 	 * @spec openspec/specs/automation-designer/spec.md#req-autd-008
 	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-only-app-owners-change-script-steps-req-bqss-002
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-script-runs-only-in-the-code-runner-req-bqss-003
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	public function update(string $uuid, array $payload, array $automation): JSONResponse {
@@ -237,12 +241,14 @@ class AutomationWriteService implements AutomationWriteServiceInterface {
 		$changes     = self::isShared(automation: $payload) !== self::isShared(automation: $automation);
 		$refusal     = $this->shareChangeRefusal(changes: $changes, application: $application)
 			?? $this->shareabilityRefusal(automation: $payload)
-			?? $this->scriptRefusal(before: $automation, after: $payload, application: $application);
+			?? $this->ownerOnlyRefusal(touches: ScriptSteps::changed(before: $automation, after: $payload), application: $application);
 		if ($refusal !== null) {
 			return $refusal;
 		}
 
-		$saved = $this->saveAuthorised(automation: $this->withScriptAuthor(payload: $payload, before: $automation), uuid: $uuid);
+		// Logic-script-step D6: who wrote the code last, never the body's word for it.
+		$stamped = ScriptSteps::stamp(payload: $payload, before: $automation, caller: (string)$this->userSession->getUser()?->getUID());
+		$saved   = $this->saveAuthorised(automation: $stamped, uuid: $uuid);
 
 		return new JSONResponse(data: ObjectRecord::toArray(object: $saved), statusCode: Http::STATUS_OK);
 	}//end update()
@@ -551,29 +557,6 @@ class AutomationWriteService implements AutomationWriteServiceInterface {
 	}//end shareChangeRefusal()
 
 	/**
-	 * The refusal of a save that adds, changes or removes a script step by anyone but an app owner, or null.
-	 *
-	 * Admins get no bypass (REQ-BQSS-002).
-	 *
-	 * @param array<string,mixed>      $before      The stored automation, [] for a new one.
-	 * @param array<string,mixed>      $after       The automation as it would be saved.
-	 * @param array<string,mixed>|null $application The automation's Application.
-	 *
-	 * @return JSONResponse|null The refusal.
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) ScriptSteps is a pure read of the actions.
-	 *
-	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-only-app-owners-change-script-steps-req-bqss-002
-	 */
-	private function scriptRefusal(array $before, array $after, ?array $application): ?JSONResponse {
-		if (ScriptSteps::changed(before: $before, after: $after) === false || $this->callerOwns(application: $application) === true) {
-			return null;
-		}
-
-		return $this->error(code: 'insufficient_permission', detail: ScriptSteps::OWNER_REFUSAL, status: Http::STATUS_FORBIDDEN);
-	}//end scriptRefusal()
-
-	/**
 	 * The refusal of compiling or enabling an automation that holds a script
 	 * step by anyone but an app owner, or null (REQ-BQSS-002).
 	 *
@@ -586,45 +569,30 @@ class AutomationWriteService implements AutomationWriteServiceInterface {
 	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-only-app-owners-change-script-steps-req-bqss-002
 	 */
 	public function compileRefusal(array $automation): ?JSONResponse {
-		if (ScriptSteps::holds(automation: $automation) === false
-			|| $this->callerOwns(application: $this->loadApplication(slug: (string)($automation['applicationSlug'] ?? ''))) === true
-		) {
+		if (ScriptSteps::holds(automation: $automation) === false) {
+			return null;
+		}
+
+		return $this->ownerOnlyRefusal(touches: true, application: $this->loadApplication(slug: (string)($automation['applicationSlug'] ?? '')));
+	}//end compileRefusal()
+
+	/**
+	 * The script-step refusal for a caller who is no owner of the app, or null.
+	 *
+	 * @param bool                     $touches     Whether the call touches a script step.
+	 * @param array<string,mixed>|null $application The automation's Application.
+	 *
+	 * @return JSONResponse|null The refusal.
+	 *
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-only-app-owners-change-script-steps-req-bqss-002
+	 */
+	private function ownerOnlyRefusal(bool $touches, ?array $application): ?JSONResponse {
+		if ($touches === false || $this->callerOwns(application: $application) === true) {
 			return null;
 		}
 
 		return $this->error(code: 'insufficient_permission', detail: ScriptSteps::OWNER_REFUSAL, status: Http::STATUS_FORBIDDEN);
-	}//end compileRefusal()
-
-	/**
-	 * The automation with the author of its last script change in its provenance (D6).
-	 *
-	 * A save that changes a script names the caller; any other save keeps the
-	 * stored author; the body's own word for it is never taken.
-	 *
-	 * @param array<string,mixed> $payload The automation as it would be saved.
-	 * @param array<string,mixed> $before  The stored automation, [] for a new one.
-	 *
-	 * @return array<string,mixed>
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) ScriptSteps is a pure read of the actions.
-	 *
-	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-script-runs-only-in-the-code-runner-req-bqss-003
-	 */
-	private function withScriptAuthor(array $payload, array $before): array {
-		$provenance = $this->orArray(value: $payload['provenance'] ?? null);
-		$stored     = (string)($this->orArray(value: $before['provenance'] ?? null)[ScriptSteps::AUTHOR_KEY] ?? '');
-		$caller     = null;
-		if (ScriptSteps::changed(before: $before, after: $payload) === true) {
-			$caller = (string)$this->userSession->getUser()?->getUID();
-		}
-
-		if ($caller === null && $stored === '' && array_key_exists(ScriptSteps::AUTHOR_KEY, $provenance) === false) {
-			return $payload;
-		}
-
-		$payload['provenance'] = ScriptSteps::authored(provenance: $provenance, stored: $stored, caller: $caller);
-		return $payload;
-	}//end withScriptAuthor()
+	}//end ownerOnlyRefusal()
 
 	/**
 	 * The refusal of a shared automation that writes a record of its own app, or null (REQ-BQSF-003).

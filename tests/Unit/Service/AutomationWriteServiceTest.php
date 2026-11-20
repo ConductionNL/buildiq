@@ -739,7 +739,7 @@ final class AutomationWriteServiceTest extends TestCase {
 		$base = ['applicationSlug' => 'permit-tracker', 'versionUuid' => 'draft-version', 'slug' => 'join', 'actions' => self::scriptActions()];
 
 		$this->wireUser(uid: 'bob');
-		$this->objectService->method('find')->willReturn($this->buildEntity(self::APPLICATION));
+		$this->objectService->method('find')->willReturn($this->buildEntity(payload: self::APPLICATION));
 		$this->objectService->expects($this->never())->method('saveObject');
 		$refused = $this->service->create(payload: $base, roles: ['owners', 'editors']);
 		$this->assertSame(expected: Http::STATUS_FORBIDDEN, actual: $refused->getStatus());
@@ -747,11 +747,11 @@ final class AutomationWriteServiceTest extends TestCase {
 		$this->setUp();
 		$written = null;
 		$this->wireUser(uid: 'alice');
-		$this->objectService->method('find')->willReturn($this->buildEntity(self::APPLICATION));
+		$this->objectService->method('find')->willReturn($this->buildEntity(payload: self::APPLICATION));
 		$this->objectService->method('saveObject')->willReturnCallback(
 			function (...$arguments) use (&$written): ObjectEntity {
 				$written = $arguments[$this->argumentIndex(method: 'saveObject', name: 'object')];
-				return $this->buildEntity(['id' => 'a-new']);
+				return $this->buildEntity(payload: ['id' => 'a-new']);
 			}
 		);
 		$allowed = $this->service->create(payload: $base, roles: ['owners', 'editors']);
@@ -780,7 +780,7 @@ final class AutomationWriteServiceTest extends TestCase {
 	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-only-app-owners-change-script-steps-req-bqss-002
 	 */
 	public function testCompilingAScriptStepTakesAnOwner(): void {
-		$this->objectService->method('find')->willReturn($this->buildEntity(self::APPLICATION));
+		$this->objectService->method('find')->willReturn($this->buildEntity(payload: self::APPLICATION));
 		$stored = ['applicationSlug' => 'permit-tracker', 'actions' => self::scriptActions()];
 
 		$this->wireUser(uid: 'bob');
@@ -789,7 +789,7 @@ final class AutomationWriteServiceTest extends TestCase {
 		$this->assertNull(actual: $this->service->compileRefusal(automation: ['applicationSlug' => 'permit-tracker', 'actions' => []]));
 
 		$this->setUp();
-		$this->objectService->method('find')->willReturn($this->buildEntity(self::APPLICATION));
+		$this->objectService->method('find')->willReturn($this->buildEntity(payload: self::APPLICATION));
 		$this->wireUser(uid: 'alice');
 		$this->assertNull(actual: $this->service->compileRefusal(automation: $stored));
 	}//end testCompilingAScriptStepTakesAnOwner()
