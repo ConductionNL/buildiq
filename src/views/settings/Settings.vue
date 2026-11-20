@@ -83,6 +83,27 @@
 				</span>
 			</div>
 
+			<!-- "Allow code on pages" (pages-custom-code, REQ-BQCC-005): off by
+				default. The server reads it on every manifest save. -->
+			<h3 id="section-page-code" class="settings-subheading">
+				{{ t('buildiq', 'Code on pages') }}
+			</h3>
+			<div class="form-group">
+				<NcCheckboxRadioSwitch
+					v-model="allowPageCode"
+					type="switch">
+					{{ t('buildiq', 'Allow code on pages') }}
+				</NcCheckboxRadioSwitch>
+				<p class="settings-help">
+					{{
+						t(
+							'buildiq',
+							'Lets app owners write their own HTML, CSS and JavaScript on a page, and computed columns and fields. The code runs in a sandbox with no network access. When off, code shows a placeholder and computed values stay empty.',
+						)
+					}}
+				</p>
+			</div>
+
 			<div v-if="successMessage" class="success-message">
 				{{ successMessage }}
 			</div>
@@ -96,13 +117,14 @@
 
 <script>
 import { CnSettingsSection } from '@conduction/nextcloud-vue'
-import { NcButton } from '@nextcloud/vue'
+import { NcButton, NcCheckboxRadioSwitch } from '@nextcloud/vue'
 import { useSettingsStore } from '../../store/modules/settings.js'
 
 export default {
 	name: 'Settings',
 	components: {
 		NcButton,
+		NcCheckboxRadioSwitch,
 		CnSettingsSection,
 	},
 
@@ -117,6 +139,7 @@ export default {
 			},
 
 			tokenIsSet: false,
+			allowPageCode: false,
 			saving: false,
 			successMessage: '',
 		}
@@ -149,6 +172,7 @@ export default {
 		this.form.registry_url = settings.registry_url || ''
 		this.form.registry_register = settings.registry_register || 'buildiq'
 		this.tokenIsSet = !!settings.registry_token_set
+		this.allowPageCode = settings.allow_page_code === true
 		this.form.allow_offline_apps = settings.allow_offline_apps === true
 	},
 
@@ -167,6 +191,7 @@ export default {
 				register: this.form.register,
 				registry_url: this.form.registry_url,
 				registry_register: this.form.registry_register,
+				allow_page_code: this.allowPageCode,
 				allow_offline_apps: this.form.allow_offline_apps === true,
 			}
 			if (this.form.registry_token.trim().length > 0) {
@@ -180,6 +205,7 @@ export default {
 					|| (this.tokenIsSet
 						&& this.form.registry_token.trim().length === 0)
 				this.form.registry_token = ''
+				this.allowPageCode = result.allow_page_code === true
 			}
 			this.saving = false
 		},

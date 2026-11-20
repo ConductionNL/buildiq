@@ -80,6 +80,23 @@ class DashboardControllerFeaturePolicyTest extends TestCase {
 	}//end testAnOlderVersionHasItsFeaturesDerived()
 
 	/**
+	 * An app that finds records by scanning allows the camera for itself only, derived from its manifest (REQ-BQQR-004).
+	 *
+	 * @return void
+	 */
+	public function testAScanningAppAllowsTheCameraForItself(): void {
+		$apps = [
+			['slug' => 'assets', 'productionVersion' => ['manifest' => ['pages' => [['type' => 'index', 'config' => ['scan' => ['field' => 'tag']]]]]]],
+		];
+
+		$policy = $this->controller(applications: $apps)->builder(slug: 'assets')->getFeaturePolicy()->buildPolicy();
+
+		$this->assertStringContainsString("camera 'self';", $policy);
+		$this->assertStringContainsString("microphone 'none';", $policy);
+		$this->assertStringContainsString("geolocation 'none';", $policy);
+	}//end testAScanningAppAllowsTheCameraForItself()
+
+	/**
 	 * An app that uses no device, an unknown slug and an unreadable app list keep Nextcloud's default policy.
 	 *
 	 * @return void

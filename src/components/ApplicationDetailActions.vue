@@ -67,12 +67,18 @@
 			:themeColor="(obApp && obApp.themeColor) || ''"
 			:availableFlows="availableFlows"
 			:loadingFlows="loadingFlows"
+			:schemas="flowSchemas"
+			:busy="publishing || savingLanguages"
+			:sourceLanguage="appLanguages.sourceLanguage"
+			:languages="appLanguages.languages"
+			:canEditLanguages="canSaveAsTemplate"
 			:offlineAllowed="offlineAllowed"
 			:offline="offlineBlock"
-			:busy="publishing"
 			:organisationScope="(obApp && obApp.organisationScope) || 'all'"
 			:organisationScopeAvailable="organisationScopeAvailable"
 			:isOwner="obAppRole === 'owner'"
+			@update:languages="setLanguages"
+			@loadLanguages="loadLanguages"
 			@update:organisationScope="setOrganisationScope"
 			@update:open="onSettingsOpen"
 			@setPublished="setPublished"
@@ -139,6 +145,7 @@ import { useRegisterPicker } from '../composables/useRegisterPicker.js'
 import { getCurrentUserGroups } from '../composables/useRole.js'
 import applicationContext from '../mixins/applicationContext.js'
 import { buildVersionedRoute } from '../router/helpers.js'
+import { appI18n, withLanguages } from '../services/appLanguages.js'
 import { fetchProductionRegister } from '../services/appRegister.js'
 import { withOffline } from '../services/offlineManifest.js'
 
@@ -214,6 +221,19 @@ function versionList(data) {
  */
 function flowList(data) {
 	return data.results || data.items || data || []
+}
+
+/**
+ * The app version's schemas as "Run on" options: label by title, value by slug.
+ *
+ * @param {Array<object>} schemas The register's schemas.
+ * @return {Array<{label: string, value: string}>}
+ * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-bound-flow-declares-where-it-runs-req-bqsf-001
+ */
+function schemaOptions(schemas) {
+	return (Array.isArray(schemas) ? schemas : [])
+		.filter((schema) => schema && schema.slug)
+		.map((schema) => ({ label: schema.title || schema.slug, value: schema.slug }))
 }
 
 /**
@@ -306,6 +326,10 @@ export default {
 			deleting: false,
 			githubOpen: false,
 			settingsOpen: false,
+			// experience-multilingual-apps: the active version's languages,
+			// read from its manifest when the settings modal opens.
+			appLanguages: { sourceLanguage: '', languages: [] },
+			savingLanguages: false,
 			// Whether this instance lets apps work offline (REQ-BQOM-002), and
 			// the active version's offline block, read when the settings open.
 			offlineAllowed: loadState('buildiq', 'offlineAppsAllowed', false) === true,
@@ -320,6 +344,9 @@ export default {
 			// the settings modal opens — see onSettingsOpen().
 			availableFlows: [],
 			loadingFlows: false,
+			// The app version's schemas as "Run on" options (REQ-BQSF-001),
+			// loaded with the flows when the settings modal opens.
+			flowSchemas: [],
 			deleteOpen: false,
 			permissionsOpen: false,
 			historyOpen: false,
@@ -1211,11 +1238,89 @@ export default {
 
 			this.loadingFlows = true
 			try {
-				this.availableFlows = await this.fetchFlowOptions()
+				const [flows, schemas] = await Promise.all([
+					this.fetchFlowOptions(),
+					this.loadTemplateSchemas().catch(() => []),
+				])
+				this.availableFlows = flows
+				this.flowSchemas = schemaOptions(schemas)
 			} catch (e) {
 				this.error = `${t('buildiq', 'Failed to load flows')}: ${e.message || e}`
 			} finally {
 				this.loadingFlows = false
+			}
+		},
+
+		/**
+		 * The active version's manifest, as the app's own endpoint returns it.
+		 *
+		 * @return {Promise<object>} The manifest.
+		 */
+		async fetchActiveManifest() {
+			const { data } = await axios.get(
+				generateUrl(
+					`/apps/buildiq/api/applications/${encodeURIComponent(this.obApp.slug)}/manifest`,
+				),
+			)
+			return data && typeof data === 'object' ? data : {}
+		},
+
+		/**
+		 * Read the languages the active version offers, for the settings modal.
+		 * An app that never set any shows the viewer's language as written.
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-sets-the-app-s-languages-req-bqml-001
+		 */
+		async loadLanguages() {
+			if (!this.obApp || !this.obApp.slug) {
+				return
+			}
+			try {
+				const i18n = appI18n(await this.fetchActiveManifest())
+				this.appLanguages = {
+					sourceLanguage: i18n.sourceLanguage,
+					languages: i18n.languages,
+				}
+			} catch (e) {
+				this.error = `${t('buildiq', 'Failed to load settings')}: ${e.message || e}`
+			}
+		},
+
+		/**
+		 * Persist the app's languages into the active version's manifest
+		 * (owner or editor). A removed language's translations go with it.
+		 *
+		 * Read-modify-write on the freshest manifest, so a concurrent edit to
+		 * pages or menu is not overwritten with a stale copy.
+		 *
+		 * @param {{sourceLanguage: string, languages: string[]}} next The languages.
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-sets-the-app-s-languages-req-bqml-001
+		 */
+		async setLanguages(next) {
+			if (!this.canSaveAsTemplate || !this.obApp || !this.obApp.slug) {
+				return
+			}
+			this.error = ''
+			this.savingLanguages = true
+			try {
+				const manifest = withLanguages(await this.fetchActiveManifest(), next)
+				await axios.put(
+					generateUrl(
+						`/apps/buildiq/api/applications/${encodeURIComponent(this.obApp.slug)}/manifest`,
+					),
+					{ manifest },
+				)
+				const i18n = appI18n(manifest)
+				this.appLanguages = {
+					sourceLanguage: i18n.sourceLanguage,
+					languages: i18n.languages,
+				}
+			} catch (e) {
+				this.error = `${t('buildiq', 'Failed to save settings')}: ${e.message || e}`
+			} finally {
+				this.savingLanguages = false
 			}
 		},
 
@@ -1250,6 +1355,32 @@ export default {
 				await this.obPatchApp({ flows })
 			} catch (e) {
 				this.error = `${t('buildiq', 'Failed to save settings')}: ${e.message || e}`
+				return
+			}
+			await this.wireFlows()
+		},
+
+		/**
+		 * Have the server save, publish and bind the wrapper flows of the
+		 * bindings' "Run on" entries, and take the bindings it answers with,
+		 * wrappers included, so the next save carries them (REQ-BQSF-002).
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-binding-runs-the-flow-on-the-apps-records-req-bqsf-002
+		 */
+		async wireFlows() {
+			try {
+				const { data } = await axios.post(
+					generateUrl(`/apps/buildiq/api/applications/${encodeURIComponent(this.obAppUuid)}/flow-wrappers`),
+				)
+				if (data && Array.isArray(data.flows)) {
+					this.obApp = { ...this.obApp, flows: data.flows }
+				}
+				if (data && Array.isArray(data.failed) && data.failed.length) {
+					this.error = t('buildiq', 'Saved, but some "Run on" entries could not be wired. Save again to retry.')
+				}
+			} catch (e) {
+				this.error = `${t('buildiq', 'Saved, but the "Run on" entries could not be wired')}: ${e.message || e}`
 			}
 		},
 

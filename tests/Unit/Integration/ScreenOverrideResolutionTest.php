@@ -30,11 +30,13 @@ use OCA\Buildiq\Service\PageLayoutParts;
 use OCA\Buildiq\Service\PageLayoutPresenter;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Db\OrganisationMapper;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserSession;
 use PHPUnit\Framework\TestCase;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 
 /**
@@ -73,10 +75,11 @@ final class ScreenOverrideResolutionTest extends TestCase {
 	 * @param array<int, array<string, mixed>> $layouts The stored layouts.
 	 * @param string|null $uid The signed-in user, or null for a visitor with no account.
 	 * @param array<int, string> $groups The groups that user is in.
+	 * @param string|null $activeOrganisation The caller's active OpenRegister organisation; null wires no organisation lookup.
 	 *
 	 * @return PageLayoutLeafProvider The provider.
 	 */
-	private function makeProvider(array $layouts, ?string $uid = 'handler', array $groups = []): PageLayoutLeafProvider {
+	private function makeProvider(array $layouts, ?string $uid = 'handler', array $groups = [], ?string $activeOrganisation = null): PageLayoutLeafProvider {
 		$saved = &$this->saved;
 
 		// onlyMethods: the double may not invent a method the real contract
@@ -118,7 +121,15 @@ final class ScreenOverrideResolutionTest extends TestCase {
 			static fn (string $who, string $group): bool => in_array($group, $groups, true)
 		);
 
-		$layers = new PageLayoutLayerStack(userSession: $session, groupManager: $groupManager);
+		$container = null;
+		if ($activeOrganisation !== null) {
+			$organisations = $this->createMock(OrganisationMapper::class);
+			$organisations->method('getActiveOrganisationUuidForUser')->willReturn($activeOrganisation);
+			$container = $this->createMock(ContainerInterface::class);
+			$container->method('get')->with(OrganisationMapper::class)->willReturn($organisations);
+		}
+
+		$layers = new PageLayoutLayerStack(userSession: $session, groupManager: $groupManager, container: $container);
 
 		return new PageLayoutLeafProvider(
 			objectService: $objectService,
@@ -262,6 +273,41 @@ final class ScreenOverrideResolutionTest extends TestCase {
 		self::assertSame(['gegevens', 'bouwwerk'], $this->tabIds($answer));
 		self::assertSame(['pl-schema', 'pl-bouw', 'pl-team'], array_column($answer['appliedLayers'], 'id'));
 	}//end testTheNarrowScreenComposesOverTheWideOne()
+
+	/**
+	 * Two organisations each get their own screen, and a team narrows one: the
+	 * organisation override sits right after the type layout and the team
+	 * override patches it; a caller gets only their active organisation's
+	 * override (REQ-OBSO-007).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md#requirement-an-override-can-be-bound-to-an-organisation-req-obso-007
+	 */
+	public function testEachOrganisationGetsItsOwnScreenAndATeamNarrowsOne(): void {
+		$layouts = [
+			$this->schemaWide(),
+			$this->typeLayout(),
+			$this->override('team', 'vergunningen', ['id' => 'pl-team-a', 'layoutDelta' => ['tabs' => ['bouwwerk' => ['label' => 'Bouwwerk (team)']]]]),
+			$this->override('organisation', 'gemeente-b', ['id' => 'pl-org-b', 'layoutDelta' => ['tabs' => ['documenten' => ['$op' => 'remove']]]]),
+			$this->override('organisation', 'gemeente-a', ['id' => 'pl-org-a', 'layoutDelta' => ['tabs' => ['bouwwerk' => ['label' => 'Bouwwerk (A)'], 'gegevens' => ['label' => 'Gegevens (A)']]]]),
+		];
+
+		$handlerB = $this->makeProvider($layouts, 'handler-b', [], 'gemeente-b')->list('dossiq', 'Zaak', 'zaak-7', $this->host());
+		self::assertSame(['pl-schema', 'pl-bouw', 'pl-org-b'], array_column($handlerB['appliedLayers'], 'id'));
+		self::assertSame(['gegevens', 'bouwwerk'], $this->tabIds($handlerB));
+
+		$teamA = $this->makeProvider($layouts, 'handler-a', ['vergunningen'], 'gemeente-a')->list('dossiq', 'Zaak', 'zaak-7', $this->host());
+		self::assertSame(['pl-schema', 'pl-bouw', 'pl-org-a', 'pl-team-a'], array_column($teamA['appliedLayers'], 'id'));
+		self::assertSame('Gegevens (A)', $teamA['items'][0]['tabs'][0]['label']);
+		self::assertSame('Bouwwerk (team)', $teamA['items'][0]['tabs'][2]['label'], 'the team override patches the organisation screen');
+
+		$noLookup = $this->makeProvider($layouts, 'handler-a', [], null)->list('dossiq', 'Zaak', 'zaak-7', $this->host());
+		self::assertSame(['pl-schema', 'pl-bouw'], array_column($noLookup['appliedLayers'], 'id'), 'without an organisation lookup no organisation override applies');
+
+		$visitor = $this->makeProvider($layouts, null, [], 'gemeente-a')->list('dossiq', 'Zaak', 'zaak-7', $this->host());
+		self::assertSame(['pl-schema', 'pl-bouw'], array_column($visitor['appliedLayers'], 'id'), 'a visitor with no account has no organisation');
+	}//end testEachOrganisationGetsItsOwnScreenAndATeamNarrowsOne()
 
 	/**
 	 * A caller who is NOT in the team gets the layers without that override.

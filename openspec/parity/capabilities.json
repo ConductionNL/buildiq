@@ -5586,13 +5586,13 @@
 			"mendix": "unknown",
 			"power-apps": "unknown",
 			"built": {
-				"state": "specified",
-				"evidence": "Re-rated 2026-10-07 (building -> specified): archived integriq change 2026-09-29-registry-backed-field-source built the resolvers. integriq origin/development @254619dff: lib/PropertySource/Provider/BagPropertySource.php, BrpPropertySource.php, KvkPropertySource.php behind lib/Controller/PropertySourceController.php, with a lookup dialog in integriq itself (src/dialogs/RegistryLookupDialog.vue). openregister accepts the declaration (lib/Service/Schemas/PropertySourceDeclaration.php). Nothing in buildiq declares or renders it: grep property-source/propertySource over buildiq src and lib, none; the same grep over nextcloud-vue src, none, so no form field reads a registry.",
+				"state": "building",
+				"evidence": "Re-rated 2026-11-17 (specified -> building): buildiq's half of data-registry-backed-field-option is on development (3b56d20bb). src/components/schema-editor/FieldEditor.vue has the Value source section and writes x-openregister-property-source {provider, mode, config}; src/services/propertySources.js lists the providers from integriq's /api/property-sources; src/views/SchemaDesigner.vue shows the source per field and lands a refusal on its field. Resolvers exist in integriq (lib/PropertySource/Provider/KvkPropertySource.php, BagPropertySource.php, BrpPropertySource.php) and openregister accepts the declaration. Still no built form renders it: nextcloud-vue has no form field that calls the property source.",
 				"reachedOn": "",
 				"owner": "ConductionNL/integriq",
-				"note": "Still specified: the registry lookup exists in integriq and the schema key in openregister, but a buildiq maker cannot declare a registry-backed field and a built form cannot show one. Missing: a field-type option in buildiq's schema designer and a nextcloud-vue form field that calls integriq's property source. Spec round part 3 (2026-10-07): buildiq's half (the field editor declares x-openregister-property-source) is specified in data-registry-backed-field-option; the nextcloud-vue form field that renders it is cross-repo.",
+				"note": "Building: a buildiq maker can now declare a registry-backed field. The row stays building until nextcloud-vue renders that field in a built app (cross-repo), and the Playwright spec of the change (T07) has run.",
 				"change": "data-registry-backed-field-option",
-				"readOn": "2026-10-07",
+				"readOn": "2026-11-17",
 				"requirement": "openspec/changes/data-registry-backed-field-option/specs/schema-designer-ui :: A maker declares that a field takes its value from a registry (REQ-BQRF-001)"
 			},
 			"provider": "integriq",
@@ -11519,12 +11519,12 @@
 			"mendix": "unknown",
 			"power-apps": "unknown",
 			"built": {
-				"state": "specified",
-				"evidence": "The editor exists: src/components/ApplicationDetailActions.vue:369-375 adds \"Support & donation\" to the app actions menu (canEditVersions), 803-818 loads GET /api/applications/{slug}/manifest and opens nextcloud-vue CnEditSupportModal on a working copy with every field the board draws. It does not save: the dialog saves through manifestModalDoneMixin.onDone() via the injected cnManifestEditor, which on the app detail page is buildiq's own CnAppRoot (src/App.vue passes no persistManifestDelta), then onSupportClose() (828-831) drops the copy; nothing calls PUT /api/applications/{slug}/manifest (appinfo/routes.php:65) from this path. Runtime works: src/utils/virtualAppSupportDialog.js:22-26 shows the note in a virtual app only when manifest.support.enabled is true (src/builder.js:394).",
+				"state": "building",
+				"evidence": "Building in openspec/changes/apps-support-note-editor-saves (T01 to T04 merged on development). The editor saves: src/modals/SupportEditorModal.vue provides the save that sends PUT /api/applications/{slug}/manifest with the working copy, src/components/ApplicationDetailActions.vue keeps the dialog and the copy open on a failed save (onSupportFailed), pinned by tests/components/ApplicationDetailActions.support.spec.js; tests/e2e/support-note-editor.spec.ts is written, not yet run live. Runtime: src/utils/virtualAppSupportDialog.js shows the note in a virtual app only when manifest.support.enabled is true.",
 				"change": "apps-support-note-editor-saves",
 				"note": "Added by decision 99 (8 Oct): board without a row.",
 				"owner": "ConductionNL/buildiq",
-				"readOn": "2026-10-08",
+				"readOn": "2026-11-17",
 				"requirement": [
 					"openspec/changes/apps-support-note-editor-saves/specs/support-note :: The support editor saves the note to the app's manifest (REQ-BQSN-001)",
 					"openspec/changes/apps-support-note-editor-saves/specs/support-note :: A virtual app shows the note only when it is switched on (REQ-BQSN-003)"

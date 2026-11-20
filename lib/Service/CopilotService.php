@@ -254,6 +254,18 @@ class CopilotService implements CopilotServiceInterface {
 	}//end health()
 
 	/**
+	 * Whether an agent's knowledge is searched for the passages that match a
+	 * request rather than read whole under the budget (ai-agents-knowledge-and-run-trace T08).
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/ai-agents-knowledge-and-run-trace/specs/agent-knowledge-base/spec.md#requirement-a-maker-attaches-knowledge-files-to-an-agent-req-bqag-001
+	 */
+	public function knowledgeRetrieval(): bool {
+		return $this->knowledgeReader->retrievalAvailable();
+	}//end knowledgeRetrieval()
+
+	/**
 	 * Turn a natural-language brief into a validated plan. Performs zero
 	 * builder writes (an agent-scoped rejected plan still writes exactly
 	 * one `AgentRun` audit record — never an Application/ApplicationVersion/
@@ -460,7 +472,8 @@ class CopilotService implements CopilotServiceInterface {
 			$effectiveDescriptors = $this->narrowDescriptors(descriptors: $effectiveDescriptors, enabledTools: $agentEnabledTools);
 			$instructionsPrefix = (string)($agent['instructions'] ?? '');
 			// REQ-BQAG-002: read only after the caller's role on the agent's app is confirmed above.
-			$this->knowledge = $this->knowledgeReader->read(agent: $agent);
+			// T08: with OpenRegister's vector facade, the passages that match the brief.
+			$this->knowledge = $this->knowledgeReader->read(agent: $agent, query: $brief);
 		}
 
 		$plan = $this->requestPlanFromLlm(

@@ -65,6 +65,8 @@ return \OCA\Buildiq\Middleware\Support\ApiPathAliases::withVersionedAliases(\OCA
         // controller method so auth-required-but-non-admin users can hit it (per design.md Decision 6).
         // Slug matches the kebab-case pattern declared in openbuild_register.json on the Application
         // and BuiltAppRoute schemas (^[a-z0-9][a-z0-9-]*[a-z0-9]$, min 2 max 48 chars).
+        // built-app-connections-page REQ-BIQ-CONN-005: an app's sources and integrations with their health.
+        ['name' => 'applicationConnections#index', 'url' => '/api/applications/{id}/connections', 'verb' => 'GET', 'requirements' => ['id' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'applications#getManifest', 'url' => '/api/applications/{slug}/manifest', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
         // Symmetric write counterpart — the standalone runtime's in-app edit shell
@@ -72,6 +74,13 @@ return \OCA\Buildiq\Middleware\Support\ApiPathAliases::withVersionedAliases(\OCA
         // audited admin bypass live in the controller. Without this, in-app edits
         // (pages/menu/settings/sidebar/actions) were computed but never persisted.
         ['name' => 'applications#saveManifest', 'url' => '/api/applications/{slug}/manifest', 'verb' => 'PUT', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+
+        // Sandbox documents for maker code (pages-custom-code D2, REQ-BQCC-003):
+        // loaded into an iframe with sandbox="allow-scripts" and no
+        // allow-same-origin, answered with a policy that allows no requests.
+        ['name' => 'sandbox#evaluator', 'url' => '/sandbox/evaluator', 'verb' => 'GET'],
+        ['name' => 'sandbox#preview', 'url' => '/sandbox/preview', 'verb' => 'GET'],
+        ['name' => 'sandbox#code', 'url' => '/sandbox/{slug}/{version}/{codeId}', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
         // Versioning — diff endpoint (chain spec #6 buildiq-versioning, REQ-OBV-005). Returns
         // two ApplicationVersion manifest blobs in one round-trip so the client diff component
@@ -135,6 +144,10 @@ return \OCA\Buildiq\Middleware\Support\ApiPathAliases::withVersionedAliases(\OCA
         ['name' => 'applicationPublish#unpublish', 'url' => '/api/applications/{appUuid}/unpublish', 'verb' => 'POST', 'requirements' => ['appUuid' => '[a-f0-9-]{8,}']],
         // Owner-only full delete (Application + versions + per-version registers + routes).
         ['name' => 'applicationPublish#destroy', 'url' => '/api/applications/{appUuid}', 'verb' => 'DELETE', 'requirements' => ['appUuid' => '[a-f0-9-]{8,}']],
+
+        // Wrapper flows for the app's flow bindings (logic-shared-flows-and-automations REQ-BQSF-002):
+        // saves, publishes and binds one wrapper per `runOn` entry and removes stale ones. Owners only.
+        ['name' => 'flowBindings#sync', 'url' => '/api/applications/{appUuid}/flow-wrappers', 'verb' => 'POST', 'requirements' => ['appUuid' => '[a-f0-9-]{8,}']],
 
         // Standalone runtime page for a published virtual app — the bare
         // /builder/{slug} (no sub-path). Placed before the catch-all

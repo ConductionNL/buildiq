@@ -41,7 +41,7 @@
 - [x] 6.2 PHPUnit `AppRepoParser` happy path: a conforming fixture repo map parses to an `installFromTemplateArray`-shaped array with `slug`/`title`/`description`/`category`/`version`/`manifest`/`companionSchemas`/`templateOrigin`. (REQ-GARF-007)
 - [x] 6.3 PHPUnit `AppRepoParser` strict-validation matrix: each failure code fires on its trigger (missing/unparseable descriptor, unknown appType, unsupported formatVersion, missing/unparseable/invalid manifest, unparseable/invalid schema, duplicate schema slug) and the whole parse fails with nothing imported. (REQ-GARF-008)
 - [x] 6.4 PHPUnit hostile-input: an oversized/deeply-nested descriptor or manifest is rejected before decode; a `schemas/` entry with a path-traversal filename is rejected with `schema_invalid`. (design.md Decision 8)
-- [ ] 6.5 PHPUnit schema round-trip: an Application saved with `githubRepo`/`githubDefaultBranch` and an ApplicationVersion saved with `commitSha`/`sourceRef` round-trip via OR; a provenance-only save does not bump `semver`; legacy objects without the fields stay valid. (REQ-OBA-010, REQ-OBV-112)
+- [x] 6.5 PHPUnit schema round-trip: an Application saved with `githubRepo`/`githubDefaultBranch` and an ApplicationVersion saved with `commitSha`/`sourceRef` round-trip via OR; a provenance-only save does not bump `semver`; legacy objects without the fields stay valid. (REQ-OBA-010, REQ-OBV-112)
 
 ## 7. Gates
 
