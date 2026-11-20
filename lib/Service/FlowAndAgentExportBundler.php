@@ -196,6 +196,8 @@ class FlowAndAgentExportBundler {
 	 * @param array<int,mixed> $flows The bindings.
 	 *
 	 * @return array<int, array{kind: string, ref: string, reason: string}> Skips.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) FlowBindingWrapperService::isWrapper() is a pure predicate on the binding.
 	 */
 	private function bundleFlows(string $rootDir, array $flows): array {
 		$skipped = [];
@@ -206,6 +208,13 @@ class FlowAndAgentExportBundler {
 		$targetDir = $rootDir . '/lib/Settings/flows';
 
 		foreach ($flows as $binding) {
+			// A wrapper is buildiq's own wiring of a `runOn` entry, rebuilt from
+			// the binding it serves wherever the app is installed. Exporting it
+			// would duplicate it beside the one the install builds (REQ-BQSF-002).
+			if (FlowBindingWrapperService::isWrapper(binding: $binding) === true) {
+				continue;
+			}
+
 			$uuid = self::boundFlowUuid(binding: $binding);
 			if ($uuid === '') {
 				continue;
