@@ -323,13 +323,13 @@ class AgentsControllerTest extends TestCase {
 	 * @return void
 	 */
 	private function adminControllerWithGuard(?AppOrganisationGuard $guard): void {
-		$this->groupManager = $this->createMock(IGroupManager::class);
+		$this->groupManager = $this->createMock(originalClassName: IGroupManager::class);
 		$this->groupManager->method('isAdmin')->willReturn(true);
 		$this->groupManager->method('getUserGroups')->willReturn([]);
-		$permissionResolver = new PermissionResolver(groupManager: $this->groupManager, logger: $this->createMock(LoggerInterface::class));
+		$permissionResolver = new PermissionResolver(groupManager: $this->groupManager, logger: $this->createMock(originalClassName: LoggerInterface::class));
 		$this->controller = new AgentsController(
 			request: $this->request,
-			logger: $this->createMock(LoggerInterface::class),
+			logger: $this->createMock(originalClassName: LoggerInterface::class),
 			store: new RegisterStore(
 				objectService: $this->objectService,
 				registerMapper: $this->registerMapper,
@@ -352,7 +352,7 @@ class AgentsControllerTest extends TestCase {
 	 */
 	public function testRunsHidesAnotherOrganisationsScopedAppFromAnAdmin(): void {
 		$this->wireUser(uid: 'admin-1');
-		$guard = $this->createMock(AppOrganisationGuard::class);
+		$guard = $this->createMock(originalClassName: AppOrganisationGuard::class);
 		$guard->expects(self::once())->method('canSee')->willReturn(false);
 		$this->adminControllerWithGuard(guard: $guard);
 		$this->wireAgentAndApplication(
@@ -362,8 +362,8 @@ class AgentsControllerTest extends TestCase {
 		$this->objectService->expects(self::never())->method('searchObjects');
 
 		$response = $this->controller->runs(uuid: 'agent-1');
-		self::assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
-		self::assertSame('not_found', $response->getData()['error']);
+		self::assertSame(expected: Http::STATUS_NOT_FOUND, actual: $response->getStatus());
+		self::assertSame(expected: 'not_found', actual: $response->getData()['error']);
 	}//end testRunsHidesAnotherOrganisationsScopedAppFromAnAdmin()
 
 	/**
@@ -379,7 +379,7 @@ class AgentsControllerTest extends TestCase {
 		);
 
 		$response = $this->controller->runs(uuid: 'agent-1');
-		self::assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
+		self::assertSame(expected: Http::STATUS_NOT_FOUND, actual: $response->getStatus());
 	}//end testRunsHidesAScopedAppWithoutTheGuard()
 
 	/**
@@ -389,7 +389,7 @@ class AgentsControllerTest extends TestCase {
 	 */
 	public function testRunsLetsAMemberOfTheHolderThrough(): void {
 		$this->wireUser(uid: 'admin-1');
-		$guard = $this->createMock(AppOrganisationGuard::class);
+		$guard = $this->createMock(originalClassName: AppOrganisationGuard::class);
 		$guard->method('canSee')->willReturn(true);
 		$this->adminControllerWithGuard(guard: $guard);
 		$this->wireAgentAndApplication(
@@ -399,6 +399,6 @@ class AgentsControllerTest extends TestCase {
 		$this->objectService->method('searchObjects')->willReturn([]);
 
 		$response = $this->controller->runs(uuid: 'agent-1');
-		self::assertSame(Http::STATUS_OK, $response->getStatus());
+		self::assertSame(expected: Http::STATUS_OK, actual: $response->getStatus());
 	}//end testRunsLetsAMemberOfTheHolderThrough()
 }//end class
