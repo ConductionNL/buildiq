@@ -121,7 +121,9 @@ final class VersionMergeRunnerTest extends TestCase {
 	 *
 	 * @return array<string,mixed>
 	 */
-	private static function branch(array $baseSchemas = ['permit' => ['title' => 'Permit', 'required' => [], 'properties' => ['fee' => ['type' => 'number']]]]): array {
+	private static function branch(
+		array $baseSchemas = ['permit' => ['title' => 'Permit', 'required' => [], 'properties' => ['fee' => ['type' => 'number']]]]
+	): array {
 		return [
 			'id' => 'v-fees',
 			'slug' => 'permit-fees',
@@ -149,7 +151,7 @@ final class VersionMergeRunnerTest extends TestCase {
 	 * @return ApplicationVersionService
 	 */
 	private function versions(): ApplicationVersionService {
-		return BranchFixture::versions(mock: fn (string $class): object => $this->createMock($class));
+		return BranchFixture::versions(mock: fn (string $class): object => $this->createMock(originalClassName: $class));
 	}//end versions()
 
 	/**
@@ -158,15 +160,15 @@ final class VersionMergeRunnerTest extends TestCase {
 	 * @return VersionMergeRunner
 	 */
 	private function runner(): VersionMergeRunner {
-		$registers = $this->fixture->registerMapper(mapper: $this->createMock(RegisterMapper::class));
-		$schemas   = $this->fixture->schemaMapper(mapper: $this->createMock(SchemaMapper::class));
+		$registers = $this->fixture->registerMapper(mapper: $this->createMock(originalClassName: RegisterMapper::class));
+		$schemas   = $this->fixture->schemaMapper(mapper: $this->createMock(originalClassName: SchemaMapper::class));
 		$state     = new VersionState(registerMapper: $registers, schemaMapper: $schemas);
 		$writer    = new VersionSchemaWriter(registerMapper: $registers, schemaMapper: $schemas, state: $state);
-		$objects   = $this->createMock(ObjectServiceInterface::class);
+		$objects   = $this->createMock(originalClassName: ObjectServiceInterface::class);
 		$objects->method('saveObject')->willReturnCallback(
 			function (array $object, ?ObjectSaveOptions $options = null): ObjectEntityInterface {
 				$this->saved[] = ['object' => $object, 'options' => $options];
-				$entity        = $this->createMock(ObjectEntityInterface::class);
+				$entity        = $this->createMock(originalClassName: ObjectEntityInterface::class);
 				$entity->method('jsonSerialize')->willReturn($object + ['id' => 'v-saved']);
 				return $entity;
 			}
@@ -199,7 +201,7 @@ final class VersionMergeRunnerTest extends TestCase {
 			}
 		}
 
-		$this->fail('No schema ' . $slug);
+		$this->fail(message: 'No schema ' . $slug);
 	}//end propertiesOf()
 
 	/**
@@ -215,13 +217,13 @@ final class VersionMergeRunnerTest extends TestCase {
 		try {
 			$run();
 		} catch (VersionBranchRefused $e) {
-			$this->assertSame($code, $e->errorCode);
-			$this->assertSame($status, $e->status);
-			$this->assertSame([], $this->saved);
+			$this->assertSame(expected: $code, actual: $e->errorCode);
+			$this->assertSame(expected: $status, actual: $e->status);
+			$this->assertSame(expected: [], actual: $this->saved);
 			return $e;
 		}
 
-		$this->fail('Expected the refusal ' . $code);
+		$this->fail(message: 'Expected the refusal ' . $code);
 	}//end assertRefused()
 
 	/**
@@ -232,15 +234,15 @@ final class VersionMergeRunnerTest extends TestCase {
 	public function testAPreviewMergesWithoutWriting(): void {
 		$preview = $this->runner()->previewMerge(application: self::APPLICATION, source: self::branch(), target: self::development());
 
-		$this->assertSame([], $preview['conflicts']);
-		$this->assertSame([], $preview['breaking']);
-		$this->assertSame(['permits', 'fees'], array_column($preview['manifest']['pages'], 'id'));
-		$this->assertSame(['register' => '@version', 'schema' => '@schema:permit'], $preview['manifest']['pages'][1]['config']);
-		$this->assertSame(['fee' => ['type' => 'number'], 'reason' => ['type' => 'string']], $preview['schemas']['permit']['properties']);
-		$this->assertSame($this->versions()->hashManifest(manifest: self::development()['manifest']), $preview['targetHash']);
+		$this->assertSame(expected: [], actual: $preview['conflicts']);
+		$this->assertSame(expected: [], actual: $preview['breaking']);
+		$this->assertSame(expected: ['permits', 'fees'], actual: array_column($preview['manifest']['pages'], 'id'));
+		$this->assertSame(expected: ['register' => '@version', 'schema' => '@schema:permit'], actual: $preview['manifest']['pages'][1]['config']);
+		$this->assertSame(expected: ['fee' => ['type' => 'number'], 'reason' => ['type' => 'string']], actual: $preview['schemas']['permit']['properties']);
+		$this->assertSame(expected: $this->versions()->hashManifest(manifest: self::development()['manifest']), actual: $preview['targetHash']);
 
-		$this->assertSame([], $this->saved);
-		$this->assertSame(['fee' => ['type' => 'number']], $this->propertiesOf(slug: 'shop-development-permit'));
+		$this->assertSame(expected: [], actual: $this->saved);
+		$this->assertSame(expected: ['fee' => ['type' => 'number']], actual: $this->propertiesOf(slug: 'shop-development-permit'));
 	}//end testAPreviewMergesWithoutWriting()
 
 	/**
@@ -257,26 +259,29 @@ final class VersionMergeRunnerTest extends TestCase {
 			resolution: ['targetHash' => $this->versions()->hashManifest(manifest: $target['manifest'])]
 		);
 
-		$this->assertSame(['fee' => ['type' => 'number'], 'reason' => ['type' => 'string']], $this->propertiesOf(slug: 'shop-development-permit'));
+		$this->assertSame(
+			expected: ['fee' => ['type' => 'number'], 'reason' => ['type' => 'string']],
+			actual: $this->propertiesOf(slug: 'shop-development-permit')
+		);
 
-		$this->assertCount(1, $this->saved);
+		$this->assertCount(expectedCount: 1, haystack: $this->saved);
 		$object = $this->saved[0]['object'];
 		$this->assertSame(
-			['register' => 'openbuild-shop-development', 'schema' => 'shop-development-permit'],
-			$object['manifest']['pages'][1]['config']
+			expected: ['register' => 'openbuild-shop-development', 'schema' => 'shop-development-permit'],
+			actual: $object['manifest']['pages'][1]['config']
 		);
-		$this->assertSame('permit-fees', $object['branchBase']['source']);
-		$this->assertSame($this->versions()->hashManifest(manifest: self::branch()['manifest']), $object['branchBase']['manifestHash']);
-		$this->assertSame($this->versions()->hashManifest(manifest: $object['manifest']), $object['manifestHash']);
-		$this->assertSame('1.0.1', $object['semver']);
+		$this->assertSame(expected: 'permit-fees', actual: $object['branchBase']['source']);
+		$this->assertSame(expected: $this->versions()->hashManifest(manifest: self::branch()['manifest']), actual: $object['branchBase']['manifestHash']);
+		$this->assertSame(expected: $this->versions()->hashManifest(manifest: $object['manifest']), actual: $object['manifestHash']);
+		$this->assertSame(expected: '1.0.1', actual: $object['semver']);
 
 		$options = $this->saved[0]['options'];
-		$this->assertInstanceOf(ObjectSaveOptions::class, $options);
-		$this->assertSame('v-dev', $options->uuid);
-		$this->assertSame(ApplicationVersionServiceInterface::REGISTER_SLUG, $options->target->register);
-		$this->assertSame(ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA, $options->target->schema);
+		$this->assertInstanceOf(expected: ObjectSaveOptions::class, actual: $options);
+		$this->assertSame(expected: 'v-dev', actual: $options->uuid);
+		$this->assertSame(expected: ApplicationVersionServiceInterface::REGISTER_SLUG, actual: $options->target->register);
+		$this->assertSame(expected: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA, actual: $options->target->schema);
 
-		$this->assertSame('v-dev', $saved['id']);
+		$this->assertSame(expected: 'v-dev', actual: $saved['id']);
 	}//end testAnApplyWritesTheTargetOnce()
 
 	/**
@@ -297,7 +302,7 @@ final class VersionMergeRunnerTest extends TestCase {
 			status: 409
 		);
 
-		$this->assertSame(['fee' => ['type' => 'number']], $this->propertiesOf(slug: 'shop-development-permit'));
+		$this->assertSame(expected: ['fee' => ['type' => 'number']], actual: $this->propertiesOf(slug: 'shop-development-permit'));
 	}//end testATargetThatMovedSinceThePreviewIsRefused()
 
 	/**
@@ -337,7 +342,7 @@ final class VersionMergeRunnerTest extends TestCase {
 			code: 'no_common_base',
 			status: 422
 		);
-		$this->assertStringContainsString('"permit-fees" and "development"', $refusal->getMessage());
+		$this->assertStringContainsString(needle: '"permit-fees" and "development"', haystack: $refusal->getMessage());
 	}//end testVersionsWithoutACommonBaseAreRefused()
 
 	/**
@@ -356,7 +361,7 @@ final class VersionMergeRunnerTest extends TestCase {
 		$hash   = $this->versions()->hashManifest(manifest: $target['manifest']);
 
 		$preview = $this->runner()->previewMerge(application: self::APPLICATION, source: self::branch(baseSchemas: $base), target: $target);
-		$this->assertSame(['property:permit.fee'], array_column($preview['conflicts'], 'unit'));
+		$this->assertSame(expected: ['property:permit.fee'], actual: array_column($preview['conflicts'], 'unit'));
 
 		$runner = $this->runner();
 		$this->assertRefused(
@@ -376,8 +381,8 @@ final class VersionMergeRunnerTest extends TestCase {
 			target: $target,
 			resolution: ['targetHash' => $hash, 'choices' => ['property:permit.fee' => VersionMergeService::TAKE_TARGET]]
 		);
-		$this->assertCount(1, $this->saved);
-		$this->assertSame(['type' => 'number'], $this->propertiesOf(slug: 'shop-development-permit')['fee']);
+		$this->assertCount(expectedCount: 1, haystack: $this->saved);
+		$this->assertSame(expected: ['type' => 'number'], actual: $this->propertiesOf(slug: 'shop-development-permit')['fee']);
 	}//end testAConflictMustHaveASideChosen()
 
 	/**
@@ -392,7 +397,7 @@ final class VersionMergeRunnerTest extends TestCase {
 		$hash   = $this->versions()->hashManifest(manifest: $target['manifest']);
 
 		$preview = $this->runner()->previewMerge(application: self::APPLICATION, source: self::branch(), target: $target);
-		$this->assertSame(['The field "permit.fee" is removed.'], $preview['breaking']);
+		$this->assertSame(expected: ['The field "permit.fee" is removed.'], actual: $preview['breaking']);
 
 		$runner  = $this->runner();
 		$refusal = $this->assertRefused(
@@ -400,7 +405,7 @@ final class VersionMergeRunnerTest extends TestCase {
 			code: 'breaking_change',
 			status: 409
 		);
-		$this->assertStringContainsString('The field "permit.fee" is removed.', $refusal->getMessage());
+		$this->assertStringContainsString(needle: 'The field "permit.fee" is removed.', haystack: $refusal->getMessage());
 
 		$this->runner()->applyMerge(
 			application: self::APPLICATION,
@@ -408,8 +413,8 @@ final class VersionMergeRunnerTest extends TestCase {
 			target: $target,
 			resolution: ['targetHash' => $hash, 'acknowledgeBreaking' => 'true']
 		);
-		$this->assertCount(1, $this->saved);
-		$this->assertSame(['reason' => ['type' => 'string']], $this->propertiesOf(slug: 'shop-development-permit'));
+		$this->assertCount(expectedCount: 1, haystack: $this->saved);
+		$this->assertSame(expected: ['reason' => ['type' => 'string']], actual: $this->propertiesOf(slug: 'shop-development-permit'));
 	}//end testABreakingMergeNeedsConfirmation()
 
 	/**
@@ -420,9 +425,9 @@ final class VersionMergeRunnerTest extends TestCase {
 	public function testStartBranchCreatesTheBranchThroughTheBranchService(): void {
 		$branch = $this->runner()->startBranch(application: self::APPLICATION, source: self::development(), name: 'zones');
 
-		$this->assertSame('zones', $branch['slug']);
-		$this->assertSame('openbuild-shop-zones', $branch['register']);
-		$this->assertSame('development', $branch['branchBase']['source']);
-		$this->assertArrayHasKey('openbuild-shop-zones', $this->fixture->registers);
+		$this->assertSame(expected: 'zones', actual: $branch['slug']);
+		$this->assertSame(expected: 'openbuild-shop-zones', actual: $branch['register']);
+		$this->assertSame(expected: 'development', actual: $branch['branchBase']['source']);
+		$this->assertArrayHasKey(key: 'openbuild-shop-zones', array: $this->fixture->registers);
 	}//end testStartBranchCreatesTheBranchThroughTheBranchService()
 }//end class

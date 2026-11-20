@@ -70,8 +70,8 @@ final class VersionStateTest extends TestCase {
 	 */
 	private function state(): VersionState {
 		return new VersionState(
-			registerMapper: $this->fixture->registerMapper(mapper: $this->createMock(RegisterMapper::class)),
-			schemaMapper: $this->fixture->schemaMapper(mapper: $this->createMock(SchemaMapper::class))
+			registerMapper: $this->fixture->registerMapper(mapper: $this->createMock(originalClassName: RegisterMapper::class)),
+			schemaMapper: $this->fixture->schemaMapper(mapper: $this->createMock(originalClassName: SchemaMapper::class))
 		);
 	}//end state()
 
@@ -89,7 +89,7 @@ final class VersionStateTest extends TestCase {
 			}
 		}
 
-		$this->fail('No schema ' . $slug);
+		$this->fail(message: 'No schema ' . $slug);
 	}//end idOf()
 
 	/**
@@ -100,9 +100,9 @@ final class VersionStateTest extends TestCase {
 	public function testOwnSchemasAreThoseUnderTheStemSortedByName(): void {
 		$own = $this->state()->ownSchemas(registerSlug: 'openbuild-shop-development');
 
-		$this->assertSame(['permit', 'zone'], array_keys($own));
-		$this->assertSame('shop-development-permit', $own['permit']->getSlug());
-		$this->assertSame('shop-development-zone', $own['zone']->getSlug());
+		$this->assertSame(expected: ['permit', 'zone'], actual: array_keys($own));
+		$this->assertSame(expected: 'shop-development-permit', actual: $own['permit']->getSlug());
+		$this->assertSame(expected: 'shop-development-zone', actual: $own['zone']->getSlug());
 	}//end testOwnSchemasAreThoseUnderTheStemSortedByName()
 
 	/**
@@ -114,9 +114,9 @@ final class VersionStateTest extends TestCase {
 		$this->fixture->register(slug: 'decidiq', schemas: ['decidiq-meeting' => []]);
 		$state = $this->state();
 
-		$this->assertSame([], $state->ownSchemas(registerSlug: 'openbuild-shop-gone'));
-		$this->assertSame([], $state->ownSchemas(registerSlug: 'decidiq'));
-		$this->assertSame([], $state->ownSchemas(registerSlug: ''));
+		$this->assertSame(expected: [], actual: $state->ownSchemas(registerSlug: 'openbuild-shop-gone'));
+		$this->assertSame(expected: [], actual: $state->ownSchemas(registerSlug: 'decidiq'));
+		$this->assertSame(expected: [], actual: $state->ownSchemas(registerSlug: ''));
 	}//end testAMissingOrForeignRegisterHasNoOwnSchemas()
 
 	/**
@@ -141,15 +141,15 @@ final class VersionStateTest extends TestCase {
 		);
 
 		$pages = $read['manifest']['pages'];
-		$this->assertSame(['register' => '@version', 'schema' => '@schema:permit'], $pages[0]['config']);
-		$this->assertSame(['register' => '@version', 'schema' => '@schema:permit'], $pages[1]['config']);
-		$this->assertSame(['register' => 'addresses', 'schema' => 'shared-address'], $pages[2]['config']);
-		$this->assertSame('1.0.0', $read['manifest']['version']);
+		$this->assertSame(expected: ['register' => '@version', 'schema' => '@schema:permit'], actual: $pages[0]['config']);
+		$this->assertSame(expected: ['register' => '@version', 'schema' => '@schema:permit'], actual: $pages[1]['config']);
+		$this->assertSame(expected: ['register' => 'addresses', 'schema' => 'shared-address'], actual: $pages[2]['config']);
+		$this->assertSame(expected: '1.0.0', actual: $read['manifest']['version']);
 
-		$this->assertSame(['permit', 'zone'], array_keys($read['schemas']));
-		$this->assertSame(['fee' => ['type' => 'number']], $read['schemas']['permit']['properties']);
-		$this->assertSame('Permit', $read['schemas']['permit']['title']);
-		$this->assertArrayNotHasKey('slug', $read['schemas']['permit']);
+		$this->assertSame(expected: ['permit', 'zone'], actual: array_keys($read['schemas']));
+		$this->assertSame(expected: ['fee' => ['type' => 'number']], actual: $read['schemas']['permit']['properties']);
+		$this->assertSame(expected: 'Permit', actual: $read['schemas']['permit']['title']);
+		$this->assertArrayNotHasKey(key: 'slug', array: $read['schemas']['permit']);
 	}//end testReadMakesTheOwnRegisterAndSchemasNeutral()
 
 	/**
@@ -158,10 +158,10 @@ final class VersionStateTest extends TestCase {
 	 * @return void
 	 */
 	public function testAVersionWithoutRegisterOrManifestReadsEmpty(): void {
-		$this->assertSame(['manifest' => [], 'schemas' => []], $this->state()->read(version: []));
+		$this->assertSame(expected: ['manifest' => [], 'schemas' => []], actual: $this->state()->read(version: []));
 		$this->assertSame(
-			['manifest' => [], 'schemas' => []],
-			$this->state()->read(version: ['register' => 'openbuild-shop-gone', 'manifest' => 'not a manifest'])
+			expected: ['manifest' => [], 'schemas' => []],
+			actual: $this->state()->read(version: ['register' => 'openbuild-shop-gone', 'manifest' => 'not a manifest'])
 		);
 	}//end testAVersionWithoutRegisterOrManifestReadsEmpty()
 
@@ -184,10 +184,10 @@ final class VersionStateTest extends TestCase {
 		);
 
 		$pages = $restored['pages'];
-		$this->assertSame(['register' => 'openbuild-shop-permit-fees', 'schema' => 'shop-permit-fees-permit'], $pages[0]['config']);
-		$this->assertSame(['register' => 'addresses', 'schema' => 'shared-address'], $pages[1]['config']);
-		$this->assertSame(['register' => 7, 'schema' => 12], $pages[2]['config']);
-		$this->assertSame('Shop', $restored['title']);
+		$this->assertSame(expected: ['register' => 'openbuild-shop-permit-fees', 'schema' => 'shop-permit-fees-permit'], actual: $pages[0]['config']);
+		$this->assertSame(expected: ['register' => 'addresses', 'schema' => 'shared-address'], actual: $pages[1]['config']);
+		$this->assertSame(expected: ['register' => 7, 'schema' => 12], actual: $pages[2]['config']);
+		$this->assertSame(expected: 'Shop', actual: $restored['title']);
 	}//end testRestorePutsANeutralManifestIntoAVersionsOwnSlugs()
 
 	/**
@@ -207,8 +207,8 @@ final class VersionStateTest extends TestCase {
 		$restored = $state->restore(manifest: $neutral, version: ['register' => 'openbuild-shop-acceptance']);
 
 		$this->assertSame(
-			['register' => 'openbuild-shop-acceptance', 'schema' => 'shop-acceptance-zone'],
-			$restored['pages'][0]['config']
+			expected: ['register' => 'openbuild-shop-acceptance', 'schema' => 'shop-acceptance-zone'],
+			actual: $restored['pages'][0]['config']
 		);
 	}//end testReadThenRestoreMovesAManifestBetweenVersions()
 
@@ -224,10 +224,10 @@ final class VersionStateTest extends TestCase {
 
 		$definition = VersionState::definition(schema: $schema);
 
-		$this->assertSame('Fee', $definition['title']);
-		$this->assertSame(['amount' => ['type' => 'number']], $definition['properties']);
-		$this->assertSame(['amount'], $definition['required']);
-		$this->assertArrayNotHasKey('slug', $definition);
-		$this->assertArrayNotHasKey('id', $definition);
+		$this->assertSame(expected: 'Fee', actual: $definition['title']);
+		$this->assertSame(expected: ['amount' => ['type' => 'number']], actual: $definition['properties']);
+		$this->assertSame(expected: ['amount'], actual: $definition['required']);
+		$this->assertArrayNotHasKey(key: 'slug', array: $definition);
+		$this->assertArrayNotHasKey(key: 'id', array: $definition);
 	}//end testTheDefinitionCarriesTheComparedFields()
 }//end class
