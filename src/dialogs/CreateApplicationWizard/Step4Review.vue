@@ -138,7 +138,7 @@ export default {
 		 * The tables "Start from a database" makes pages for, in menu order.
 		 *
 		 * @return {Array<{slug: string, title: string}>}
-		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
+		 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
 		 */
 		databasePages() {
 			const choice = this.payload.fromDatabase

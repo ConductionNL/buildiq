@@ -184,7 +184,7 @@ export default {
 		 * with that query, so its agents are listed straight away.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/ai-agents-knowledge-and-run-trace/specs/agent-workspace/spec.md#requirement-the-app-detail-page-leads-to-its-agents-req-bqag-003
+		 * @spec openspec/changes/archive/2026-11-20-ai-agents-knowledge-and-run-trace/specs/agent-workspace/spec.md#requirement-the-app-detail-page-leads-to-its-agents-req-bqag-003
 		 */
 		async openFromQuery() {
 			await this.fetchApplications()

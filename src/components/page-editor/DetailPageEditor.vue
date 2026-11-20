@@ -405,7 +405,7 @@ export default {
 		 * The config key a read-only database switches off on a detail page.
 		 *
 		 * @return {string[]}
-		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-pages-follow-the-databases-write-setting-req-bqdb-002
+		 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-pages-follow-the-databases-write-setting-req-bqdb-002
 		 */
 		writeActionKeys() {
 			return ['showEditAction']
@@ -415,7 +415,7 @@ export default {
 		 * The write action switch of a detail page.
 		 *
 		 * @return {Array<{key: string, label: string}>}
-		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-pages-follow-the-databases-write-setting-req-bqdb-002
+		 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-pages-follow-the-databases-write-setting-req-bqdb-002
 		 */
 		writeActions() {
 			return [{ key: 'showEditAction', label: this.t('buildiq', 'Edit button') }]

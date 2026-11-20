@@ -26,7 +26,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
+ * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
  */
 
 declare(strict_types=1);
@@ -38,7 +38,7 @@ use InvalidArgumentException;
 /**
  * Builds a manifest of index, detail and menu entries from database tables.
  *
- * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
+ * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
  */
 class DatabaseManifestBuilder {
 
@@ -67,7 +67,7 @@ class DatabaseManifestBuilder {
 	 *
 	 * @throws InvalidArgumentException When the register is empty or no table has a slug.
 	 *
-	 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
+	 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
 	 */
 	public function build(string $register, array $schemas, bool $writable): array {
 		if (trim($register) === '') {
@@ -98,7 +98,7 @@ class DatabaseManifestBuilder {
 	 *
 	 * @return list<array{schema: array<string, mixed>, slug: string, segment: string, title: string, pageId: string}>
 	 *
-	 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
+	 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
 	 */
 	private function distinctTables(array $schemas): array {
 		$tables = [];
@@ -129,7 +129,7 @@ class DatabaseManifestBuilder {
 	 *
 	 * @return list<array<string, mixed>>
 	 *
-	 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
+	 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
 	 */
 	private function tablePages(array $table, array $source): array {
 		$route   = '/' . $table['segment'];
@@ -158,7 +158,7 @@ class DatabaseManifestBuilder {
 	 *
 	 * @return array{id: string, label: string, route: string, order: int}
 	 *
-	 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
+	 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
 	 */
 	private function menuEntry(array $table, int $order): array {
 		return [
@@ -179,7 +179,7 @@ class DatabaseManifestBuilder {
 	 *
 	 * @return array<string, mixed>
 	 *
-	 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-pages-follow-the-databases-write-setting-req-bqdb-002
+	 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-pages-follow-the-databases-write-setting-req-bqdb-002
 	 */
 	private function indexPage(array $page, array $binding, array $columns, bool $writable): array {
 		$config = ['register' => $binding['register'], 'schema' => $binding['schema'], 'columns' => $columns];
@@ -201,7 +201,7 @@ class DatabaseManifestBuilder {
 	 *
 	 * @return array<string, mixed>
 	 *
-	 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-pages-follow-the-databases-write-setting-req-bqdb-002
+	 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-pages-follow-the-databases-write-setting-req-bqdb-002
 	 */
 	private function detailPage(array $page, array $binding, bool $writable): array {
 		$config = ['register' => $binding['register'], 'schema' => $binding['schema']];
@@ -219,7 +219,7 @@ class DatabaseManifestBuilder {
 	 *
 	 * @return list<string>
 	 *
-	 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
+	 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
 	 */
 	private function columnsOf(array $schema): array {
 		$properties = ($schema['properties'] ?? []);
@@ -253,7 +253,7 @@ class DatabaseManifestBuilder {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
+	 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
 	 */
 	private function isScalar(array $property): bool {
 		$type = ($property['type'] ?? null);
@@ -277,7 +277,7 @@ class DatabaseManifestBuilder {
 	 *
 	 * @return string The slug, or '' when there is none.
 	 *
-	 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
+	 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
 	 */
 	private function slugOf(mixed $schema): string {
 		if (is_array($schema) === false || is_string($schema['slug'] ?? null) === false) {
@@ -295,7 +295,7 @@ class DatabaseManifestBuilder {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
+	 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
 	 */
 	private function titleOf(array $schema, string $slug): string {
 		$title = ($schema['title'] ?? null);
@@ -313,7 +313,7 @@ class DatabaseManifestBuilder {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
+	 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
 	 */
 	private function pageIdOf(string $slug): string {
 		$words = preg_split('/[^A-Za-z0-9]+/', $slug, -1, PREG_SPLIT_NO_EMPTY);
@@ -328,7 +328,7 @@ class DatabaseManifestBuilder {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
+	 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
 	 */
 	private function routeSegmentOf(string $slug): string {
 		return trim((string) preg_replace('/[^a-z0-9]+/', '-', strtolower($slug)), '-');

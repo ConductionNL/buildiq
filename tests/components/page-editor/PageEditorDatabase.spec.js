@@ -7,7 +7,7 @@
  * marks a connected database, a read-only one switches the write actions off
  * and locks them with a note, a writable one leaves them alone.
  *
- * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-pages-follow-the-databases-write-setting-req-bqdb-002
+ * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-pages-follow-the-databases-write-setting-req-bqdb-002
  */
 
 import { flushPromises, mount } from '@vue/test-utils'
