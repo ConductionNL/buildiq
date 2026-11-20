@@ -167,6 +167,13 @@
 			:window="selectedWindow"
 			:pageTitles="pageTitles" />
 
+		<!-- 3c. The app's outside systems and their health (built-app-connections-page,
+		     board BqAppWerking): for its owners and editors, and admins; the
+		     server checks the same before it reads anything. -->
+		<ApplicationConnectionsSection
+			v-if="canSeeConnections && appSlug"
+			:appSlug="appSlug" />
+
 		<!-- 4. Customization-layer widget grid. The manifest-derived Schemas /
 		     Pages / Menu widgets are replaced by the Manifest widget (delta
 		     layers + version state) and the Register widget (counts + deep-link
@@ -236,6 +243,7 @@
 
 <script>
 import { CnStatsBlock } from '@conduction/nextcloud-vue'
+import { getCurrentUser } from '@nextcloud/auth'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import NcButton from '@nextcloud/vue/components/NcButton'
@@ -246,6 +254,7 @@ import Harddisk from 'vue-material-design-icons/Harddisk.vue'
 import History from 'vue-material-design-icons/History.vue'
 import ImportDataWizard from '../../dialogs/ImportDataWizard.vue'
 import UserDeltaEditModal from '../../modals/UserDeltaEditModal.vue'
+import ApplicationConnectionsSection from './ApplicationConnectionsSection.vue'
 import ApplicationHealthSection from './ApplicationHealthSection.vue'
 import FlowsWidget from './widgets/FlowsWidget.vue'
 import GroupsWidget from './widgets/GroupsWidget.vue'
@@ -276,6 +285,7 @@ const KPI_CARDS = Object.freeze([
 export default {
 	name: 'ApplicationDetailDashboard',
 	components: {
+		ApplicationConnectionsSection,
 		ApplicationHealthSection,
 		ArrowTopRight,
 		CnStatsBlock,
@@ -689,6 +699,17 @@ export default {
 		canImport() {
 			const role = useRole(this.application)
 			return role === 'owner' || role === 'editor'
+		},
+
+		/**
+		 * Whether the Connections section shows: the app's owners and editors, and admins.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/built-app-connections-page/specs/app-connections/spec.md#requirement-req-biq-conn-005-every-app-built-in-buildiq-has-a-connections-page-with-health
+		 */
+		canSeeConnections() {
+			const user = getCurrentUser()
+			return this.canImport || Boolean(user && user.isAdmin)
 		},
 	},
 

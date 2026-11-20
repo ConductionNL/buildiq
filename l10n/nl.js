@@ -2760,7 +2760,15 @@ OC.L10N.register(
         "Snippet to paste into the other site": "Fragment om in de andere site te plakken",
         "The whole app": "De hele app",
         "This is not a valid site address.": "Dit is geen geldig siteadres.",
-        "What to embed": "Wat insluiten"
+        "What to embed": "Wat insluiten",
+        "Switched off": "Uitgeschakeld",
+        "Not checked": "Niet gecontroleerd",
+        "Connections": "Koppelingen",
+        "The outside systems this app reads from, and whether they answered the last time they were checked.": "De externe systemen waaruit deze app leest, en of ze antwoordden toen ze voor het laatst werden gecontroleerd.",
+        "The connections could not be loaded.": "De koppelingen konden niet worden geladen.",
+        "Health checks need integriq. Install it to see whether these sources answer.": "Voor gezondheidscontroles is integriq nodig. Installeer het om te zien of deze bronnen antwoorden.",
+        "This app reads from no outside system.": "Deze app leest uit geen enkel extern systeem.",
+        "Integration": "Integratie"
     },
     "nplurals=2; plural=(n != 1);"
 )

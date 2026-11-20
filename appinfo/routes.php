@@ -65,6 +65,8 @@ return \OCA\Buildiq\Middleware\Support\ApiPathAliases::withVersionedAliases(\OCA
         // controller method so auth-required-but-non-admin users can hit it (per design.md Decision 6).
         // Slug matches the kebab-case pattern declared in openbuild_register.json on the Application
         // and BuiltAppRoute schemas (^[a-z0-9][a-z0-9-]*[a-z0-9]$, min 2 max 48 chars).
+        // built-app-connections-page REQ-BIQ-CONN-005: an app's sources and integrations with their health.
+        ['name' => 'applicationConnections#index', 'url' => '/api/applications/{id}/connections', 'verb' => 'GET', 'requirements' => ['id' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'applications#getManifest', 'url' => '/api/applications/{slug}/manifest', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
         // Symmetric write counterpart — the standalone runtime's in-app edit shell
