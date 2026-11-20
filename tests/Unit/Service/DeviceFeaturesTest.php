@@ -90,4 +90,58 @@ class DeviceFeaturesTest extends TestCase {
 		$this->assertNull($features->policyFor(features: []));
 		$this->assertNull($features->policyFor(features: ['usb']));
 	}//end testThePolicyAllowsOnlyTheListedFeatures()
+
+	/**
+	 * An index page that finds a record by scanning uses the camera (REQ-BQQR-004).
+	 *
+	 * @return void
+	 */
+	public function testAScanningIndexPageUsesTheCamera(): void {
+		$manifest = [
+			'pages' => [
+				['id' => 'assets', 'type' => 'index', 'config' => ['schema' => 'asset', 'scan' => ['field' => 'tag', 'onMatch' => 'open']]],
+			],
+		];
+
+		$this->assertSame(['camera'], (new DeviceFeatures())->fromManifest(manifest: $manifest));
+	}//end testAScanningIndexPageUsesTheCamera()
+
+	/**
+	 * A form with a scan field, however deep, uses the camera once, next to the other devices.
+	 *
+	 * @return void
+	 */
+	public function testAScanFieldInAFormUsesTheCameraOnce(): void {
+		$manifest = [
+			'pages' => [
+				[
+					'id' => 'intake',
+					'type' => 'form',
+					'config' => ['fields' => [['key' => 'name', 'type' => 'string'], ['key' => 'tag', 'type' => 'scan', 'formats' => ['qr']], ['key' => 'memo', 'type' => 'audio']]],
+				],
+				['id' => 'move', 'type' => 'form', 'config' => ['sections' => [['fields' => [['name' => 'to', 'type' => 'scan']]]]]],
+			],
+		];
+
+		$this->assertSame(['camera', 'microphone'], (new DeviceFeatures())->fromManifest(manifest: $manifest));
+	}//end testAScanFieldInAFormUsesTheCameraOnce()
+
+	/**
+	 * Showing a code, an empty scan action or a scan type without a field name keeps the camera closed.
+	 *
+	 * @return void
+	 */
+	public function testShowingACodeUsesNoCamera(): void {
+		$manifest = [
+			'pages' => [
+				['id' => 'asset', 'type' => 'detail', 'config' => ['widgets' => [['id' => 'label', 'type' => 'code', 'format' => 'qr', 'source' => 'tag']]]],
+				['id' => 'assets', 'type' => 'index', 'config' => ['scan' => []]],
+				['id' => 'odd', 'type' => 'form', 'config' => ['type' => 'scan']],
+				['id' => 'broken', 'type' => 'index', 'config' => 'not a config'],
+				'not a page',
+			],
+		];
+
+		$this->assertSame([], (new DeviceFeatures())->fromManifest(manifest: $manifest));
+	}//end testShowingACodeUsesNoCamera()
 }//end class

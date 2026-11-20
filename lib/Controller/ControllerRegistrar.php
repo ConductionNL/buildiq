@@ -25,6 +25,8 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Controller;
 
 use OCA\Buildiq\Kernel\AppIdentity;
+use OCA\Buildiq\Kernel\Contracts\DeviceFeaturesInterface;
+use OCA\Buildiq\Kernel\Contracts\PublishedApplicationProviderInterface;
 use OCA\Buildiq\Kernel\Contracts\SettingsServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\TemplateInstallSeamInterface;
 use OCP\AppFramework\Bootstrap\IRegistrationContext;
@@ -83,6 +85,8 @@ final class ControllerRegistrar {
 				userSession: $c->get('OCP\\IUserSession'),
 				groupManager: $c->get('OCP\\IGroupManager'),
 				navigationManager: $c->get('OCP\\INavigationManager'),
+				publishedApps: $c->get(PublishedApplicationProviderInterface::class),
+				deviceFeatures: $c->get(DeviceFeaturesInterface::class),
 				settings: $c->get(SettingsServiceInterface::class),
 				manifestResolver: $c->get('OCA\\Buildiq\\Kernel\\Contracts\\ManifestResolverServiceInterface'),
 				embedOrigins: $c->get('OCA\\Buildiq\\Service\\EmbedOrigins')

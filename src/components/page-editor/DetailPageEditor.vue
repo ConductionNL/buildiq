@@ -175,6 +175,14 @@
 			<InlineFieldMark :error="markFor('sidebarProps')" />
 		</fieldset>
 
+		<fieldset class="detail-page-editor__fieldset" data-testid="detail-page-codes">
+			<legend>{{ t('buildiq', 'Codes') }}</legend>
+			<CodeWidgetBuilder
+				:modelValue="config.widgets || []"
+				@update:modelValue="updateWidgets($event)" />
+			<InlineFieldMark :error="markFor('widgets')" />
+		</fieldset>
+
 		<fieldset class="detail-page-editor__fieldset detail-page-editor__buttons">
 			<legend>{{ t('buildiq', 'Buttons') }}</legend>
 			<p class="detail-page-editor__note">
@@ -278,6 +286,7 @@
 <script>
 import ActionBuilder from './fields/ActionBuilder.vue'
 import AppliesToPanel from './fields/AppliesToPanel.vue'
+import CodeWidgetBuilder from './fields/CodeWidgetBuilder.vue'
 import InlineFieldMark from './fields/InlineFieldMark.vue'
 import RegisterSchemaFields from './fields/RegisterSchemaFields.vue'
 import RegistrationFormList from './fields/RegistrationFormList.vue'
@@ -334,6 +343,7 @@ export default {
 	components: {
 		ActionBuilder,
 		AppliesToPanel,
+		CodeWidgetBuilder,
 		InlineFieldMark,
 		RegisterSchemaFields,
 		RegistrationFormList,
@@ -408,6 +418,7 @@ export default {
 				'sidebarProps',
 				'relatedCollections',
 				'relationLinks',
+				'widgets',
 				'headerActions',
 				'lifecycleActions',
 			]
@@ -531,6 +542,22 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Write the page's widget list; an empty list deletes `config.widgets`.
+		 *
+		 * @param {Array<object>} widgets - the whole widget list.
+		 * @spec openspec/changes/pages-qr-and-barcodes/specs/page-codes/spec.md#requirement-detail-pages-can-show-a-code-req-bqqr-003
+		 */
+		updateWidgets(widgets) {
+			const next = { ...this.config }
+			if (Array.isArray(widgets) && widgets.length > 0) {
+				next.widgets = widgets
+			} else {
+				delete next.widgets
+			}
+			this.$emit('update:config', next)
+		},
+
 		/**
 		 * Write one key on the page's `config` block and emit the whole block
 		 * back to PageDesigner. Only the named key is touched, so config keys
