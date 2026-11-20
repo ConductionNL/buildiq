@@ -149,7 +149,7 @@ class AgentsController extends Controller {
 		IRequest $request,
 		private readonly LoggerInterface $logger,
 		RegisterStore $store,
-		CallerContext $caller,
+		private readonly CallerContext $caller,
 	) {
 		$this->objectService = $store->objectService;
 		$this->registerMapper = $store->registerMapper;
@@ -186,7 +186,9 @@ class AgentsController extends Controller {
 
 			$applicationSlug = (string)($agent['applicationSlug'] ?? '');
 			$application = $this->loadApplication(slug: $applicationSlug);
-			if ($application === null) {
+			// Organisation scope before any role, admins included: another
+			// organisation's scoped app answers as an unknown one (REQ-BQOS-002).
+			if ($application === null || $this->caller->seesApplication(application: $application) === false) {
 				return $this->error(code: 'not_found', detail: 'Application ' . $applicationSlug . ' not found', status: Http::STATUS_NOT_FOUND);
 			}
 
