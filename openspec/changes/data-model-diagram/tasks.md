@@ -7,4 +7,8 @@
 - [x] **T05**: In `src/views/SchemaDesigner.vue` list mode, add the "List | Diagram" switch kept in `?view=diagram`, and a register switch listing the version's register and the app's `dataRegisters` (REQ-BQMD-001, REQ-BQMD-005). Verify: extend `tests/views/SchemaDesigner.spec.js` for the switch, the query key and the register list.
 - [ ] **T06**: Playwright `tests/e2e/data-model-diagram.spec.ts`: open an app's schemas, switch to Diagram, open a schema from its box, and pass an axe check on the view (REQ-BQMD-001, REQ-BQMD-003, REQ-BQMD-004).
 - [x] **T07**: English and Dutch strings for the switch, the table and the empty state (`l10n/en.json`, `l10n/nl.json`), and a section in `docs/user-guide/` on reading an app's data model as a diagram.
-- [ ] **T08**: Run `openspec validate data-model-diagram --strict`.
+- [x] **T08**: Run `openspec validate data-model-diagram --strict`.
+
+## Build notes
+
+Round 2: `tests/e2e/data-model-diagram.spec.ts` is written for T06. It covers switching to Diagram (`view=diagram`), the boxes and the relation table with one/many, a drag that adds no relation, Enter on a focused box opening the schema, and an axe check (WCAG 2.1 A/AA, serious and critical) on the view. It lints, type-checks and lists, but it has not been run against a live instance, so T06 stays unticked. The "schema the maker may not read" scenario needs a second user with no access to another register and is left to the vitest cases. T08 passes (`openspec validate data-model-diagram --strict`: valid).
