@@ -241,7 +241,12 @@ return \OCA\Buildiq\Middleware\Support\ApiPathAliases::withVersionedAliases(\OCA
         ['name' => 'rules#evaluate', 'url' => '/api/rules/{ruleSetSlug}/evaluate', 'verb' => 'POST', 'requirements' => ['ruleSetSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'rules#schema',   'url' => '/api/rules/{ruleSetSlug}/schema',   'verb' => 'GET',  'requirements' => ['ruleSetSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'rules#testAll',  'url' => '/api/rules/{ruleSetSlug}/test-all', 'verb' => 'POST', 'requirements' => ['ruleSetSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
-        ['name' => 'rules#export',   'url' => '/api/rules/{ruleSetSlug}/export',   'verb' => 'GET',  'requirements' => ['ruleSetSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        [
+            'name' => 'rules#export',
+            'url' => '/api/rules/{ruleSetSlug}/export',
+            'verb' => 'GET',
+            'requirements' => ['ruleSetSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]'],
+        ],
         ['name' => 'rules#saveDecisionTable', 'url' => '/api/rules/{ruleSetSlug}/decision-table', 'verb' => 'PUT', 'requirements' => ['ruleSetSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
         // Automation designer (spec automation-designer REQ-AUTD-005/006/007/008).
