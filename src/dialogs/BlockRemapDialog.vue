@@ -80,7 +80,7 @@ export default {
 		 * Options offered in every remap picker.
 		 *
 		 * @return {Array<{id: string, label: string}>}
-		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 * @spec openspec/specs/component-blocks/spec.md
 		 */
 		schemaOptions() {
 			return this.targetSchemaSlugs.map((slug) => ({ id: slug, label: slug }))
@@ -93,7 +93,7 @@ export default {
 		 *
 		 * @param {boolean} value - the new `open` prop value.
 		 * @return {void}
-		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 * @spec openspec/specs/component-blocks/spec.md
 		 */
 		open(value) {
 			if (value) {
@@ -105,7 +105,7 @@ export default {
 		 * Reset the picker state whenever the mismatched-dependency list changes.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 * @spec openspec/specs/component-blocks/spec.md
 		 */
 		dependencies() {
 			this.resetSelections()
@@ -116,7 +116,7 @@ export default {
 	 * Reset the picker state when already open on mount.
 	 *
 	 * @return {void}
-	 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+	 * @spec openspec/specs/component-blocks/spec.md
 	 */
 	created() {
 		if (this.open) {
@@ -129,7 +129,7 @@ export default {
 		 * Reset every dependency's picker to unresolved (null).
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 * @spec openspec/specs/component-blocks/spec.md
 		 */
 		resetSelections() {
 			const next = {}
@@ -143,7 +143,7 @@ export default {
 		 * Close without resolving anything.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 * @spec openspec/specs/component-blocks/spec.md
 		 */
 		onClose() {
 			this.$emit('update:open', false)
@@ -155,7 +155,7 @@ export default {
 		 * this shape directly.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/component-blocks/specs/component-blocks/spec.md
+		 * @spec openspec/specs/component-blocks/spec.md
 		 */
 		confirm() {
 			const remapMap = {}

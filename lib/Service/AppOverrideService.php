@@ -33,7 +33,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/unify-apps-with-app-type/specs/app-override-persistence/spec.md
+ * @spec openspec/specs/app-override-persistence/spec.md
  */
 
 declare(strict_types=1);
@@ -42,8 +42,13 @@ namespace OCA\Buildiq\Service;
 
 use DateTimeImmutable;
 use DateTimeInterface;
+use OCA\Buildiq\Kernel\Contracts\AppOverrideServiceInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCP\App\IAppManager;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -56,23 +61,9 @@ use Throwable;
  * delta is served back raw for a client-side merge; the write path validates
  * the delta shape and refuses an app-blanking delta (design D4).
  *
- * @spec openspec/changes/unify-apps-with-app-type/specs/app-override-persistence/spec.md
+ * @spec openspec/specs/app-override-persistence/spec.md
  */
-class AppOverrideService {
-	/**
-	 * OpenRegister register slug that hosts the Buildiq control schemas.
-	 */
-	public const REGISTER_SLUG = 'buildiq';
-
-	/**
-	 * OpenRegister schema slug for the logical app record.
-	 */
-	public const APPLICATION_SCHEMA = 'built-app';
-
-	/**
-	 * OpenRegister schema slug for the deployable version record.
-	 */
-	public const APPLICATION_VERSION_SCHEMA = 'applicationVersion';
+class AppOverrideService implements AppOverrideServiceInterface {
 
 	/**
 	 * The fixed version slug used for a hybrid app's single production version.
@@ -108,7 +99,7 @@ class AppOverrideService {
 	 *
 	 * @return array<string, mixed>|null The record with a `manifestDelta` key, or null when none exists.
 	 *
-	 * @spec openspec/changes/unify-apps-with-app-type/specs/app-override-persistence/spec.md
+	 * @spec openspec/specs/app-override-persistence/spec.md
 	 */
 	public function findByAppId(string $appId): ?array {
 		$version = $this->findHybridProductionVersion(appId: $appId);
@@ -145,7 +136,7 @@ class AppOverrideService {
 	 *
 	 * @return array<string, mixed>|null The record with a merged `manifestDelta` key, or null when no hybrid app exists.
 	 *
-	 * @spec openspec/changes/layered-versioned-app-deltas/specs/layered-app-deltas/spec.md
+	 * @spec openspec/specs/layered-app-deltas/spec.md
 	 */
 	public function resolveLayeredDelta(string $appId, ?string $uid): ?array {
 		$application = $this->findHybridApplication(appId: $appId);
@@ -153,26 +144,13 @@ class AppOverrideService {
 			return null;
 		}
 
-		$adminVersion = $this->findHybridProductionVersion(appId: $appId, application: $application);
-		$adminDelta = [];
-		if ($adminVersion !== null) {
-			$candidate = ($adminVersion['manifestDelta'] ?? []);
-			if (is_array($candidate) === true) {
-				$adminDelta = $candidate;
-			}
-		}
-
-		$resolved = $adminDelta;
+		$adminDelta = $this->deltaOf(version: $this->findHybridProductionVersion(appId: $appId, application: $application));
+		$resolved   = $adminDelta;
 
 		// Layer the caller's own user delta on top, gated by the per-app flag.
-		if ($uid !== null && $uid !== '' && $this->appAllowsUserOverrides(application: $application) === true) {
-			$userVersion = $this->findUserDeltaForApp(application: $application, uid: $uid);
-			if ($userVersion !== null) {
-				$userDelta = ($userVersion['manifestDelta'] ?? []);
-				if (is_array($userDelta) === true && $userDelta !== []) {
-					$resolved = $this->deepMergeDelta(base: $adminDelta, overlay: $userDelta);
-				}
-			}
+		$userDelta = $this->callerDeltaOf(application: $application, uid: $uid);
+		if ($userDelta !== []) {
+			$resolved = $this->deepMergeDelta(base: $adminDelta, overlay: $userDelta);
 		}
 
 		return [
@@ -181,6 +159,38 @@ class AppOverrideService {
 		];
 
 	}//end resolveLayeredDelta()
+
+	/**
+	 * The `manifestDelta` of a delta version.
+	 *
+	 * @param array<string,mixed>|null $version The version, or null when there is none.
+	 *
+	 * @return array<string,mixed> The delta, empty when the version is missing or carries no array.
+	 */
+	private function deltaOf(?array $version): array {
+		$delta = ($version['manifestDelta'] ?? []);
+		if (is_array($delta) === false) {
+			return [];
+		}
+
+		return $delta;
+	}//end deltaOf()
+
+	/**
+	 * The caller's own user delta for an app that allows user overrides.
+	 *
+	 * @param array<string,mixed> $application The parent Application.
+	 * @param string|null         $uid         The calling user's UID, or null for an anonymous caller.
+	 *
+	 * @return array<string,mixed> The user delta, empty when there is none to layer.
+	 */
+	private function callerDeltaOf(array $application, ?string $uid): array {
+		if ($uid === null || $uid === '' || $this->appAllowsUserOverrides(application: $application) === false) {
+			return [];
+		}
+
+		return $this->deltaOf(version: $this->findUserDeltaForApp(application: $application, uid: $uid));
+	}//end callerDeltaOf()
 
 	/**
 	 * Read the caller's own user-scoped delta record for a fleet app, for editing.
@@ -195,7 +205,7 @@ class AppOverrideService {
 	 *                              `exists` (the caller has a user delta), `manifestDelta`,
 	 *                              `versionUuid` (the OR row uuid for version history / rollback).
 	 *
-	 * @spec openspec/changes/layered-versioned-app-deltas/specs/layered-app-deltas/spec.md
+	 * @spec openspec/specs/layered-app-deltas/spec.md
 	 */
 	public function getUserDelta(string $appId, string $uid): array {
 		$application = $this->findHybridApplication(appId: $appId);
@@ -249,7 +259,7 @@ class AppOverrideService {
 	 *
 	 * @throws \RuntimeException When the app does not exist or does not allow user overrides.
 	 *
-	 * @spec openspec/changes/layered-versioned-app-deltas/specs/layered-app-deltas/spec.md
+	 * @spec openspec/specs/layered-app-deltas/spec.md
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	public function upsertUserDelta(string $appId, array $delta, string $uid): array {
@@ -295,9 +305,13 @@ class AppOverrideService {
 
 			$saved = $this->objectService->saveObject(
 				object: $existing,
-				register: self::REGISTER_SLUG,
-				schema: self::APPLICATION_VERSION_SCHEMA,
-				uuid: $versionUuid,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(
+							register: self::REGISTER_SLUG,
+							schema: self::APPLICATION_VERSION_SCHEMA
+						),
+					uuid: $versionUuid
+				),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -318,8 +332,10 @@ class AppOverrideService {
 					'status' => 'draft',
 					'application' => $appUuid,
 				],
-				register: self::REGISTER_SLUG,
-				schema: self::APPLICATION_VERSION_SCHEMA,
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(
+						register: self::REGISTER_SLUG,
+						schema: self::APPLICATION_VERSION_SCHEMA
+					)),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -347,7 +363,7 @@ class AppOverrideService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/layered-versioned-app-deltas/specs/layered-app-deltas/spec.md
+	 * @spec openspec/specs/layered-app-deltas/spec.md
 	 */
 	public function deleteUserDelta(string $appId, string $uid): void {
 		if ($uid === '') {
@@ -385,7 +401,7 @@ class AppOverrideService {
 	 *
 	 * @return array<int, array<string, mixed>> List of `{ owner, versionUuid, semver, status, updatedAt }`.
 	 *
-	 * @spec openspec/changes/layered-versioned-app-deltas/specs/application-delta-layers-ui/spec.md
+	 * @spec openspec/specs/application-delta-layers-ui/spec.md
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	public function listUserDeltas(string $appId): array {
@@ -466,7 +482,7 @@ class AppOverrideService {
 	 *
 	 * @return array<string, mixed> A normalised summary: appId, updatedBy, updatedAt, applicationUuid.
 	 *
-	 * @spec openspec/changes/unify-apps-with-app-type/specs/app-override-persistence/spec.md
+	 * @spec openspec/specs/app-override-persistence/spec.md
 	 */
 	public function upsert(string $appId, array $delta, ?string $baseRef, string $updatedBy, bool $systemContext = false): array {
 		$now = (new DateTimeImmutable())->format(DateTimeInterface::ATOM);
@@ -518,7 +534,7 @@ class AppOverrideService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/unify-apps-with-app-type/specs/app-override-persistence/spec.md
+	 * @spec openspec/specs/app-override-persistence/spec.md
 	 */
 	public function delete(string $appId): void {
 		$application = $this->findHybridApplication(appId: $appId);
@@ -550,7 +566,7 @@ class AppOverrideService {
 	 *
 	 * @return array<int, string> A list of violations; empty when the delta is valid.
 	 *
-	 * @spec openspec/changes/unify-apps-with-app-type/specs/app-override-persistence/spec.md
+	 * @spec openspec/specs/app-override-persistence/spec.md
 	 */
 	public function validateDeltaShape(array $delta): array {
 		return $this->deltaValidator->validateDeltaShape(delta: $delta);
@@ -564,7 +580,7 @@ class AppOverrideService {
 	 *
 	 * @return bool True when the delta resolves (over an empty base) to no pages/menu.
 	 *
-	 * @spec openspec/changes/unify-apps-with-app-type/specs/app-override-persistence/spec.md
+	 * @spec openspec/specs/app-override-persistence/spec.md
 	 */
 	public function wouldBlankApp(array $delta): bool {
 		return $this->deltaValidator->wouldBlankApp(delta: $delta);
@@ -580,7 +596,7 @@ class AppOverrideService {
 	 *
 	 * @return array<string, mixed>|null The normalised Application, or null when none exists.
 	 *
-	 * @spec openspec/changes/unify-apps-with-app-type/specs/app-override-persistence/spec.md
+	 * @spec openspec/specs/app-override-persistence/spec.md
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	public function findHybridApplication(string $appId): ?array {
@@ -634,8 +650,7 @@ class AppOverrideService {
 		try {
 			$entity = $this->objectService->find(
 				id: $versionUuid,
-				register: self::REGISTER_SLUG,
-				schema: self::APPLICATION_VERSION_SCHEMA
+				options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: self::APPLICATION_VERSION_SCHEMA)
 			);
 		} catch (Throwable $e) {
 			$this->logger->error(
@@ -674,8 +689,7 @@ class AppOverrideService {
 				'appType' => 'hybrid',
 				'baseRef' => $baseRefObject,
 			],
-			register: self::REGISTER_SLUG,
-			schema: self::APPLICATION_SCHEMA,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::APPLICATION_SCHEMA)),
 			_rbac: $rbac,
 			_multitenancy: $rbac
 		);
@@ -696,8 +710,7 @@ class AppOverrideService {
 				'status' => 'published',
 				'application' => $applicationUuid,
 			],
-			register: self::REGISTER_SLUG,
-			schema: self::APPLICATION_VERSION_SCHEMA,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::APPLICATION_VERSION_SCHEMA)),
 			_rbac: $rbac,
 			_multitenancy: $rbac
 		);
@@ -714,9 +727,10 @@ class AppOverrideService {
 			$applicationData['productionVersion'] = $versionUuid;
 			$this->objectService->saveObject(
 				object: $applicationData,
-				register: self::REGISTER_SLUG,
-				schema: self::APPLICATION_SCHEMA,
-				uuid: $applicationUuid,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::APPLICATION_SCHEMA),
+					uuid: $applicationUuid
+				),
 				_rbac: $rbac,
 				_multitenancy: $rbac
 			);
@@ -762,9 +776,13 @@ class AppOverrideService {
 
 			$this->objectService->saveObject(
 				object: $version,
-				register: self::REGISTER_SLUG,
-				schema: self::APPLICATION_VERSION_SCHEMA,
-				uuid: $versionUuid,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(
+							register: self::REGISTER_SLUG,
+							schema: self::APPLICATION_VERSION_SCHEMA
+						),
+					uuid: $versionUuid
+				),
 				_rbac: $rbac,
 				_multitenancy: $rbac
 			);
@@ -824,7 +842,7 @@ class AppOverrideService {
 	 */
 	private function deleteObjectSafely(string $uuid, string $context): void {
 		try {
-			$this->objectService->deleteObject(uuid: $uuid);
+			$this->objectService->deleteObject(new ObjectDeletion(uuid: $uuid));
 		} catch (Throwable $e) {
 			$this->logger->error(
 				'Buildiq: failed to delete ' . $context . ': ' . $e->getMessage(),

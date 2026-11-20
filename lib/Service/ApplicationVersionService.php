@@ -35,21 +35,26 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-22
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-23
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-25
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-31
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-22
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-23
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-25
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-31
  */
 
 declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\ApplicationVersionServiceInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\RegisterService;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -65,45 +70,7 @@ use Throwable;
  *
  * @spec openspec/specs/application-versions/spec.md#requirement-cycle-prevention-on-the-promotesto-chain
  */
-class ApplicationVersionService {
-	/**
-	 * Shared register that hosts both Application and ApplicationVersion.
-	 */
-	public const REGISTER_SLUG = 'buildiq';
-
-	/**
-	 * Prefix of the PER-VERSION register the creation wizard provisions.
-	 *
-	 * SEPARATE FROM REGISTER_SLUG, AND DELIBERATELY STILL `openbuild-`.
-	 *
-	 * Until the app-id rename these were the same string, and several callers
-	 * built a per-version name as `REGISTER_SLUG . '-' . $slug`. Renaming
-	 * REGISTER_SLUG to `buildiq` silently changed what those callers emit,
-	 * because one constant was doing two jobs. The applicationVersion schema
-	 * pins this one with `"pattern": "^openbuild-[a-z0-9][a-z0-9-]*[a-z0-9]$"`,
-	 * so the renamed value is not merely inconsistent — it is REJECTED, and the
-	 * failure surfaces as "Property 'register' should match pattern … but
-	 * 'buildiq-…' does not" at the moment an ApplicationVersion is written.
-	 *
-	 * Naming the two apart is what stops the next rename from doing it again.
-	 * Moving the per-version registers as well is a separate decision: existing
-	 * ones are real, populated registers, and renaming them needs a migration
-	 * and a change to that schema pattern, neither of which belongs in an
-	 * app-slug rename.
-	 *
-	 * @var string
-	 */
-	public const VERSION_REGISTER_PREFIX = 'openbuild-';
-
-	/**
-	 * Schema slug of the parent Application object.
-	 */
-	public const APPLICATION_SCHEMA = 'built-app';
-
-	/**
-	 * Schema slug of the versioned-model ApplicationVersion object.
-	 */
-	public const APPLICATION_VERSION_SCHEMA = 'applicationVersion';
+class ApplicationVersionService implements ApplicationVersionServiceInterface {
 
 	/**
 	 * Hard cap on the `promotesTo` chain walk in {@see guardNoCycle()}.
@@ -181,7 +148,7 @@ class ApplicationVersionService {
 	 *
 	 * @throws \JsonException When the structure contains non-encodable values
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-22
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-22
 	 */
 	public function canonicaliseManifest(array $manifest): string {
 		return json_encode(
@@ -199,7 +166,7 @@ class ApplicationVersionService {
 	 *
 	 * @throws \JsonException When the manifest contains non-encodable values
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-22
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-22
 	 */
 	public function hashManifest(array $manifest): string {
 		return hash(algo: 'sha256', data: $this->canonicaliseManifest(manifest: $manifest));
@@ -215,7 +182,7 @@ class ApplicationVersionService {
 	 *
 	 * @throws RuntimeException When the input is not a recognisable semver
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-22
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-22
 	 */
 	public function bumpPatch(string $semver): string {
 		$matches = [];
@@ -252,7 +219,7 @@ class ApplicationVersionService {
 	 *
 	 * @throws \JsonException When the manifest cannot be canonicalised
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-22
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-22
 	 */
 	public function onSave(?array $current, array $next): array {
 		$manifest = $next['manifest'] ?? null;
@@ -307,7 +274,7 @@ class ApplicationVersionService {
 	 *
 	 * @throws RuntimeException When a cycle is detected or the cap is exceeded
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-23
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-23
 	 */
 	public function guardNoCycle(string $currentUuid, ?string $proposedTargetUuid): void {
 		if ($proposedTargetUuid === null || $proposedTargetUuid === '') {
@@ -379,14 +346,13 @@ class ApplicationVersionService {
 	 *
 	 * @throws RuntimeException When the back-reference does not point at the parent
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-31
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-31
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	public function guardProductionVersionOwnership(string $applicationUuid, string $proposedVersionUuid): void {
 		$version = $this->objectService->find(
 			id: $proposedVersionUuid,
-			register: self::REGISTER_SLUG,
-			schema: self::APPLICATION_VERSION_SCHEMA
+			options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: self::APPLICATION_VERSION_SCHEMA)
 		);
 
 		if ($version === null) {
@@ -444,7 +410,7 @@ class ApplicationVersionService {
 	 *
 	 * @throws RuntimeException On back-reference mismatch or a missing object
 	 *
-	 * @spec openspec/changes/version-lifecycle-and-switcher/specs/application-versions/spec.md
+	 * @spec openspec/specs/application-versions/spec.md
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	public function releaseVersion(string $applicationUuid, string $versionUuid): array {
@@ -456,8 +422,7 @@ class ApplicationVersionService {
 
 		$application = $this->objectService->find(
 			id: $applicationUuid,
-			register: self::REGISTER_SLUG,
-			schema: self::APPLICATION_SCHEMA
+			options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: self::APPLICATION_SCHEMA)
 		);
 		if ($application === null) {
 			throw new RuntimeException(message: sprintf('Application %s does not exist.', $applicationUuid));
@@ -469,8 +434,7 @@ class ApplicationVersionService {
 		// 2. Publish the chosen version (draft → published) — fires the lifecycle.
 		$version = $this->objectService->find(
 			id: $versionUuid,
-			register: self::REGISTER_SLUG,
-			schema: self::APPLICATION_VERSION_SCHEMA
+			options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: self::APPLICATION_VERSION_SCHEMA)
 		);
 		if ($version === null) {
 			throw new RuntimeException(message: sprintf('ApplicationVersion %s does not exist.', $versionUuid));
@@ -481,9 +445,10 @@ class ApplicationVersionService {
 		$versionData['status'] = 'published';
 		$this->objectService->saveObject(
 			object: $versionData,
-			register: self::REGISTER_SLUG,
-			schema: self::APPLICATION_VERSION_SCHEMA,
-			uuid: $versionUuid
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::APPLICATION_VERSION_SCHEMA),
+				uuid: $versionUuid
+			)
 		);
 
 		// 3. Move the single production pointer (single-production invariant).
@@ -491,9 +456,10 @@ class ApplicationVersionService {
 		$applicationData['productionVersion'] = $versionUuid;
 		$this->objectService->saveObject(
 			object: $applicationData,
-			register: self::REGISTER_SLUG,
-			schema: self::APPLICATION_SCHEMA,
-			uuid: $applicationUuid
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::APPLICATION_SCHEMA),
+				uuid: $applicationUuid
+			)
 		);
 
 		// 4. Demote the previous production. The single-production invariant is
@@ -502,39 +468,9 @@ class ApplicationVersionService {
 		// (x-openregister-lifecycle has no draft→archived edge), so a draft
 		// ex-production is demoted by the pointer move alone and left as a
 		// draft the maintainer can keep editing or delete.
-		$archived = null;
-		if ($previousProduction !== '' && $previousProduction !== $versionUuid) {
-			$previous = $this->objectService->find(
-				id: $previousProduction,
-				register: self::REGISTER_SLUG,
-				schema: self::APPLICATION_VERSION_SCHEMA
-			);
-			if ($previous !== null) {
-				$previousData = ObjectRecord::toArray(object: $previous);
-				if ((string)($previousData['status'] ?? '') === 'published') {
-					unset($previousData['@self']);
-					$previousData['status'] = 'archived';
-					$this->objectService->saveObject(
-						object: $previousData,
-						register: self::REGISTER_SLUG,
-						schema: self::APPLICATION_VERSION_SCHEMA,
-						uuid: $previousProduction
-					);
-					$archived = $previousProduction;
-				}
-			}
-		}//end if
+		$archived = $this->archivePreviousProduction(previousProduction: $previousProduction, versionUuid: $versionUuid);
 
-		$previousLabel = $previousProduction;
-		if ($previousProduction === '') {
-			$previousLabel = '(none)';
-		}
-
-		$archivedLabel = 'unchanged';
-		if ($archived !== null) {
-			$archivedLabel = 'archived';
-		}
-
+		[$previousLabel, $archivedLabel] = $this->releaseLabels(previousProduction: $previousProduction, archived: $archived);
 		$this->logger->info(
 			sprintf(
 				'Buildiq: released ApplicationVersion %s as production for Application %s (previous %s %s).',
@@ -551,6 +487,89 @@ class ApplicationVersionService {
 			'archived' => $archived,
 		];
 	}//end releaseVersion()
+
+	/**
+	 * Archive the previous production version when it is published and not the released one.
+	 *
+	 * Only a `published` version can transition to `archived`, so a draft
+	 * ex-production is left as a draft.
+	 *
+	 * @param string $previousProduction The previous production version uuid, or ''.
+	 * @param string $versionUuid        The version being released.
+	 *
+	 * @return string|null The archived version uuid, or null when none was archived.
+	 *
+	 * @spec openspec/specs/application-versions/spec.md
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
+	 */
+	private function archivePreviousProduction(string $previousProduction, string $versionUuid): ?string {
+		if ($previousProduction === '' || $previousProduction === $versionUuid) {
+			return null;
+		}
+
+		return $this->archiveIfPublished(versionUuid: $previousProduction);
+	}//end archivePreviousProduction()
+
+	/**
+	 * Archive a version when it is published.
+	 *
+	 * @param string $versionUuid The version to archive.
+	 *
+	 * @return string|null The archived version uuid, or null when it was not archived.
+	 *
+	 * @spec openspec/specs/application-versions/spec.md
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
+	 */
+	private function archiveIfPublished(string $versionUuid): ?string {
+		$previous = $this->objectService->find(
+			id: $versionUuid,
+			options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: self::APPLICATION_VERSION_SCHEMA)
+		);
+		if ($previous === null) {
+			return null;
+		}
+
+		$previousData = ObjectRecord::toArray(object: $previous);
+		if ((string)($previousData['status'] ?? '') !== 'published') {
+			return null;
+		}
+
+		unset($previousData['@self']);
+		$previousData['status'] = 'archived';
+		$this->objectService->saveObject(
+			object: $previousData,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::APPLICATION_VERSION_SCHEMA),
+				uuid: $versionUuid
+			)
+		);
+
+		return $versionUuid;
+	}//end archiveIfPublished()
+
+	/**
+	 * The log labels of a release: the previous production and whether it was archived.
+	 *
+	 * @param string      $previousProduction The previous production version uuid, or ''.
+	 * @param string|null $archived           The archived version uuid, or null.
+	 *
+	 * @return array{0: string, 1: string}
+	 *
+	 * @spec openspec/specs/application-versions/spec.md
+	 */
+	private function releaseLabels(string $previousProduction, ?string $archived): array {
+		$previousLabel = $previousProduction;
+		if ($previousProduction === '') {
+			$previousLabel = '(none)';
+		}
+
+		$archivedLabel = 'unchanged';
+		if ($archived !== null) {
+			$archivedLabel = 'archived';
+		}
+
+		return [$previousLabel, $archivedLabel];
+	}//end releaseLabels()
 
 	/**
 	 * Delete an ApplicationVersion using the named strategy (spec REQ-OBV-108).
@@ -578,7 +597,7 @@ class ApplicationVersionService {
 	 * @throws RuntimeException On unknown strategy, missing version, or
 	 *                          production-version refusal
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-25
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-25
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	public function deleteVersion(string $versionUuid, string $strategy): void {
@@ -586,8 +605,7 @@ class ApplicationVersionService {
 
 		$version = $this->objectService->find(
 			id: $versionUuid,
-			register: self::REGISTER_SLUG,
-			schema: self::APPLICATION_VERSION_SCHEMA
+			options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: self::APPLICATION_VERSION_SCHEMA)
 		);
 
 		if ($version === null) {
@@ -620,7 +638,24 @@ class ApplicationVersionService {
 			$effectiveStrategy = self::STRATEGY_KEEP_REGISTER;
 		}
 
-		switch ($effectiveStrategy) {
+		$this->applyRegisterStrategy(strategy: $effectiveStrategy, registerSlug: $registerSlug, versionUuid: $versionUuid);
+
+		$this->objectService->deleteObject(new ObjectDeletion(uuid: $versionUuid));
+	}//end deleteVersion()
+
+	/**
+	 * Apply a delete strategy to the version's register: drop it, flag it orphaned, or keep it.
+	 *
+	 * @param string $strategy     The effective strategy.
+	 * @param string $registerSlug The version's register slug.
+	 * @param string $versionUuid  The version being deleted.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/specs/application-versions/spec.md
+	 */
+	private function applyRegisterStrategy(string $strategy, string $registerSlug, string $versionUuid): void {
+		switch ($strategy) {
 			case self::STRATEGY_DELETE_NOW:
 				$this->dropPerVersionRegister(registerSlug: $registerSlug, versionUuid: $versionUuid);
 				break;
@@ -638,9 +673,7 @@ class ApplicationVersionService {
 				);
 				break;
 		}//end switch
-
-		$this->objectService->deleteObject(uuid: $versionUuid);
-	}//end deleteVersion()
+	}//end applyRegisterStrategy()
 
 	/**
 	 * Reject an unknown deletion strategy.
@@ -651,7 +684,7 @@ class ApplicationVersionService {
 	 *
 	 * @throws RuntimeException When the strategy is not recognised
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-25
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-25
 	 */
 	private function assertValidStrategy(string $strategy): void {
 		if (in_array($strategy, self::VALID_STRATEGIES, true) === false) {
@@ -675,7 +708,7 @@ class ApplicationVersionService {
 	 *
 	 * @throws RuntimeException When the row is the parent's productionVersion
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-25
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-25
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function assertNotProductionVersion(array $versionData, string $versionUuid): void {
@@ -686,8 +719,7 @@ class ApplicationVersionService {
 
 		$application = $this->objectService->find(
 			id: $applicationUuid,
-			register: self::REGISTER_SLUG,
-			schema: self::APPLICATION_SCHEMA
+			options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: self::APPLICATION_SCHEMA)
 		);
 
 		if ($application === null) {
@@ -735,8 +767,7 @@ class ApplicationVersionService {
 
 		$application = $this->objectService->find(
 			id: $applicationUuid,
-			register: self::REGISTER_SLUG,
-			schema: self::APPLICATION_SCHEMA
+			options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: self::APPLICATION_SCHEMA)
 		);
 		if ($application === null) {
 			return false;
@@ -755,8 +786,10 @@ class ApplicationVersionService {
 			if ($productionUuid !== '') {
 				$prod = $this->objectService->find(
 					id: $productionUuid,
-					register: self::REGISTER_SLUG,
-					schema: self::APPLICATION_VERSION_SCHEMA
+					options: new ObjectFindOptions(
+						register: self::REGISTER_SLUG,
+						schema: self::APPLICATION_VERSION_SCHEMA
+					)
 				);
 				if ($prod !== null) {
 					$productionRegister = (string)(ObjectRecord::toArray(object: $prod)['register'] ?? '');
@@ -775,7 +808,7 @@ class ApplicationVersionService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-25
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-25
 	 */
 	private function dropPerVersionRegister(string $registerSlug, string $versionUuid): void {
 		if ($registerSlug === '') {
@@ -825,7 +858,7 @@ class ApplicationVersionService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-25
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-25
 	 */
 	private function flagRegisterOrphaned(string $registerSlug, string $versionUuid): void {
 		if ($registerSlug === '') {
@@ -881,8 +914,7 @@ class ApplicationVersionService {
 		try {
 			$entity = $this->objectService->find(
 				id: $versionUuid,
-				register: self::REGISTER_SLUG,
-				schema: self::APPLICATION_VERSION_SCHEMA
+				options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: self::APPLICATION_VERSION_SCHEMA)
 			);
 		} catch (Throwable $e) {
 			$this->logger->debug(
@@ -949,7 +981,7 @@ class ApplicationVersionService {
 	 *
 	 * @return int The number of automations successfully cloned.
 	 *
-	 * @spec openspec/changes/automation-designer/tasks.md#2.6
+	 * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#2.6
 	 * @spec openspec/specs/automation-designer/spec.md#req-autd-009
 	 */
 	public function cloneAutomationsToVersion(string $applicationSlug, string $sourceVersionUuid, string $newVersionUuid): int {
@@ -1023,7 +1055,10 @@ class ApplicationVersionService {
 		unset($payload['id'], $payload['uuid'], $payload['@self'], $payload['provenance']);
 		$payload['versionUuid'] = $newVersionUuid;
 
-		$created = $this->objectService->saveObject(object: $payload, register: self::REGISTER_SLUG, schema: 'automation');
+		$created = $this->objectService->saveObject(
+			object: $payload,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: 'automation'))
+		);
 		$createdArray = ObjectRecord::toArray(object: $created);
 
 		// Prefer the entity's own uuid (NC Entity's magic getUuid() — not
@@ -1057,7 +1092,10 @@ class ApplicationVersionService {
 		$provenance = $this->automationCompiler->apply(automation: $createdArray, plan: $plan, priorProvenance: []);
 
 		$createdArray['provenance'] = $provenance;
-		$this->objectService->saveObject(object: $createdArray, register: self::REGISTER_SLUG, schema: 'automation', uuid: $newUuid);
+		$this->objectService->saveObject(
+			object: $createdArray,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: 'automation'), uuid: $newUuid)
+		);
 	}//end cloneOneAutomation()
 
 	/**

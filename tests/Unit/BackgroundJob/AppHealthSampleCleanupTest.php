@@ -1,5 +1,10 @@
 <?php
 
+/**
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ */
+
 declare(strict_types=1);
 
 namespace OCA\Buildiq\Tests\Unit\BackgroundJob;
@@ -12,6 +17,7 @@ use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 
 /**
  * REQ-BQDM-005: samples older than the retention window are deleted, newer ones stay.
@@ -24,7 +30,8 @@ final class AppHealthSampleCleanupTest extends TestCase {
 			['id' => 'old', 'windowStart' => '2026-09-21T10:00:00+00:00'],
 			['id' => 'new', 'windowStart' => '2026-10-22T10:00:00+00:00'],
 		]);
-		$objects->method('deleteObject')->willReturnCallback(static function (string $uuid) use (&$deleted): bool {
+		$objects->method('deleteObject')->willReturnCallback(static function (ObjectDeletion $deletion) use (&$deleted): bool {
+			$uuid = $deletion->uuid;
 			$deleted[] = $uuid;
 			return true;
 		});

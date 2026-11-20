@@ -3,6 +3,9 @@
 /**
  * Buildiq MCP Tool Provider
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Per-app implementation of OCA\OpenRegister\Mcp\IMcpToolProvider. Exposes the
  * full Buildiq authoring surface to an LLM via MCP: list/read apps, create
  * new apps, promote versions, and mutate a draft version's manifest (pages,
@@ -22,25 +25,23 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-8
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-42
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-50
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-59
- * @spec openspec/changes/retrofit-2026-05-24-openbuild-runtime-mcp/tasks.md#task-1
- * @spec openspec/changes/retrofit-2026-05-24-openbuild-runtime-mcp/tasks.md#task-2
- * @spec openspec/changes/retrofit-2026-05-24-openbuild-runtime-mcp/tasks.md#task-3
- * @spec openspec/changes/retrofit-2026-05-24-openbuild-runtime-mcp/tasks.md#task-4
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
- * SPDX-License-Identifier: EUPL-1.2
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-8
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-42
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-50
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-59
+ * @spec openspec/changes/archive/retrofit-2026-05-24-openbuild-runtime-mcp/tasks.md#task-1
+ * @spec openspec/changes/archive/retrofit-2026-05-24-openbuild-runtime-mcp/tasks.md#task-2
+ * @spec openspec/changes/archive/retrofit-2026-05-24-openbuild-runtime-mcp/tasks.md#task-3
+ * @spec openspec/changes/archive/retrofit-2026-05-24-openbuild-runtime-mcp/tasks.md#task-4
  */
 
 declare(strict_types=1);
 
 namespace OCA\Buildiq\Mcp;
 
+use OCA\Buildiq\Kernel\Contracts\BuildiqToolProviderInterface;
+use OCA\Buildiq\Kernel\Contracts\PermissionResolverInterface;
 use OCA\Buildiq\Mcp\Handler\AddWidgetHandler;
-use OCA\Buildiq\Service\PermissionResolver;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
@@ -69,7 +70,7 @@ use Psr\Log\LoggerInterface;
  * Authoring tools default to the `development` version so a misfired tool
  * call cannot mutate production. To promote the change use promoteVersion.
  */
-class BuildiqToolProvider implements IMcpToolProvider {
+class BuildiqToolProvider implements IMcpToolProvider, BuildiqToolProviderInterface {
 
 	/**
 	 * Tool catalogue.
@@ -120,6 +121,22 @@ class BuildiqToolProvider implements IMcpToolProvider {
 					'name' => ['type' => 'string', 'minLength' => 2, 'maxLength' => 80],
 					'description' => ['type' => 'string', 'maxLength' => 500],
 					'preset' => ['type' => 'string', 'enum' => ['single', 'dev-prod', 'dev-staging-prod'], 'default' => 'dev-prod'],
+					'stories' => [
+						'type' => 'array',
+						'maxItems' => 20,
+						'description' => 'User stories the app serves, kept on the Application. Filled in from the plan\'s stories; leave it out.',
+						'items' => [
+							'type' => 'object',
+							'required' => ['role', 'goal'],
+							'properties' => [
+								'id' => ['type' => 'string', 'maxLength' => 64],
+								'role' => ['type' => 'string', 'maxLength' => 120],
+								'goal' => ['type' => 'string', 'maxLength' => 300],
+								'benefit' => ['type' => 'string', 'maxLength' => 300],
+								'servedBy' => ['type' => 'array', 'items' => ['type' => 'object']],
+							],
+						],
+					],
 				],
 				'required' => ['slug', 'name'],
 			],
@@ -290,7 +307,7 @@ class BuildiqToolProvider implements IMcpToolProvider {
 	 * @param ContainerInterface $container DI container used to resolve OpenRegister and Buildiq services lazily.
 	 * @param LoggerInterface $logger PSR logger used for non-fatal warnings and error logging.
 	 * @param ObjectServiceInterface $objectService OpenRegister's published object contract (ADR-084), threaded to every handler.
-	 * @param PermissionResolver|null $permissionResolver Shared permission-grammar resolver (H1 fix).
+	 * @param PermissionResolverInterface|null $permissionResolver Shared permission-grammar resolver (H1 fix).
 	 * @param AuditTrailMapper|null $auditTrailMapper Optional OR audit-trail writer threaded to handlers (L2).
 	 */
 	public function __construct(
@@ -299,7 +316,7 @@ class BuildiqToolProvider implements IMcpToolProvider {
 		private readonly ContainerInterface $container,
 		private readonly LoggerInterface $logger,
 		private readonly ObjectServiceInterface $objectService,
-		private readonly ?PermissionResolver $permissionResolver = null,
+		private readonly ?PermissionResolverInterface $permissionResolver = null,
 		private readonly ?AuditTrailMapper $auditTrailMapper = null,
 	) {
 	}//end __construct()
@@ -335,7 +352,7 @@ class BuildiqToolProvider implements IMcpToolProvider {
 	 *
 	 * @return array<int, array<string, mixed>>
 	 *
-	 * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+	 * @spec openspec/specs/ai-copilot/spec.md
 	 */
 	public function getToolDescriptors(): array {
 		return self::TOOL_DESCRIPTORS;

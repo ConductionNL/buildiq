@@ -40,6 +40,7 @@ use OCP\App\IAppManager;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\NullLogger;
+use OCA\Buildiq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Tests for {@see AutomationCompilerService}.
@@ -465,6 +466,192 @@ final class AutomationCompilerServiceTest extends TestCase {
 		$this->assertSame([], $plan['notifications']);
 
 	}//end testObjectCreatedPlusApprovalCompilesToApprovalChainPlan()
+
+	/**
+	 * An automation on `klacht` asking the approver for these fields.
+	 *
+	 * @param array<int,array<string,mixed>> $fields The form fields.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private static function approvalWithForm(array $fields): array {
+		return [
+			'id' => 'auto-form',
+			'slug' => 'klacht-ter-goedkeuring',
+			'applicationSlug' => 'klachten',
+			'versionUuid' => 'version-1',
+			'enabled' => true,
+			'trigger' => ['type' => 'object-updated', 'schema' => 'klacht'],
+			'condition' => null,
+			'actions' => [['type' => 'approval', 'assigneeGroup' => 'teamleiders', 'form' => ['fields' => $fields]]],
+		];
+	}//end approvalWithForm()
+
+	/**
+	 * Let the schema mapper answer `klacht` with these properties.
+	 *
+	 * @return void
+	 */
+	private function klachtSchema(): void {
+		$schema = $this->createMock(Schema::class);
+		$schema->method('getProperties')->willReturn([
+			'bedrag' => ['type' => 'number'],
+			'motivering' => ['type' => 'string'],
+			'zaaknummer' => ['type' => 'string', 'readOnly' => true],
+			'intern' => ['type' => 'string', 'visible' => false],
+			'bijlagen' => ['type' => 'array', 'items' => ['type' => 'string']],
+			'melder' => ['type' => 'string', 'format' => 'uuid', '$ref' => 'persoon'],
+			'adres' => ['type' => 'object'],
+		]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+	}//end klachtSchema()
+
+	/**
+	 * logic-approval-task-form REQ-BQTF-001: each field the task form cannot render is refused, naming it.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
+	 */
+	public function testAnApprovalFormFieldTheFormCannotRenderIsRefusedByName(): void {
+		$this->klachtSchema();
+		$cases = [
+			'onbekend' => 'it is not a property',
+			'zaaknummer' => 'it is read-only',
+			'intern' => 'it is hidden',
+			'bijlagen' => 'it is a list',
+			'melder' => 'it is a relation',
+			'adres' => 'it is a relation',
+		];
+
+		foreach ($cases as $field => $reason) {
+			try {
+				$this->compiler->compile(self::approvalWithForm(fields: [['field' => 'bedrag', 'required' => true], ['field' => $field]]));
+				$this->fail('Expected a refusal for ' . $field);
+			} catch (UnsupportedAutomationCombinationException $e) {
+				$this->assertSame('The approval form cannot ask for "' . $field . '": ' . $reason . ' in schema "klacht".', $e->getMessage());
+			}
+		}
+	}//end testAnApprovalFormFieldTheFormCannotRenderIsRefusedByName()
+
+	/**
+	 * A field listed twice, or a row without a field, is refused too.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
+	 */
+	public function testADuplicateOrNamelessFormFieldIsRefused(): void {
+		$this->klachtSchema();
+
+		foreach ([[['field' => 'bedrag'], ['field' => 'bedrag']], [['field' => ' '], ['required' => true]]] as $fields) {
+			try {
+				$this->compiler->compile(self::approvalWithForm(fields: $fields));
+				$this->fail('Expected a refusal');
+			} catch (UnsupportedAutomationCombinationException $e) {
+				$this->assertMatchesRegularExpression('/listed twice|without a name/', $e->getMessage());
+			}
+		}
+	}//end testADuplicateOrNamelessFormFieldIsRefused()
+
+	/**
+	 * logic-approval-task-form REQ-BQTF-002: with OpenRegister carrying it, a valid form compiles onto the chain position, in order, and into the hash.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-the-form-is-compiled-into-the-approval-chain-or-refused-req-bqtf-002
+	 */
+	public function testAValidApprovalFormCompilesOntoTheChainPosition(): void {
+		$this->assertTrue(class_exists('OCA\\OpenRegister\\Service\\Task\\ApprovalPositionForm'));
+		$this->klachtSchema();
+
+		$plan = $this->compiler->compile(self::approvalWithForm(fields: [['field' => 'bedrag', 'required' => true], ['field' => 'motivering', 'required' => false]]));
+		$plain = $this->compiler->compile(self::approvalWithForm(fields: []));
+
+		$this->assertSame(
+			[
+				'name' => 'aut-klacht-ter-goedkeuring',
+				'schema' => 'klacht',
+				'assigneeGroup' => 'teamleiders',
+				'enabled' => true,
+				'form' => ['kind' => 'fields', 'fields' => [['field' => 'bedrag', 'required' => true], ['field' => 'motivering', 'required' => false]]],
+			],
+			$plan['approvalChain']
+		);
+		$this->assertNotSame($plain['hash'], $plan['hash']);
+	}//end testAValidApprovalFormCompilesOntoTheChainPosition()
+
+	/**
+	 * logic-approval-task-form REQ-BQTF-002: applying writes the form on the declared approver, and a form changed outside buildiq changes the live hash.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-the-form-is-compiled-into-the-approval-chain-or-refused-req-bqtf-002
+	 */
+	public function testTheAppliedChainCarriesTheFormAndAChangedFormShowsInTheLiveHash(): void {
+		$captured = [];
+		$schema = $this->schemaWithConfig([], $captured);
+		$schema->method('getId')->willReturn(42);
+		$schema->method('getProperties')->willReturn(['bedrag' => ['type' => 'number'], 'motivering' => ['type' => 'string']]);
+		$this->schemaMapper->method('find')->willReturn($schema);
+		$automation = self::approvalWithForm(fields: [['field' => 'bedrag', 'required' => true], ['field' => 'motivering']]);
+
+		$plan = $this->compiler->compile($automation);
+		$provenance = $this->compiler->apply($automation, $plan, []);
+
+		$this->assertSame(
+			[
+				'approvers' => [[
+					'role' => 'teamleiders',
+					'form' => ['kind' => 'fields', 'fields' => [['field' => 'bedrag', 'required' => true], ['field' => 'motivering', 'required' => false]]],
+				]],
+				'enabled' => true,
+			],
+			$captured['x-openregister-approval-chains']['aut-klacht-ter-goedkeuring']
+		);
+
+		$before = $this->compiler->status($automation, $provenance)['liveHash'];
+		$this->assertSame($before, $this->compiler->status($automation, $provenance)['liveHash']);
+
+		$edited = $captured;
+		$edited['x-openregister-approval-chains']['aut-klacht-ter-goedkeuring']['approvers'][0]['form']['fields'] = [['field' => 'bedrag', 'required' => true]];
+		$schema->setConfiguration($edited);
+
+		$after = $this->compiler->status($automation, $provenance);
+		$this->assertTrue($after['drift']);
+		$this->assertNotSame($before, $after['liveHash']);
+	}//end testTheAppliedChainCarriesTheFormAndAChangedFormShowsInTheLiveHash()
+
+	/**
+	 * An empty field list is no form: the approval compiles as before, without reading the schema.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
+	 */
+	public function testAnEmptyApprovalFormLeavesTheApprovalAsItWas(): void {
+		$this->schemaMapper->expects($this->never())->method('find');
+
+		$plan = $this->compiler->compile(self::approvalWithForm(fields: []));
+
+		$this->assertSame(['name' => 'aut-klacht-ter-goedkeuring', 'schema' => 'klacht', 'assigneeGroup' => 'teamleiders', 'enabled' => true], $plan['approvalChain']);
+	}//end testAnEmptyApprovalFormLeavesTheApprovalAsItWas()
+
+	/**
+	 * A trigger schema that cannot be read refuses the form rather than letting it through unchecked.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
+	 */
+	public function testAnUnreadableSchemaRefusesTheForm(): void {
+		$this->schemaMapper->method('find')->willThrowException(new \RuntimeException('gone'));
+
+		$this->expectException(UnsupportedAutomationCombinationException::class);
+		$this->expectExceptionMessage('schema "klacht" could not be read');
+
+		$this->compiler->compile(self::approvalWithForm(fields: [['field' => 'bedrag']]));
+	}//end testAnUnreadableSchemaRefusesTheForm()
 
 	/**
 	 * automation-approval-steps REQ-AUTD-004: `lifecycle-transition` +
@@ -949,4 +1136,97 @@ final class AutomationCompilerServiceTest extends TestCase {
 		);
 
 	}//end testMapActionToRuleActionMapsGenerateDocument()
+
+	/**
+	 * Serve one ApplicationVersion and capture what is saved for it.
+	 *
+	 * @param array<string, mixed>          $version The stored version.
+	 * @param array<int, array<string, mixed>> $saved   Receives the saved objects.
+	 *
+	 * @return void
+	 */
+	private function serveVersion(array $version, array &$saved): void {
+		$entity = $this->createMock(\OCA\OpenRegister\Contract\ObjectEntityInterface::class);
+		$entity->method('jsonSerialize')->willReturn($version);
+		$entity->method('getObject')->willReturn($version);
+		$this->objectService->method('find')->willReturnCallback(
+			static fn (...$args) => (($args[0] ?? null) === 'version-1' ? $entity : null)
+		);
+		$this->objectService->method('saveObject')->willReturnCallback(
+			function (...$args) use (&$saved, $entity) {
+				$args = LegacyObjectArgs::positional(method: 'saveObject', args: $args);
+				$saved[] = $args[0];
+				return $entity;
+			}
+		);
+	}//end serveVersion()
+
+	/**
+	 * Applying a schedule plan replaces the entry with the same id, keeps
+	 * unrelated entries, drops a prior-provenance id no longer planned, and
+	 * records the planned ids as provenance.
+	 *
+	 * @return void
+	 */
+	public function testApplyUpsertsScheduleEntriesIntoTheVersionManifest(): void {
+		$saved = [];
+		$this->serveVersion(
+			[
+				'id' => 'version-1',
+				'manifest' => [
+					'pages' => ['p'],
+					'schedules' => [
+						['id' => 'other', 'interval' => 60],
+						['id' => 'aut-nightly-sync-1', 'interval' => 1],
+						['id' => 'aut-nightly-sync-old', 'interval' => 2],
+						'not-a-row',
+					],
+				],
+			],
+			$saved
+		);
+		$automation = [
+			'id' => 'auto-2',
+			'slug' => 'nightly-sync',
+			'applicationSlug' => 'permit-tracker',
+			'versionUuid' => 'version-1',
+			'enabled' => true,
+			'trigger' => ['type' => 'schedule', 'interval' => 86400],
+			'condition' => null,
+			'actions' => [['type' => 'run-synchronization', 'synchronizationId' => 'sync-1']],
+		];
+		$plan = $this->compiler->compile($automation);
+
+		$provenance = $this->compiler->apply($automation, $plan, ['scheduleIds' => ['aut-nightly-sync-1', 'aut-nightly-sync-old']]);
+
+		$this->assertSame(['aut-nightly-sync-1'], $provenance['scheduleIds']);
+		$this->assertCount(1, $saved);
+		$this->assertSame(['p'], $saved[0]['manifest']['pages']);
+		$this->assertSame(
+			[
+				['id' => 'other', 'interval' => 60],
+				$plan['schedules'][0],
+				'not-a-row',
+			],
+			$saved[0]['manifest']['schedules']
+		);
+	}//end testApplyUpsertsScheduleEntriesIntoTheVersionManifest()
+
+	/**
+	 * Removing an automation drops its schedule entries and the schedules key
+	 * when nothing is left; an unknown version is warned about and nothing is saved.
+	 *
+	 * @return void
+	 */
+	public function testRemoveDropsScheduleEntriesAndAnEmptySchedulesKey(): void {
+		$saved = [];
+		$this->serveVersion(['id' => 'version-1', 'manifest' => ['schedules' => [['id' => 'aut-x-1']]]], $saved);
+
+		$this->compiler->remove(['slug' => 'x', 'versionUuid' => 'version-1'], ['scheduleIds' => ['aut-x-1']]);
+		$this->compiler->remove(['slug' => 'x', 'versionUuid' => 'version-9'], ['scheduleIds' => ['aut-x-1']]);
+		$this->compiler->remove(['slug' => 'x', 'versionUuid' => 'version-1'], []);
+
+		$this->assertCount(1, $saved);
+		$this->assertSame(['id' => 'version-1', 'manifest' => []], $saved[0]);
+	}//end testRemoveDropsScheduleEntriesAndAnEmptySchedulesKey()
 }//end class

@@ -98,11 +98,13 @@ export default {
 	},
 
 	emits: ['update:relations'],
+
 	methods: {
+
 		/**
 		 * Emit the updated relations array to the parent.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
 		 * @param {Array} next Next relations array.
 		 * @return {void}
 		 */
@@ -113,7 +115,7 @@ export default {
 		/**
 		 * Append a new blank relation row.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
 		 * @return {void}
 		 */
 		addRelation() {
@@ -131,7 +133,7 @@ export default {
 		/**
 		 * Update a single field of a relation row.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
 		 * @param {number} index Row index.
 		 * @param {string} key Field key.
 		 * @param {*} value New value.
@@ -146,7 +148,7 @@ export default {
 		/**
 		 * Remove a relation row by index.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
 		 * @param {number} index Row index.
 		 * @return {void}
 		 */

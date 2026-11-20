@@ -81,7 +81,7 @@ export default {
 		/**
 		 * Observed behaviour of `presetOptions` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-2
 		 */
 		presetOptions() {
 			return [
@@ -144,7 +144,7 @@ export default {
 		 *   `PRESET_VERSIONS`; `custom` keeps any versions already chosen and
 		 *   otherwise seeds a single Production row for step 3 to edit.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-2
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-2
 		 */
 		selectPreset(presetId) {
 			const update = { preset: presetId }

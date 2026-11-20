@@ -419,6 +419,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values falsy 
    "minItems": 0,
    "maxItems": 0
   },
+  "source": null,
   "_raw": {
    "format": "",
    "pattern": "",
@@ -444,14 +445,21 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values falsy 
  },
  {
   "name": "p_string",
-  "type": "string",
+  "type": "choice",
   "required": true,
   "default": "x",
   "description": "d",
   "validation": {
+   "options": [
+    {
+     "value": "a",
+     "label": ""
+    }
+   ],
    "minLength": 0,
    "maxLength": 0
   },
+  "source": null,
   "_raw": {
    "format": "",
    "pattern": "",
@@ -482,6 +490,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values falsy 
    "maximum": 0,
    "multipleOf": 0
   },
+  "source": null,
   "_raw": {
    "format": "",
    "pattern": "",
@@ -512,6 +521,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values falsy 
    "maximum": 0,
    "multipleOf": 0
   },
+  "source": null,
   "_raw": {
    "format": "",
    "pattern": "",
@@ -538,6 +548,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values falsy 
   "default": "x",
   "description": "d",
   "validation": {},
+  "source": null,
   "_raw": {
    "format": "",
    "pattern": "",
@@ -564,6 +575,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values falsy 
   "default": "x",
   "description": "d",
   "validation": {},
+  "source": null,
   "_raw": {
    "format": "",
    "pattern": "",
@@ -594,6 +606,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values falsy 
    "cardinality": "many",
    "inverseOf": "cases"
   },
+  "source": null,
   "_raw": {
    "format": "",
    "pattern": "",
@@ -625,6 +638,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values falsy 
   "default": "x",
   "description": "d",
   "validation": {},
+  "source": null,
   "_raw": {
    "format": "",
    "pattern": "",
@@ -651,6 +665,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values falsy 
   "default": "x",
   "description": "d",
   "validation": {},
+  "source": null,
   "_raw": {
    "format": "",
    "pattern": "",
@@ -677,6 +692,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values falsy 
   "default": "x",
   "description": "d",
   "validation": {},
+  "source": null,
   "_raw": {
    "format": "",
    "pattern": "",
@@ -698,14 +714,21 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values falsy 
  },
  {
   "name": "p_undefined",
-  "type": "string",
+  "type": "choice",
   "required": false,
   "default": "x",
   "description": "d",
   "validation": {
+   "options": [
+    {
+     "value": "a",
+     "label": ""
+    }
+   ],
    "minLength": 0,
    "maxLength": 0
   },
+  "source": null,
   "_raw": {
    "format": "",
    "pattern": "",
@@ -726,11 +749,12 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values falsy 
  },
  {
   "name": "empty",
-  "type": "string",
+  "type": "text",
   "required": false,
   "default": null,
   "description": "",
   "validation": {},
+  "source": null,
   "_raw": {}
  },
  {
@@ -740,6 +764,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values falsy 
   "default": null,
   "description": "",
   "validation": {},
+  "source": null,
   "_raw": {
    "x-openregister-relation": {}
   }
@@ -751,6 +776,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values falsy 
   "default": null,
   "description": "",
   "validation": {},
+  "source": null,
   "_raw": {
    "type": "array",
    "items": {}
@@ -758,11 +784,12 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values falsy 
  },
  {
   "name": "stringWithItems",
-  "type": "string",
+  "type": "text",
   "required": false,
   "default": null,
   "description": "",
   "validation": {},
+  "source": null,
   "_raw": {
    "type": "string",
    "items": {
@@ -792,15 +819,15 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values falsy 
    "maxItems": 0
   },
   "p_string": {
-   "enum": [
-    "a"
-   ],
    "x-extra": 1,
    "description": "d",
    "default": "x",
    "type": "string",
    "minLength": 0,
-   "maxLength": 0
+   "maxLength": 0,
+   "enum": [
+    "a"
+   ]
   },
   "p_number": {
    "enum": [
@@ -887,15 +914,15 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values falsy 
    "type": "string"
   },
   "p_undefined": {
-   "enum": [
-    "a"
-   ],
    "x-extra": 1,
    "description": "d",
    "default": "x",
    "type": "string",
    "minLength": 0,
-   "maxLength": 0
+   "maxLength": 0,
+   "enum": [
+    "a"
+   ]
   },
   "empty": {
    "type": "string"
@@ -952,6 +979,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values none 1
   "validation": {
    "itemsType": "integer"
   },
+  "source": null,
   "_raw": {
    "description": "d",
    "default": "x",
@@ -968,11 +996,19 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values none 1
  },
  {
   "name": "p_string",
-  "type": "string",
+  "type": "choice",
   "required": true,
   "default": "x",
   "description": "d",
-  "validation": {},
+  "validation": {
+   "options": [
+    {
+     "value": "a",
+     "label": ""
+    }
+   ]
+  },
+  "source": null,
   "_raw": {
    "description": "d",
    "default": "x",
@@ -990,6 +1026,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values none 1
   "default": "x",
   "description": "d",
   "validation": {},
+  "source": null,
   "_raw": {
    "description": "d",
    "default": "x",
@@ -1007,6 +1044,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values none 1
   "default": "x",
   "description": "d",
   "validation": {},
+  "source": null,
   "_raw": {
    "description": "d",
    "default": "x",
@@ -1024,6 +1062,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values none 1
   "default": "x",
   "description": "d",
   "validation": {},
+  "source": null,
   "_raw": {
    "description": "d",
    "default": "x",
@@ -1041,6 +1080,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values none 1
   "default": "x",
   "description": "d",
   "validation": {},
+  "source": null,
   "_raw": {
    "description": "d",
    "default": "x",
@@ -1062,6 +1102,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values none 1
    "cardinality": "many",
    "inverseOf": "cases"
   },
+  "source": null,
   "_raw": {
    "description": "d",
    "default": "x",
@@ -1084,6 +1125,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values none 1
   "default": "x",
   "description": "d",
   "validation": {},
+  "source": null,
   "_raw": {
    "description": "d",
    "default": "x",
@@ -1101,6 +1143,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values none 1
   "default": "x",
   "description": "d",
   "validation": {},
+  "source": null,
   "_raw": {
    "description": "d",
    "default": "x",
@@ -1118,6 +1161,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values none 1
   "default": "x",
   "description": "d",
   "validation": {},
+  "source": null,
   "_raw": {
    "description": "d",
    "default": "x",
@@ -1130,11 +1174,19 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values none 1
  },
  {
   "name": "p_undefined",
-  "type": "string",
+  "type": "choice",
   "required": false,
   "default": "x",
   "description": "d",
-  "validation": {},
+  "validation": {
+   "options": [
+    {
+     "value": "a",
+     "label": ""
+    }
+   ]
+  },
+  "source": null,
   "_raw": {
    "description": "d",
    "default": "x",
@@ -1146,11 +1198,12 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values none 1
  },
  {
   "name": "empty",
-  "type": "string",
+  "type": "text",
   "required": false,
   "default": null,
   "description": "",
   "validation": {},
+  "source": null,
   "_raw": {}
  },
  {
@@ -1160,6 +1213,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values none 1
   "default": null,
   "description": "",
   "validation": {},
+  "source": null,
   "_raw": {
    "x-openregister-relation": {}
   }
@@ -1171,6 +1225,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values none 1
   "default": null,
   "description": "",
   "validation": {},
+  "source": null,
   "_raw": {
    "type": "array",
    "items": {}
@@ -1178,11 +1233,12 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values none 1
  },
  {
   "name": "stringWithItems",
-  "type": "string",
+  "type": "text",
   "required": false,
   "default": null,
   "description": "",
   "validation": {},
+  "source": null,
   "_raw": {
    "type": "string",
    "items": {
@@ -1210,13 +1266,13 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values none 2
    }
   },
   "p_string": {
-   "enum": [
-    "a"
-   ],
    "x-extra": 1,
    "description": "d",
    "default": "x",
-   "type": "string"
+   "type": "string",
+   "enum": [
+    "a"
+   ]
   },
   "p_number": {
    "enum": [
@@ -1297,13 +1353,13 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values none 2
    "type": "string"
   },
   "p_undefined": {
-   "enum": [
-    "a"
-   ],
    "x-extra": 1,
    "description": "d",
    "default": "x",
-   "type": "string"
+   "type": "string",
+   "enum": [
+    "a"
+   ]
   },
   "empty": {
    "type": "string"
@@ -1360,6 +1416,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values null 1
   "validation": {
    "itemsType": "integer"
   },
+  "source": null,
   "_raw": {
    "format": null,
    "pattern": null,
@@ -1385,11 +1442,19 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values null 1
  },
  {
   "name": "p_string",
-  "type": "string",
+  "type": "choice",
   "required": true,
   "default": "x",
   "description": "d",
-  "validation": {},
+  "validation": {
+   "options": [
+    {
+     "value": "a",
+     "label": ""
+    }
+   ]
+  },
+  "source": null,
   "_raw": {
    "format": null,
    "pattern": null,
@@ -1416,6 +1481,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values null 1
   "default": "x",
   "description": "d",
   "validation": {},
+  "source": null,
   "_raw": {
    "format": null,
    "pattern": null,
@@ -1442,6 +1508,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values null 1
   "default": "x",
   "description": "d",
   "validation": {},
+  "source": null,
   "_raw": {
    "format": null,
    "pattern": null,
@@ -1468,6 +1535,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values null 1
   "default": "x",
   "description": "d",
   "validation": {},
+  "source": null,
   "_raw": {
    "format": null,
    "pattern": null,
@@ -1494,6 +1562,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values null 1
   "default": "x",
   "description": "d",
   "validation": {},
+  "source": null,
   "_raw": {
    "format": null,
    "pattern": null,
@@ -1524,6 +1593,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values null 1
    "cardinality": "many",
    "inverseOf": "cases"
   },
+  "source": null,
   "_raw": {
    "format": null,
    "pattern": null,
@@ -1555,6 +1625,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values null 1
   "default": "x",
   "description": "d",
   "validation": {},
+  "source": null,
   "_raw": {
    "format": null,
    "pattern": null,
@@ -1581,6 +1652,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values null 1
   "default": "x",
   "description": "d",
   "validation": {},
+  "source": null,
   "_raw": {
    "format": null,
    "pattern": null,
@@ -1607,6 +1679,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values null 1
   "default": "x",
   "description": "d",
   "validation": {},
+  "source": null,
   "_raw": {
    "format": null,
    "pattern": null,
@@ -1628,11 +1701,19 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values null 1
  },
  {
   "name": "p_undefined",
-  "type": "string",
+  "type": "choice",
   "required": false,
   "default": "x",
   "description": "d",
-  "validation": {},
+  "validation": {
+   "options": [
+    {
+     "value": "a",
+     "label": ""
+    }
+   ]
+  },
+  "source": null,
   "_raw": {
    "format": null,
    "pattern": null,
@@ -1653,11 +1734,12 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values null 1
  },
  {
   "name": "empty",
-  "type": "string",
+  "type": "text",
   "required": false,
   "default": null,
   "description": "",
   "validation": {},
+  "source": null,
   "_raw": {}
  },
  {
@@ -1667,6 +1749,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values null 1
   "default": null,
   "description": "",
   "validation": {},
+  "source": null,
   "_raw": {
    "x-openregister-relation": {}
   }
@@ -1678,6 +1761,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values null 1
   "default": null,
   "description": "",
   "validation": {},
+  "source": null,
   "_raw": {
    "type": "array",
    "items": {}
@@ -1685,11 +1769,12 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values null 1
  },
  {
   "name": "stringWithItems",
-  "type": "string",
+  "type": "text",
   "required": false,
   "default": null,
   "description": "",
   "validation": {},
+  "source": null,
   "_raw": {
    "type": "string",
    "items": {
@@ -1717,13 +1802,13 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values null 2
    }
   },
   "p_string": {
-   "enum": [
-    "a"
-   ],
    "x-extra": 1,
    "description": "d",
    "default": "x",
-   "type": "string"
+   "type": "string",
+   "enum": [
+    "a"
+   ]
   },
   "p_number": {
    "enum": [
@@ -1804,13 +1889,13 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values null 2
    "type": "string"
   },
   "p_undefined": {
-   "enum": [
-    "a"
-   ],
    "x-extra": 1,
    "description": "d",
    "default": "x",
-   "type": "string"
+   "type": "string",
+   "enum": [
+    "a"
+   ]
   },
   "empty": {
    "type": "string"
@@ -1869,6 +1954,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values set 1`
    "minItems": 0,
    "maxItems": 3
   },
+  "source": null,
   "_raw": {
    "format": "email",
    "pattern": "^a",
@@ -1894,16 +1980,23 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values set 1`
  },
  {
   "name": "p_string",
-  "type": "string",
+  "type": "choice",
   "required": true,
   "default": "x",
   "description": "d",
   "validation": {
+   "options": [
+    {
+     "value": "a",
+     "label": ""
+    }
+   ],
    "format": "email",
    "pattern": "^a",
    "minLength": 1,
    "maxLength": 9
   },
+  "source": null,
   "_raw": {
    "format": "email",
    "pattern": "^a",
@@ -1934,6 +2027,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values set 1`
    "maximum": 2,
    "multipleOf": 0.5
   },
+  "source": null,
   "_raw": {
    "format": "email",
    "pattern": "^a",
@@ -1964,6 +2058,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values set 1`
    "maximum": 2,
    "multipleOf": 0.5
   },
+  "source": null,
   "_raw": {
    "format": "email",
    "pattern": "^a",
@@ -1990,6 +2085,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values set 1`
   "default": "x",
   "description": "d",
   "validation": {},
+  "source": null,
   "_raw": {
    "format": "email",
    "pattern": "^a",
@@ -2016,6 +2112,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values set 1`
   "default": "x",
   "description": "d",
   "validation": {},
+  "source": null,
   "_raw": {
    "format": "email",
    "pattern": "^a",
@@ -2046,6 +2143,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values set 1`
    "cardinality": "many",
    "inverseOf": "cases"
   },
+  "source": null,
   "_raw": {
    "format": "email",
    "pattern": "^a",
@@ -2077,6 +2175,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values set 1`
   "default": "x",
   "description": "d",
   "validation": {},
+  "source": null,
   "_raw": {
    "format": "email",
    "pattern": "^a",
@@ -2103,6 +2202,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values set 1`
   "default": "x",
   "description": "d",
   "validation": {},
+  "source": null,
   "_raw": {
    "format": "email",
    "pattern": "^a",
@@ -2129,6 +2229,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values set 1`
   "default": "x",
   "description": "d",
   "validation": {},
+  "source": null,
   "_raw": {
    "format": "email",
    "pattern": "^a",
@@ -2150,16 +2251,23 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values set 1`
  },
  {
   "name": "p_undefined",
-  "type": "string",
+  "type": "choice",
   "required": false,
   "default": "x",
   "description": "d",
   "validation": {
+   "options": [
+    {
+     "value": "a",
+     "label": ""
+    }
+   ],
    "format": "email",
    "pattern": "^a",
    "minLength": 1,
    "maxLength": 9
   },
+  "source": null,
   "_raw": {
    "format": "email",
    "pattern": "^a",
@@ -2180,11 +2288,12 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values set 1`
  },
  {
   "name": "empty",
-  "type": "string",
+  "type": "text",
   "required": false,
   "default": null,
   "description": "",
   "validation": {},
+  "source": null,
   "_raw": {}
  },
  {
@@ -2194,6 +2303,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values set 1`
   "default": null,
   "description": "",
   "validation": {},
+  "source": null,
   "_raw": {
    "x-openregister-relation": {}
   }
@@ -2205,6 +2315,7 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values set 1`
   "default": null,
   "description": "",
   "validation": {},
+  "source": null,
   "_raw": {
    "type": "array",
    "items": {}
@@ -2212,11 +2323,12 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values set 1`
  },
  {
   "name": "stringWithItems",
-  "type": "string",
+  "type": "text",
   "required": false,
   "default": null,
   "description": "",
   "validation": {},
+  "source": null,
   "_raw": {
    "type": "string",
    "items": {
@@ -2246,9 +2358,6 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values set 2`
    "maxItems": 3
   },
   "p_string": {
-   "enum": [
-    "a"
-   ],
    "x-extra": 1,
    "description": "d",
    "default": "x",
@@ -2256,7 +2365,10 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values set 2`
    "format": "email",
    "pattern": "^a",
    "minLength": 1,
-   "maxLength": 9
+   "maxLength": 9,
+   "enum": [
+    "a"
+   ]
   },
   "p_number": {
    "enum": [
@@ -2343,9 +2455,6 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values set 2`
    "type": "string"
   },
   "p_undefined": {
-   "enum": [
-    "a"
-   ],
    "x-extra": 1,
    "description": "d",
    "default": "x",
@@ -2353,7 +2462,10 @@ exports[`FieldEditor conversions golden > schemaToFields and back, values set 2`
    "format": "email",
    "pattern": "^a",
    "minLength": 1,
-   "maxLength": 9
+   "maxLength": 9,
+   "enum": [
+    "a"
+   ]
   },
   "empty": {
    "type": "string"

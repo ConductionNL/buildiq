@@ -19,7 +19,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-38
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-38
  *
  * @SPDX-License-Identifier: EUPL-1.2
  * @SPDX-FileCopyrightText:  2026 Conduction B.V. <info@conduction.nl>
@@ -59,7 +59,7 @@ use Psr\Log\LoggerInterface;
  * self-contained and has no other coupling to ExportJobService's PAT/queue
  * responsibilities.
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-38
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-38
  */
 class JobOwnerImpersonator {
 	/**
@@ -98,7 +98,7 @@ class JobOwnerImpersonator {
 	 * @throws \Throwable Whatever `$work` throws — propagated after the
 	 *                    session user is restored.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-38
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-38
 	 */
 	public function runAsOwner(string $objectId, callable $work): mixed {
 		[$priorUser, $impersonating] = $this->impersonate(objectId: $objectId);

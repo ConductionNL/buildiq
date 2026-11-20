@@ -23,8 +23,10 @@
  *
  * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md
  * @e2e screen-override-layers/requirement-an-override-records-the-base-it-was-cut-against-req-obso-002/an-override-without-a-base-is-refused
+ * @spec openspec/changes/pages-task-panel-beside-case-tabs/specs/page-layout-task-panel/spec.md
  */
 import { expect, test } from '@playwright/test'
+import { anonymousContext } from './support/anonymous.ts'
 
 const API = '/index.php/apps/buildiq/api/page-layouts'
 const HEADERS = { 'OCS-APIRequest': 'true' }
@@ -57,9 +59,7 @@ test.describe('page layout authoring', () => {
 		// The least privileged principal that should be refused. A layout
 		// decides what everyone using a case type sees, so an anonymous write
 		// must never reach the rules, let alone the store.
-		const anonymous = await playwright.request.newContext({
-			baseURL: process.env.BASE_URL ?? process.env.NC_BASE_URL,
-		})
+		const anonymous = await anonymousContext(playwright)
 
 		const response = await anonymous.put(API, {
 			headers: HEADERS,
@@ -78,6 +78,59 @@ test.describe('page layout authoring', () => {
 		).not.toBe(200)
 
 		await anonymous.dispose()
+	})
+
+	// pages-task-panel-beside-case-tabs T04: the body PageLayoutBodyEditor emits
+	// after the maker picks "beside these tabs", ticks two of the three tabs and
+	// publishes. Read back from the list route, the panel is what was placed; a
+	// tab id the layout does not declare is refused with the id named.
+	test('the task panel placed beside two tabs is published as placed', async ({
+		request,
+	}) => {
+		const schema = `e2e-panel-${Date.now()}`
+		const tabs = [
+			{ id: 'gegevens', kind: 'fieldGroup', label: 'Gegevens', order: 0, fields: ['title'] },
+			{ id: 'documenten', kind: 'leaf', label: 'Documenten', order: 1, ref: 'files' },
+			{ id: 'besluit', kind: 'fieldGroup', label: 'Besluit', order: 2, fields: ['title'] },
+		]
+		const body = {
+			id: `${schema}-bouwvergunning`,
+			targetApp: 'dossiq',
+			register: 'e2e-layouts',
+			schema,
+			typeProperty: 'caseType',
+			typeValue: 'bouwvergunning',
+			status: 'published',
+			tabs,
+			taskList: {
+				columns: [{ field: 'title' }],
+				panel: { placement: 'side', tabs: ['gegevens', 'besluit'], collapsed: false },
+			},
+		}
+
+		const saved = await request.put(API, { headers: HEADERS, data: body })
+		test.skip(saved.status() === 404, 'buildiq is not installed here')
+		expect(saved.status(), await saved.text()).toBe(200)
+
+		const list = await request.get(`${API}?register=e2e-layouts&schema=${schema}`, { headers: HEADERS })
+		expect(list.status()).toBe(200)
+		const items = ((await list.json()).items ?? []) as Array<Record<string, any>>
+		const typed = items.find((item) => item.typeValue === 'bouwvergunning')
+		expect(typed, 'the layout is listed').toBeTruthy()
+		expect(typed!.status).toBe('published')
+		expect(typed!.taskList.panel).toEqual({ placement: 'side', tabs: ['gegevens', 'besluit'], collapsed: false })
+
+		const unknownTab = await request.put(API, {
+			headers: HEADERS,
+			data: {
+				...body,
+				id: `${schema}-sloop`,
+				typeValue: 'sloopvergunning',
+				taskList: { columns: [{ field: 'title' }], panel: { placement: 'side', tabs: ['gegevens', 'bestaat-niet'] } },
+			},
+		})
+		expect(unknownTab.status(), 'a tab the layout does not declare was accepted').not.toBe(200)
+		expect(await unknownTab.text()).toContain('bestaat-niet')
 	})
 
 	test('a re-cut of an override that is not there is refused, not invented', async ({

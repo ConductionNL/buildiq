@@ -21,6 +21,9 @@
  *
  * @author  Conduction Development Team <dev@conduction.nl>
  * @license EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -159,6 +162,36 @@ final class FlowAndAgentExportBundlerTest extends TestCase {
 		$this->assertSame(expected: [], actual: $skipped);
 
 	}//end testABoundFlowIsWrittenWithItsUuid()
+
+	/**
+	 * A wrapper flow of a `runOn` entry is not exported: the install rebuilds
+	 * it from the binding it serves, and the bound flow itself still is.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-binding-runs-the-flow-on-the-apps-records-req-bqsf-002
+	 */
+	public function testAWrapperFlowIsNotExported(): void {
+		$bound = '6b14a1fd-0cab-40c0-a3e7-7fea3be29bdc';
+		$wrapper = '0f3e9a52-1d1c-4c35-9d8e-2b6f0b6b7a10';
+		$this->flowMapper->expects($this->once())->method('findByUuid')->with($bound)
+			->willReturn($this->flow($bound, [['id' => 'start', 'type' => 'openregister.trigger-manual']]));
+		$this->objectService->method('findAll')->willReturn([]);
+
+		$skipped = $this->bundler->bundle(
+			$this->root,
+			[
+				['flow' => $bound, 'runOn' => [['schema' => 'vergunning', 'event' => 'object.updated']]],
+				['flow' => $wrapper, 'label' => 'aut-attach-permits-0123456789ab', 'sourceUuid' => $bound],
+			],
+			'permits'
+		);
+
+		$this->assertFileExists($this->root . '/lib/Settings/flows/' . $bound . '.json');
+		$this->assertFileDoesNotExist($this->root . '/lib/Settings/flows/' . $wrapper . '.json');
+		$this->assertSame(expected: [], actual: $skipped);
+
+	}//end testAWrapperFlowIsNotExported()
 
 	/**
 	 * THE FIXTURE THAT DISTINGUISHES: the entity and the mirror disagree.

@@ -177,6 +177,9 @@
                      text instead let an unrelated PHP error masquerade as a
                      benign collision (apply-v2-channels). -->
                 <referencedClass name="OCA\OpenRegister\Exception\ObjectExistsException"/>
+                <!-- Thrown by ObjectService::saveObject() on a schema refusal; the
+                     authoring services answer it as a 422 refusal. -->
+                <referencedClass name="OCA\OpenRegister\Exception\ValidationException"/>
                 <referencedClass name="OCA\OpenRegister\Service\ConfigurationService"/>
                 <referencedClass name="OCA\OpenRegister\Service\RegisterService"/>
                 <referencedClass name="OCA\OpenRegister\Service\FileService"/>

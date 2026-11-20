@@ -39,15 +39,15 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-59
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-60
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-61
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-62
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-63
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-64
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-66
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-67
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-68
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-59
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-60
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-61
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-62
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-63
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-64
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-66
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-67
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-68
  */
 
 declare(strict_types=1);
@@ -58,15 +58,22 @@ use OCA\Buildiq\Exception\InvalidStrategyException;
 use OCA\Buildiq\Exception\NoPromoteTargetException;
 use OCA\Buildiq\Exception\PromotionFailedException;
 use OCA\Buildiq\Exception\VersionLockedException;
+use OCA\Buildiq\Kernel\Contracts\VersionPromotionServiceInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
  * Imperative business-logic surface for ApplicationVersion promotion.
  */
-class VersionPromotionService {
+class VersionPromotionService implements VersionPromotionServiceInterface {
 	/**
 	 * Strategy: replace target rows with source rows, import source schemas.
 	 */
@@ -92,21 +99,6 @@ class VersionPromotionService {
 		self::STRATEGY_MIGRATE_EXISTING_DATA,
 		self::STRATEGY_EMPTY_START,
 	];
-
-	/**
-	 * Shared register hosting Application + ApplicationVersion rows.
-	 */
-	public const REGISTER_SLUG = ApplicationVersionService::REGISTER_SLUG;
-
-	/**
-	 * Schema slug of the parent Application object.
-	 */
-	public const APPLICATION_SCHEMA = ApplicationVersionService::APPLICATION_SCHEMA;
-
-	/**
-	 * Schema slug of the ApplicationVersion object.
-	 */
-	public const APPLICATION_VERSION_SCHEMA = ApplicationVersionService::APPLICATION_VERSION_SCHEMA;
 
 	/**
 	 * Status string applied to a target after a failed promotion (spec REQ-OBVP-009).
@@ -154,7 +146,7 @@ class VersionPromotionService {
 	 * @return string One of {@see self::STRATEGY_MIGRATE_EXISTING_DATA},
 	 *                {@see self::STRATEGY_START_WITH_SOURCE_DATA}.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-68
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-68
 	 */
 	public static function defaultStrategyFor(array $application, array $target): string {
 		$productionUuid = (string)($application['productionVersion'] ?? '');
@@ -186,7 +178,7 @@ class VersionPromotionService {
 	 * @throws VersionLockedException When OR's lock is held by another caller
 	 * @throws PromotionFailedException When the strategy branch fails midway
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-59
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-59
 	 */
 	public function promote(array $source, string $strategy): array {
 		$this->assertValidStrategy(strategy: $strategy);
@@ -224,9 +216,9 @@ class VersionPromotionService {
 	 *
 	 * @throws PromotionFailedException On any failure inside the branch
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-60
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-61
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-62
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-60
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-61
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-62
 	 */
 	private function runStrategy(string $strategy, array $source, array $target): array {
 		try {
@@ -260,7 +252,7 @@ class VersionPromotionService {
 	 *
 	 * @return array<string,mixed> The updated target row
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-60
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-60
 	 */
 	private function runStartWithSourceData(array $source, array $target): array {
 		$maps = $this->schemaCarrier->carrySchemas(source: $source, target: $target);
@@ -280,7 +272,7 @@ class VersionPromotionService {
 	 *
 	 * @return array<string,mixed> The updated target row
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-61
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-61
 	 */
 	private function runMigrateExistingData(array $source, array $target): array {
 		$maps = $this->schemaCarrier->carrySchemas(source: $source, target: $target);
@@ -297,7 +289,7 @@ class VersionPromotionService {
 	 *
 	 * @return array<string,mixed> The updated target row
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-62
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-62
 	 */
 	private function runEmptyStart(array $source, array $target): array {
 		$this->wipeTargetRegister(target: $target);
@@ -315,8 +307,8 @@ class VersionPromotionService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-60
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-62
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-60
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-62
 	 */
 	private function wipeTargetRegister(array $target): void {
 		$targetRegisterSlug = (string)($target['register'] ?? '');
@@ -345,7 +337,7 @@ class VersionPromotionService {
 				continue;
 			}
 
-			$this->objectService->deleteObject(uuid: $uuid, _rbac: false, _multitenancy: false);
+			$this->objectService->deleteObject(new ObjectDeletion(uuid: $uuid), _rbac: false, _multitenancy: false);
 		}
 	}//end wipeTargetRegister()
 
@@ -362,7 +354,7 @@ class VersionPromotionService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-60
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-60
 	 */
 	private function copyRowsFromSource(array $source, array $target, array $schemaIds = []): void {
 		$sourceRegisterSlug = (string)($source['register'] ?? '');
@@ -399,8 +391,7 @@ class VersionPromotionService {
 
 			$this->objectService->saveObject(
 				object: $payload,
-				register: $targetRegisterSlug,
-				schema: $schemaIdHint,
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $targetRegisterSlug, schema: $schemaIdHint)),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -422,7 +413,7 @@ class VersionPromotionService {
 	 *
 	 * @return array<string,mixed> The persisted target row
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-66
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-66
 	 */
 	private function applyManifestAndSemver(array $source, array $target, array $maps): array {
 		$targetUuid = (string)($target['id'] ?? ($target['uuid'] ?? ''));
@@ -442,9 +433,10 @@ class VersionPromotionService {
 
 		$saved = $this->objectService->saveObject(
 			object: $target,
-			register: self::REGISTER_SLUG,
-			schema: self::APPLICATION_VERSION_SCHEMA,
-			uuid: $targetUuid,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::APPLICATION_VERSION_SCHEMA),
+				uuid: $targetUuid
+			),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -467,7 +459,7 @@ class VersionPromotionService {
 	 *
 	 * @throws PromotionFailedException Always
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-67
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-67
 	 */
 	private function handlePromotionFailure(string $targetUuid, string $strategy, Throwable $error): never {
 		$message = $error->getMessage();
@@ -490,9 +482,13 @@ class VersionPromotionService {
 
 			$this->objectService->saveObject(
 				object: $current,
-				register: self::REGISTER_SLUG,
-				schema: self::APPLICATION_VERSION_SCHEMA,
-				uuid: $targetUuid,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(
+							register: self::REGISTER_SLUG,
+							schema: self::APPLICATION_VERSION_SCHEMA
+						),
+					uuid: $targetUuid
+				),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -525,14 +521,16 @@ class VersionPromotionService {
 	 *
 	 * @throws VersionLockedException When OR's lockObject reports contention
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-64
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-64
 	 */
 	private function acquireLock(string $targetUuid): void {
 		try {
 			$this->objectService->lockObject(
-				identifier: $targetUuid,
-				process: 'buildiq.version-promotion',
-				duration: self::LOCK_DURATION_SECONDS
+				new LockRequest(
+					identifier: $targetUuid,
+					process: 'buildiq.version-promotion',
+					duration: self::LOCK_DURATION_SECONDS
+				)
 			);
 		} catch (Throwable $e) {
 			// ObjectService surfaces OR's LockedException + any other lock
@@ -562,11 +560,11 @@ class VersionPromotionService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-64
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-64
 	 */
 	private function releaseLock(string $targetUuid): void {
 		try {
-			$this->objectService->unlockObject(identifier: $targetUuid);
+			$this->objectService->unlockObject(new UnlockRequest(identifier: $targetUuid));
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				'Buildiq: failed to release lock on target ' . $targetUuid . ': ' . $e->getMessage()
@@ -584,7 +582,7 @@ class VersionPromotionService {
 	 *
 	 * @return array<string,mixed>
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-64
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-64
 	 */
 	private function readLock(string $targetUuid): array {
 		try {
@@ -614,8 +612,7 @@ class VersionPromotionService {
 	private function loadVersion(string $uuid): array {
 		$entity = $this->objectService->find(
 			id: $uuid,
-			register: self::REGISTER_SLUG,
-			schema: self::APPLICATION_VERSION_SCHEMA
+			options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: self::APPLICATION_VERSION_SCHEMA)
 		);
 
 		if ($entity === null) {

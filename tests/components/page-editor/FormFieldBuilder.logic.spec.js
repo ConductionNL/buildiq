@@ -207,3 +207,27 @@ describe('FormFieldBuilder (show-logic=false, SettingsSectionBuilder path unchan
 		expect(wrapper.find('.form-field-builder__details').exists()).toBe(false)
 	})
 })
+
+describe('FormFieldBuilder fx default (pages-custom-code REQ-BQCC-002)', () => {
+	it('the fx toggle starts an empty expressionDefault and keeps the field\'s other keys', async () => {
+		const wrapper = mountBuilder()
+		await wrapper.find('.form-field-builder__disclosure').trigger('click')
+		await wrapper.find('.form-field-builder__fx').trigger('click')
+		const next = wrapper.emitted('update:modelValue').at(-1)[0]
+		expect(next[0]).toEqual({ ...FIELDS[0], expressionDefault: '' })
+		expect(next[1]).toEqual(FIELDS[1])
+	})
+
+	it('typing writes expressionDefault, and fx off removes it while the default stays', async () => {
+		const fields = [{ ...FIELDS[0], default: '@me', expressionDefault: '' }, FIELDS[1]]
+		const wrapper = mountBuilder(fields)
+		await wrapper.find('.form-field-builder__disclosure').trigger('click')
+		await wrapper.find('.form-field-builder__expression').setValue('user.displayName')
+		expect(wrapper.emitted('update:modelValue').at(-1)[0][0].expressionDefault).toBe('user.displayName')
+
+		await wrapper.find('.form-field-builder__fx').trigger('click')
+		const off = wrapper.emitted('update:modelValue').at(-1)[0][0]
+		expect(off.expressionDefault).toBeUndefined()
+		expect(off.default).toBe('@me')
+	})
+})

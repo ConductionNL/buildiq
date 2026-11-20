@@ -31,7 +31,9 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
-use OCP\ICache;
+use OCA\Buildiq\Kernel\Contracts\GitHubFormCatalogServiceInterface;
+use OCA\Buildiq\Kernel\Values\RepoSource;
+use OCA\Buildiq\Service\GitHub\ShortLivedCache;
 use OCP\ICacheFactory;
 
 /**
@@ -39,7 +41,7 @@ use OCP\ICacheFactory;
  *
  * @spec openspec/changes/reuse-gallery-categories-and-form-library/specs/form-library/spec.md#requirement-forms-travel-between-organisations-req-bqgl-005
  */
-class GitHubFormCatalogService {
+class GitHubFormCatalogService implements GitHubFormCatalogServiceInterface {
 
 	/**
 	 * The GitHub topic a shared form repository carries (REQ-BQGL-005).
@@ -77,11 +79,11 @@ class GitHubFormCatalogService {
 	private const SEARCH_TTL = 60;
 
 	/**
-	 * Short-TTL distributed cache, or null when no backend is available.
+	 * Form search results, kept for {@see SEARCH_TTL} seconds.
 	 *
-	 * @var ICache|null
+	 * @var ShortLivedCache
 	 */
-	private readonly ?ICache $cache;
+	private readonly ShortLivedCache $searchCache;
 
 	/**
 	 * Constructor.
@@ -102,7 +104,7 @@ class GitHubFormCatalogService {
 			$cache = $cacheFactory->createDistributed(self::CACHE_NS);
 		}
 
-		$this->cache = $cache;
+		$this->searchCache = new ShortLivedCache(cache: $cache, ttl: self::SEARCH_TTL);
 	}//end __construct()
 
 	/**
@@ -126,7 +128,7 @@ class GitHubFormCatalogService {
 		$term = trim((string)$query);
 		$cacheKey = 'forms:' . md5(strtolower($term) . '|' . ((string)$credentialId));
 
-		$cached = $this->cacheGet(key: $cacheKey);
+		$cached = $this->searchCache->get(key: $cacheKey);
 		if (is_array($cached) === true) {
 			return $cached;
 		}
@@ -160,7 +162,7 @@ class GitHubFormCatalogService {
 			'brokerUsed' => $page['brokerUsed'],
 			'rateLimited' => $page['rateLimited'],
 		];
-		$this->cacheSet(key: $cacheKey, value: $payload, ttl: self::SEARCH_TTL);
+		$this->searchCache->set(key: $cacheKey, value: $payload);
 
 		return $payload;
 	}//end searchForms()
@@ -190,16 +192,7 @@ class GitHubFormCatalogService {
 			actingUserId: $actingUserId
 		);
 
-		$export = null;
-		if ($contents !== null) {
-			$decoded = json_decode($contents, true);
-			if (is_array($decoded) === true
-				&& ($decoded['kind'] ?? null) === self::FORM_EXPORT_KIND
-				&& is_array($decoded['form'] ?? null) === true
-			) {
-				$export = $decoded;
-			}
-		}
+		$export = $this->formExport(contents: $contents);
 
 		$form = [];
 		if ($export !== null) {
@@ -222,34 +215,27 @@ class GitHubFormCatalogService {
 	}//end buildFormCard()
 
 	/**
-	 * Read a value from the cache (null on a miss or without a backend).
+	 * The form export a repository's form.json holds, when it is one.
 	 *
-	 * @param string $key The cache key.
+	 * @param string|null $contents The file contents, or null when it could not be read.
 	 *
-	 * @return mixed
+	 * @return array<string, mixed>|null The decoded export, or null for anything else.
+	 *
+	 * @spec openspec/changes/reuse-gallery-categories-and-form-library/specs/form-library/spec.md#requirement-forms-travel-between-organisations-req-bqgl-005
 	 */
-	private function cacheGet(string $key): mixed {
-		if ($this->cache === null) {
+	private function formExport(?string $contents): ?array {
+		if ($contents === null) {
 			return null;
 		}
 
-		return $this->cache->get($key);
-	}//end cacheGet()
-
-	/**
-	 * Write a value to the cache (no-op without a backend).
-	 *
-	 * @param string $key   The cache key.
-	 * @param mixed  $value The value.
-	 * @param int    $ttl   The TTL in seconds.
-	 *
-	 * @return void
-	 */
-	private function cacheSet(string $key, mixed $value, int $ttl): void {
-		if ($this->cache === null) {
-			return;
+		$decoded = json_decode($contents, true);
+		if (is_array($decoded) === true
+			&& ($decoded['kind'] ?? null) === self::FORM_EXPORT_KIND
+			&& is_array($decoded['form'] ?? null) === true
+		) {
+			return $decoded;
 		}
 
-		$this->cache->set($key, $value, $ttl);
-	}//end cacheSet()
+		return null;
+	}//end formExport()
 }//end class

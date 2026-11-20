@@ -92,4 +92,57 @@ describe('FieldValidationBuilder', () => {
 		await wrapper.find('input[type="checkbox"]').setChecked(false)
 		expect(wrapper.emitted('update:modelValue')[0][0]).toBeNull()
 	})
+	describe('buildValidation', () => {
+		it('falls back to the display values when no override is given', () => {
+			const wrapper = mountBuilder({
+				modelValue: { required: true, min: 2, max: 9, pattern: 'a', message: 'm' },
+			})
+			expect(wrapper.vm.buildValidation({})).toEqual({
+				required: true,
+				min: 2,
+				max: 9,
+				pattern: 'a',
+				message: 'm',
+			})
+		})
+
+		it('lets overrides win over the display values', () => {
+			const wrapper = mountBuilder({
+				modelValue: { required: true, min: 2, max: 9, pattern: 'a', message: 'm' },
+			})
+			expect(
+				wrapper.vm.buildValidation({
+					required: false,
+					min: '3',
+					max: '4',
+					pattern: 'b',
+					message: 'n',
+				}),
+			).toEqual({ min: 3, max: 4, pattern: 'b', message: 'n' })
+		})
+
+		it.each(['', null, 'abc'])('drops a bound of %j', (raw) => {
+			const wrapper = mountBuilder()
+			expect(wrapper.vm.buildValidation({ min: raw, max: raw })).toEqual({})
+		})
+
+		it('keeps a zero bound and drops empty pattern and message', () => {
+			const wrapper = mountBuilder({ modelValue: { pattern: 'x', message: 'y' } })
+			expect(
+				wrapper.vm.buildValidation({ min: 0, max: '0', pattern: '', message: '' }),
+			).toEqual({ min: 0, max: 0 })
+		})
+
+		it('emits the keys in a stable order', () => {
+			const wrapper = mountBuilder()
+			const next = wrapper.vm.buildValidation({
+				message: 'm',
+				pattern: 'p',
+				max: 2,
+				min: 1,
+				required: true,
+			})
+			expect(Object.keys(next)).toEqual(['required', 'min', 'max', 'pattern', 'message'])
+		})
+	})
 })

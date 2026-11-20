@@ -52,6 +52,9 @@
 						{{ t('buildiq', 'Owner app') }}
 					</th>
 					<th scope="col">
+						{{ t('buildiq', 'May be called by') }}
+					</th>
+					<th scope="col">
 						{{ t('buildiq', 'Tests') }}
 					</th>
 					<th scope="col">
@@ -72,6 +75,9 @@
 					</td>
 					<td>{{ rs.version }}</td>
 					<td>{{ rs.ownerApp }}</td>
+					<td data-testid="rule-set-callers">
+						{{ callersLabel(rs) }}
+					</td>
 					<td>
 						<span
 							class="rule-sets-page__test"
@@ -82,6 +88,9 @@
 					<td class="rule-sets-page__actions">
 						<NcButton variant="tertiary" @click="edit(rs)">
 							{{ t('buildiq', 'Edit') }}
+						</NcButton>
+						<NcButton variant="tertiary" @click="openCallers(rs)">
+							{{ t('buildiq', 'Callers') }}
 						</NcButton>
 						<NcButton variant="tertiary" @click="openSandbox(rs)">
 							{{ t('buildiq', 'Test') }}
@@ -113,6 +122,11 @@
 			@close="showConditionEditor = false"
 			@saved="onSaved" />
 
+		<RuleSetCallersDialog
+			v-model:open="showCallers"
+			:ruleSet="activeRuleSet"
+			@saved="onSaved" />
+
 		<RuleSetTestSandbox
 			v-if="showSandbox"
 			:ruleSet="activeRuleSet"
@@ -126,7 +140,9 @@ import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcEmptyContent, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
 import ConditionActionRuleEditor from '../dialogs/ConditionActionRuleEditor.vue'
 import DecisionTableEditor from '../dialogs/DecisionTableEditor.vue'
+import RuleSetCallersDialog from '../dialogs/RuleSetCallersDialog.vue'
 import RuleSetTestSandbox from '../modals/RuleSetTestSandboxModal.vue'
+import { listResults } from '../utils/listResults.js'
 
 export default {
 	name: 'RuleSetsPage',
@@ -137,6 +153,7 @@ export default {
 		NcNoteCard,
 		DecisionTableEditor,
 		ConditionActionRuleEditor,
+		RuleSetCallersDialog,
 		RuleSetTestSandbox,
 	},
 
@@ -149,6 +166,7 @@ export default {
 			showDecisionEditor: false,
 			showConditionEditor: false,
 			showSandbox: false,
+			showCallers: false,
 			testResults: {},
 		}
 	},
@@ -169,22 +187,12 @@ export default {
 					'/apps/openregister/api/objects/buildiq/rule-set',
 				)
 				const { data } = await axios.get(url)
-				this.ruleSets = this.extractResults(data)
+				this.ruleSets = listResults(data)
 			} catch (error) {
 				this.errorMessage = t('buildiq', 'Could not load rule sets.')
 			} finally {
 				this.loading = false
 			}
-		},
-
-		extractResults(data) {
-			if (Array.isArray(data)) {
-				return data
-			}
-			if (data && Array.isArray(data.results)) {
-				return data.results
-			}
-			return []
 		},
 
 		edit(ruleSet) {
@@ -194,6 +202,30 @@ export default {
 			} else {
 				this.showDecisionEditor = true
 			}
+		},
+
+		/**
+		 * Open "May be called by" for a rule set (REQ-BQRX-001).
+		 *
+		 * @param {object} ruleSet - the rule set.
+		 * @return {void}
+		 * @spec openspec/changes/rules-evaluation-for-other-apps/specs/rules-evaluation-for-other-apps/spec.md#requirement-a-rule-set-names-the-apps-that-may-call-it-req-bqrx-001
+		 */
+		openCallers(ruleSet) {
+			this.activeRuleSet = ruleSet
+			this.showCallers = true
+		},
+
+		/**
+		 * The apps that may call a rule set, as the table shows them.
+		 *
+		 * @param {object} ruleSet - the rule set.
+		 * @return {string}
+		 * @spec openspec/changes/rules-evaluation-for-other-apps/specs/rules-evaluation-for-other-apps/spec.md#requirement-a-rule-set-names-the-apps-that-may-call-it-req-bqrx-001
+		 */
+		callersLabel(ruleSet) {
+			const apps = Array.isArray(ruleSet.callableBy) ? ruleSet.callableBy : []
+			return apps.length > 0 ? apps.join(', ') : '—'
 		},
 
 		openSandbox(ruleSet) {
@@ -265,9 +297,16 @@ export default {
 			URL.revokeObjectURL(link.href)
 		},
 
+		/**
+		 * Close the open editor or callers dialog and reload the rule sets after a save.
+		 *
+		 * @return {void}
+		 * @spec openspec/changes/rules-evaluation-for-other-apps/specs/rules-evaluation-for-other-apps/spec.md#requirement-a-rule-set-names-the-apps-that-may-call-it-req-bqrx-001
+		 */
 		onSaved() {
 			this.showDecisionEditor = false
 			this.showConditionEditor = false
+			this.showCallers = false
 			this.fetchRuleSets()
 		},
 	},

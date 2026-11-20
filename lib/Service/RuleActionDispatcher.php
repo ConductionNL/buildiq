@@ -3,6 +3,9 @@
 /**
  * Buildiq RuleActionDispatcher
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Completes the ADR-031 §Exceptions rules-engine code path: the concrete
  * side-effect dispatcher `ConditionActionExecutor` has always accepted as an
  * optional `?callable $dispatcher` but that `RuleEngineService` never wired
@@ -44,9 +47,6 @@
  * actions when `continueOnError` is false but the type itself is merely
  * unsupported rather than a hard failure.
  *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
- *
  * @category Service
  * @package  OCA\Buildiq\Service
  *
@@ -58,7 +58,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/automation-designer/tasks.md#2.3
+ * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#2.3
  * @spec openspec/specs/automation-designer/spec.md#req-autd-010
  */
 
@@ -67,9 +67,12 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use DateTime;
+use OCA\Buildiq\Kernel\Contracts\RuleActionDispatcherInterface;
 use OCA\Buildiq\Service\Connection\ConnectionReporter;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\SecurityService;
 use OCP\Http\Client\IClientService;
 use OCP\IUserSession;
@@ -86,7 +89,7 @@ use Throwable;
  *   OpenRegister objects, the HTTP client and its egress guard, the rule engine), and
  *   the egress guard ADR-067 requires on the webhook is what tipped the count over.
  */
-class RuleActionDispatcher {
+class RuleActionDispatcher implements RuleActionDispatcherInterface {
 	/**
 	 * App identifier stamped on every created NC notification.
 	 */
@@ -164,19 +167,7 @@ class RuleActionDispatcher {
 			$subject = 'Automation notification';
 		}
 
-		$recipients = [];
-		if (isset($params['recipientUid']) === true && is_string($params['recipientUid']) === true && $params['recipientUid'] !== '') {
-			$recipients[] = $params['recipientUid'];
-		}
-
-		if (isset($params['recipientUids']) === true && is_array($params['recipientUids']) === true) {
-			foreach ($params['recipientUids'] as $uid) {
-				if (is_string($uid) === true && $uid !== '') {
-					$recipients[] = $uid;
-				}
-			}
-		}
-
+		$recipients = $this->notificationRecipients(params: $params);
 		if ($recipients === []) {
 			$this->logger->info('Buildiq: send-notification action had no resolvable recipient — skipped.');
 			return 0;
@@ -197,6 +188,27 @@ class RuleActionDispatcher {
 
 		return $sent;
 	}//end dispatchNotification()
+
+	/**
+	 * The recipients of a send-notification action: `recipientUid`, then every `recipientUids` entry.
+	 *
+	 * @param array<string,mixed> $params Action parameters.
+	 *
+	 * @return array<int,string> The non-empty uids, in order, duplicates kept.
+	 */
+	private function notificationRecipients(array $params): array {
+		$candidates = [$params['recipientUid'] ?? null];
+		if (is_array($params['recipientUids'] ?? null) === true) {
+			$candidates = array_merge($candidates, array_values($params['recipientUids']));
+		}
+
+		return array_values(
+			array_filter(
+				$candidates,
+				static fn (mixed $uid): bool => is_string($uid) === true && $uid !== ''
+			)
+		);
+	}//end notificationRecipients()
 
 	/**
 	 * Object-op — create or update an object via OpenRegister's ObjectService.
@@ -229,10 +241,16 @@ class RuleActionDispatcher {
 
 		$write = function () use ($object, $register, $schema, $operation, $id) {
 			if ($operation === 'update') {
-				return $this->objectService->saveObject(object: $object, register: $register, schema: $schema, uuid: $id);
+				return $this->objectService->saveObject(
+					object: $object,
+					options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema), uuid: $id)
+				);
 			}
 
-			return $this->objectService->saveObject(object: $object, register: $register, schema: $schema);
+			return $this->objectService->saveObject(
+				object: $object,
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema))
+			);
 		};
 
 		if ($this->userSession->getUser() === null && $id !== '') {

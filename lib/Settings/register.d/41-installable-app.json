@@ -1,0 +1,23 @@
+{
+	"_comment": "ADR-037 register fragment — pages-installable-offline-and-mobile T02 (REQ-BQOM-001). Adds the optional shortName and themeColor properties to the shared `buildiq` register's Application schema. The run route's web app manifest (ApplicationsController::webManifest) reads both: short_name falls back to the app's name when shortName is empty, and theme_color is only sent for a six-digit hex colour. Edited in the Installable section of the app settings. Declarative schema metadata only; no other property or schema is touched.",
+	"components": {
+		"schemas": {
+			"Application": {
+				"properties": {
+					"shortName": {
+						"title": "Short name",
+						"type": "string",
+						"maxLength": 12,
+						"description": "The name under the app's icon on a phone's home screen once installed. Empty falls back to the app's name."
+					},
+					"themeColor": {
+						"title": "Theme colour",
+						"type": "string",
+						"pattern": "^(#[0-9a-fA-F]{6})?$",
+						"description": "The colour of the installed app's title bar, as a six-digit hex colour such as #1f6feb. Empty leaves it to the browser."
+					}
+				}
+			}
+		}
+	}
+}

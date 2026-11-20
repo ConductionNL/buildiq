@@ -38,11 +38,11 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
-use OCA\Buildiq\Support\RepoDescriptor;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Contract\RegisterSlugResolverInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -295,7 +295,7 @@ class AppRepoSerializer {
 	 *
 	 * @return array<string,array<string,mixed>> Register blobs keyed by register slug.
 	 *
-	 * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-app-s-whole-configuration
+	 * @spec openspec/changes/archive/2026-10-07-app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-app-s-whole-configuration
 	 */
 	private function collectDataRegisters(array $application): array {
 		$bindings = ($application['dataRegisters'] ?? []);
@@ -327,47 +327,59 @@ class AppRepoSerializer {
 				continue;
 			}
 
-			$schemas = [];
-			foreach ((array)$register->getSchemas() as $schemaId) {
-				try {
-					$schema = $this->schemaMapper->find($schemaId, _multitenancy: false);
-				} catch (Throwable $e) {
-					continue;
-				}
-
-				$schemaSlug = $schema->getSlug();
-				if ($schemaSlug === '') {
-					continue;
-				}
-
-				$schemaVersion = (string)$schema->getVersion();
-				if ($schemaVersion === '') {
-					$schemaVersion = '0.1.0';
-				}
-
-				$schemas[$schemaSlug] = [
-					'slug' => $schemaSlug,
-					'title' => (string)$schema->getTitle(),
-					'description' => (string)$schema->getDescription(),
-					'version' => $schemaVersion,
-					'type' => 'object',
-					'required' => array_values((array)$schema->getRequired()),
-					'properties' => (array)$schema->getProperties(),
-				];
-			}//end foreach
-
-			ksort($schemas);
-
 			$out[$registerSlug] = [
 				'slug' => $registerSlug,
 				'title' => (string)$register->getTitle(),
 				'label' => (string)($binding['label'] ?? ''),
-				'schemas' => $schemas,
+				'schemas' => $this->registerSchemaDefinitions(schemaIds: (array)$register->getSchemas()),
 			];
 		}//end foreach
 
 		return $out;
 	}//end collectDataRegisters()
+
+	/**
+	 * The schema definitions of a register's schemas, keyed and sorted by slug.
+	 * A schema that cannot be read, or has no slug, is left out.
+	 *
+	 * @param array<int|string,mixed> $schemaIds The register's schema ids.
+	 *
+	 * @return array<string,array<string,mixed>> Schema definitions keyed by slug.
+	 */
+	private function registerSchemaDefinitions(array $schemaIds): array {
+		$schemas = [];
+		foreach ($schemaIds as $schemaId) {
+			try {
+				$schema = $this->schemaMapper->find($schemaId, _multitenancy: false);
+			} catch (Throwable $e) {
+				continue;
+			}
+
+			$schemaSlug = $schema->getSlug();
+			if ($schemaSlug === '') {
+				continue;
+			}
+
+			$schemaVersion = (string)$schema->getVersion();
+			if ($schemaVersion === '') {
+				$schemaVersion = '0.1.0';
+			}
+
+			$schemas[$schemaSlug] = [
+				'slug' => $schemaSlug,
+				'title' => (string)$schema->getTitle(),
+				'description' => (string)$schema->getDescription(),
+				'version' => $schemaVersion,
+				'type' => 'object',
+				'required' => array_values((array)$schema->getRequired()),
+				'properties' => (array)$schema->getProperties(),
+			];
+		}//end foreach
+
+		ksort($schemas);
+
+		return $schemas;
+	}//end registerSchemaDefinitions()
 
 	/**
 	 * Collect the OpenConnector configuration this application EXPLICITLY declares.
@@ -383,92 +395,98 @@ class AppRepoSerializer {
 	 *
 	 * @return array{files:array<string,array<string,mixed>>,declaredCount:int,resolvedCount:int,strippedCount:int,missingCount:int}
 	 *
-	 * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-connectors-are-declared-explicitly-never-inferred
+	 * @spec openspec/specs/github-app-repo-format/spec.md#requirement-connectors-are-declared-explicitly-never-inferred
 	 */
 	private function collectConnectors(array $application): array {
-		$empty = ['files' => [], 'declaredCount' => 0, 'resolvedCount' => 0, 'strippedCount' => 0, 'missingCount' => 0];
+		$run = new ConnectorExportRun();
 		$bindings = ($application['connectors'] ?? []);
 		if (is_array($bindings) === false || $this->objectService === null) {
-			return $empty;
+			return $run->summary();
 		}
 
-		$files = [];
-		$declared = 0;
-		$resolved = 0;
-		$stripped = 0;
-		$missing = 0;
-		$seen = [];
-
 		foreach ($bindings as $binding) {
-			if (is_array($binding) === false || count($files) >= self::MAX_CHANNEL_ENTRIES) {
-				continue;
-			}
+			$this->exportDeclaredConnector(run: $run, binding: $binding);
+		}
 
-			$kind = (string)($binding['kind'] ?? '');
-			$uuid = (string)($binding['uuid'] ?? '');
-			if (in_array($kind, self::CONNECTOR_KINDS, true) === false || $this->payloadSafety->isSafeUuid(uuid: $uuid) === false) {
-				$this->logger->warning(
-					'Buildiq AppRepoSerializer: rejected unsafe connector binding.',
-					['kind' => $kind, 'uuid' => $uuid]
-				);
-				continue;
-			}
-
-			$realUuid = null;
-			$object = $this->findConnector(kind: $kind, uuid: $uuid, resolvedUuid: $realUuid);
-			if ($object === null) {
-				// Counted, not silently skipped: "declared 25, missing 25" is a
-				// diagnosable artefact; "declared 0" is indistinguishable from an
-				// app that declared nothing, which is how a lookup bug hid here
-				// once already.
-				$missing++;
-				continue;
-			}
-
-			// Keyed on the object's OWN resolved identity (findConnector()'s
-			// $resolvedUuid out-param), never the raw reference string — see
-			// exportReferencedConnector(). The check is needed HERE too, not
-			// only on the reference path: a synchronization binding processed
-			// EARLIER can resolve this exact object first via its slug-shaped
-			// sourceId and already have written it under a different filename,
-			// and the declared path used to write unconditionally regardless
-			// (live-verified: `norway-doffin.json` AND `bc2d32cc-….json` both
-			// present for one object before this check existed).
-			$identity = (string)($realUuid ?? '');
-			if ($identity === '') {
-				$identity = $uuid;
-			}
-
-			if (isset($seen[$kind . '/' . $identity]) === true) {
-				continue;
-			}
-
-			$name = $this->payloadSafety->connectorFileName(binding: $binding, object: $object, uuid: $uuid);
-			$sanitised = $this->payloadSafety->stripSecrets(data: $object, stripped: $stripped);
-
-			$files[$kind . '/' . $name . '.json'] = $sanitised;
-			$seen[$kind . '/' . $identity] = true;
-			$declared++;
-
-			// ONE level of dependency resolution, and no further.
-			$resolved += $this->collectDirectReferences(
-				kind: $kind,
-				object: $object,
-				files: $files,
-				seen: $seen,
-				stripped: $stripped
-			);
-		}//end foreach
-
-		return [
-			'files' => $files,
-			'declaredCount' => $declared,
-			'resolvedCount' => $resolved,
-			'strippedCount' => $stripped,
-			'missingCount' => $missing,
-		];
+		return $run->summary();
 
 	}//end collectConnectors()
+
+	/**
+	 * Export one declared connector binding and the objects it directly references.
+	 *
+	 * A binding that does not resolve is counted, not silently skipped:
+	 * "declared 25, missing 25" is a diagnosable artefact; "declared 0" is
+	 * indistinguishable from an app that declared nothing, which is how a lookup
+	 * bug hid here once already.
+	 *
+	 * @param ConnectorExportRun $run     The export in progress.
+	 * @param mixed              $binding One entry of the Application's `connectors` list.
+	 *
+	 * @return void
+	 */
+	private function exportDeclaredConnector(ConnectorExportRun $run, mixed $binding): void {
+		if (is_array($binding) === false || count($run->files) >= self::MAX_CHANNEL_ENTRIES) {
+			return;
+		}
+
+		$reference = ConnectorReference::fromBinding(binding: $binding);
+		if ($this->isSafeBinding(reference: $reference) === false) {
+			return;
+		}
+
+		$this->exportDeclaredReference(run: $run, reference: $reference);
+
+	}//end exportDeclaredConnector()
+
+	/**
+	 * Export the connector a safe declared binding names, then its direct references.
+	 *
+	 * @param ConnectorExportRun $run       The export in progress.
+	 * @param ConnectorReference $reference The declared binding's reference.
+	 *
+	 * @return void
+	 */
+	private function exportDeclaredReference(ConnectorExportRun $run, ConnectorReference $reference): void {
+		$located = $this->locateConnector(reference: $reference);
+		if ($located === null) {
+			$run->missing++;
+			return;
+		}
+
+		// Deduped on the object's OWN resolved identity here too, not only on the
+		// reference path: a synchronization binding processed EARLIER can resolve
+		// this exact object first via its slug-shaped sourceId and already have
+		// written it under a different filename (live-verified:
+		// `norway-doffin.json` AND `bc2d32cc-….json` both present for one object
+		// before this check existed).
+		if ($this->addConnector(run: $run, located: $located) === true) {
+			$run->declared++;
+			// ONE level of dependency resolution, and no further.
+			$run->resolved += $this->collectDirectReferences(run: $run, located: $located);
+		}
+
+	}//end exportDeclaredReference()
+
+	/**
+	 * Whether a declared binding names an exportable kind and a well-formed UUID.
+	 *
+	 * @param ConnectorReference $reference The declared binding's reference.
+	 *
+	 * @return bool False (after a warning) when the binding is rejected.
+	 */
+	private function isSafeBinding(ConnectorReference $reference): bool {
+		if (in_array($reference->kind, self::CONNECTOR_KINDS, true) === false || $this->payloadSafety->isSafeUuid(uuid: $reference->uuid) === false) {
+			$this->logger->warning(
+				'Buildiq AppRepoSerializer: rejected unsafe connector binding.',
+				['kind' => $reference->kind, 'uuid' => $reference->uuid]
+			);
+			return false;
+		}
+
+		return true;
+
+	}//end isSafeBinding()
 
 	/**
 	 * Export the objects one declared connector DIRECTLY references — one level,
@@ -477,45 +495,28 @@ class AppRepoSerializer {
 	 * A synchronization without its source, mapping and target installs into
 	 * something that cannot run, so those are pulled in alongside the declared
 	 * entry. What they in turn reference is NOT followed — one level is the
-	 * contract. `$files`/`$seen`/`$stripped` are by-reference because a resolved
-	 * object must count against the SAME MAX_CHANNEL_ENTRIES budget and dedupe
-	 * against the SAME declared entries as its caller.
+	 * contract. A resolved object counts against the SAME MAX_CHANNEL_ENTRIES
+	 * budget and dedupes against the SAME declared entries as its caller.
 	 *
-	 * @param string $kind The declared entry's connector kind.
-	 * @param array<string,mixed> $object The declared entry's payload.
-	 * @param array<string,array<string,mixed>> $files IN/OUT: the export file map.
-	 * @param array<string,bool> $seen IN/OUT: dedupe index, keyed `kind/resolved-identity`.
-	 * @param int $stripped IN/OUT: running count of stripped secrets.
+	 * @param ConnectorExportRun $run     The export in progress.
+	 * @param LocatedConnector   $located The declared entry.
 	 *
 	 * @return int How many referenced objects were newly exported.
 	 */
-	private function collectDirectReferences(
-		string $kind,
-		array $object,
-		array &$files,
-		array &$seen,
-		int &$stripped,
-	): int {
+	private function collectDirectReferences(ConnectorExportRun $run, LocatedConnector $located): int {
 		$resolved = 0;
 
-		foreach ($this->directReferences(kind: $kind, object: $object) as $refKind => $refUuids) {
+		foreach ($this->directReferences(kind: $located->reference->kind, object: $located->object) as $refKind => $refUuids) {
 			foreach ($refUuids as $refUuid) {
-				if (count($files) >= self::MAX_CHANNEL_ENTRIES) {
+				if (count($run->files) >= self::MAX_CHANNEL_ENTRIES) {
 					continue;
 				}
 
-				$exported = $this->exportReferencedConnector(
-					refKind: $refKind,
-					refUuid: $refUuid,
-					files: $files,
-					seen: $seen,
-					stripped: $stripped
-				);
-				if ($exported === true) {
+				if ($this->exportReferencedConnector(run: $run, reference: new ConnectorReference(kind: $refKind, uuid: $refUuid)) === true) {
 					$resolved++;
 				}
-			}//end foreach
-		}//end foreach
+			}
+		}
 
 		return $resolved;
 	}//end collectDirectReferences()
@@ -526,51 +527,72 @@ class AppRepoSerializer {
 	 * Split out of {@see collectDirectReferences()} so "which references do we
 	 * follow" and "is this object safe, real and not already exported" read apart.
 	 *
-	 * @param string $refKind The referenced object's connector kind.
-	 * @param string $refUuid The reference as authored — a UUID *or* a slug.
-	 * @param array<string,array<string,mixed>> $files IN/OUT: the export file map.
-	 * @param array<string,bool> $seen IN/OUT: dedupe index, keyed `kind/resolved-identity`.
-	 * @param int $stripped IN/OUT: running count of stripped secrets.
+	 * @param ConnectorExportRun $run       The export in progress.
+	 * @param ConnectorReference $reference The reference as authored — a UUID *or* a slug.
 	 *
 	 * @return bool True when this call added a new file to the export.
 	 */
-	private function exportReferencedConnector(
-		string $refKind,
-		string $refUuid,
-		array &$files,
-		array &$seen,
-		int &$stripped,
-	): bool {
-		if ($this->payloadSafety->isSafeUuid(uuid: $refUuid) === false && $this->payloadSafety->isSafeSlug(slug: $refUuid) === false) {
+	private function exportReferencedConnector(ConnectorExportRun $run, ConnectorReference $reference): bool {
+		if ($this->payloadSafety->isSafeUuid(uuid: $reference->uuid) === false && $this->payloadSafety->isSafeSlug(slug: $reference->uuid) === false) {
 			return false;
 		}
 
-		$realRefUuid = null;
-		$refObject = $this->findConnector(kind: $refKind, uuid: $refUuid, resolvedUuid: $realRefUuid);
-		if ($refObject === null) {
+		$located = $this->locateConnector(reference: $reference);
+		if ($located === null) {
 			return false;
 		}
 
-		// Keyed on the object's OWN resolved identity, never the raw reference:
-		// a synchronization's `sourceId` is commonly a SLUG ("tenderned") while
-		// a declared binding's `uuid` is a real UUID, and two spellings of one
-		// identifier must dedupe to the SAME entry.
-		$refIdentity = (string)($realRefUuid ?? '');
-		if ($refIdentity === '') {
-			$refIdentity = $refUuid;
-		}
-
-		$key = $refKind . '/' . $refIdentity;
-		if (isset($seen[$key]) === true) {
-			return false;
-		}
-
-		$refName = $this->payloadSafety->connectorFileName(binding: [], object: $refObject, uuid: $refUuid);
-
-		$files[$refKind . '/' . $refName . '.json'] = $this->payloadSafety->stripSecrets(data: $refObject, stripped: $stripped);
-		$seen[$key] = true;
-		return true;
+		return $this->addConnector(run: $run, located: $located);
 	}//end exportReferencedConnector()
+
+	/**
+	 * Look a referenced connector object up, with the identity it dedupes on.
+	 *
+	 * Keyed on the object's OWN resolved identity ({@see findConnector()}'s
+	 * `$resolvedUuid` out-param), never the raw reference: a synchronization's
+	 * `sourceId` is commonly a SLUG ("tenderned") while a declared binding's
+	 * `uuid` is a real UUID, and two spellings of one identifier must dedupe to
+	 * the SAME entry.
+	 *
+	 * @param ConnectorReference $reference The reference to resolve.
+	 *
+	 * @return LocatedConnector|null Null when the object does not resolve.
+	 */
+	private function locateConnector(ConnectorReference $reference): ?LocatedConnector {
+		$resolvedUuid = null;
+		$object = $this->findConnector(kind: $reference->kind, uuid: $reference->uuid, resolvedUuid: $resolvedUuid);
+		if ($object === null) {
+			return null;
+		}
+
+		$identity = (string)($resolvedUuid ?? '');
+		if ($identity === '') {
+			$identity = $reference->uuid;
+		}
+
+		return new LocatedConnector(reference: $reference, object: $object, identity: $identity);
+	}//end locateConnector()
+
+	/**
+	 * Write a located connector into the export unless it is already there.
+	 *
+	 * @param ConnectorExportRun $run     The export in progress.
+	 * @param LocatedConnector   $located The connector to write.
+	 *
+	 * @return bool True when this call added a new file to the export.
+	 */
+	private function addConnector(ConnectorExportRun $run, LocatedConnector $located): bool {
+		if (isset($run->seen[$located->key()]) === true) {
+			return false;
+		}
+
+		$reference = $located->reference;
+		$name = $this->payloadSafety->connectorFileName(binding: $reference->binding, object: $located->object, uuid: $reference->uuid);
+
+		$run->files[$reference->kind . '/' . $name . '.json'] = $this->payloadSafety->stripSecrets(data: $located->object, stripped: $run->stripped);
+		$run->seen[$located->key()] = true;
+		return true;
+	}//end addConnector()
 
 	/**
 	 * Resolve one connector object by kind + UUID from the shared `openconnector`
@@ -615,8 +637,7 @@ class AppRepoSerializer {
 			// mappings), so a slug lookup would miss most real ingestion.
 			$found = $this->objectService->find(
 				id: $uuid,
-				register: $registerSlug->slug,
-				schema: $kind
+				options: new ObjectFindOptions(register: $registerSlug->slug, schema: $kind)
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning(
@@ -686,7 +707,7 @@ class AppRepoSerializer {
 	 *
 	 * @return array<string,array<string,mixed>> Automation blobs keyed by slug.
 	 *
-	 * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-app-s-whole-configuration
+	 * @spec openspec/changes/archive/2026-10-07-app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-app-s-whole-configuration
 	 */
 	private function collectAutomations(string $slug): array {
 		// Buildiq's own register is renamed from `openbuild` per instance, so resolve it like the connector register.
@@ -713,15 +734,23 @@ class AppRepoSerializer {
 			return [];
 		}
 
-		$out = [];
-		foreach ((array)$results as $result) {
-			$payload = null;
-			if (is_object($result) === true && method_exists($result, 'getObject') === true) {
-				$payload = (array)$result->getObject();
-			} elseif (is_array($result) === true) {
-				$payload = $result;
-			}
+		return $this->automationsBySlug(results: (array)$results);
+	}//end collectAutomations()
 
+	/**
+	 * The automation payloads found, keyed by slug; a result without a payload
+	 * or with an unsafe slug is left out.
+	 *
+	 * @param array<int|string,mixed> $results The findAll results.
+	 *
+	 * @return array<string,array<string,mixed>> Automation blobs keyed by slug.
+	 *
+	 * @spec openspec/changes/archive/2026-10-07-app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-app-s-whole-configuration
+	 */
+	private function automationsBySlug(array $results): array {
+		$out = [];
+		foreach ($results as $result) {
+			$payload = self::automationPayload(result: $result);
 			if ($payload === null) {
 				continue;
 			}
@@ -732,10 +761,32 @@ class AppRepoSerializer {
 			}
 
 			$out[$automationSlug] = $payload;
-		}//end foreach
+		}
 
 		return $out;
-	}//end collectAutomations()
+	}//end automationsBySlug()
+
+	/**
+	 * The payload of one findAll result: an entity's object, an array as is,
+	 * null for anything else.
+	 *
+	 * @param mixed $result One findAll result.
+	 *
+	 * @return array<string,mixed>|null The payload.
+	 *
+	 * @spec openspec/changes/archive/2026-10-07-app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-app-s-whole-configuration
+	 */
+	private static function automationPayload(mixed $result): ?array {
+		if (is_object($result) === true && method_exists($result, 'getObject') === true) {
+			return (array)$result->getObject();
+		}
+
+		if (is_array($result) === true) {
+			return $result;
+		}
+
+		return null;
+	}//end automationPayload()
 
 	/**
 	 * Collect the application's bound flows and the agents that point at it.
@@ -749,7 +800,7 @@ class AppRepoSerializer {
 	 *
 	 * @return array{flows:array<string,array<string,mixed>>,agents:array<string,array<string,mixed>>,declaredFlows:int,skipped:array<int,array<string,mixed>>}
 	 *
-	 * @spec openspec/changes/app-repo-format-flow-agent-export/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-app-s-bound-flows-and-agents
+	 * @spec openspec/changes/archive/2026-08-19-app-repo-format-flow-agent-export/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-app-s-bound-flows-and-agents
 	 */
 	private function collectFlowsAndAgents(array $application): array {
 		if ($this->flowAgentCollector === null) {
@@ -794,7 +845,7 @@ class AppRepoSerializer {
 	 * @return array<string,mixed>
 	 *
 	 * @spec openspec/changes/github-app-repo-format/specs/github-app-repo-format/spec.md
-	 * @spec openspec/changes/app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-app-s-whole-configuration
+	 * @spec openspec/changes/archive/2026-10-07-app-repo-format-v2/specs/github-app-repo-format/spec.md#requirement-a-published-repository-carries-the-app-s-whole-configuration
 	 * @SuppressWarnings(PHPMD.StaticAccess) RepoDescriptor is a pure function with no collaborators.
 	 */
 	private function buildDescriptor(array $application, array $version, array $manifest, array $channels = []): array {

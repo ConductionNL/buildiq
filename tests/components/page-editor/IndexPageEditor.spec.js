@@ -216,6 +216,37 @@ describe('IndexPageEditor', () => {
 		expect(next).not.toHaveProperty('sidebar')
 	})
 
+	// pages-qr-and-barcodes REQ-BQQR-001: the Scan section writes config.scan.
+	it('scan toggle writes config.scan opening the match, and untoggle deletes it', async () => {
+		const wrapper = mountEditor({ register: 'r', schema: 's' })
+		await wrapper.find('[data-testid="index-page-scan"] input[type="checkbox"]').setValue(true)
+		expect(wrapper.emitted('update:config')[0][0].scan).toEqual({ enabled: true, field: '', onMatch: 'open' })
+
+		const on = mountEditor({ register: 'r', schema: 's', scan: { enabled: true, field: 'serienummer', onMatch: 'filter' } })
+		await on.find('[data-testid="index-page-scan"] input[type="checkbox"]').setValue(false)
+		expect(on.emitted('update:config')[0][0]).not.toHaveProperty('scan')
+	})
+
+	it('scan offers the schema\'s fields and writes the chosen field and match action', async () => {
+		const wrapper = mountEditor({ register: 'r', schema: 's', scan: { enabled: true, field: '', onMatch: 'open' } })
+		await flushPromises()
+		// The schema's properties come from the mocked picker: title and route.
+		const options = wrapper.findAll('[data-testid="index-page-scan-field"] option').map((o) => o.attributes('value'))
+		expect(options).toEqual(['', 'route', 'title'])
+
+		await wrapper.find('[data-testid="index-page-scan-field"]').setValue('route')
+		expect(wrapper.emitted('update:config')[0][0].scan).toEqual({ enabled: true, field: 'route', onMatch: 'open' })
+		await wrapper.find('[data-testid="index-page-scan-match"]').setValue('filter')
+		expect(wrapper.emitted('update:config')[1][0].scan).toEqual({ enabled: true, field: '', onMatch: 'filter' })
+	})
+
+	it('scan keeps a chosen field listed before the schema loads, and hides its pickers when off', () => {
+		const on = mountEditor({ register: 'r', schema: 's', scan: { enabled: true, field: 'serienummer', onMatch: 'open' } })
+		expect(on.vm.scanFieldOptions).toContain('serienummer')
+		const off = mountEditor({ register: 'r', schema: 's' })
+		expect(off.find('[data-testid="index-page-scan-field"]').exists()).toBe(false)
+	})
+
 	it('updates `cardComponent` via the optional input', async () => {
 		const wrapper = mountEditor({ register: 'r' })
 		wrapper.vm.update('cardComponent', 'BuildiqDefaultCard')
@@ -286,5 +317,27 @@ describe('IndexPageEditor', () => {
 		expect(getter()).toBe('')
 		await wrapper.setProps({ appRegister: 'openbuild-hello-world-development' })
 		expect(getter()).toBe('openbuild-hello-world-development')
+	})
+
+	it('the drag order switch emits manualOrder for the page, not a config key (REQ-PEC-009)', async () => {
+		const wrapper = mount(IndexPageEditor, {
+			propsData: { config: { columns: ['title'] }, appSlug: 'hello-world', manualOrder: false },
+		})
+		const toggle = wrapper.find('input[data-manual-order]')
+		expect(toggle.element.checked).toBe(false)
+		await toggle.setValue(true)
+		expect(wrapper.emitted('update:manualOrder').at(-1)).toEqual([true])
+		expect(wrapper.emitted('update:config')).toBeUndefined()
+
+		await wrapper.setProps({ manualOrder: true })
+		expect(toggle.element.checked).toBe(true)
+		await toggle.setValue(false)
+		expect(wrapper.emitted('update:manualOrder').at(-1)).toEqual([false])
+	})
+
+	it('a view change from the Views section reaches update:config (REQ-PEC-008)', async () => {
+		const wrapper = mountEditor({ columns: ['title'] })
+		await wrapper.find('input[data-mode="calendar"]').setValue(true)
+		expect(wrapper.emitted('update:config').at(-1)[0]).toEqual({ columns: ['title'], viewModes: ['table', 'calendar'] })
 	})
 })

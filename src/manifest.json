@@ -25,7 +25,7 @@
 				"id": "welcome",
 				"type": "info",
 				"title": "Welcome to Buildiq",
-				"body": "Buildiq builds apps from templates. This quick setup offers example data and can connect a remote template store. The starter templates install on their own. An admin can reinstall them in the admin settings."
+				"body": "Buildiq builds apps from templates. This quick setup offers example data and can connect a remote template marketplace. The starter templates install on their own. An admin can reinstall them in the admin settings."
 			},
 			{
 				"id": "demo-data",
@@ -41,14 +41,14 @@
 			{
 				"id": "store",
 				"type": "config-fields",
-				"title": "Remote template store (optional)",
+				"title": "Remote template marketplace (optional)",
 				"body": "Connect a remote template catalogue to offer more starter apps. The bundled templates work without it, so leave this blank to skip.",
 				"schema": {
 					"type": "object",
 					"properties": {
 						"registry_url": {
 							"type": "string",
-							"title": "Store URL"
+							"title": "Marketplace URL"
 						},
 						"registry_register": {
 							"type": "string",
@@ -67,7 +67,7 @@
 				"type": "summary",
 				"title": "All set",
 				"healthCheck": true,
-				"body": "Buildiq is ready. Open the Store to clone a template into your first app."
+				"body": "Buildiq is ready. Open the Marketplace to clone a template into your first app."
 			}
 		]
 	},
@@ -336,7 +336,7 @@
 		},
 		{
 			"id": "Store",
-			"label": "Store",
+			"label": "Marketplace",
 			"icon": "StoreOutline",
 			"route": "Templates",
 			"order": 92,
@@ -486,6 +486,13 @@
 						"order": 60
 					},
 					{
+						"id": "api",
+						"label": "API",
+						"icon": "Api",
+						"component": "ApplicationApiTab",
+						"order": 65
+					},
+					{
 						"id": "audit",
 						"label": "History",
 						"icon": "History",
@@ -522,14 +529,14 @@
 			"id": "Templates",
 			"route": "/templates",
 			"type": "custom",
-			"title": "Store",
+			"title": "Marketplace",
 			"component": "TemplateGallery",
 			"config": {
 				"register": "buildiq",
 				"schema": "application-template",
 				"documentationUrl": "https://buildiq.conduction.nl"
 			},
-			"_note": "Templates renders the store-aware TemplateGallery view (buildiq-remote-template-store): when a registry is configured the remote store search is the primary surface with built-in templates secondary; with no registry it falls back to the built-in templates as today. Install clones via CloneTemplateDialog."
+			"_note": "Templates renders the TemplateGallery view: built-in templates first, then the shared catalogue section (reuse-remote-store-section, SharedCatalogueSection) when an administrator configured a remote catalogue, then apps on GitHub. With no catalogue the section is absent. Install opens CloneTemplateDialog: clone for a built-in template, store install for a catalogue template, GitHub install for a GitHub app."
 		},
 		{
 			"id": "SchemaDesignerList",
@@ -670,6 +677,8 @@
 			"title": "Applications",
 			"_note": "Every filter is scalar equality, the only kind OpenRegister's aggregation endpoint can evaluate. A multi-value or relative-date filter is accepted and then silently not applied.",
 			"config": {
+				"download": true,
+				"downloadName": "buildiq-applications",
 				"widgets": [
 					{
 						"id": "apps-published",
@@ -907,6 +916,8 @@
 			"title": "Versions and exports",
 			"_note": "applicationVersion keeps its camelCase slug while every other schema here is kebab-case. Two schemas on one page deliberately: a version is what was cut, an export is where it went, and the question a reader has spans both.",
 			"config": {
+				"download": true,
+				"downloadName": "buildiq-delivery",
 				"widgets": [
 					{
 						"id": "versions-published",
@@ -1222,8 +1233,60 @@
 						"status"
 					]
 				}
+			},
+			{
+				"name": "app_requests_total",
+				"type": "counter",
+				"help": "Requests made by running built apps, from their health samples, per app and version",
+				"source": {
+					"kind": "objectSum",
+					"register": "buildiq",
+					"schema": "app-health-sample",
+					"field": "requests",
+					"groupBy": [
+						"applicationUuid",
+						"versionUuid"
+					]
+				}
+			},
+			{
+				"name": "app_request_failures_total",
+				"type": "counter",
+				"help": "Failed requests (4xx and 5xx) of running built apps, per app and version",
+				"source": {
+					"kind": "objectSum",
+					"register": "buildiq",
+					"schema": "app-health-sample",
+					"field": "failures",
+					"groupBy": [
+						"applicationUuid",
+						"versionUuid"
+					]
+				}
+			},
+			{
+				"name": "app_client_errors_total",
+				"type": "counter",
+				"help": "Client-side errors in running built apps, per app and version",
+				"source": {
+					"kind": "objectSum",
+					"register": "buildiq",
+					"schema": "app-health-sample",
+					"field": "clientErrors",
+					"groupBy": [
+						"applicationUuid",
+						"versionUuid"
+					]
+				}
 			}
 		]
 	},
-	"deepLinks": []
+	"deepLinks": [
+		{
+			"registerSlug": "buildiq",
+			"schemaSlug": "built-app",
+			"urlTemplate": "/apps/buildiq/applications/{uuid}",
+			"displayName": "App"
+		}
+	]
 }

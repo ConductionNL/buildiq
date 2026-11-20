@@ -3,6 +3,9 @@
 /**
  * Buildiq AutomationCompilerService
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Compiles a stored `Automation` declarative object (design.md Decision 1 of
  * the automation-designer change) to Buildiq's EXISTING declarative
  * primitives, and nothing else (ADR-031 — no new imperative engine):
@@ -80,9 +83,6 @@
  * compiled artifact id/key carries the `aut-` prefix so hand-authored
  * entries are never touched.
  *
- * SPDX-License-Identifier: EUPL-1.2
- * SPDX-FileCopyrightText: 2026 Conduction B.V.
- *
  * @category Service
  * @package  OCA\Buildiq\Service
  *
@@ -94,16 +94,16 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/automation-designer/tasks.md#2.1
- * @spec openspec/changes/automation-designer/tasks.md#2.2
+ * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#2.1
+ * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#2.2
  * @spec openspec/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-existing-declarative-primitives-req-autd-004
  * @spec openspec/specs/automation-designer/spec.md#requirement-an-automation-is-managed-as-one-unit-with-provenance-req-autd-005
- * @spec openspec/changes/automation-approval-steps/tasks.md#1.1
- * @spec openspec/changes/automation-approval-steps/tasks.md#1.2
+ * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#1.1
+ * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#1.2
  * @spec openspec/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-existing-declarative-primitives-req-autd-004
- * @spec openspec/changes/automation-document-action/tasks.md#1.1
- * @spec openspec/changes/automation-document-action/tasks.md#1.2
- * @spec openspec/changes/automation-document-action/tasks.md#1.3
+ * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#1.1
+ * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#1.2
+ * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#1.3
  * @spec openspec/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-existing-declarative-primitives-req-autd-004
  */
 
@@ -112,14 +112,19 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Exception\UnsupportedAutomationCombinationException;
+use OCA\Buildiq\Service\Automation\ApprovalFormDeclaration;
+use OCA\Buildiq\Kernel\Contracts\AutomationCompilerServiceInterface;
 use OCA\Buildiq\Service\Automation\CompileInput;
-use OCA\Buildiq\Support\FleetAppId;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
-use Psr\Container\ContainerInterface;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCP\App\IAppManager;
+use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 use Throwable;
@@ -127,18 +132,9 @@ use Throwable;
 /**
  * Pure compile() + I/O-performing apply()/remove()/status().
  *
- * @spec openspec/changes/automation-designer/tasks.md#2.1
+ * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#2.1
  */
-class AutomationCompilerService {
-	/**
-	 * Shared Buildiq register slug.
-	 */
-	public const REGISTER_SLUG = 'buildiq';
-
-	/**
-	 * Schema slug of the Automation object itself.
-	 */
-	public const AUTOMATION_SCHEMA = 'automation';
+class AutomationCompilerService implements AutomationCompilerServiceInterface {
 
 	/**
 	 * The v1 compilation matrix: trigger type → allowed action types.
@@ -172,6 +168,16 @@ class AutomationCompilerService {
 	 * @var string
 	 */
 	private const APPROVAL_CHAINS_KEY = 'x-openregister-approval-chains';
+
+	/**
+	 * OpenRegister's reader of an approval position's form: present when
+	 * OpenRegister carries a position's form into the tasks it opens
+	 * (approval-position-task-form). Named as a string so this class loads
+	 * without OpenRegister.
+	 *
+	 * @var string
+	 */
+	private const APPROVAL_POSITION_FORM_CLASS = 'OCA\\OpenRegister\\Service\\Task\\ApprovalPositionForm';
 
 	/**
 	 * Canonical id of the document app (`docudesk` renamed to `filinq`).
@@ -292,7 +298,7 @@ class AutomationCompilerService {
 	 *
 	 * @throws UnsupportedAutomationCombinationException When the matrix (or condition placement) rejects the shape.
 	 *
-	 * @spec openspec/changes/automation-designer/tasks.md#2.1
+	 * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#2.1
 	 * @spec openspec/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-existing-declarative-primitives-req-autd-004
 	 */
 	public function compile(array $automation): array {
@@ -300,6 +306,15 @@ class AutomationCompilerService {
 
 		$this->assertMatrix(triggerType: $input->triggerType, condition: $input->condition, actions: $input->actions);
 		$this->assertGenerateDocumentActions(actions: $input->actions);
+		// Logic-approval-task-form D2/D3: the fields an approver fills in are
+		// checked against the trigger schema, and refused when the installed
+		// OpenRegister cannot carry a form into the task it opens.
+		$schemaSlug = (string)($input->trigger['schema'] ?? '');
+		(new ApprovalFormDeclaration(
+			schemaSlug: $schemaSlug,
+			properties: fn (): ?array => $this->loadSchema(slug: $schemaSlug)?->getProperties(),
+			carried: static fn (): bool => class_exists(self::APPROVAL_POSITION_FORM_CLASS)
+		))->check(actions: $input->actions);
 
 		$plan = [
 			'notifications' => [],
@@ -333,7 +348,7 @@ class AutomationCompilerService {
 	 *
 	 * @return array<string,mixed> The new `provenance` block.
 	 *
-	 * @spec openspec/changes/automation-designer/tasks.md#2.2
+	 * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#2.2
 	 */
 	public function apply(array $automation, array $plan, array $priorProvenance = []): array {
 		$slug = (string)($automation['slug'] ?? '');
@@ -417,7 +432,7 @@ class AutomationCompilerService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/automation-designer/tasks.md#2.2
+	 * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#2.2
 	 * @spec openspec/specs/automation-designer/spec.md#requirement-an-automation-is-managed-as-one-unit-with-provenance-req-autd-005
 	 */
 	public function remove(array $automation, array $provenance): void {
@@ -457,7 +472,7 @@ class AutomationCompilerService {
 	 *
 	 * @return array{drift:bool,compiledHash:?string,liveHash:?string}
 	 *
-	 * @spec openspec/changes/automation-designer/tasks.md#2.2
+	 * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#2.2
 	 * @spec openspec/specs/automation-designer/spec.md#requirement-an-automation-is-managed-as-one-unit-with-provenance-req-autd-005
 	 */
 	public function status(array $automation, array $provenance): array {
@@ -519,7 +534,7 @@ class AutomationCompilerService {
 	 *
 	 * @return string One of `none|pending|approved|rejected`.
 	 *
-	 * @spec openspec/changes/automation-approval-steps/tasks.md#5.1
+	 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#5.1
 	 * @spec openspec/specs/automation-designer/spec.md#requirement-dry-run-test-panel-evaluates-an-automation-without-side-effects-req-autd-007
 	 */
 	public function approvalState(array $automation, array $provenance): string {
@@ -566,23 +581,17 @@ class AutomationCompilerService {
 	 * @return array<string, mixed>|null The declared chain, or null.
 	 */
 	private function resolveApprovalChainForState(string $schemaSlug, string $chainName): ?array {
-		$schema = $this->loadSchema(slug: $schemaSlug);
-		if ($schema === null) {
+		$declared = $this->declaredApprovalChains(schemaSlug: $schemaSlug);
+		if ($declared === null) {
 			return null;
 		}
 
-		$schemaId = $schema->getId();
-		if ($schemaId === null) {
-			return null;
-		}
-
-		$config = ($schema->getConfiguration() ?? []);
-		$chains = ($config[self::APPROVAL_CHAINS_KEY] ?? []);
+		[$schemaId, $chains] = $declared;
 		if (is_array($chains) === false || is_array(($chains[$chainName] ?? null)) === false) {
 			return null;
 		}
 
-		return ['name' => $chainName, 'schemaId' => (int)$schemaId];
+		return ['name' => $chainName, 'schemaId' => $schemaId];
 
 	}//end resolveApprovalChainForState()
 
@@ -638,8 +647,8 @@ class AutomationCompilerService {
 	 * @throws UnsupportedAutomationCombinationException On any invalid `generateDocument` config
 	 *                                                   or when Docudesk is absent.
 	 *
-	 * @spec openspec/changes/automation-document-action/tasks.md#1.2
-	 * @spec openspec/changes/automation-document-action/tasks.md#1.3
+	 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#1.2
+	 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#1.3
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) FleetAppId is a stateless
 	 *  resolver over a constant map, with no state to inject and nothing to
@@ -666,32 +675,64 @@ class AutomationCompilerService {
 		}
 
 		foreach ($generateDocumentActions as $action) {
-			$templateId = (string)($action['templateId'] ?? '');
-			if ($templateId === '') {
-				throw new UnsupportedAutomationCombinationException(
-					message: 'A "generateDocument" action is missing a required "templateId".'
-				);
-			}
-
-			$outputModes = $this->normaliseGenerateDocumentOutput(raw: $action['output'] ?? null);
-			if ($outputModes === []) {
-				throw new UnsupportedAutomationCombinationException(
-					message: 'A "generateDocument" action must set "output" to one or more of "'
-					. implode('", "', self::GENERATE_DOCUMENT_OUTPUT_MODES) . '".'
-				);
-			}
-
-			$hasNotify = in_array('notify', $outputModes, true);
-			$hasDeliveryMode = in_array('attach', $outputModes, true) === true || in_array('download-link', $outputModes, true) === true;
-			if ($hasNotify === true && $hasDeliveryMode === false) {
-				throw new UnsupportedAutomationCombinationException(
-					message: 'A "generateDocument" action with "output: notify" must also set "attach" '
-					. 'and/or "download-link" — "notify" alone is incomplete.'
-				);
-			}
-		}//end foreach
+			$this->assertGenerateDocumentAction(action: $action);
+		}
 
 	}//end assertGenerateDocumentActions()
+
+	/**
+	 * Validate one `generateDocument` action: a template and at least one output mode.
+	 *
+	 * @param array<string, mixed> $action The action.
+	 *
+	 * @return void
+	 *
+	 * @throws UnsupportedAutomationCombinationException On a missing template or output, or `notify` alone.
+	 *
+	 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#1.2
+	 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#1.3
+	 */
+	private function assertGenerateDocumentAction(array $action): void {
+		$templateId = (string)($action['templateId'] ?? '');
+		if ($templateId === '') {
+			throw new UnsupportedAutomationCombinationException(
+				message: 'A "generateDocument" action is missing a required "templateId".'
+			);
+		}
+
+		$outputModes = $this->normaliseGenerateDocumentOutput(raw: $action['output'] ?? null);
+		if ($outputModes === []) {
+			throw new UnsupportedAutomationCombinationException(
+				message: 'A "generateDocument" action must set "output" to one or more of "'
+				. implode('", "', self::GENERATE_DOCUMENT_OUTPUT_MODES) . '".'
+			);
+		}
+
+		self::assertNotifyHasDelivery(outputModes: $outputModes);
+	}//end assertGenerateDocumentAction()
+
+	/**
+	 * `notify` only tells someone about a document that is attached or linked, so it never stands alone.
+	 *
+	 * @param array<int, string> $outputModes The action's normalised output modes.
+	 *
+	 * @return void
+	 *
+	 * @throws UnsupportedAutomationCombinationException When `notify` is set without `attach` or `download-link`.
+	 *
+	 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#1.2
+	 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#1.3
+	 */
+	private static function assertNotifyHasDelivery(array $outputModes): void {
+		$hasNotify = in_array('notify', $outputModes, true);
+		$hasDeliveryMode = in_array('attach', $outputModes, true) === true || in_array('download-link', $outputModes, true) === true;
+		if ($hasNotify === true && $hasDeliveryMode === false) {
+			throw new UnsupportedAutomationCombinationException(
+				message: 'A "generateDocument" action with "output: notify" must also set "attach" '
+				. 'and/or "download-link" — "notify" alone is incomplete.'
+			);
+		}
+	}//end assertNotifyHasDelivery()
 
 	/**
 	 * Normalise a `generateDocument` action's `output` field to a
@@ -756,6 +797,13 @@ class AutomationCompilerService {
 					'assigneeGroup' => (string)($action['assigneeGroup'] ?? ''),
 					'enabled' => $input->enabled,
 				];
+				// Logic-approval-task-form D3: the form rides on the chain's
+				// single position, and so in the compiled hash.
+				$form = ApprovalFormDeclaration::chainForm(action: $action);
+				if ($form !== null) {
+					$plan['approvalChain']['form'] = $form;
+				}
+
 				continue;
 			}
 
@@ -943,7 +991,7 @@ class AutomationCompilerService {
 	 *
 	 * @return array<string,mixed> A synthetic ConditionActionRule-shaped record.
 	 *
-	 * @spec openspec/changes/automation-designer/tasks.md#3.1
+	 * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#3.1
 	 * @spec openspec/specs/automation-designer/spec.md#requirement-dry-run-test-panel-evaluates-an-automation-without-side-effects-req-autd-007
 	 */
 	public function compileDryRunRule(array $automation): array {
@@ -1016,7 +1064,7 @@ class AutomationCompilerService {
 	 *
 	 * @return array<string,mixed>
 	 *
-	 * @spec openspec/changes/automation-approval-steps/tasks.md#2.1
+	 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#2.1
 	 */
 	public function mapActionToRuleAction(array $action): array {
 		$type = (string)($action['type'] ?? '');
@@ -1185,16 +1233,12 @@ class AutomationCompilerService {
 		$schemas = array_unique(array_merge(array_keys($bySchema), array_keys($priorBySchema)));
 
 		foreach ($schemas as $schemaSlug) {
-			if ($schemaSlug === '') {
+			$target = $this->configuredSchema(slug: $schemaSlug);
+			if ($target === null) {
 				continue;
 			}
 
-			$schema = $this->loadSchema(slug: $schemaSlug);
-			if ($schema === null) {
-				continue;
-			}
-
-			$config = ($schema->getConfiguration() ?? []);
+			[$schema, $config] = $target;
 			$map = $this->orArray(value: $config['x-openregister-notifications'] ?? null);
 
 			$keepKeys = array_map(static fn (array $entry): string => (string)$entry['key'], ($bySchema[$schemaSlug] ?? []));
@@ -1245,53 +1289,101 @@ class AutomationCompilerService {
 
 		$result = [];
 		foreach ($schemas as $schemaSlug) {
-			if ($schemaSlug === '') {
-				continue;
-			}
-
-			$schema = $this->loadSchema(slug: $schemaSlug);
-			if ($schema === null) {
-				continue;
-			}
-
-			$config = ($schema->getConfiguration() ?? []);
-			$lifecycle = $this->orNullArray(value: $config['x-openregister-lifecycle'] ?? null);
-			if ($lifecycle === null) {
-				continue;
-			}
-
-			$transitions = $this->orArray(value: $lifecycle['transitions'] ?? null);
-
-			foreach ($transitions as $tName => $t) {
-				$actions = $this->orArray(value: $t['actions'] ?? null);
-				$transitions[$tName]['actions'] = array_values(
-					array_filter(
-						$actions,
-						static fn ($a): bool => is_array($a) === false || ($a['marker'] ?? null) !== $marker
-					)
-				);
-			}
-
-			foreach (($plannedBySchema[$schemaSlug] ?? []) as $entry) {
-				$tName = (string)$entry['transition'];
-				if (isset($transitions[$tName]) === false) {
-					continue;
-				}
-
-				$actions = $this->orArray(value: $transitions[$tName]['actions'] ?? null);
-				$actions[] = $entry['action'];
-				$transitions[$tName]['actions'] = $actions;
-				$result[] = ['schema' => $schemaSlug, 'transition' => $tName, 'marker' => $marker];
-			}
-
-			$lifecycle['transitions'] = $transitions;
-			$config['x-openregister-lifecycle'] = $lifecycle;
-			$schema->setConfiguration($config);
-			$this->schemaMapper->update($schema);
-		}//end foreach
+			array_push(
+				$result,
+				...$this->applyLifecycleToSchema(
+					schemaSlug: $schemaSlug,
+					plan: ['marker' => $marker, 'entries' => ($plannedBySchema[$schemaSlug] ?? [])]
+				)
+			);
+		}
 
 		return $result;
 	}//end applyLifecycleActions()
+
+	/**
+	 * Re-add one schema's planned lifecycle actions after stripping its marker-tagged ones, and save the schema.
+	 *
+	 * @param string                                                                  $schemaSlug The target schema slug.
+	 * @param array{marker: string, entries: array<int, array<string, mixed>>} $plan       The marker and the planned entries.
+	 *
+	 * @return array<int, array<string, string>> The provenance records of the actions added.
+	 */
+	private function applyLifecycleToSchema(string $schemaSlug, array $plan): array {
+		$target = $this->configuredSchema(slug: $schemaSlug);
+		if ($target === null) {
+			return [];
+		}
+
+		[$schema, $config] = $target;
+		$lifecycle = $this->orNullArray(value: $config['x-openregister-lifecycle'] ?? null);
+		if ($lifecycle === null) {
+			return [];
+		}
+
+		$transitions = $this->withoutMarkedActions(
+			transitions: $this->orArray(value: $lifecycle['transitions'] ?? null),
+			marker: $plan['marker']
+		);
+		$added       = $this->withPlannedActions(transitions: $transitions, entries: $plan['entries']);
+
+		$lifecycle['transitions'] = $added['transitions'];
+		$config['x-openregister-lifecycle'] = $lifecycle;
+		$schema->setConfiguration($config);
+		$this->schemaMapper->update($schema);
+
+		return array_map(
+			static fn (string $tName): array => ['schema' => $schemaSlug, 'transition' => $tName, 'marker' => $plan['marker']],
+			$added['added']
+		);
+	}//end applyLifecycleToSchema()
+
+	/**
+	 * The transitions with every action carrying this marker removed.
+	 *
+	 * @param array<string, mixed> $transitions The schema's lifecycle transitions.
+	 * @param string               $marker      The automation's marker.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function withoutMarkedActions(array $transitions, string $marker): array {
+		foreach ($transitions as $tName => $t) {
+			$actions = $this->orArray(value: $t['actions'] ?? null);
+			$transitions[$tName]['actions'] = array_values(
+				array_filter(
+					$actions,
+					static fn ($a): bool => is_array($a) === false || ($a['marker'] ?? null) !== $marker
+				)
+			);
+		}
+
+		return $transitions;
+	}//end withoutMarkedActions()
+
+	/**
+	 * The transitions with the planned actions added; an entry for a transition the schema lacks is skipped.
+	 *
+	 * @param array<string, mixed>             $transitions The schema's lifecycle transitions.
+	 * @param array<int, array<string, mixed>> $entries     The planned `{transition, action}` entries.
+	 *
+	 * @return array{transitions: array<string, mixed>, added: array<int, string>} The transitions and the names the actions went to.
+	 */
+	private function withPlannedActions(array $transitions, array $entries): array {
+		$added = [];
+		foreach ($entries as $entry) {
+			$tName = (string)$entry['transition'];
+			if (isset($transitions[$tName]) === false) {
+				continue;
+			}
+
+			$actions = $this->orArray(value: $transitions[$tName]['actions'] ?? null);
+			$actions[] = $entry['action'];
+			$transitions[$tName]['actions'] = $actions;
+			$added[] = $tName;
+		}
+
+		return ['transitions' => $transitions, 'added' => $added];
+	}//end withPlannedActions()
 
 	/**
 	 * Upsert planned schedules entries into the target ApplicationVersion's
@@ -1318,6 +1410,51 @@ class AutomationCompilerService {
 		$schedules = $this->orArray(value: $manifest['schedules'] ?? null);
 
 		$plannedIds = array_map(static fn (array $e): string => (string)$e['id'], $plannedEntries);
+		$schedules = $this->mergeScheduleEntries(
+			schedules: $schedules,
+			plannedEntries: $plannedEntries,
+			priorScheduleIds: $priorScheduleIds
+		);
+
+		if ($schedules === []) {
+			unset($manifest['schedules']);
+		} else {
+			$manifest['schedules'] = array_values($schedules);
+		}
+
+		$version['manifest'] = $manifest;
+
+		try {
+			$this->objectService->saveObject(
+				object: $version,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: 'applicationVersion'),
+					uuid: $versionUuid
+				)
+			);
+		} catch (Throwable $e) {
+			$this->logger->error(
+				'Buildiq: AutomationCompilerService failed to save schedules onto ApplicationVersion "' . $versionUuid . '": ' . $e->getMessage()
+			);
+		}
+
+		return $plannedIds;
+	}//end applySchedules()
+
+	/**
+	 * Merge planned schedule entries into a manifest's schedules list: drop every
+	 * prior-provenance id that is no longer planned, replace the row with the same
+	 * id as a planned entry, and append planned entries that are new. Rows that are
+	 * not this automation's are kept as they are, in their order.
+	 *
+	 * @param array<int|string,mixed>          $schedules        The manifest's current schedules rows.
+	 * @param array<int,array<string,mixed>>   $plannedEntries   Planned schedules entries.
+	 * @param array<int,string>                $priorScheduleIds Prior-provenance schedule ids.
+	 *
+	 * @return array<int,mixed> The merged rows.
+	 */
+	private function mergeScheduleEntries(array $schedules, array $plannedEntries, array $priorScheduleIds): array {
+		$plannedIds = array_map(static fn (array $e): string => (string)$e['id'], $plannedEntries);
 
 		$schedules = array_values(
 			array_filter(
@@ -1334,19 +1471,7 @@ class AutomationCompilerService {
 		);
 
 		foreach ($plannedEntries as $entry) {
-			$idx = null;
-			foreach ($schedules as $i => $scheduleRow) {
-				$rowId = null;
-				if (is_array($scheduleRow) === true) {
-					$rowId = ($scheduleRow['id'] ?? null);
-				}
-
-				if ($rowId === $entry['id']) {
-					$idx = $i;
-					break;
-				}
-			}
-
+			$idx = $this->scheduleRowIndex(schedules: $schedules, id: $entry['id']);
 			if ($idx !== null) {
 				$schedules[$idx] = $entry;
 			} else {
@@ -1354,24 +1479,31 @@ class AutomationCompilerService {
 			}
 		}
 
-		if ($schedules === []) {
-			unset($manifest['schedules']);
-		} else {
-			$manifest['schedules'] = array_values($schedules);
+		return $schedules;
+	}//end mergeScheduleEntries()
+
+	/**
+	 * The index of the schedules row whose id is exactly the given id.
+	 *
+	 * @param array<int,mixed> $schedules The schedules rows.
+	 * @param mixed            $id        The planned entry's id.
+	 *
+	 * @return int|null The index, or null when no row carries it.
+	 */
+	private function scheduleRowIndex(array $schedules, mixed $id): ?int {
+		foreach ($schedules as $i => $scheduleRow) {
+			$rowId = null;
+			if (is_array($scheduleRow) === true) {
+				$rowId = ($scheduleRow['id'] ?? null);
+			}
+
+			if ($rowId === $id) {
+				return $i;
+			}
 		}
 
-		$version['manifest'] = $manifest;
-
-		try {
-			$this->objectService->saveObject(object: $version, register: self::REGISTER_SLUG, schema: 'applicationVersion', uuid: $versionUuid);
-		} catch (Throwable $e) {
-			$this->logger->error(
-				'Buildiq: AutomationCompilerService failed to save schedules onto ApplicationVersion "' . $versionUuid . '": ' . $e->getMessage()
-			);
-		}
-
-		return $plannedIds;
-	}//end applySchedules()
+		return null;
+	}//end scheduleRowIndex()
 
 	/**
 	 * Upsert the compiled RuleSet + ConditionActionRule (manual trigger), or
@@ -1393,48 +1525,89 @@ class AutomationCompilerService {
 			return null;
 		}
 
+		$this->saveRuleSet(ruleSet: $ruleSet);
+		$this->saveConditionActionRule(conditionActionRule: $conditionActionRule, ruleSetSlug: (string)$ruleSet['slug']);
+
+		return (string)$ruleSet['slug'];
+	}//end applyRuleSet()
+
+	/**
+	 * Create the compiled RuleSet, or update the one with the same slug.
+	 *
+	 * A failed save is logged, never thrown.
+	 *
+	 * @param array<string,mixed> $ruleSet Planned RuleSet fields.
+	 *
+	 * @return void
+	 */
+	private function saveRuleSet(array $ruleSet): void {
 		$existingRuleSet = $this->findOneObject(schema: RuleEngineService::RULE_SET_SCHEMA, filters: ['slug' => $ruleSet['slug']]);
 		try {
 			if ($existingRuleSet !== null) {
 				$id = (string)($existingRuleSet['id'] ?? $existingRuleSet['uuid'] ?? '');
 				$this->objectService->saveObject(
 					object: $ruleSet,
-					register: self::REGISTER_SLUG,
-					schema: RuleEngineService::RULE_SET_SCHEMA,
-					uuid: $id
+					options: new ObjectSaveOptions(
+						target: new ObjectFindTarget(
+								register: self::REGISTER_SLUG,
+								schema: RuleEngineService::RULE_SET_SCHEMA
+							),
+						uuid: $id
+					)
 				);
 			} else {
-				$this->objectService->saveObject(object: $ruleSet, register: self::REGISTER_SLUG, schema: RuleEngineService::RULE_SET_SCHEMA);
+				$this->objectService->saveObject(
+					object: $ruleSet,
+					options: new ObjectSaveOptions(
+						target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: RuleEngineService::RULE_SET_SCHEMA)
+					)
+				);
 			}
 		} catch (Throwable $e) {
 			$this->logger->error('Buildiq: AutomationCompilerService failed to save RuleSet "' . $ruleSet['slug'] . '": ' . $e->getMessage());
 		}
+	}//end saveRuleSet()
 
-		$existingRule = $this->findOneObject(schema: RuleEngineService::CONDITION_RULE_SCHEMA, filters: ['ruleSetId' => $ruleSet['slug']]);
+	/**
+	 * Create the ConditionActionRule of a RuleSet, or update the one it already has.
+	 *
+	 * A failed save is logged, never thrown.
+	 *
+	 * @param array<string,mixed> $conditionActionRule Planned ConditionActionRule fields.
+	 * @param string              $ruleSetSlug         The slug of its RuleSet.
+	 *
+	 * @return void
+	 */
+	private function saveConditionActionRule(array $conditionActionRule, string $ruleSetSlug): void {
+		$existingRule = $this->findOneObject(schema: RuleEngineService::CONDITION_RULE_SCHEMA, filters: ['ruleSetId' => $ruleSetSlug]);
 		try {
 			if ($existingRule !== null) {
 				$id = (string)($existingRule['id'] ?? $existingRule['uuid'] ?? '');
 				$this->objectService->saveObject(
 					object: $conditionActionRule,
-					register: self::REGISTER_SLUG,
-					schema: RuleEngineService::CONDITION_RULE_SCHEMA,
-					uuid: $id
+					options: new ObjectSaveOptions(
+						target: new ObjectFindTarget(
+								register: self::REGISTER_SLUG,
+								schema: RuleEngineService::CONDITION_RULE_SCHEMA
+							),
+						uuid: $id
+					)
 				);
 			} else {
 				$this->objectService->saveObject(
 					object: $conditionActionRule,
-					register: self::REGISTER_SLUG,
-					schema: RuleEngineService::CONDITION_RULE_SCHEMA
+					options: new ObjectSaveOptions(target: new ObjectFindTarget(
+							register: self::REGISTER_SLUG,
+							schema: RuleEngineService::CONDITION_RULE_SCHEMA
+						))
 				);
 			}
 		} catch (Throwable $e) {
 			$this->logger->error(
-				'Buildiq: AutomationCompilerService failed to save ConditionActionRule for "' . $ruleSet['slug'] . '": ' . $e->getMessage()
+				'Buildiq: AutomationCompilerService failed to save ConditionActionRule for "' . $ruleSetSlug . '": ' . $e->getMessage()
 			);
 		}//end try
-
-		return (string)$ruleSet['slug'];
-	}//end applyRuleSet()
+	}//end saveConditionActionRule()
 
 	/**
 	 * Delete the RuleSet + its ConditionActionRule by slug.
@@ -1483,8 +1656,8 @@ class AutomationCompilerService {
 	 *
 	 * @return string|null The applied `ApprovalChain` name, or null.
 	 *
-	 * @spec openspec/changes/automation-approval-steps/tasks.md#1.2
-	 * @spec openspec/changes/automation-approval-steps/tasks.md#1.4
+	 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#1.2
+	 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#1.4
 	 */
 	private function applyApprovalChain(?array $planned, ?string $priorName, string $fallbackSchemaSlug): ?string {
 		if ($planned === null) {
@@ -1512,7 +1685,7 @@ class AutomationCompilerService {
 		$payload = [
 			'name' => (string)$planned['name'],
 			'schemaId' => (int)$schemaId,
-			'steps' => [['order' => 1, 'role' => (string)($planned['assigneeGroup'] ?? '')]],
+			'steps' => [self::approvalStep(planned: $planned)],
 			'enabled' => (bool)($planned['enabled'] ?? true),
 		];
 
@@ -1521,6 +1694,43 @@ class AutomationCompilerService {
 
 		return $payload['name'];
 	}//end applyApprovalChain()
+
+	/**
+	 * The chain's single step for a planned approval: its group, and its form when it has one.
+	 *
+	 * @param array<string,mixed> $planned The planned approval chain.
+	 *
+	 * @return array<string,mixed> `{order, role}` plus `form`.
+	 *
+	 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-the-form-is-compiled-into-the-approval-chain-or-refused-req-bqtf-002
+	 */
+	private static function approvalStep(array $planned): array {
+		$step = ['order' => 1, 'role' => (string)($planned['assigneeGroup'] ?? '')];
+		if (is_array($planned['form'] ?? null) === true) {
+			$step['form'] = $planned['form'];
+		}
+
+		return $step;
+	}//end approvalStep()
+
+	/**
+	 * The declared `approvers` entry for one step: its role, and its form when it has one.
+	 *
+	 * @param string              $role The step's group.
+	 * @param array<string,mixed> $step The step.
+	 *
+	 * @return array<string,mixed> `{role}` plus `form`.
+	 *
+	 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-the-form-is-compiled-into-the-approval-chain-or-refused-req-bqtf-002
+	 */
+	private static function approverEntry(string $role, array $step): array {
+		$entry = ['role' => $role];
+		if (is_array($step['form'] ?? null) === true) {
+			$entry['form'] = $step['form'];
+		}
+
+		return $entry;
+	}//end approverEntry()
 
 	/**
 	 * Find-then-create/update the `ApprovalChain` row for one compiled plan.
@@ -1549,7 +1759,7 @@ class AutomationCompilerService {
 		foreach ((array)($payload['steps'] ?? []) as $step) {
 			$role = trim((string)($step['role'] ?? ''));
 			if ($role !== '') {
-				$approvers[] = ['role' => $role];
+				$approvers[] = self::approverEntry(role: $role, step: (array)$step);
 			}
 		}
 
@@ -1645,7 +1855,9 @@ class AutomationCompilerService {
 	 */
 	private function deleteObjectQuietly(string $uuid, string $schema): void {
 		try {
-			$this->objectService->deleteObject(uuid: $uuid, register: self::REGISTER_SLUG, schema: $schema);
+			$this->objectService->deleteObject(
+				new ObjectDeletion(uuid: $uuid, target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: $schema))
+			);
 		} catch (Throwable $e) {
 			$this->logger->warning('Buildiq: AutomationCompilerService failed to delete ' . $schema . ' "' . $uuid . '": ' . $e->getMessage());
 		}
@@ -1664,16 +1876,16 @@ class AutomationCompilerService {
 		foreach ($keys as $k) {
 			$schemaSlug = (string)($k['schema'] ?? '');
 			$key = (string)($k['key'] ?? '');
-			if ($schemaSlug === '' || $key === '') {
+			if ($key === '') {
 				continue;
 			}
 
-			$schema = $this->loadSchema(slug: $schemaSlug);
-			if ($schema === null) {
+			$target = $this->configuredSchema(slug: $schemaSlug);
+			if ($target === null) {
 				continue;
 			}
 
-			$config = ($schema->getConfiguration() ?? []);
+			$config = $target[1];
 			$map = $this->orArray(value: $config['x-openregister-notifications'] ?? null);
 
 			$result[] = ['schema' => $schemaSlug, 'key' => $key, 'entry' => ($map[$key] ?? null)];
@@ -1696,16 +1908,16 @@ class AutomationCompilerService {
 		foreach ($marked as $m) {
 			$schemaSlug = (string)($m['schema'] ?? '');
 			$tName = (string)($m['transition'] ?? '');
-			if ($schemaSlug === '' || $tName === '') {
+			if ($tName === '') {
 				continue;
 			}
 
-			$schema = $this->loadSchema(slug: $schemaSlug);
-			if ($schema === null) {
+			$target = $this->configuredSchema(slug: $schemaSlug);
+			if ($target === null) {
 				continue;
 			}
 
-			$config = ($schema->getConfiguration() ?? []);
+			$config = $target[1];
 			$lifecycle = $this->orArray(value: $config['x-openregister-lifecycle'] ?? null);
 			$transitions = $this->orArray(value: $lifecycle['transitions'] ?? null);
 			$actions = $this->orArray(value: $transitions[$tName]['actions'] ?? null);
@@ -1824,18 +2036,12 @@ class AutomationCompilerService {
 			return null;
 		}
 
-		$schema = $this->loadSchema(slug: $schemaSlug);
-		if ($schema === null) {
+		$declared = $this->declaredApprovalChains(schemaSlug: $schemaSlug);
+		if ($declared === null) {
 			return null;
 		}
 
-		$schemaId = $schema->getId();
-		if ($schemaId === null) {
-			return null;
-		}
-
-		$config = ($schema->getConfiguration() ?? []);
-		$chains = ($config[self::APPROVAL_CHAINS_KEY] ?? []);
+		$chains = $declared[1];
 		$spec = null;
 		if (is_array($chains) === true) {
 			$spec = ($chains[$name] ?? null);
@@ -1858,13 +2064,43 @@ class AutomationCompilerService {
 			}
 		}
 
-		return [
+		$live = [
 			'name' => $name,
 			'steps' => $steps,
 			'enabled' => (bool)($spec['enabled'] ?? true),
 		];
+		$form = self::liveApprovalForm(spec: $spec);
+		if ($form !== null) {
+			$live['form'] = $form;
+		}
+
+		return $live;
 
 	}//end fetchLiveApprovalChain()
+
+	/**
+	 * The first position's form of a live chain, read back in the compiled shape.
+	 *
+	 * Logic-approval-task-form D3: so a form changed outside buildiq shows as drift.
+	 *
+	 * @param array<string,mixed> $spec The live chain's spec.
+	 *
+	 * @return array<string,mixed>|null The form, or null when the position has none.
+	 *
+	 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-the-form-is-compiled-into-the-approval-chain-or-refused-req-bqtf-002
+	 */
+	private static function liveApprovalForm(array $spec): ?array {
+		$first = ($spec['approvers'][0] ?? null);
+		if (is_array($first) === false || is_array($first['form'] ?? null) === false) {
+			return null;
+		}
+
+		if (($first['form']['kind'] ?? null) !== 'fields') {
+			return $first['form'];
+		}
+
+		return (ApprovalFormDeclaration::chainForm(action: ['form' => $first['form']]) ?? ['kind' => 'fields', 'fields' => []]);
+	}//end liveApprovalForm()
 
 	/**
 	 * The newest approval sequence opened from a chain's compiled template.
@@ -1983,6 +2219,51 @@ class AutomationCompilerService {
 	}//end loadSchema()
 
 	/**
+	 * A target schema and its configuration, by slug.
+	 *
+	 * An empty slug names no schema and is never looked up; a schema that
+	 * cannot be loaded is reported by {@see loadSchema()} and skipped.
+	 *
+	 * @param string $slug The schema slug.
+	 *
+	 * @return array{0: Schema, 1: array<string, mixed>}|null The schema and its configuration, or null.
+	 */
+	private function configuredSchema(string $slug): ?array {
+		if ($slug === '') {
+			return null;
+		}
+
+		$schema = $this->loadSchema(slug: $slug);
+		if ($schema === null) {
+			return null;
+		}
+
+		return [$schema, ($schema->getConfiguration() ?? [])];
+	}//end configuredSchema()
+
+	/**
+	 * The approval chains a schema declares, with the schema's id.
+	 *
+	 * @param string $schemaSlug The schema slug.
+	 *
+	 * @return array{0: int, 1: mixed}|null The schema id and its declared chains, or null when the schema or its id is missing.
+	 */
+	private function declaredApprovalChains(string $schemaSlug): ?array {
+		$schema = $this->loadSchema(slug: $schemaSlug);
+		if ($schema === null) {
+			return null;
+		}
+
+		$schemaId = $schema->getId();
+		if ($schemaId === null) {
+			return null;
+		}
+
+		$config = ($schema->getConfiguration() ?? []);
+		return [(int)$schemaId, ($config[self::APPROVAL_CHAINS_KEY] ?? [])];
+	}//end declaredApprovalChains()
+
+	/**
 	 * Load an ApplicationVersion by uuid.
 	 *
 	 * @param string $uuid The ApplicationVersion uuid.
@@ -1996,7 +2277,10 @@ class AutomationCompilerService {
 		}
 
 		try {
-			$entity = $this->objectService->find(id: $uuid, register: self::REGISTER_SLUG, schema: 'applicationVersion');
+			$entity = $this->objectService->find(
+				id: $uuid,
+				options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: 'applicationVersion')
+			);
 		} catch (Throwable $e) {
 			$this->logger->warning('Buildiq: AutomationCompilerService could not load ApplicationVersion "' . $uuid . '": ' . $e->getMessage());
 			return null;

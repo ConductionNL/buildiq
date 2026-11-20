@@ -31,7 +31,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Command;
 
-use OCA\Buildiq\Service\GitHubAppSyncService;
+use OCA\Buildiq\Kernel\Contracts\GitHubAppSyncServiceInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use Psr\Log\LoggerInterface;
@@ -65,14 +65,14 @@ class PublishTemplates extends Command {
 	/**
 	 * Constructor.
 	 *
-	 * @param GitHubAppSyncService $syncService The broker-routed GitHub sync service.
+	 * @param GitHubAppSyncServiceInterface $syncService The broker-routed GitHub sync service.
 	 * @param ObjectServiceInterface $objectService OpenRegister object service (template lookup).
 	 * @param LoggerInterface $logger PSR logger (secret-free diagnostics only).
 	 *
 	 * @return void
 	 */
 	public function __construct(
-		private readonly GitHubAppSyncService $syncService,
+		private readonly GitHubAppSyncServiceInterface $syncService,
 		private readonly ObjectServiceInterface $objectService,
 		private readonly LoggerInterface $logger,
 	) {
@@ -184,7 +184,7 @@ class PublishTemplates extends Command {
 			$result = $this->publishOne(template: $template, target: $target);
 			$outcome = (string)($result['outcome'] ?? 'unknown_error');
 
-			if ($outcome === GitHubAppSyncService::OUTCOME_OK) {
+			if ($outcome === GitHubAppSyncServiceInterface::OUTCOME_OK) {
 				$output->writeln('  <info>OK</info>    ' . $templateSlug . ' -> ' . ((string)($result['repoUrl'] ?? '')));
 				++$published;
 				continue;

@@ -26,8 +26,11 @@ namespace OCA\Buildiq\Service;
 
 use DateTimeImmutable;
 use DateTimeZone;
+use OCA\Buildiq\Kernel\Contracts\AppHealthServiceInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -39,27 +42,13 @@ use Throwable;
  *
  * @spec openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md
  */
-class AppHealthService {
-	/**
-	 * The register the samples live in.
-	 */
-	public const REGISTER_SLUG = 'buildiq';
-
-	/**
-	 * The sample schema.
-	 */
-	public const SCHEMA_SLUG = 'app-health-sample';
+class AppHealthService implements AppHealthServiceInterface {
 
 	/**
 	 * The most samples one window reads (50 pages, every five minutes, 90 days would be far more;
 	 * the newest are kept).
 	 */
 	public const READ_LIMIT = 20000;
-
-	/**
-	 * Window lengths in days.
-	 */
-	public const WINDOW_DAYS = ['7d' => 7, '30d' => 30, '90d' => 90];
 
 	/**
 	 * Constructor.
@@ -93,8 +82,7 @@ class AppHealthService {
 			try {
 				$this->objectService->saveObject(
 					['applicationUuid' => $applicationUuid, 'versionUuid' => $versionUuid, 'windowStart' => $windowStart] + $sample,
-					register: self::REGISTER_SLUG,
-					schema: self::SCHEMA_SLUG,
+					new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::SCHEMA_SLUG)),
 					_rbac: false,
 					_multitenancy: false
 				);

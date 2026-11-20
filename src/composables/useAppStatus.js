@@ -19,8 +19,8 @@ import { generateUrl } from '@nextcloud/router'
  * a synchronous positive signal. The result is cached per app id for the
  * session.
  *
- * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-006
- * @spec openspec/changes/openconnector-api-sources/tasks.md#task-2.2
+ * @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-006
+ * @spec openspec/changes/archive/2026-06-14-openconnector-api-sources/tasks.md#task-2.2
  */
 import { ref } from 'vue'
 import { fleetAppCandidates, resolveFleetAppId } from '../services/fleetAppId.js'
@@ -84,8 +84,8 @@ function probeAnswered(e) {
  *   is silent (default `/apps/{appId}/api`).
  * @param {Function} [opts.client] - axios-like client injection for tests.
  * @return {{ available: import('vue').Ref<boolean>, checked: import('vue').Ref<boolean>, check: Function }}
- * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-006
- * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-005
+ * @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-006
+ * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-005
  */
 export function useAppStatus(appId, opts = {}) {
 	const client = opts.client || axios
@@ -137,8 +137,8 @@ export function useAppStatus(appId, opts = {}) {
 /**
  * Test helper — clear the session status cache.
  *
- * @spec openspec/changes/procest-workflow-attachments/specs/procest-workflow-attachments/spec.md#req-pwa-006
- * @spec openspec/changes/openconnector-api-sources/specs/openconnector-api-sources/spec.md#req-ocas-005
+ * @spec openspec/specs/procest-workflow-attachments/spec.md#req-pwa-006
+ * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-005
  */
 export function clearAppStatusCache() {
 	statusCache.clear()

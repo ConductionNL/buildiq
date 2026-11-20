@@ -43,16 +43,22 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Exception\AppRepoParseException;
-use OCA\Buildiq\Service\GitHub\AppPushRequest;
-use OCA\Buildiq\Service\GitHub\BrokerAccess;
-use OCA\Buildiq\Service\GitHub\BrokeredRepo;
+use OCA\Buildiq\Kernel\Contracts\GitHubAppSyncServiceInterface;
+use OCA\Buildiq\Kernel\Values\LocalApplicationRef;
+use OCA\Buildiq\Kernel\Values\RepoSource;
+use OCA\Buildiq\Kernel\Values\AppPushRequest;
+use OCA\Buildiq\Kernel\Values\BrokerAccess;
+use OCA\Buildiq\Kernel\Values\BrokeredRepo;
+use OCA\Buildiq\Service\GitHub\CredentialBrokerClient;
 use OCA\Buildiq\Service\GitHub\FileCommit;
-use OCA\Buildiq\Service\GitHub\PushTarget;
+use OCA\Buildiq\Kernel\Values\PushTarget;
 use OCA\Buildiq\Service\GitHub\TokenScrubber;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -62,16 +68,11 @@ use Throwable;
  *
  * @spec openspec/changes/github-app-sync/specs/github-app-sync/spec.md
  */
-class GitHubAppSyncService {
+class GitHubAppSyncService implements GitHubAppSyncServiceInterface {
 	/**
 	 * The credential-broker service FQCN (resolved lazily; may be absent).
 	 */
 	private const BROKER_CLASS = 'OCA\\OpenRegister\\Service\\Credential\\CredentialBrokerService';
-
-	/**
-	 * The broker `appId` Buildiq identifies itself with.
-	 */
-	private const APP_ID = 'buildiq';
 
 	/**
 	 * The shared Buildiq register slug.
@@ -91,47 +92,13 @@ class GitHubAppSyncService {
 	/**
 	 * The discovery topic set on a freshly created repo.
 	 */
-	private const DISCOVERY_TOPIC = 'openbuild-app';
+	private const DISCOVERY_TOPIC = 'buildiq-app';
 
 	/**
-	 * Outcome: the operation succeeded.
+	 * The shape of a version's Git branch, as GitHubSyncController's REF_PATTERN
+	 * (lifecycle-git-branches); `..` is refused separately.
 	 */
-	public const OUTCOME_OK = 'ok';
-
-	/**
-	 * Outcome: the credential broker is absent — publish is unavailable.
-	 */
-	public const OUTCOME_BROKER_UNAVAILABLE = 'broker_unavailable';
-
-	/**
-	 * Outcome: the broker denied the call (rules missing / credential not allowed).
-	 */
-	public const OUTCOME_BROKER_DENIED = 'broker_denied';
-
-	/**
-	 * Outcome: the app is not linked to a GitHub repository.
-	 */
-	public const OUTCOME_NOT_LINKED = 'not_linked';
-
-	/**
-	 * Outcome: the remote head moved — the owner must pull first (never force).
-	 */
-	public const OUTCOME_PUSH_CONFLICT = 'push_conflict';
-
-	/**
-	 * Outcome: GitHub / transport failure.
-	 */
-	public const OUTCOME_UNREACHABLE = 'github_unreachable';
-
-	/**
-	 * Outcome: GitHub refused the call on permissions grounds (HTTP 403).
-	 *
-	 * Distinct from a transport failure. Publishing a generated app needs a
-	 * credential carrying the `workflow` permission, because the scaffold always
-	 * emits `.github/workflows/*` and GitHub rejects a tree containing those
-	 * without it.
-	 */
-	public const OUTCOME_FORBIDDEN = 'github_forbidden';
+	private const BRANCH_PATTERN = '/^(?!.*\.\.)[A-Za-z0-9._\/-]{1,255}$/';
 
 	/**
 	 * OR object CRUD (load/save Application + versions).
@@ -169,6 +136,13 @@ class GitHubAppSyncService {
 	private readonly AppRepoParser $parser;
 
 	/**
+	 * Sends the JSON calls through OpenRegister's credential broker.
+	 *
+	 * @var CredentialBrokerClient
+	 */
+	private readonly CredentialBrokerClient $broker;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param RegisterStore $store OpenRegister's object service, register and schema mappers and audit trail.
@@ -187,13 +161,14 @@ class GitHubAppSyncService {
 		private readonly GitHubCatalogService $catalogService,
 		private readonly AppChannelApplier $channelApplier,
 		private readonly LoggerInterface $logger,
-		private readonly ContainerInterface $container,
+		ContainerInterface $container,
 	) {
 		$this->objectService = $store->objectService;
 		$this->registerMapper = $store->registerMapper;
 		$this->schemaMapper = $store->schemaMapper;
 		$this->serializer = $codec->serializer;
 		$this->parser = $codec->parser;
+		$this->broker = new CredentialBrokerClient(container: $container);
 	}//end __construct()
 
 	/**
@@ -273,9 +248,14 @@ class GitHubAppSyncService {
 			return $repo;
 		}
 
-		$result = $this->commitFileMap(
-			commit: new FileCommit(repo: $this->foundRepo(found: $repo, access: $request->access), branch: $repo['branch'], files: $files)
-		);
+		$brokered = $this->foundRepo(found: $repo, access: $request->access);
+		$branch = $this->versionBranch(application: $application, version: $version, defaultBranch: $repo['branch']);
+		$missing = $this->ensureBranch(repo: $brokered, branch: $branch, defaultBranch: $repo['branch']);
+		if ($missing !== null) {
+			return ['outcome' => $missing];
+		}
+
+		$result = $this->commitFileMap(commit: new FileCommit(repo: $brokered, branch: $branch, files: $files));
 		if ($result['outcome'] !== self::OUTCOME_OK) {
 			return $result;
 		}
@@ -365,6 +345,65 @@ class GitHubAppSyncService {
 	}//end commitFileMap()
 
 	/**
+	 * The branch a version pushes to: its own `githubBranch`, or the default
+	 * branch for the production version and for a version without one.
+	 *
+	 * @param array<string,mixed> $application   The Application object.
+	 * @param array<string,mixed> $version       The version pushed.
+	 * @param string              $defaultBranch The repository's default branch.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-each-version-pushes-to-its-own-branch-req-bqgb-002
+	 */
+	private function versionBranch(array $application, array $version, string $defaultBranch): string {
+		$branch = trim((string)($version['githubBranch'] ?? ''));
+		$isProduction = $this->uuidOf(object: $version) === (string)($application['productionVersion'] ?? '');
+		if ($branch === '' || $isProduction === true || preg_match(self::BRANCH_PATTERN, $branch) !== 1) {
+			return $defaultBranch;
+		}
+
+		return $branch;
+	}//end versionBranch()
+
+	/**
+	 * Make a version branch that does not exist yet from the default branch head.
+	 *
+	 * @param BrokeredRepo $repo          The repository and access.
+	 * @param string       $branch        The version's branch.
+	 * @param string       $defaultBranch The repository's default branch.
+	 *
+	 * @return string|null Null when the branch is there (or is the default branch), else the failure outcome.
+	 *
+	 * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-each-version-pushes-to-its-own-branch-req-bqgb-002
+	 */
+	private function ensureBranch(BrokeredRepo $repo, string $branch, string $defaultBranch): ?string {
+		if ($branch === $defaultBranch || $this->resolveHead(repo: $repo, branch: $branch) !== null) {
+			return null;
+		}
+
+		$head = $this->resolveHead(repo: $repo, branch: $defaultBranch);
+		if ($head === null) {
+			// An empty repository: the first commit creates the branch itself.
+			return null;
+		}
+
+		$created = $this->brokerJson(
+			request: [
+				'method' => 'POST',
+				'path' => $repo->target->repoPath() . '/git/refs',
+				'body' => ['ref' => 'refs/heads/' . $branch, 'sha' => $head['commitSha']],
+			],
+			access: $repo->access
+		);
+		if ($created['ok'] === false) {
+			return $this->brokerFailureOutcome(result: $created);
+		}
+
+		return null;
+	}//end ensureBranch()
+
+	/**
 	 * Store the app's GitHub linkage (owner/name + resolved default branch).
 	 *
 	 * @param array<string,mixed> $application The owner-gated Application object.
@@ -410,17 +449,13 @@ class GitHubAppSyncService {
 		?string $credentialId,
 		?string $actingUserId,
 	): array {
-		$repo = ($application['githubRepo'] ?? null);
-		if (is_array($repo) === false) {
-			return ['outcome' => self::OUTCOME_NOT_LINKED];
+		$linked = $this->linkedRepo(application: $application);
+		if (isset($linked['outcome']) === true) {
+			return $linked;
 		}
 
-		$owner = (string)($repo['owner'] ?? '');
-		$name = (string)($repo['name'] ?? '');
-		if ($owner === '' || $name === '') {
-			return ['outcome' => self::OUTCOME_NOT_LINKED];
-		}
-
+		$owner = $linked['owner'];
+		$name = $linked['name'];
 		$source = new RepoSource(owner: $owner, repo: $name, ref: $ref, credentialId: $credentialId);
 		$files = $this->catalogService->fetchRepoFiles(source: $source, actingUserId: $actingUserId);
 		if ($files === []) {
@@ -444,24 +479,16 @@ class GitHubAppSyncService {
 			registerSlug: $registerSlug
 		);
 
-		$manifest = $this->rewriteSchemaRefs(node: $template['manifest'], map: $rewriteMap);
-		if (is_array($manifest) === false) {
-			$manifest = [];
-		}
+		$manifest = $this->draftManifest(template: $template, rewriteMap: $rewriteMap);
 
 		$commitSha = $this->catalogService->resolveCommitSha(source: $source, actingUserId: $actingUserId);
-
-		$semver = (string)($template['version'] ?? '');
-		if (preg_match('/^[0-9]+\.[0-9]+\.[0-9]+/', $semver) !== 1) {
-			$semver = '0.1.0';
-		}
 
 		$payload = [
 			'name' => 'Pulled ' . $versionSlug,
 			'slug' => $versionSlug,
 			'manifest' => $manifest,
 			'register' => $registerSlug,
-			'semver' => $semver,
+			'semver' => self::semverOf(template: $template),
 			'status' => 'draft',
 			'application' => $appUuid,
 			'sourceRef' => $ref,
@@ -472,8 +499,7 @@ class GitHubAppSyncService {
 
 		$created = $this->objectService->saveObject(
 			object: $payload,
-			register: self::REGISTER_SLUG,
-			schema: self::VERSION_SCHEMA
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::VERSION_SCHEMA))
 		);
 		$versionData = ObjectRecord::serialised(object: $created);
 		$versionUuid = $this->uuidOf(object: $versionData);
@@ -505,6 +531,43 @@ class GitHubAppSyncService {
 			'warnings' => ($channels['warnings'] ?? []),
 		];
 	}//end pull()
+
+	/**
+	 * The pulled manifest with its schema references rewritten to the draft's namespaced slugs.
+	 *
+	 * @param array<string,mixed>  $template   The parsed clone-seam array.
+	 * @param array<string,string> $rewriteMap Source-slug → namespaced-slug rewrite map.
+	 *
+	 * @return array<mixed> The manifest; empty when the rewrite does not give an array.
+	 *
+	 * @spec openspec/changes/github-app-sync/specs/github-app-sync/spec.md
+	 */
+	private function draftManifest(array $template, array $rewriteMap): array {
+		$manifest = $this->rewriteSchemaRefs(node: $template['manifest'], map: $rewriteMap);
+		if (is_array($manifest) === false) {
+			return [];
+		}
+
+		return $manifest;
+	}//end draftManifest()
+
+	/**
+	 * The pulled template's semantic version, or 0.1.0 when it carries none.
+	 *
+	 * @param array<string,mixed> $template The parsed clone-seam array.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/github-app-sync/specs/github-app-sync/spec.md
+	 */
+	private static function semverOf(array $template): string {
+		$semver = (string)($template['version'] ?? '');
+		if (preg_match('/^[0-9]+\.[0-9]+\.[0-9]+/', $semver) !== 1) {
+			return '0.1.0';
+		}
+
+		return $semver;
+	}//end semverOf()
 
 	/**
 	 * Ensure a linked repo exists — create it via the broker when unlinked.
@@ -893,19 +956,11 @@ class GitHubAppSyncService {
 	 * @return array<string,string> Source-slug → namespaced-slug rewrite map.
 	 */
 	private function reconcileCompanionSchemas(array $template, string $appSlug, string $versionSlug, string $registerSlug): array {
-		$companions = [];
-		if (is_array($template['companionSchemas'] ?? null) === true) {
-			$companions = $template['companionSchemas'];
-		}
-
-		$prefix = $appSlug . '-' . $versionSlug . '-';
-		$map = [];
+		$companions = $this->companionSchemasOf(template: $template);
+		$prefix     = $appSlug . '-' . $versionSlug . '-';
+		$map        = [];
 		foreach ($companions as $companion) {
-			if (is_array($companion) === false || isset($companion['slug']) === false) {
-				continue;
-			}
-
-			$source = (string)$companion['slug'];
+			$source       = (string)$companion['slug'];
 			$map[$source] = $prefix . $source;
 		}
 
@@ -918,40 +973,80 @@ class GitHubAppSyncService {
 
 		$createdIds = [];
 		foreach ($companions as $companion) {
-			if (is_array($companion) === false || isset($companion['slug']) === false) {
-				continue;
-			}
-
-			$source = (string)$companion['slug'];
-			$blob = $this->rewriteSchemaRefs(node: $companion, map: $map);
-			if (is_array($blob) === false) {
-				continue;
-			}
-
-			$blob['slug'] = $map[$source];
-			if (isset($blob['version']) === false) {
-				$blob['version'] = '0.1.0';
-			}
-
-			try {
-				$createdIds[] = $this->schemaMapper->createFromArray(object: $blob)->getId();
-			} catch (Throwable $e) {
-				$this->logger->warning('Buildiq GitHub pull: could not clone schema "' . $source . '": ' . $e->getMessage());
-			}
-		}//end foreach
+			$createdIds = array_merge($createdIds, $this->cloneCompanionSchema(companion: $companion, map: $map));
+		}
 
 		if ($createdIds !== []) {
-			try {
-				$existing = (array)$register->getSchemas();
-				$register->setSchemas(array_values(array_unique(array_merge($existing, $createdIds))));
-				$this->registerMapper->update($register);
-			} catch (Throwable $e) {
-				$this->logger->warning('Buildiq GitHub pull: could not attach schemas to draft register: ' . $e->getMessage());
-			}
+			$this->attachSchemas(register: $register, schemaIds: $createdIds);
 		}
 
 		return $map;
 	}//end reconcileCompanionSchemas()
+
+	/**
+	 * The template's companion schemas that carry a slug.
+	 *
+	 * @param array<string,mixed> $template The parsed clone-seam array.
+	 *
+	 * @return array<int|string,array<string,mixed>> The companion schemas, in template order.
+	 */
+	private function companionSchemasOf(array $template): array {
+		$companions = [];
+		if (is_array($template['companionSchemas'] ?? null) === true) {
+			$companions = $template['companionSchemas'];
+		}
+
+		return array_filter(
+			$companions,
+			static fn (mixed $companion): bool => is_array($companion) === true && isset($companion['slug']) === true
+		);
+	}//end companionSchemasOf()
+
+	/**
+	 * Clone one companion schema under its namespaced slug.
+	 *
+	 * @param array<string,mixed>  $companion The companion schema.
+	 * @param array<string,string> $map       Source-slug → namespaced-slug map.
+	 *
+	 * @return array<int,mixed> The created schema's id, or nothing when it could not be cloned.
+	 */
+	private function cloneCompanionSchema(array $companion, array $map): array {
+		$source = (string)$companion['slug'];
+		$blob   = $this->rewriteSchemaRefs(node: $companion, map: $map);
+		if (is_array($blob) === false) {
+			return [];
+		}
+
+		$blob['slug'] = $map[$source];
+		if (isset($blob['version']) === false) {
+			$blob['version'] = '0.1.0';
+		}
+
+		try {
+			return [$this->schemaMapper->createFromArray(object: $blob)->getId()];
+		} catch (Throwable $e) {
+			$this->logger->warning('Buildiq GitHub pull: could not clone schema "' . $source . '": ' . $e->getMessage());
+			return [];
+		}
+	}//end cloneCompanionSchema()
+
+	/**
+	 * Attach the cloned schemas to the draft register.
+	 *
+	 * @param \OCA\OpenRegister\Db\Register $register  The draft register.
+	 * @param array<int,mixed>              $schemaIds The cloned schema ids.
+	 *
+	 * @return void
+	 */
+	private function attachSchemas(\OCA\OpenRegister\Db\Register $register, array $schemaIds): void {
+		try {
+			$existing = (array)$register->getSchemas();
+			$register->setSchemas(array_values(array_unique(array_merge($existing, $schemaIds))));
+			$this->registerMapper->update($register);
+		} catch (Throwable $e) {
+			$this->logger->warning('Buildiq GitHub pull: could not attach schemas to draft register: ' . $e->getMessage());
+		}
+	}//end attachSchemas()
 
 	/**
 	 * Find or create a draft register at an exact slug.
@@ -1014,7 +1109,41 @@ class GitHubAppSyncService {
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function resolveVersion(array $application, ?string $versionSlug): ?array {
-		$appUuid = $this->uuidOf(object: $application);
+		$versions = $this->versionsOfApplication(appUuid: $this->uuidOf(object: $application));
+		if ($versions === []) {
+			return null;
+		}
+
+		if ($versionSlug !== null && $versionSlug !== '') {
+			return $this->firstVersionWhere(
+				versions: $versions,
+				match: static fn (array $version): bool => (string)($version['slug'] ?? '') === $versionSlug
+			);
+		}
+
+		$production = (string)($application['productionVersion'] ?? '');
+		if ($production !== '') {
+			$found = $this->firstVersionWhere(
+				versions: $versions,
+				match: fn (array $version): bool => $this->uuidOf(object: $version) === $production
+			);
+			if ($found !== null) {
+				return $found;
+			}
+		}
+
+		return $versions[0];
+	}//end resolveVersion()
+
+	/**
+	 * The version rows of one Application, serialised.
+	 *
+	 * @param string $appUuid The parent Application UUID.
+	 *
+	 * @return array<int,array<string,mixed>> The versions, empty when none or when the lookup failed.
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
+	 */
+	private function versionsOfApplication(string $appUuid): array {
 		try {
 			$registerId = $this->registerMapper->find(self::REGISTER_SLUG, _multitenancy: false)->getId();
 			$schemaId = $this->schemaMapper->find(self::VERSION_SCHEMA, _multitenancy: false)->getId();
@@ -1034,44 +1163,37 @@ class GitHubAppSyncService {
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning('Buildiq GitHub sync: version lookup failed: ' . $e->getMessage());
-			return null;
+			return [];
 		}//end try
 
 		$versions = [];
 		foreach ((array)$results as $result) {
 			$normalisedRow = ObjectRecord::serialised(object: $result);
-			if ((string)($normalisedRow['application'] ?? '') !== $appUuid) {
-				continue;
-			}
-
-			$versions[] = $normalisedRow;
-		}
-
-		if ($versions === []) {
-			return null;
-		}
-
-		if ($versionSlug !== null && $versionSlug !== '') {
-			foreach ($versions as $version) {
-				if ((string)($version['slug'] ?? '') === $versionSlug) {
-					return $version;
-				}
-			}
-
-			return null;
-		}
-
-		$production = (string)($application['productionVersion'] ?? '');
-		if ($production !== '') {
-			foreach ($versions as $version) {
-				if ($this->uuidOf(object: $version) === $production) {
-					return $version;
-				}
+			if ((string)($normalisedRow['application'] ?? '') === $appUuid) {
+				$versions[] = $normalisedRow;
 			}
 		}
 
-		return $versions[0];
-	}//end resolveVersion()
+		return $versions;
+	}//end versionsOfApplication()
+
+	/**
+	 * The first version a predicate accepts.
+	 *
+	 * @param array<int,array<string,mixed>>      $versions The versions.
+	 * @param callable(array<string,mixed>): bool $match    The predicate.
+	 *
+	 * @return array<string,mixed>|null The first match, or null when none.
+	 */
+	private function firstVersionWhere(array $versions, callable $match): ?array {
+		foreach ($versions as $version) {
+			if ($match($version) === true) {
+				return $version;
+			}
+		}
+
+		return null;
+	}//end firstVersionWhere()
 
 	/**
 	 * Resolve a repo's default branch (via the broker, else the stored/default).
@@ -1114,8 +1236,7 @@ class GitHubAppSyncService {
 		try {
 			$this->objectService->saveObject(
 				object: $version,
-				register: self::REGISTER_SLUG,
-				schema: self::VERSION_SCHEMA
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::VERSION_SCHEMA))
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning('Buildiq GitHub sync: could not stamp commitSha: ' . $e->getMessage());
@@ -1133,8 +1254,7 @@ class GitHubAppSyncService {
 		try {
 			$this->objectService->saveObject(
 				object: $application,
-				register: self::REGISTER_SLUG,
-				schema: self::APPLICATION_SCHEMA
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::APPLICATION_SCHEMA))
 			);
 		} catch (Throwable $e) {
 			$this->logger->warning('Buildiq GitHub sync: could not persist linkage: ' . $e->getMessage());
@@ -1155,22 +1275,8 @@ class GitHubAppSyncService {
 		$method = (string)$request['method'];
 		$path = (string)$request['path'];
 
-		$encoded = null;
-		if ($request['body'] !== null) {
-			$encoded = (string)json_encode($request['body']);
-		}
-
 		try {
-			$broker = $this->container->get(self::BROKER_CLASS);
-			$response = $broker->request(
-				$access->credentialId,
-				self::APP_ID,
-				$method,
-				$path,
-				['Accept' => 'application/vnd.github+json', 'Content-Type' => 'application/json'],
-				$encoded,
-				$access->actingUserId
-			);
+			$response = $this->broker->sendJson(request: $request, access: $access);
 		} catch (Throwable $e) {
 			// At `debug` this is invisible on any instance running a normal
 			// loglevel, which leaves an operator with a bare 502 and nothing to

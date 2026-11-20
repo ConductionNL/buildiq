@@ -80,3 +80,44 @@ describe('DashboardPageEditor', () => {
 		expect(out.layout).toEqual([{ id: 'l1', gridX: 0, gridY: 0 }])
 	})
 })
+
+describe('DashboardPageEditor add chart (pages-chart-widget-authoring T02)', () => {
+	it('adds a chart widget and its layout item in one config change', async () => {
+		const wrapper = mountEditor({
+			widgets: [{ id: 'a', type: 'custom' }, { id: 'b', type: 'custom' }],
+			layout: [
+				{ id: 1, widgetId: 'a', gridX: 0, gridY: 0, gridWidth: 6, gridHeight: 2 },
+				{ id: 2, widgetId: 'b', gridX: 6, gridY: 0, gridWidth: 6, gridHeight: 2 },
+			],
+			title: 'Overview',
+		})
+
+		await wrapper.find('.dashboard-page-editor__add-chart').trigger('click')
+
+		const emitted = wrapper.emitted('update:config')
+		expect(emitted).toHaveLength(1)
+		const next = emitted[0][0]
+		expect(next.title).toBe('Overview')
+		expect(next.widgets).toHaveLength(3)
+		expect(next.widgets[2]).toEqual({
+			id: 'chart-1',
+			title: '',
+			type: 'chart',
+			props: { chartKind: 'bar' },
+			dataSource: { register: '', schema: '' },
+		})
+		expect(next.layout).toHaveLength(3)
+		expect(next.layout[2]).toEqual({ id: 3, widgetId: 'chart-1', gridX: 0, gridY: 2, gridWidth: 6, gridHeight: 4 })
+	})
+
+	it('adds no second layout item when one already references the new id', async () => {
+		const placed = { id: 7, widgetId: 'chart-1', gridX: 0, gridY: 0, gridWidth: 6, gridHeight: 4 }
+		const wrapper = mountEditor({ layout: [placed] })
+
+		await wrapper.find('.dashboard-page-editor__add-chart').trigger('click')
+
+		const next = wrapper.emitted('update:config')[0][0]
+		expect(next.widgets.map((w) => w.id)).toEqual(['chart-1'])
+		expect(next.layout).toEqual([placed])
+	})
+})

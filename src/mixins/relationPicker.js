@@ -8,7 +8,7 @@ const CARDINALITIES = ['one', 'many']
  * prop a relation can target, the target-schema options over it, the
  * translated cardinality options, and the option a stored value selects.
  *
- * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
+ * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
  */
 export const relationPickerMixin = {
 	props: {

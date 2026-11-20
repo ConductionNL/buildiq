@@ -28,6 +28,8 @@
  * @spec openspec/specs/form-editor-logic/spec.md#req-obfel-005
  */
 
+import { deviceFieldProblems } from '../deviceFields.js'
+
 /** The visibleWhen op allow-list (mirrors `$defs/visibleWhen.properties.op.enum`). */
 export const VISIBLE_WHEN_OPS = Object.freeze([
 	'eq',
@@ -320,7 +322,112 @@ function validateFieldLogic(field, ctx) {
 	return [
 		...localVisibleWhenErrors(field.visibleWhen, ctx),
 		...fieldValidationErrors(field, ctx.fieldPath),
+		...childRecordsErrors(field, ctx.fieldPath),
+		...assignErrors(field, ctx),
 	]
+}
+
+/**
+ * A `child-records` field without the child schema or the child field that
+ * points back at the parent cannot save its rows.
+ *
+ * @param {object} field - the field entry.
+ * @param {string} fieldPath - the field pointer prefix.
+ * @return {string[]}
+ * @spec openspec/changes/forms-designer-file-camera-children-and-assign/specs/form-field-kinds/spec.md#requirement-a-maker-adds-a-table-of-child-records-req-bqfk-003
+ */
+function childRecordsErrors(field, fieldPath) {
+	if (field.type !== 'child-records') {
+		return []
+	}
+	const errors = []
+	if (typeof field.schema !== 'string' || field.schema.trim() === '') {
+		errors.push(`${fieldPath}/schema: buildiq.formLogic.error.child-records-schema-required`)
+	}
+	if (typeof field.parentField !== 'string' || field.parentField.trim() === '') {
+		errors.push(`${fieldPath}/parentField: buildiq.formLogic.error.child-records-parent-field-required`)
+	}
+	return errors
+}
+
+/** The prefix of an `assign` value that copies another answer. */
+const ANSWER_PREFIX = '@answer.'
+
+/**
+ * Errors of a field's `assign` rules: not a list, a condition or answer
+ * naming an unknown field, a rule reading the field it sets, or an operator
+ * outside the shared set.
+ *
+ * @param {object} field - the field entry.
+ * @param {{fieldPath: string, declaredKeys: Set<string>}} ctx - the field
+ *   pointer prefix and the declared field keys.
+ * @return {string[]}
+ * @spec openspec/changes/forms-designer-file-camera-children-and-assign/specs/form-field-kinds/spec.md#requirement-a-field-is-filled-in-from-another-answer-req-bqfk-004
+ */
+function assignErrors(field, ctx) {
+	if (field.assign === undefined) {
+		return []
+	}
+	const path = `${ctx.fieldPath}/assign`
+	if (!Array.isArray(field.assign)) {
+		return [`${path}: buildiq.formLogic.error.assign-not-array`]
+	}
+	return field.assign.flatMap((rule, index) =>
+		assignRuleErrors(rule, {
+			path: `${path}/${index}`,
+			declaredKeys: ctx.declaredKeys,
+			self: field.key,
+		}),
+	)
+}
+
+/**
+ * Errors of one `assign` rule.
+ *
+ * @param {unknown} rule - the rule.
+ * @param {{path: string, declaredKeys: Set<string>, self: string}} ctx - the
+ *   rule pointer, the declared keys and the key of the field it sets.
+ * @return {string[]}
+ */
+function assignRuleErrors(rule, ctx) {
+	if (!isPlainObject(rule)) {
+		return [`${ctx.path}: buildiq.formLogic.error.assign-rule-not-object`]
+	}
+	const errors = []
+	const when = rule.when
+	if (isPlainObject(when) && !when.endpoint && !when.source) {
+		errors.push(...assignReadErrors(when.field, `${ctx.path}/when/field`, ctx))
+		if (when.op !== undefined && !VISIBLE_WHEN_OPS.includes(when.op)) {
+			errors.push(`${ctx.path}/when/op: buildiq.formLogic.error.condition-op-not-allowed`)
+		}
+	}
+	if (typeof rule.value === 'string' && rule.value.startsWith(ANSWER_PREFIX)) {
+		const key = rule.value.slice(ANSWER_PREFIX.length).split('.')[0]
+		errors.push(...assignReadErrors(key, `${ctx.path}/value`, ctx))
+	}
+	return errors
+}
+
+/**
+ * Errors of one field an `assign` rule reads.
+ *
+ * @param {unknown} key - the read field key.
+ * @param {string} path - the pointer of the read.
+ * @param {{declaredKeys: Set<string>, self: string}} ctx - the declared keys
+ *   and the key of the field the rule sets.
+ * @return {string[]}
+ */
+function assignReadErrors(key, path, ctx) {
+	if (typeof key !== 'string' || key.trim() === '') {
+		return [`${path}: buildiq.formLogic.error.assign-field-required`]
+	}
+	if (key === ctx.self) {
+		return [`${path}: buildiq.formLogic.error.assign-reads-itself`]
+	}
+	if (!ctx.declaredKeys.has(key)) {
+		return [`${path}: buildiq.formLogic.error.dangling-assign-field`]
+	}
+	return []
 }
 
 /**
@@ -404,6 +511,7 @@ function fieldListOf(config) {
 function formPageErrors(config, pathBase) {
 	const fieldList = fieldListOf(config)
 	const declaredKeys = new Set(fieldKeys(fieldList))
+	const mode = config.mode || 'public'
 	return [
 		...validateSteps(config, pathBase, declaredKeys),
 		...fieldList.flatMap((field, fIndex) =>
@@ -412,7 +520,114 @@ function formPageErrors(config, pathBase) {
 				declaredKeys,
 			}),
 		),
+		...smartPasteErrors(config, { pathBase, fieldList }),
+		...fieldList.flatMap((field, fIndex) =>
+			deviceFieldProblems(field, mode).map(
+				(code) => `${pathBase}/fields/${fIndex}: buildiq.formLogic.error.${code}`,
+			),
+		),
 	]
+}
+
+/**
+ * Field types the fill cannot set: a file, a signature or a relation to
+ * another object is never proposed from pasted text.
+ */
+export const SMART_PASTE_UNFILLABLE_TYPES = Object.freeze([
+	'file',
+	'signature',
+	'relation',
+])
+
+/**
+ * The mode a form renders in: `config.mode`, else the renderer's default
+ * `public` (CnFormPage's `mode` prop default).
+ *
+ * @param {object} config - the form page config.
+ * @return {string}
+ * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-smart-paste-is-validated-req-bqsp-002
+ */
+export function formMode(config) {
+	return config && typeof config.mode === 'string' && config.mode !== ''
+		? config.mode
+		: 'public'
+}
+
+/**
+ * Whether a field's type can be filled from pasted text.
+ *
+ * @param {object} field - a `config.fields[]` entry.
+ * @return {boolean}
+ * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-smart-paste-is-validated-req-bqsp-002
+ */
+export function isSmartPasteFillable(field) {
+	return (
+		isPlainObject(field)
+		&& typeof field.key === 'string'
+		&& !SMART_PASTE_UNFILLABLE_TYPES.includes(field.type)
+	)
+}
+
+/**
+ * Errors of a form's `config.smartPaste` (REQ-BQSP-002): an unknown field
+ * key, a field of a type the fill cannot set, enabled with no fields, or
+ * enabled on a `public` form. Every pointer sits under
+ * `<pathBase>/smartPaste`, so the "Fill from pasted text" fieldset marks.
+ *
+ * @param {object} config - the form page config.
+ * @param {{pathBase: string, fieldList: Array}} ctx - the
+ *   `/pages/<n>/config` pointer prefix and the form's fields.
+ * @return {string[]}
+ * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-smart-paste-is-validated-req-bqsp-002
+ */
+function smartPasteErrors(config, ctx) {
+	const smartPaste = config.smartPaste
+	const path = `${ctx.pathBase}/smartPaste`
+	if (smartPaste === undefined) {
+		return []
+	}
+	if (!isPlainObject(smartPaste)) {
+		return [`${path}: buildiq.formLogic.error.smart-paste-invalid-shape`]
+	}
+	const errors = []
+	if (smartPaste.hint !== undefined && typeof smartPaste.hint !== 'string') {
+		errors.push(`${path}/hint: buildiq.formLogic.error.smart-paste-hint-not-string`)
+	}
+	if (smartPaste.fields !== undefined && !Array.isArray(smartPaste.fields)) {
+		errors.push(`${path}/fields: buildiq.formLogic.error.smart-paste-fields-not-array`)
+		return errors
+	}
+	const keys = Array.isArray(smartPaste.fields) ? smartPaste.fields : []
+	if (smartPaste.enabled === true) {
+		if (formMode(config) === 'public') {
+			errors.push(`${path}/enabled: buildiq.formLogic.error.smart-paste-public-form`)
+		}
+		if (keys.length === 0) {
+			errors.push(`${path}/fields: buildiq.formLogic.error.smart-paste-no-fields`)
+		}
+	}
+	keys.forEach((key, index) => {
+		errors.push(...smartPasteFieldErrors(key, { path: `${path}/fields/${index}`, fieldList: ctx.fieldList }))
+	})
+	return errors
+}
+
+/**
+ * The error of one `smartPaste.fields[]` entry, if any.
+ *
+ * @param {unknown} key - the listed field key.
+ * @param {{path: string, fieldList: Array}} ctx - the entry pointer and the form's fields.
+ * @return {string[]}
+ */
+function smartPasteFieldErrors(key, ctx) {
+	const field = ctx.fieldList.find((f) => isPlainObject(f) && f.key === key)
+	if (typeof key !== 'string' || !field) {
+		return [`${ctx.path}: buildiq.formLogic.error.smart-paste-unknown-field(${key})`]
+	}
+	if (!isSmartPasteFillable(field)) {
+		return [`${ctx.path}: buildiq.formLogic.error.smart-paste-unfillable-type(${key})`]
+	}
+	return []
 }
 
 /**

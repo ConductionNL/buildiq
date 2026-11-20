@@ -24,6 +24,23 @@
 			{{ modelValue.name || t('buildiq', 'This form') }}
 		</h4>
 
+		<fieldset class="form-editor__block" data-testid="registration-form-applies-to">
+			<legend>{{ t('buildiq', 'Applies to') }}</legend>
+			<p class="form-editor__applies">
+				{{ appliesToTarget }}
+			</p>
+			<p class="form-editor__applies-hint">
+				{{
+					modelValue.typeValue
+						? t('buildiq', 'Only objects whose {property} is {value} get this form.', {
+							property: modelValue.typeProperty || '',
+							value: modelValue.typeValue,
+						})
+						: t('buildiq', 'No type is set, so this form covers every object in the schema.')
+				}}
+			</p>
+		</fieldset>
+
 		<fieldset class="form-editor__block">
 			<legend>{{ t('buildiq', 'This form') }}</legend>
 
@@ -189,6 +206,70 @@
 			</p>
 		</fieldset>
 
+		<fieldset class="form-editor__block" data-testid="registration-form-fee">
+			<legend>{{ t('buildiq', 'Fee on submit') }}</legend>
+
+			<label class="form-editor__inline">
+				<input
+					type="checkbox"
+					:checked="hasFee"
+					data-testid="registration-form-fee-switch"
+					@change="writeFeeOn($event.target.checked)" />
+				{{ t('buildiq', 'The filer pays a fee after sending') }}
+			</label>
+
+			<template v-if="hasFee">
+				<label class="form-editor__field">
+					{{ t('buildiq', 'Amount') }}
+					<input
+						type="number"
+						min="0.01"
+						step="0.01"
+						:value="modelValue.fee.amount ?? ''"
+						data-testid="registration-form-fee-amount"
+						@input="writeFee('amount', $event.target.value === '' ? null : Number($event.target.value))" />
+				</label>
+				<label class="form-editor__field">
+					{{ t('buildiq', 'Currency') }}
+					<input
+						type="text"
+						maxlength="3"
+						:value="modelValue.fee.currency || 'EUR'"
+						data-testid="registration-form-fee-currency"
+						@input="writeFee('currency', $event.target.value.trim().toUpperCase())" />
+				</label>
+				<label class="form-editor__field">
+					{{ t('buildiq', 'Line the filer sees on the payment') }}
+					<input
+						type="text"
+						:value="modelValue.fee.description || ''"
+						placeholder="Leges evenementenvergunning"
+						data-testid="registration-form-fee-description"
+						@input="writeFee('description', $event.target.value)" />
+				</label>
+				<p
+					v-if="feeNeedsSignIn"
+					class="form-editor__warn"
+					role="alert"
+					data-testid="registration-form-fee-sign-in">
+					{{
+						t(
+							'buildiq',
+							'A form with a fee needs sign-in at level substantial or high. Choose that level above, or it cannot be saved.',
+						)
+					}}
+				</p>
+				<p class="form-editor__hint">
+					{{
+						t(
+							'buildiq',
+							'After sending, the portal asks the filer to pay this amount before the application is complete.',
+						)
+					}}
+				</p>
+			</template>
+		</fieldset>
+
 		<FormLayoutBuilder
 			:sections="modelValue.sections || []"
 			:fields="modelValue.fields || []"
@@ -202,6 +283,41 @@
 			:properties="properties"
 			:findings="findingsPerField"
 			@update:presets="write('presets', $event)" />
+
+		<fieldset class="form-editor__block" data-testid="registration-form-steps">
+			<legend>{{ t('buildiq', 'Steps and phases') }}</legend>
+			<FormStepsManager
+				:steps="modelValue.steps || []"
+				:fields="stepFieldPool"
+				:withPhase="true"
+				:leavesUnassigned="true"
+				@update:steps="writeSteps" />
+			<label class="form-editor__inline">
+				<input
+					type="checkbox"
+					:checked="!!modelValue.allowSaveForLater"
+					data-testid="registration-form-save-for-later"
+					@change="write('allowSaveForLater', $event.target.checked)" />
+				{{ t('buildiq', 'The filer may save the form and finish it later') }}
+			</label>
+		</fieldset>
+
+		<fieldset
+			v-if="ruleFields.length"
+			class="form-editor__block"
+			data-testid="registration-form-rules">
+			<legend>{{ t('buildiq', 'When a question is shown') }}</legend>
+			<div
+				v-for="field in ruleFields"
+				:key="field.index"
+				class="form-editor__rule">
+				<span class="form-editor__rule-name">{{ field.label }}</span>
+				<VisibleWhenBuilder
+					:modelValue="field.visibleWhen"
+					:fieldOptions="otherFieldNames(field.index)"
+					@update:modelValue="writeVisibleWhen(field.index, $event)" />
+			</div>
+		</fieldset>
 
 		<!-- Decision 179/189: a draft saves with its findings; publishing
 		     needs none. Findings on no field or preset are listed here. -->
@@ -254,12 +370,19 @@
 <script>
 import FormLayoutBuilder from './FormLayoutBuilder.vue'
 import FormPresetsBuilder from './FormPresetsBuilder.vue'
+import FormStepsManager from './FormStepsManager.vue'
+import VisibleWhenBuilder from './VisibleWhenBuilder.vue'
 import { findingsByField } from '../../../services/formDestinationCheck.js'
 
 export default {
 	name: 'RegistrationFormEditor',
 
-	components: { FormLayoutBuilder, FormPresetsBuilder },
+	components: {
+		FormLayoutBuilder,
+		FormPresetsBuilder,
+		FormStepsManager,
+		VisibleWhenBuilder,
+	},
 
 	props: {
 		modelValue: {
@@ -301,6 +424,56 @@ export default {
 
 	computed: {
 		/**
+		 * What the form creates, said in one line: the app, register and
+		 * schema it is bound to.
+		 *
+		 * @return {string}
+		 * @spec openspec/changes/registration-form-builder/specs/registration-form-builder/spec.md (REQ-OBRF-002)
+		 */
+		appliesToTarget() {
+			const parts = [
+				this.modelValue.targetApp,
+				this.modelValue.register,
+				this.modelValue.schema,
+			].filter((part) => typeof part === 'string' && part !== '')
+			return parts.length
+				? parts.join(' / ')
+				: t('buildiq', 'Not bound to a schema yet')
+		},
+
+		/**
+		 * The form's field names in the `{key}` shape the steps manager
+		 * assigns from.
+		 *
+		 * @return {Array<{key: string}>}
+		 * @spec openspec/changes/registration-form-builder/specs/registration-form-builder/spec.md (REQ-OBRF-002)
+		 */
+		stepFieldPool() {
+			return (this.modelValue.fields || [])
+				.map((f) => f && f.name)
+				.filter((name) => typeof name === 'string' && name !== '')
+				.map((key) => ({ key }))
+		},
+
+		/**
+		 * The named fields a rule can be set on, with their index in
+		 * `fields[]` so a write lands on the right one.
+		 *
+		 * @return {Array<{index: number, label: string, visibleWhen: object|null}>}
+		 * @spec openspec/changes/registration-form-builder/specs/registration-form-builder/spec.md (REQ-OBRF-002)
+		 */
+		ruleFields() {
+			return (this.modelValue.fields || [])
+				.map((f, index) => ({ f, index }))
+				.filter(({ f }) => f && typeof f.name === 'string' && f.name !== '')
+				.map(({ f, index }) => ({
+					index,
+					label: f.label || f.name,
+					visibleWhen: f.visibleWhen || null,
+				}))
+		},
+
+		/**
 		 * The findings grouped by the field or preset they sit on.
 		 *
 		 * @return {{[key: string]: Array<object>}}
@@ -336,6 +509,28 @@ export default {
 		 */
 		channelsUnknown() {
 			return (this.channels || []).length === 0
+		},
+
+		/**
+		 * Whether the form carries a fee.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/forms-fee-on-submit/specs/registration-form-builder/spec.md (REQ-OBRF-010)
+		 */
+		hasFee() {
+			const fee = this.modelValue.fee
+			return !!fee && typeof fee === 'object'
+		},
+
+		/**
+		 * Whether the fee cannot be saved for want of sign-in: the server
+		 * refuses a fee on a form below level substantial.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/forms-fee-on-submit/specs/registration-form-builder/spec.md (REQ-OBRF-010)
+		 */
+		feeNeedsSignIn() {
+			return this.hasFee && !['substantial', 'high'].includes(this.modelValue.minTrust)
 		},
 	},
 
@@ -385,12 +580,99 @@ export default {
 		 * @return {void}
 		 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-009)
 		 */
+		/**
+		 * Write the steps. The steps manager sends null for no steps; the key
+		 * is then removed, since an empty steps list is a single-step form.
+		 *
+		 * @param {Array<object>|null} steps - the next steps, or null.
+		 * @return {void}
+		 * @spec openspec/changes/registration-form-builder/specs/registration-form-builder/spec.md (REQ-OBRF-002)
+		 */
+		writeSteps(steps) {
+			const next = { ...this.modelValue }
+			if (Array.isArray(steps) && steps.length) {
+				next.steps = steps
+			} else {
+				delete next.steps
+			}
+			this.$emit('update:modelValue', next)
+		},
+
+		/**
+		 * The other fields' names, which a rule on this field may look at.
+		 *
+		 * @param {number} index - the field's index in `fields[]`.
+		 * @return {string[]}
+		 * @spec openspec/changes/registration-form-builder/specs/registration-form-builder/spec.md (REQ-OBRF-002)
+		 */
+		otherFieldNames(index) {
+			return (this.modelValue.fields || [])
+				.filter((f, i) => i !== index && f && f.name)
+				.map((f) => f.name)
+		},
+
+		/**
+		 * Write one field's `visibleWhen`; null removes the rule, leaving
+		 * every other key of that field as it was.
+		 *
+		 * @param {number} index - the field's index in `fields[]`.
+		 * @param {object|null} rule - the next rule, or null for none.
+		 * @return {void}
+		 * @spec openspec/changes/registration-form-builder/specs/registration-form-builder/spec.md (REQ-OBRF-002)
+		 */
+		writeVisibleWhen(index, rule) {
+			const fields = (this.modelValue.fields || []).slice()
+			const field = { ...fields[index] }
+			if (rule) {
+				field.visibleWhen = rule
+			} else {
+				delete field.visibleWhen
+			}
+			fields[index] = field
+			this.write('fields', fields)
+		},
+
 		writePublic(checked) {
 			const next = { ...this.modelValue, isPublic: checked }
 			if (checked) {
 				delete next.minTrust
 			}
 			this.$emit('update:modelValue', next)
+		},
+
+		/**
+		 * Switch the fee on or off. On starts a fee in euros with no amount
+		 * yet; off removes the key, since a form without a fee carries none.
+		 *
+		 * @param {boolean} checked - whether the filer pays.
+		 * @return {void}
+		 * @spec openspec/changes/forms-fee-on-submit/specs/registration-form-builder/spec.md (REQ-OBRF-010)
+		 */
+		writeFeeOn(checked) {
+			const next = { ...this.modelValue }
+			if (checked) {
+				next.fee = { currency: 'EUR', description: '', ...(this.modelValue.fee || {}) }
+			} else {
+				delete next.fee
+			}
+			this.$emit('update:modelValue', next)
+		},
+
+		/**
+		 * Write one part of the fee. An emptied amount is removed rather than
+		 * stored as zero, which the server refuses.
+		 *
+		 * @param {string} key - amount, currency or description.
+		 * @param {number|string|null} value - the new value.
+		 * @return {void}
+		 * @spec openspec/changes/forms-fee-on-submit/specs/registration-form-builder/spec.md (REQ-OBRF-010)
+		 */
+		writeFee(key, value) {
+			const fee = { ...(this.modelValue.fee || {}), [key]: value }
+			if (value === null || Number.isNaN(value)) {
+				delete fee[key]
+			}
+			this.$emit('update:modelValue', { ...this.modelValue, fee })
 		},
 	},
 }
@@ -424,12 +706,30 @@ export default {
 	margin-block-end: 8px;
 }
 
-.form-editor__hint {
+.form-editor__hint,
+.form-editor__applies-hint {
 	color: var(--color-text-maxcontrast);
 }
 
 .form-editor__warn {
 	color: var(--color-warning-text, var(--color-text-maxcontrast));
+}
+
+.form-editor__applies {
+	font-weight: bold;
+	margin-block: 0 4px;
+}
+
+.form-editor__rule {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	align-items: center;
+	margin-block-end: 8px;
+}
+
+.form-editor__rule-name {
+	min-width: 160px;
 }
 
 .form-editor__actions {

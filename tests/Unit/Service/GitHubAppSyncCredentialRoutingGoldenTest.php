@@ -13,6 +13,9 @@
  * @version GIT: <git-id>
  *
  * @link https://conduction.nl
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -23,10 +26,10 @@ use OCA\Buildiq\Service\AppChannelApplier;
 use OCA\Buildiq\Service\AppRepoCodec;
 use OCA\Buildiq\Service\AppRepoParser;
 use OCA\Buildiq\Service\AppRepoSerializer;
-use OCA\Buildiq\Service\GitHub\AppPushRequest;
-use OCA\Buildiq\Service\GitHub\BrokerAccess;
-use OCA\Buildiq\Service\GitHub\BrokeredRepo;
-use OCA\Buildiq\Service\GitHub\PushTarget;
+use OCA\Buildiq\Kernel\Values\AppPushRequest;
+use OCA\Buildiq\Kernel\Values\BrokerAccess;
+use OCA\Buildiq\Kernel\Values\BrokeredRepo;
+use OCA\Buildiq\Kernel\Values\PushTarget;
 use OCA\Buildiq\Service\GitHubAppSyncService;
 use OCA\Buildiq\Service\GitHubCatalogService;
 use OCA\Buildiq\Service\RegisterStore;
@@ -42,6 +45,7 @@ use Psr\Container\ContainerInterface;
 use Psr\Log\AbstractLogger;
 use Stringable;
 use Throwable;
+use OCA\Buildiq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Pins, for every push, template publish and link, which broker credential and
@@ -52,11 +56,12 @@ use Throwable;
  * piece of one. Set GOLDEN_RECORD=1 to write a missing fixture.
  *
  * @covers \OCA\Buildiq\Service\GitHubAppSyncService
- * @uses   \OCA\Buildiq\Service\GitHub\AppPushRequest
- * @uses   \OCA\Buildiq\Service\GitHub\BrokerAccess
- * @uses   \OCA\Buildiq\Service\GitHub\BrokeredRepo
+ * @uses   \OCA\Buildiq\Kernel\Values\AppPushRequest
+ * @uses   \OCA\Buildiq\Kernel\Values\BrokerAccess
+ * @uses   \OCA\Buildiq\Kernel\Values\BrokeredRepo
+ * @uses   \OCA\Buildiq\Service\GitHub\CredentialBrokerClient
  * @uses   \OCA\Buildiq\Service\GitHub\FileCommit
- * @uses   \OCA\Buildiq\Service\GitHub\PushTarget
+ * @uses   \OCA\Buildiq\Kernel\Values\PushTarget
  * @uses   \OCA\Buildiq\Service\GitHub\TokenScrubber
  * @uses   \OCA\Buildiq\Service\AppRepoCodec
  * @uses   \OCA\Buildiq\Service\RegisterStore
@@ -215,6 +220,7 @@ class GitHubAppSyncCredentialRoutingGoldenTest extends TestCase {
 		);
 		$objects->method('saveObject')->willReturnCallback(
 			function (...$args) use (&$trace): ObjectEntityInterface {
+				$args = LegacyObjectArgs::positional(method: 'saveObject', args: $args);
 				$trace['saved'][] = ['object' => $args[0], 'target' => array_values(array_filter(array_slice($args, 1), 'is_string'))];
 				return $this->createMock(ObjectEntityInterface::class);
 			}

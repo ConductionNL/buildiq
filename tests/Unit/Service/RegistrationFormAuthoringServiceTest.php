@@ -38,7 +38,9 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Exception\ValidationException;
 use OCP\IAppConfig;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
@@ -242,6 +244,37 @@ final class RegistrationFormAuthoringServiceTest extends TestCase {
 	}//end testAValidFormIsStored()
 
 	/**
+	 * A form the schema refuses is a refusal, not a failure, so the controller
+	 * can answer it as one.
+	 *
+	 * @return void
+	 */
+	public function testASchemaRefusalIsARefusal(): void {
+		$objectService = $this->getMockBuilder(className: ObjectServiceInterface::class)
+			->disableOriginalConstructor()
+			->onlyMethods(['setRegister', 'setSchema', 'findAll', 'saveObject'])
+			->getMockForAbstractClass();
+		$objectService->method('setRegister')->willReturnSelf();
+		$objectService->method('setSchema')->willReturnSelf();
+		$objectService->method('findAll')->willReturn([]);
+		$objectService->method('saveObject')->willThrowException(
+			new ValidationException('The required property (name) is missing.')
+		);
+		$service = new RegistrationFormAuthoringService(
+			objectService: $objectService,
+			appConfig: $this->appConfigStub(),
+			validator: new RegistrationFormValidator(),
+			targetSchema: $this->readerOver(properties: ['caseType' => ['type' => 'string'], 'naam' => ['type' => 'string']]),
+			destination: $this->destinationAnswering(findings: []),
+		);
+
+		$this->expectException(exception: InvalidArgumentException::class);
+		$this->expectExceptionMessage(message: 'The required property (name) is missing.');
+
+		$service->save($this->form());
+	}//end testASchemaRefusalIsARefusal()
+
+	/**
 	 * A second form with the same name on the same type is refused: two forms
 	 * called the same thing are two an administrator cannot tell apart.
 	 *
@@ -440,4 +473,110 @@ final class RegistrationFormAuthoringServiceTest extends TestCase {
 			logger: $this->createMock(LoggerInterface::class),
 		);
 	}//end readerOverNothing()
+	/**
+	 * listFor reads buildiq's register and keeps the target's rows, in stored order.
+	 *
+	 * @param string $setting  The stored register setting.
+	 * @param string $register The register read from.
+	 *
+	 * @return void
+	 */
+	#[DataProvider('registerSettings')]
+	public function testListForReadsTheTargetRows(string $setting, string $register): void {
+		$calls = [];
+		$service = new RegistrationFormAuthoringService(
+			objectService: $this->recordingObjectService(rows: $this->mixedRows(), calls: $calls),
+			appConfig: $this->appConfigReading(setting: $setting),
+			validator: new RegistrationFormValidator(),
+			targetSchema: $this->readerOver(['caseType' => ['type' => 'string']]),
+			destination: $this->destinationAnswering(findings: []),
+		);
+
+		$forms = $service->listFor(register: 'dossiq', schema: 'Zaak');
+
+		self::assertSame(['mine-1', 'mine-2'], array_column($forms, 'id'));
+		$read = [['setRegister', $register], ['setSchema', 'registrationForm'], ['findAll', ['limit' => 500]]];
+		self::assertSame($read, $calls);
+	}//end testListForReadsTheTargetRows()
+
+	/**
+	 * An object service that records what it was asked and answers these rows.
+	 *
+	 * @param array<int, mixed> $rows The rows findAll() answers.
+	 * @param array<int, mixed> $calls Receives each call as `[method, argument]`.
+	 *
+	 * @return ObjectServiceInterface The double.
+	 */
+	private function recordingObjectService(array $rows, array &$calls): ObjectServiceInterface {
+		$objectService = $this->getMockBuilder(ObjectServiceInterface::class)
+			->disableOriginalConstructor()
+			->onlyMethods(['setRegister', 'setSchema', 'findAll', 'saveObject'])
+			->getMockForAbstractClass();
+		$objectService->method('setRegister')->willReturnCallback(function (string $slug) use (&$calls, $objectService) {
+			$calls[] = ['setRegister', $slug];
+			return $objectService;
+		});
+		$objectService->method('setSchema')->willReturnCallback(function (string $slug) use (&$calls, $objectService) {
+			$calls[] = ['setSchema', $slug];
+			return $objectService;
+		});
+		$objectService->method('findAll')->willReturnCallback(function (array $config) use (&$calls, $rows): array {
+			$calls[] = ['findAll', $config];
+			return $rows;
+		});
+
+		return $objectService;
+	}//end recordingObjectService()
+
+	/**
+	 * An app config whose register setting reads as given.
+	 *
+	 * @param string $setting The stored register setting.
+	 *
+	 * @return IAppConfig The double.
+	 */
+	private function appConfigReading(string $setting): IAppConfig {
+		$appConfig = $this->createMock(IAppConfig::class);
+		$appConfig->method('getValueString')->with('buildiq', 'register', 'buildiq')->willReturn($setting);
+
+		return $appConfig;
+	}//end appConfigReading()
+
+	/**
+	 * Stored register settings and the register they read from.
+	 *
+	 * @return array<string, array{0: string, 1: string}>
+	 */
+	public static function registerSettings(): array {
+		return ['default' => ['buildiq', 'buildiq'], 'configured' => ['eigen-register', 'eigen-register'], 'emptied by hand' => ['', 'buildiq']];
+	}//end registerSettings()
+
+	/**
+	 * The rows findAll() answers: junk, two strays and two that belong.
+	 *
+	 * @return array<int, mixed>
+	 */
+	private function mixedRows(): array {
+		return [
+			'not a row',
+			['id' => 'other-register', 'register' => 'elders', 'schema' => 'Zaak'],
+			['id' => 'other-schema', 'register' => 'dossiq', 'schema' => 'Besluit'],
+			['id' => 'mine-1', 'register' => 'dossiq', 'schema' => 'Zaak'],
+			$this->entity(object: ['id' => 'mine-2', 'register' => 'dossiq', 'schema' => 'Zaak']),
+		];
+	}//end mixedRows()
+
+	/**
+	 * A row as findAll() renders it: an entity, not an array.
+	 *
+	 * @param array<string, mixed> $object The object data.
+	 *
+	 * @return ObjectEntityInterface The entity.
+	 */
+	private function entity(array $object): ObjectEntityInterface {
+		$entity = $this->createMock(originalClassName: ObjectEntityInterface::class);
+		$entity->method('getObject')->willReturn($object);
+
+		return $entity;
+	}//end entity()
 }//end class
