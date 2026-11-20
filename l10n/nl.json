@@ -3000,7 +3000,21 @@
         "succeeded": "geslaagd",
         "This automation runs entirely in OpenRegister": "Deze automatisering draait helemaal in OpenRegister",
         "Time": "Tijd",
-        "waiting": "wacht"
+        "waiting": "wacht",
+        "Run automation": "Automatisering uitvoeren",
+        "\"{name}\" started": "\"{name}\" is gestart",
+        "\"{name}\" could not be started": "\"{name}\" kon niet worden gestart",
+        "Decide with a rule set": "Beslissen met een regelset",
+        "Inputs (JSON, table column to record field)": "Invoer (JSON, tabelkolom naar recordveld)",
+        "Integriq is not installed, so a webhook step has no source to call.": "Integriq is niet geïnstalleerd, dus een webhookstap heeft geen bron om aan te roepen.",
+        "Path": "Pad",
+        "Pick a rule set and the field its decision is written to.": "Kies een regelset en het veld waarin de beslissing wordt geschreven.",
+        "Pick a source for this webhook.": "Kies een bron voor deze webhook.",
+        "Rule set": "Regelset",
+        "This step still posts to {url}. Pick a source for this webhook.": "Deze stap verstuurt nog naar {url}. Kies een bron voor deze webhook.",
+        "Write the decision to field": "Beslissing schrijven naar veld",
+        "Rule set decides": "Regelset beslist",
+        "The rule set runs first. The actions run only when its outcome is true.": "De regelset wordt eerst uitgevoerd. De acties worden alleen uitgevoerd als de uitkomst waar is."
     },
     "plurals": null,
     "pluralForm": "nplurals=2; plural=(n != 1);"

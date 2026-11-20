@@ -211,10 +211,12 @@ describe('AutomationEditDialog', () => {
 			{ type: 'approval', assigneeGroup: 'managers', onApprove: null, onReject: [] },
 			{ type: 'generateDocument', templateId: 'tpl-1', output: ['attach'] },
 			{ type: 'generateDocument', templateId: 'tpl-2', output: 'attach' },
-			{ type: 'webhook', url: 'https://hooks.test/a', payloadTemplateText: '{"b":2}' },
-			{ type: 'webhook', url: 'https://hooks.test/b', payloadTemplateText: '{}' },
+			{ type: 'webhook', source: 'planning', path: '/intake', payloadTemplateText: '{"b":2}' },
+			{ type: 'webhook', source: ' planning ', path: '', payloadTemplateText: '{}' },
 			{ type: 'webhook', url: 'https://hooks.test/c', payloadTemplateText: '{oops' },
-			{ type: 'something-else', url: 'https://hooks.test/d' },
+			{ type: 'something-else', source: 'crm', path: '/d' },
+			{ type: 'rule-decision', ruleSetSlug: 'leges-categorie', outputField: 'categorie', inputMappingText: '{"oppervlakte":"area"}' },
+			{ type: 'rule-decision', ruleSetSlug: 'leges-categorie', outputField: 'categorie', inputMappingText: '' },
 		]
 
 		expect(wrapper.vm.buildActions()).toEqual([
@@ -230,14 +232,17 @@ describe('AutomationEditDialog', () => {
 			{ type: 'approval', assigneeGroup: 'managers', onApprove: [], onReject: [] },
 			{ type: 'generateDocument', templateId: 'tpl-1', output: ['attach'] },
 			{ type: 'generateDocument', templateId: 'tpl-2', output: [] },
-			{ type: 'webhook', url: 'https://hooks.test/a', payloadTemplate: { b: 2 } },
-			{ type: 'webhook', url: 'https://hooks.test/b' },
-			{ type: 'webhook', url: 'https://hooks.test/c' },
-			{ type: 'webhook', url: 'https://hooks.test/d' },
+			{ type: 'webhook', source: 'planning', path: '/intake', payloadTemplate: { b: 2 } },
+			{ type: 'webhook', source: 'planning', path: '/' },
+			{ type: 'webhook', source: '', path: '/' },
+			{ type: 'webhook', source: 'crm', path: '/d' },
+			{ type: 'rule-decision', ruleSetSlug: 'leges-categorie', outputField: 'categorie', inputMapping: { oppervlakte: 'area' } },
+			{ type: 'rule-decision', ruleSetSlug: 'leges-categorie', outputField: 'categorie' },
 		])
 		const keys = wrapper.vm.buildActions().map((a) => Object.keys(a))
 		expect(keys[3]).toEqual(['type', 'operation', 'schema'])
-		expect(keys[13]).toEqual(['type', 'url'])
+		expect(keys[13]).toEqual(['type', 'source', 'path'])
+		expect(keys[17]).toEqual(['type', 'ruleSetSlug', 'outputField'])
 	})
 
 	it('REQ-AUTD-002 scenario 3: composes a manual automation with a condition + object-op', async () => {
@@ -281,11 +286,11 @@ describe('AutomationEditDialog', () => {
 		wrapper.vm.name = 'Bad automation'
 		wrapper.vm.triggerType = 'object-created'
 		wrapper.vm.triggerSchema = 'permit'
-		wrapper.vm.actions = [wrapper.vm.actionToEditor({ type: 'webhook' })]
+		wrapper.vm.actions = [wrapper.vm.actionToEditor({ type: 'run-synchronization' })]
 		await wrapper.vm.$nextTick()
 
 		expect(wrapper.vm.valid).toBe(false)
-		expect(wrapper.vm.actionBlockedReason('webhook')).not.toBe('')
+		expect(wrapper.vm.actionBlockedReason('run-synchronization')).not.toBe('')
 
 		await wrapper.vm.onSave()
 		expect(
@@ -293,10 +298,11 @@ describe('AutomationEditDialog', () => {
 		).toBeUndefined()
 	})
 
-	it('buildiq#923: a rule set is not offered as a gate that stops the actions', async () => {
-		// A rule-set condition compiles to a call-rule-set action ahead of the
-		// automation's own actions, and the actions run whatever the rule set
-		// decides. The picker must not sell it as a condition.
+	it('REQ-BQAR-004: a rule-set condition is offered as the gate it now is', async () => {
+		// buildiq#923 described a rule set that ran ahead of the actions and
+		// stopped nothing. A condition is offered only on a manual trigger,
+		// which now compiles to a flow where the rule set's outcome gates the
+		// actions (logic-automation-actions-that-run D6), so the text says so.
 		const wrapper = factory({
 			...baseAutomation(),
 			condition: { type: 'rule-set', ruleSetSlug: 'always-no' },
@@ -306,12 +312,12 @@ describe('AutomationEditDialog', () => {
 		const option = wrapper.vm.conditionKindOptions.find(
 			(o) => o.value === 'rule-set',
 		)
-		expect(option.label).toBe('Also run a rule set')
+		expect(option.label).toBe('Rule set decides')
 		expect(wrapper.vm.conditionKind).toBe('rule-set')
 
 		const note = wrapper.find('[data-testid="condition-rule-set-note"]')
 		expect(note.exists()).toBe(true)
-		expect(note.text()).toContain('The actions always run.')
+		expect(note.text()).toContain('The actions run only when its outcome is true.')
 	})
 
 	it('REQ-AUTD-003: blocks a condition on a schedule trigger', async () => {
@@ -595,6 +601,127 @@ describe('AutomationEditDialog', () => {
 		expect(wrapper.vm.docudeskAvailable).toBe(false)
 		expect(wrapper.vm.actionBlockedReason('generateDocument')).not.toBe('')
 		expect(wrapper.vm.valid).toBe(false)
+	})
+
+	describe('logic-automation-actions-that-run: flow steps', () => {
+		it('REQ-BQAR-003: lists the integriq sources and stores a source and a path, never a URL', async () => {
+			globalThis.OC = { appswebroots: { integriq: '/apps/integriq' } }
+			axios.get.mockImplementation((url) => {
+				if (url.includes('/objects/integriq/source')) {
+					return Promise.resolve({
+						data: { results: [{ uuid: 'src-1', slug: 'planning', name: 'Planning', password: 'secret' }] },
+					})
+				}
+				return Promise.resolve({ data: { results: [] } })
+			})
+
+			const wrapper = factory()
+			await openDialog(wrapper)
+
+			expect(wrapper.vm.sourceOptions).toEqual([{ id: 'planning', label: 'Planning' }])
+			expect(wrapper.vm.sourcePickerAvailable).toBe(true)
+
+			wrapper.vm.name = 'Post intake'
+			wrapper.vm.triggerType = 'object-created'
+			wrapper.vm.triggerSchema = 'aanvraag'
+			wrapper.vm.actions = [wrapper.vm.actionToEditor({ type: 'webhook' })]
+			wrapper.vm.updateAction(0, 'source', 'planning')
+			wrapper.vm.updateAction(0, 'path', '/intake')
+			await wrapper.vm.$nextTick()
+
+			expect(wrapper.vm.valid).toBe(true)
+			expect(wrapper.vm.buildActions()).toEqual([{ type: 'webhook', source: 'planning', path: '/intake' }])
+			delete globalThis.OC
+		})
+
+		it('REQ-BQAR-003: a webhook without a source is refused on save, a stored bare URL included', async () => {
+			const wrapper = factory()
+			await openDialog(wrapper)
+
+			wrapper.vm.name = 'Old webhook'
+			wrapper.vm.triggerType = 'manual'
+			wrapper.vm.actions = [wrapper.vm.actionToEditor({ type: 'webhook', url: 'https://hooks.test/a' })]
+			await wrapper.vm.$nextTick()
+
+			expect(wrapper.find('[data-testid="webhook-bare-url"]').exists()).toBe(true)
+			expect(wrapper.vm.valid).toBe(false)
+			expect(wrapper.vm.validationMessage).toBe('Pick a source for this webhook.')
+
+			await wrapper.vm.onSave()
+			expect(axios.post.mock.calls.find(([url]) => url.includes('/automations'))).toBeUndefined()
+		})
+
+		it('REQ-BQAR-003: the webhook kind is disabled without integriq', async () => {
+			axios.get.mockImplementation((url) => {
+				if (String(url).includes('/apps/integriq/api')) {
+					const error = new Error('not found')
+					error.response = { status: 404 }
+					return Promise.reject(error)
+				}
+				return Promise.resolve({ data: { results: [] } })
+			})
+
+			const wrapper = factory()
+			await openDialog(wrapper)
+
+			expect(wrapper.vm.integriqAvailable).toBe(false)
+			expect(wrapper.vm.actionBlockedReason('webhook')).toBe('Integriq is not installed, so a webhook step has no source to call.')
+			expect(axios.get.mock.calls.some(([url]) => String(url).includes('/source'))).toBe(false)
+		})
+
+		it('REQ-BQAR-005: offers only decision tables and composes "Decide with a rule set"', async () => {
+			axios.get.mockImplementation((url) => {
+				if (url.includes('/objects/buildiq/rule-set')) {
+					return Promise.resolve({
+						data: {
+							results: [
+								{ slug: 'leges-categorie', name: 'Leges categorie', ruleType: 'decision-table' },
+								{ slug: 'aut-notify', name: 'Notify', ruleType: 'condition-action' },
+							],
+						},
+					})
+				}
+				return Promise.resolve({ data: { results: [] } })
+			})
+
+			const wrapper = factory()
+			await openDialog(wrapper)
+
+			expect(wrapper.vm.ruleSetOptions).toEqual([{ id: 'leges-categorie', label: 'Leges categorie' }])
+			expect(wrapper.vm.actionTypeOptions.map((o) => o.value)).toContain('rule-decision')
+
+			wrapper.vm.name = 'Decide the fee'
+			wrapper.vm.triggerType = 'object-created'
+			wrapper.vm.triggerSchema = 'aanvraag'
+			wrapper.vm.actions = [wrapper.vm.actionToEditor({ type: 'rule-decision' })]
+			wrapper.vm.updateAction(0, 'ruleSetSlug', 'leges-categorie')
+			await wrapper.vm.$nextTick()
+
+			expect(wrapper.vm.valid).toBe(false)
+			expect(wrapper.vm.validationMessage).toBe('Pick a rule set and the field its decision is written to.')
+
+			wrapper.vm.updateAction(0, 'outputField', 'categorie')
+			wrapper.vm.updateAction(0, 'inputMappingText', '{"oppervlakte":"oppervlakte","type":"soort"}')
+			await wrapper.vm.$nextTick()
+
+			expect(wrapper.vm.valid).toBe(true)
+			expect(wrapper.vm.buildActions()).toEqual([{
+				type: 'rule-decision',
+				ruleSetSlug: 'leges-categorie',
+				outputField: 'categorie',
+				inputMapping: { oppervlakte: 'oppervlakte', type: 'soort' },
+			}])
+		})
+
+		it('REQ-BQAR-005: hydrates a stored rule decision into the editor', async () => {
+			const wrapper = factory()
+			await openDialog(wrapper)
+
+			const row = wrapper.vm.actionToEditor({ type: 'rule-decision', ruleSetSlug: 'leges-categorie', outputField: 'categorie', inputMapping: { type: 'soort' } })
+			expect(row).toMatchObject({ ruleSetSlug: 'leges-categorie', outputField: 'categorie' })
+			expect(JSON.parse(row.inputMappingText)).toEqual({ type: 'soort' })
+			expect(wrapper.vm.ruleSetOption('leges-categorie')).toEqual({ id: 'leges-categorie', label: 'leges-categorie' })
+		})
 	})
 
 	describe('schedule cadence', () => {

@@ -232,3 +232,41 @@ describe('RuleSetsPage', () => {
 		expect(wrapper.findAll('[data-testid="rule-set-row"]')).toHaveLength(1)
 	})
 })
+
+describe('RuleSetsPage opened for an app (REQ-BQAR-008)', () => {
+	const OWN = { ...DT, slug: 'permit-fees', name: 'Permit fees', ownerApp: 'permits' }
+	const GLOBAL = { ...CA, slug: 'shared', name: 'Shared', ownerApp: '' }
+	const UNOWNED = { ...CA, slug: 'legacy', name: 'Legacy', ownerApp: undefined }
+	const OTHER = { ...DT, slug: 'other-fees', name: 'Other fees', ownerApp: 'lending' }
+
+	/**
+	 * Mount the page on a route with this query.
+	 *
+	 * @param {object} query The route query.
+	 * @return {Promise<import('@vue/test-utils').VueWrapper>}
+	 */
+	async function mountFor(query) {
+		axios.get.mockResolvedValueOnce({ data: { results: [OWN, GLOBAL, UNOWNED, OTHER] } })
+		const wrapper = mount(RuleSetsPage, { global: { stubs, mocks: { $route: { query } } } })
+		await flushPromises()
+		return wrapper
+	}
+
+	it('lists the rule sets the app owns and the global ones', async () => {
+		const wrapper = await mountFor({ app: ' permits ' })
+		const names = wrapper.findAll('[data-testid="rule-set-row"]').map((row) => row.find('td').text())
+		expect(names).toEqual(['Permit fees', 'Shared', 'Legacy'])
+	})
+
+	it('lists every rule set without an app, or for a non-text one', async () => {
+		expect((await mountFor({})).findAll('[data-testid="rule-set-row"]')).toHaveLength(4)
+		expect((await mountFor({ app: ['permits'] })).findAll('[data-testid="rule-set-row"]')).toHaveLength(4)
+	})
+
+	it('shows the empty state when the app has no rule sets and there are no global ones', async () => {
+		axios.get.mockResolvedValueOnce({ data: { results: [OTHER] } })
+		const wrapper = mount(RuleSetsPage, { global: { stubs, mocks: { $route: { query: { app: 'permits' } } } } })
+		await flushPromises()
+		expect(wrapper.find('.empty-stub').exists()).toBe(true)
+	})
+})

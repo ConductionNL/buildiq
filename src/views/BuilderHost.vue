@@ -71,6 +71,18 @@ export default {
 		CnAppRoot,
 	},
 
+	/**
+	 * The app slug for runtime components inside the app, read as a function
+	 * so it follows the route (logic-automation-actions-that-run D8).
+	 *
+	 * @return {object}
+	 *
+	 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-app-users-run-manual-automations-from-a-record-req-bqar-006
+	 */
+	provide() {
+		return { cnAppSlug: () => this.slug }
+	},
+
 	data() {
 		return {
 			// REQ-OBVR-004: reactive version state from useApplicationVersion.

@@ -4989,6 +4989,133 @@
                     }
                 }
             }
+        },
+        "/automations/manual": {
+            "get": {
+                "operationId": "automations-manual",
+                "summary": "The enabled manual automations of an app for a record schema",
+                "description": "The enabled manual automations of an app (`app`) whose trigger runs on a schema (`schema`), as uuid and name, for a caller with a role on the app (logic-automation-actions-that-run D8). Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "automations"
+                ],
+                "parameters": [
+                    {
+                        "name": "app",
+                        "in": "query",
+                        "required": true,
+                        "description": "The app slug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "schema",
+                        "in": "query",
+                        "required": true,
+                        "description": "The record's schema slug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/Problem503"
+                    }
+                }
+            }
+        },
+        "/automations/{uuid}/run": {
+            "post": {
+                "operationId": "automations-run",
+                "summary": "Run a manual automation on one record",
+                "description": "Starts the automation's flow on the record named by `object`, as the caller (logic-automation-actions-that-run D8). Refused for a caller without a role on the app or who cannot read the record (403) and for an automation that is not manual and enabled (409). Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "automations"
+                ],
+                "parameters": [
+                    {
+                        "name": "uuid",
+                        "in": "path",
+                        "required": true,
+                        "description": "The Automation object uuid.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "object": {
+                                        "type": "string",
+                                        "description": "The record's uuid."
+                                    }
+                                },
+                                "required": [
+                                    "object"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "202": {
+                        "description": "The run started.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Problem409"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/Problem503"
+                    }
+                }
+            }
         }
     },
     "components": {

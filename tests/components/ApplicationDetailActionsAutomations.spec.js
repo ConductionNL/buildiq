@@ -107,12 +107,34 @@ describe('ApplicationDetailActions automations entry', () => {
 		})
 	})
 
-	it('offers Agents next to Automations and opens the Agents page on this app (REQ-BQAG-003)', async () => {
+	it('offers Business rules next to Automations (REQ-BQAR-008)', async () => {
 		const wrapper = mountActions()
 		await wrapper.vm.$nextTick()
 
 		const ids = wrapper.vm.actionDescriptors.map((a) => a.id)
-		expect(ids.indexOf('app-agents')).toBe(ids.indexOf('app-automations') + 1)
+		expect(ids.indexOf('app-business-rules')).toBe(ids.indexOf('app-automations') + 1)
+		const entry = wrapper.vm.actionDescriptors.find((a) => a.id === 'app-business-rules')
+		expect(entry.label).toBe('Business rules')
+	})
+
+	it('opens the business rules page with this app preselected', async () => {
+		const wrapper = mountActions()
+		await wrapper.vm.$nextTick()
+
+		wrapper.vm.actionDescriptors.find((a) => a.id === 'app-business-rules').onSelect()
+
+		expect(router.push).toHaveBeenCalledWith({
+			name: 'BusinessRules',
+			query: { app: 'permit-tracker' },
+		})
+	})
+
+	it('offers Agents next to Business rules and opens the Agents page on this app (REQ-BQAG-003)', async () => {
+		const wrapper = mountActions()
+		await wrapper.vm.$nextTick()
+
+		const ids = wrapper.vm.actionDescriptors.map((a) => a.id)
+		expect(ids.indexOf('app-agents')).toBe(ids.indexOf('app-business-rules') + 1)
 
 		wrapper.vm.actionDescriptors.find((a) => a.id === 'app-agents').onSelect()
 

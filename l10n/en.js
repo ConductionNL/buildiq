@@ -2871,7 +2871,21 @@ OC.L10N.register(
         "succeeded": "succeeded",
         "This automation runs entirely in OpenRegister": "This automation runs entirely in OpenRegister",
         "Time": "Time",
-        "waiting": "waiting"
+        "waiting": "waiting",
+        "\"{name}\" could not be started": "\"{name}\" could not be started",
+        "\"{name}\" started": "\"{name}\" started",
+        "Run automation": "Run automation",
+        "Decide with a rule set": "Decide with a rule set",
+        "Inputs (JSON, table column to record field)": "Inputs (JSON, table column to record field)",
+        "Integriq is not installed, so a webhook step has no source to call.": "Integriq is not installed, so a webhook step has no source to call.",
+        "Path": "Path",
+        "Pick a rule set and the field its decision is written to.": "Pick a rule set and the field its decision is written to.",
+        "Pick a source for this webhook.": "Pick a source for this webhook.",
+        "Rule set": "Rule set",
+        "This step still posts to {url}. Pick a source for this webhook.": "This step still posts to {url}. Pick a source for this webhook.",
+        "Write the decision to field": "Write the decision to field",
+        "Rule set decides": "Rule set decides",
+        "The rule set runs first. The actions run only when its outcome is true.": "The rule set runs first. The actions run only when its outcome is true."
     },
     "nplurals=2; plural=(n != 1);"
 )
