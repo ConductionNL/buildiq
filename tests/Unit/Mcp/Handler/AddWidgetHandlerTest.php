@@ -187,7 +187,7 @@ class AddWidgetHandlerTest extends TestCase {
 	public function testCodeIsLeftOutOfACopilotWidget(): void {
 		$this->wireVersion(manifest: $this->emptyDashboardManifest());
 
-		$result = $this->provider->invokeTool('buildiq.addWidget', [
+		$result = $this->provider->invokeApprovedTool('buildiq.addWidget', [
 			'appSlug' => 'my-app',
 			'pageId' => 'home',
 			'widgetType' => 'stat',

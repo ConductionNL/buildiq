@@ -24,8 +24,10 @@ namespace OCA\Buildiq\Tests\Unit\Service;
 
 use OCA\Buildiq\Kernel\Contracts\PermissionResolverInterface;
 use OCA\Buildiq\Service\AgentPlanService;
+use OCA\Buildiq\Service\AgentPlanStore;
 use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCP\IUser;
 use OCP\Security\ICrypto;
 use PHPUnit\Framework\MockObject\MockObject;
@@ -308,9 +310,9 @@ class AgentPlanServiceTest extends TestCase {
 	 * @return void
 	 */
 	public function testWriteToolsAndPlanIdStripping(): void {
-		self::assertTrue(AgentPlanService::isWriteTool(toolId: 'buildiq.promoteVersion'));
-		self::assertFalse(AgentPlanService::isWriteTool(toolId: 'buildiq.getAppManifest'));
-		self::assertSame(['a' => 1], AgentPlanService::withoutPlanId(arguments: ['a' => 1, 'planId' => 'p']));
+		self::assertTrue(\OCA\Buildiq\Service\AgentPlanSteps::isWriteTool(toolId: 'buildiq.promoteVersion'));
+		self::assertFalse(\OCA\Buildiq\Service\AgentPlanSteps::isWriteTool(toolId: 'buildiq.getAppManifest'));
+		self::assertSame(['a' => 1], \OCA\Buildiq\Service\AgentPlanSteps::withoutPlanId(arguments: ['a' => 1, 'planId' => 'p']));
 	}//end testWriteToolsAndPlanIdStripping()
 
 	/**
@@ -364,8 +366,8 @@ class AgentPlanServiceTest extends TestCase {
 	private function service(): AgentPlanService {
 		$objects = $this->createMock(ObjectServiceInterface::class);
 		$objects->method('saveObject')->willReturnCallback(
-			function (array $object, ?array $extend = [], $register = null, $schema = null, ?string $uuid = null): ObjectEntityInterface {
-				$this->saves[] = [$object, $register, $schema, $uuid];
+			function (array $object, ObjectSaveOptions $options): ObjectEntityInterface {
+				$this->saves[] = [$object, $options->target->register, $options->target->schema, $options->uuid];
 				return $this->entity(data: $object);
 			}
 		);
@@ -377,7 +379,13 @@ class AgentPlanServiceTest extends TestCase {
 		$crypto = $this->createMock(ICrypto::class);
 		$crypto->method('calculateHMAC')->willReturnCallback(static fn (string $message): string => hash_hmac('sha256', $message, 'secret', true));
 
-		return new AgentPlanService(objectService: $objects, permissionResolver: $this->resolver, crypto: $crypto, logger: new NullLogger());
+		return new AgentPlanService(
+			store: new AgentPlanStore(objectService: $objects, logger: new NullLogger()),
+			objectService: $objects,
+			permissionResolver: $this->resolver,
+			crypto: $crypto,
+			logger: new NullLogger()
+		);
 	}//end service()
 
 	/**

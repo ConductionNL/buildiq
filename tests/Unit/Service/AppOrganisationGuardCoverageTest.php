@@ -53,6 +53,7 @@ class AppOrganisationGuardCoverageTest extends TestCase {
 		'lib/Mcp/Handler/GetAppManifestHandler.php' => 'requireAnyRoleOnApp(',
 		'lib/Controller/AgentsController.php' => 'seesApplication(',
 		'lib/Controller/ExportsController.php' => 'visibleToOrganisation(',
+		'lib/Service/AgentPlanService.php' => 'visibleToOrganisation(',
 	];
 
 	/**

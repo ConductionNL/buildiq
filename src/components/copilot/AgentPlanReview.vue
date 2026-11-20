@@ -259,7 +259,7 @@ export default {
 	max-height: 200px;
 	overflow: auto;
 	white-space: pre-wrap;
-	word-break: break-word;
+	overflow-wrap: anywhere;
 	background: var(--color-background-dark);
 	color: var(--color-main-text);
 	border-radius: var(--border-radius);

@@ -43,6 +43,7 @@ use OCA\Buildiq\Kernel\Contracts\BuildiqToolProviderInterface;
 use OCA\Buildiq\Kernel\Contracts\PermissionResolverInterface;
 use OCA\Buildiq\Mcp\Handler\AddWidgetHandler;
 use OCA\Buildiq\Service\AgentPlanService;
+use OCA\Buildiq\Service\AgentPlanSteps;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
@@ -336,11 +337,13 @@ class BuildiqToolProvider implements IMcpToolProvider, BuildiqToolProviderInterf
 	 * Return the catalogue of MCP tools exposed by this provider.
 	 *
 	 * @return array<int, array<string, mixed>>
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) AgentPlanSteps is pure step logic with no collaborators.
 	 */
 	public function getTools(): array {
 		$tools = [];
 		foreach (self::TOOL_DESCRIPTORS as $tool) {
-			if (AgentPlanService::isWriteTool(toolId: $tool['id']) === true) {
+			if (AgentPlanSteps::isWriteTool(toolId: $tool['id']) === true) {
 				$tool['description'] .= ' Writes only under a plan a person approved: pass planId.'
 					. ' A call without planId writes nothing and submits this call as a plan for an owner or editor of the app to approve in Buildiq.';
 				$tool['inputSchema']['properties']['planId'] = [
@@ -389,9 +392,11 @@ class BuildiqToolProvider implements IMcpToolProvider, BuildiqToolProviderInterf
 	 * @return array<string, mixed>
 	 *
 	 * @spec openspec/changes/openbuild-mcp-adoption/specs/openbuild-mcp-surface/spec.md#requirement-a-builder-tool-shall-write-only-under-a-plan-a-person-approved
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) AgentPlanSteps is pure step logic with no collaborators.
 	 */
 	public function invokeTool(string $toolId, array $arguments): array {
-		if (AgentPlanService::isWriteTool(toolId: $toolId) === false) {
+		if (AgentPlanSteps::isWriteTool(toolId: $toolId) === false) {
 			return $this->dispatch(toolId: $toolId, arguments: $arguments);
 		}
 
@@ -400,7 +405,7 @@ class BuildiqToolProvider implements IMcpToolProvider, BuildiqToolProviderInterf
 			return $refusal;
 		}
 
-		return $this->dispatch(toolId: $toolId, arguments: AgentPlanService::withoutPlanId(arguments: $arguments));
+		return $this->dispatch(toolId: $toolId, arguments: AgentPlanSteps::withoutPlanId(arguments: $arguments));
 	}//end invokeTool()
 
 	/**
@@ -416,9 +421,11 @@ class BuildiqToolProvider implements IMcpToolProvider, BuildiqToolProviderInterf
 	 * @return array<string, mixed>
 	 *
 	 * @spec openspec/changes/openbuild-mcp-adoption/specs/ai-copilot/spec.md#requirement-an-approved-plan-executes-atomically-through-the-mcp-handler-layer
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) AgentPlanSteps is pure step logic with no collaborators.
 	 */
 	public function invokeApprovedTool(string $toolId, array $arguments): array {
-		return $this->dispatch(toolId: $toolId, arguments: AgentPlanService::withoutPlanId(arguments: $arguments));
+		return $this->dispatch(toolId: $toolId, arguments: AgentPlanSteps::withoutPlanId(arguments: $arguments));
 	}//end invokeApprovedTool()
 
 	/**
@@ -428,6 +435,8 @@ class BuildiqToolProvider implements IMcpToolProvider, BuildiqToolProviderInterf
 	 * @param array<string, mixed> $arguments The call's arguments.
 	 *
 	 * @return array<string, mixed>|null
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) AgentPlanSteps is pure step logic with no collaborators.
 	 */
 	private function planRefusal(string $toolId, array $arguments): ?array {
 		$plans = $this->planService();
@@ -447,7 +456,7 @@ class BuildiqToolProvider implements IMcpToolProvider, BuildiqToolProviderInterf
 		return $plans->authorizeStep(
 			planId: $planId,
 			toolId: $toolId,
-			arguments: AgentPlanService::withoutPlanId(arguments: $arguments),
+			arguments: AgentPlanSteps::withoutPlanId(arguments: $arguments),
 			userId: $this->userId()
 		);
 	}//end planRefusal()
@@ -459,11 +468,13 @@ class BuildiqToolProvider implements IMcpToolProvider, BuildiqToolProviderInterf
 	 * @param array<string, mixed> $arguments The call's arguments.
 	 *
 	 * @return array<string, mixed> The refusal, naming the submitted plan when there is one.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) AgentPlanSteps is pure step logic with no collaborators.
 	 */
 	private function submittedForApproval(string $toolId, array $arguments): array {
 		$submitted = $this->planService()?->submit(
-			appSlug: AgentPlanService::targetApp(toolId: $toolId, arguments: $arguments),
-			steps: [['tool' => $toolId, 'arguments' => AgentPlanService::withoutPlanId(arguments: $arguments)]],
+			appSlug: AgentPlanSteps::targetApp(toolId: $toolId, arguments: $arguments),
+			steps: [['tool' => $toolId, 'arguments' => AgentPlanSteps::withoutPlanId(arguments: $arguments)]],
 			userId: $this->userId()
 		);
 		$planNote = '';
