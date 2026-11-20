@@ -37,6 +37,8 @@ use RuntimeException;
  * @uses   \OCA\Buildiq\Integration\AppLocalLeafProvider
  * @uses   \OCA\Buildiq\Service\RegistrationFormPresenter
  * @uses   \OCA\Buildiq\Service\HelperFactory
+ * @uses   \OCA\Buildiq\Service\RegistrationFormFee
+ * @uses   \OCA\Buildiq\Support\ObjectRecord
  */
 final class RegistrationFormLeafProviderContractTest extends TestCase {
 	/**

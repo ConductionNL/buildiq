@@ -40,6 +40,8 @@ namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Kernel\Contracts\TemplateSeedServiceInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCP\App\IAppManager;
 use OCP\AppFramework\Db\DoesNotExistException;
 use Psr\Log\LoggerInterface;
@@ -111,63 +113,98 @@ class TemplateSeedService implements TemplateSeedServiceInterface {
 	 * @spec openspec/changes/openbuild-first-time-setup/tasks.md#task-11
 	 */
 	public function seed(): array {
-		$seeded = 0;
-		$updated = 0;
-		$skipped = 0;
-		$errors = [];
+		$counts = ['seeded' => 0, 'updated' => 0, 'skipped' => 0, 'errors' => []];
 
 		$fixturesDir = $this->appManager->getAppPath('buildiq') . '/lib/Settings/templates';
 		if (is_dir($fixturesDir) === false) {
-			$errors[] = 'Template fixtures directory missing: ' . $fixturesDir;
-			return ['seeded' => $seeded, 'updated' => $updated, 'skipped' => $skipped, 'errors' => $errors];
+			$counts['errors'][] = 'Template fixtures directory missing: ' . $fixturesDir;
+			return $counts;
 		}
 
 		foreach (self::TEMPLATE_SLUGS as $slug) {
-			[$data, $fixtureError] = $this->loadFixture(fixturesDir: $fixturesDir, slug: $slug);
-			if ($fixtureError !== null) {
-				$errors[] = $fixtureError;
+			$outcome = $this->seedOne(fixturesDir: $fixturesDir, slug: $slug);
+			if ($outcome['result'] === 'deferred') {
+				return array_merge($counts, ['errors' => [], 'deferred' => true]);
+			}
+
+			if ($outcome['result'] === 'error') {
+				$counts['errors'][] = $outcome['error'];
 				continue;
 			}
 
-			// Upsert semantics: a brand-new slug is created; an already-seeded
-			// slug is re-written in place ONLY when the bundled fixture carries a
-			// newer version, so curated template improvements reach upgraded
-			// installs instead of being frozen at their first-seeded version.
-			$existing = $this->findBySlug(slug: $slug);
-			$existingUuid = null;
-			if ($existing !== null) {
-				$existingUuid = $this->updateTargetUuid(fixture: $data, existing: $existing, slug: $slug);
-				if ($existingUuid === null) {
-					++$skipped;
-					continue;
-				}
-			}
+			++$counts[$outcome['result']];
+		}
 
-			try {
-				$this->saveTemplate(data: $data, uuid: $existingUuid);
-				if ($existing === null) {
-					++$seeded;
-				} else {
-					++$updated;
-				}
-			} catch (DoesNotExistException $e) {
-				// Not provisioned yet: defer the whole batch (see saveTemplate()).
-				$this->logger->warning(
-					'Buildiq: register/application-template schema not available yet — deferring template seeding',
-					['slug' => $slug, 'exception' => $e->getMessage()]
-				);
-				return ['seeded' => $seeded, 'updated' => $updated, 'skipped' => $skipped, 'errors' => [], 'deferred' => true];
-			} catch (Throwable $e) {
-				$this->logger->error(
-					'Buildiq: failed to seed template',
-					['slug' => $slug, 'exception' => $e->getMessage()]
-				);
-				$errors[] = 'Failed to seed template "' . $slug . '": ' . $e->getMessage();
-			}//end try
-		}//end foreach
-
-		return ['seeded' => $seeded, 'updated' => $updated, 'skipped' => $skipped, 'errors' => $errors];
+		return $counts;
 	}//end seed()
+
+	/**
+	 * Seed one bundled template: create it, upgrade it in place, or leave it.
+	 *
+	 * @param string $fixturesDir The directory holding the bundled fixtures.
+	 * @param string $slug        The template slug.
+	 *
+	 * @return array{result: string, error: string} `seeded`, `updated`, `skipped`, `deferred` or `error` (with its message).
+	 *
+	 * @spec openspec/changes/openbuild-first-time-setup/tasks.md#task-11
+	 */
+	private function seedOne(string $fixturesDir, string $slug): array {
+		[$data, $fixtureError] = $this->loadFixture(fixturesDir: $fixturesDir, slug: $slug);
+		if ($fixtureError !== null) {
+			return ['result' => 'error', 'error' => $fixtureError];
+		}
+
+		// Upsert semantics: a brand-new slug is created; an already-seeded
+		// slug is re-written in place ONLY when the bundled fixture carries a
+		// newer version, so curated template improvements reach upgraded
+		// installs instead of being frozen at their first-seeded version.
+		$existing = $this->findBySlug(slug: $slug);
+		$existingUuid = null;
+		if ($existing !== null) {
+			$existingUuid = $this->updateTargetUuid(fixture: $data, existing: $existing, slug: $slug);
+			if ($existingUuid === null) {
+				return ['result' => 'skipped', 'error' => ''];
+			}
+		}
+
+		return $this->writeOne(slug: $slug, data: $data, uuid: $existingUuid);
+	}//end seedOne()
+
+	/**
+	 * Write one template, new when there is no uuid and in place when there is.
+	 *
+	 * @param string               $slug The template slug.
+	 * @param array<string, mixed> $data The fixture.
+	 * @param string|null          $uuid The stored row to rewrite, or null for a new row.
+	 *
+	 * @return array{result: string, error: string} `seeded`, `updated`, `deferred` or `error` (with its message).
+	 *
+	 * @spec openspec/changes/openbuild-first-time-setup/tasks.md#task-11
+	 */
+	private function writeOne(string $slug, array $data, ?string $uuid): array {
+		try {
+			$this->saveTemplate(data: $data, uuid: $uuid);
+		} catch (DoesNotExistException $e) {
+			// Not provisioned yet: defer the whole batch (see saveTemplate()).
+			$this->logger->warning(
+				'Buildiq: register/application-template schema not available yet — deferring template seeding',
+				['slug' => $slug, 'exception' => $e->getMessage()]
+			);
+			return ['result' => 'deferred', 'error' => ''];
+		} catch (Throwable $e) {
+			$this->logger->error(
+				'Buildiq: failed to seed template',
+				['slug' => $slug, 'exception' => $e->getMessage()]
+			);
+			return ['result' => 'error', 'error' => 'Failed to seed template "' . $slug . '": ' . $e->getMessage()];
+		}//end try
+
+		if ($uuid === null) {
+			return ['result' => 'seeded', 'error' => ''];
+		}
+
+		return ['result' => 'updated', 'error' => ''];
+	}//end writeOne()
 
 	/**
 	 * Write one template row in system context.
@@ -199,9 +236,10 @@ class TemplateSeedService implements TemplateSeedServiceInterface {
 	private function saveTemplate(array $data, ?string $uuid): void {
 		$this->objectService->saveObject(
 			object: $data,
-			register: 'buildiq',
-			schema: 'application-template',
-			uuid: $uuid,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: 'buildiq', schema: 'application-template'),
+				uuid: $uuid
+			),
 			_rbac: false,
 			_multitenancy: false
 		);

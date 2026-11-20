@@ -146,8 +146,8 @@
       "type": "library",
       "name": "helper-string-parser",
       "group": "@babel",
-      "version": "7.29.7",
-      "bom-ref": "buildiq@0.2.0|@babel/helper-string-parser@7.29.7",
+      "version": "7.29.14",
+      "bom-ref": "buildiq@0.2.0|@babel/helper-string-parser@7.29.14",
       "licenses": [
         {
           "license": {
@@ -155,15 +155,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40babel/helper-string-parser@7.29.7",
+      "purl": "pkg:npm/%40babel/helper-string-parser@7.29.14",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@babel/helper-string-parser/-/helper-string-parser-7.29.7.tgz",
+          "url": "https://registry.npmjs.org/@babel/helper-string-parser/-/helper-string-parser-7.29.14.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "3dbe628cfad9f3d1831fcdb6dcbe143fc8ba400a56c6cd3845b3d02537960d5d3f91e476137e8c78a9f2afa2d899452fa91448f88bfced2b85d56e84ac837363"
+              "content": "097bca305bccf348a123b568c7d8dbfa44239f28c449034f33ebc1ed4d19cfa4d6b9903e67f14bd103cc1f7d34877dea26d231f9111e0615ea58e3d6e3c4dc01"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -214,8 +214,8 @@
       "type": "library",
       "name": "parser",
       "group": "@babel",
-      "version": "7.29.8",
-      "bom-ref": "buildiq@0.2.0|@babel/parser@7.29.8",
+      "version": "7.29.14",
+      "bom-ref": "buildiq@0.2.0|@babel/parser@7.29.14",
       "licenses": [
         {
           "license": {
@@ -223,15 +223,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40babel/parser@7.29.8",
+      "purl": "pkg:npm/%40babel/parser@7.29.14",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@babel/parser/-/parser-7.29.8.tgz",
+          "url": "https://registry.npmjs.org/@babel/parser/-/parser-7.29.14.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "13c953018341d4a5be147f95189b993358a8031d84ea8565bd0151adfe4ff19666b222576000fdbd3155ef2c84511373821d5d16a319b8eead53070045ba8508"
+              "content": "54bdb6d2f5eec8edb3deb34843063b7ed8fd530a6a3adfb7dec1feb015a439e91bb1247683b1043273b1db8665087d31380dc333fdf74a27d51466e7243f2bff"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -282,8 +282,8 @@
       "type": "library",
       "name": "types",
       "group": "@babel",
-      "version": "7.29.8",
-      "bom-ref": "buildiq@0.2.0|@babel/types@7.29.8",
+      "version": "7.29.14",
+      "bom-ref": "buildiq@0.2.0|@babel/types@7.29.14",
       "licenses": [
         {
           "license": {
@@ -291,15 +291,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40babel/types@7.29.8",
+      "purl": "pkg:npm/%40babel/types@7.29.14",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@babel/types/-/types-7.29.8.tgz",
+          "url": "https://registry.npmjs.org/@babel/types/-/types-7.29.14.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "563d6317770f7f183b3807e823b42754a2e820b966d8917da67547ad7f2ac7b0073226164fe343000ee30a194d8114b85932dcfdf0f59572e63e2c65ba3fb71a"
+              "content": "52323f74a9b02704fda4eb33262b6ad86e8439b64f9ec6547dd0abf76cf64e51771192bd27711d7ce294ac2cc797ac05b616f3c21ce5d52a1cfd4230c518aaeb"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -868,8 +868,8 @@
       "type": "library",
       "name": "nextcloud-vue",
       "group": "@conduction",
-      "version": "2.180.0",
-      "bom-ref": "buildiq@0.2.0|@conduction/nextcloud-vue@2.180.0",
+      "version": "2.181.0",
+      "bom-ref": "buildiq@0.2.0|@conduction/nextcloud-vue@2.181.0",
       "licenses": [
         {
           "license": {
@@ -877,15 +877,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40conduction/nextcloud-vue@2.180.0",
+      "purl": "pkg:npm/%40conduction/nextcloud-vue@2.181.0",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@conduction/nextcloud-vue/-/nextcloud-vue-2.180.0.tgz",
+          "url": "https://registry.npmjs.org/@conduction/nextcloud-vue/-/nextcloud-vue-2.181.0.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "6deed18686d29c1328f786009a99a14fab4cf52e8a8aa2ea6f0035c1d4eaa77f5d064ff23fe6142873a61e9201ac1ac40e28e56cfc9ae96ce536608df4ed7493"
+              "content": "4cbbcd40d463ccd080f1a3edaeca41c546842375bad9b7956540f0b289a94f3641ca79122d3ae762d6ae99d659767b057dff60ef40b1c4f0ab8937579b586f9b"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -1965,8 +1965,8 @@
       "type": "library",
       "name": "sourcemap-codec",
       "group": "@jridgewell",
-      "version": "1.5.5",
-      "bom-ref": "buildiq@0.2.0|@jridgewell/sourcemap-codec@1.5.5",
+      "version": "1.6.0",
+      "bom-ref": "buildiq@0.2.0|@jridgewell/sourcemap-codec@1.6.0",
       "licenses": [
         {
           "license": {
@@ -1974,15 +1974,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40jridgewell/sourcemap-codec@1.5.5",
+      "purl": "pkg:npm/%40jridgewell/sourcemap-codec@1.6.0",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@jridgewell/sourcemap-codec/-/sourcemap-codec-1.5.5.tgz",
+          "url": "https://registry.npmjs.org/@jridgewell/sourcemap-codec/-/sourcemap-codec-1.6.0.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "71843ddf5d20aeac6e7966e5f96b885086a251a0dc8fb58eab97d58449633558117ce52163d7f2db34ef7e8a96b2779b87c4a5ef45527056c80af2672ca0743a"
+              "content": "4fb8dffb9ce0b191f0349e25bd0eff69ecdbca4d27357fb32555a998703b558b04c7b6bbaabe5183921bb4916a920cdee58dacaeeab545463c43cdfb39dee217"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -5381,8 +5381,8 @@
       "type": "library",
       "name": "parser",
       "group": "@typescript-eslint",
-      "version": "8.70.0",
-      "bom-ref": "buildiq@0.2.0|@typescript-eslint/parser@8.70.0",
+      "version": "8.73.0",
+      "bom-ref": "buildiq@0.2.0|@typescript-eslint/parser@8.73.0",
       "licenses": [
         {
           "license": {
@@ -5390,15 +5390,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40typescript-eslint/parser@8.70.0",
+      "purl": "pkg:npm/%40typescript-eslint/parser@8.73.0",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@typescript-eslint/parser/-/parser-8.70.0.tgz",
+          "url": "https://registry.npmjs.org/@typescript-eslint/parser/-/parser-8.73.0.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "cd8beb9a3f58c5deb7506697c3e91db7a034174b34aaf789cae6ad20cefb6d80b60c4e2982683b6b9d2ef0b47b3d1b57774c7e87e4e5dde5da6c69b4e9259ddd"
+              "content": "02e2f8e5b55c9acb077d9dc38b772cf50d25e20066e19155ac9390104ed5a6a5be3d5810684c12c1acf3e1354888569b5e493a539d44a6b603c2ac3e1d1f1e3f"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -5419,8 +5419,8 @@
           "type": "library",
           "name": "scope-manager",
           "group": "@typescript-eslint",
-          "version": "8.70.0",
-          "bom-ref": "buildiq@0.2.0|@typescript-eslint/parser@8.70.0|@typescript-eslint/scope-manager@8.70.0",
+          "version": "8.73.0",
+          "bom-ref": "buildiq@0.2.0|@typescript-eslint/parser@8.73.0|@typescript-eslint/scope-manager@8.73.0",
           "licenses": [
             {
               "license": {
@@ -5428,15 +5428,15 @@
               }
             }
           ],
-          "purl": "pkg:npm/%40typescript-eslint/scope-manager@8.70.0",
+          "purl": "pkg:npm/%40typescript-eslint/scope-manager@8.73.0",
           "externalReferences": [
             {
-              "url": "https://registry.npmjs.org/@typescript-eslint/scope-manager/-/scope-manager-8.70.0.tgz",
+              "url": "https://registry.npmjs.org/@typescript-eslint/scope-manager/-/scope-manager-8.73.0.tgz",
               "type": "distribution",
               "hashes": [
                 {
                   "alg": "SHA-512",
-                  "content": "f273f72b0879865819e0589c1af9b39c09897bc50be2c754f2d2ee92b3da32e4260ee93863cc587f3bbf698656e314f624281cec7fd3a43239706971716252a9"
+                  "content": "fd38c3ef7f08ab6af38f9cf48b154e8be4ecbe08c0cd93cb3da1f5c96743072b51fc74d1e60329c985997827b95934192f0937868f0057b5379aea10091b5705"
                 }
               ],
               "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -5457,8 +5457,8 @@
           "type": "library",
           "name": "types",
           "group": "@typescript-eslint",
-          "version": "8.70.0",
-          "bom-ref": "buildiq@0.2.0|@typescript-eslint/parser@8.70.0|@typescript-eslint/types@8.70.0",
+          "version": "8.73.0",
+          "bom-ref": "buildiq@0.2.0|@typescript-eslint/parser@8.73.0|@typescript-eslint/types@8.73.0",
           "licenses": [
             {
               "license": {
@@ -5466,15 +5466,15 @@
               }
             }
           ],
-          "purl": "pkg:npm/%40typescript-eslint/types@8.70.0",
+          "purl": "pkg:npm/%40typescript-eslint/types@8.73.0",
           "externalReferences": [
             {
-              "url": "https://registry.npmjs.org/@typescript-eslint/types/-/types-8.70.0.tgz",
+              "url": "https://registry.npmjs.org/@typescript-eslint/types/-/types-8.73.0.tgz",
               "type": "distribution",
               "hashes": [
                 {
                   "alg": "SHA-512",
-                  "content": "6ac4ce218843838cddcce49c0b26b2b6bb15ddc47a07879c3d0957c3f749226ec9fcc653b42b5f54823d243f067a1e234c2acafd77ba720e547afa2578c72825"
+                  "content": "3bfd72b58cdf945d7a403297c78fea39783522e669fa7ee1afdb7e4b49efecdff64e5f2b262342b21ced57581c494bc76cfb685f7fb398d6ed480c956f3c557f"
                 }
               ],
               "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -5495,8 +5495,8 @@
           "type": "library",
           "name": "typescript-estree",
           "group": "@typescript-eslint",
-          "version": "8.70.0",
-          "bom-ref": "buildiq@0.2.0|@typescript-eslint/parser@8.70.0|@typescript-eslint/typescript-estree@8.70.0",
+          "version": "8.73.0",
+          "bom-ref": "buildiq@0.2.0|@typescript-eslint/parser@8.73.0|@typescript-eslint/typescript-estree@8.73.0",
           "licenses": [
             {
               "license": {
@@ -5504,15 +5504,15 @@
               }
             }
           ],
-          "purl": "pkg:npm/%40typescript-eslint/typescript-estree@8.70.0",
+          "purl": "pkg:npm/%40typescript-eslint/typescript-estree@8.73.0",
           "externalReferences": [
             {
-              "url": "https://registry.npmjs.org/@typescript-eslint/typescript-estree/-/typescript-estree-8.70.0.tgz",
+              "url": "https://registry.npmjs.org/@typescript-eslint/typescript-estree/-/typescript-estree-8.73.0.tgz",
               "type": "distribution",
               "hashes": [
                 {
                   "alg": "SHA-512",
-                  "content": "77d3661cc3c4290ed008b2e6d63237ce6a100704f92b01588d7049f729997ca09453ee6b99347290a005bc7e509ff64276cdc2100152f4e0bd33f8e49745f66c"
+                  "content": "2278e506449d59c788c080564b04b710d529fa2d0ed363c65f766fdb09e2856242d560d51af1bb9931ee7fc6f9eee01a2138fde1dead44f0c7fac504b5775141"
                 }
               ],
               "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -5533,8 +5533,8 @@
           "type": "library",
           "name": "visitor-keys",
           "group": "@typescript-eslint",
-          "version": "8.70.0",
-          "bom-ref": "buildiq@0.2.0|@typescript-eslint/parser@8.70.0|@typescript-eslint/visitor-keys@8.70.0",
+          "version": "8.73.0",
+          "bom-ref": "buildiq@0.2.0|@typescript-eslint/parser@8.73.0|@typescript-eslint/visitor-keys@8.73.0",
           "licenses": [
             {
               "license": {
@@ -5542,15 +5542,15 @@
               }
             }
           ],
-          "purl": "pkg:npm/%40typescript-eslint/visitor-keys@8.70.0",
+          "purl": "pkg:npm/%40typescript-eslint/visitor-keys@8.73.0",
           "externalReferences": [
             {
-              "url": "https://registry.npmjs.org/@typescript-eslint/visitor-keys/-/visitor-keys-8.70.0.tgz",
+              "url": "https://registry.npmjs.org/@typescript-eslint/visitor-keys/-/visitor-keys-8.73.0.tgz",
               "type": "distribution",
               "hashes": [
                 {
                   "alg": "SHA-512",
-                  "content": "0680bc3e23b81e4768d1354987d36dc6be4cc4f0c8effa05b2bca03790037a51527971bfaa036eb9c20603e2f967a2693d313fb917dc4d6b6c7236d46ae7dea5"
+                  "content": "93896c155a5164809b96d9081041f8859464c1792a0c5d461c1a4294a40e1d063e464a19000bb2735722dc8ea9f8207abf75388da1c852c85ce11cf34176562e"
                 }
               ],
               "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -5571,8 +5571,8 @@
           "type": "library",
           "name": "project-service",
           "group": "@typescript-eslint",
-          "version": "8.70.0",
-          "bom-ref": "buildiq@0.2.0|@typescript-eslint/parser@8.70.0|@typescript-eslint/project-service@8.70.0",
+          "version": "8.73.0",
+          "bom-ref": "buildiq@0.2.0|@typescript-eslint/parser@8.73.0|@typescript-eslint/project-service@8.73.0",
           "licenses": [
             {
               "license": {
@@ -5580,15 +5580,15 @@
               }
             }
           ],
-          "purl": "pkg:npm/%40typescript-eslint/project-service@8.70.0",
+          "purl": "pkg:npm/%40typescript-eslint/project-service@8.73.0",
           "externalReferences": [
             {
-              "url": "https://registry.npmjs.org/@typescript-eslint/project-service/-/project-service-8.70.0.tgz",
+              "url": "https://registry.npmjs.org/@typescript-eslint/project-service/-/project-service-8.73.0.tgz",
               "type": "distribution",
               "hashes": [
                 {
                   "alg": "SHA-512",
-                  "content": "8451db4cdaa153d1bed9e2855c20556f5b63153fcb71e889e3e1df2cee294e90c8d0a1e2ea26a3a5c14591a490f605e60a1ee7f360343ed85a6b211d37a9aca5"
+                  "content": "fe911ff1173832393ea899d8d2e3b5f8669d79a97cbafe74c69ba273eb2b1b6bc855ab40d17c6f58c51e32d16fb3a3821ea7ed890efffaa1f869e846e6cb7320"
                 }
               ],
               "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -5609,8 +5609,8 @@
           "type": "library",
           "name": "tsconfig-utils",
           "group": "@typescript-eslint",
-          "version": "8.70.0",
-          "bom-ref": "buildiq@0.2.0|@typescript-eslint/parser@8.70.0|@typescript-eslint/tsconfig-utils@8.70.0",
+          "version": "8.73.0",
+          "bom-ref": "buildiq@0.2.0|@typescript-eslint/parser@8.73.0|@typescript-eslint/tsconfig-utils@8.73.0",
           "licenses": [
             {
               "license": {
@@ -5618,15 +5618,15 @@
               }
             }
           ],
-          "purl": "pkg:npm/%40typescript-eslint/tsconfig-utils@8.70.0",
+          "purl": "pkg:npm/%40typescript-eslint/tsconfig-utils@8.73.0",
           "externalReferences": [
             {
-              "url": "https://registry.npmjs.org/@typescript-eslint/tsconfig-utils/-/tsconfig-utils-8.70.0.tgz",
+              "url": "https://registry.npmjs.org/@typescript-eslint/tsconfig-utils/-/tsconfig-utils-8.73.0.tgz",
               "type": "distribution",
               "hashes": [
                 {
                   "alg": "SHA-512",
-                  "content": "69d9e479e36af52ab5b147f8f8545573429d818821cec805a5949055956f6342c2b94b8dd059d08321b3089782e1f5b571d5ec78102353610ea942236cd71953"
+                  "content": "966b4214e7d86897e9a99cb01ae5e2e05a4db44f8d43e60b7b74f42bdaed103716f19b865af7c8fbea63f2bd39b18308f2f593d8260ae2b5b279d983e91a78a2"
                 }
               ],
               "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -5645,9 +5645,46 @@
         },
         {
           "type": "library",
+          "name": "minimatch",
+          "version": "11.0.9",
+          "bom-ref": "buildiq@0.2.0|@typescript-eslint/parser@8.73.0|minimatch@11.0.9",
+          "licenses": [
+            {
+              "license": {
+                "id": "BlueOak-1.0.0"
+              }
+            }
+          ],
+          "purl": "pkg:npm/minimatch@11.0.9",
+          "externalReferences": [
+            {
+              "url": "https://registry.npmjs.org/minimatch/-/minimatch-11.0.9.tgz",
+              "type": "distribution",
+              "hashes": [
+                {
+                  "alg": "SHA-512",
+                  "content": "2821647f28ea7ab3654acb6396120635720a64603fe8ee15e1196167e0ecafadb548f3f0d26ce5ca913d0fd64ea0f89579f1c80fe8fbfd7b8c325a9f0ff17ad1"
+                }
+              ],
+              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+            }
+          ],
+          "properties": [
+            {
+              "name": "cdx:npm:package:development",
+              "value": "true"
+            },
+            {
+              "name": "cdx:npm:package:path",
+              "value": "node_modules/@typescript-eslint/parser/node_modules/minimatch"
+            }
+          ]
+        },
+        {
+          "type": "library",
           "name": "eslint-visitor-keys",
           "version": "5.0.1",
-          "bom-ref": "buildiq@0.2.0|@typescript-eslint/parser@8.70.0|eslint-visitor-keys@5.0.1",
+          "bom-ref": "buildiq@0.2.0|@typescript-eslint/parser@8.73.0|eslint-visitor-keys@5.0.1",
           "licenses": [
             {
               "license": {
@@ -6202,8 +6239,8 @@
       "type": "library",
       "name": "compiler-sfc",
       "group": "@vue",
-      "version": "3.5.42",
-      "bom-ref": "buildiq@0.2.0|@vue/compiler-sfc@3.5.42",
+      "version": "3.5.45",
+      "bom-ref": "buildiq@0.2.0|@vue/compiler-sfc@3.5.45",
       "licenses": [
         {
           "license": {
@@ -6211,15 +6248,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/%40vue/compiler-sfc@3.5.42",
+      "purl": "pkg:npm/%40vue/compiler-sfc@3.5.45",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/@vue/compiler-sfc/-/compiler-sfc-3.5.42.tgz",
+          "url": "https://registry.npmjs.org/@vue/compiler-sfc/-/compiler-sfc-3.5.45.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "7e4080141e2891c00034631385ba169d2729fe0cd68d4d194a45678d3222a6598c0eadaeab4b480778fec55bb8ae1bf9aef3a0072482cacb9d99b31deb1451ab"
+              "content": "30a1636f6517d0cfe5fe385fcea30bac8f15338a5fbc5286de9a8566449914744bb4d95dfcee11b543d91564b086ba3fd78a8ff3c5101245b31f1019010d2db3"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -6229,6 +6266,144 @@
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/@vue/compiler-sfc"
+        }
+      ],
+      "components": [
+        {
+          "type": "library",
+          "name": "compiler-core",
+          "group": "@vue",
+          "version": "3.5.45",
+          "bom-ref": "buildiq@0.2.0|@vue/compiler-sfc@3.5.45|@vue/compiler-core@3.5.45",
+          "licenses": [
+            {
+              "license": {
+                "id": "MIT"
+              }
+            }
+          ],
+          "purl": "pkg:npm/%40vue/compiler-core@3.5.45",
+          "externalReferences": [
+            {
+              "url": "https://registry.npmjs.org/@vue/compiler-core/-/compiler-core-3.5.45.tgz",
+              "type": "distribution",
+              "hashes": [
+                {
+                  "alg": "SHA-512",
+                  "content": "5c61c9acceae7d901101cff0fadc8eb304adc3db5d2a2a8228149c23880668dc43f9a686bbf1d05a0289f8922d8d12cfa9e9d0ee213b1bc0090bb4f97b0d69fa"
+                }
+              ],
+              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+            }
+          ],
+          "properties": [
+            {
+              "name": "cdx:npm:package:path",
+              "value": "node_modules/@vue/compiler-sfc/node_modules/@vue/compiler-core"
+            }
+          ]
+        },
+        {
+          "type": "library",
+          "name": "compiler-dom",
+          "group": "@vue",
+          "version": "3.5.45",
+          "bom-ref": "buildiq@0.2.0|@vue/compiler-sfc@3.5.45|@vue/compiler-dom@3.5.45",
+          "licenses": [
+            {
+              "license": {
+                "id": "MIT"
+              }
+            }
+          ],
+          "purl": "pkg:npm/%40vue/compiler-dom@3.5.45",
+          "externalReferences": [
+            {
+              "url": "https://registry.npmjs.org/@vue/compiler-dom/-/compiler-dom-3.5.45.tgz",
+              "type": "distribution",
+              "hashes": [
+                {
+                  "alg": "SHA-512",
+                  "content": "2db3f6775f4648e6063e6bcc04109525596fed32ad8ccd427decaeddc6226bbdb4a649d93fed5c2d7ec7e4c55ab6faee4fa32e26188fb8d6d0056fcc0e7fc4c0"
+                }
+              ],
+              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+            }
+          ],
+          "properties": [
+            {
+              "name": "cdx:npm:package:path",
+              "value": "node_modules/@vue/compiler-sfc/node_modules/@vue/compiler-dom"
+            }
+          ]
+        },
+        {
+          "type": "library",
+          "name": "compiler-ssr",
+          "group": "@vue",
+          "version": "3.5.45",
+          "bom-ref": "buildiq@0.2.0|@vue/compiler-sfc@3.5.45|@vue/compiler-ssr@3.5.45",
+          "licenses": [
+            {
+              "license": {
+                "id": "MIT"
+              }
+            }
+          ],
+          "purl": "pkg:npm/%40vue/compiler-ssr@3.5.45",
+          "externalReferences": [
+            {
+              "url": "https://registry.npmjs.org/@vue/compiler-ssr/-/compiler-ssr-3.5.45.tgz",
+              "type": "distribution",
+              "hashes": [
+                {
+                  "alg": "SHA-512",
+                  "content": "445e6c6d939f633e402b4d2d389527d8fc055d1d9f4b5bb61d5cc8f03f5517dac6005c6e181aa0d9b075909dd91cca6ba9296d5e74fd31913522caa348cf287b"
+                }
+              ],
+              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+            }
+          ],
+          "properties": [
+            {
+              "name": "cdx:npm:package:path",
+              "value": "node_modules/@vue/compiler-sfc/node_modules/@vue/compiler-ssr"
+            }
+          ]
+        },
+        {
+          "type": "library",
+          "name": "shared",
+          "group": "@vue",
+          "version": "3.5.45",
+          "bom-ref": "buildiq@0.2.0|@vue/compiler-sfc@3.5.45|@vue/shared@3.5.45",
+          "licenses": [
+            {
+              "license": {
+                "id": "MIT"
+              }
+            }
+          ],
+          "purl": "pkg:npm/%40vue/shared@3.5.45",
+          "externalReferences": [
+            {
+              "url": "https://registry.npmjs.org/@vue/shared/-/shared-3.5.45.tgz",
+              "type": "distribution",
+              "hashes": [
+                {
+                  "alg": "SHA-512",
+                  "content": "b9ef5f80799534f94fee25b7f9cc68057fc29e5c39ddd1e5552c3424a198eb3d6539b83ca47a23f76f0cda7cc6e3fc95b0c67735a459dacdb3eb5b82d7a343c1"
+                }
+              ],
+              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+            }
+          ],
+          "properties": [
+            {
+              "name": "cdx:npm:package:path",
+              "value": "node_modules/@vue/compiler-sfc/node_modules/@vue/shared"
+            }
+          ]
         }
       ]
     },
@@ -26482,8 +26657,8 @@
     {
       "type": "library",
       "name": "vue-material-design-icons",
-      "version": "5.3.1",
-      "bom-ref": "buildiq@0.2.0|vue-material-design-icons@5.3.1",
+      "version": "5.4.0",
+      "bom-ref": "buildiq@0.2.0|vue-material-design-icons@5.4.0",
       "licenses": [
         {
           "license": {
@@ -26491,15 +26666,15 @@
           }
         }
       ],
-      "purl": "pkg:npm/vue-material-design-icons@5.3.1",
+      "purl": "pkg:npm/vue-material-design-icons@5.4.0",
       "externalReferences": [
         {
-          "url": "https://registry.npmjs.org/vue-material-design-icons/-/vue-material-design-icons-5.3.1.tgz",
+          "url": "https://registry.npmjs.org/vue-material-design-icons/-/vue-material-design-icons-5.4.0.tgz",
           "type": "distribution",
           "hashes": [
             {
               "alg": "SHA-512",
-              "content": "e94344ca1953ce509e4fc65e5f959ba541854d33d26cea1341ea00493bfb5f8625874a5ef2f96d8fedfa54c2b9e8a334806f04415a0c2bf430ffa7af6a583c94"
+              "content": "36a2935a7fb8727583883d8feb178aa9a2e0d6219a8e5d1555470c6dcbf96834685c53eeef486a379e6c052ac629ab6478fe4cd5a0d9fd80a20a0064afdaa1d4"
             }
           ],
           "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
@@ -26644,6 +26819,42 @@
         {
           "name": "cdx:npm:package:path",
           "value": "node_modules/vue"
+        }
+      ],
+      "components": [
+        {
+          "type": "library",
+          "name": "compiler-sfc",
+          "group": "@vue",
+          "version": "3.5.42",
+          "bom-ref": "buildiq@0.2.0|vue@3.5.42|@vue/compiler-sfc@3.5.42",
+          "licenses": [
+            {
+              "license": {
+                "id": "MIT"
+              }
+            }
+          ],
+          "purl": "pkg:npm/%40vue/compiler-sfc@3.5.42",
+          "externalReferences": [
+            {
+              "url": "https://registry.npmjs.org/@vue/compiler-sfc/-/compiler-sfc-3.5.42.tgz",
+              "type": "distribution",
+              "hashes": [
+                {
+                  "alg": "SHA-512",
+                  "content": "7e4080141e2891c00034631385ba169d2729fe0cd68d4d194a45678d3222a6598c0eadaeab4b480778fec55bb8ae1bf9aef3a0072482cacb9d99b31deb1451ab"
+                }
+              ],
+              "comment": "as detected from npm-ls property \"resolved\" and property \"integrity\""
+            }
+          ],
+          "properties": [
+            {
+              "name": "cdx:npm:package:path",
+              "value": "node_modules/vue/node_modules/@vue/compiler-sfc"
+            }
+          ]
         }
       ]
     },

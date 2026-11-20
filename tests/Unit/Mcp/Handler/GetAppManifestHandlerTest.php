@@ -37,6 +37,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\Buildiq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Tests for GetAppManifestHandler::handle.
@@ -44,6 +45,7 @@ use RuntimeException;
  * @covers \OCA\Buildiq\Mcp\Handler\GetAppManifestHandler
  * @uses   \OCA\Buildiq\Mcp\Handler\AbstractToolHandler
  * @uses   \OCA\Buildiq\Support\ObjectRecord
+ * @uses   \OCA\Buildiq\Service\AppOrganisationGuard
  */
 class GetAppManifestHandlerTest extends TestCase {
 
@@ -136,7 +138,13 @@ class GetAppManifestHandlerTest extends TestCase {
 			->with('buildiq', 'built-app-route', ['slug' => 'demo'], true, false)
 			->willReturn([['applicationUuid' => 'app-uuid']]);
 		$this->objectService->method('find')
-			->with('app-uuid', $this->anything(), $this->anything(), 'buildiq', 'built-app')
+			->with(...LegacyObjectArgs::with(method: 'find', expected: [
+				'id' => 'app-uuid',
+				'_extend' => $this->anything(),
+				'files' => $this->anything(),
+				'register' => 'buildiq',
+				'schema' => 'built-app',
+			]))
 			->willReturn($this->entity(data: $application));
 	}//end arrangeApp()
 

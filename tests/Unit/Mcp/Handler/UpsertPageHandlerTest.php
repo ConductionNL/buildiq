@@ -211,8 +211,8 @@ class UpsertPageHandlerTest extends TestCase {
 	public function testAppendsANewEntryUnderTheLock(): void {
 		$this->arrange(permissions: ['editors' => ['user:alice']], entries: [['id' => 'home', 'title' => 'Home', 'type' => 'dashboard', 'route' => '/']]);
 		$this->objectService->expects(self::once())->method('lockObject')
-			->with('ver-uuid', 'buildiq.mcp-manifest-edit', 30);
-		$this->objectService->expects(self::once())->method('unlockObject')->with('ver-uuid');
+			->with(self::callback(static fn ($request): bool => $request->identifier === 'ver-uuid' && $request->process === 'buildiq.mcp-manifest-edit' && $request->duration === 30));
+		$this->objectService->expects(self::once())->method('unlockObject')->with(self::callback(static fn ($request): bool => $request->identifier === 'ver-uuid'));
 		$captured = null;
 		$this->captureSave(captured: $captured);
 
@@ -228,6 +228,35 @@ class UpsertPageHandlerTest extends TestCase {
 		self::assertArrayNotHasKey(key: '@self', array: $captured);
 		self::assertArrayNotHasKey(key: 'id', array: $captured);
 	}//end testAppendsANewEntryUnderTheLock()
+
+	/**
+	 * The copilot never writes code: a page config with code and an expression is stored without them, and the result says so (pages-custom-code D6).
+	 *
+	 * @return void
+	 */
+	public function testCodeIsLeftOutOfACopilotPage(): void {
+		$this->arrange(permissions: ['owners' => ['user:alice']], entries: []);
+		$captured = null;
+		$this->captureSave(captured: $captured);
+		$args = $this->args();
+		$args['config'] = [
+			'schema' => 'case',
+			'code' => ['html' => '<p>x</p>', 'js' => 'fetch()'],
+			'columns' => [['key' => 'title'], ['key' => 'age', 'expression' => 'row.age * 2']],
+		];
+
+		$result = $this->handler->handle(args: $args);
+
+		self::assertTrue(condition: $result['success']);
+		$stored = $captured['manifest']['pages'][0]['config'];
+		self::assertArrayNotHasKey(key: 'code', array: $stored);
+		self::assertSame(expected: [['key' => 'title'], ['key' => 'age']], actual: $stored['columns']);
+		self::assertSame(expected: 'case', actual: $stored['schema']);
+		self::assertSame(
+			expected: 'Code and expressions were left out (config/code, config/columns/1/expression): app owners write code on a page.',
+			actual: $result['notice']
+		);
+	}//end testCodeIsLeftOutOfACopilotPage()
 
 	/**
 	 * An entry with the same id in another case is replaced, not duplicated.

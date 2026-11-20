@@ -180,6 +180,29 @@ class AddWidgetHandlerTest extends TestCase {
 	}//end testStoredWidgetCarriesIdTitleAndType()
 
 	/**
+	 * The copilot never writes code: a widget config with code is stored without it, and the result says so (pages-custom-code D6).
+	 *
+	 * @return void
+	 */
+	public function testCodeIsLeftOutOfACopilotWidget(): void {
+		$this->wireVersion(manifest: $this->emptyDashboardManifest());
+
+		$result = $this->provider->invokeTool('buildiq.addWidget', [
+			'appSlug' => 'my-app',
+			'pageId' => 'home',
+			'widgetType' => 'stat',
+			'widgetConfig' => ['register' => 'tool-library', 'schema' => 'loan', 'title' => 'Loans', 'code' => ['js' => 'x()'], 'visibleWhen' => ['expression' => 'user.id']],
+		]);
+
+		$this->assertArrayNotHasKey('isError', $result);
+		$widget = $this->savedManifest['pages'][0]['config']['widgets'][0];
+		$this->assertArrayNotHasKey('code', $widget['config'] ?? $widget);
+		$this->assertStringNotContainsString('x()', (string)json_encode($this->savedManifest));
+		$this->assertStringNotContainsString('user.id', (string)json_encode($this->savedManifest));
+		$this->assertStringContainsString('app owners write code', (string)json_encode($result));
+	}//end testCodeIsLeftOutOfACopilotWidget()
+
+	/**
 	 * The stored widget is placed on the grid, so the dashboard renders it
 	 * instead of reporting that no widgets are configured.
 	 *

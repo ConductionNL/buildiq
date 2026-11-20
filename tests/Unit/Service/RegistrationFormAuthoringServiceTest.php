@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Exception\ValidationException;
 use OCP\IAppConfig;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
@@ -241,6 +242,37 @@ final class RegistrationFormAuthoringServiceTest extends TestCase {
 		$this->assertSame('rf-1', $saved['form']['id']);
 		$this->assertArrayHasKey('rf-1', $this->store);
 	}//end testAValidFormIsStored()
+
+	/**
+	 * A form the schema refuses is a refusal, not a failure, so the controller
+	 * can answer it as one.
+	 *
+	 * @return void
+	 */
+	public function testASchemaRefusalIsARefusal(): void {
+		$objectService = $this->getMockBuilder(className: ObjectServiceInterface::class)
+			->disableOriginalConstructor()
+			->onlyMethods(['setRegister', 'setSchema', 'findAll', 'saveObject'])
+			->getMockForAbstractClass();
+		$objectService->method('setRegister')->willReturnSelf();
+		$objectService->method('setSchema')->willReturnSelf();
+		$objectService->method('findAll')->willReturn([]);
+		$objectService->method('saveObject')->willThrowException(
+			new ValidationException('The required property (name) is missing.')
+		);
+		$service = new RegistrationFormAuthoringService(
+			objectService: $objectService,
+			appConfig: $this->appConfigStub(),
+			validator: new RegistrationFormValidator(),
+			targetSchema: $this->readerOver(properties: ['caseType' => ['type' => 'string'], 'naam' => ['type' => 'string']]),
+			destination: $this->destinationAnswering(findings: []),
+		);
+
+		$this->expectException(exception: InvalidArgumentException::class);
+		$this->expectExceptionMessage(message: 'The required property (name) is missing.');
+
+		$service->save($this->form());
+	}//end testASchemaRefusalIsARefusal()
 
 	/**
 	 * A second form with the same name on the same type is refused: two forms
@@ -463,7 +495,7 @@ final class RegistrationFormAuthoringServiceTest extends TestCase {
 		$forms = $service->listFor(register: 'dossiq', schema: 'Zaak');
 
 		self::assertSame(['mine-1', 'mine-2'], array_column($forms, 'id'));
-		$read = [['setRegister', $register], ['setSchema', 'registrationForm'], ['findAll', ['filters' => ['register' => 'dossiq'], 'limit' => 500]]];
+		$read = [['setRegister', $register], ['setSchema', 'registrationForm'], ['findAll', ['limit' => 500]]];
 		self::assertSame($read, $calls);
 	}//end testListForReadsTheTargetRows()
 
@@ -530,7 +562,21 @@ final class RegistrationFormAuthoringServiceTest extends TestCase {
 			['id' => 'other-register', 'register' => 'elders', 'schema' => 'Zaak'],
 			['id' => 'other-schema', 'register' => 'dossiq', 'schema' => 'Besluit'],
 			['id' => 'mine-1', 'register' => 'dossiq', 'schema' => 'Zaak'],
-			['id' => 'mine-2', 'register' => 'dossiq', 'schema' => 'Zaak'],
+			$this->entity(object: ['id' => 'mine-2', 'register' => 'dossiq', 'schema' => 'Zaak']),
 		];
 	}//end mixedRows()
+
+	/**
+	 * A row as findAll() renders it: an entity, not an array.
+	 *
+	 * @param array<string, mixed> $object The object data.
+	 *
+	 * @return ObjectEntityInterface The entity.
+	 */
+	private function entity(array $object): ObjectEntityInterface {
+		$entity = $this->createMock(originalClassName: ObjectEntityInterface::class);
+		$entity->method('getObject')->willReturn($object);
+
+		return $entity;
+	}//end entity()
 }//end class

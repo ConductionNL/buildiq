@@ -251,17 +251,7 @@ class GitHubCatalogService implements GitHubCatalogServiceInterface {
 			// this is not an empty catalogue. Returning here also skips the
 			// cache write below, so one bad round is not served to every later
 			// caller for the whole TTL.
-			$failure = self::OUTCOME_UNREACHABLE;
-			if ($hits['rateLimited'] === true) {
-				$failure = self::OUTCOME_RATE_LIMITED;
-			}
-
-			return [
-				'outcome' => $failure,
-				'cards' => [],
-				'brokerUsed' => $hits['brokerUsed'],
-				'rateLimited' => $hits['rateLimited'],
-			];
+			return self::failedSearch(hits: $hits);
 		}
 
 		$payload = [
@@ -281,6 +271,27 @@ class GitHubCatalogService implements GitHubCatalogServiceInterface {
 
 		return $payload;
 	}//end search()
+
+	/**
+	 * The answer to a search in which no topic answered: unreachable, or rate-limited when that was why.
+	 *
+	 * @param array<string, mixed> $hits The collected topic hits, with `brokerUsed` and `rateLimited`.
+	 *
+	 * @return array<string, mixed> The `{outcome, cards, brokerUsed, rateLimited}` answer, with no cards.
+	 */
+	private static function failedSearch(array $hits): array {
+		$failure = self::OUTCOME_UNREACHABLE;
+		if ($hits['rateLimited'] === true) {
+			$failure = self::OUTCOME_RATE_LIMITED;
+		}
+
+		return [
+			'outcome' => $failure,
+			'cards' => [],
+			'brokerUsed' => $hits['brokerUsed'],
+			'rateLimited' => $hits['rateLimited'],
+		];
+	}//end failedSearch()
 
 	/**
 	 * Query every accepted discovery topic and merge the hits.
@@ -325,15 +336,7 @@ class GitHubCatalogService implements GitHubCatalogServiceInterface {
 			}
 
 			$anyOk = true;
-			foreach ($page['items'] as $item) {
-				$key = strtolower((string)($item['full_name'] ?? ''));
-				if ($key === '' || isset($seen[$key]) === true) {
-					continue;
-				}
-
-				$seen[$key] = true;
-				$items[] = $item;
-			}
+			$items = array_merge($items, $this->unseenHits(hits: $page['items'], seen: $seen));
 		}
 
 		return [
@@ -343,6 +346,29 @@ class GitHubCatalogService implements GitHubCatalogServiceInterface {
 			'rateLimited' => $rateLimited,
 		];
 	}//end collectTopicHits()
+
+	/**
+	 * The hits of one topic page not seen on an earlier page, keyed by lower-cased full_name.
+	 *
+	 * @param array<int, array<string, mixed>> $hits The page's items.
+	 * @param array<string, bool>              $seen Full names already taken; updated in place.
+	 *
+	 * @return array<int, array<string, mixed>> The new hits, in page order.
+	 */
+	private function unseenHits(array $hits, array &$seen): array {
+		$fresh = [];
+		foreach ($hits as $item) {
+			$key = strtolower((string)($item['full_name'] ?? ''));
+			if ($key === '' || isset($seen[$key]) === true) {
+				continue;
+			}
+
+			$seen[$key] = true;
+			$fresh[] = $item;
+		}
+
+		return $fresh;
+	}//end unseenHits()
 
 	/**
 	 * Run one topic's repository search and return its usable items.
@@ -381,25 +407,10 @@ class GitHubCatalogService implements GitHubCatalogServiceInterface {
 			return $failed;
 		}
 
-		$decoded = json_decode($result['body'], true);
-		if (is_array($decoded) === false || is_array($decoded['items'] ?? null) === false) {
-			// A 200 whose body is not the documented search shape means GitHub
-			// never actually answered this query: a proxy error page, a
-			// truncated response, an HTML interstitial. Counting it as an empty
-			// success would make the UI say "no apps match your search", telling
-			// the user their query found nothing when in fact the lookup failed.
-			// A lookup failure must not wear the words of a judgement, so this
-			// query counts as failed.
+		$items = self::searchItems(body: $result['body']);
+		if ($items === null) {
 			return $failed;
 		}
-
-		// Shape-check here so the caller's merge loop can trust every entry.
-		$items = array_values(
-			array_filter(
-				$decoded['items'],
-				static fn ($item): bool => is_array($item)
-			)
-		);
 
 		return [
 			'ok' => true,
@@ -408,6 +419,36 @@ class GitHubCatalogService implements GitHubCatalogServiceInterface {
 			'rateLimited' => $result['rateLimited'],
 		];
 	}//end fetchTopic()
+
+	/**
+	 * The repository entries of a search response body, or null when the body is not the search shape.
+	 *
+	 * A 200 whose body is not the documented search shape means GitHub
+	 * never actually answered this query: a proxy error page, a
+	 * truncated response, an HTML interstitial. Counting it as an empty
+	 * success would make the UI say "no apps match your search", telling
+	 * the user their query found nothing when in fact the lookup failed.
+	 * A lookup failure must not wear the words of a judgement, so this
+	 * query counts as failed.
+	 *
+	 * @param string $body The response body.
+	 *
+	 * @return array<int, array<mixed>>|null The entries that are objects, or null.
+	 */
+	private static function searchItems(string $body): ?array {
+		$decoded = json_decode($body, true);
+		if (is_array($decoded) === false || is_array($decoded['items'] ?? null) === false) {
+			return null;
+		}
+
+		// Shape-check here so the caller's merge loop can trust every entry.
+		return array_values(
+			array_filter(
+				$decoded['items'],
+				static fn ($item): bool => is_array($item)
+			)
+		);
+	}//end searchItems()
 
 	/**
 	 * Build the installable cards for the merged hits.
@@ -666,8 +707,42 @@ class GitHubCatalogService implements GitHubCatalogServiceInterface {
 	 * @return array<string,mixed>|null The card, or null when the item lacks an owner/name.
 	 */
 	private function buildCard(array $item, ?string $actingUserId, ?string $credentialId): ?array {
-		$fullName = (string)($item['full_name'] ?? '');
-		$nameParts = explode('/', $fullName);
+		$coordinates = $this->repoCoordinates(item: $item);
+		if ($coordinates === null) {
+			return null;
+		}
+
+		[$owner, $repo] = $coordinates;
+		$card = [
+			'owner' => $owner,
+			'repo' => $repo,
+			'stars' => (int)($item['stargazers_count'] ?? 0),
+		];
+		$descriptor = $this->fetchDescriptor(
+			source: new RepoSource(owner: $owner, repo: $repo, ref: null, credentialId: $credentialId),
+			actingUserId: $actingUserId
+		);
+
+		if ($descriptor === null) {
+			return $card + [
+				'installable' => false,
+				'unparseable' => true,
+			];
+		}
+
+		return $card + $this->descriptorFields(descriptor: $descriptor, repo: $repo);
+	}//end buildCard()
+
+	/**
+	 * The owner and repository a search hit names, read from its `owner` and
+	 * `name`, else from `full_name`.
+	 *
+	 * @param array<string,mixed> $item A GitHub search-result item.
+	 *
+	 * @return array{0: string, 1: string}|null Owner and repository, or null when either is missing.
+	 */
+	private function repoCoordinates(array $item): ?array {
+		$nameParts = explode('/', (string)($item['full_name'] ?? ''));
 		$owner = (string)($item['owner']['login'] ?? '');
 		if ($owner === '') {
 			$owner = (string)($nameParts[0] ?? '');
@@ -682,31 +757,24 @@ class GitHubCatalogService implements GitHubCatalogServiceInterface {
 			return null;
 		}
 
-		$stars = (int)($item['stargazers_count'] ?? 0);
-		$descriptor = $this->fetchDescriptor(
-			source: new RepoSource(owner: $owner, repo: $repo, ref: null, credentialId: $credentialId),
-			actingUserId: $actingUserId
-		);
+		return [$owner, $repo];
+	}//end repoCoordinates()
 
-		if ($descriptor === null) {
-			return [
-				'owner' => $owner,
-				'repo' => $repo,
-				'stars' => $stars,
-				'installable' => false,
-				'unparseable' => true,
-			];
-		}
-
+	/**
+	 * The card fields of an installable hit, read from its descriptor.
+	 *
+	 * @param array<string,mixed> $descriptor The parsed descriptor.
+	 * @param string $repo The repository name, the name fallback.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function descriptorFields(array $descriptor, string $repo): array {
 		$credentials = [];
 		if (is_array($descriptor['credentials'] ?? null) === true) {
 			$credentials = $descriptor['credentials'];
 		}
 
 		return [
-			'owner' => $owner,
-			'repo' => $repo,
-			'stars' => $stars,
 			'installable' => true,
 			'unparseable' => false,
 			'slug' => (string)($descriptor['slug'] ?? ''),
@@ -717,7 +785,7 @@ class GitHubCatalogService implements GitHubCatalogServiceInterface {
 			'version' => (string)($descriptor['version'] ?? ''),
 			'credentials' => $credentials,
 		];
-	}//end buildCard()
+	}//end descriptorFields()
 
 	/**
 	 * List `schemas/*.json` paths via the contents API directory listing.

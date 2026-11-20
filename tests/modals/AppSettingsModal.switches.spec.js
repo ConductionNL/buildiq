@@ -102,7 +102,8 @@ describe('AppSettingsModal switches and flows', () => {
 
 	it('disables every control while busy', () => {
 		const wrapper = mountModal({ busy: true, dataRegisters: [{ register: 'r' }] })
-		expect(wrapper.findAll('.switch').map((s) => s.attributes('data-disabled'))).toEqual(['true', 'true'])
+		// Published, per-user customisation and embedding (apps-embed-in-other-sites).
+		expect(wrapper.findAll('.switch').map((s) => s.attributes('data-disabled'))).toEqual(['true', 'true', 'true'])
 		expect(wrapper.findAll('button').every((b) => b.attributes('disabled') !== undefined)).toBe(true)
 		expect(wrapper.find('.select').attributes('data-disabled')).toBe('true')
 	})
@@ -152,6 +153,8 @@ describe('AppSettingsModal switches and flows', () => {
 
 	it('treats a data-registers value that is not a list as no rows', () => {
 		const wrapper = mountModal({ dataRegisters: null })
-		expect(wrapper.findAllComponents({ name: 'NcTextField' })).toHaveLength(0)
+		// The one text field left is the Installable section's short name.
+		expect(wrapper.findAll('.app-settings__data-register-row')).toHaveLength(0)
+		expect(wrapper.findAllComponents({ name: 'NcTextField' })).toHaveLength(1)
 	})
 })

@@ -43,6 +43,7 @@ use RuntimeException;
  *
  * @covers \OCA\Buildiq\Mcp\Handler\CreateAppHandler
  * @uses   \OCA\Buildiq\Mcp\Handler\AbstractToolHandler
+ * @uses   \OCA\Buildiq\Support\ApplicationStories
  */
 class CreateAppHandlerTest extends TestCase {
 
@@ -118,7 +119,7 @@ class CreateAppHandlerTest extends TestCase {
 	public function testAnAdminCreatesTheApp(): void {
 		$this->groupManager->method('isAdmin')->with('alice')->willReturn(true);
 		$this->creation->expects($this->once())->method('createApplication')
-			->with(['slug' => 'demo-app', 'name' => 'Demo', 'description' => 'A demo', 'preset' => 'single'])
+			->with(['slug' => 'demo-app', 'name' => 'Demo', 'description' => 'A demo', 'preset' => 'single', 'stories' => []])
 			->willReturn('uuid-1');
 
 		$result = $this->handler->handle(['slug' => 'demo-app', 'name' => 'Demo', 'description' => 'A demo', 'preset' => 'single']);
@@ -135,6 +136,23 @@ class CreateAppHandlerTest extends TestCase {
 	}//end testAnAdminCreatesTheApp()
 
 	/**
+	 * The plan's stories reach the creation service sanitised: a story without a goal is dropped.
+	 *
+	 * @return void
+	 */
+	public function testTheStoriesReachTheCreationService(): void {
+		$this->groupManager->method('isAdmin')->with('alice')->willReturn(true);
+		$story = ['id' => 's1', 'role' => 'an applicant', 'goal' => 'track my permit', 'servedBy' => [['kind' => 'page', 'id' => 'mine', 'title' => 'Mijn aanvragen']]];
+		$this->creation->expects($this->once())->method('createApplication')
+			->with(['slug' => 'tuin', 'name' => 'Tuin', 'description' => '', 'preset' => 'dev-prod', 'stories' => [$story]])
+			->willReturn('uuid-9');
+
+		$result = $this->handler->handle(['slug' => 'tuin', 'name' => 'Tuin', 'stories' => [$story, ['role' => 'a reviewer']]]);
+
+		$this->assertTrue($result['success']);
+	}//end testTheStoriesReachTheCreationService()
+
+	/**
 	 * Without a preset the app is created as dev-prod with an empty description.
 	 *
 	 * @return void
@@ -142,7 +160,7 @@ class CreateAppHandlerTest extends TestCase {
 	public function testThePresetDefaultsToDevProd(): void {
 		$this->groupManager->method('isAdmin')->willReturn(true);
 		$this->creation->expects($this->once())->method('createApplication')
-			->with(['slug' => 'demo', 'name' => 'Demo', 'description' => '', 'preset' => 'dev-prod'])
+			->with(['slug' => 'demo', 'name' => 'Demo', 'description' => '', 'preset' => 'dev-prod', 'stories' => []])
 			->willReturn('uuid-2');
 
 		$result = $this->handler->handle(['slug' => 'demo', 'name' => 'Demo']);

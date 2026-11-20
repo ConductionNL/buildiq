@@ -82,6 +82,18 @@ class SettingsService implements SettingsServiceInterface {
 	];
 
 	/**
+	 * Boolean config keys and their defaults. `allow_offline_apps` is the
+	 * instance setting "Let apps work offline": while it is off no app gets an
+	 * offline worker, whatever its manifest declares (pages-installable-offline-
+	 * and-mobile, REQ-BQOM-002).
+	 *
+	 * @var array<string, bool>
+	 */
+	private const BOOL_KEYS = [
+		'allow_offline_apps' => false,
+	];
+
+	/**
 	 * Write-only config keys — accepted on update but NEVER returned by
 	 * getSettings(). The remote registry read token lives here.
 	 *
@@ -143,6 +155,17 @@ class SettingsService implements SettingsServiceInterface {
 	}//end isOpenRegisterAvailable()
 
 	/**
+	 * Whether the instance lets apps work offline ("Let apps work offline", off by default).
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-offline-is-the-administrators-choice-first-req-bqom-002
+	 */
+	public function offlineAppsAllowed(): bool {
+		return $this->appConfig->getValueBool(AppIdentity::APP_ID, 'allow_offline_apps', self::BOOL_KEYS['allow_offline_apps']);
+	}//end offlineAppsAllowed()
+
+	/**
 	 * Retrieve all current settings.
 	 *
 	 * Returns a flat array containing all app config values plus metadata
@@ -164,6 +187,10 @@ class SettingsService implements SettingsServiceInterface {
 			$settings[$key] = $value;
 		}
 
+		foreach (self::BOOL_KEYS as $key => $default) {
+			$settings[$key] = $this->appConfig->getValueBool(AppIdentity::APP_ID, $key, $default);
+		}
+
 		$user = $this->userSession->getUser();
 		$isAdmin = ($user !== null && $this->groupManager->isAdmin($user->getUID()));
 
@@ -180,6 +207,9 @@ class SettingsService implements SettingsServiceInterface {
 				// `registry_url` is one of self::CONFIG_KEYS, so the loop above
 				// always set it — the `?? ''` this replaces was unreachable.
 				'storeConfigured' => (trim($settings['registry_url']) !== ''),
+				// "Allow code on pages" (pages-custom-code, REQ-BQCC-005): off by
+				// default, read as a boolean, the same read saveManifest() makes.
+				PageCodeGuard::SETTING => $this->appConfig->getValueBool(AppIdentity::APP_ID, PageCodeGuard::SETTING, false),
 			]
 		);
 	}//end getSettings()
@@ -207,6 +237,13 @@ class SettingsService implements SettingsServiceInterface {
 			}
 		}
 
+		foreach (array_keys(self::BOOL_KEYS) as $key) {
+			if (array_key_exists($key, $data) === true) {
+				$this->appConfig->setValueBool(AppIdentity::APP_ID, $key, filter_var($data[$key], FILTER_VALIDATE_BOOLEAN));
+				$written[] = $key;
+			}
+		}
+
 		// Write-only secrets (registry_token): an empty submitted value means
 		// "leave the stored token unchanged" so re-saving the form does not wipe
 		// a previously-stored token (the form never receives the value back).
@@ -228,10 +265,55 @@ class SettingsService implements SettingsServiceInterface {
 			}
 		}
 
+		$written = [...$written, ...$this->writePageCodeSetting(data: $data)];
+
 		$this->connectionReporter?->refreshFromSave(savedKeys: $written);
 
 		return $this->getSettings();
 	}//end updateSettings()
+
+	/**
+	 * Write "Allow code on pages" when the submission carries it.
+	 *
+	 * @param array<string,mixed> $data The submitted settings.
+	 *
+	 * @return list<string> The key written, or none.
+	 *
+	 * @spec openspec/changes/pages-custom-code/tasks.md#t01
+	 */
+	private function writePageCodeSetting(array $data): array {
+		if (array_key_exists(PageCodeGuard::SETTING, $data) === false) {
+			return [];
+		}
+
+		$this->appConfig->setValueBool(AppIdentity::APP_ID, PageCodeGuard::SETTING, $this->isOn(value: $data[PageCodeGuard::SETTING]));
+
+		return [PageCodeGuard::SETTING];
+	}//end writePageCodeSetting()
+
+	/**
+	 * Whether a submitted toggle value means "on".
+	 *
+	 * A JSON body carries a boolean; a form or query string carries "true",
+	 * "1" or "on". Anything else, including null, is off.
+	 *
+	 * @param mixed $value The submitted value.
+	 *
+	 * @return bool True when the value means on.
+	 *
+	 * @spec openspec/changes/pages-custom-code/tasks.md#t01
+	 */
+	private function isOn(mixed $value): bool {
+		if (is_bool($value) === true) {
+			return $value;
+		}
+
+		if (is_scalar($value) === false) {
+			return false;
+		}
+
+		return in_array(strtolower(trim((string)$value)), ['true', '1', 'on'], true);
+	}//end isOn()
 
 	/**
 	 * Load configuration from openbuild_register.json via OpenRegister.

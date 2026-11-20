@@ -27,6 +27,7 @@ use OCA\Buildiq\Service\PageLayoutFrozenBase;
 use OCA\Buildiq\Service\PageLayoutLayerStack;
 use OCA\Buildiq\Service\PageLayoutParts;
 use OCA\Buildiq\Service\PageLayoutPresenter;
+use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -36,6 +37,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\Buildiq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Covers the paths around resolution: reading the host when the caller did
@@ -50,6 +52,7 @@ use RuntimeException;
  * @uses   \OCA\Buildiq\Service\PageLayoutLayerStack
  * @uses   \OCA\Buildiq\Service\PageLayoutParts
  * @uses   \OCA\Buildiq\Service\PageLayoutPresenter
+ * @uses   \OCA\Buildiq\Support\ObjectRecord
  */
 final class PageLayoutLeafProviderContractTest extends TestCase {
 	/**
@@ -74,19 +77,36 @@ final class PageLayoutLeafProviderContractTest extends TestCase {
 	private LoggerInterface $logger;
 
 	/**
-	 * Build the provider. `findAll` answers `$hostRows` when pointed at the
-	 * host's register and `$layouts` when pointed at buildiq's own.
+	 * Build the provider. `findAll` answers `$layouts` from buildiq's own
+	 * register, and `find` answers the first of `$hostRows` as an entity.
 	 *
 	 * @param array<int, mixed> $layouts What the layout read returns.
-	 * @param mixed $hostRows What the host read returns, or a Throwable to throw.
+	 * @param mixed $hostRows The host rows, or a Throwable for the host read to throw.
 	 *
 	 * @return PageLayoutLeafProvider The provider.
 	 */
 	private function makeProvider(array $layouts, mixed $hostRows = []): PageLayoutLeafProvider {
 		$this->objectService = $this->getMockBuilder(ObjectServiceInterface::class)
 			->disableOriginalConstructor()
-			->onlyMethods(['setRegister', 'setSchema', 'findAll', 'saveObject'])
+			->onlyMethods(['setRegister', 'setSchema', 'find', 'findAll', 'saveObject'])
 			->getMockForAbstractClass();
+
+		$this->objectService->method('find')->willReturnCallback(
+			function () use ($hostRows): ?ObjectEntityInterface {
+				if ($hostRows instanceof \Throwable) {
+					throw $hostRows;
+				}
+
+				$host = ($hostRows[0] ?? null);
+				if (is_array($host) === false) {
+					return null;
+				}
+
+				$entity = $this->createMock(originalClassName: ObjectEntityInterface::class);
+				$entity->method('getObject')->willReturn($host);
+				return $entity;
+			}
+		);
 
 		$this->objectService->method('setRegister')->willReturnCallback(
 			function (string $register) {
@@ -96,16 +116,12 @@ final class PageLayoutLeafProviderContractTest extends TestCase {
 		);
 		$this->objectService->method('setSchema')->willReturnSelf();
 		$this->objectService->method('findAll')->willReturnCallback(
-			function () use ($layouts, $hostRows) {
+			function () use ($layouts) {
 				if ($this->register === 'layouts-register') {
 					return $layouts;
 				}
 
-				if ($hostRows instanceof \Throwable) {
-					throw $hostRows;
-				}
-
-				return $hostRows;
+				return [];
 			}
 		);
 
@@ -201,6 +217,22 @@ final class PageLayoutLeafProviderContractTest extends TestCase {
 	}//end testMalformedAndForeignLayoutRowsAreSkipped()
 
 	/**
+	 * findAll() renders its rows as entities, and a layout is served from one.
+	 *
+	 * @return void
+	 */
+	public function testARenderedLayoutRowIsServed(): void {
+		$row = $this->createMock(originalClassName: ObjectEntityInterface::class);
+		$row->method('getObject')->willReturn($this->layout());
+		$provider = $this->makeProvider(layouts: [$row]);
+
+		$listed = $provider->list('dossiq', 'Zaak', 'zaak-7', ['object' => ['id' => 'zaak-7']]);
+
+		self::assertSame(expected: 1, actual: $listed['total']);
+		self::assertSame(expected: 'pl-schema', actual: $listed['items'][0]['id']);
+	}//end testARenderedLayoutRowIsServed()
+
+	/**
 	 * `get()` returns the composed layout by id and refuses any other id with a 404.
 	 *
 	 * @return void
@@ -265,6 +297,7 @@ final class PageLayoutLeafProviderContractTest extends TestCase {
 		$saved = [];
 		$this->objectService->expects(self::once())->method('saveObject')->willReturnCallback(
 			static function (mixed ...$args) use (&$saved) {
+				$args = LegacyObjectArgs::positional(method: 'saveObject', args: $args);
 				$saved = $args;
 				throw new RuntimeException('locked');
 			}

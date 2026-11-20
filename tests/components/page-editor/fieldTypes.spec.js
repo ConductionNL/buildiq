@@ -26,8 +26,8 @@ function optionValues(wrapper) {
 }
 
 describe('FIELD_TYPES', () => {
-	it('adds file and child-records to the six plain types', () => {
-		expect([...FIELD_TYPES]).toEqual(['string', 'number', 'boolean', 'select', 'textarea', 'date', 'file', 'child-records'])
+	it('adds file, child-records, the product list and scan to the six plain types', () => {
+		expect([...FIELD_TYPES]).toEqual(['string', 'number', 'boolean', 'select', 'textarea', 'date', 'file', 'child-records', 'product-list', 'scan'])
 	})
 
 	it('is offered by both form builders, the field builder adding the device fields', () => {

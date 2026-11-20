@@ -46,7 +46,11 @@ namespace OCA\Buildiq\Service;
 use InvalidArgumentException;
 use OCA\Buildiq\Kernel\Contracts\PageLayoutAuthoringServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\PageLayoutLeafProviderInterface;
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Exception\ValidationException;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCP\IAppConfig;
 use RuntimeException;
 
@@ -54,6 +58,9 @@ use RuntimeException;
  * Saves and re-cuts page layouts and the overrides that patch them.
  *
  * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md (REQ-OBSO-002, REQ-OBSO-003)
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Most of the count is OpenRegister's value objects and
+ *     exceptions; the collaborators are injected.
  */
 class PageLayoutAuthoringService implements PageLayoutAuthoringServiceInterface {
 	/**
@@ -377,6 +384,7 @@ class PageLayoutAuthoringService implements PageLayoutAuthoringServiceInterface 
 	 * @param string $layoutId The id.
 	 *
 	 * @return array<string, mixed>|null The layout, or null.
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function byId(string $layoutId): ?array {
 		$rows = $this->objectService
@@ -389,7 +397,8 @@ class PageLayoutAuthoringService implements PageLayoutAuthoringServiceInterface 
 		}
 
 		foreach ($rows as $row) {
-			if (is_array($row) === true && (string)($row['id'] ?? '') === $layoutId) {
+			$row = ObjectRecord::toArray(object: $row);
+			if ((string)($row['id'] ?? '') === $layoutId) {
 				return $row;
 			}
 		}
@@ -403,13 +412,18 @@ class PageLayoutAuthoringService implements PageLayoutAuthoringServiceInterface 
 	 * @param array<string, mixed> $layout The layout.
 	 *
 	 * @return array<string, mixed> The layout as stored.
+	 *
+	 * @throws InvalidArgumentException When the schema refuses it.
 	 */
 	private function store(array $layout): array {
-		$this->objectService->saveObject(
-			object: $layout,
-			register: $this->registerSlug(),
-			schema: self::SCHEMA,
-		);
+		try {
+			$this->objectService->saveObject(
+				object: $layout,
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->registerSlug(), schema: self::SCHEMA))
+			);
+		} catch (ValidationException $e) {
+			throw new InvalidArgumentException($e->getMessage(), 0, $e);
+		}
 
 		return $layout;
 	}//end store()

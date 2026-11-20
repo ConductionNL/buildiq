@@ -25,6 +25,7 @@ import { createPinia, setActivePinia } from 'pinia'
 import { createApp, h, shallowReactive } from 'vue'
 import { createMemoryHistory, createRouter } from 'vue-router'
 import { ROUTE_PATTERN } from './PageListEditor.vue'
+import SmartPastePreview from './SmartPastePreview.vue'
 import designerPinia from '../../pinia.js'
 import { registerDirectives } from '../../registerDirectives.js'
 
@@ -242,6 +243,16 @@ export default {
 			default: null,
 		},
 
+		/**
+		 * The language the previewed app's labels are shown in; '' is the
+		 * maker's own Nextcloud language. CnAppRoot looks each label up in the
+		 * manifest's translations for it (REQ-BQML-004).
+		 */
+		language: {
+			type: String,
+			default: '',
+		},
+
 		permissions: {
 			type: [Array, Object],
 			default: () => [],
@@ -278,6 +289,7 @@ export default {
 				customComponents: this.customComponents,
 				pageTypes: this.pageTypes,
 				translate: this.translate,
+				language: this.language,
 				permissions: this.permissions,
 				diagnostics: this.diagnostics,
 			}
@@ -576,9 +588,18 @@ export default {
 		 * @param {object} state The reactive CnAppRoot prop bag.
 		 * @param {object} router The sandbox router.
 		 * @return {object} the (unmounted) application.
+		 * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-the-authored-behaviour-is-fixed-for-the-renderer-req-bqsp-003
 		 */
 		buildSandboxApp(state, router) {
-			const app = createApp({ render: () => h(CnAppRoot, state) })
+			// The "Paste to fill" control of a form with smart paste
+			// (ai-smart-paste-into-forms D5): the form renderer does not draw it
+			// yet, so the preview shows it with a sample answer above the app.
+			const app = createApp({
+				render: () => [
+					h(SmartPastePreview, { manifest: state.manifest }),
+					h(CnAppRoot, state),
+				],
+			})
 			app.mixin({ methods: { t, n } })
 			// A render error in the preview lands in the designer's error log, not only the console.
 			app.config.errorHandler = this.renderErrorHandler(router)

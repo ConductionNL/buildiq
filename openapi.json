@@ -2,7 +2,7 @@
     "openapi": "3.0.3",
     "info": {
         "title": "Buildiq",
-        "version": "0.7.16-unstable.20261103190000",
+        "version": "0.7.17-unstable.20261119140417",
         "description": "The JSON API of Buildiq, the app builder for Nextcloud: applications and their versions, page layouts, forms and registration forms, rules and automations, the copilot, exports, the shop and the settings behind them. The records themselves are stored in OpenRegister and read and written through its API; this document covers the endpoints Buildiq adds on top.\n\nEvery path is served under `/api/v1/`, the version this document describes. The unversioned `/api/` paths keep working, are deprecated, and name their `/api/v1/` successor in a `Link` header next to a `Deprecation` header. Errors are RFC 9457 problem details (`application/problem+json`), and every response carries an `API-Version` header. Paths that implement an external standard keep the formats of that standard and are not described here.",
         "contact": {
             "name": "Conduction B.V.",
@@ -1641,6 +1641,91 @@
                 }
             }
         },
+        "/applications/{appUuid}/flow-wrappers": {
+            "post": {
+                "operationId": "flow-bindings-sync",
+                "summary": "Wire the app's flow bindings: one wrapper flow per Run on entry",
+                "description": "Wire the app's flow bindings: one wrapper flow per Run on entry. Saves, publishes and binds a wrapper flow for each `runOn` entry of the flows bound in `Application.flows`, removes wrappers whose entry or binding is gone, and answers the new bindings. The bound flows themselves are never changed. Wired in `appinfo/routes.php` under name `flowBindings#sync`. `#[NoAdminRequired]`; only an owner of the Application may call it. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "applications"
+                ],
+                "parameters": [
+                    {
+                        "name": "appUuid",
+                        "in": "path",
+                        "required": true,
+                        "description": "Application UUID (path param).",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "flows": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            },
+                                            "description": "The Application's bindings after the sync, wrappers included."
+                                        },
+                                        "created": {
+                                            "type": "integer",
+                                            "description": "Wrappers saved and bound."
+                                        },
+                                        "removed": {
+                                            "type": "integer",
+                                            "description": "Wrappers deleted and unbound."
+                                        },
+                                        "failed": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "reason": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                            "no_register",
+                                                            "save_failed",
+                                                            "not_published",
+                                                            "remove_failed"
+                                                        ]
+                                                    }
+                                                }
+                                            },
+                                            "description": "Wrappers that could not be saved, published or removed."
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    }
+                }
+            }
+        },
         "/applications/{appUuid}/versions/{versionUuid}/health": {
             "get": {
                 "operationId": "app-health-show",
@@ -1849,7 +1934,7 @@
                 }
             }
         },
-        "/applications/{slug}/copy": {
+        "/applications/{sourceSlug}/copy": {
             "post": {
                 "operationId": "applications-copy",
                 "summary": "Copy an app into a new one, owned by the caller (REQ-BQCP-001)",
@@ -1859,7 +1944,7 @@
                 ],
                 "parameters": [
                     {
-                        "name": "slug",
+                        "name": "sourceSlug",
                         "in": "path",
                         "required": true,
                         "description": "The source app's slug.",
@@ -2927,6 +3012,80 @@
                 }
             }
         },
+        "/copilot/assist": {
+            "post": {
+                "operationId": "copilot-assist",
+                "summary": "POST /api/copilot/assist — propose or explain one builder expression",
+                "description": "POST /api/copilot/assist — propose or explain one builder expression: a FEEL condition, a decision table row, a field mapping or a webhook payload template. Body: `{ target, mode, request, current, appSlug, context }`, where `target` is `feel-condition`, `decision-rule`, `field-mapping` or `payload-template`, `mode` is `write` or `explain`, and `context` carries names only. The answer is checked before it is returned; after one failed repair it answers 422 `assist_invalid`. Performs zero writes. Needs a signed-in Nextcloud user who is an owner or editor of `appSlug`.",
+                "tags": [
+                    "copilot"
+                ],
+                "requestBody": {
+                    "required": false,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "target": {
+                                        "description": "The editor field."
+                                    },
+                                    "mode": {
+                                        "description": "write or explain."
+                                    },
+                                    "request": {
+                                        "description": "The plain request."
+                                    },
+                                    "current": {
+                                        "description": "The current value."
+                                    },
+                                    "appSlug": {
+                                        "description": "The app slug."
+                                    },
+                                    "context": {
+                                        "description": "Names only: columns, paths, register, targetSchema, triggerSchema."
+                                    }
+                                },
+                                "additionalProperties": false
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Problem422"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    },
+                    "503": {
+                        "$ref": "#/components/responses/Problem503"
+                    }
+                }
+            }
+        },
         "/copilot/discard": {
             "post": {
                 "operationId": "copilot-discard",
@@ -3065,7 +3224,7 @@
             "post": {
                 "operationId": "copilot-plan",
                 "summary": "POST /api/copilot/plan — turn a brief into a validated, reviewable plan",
-                "description": "POST /api/copilot/plan — turn a brief into a validated, reviewable plan. Body: `{ brief: string, appSlug?: string, agentId?: string, versionSlug?: string }`. Performs zero builder writes (an agent-scoped rejected plan still writes one `AgentRun` audit record — see `CopilotService::plan()`). Needs a signed-in Nextcloud user.",
+                "description": "POST /api/copilot/plan — turn a brief into a validated, reviewable plan. Body: `{ brief: string, appSlug?: string, agentId?: string, versionSlug?: string, documentFileId?: int }`. Performs zero builder writes (an agent-scoped rejected plan still writes one `AgentRun` audit record — see `CopilotService::plan()`). Needs a signed-in Nextcloud user.",
                 "tags": [
                     "copilot"
                 ],
@@ -3087,6 +3246,9 @@
                                     },
                                     "versionSlug": {
                                         "description": "The version slug."
+                                    },
+                                    "documentFileId": {
+                                        "description": "Files id of a requirements document, read as the caller (plain text or Markdown, at most 60,000 characters)."
                                     }
                                 },
                                 "additionalProperties": false
@@ -3110,6 +3272,12 @@
                     },
                     "401": {
                         "$ref": "#/components/responses/Problem401"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "422": {
+                        "$ref": "#/components/responses/Problem422"
                     },
                     "500": {
                         "$ref": "#/components/responses/Problem500"
@@ -3813,6 +3981,48 @@
                 }
             }
         },
+        "/rules": {
+            "get": {
+                "operationId": "rules-index",
+                "summary": "List the active rule sets another app may call",
+                "description": "The active rule sets whose callableBy lists the app, projected to slug, title, version, inputs and outputs; the decision table is not returned (rules-evaluation-for-other-apps REQ-BQRX-001). Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "rules"
+                ],
+                "parameters": [
+                    {
+                        "name": "callableBy",
+                        "in": "query",
+                        "required": true,
+                        "description": "The app id to list the callable rule sets for.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "400": {
+                        "$ref": "#/components/responses/Problem400"
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    }
+                }
+            }
+        },
         "/rules/{ruleSetSlug}/decision-table": {
             "put": {
                 "operationId": "rules-save-decision-table",
@@ -4485,7 +4695,7 @@
                 }
             }
         },
-        "/store/templates/{slug}/install": {
+        "/store/templates/{templateSlug}/install": {
             "post": {
                 "operationId": "store-install",
                 "summary": "Resolve a remote template by slug and install it locally (clone)",
@@ -4495,7 +4705,7 @@
                 ],
                 "parameters": [
                     {
-                        "name": "slug",
+                        "name": "templateSlug",
                         "in": "path",
                         "required": true,
                         "description": "The remote template slug to install.",
@@ -4539,6 +4749,51 @@
                     },
                     "401": {
                         "$ref": "#/components/responses/Problem401"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    }
+                }
+            }
+        },
+        "/applications/{id}/connections": {
+            "get": {
+                "operationId": "application-connections-index",
+                "summary": "List an app's sources and integrations with their health (REQ-BIQ-CONN-005)",
+                "description": "The integriq sources the app's manifest binds as data sources and the integriq connections registered for the app, each with its status and when it was last checked. Only users who may edit the app, and admins; the check runs before any connection is read.",
+                "tags": [
+                    "applications"
+                ],
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "description": "Application slug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
                     },
                     "404": {
                         "$ref": "#/components/responses/Problem404"

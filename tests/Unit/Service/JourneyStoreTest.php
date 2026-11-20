@@ -32,6 +32,7 @@ use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use RuntimeException;
+use OCA\Buildiq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Tests for {@see JourneyStore}.
@@ -91,7 +92,15 @@ final class JourneyStoreTest extends TestCase {
 		];
 
 		$this->objects->expects($this->once())->method('saveObject')
-			->with($expected, [], 'buildiq', 'journey', null, false, false)
+			->with(...LegacyObjectArgs::with(method: 'saveObject', expected: [
+				'object' => $expected,
+				'extend' => [],
+				'register' => 'buildiq',
+				'schema' => 'journey',
+				'uuid' => null,
+				'_rbac' => false,
+				'_multitenancy' => false,
+			]))
 			->willReturn($this->entity(uuid: 'uuid-new'));
 
 		self::assertSame($expected + ['id' => 'uuid-new'], $this->store->save(journey: $journey));
@@ -104,7 +113,15 @@ final class JourneyStoreTest extends TestCase {
 	 */
 	public function testAnExistingJourneyIsWrittenUnderItsId(): void {
 		$this->objects->expects($this->once())->method('saveObject')
-			->with($this->anything(), [], 'buildiq', 'journey', 'uuid-1', false, false)
+			->with(...LegacyObjectArgs::with(method: 'saveObject', expected: [
+				'object' => $this->anything(),
+				'extend' => [],
+				'register' => 'buildiq',
+				'schema' => 'journey',
+				'uuid' => 'uuid-1',
+				'_rbac' => false,
+				'_multitenancy' => false,
+			]))
 			->willReturn($this->entity(uuid: 'uuid-1'));
 
 		$stored = $this->store->save(journey: ['id' => 'uuid-1', 'title' => 'J', 'description' => 'D', 'steps' => []]);

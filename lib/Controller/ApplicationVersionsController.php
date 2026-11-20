@@ -47,9 +47,9 @@ use DateTimeImmutable;
 use DateTimeInterface;
 use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Kernel\Contracts\ApplicationVersionServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\VersionMergeRunnerInterface;
 use OCA\Buildiq\Service\Branch\VersionBranchRefused;
-use OCA\Buildiq\Service\Branch\VersionMergeRequest;
-use OCA\Buildiq\Service\Branch\VersionMergeRunner;
+use OCA\Buildiq\Service\PageCodeGuard;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
@@ -57,11 +57,17 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\UserRateLimit;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
@@ -131,7 +137,9 @@ class ApplicationVersionsController extends Controller {
 	 * @param IGroupManager $groupManager Group membership resolver
 	 * @param ApplicationVersionServiceInterface $versionService Owner of the imperative logic
 	 * @param AuditTrailMapper|null $auditTrailMapper Optional OR audit-trail writer (null until OR loaded)
-	 * @param VersionMergeRunner|null $merges Starts a branch, previews and applies a merge (lifecycle-git-branches)
+	 * @param VersionMergeRunnerInterface|null $merges Starts a branch, previews and applies a merge (lifecycle-git-branches)
+	 * @param IAppConfig|null $appConfig Reads the instance setting "Allow code on pages"; without it code stays refused
+	 * @param PageCodeGuard $codeGuard Finds the code-bearing keys of a manifest (pages-custom-code D6)
 	 *
 	 * @return void
 	 */
@@ -145,7 +153,9 @@ class ApplicationVersionsController extends Controller {
 		private readonly IGroupManager $groupManager,
 		private readonly ApplicationVersionServiceInterface $versionService,
 		private readonly ?AuditTrailMapper $auditTrailMapper = null,
-		private readonly ?VersionMergeRunner $merges = null,
+		private readonly ?VersionMergeRunnerInterface $merges = null,
+		private readonly ?IAppConfig $appConfig = null,
+		private readonly PageCodeGuard $codeGuard = new PageCodeGuard(),
 	) {
 		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
@@ -261,8 +271,10 @@ class ApplicationVersionsController extends Controller {
 
 			$created = $this->objectService->saveObject(
 				object: $payload,
-				register: ApplicationVersionServiceInterface::REGISTER_SLUG,
-				schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(
+						register: ApplicationVersionServiceInterface::REGISTER_SLUG,
+						schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
+					))
 			);
 
 			return new JSONResponse(
@@ -362,7 +374,7 @@ class ApplicationVersionsController extends Controller {
 		}
 
 		return $this->branchRun(
-			run: fn (): array => $this->merges->branches->start(application: $application, source: $source, name: $name),
+			run: fn (): array => $this->merges->startBranch(application: $application, source: $source, name: $name),
 			status: Http::STATUS_CREATED
 		);
 	}//end branch()
@@ -390,44 +402,58 @@ class ApplicationVersionsController extends Controller {
 		}
 
 		$application = $this->loadApplication(slug: $appSlug);
-		$request     = $this->mergeRequest(application: (array)$application, source: $source, target: $target);
-		if ($application === null || $request === null) {
+		$versions    = $this->mergeVersions(application: (array)$application, source: $source, target: $target);
+		if ($application === null || $versions === null) {
 			return $this->errorResponse(code: 'not_found', detail: $source . ' / ' . $target, status: Http::STATUS_NOT_FOUND);
 		}
 
 		if ($this->request->getParam('preview') === true || $this->request->getParam('preview') === 'true') {
-			return $this->branchRun(run: fn (): array => $this->merges->preview(application: $application, request: $request), status: Http::STATUS_OK);
+			return $this->branchRun(
+				run: fn (): array => $this->merges->previewMerge(application: $application, source: $versions['source'], target: $versions['target']),
+				status: Http::STATUS_OK
+			);
 		}
 
-		return $this->branchRun(run: fn (): array => $this->merges->apply(application: $application, request: $request), status: Http::STATUS_OK);
+		// A merge writes the source's code into the target: the code-write rule of a save applies (REQ-BQCC-005).
+		$codeRefusal = $this->refuseCodeChange(
+			application: $application,
+			before: $this->manifestOf(version: $versions['target']),
+			after: ($this->manifestOf(version: $versions['source']) ?? [])
+		);
+
+		return $codeRefusal ?? $this->branchRun(
+			run: fn (): array => $this->merges->applyMerge(
+				application: $application,
+				source: $versions['source'],
+				target: $versions['target'],
+				resolution: [
+					'choices' => $this->request->getParam('choices', []),
+					'targetHash' => $this->request->getParam('targetHash', ''),
+					'acknowledgeBreaking' => $this->request->getParam('acknowledgeBreaking'),
+				]
+			),
+			status: Http::STATUS_OK
+		);
 	}//end merge()
 
 	/**
-	 * The merge request of two versions of the Application, or null when either is missing.
+	 * The two versions of the Application to merge, or null when either is missing.
 	 *
 	 * @param array<string,mixed> $application The Application.
 	 * @param string              $source      The source version slug.
 	 * @param string              $target      The target version slug.
 	 *
-	 * @return VersionMergeRequest|null
+	 * @return array{source: array<string,mixed>, target: array<string,mixed>}|null
 	 */
-	private function mergeRequest(array $application, string $source, string $target): ?VersionMergeRequest {
+	private function mergeVersions(array $application, string $source, string $target): ?array {
 		$from = $this->findVersionRowBySlug(application: $application, versionSlug: $source);
 		$into = $this->findVersionRowBySlug(application: $application, versionSlug: $target);
 		if ($from === null || $into === null || $source === $target) {
 			return null;
 		}
 
-		return new VersionMergeRequest(
-			source: $from,
-			target: $into,
-			resolution: [
-				'choices' => $this->request->getParam('choices', []),
-				'targetHash' => $this->request->getParam('targetHash', ''),
-				'acknowledgeBreaking' => $this->request->getParam('acknowledgeBreaking'),
-			]
-		);
-	}//end mergeRequest()
+		return ['source' => $from, 'target' => $into];
+	}//end mergeVersions()
 
 	/**
 	 * Run a branch or merge step, answering a refusal with its own code and status.
@@ -480,9 +506,17 @@ class ApplicationVersionsController extends Controller {
 			$currentUuid = (string)($current['id'] ?? $current['uuid'] ?? '');
 			$payload = $this->buildUpdatePayload(current: $current, currentUuid: $currentUuid);
 
+			// An editor may save a version, but not add, change or remove its code (REQ-BQCC-005).
+			$codeRefusal = $this->refuseCodeChange(
+				application: (array)$this->loadApplication(slug: $appSlug),
+				before: $this->manifestOf(version: $current),
+				after: ($this->manifestOf(version: $payload) ?? [])
+			);
+
 			// Acquire an optimistic lock before the read-modify-write to prevent
 			// concurrent UI / MCP writes silently losing each other's changes (issue #159).
-			$locked = $this->lockForUpdate(currentUuid: $currentUuid, versionSlug: $versionSlug);
+			// A refused code change returns before any lock is taken.
+			$locked = ($codeRefusal ?? $this->lockForUpdate(currentUuid: $currentUuid, versionSlug: $versionSlug));
 			if ($locked instanceof JSONResponse) {
 				return $locked;
 			}
@@ -490,9 +524,13 @@ class ApplicationVersionsController extends Controller {
 			try {
 				$updated = $this->objectService->saveObject(
 					object: $payload,
-					register: ApplicationVersionServiceInterface::REGISTER_SLUG,
-					schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA,
-					uuid: $currentUuid
+					options: new ObjectSaveOptions(
+						target: new ObjectFindTarget(
+								register: ApplicationVersionServiceInterface::REGISTER_SLUG,
+								schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
+							),
+						uuid: $currentUuid
+					)
 				);
 			} finally {
 				$this->releaseUpdateLock(currentUuid: $currentUuid, locked: $locked);
@@ -546,6 +584,79 @@ class ApplicationVersionsController extends Controller {
 	}//end buildUpdatePayload()
 
 	/**
+	 * The manifest of a version row, or null when it holds none.
+	 *
+	 * @param array<string,mixed> $version The version row.
+	 *
+	 * @return array<mixed>|null
+	 */
+	private function manifestOf(array $version): ?array {
+		$manifest = ($version['manifest'] ?? null);
+		if (is_array($manifest) === true) {
+			return $manifest;
+		}
+
+		return null;
+	}//end manifestOf()
+
+	/**
+	 * Refuse a write that adds, changes or removes code unless an app owner
+	 * makes it and the instance allows code on pages (pages-custom-code D6).
+	 *
+	 * A write that leaves every code-bearing key as it was passes. There is no
+	 * admin bypass: a Nextcloud administrator who is not an owner of the app
+	 * cannot write code into it, the same rule as the manifest save.
+	 *
+	 * @param array<string,mixed> $application The parent Application.
+	 * @param array<mixed>|null   $before      The stored manifest, or null when there is none.
+	 * @param array<mixed>        $after       The manifest being written.
+	 *
+	 * @return JSONResponse|null The 403, or null when the write may proceed.
+	 *
+	 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-only-owners-write-code-and-only-when-allowed-req-bqcc-005
+	 */
+	private function refuseCodeChange(array $application, array|null $before, array $after): JSONResponse|null {
+		if ($this->codeGuard->changesCode(before: $before, after: $after) === false) {
+			return null;
+		}
+
+		if ($this->appConfig?->getValueBool(AppIdentity::APP_ID, PageCodeGuard::SETTING, false) !== true) {
+			return new JSONResponse(
+				data: ['error' => 'forbidden', 'code' => 'buildiq.code.disabled', 'message' => 'Code on pages is switched off for this instance.'],
+				statusCode: Http::STATUS_FORBIDDEN
+			);
+		}
+
+		if ($this->isOwner(application: $application, user: $this->userSession->getUser()) === true) {
+			return null;
+		}
+
+		return new JSONResponse(
+			data: ['error' => 'forbidden', 'code' => 'buildiq.code.owners_only', 'message' => 'Only app owners can add code to a page.'],
+			statusCode: Http::STATUS_FORBIDDEN
+		);
+	}//end refuseCodeChange()
+
+	/**
+	 * Whether the user is an owner of the Application, by name or by group. No admin bypass.
+	 *
+	 * @param array<string,mixed> $application The parent Application.
+	 * @param IUser|null          $user        The caller, or null when nobody is signed in.
+	 *
+	 * @return bool True for an owner.
+	 */
+	private function isOwner(array $application, IUser|null $user): bool {
+		if ($user === null) {
+			return false;
+		}
+
+		$owners = $this->collectAuthorisedPrincipals(application: $application, roles: ['owners']);
+
+		return in_array($user->getUID(), $owners['users'], true) === true
+			|| count(array_intersect($this->getUserGroupIds(user: $user), $owners['groups'])) > 0;
+	}//end isOwner()
+
+	/**
 	 * Refuse a promotesTo target that would close a promotion cycle.
 	 *
 	 * @param string $currentUuid        The current version uuid.
@@ -589,9 +700,7 @@ class ApplicationVersionsController extends Controller {
 
 		try {
 			$this->objectService->lockObject(
-				identifier: $currentUuid,
-				process: 'buildiq.controller-update',
-				duration: 15
+				new LockRequest(identifier: $currentUuid, process: 'buildiq.controller-update', duration: 15)
 			);
 		} catch (Throwable $lockError) {
 			return $this->errorResponse(
@@ -618,7 +727,7 @@ class ApplicationVersionsController extends Controller {
 		}
 
 		try {
-			$this->objectService->unlockObject(identifier: $currentUuid);
+			$this->objectService->unlockObject(new UnlockRequest(identifier: $currentUuid));
 		} catch (Throwable $unlockErr) {
 			$this->logger->warning(
 				'Buildiq: failed to release update lock on ' . $currentUuid . ': ' . $unlockErr->getMessage()
@@ -781,8 +890,10 @@ class ApplicationVersionsController extends Controller {
 		try {
 			$version = $this->objectService->find(
 				id: $versionUuid,
-				register: ApplicationVersionServiceInterface::REGISTER_SLUG,
-				schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
+				options: new ObjectFindOptions(
+					register: ApplicationVersionServiceInterface::REGISTER_SLUG,
+					schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
+				)
 			);
 		} catch (Throwable $e) {
 			return null;
@@ -915,31 +1026,9 @@ class ApplicationVersionsController extends Controller {
 	 * @param string $slug Parent Application slug
 	 *
 	 * @return array<string,mixed>|null Application record or null when missing
-	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function loadApplication(string $slug): ?array {
-		$ids = $this->resolveRegisterAndSchema(schemaSlug: ApplicationVersionServiceInterface::APPLICATION_SCHEMA);
-		if ($ids === null) {
-			return null;
-		}
-
-		[$registerId, $schemaId] = $ids;
-
-		$rows = $this->objectService->searchObjects(
-			query: [
-				'@self' => [
-					'register' => $registerId,
-					'schema' => $schemaId,
-				],
-				'slug' => $slug,
-			]
-		);
-
-		if (is_array($rows) === false || $rows === []) {
-			return null;
-		}
-
-		return ObjectRecord::toArray(object: $rows[0]);
+		return $this->findFirst(schemaSlug: ApplicationVersionServiceInterface::APPLICATION_SCHEMA, filters: ['slug' => $slug]);
 	}//end loadApplication()
 
 	/**
@@ -955,7 +1044,6 @@ class ApplicationVersionsController extends Controller {
 	 * @return array<string,mixed>|null Version record or null on miss
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-24
-	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function findVersionForApplication(string $slug, string $versionSlug): ?array {
 		$application = $this->loadApplication(slug: $slug);
@@ -965,7 +1053,23 @@ class ApplicationVersionsController extends Controller {
 
 		$applicationUuid = (string)($application['id'] ?? $application['uuid'] ?? '');
 
-		$ids = $this->resolveRegisterAndSchema(schemaSlug: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA);
+		return $this->findFirst(
+			schemaSlug: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA,
+			filters: ['slug' => $versionSlug, 'application' => $applicationUuid]
+		);
+	}//end findVersionForApplication()
+
+	/**
+	 * The first object of a schema in buildiq's register matching the filters.
+	 *
+	 * @param string $schemaSlug The schema to search.
+	 * @param array<string,string> $filters Property filters, added after the `@self` scope.
+	 *
+	 * @return array<string,mixed>|null The normalised object, or null on a miss
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
+	 */
+	private function findFirst(string $schemaSlug, array $filters): ?array {
+		$ids = $this->resolveRegisterAndSchema(schemaSlug: $schemaSlug);
 		if ($ids === null) {
 			return null;
 		}
@@ -973,14 +1077,7 @@ class ApplicationVersionsController extends Controller {
 		[$registerId, $schemaId] = $ids;
 
 		$rows = $this->objectService->searchObjects(
-			query: [
-				'@self' => [
-					'register' => $registerId,
-					'schema' => $schemaId,
-				],
-				'slug' => $versionSlug,
-				'application' => $applicationUuid,
-			]
+			query: ['@self' => ['register' => $registerId, 'schema' => $schemaId]] + $filters
 		);
 
 		if (is_array($rows) === false || $rows === []) {
@@ -988,7 +1085,7 @@ class ApplicationVersionsController extends Controller {
 		}
 
 		return ObjectRecord::toArray(object: $rows[0]);
-	}//end findVersionForApplication()
+	}//end findFirst()
 
 	/**
 	 * Verify the current user has any of the named roles on the parent Application.

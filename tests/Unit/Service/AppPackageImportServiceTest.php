@@ -29,6 +29,7 @@ use OCA\Buildiq\Controller\ApplicationsController;
 use OCA\Buildiq\Service\AppPackageImportService;
 use OCA\Buildiq\Service\AppRecordsImporter;
 use OCA\Buildiq\Service\AppRepoParser;
+use OCP\IAppConfig;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use ZipArchive;
@@ -41,6 +42,7 @@ use ZipArchive;
  * @uses   \OCA\Buildiq\Exception\AppRepoParseException
  * @uses   \OCA\Buildiq\Service\SchemaSlugClaims
  * @uses   \OCA\Buildiq\Service\AppRecordsImporter
+ * @uses   \OCA\Buildiq\Service\PageCodeGuard
  */
 class AppPackageImportServiceTest extends TestCase {
 
@@ -94,10 +96,20 @@ class AppPackageImportServiceTest extends TestCase {
 	/**
 	 * The service under test, with the real parser.
 	 *
+	 * @param bool|null $allowCode The instance setting "Allow code on pages"; null for no app config.
+	 *
 	 * @return AppPackageImportService The service.
 	 */
-	private function service(): AppPackageImportService {
-		return new AppPackageImportService(new AppRepoParser(), $this->install, $this->records);
+	private function service(?bool $allowCode = null): AppPackageImportService {
+		$config = null;
+		if ($allowCode !== null) {
+			$config = $this->createMock(IAppConfig::class);
+			$config->method('getValueBool')->willReturnCallback(
+				static fn (string $app, string $key, bool $default = false): bool => ($app === 'buildiq' && $key === 'allow_page_code') ? $allowCode : $default
+			);
+		}
+
+		return new AppPackageImportService(new AppRepoParser(), $this->install, $this->records, $config);
 
 	}//end service()
 
@@ -397,4 +409,41 @@ class AppPackageImportServiceTest extends TestCase {
 		$this->assertSame(422, $preview['status']);
 
 	}//end testThePreviewRefusesWhatTheImportRefuses()
+	/**
+	 * An archive with code on its pages is refused while code on pages is switched off, and nothing is installed.
+	 *
+	 * @return void
+	 */
+	public function testAnArchiveWithCodeIsRefusedWhileCodeIsSwitchedOff(): void {
+		$manifest = ['version' => '1.0.0', 'menu' => [], 'pages' => [['id' => 'chart', 'type' => 'custom', 'config' => ['code' => 'return 1;']]]];
+		$archive  = $this->archive(self::package(['manifest.json' => (string)json_encode($manifest)]));
+		$this->install->expects($this->never())->method('installFromTemplateArray');
+
+		foreach ([$this->service(allowCode: false), $this->service()] as $service) {
+			$result = $service->import($archive, '', '', 'sanne');
+			$this->assertSame(403, $result['status']);
+			$this->assertSame('buildiq.code.disabled', $result['data']['code']);
+		}
+
+	}//end testAnArchiveWithCodeIsRefusedWhileCodeIsSwitchedOff()
+
+	/**
+	 * With code on pages allowed, the importer (the new owner) imports an archive with code.
+	 *
+	 * @return void
+	 */
+	public function testAnArchiveWithCodeIsImportedWhenCodeIsAllowed(): void {
+		$manifest = ['version' => '1.0.0', 'menu' => [], 'pages' => [['id' => 'chart', 'type' => 'custom', 'config' => ['code' => 'return 1;']]]];
+		$archive  = $this->archive(self::package(['manifest.json' => (string)json_encode($manifest)]));
+		$this->install->expects($this->once())->method('installFromTemplateArray')
+			->willReturnCallback(
+				function (array $template, string $name, string $newSlug, string $ownerUid): array {
+					$this->assertSame('return 1;', $template['manifest']['pages'][0]['config']['code']);
+					return ['status' => 201, 'data' => ['slug' => $newSlug]];
+				}
+			);
+
+		$this->assertSame(201, $this->service(allowCode: true)->import($archive, '', '', 'sanne')['status']);
+
+	}//end testAnArchiveWithCodeIsImportedWhenCodeIsAllowed()
 }//end class

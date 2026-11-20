@@ -25,6 +25,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\Mcp\Handler;
 
 use OCA\Buildiq\Mcp\Handler\AbstractToolHandler;
+use OCA\Buildiq\Service\AppOrganisationGuard;
 use OCA\Buildiq\Service\PermissionResolver;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
@@ -39,6 +40,7 @@ use PHPUnit\Framework\TestCase;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\Buildiq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Tests for the AbstractToolHandler write gate and version helpers.
@@ -47,6 +49,7 @@ use RuntimeException;
  */
 #[CoversClass(AbstractToolHandler::class)]
 #[UsesClass(ObjectRecord::class)]
+#[UsesClass(AppOrganisationGuard::class)]
 final class AbstractToolHandlerWriteGuardTest extends TestCase {
 
 	/**
@@ -171,6 +174,26 @@ final class AbstractToolHandlerWriteGuardTest extends TestCase {
 	}//end testALostSessionOrUnreadablePermissionsIsForbidden()
 
 	/**
+	 * Without a resolver, empty or non-string principals grant nothing.
+	 *
+	 * @return void
+	 */
+	public function testEmptyPrincipalsGrantNoWriteRoleWithoutAResolver(): void {
+		$this->objects->method('searchObjectsBySlug')->willReturn(
+			[['uuid' => 'u1', 'permissions' => ['owners' => ['user:', 'group:', '', 7], 'editors' => 'alice']]]
+		);
+
+		$groups = $this->createMock(IGroupManager::class);
+		$groups->method('isAdmin')->with('alice')->willReturn(false);
+		$groups->expects($this->once())->method('getUserGroups')->willReturn([]);
+
+		$this->assertSame(
+			['isError' => true, 'error' => 'forbidden', 'message' => "You do not have owner or editor access to application 'permits'."],
+			$this->handler(users: [$this->user('alice')], groups: $groups)->call('requireWriteRole', ['permits'])
+		);
+	}//end testEmptyPrincipalsGrantNoWriteRoleWithoutAResolver()
+
+	/**
 	 * A slug is two to 48 lowercase letters, digits or inner hyphens.
 	 *
 	 * @return void
@@ -233,12 +256,18 @@ final class AbstractToolHandlerWriteGuardTest extends TestCase {
 		$saved = $this->createMock(ObjectEntity::class);
 		$saved->method('jsonSerialize')->willReturn(['slug' => 'v1', 'manifest' => ['pages' => []]]);
 
-		$this->objects->expects($this->once())->method('lockObject')->with('ver-1', 'buildiq.mcp-manifest-edit', 30)->willReturn([]);
+		$this->objects->expects($this->once())->method('lockObject')->with(self::callback(static fn ($request): bool => $request->identifier === 'ver-1' && $request->process === 'buildiq.mcp-manifest-edit' && $request->duration === 30))->willReturn([]);
 		$this->objects->expects($this->once())
 			->method('saveObject')
-			->with(['slug' => 'v1', 'manifest' => ['pages' => []]], [], 'buildiq', 'applicationVersion', 'ver-1')
+			->with(...LegacyObjectArgs::with(method: 'saveObject', expected: [
+					'object' => ['slug' => 'v1', 'manifest' => ['pages' => []]],
+					'extend' => [],
+					'register' => 'buildiq',
+					'schema' => 'applicationVersion',
+					'uuid' => 'ver-1',
+				]))
 			->willReturn($saved);
-		$this->objects->expects($this->once())->method('unlockObject')->with('ver-1')->willThrowException(new RuntimeException('lock lost'));
+		$this->objects->expects($this->once())->method('unlockObject')->with(self::callback(static fn ($request): bool => $request->identifier === 'ver-1'))->willThrowException(new RuntimeException('lock lost'));
 
 		$result = $this->handler(users: [null])->call(
 			'saveVersionManifest',

@@ -52,6 +52,7 @@ use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -148,7 +149,7 @@ class AgentsController extends Controller {
 		IRequest $request,
 		private readonly LoggerInterface $logger,
 		RegisterStore $store,
-		CallerContext $caller,
+		private readonly CallerContext $caller,
 	) {
 		$this->objectService = $store->objectService;
 		$this->registerMapper = $store->registerMapper;
@@ -185,7 +186,9 @@ class AgentsController extends Controller {
 
 			$applicationSlug = (string)($agent['applicationSlug'] ?? '');
 			$application = $this->loadApplication(slug: $applicationSlug);
-			if ($application === null) {
+			// Organisation scope before any role, admins included: another
+			// organisation's scoped app answers as an unknown one (REQ-BQOS-002).
+			if ($application === null || $this->caller->seesApplication(application: $application) === false) {
 				return $this->error(code: 'not_found', detail: 'Application ' . $applicationSlug . ' not found', status: Http::STATUS_NOT_FOUND);
 			}
 
@@ -300,7 +303,7 @@ class AgentsController extends Controller {
 	 */
 	private function loadAgent(string $uuid): ?array {
 		try {
-			$entity = $this->objectService->find(id: $uuid, register: self::REGISTER_SLUG, schema: self::AGENT_SCHEMA);
+			$entity = $this->objectService->find(id: $uuid, options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: self::AGENT_SCHEMA));
 		} catch (Throwable $e) {
 			return null;
 		}
@@ -326,7 +329,7 @@ class AgentsController extends Controller {
 		}
 
 		try {
-			$entity = $this->objectService->find(id: $slug, register: self::REGISTER_SLUG, schema: 'built-app');
+			$entity = $this->objectService->find(id: $slug, options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: 'built-app'));
 		} catch (Throwable $e) {
 			return null;
 		}

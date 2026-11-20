@@ -50,6 +50,8 @@ interface ExportServiceInterface {
 	 * @param ExportContents $contents The placeholder context, data register bindings, flows and
 	 *                                 application source the tree is filled from.
 	 * @param bool $includeServerBundle Add `deploy/`, the files that run the app on its own server.
+	 * @param string|null $mobileBundleId Add `mobile/`, the app-store wrapper project, with this bundle id
+	 *                                    (empty for the default); null leaves it out.
 	 *
 	 * @return string Absolute (local) path to the produced ZIP.
 	 *
@@ -62,6 +64,7 @@ interface ExportServiceInterface {
 		ExportTarget $target,
 		ExportContents $contents,
 		bool $includeServerBundle = false,
+		?string $mobileBundleId = null,
 	): string;
 
 	/**

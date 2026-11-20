@@ -61,6 +61,12 @@ use OCA\Buildiq\Exception\VersionLockedException;
 use OCA\Buildiq\Kernel\Contracts\VersionPromotionServiceInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Kernel\Contracts\Value\LockRequest;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\UnlockRequest;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
@@ -331,7 +337,7 @@ class VersionPromotionService implements VersionPromotionServiceInterface {
 				continue;
 			}
 
-			$this->objectService->deleteObject(uuid: $uuid, _rbac: false, _multitenancy: false);
+			$this->objectService->deleteObject(new ObjectDeletion(uuid: $uuid), _rbac: false, _multitenancy: false);
 		}
 	}//end wipeTargetRegister()
 
@@ -385,8 +391,7 @@ class VersionPromotionService implements VersionPromotionServiceInterface {
 
 			$this->objectService->saveObject(
 				object: $payload,
-				register: $targetRegisterSlug,
-				schema: $schemaIdHint,
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $targetRegisterSlug, schema: $schemaIdHint)),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -428,9 +433,10 @@ class VersionPromotionService implements VersionPromotionServiceInterface {
 
 		$saved = $this->objectService->saveObject(
 			object: $target,
-			register: self::REGISTER_SLUG,
-			schema: self::APPLICATION_VERSION_SCHEMA,
-			uuid: $targetUuid,
+			options: new ObjectSaveOptions(
+				target: new ObjectFindTarget(register: self::REGISTER_SLUG, schema: self::APPLICATION_VERSION_SCHEMA),
+				uuid: $targetUuid
+			),
 			_rbac: false,
 			_multitenancy: false
 		);
@@ -476,9 +482,13 @@ class VersionPromotionService implements VersionPromotionServiceInterface {
 
 			$this->objectService->saveObject(
 				object: $current,
-				register: self::REGISTER_SLUG,
-				schema: self::APPLICATION_VERSION_SCHEMA,
-				uuid: $targetUuid,
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(
+							register: self::REGISTER_SLUG,
+							schema: self::APPLICATION_VERSION_SCHEMA
+						),
+					uuid: $targetUuid
+				),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -516,9 +526,11 @@ class VersionPromotionService implements VersionPromotionServiceInterface {
 	private function acquireLock(string $targetUuid): void {
 		try {
 			$this->objectService->lockObject(
-				identifier: $targetUuid,
-				process: 'buildiq.version-promotion',
-				duration: self::LOCK_DURATION_SECONDS
+				new LockRequest(
+					identifier: $targetUuid,
+					process: 'buildiq.version-promotion',
+					duration: self::LOCK_DURATION_SECONDS
+				)
 			);
 		} catch (Throwable $e) {
 			// ObjectService surfaces OR's LockedException + any other lock
@@ -552,7 +564,7 @@ class VersionPromotionService implements VersionPromotionServiceInterface {
 	 */
 	private function releaseLock(string $targetUuid): void {
 		try {
-			$this->objectService->unlockObject(identifier: $targetUuid);
+			$this->objectService->unlockObject(new UnlockRequest(identifier: $targetUuid));
 		} catch (Throwable $e) {
 			$this->logger->warning(
 				'Buildiq: failed to release lock on target ' . $targetUuid . ': ' . $e->getMessage()
@@ -600,8 +612,7 @@ class VersionPromotionService implements VersionPromotionServiceInterface {
 	private function loadVersion(string $uuid): array {
 		$entity = $this->objectService->find(
 			id: $uuid,
-			register: self::REGISTER_SLUG,
-			schema: self::APPLICATION_VERSION_SCHEMA
+			options: new ObjectFindOptions(register: self::REGISTER_SLUG, schema: self::APPLICATION_VERSION_SCHEMA)
 		);
 
 		if ($entity === null) {

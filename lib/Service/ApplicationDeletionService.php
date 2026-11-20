@@ -35,6 +35,7 @@ use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Service\RegisterService;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -545,26 +546,7 @@ class ApplicationDeletionService implements ApplicationDeletionServiceInterface 
 
 			// Track progress so a batch that can never be deleted (e.g. an
 			// append-only/archival schema) breaks the loop instead of spinning.
-			$progressed = false;
-			foreach ($objects as $object) {
-				$uuid = $this->extractUuid(item: $object);
-				if ($uuid === '') {
-					continue;
-				}
-
-				try {
-					$this->objectService->deleteObject(uuid: $uuid);
-					$progressed = true;
-				} catch (Throwable $e) {
-					$this->logger->error(
-						'Buildiq: deleteApplication failed to delete object {uuid}: {message}',
-						['uuid' => $uuid, 'message' => $e->getMessage()]
-					);
-					$orphaned[] = 'object:' . $uuid;
-				}
-			}//end foreach
-
-			if ($progressed === false) {
+			if ($this->deleteBatch(objects: $objects, orphaned: $orphaned) === false) {
 				return;
 			}
 		}//end for
@@ -583,6 +565,37 @@ class ApplicationDeletionService implements ApplicationDeletionServiceInterface 
 			['slug' => $registerSlug, 'schema' => (string)$schemaId, 'batch' => self::PURGE_BATCH_LIMIT, 'rounds' => self::MAX_PURGE_ROUNDS]
 		);
 	}//end purgeRegisterSchema()
+
+	/**
+	 * Delete one listed batch of objects, recording each one that would not go.
+	 *
+	 * @param array<int, mixed> $objects  The listed objects.
+	 * @param array<int,string> $orphaned Accumulator for resources that could not be removed.
+	 *
+	 * @return bool Whether at least one object was deleted.
+	 */
+	private function deleteBatch(array $objects, array &$orphaned): bool {
+		$progressed = false;
+		foreach ($objects as $object) {
+			$uuid = $this->extractUuid(item: $object);
+			if ($uuid === '') {
+				continue;
+			}
+
+			try {
+				$this->objectService->deleteObject(new ObjectDeletion(uuid: $uuid));
+				$progressed = true;
+			} catch (Throwable $e) {
+				$this->logger->error(
+					'Buildiq: deleteApplication failed to delete object {uuid}: {message}',
+					['uuid' => $uuid, 'message' => $e->getMessage()]
+				);
+				$orphaned[] = 'object:' . $uuid;
+			}
+		}//end foreach
+
+		return $progressed;
+	}//end deleteBatch()
 
 	/**
 	 * Extract an object UUID/id from a findAll result item (array or entity).
@@ -617,7 +630,7 @@ class ApplicationDeletionService implements ApplicationDeletionServiceInterface 
 	 */
 	private function deleteObject(string $uuid, string $label, array &$orphaned): void {
 		try {
-			$this->objectService->deleteObject(uuid: $uuid);
+			$this->objectService->deleteObject(new ObjectDeletion(uuid: $uuid));
 		} catch (Throwable $e) {
 			$this->logger->error(
 				'Buildiq: deleteApplication failed to delete {label} {uuid}: {message}',

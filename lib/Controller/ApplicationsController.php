@@ -59,9 +59,14 @@ use OCA\Buildiq\Kernel\Contracts\ApplicationVersionServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\ManifestResolverServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\PermissionResolverInterface;
 use OCA\Buildiq\Kernel\Contracts\TemplateInstallSeamInterface;
+use OCA\Buildiq\Kernel\Contracts\SettingsServiceInterface;
+use OCA\Buildiq\Service\Icon\SvgRasteriser;
+use OCA\Buildiq\Service\Offline\OfflineWorkerScript;
+use OCA\Buildiq\Service\AppOrganisationGuard;
 use OCA\Buildiq\Service\CallerContext;
 use OCA\Buildiq\Service\HelperFactory;
 use OCA\Buildiq\Kernel\Values\LocalApplicationRef;
+use OCA\Buildiq\Service\PageCodeGuard;
 use OCA\Buildiq\Service\RegisterStore;
 use OCA\Buildiq\Kernel\Values\RepoSource;
 use OCA\Buildiq\Service\TemplateInstall;
@@ -73,12 +78,17 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
 use OCP\AppFramework\Http\Attribute\NoCSRFRequired;
 use OCP\AppFramework\Http\Attribute\UserRateLimit;
+use OCP\AppFramework\Http\DataDisplayResponse;
 use OCP\AppFramework\Http\JSONResponse;
+use OCP\IAppConfig;
 use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
@@ -152,6 +162,13 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 	private readonly PermissionResolverInterface $permissionResolver;
 
 	/**
+	 * Organisation scope guard; null hides every scoped app.
+	 *
+	 * @var AppOrganisationGuard|null
+	 */
+	private readonly ?AppOrganisationGuard $organisationGuard;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IRequest $request The current HTTP request
@@ -160,6 +177,11 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 	 * @param CallerContext $caller The caller's session, group memberships and the shared permission matcher.
 	 * @param ManifestResolverServiceInterface $manifestResolver Version-aware manifest resolver (REQ-OBVR-002)
 	 * @param AppChannelApplierInterface $channelApplier Applies the v2 repo channels (apply-v2-channels)
+	 * @param IAppConfig|null $appConfig Reads the instance setting "Allow code on pages"; without it code stays refused
+	 * @param PageCodeGuard $codeGuard Finds the code-bearing keys of a manifest (pages-custom-code D6)
+	 * @param SvgRasteriser $rasteriser Whether a PNG touch icon can be offered (pages-installable-offline-and-mobile T02)
+	 * @param SettingsServiceInterface|null $settings Whether the instance lets apps work offline (T05)
+	 * @param OfflineWorkerScript $workerScript The built offline worker (T05)
 	 *
 	 * @return void
 	 */
@@ -170,6 +192,11 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 		CallerContext $caller,
 		private readonly ManifestResolverServiceInterface $manifestResolver,
 		private readonly AppChannelApplierInterface $channelApplier,
+		private readonly ?IAppConfig $appConfig = null,
+		private readonly PageCodeGuard $codeGuard = new PageCodeGuard(),
+		private readonly SvgRasteriser $rasteriser=new SvgRasteriser(),
+		private readonly ?SettingsServiceInterface $settings=null,
+		private readonly OfflineWorkerScript $workerScript=new OfflineWorkerScript(),
 	) {
 		$this->objectService = $store->objectService;
 		$this->registerMapper = $store->registerMapper;
@@ -178,6 +205,7 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 		$this->userSession = $caller->userSession;
 		$this->groupManager = $caller->groupManager;
 		$this->permissionResolver = $caller->permissionResolver;
+		$this->organisationGuard = $caller->organisationGuard;
 		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
@@ -298,16 +326,25 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 			return new JSONResponse(['error' => 'not_found'], Http::STATUS_NOT_FOUND);
 		}
 
-		$application = $resolved[1];
-		$name = trim((string)($application['name'] ?? ''));
-		if ($name === '') {
-			$name = $slug;
-		}
+		$response = new JSONResponse($this->webManifestBody(application: $resolved[1], slug: $slug));
+		$response->addHeader('Content-Type', 'application/manifest+json; charset=utf-8');
 
-		$shortName = trim((string)($application['shortName'] ?? ''));
-		if ($shortName === '') {
-			$shortName = $name;
-		}
+		return $response;
+	}//end webManifest()
+
+	/**
+	 * The web app manifest of one app: its names, icons and theme colour.
+	 *
+	 * @param array<string, mixed> $application The application object.
+	 * @param string               $slug        The virtual app slug.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-a-maker-makes-an-app-installable-req-bqom-001
+	 */
+	private function webManifestBody(array $application, string $slug): array {
+		$name      = self::textOr(value: $application['name'] ?? '', fallback: $slug);
+		$shortName = self::textOr(value: $application['shortName'] ?? '', fallback: $name);
 
 		$manifest = [
 			'id' => './',
@@ -316,18 +353,135 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 			'start_url' => './',
 			'scope' => './',
 			'display' => 'standalone',
-			'icons' => [['src' => '../../icons/' . $slug . '.svg', 'type' => 'image/svg+xml', 'sizes' => 'any', 'purpose' => 'any']],
+			'icons' => $this->webManifestIcons(slug: $slug),
 		];
 		$themeColor = (string)($application['themeColor'] ?? '');
 		if (preg_match('/^#[0-9a-fA-F]{6}$/', $themeColor) === 1) {
 			$manifest['theme_color'] = $themeColor;
 		}
 
-		$response = new JSONResponse($manifest);
-		$response->addHeader('Content-Type', 'application/manifest+json; charset=utf-8');
+		return $manifest;
+	}//end webManifestBody()
+
+	/**
+	 * The trimmed text of a value, or the fallback when that is empty.
+	 *
+	 * @param mixed  $value    The value.
+	 * @param string $fallback The fallback.
+	 *
+	 * @return string
+	 */
+	private static function textOr(mixed $value, string $fallback): string {
+		$text = trim((string)$value);
+		if ($text === '') {
+			return $fallback;
+		}
+
+		return $text;
+	}//end textOr()
+
+	/**
+	 * The web app manifest icons: the SVG, plus a PNG for platforms that ignore
+	 * SVG icons, only when the server can make one (pages-installable-offline-and-mobile T02).
+	 *
+	 * @param string $slug The virtual app slug.
+	 *
+	 * @return array<int, array<string, string>>
+	 *
+	 * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-a-maker-makes-an-app-installable-req-bqom-001
+	 */
+	private function webManifestIcons(string $slug): array {
+		$icons = [['src' => '../../icons/' . $slug . '.svg', 'type' => 'image/svg+xml', 'sizes' => 'any', 'purpose' => 'any']];
+		if ($this->rasteriser->available() === true) {
+			$size    = SvgRasteriser::TOUCH_ICON_SIZE;
+			$icons[] = ['src' => '../../icons/' . $slug . '-touch.png', 'type' => 'image/png', 'sizes' => $size . 'x' . $size, 'purpose' => 'any'];
+		}
+
+		return $icons;
+	}//end webManifestIcons()
+
+	/**
+	 * Serve the app's offline worker, scoped to its run path.
+	 *
+	 * Answered only when the instance lets apps work offline, the caller may
+	 * open the app, and the app's production manifest declares an `offline`
+	 * block; every other case is 404, the same as an app that does not exist.
+	 * `Service-Worker-Allowed: ./` caps the scope at `/run/{slug}/`: this app's
+	 * runtime and nothing else (design D1).
+	 *
+	 * @param string $slug The virtual app slug.
+	 *
+	 * @return DataDisplayResponse|JSONResponse The script, or 404.
+	 *
+	 * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-a-maker-declares-what-goes-offline-req-bqom-003
+	 */
+	#[NoAdminRequired]
+	#[NoCSRFRequired]
+	public function offlineWorker(string $slug): DataDisplayResponse|JSONResponse {
+		$notFound = new JSONResponse(['error' => 'not_found'], Http::STATUS_NOT_FOUND);
+		try {
+			$script = $this->offlineWorkerScript(slug: $slug);
+		} catch (Throwable $e) {
+			$this->logger->error('Buildiq: offline worker failed for slug ' . $slug . ': ' . $e->getMessage(), ['exception' => $e]);
+			return $notFound;
+		}
+
+		if ($script === null) {
+			return $notFound;
+		}
+
+		$response = new DataDisplayResponse($script, Http::STATUS_OK, ['Content-Type' => 'text/javascript; charset=utf-8']);
+		$response->addHeader('Service-Worker-Allowed', './');
+		$response->addHeader('Cache-Control', 'no-cache');
 
 		return $response;
-	}//end webManifest()
+	}//end offlineWorker()
+
+	/**
+	 * The offline worker script of one app, or null when offline does not apply:
+	 * the instance does not allow it, the caller may not open the app, or its
+	 * production manifest declares no `offline` block.
+	 *
+	 * @param string $slug The virtual app slug.
+	 *
+	 * @return string|null
+	 *
+	 * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-a-maker-declares-what-goes-offline-req-bqom-003
+	 */
+	private function offlineWorkerScript(string $slug): ?string {
+		if ($this->settings?->offlineAppsAllowed() !== true) {
+			return null;
+		}
+
+		if ($this->resolvePermittedApplication(slug: $slug) instanceof JSONResponse) {
+			return null;
+		}
+
+		if ($this->declaresOffline(slug: $slug) === true) {
+			return $this->workerScript->script();
+		}
+
+		return null;
+	}//end offlineWorkerScript()
+
+	/**
+	 * Whether the app's production manifest, as the caller sees it, declares an `offline` block.
+	 *
+	 * @param string $slug The virtual app slug.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-a-maker-declares-what-goes-offline-req-bqom-003
+	 */
+	private function declaresOffline(string $slug): bool {
+		$manifest = $this->manifestResolver->resolve(
+			appSlug: $slug,
+			versionSlug: null,
+			caller: $this->userSession->getUser()
+		);
+
+		return is_array($manifest) === true && is_array($manifest['offline'] ?? null) === true;
+	}//end declaresOffline()
 
 	/**
 	 * The `?_version=` query parameter, or null when it is absent or empty.
@@ -501,7 +655,9 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 			// Never let a manifest body inject/overwrite the permissions roster.
 			unset($manifest['permissions']);
 
-			return $this->writeManifest(applicationArray: $applicationArray, manifest: $manifest);
+			// A save that adds, changes or removes code is refused unless the code-write rule allows it.
+			return $this->refuseCodeSave(slug: $slug, applicationArray: $applicationArray, manifest: $manifest)
+				?? $this->writeManifest(applicationArray: $applicationArray, manifest: $manifest);
 		} catch (Throwable $e) {
 			$correlationId = bin2hex(random_bytes(8));
 			$this->logger->error(
@@ -550,6 +706,87 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 
 		return null;
 	}//end authorizeManifestWrite()
+
+	/**
+	 * The stored manifest, read the way the manifest endpoint serves it, so a
+	 * save of what an editor loaded changes no code key (pages-custom-code D6).
+	 *
+	 * @param string              $slug             The virtual-app slug.
+	 * @param array<string,mixed> $applicationArray The resolved Application.
+	 *
+	 * @return array<mixed>|null The stored manifest, or null when there is none.
+	 *
+	 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-only-owners-write-code-and-only-when-allowed-req-bqcc-005
+	 */
+	private function storedManifest(string $slug, array $applicationArray): ?array {
+		$stored = $this->manifestResolver->resolve(appSlug: $slug, versionSlug: null, caller: $this->userSession->getUser());
+		if ($stored === null && is_array($applicationArray['manifest'] ?? null) === true) {
+			$stored = $applicationArray['manifest'];
+		}
+
+		return $stored;
+	}//end storedManifest()
+
+	/**
+	 * The refusal of a manifest save that changes code against the stored
+	 * manifest, or null when it changes none or the code-write rule allows it.
+	 *
+	 * @param string              $slug             The virtual-app slug.
+	 * @param array<string,mixed> $applicationArray The resolved Application.
+	 * @param array<mixed>        $manifest         The manifest being saved.
+	 *
+	 * @return JSONResponse|null The 403, or null when the save may proceed.
+	 *
+	 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-only-owners-write-code-and-only-when-allowed-req-bqcc-005
+	 */
+	private function refuseCodeSave(string $slug, array $applicationArray, array $manifest): JSONResponse|null {
+		$storedManifest = $this->storedManifest(slug: $slug, applicationArray: $applicationArray);
+		if ($this->codeGuard->changesCode(before: $storedManifest, after: $manifest) === false) {
+			return null;
+		}
+
+		return $this->refuseCodeChange(applicationArray: $applicationArray);
+	}//end refuseCodeSave()
+
+	/**
+	 * Refuse a save that adds, changes or removes code unless an app owner makes
+	 * it and the instance allows code on pages (pages-custom-code D6).
+	 *
+	 * Called only for a save that changes code. There is no admin bypass: a
+	 * Nextcloud administrator who is not an owner of the app cannot write code
+	 * into it.
+	 *
+	 * @param array<string,mixed> $applicationArray The resolved Application.
+	 *
+	 * @return JSONResponse|null The 403, or null when the save may proceed.
+	 *
+	 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-only-owners-write-code-and-only-when-allowed-req-bqcc-005
+	 */
+	private function refuseCodeChange(array $applicationArray): JSONResponse|null {
+		if ($this->appConfig?->getValueBool(AppIdentity::APP_ID, PageCodeGuard::SETTING, false) !== true) {
+			return new JSONResponse(
+				data: ['error' => 'forbidden', 'code' => 'buildiq.code.disabled', 'message' => 'Code on pages is switched off for this instance.'],
+				statusCode: Http::STATUS_FORBIDDEN
+			);
+		}
+
+		$user    = $this->userSession->getUser();
+		$isOwner = ($user !== null && $this->permissionResolver->matchesCaller(
+			permissions: ($applicationArray['permissions'] ?? []),
+			caller: $user,
+			userGroups: $this->permissionResolver->resolveUserGroups($user),
+			allowAdminBypass: false,
+			roles: ['owners']
+		) === true);
+		if ($isOwner === false) {
+			return new JSONResponse(
+				data: ['error' => 'forbidden', 'code' => 'buildiq.code.owners_only', 'message' => 'Only app owners can add code to a page.'],
+				statusCode: Http::STATUS_FORBIDDEN
+			);
+		}
+
+		return null;
+	}//end refuseCodeChange()
 
 	/**
 	 * Whether the caller is an owner or editor of the Application.
@@ -674,8 +911,7 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 			$applicationArray['productionVersion']['manifest'] = $manifest;
 			$this->objectService->saveObject(
 				object: $applicationArray,
-				register: 'buildiq',
-				schema: 'built-app'
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: 'buildiq', schema: 'built-app'))
 			);
 			return new JSONResponse(data: ['status' => 'ok', 'target' => 'embedded'], statusCode: Http::STATUS_OK);
 		}
@@ -684,8 +920,7 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 		$applicationArray['manifest'] = $manifest;
 		$this->objectService->saveObject(
 			object: $applicationArray,
-			register: 'buildiq',
-			schema: 'built-app'
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: 'buildiq', schema: 'built-app'))
 		);
 		return new JSONResponse(data: ['status' => 'ok', 'target' => 'application'], statusCode: Http::STATUS_OK);
 	}//end writeManifest()
@@ -720,16 +955,20 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 	private function writeVersionManifest(string $versionUuid, array $manifest): ?JSONResponse {
 		$versionEntity = $this->objectService->find(
 			id: $versionUuid,
-			register: 'buildiq',
-			schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
+			options: new ObjectFindOptions(
+				register: 'buildiq',
+				schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
+			)
 		);
 		if ($versionEntity !== null) {
 			$versionArray = ObjectRecord::toArray(object: $versionEntity);
 			$versionArray['manifest'] = $manifest;
 			$this->objectService->saveObject(
 				object: $versionArray,
-				register: 'buildiq',
-				schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(
+						register: 'buildiq',
+						schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
+					))
 			);
 			return new JSONResponse(data: ['status' => 'ok', 'target' => 'version'], statusCode: Http::STATUS_OK);
 		}
@@ -1059,8 +1298,10 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 		try {
 			$version = $this->objectService->find(
 				id: $token,
-				register: 'buildiq',
-				schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
+				options: new ObjectFindOptions(
+					register: 'buildiq',
+					schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
+				)
 			);
 		} catch (Throwable $e) {
 			$version = null;
@@ -1199,8 +1440,7 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 		// Step 2 — load the Application object.
 		$application = $this->objectService->find(
 			id: $applicationUuid,
-			register: 'buildiq',
-			schema: 'built-app'
+			options: new ObjectFindOptions(register: 'buildiq', schema: 'built-app')
 		);
 
 		if ($application === null) {
@@ -1211,8 +1451,59 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 			);
 		}
 
-		return [$application, ObjectRecord::toArray(object: $application), (string)$applicationUuid];
+		$applicationArray = ObjectRecord::toArray(object: $application);
+
+		// Organisation scope before any role: another organisation's scoped app
+		// answers exactly as an unknown slug does (REQ-BQOS-002).
+		if ($this->visibleToOrganisation(application: $applicationArray) === false) {
+			return new JSONResponse(
+				data: ['error' => 'not_found', 'message' => 'No virtual app found for slug ' . $slug],
+				statusCode: Http::STATUS_NOT_FOUND
+			);
+		}
+
+		return [$application, $applicationArray, (string)$applicationUuid];
 	}//end resolveApplicationBySlug()
+
+	/**
+	 * The organisation scope an installed app starts with, as a payload fragment.
+	 *
+	 * The same default as an app made in the wizard: "This organisation only"
+	 * while multitenancy is on, held by the installer's active organisation,
+	 * which OpenRegister stamps on save (REQ-BQOS-005). Without the guard the
+	 * scope stays absent, which means all organisations.
+	 *
+	 * @return array<string, string> `['organisationScope' => ...]`, or [] without a guard.
+	 *
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-installs-land-in-the-installer-s-organisation-req-bqos-005
+	 */
+	private function newAppScope(): array {
+		if ($this->organisationGuard === null) {
+			return [];
+		}
+
+		return ['organisationScope' => $this->organisationGuard->defaultScope()];
+	}//end newAppScope()
+
+	/**
+	 * Whether the caller may see the Application at all, by its organisation scope.
+	 *
+	 * A shared app passes without a lookup; a scoped one needs the guard to admit
+	 * the caller, and a missing guard fails closed.
+	 *
+	 * @param array<string, mixed> $application The Application.
+	 *
+	 * @return bool True when the app is visible to the caller.
+	 *
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002
+	 */
+	private function visibleToOrganisation(array $application): bool {
+		if (AppOrganisationGuard::isShared(application: $application) === true) {
+			return true;
+		}
+
+		return $this->organisationGuard?->canSee(application: $application, user: $this->userSession->getUser()) === true;
+	}//end visibleToOrganisation()
 
 	/**
 	 * The BuiltAppRoute entry for a slug, or a stand-in built from the Application.
@@ -1424,6 +1715,11 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 		foreach ($results as $entry) {
 			$app = ObjectRecord::toArray(object: $entry);
 			if ($app === []) {
+				continue;
+			}
+
+			// Organisation scope before any role, admins included (REQ-BQOS-002).
+			if ($this->visibleToOrganisation(application: $app) === false) {
 				continue;
 			}
 
@@ -1982,7 +2278,7 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 	 * app; a viewer is refused even when they are an administrator. A taken
 	 * slug is the seam's 409.
 	 *
-	 * @param string $slug The source app's slug
+	 * @param string $sourceSlug The source app's slug. Not `slug`: the JSON body's `slug` (the copy's) would override it.
 	 *
 	 * @return JSONResponse 201 with the new app; 400, 401, 403, 404 or 409 otherwise
 	 *
@@ -1991,7 +2287,7 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 	 */
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 10, period: 3600)]
-	public function copy(string $slug): JSONResponse {
+	public function copy(string $sourceSlug): JSONResponse {
 		$admitted = $this->admitClone(refusal: 'Copying an app requires Nextcloud admin privileges.');
 		if ($admitted instanceof JSONResponse) {
 			return $admitted;
@@ -1999,7 +2295,7 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 
 		[$user, $name, $newSlug] = $admitted;
 
-		$resolved = $this->resolveApplicationBySlug(slug: $slug);
+		$resolved = $this->resolveApplicationBySlug(slug: $sourceSlug);
 		if ($resolved instanceof JSONResponse) {
 			return $resolved;
 		}
@@ -2054,8 +2350,10 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 			$version = ObjectRecord::toArray(
 				object: $this->objectService->find(
 					id: $versionId,
-					register: 'buildiq',
-					schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
+					options: new ObjectFindOptions(
+						register: 'buildiq',
+						schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
+					)
 				)
 			);
 		}
@@ -2415,9 +2713,8 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 						'editors' => [],
 						'viewers' => [],
 					],
-				],
-				register: $ctx['register'],
-				schema: $ctx['applicationSchema']
+				] + $this->newAppScope(),
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $ctx['register'], schema: $ctx['applicationSchema']))
 			);
 		} catch (Throwable $e) {
 			$this->logger->error('Buildiq: application save failed', ['exception' => $e->getMessage()]);
@@ -2482,8 +2779,10 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 
 			$createdVersion = $this->objectService->saveObject(
 				object: $versionPayload,
-				register: ApplicationVersionServiceInterface::REGISTER_SLUG,
-				schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(
+						register: ApplicationVersionServiceInterface::REGISTER_SLUG,
+						schema: ApplicationVersionServiceInterface::APPLICATION_VERSION_SCHEMA
+					))
 			);
 			$versionData = ObjectRecord::toArray(object: $createdVersion);
 			$versionUuid = (string)($versionData['uuid'] ?? $versionData['id'] ?? '');
@@ -2507,9 +2806,13 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 
 			$this->objectService->saveObject(
 				object: $application,
-				register: ApplicationVersionServiceInterface::REGISTER_SLUG,
-				schema: ApplicationVersionServiceInterface::APPLICATION_SCHEMA,
-				uuid: $appUuid
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(
+							register: ApplicationVersionServiceInterface::REGISTER_SLUG,
+							schema: ApplicationVersionServiceInterface::APPLICATION_SCHEMA
+						),
+					uuid: $appUuid
+				)
 			);
 		} catch (Throwable $e) {
 			$this->logger->error(

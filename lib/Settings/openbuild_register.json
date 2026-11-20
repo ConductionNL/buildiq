@@ -66,7 +66,7 @@
         "x-openregister-demo-data": "buildiq's own register of the apps it has built. A generated app has no version with pages behind it, so it lists on the dashboard and never opens.",
         "slug": "built-app",
         "icon": "AppsBox",
-        "version": "0.6.0",
+        "version": "0.7.0",
         "title": "Application",
         "description": "An app built or customized with OpenBuild (unify-apps-with-app-type). The `appType` discriminator distinguishes a `virtual` app (fully delivered by OpenBuild) from a `hybrid` app (a delta layered over an installed Nextcloud fleet app, linked via `baseRef`). Per ADR-002 the Application carries identity (slug, name, description, appType, baseRef, permissions) plus a productionVersion relation to the ApplicationVersion currently exposed at the canonical URL. Manifest, semver, and lifecycle live on ApplicationVersion. For a hybrid app the identity metadata (slug/name) mirrors the underlying NC app and is read-only after creation (enforced by HybridMetadataLockListener).",
         "authorization": {
@@ -213,6 +213,29 @@
             "type": "boolean",
             "default": false,
             "description": "Per-app permission flag (layered-versioned-app-deltas). When true, users of this app MAY create/edit their own user-scoped manifest delta layered over the admin delta (base ⊕ admin ⊕ user). Default false (default-secure): an Application with no allowUserOverrides reads as false. Read directly by the override resolver, ApplicationVersionOwnerGuard, and the dashboard 'create override' affordance; purely declarative (no Service)."
+          },
+          "embed": {
+            "title": "Embedding",
+            "type": "object",
+            "description": "Whether this app may be shown inside another site its staff use, and which sites (apps-embed-in-other-sites D1). Off by default. An origin is an https scheme and host, optionally a port, without a path or a wildcard; anything else is refused on save. Embedding never makes the app public: the framed app is the same app, with the same access.",
+            "properties": {
+              "enabled": {
+                "title": "Embedding on",
+                "type": "boolean",
+                "default": false,
+                "description": "When true, the runtime answers `?embed=1` without the Nextcloud header and lets the listed origins frame it."
+              },
+              "origins": {
+                "title": "Allowed sites",
+                "type": "array",
+                "default": [],
+                "description": "The sites allowed to frame the app, each an https origin such as `https://intranet.example.nl`.",
+                "items": {
+                  "type": "string",
+                  "pattern": "^https://[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)*(?::[0-9]{1,5})?$"
+                }
+              }
+            }
           },
           "permissions": {
             "title": "Access Permissions",
@@ -613,6 +636,13 @@
             "minLength": 2,
             "maxLength": 48,
             "description": "URL-safe kebab-case slug for this version (e.g. `production`, `staging`, `development`)."
+          },
+          "deviceFeatures": {
+            "title": "Device features",
+            "type": "array",
+            "items": {"type": "string", "enum": ["camera", "geolocation", "microphone"]},
+            "default": [],
+            "description": "Browser features the built app's pages use, derived from the manifest on every save (pages-qr-and-barcodes REQ-BQQR-004): `camera` when an index page scans or a form has a scan field, `microphone` for an audio form field, `geolocation` for a location field or a map showing the user. The pages allow these for the page itself only; never set by hand."
           },
           "manifest": {
             "title": "App Manifest",

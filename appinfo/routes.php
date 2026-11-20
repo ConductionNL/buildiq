@@ -55,13 +55,18 @@ return \OCA\Buildiq\Middleware\Support\ApiPathAliases::withVersionedAliases(\OCA
         // Application in the shared `buildiq` register tagged with the caller's UID.
         ['name' => 'applications#createFromTemplate', 'url' => '/api/applications/from-template/{templateSlug}', 'verb' => 'POST'],
         // Copy an app (apps-copy-app-and-page REQ-BQCP-001/002): same gates as from-template.
-        ['name' => 'applications#copy', 'url' => '/api/applications/{slug}/copy', 'verb' => 'POST', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        [
+            'name' => 'applications#copy', 'url' => '/api/applications/{sourceSlug}/copy', 'verb' => 'POST',
+            'requirements' => ['sourceSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]'],
+        ],
 
         // Manifest endpoint — returns the stored manifest JSON blob for a given virtual-app slug.
         // Per ADR-016 routes.php is the only registration path; #[NoAdminRequired] is set on the
         // controller method so auth-required-but-non-admin users can hit it (per design.md Decision 6).
         // Slug matches the kebab-case pattern declared in openbuild_register.json on the Application
         // and BuiltAppRoute schemas (^[a-z0-9][a-z0-9-]*[a-z0-9]$, min 2 max 48 chars).
+        // built-app-connections-page REQ-BIQ-CONN-005: an app's sources and integrations with their health.
+        ['name' => 'applicationConnections#index', 'url' => '/api/applications/{id}/connections', 'verb' => 'GET', 'requirements' => ['id' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'applications#getManifest', 'url' => '/api/applications/{slug}/manifest', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
         // Symmetric write counterpart — the standalone runtime's in-app edit shell
@@ -69,6 +74,13 @@ return \OCA\Buildiq\Middleware\Support\ApiPathAliases::withVersionedAliases(\OCA
         // audited admin bypass live in the controller. Without this, in-app edits
         // (pages/menu/settings/sidebar/actions) were computed but never persisted.
         ['name' => 'applications#saveManifest', 'url' => '/api/applications/{slug}/manifest', 'verb' => 'PUT', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+
+        // Sandbox documents for maker code (pages-custom-code D2, REQ-BQCC-003):
+        // loaded into an iframe with sandbox="allow-scripts" and no
+        // allow-same-origin, answered with a policy that allows no requests.
+        ['name' => 'sandbox#evaluator', 'url' => '/sandbox/evaluator', 'verb' => 'GET'],
+        ['name' => 'sandbox#preview', 'url' => '/sandbox/preview', 'verb' => 'GET'],
+        ['name' => 'sandbox#code', 'url' => '/sandbox/{slug}/{version}/{codeId}', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
         // Versioning — diff endpoint (chain spec #6 buildiq-versioning, REQ-OBV-005). Returns
         // two ApplicationVersion manifest blobs in one round-trip so the client diff component
@@ -133,6 +145,10 @@ return \OCA\Buildiq\Middleware\Support\ApiPathAliases::withVersionedAliases(\OCA
         // Owner-only full delete (Application + versions + per-version registers + routes).
         ['name' => 'applicationPublish#destroy', 'url' => '/api/applications/{appUuid}', 'verb' => 'DELETE', 'requirements' => ['appUuid' => '[a-f0-9-]{8,}']],
 
+        // Wrapper flows for the app's flow bindings (logic-shared-flows-and-automations REQ-BQSF-002):
+        // saves, publishes and binds one wrapper per `runOn` entry and removes stale ones. Owners only.
+        ['name' => 'flowBindings#sync', 'url' => '/api/applications/{appUuid}/flow-wrappers', 'verb' => 'POST', 'requirements' => ['appUuid' => '[a-f0-9-]{8,}']],
+
         // Standalone runtime page for a published virtual app — the bare
         // /builder/{slug} (no sub-path). Placed before the catch-all
         // (Routes::standard appends it) so this specific page wins.
@@ -149,6 +165,8 @@ return \OCA\Buildiq\Middleware\Support\ApiPathAliases::withVersionedAliases(\OCA
         // runtime and nothing else; its web app manifest is signed-in only.
         ['name' => 'dashboard#run', 'url' => '/run/{slug}/', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'applications#webManifest', 'url' => '/run/{slug}/manifest.webmanifest', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        // Its offline worker, scoped to the run path; 404 unless the instance allows offline and the app declares it.
+        ['name' => 'applications#offlineWorker', 'url' => '/run/{slug}/offline-worker.js', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
         // Reserved Buildiq designer sub-paths (buildiq-deep-links #100 fix).
         // `pages`, `schemas`, `schemas/{schemaId}` and `walkthrough` are
@@ -194,6 +212,7 @@ return \OCA\Buildiq\Middleware\Support\ApiPathAliases::withVersionedAliases(\OCA
         // exports so slug patterns don't collide.
         ['name' => 'icon#iconDark',  'url' => '/icons/{slug}-dark.svg', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'icon#iconLight', 'url' => '/icons/{slug}.svg',      'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        ['name' => 'icon#touchIcon', 'url' => '/icons/{slug}-touch.png', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
         // Export pipeline (Phase-2 graduation).
         ['name' => 'exports#submit',   'url' => '/api/applications/{slug}/exports', 'verb' => 'POST', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
@@ -211,6 +230,8 @@ return \OCA\Buildiq\Middleware\Support\ApiPathAliases::withVersionedAliases(\OCA
         // the schema). evaluate/test-all are POST so they cannot collide
         // with the GET SPA catch-all; the GET schema route's `/schema` suffix makes it
         // strictly more specific than `/{path}`. Slugs are kebab-case.
+        // The rule sets another app may call (rules-evaluation-for-other-apps REQ-BQRX-001): `?callableBy={app}`.
+        ['name' => 'rules#index',    'url' => '/api/rules',                        'verb' => 'GET'],
         ['name' => 'rules#evaluate', 'url' => '/api/rules/{ruleSetSlug}/evaluate', 'verb' => 'POST', 'requirements' => ['ruleSetSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'rules#schema',   'url' => '/api/rules/{ruleSetSlug}/schema',   'verb' => 'GET',  'requirements' => ['ruleSetSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'rules#testAll',  'url' => '/api/rules/{ruleSetSlug}/test-all', 'verb' => 'POST', 'requirements' => ['ruleSetSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
@@ -319,7 +340,10 @@ return \OCA\Buildiq\Middleware\Support\ApiPathAliases::withVersionedAliases(\OCA
         // install resolves a remote template by slug and clones it locally via the
         // shared ApplicationsController install seam.
         ['name' => 'store#search',  'url' => '/api/store/templates',                  'verb' => 'GET'],
-        ['name' => 'store#install', 'url' => '/api/store/templates/{slug}/install',   'verb' => 'POST', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        [
+            'name' => 'store#install', 'url' => '/api/store/templates/{templateSlug}/install', 'verb' => 'POST',
+            'requirements' => ['templateSlug' => '[a-z0-9][a-z0-9-]*[a-z0-9]'],
+        ],
         // Also in OpenRegister's canonical table; declared here so it is
         // visible where this app's routes are read, and it overrides by name.
         ['name' => 'store#publish', 'url' => '/api/store/publish',                    'verb' => 'POST'],
@@ -357,6 +381,10 @@ return \OCA\Buildiq\Middleware\Support\ApiPathAliases::withVersionedAliases(\OCA
         ['name' => 'copilot#plan',    'url' => '/api/copilot/plan',    'verb' => 'POST'],
         ['name' => 'copilot#execute', 'url' => '/api/copilot/execute', 'verb' => 'POST'],
         ['name' => 'copilot#discard', 'url' => '/api/copilot/discard', 'verb' => 'POST'],
+        // Builder assist (ai-copilot-documents-and-code-help REQ-BQCH-002/004):
+        // #[NoAdminRequired], owners/editors of the body's appSlug only, enforced
+        // inside CopilotAssistService. Zero writes.
+        ['name' => 'copilot#assist',  'url' => '/api/copilot/assist',  'verb' => 'POST'],
 
         // Outside-agent builder plans (openbuild-mcp-adoption). An MCP write
         // without an approved plan is stored as a pending plan; an owner or
