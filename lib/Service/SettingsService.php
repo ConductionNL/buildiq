@@ -207,6 +207,9 @@ class SettingsService implements SettingsServiceInterface {
 				// `registry_url` is one of self::CONFIG_KEYS, so the loop above
 				// always set it — the `?? ''` this replaces was unreachable.
 				'storeConfigured' => (trim($settings['registry_url']) !== ''),
+				// "Allow code on pages" (pages-custom-code, REQ-BQCC-005): off by
+				// default, read as a boolean, the same read saveManifest() makes.
+				PageCodeGuard::SETTING => $this->appConfig->getValueBool(AppIdentity::APP_ID, PageCodeGuard::SETTING, false),
 			]
 		);
 	}//end getSettings()
@@ -262,10 +265,55 @@ class SettingsService implements SettingsServiceInterface {
 			}
 		}
 
+		$written = [...$written, ...$this->writePageCodeSetting(data: $data)];
+
 		$this->connectionReporter?->refreshFromSave(savedKeys: $written);
 
 		return $this->getSettings();
 	}//end updateSettings()
+
+	/**
+	 * Write "Allow code on pages" when the submission carries it.
+	 *
+	 * @param array<string,mixed> $data The submitted settings.
+	 *
+	 * @return list<string> The key written, or none.
+	 *
+	 * @spec openspec/changes/pages-custom-code/tasks.md#t01
+	 */
+	private function writePageCodeSetting(array $data): array {
+		if (array_key_exists(PageCodeGuard::SETTING, $data) === false) {
+			return [];
+		}
+
+		$this->appConfig->setValueBool(AppIdentity::APP_ID, PageCodeGuard::SETTING, $this->isOn(value: $data[PageCodeGuard::SETTING]));
+
+		return [PageCodeGuard::SETTING];
+	}//end writePageCodeSetting()
+
+	/**
+	 * Whether a submitted toggle value means "on".
+	 *
+	 * A JSON body carries a boolean; a form or query string carries "true",
+	 * "1" or "on". Anything else, including null, is off.
+	 *
+	 * @param mixed $value The submitted value.
+	 *
+	 * @return bool True when the value means on.
+	 *
+	 * @spec openspec/changes/pages-custom-code/tasks.md#t01
+	 */
+	private function isOn(mixed $value): bool {
+		if (is_bool($value) === true) {
+			return $value;
+		}
+
+		if (is_scalar($value) === false) {
+			return false;
+		}
+
+		return in_array(strtolower(trim((string)$value)), ['true', '1', 'on'], true);
+	}//end isOn()
 
 	/**
 	 * Load configuration from openbuild_register.json via OpenRegister.

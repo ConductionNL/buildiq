@@ -510,4 +510,130 @@ final class AutomationWriteServiceTest extends TestCase {
 		$this->assertSame('nag', $body['slug']);
 
 	}//end testRequestBodyStripsCallerSuppliedIdentity()
+
+	/**
+	 * Run `update()` as `$uid` on a stored automation of `permit-tracker`.
+	 *
+	 * @param string              $uid     The caller.
+	 * @param array<string,mixed> $payload The body.
+	 * @param array<string,mixed> $stored  Stored fields beyond the scope.
+	 * @param array|null          $written Receives the saved object, when saved.
+	 *
+	 * @return \OCP\AppFramework\Http\JSONResponse The response.
+	 */
+	private function updateAs(string $uid, array $payload, array $stored, ?array &$written = null): \OCP\AppFramework\Http\JSONResponse {
+		$this->wireUser(uid: $uid);
+		$this->objectService->method('find')->willReturn($this->buildEntity(self::APPLICATION));
+		$this->objectService->method('saveObject')->willReturnCallback(
+			function (...$arguments) use (&$written): ObjectEntity {
+				$written = $arguments[$this->argumentIndex(method: 'saveObject', name: 'object')];
+				return $this->buildEntity(['id' => 'a-1']);
+			}
+		);
+
+		return $this->service->update(
+			uuid: 'a-1',
+			payload: $payload,
+			automation: array_merge(['id' => 'a-1', 'applicationSlug' => 'permit-tracker', 'versionUuid' => 'draft-version'], $stored)
+		);
+
+	}//end updateAs()
+
+	/**
+	 * REQ-BQSF-003: an editor cannot share; the save is refused and nothing is written.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-be-shared-with-other-apps-req-bqsf-003
+	 */
+	public function testAnEditorCannotShareOrUnshare(): void {
+		$this->objectService->expects($this->never())->method('saveObject');
+
+		$response = $this->updateAs(uid: 'bob', payload: ['slug' => 'nag', 'shared' => true], stored: []);
+		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+		$this->assertSame('insufficient_permission', $response->getData()['error']);
+
+		$response = $this->updateAs(uid: 'bob', payload: ['slug' => 'nag', 'shared' => false], stored: ['shared' => true]);
+		$this->assertSame(Http::STATUS_FORBIDDEN, $response->getStatus());
+
+	}//end testAnEditorCannotShareOrUnshare()
+
+	/**
+	 * REQ-BQSF-003: an owner shares; an editor's later edit without `shared` keeps it shared.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-be-shared-with-other-apps-req-bqsf-003
+	 */
+	public function testAnOwnerSharesAndAnEditorsEditKeepsItShared(): void {
+		$written = null;
+		$response = $this->updateAs(uid: 'alice', payload: ['slug' => 'nag', 'shared' => true], stored: [], written: $written);
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertTrue($written['shared']);
+
+		$this->setUp();
+		$written = null;
+		$response = $this->updateAs(uid: 'bob', payload: ['slug' => 'renamed'], stored: ['shared' => true], written: $written);
+		$this->assertSame(Http::STATUS_OK, $response->getStatus());
+		$this->assertTrue($written['shared'], 'An edit that does not mention shared keeps the stored value.');
+		$this->assertSame('renamed', $written['slug']);
+
+	}//end testAnOwnerSharesAndAnEditorsEditKeepsItShared()
+
+	/**
+	 * REQ-BQSF-003: a shared automation may not write a record of its own app, and the refusal names the step.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-be-shared-with-other-apps-req-bqsf-003
+	 */
+	public function testASharedAutomationMayNotWriteItsOwnRecords(): void {
+		$this->objectService->expects($this->never())->method('saveObject');
+		$actions = [['type' => 'send-notification'], ['type' => 'object-op', 'operation' => 'update', 'schema' => 'vergunning']];
+
+		$response = $this->updateAs(uid: 'alice', payload: ['slug' => 'nag', 'shared' => true, 'actions' => $actions], stored: []);
+
+		$this->assertSame(Http::STATUS_UNPROCESSABLE_ENTITY, $response->getStatus());
+		$this->assertSame('automation_not_shareable', $response->getData()['error']);
+		$this->assertStringContainsString('Step 2 writes vergunning', $response->getData()['detail']);
+
+	}//end testASharedAutomationMayNotWriteItsOwnRecords()
+
+	/**
+	 * REQ-BQSF-003: on create, only an owner may start an automation shared, and an unshared one may write records.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-be-shared-with-other-apps-req-bqsf-003
+	 */
+	public function testCreatingASharedAutomationTakesAnOwner(): void {
+		$this->wireUser(uid: 'bob');
+		$this->objectService->method('find')->willReturn($this->buildEntity(self::APPLICATION));
+		$this->objectService->expects($this->once())->method('saveObject')->willReturn($this->buildEntity(['id' => 'a-new']));
+		$base = ['applicationSlug' => 'permit-tracker', 'versionUuid' => 'draft-version', 'slug' => 'nag'];
+
+		$refused = $this->service->create(payload: $base + ['shared' => true], roles: ['owners', 'editors']);
+		$this->assertSame(Http::STATUS_FORBIDDEN, $refused->getStatus());
+
+		$allowed = $this->service->create(
+			payload: $base + ['actions' => [['type' => 'object-op', 'schema' => 'vergunning']]],
+			roles: ['owners', 'editors']
+		);
+		$this->assertSame(Http::STATUS_CREATED, $allowed->getStatus());
+
+	}//end testCreatingASharedAutomationTakesAnOwner()
+
+	/**
+	 * The step finder counts from one and only reports an object-op.
+	 *
+	 * @return void
+	 */
+	public function testTheStepWritingOwnRecords(): void {
+		$this->assertNull(AutomationWriteService::stepWritingOwnRecords([['type' => 'webhook'], 'junk']));
+		$this->assertSame(
+			['number' => 3, 'schema' => 'zaak'],
+			AutomationWriteService::stepWritingOwnRecords(['junk', ['type' => 'approval'], ['type' => 'object-op', 'schema' => 'zaak']])
+		);
+
+	}//end testTheStepWritingOwnRecords()
 }//end class

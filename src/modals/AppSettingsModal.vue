@@ -5,7 +5,9 @@
   - AppSettingsModal — owner-facing app settings. Holds the publish/unpublish
   - toggle (whether the app is live in the Nextcloud app menu), the
   - allow-user-overrides toggle, and the Data registers section (add/remove
-  - `Application.dataRegisters` bindings — data-registers-runtime task 5.1).
+  - `Application.dataRegisters` bindings — data-registers-runtime task 5.1),
+  - and the Languages section (the version manifest's `i18n.sourceLanguage`
+  - and `i18n.languages`, experience-multilingual-apps REQ-BQML-001).
   - Emits intent; the parent (ApplicationDetailActions) performs the API
   - calls. Kept in its own file per ADR-004 gate-modal-isolation.
   -->
@@ -176,7 +178,7 @@
 				<div data-test="app-settings-flow-picker">
 					<NcSelect
 						:modelValue="selectedFlows"
-						:options="availableFlows"
+						:options="flowOptions"
 						:multiple="true"
 						:disabled="busy || loadingFlows"
 						:loading="loadingFlows"
@@ -192,6 +194,127 @@
 							'No flows exist on this instance yet. Create one in OpenRegister first.',
 						)
 					}}
+				</p>
+
+				<!-- "Run on" per bound flow (REQ-BQSF-001): where the flow
+				     runs, on the app version's schemas only. -->
+				<div
+					v-for="binding in boundFlows"
+					:key="binding.flow"
+					class="app-settings__run-on"
+					:data-test="'app-settings-run-on-' + binding.flow">
+					<h5 class="app-settings__run-on-title">
+						{{ t('buildiq', 'Run on: {flow}', { flow: flowLabel(binding) }) }}
+					</h5>
+					<p v-if="!runOnOf(binding).length" class="app-settings__hint app-settings__hint--inline">
+						{{ t('buildiq', 'Not wired yet. The flow only runs when something else starts it.') }}
+					</p>
+					<div
+						v-for="(entry, index) in runOnOf(binding)"
+						:key="index"
+						class="app-settings__run-on-row"
+						data-test="app-settings-run-on-row">
+						<NcSelect
+							:modelValue="schemaOption(entry.schema)"
+							:options="schemas"
+							:clearable="false"
+							:disabled="busy"
+							:inputLabel="t('buildiq', 'Schema')"
+							@update:modelValue="(option) => setRunOn(binding, index, option && option.value, runOnWhen(entry))" />
+						<NcSelect
+							:modelValue="whenOption(runOnWhen(entry))"
+							:options="whenOptions"
+							:clearable="false"
+							:disabled="busy"
+							:inputLabel="t('buildiq', 'When')"
+							@update:modelValue="(option) => setRunOn(binding, index, entry.schema, option && option.value)" />
+						<NcButton
+							variant="tertiary"
+							:disabled="busy"
+							data-test="app-settings-run-on-remove"
+							@click="removeRunOn(binding, index)">
+							{{ t('buildiq', 'Remove') }}
+						</NcButton>
+					</div>
+					<NcButton
+						:disabled="busy || !schemas.length"
+						data-test="app-settings-run-on-add"
+						@click="addRunOn(binding)">
+						{{ t('buildiq', 'Add where it runs') }}
+					</NcButton>
+					<p v-if="!schemas.length" class="app-settings__hint">
+						{{ t('buildiq', 'This app has no schemas yet, so the flow cannot run on its records.') }}
+					</p>
+				</div>
+			</div>
+
+			<div class="app-settings__row" data-test="app-settings-languages">
+				<h4 class="app-settings__subtitle">
+					{{ t('buildiq', 'Languages') }}
+				</h4>
+				<p class="app-settings__hint app-settings__hint--inline">
+					{{
+						t(
+							'buildiq',
+							'The language the app\'s labels are written in, and the languages they are translated into. Each user sees the app in their own Nextcloud language where a translation exists. Translate the labels from the page designer.',
+						)
+					}}
+				</p>
+				<div data-test="app-settings-source-language">
+					<NcSelect
+						:modelValue="sourceOption"
+						:options="sourceOptions"
+						:clearable="false"
+						:disabled="!canEditLanguages || busy"
+						:inputLabel="t('buildiq', 'Labels are written in')"
+						@update:modelValue="onSourcePicked" />
+				</div>
+				<ul class="app-settings__languages">
+					<li
+						v-for="code in languages"
+						:key="code"
+						class="app-settings__language"
+						data-test="app-settings-language">
+						<span>{{ languageLabel(code) }}</span>
+						<template v-if="pendingRemoval === code">
+							<span class="app-settings__confirm" role="alert">
+								{{ t('buildiq', 'Remove {language} and drop its translations?', { language: languageLabel(code) }) }}
+							</span>
+							<NcButton
+								variant="error"
+								:disabled="busy"
+								data-test="app-settings-language-confirm-remove"
+								@click="confirmRemoveLanguage(code)">
+								{{ t('buildiq', 'Remove language') }}
+							</NcButton>
+							<NcButton
+								variant="tertiary"
+								:disabled="busy"
+								@click="pendingRemoval = ''">
+								{{ t('buildiq', 'Cancel') }}
+							</NcButton>
+						</template>
+						<NcButton
+							v-else
+							variant="tertiary"
+							:disabled="!canEditLanguages || busy"
+							:aria-label="t('buildiq', 'Remove {language}', { language: languageLabel(code) })"
+							data-test="app-settings-language-remove"
+							@click="pendingRemoval = code">
+							{{ t('buildiq', 'Remove') }}
+						</NcButton>
+					</li>
+				</ul>
+				<div data-test="app-settings-add-language">
+					<NcSelect
+						:modelValue="null"
+						:options="addOptions"
+						:disabled="!canEditLanguages || busy || !sourceLanguage"
+						:inputLabel="t('buildiq', 'Add a language')"
+						@update:modelValue="onLanguageAdded" />
+				</div>
+				<p v-if="!canEditLanguages" class="app-settings__hint app-settings__hint--inline">
+					{{ t('buildiq', 'Only the app\'s owners and editors can change its languages.') }}
 				</p>
 			</div>
 			<div class="app-settings__row" data-test="app-settings-installable">
@@ -302,6 +425,7 @@
 </template>
 
 <script>
+import { getLanguage } from '@nextcloud/l10n'
 import NcButton from '@nextcloud/vue/components/NcButton'
 import NcCheckboxRadioSwitch from '@nextcloud/vue/components/NcCheckboxRadioSwitch'
 import NcModal from '@nextcloud/vue/components/NcModal'
@@ -309,7 +433,17 @@ import NcSelect from '@nextcloud/vue/components/NcSelect'
 import NcTextField from '@nextcloud/vue/components/NcTextField'
 import AppEmbedSettings from '../components/AppEmbedSettings.vue'
 import { fetchConnectedDatabases } from '../composables/useConnectedDatabases.js'
+import { languageName, NEXTCLOUD_LANGUAGES } from '../services/appLanguages.js'
 import { normaliseOffline, OFFLINE_LIMIT_DEFAULT, OFFLINE_TTL_DEFAULT } from '../services/offlineManifest.js'
+import {
+	FROM_RECORD,
+	isWrapperBinding,
+	runOnEntry,
+	runOnWhen,
+	withPickedFlows,
+	withRunOn,
+	WRAPPER_PREFIX,
+} from '../utils/flowBindings.js'
 
 export default {
 	name: 'AppSettingsModal',
@@ -349,6 +483,11 @@ export default {
 		availableFlows: { type: Array, default: () => [] },
 		/** Whether the flow list is still being fetched. */
 		loadingFlows: { type: Boolean, default: false },
+		/**
+		 * The app version's schemas, as `{label, value}` options with the
+		 * slug as value: the only schemas a "Run on" entry may name.
+		 */
+		schemas: { type: Array, default: () => [] },
 		/** The installed app's short name (`Application.shortName`), '' for the app name. */
 		shortName: { type: String, default: '' },
 		/** The installed app's theme colour (`Application.themeColor`), '' for none. */
@@ -359,6 +498,12 @@ export default {
 		offline: { type: Object, default: null },
 		/** Whether an action is in flight (disables the switches). */
 		busy: { type: Boolean, default: false },
+		/** The language the app's labels are written in (`i18n.sourceLanguage`). */
+		sourceLanguage: { type: String, default: '' },
+		/** The languages the labels are translated into (`i18n.languages`). */
+		languages: { type: Array, default: () => [] },
+		/** Whether the viewer may change the languages (owner or editor). */
+		canEditLanguages: { type: Boolean, default: false },
 		/** The app's organisation scope, `holder` or `all` (absent means `all`). */
 		organisationScope: { type: String, default: 'all' },
 		/** Whether OpenRegister's multitenancy is on, so the scope can be offered. */
@@ -374,6 +519,8 @@ export default {
 		'update:embed',
 		'update:data-registers',
 		'update:flows',
+		'update:languages',
+		'loadLanguages',
 		'update:installable',
 		'update:offline',
 		'update:organisationScope',
@@ -387,6 +534,8 @@ export default {
 			// (see the watcher below). `register`/`label` default to '' so
 			// NcTextField always receives a string, never undefined.
 			rows: this.toRows(this.dataRegisters),
+			// The language a maker asked to remove, awaiting confirmation.
+			pendingRemoval: '',
 			// The registers OpenRegister serves from a database source, read
 			// again every time the modal opens (REQ-BQDB-001).
 			databases: [],
@@ -400,6 +549,42 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * Every Nextcloud language as a picker option.
+		 *
+		 * @return {Array<{label: string, value: string}>} Options.
+		 * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-sets-the-app-s-languages-req-bqml-001
+		 */
+		sourceOptions() {
+			return NEXTCLOUD_LANGUAGES.map((code) => ({
+				label: this.languageLabel(code),
+				value: code,
+			}))
+		},
+
+		/**
+		 * The written language as a picker option, null when unset.
+		 *
+		 * @return {?{label: string, value: string}} The option.
+		 */
+		sourceOption() {
+			return this.sourceLanguage
+				? { label: this.languageLabel(this.sourceLanguage), value: this.sourceLanguage }
+				: null
+		},
+
+		/**
+		 * The languages that can still be added: not the written one and not
+		 * one already offered.
+		 *
+		 * @return {Array<{label: string, value: string}>} Options.
+		 * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-sets-the-app-s-languages-req-bqml-001
+		 */
+		addOptions() {
+			const taken = new Set([this.sourceLanguage, ...this.languages])
+			return this.sourceOptions.filter((option) => !taken.has(option.value))
+		},
+
 		/**
 		 * The take-along filter's helper text.
 		 *
@@ -438,7 +623,7 @@ export default {
 		 * @spec openspec/specs/application-detail-ui/spec.md
 		 */
 		selectedFlows() {
-			return this.flows.map((binding) => {
+			return this.boundFlows.map((binding) => {
 				const known = this.availableFlows.find(
 					(option) => option.value === binding.flow,
 				)
@@ -455,21 +640,62 @@ export default {
 				)
 			})
 		},
+
+		/**
+		 * The flows the maker bound, without buildiq's own wrapper flows.
+		 *
+		 * @return {Array<object>} Bindings.
+		 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-bound-flow-declares-where-it-runs-req-bqsf-001
+		 */
+		boundFlows() {
+			return this.flows.filter((binding) => !isWrapperBinding(binding))
+		},
+
+		/**
+		 * The flows a maker may pick: every flow but buildiq's wrappers.
+		 *
+		 * @return {Array<{label: string, value: string}>} Options.
+		 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-bound-flow-declares-where-it-runs-req-bqsf-001
+		 */
+		flowOptions() {
+			return this.availableFlows.filter(
+				(option) => !String(option.label || '').startsWith(WRAPPER_PREFIX),
+			)
+		},
+
+		/**
+		 * The "when" choices of a "Run on" entry.
+		 *
+		 * @return {Array<{label: string, value: string}>} Options.
+		 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-bound-flow-declares-where-it-runs-req-bqsf-001
+		 */
+		whenOptions() {
+			return [
+				{ label: this.t('buildiq', 'Created'), value: 'object.created' },
+				{ label: this.t('buildiq', 'Updated'), value: 'object.updated' },
+				{ label: this.t('buildiq', 'Deleted'), value: 'object.deleted' },
+				{ label: this.t('buildiq', 'From a record'), value: FROM_RECORD },
+			]
+		},
 	},
 
 	watch: {
 		open: {
 			immediate: true,
 			/**
-			 * Read the connected databases again whenever the modal opens.
+			 * Each time the modal opens: ask the parent for the version's
+			 * languages (they live in the manifest, which the Application record
+			 * the other settings come from does not carry), and read the connected
+			 * databases again.
 			 *
-			 * @param {boolean} isOpen Whether the modal is shown.
+			 * @param {boolean} open Whether the modal is now open.
 			 * @return {void}
-			 *
+			 * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-sets-the-app-s-languages-req-bqml-001
 			 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-an-app-binds-a-connected-database-req-bqdb-001
 			 */
-			handler(isOpen) {
-				if (isOpen) {
+			handler(open) {
+				if (open) {
+					this.$emit('loadLanguages')
 					this.loadDatabases()
 				}
 			},
@@ -532,6 +758,68 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * A language's name in the viewer's language, with its code.
+		 *
+		 * @param {string} code A Nextcloud language code.
+		 * @return {string} The label.
+		 */
+		languageLabel(code) {
+			const name = languageName(code, getLanguage())
+			return name === code ? code : `${name} (${code})`
+		},
+
+		/**
+		 * Emit the languages after the written language changes. A language
+		 * that becomes the written one stops being translated into.
+		 *
+		 * @param {?{value: string}} option The picked option.
+		 * @return {void}
+		 * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-sets-the-app-s-languages-req-bqml-001
+		 */
+		onSourcePicked(option) {
+			if (!option || !option.value || option.value === this.sourceLanguage) {
+				return
+			}
+			this.$emit('update:languages', {
+				sourceLanguage: option.value,
+				languages: this.languages.filter((code) => code !== option.value),
+			})
+		},
+
+		/**
+		 * Emit the languages with one added.
+		 *
+		 * @param {?{value: string}} option The picked option.
+		 * @return {void}
+		 * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-sets-the-app-s-languages-req-bqml-001
+		 */
+		onLanguageAdded(option) {
+			if (!option || !option.value || this.languages.includes(option.value)) {
+				return
+			}
+			this.$emit('update:languages', {
+				sourceLanguage: this.sourceLanguage,
+				languages: [...this.languages, option.value],
+			})
+		},
+
+		/**
+		 * Emit the languages with one removed, after the maker confirmed it.
+		 * The parent drops that language's translations with it.
+		 *
+		 * @param {string} code The language to remove.
+		 * @return {void}
+		 * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-sets-the-app-s-languages-req-bqml-001
+		 */
+		confirmRemoveLanguage(code) {
+			this.pendingRemoval = ''
+			this.$emit('update:languages', {
+				sourceLanguage: this.sourceLanguage,
+				languages: this.languages.filter((language) => language !== code),
+			})
+		},
+
 		/**
 		 * Switch the organisation scope. Keeping the app to the organisation
 		 * applies at once; sharing it with every organisation asks first.
@@ -603,15 +891,122 @@ export default {
 		 *
 		 * @param {Array<{label: string, value: string}>} picked The chosen options.
 		 * @return {void}
+		 *
+		 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-bound-flow-declares-where-it-runs-req-bqsf-001
 		 */
 		onFlowsPicked(picked) {
-			this.$emit(
-				'update:flows',
-				(picked || []).map((option) => ({
-					flow: option.value,
-					label: option.label,
-				})),
-			)
+			// A flow that stays picked keeps its binding as it was, `runOn`
+			// included, and buildiq's wrappers travel along untouched.
+			this.$emit('update:flows', withPickedFlows(this.flows, picked))
+		},
+
+		runOnWhen,
+
+		/**
+		 * A bound flow's `runOn` entries.
+		 *
+		 * @param {object} binding The binding.
+		 * @return {Array<object>} Entries.
+		 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-bound-flow-declares-where-it-runs-req-bqsf-001
+		 */
+		runOnOf(binding) {
+			return Array.isArray(binding.runOn) ? binding.runOn : []
+		},
+
+		/**
+		 * The name a bound flow is shown by.
+		 *
+		 * @param {object} binding The binding.
+		 * @return {string} The flow's name.
+		 *
+		 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-bound-flow-declares-where-it-runs-req-bqsf-001
+		 */
+		flowLabel(binding) {
+			const known = this.availableFlows.find((option) => option.value === binding.flow)
+			return (known && known.label) || binding.label || binding.flow
+		},
+
+		/**
+		 * The picker option of a schema slug; an unknown slug is shown as itself.
+		 *
+		 * @param {string} slug The schema slug.
+		 * @return {?{label: string, value: string}} The option.
+		 *
+		 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-bound-flow-declares-where-it-runs-req-bqsf-001
+		 */
+		schemaOption(slug) {
+			if (!slug) {
+				return null
+			}
+			return this.schemas.find((option) => option.value === slug) || { label: slug, value: slug }
+		},
+
+		/**
+		 * The picker option of a "when".
+		 *
+		 * @param {string} when The event or `from-record`.
+		 * @return {?{label: string, value: string}} The option.
+		 *
+		 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-bound-flow-declares-where-it-runs-req-bqsf-001
+		 */
+		whenOption(when) {
+			return this.whenOptions.find((option) => option.value === when) || null
+		},
+
+		/**
+		 * Emit the bindings with one bound flow's entries replaced.
+		 *
+		 * @param {object} binding The binding.
+		 * @param {Array<object>} runOn Its new entries.
+		 * @return {void}
+		 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-bound-flow-declares-where-it-runs-req-bqsf-001
+		 */
+		emitRunOn(binding, runOn) {
+			this.$emit('update:flows', withRunOn(this.flows, binding.flow, runOn))
+		},
+
+		/**
+		 * Add an entry on the first schema, on updates.
+		 *
+		 * @param {object} binding The binding.
+		 * @return {void}
+		 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-bound-flow-declares-where-it-runs-req-bqsf-001
+		 */
+		addRunOn(binding) {
+			if (!this.schemas.length) {
+				return
+			}
+			this.emitRunOn(binding, [...this.runOnOf(binding), runOnEntry(this.schemas[0].value, 'object.updated')])
+		},
+
+		/**
+		 * Change one entry's schema or "when".
+		 *
+		 * @param {object} binding The binding.
+		 * @param {number} index The entry.
+		 * @param {string} schema The schema slug.
+		 * @param {string} when The event or `from-record`.
+		 * @return {void}
+		 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-bound-flow-declares-where-it-runs-req-bqsf-001
+		 */
+		setRunOn(binding, index, schema, when) {
+			if (!schema) {
+				return
+			}
+			const runOn = this.runOnOf(binding).map((entry, at) => (at === index ? runOnEntry(schema, when) : entry))
+			this.emitRunOn(binding, runOn)
+		},
+
+		/**
+		 * Remove one entry.
+		 *
+		 * @param {object} binding The binding.
+		 * @param {number} index The entry.
+		 * @return {void}
+		 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-bound-flow-declares-where-it-runs-req-bqsf-001
+		 */
+		removeRunOn(binding, index) {
+			this.emitRunOn(binding, this.runOnOf(binding).filter((entry, at) => at !== index))
 		},
 
 		/**
@@ -798,6 +1193,26 @@ export default {
 </script>
 
 <style scoped>
+.app-settings__run-on {
+	margin-top: 12px;
+	padding: 8px 12px;
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius-large);
+}
+
+.app-settings__run-on-title {
+	margin: 0 0 8px;
+	font-weight: bold;
+}
+
+.app-settings__run-on-row {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 8px;
+	align-items: flex-end;
+	margin-bottom: 8px;
+}
+
 .app-settings {
 	padding: 20px 24px 24px;
 	display: flex;
@@ -851,6 +1266,26 @@ export default {
 
 .app-settings__hint--inline {
 	margin-left: 0;
+}
+
+.app-settings__languages {
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.app-settings__language {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: 8px;
+}
+
+.app-settings__confirm {
+	color: var(--color-error-text, var(--color-error));
 }
 
 .app-settings__data-register-row {

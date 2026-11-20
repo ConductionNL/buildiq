@@ -29,10 +29,12 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Exception\AppRepoParseException;
+use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Kernel\Contracts\AppPackageImportServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\AppRepoParserInterface;
 use OCA\Buildiq\Kernel\Contracts\TemplateInstallSeamInterface;
 use OCP\AppFramework\Http;
+use OCP\IAppConfig;
 use ZipArchive;
 
 /**
@@ -96,6 +98,8 @@ class AppPackageImportService implements AppPackageImportServiceInterface {
 	 * @param AppRepoParserInterface       $parser  Parses the package with the GitHub install's rules.
 	 * @param TemplateInstallSeamInterface $install The install seam GitHub installs and templates share.
 	 * @param AppRecordsImporter           $records Writes the archive's records into the new app when asked.
+	 * @param IAppConfig|null              $appConfig Reads the instance setting "Allow code on pages"; without it code stays refused.
+	 * @param PageCodeGuard                $codeGuard Finds the code-bearing keys of the archive's manifest (pages-custom-code D6).
 	 *
 	 * @return void
 	 */
@@ -103,6 +107,8 @@ class AppPackageImportService implements AppPackageImportServiceInterface {
 		private readonly AppRepoParserInterface $parser,
 		private readonly TemplateInstallSeamInterface $install,
 		private readonly AppRecordsImporter $records,
+		private readonly ?IAppConfig $appConfig = null,
+		private readonly PageCodeGuard $codeGuard = new PageCodeGuard(),
 	) {
 	}//end __construct()
 
@@ -152,11 +158,9 @@ class AppPackageImportService implements AppPackageImportServiceInterface {
 		}
 
 		$slug = self::orDefault(value: (string)($target['slug'] ?? ''), default: (string)($template['slug'] ?? ''));
-		if (preg_match(AppRepoParser::SLUG_PATTERN, $slug) !== 1) {
-			return [
-				'status' => Http::STATUS_BAD_REQUEST,
-				'data' => ['error' => 'invalid_slug', 'detail' => 'A slug is lowercase letters, digits and hyphens.'],
-			];
+		$refusal = ($this->refuseCode(template: $template) ?? self::refuseSlug(slug: $slug));
+		if ($refusal !== null) {
+			return $refusal;
 		}
 
 		$result = $this->install->installFromTemplateArray(
@@ -176,6 +180,55 @@ class AppPackageImportService implements AppPackageImportServiceInterface {
 		);
 		return $result;
 	}//end importWithRecords()
+
+	/**
+	 * Refuse a slug that is not lowercase letters, digits and hyphens.
+	 *
+	 * @param string $slug The slug the new app would get.
+	 *
+	 * @return array{status:int,data:array<string,mixed>}|null The 400, or null for a valid slug.
+	 */
+	private static function refuseSlug(string $slug): array|null {
+		if (preg_match(AppRepoParser::SLUG_PATTERN, $slug) === 1) {
+			return null;
+		}
+
+		return [
+			'status' => Http::STATUS_BAD_REQUEST,
+			'data' => ['error' => 'invalid_slug', 'detail' => 'A slug is lowercase letters, digits and hyphens.'],
+		];
+	}//end refuseSlug()
+
+	/**
+	 * Refuse an archive whose pages hold code while the instance does not allow
+	 * code on pages (REQ-BQCC-005). The importer becomes the new app's owner,
+	 * so the owner half of the rule holds already.
+	 *
+	 * @param array<string,mixed> $template The parsed package.
+	 *
+	 * @return array{status:int,data:array<string,mixed>}|null The 403, or null when the import may proceed.
+	 *
+	 * @spec openspec/changes/pages-custom-code/specs/page-custom-code/spec.md#requirement-only-owners-write-code-and-only-when-allowed-req-bqcc-005
+	 */
+	private function refuseCode(array $template): array|null {
+		$manifest = ($template['manifest'] ?? null);
+		if (is_array($manifest) === false || $this->codeGuard->codeKeys(manifest: $manifest) === []) {
+			return null;
+		}
+
+		if ($this->appConfig?->getValueBool(AppIdentity::APP_ID, PageCodeGuard::SETTING, false) === true) {
+			return null;
+		}
+
+		return [
+			'status' => Http::STATUS_FORBIDDEN,
+			'data' => [
+				'error' => 'forbidden',
+				'code' => 'buildiq.code.disabled',
+				'detail' => 'The archive has code on its pages, and code on pages is switched off for this instance.',
+			],
+		];
+	}//end refuseCode()
 
 	/**
 	 * What an archive would import, without importing it: its name and slug and how many pages, schemas and records it holds.

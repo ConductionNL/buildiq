@@ -75,7 +75,7 @@ final class ScreenOverrideFragmentTest extends TestCase {
 	 */
 	public function testTheAudienceKindsMatchTheResolver(): void {
 		self::assertSame(
-			['everyone', 'group', 'team', 'portal', 'user'],
+			['everyone', 'group', 'team', 'portal', 'user', 'organisation'],
 			$this->schema()['properties']['audience']['properties']['kind']['enum']
 		);
 	}//end testTheAudienceKindsMatchTheResolver()
@@ -135,6 +135,6 @@ final class ScreenOverrideFragmentTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheSchemaVersionMoved(): void {
-		self::assertSame('0.3.0', $this->schema()['version']);
+		self::assertSame('0.4.0', $this->schema()['version']);
 	}//end testTheSchemaVersionMoved()
 }//end class

@@ -26,6 +26,8 @@ export const FIELD_TYPES = Object.freeze([
 	'file',
 	'child-records',
 	'product-list',
+	// pages-qr-and-barcodes REQ-BQQR-002: a field filled by scanning a code.
+	'scan',
 ])
 
 /** The palette's name and icon per field type. */
@@ -39,6 +41,7 @@ const TYPE_META = Object.freeze({
 	file: { label: () => t('buildiq', 'File'), icon: '📎' },
 	'child-records': { label: () => t('buildiq', 'Table of records'), icon: '▦' },
 	'product-list': { label: () => t('buildiq', 'Product list'), icon: '⊞' },
+	scan: { label: () => t('buildiq', 'Scanned code'), icon: '⌗' },
 	// The device fields only the field builder offers (forms-signature-audio-and-location).
 	signature: { label: () => t('buildiq', 'Signature'), icon: '✍' },
 	audio: { label: () => t('buildiq', 'Audio recording'), icon: '🎤' },

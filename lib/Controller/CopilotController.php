@@ -98,12 +98,19 @@ class CopilotController extends Controller {
 	#[NoAdminRequired]
 	public function health(): JSONResponse {
 		$health = $this->copilotService->health();
+		// T08 of ai-agents-knowledge-and-run-trace: the agent editor drops its
+		// knowledge budget refusal when knowledge is searched, not read whole.
+		$retrieval = $this->copilotService->knowledgeRetrieval();
 		if ($health['available'] === true) {
-			return new JSONResponse(data: ['status' => 'ok'], statusCode: Http::STATUS_OK);
+			return new JSONResponse(data: ['status' => 'ok', 'knowledgeRetrieval' => $retrieval], statusCode: Http::STATUS_OK);
 		}
 
 		return new JSONResponse(
-			data: ['status' => 'unavailable', 'reason' => (string)($health['reason'] ?? 'unsupported_server')],
+			data: [
+				'status' => 'unavailable',
+				'reason' => (string)($health['reason'] ?? 'unsupported_server'),
+				'knowledgeRetrieval' => $retrieval,
+			],
 			statusCode: Http::STATUS_SERVICE_UNAVAILABLE
 		);
 	}//end health()

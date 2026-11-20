@@ -158,6 +158,20 @@ class CopilotControllerTest extends TestCase {
 		self::assertSame('no_provider', $response->getData()['reason']);
 	}//end testHealthReturns503WithReason()
 
+	/**
+	 * Health says whether agent knowledge is searched rather than read whole
+	 * (ai-agents-knowledge-and-run-trace T08), on both answers.
+	 *
+	 * @return void
+	 */
+	public function testHealthSaysWhetherKnowledgeIsSearched(): void {
+		$this->copilotService->method('health')->willReturnOnConsecutiveCalls(['available' => true], ['available' => false, 'reason' => 'no_provider']);
+		$this->copilotService->method('knowledgeRetrieval')->willReturnOnConsecutiveCalls(true, false);
+
+		self::assertTrue($this->controller->health()->getData()['knowledgeRetrieval']);
+		self::assertFalse($this->controller->health()->getData()['knowledgeRetrieval']);
+	}//end testHealthSaysWhetherKnowledgeIsSearched()
+
 	// -------------------------------------------------------------------
 	// plan()
 	// -------------------------------------------------------------------

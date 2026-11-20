@@ -84,6 +84,8 @@ beforeEach(() => {
 	}
 	axiosMock.get.mockResolvedValue({ data: [] })
 	axiosMock.put.mockImplementation(async (url, body) => ({ data: { results: body } }))
+	// setFlows asks the server to wire the "Run on" entries after the PUT.
+	axiosMock.post.mockResolvedValue({ data: {} })
 })
 
 describe('owner-only settings patches', () => {
@@ -175,6 +177,59 @@ describe('support-note editor', () => {
 		await wrapper.vm.openSupportEditor()
 		expect(axiosMock.get).not.toHaveBeenCalled()
 		expect(wrapper.vm.supportOpen).toBe(false)
+	})
+})
+
+// experience-multilingual-apps (REQ-BQML-001): the languages live in the
+// active version's manifest, read on open and written back through PUT.
+describe('app languages', () => {
+	const MANIFEST_URL = '/apps/buildiq/api/applications/my-permits/manifest'
+	const stored = {
+		version: '1.0.0',
+		pages: [{ id: 'home' }],
+		i18n: { sourceLanguage: 'nl', languages: ['en', 'de'], labels: { de: { Thuis: 'Startseite' } } },
+	}
+
+	it('reads the languages when the settings modal opens', async () => {
+		const wrapper = mountActions('owner')
+		await flushPromises()
+		axiosMock.get.mockImplementation(async (url) => ({ data: url === MANIFEST_URL ? stored : [] }))
+		await wrapper.vm.loadLanguages()
+		expect(wrapper.vm.appLanguages).toEqual({ sourceLanguage: 'nl', languages: ['en', 'de'] })
+	})
+
+	it.each(['owner', 'editor'])('%s saves them into the manifest, dropping a removed language\'s translations', async (role) => {
+		const wrapper = mountActions(role)
+		await flushPromises()
+		axiosMock.get.mockImplementation(async (url) => ({ data: url === MANIFEST_URL ? stored : [] }))
+		axiosMock.put.mockClear()
+		await wrapper.vm.setLanguages({ sourceLanguage: 'nl', languages: ['en'] })
+		expect(axiosMock.put).toHaveBeenCalledTimes(1)
+		const [url, body] = axiosMock.put.mock.calls[0]
+		expect(url).toBe(MANIFEST_URL)
+		expect(body).toEqual({
+			manifest: { version: '1.0.0', pages: [{ id: 'home' }], i18n: { sourceLanguage: 'nl', languages: ['en'], labels: {} } },
+		})
+		expect(wrapper.vm.appLanguages).toEqual({ sourceLanguage: 'nl', languages: ['en'] })
+		expect(wrapper.vm.savingLanguages).toBe(false)
+	})
+
+	it('writes nothing for a viewer', async () => {
+		const wrapper = mountActions('viewer')
+		await flushPromises()
+		axiosMock.put.mockClear()
+		await wrapper.vm.setLanguages({ sourceLanguage: 'nl', languages: ['en'] })
+		expect(axiosMock.put).not.toHaveBeenCalled()
+	})
+
+	it('reports a failed save', async () => {
+		const wrapper = mountActions('owner')
+		await flushPromises()
+		axiosMock.get.mockResolvedValue({ data: stored })
+		axiosMock.put.mockRejectedValue(new Error('boom'))
+		await wrapper.vm.setLanguages({ sourceLanguage: 'nl', languages: [] })
+		expect(wrapper.vm.error).toBe('Failed to save settings: boom')
+		expect(wrapper.vm.savingLanguages).toBe(false)
 	})
 })
 

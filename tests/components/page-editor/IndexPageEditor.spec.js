@@ -216,6 +216,37 @@ describe('IndexPageEditor', () => {
 		expect(next).not.toHaveProperty('sidebar')
 	})
 
+	// pages-qr-and-barcodes REQ-BQQR-001: the Scan section writes config.scan.
+	it('scan toggle writes config.scan opening the match, and untoggle deletes it', async () => {
+		const wrapper = mountEditor({ register: 'r', schema: 's' })
+		await wrapper.find('[data-testid="index-page-scan"] input[type="checkbox"]').setValue(true)
+		expect(wrapper.emitted('update:config')[0][0].scan).toEqual({ enabled: true, field: '', onMatch: 'open' })
+
+		const on = mountEditor({ register: 'r', schema: 's', scan: { enabled: true, field: 'serienummer', onMatch: 'filter' } })
+		await on.find('[data-testid="index-page-scan"] input[type="checkbox"]').setValue(false)
+		expect(on.emitted('update:config')[0][0]).not.toHaveProperty('scan')
+	})
+
+	it('scan offers the schema\'s fields and writes the chosen field and match action', async () => {
+		const wrapper = mountEditor({ register: 'r', schema: 's', scan: { enabled: true, field: '', onMatch: 'open' } })
+		await flushPromises()
+		// The schema's properties come from the mocked picker: title and route.
+		const options = wrapper.findAll('[data-testid="index-page-scan-field"] option').map((o) => o.attributes('value'))
+		expect(options).toEqual(['', 'route', 'title'])
+
+		await wrapper.find('[data-testid="index-page-scan-field"]').setValue('route')
+		expect(wrapper.emitted('update:config')[0][0].scan).toEqual({ enabled: true, field: 'route', onMatch: 'open' })
+		await wrapper.find('[data-testid="index-page-scan-match"]').setValue('filter')
+		expect(wrapper.emitted('update:config')[1][0].scan).toEqual({ enabled: true, field: '', onMatch: 'filter' })
+	})
+
+	it('scan keeps a chosen field listed before the schema loads, and hides its pickers when off', () => {
+		const on = mountEditor({ register: 'r', schema: 's', scan: { enabled: true, field: 'serienummer', onMatch: 'open' } })
+		expect(on.vm.scanFieldOptions).toContain('serienummer')
+		const off = mountEditor({ register: 'r', schema: 's' })
+		expect(off.find('[data-testid="index-page-scan-field"]').exists()).toBe(false)
+	})
+
 	it('updates `cardComponent` via the optional input', async () => {
 		const wrapper = mountEditor({ register: 'r' })
 		wrapper.vm.update('cardComponent', 'BuildiqDefaultCard')
