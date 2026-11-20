@@ -39,6 +39,39 @@ app silently.
    MCP tools use — the same permission checks, the same locking, the same
    caps. There is no separate, less-checked path for AI-driven changes.
 
+## Outside agents over MCP
+
+Agents outside Buildiq can build apps too. They connect through OpenRegister's
+MCP server and use the same eight builder tools as the copilot
+(`buildiq.listApps`, `buildiq.getAppManifest`, `buildiq.createApp`,
+`buildiq.upsertSchema`, `buildiq.upsertPage`, `buildiq.addWidget`,
+`buildiq.upsertMenuItem`, `buildiq.promoteVersion`). The six write tools run the
+same handlers, with the same app roles, validation, locks and caps.
+
+A person stays between the agent and every write:
+
+1. When an agent calls a write tool without a `planId`, nothing is written. The
+   call is stored as a pending plan, and the answer carries its `planId`.
+2. An owner or editor of the app reads the plan
+   (`GET /api/agent-plans/{id}`) and approves or rejects it
+   (`POST /api/agent-plans/{id}/approve` or `/reject`). Admin power does not
+   stand in for the role. A plan that creates a new app needs an admin.
+3. The agent calls the tool again with the same arguments and the `planId`.
+   The call runs only when the plan is approved, the agent acts as the user
+   who submitted it, and the call matches an unused step exactly. Each step
+   runs once. `buildiq.promoteVersion` follows the same rule, so an agent
+   cannot promote what it wrote without approval.
+
+Approvals are signed with the instance secret over the plan, its app, the
+submitter, the approver and the steps, so editing a plan through
+OpenRegister's object API cannot approve it or change an approved step.
+
+For read questions, five schemas also carry a read-only MCP dialect
+(`search` and `get` only): Application, ApplicationVersion,
+ApplicationTemplate, exportJob and Automation. An agent can ask which apps
+exist, what version is live, or whether an export failed, without any write
+tool.
+
 ## Atomicity guarantee
 
 An approved plan is applied step by step. If a step fails partway

@@ -101,17 +101,14 @@ final class AutomationFlowBuilder {
 	 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-declarative-primitives-or-one-openregister-flow-req-bqar-001
 	 */
 	public function wantsFlow(CompileInput $input): bool {
-		if ($input->triggerType === 'manual') {
+		// Logic-email-and-webhook-triggers D1: the inbound triggers run only as a flow.
+		if (in_array($input->triggerType, ['manual', ...InboundTriggerDeclarations::TRIGGERS], true) === true) {
 			return true;
 		}
 
-		foreach ($input->actions as $action) {
-			if (in_array((string)($action['type'] ?? ''), self::FLOW_ACTIONS, true) === true) {
-				return true;
-			}
-		}
+		$types = array_map(static fn (mixed $action): string => (string)($action['type'] ?? ''), $input->actions);
 
-		return false;
+		return array_intersect($types, self::FLOW_ACTIONS) !== [];
 	}//end wantsFlow()
 
 	/**
@@ -221,6 +218,8 @@ final class AutomationFlowBuilder {
 	 * @return array<string, mixed>
 	 *
 	 * @throws UnsupportedAutomationCombinationException For a lifecycle transition or an unknown trigger.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) InboundTriggerDeclarations::check() is a pure settings check with no collaborators.
 	 */
 	private function triggerNode(CompileInput $input, string $register): array {
 		$type = $input->triggerType;
@@ -231,6 +230,13 @@ final class AutomationFlowBuilder {
 
 		if ($type === 'manual') {
 			return ['id' => 'trigger', 'type' => 'openregister.trigger-manual', 'config' => []];
+		}
+
+		// Logic-email-and-webhook-triggers D1: integriq starts the run, with the
+		// mail or the request body as input, so the flow itself is started manually.
+		if (in_array($type, InboundTriggerDeclarations::TRIGGERS, true) === true) {
+			InboundTriggerDeclarations::check(trigger: $input->trigger);
+			return ['id' => 'trigger', 'type' => 'openregister.trigger-manual', 'config' => ['startedBy' => 'integriq', 'trigger' => $type]];
 		}
 
 		if ($type === 'schedule') {

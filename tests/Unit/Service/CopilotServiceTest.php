@@ -460,7 +460,7 @@ class CopilotServiceTest extends TestCase {
 		);
 
 		$this->objectService->expects(self::never())->method('saveObject');
-		$this->toolProvider->expects(self::never())->method('invokeTool');
+		$this->toolProvider->expects(self::never())->method('invokeApprovedTool');
 
 		$result = $this->makeService()->plan(brief: 'A tool library', appSlug: null, userId: 'alice');
 
@@ -1019,7 +1019,7 @@ class CopilotServiceTest extends TestCase {
 				['id' => 'app-1', 'slug' => 'tool-library', 'permissions' => ['owners' => ['user:alice']]],
 			]
 		);
-		$this->toolProvider->method('invokeTool')->willReturn(['success' => true, 'action' => 'created']);
+		$this->toolProvider->method('invokeApprovedTool')->willReturn(['success' => true, 'action' => 'created']);
 
 		$this->agentRunLogger->expects(self::once())->method('log')
 			->with(
@@ -1058,7 +1058,7 @@ class CopilotServiceTest extends TestCase {
 				['id' => 'app-1', 'slug' => 'tool-library', 'permissions' => ['owners' => ['user:alice']]],
 			]
 		);
-		$this->toolProvider->method('invokeTool')->willReturn(['isError' => true, 'error' => 'upsert_failed', 'message' => 'boom']);
+		$this->toolProvider->method('invokeApprovedTool')->willReturn(['isError' => true, 'error' => 'upsert_failed', 'message' => 'boom']);
 
 		$this->agentRunLogger->expects(self::once())->method('log')
 			->with(self::anything(), 'alice', 'x', $plan, self::anything(), 'rolled-back');
@@ -1087,7 +1087,7 @@ class CopilotServiceTest extends TestCase {
 			'steps' => [['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'x', 'name' => 'X']]],
 		];
 
-		$this->toolProvider->expects(self::never())->method('invokeTool');
+		$this->toolProvider->expects(self::never())->method('invokeApprovedTool');
 		$this->agentRunLogger->expects(self::once())->method('log')
 			->with(self::anything(), 'alice', 'x', $plan, [], 'plan-rejected');
 
@@ -1111,7 +1111,7 @@ class CopilotServiceTest extends TestCase {
 			'summary' => 'x',
 			'steps' => [['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']]],
 		];
-		$this->toolProvider->method('invokeTool')->willReturn(
+		$this->toolProvider->method('invokeApprovedTool')->willReturn(
 			[
 				'success' => true,
 				'created' => true,
@@ -1390,7 +1390,7 @@ class CopilotServiceTest extends TestCase {
 		];
 
 		$invokedOrder = [];
-		$this->toolProvider->method('invokeTool')->willReturnCallback(
+		$this->toolProvider->method('invokeApprovedTool')->willReturnCallback(
 			function (string $tool) use (&$invokedOrder): array {
 				$invokedOrder[] = $tool;
 				if ($tool === 'buildiq.createApp') {
@@ -1421,7 +1421,7 @@ class CopilotServiceTest extends TestCase {
 			],
 		];
 
-		$this->toolProvider->method('invokeTool')->willReturnCallback(
+		$this->toolProvider->method('invokeApprovedTool')->willReturnCallback(
 			function (string $tool): array {
 				if ($tool === 'buildiq.createApp') {
 					return ['success' => true, 'created' => true, 'app' => ['uuid' => 'app-uuid-1', 'slug' => 'tool-library', 'name' => 'Tool Library']];
@@ -1471,7 +1471,7 @@ class CopilotServiceTest extends TestCase {
 			],
 		];
 
-		$this->toolProvider->method('invokeTool')->willReturnCallback(
+		$this->toolProvider->method('invokeApprovedTool')->willReturnCallback(
 			function (string $tool): array {
 				if ($tool === 'buildiq.createApp') {
 					return ['success' => true, 'created' => true, 'app' => ['uuid' => 'app-uuid-1', 'slug' => 'tool-library', 'name' => 'Tool Library']];
@@ -1519,7 +1519,7 @@ class CopilotServiceTest extends TestCase {
 		];
 
 		$seen = [];
-		$this->toolProvider->method('invokeTool')->willReturnCallback(
+		$this->toolProvider->method('invokeApprovedTool')->willReturnCallback(
 			function (string $tool, array $args) use (&$seen): array {
 				$seen[$tool] = $args;
 				if ($tool === 'buildiq.createApp') {
@@ -1559,7 +1559,7 @@ class CopilotServiceTest extends TestCase {
 		];
 
 		$seen = [];
-		$this->toolProvider->method('invokeTool')->willReturnCallback(
+		$this->toolProvider->method('invokeApprovedTool')->willReturnCallback(
 			function (string $tool, array $args) use (&$seen): array {
 				$seen[$tool] = $args;
 				if ($tool === 'buildiq.createApp') {
@@ -1594,7 +1594,7 @@ class CopilotServiceTest extends TestCase {
 		];
 
 		$seen = [];
-		$this->toolProvider->method('invokeTool')->willReturnCallback(
+		$this->toolProvider->method('invokeApprovedTool')->willReturnCallback(
 			function (string $tool, array $args) use (&$seen): array {
 				$seen[$tool] = $args;
 				if ($tool === 'buildiq.createApp') {
@@ -1632,7 +1632,7 @@ class CopilotServiceTest extends TestCase {
 		];
 
 		$seen = [];
-		$this->toolProvider->method('invokeTool')->willReturnCallback(
+		$this->toolProvider->method('invokeApprovedTool')->willReturnCallback(
 			function (string $tool, array $args) use (&$seen): array {
 				$seen[$tool] = $args;
 				if ($tool === 'buildiq.createApp') {
@@ -1670,7 +1670,7 @@ class CopilotServiceTest extends TestCase {
 		];
 
 		$seen = [];
-		$this->toolProvider->method('invokeTool')->willReturnCallback(
+		$this->toolProvider->method('invokeApprovedTool')->willReturnCallback(
 			function (string $tool, array $args) use (&$seen): array {
 				$seen[$tool] = $args;
 				if ($tool === 'buildiq.createApp') {
@@ -1704,7 +1704,7 @@ class CopilotServiceTest extends TestCase {
 		];
 
 		$seen = [];
-		$this->toolProvider->method('invokeTool')->willReturnCallback(
+		$this->toolProvider->method('invokeApprovedTool')->willReturnCallback(
 			function (string $tool, array $args) use (&$seen): array {
 				$seen[$tool] = $args;
 				if ($tool === 'buildiq.createApp') {
@@ -1739,7 +1739,7 @@ class CopilotServiceTest extends TestCase {
 		];
 
 		$seen = [];
-		$this->toolProvider->method('invokeTool')->willReturnCallback(
+		$this->toolProvider->method('invokeApprovedTool')->willReturnCallback(
 			function (string $tool, array $args) use (&$seen): array {
 				$seen[$tool] = $args;
 				if ($tool === 'buildiq.createApp') {
@@ -1795,7 +1795,7 @@ class CopilotServiceTest extends TestCase {
 		];
 
 		$seen = [];
-		$this->toolProvider->method('invokeTool')->willReturnCallback(
+		$this->toolProvider->method('invokeApprovedTool')->willReturnCallback(
 			function (string $tool, array $args) use (&$seen): array {
 				$seen[] = ['tool' => $tool, 'args' => $args];
 
@@ -1836,7 +1836,7 @@ class CopilotServiceTest extends TestCase {
 		$bob->method('getUID')->willReturn('bob');
 		$this->userManager->method('get')->with('bob')->willReturn($bob);
 
-		$this->toolProvider->expects(self::never())->method('invokeTool');
+		$this->toolProvider->expects(self::never())->method('invokeApprovedTool');
 
 		$plan = [
 			'summary' => 'x',
@@ -1864,7 +1864,7 @@ class CopilotServiceTest extends TestCase {
 	public function testExecuteCreateAppOnlyRequiresNoExistingAppRole(): void {
 		$this->objectService->expects(self::never())->method('searchObjectsBySlug');
 
-		$this->toolProvider->method('invokeTool')->willReturn(
+		$this->toolProvider->method('invokeApprovedTool')->willReturn(
 			[
 				'success' => true,
 				'created' => true,

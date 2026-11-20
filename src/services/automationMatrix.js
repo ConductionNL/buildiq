@@ -37,6 +37,8 @@ export const TRIGGER_TYPES = Object.freeze([
 	'lifecycle-transition',
 	'schedule',
 	'manual',
+	'email-received',
+	'webhook-called',
 ])
 
 /** Every action type the v1 designer supports. */
@@ -109,6 +111,19 @@ export const MATRIX = Object.freeze({
 		'webhook',
 		'rule-decision',
 		'ai-step',
+	]),
+	// logic-email-and-webhook-triggers D1: started by integriq, flow steps only.
+	'email-received': Object.freeze([
+		'send-notification',
+		'object-op',
+		'webhook',
+		'rule-decision',
+	]),
+	'webhook-called': Object.freeze([
+		'send-notification',
+		'object-op',
+		'webhook',
+		'rule-decision',
 	]),
 })
 

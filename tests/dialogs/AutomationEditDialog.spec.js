@@ -724,6 +724,242 @@ describe('AutomationEditDialog', () => {
 		})
 	})
 
+	describe('logic-email-and-webhook-triggers: inbound triggers', () => {
+		function withMailboxes(rows) {
+			axios.get.mockImplementation((url, config) => {
+				if (url.includes('/objects/integriq/source') && config && config.params && config.params.type === 'mailbox') {
+					return Promise.resolve({ data: { results: rows } })
+				}
+				return Promise.resolve({ data: { results: [] } })
+			})
+		}
+
+		it('REQ-BQTR-001: offers both triggers and lists the mailboxes the maker can read', async () => {
+			globalThis.OC = { appswebroots: { integriq: '/apps/integriq' } }
+			withMailboxes([
+				{ uuid: 'mb-1', name: 'meldingen@gemeente.nl', type: 'mailbox' },
+				{ uuid: 'api-1', name: 'Planning API', type: 'api' },
+			])
+
+			const wrapper = factory()
+			await openDialog(wrapper)
+
+			const offered = wrapper.vm.triggerOptions.filter((o) => ['email-received', 'webhook-called'].includes(o.value))
+			expect(offered.map((o) => [o.value, o.label, o.disabled])).toEqual([
+				['email-received', 'Email received', false],
+				['webhook-called', 'Webhook called', false],
+			])
+			expect(wrapper.vm.mailboxOptions).toEqual([{ id: 'mb-1', label: 'meldingen@gemeente.nl' }])
+
+			wrapper.vm.triggerType = 'email-received'
+			await wrapper.vm.$nextTick()
+			expect(wrapper.find('[data-testid="mailbox-select"]').exists()).toBe(true)
+			expect(wrapper.find('[data-testid="inbound-input-fields"]').exists()).toBe(true)
+			expect(wrapper.vm.inboundFields).toEqual(['from', 'to', 'subject', 'receivedAt', 'bodyText', 'attachments'])
+			delete globalThis.OC
+		})
+
+		it('REQ-BQTR-002: stores the mailbox and its filters, and needs a mailbox to save', async () => {
+			withMailboxes([{ uuid: 'mb-1', name: 'meldingen@gemeente.nl', type: 'mailbox' }])
+			const wrapper = factory()
+			await openDialog(wrapper)
+
+			wrapper.vm.name = 'Meldingen per mail'
+			wrapper.vm.triggerType = 'email-received'
+			wrapper.vm.actions = [wrapper.vm.actionToEditor({ type: 'send-notification' })]
+			wrapper.vm.actions[0].subjectEn = 'New report'
+			wrapper.vm.actions[0].subjectNl = 'Nieuwe melding'
+			await wrapper.vm.$nextTick()
+			expect(wrapper.vm.valid).toBe(false)
+
+			wrapper.vm.triggerSource = 'mb-1'
+			wrapper.vm.triggerFrom = ' burger@example.nl '
+			wrapper.vm.triggerSubjectContains = 'stoeptegel'
+			await wrapper.vm.$nextTick()
+
+			expect(wrapper.vm.valid).toBe(true)
+			expect(wrapper.vm.buildTrigger()).toEqual({
+				type: 'email-received',
+				source: 'mb-1',
+				from: 'burger@example.nl',
+				subjectContains: 'stoeptegel',
+			})
+		})
+
+		it('REQ-BQTR-003: shows the address and stores only the sign-in kind, never a secret', async () => {
+			const wrapper = factory({ ...baseAutomation(), provenance: { inbound: { consumer: 'c-1' } } })
+			await openDialog(wrapper)
+
+			wrapper.vm.name = 'Opdracht gereed'
+			wrapper.vm.triggerType = 'webhook-called'
+			wrapper.vm.triggerBodyExample = '{"opdracht": "42"}'
+			await wrapper.vm.$nextTick()
+
+			expect(wrapper.vm.webhookUrl).toBe(window.location.origin + '/apps/integriq/api/endpoint/buildiq/permit-tracker/opdracht-gereed')
+			expect(wrapper.find('[data-testid="webhook-address"]').text()).toContain('/api/endpoint/buildiq/permit-tracker/opdracht-gereed')
+			expect(wrapper.find('[data-testid="webhook-show-key"]').attributes('href')).toBe('/apps/integriq/consumers/c-1')
+			expect(wrapper.vm.inboundFields).toEqual(['opdracht'])
+			expect(wrapper.vm.buildTrigger()).toEqual({ type: 'webhook-called', authorization: 'api-key', bodyExample: '{"opdracht": "42"}' })
+
+			wrapper.vm.triggerBodyExample = '[1, 2]'
+			wrapper.vm.actions = [wrapper.vm.actionToEditor({ type: 'send-notification' })]
+			wrapper.vm.actions[0].subjectEn = 'Done'
+			wrapper.vm.actions[0].subjectNl = 'Gereed'
+			await wrapper.vm.$nextTick()
+			expect(wrapper.vm.bodyExampleValid).toBe(false)
+			expect(wrapper.vm.valid).toBe(false)
+		})
+
+		it('REQ-BQTR-001: only flow steps are allowed on an inbound trigger', async () => {
+			const wrapper = factory()
+			await openDialog(wrapper)
+
+			wrapper.vm.name = 'Bad shape'
+			wrapper.vm.triggerType = 'webhook-called'
+			wrapper.vm.actions = [wrapper.vm.actionToEditor({ type: 'approval' })]
+			await wrapper.vm.$nextTick()
+
+			expect(wrapper.vm.valid).toBe(false)
+			expect(wrapper.vm.actionBlockedReason('run-synchronization')).not.toBe('')
+		})
+
+		it('D6: both triggers are disabled with the reason without integriq', async () => {
+			axios.get.mockImplementation((url) => {
+				if (String(url).includes('/apps/integriq/api')) {
+					const error = new Error('not found')
+					error.response = { status: 404 }
+					return Promise.reject(error)
+				}
+				return Promise.resolve({ data: { results: [] } })
+			})
+
+			const wrapper = factory({ ...baseAutomation(), trigger: { type: 'email-received', source: 'mb-1' } })
+			await openDialog(wrapper)
+
+			expect(wrapper.vm.integriqAvailable).toBe(false)
+			expect(wrapper.vm.triggerOptions.filter((o) => o.disabled).map((o) => o.value)).toEqual(['email-received', 'webhook-called'])
+			expect(wrapper.find('[data-testid="inbound-trigger-blocked"]').text()).toBe('Email and webhook triggers need the Integriq app.')
+			expect(wrapper.vm.valid).toBe(false)
+		})
+
+		it('D6: a mail trigger without a readable mailbox says so', async () => {
+			withMailboxes([])
+			const wrapper = factory({ ...baseAutomation(), trigger: { type: 'email-received' } })
+			await openDialog(wrapper)
+
+			expect(wrapper.vm.inboundReason).toBe('There is no mailbox in Integriq that you can read.')
+		})
+	})
+
+	describe('schedule cadence', () => {
+		it('offers the six cadences with their labels', async () => {
+			const wrapper = factory()
+			await openDialog(wrapper)
+
+			expect(wrapper.vm.cadenceOptions).toEqual([
+				{ id: 'hourly', label: 'Hourly' },
+				{ id: 'daily', label: 'Daily' },
+				{ id: 'weekly', label: 'Weekly' },
+				{ id: 'monthly', label: 'Monthly' },
+				{ id: 'custom-cron', label: 'Custom (cron)' },
+				{ id: 'custom-interval', label: 'Custom interval (seconds)' },
+			])
+		})
+
+		it.each([
+			[{ type: 'schedule', cron: '0 3 * * 1', interval: 3600 }, 'custom-cron'],
+			[{ type: 'schedule', cron: '', interval: 604800 }, 'weekly'],
+			[{ type: 'schedule', interval: 2592000 }, 'monthly'],
+			[{ type: 'schedule', interval: 43200 }, 'custom-interval'],
+			[{ type: 'manual' }, 'custom-interval'],
+		])('maps the stored trigger %j to the %s cadence', async (trigger, id) => {
+			const wrapper = factory({ ...baseAutomation(), slug: 'a', trigger })
+			await openDialog(wrapper)
+
+			expect(wrapper.vm.cadenceOption).toEqual(
+				wrapper.vm.cadenceOptions.find((o) => o.id === id),
+			)
+		})
+
+		it.each([
+			['hourly', { type: 'schedule', interval: 3600 }],
+			['monthly', { type: 'schedule', interval: 2592000 }],
+			[null, { type: 'schedule', interval: 86400 }],
+		])('writes the %s preset as its interval', async (id, expected) => {
+			const wrapper = factory()
+			await openDialog(wrapper)
+			wrapper.vm.triggerType = 'schedule'
+			wrapper.vm.cadenceOption = wrapper.vm.cadenceOptions.find((o) => o.id === id) || null
+
+			expect(wrapper.vm.buildTrigger()).toEqual(expected)
+		})
+
+		it('derives the slug from the name', async () => {
+			const wrapper = factory()
+			await openDialog(wrapper)
+			wrapper.vm.name = '  Nightly  Sync -- Run! '
+
+			expect(wrapper.vm.derivedSlug).toBe('nightly-sync-run')
+		})
+	})
+})
+
+describe('AutomationEditDialog Ask AI (ai-copilot-documents-and-code-help REQ-BQCH-001/004)', () => {
+	const AssistStub = {
+		name: 'CopilotAssistButton',
+		props: ['target', 'appSlug', 'current', 'context'],
+		emits: ['accept'],
+		template: '<span class="assist-stub" :data-target="target" />',
+	}
+
+	beforeEach(() => {
+		axios.get.mockReset()
+		axios.post.mockReset()
+		axios.get.mockResolvedValue({ data: { results: [] } })
+		clearAppStatusCache()
+	})
+
+	async function openWith(actions) {
+		const wrapper = mount(AutomationEditDialog, {
+			propsData: { open: false, automation: baseAutomation(), register: 'openbuild-permit-tracker-main' },
+			stubs: { ...stubs, CopilotAssistButton: AssistStub },
+		})
+		await openDialog(wrapper)
+		wrapper.vm.triggerSchema = 'application'
+		wrapper.vm.actions = actions.map((a) => wrapper.vm.actionToEditor(a))
+		await wrapper.vm.$nextTick()
+		return wrapper
+	}
+
+	it('puts Ask AI beside the field mapping, scoped to the app with names only', async () => {
+		const wrapper = await openWith([{ type: 'object-op', operation: 'create', schema: 'permit', fieldMapping: { name: 'x' } }])
+
+		const button = wrapper.findAllComponents(AssistStub).find((b) => b.props('target') === 'field-mapping')
+		expect(button.props('appSlug')).toBe('permit-tracker')
+		expect(button.props('context')).toEqual({ register: 'openbuild-permit-tracker-main', targetSchema: 'permit', triggerSchema: 'application' })
+		expect(JSON.parse(button.props('current'))).toEqual({ name: 'x' })
+	})
+
+	it('stages an accepted mapping and payload template without saving', async () => {
+		const wrapper = await openWith([
+			{ type: 'object-op', operation: 'create', schema: 'permit' },
+			{ type: 'webhook', url: 'https://hooks.test/a', payloadTemplateText: '' },
+		])
+		const buttons = wrapper.findAllComponents(AssistStub)
+		const mapping = buttons.find((b) => b.props('target') === 'field-mapping')
+		const payload = buttons.find((b) => b.props('target') === 'payload-template')
+		expect(payload.props('context')).toEqual({ triggerSchema: 'application' })
+
+		mapping.vm.$emit('accept', '{\n    "name": "{{ object.title }}"\n}')
+		payload.vm.$emit('accept', '{\n    "id": "{{ object.uuid }}"\n}')
+		await wrapper.vm.$nextTick()
+
+		expect(wrapper.vm.actions[0].fieldMappingText).toBe('{\n    "name": "{{ object.title }}"\n}')
+		expect(wrapper.vm.actions[1].payloadTemplateText).toBe('{\n    "id": "{{ object.uuid }}"\n}')
+		expect(axios.post).not.toHaveBeenCalled()
+		expect(axios.put).not.toHaveBeenCalled()
+	})
+
 	describe('ai-llm-steps-and-computed-fields: the Ask AI step', () => {
 		/**
 		 * Answer the node catalogue, the hermiq agents and the melding schema.
@@ -864,114 +1100,5 @@ describe('AutomationEditDialog', () => {
 			expect(wrapper.find('[data-testid="action-blocked"]').text()).toBe('Install Hermiq to use AI steps.')
 			expect(wrapper.vm.valid).toBe(false)
 		})
-	})
-
-	describe('schedule cadence', () => {
-		it('offers the six cadences with their labels', async () => {
-			const wrapper = factory()
-			await openDialog(wrapper)
-
-			expect(wrapper.vm.cadenceOptions).toEqual([
-				{ id: 'hourly', label: 'Hourly' },
-				{ id: 'daily', label: 'Daily' },
-				{ id: 'weekly', label: 'Weekly' },
-				{ id: 'monthly', label: 'Monthly' },
-				{ id: 'custom-cron', label: 'Custom (cron)' },
-				{ id: 'custom-interval', label: 'Custom interval (seconds)' },
-			])
-		})
-
-		it.each([
-			[{ type: 'schedule', cron: '0 3 * * 1', interval: 3600 }, 'custom-cron'],
-			[{ type: 'schedule', cron: '', interval: 604800 }, 'weekly'],
-			[{ type: 'schedule', interval: 2592000 }, 'monthly'],
-			[{ type: 'schedule', interval: 43200 }, 'custom-interval'],
-			[{ type: 'manual' }, 'custom-interval'],
-		])('maps the stored trigger %j to the %s cadence', async (trigger, id) => {
-			const wrapper = factory({ ...baseAutomation(), slug: 'a', trigger })
-			await openDialog(wrapper)
-
-			expect(wrapper.vm.cadenceOption).toEqual(
-				wrapper.vm.cadenceOptions.find((o) => o.id === id),
-			)
-		})
-
-		it.each([
-			['hourly', { type: 'schedule', interval: 3600 }],
-			['monthly', { type: 'schedule', interval: 2592000 }],
-			[null, { type: 'schedule', interval: 86400 }],
-		])('writes the %s preset as its interval', async (id, expected) => {
-			const wrapper = factory()
-			await openDialog(wrapper)
-			wrapper.vm.triggerType = 'schedule'
-			wrapper.vm.cadenceOption = wrapper.vm.cadenceOptions.find((o) => o.id === id) || null
-
-			expect(wrapper.vm.buildTrigger()).toEqual(expected)
-		})
-
-		it('derives the slug from the name', async () => {
-			const wrapper = factory()
-			await openDialog(wrapper)
-			wrapper.vm.name = '  Nightly  Sync -- Run! '
-
-			expect(wrapper.vm.derivedSlug).toBe('nightly-sync-run')
-		})
-	})
-})
-
-describe('AutomationEditDialog Ask AI (ai-copilot-documents-and-code-help REQ-BQCH-001/004)', () => {
-	const AssistStub = {
-		name: 'CopilotAssistButton',
-		props: ['target', 'appSlug', 'current', 'context'],
-		emits: ['accept'],
-		template: '<span class="assist-stub" :data-target="target" />',
-	}
-
-	beforeEach(() => {
-		axios.get.mockReset()
-		axios.post.mockReset()
-		axios.get.mockResolvedValue({ data: { results: [] } })
-		clearAppStatusCache()
-	})
-
-	async function openWith(actions) {
-		const wrapper = mount(AutomationEditDialog, {
-			propsData: { open: false, automation: baseAutomation(), register: 'openbuild-permit-tracker-main' },
-			stubs: { ...stubs, CopilotAssistButton: AssistStub },
-		})
-		await openDialog(wrapper)
-		wrapper.vm.triggerSchema = 'application'
-		wrapper.vm.actions = actions.map((a) => wrapper.vm.actionToEditor(a))
-		await wrapper.vm.$nextTick()
-		return wrapper
-	}
-
-	it('puts Ask AI beside the field mapping, scoped to the app with names only', async () => {
-		const wrapper = await openWith([{ type: 'object-op', operation: 'create', schema: 'permit', fieldMapping: { name: 'x' } }])
-
-		const button = wrapper.findAllComponents(AssistStub).find((b) => b.props('target') === 'field-mapping')
-		expect(button.props('appSlug')).toBe('permit-tracker')
-		expect(button.props('context')).toEqual({ register: 'openbuild-permit-tracker-main', targetSchema: 'permit', triggerSchema: 'application' })
-		expect(JSON.parse(button.props('current'))).toEqual({ name: 'x' })
-	})
-
-	it('stages an accepted mapping and payload template without saving', async () => {
-		const wrapper = await openWith([
-			{ type: 'object-op', operation: 'create', schema: 'permit' },
-			{ type: 'webhook', url: 'https://hooks.test/a', payloadTemplateText: '' },
-		])
-		const buttons = wrapper.findAllComponents(AssistStub)
-		const mapping = buttons.find((b) => b.props('target') === 'field-mapping')
-		const payload = buttons.find((b) => b.props('target') === 'payload-template')
-		expect(payload.props('context')).toEqual({ triggerSchema: 'application' })
-
-		mapping.vm.$emit('accept', '{\n    "name": "{{ object.title }}"\n}')
-		payload.vm.$emit('accept', '{\n    "id": "{{ object.uuid }}"\n}')
-		await wrapper.vm.$nextTick()
-
-		expect(wrapper.vm.actions[0].fieldMappingText).toBe('{\n    "name": "{{ object.title }}"\n}')
-		expect(wrapper.vm.actions[1].payloadTemplateText).toBe('{\n    "id": "{{ object.uuid }}"\n}')
-		expect(axios.post).not.toHaveBeenCalled()
-		expect(axios.put).not.toHaveBeenCalled()
 	})
 })

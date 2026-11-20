@@ -682,11 +682,13 @@ class AutomationsController extends Controller {
 	 * @return JSONResponse
 	 */
 	private function recompileAndRespond(array $automation): JSONResponse {
-		// Apply refuses too: an AI step without Hermiq's node in the engine
-		// (ai-llm-steps-and-computed-fields REQ-BQLS-005) is a 422, not a 500.
+		$priorProvenance = $this->orArray(value: $automation['provenance'] ?? null);
+		// Apply refuses too, as a 422 rather than a 500: an AI step without
+		// Hermiq's node in the engine (ai-llm-steps-and-computed-fields
+		// REQ-BQLS-005), or an email or webhook trigger integriq cannot take,
+		// which fails closed before anything is written (logic-email-and-webhook-triggers D6).
 		try {
 			$plan = $this->compiler->compile(automation: $automation);
-			$priorProvenance = $this->orArray(value: $automation['provenance'] ?? null);
 			$provenance = $this->compiler->apply(automation: $automation, plan: $plan, priorProvenance: $priorProvenance);
 		} catch (UnsupportedAutomationCombinationException $e) {
 			return $this->error(code: $e->getErrorCode(), detail: $e->getMessage(), status: Http::STATUS_UNPROCESSABLE_ENTITY);
