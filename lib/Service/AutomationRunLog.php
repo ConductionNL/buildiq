@@ -62,6 +62,7 @@ final class AutomationRunLog {
 	 * @param AutomationRunRecorderInterface $recorder      Writes and reads the run records.
 	 * @param ObjectServiceInterface         $objectService Finds the automation an `aut-` rule set belongs to.
 	 * @param LoggerInterface                $logger        Logs a run that could not be recorded.
+	 * @param RuleSetRunSteps                $steps         Reads the steps and reasons of a rule set run.
 	 *
 	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
 	 */
@@ -69,6 +70,7 @@ final class AutomationRunLog {
 		private readonly AutomationRunRecorderInterface $recorder,
 		private readonly ObjectServiceInterface $objectService,
 		private readonly LoggerInterface $logger,
+		private readonly RuleSetRunSteps $steps=new RuleSetRunSteps(),
 	) {
 	}//end __construct()
 
@@ -112,11 +114,11 @@ final class AutomationRunLog {
 			$errors = array_values(array_map('strval', (array)($outcome['errors'] ?? [])));
 
 			if ((array)($outcome['triggeredRules'] ?? []) === [] && $errors === []) {
-				$this->recorder->finish(run: $run, outcome: 'skipped', reason: self::falseConditionReason(rules: $rules));
+				$this->recorder->finish(run: $run, outcome: 'skipped', reason: $this->steps->falseConditionReason(rules: $rules));
 				return;
 			}
 
-			foreach (self::stepsOf(rules: $rules, errors: $errors) as $step) {
+			foreach ($this->steps->stepsOf(rules: $rules, errors: $errors) as $step) {
 				$run = $this->recorder->step(run: $run, action: $step['action'], outcome: $step['outcome'], message: $step['message']);
 			}
 
@@ -182,7 +184,7 @@ final class AutomationRunLog {
 		}
 
 		$steps   = array_merge([['action' => 'approval', 'outcome' => 'succeeded', 'message' => $decision]], $followUps);
-		$failure = self::firstFailure(steps: $steps);
+		$failure = $this->steps->firstFailure(steps: $steps);
 		$outcome = 'succeeded';
 		if ($failure !== null) {
 			$outcome = 'failed';
@@ -254,6 +256,8 @@ final class AutomationRunLog {
 	 * @return array<string, mixed>|null
 	 *
 	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	public function automationForRuleSet(string $ruleSetSlug): ?array {
 		$found = $this->objectService->findAll(
@@ -308,106 +312,6 @@ final class AutomationRunLog {
 	}//end waitingRun()
 
 	/**
-	 * One step per compiled action, in rule order.
-	 *
-	 * @param array<int, mixed>  $rules  The condition-action rules.
-	 * @param array<int, string> $errors The engine's errors.
-	 *
-	 * @return list<array{action: string, outcome: string, message: string}>
-	 */
-	private static function stepsOf(array $rules, array $errors): array {
-		$steps = [];
-		foreach ($rules as $rule) {
-			if (is_array($rule) === false || ($rule['active'] ?? true) === false) {
-				continue;
-			}
-
-			$stopped = false;
-			foreach ((array)($rule['actions'] ?? []) as $action) {
-				$type = '';
-				if (is_array($action) === true) {
-					$type = (string)($action['type'] ?? '');
-				}
-
-				if ($stopped === true) {
-					$steps[] = ['action' => $type, 'outcome' => 'skipped', 'message' => 'Not run: an earlier action failed.'];
-					continue;
-				}
-
-				$message = self::failureOf(type: $type, rule: (string)($rule['name'] ?? ''), errors: $errors);
-				if ($message === null) {
-					$steps[] = ['action' => $type, 'outcome' => 'succeeded', 'message' => ''];
-					continue;
-				}
-
-				$steps[] = ['action' => $type, 'outcome' => 'failed', 'message' => $message];
-				$stopped = ((bool)($rule['continueOnError'] ?? false) === false);
-			}
-		}//end foreach
-
-		return $steps;
-	}//end stepsOf()
-
-	/**
-	 * The message the executor gave for a failed action, or null.
-	 *
-	 * @param string             $type   The action type.
-	 * @param string             $rule   The rule name.
-	 * @param array<int, string> $errors The engine's errors.
-	 *
-	 * @return string|null
-	 */
-	private static function failureOf(string $type, string $rule, array $errors): ?string {
-		$prefix = 'Action "' . $type . '" failed in rule "' . $rule . '": ';
-		foreach ($errors as $error) {
-			if (str_starts_with($error, $prefix) === true) {
-				return substr($error, strlen($prefix));
-			}
-		}
-
-		return null;
-	}//end failureOf()
-
-	/**
-	 * The reason of a skipped run: which condition did not hold.
-	 *
-	 * @param array<int, mixed> $rules The condition-action rules.
-	 *
-	 * @return string
-	 */
-	private static function falseConditionReason(array $rules): string {
-		$conditions = [];
-		foreach ($rules as $rule) {
-			if (is_array($rule) === true && ($rule['active'] ?? true) !== false && (string)($rule['condition'] ?? '') !== '') {
-				$conditions[] = (string)$rule['condition'];
-			}
-		}
-
-		if ($conditions === []) {
-			return 'No rule of the automation is active.';
-		}
-
-		return 'The condition was false: ' . implode('; ', $conditions) . '.';
-	}//end falseConditionReason()
-
-	/**
-	 * The message of the first failed step, or null.
-	 *
-	 * @param array<int, array{action: string, outcome: string, message: string}> $steps The steps.
-	 *
-	 * @return string|null
-	 */
-	private static function firstFailure(array $steps): ?string {
-		foreach ($steps as $step) {
-			if (($step['outcome'] ?? '') === 'failed') {
-				return (string)($step['message'] ?? '');
-			}
-		}
-
-		return null;
-	}//end firstFailure()
-
-	/**
 	 * The subject of a manual run: the automation's schema and the uuid the payload names.
 	 *
 	 * @param array<string, mixed> $automation The automation.
@@ -435,6 +339,8 @@ final class AutomationRunLog {
 	 * @param array<string, mixed> $automation The automation.
 	 *
 	 * @return string
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private static function idOf(array $automation): string {
 		return (string)(ObjectRecord::uuid(record: $automation) ?? ($automation['id'] ?? ($automation['uuid'] ?? '')));

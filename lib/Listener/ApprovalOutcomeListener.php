@@ -52,11 +52,9 @@ namespace OCA\Buildiq\Listener;
 use OCA\Buildiq\Kernel\Contracts\AutomationCompilerServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\RuleActionDispatcherInterface;
 use OCA\Buildiq\Service\AutomationRunLog;
-use OCA\Buildiq\Service\AutomationRunRecorder;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Event\TaskSequenceCompletedEvent;
 use OCA\OpenRegister\Event\TaskTerminalEvent;
-use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Container\ContainerInterface;
@@ -368,9 +366,9 @@ class ApprovalOutcomeListener implements IEventListener {
 		return ObjectRecord::toArray(object: $results[0]);
 	}//end findAutomationBySlug()
 	/**
-	 * The run log, built at use time from the same lazily resolved object
-	 * service: a listener cannot constructor-inject the recorder's published
-	 * dependencies (see LazyObjectService). Null when it cannot be built.
+	 * The run log, resolved from the container at use time: a listener cannot
+	 * constructor-inject the recorder's published dependencies (see
+	 * LazyObjectService). Null when it cannot be resolved.
 	 *
 	 * @return AutomationRunLog|null
 	 *
@@ -382,12 +380,12 @@ class ApprovalOutcomeListener implements IEventListener {
 		}
 
 		try {
-			$objectService = $this->objects->get();
-			$this->runLog  = new AutomationRunLog(
-				recorder: new AutomationRunRecorder(objectService: $objectService, time: $this->container->get(ITimeFactory::class), logger: $this->logger),
-				objectService: $objectService,
-				logger: $this->logger
-			);
+			$runLog = $this->container->get(AutomationRunLog::class);
+			if (($runLog instanceof AutomationRunLog) === false) {
+				return null;
+			}
+
+			$this->runLog = $runLog;
 		} catch (Throwable $e) {
 			$this->logger->error('Buildiq: automation runs cannot be recorded: ' . $e->getMessage());
 			return null;
