@@ -21,5 +21,5 @@
   - Done: `tests/components/applicationDetail/ApplicationConnectionsSection.spec.js` (4), the Dutch labels read from `l10n/nl.json`.
 
 ## 4. Capability row
-- [ ] 4.1 When 1 to 3 are done, set `int-connection-registry` to built with this change's evidence and archive the change.
-  - Left for after merge: flipping the capability and archiving belong to the merged change.
+- [x] 4.1 When 1 to 3 are done, set `int-connection-registry` to built with this change's evidence and archive the change.
+  - Done (20 Nov): `int-connection-registry` is `built` with `buildiq: yes`, the service, controller, section and their tests as evidence, and the change is archived with REQ-BIQ-CONN-005 synced into `openspec/specs/app-connections`.
