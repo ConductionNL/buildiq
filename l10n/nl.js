@@ -2792,7 +2792,8 @@ OC.L10N.register(
         "The connections could not be loaded.": "De koppelingen konden niet worden geladen.",
         "Health checks need integriq. Install it to see whether these sources answer.": "Voor gezondheidscontroles is integriq nodig. Installeer het om te zien of deze bronnen antwoorden.",
         "This app reads from no outside system.": "Deze app leest uit geen enkel extern systeem.",
-        "Integration": "Integratie"
+        "Integration": "Integratie",
+        "Text and Markdown files this agent reads before it plans. Its knowledge is searched for the passages that match each request, so files of any size can be added.": "Tekst- en Markdown-bestanden die deze agent leest voordat hij een plan maakt. Zijn kennis wordt doorzocht op de passages die bij elk verzoek passen, dus bestanden van elke grootte kunnen worden toegevoegd."
     },
     "nplurals=2; plural=(n != 1);"
 )

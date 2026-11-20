@@ -2709,7 +2709,8 @@ OC.L10N.register(
         "Switched off": "Switched off",
         "The connections could not be loaded.": "The connections could not be loaded.",
         "The outside systems this app reads from, and whether they answered the last time they were checked.": "The outside systems this app reads from, and whether they answered the last time they were checked.",
-        "This app reads from no outside system.": "This app reads from no outside system."
+        "This app reads from no outside system.": "This app reads from no outside system.",
+        "Text and Markdown files this agent reads before it plans. Its knowledge is searched for the passages that match each request, so files of any size can be added.": "Text and Markdown files this agent reads before it plans. Its knowledge is searched for the passages that match each request, so files of any size can be added."
     },
     "nplurals=2; plural=(n != 1);"
 )

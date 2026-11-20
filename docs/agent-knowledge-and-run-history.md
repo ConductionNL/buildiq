@@ -32,6 +32,15 @@ section shows how much room is left. A file that does not fit is refused,
 and the message says how many characters of room are left, so you can shorten
 the file or remove another one.
 
+When OpenRegister's vector search is configured (AI features on and an
+embedding provider set), the knowledge is searched instead. Before each plan
+the agent reads the passages of its own knowledge files that best match the
+request, best first, up to the same 40,000 characters, so files of any size
+can be added and the section says so instead of counting the room left. The
+search runs as the person asking, so it only returns passages from files they
+can open. When the search finds nothing in the agent's files, for example
+because a file is not indexed yet, the agent reads the whole files as before.
+
 To take a file out, choose **Remove** next to it and save the agent.
 
 ### Who can read the files
