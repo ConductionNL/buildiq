@@ -15,7 +15,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/built-app-connections-page/specs/app-connections/spec.md#requirement-req-biq-conn-005-every-app-built-in-buildiq-has-a-connections-page-with-health
+ * @spec openspec/changes/archive/2026-11-20-built-app-connections-page/specs/app-connections/spec.md#requirement-req-biq-conn-005-every-app-built-in-buildiq-has-a-connections-page-with-health
  */
 
 declare(strict_types=1);

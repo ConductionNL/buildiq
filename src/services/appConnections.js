@@ -10,7 +10,7 @@
  * `connectionStatus` formatter uses the same words), and a row integriq never
  * checked reads "Not checked".
  *
- * @spec openspec/changes/built-app-connections-page/specs/app-connections/spec.md#requirement-req-biq-conn-005-every-app-built-in-buildiq-has-a-connections-page-with-health
+ * @spec openspec/changes/archive/2026-11-20-built-app-connections-page/specs/app-connections/spec.md#requirement-req-biq-conn-005-every-app-built-in-buildiq-has-a-connections-page-with-health
  */
 
 import axios from '@nextcloud/axios'
@@ -25,7 +25,7 @@ import { resolveFleetAppId } from './fleetAppId.js'
  *
  * @param {?string} status The status integriq recorded.
  * @return {string} The label.
- * @spec openspec/changes/built-app-connections-page/specs/app-connections/spec.md#requirement-req-biq-conn-005-every-app-built-in-buildiq-has-a-connections-page-with-health
+ * @spec openspec/changes/archive/2026-11-20-built-app-connections-page/specs/app-connections/spec.md#requirement-req-biq-conn-005-every-app-built-in-buildiq-has-a-connections-page-with-health
  */
 export function connectionStatusLabel(status) {
 	switch (status) {
@@ -46,7 +46,7 @@ export function connectionStatusLabel(status) {
  * @param {{kind: string, linkId: ?string}} row The connection row.
  * @param {string} appSlug The app's slug.
  * @return {string} The URL, or '' when the row has nothing to open.
- * @spec openspec/changes/built-app-connections-page/specs/app-connections/spec.md#requirement-req-biq-conn-005-every-app-built-in-buildiq-has-a-connections-page-with-health
+ * @spec openspec/changes/archive/2026-11-20-built-app-connections-page/specs/app-connections/spec.md#requirement-req-biq-conn-005-every-app-built-in-buildiq-has-a-connections-page-with-health
  */
 export function connectionLink(row, appSlug) {
 	if (!row || !row.linkId) {
@@ -64,7 +64,7 @@ export function connectionLink(row, appSlug) {
  *
  * @param {string} appSlug The app's slug.
  * @return {Promise<{healthNeedsIntegriq: boolean, connections: Array<object>}>} The list.
- * @spec openspec/changes/built-app-connections-page/specs/app-connections/spec.md#requirement-req-biq-conn-005-every-app-built-in-buildiq-has-a-connections-page-with-health
+ * @spec openspec/changes/archive/2026-11-20-built-app-connections-page/specs/app-connections/spec.md#requirement-req-biq-conn-005-every-app-built-in-buildiq-has-a-connections-page-with-health
  */
 export async function fetchAppConnections(appSlug) {
 	const { data } = await axios.get(generateUrl(`/apps/buildiq/api/applications/${encodeURIComponent(appSlug)}/connections`))
