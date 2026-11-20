@@ -8,7 +8,11 @@ A maker picks a Dutch format for a form field, and the form checks it the same w
 
 ### Requirement: The form designer offers Dutch formats for a field (REQ-BQDF-001)
 
-The form designer's "Controle" block SHALL offer a "Formaat" select with BSN, IBAN, Kenteken, Telefoonnummer (Nederlands), Telefoonnummer (internationaal), Postcode, KvK-nummer and Vestigingsnummer, and SHALL write the chosen value to the published form field as `format` with the names `bsn`, `iban`, `nl-licence-plate`, `phone-nl`, `phone-international`, `postcode`, `kvk` and `kvk-branch`. When a format is set the designer SHALL NOT accept a pattern on the same field. The schema field editor's "Formaat" SHALL offer the same entries, and a form field on a schema property with a Dutch format SHALL show that format and SHALL NOT drop it.
+The form designer's "Controle" block SHALL offer a "Formaat" select with the eight Dutch formats and SHALL write the chosen one to the published form field as `format`, named `bsn`, `iban`, `nl-licence-plate`, `phone-nl`, `phone-international`, `postcode`, `kvk` or `kvk-branch`. A field with a format SHALL NOT accept a pattern. The schema field editor's "Formaat" SHALL offer the same entries, and a form field on a schema property with a Dutch format SHALL show that format and SHALL NOT drop it.
+
+#### Scenario: the eight formats are offered
+- **WHEN** a maker opens "Formaat" on a form field
+- **THEN** it offers BSN, IBAN, Kenteken, Telefoonnummer (Nederlands), Telefoonnummer (internationaal), Postcode, KvK-nummer and Vestigingsnummer
 
 #### Scenario: a maker adds an IBAN check
 - **WHEN** a maker sets "Formaat" to IBAN on field `rekeningnummer` and publishes the form
