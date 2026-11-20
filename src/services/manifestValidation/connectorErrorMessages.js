@@ -20,6 +20,7 @@
  */
 
 import { translate as t } from '@nextcloud/l10n'
+import { indexViewMessages } from './indexViews.js'
 
 /**
  * One sentence per code the connector validator can emit, saying what is
@@ -30,6 +31,7 @@ import { translate as t } from '@nextcloud/l10n'
  */
 function messages() {
 	return {
+		...indexViewMessages(),
 		'buildiq.connector.error.invalid-shape': t(
 			'buildiq',
 			'The connector settings must be a block of keys and values.',
@@ -85,6 +87,11 @@ function messages() {
 		'buildiq.connector.error.cachettl-range': t(
 			'buildiq',
 			'Cache lifetime is a whole number of seconds, from 0 to 3600.',
+		),
+		// experience-multilingual-apps (REQ-BQML-001): the i18n validator.
+		'buildiq.i18n.error.unknown-language': t(
+			'buildiq',
+			'This is not a Nextcloud language code. Pick the language from the list in the app settings.',
 		),
 	}
 }

@@ -40,7 +40,6 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Repair;
 
 use OCA\Buildiq\Kernel\Contracts\AppOverrideServiceInterface;
-use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
@@ -62,6 +61,13 @@ class MigrateAppOverridesToHybrid implements IRepairStep {
 	private const LEGACY_SCHEMA_SLUG = 'app-override';
 
 	/**
+	 * Reads every row of the schema being migrated.
+	 *
+	 * @var SchemaRowReader
+	 */
+	private readonly SchemaRowReader $rows;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param LoggerInterface $logger PSR logger for diagnostics.
@@ -79,6 +85,7 @@ class MigrateAppOverridesToHybrid implements IRepairStep {
 		private readonly SchemaMapper $schemaMapper,
 		private readonly AppOverrideServiceInterface $appOverrideService,
 	) {
+		$this->rows = new SchemaRowReader(objectService: $objectService);
 	}//end __construct()
 
 	/**
@@ -165,7 +172,6 @@ class MigrateAppOverridesToHybrid implements IRepairStep {
 	 * @param int $schemaId The resolved app-override schema id.
 	 *
 	 * @return array<int, array<string, mixed>>
-	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function enumerateLegacyOverrides(int $schemaId): array {
 		try {
@@ -180,21 +186,7 @@ class MigrateAppOverridesToHybrid implements IRepairStep {
 			return [];
 		}
 
-		$rows = $this->objectService->findAll(
-			config: [
-				'filters' => [
-					'register' => $registerId,
-					'schema' => $schemaId,
-				],
-			]
-		);
-
-		$normalised = [];
-		foreach ($rows as $row) {
-			$normalised[] = ObjectRecord::toArray(object: $row);
-		}
-
-		return $normalised;
+		return $this->rows->rows(registerId: $registerId, schemaId: $schemaId);
 	}//end enumerateLegacyOverrides()
 
 	/**

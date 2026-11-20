@@ -83,7 +83,15 @@
 				<h3 class="agent-edit__subtitle">
 					{{ t('buildiq', 'Knowledge') }}
 				</h3>
-				<p class="agent-edit__hint">
+				<p v-if="knowledgeRetrieval" class="agent-edit__hint" data-testid="agent-knowledge-retrieval">
+					{{
+						t(
+							'buildiq',
+							'Text and Markdown files this agent reads before it plans. Its knowledge is searched for the passages that match each request, so files of any size can be added.',
+						)
+					}}
+				</p>
+				<p v-else class="agent-edit__hint">
 					{{
 						t(
 							'buildiq',
@@ -170,6 +178,7 @@ import {
 	NcTextArea,
 	NcTextField,
 } from '@nextcloud/vue'
+import { fetchCopilotHealth } from '../services/copilot.js'
 
 /**
  * The stored id of an agent record (`id`, else `uuid`), or null for a new one.
@@ -271,6 +280,8 @@ export default {
 			pendingKnowledge: {},
 			removedKnowledge: [],
 			knowledgeError: '',
+			// T08: OpenRegister's vector facade searches the knowledge, so no budget refusal.
+			knowledgeRetrieval: false,
 			showValidation: false,
 			saving: false,
 			errorMessage: '',
@@ -407,6 +418,7 @@ export default {
 		open(isOpen) {
 			if (isOpen) {
 				this.hydrate()
+				this.checkKnowledgeRetrieval()
 			}
 		},
 	},
@@ -444,6 +456,18 @@ export default {
 		 */
 		formatCount(count) {
 			return Number(count).toLocaleString()
+		},
+
+		/**
+		 * Ask the copilot health whether knowledge is searched rather than read
+		 * whole; a failed probe keeps the budget (ai-agents-knowledge-and-run-trace T08).
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/ai-agents-knowledge-and-run-trace/specs/agent-knowledge-base/spec.md#requirement-a-maker-attaches-knowledge-files-to-an-agent-req-bqag-001
+		 */
+		async checkKnowledgeRetrieval() {
+			const health = await fetchCopilotHealth()
+			this.knowledgeRetrieval = health.knowledgeRetrieval === true
 		},
 
 		/**
@@ -486,7 +510,7 @@ export default {
 			}
 			const text = await file.text()
 			const characters = characterCount(text)
-			if (characters > this.knowledgeRoom) {
+			if (!this.knowledgeRetrieval && characters > this.knowledgeRoom) {
 				return t(
 					'buildiq',
 					'{file} has {size} characters, but only {room} characters of room are left.',

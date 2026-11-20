@@ -46,6 +46,10 @@ use Throwable;
 /**
  * Saves, publishes, binds, toggles and removes the flow of an automation.
  *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Most of the count is OpenRegister's value objects
+ *                                                 (find target and options, save options) and the flow
+ *                                                 entity; the collaborators themselves are five.
+ *
  * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-declarative-primitives-or-one-openregister-flow-req-bqar-001
  */
 class AutomationFlowBackend {

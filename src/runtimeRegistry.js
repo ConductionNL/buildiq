@@ -21,6 +21,9 @@
  * @spec openspec/changes/data-index-grid-and-saved-views/tasks.md#t03
  */
 
+// Library page — the "Waiting to sync" page an app with offline forms gets
+// (pages-installable-offline-and-mobile, REQ-BQOM-005).
+import { CnOfflineQueue } from '@conduction/nextcloud-vue'
 // Runtime widget — renders an OpenConnector-bound data source for a manifest
 // page/widget that declares `dataSource.connector` (REQ-OCAS-006).
 import ConnectorDataView from './components/runtime/ConnectorDataView.vue'
@@ -148,6 +151,13 @@ export const runtimeRegistry = {
 	RunAutomationAction: actions(RunAutomationAction),
 	// @custom-widget-ratchet exclude data-index-grid-and-saved-views: a grid
 	// page edits records cell by cell, which no built-in page type does.
+	// @custom-widget-ratchet exclude pages-installable-offline-and-mobile: the
+	// "Waiting to sync" page lists the submissions still on the device from
+	// the offline queue in IndexedDB, which no built-in page type reads.
+	'offline-queue': page(
+		CnOfflineQueue,
+		'No built-in page type reads the device-side offline queue; CnOfflineQueue is the library surface for it (REQ-BQOM-005).',
+	),
 	'record-grid': page(
 		RecordGridPage,
 		'No built-in page type edits records in a grid: index pages edit one record at a time in a form, so a spreadsheet-like page over CnDataMatrix is a custom page (ADR-049).',

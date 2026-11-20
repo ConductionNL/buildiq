@@ -918,3 +918,60 @@ describe('AutomationEditDialog', () => {
 		})
 	})
 })
+
+describe('AutomationEditDialog Ask AI (ai-copilot-documents-and-code-help REQ-BQCH-001/004)', () => {
+	const AssistStub = {
+		name: 'CopilotAssistButton',
+		props: ['target', 'appSlug', 'current', 'context'],
+		emits: ['accept'],
+		template: '<span class="assist-stub" :data-target="target" />',
+	}
+
+	beforeEach(() => {
+		axios.get.mockReset()
+		axios.post.mockReset()
+		axios.get.mockResolvedValue({ data: { results: [] } })
+		clearAppStatusCache()
+	})
+
+	async function openWith(actions) {
+		const wrapper = mount(AutomationEditDialog, {
+			propsData: { open: false, automation: baseAutomation(), register: 'openbuild-permit-tracker-main' },
+			stubs: { ...stubs, CopilotAssistButton: AssistStub },
+		})
+		await openDialog(wrapper)
+		wrapper.vm.triggerSchema = 'application'
+		wrapper.vm.actions = actions.map((a) => wrapper.vm.actionToEditor(a))
+		await wrapper.vm.$nextTick()
+		return wrapper
+	}
+
+	it('puts Ask AI beside the field mapping, scoped to the app with names only', async () => {
+		const wrapper = await openWith([{ type: 'object-op', operation: 'create', schema: 'permit', fieldMapping: { name: 'x' } }])
+
+		const button = wrapper.findAllComponents(AssistStub).find((b) => b.props('target') === 'field-mapping')
+		expect(button.props('appSlug')).toBe('permit-tracker')
+		expect(button.props('context')).toEqual({ register: 'openbuild-permit-tracker-main', targetSchema: 'permit', triggerSchema: 'application' })
+		expect(JSON.parse(button.props('current'))).toEqual({ name: 'x' })
+	})
+
+	it('stages an accepted mapping and payload template without saving', async () => {
+		const wrapper = await openWith([
+			{ type: 'object-op', operation: 'create', schema: 'permit' },
+			{ type: 'webhook', url: 'https://hooks.test/a', payloadTemplateText: '' },
+		])
+		const buttons = wrapper.findAllComponents(AssistStub)
+		const mapping = buttons.find((b) => b.props('target') === 'field-mapping')
+		const payload = buttons.find((b) => b.props('target') === 'payload-template')
+		expect(payload.props('context')).toEqual({ triggerSchema: 'application' })
+
+		mapping.vm.$emit('accept', '{\n    "name": "{{ object.title }}"\n}')
+		payload.vm.$emit('accept', '{\n    "id": "{{ object.uuid }}"\n}')
+		await wrapper.vm.$nextTick()
+
+		expect(wrapper.vm.actions[0].fieldMappingText).toBe('{\n    "name": "{{ object.title }}"\n}')
+		expect(wrapper.vm.actions[1].payloadTemplateText).toBe('{\n    "id": "{{ object.uuid }}"\n}')
+		expect(axios.post).not.toHaveBeenCalled()
+		expect(axios.put).not.toHaveBeenCalled()
+	})
+})

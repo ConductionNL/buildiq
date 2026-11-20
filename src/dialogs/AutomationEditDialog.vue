@@ -234,12 +234,20 @@
 							@update:modelValue="
 								updateAction(index, 'schema', $event)
 							" />
-						<NcTextArea
-							:modelValue="action.fieldMappingText"
-							:label="t('buildiq', 'Field mapping (JSON)')"
-							@update:modelValue="
-								updateAction(index, 'fieldMappingText', $event)
-							" />
+						<div class="automation-edit__assisted">
+							<NcTextArea
+								:modelValue="action.fieldMappingText"
+								:label="t('buildiq', 'Field mapping (JSON)')"
+								@update:modelValue="
+									updateAction(index, 'fieldMappingText', $event)
+								" />
+							<CopilotAssistButton
+								target="field-mapping"
+								:appSlug="assistAppSlug"
+								:current="action.fieldMappingText || ''"
+								:context="{ register, targetSchema: action.schema || '', triggerSchema }"
+								@accept="updateAction(index, 'fieldMappingText', $event)" />
+						</div>
 					</template>
 
 					<template v-else-if="action.type === 'webhook'">
@@ -279,12 +287,20 @@
 							@update:modelValue="
 								updateAction(index, 'path', $event)
 							" />
-						<NcTextArea
-							:modelValue="action.payloadTemplateText"
-							:label="t('buildiq', 'Payload template (JSON)')"
-							@update:modelValue="
-								updateAction(index, 'payloadTemplateText', $event)
-							" />
+						<div class="automation-edit__assisted">
+							<NcTextArea
+								:modelValue="action.payloadTemplateText"
+								:label="t('buildiq', 'Payload template (JSON)')"
+								@update:modelValue="
+									updateAction(index, 'payloadTemplateText', $event)
+								" />
+							<CopilotAssistButton
+								target="payload-template"
+								:appSlug="assistAppSlug"
+								:current="action.payloadTemplateText || ''"
+								:context="{ triggerSchema }"
+								@accept="updateAction(index, 'payloadTemplateText', $event)" />
+						</div>
 					</template>
 
 					<template v-else-if="action.type === 'rule-decision'">
@@ -451,6 +467,7 @@ import {
 import AiStepForm from '../components/AiStepForm.vue'
 import ApprovalFormFieldsEditor from '../components/ApprovalFormFieldsEditor.vue'
 import AutomationActionListEditor from '../components/AutomationActionListEditor.vue'
+import CopilotAssistButton from '../components/copilot/CopilotAssistButton.vue'
 import { useAppStatus } from '../composables/useAppStatus.js'
 import {
 	fetchDocudeskTemplates,
@@ -504,6 +521,7 @@ export default {
 		NcTextField,
 		AutomationActionListEditor,
 		AiStepForm,
+		CopilotAssistButton,
 		ApprovalFormFieldsEditor,
 	},
 
@@ -581,6 +599,16 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * The app the Ask AI help is scoped to: the automation's own app.
+		 *
+		 * @return {string}
+		 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-builder-assist/spec.md#requirement-the-assist-writes-nothing-and-respects-app-access-req-bqch-004
+		 */
+		assistAppSlug() {
+			return (this.automation && this.automation.applicationSlug) || ''
+		},
+
 		/**
 		 * The trigger schema whose fields an approval form can ask for: set
 		 * only while the automation has an approval action.
@@ -1767,5 +1795,15 @@ export default {
 	justify-content: flex-end;
 	gap: 8px;
 	margin-top: 8px;
+}
+
+.automation-edit__assisted {
+	display: flex;
+	align-items: flex-start;
+	gap: var(--default-grid-baseline);
+}
+
+.automation-edit__assisted > :first-child {
+	flex: 1;
 }
 </style>

@@ -21,6 +21,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\Service;
 
 use OCA\Buildiq\Service\AuthoredRowReader;
+use OCA\OpenRegister\Contract\ObjectEntityInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\IAppConfig;
 use PHPUnit\Framework\TestCase;
@@ -45,7 +46,7 @@ class AuthoredRowReaderTest extends TestCase {
 		$objectService->expects($this->once())->method('setSchema')->with('page-layout')->willReturnSelf();
 		$objectService->expects($this->once())
 			->method('findAll')
-			->with(['filters' => ['register' => 'permits'], 'limit' => 500])
+			->with(['limit' => 500])
 			->willReturn(
 				[
 					['register' => 'permits', 'schema' => 'permit', 'id' => 1],
@@ -53,7 +54,7 @@ class AuthoredRowReaderTest extends TestCase {
 					['register' => 'elsewhere', 'schema' => 'permit', 'id' => 3],
 					'not a row',
 					['schema' => 'permit', 'id' => 4],
-					['register' => 'permits', 'schema' => 'permit', 'id' => 5],
+					$this->entity(object: ['register' => 'permits', 'schema' => 'permit', 'id' => 5]),
 				]
 			);
 
@@ -89,4 +90,18 @@ class AuthoredRowReaderTest extends TestCase {
 		$config->method('getValueString')->with('buildiq', 'register', 'buildiq')->willReturn($slug);
 		return $config;
 	}//end appConfig()
+
+	/**
+	 * A row as findAll() renders it: an entity, not an array.
+	 *
+	 * @param array<string, mixed> $object The object data.
+	 *
+	 * @return ObjectEntityInterface The entity.
+	 */
+	private function entity(array $object): ObjectEntityInterface {
+		$entity = $this->createMock(originalClassName: ObjectEntityInterface::class);
+		$entity->method('getObject')->willReturn($object);
+
+		return $entity;
+	}//end entity()
 }//end class

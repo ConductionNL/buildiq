@@ -384,7 +384,9 @@
 					"slug": "data"
 				}
 			],
+			"flows": [],
 			"pageType": "detail",
+			"pages": [],
 			"parentRoute": ""
 		},
 		"emits": [
@@ -655,6 +657,8 @@
 				}
 			],
 			"destinationFindings": [],
+			"offlineAllowed": false,
+			"offlineForms": [],
 			"pageId": "",
 			"pageType": "form",
 			"parentRoute": "",
@@ -662,6 +666,7 @@
 		},
 		"emits": [
 			"update:config",
+			"update:offlineForms",
 			"update:runtimeExternalForms"
 		],
 		"picker": [
@@ -955,11 +960,15 @@
 					"slug": "data"
 				}
 			],
+			"flows": [],
+			"manualOrder": false,
 			"pageType": "index",
+			"pages": [],
 			"parentRoute": ""
 		},
 		"emits": [
-			"update:config"
+			"update:config",
+			"update:manualOrder"
 		],
 		"picker": [
 			[

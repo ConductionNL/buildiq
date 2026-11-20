@@ -45,6 +45,7 @@ use OCA\Buildiq\Tests\Support\LegacyObjectArgs;
  * @covers \OCA\Buildiq\Mcp\Handler\GetAppManifestHandler
  * @uses   \OCA\Buildiq\Mcp\Handler\AbstractToolHandler
  * @uses   \OCA\Buildiq\Support\ObjectRecord
+ * @uses   \OCA\Buildiq\Service\AppOrganisationGuard
  */
 class GetAppManifestHandlerTest extends TestCase {
 

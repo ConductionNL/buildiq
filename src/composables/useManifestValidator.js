@@ -34,7 +34,12 @@ import { validateManifestConnectors } from '../services/manifestValidation/conne
 import { validateDocumentAttachments } from '../services/manifestValidation/documentAttachments.js'
 import { validateExternalForms } from '../services/manifestValidation/externalForms.js'
 import { validateFormLogic } from '../services/manifestValidation/formLogic.js'
+import { validateI18n } from '../services/manifestValidation/i18n.js'
+import { validateIndexViews } from '../services/manifestValidation/indexViews.js'
 import { validateLabels } from '../services/manifestValidation/labels.js'
+import { validateOffline } from '../services/manifestValidation/offline.js'
+import { validatePageCode } from '../services/manifestValidation/pageCode.js'
+import { validatePageCodes } from '../services/manifestValidation/pageCodes.js'
 import { validateSchedules } from '../services/manifestValidation/schedules.js'
 import { validateWorkflowAttachments } from '../services/manifestValidation/workflowAttachments.js'
 
@@ -85,8 +90,15 @@ export function useManifestValidator() {
 					.concat(validateSchedules(manifest))
 					.concat(validateFormLogic(manifest))
 					.concat(validateExternalForms(manifest))
+					.concat(validatePageCodes(manifest))
+					.concat(validateI18n(manifest))
+					.concat(validateIndexViews(manifest))
 					// An empty label on an action, widget or form field (REQ-PLAT-005).
 					.concat(validateLabels(manifest))
+					// Code components and expressions in their D1 shapes (REQ-BQCC-001).
+					.concat(validatePageCode(manifest))
+					// The offline block, until the library schema carries it (REQ-BQOM-003).
+					.concat(validateOffline(manifest))
 				errors.value = libErrors.concat(appErrors)
 			} catch (e) {
 				errors.value = [`validator threw: ${e && e.message ? e.message : e}`]

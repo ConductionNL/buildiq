@@ -203,6 +203,35 @@ final class ExportAppContentBundlerTest extends TestCase {
 	}//end testBundleWritesRecordsOnlyWhenSeedDataIsIncluded()
 
 	/**
+	 * An app with Dutch and German labels exports one l10n file per language,
+	 * merged with the template's own strings, keeping a label named like a secret.
+	 */
+	public function testBundleWritesTheAppsLabelTranslationsAsL10nFiles(): void {
+		mkdir($this->root . '/l10n', 0o755, true);
+		file_put_contents($this->root . '/l10n/nl.json', json_encode(['translations' => ['Configuration' => 'Configuratie']]));
+		$bundler = $this->bundler();
+		$source = $bundler->resolveSource(applicationUuid: self::APP_UUID, semver: '0.1.0', versionSlug: 'development');
+		self::assertNotNull(actual: $source);
+		$source['version']['manifest']['i18n'] = [
+			'sourceLanguage' => 'en',
+			'languages' => ['nl', 'de'],
+			'labels' => [
+				'nl' => ['Messages' => 'Berichten', 'Password' => 'Wachtwoord'],
+				'de' => ['Messages' => 'Nachrichten'],
+			],
+		];
+
+		$bundler->bundle(rootDir: $this->root, source: $source, appId: 'demo-app', semver: '0.1.0');
+
+		self::assertSame(
+			expected: ['Configuration' => 'Configuratie', 'Messages' => 'Berichten', 'Password' => 'Wachtwoord'],
+			actual: $this->json('l10n/nl.json')['translations']
+		);
+		self::assertSame(expected: ['Messages' => 'Nachrichten'], actual: $this->json('l10n/de.json')['translations']);
+		self::assertSame(expected: ['nl', 'de'], actual: $this->json('src/manifest.json')['i18n']['languages'], message: 'the manifest keeps its i18n block');
+	}//end testBundleWritesTheAppsLabelTranslationsAsL10nFiles()
+
+	/**
 	 * Every file the bundler writes, and the summary it answers, for an
 	 * application with all its fields, without its name and description, and
 	 * also without its slug, with and

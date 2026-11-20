@@ -1501,7 +1501,7 @@ namespace OCA\OpenRegister\Db {
 			protected ?array $limits = null;
 
 			/**
-			 * Stub app column.
+			 * Stub owning-app column.
 			 *
 			 * @var string|null
 			 */
@@ -1513,6 +1513,13 @@ namespace OCA\OpenRegister\Db {
 			 * @var string|null
 			 */
 			protected ?string $lifecycleStatus = 'draft';
+
+			/**
+			 * Stub application-slug column.
+			 *
+			 * @var string|null
+			 */
+			protected ?string $applicationSlug = null;
 		}//end class
 	}//end if
 
@@ -1637,9 +1644,19 @@ namespace OCA\OpenRegister\Db {
 	if (class_exists(OrganisationMapper::class, autoload: false) === false) {
 		/**
 		 * Stub OrganisationMapper — the membership and hierarchy reads
-		 * AppOrganisationGuard makes, with the real mapper's signatures.
+		 * AppOrganisationGuard makes and the active-organisation read
+		 * PageLayoutLayerStack makes, with the real mapper's signatures.
 		 */
 		class OrganisationMapper {
+			/**
+			 * @param string $userId The user.
+			 *
+			 * @return string|null The active organisation uuid.
+			 */
+			public function getActiveOrganisationUuidForUser(string $userId): ?string {
+				return null;
+			}//end getActiveOrganisationUuidForUser()
+
 			/**
 			 * @param string $userId The user.
 			 *
@@ -3667,6 +3684,15 @@ namespace OCA\OpenRegister\Exception {
 		 * wiring bug reported itself as "already exists" and the test went green.
 		 */
 		class ObjectExistsException extends \Exception {
+		}//end class
+	}
+
+	if (class_exists('OCA\OpenRegister\Exception\ValidationException', false) === false) {
+		/**
+		 * Schema validation refusal: thrown by ObjectService::saveObject() when
+		 * the object does not satisfy its schema.
+		 */
+		class ValidationException extends \Exception {
 		}//end class
 	}
 }

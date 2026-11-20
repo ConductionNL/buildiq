@@ -13,6 +13,22 @@
 					:placeholder="t('buildiq', 'OpenRegister register ID')" />
 			</div>
 
+			<h3 class="settings-subheading">
+				{{ t('buildiq', 'Offline') }}
+			</h3>
+			<div class="form-group">
+				<label for="allow_offline_apps" class="settings-checkbox">
+					<input
+						id="allow_offline_apps"
+						v-model="form.allow_offline_apps"
+						type="checkbox" />
+					{{ t('buildiq', 'Let apps work offline') }}
+				</label>
+				<p class="settings-help">
+					{{ t('buildiq', 'When this is on, an app whose maker chose records or forms to take along keeps them on the device and syncs forms filled in offline. Off by default.') }}
+				</p>
+			</div>
+
 			<!-- `section-store` is the anchor lib/Settings/connections.json links the
 				Template store row to (adopt-connection-registry). Keep the id stable. -->
 			<h3 id="section-store" class="settings-subheading">
@@ -67,6 +83,27 @@
 				</span>
 			</div>
 
+			<!-- "Allow code on pages" (pages-custom-code, REQ-BQCC-005): off by
+				default. The server reads it on every manifest save. -->
+			<h3 id="section-page-code" class="settings-subheading">
+				{{ t('buildiq', 'Code on pages') }}
+			</h3>
+			<div class="form-group">
+				<NcCheckboxRadioSwitch
+					v-model="allowPageCode"
+					type="switch">
+					{{ t('buildiq', 'Allow code on pages') }}
+				</NcCheckboxRadioSwitch>
+				<p class="settings-help">
+					{{
+						t(
+							'buildiq',
+							'Lets app owners write their own HTML, CSS and JavaScript on a page, and computed columns and fields. The code runs in a sandbox with no network access. When off, code shows a placeholder and computed values stay empty.',
+						)
+					}}
+				</p>
+			</div>
+
 			<div v-if="successMessage" class="success-message">
 				{{ successMessage }}
 			</div>
@@ -80,13 +117,14 @@
 
 <script>
 import { CnSettingsSection } from '@conduction/nextcloud-vue'
-import { NcButton } from '@nextcloud/vue'
+import { NcButton, NcCheckboxRadioSwitch } from '@nextcloud/vue'
 import { useSettingsStore } from '../../store/modules/settings.js'
 
 export default {
 	name: 'Settings',
 	components: {
 		NcButton,
+		NcCheckboxRadioSwitch,
 		CnSettingsSection,
 	},
 
@@ -97,9 +135,11 @@ export default {
 				registry_url: '',
 				registry_register: 'buildiq',
 				registry_token: '',
+				allow_offline_apps: false,
 			},
 
 			tokenIsSet: false,
+			allowPageCode: false,
 			saving: false,
 			successMessage: '',
 		}
@@ -132,6 +172,8 @@ export default {
 		this.form.registry_url = settings.registry_url || ''
 		this.form.registry_register = settings.registry_register || 'buildiq'
 		this.tokenIsSet = !!settings.registry_token_set
+		this.allowPageCode = settings.allow_page_code === true
+		this.form.allow_offline_apps = settings.allow_offline_apps === true
 	},
 
 	methods: {
@@ -149,6 +191,8 @@ export default {
 				register: this.form.register,
 				registry_url: this.form.registry_url,
 				registry_register: this.form.registry_register,
+				allow_page_code: this.allowPageCode,
+				allow_offline_apps: this.form.allow_offline_apps === true,
 			}
 			if (this.form.registry_token.trim().length > 0) {
 				payload.registry_token = this.form.registry_token
@@ -161,6 +205,7 @@ export default {
 					|| (this.tokenIsSet
 						&& this.form.registry_token.trim().length === 0)
 				this.form.registry_token = ''
+				this.allowPageCode = result.allow_page_code === true
 			}
 			this.saving = false
 		},

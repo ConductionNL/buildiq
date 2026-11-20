@@ -52,8 +52,19 @@ describe('Settings.vue', () => {
 		const ctx = context(Settings)
 		Settings.created.call(ctx)
 
-		expect(ctx.form).toEqual({ register: '', registry_url: '', registry_register: 'buildiq', registry_token: '' })
+		expect(ctx.form).toEqual({ register: '', registry_url: '', registry_register: 'buildiq', registry_token: '', allow_offline_apps: false })
 		expect(ctx.tokenIsSet).toBe(false)
+	})
+
+	it('reads the offline setting as on only when it is stored as true', () => {
+		settingsStore.settings = { allow_offline_apps: true }
+		const on = context(Settings)
+		Settings.created.call(on)
+		settingsStore.settings = { allow_offline_apps: 'true' }
+		const text = context(Settings)
+		Settings.created.call(text)
+
+		expect([on.form.allow_offline_apps, text.form.allow_offline_apps]).toEqual([true, false])
 	})
 
 	it('reads the stored settings, never the token itself', () => {
@@ -66,7 +77,7 @@ describe('Settings.vue', () => {
 		const ctx = context(Settings)
 		Settings.created.call(ctx)
 
-		expect(ctx.form).toEqual({ register: 'apps', registry_url: 'https://registry.example', registry_register: 'catalogue', registry_token: '' })
+		expect(ctx.form).toEqual({ register: 'apps', registry_url: 'https://registry.example', registry_register: 'catalogue', registry_token: '', allow_offline_apps: false })
 		expect(ctx.tokenIsSet).toBe(true)
 	})
 
@@ -89,7 +100,7 @@ describe('Settings.vue', () => {
 		expect([ctx.saving, ctx.successMessage]).toEqual([true, ''])
 		await pending
 
-		expect(settingsStore.saveSettings).toHaveBeenCalledWith({ register: 'apps', registry_url: 'u', registry_register: 'r' })
+		expect(settingsStore.saveSettings).toHaveBeenCalledWith({ register: 'apps', registry_url: 'u', registry_register: 'r', allow_page_code: false, allow_offline_apps: false })
 		expect([ctx.saving, ctx.successMessage, ctx.tokenIsSet, ctx.form.registry_token])
 			.toEqual([false, 'Settings saved successfully', true, ''])
 	})
@@ -103,6 +114,30 @@ describe('Settings.vue', () => {
 
 		expect(settingsStore.saveSettings.mock.calls[0][0].registry_token).toBe('secret-token')
 		expect([ctx.tokenIsSet, ctx.form.registry_token]).toEqual([true, ''])
+	})
+
+	it('reads "Allow code on pages" as off unless the server says true', () => {
+		const off = context(Settings)
+		Settings.created.call(off)
+		settingsStore.settings = { allow_page_code: 'true' }
+		const notABoolean = context(Settings)
+		Settings.created.call(notABoolean)
+		settingsStore.settings = { allow_page_code: true }
+		const on = context(Settings)
+		Settings.created.call(on)
+
+		expect([off.allowPageCode, notABoolean.allowPageCode, on.allowPageCode]).toEqual([false, false, true])
+	})
+
+	it('sends "Allow code on pages" and shows what the server stored', async () => {
+		settingsStore.saveSettings.mockResolvedValue({ allow_page_code: false })
+		const ctx = context(Settings)
+		ctx.allowPageCode = true
+
+		await ctx.save()
+
+		expect(settingsStore.saveSettings.mock.calls[0][0].allow_page_code).toBe(true)
+		expect(ctx.allowPageCode).toBe(false)
 	})
 
 	it('reports nothing and keeps the typed token when the save fails', async () => {

@@ -150,6 +150,8 @@ class ExportService implements ExportServiceInterface {
 	 * @param ExportContents $contents The placeholder context, data register bindings, flows and
 	 *                                 application source the tree is filled from.
 	 * @param bool $includeServerBundle Add `deploy/`, the files that run the app on its own server.
+	 * @param string|null $mobileBundleId Add `mobile/`, the app-store wrapper project, with this bundle id
+	 *                                    (empty for the default); null leaves it out.
 	 *
 	 * @return string Absolute (local) path to the produced ZIP.
 	 *
@@ -157,11 +159,13 @@ class ExportService implements ExportServiceInterface {
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-40
 	 * @spec openspec/changes/archive/2026-10-07-data-registers-runtime/tasks.md#task-4.2
+	 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T08
 	 */
 	public function generateAppZip(
 		ExportTarget $target,
 		ExportContents $contents,
 		bool $includeServerBundle = false,
+		?string $mobileBundleId = null,
 	): string {
 		$scratchDir = $this->prepareScratchDir(jobUuid: $target->jobUuid);
 		$this->copyTemplate(source: $this->templateRoot, dest: $scratchDir);
@@ -175,17 +179,12 @@ class ExportService implements ExportServiceInterface {
 		$this->bundleDataRegisterSchemas(rootDir: $scratchDir, dataRegisters: $contents->dataRegisters);
 
 		// The application itself: without this the archive is the empty template.
-		$this->lastContent = null;
-		if ($contents->source !== null && $this->bundlers->contentBundler !== null) {
-			$this->lastContent = $this->bundlers->contentBundler->bundle(
-				rootDir: $scratchDir,
-				source: $contents->source,
-				appId: $this->placeholderResolver->slug(value: (string)($contents->context['appId'] ?? '')),
-				semver: $target->versionSlug
-			);
-		}
+		$this->lastContent = $this->bundleContent(rootDir: $scratchDir, target: $target, contents: $contents);
 
 		$serverBundle?->pointReadme(rootDir: $scratchDir);
+
+		// The app-store wrapper project, when the maker asked for it (REQ-BQOM-006).
+		$this->writeMobileProject(rootDir: $scratchDir, target: $target, contents: $contents, bundleId: $mobileBundleId);
 
 		// The flows the app is composed of, and the agents that point at it.
 		// Skips are RETURNED so the job result can name them — an operator
@@ -210,6 +209,55 @@ class ExportService implements ExportServiceInterface {
 
 		return $this->packageZip(sourceDir: $scratchDir, jobUuid: $target->jobUuid);
 	}//end generateAppZip()
+
+	/**
+	 * Write the application itself into the tree; null when there is no source or no content bundler.
+	 *
+	 * @param string         $rootDir  The export tree.
+	 * @param ExportTarget   $target   The export target.
+	 * @param ExportContents $contents The export contents.
+	 *
+	 * @return array<string, mixed>|null What the content bundler wrote, or null.
+	 *
+	 * @spec openspec/changes/archive/2026-10-07-data-registers-runtime/tasks.md#task-4.2
+	 */
+	private function bundleContent(string $rootDir, ExportTarget $target, ExportContents $contents): ?array {
+		if ($contents->source === null || $this->bundlers->contentBundler === null) {
+			return null;
+		}
+
+		return $this->bundlers->contentBundler->bundle(
+			rootDir: $rootDir,
+			source: $contents->source,
+			appId: $this->placeholderResolver->slug(value: (string)($contents->context['appId'] ?? '')),
+			semver: $target->versionSlug
+		);
+	}//end bundleContent()
+
+	/**
+	 * Write the app-store wrapper project into `mobile/` when a bundle id was asked for (REQ-BQOM-006).
+	 *
+	 * @param string         $rootDir  The export tree.
+	 * @param ExportTarget   $target   The export target.
+	 * @param ExportContents $contents The export contents.
+	 * @param string|null    $bundleId The bundle id (empty for the default); null leaves the project out.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T08
+	 */
+	private function writeMobileProject(string $rootDir, ExportTarget $target, ExportContents $contents, ?string $bundleId): void {
+		if ($bundleId === null || $this->bundlers->mobileProjectWriter === null) {
+			return;
+		}
+
+		$this->bundlers->mobileProjectWriter->write(
+			rootDir: $rootDir,
+			slug: $target->applicationSlug,
+			appName: (string)($contents->context['appName'] ?? ''),
+			bundleId: $bundleId
+		);
+	}//end writeMobileProject()
 
 	/**
 	 * What the last export wrote of the application itself.

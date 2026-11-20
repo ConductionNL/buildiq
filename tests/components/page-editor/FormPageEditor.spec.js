@@ -247,3 +247,46 @@ describe('FormPageEditor', () => {
 		})
 	})
 })
+
+describe('FormPageEditor — Works offline (pages-installable-offline-and-mobile T04)', () => {
+	const mountOffline = (props) => mount(FormPageEditor, {
+		propsData: { config: {}, pageId: 'report', ...props },
+		global: {
+			stubs: {
+				NcCheckboxRadioSwitch: {
+					props: ['modelValue'],
+					emits: ['update:modelValue'],
+					template: '<input type="checkbox" class="offline-switch" :checked="modelValue" @change="$emit(\'update:modelValue\', $event.target.checked)" />',
+				},
+			},
+		},
+	})
+
+	it('is hidden while the instance does not let apps work offline', () => {
+		expect(mountOffline({ offlineForms: ['report'] }).find('[data-test="form-page-editor-offline"]').exists()).toBe(false)
+	})
+
+	it('shows the page as working offline when it is one of the offline forms', () => {
+		const wrapper = mountOffline({ offlineAllowed: true, offlineForms: ['report'] })
+		expect(wrapper.find('.offline-switch').element.checked).toBe(true)
+		expect(mountOffline({ offlineAllowed: true, offlineForms: ['other'] }).find('.offline-switch').element.checked).toBe(false)
+	})
+
+	it('emits the offline forms with this page added, or removed', async () => {
+		const wrapper = mountOffline({ offlineAllowed: true, offlineForms: ['other'] })
+		const input = wrapper.find('.offline-switch')
+		input.element.checked = true
+		await input.trigger('change')
+		expect(wrapper.emitted('update:offlineForms')[0][0]).toEqual(['other', 'report'])
+
+		const on = mountOffline({ offlineAllowed: true, offlineForms: ['report', 'other'] })
+		const onInput = on.find('.offline-switch')
+		onInput.element.checked = false
+		await onInput.trigger('change')
+		expect(on.emitted('update:offlineForms')[0][0]).toEqual(['other'])
+	})
+
+	it('offers no switch on a page without an id', () => {
+		expect(mountOffline({ offlineAllowed: true, pageId: '' }).find('[data-test="form-page-editor-offline"]').exists()).toBe(false)
+	})
+})
