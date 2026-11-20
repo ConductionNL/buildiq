@@ -25,9 +25,9 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service\Automation;
 
+use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\AutomationCompilerServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\AutomationWriteServiceInterface;
-use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use Psr\Log\LoggerInterface;
 
 /**
