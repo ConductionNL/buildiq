@@ -49,6 +49,7 @@ use InvalidArgumentException;
 use OCA\Buildiq\Exception\FormDestinationRefusedException;
 use OCA\Buildiq\Kernel\Contracts\RegistrationFormAuthoringServiceInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Exception\ValidationException;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCP\IAppConfig;
@@ -107,7 +108,7 @@ class RegistrationFormAuthoringService implements RegistrationFormAuthoringServi
 	 *
 	 * @return array<string, mixed> `{form, warnings, findings}`; `warnings` stays for callers that read it and is empty.
 	 *
-	 * @throws InvalidArgumentException When a rule refuses it.
+	 * @throws InvalidArgumentException When a rule or the schema refuses it.
 	 * @throws FormDestinationRefusedException When a form that is not a draft has findings.
 	 *
 	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-004)
@@ -144,10 +145,14 @@ class RegistrationFormAuthoringService implements RegistrationFormAuthoringServi
 			throw new FormDestinationRefusedException(findings: $findings);
 		}
 
-		$this->objectService->saveObject(
-			object: $form,
-			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->registerSlug(), schema: self::SCHEMA))
-		);
+		try {
+			$this->objectService->saveObject(
+				object: $form,
+				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->registerSlug(), schema: self::SCHEMA))
+			);
+		} catch (ValidationException $e) {
+			throw new InvalidArgumentException($e->getMessage(), 0, $e);
+		}
 
 		return ['form' => $form, 'warnings' => [], 'findings' => $findings];
 	}//end save()

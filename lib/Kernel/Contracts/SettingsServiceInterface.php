@@ -85,4 +85,13 @@ interface SettingsServiceInterface {
 	 * @spec openspec/changes/adopt-connection-registry/specs/app-connections/spec.md#requirement-req-biq-conn-002-a-store-settings-save-asks-integriq-to-look-again
 	 */
 	public function updateSettings(array $data): array;
+
+	/**
+	 * Whether the instance lets apps work offline ("Let apps work offline", off by default).
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-offline-is-the-administrators-choice-first-req-bqom-002
+	 */
+	public function offlineAppsAllowed(): bool;
 }//end interface

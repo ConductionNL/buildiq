@@ -237,7 +237,7 @@ class StoreControllerTest extends TestCase {
 		$this->storeService->expects(self::never())->method('resolve');
 		$this->appsController->expects(self::never())->method('installFromTemplateArray');
 
-		$response = $this->controller()->install(slug: 'permit-tracker');
+		$response = $this->controller()->install(templateSlug: 'permit-tracker');
 
 		self::assertSame(Http::STATUS_UNAUTHORIZED, $response->getStatus());
 
@@ -294,7 +294,7 @@ class StoreControllerTest extends TestCase {
 		$this->storeService->method('resolve')->willReturn(null);
 		$this->appsController->expects(self::never())->method('installFromTemplateArray');
 
-		$response = $this->controller()->install(slug: 'permit-tracker');
+		$response = $this->controller()->install(templateSlug: 'permit-tracker');
 
 		self::assertSame(Http::STATUS_NOT_FOUND, $response->getStatus());
 
@@ -326,7 +326,7 @@ class StoreControllerTest extends TestCase {
 			->with($template, 'My Permits', 'my-permits', 'alice')
 			->willReturn(['status' => Http::STATUS_CREATED, 'data' => ['uuid' => 'new-app', 'slug' => 'my-permits']]);
 
-		$response = $this->controller()->install(slug: 'permit-tracker');
+		$response = $this->controller()->install(templateSlug: 'permit-tracker');
 
 		self::assertSame(Http::STATUS_CREATED, $response->getStatus());
 		self::assertSame('new-app', $response->getData()['uuid']);
@@ -342,7 +342,7 @@ class StoreControllerTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn($this->mockUser('alice'));
 		$this->storeService->expects(self::never())->method('resolve');
 
-		$response = $this->controller()->install(slug: 'Not_Valid');
+		$response = $this->controller()->install(templateSlug: 'Not_Valid');
 
 		self::assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
 
@@ -358,7 +358,7 @@ class StoreControllerTest extends TestCase {
 		$this->request->method('getParam')->willReturn(null);
 		$this->storeService->expects(self::never())->method('resolve');
 
-		$response = $this->controller()->install(slug: 'permit-tracker');
+		$response = $this->controller()->install(templateSlug: 'permit-tracker');
 
 		self::assertSame(Http::STATUS_BAD_REQUEST, $response->getStatus());
 

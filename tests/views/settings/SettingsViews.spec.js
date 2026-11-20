@@ -52,8 +52,19 @@ describe('Settings.vue', () => {
 		const ctx = context(Settings)
 		Settings.created.call(ctx)
 
-		expect(ctx.form).toEqual({ register: '', registry_url: '', registry_register: 'buildiq', registry_token: '' })
+		expect(ctx.form).toEqual({ register: '', registry_url: '', registry_register: 'buildiq', registry_token: '', allow_offline_apps: false })
 		expect(ctx.tokenIsSet).toBe(false)
+	})
+
+	it('reads the offline setting as on only when it is stored as true', () => {
+		settingsStore.settings = { allow_offline_apps: true }
+		const on = context(Settings)
+		Settings.created.call(on)
+		settingsStore.settings = { allow_offline_apps: 'true' }
+		const text = context(Settings)
+		Settings.created.call(text)
+
+		expect([on.form.allow_offline_apps, text.form.allow_offline_apps]).toEqual([true, false])
 	})
 
 	it('reads the stored settings, never the token itself', () => {
@@ -66,7 +77,7 @@ describe('Settings.vue', () => {
 		const ctx = context(Settings)
 		Settings.created.call(ctx)
 
-		expect(ctx.form).toEqual({ register: 'apps', registry_url: 'https://registry.example', registry_register: 'catalogue', registry_token: '' })
+		expect(ctx.form).toEqual({ register: 'apps', registry_url: 'https://registry.example', registry_register: 'catalogue', registry_token: '', allow_offline_apps: false })
 		expect(ctx.tokenIsSet).toBe(true)
 	})
 
@@ -89,7 +100,7 @@ describe('Settings.vue', () => {
 		expect([ctx.saving, ctx.successMessage]).toEqual([true, ''])
 		await pending
 
-		expect(settingsStore.saveSettings).toHaveBeenCalledWith({ register: 'apps', registry_url: 'u', registry_register: 'r', allow_page_code: false })
+		expect(settingsStore.saveSettings).toHaveBeenCalledWith({ register: 'apps', registry_url: 'u', registry_register: 'r', allow_page_code: false, allow_offline_apps: false })
 		expect([ctx.saving, ctx.successMessage, ctx.tokenIsSet, ctx.form.registry_token])
 			.toEqual([false, 'Settings saved successfully', true, ''])
 	})

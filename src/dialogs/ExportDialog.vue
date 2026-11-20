@@ -170,6 +170,30 @@
 				</p>
 			</section>
 
+			<div data-test="export-mobile-project">
+				<NcCheckboxRadioSwitch
+					v-model="form.includeMobileProject"
+					:disabled="submitting">
+					{{ t('buildiq', 'Mobile app project') }}
+				</NcCheckboxRadioSwitch>
+				<p class="export-dialog__scope-hint">
+					{{
+						t(
+							'buildiq',
+							'Adds a project your organisation turns into iOS and Android apps that open this app. Buildiq does not build, sign or publish them.',
+						)
+					}}
+				</p>
+				<NcTextField
+					v-if="form.includeMobileProject"
+					v-model="form.mobileBundleId"
+					data-test="export-mobile-bundle-id"
+					:label="t('buildiq', 'Bundle id')"
+					:placeholder="defaultBundleId"
+					:helperText="t('buildiq', 'Leave empty for {bundleId}. The stores do not let you change it after the first release.', { bundleId: defaultBundleId })"
+					:disabled="submitting" />
+			</div>
+
 			<template v-if="form.target && form.target.value === 'github'">
 				<NcTextField
 					v-model="form.githubOrg"
@@ -310,6 +334,8 @@ export default {
 				license: { label: 'EUPL-1.2', value: 'EUPL-1.2' },
 				includeSeedData: false,
 				includeServerBundle: true,
+				includeMobileProject: false,
+				mobileBundleId: '',
 				githubOrg: '',
 				githubRepo: '',
 				githubVisibility: {
@@ -372,6 +398,25 @@ export default {
 		 * @spec openspec/changes/apps-standalone-deploy/specs/standalone-server-bundle/spec.md#requirement-the-export-offers-its-own-server-as-a-target-req-bqsd-001
 		 * @return {boolean} True for the Own server target.
 		 */
+		/**
+		 * The bundle id the server uses when none is given: nl.<instance-host>.<slug>,
+		 * in the characters a bundle id may hold (MobileProjectWriter::defaultBundleId).
+		 *
+		 * @return {string} The default bundle id.
+		 *
+		 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T08
+		 */
+		defaultBundleId() {
+			const part = (raw, fallback) => {
+				const reduced = String(raw || '').toLowerCase().replace(/[^a-z0-9]+/g, '')
+				if (reduced === '') {
+					return fallback
+				}
+				return /^[a-z]/.test(reduced) ? reduced : 'a' + reduced
+			}
+			return 'nl.' + part(window.location.hostname, 'instance') + '.' + part(this.applicationSlug, 'app')
+		},
+
 		isServerTarget() {
 			return this.form.target?.value === 'server'
 		},
@@ -606,6 +651,8 @@ export default {
 		 * data choices, plus the server bundle flag for the own-server target.
 		 *
 		 * @return {object} The payload.
+		 *
+		 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T08
 		 */
 		exportPayload() {
 			const payload = {
@@ -623,6 +670,10 @@ export default {
 			}
 			if (this.isServerTarget) {
 				payload.includeServerBundle = this.form.includeServerBundle
+			}
+			if (this.form.includeMobileProject) {
+				payload.includeMobileProject = true
+				payload.mobileBundleId = this.form.mobileBundleId.trim()
 			}
 			return payload
 		},

@@ -39,6 +39,30 @@
 						)
 					"
 					:rows="4" />
+				<div class="copilot-generate__document">
+					<template v-if="document">
+						<span data-testid="copilot-document-name" class="copilot-generate__document-name">
+							{{ document.name }}
+						</span>
+						<NcButton
+							variant="tertiary"
+							data-testid="copilot-document-remove"
+							:disabled="state === 'planning'"
+							@click="document = null">
+							{{ t('buildiq', 'Remove document') }}
+						</NcButton>
+					</template>
+					<NcButton
+						v-else
+						data-testid="copilot-document-add"
+						:disabled="state === 'planning'"
+						@click="onAddDocument">
+						{{ t('buildiq', 'Add a document') }}
+					</NcButton>
+					<p class="copilot-generate__hint">
+						{{ t('buildiq', 'Plain text (.txt) and Markdown (.md) documents of up to 60,000 characters can be read.') }}
+					</p>
+				</div>
 				<p v-if="state === 'planning'" class="copilot-generate__waiting">
 					{{
 						t(
@@ -62,6 +86,26 @@
 					<p class="copilot-generate__summary">
 						{{ plan && plan.summary }}
 					</p>
+
+					<div
+						v-if="stories.length"
+						class="copilot-generate__group"
+						data-testid="copilot-plan-stories">
+						<h3>{{ t('buildiq', 'User stories') }}</h3>
+						<ul>
+							<li
+								v-for="(story, idx) in stories"
+								:key="'story-' + idx"
+								data-testid="copilot-plan-story">
+								<span class="copilot-generate__story">{{ story.text }}</span>
+								<ul v-if="story.servedBy.length" class="copilot-generate__served-by">
+									<li v-for="(name, sIdx) in story.servedBy" :key="'served-' + idx + '-' + sIdx">
+										{{ name }}
+									</li>
+								</ul>
+							</li>
+						</ul>
+					</div>
 
 					<div v-if="schemaSteps.length" class="copilot-generate__group">
 						<h3>{{ t('buildiq', 'Schemas') }}</h3>
@@ -155,7 +199,7 @@
 						state === 'idle' || state === 'planning' || state === 'error'
 					"
 					variant="primary"
-					:disabled="!brief.trim() || state === 'planning'"
+					:disabled="!canGenerate || state === 'planning'"
 					@click="onGenerate">
 					{{
 						state === 'planning'
@@ -183,6 +227,7 @@
 <script>
 import { NcButton, NcModal, NcTextArea } from '@nextcloud/vue'
 import { uniqueValidatorMessages, useCopilot } from '../composables/useCopilot.js'
+import { pickRequirementsDocument } from '../services/documentPicker.js'
 
 /**
  * How many validator messages the review screen lists before it stops and
@@ -214,10 +259,22 @@ export default {
 	data() {
 		return {
 			brief: '',
+			// The requirements document picked from Files: `{id, name}`, or null.
+			document: null,
 		}
 	},
 
 	computed: {
+		/**
+		 * Whether there is something to generate from: a brief or a document.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot/spec.md#requirement-the-wizard-reads-a-document-from-files-req-bqch-005
+		 */
+		canGenerate() {
+			return this.brief.trim() !== '' || this.document !== null
+		},
+
 		/**
 		 * The copilot state machine's current state.
 		 *
@@ -312,6 +369,26 @@ export default {
 		},
 
 		/**
+		 * The plan's user stories as the review lists them: one sentence each,
+		 * with the names of the schemas and pages that serve it.
+		 *
+		 * @return {Array<{text: string, servedBy: Array<string>}>}
+		 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot/spec.md#requirement-the-plan-carries-user-stories-req-bqch-006
+		 */
+		stories() {
+			const stories = (this.plan && Array.isArray(this.plan.stories)) ? this.plan.stories : []
+			const steps = (this.plan && this.plan.steps) || []
+			return stories
+				.filter((story) => story && story.role && story.goal)
+				.map((story) => ({
+					text: this.storySentence(story),
+					servedBy: (Array.isArray(story.servedBy) ? story.servedBy : [])
+						.map((index) => this.stepName(steps[index]))
+						.filter(Boolean),
+				}))
+		},
+
+		/**
 		 * Proposed `upsertSchema` steps, for the "Schemas" review group.
 		 *
 		 * @return {Array<object>}
@@ -343,9 +420,16 @@ export default {
 	},
 
 	watch: {
+		/**
+		 * Start every opening of the wizard from a clean state.
+		 *
+		 * @param {boolean} value Whether the wizard just opened.
+		 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot/spec.md#requirement-the-wizard-reads-a-document-from-files-req-bqch-005
+		 */
 		open(value) {
 			if (value) {
 				this.brief = ''
+				this.document = null
 				this.copilot.discard()
 				this.copilot.checkHealth()
 			}
@@ -366,16 +450,69 @@ export default {
 		},
 
 		/**
+		 * One story as a sentence.
+		 *
+		 * @param {{role: string, goal: string, benefit?: string}} story - the story.
+		 * @return {string}
+		 *
+		 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot/spec.md#requirement-the-plan-carries-user-stories-req-bqch-006
+		 */
+		storySentence(story) {
+			if (story.benefit) {
+				return t('buildiq', 'As {role} I want to {goal}, so that {benefit}', { role: story.role, goal: story.goal, benefit: story.benefit })
+			}
+			return t('buildiq', 'As {role} I want to {goal}', { role: story.role, goal: story.goal })
+		},
+
+		/**
+		 * The display name of a schema or page step, '' for any other step.
+		 *
+		 * @param {object|undefined} step - a plan step.
+		 * @return {string}
+		 *
+		 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot/spec.md#requirement-the-plan-carries-user-stories-req-bqch-006
+		 */
+		stepName(step) {
+			if (!step || !step.arguments) {
+				return ''
+			}
+			if (step.tool === 'buildiq.upsertSchema') {
+				return step.arguments.title || step.arguments.slug || ''
+			}
+			if (step.tool === 'buildiq.upsertPage') {
+				return step.arguments.title || step.arguments.pageId || ''
+			}
+			return ''
+		},
+
+		/**
 		 * Request a plan for the current brief.
 		 *
 		 * @return {Promise<void>}
 		 * @spec openspec/specs/ai-copilot/spec.md
 		 */
 		async onGenerate() {
-			if (!this.brief.trim()) {
+			if (!this.canGenerate) {
 				return
 			}
-			await this.copilot.generatePlan(this.brief.trim())
+			if (!this.document) {
+				await this.copilot.generatePlan(this.brief.trim())
+				return
+			}
+			await this.copilot.generatePlan(this.brief.trim(), undefined, undefined, undefined, this.document.id)
+		},
+
+		/**
+		 * Pick a requirements document from Files; the server reads it as the maker.
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot/spec.md#requirement-the-wizard-reads-a-document-from-files-req-bqch-005
+		 */
+		async onAddDocument() {
+			const picked = await pickRequirementsDocument()
+			if (picked) {
+				this.document = picked
+			}
 		},
 
 		/**
@@ -471,5 +608,21 @@ export default {
 	justify-content: flex-end;
 	gap: 8px;
 	margin-top: 8px;
+}
+
+.copilot-generate__document {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+}
+
+.copilot-generate__document-name {
+	font-weight: 600;
+	color: var(--color-main-text);
+}
+
+.copilot-generate__served-by {
+	color: var(--color-text-maxcontrast);
 }
 </style>
