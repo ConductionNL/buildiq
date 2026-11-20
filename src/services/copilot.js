@@ -33,20 +33,29 @@ function normaliseError(err) {
 /**
  * GET /api/copilot/health — probe AI copilot availability.
  *
- * @return {Promise<{available: boolean, reason?: string}>} Never rejects —
+ * `knowledgeRetrieval` says whether an agent's knowledge is searched for the
+ * passages that match a request instead of read whole under the budget
+ * (ai-agents-knowledge-and-run-trace T08); it is on both answers.
+ *
+ * @return {Promise<{available: boolean, reason?: string, knowledgeRetrieval: boolean}>} Never rejects —
  *   a network/503 failure resolves to `{available: false, reason}`.
  * @spec openspec/specs/ai-copilot/spec.md
  */
 export async function fetchCopilotHealth() {
 	try {
-		await axios.get(generateUrl('/apps/buildiq/api/copilot/health'))
-		return { available: true }
+		const response = await axios.get(generateUrl('/apps/buildiq/api/copilot/health'))
+		const data = (response && response.data) || {}
+		return { available: true, knowledgeRetrieval: data.knowledgeRetrieval === true }
 	} catch (err) {
 		// The health envelope carries its machine-readable code under `reason`
 		// (`unsupported_server` | `no_provider`), not `error` like the plan/
 		// execute envelopes — read it directly rather than via normaliseError().
 		const data = (err && err.response && err.response.data) || {}
-		return { available: false, reason: data.reason || 'unsupported_server' }
+		return {
+			available: false,
+			reason: data.reason || 'unsupported_server',
+			knowledgeRetrieval: data.knowledgeRetrieval === true,
+		}
 	}
 }
 

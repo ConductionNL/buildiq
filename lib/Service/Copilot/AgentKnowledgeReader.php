@@ -61,16 +61,40 @@ class AgentKnowledgeReader {
 	/**
 	 * Constructor.
 	 *
-	 * @param ContainerInterface $container Where OpenRegister's file service comes from, resolved on first read.
-	 * @param LoggerInterface    $logger    Logger for files that cannot be read.
+	 * @param ContainerInterface     $container Where OpenRegister's file service comes from, resolved on first read.
+	 * @param LoggerInterface        $logger    Logger for files that cannot be read.
+	 * @param KnowledgePassages|null $passages  Ranked passages through OpenRegister's vector facade (T08);
+	 *                                          built from the container and logger when not given.
 	 *
 	 * @return void
 	 */
 	public function __construct(
 		private readonly ContainerInterface $container,
 		private readonly LoggerInterface $logger,
+		private readonly ?KnowledgePassages $passages = null,
 	) {
 	}//end __construct()
+
+	/**
+	 * Whether the agent's knowledge is searched for the passages that match the
+	 * request, so the editor need not refuse a file over the budget (T08).
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/ai-agents-knowledge-and-run-trace/specs/agent-knowledge-base/spec.md#requirement-a-maker-attaches-knowledge-files-to-an-agent-req-bqag-001
+	 */
+	public function retrievalAvailable(): bool {
+		return $this->passages()->available();
+	}//end retrievalAvailable()
+
+	/**
+	 * The passage ranker.
+	 *
+	 * @return KnowledgePassages
+	 */
+	private function passages(): KnowledgePassages {
+		return ($this->passages ?? new KnowledgePassages(container: $this->container, logger: $this->logger));
+	}//end passages()
 
 	/**
 	 * Whether a file of this name is read as knowledge.
@@ -88,19 +112,23 @@ class AgentKnowledgeReader {
 	}//end isReadable()
 
 	/**
-	 * Read the agent's knowledge files, in the order of `knowledge[]`.
+	 * Read the agent's knowledge for a request.
 	 *
-	 * A file that cannot be found or read, is not text, or would take the set
-	 * past the budget is left out and not listed as used, so the run never
-	 * names knowledge the model did not get.
+	 * With a request and OpenRegister's vector facade, the passages of the
+	 * knowledge files that best match it, within the budget (T08). Otherwise,
+	 * or when the search finds nothing in these files, the whole files in the
+	 * order of `knowledge[]`: a file that cannot be found or read, is not text,
+	 * or would take the set past the budget is left out and not listed as
+	 * used, so the run never names knowledge the model did not get.
 	 *
 	 * @param array<string, mixed> $agent The resolved `Agent` record.
+	 * @param string               $query The request the agent plans for, '' for none.
 	 *
-	 * @return array<int, array{fileName: string, text: string}> The files read, in order.
+	 * @return array<int, array{fileName: string, text: string}> The knowledge read, in order.
 	 *
 	 * @spec openspec/changes/ai-agents-knowledge-and-run-trace/specs/agent-knowledge-base/spec.md#requirement-an-agents-plan-reads-its-knowledge-req-bqag-002
 	 */
-	public function read(array $agent): array {
+	public function read(array $agent, string $query = ''): array {
 		$fileNames = self::fileNames(agent: $agent);
 		if ($fileNames === []) {
 			return [];
@@ -110,6 +138,30 @@ class AgentKnowledgeReader {
 		if ($objectId === null) {
 			return [];
 		}
+
+		if (trim($query) !== '') {
+			$ranked = $this->passages()->rank(
+				query: $query,
+				files: $this->fileIds(objectId: $objectId, fileNames: $fileNames),
+				budget: self::BUDGET_CHARACTERS
+			);
+			if ($ranked !== null) {
+				return $ranked;
+			}
+		}
+
+		return $this->wholeFiles(objectId: $objectId, fileNames: $fileNames);
+	}//end read()
+
+	/**
+	 * The whole knowledge files, in order, within the budget.
+	 *
+	 * @param string             $objectId  The agent object id.
+	 * @param array<int, string> $fileNames The knowledge file names.
+	 *
+	 * @return array<int, array{fileName: string, text: string}>
+	 */
+	private function wholeFiles(string $objectId, array $fileNames): array {
 
 		$files = [];
 		$room = self::BUDGET_CHARACTERS;
@@ -130,7 +182,37 @@ class AgentKnowledgeReader {
 		}
 
 		return $files;
-	}//end read()
+	}//end wholeFiles()
+
+	/**
+	 * The ids of the readable knowledge files attached to the agent object.
+	 *
+	 * @param string             $objectId  The agent object id.
+	 * @param array<int, string> $fileNames The knowledge file names.
+	 *
+	 * @return array<int, array{fileName: string, fileId: string}>
+	 */
+	private function fileIds(string $objectId, array $fileNames): array {
+		$files = [];
+		foreach ($fileNames as $fileName) {
+			if (self::isReadable(fileName: $fileName) === false) {
+				continue;
+			}
+
+			try {
+				$file = $this->container->get(FileService::class)->getFile(object: $objectId, file: $fileName);
+			} catch (Throwable $e) {
+				$this->logger->warning('Buildiq agent knowledge: could not find "' . $fileName . '": ' . $e->getMessage());
+				continue;
+			}
+
+			if ($file !== null) {
+				$files[] = ['fileName' => $fileName, 'fileId' => (string)$file->getId()];
+			}
+		}
+
+		return $files;
+	}//end fileIds()
 
 	/**
 	 * The knowledge file names of an agent, in order, without blanks or repeats.
