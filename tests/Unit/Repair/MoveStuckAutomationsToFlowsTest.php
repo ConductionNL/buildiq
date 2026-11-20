@@ -43,6 +43,7 @@ use RuntimeException;
  * @covers \OCA\Buildiq\Repair\MoveStuckAutomationsToFlows
  * @uses \OCA\Buildiq\Exception\UnsupportedAutomationCombinationException
  * @uses \OCA\Buildiq\Support\ObjectRecord
+ * @uses \OCA\Buildiq\Service\Automation\AutomationRecords
  */
 final class MoveStuckAutomationsToFlowsTest extends TestCase {
 

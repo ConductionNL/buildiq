@@ -128,6 +128,17 @@ final class FiredAutomationTrigger {
 	}//end isAddressable()
 
 	/**
+	 * The trigger type that fired: object-created, object-updated, object-deleted or lifecycle-transition.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
+	 */
+	public function triggerType(): string {
+		return $this->fired[0];
+	}//end triggerType()
+
+	/**
 	 * The fired object's schema slug.
 	 *
 	 * @return string

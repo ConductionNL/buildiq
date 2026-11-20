@@ -30,7 +30,6 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service\Automation;
 
 use OCA\Buildiq\Exception\UnsupportedAutomationCombinationException;
-use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Flow;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -46,6 +45,10 @@ use Throwable;
 
 /**
  * Saves, publishes, binds, toggles and removes the flow of an automation.
+ *
+ * @SuppressWarnings(PHPMD.CouplingBetweenObjects) Most of the count is OpenRegister's value objects
+ *                                                 (find target and options, save options) and the flow
+ *                                                 entity; the collaborators themselves are five.
  *
  * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-declarative-primitives-or-one-openregister-flow-req-bqar-001
  */
@@ -106,7 +109,7 @@ class AutomationFlowBackend {
 	 *
 	 * @throws UnsupportedAutomationCombinationException When the version or its register cannot be read.
 	 *
-	 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-record-step-writes-a-record-of-the-app-req-bqar-002
+	 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-record-step-runs-outside-an-approval-req-bqar-002
 	 */
 	public function scope(string $versionUuid): array {
 		$version = $this->loadVersion(uuid: $versionUuid);
@@ -334,12 +337,8 @@ class AutomationFlowBackend {
 		}
 
 		$bindings = array_values((array)($application['flows'] ?? []));
-		$kept = array_values(
-			array_filter(
-				$bindings,
-				static fn ($binding): bool => is_array($binding) === false || (string)($binding['flow'] ?? '') !== $flowUuid
-			)
-		);
+		$keeps    = static fn ($binding): bool => is_array($binding) === false || (string)($binding['flow'] ?? '') !== $flowUuid;
+		$kept     = array_values(array_filter($bindings, $keeps));
 		if (count($kept) === count($bindings)) {
 			return;
 		}
@@ -416,7 +415,7 @@ class AutomationFlowBackend {
 	 *
 	 * @throws UnsupportedAutomationCombinationException When it cannot be read.
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
+	 * @SuppressWarnings(PHPMD.StaticAccess) AutomationRecords is a pure coercion with no collaborators.
 	 */
 	private function loadVersion(string $uuid): array {
 		if ($uuid === '') {
@@ -439,7 +438,7 @@ class AutomationFlowBackend {
 			throw new UnsupportedAutomationCombinationException(message: 'The app version of this automation could not be read.');
 		}
 
-		return ObjectRecord::toArray(object: $found);
+		return AutomationRecords::toArray(object: $found);
 	}//end loadVersion()
 
 	/**

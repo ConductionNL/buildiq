@@ -48,6 +48,7 @@ namespace OCA\Buildiq\Controller;
 use OCA\Buildiq\Exception\CopilotException;
 use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Kernel\Contracts\CopilotServiceInterface;
+use OCA\Buildiq\Service\Copilot\CopilotAssistService;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -71,6 +72,7 @@ class CopilotController extends Controller {
 	 * @param LoggerInterface $logger PSR logger for diagnostics.
 	 * @param CopilotServiceInterface $copilotService Copilot orchestrator.
 	 * @param IUserSession $userSession Current Nextcloud user session.
+	 * @param CopilotAssistService $assistService The builder assist (ai-copilot-documents-and-code-help).
 	 *
 	 * @return void
 	 */
@@ -79,6 +81,7 @@ class CopilotController extends Controller {
 		private readonly LoggerInterface $logger,
 		private readonly CopilotServiceInterface $copilotService,
 		private readonly IUserSession $userSession,
+		private readonly CopilotAssistService $assistService,
 	) {
 		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
@@ -95,12 +98,19 @@ class CopilotController extends Controller {
 	#[NoAdminRequired]
 	public function health(): JSONResponse {
 		$health = $this->copilotService->health();
+		// T08 of ai-agents-knowledge-and-run-trace: the agent editor drops its
+		// knowledge budget refusal when knowledge is searched, not read whole.
+		$retrieval = $this->copilotService->knowledgeRetrieval();
 		if ($health['available'] === true) {
-			return new JSONResponse(data: ['status' => 'ok'], statusCode: Http::STATUS_OK);
+			return new JSONResponse(data: ['status' => 'ok', 'knowledgeRetrieval' => $retrieval], statusCode: Http::STATUS_OK);
 		}
 
 		return new JSONResponse(
-			data: ['status' => 'unavailable', 'reason' => (string)($health['reason'] ?? 'unsupported_server')],
+			data: [
+				'status' => 'unavailable',
+				'reason' => (string)($health['reason'] ?? 'unsupported_server'),
+				'knowledgeRetrieval' => $retrieval,
+			],
 			statusCode: Http::STATUS_SERVICE_UNAVAILABLE
 		);
 	}//end health()
@@ -108,7 +118,7 @@ class CopilotController extends Controller {
 	/**
 	 * POST /api/copilot/plan — turn a brief into a validated, reviewable plan.
 	 *
-	 * Body: `{ brief: string, appSlug?: string, agentId?: string, versionSlug?: string }`. Performs
+	 * Body: `{ brief: string, appSlug?: string, agentId?: string, versionSlug?: string, documentFileId?: int }`. Performs
 	 * zero builder writes (an agent-scoped rejected plan still writes one
 	 * `AgentRun` audit record — see `CopilotService::plan()`).
 	 *
@@ -129,6 +139,7 @@ class CopilotController extends Controller {
 		$appSlug = $this->resolveOptionalString(raw: $this->request->getParam('appSlug', null));
 		$agentId = $this->resolveOptionalString(raw: $this->request->getParam('agentId', null));
 		$versionSlug = $this->resolveOptionalString(raw: $this->request->getParam('versionSlug', null));
+		$documentFileId = $this->resolveOptionalFileId(raw: $this->request->getParam('documentFileId', null));
 
 		try {
 			$result = $this->copilotService->plan(
@@ -136,7 +147,8 @@ class CopilotController extends Controller {
 				appSlug: $appSlug,
 				userId: $user->getUID(),
 				agentId: $agentId,
-				versionSlug: $versionSlug
+				versionSlug: $versionSlug,
+				documentFileId: $documentFileId
 			);
 			return new JSONResponse(data: $result, statusCode: Http::STATUS_OK);
 		} catch (CopilotException $e) {
@@ -238,6 +250,70 @@ class CopilotController extends Controller {
 	}//end discard()
 
 	/**
+	 * POST /api/copilot/assist — propose or explain one builder expression.
+	 *
+	 * Body: `{ target, mode, request, current, appSlug, context }`, where
+	 * `context` carries names only (input columns, payload paths, the register
+	 * and target/trigger schema slugs). The caller must be an owner or editor
+	 * of `appSlug`; a target schema resolves only among that app's registers.
+	 * Performs zero writes: the editor's own Save decides what persists.
+	 *
+	 * @return JSONResponse 200 `{mode, value?, explanation}`, or an error envelope.
+	 *
+	 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-builder-assist/spec.md#requirement-the-assist-writes-nothing-and-respects-app-access-req-bqch-004
+	 */
+	#[NoAdminRequired]
+	#[UserRateLimit(limit: 60, period: 3600)]
+	public function assist(): JSONResponse {
+		$user = $this->userSession->getUser();
+		if ($user === null) {
+			return new JSONResponse(data: ['error' => 'unauthenticated'], statusCode: Http::STATUS_UNAUTHORIZED);
+		}
+
+		$context = $this->request->getParam('context', []);
+		if (is_array($context) === false) {
+			$context = [];
+		}
+
+		try {
+			$result = $this->assistService->assist(
+				target: $this->stringParam(name: 'target'),
+				mode: $this->stringParam(name: 'mode'),
+				request: $this->stringParam(name: 'request'),
+				current: $this->stringParam(name: 'current'),
+				appSlug: $this->stringParam(name: 'appSlug'),
+				context: $context,
+				userId: $user->getUID()
+			);
+			return new JSONResponse(data: $result, statusCode: Http::STATUS_OK);
+		} catch (CopilotException $e) {
+			return $this->mapExceptionToResponse(error: $e);
+		} catch (Throwable $e) {
+			$this->logger->error('Buildiq Copilot: assist() unhandled exception: ' . $e->getMessage(), ['exception' => $e]);
+			return new JSONResponse(
+				data: ['error' => 'internal_error', 'message' => 'The AI help failed. See server logs for details.'],
+				statusCode: Http::STATUS_INTERNAL_SERVER_ERROR
+			);
+		}//end try
+	}//end assist()
+
+	/**
+	 * A request param as a string, '' when absent or not a scalar.
+	 *
+	 * @param string $name The param name.
+	 *
+	 * @return string
+	 */
+	private function stringParam(string $name): string {
+		$raw = $this->request->getParam($name, '');
+		if (is_scalar($raw) === false) {
+			return '';
+		}
+
+		return (string)$raw;
+	}//end stringParam()
+
+	/**
 	 * Normalise a raw string request param (`appSlug`, `agentId`) to `null` when absent/blank.
 	 *
 	 * @param mixed $raw Raw request param value.
@@ -251,6 +327,27 @@ class CopilotController extends Controller {
 
 		return (string)$raw;
 	}//end resolveOptionalString()
+
+	/**
+	 * Normalise the optional `documentFileId` param: a positive integer, or null.
+	 * A value that is not a file id reads as a file nobody can read (id 0),
+	 * so it answers the same 404 as someone else's file.
+	 *
+	 * @param mixed $raw Raw request param value.
+	 *
+	 * @return int|null
+	 */
+	private function resolveOptionalFileId(mixed $raw): ?int {
+		if ($raw === null || $raw === '') {
+			return null;
+		}
+
+		if (is_int($raw) === true || (is_string($raw) === true && ctype_digit($raw) === true)) {
+			return (int)$raw;
+		}
+
+		return 0;
+	}//end resolveOptionalFileId()
 
 	/**
 	 * Read the `{summary, steps}` plan payload from the request body.

@@ -39,6 +39,14 @@
 					@click="blocksSidebarOpen = true">
 					{{ t('buildiq', 'Blocks') }}
 				</button>
+				<button
+					type="button"
+					class="page-designer__tool-btn"
+					data-test="open-translations"
+					:aria-pressed="translationsOpen ? 'true' : 'false'"
+					@click="translationsOpen = !translationsOpen">
+					{{ t('buildiq', 'Translations') }}
+				</button>
 				<!-- data-walkthrough-id: spotlighted by the tour's `preview` step. -->
 				<button
 					type="button"
@@ -68,6 +76,15 @@
 				@insertWidgets="onInsertWidgets" />
 		</NcAppSidebar>
 
+		<!-- experience-multilingual-apps (REQ-BQML-002): every label of the
+		     version, one column per language. Edits go through emitManifest
+		     like any designer edit, so undo/redo and the save cover them. -->
+		<TranslationsView
+			v-if="translationsOpen"
+			:manifest="manifest"
+			@update:manifest="emitManifest"
+			@close="translationsOpen = false" />
+
 		<div class="page-designer__panes">
 			<aside class="page-designer__left">
 				<PageListEditor
@@ -94,8 +111,11 @@
 						v-bind="stubEditorProps(selectedPage.type)"
 						:pageId="selectedPage.id || ''"
 						:runtimeExternalForms="externalForms"
+						:offlineAllowed="offlineAllowed"
+						:offlineForms="offlineFormIds"
 						@update:config="onConfigUpdate"
-						@update:runtimeExternalForms="onExternalFormsUpdate" />
+						@update:runtimeExternalForms="onExternalFormsUpdate"
+						@update:offlineForms="onOfflineFormsUpdate" />
 					<!-- v2-widget-placement-editor task 3.4: the placement
 					     editor for the page's uniform v2 widgets[] array. It
 					     sits beside WidgetSelectionPanel, which keeps "save as
@@ -165,7 +185,29 @@
 				<div
 					v-if="previewAvailable && livePreviewProps"
 					class="page-designer__preview">
-					<h4>{{ t('buildiq', 'Live preview') }}</h4>
+					<div class="page-designer__preview-head">
+						<h4>{{ t('buildiq', 'Live preview') }}</h4>
+						<!-- REQ-BQML-004: show the preview in one of the app's
+						     languages; the designer around it keeps the maker's. -->
+						<label
+							v-if="previewLanguages.length > 1"
+							class="page-designer__preview-language">
+							{{ t('buildiq', 'Preview language') }}
+							<select
+								v-model="previewLanguage"
+								data-test="preview-language">
+								<option value="">
+									{{ t('buildiq', 'My language') }}
+								</option>
+								<option
+									v-for="code in previewLanguages"
+									:key="code"
+									:value="code">
+									{{ languageLabel(code) }}
+								</option>
+							</select>
+						</label>
+					</div>
 					<div
 						ref="previewSurface"
 						class="page-designer__preview-surface"
@@ -185,10 +227,14 @@
 								:customComponents="previewFlatRegistry"
 								:pageTypes="previewPageTypes"
 								:translate="translateForPreview"
+								:language="previewLanguage"
 								:permissions="previewPermissions"
 								:diagnostics="debugLog.record" />
 						</div>
 					</div>
+					<!-- Code components and expressions run in the sandbox
+					     frames, never in the preview app (pages-custom-code T07). -->
+					<CodePreviewPanel :manifest="livePreviewProps.manifest" />
 					<DebugLogPanel
 						:entries="debugLog.entries"
 						:pageTitles="debugPageTitles"
@@ -222,11 +268,13 @@
 <script>
 import { defaultPageTypes, mergeManifestDelta } from '@conduction/nextcloud-vue'
 import axios from '@nextcloud/axios'
-import { translate as ncT } from '@nextcloud/l10n'
+import { loadState } from '@nextcloud/initial-state'
+import { getLanguage, translate as ncT } from '@nextcloud/l10n'
 import { generateUrl } from '@nextcloud/router'
 import { NcAppSidebar } from '@nextcloud/vue'
 import BlockLibraryPanel from '../components/page-editor/BlockLibraryPanel.vue'
 import ChatPageEditor from '../components/page-editor/ChatPageEditor.vue'
+import CodePreviewPanel from '../components/page-editor/CodePreviewPanel.vue'
 import CustomPageEditor from '../components/page-editor/CustomPageEditor.vue'
 import DashboardPageEditor from '../components/page-editor/DashboardPageEditor.vue'
 import DebugLogPanel from '../components/page-editor/DebugLogPanel.vue'
@@ -247,6 +295,7 @@ import StubPageEditor from '../components/page-editor/StubPageEditor.vue'
 import WidgetPlacementPanel from '../components/page-editor/WidgetPlacementPanel.vue'
 import WidgetSelectionPanel from '../components/page-editor/WidgetSelectionPanel.vue'
 import WikiPageEditor from '../components/page-editor/WikiPageEditor.vue'
+import TranslationsView from './TranslationsView.vue'
 import { useApplicationVersion } from '../composables/useApplicationVersion.js'
 import { useDebugLog } from '../composables/useDebugLog.js'
 import { useLivePreview } from '../composables/useLivePreview.js'
@@ -254,9 +303,12 @@ import { useManifestValidator } from '../composables/useManifestValidator.js'
 import { useRegisterPicker } from '../composables/useRegisterPicker.js'
 import { useSessionHistory } from '../composables/useSessionHistory.js'
 import registry from '../registry.js'
+import { appI18n, languageName } from '../services/appLanguages.js'
 import { versionRegister } from '../services/appRegister.js'
+import { createAppTranslate } from '../services/appTranslate.js'
 import { findingsForPage } from '../services/formDestinationCheck.js'
 import { resolveValidationMessage as resolveMessage } from '../services/manifestValidation/connectorErrorMessages.js'
+import { offlineForms, withOffline } from '../services/offlineManifest.js'
 import { isEditableTarget } from '../utils/isEditableTarget.js'
 import { mirrorVersionLoad } from '../utils/mirrorVersionLoad.js'
 
@@ -289,6 +341,7 @@ const SUB_EDITOR_MAP = {
 export default {
 	name: 'PageDesigner',
 	components: {
+		CodePreviewPanel,
 		DebugLogPanel,
 		PreviewSandbox,
 		NcAppSidebar,
@@ -312,6 +365,7 @@ export default {
 		SearchPageEditor,
 		WikiPageEditor,
 		StubPageEditor,
+		TranslationsView,
 	},
 
 	/**
@@ -389,6 +443,8 @@ export default {
 
 	data() {
 		return {
+			// Whether the instance lets apps work offline (REQ-BQOM-002).
+			offlineAllowed: loadState('buildiq', 'offlineAppsAllowed', false) === true,
 			// The live preview's error log; it stays in this tab.
 			debugLog: useDebugLog(),
 			selectedIndex: -1,
@@ -402,6 +458,8 @@ export default {
 			// small, dedicated fetch (see fetchApplicationDataRegisters()) and
 			// threaded down to the mounted sub-editor's register picker.
 			applicationDataRegisters: [],
+			// pages-action-buttons: the app's declared flows, for "start a flow" buttons.
+			applicationFlows: [],
 			// component-blocks: block-library NcAppSidebar open state (toolbar
 			// "Blocks" button), the current app's companion schema slugs (for
 			// insert-time remap mismatch detection), and the blocks already
@@ -409,6 +467,10 @@ export default {
 			blocksSidebarOpen: false,
 			targetSchemaSlugs: [],
 			existingBlocks: [],
+			// experience-multilingual-apps: the Translations view's open state,
+			// and the language the live preview shows ('' = the maker's own).
+			translationsOpen: false,
+			previewLanguage: '',
 			// Ratio the preview viewport is scaled by to fit the pane. Kept in
 			// sync with the pane's width by a ResizeObserver (see
 			// observePreviewSurface).
@@ -426,6 +488,23 @@ export default {
 		 */
 		previewViewportWidth() {
 			return PREVIEW_VIEWPORT_WIDTH
+		},
+
+		/**
+		 * The languages the preview can show: the written one first, then the
+		 * ones the app is translated into. Empty for an app without languages.
+		 *
+		 * @return {string[]} Language codes.
+		 * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-the-preview-can-switch-language-req-bqml-004
+		 */
+		previewLanguages() {
+			const i18n = appI18n(this.manifest)
+			if (!i18n.sourceLanguage && i18n.languages.length === 0) {
+				return []
+			}
+			return Array.from(new Set(
+				[i18n.sourceLanguage, ...i18n.languages].filter(Boolean),
+			))
 		},
 
 		/**
@@ -454,6 +533,17 @@ export default {
 		},
 
 		/**
+		 * The app's pages as a typed action's "go to a page" options.
+		 *
+		 * @spec openspec/changes/pages-action-buttons/specs/page-action-authoring/spec.md#requirement-the-action-editor-authors-typed-actions-req-bqab-001
+		 */
+		actionPages() {
+			return this.pages
+				.filter((page) => page && page.id)
+				.map((page) => ({ id: page.id, title: page.title || '' }))
+		},
+
+		/**
 		 * Observed behaviour of `menu` (retrofit annotation).
 		 *
 		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-1
@@ -472,6 +562,16 @@ export default {
 		 * @return {Array<object>}
 		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-001
 		 */
+		/**
+		 * The manifest's offline form page ids (REQ-BQOM-003).
+		 *
+		 * @return {Array<string>}
+		 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T04
+		 */
+		offlineFormIds() {
+			return offlineForms(this.manifest)
+		},
+
 		externalForms() {
 			return Array.isArray(
 				this.manifest
@@ -819,8 +919,11 @@ export default {
 				const app = apps.find((a) => a && a.slug === this.slug) || null
 				this.applicationDataRegisters =
 					app && Array.isArray(app.dataRegisters) ? app.dataRegisters : []
+				this.applicationFlows =
+					app && Array.isArray(app.flows) ? app.flows : []
 			} catch (e) {
 				this.applicationDataRegisters = []
+				this.applicationFlows = []
 			}
 		},
 
@@ -951,6 +1054,21 @@ export default {
 						this.selectedIndex,
 					),
 				}
+			}
+			if (type === 'index') {
+				// pages-action-buttons: the pages and flows a typed action can point at.
+				// REQ-PEC-009: drag ordering is a key on the page itself, not in
+				// its config, so the index editor gets it and its update apart.
+				return {
+					pages: this.actionPages,
+					flows: this.applicationFlows,
+					manualOrder: !!(this.selectedPage && this.selectedPage.manualOrder === true),
+					'onUpdate:manualOrder': this.onManualOrderUpdate,
+				}
+			}
+			if (type === 'detail') {
+				// pages-action-buttons: the pages and flows a typed action can point at.
+				return { pages: this.actionPages, flows: this.applicationFlows }
 			}
 			if (this.subEditorFor(type) !== 'StubPageEditor') {
 				return {}
@@ -1120,6 +1238,30 @@ export default {
 		},
 
 		/**
+		 * Switch drag ordering on the selected page: `manualOrder: true` on the
+		 * page when on, the key removed when off. Each user's order itself is
+		 * kept by the built app, never by buildiq.
+		 *
+		 * @param {boolean} on - whether users may order rows by dragging.
+		 * @return {void}
+		 * @spec openspec/changes/pages-index-calendar-and-manual-order/specs/page-editor-coverage/spec.md#requirement-an-index-page-can-let-users-order-rows-by-dragging-req-pec-009
+		 */
+		onManualOrderUpdate(on) {
+			if (this.selectedIndex < 0) {
+				return
+			}
+			const pages = this.pages.slice()
+			const page = { ...pages[this.selectedIndex] }
+			if (on === true) {
+				page.manualOrder = true
+			} else {
+				delete page.manualOrder
+			}
+			pages[this.selectedIndex] = page
+			this.emitManifest({ ...(this.manifest || {}), pages })
+		},
+
+		/**
 		 * Persist an updated `runtime.externalForms[]` array from
 		 * FormPageEditor's ExternalFormAccessDialog (REQ-EFP-001). Deletes the
 		 * `runtime.externalForms` key entirely when the array empties out so an
@@ -1131,6 +1273,19 @@ export default {
 		 * @return {void}
 		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-001
 		 */
+		/**
+		 * Write the offline form page ids onto the manifest; the "Waiting to
+		 * sync" page follows them (REQ-BQOM-005).
+		 *
+		 * @param {Array<string>} forms The offline form page ids.
+		 * @return {void}
+		 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T04
+		 */
+		onOfflineFormsUpdate(forms) {
+			const current = (this.manifest && this.manifest.offline) || {}
+			this.emitManifest(withOffline(this.manifest, { takeAlong: current.takeAlong || [], forms }))
+		},
+
 		onExternalFormsUpdate(list) {
 			const next = { ...(this.manifest || {}) }
 			const runtime = { ...(next.runtime || {}) }
@@ -1158,16 +1313,37 @@ export default {
 
 		/**
 		 * REQ-OBPD-008: translate function handed to the sandboxed CnAppRoot
-		 * preview (mirrors App.vue's `translateForApp`). Closes over
-		 * Nextcloud's translate against the buildiq app id so preview chrome
-		 * (nav labels, empty states) localises identically to the built app.
+		 * preview, the same host lookup the built app gets (src/builder.js):
+		 * buildiq's catalogue for buildiq's strings, and a maker's own label
+		 * as written when the app declares languages (REQ-BQML-003), so the
+		 * renderer's manifest lookup is not masked by buildiq's catalogue.
 		 *
 		 * @param {string} key - Translation key.
+		 * @param {object} [vars] - Interpolation vars.
 		 * @return {string} Translated string (or the key on miss).
 		 * @spec openspec/changes/page-designer-live-preview-pane/tasks.md#task-2.3
+		 * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-the-preview-can-switch-language-req-bqml-004
 		 */
-		translateForPreview(key) {
-			return ncT('buildiq', key)
+		translateForPreview(key, vars) {
+			if (!this._previewTranslate) {
+				this._previewTranslate = createAppTranslate(
+					() => this.manifest,
+					(text, values) => ncT('buildiq', text, values),
+				)
+			}
+			return this._previewTranslate(key, vars)
+		},
+
+		/**
+		 * A language's name for the preview picker, in the maker's language.
+		 *
+		 * @param {string} code - a Nextcloud language code.
+		 * @return {string} The name, with the code.
+		 * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-the-preview-can-switch-language-req-bqml-004
+		 */
+		languageLabel(code) {
+			const name = languageName(code, getLanguage())
+			return name === code ? code : `${name} (${code})`
 		},
 
 		// --- Undo / redo (OQ-1) -------------------------------------------
@@ -1320,6 +1496,21 @@ export default {
 </script>
 
 <style scoped>
+.page-designer__preview-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	flex-wrap: wrap;
+}
+
+.page-designer__preview-language {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	color: var(--color-main-text);
+}
+
 .page-designer {
 	display: flex;
 	flex-direction: column;

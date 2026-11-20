@@ -287,4 +287,19 @@ final class PageLayoutValidatorTest extends TestCase {
 
 		self::assertSame([], $warnings);
 	}//end testAnUnreadableRegistryWarnsAboutNothing()
+	/**
+	 * An organisation audience is a known kind, and like a group, team or user
+	 * it has to name which one (REQ-OBSO-007).
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md#requirement-an-override-can-be-bound-to-an-organisation-req-obso-007
+	 */
+	public function testAnOrganisationAudienceMustNameTheOrganisation(): void {
+		$this->validator->validate($this->layout(['audience' => ['kind' => 'organisation', 'ref' => 'gemeente-a']]));
+
+		$this->expectException(\InvalidArgumentException::class);
+		$this->expectExceptionMessage('An audience of kind "organisation" has to say which one');
+		$this->validator->validate($this->layout(['audience' => ['kind' => 'organisation', 'ref' => '']]));
+	}//end testAnOrganisationAudienceMustNameTheOrganisation()
 }//end class

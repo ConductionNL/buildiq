@@ -76,6 +76,8 @@ export default {
 	 * so it follows the route (logic-automation-actions-that-run D8).
 	 *
 	 * @return {object}
+	 *
+	 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-app-users-run-manual-automations-from-a-record-req-bqar-006
 	 */
 	provide() {
 		return { cnAppSlug: () => this.slug }

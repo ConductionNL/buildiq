@@ -38,6 +38,7 @@ use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\Flow\FlowService;
 use OCA\OpenRegister\Service\Flow\FlowVersionServiceInterface;
@@ -53,6 +54,7 @@ use RuntimeException;
  * @covers \OCA\Buildiq\Service\Automation\AutomationFlowBackend
  * @uses \OCA\Buildiq\Exception\UnsupportedAutomationCombinationException
  * @uses \OCA\Buildiq\Support\ObjectRecord
+ * @uses \OCA\Buildiq\Service\Automation\AutomationRecords
  */
 final class AutomationFlowBackendTest extends TestCase {
 
@@ -141,6 +143,15 @@ final class AutomationFlowBackendTest extends TestCase {
 			}
 		);
 	}//end setUp()
+
+	/**
+	 * The save options of the Application write: the buildiq register, the built-app schema, its uuid.
+	 *
+	 * @return ObjectSaveOptions
+	 */
+	private static function applicationSave(): ObjectSaveOptions {
+		return new ObjectSaveOptions(target: new ObjectFindTarget(register: 'buildiq', schema: 'built-app'), uuid: self::APPLICATION);
+	}//end applicationSave()
 
 	/**
 	 * An object entity holding a payload.
@@ -273,11 +284,7 @@ final class AutomationFlowBackendTest extends TestCase {
 			->method('saveObject')
 			->with(
 				['slug' => 'claims', 'name' => 'Claims', 'flows' => [['label' => 'aut-send', 'flow' => self::FLOW]]],
-				$this->callback(
-					callback: static fn (ObjectSaveOptions $options): bool => $options->target->register === 'buildiq'
-						&& $options->target->schema === 'built-app'
-						&& $options->uuid === self::APPLICATION
-				),
+				self::applicationSave(),
 				false,
 				false
 			);
@@ -396,16 +403,7 @@ final class AutomationFlowBackendTest extends TestCase {
 		$this->flows->expects($this->once())->method('delete')->with(self::FLOW);
 		$this->objects->expects($this->once())
 			->method('saveObject')
-			->with(
-				['slug' => 'claims', 'name' => 'Claims', 'flows' => [$other]],
-				$this->callback(
-					callback: static fn (ObjectSaveOptions $options): bool => $options->target->register === 'buildiq'
-						&& $options->target->schema === 'built-app'
-						&& $options->uuid === self::APPLICATION
-				),
-				false,
-				false
-			);
+			->with(['slug' => 'claims', 'name' => 'Claims', 'flows' => [$other]], self::applicationSave(), false, false);
 
 		$this->backend()->remove(flowUuid: self::FLOW, versionUuid: self::VERSION);
 	}//end testRemoveDeletesAndUnbinds()

@@ -36,6 +36,7 @@ use Psr\Log\LoggerInterface;
  *
  * @covers \OCA\Buildiq\Controller\GitHubSyncController
  * @uses   \OCA\Buildiq\Service\PermissionResolver
+ * @uses   \OCA\Buildiq\Service\HelperFactory
  * @uses   \OCA\Buildiq\Service\GitHub\SyncRequestParams
  * @uses   \OCA\Buildiq\Kernel\Values\AppPushRequest
  * @uses   \OCA\Buildiq\Kernel\Values\BrokerAccess

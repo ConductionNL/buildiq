@@ -34,7 +34,6 @@ namespace OCA\Buildiq\Service\Automation;
 
 use OCA\Buildiq\Kernel\Contracts\AutomationCompilerServiceInterface;
 use OCA\Buildiq\Kernel\Contracts\AutomationWriteServiceInterface;
-use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -45,27 +44,6 @@ use Throwable;
  * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-step-decides-with-a-rule-set-req-bqar-005
  */
 class RuleSetActivationRecompiler {
-
-	/**
-	 * The shared buildiq register.
-	 *
-	 * @var string
-	 */
-	private const REGISTER_SLUG = 'buildiq';
-
-	/**
-	 * The automation schema.
-	 *
-	 * @var string
-	 */
-	private const AUTOMATION_SCHEMA = 'automation';
-
-	/**
-	 * The most automations read at once.
-	 *
-	 * @var int
-	 */
-	private const LIMIT = 10000;
 
 	/**
 	 * Constructor.
@@ -91,6 +69,8 @@ class RuleSetActivationRecompiler {
 	 *
 	 * @return array{recompiled: int, failed: int}
 	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) AutomationRecords is a pure coercion with no collaborators.
+	 *
 	 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-step-decides-with-a-rule-set-req-bqar-005
 	 */
 	public function recompileReferencing(string $slug, string $version): array {
@@ -100,18 +80,13 @@ class RuleSetActivationRecompiler {
 		}
 
 		try {
-			$rows = $this->objectService->findAll(
-				config: ['filters' => ['register' => self::REGISTER_SLUG, 'schema' => self::AUTOMATION_SCHEMA], 'limit' => self::LIMIT],
-				_rbac: false,
-				_multitenancy: false
-			);
+			$automations = AutomationRecords::all(objectService: $this->objectService);
 		} catch (Throwable $e) {
 			$this->logger->warning('RuleSetActivationRecompiler: automations could not be read after activating "' . $slug . '": ' . $e->getMessage());
 			return $counts;
 		}
 
-		foreach ($rows as $row) {
-			$automation = ObjectRecord::toArray(object: $row);
+		foreach ($automations as $automation) {
 			if (self::copiesOtherVersion(automation: $automation, slug: $slug, version: $version) === false) {
 				continue;
 			}
@@ -163,12 +138,9 @@ class RuleSetActivationRecompiler {
 	private function recompile(array $automation): bool {
 		$uuid = (string)($automation['id'] ?? ($automation['uuid'] ?? ''));
 		try {
-			$plan = $this->compiler->compile(automation: $automation);
-			$automation['provenance'] = $this->compiler->apply(
-				automation: $automation,
-				plan: $plan,
-				priorProvenance: (array)$automation['provenance']
-			);
+			$plan  = $this->compiler->compile(automation: $automation);
+			$prior = (array)$automation['provenance'];
+			$automation['provenance'] = $this->compiler->apply(automation: $automation, plan: $plan, priorProvenance: $prior);
 			$this->writeService->saveCompiled(automation: $automation, uuid: $uuid);
 		} catch (Throwable $e) {
 			$this->logger->warning('RuleSetActivationRecompiler: could not recompile "' . $uuid . '": ' . $e->getMessage());

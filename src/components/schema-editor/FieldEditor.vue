@@ -35,7 +35,9 @@
 			<li
 				v-for="(field, index) in fields"
 				:key="field._key"
-				class="buildiq-field-editor__row">
+				:ref="`row-${field.name}`"
+				class="buildiq-field-editor__row"
+				:class="{ 'buildiq-field-editor__row--refused': !!sourceRefusals[field.name] }">
 				<div class="buildiq-field-editor__handle">
 					<NcButton
 						variant="tertiary"
@@ -175,6 +177,11 @@
 									toIntOrNull($event),
 								)
 							" />
+						<GeneratedNumberSettings
+							v-if="field.type !== 'longtext'"
+							:modelValue="field.generated || null"
+							:schemaSlug="schemaSlug"
+							@update:modelValue="updateField(index, 'generated', $event)" />
 					</template>
 
 					<!-- number / integer -->
@@ -436,6 +443,100 @@
 					</template>
 				</div>
 
+				<!-- REQ-BQRF-001/002: the value source, beside the type (design D1). -->
+				<fieldset
+					v-if="takesSource(field)"
+					class="buildiq-field-editor__source"
+					:data-testid="`field-source-${field.name}`">
+					<legend class="buildiq-field-editor__source-heading">
+						{{ t('buildiq', 'Value source') }}
+					</legend>
+					<p class="buildiq-field-editor__source-lead">
+						{{ t('buildiq', 'Only for type string or object') }}
+					</p>
+
+					<template v-if="propertySources.available">
+						<div class="buildiq-field-editor__source-choice">
+							<label>
+								<input
+									type="radio"
+									:name="`source-${field._key}`"
+									value="typed"
+									:checked="!field.source"
+									@change="setSourceKind(index, 'typed')">
+								{{ t('buildiq', 'Typed in') }}
+							</label>
+							<label>
+								<input
+									type="radio"
+									:name="`source-${field._key}`"
+									value="registry"
+									:checked="!!field.source"
+									@change="setSourceKind(index, 'registry')">
+								{{ t('buildiq', 'From a registry') }}
+							</label>
+						</div>
+
+						<template v-if="field.source">
+							<NcSelect
+								:inputLabel="t('buildiq', 'Registry')"
+								:modelValue="providerOption(field.source.provider)"
+								:options="providerOptions"
+								:clearable="false"
+								label="label"
+								trackBy="value"
+								@update:modelValue="
+									updateSource(
+										index,
+										'provider',
+										$event ? $event.value : '',
+									)
+								" />
+							<div class="buildiq-field-editor__source-choice">
+								<label>
+									<input
+										type="radio"
+										:name="`source-mode-${field._key}`"
+										value="live"
+										:checked="field.source.mode !== 'default'"
+										@change="updateSource(index, 'mode', 'live')">
+									{{ t('buildiq', 'Look it up every time') }}
+								</label>
+								<label>
+									<input
+										type="radio"
+										:name="`source-mode-${field._key}`"
+										value="default"
+										:checked="field.source.mode === 'default'"
+										@change="updateSource(index, 'mode', 'default')">
+									{{ t('buildiq', 'Use it as a starting value') }}
+								</label>
+							</div>
+						</template>
+					</template>
+
+					<template v-else-if="propertySources.loaded">
+						<p class="buildiq-field-editor__source-note">
+							{{ t('buildiq', 'Registry lookups need the integriq app.') }}
+						</p>
+					</template>
+
+					<p
+						v-if="sourceSummaryOf(field)"
+						class="buildiq-field-editor__source-summary"
+						:data-testid="`field-source-summary-${field.name}`">
+						{{ t('buildiq', 'Format') }}: {{ sourceSummaryOf(field) }}
+					</p>
+
+					<p
+						v-for="(message, mIndex) in sourceRefusals[field.name] || []"
+						:key="`refusal-${mIndex}`"
+						class="buildiq-field-editor__source-refusal"
+						role="alert">
+						{{ message }}
+					</p>
+				</fieldset>
+
 				<div class="buildiq-field-editor__actions">
 					<NcButton variant="error" @click="requestRemove(index)">
 						<template #icon>
@@ -468,11 +569,30 @@ import ChevronUpIcon from 'vue-material-design-icons/ChevronUp.vue'
 import DeleteIcon from 'vue-material-design-icons/Delete.vue'
 import PlusIcon from 'vue-material-design-icons/Plus.vue'
 import DeleteFieldDialog from '../../modals/DeleteFieldDialog.vue'
+import GeneratedNumberSettings from './GeneratedNumberSettings.vue'
+import { relationPickerMixin } from '../../mixins/relationPicker.js'
 import { listConceptSchemes, listSchemeOptions } from '../../services/conceptSchemes.js'
 import { dutchFormatOptions, isDutchFormat } from '../../services/dutchFormats.js'
+import {
+	PROPERTY_SOURCE_KEY,
+	PROPERTY_SOURCE_TYPES,
+	propertySourceOf,
+	sourceFromProperty,
+	sourceSummary,
+} from '../../services/propertySources.js'
+import {
+	formatProblem,
+	GENERATED_KEY,
+	generatedFromProperty,
+	generatedKeyword,
+} from './generatedNumber.js'
 
 // The JSON Schema string formats the schema field editor lists before the Dutch ones.
 const JSON_SCHEMA_FORMATS = ['email', 'uri', 'date', 'date-time', 'time', 'uuid', 'hostname', 'ipv4', 'ipv6']
+
+// The row types that take an automatic number (REQ-OBSD-009): single-line text,
+// which the named types call `text` and a formatted text row `string`.
+const GENERATED_TYPES = ['string', 'text']
 
 const FIELD_NAME_PATTERN = /^[a-zA-Z][a-zA-Z0-9_-]*$/
 
@@ -508,7 +628,6 @@ const JSON_TYPES = ['string', 'number', 'integer', 'boolean', 'array', 'object']
 /** The user reference key nextcloud-vue renders as a user picker (design D3). */
 const USER_REFERENCE = 'nextcloud-user'
 const ITEMS_TYPES = ['string', 'number', 'integer', 'boolean', 'object']
-const CARDINALITIES = ['one', 'many']
 
 let keyCounter = 0
 /**
@@ -526,6 +645,7 @@ export default {
 		ChevronUpIcon,
 		DeleteFieldDialog,
 		DeleteIcon,
+		GeneratedNumberSettings,
 		NcButton,
 		NcCheckboxRadioSwitch,
 		NcSelect,
@@ -533,9 +653,23 @@ export default {
 		PlusIcon,
 	},
 
+	mixins: [relationPickerMixin],
+
 	props: {
 		fields: { type: Array, default: () => [] },
-		schemaSlugs: { type: Array, default: () => [] },
+		/** The schema's own slug, the default counter name of an automatic number. */
+		schemaSlug: { type: String, default: '' },
+		/**
+		 * The registry providers integriq publishes, fetched once per designer
+		 * session: `{ loaded, available, results }` (design D2).
+		 */
+		propertySources: {
+			type: Object,
+			default: () => ({ loaded: false, available: false, results: [] }),
+		},
+
+		/** Refusals of the last save per field name, for a declaration OpenRegister refused. */
+		sourceRefusals: { type: Object, default: () => ({}) },
 	},
 
 	emits: ['update:fields'],
@@ -594,29 +728,45 @@ export default {
 		},
 
 		/**
-		 * Build relation target-schema picker options.
+		 * The registry picker options: the provider label, with the identifier
+		 * it keys on as the secondary line.
 		 *
-		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
+		 * @spec openspec/changes/data-registry-backed-field-option/specs/schema-designer-ui/spec.md#requirement-a-maker-declares-that-a-field-takes-its-value-from-a-registry-req-bqrf-001
 		 * @return {Array} Option objects.
 		 */
-		schemaOptions() {
-			return this.schemaSlugs.map((slug) => ({ value: slug, label: slug }))
-		},
-
-		/**
-		 * Build cardinality picker options (one/many).
-		 *
-		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
-		 * @return {Array} Option objects.
-		 */
-		cardinalityOptions() {
-			return CARDINALITIES.map((value) => ({
-				value,
-				label:
-					value === 'one'
-						? this.t('buildiq', 'One')
-						: this.t('buildiq', 'Many'),
+		providerOptions() {
+			return (this.propertySources.results || []).map((provider) => ({
+				value: provider.id,
+				label: provider.label || provider.id,
+				subname: provider.identifier
+					? this.t('buildiq', 'keyed on {identifier}', {
+							identifier: provider.identifier,
+						})
+					: '',
 			}))
+		},
+	},
+
+	watch: {
+		/**
+		 * REQ-BQRF-003: bring the first field a refused save names into view.
+		 *
+		 * @spec openspec/changes/data-registry-backed-field-option/specs/schema-designer-ui/spec.md#requirement-the-fields-table-shows-the-registry-source-and-a-refusal-lands-on-its-field-req-bqrf-003
+		 * @param {object} refusals Messages per field name.
+		 * @return {void}
+		 */
+		sourceRefusals(refusals) {
+			const first = Object.keys(refusals || {})[0]
+			if (!first) {
+				return
+			}
+			this.$nextTick(() => {
+				const found = this.$refs[`row-${first}`]
+				const row = Array.isArray(found) ? found[0] : found
+				if (row && typeof row.scrollIntoView === 'function') {
+					row.scrollIntoView({ block: 'center' })
+				}
+			})
 		},
 	},
 
@@ -625,6 +775,90 @@ export default {
 	},
 
 	methods: {
+		/**
+		 * Whether a field offers the value source section: string and object only.
+		 *
+		 * @spec openspec/changes/data-registry-backed-field-option/specs/schema-designer-ui/spec.md#requirement-a-maker-declares-that-a-field-takes-its-value-from-a-registry-req-bqrf-001
+		 * @param {object} field Field row.
+		 * @return {boolean} True for string and object.
+		 */
+		takesSource(field) {
+			return takesSourceType(field.type)
+		},
+
+		/**
+		 * The selected registry option, shown as its id when integriq does not publish it.
+		 *
+		 * @spec openspec/changes/data-registry-backed-field-option/specs/schema-designer-ui/spec.md#requirement-a-maker-declares-that-a-field-takes-its-value-from-a-registry-req-bqrf-001
+		 * @param {string} id Provider id.
+		 * @return {object|null} Matching option.
+		 */
+		providerOption(id) {
+			if (!id) {
+				return null
+			}
+			return (
+				this.providerOptions.find((o) => o.value === id) || {
+					value: id,
+					label: id,
+					subname: '',
+				}
+			)
+		},
+
+		/**
+		 * The source text a field row shows: "{label}, live" or "{label}, starting value".
+		 *
+		 * @spec openspec/changes/data-registry-backed-field-option/specs/schema-designer-ui/spec.md#requirement-the-fields-table-shows-the-registry-source-and-a-refusal-lands-on-its-field-req-bqrf-003
+		 * @param {object} field Field row.
+		 * @return {string} The text, empty without a source.
+		 */
+		sourceSummaryOf(field) {
+			return sourceSummary(field.source, this.propertySources.results)
+		},
+
+		/**
+		 * Choose "Typed in" (removes the declaration) or "From a registry"
+		 * (starts one, live, with an empty config).
+		 *
+		 * @spec openspec/changes/data-registry-backed-field-option/specs/schema-designer-ui/spec.md#requirement-a-maker-declares-that-a-field-takes-its-value-from-a-registry-req-bqrf-001
+		 * @param {number} index Row index.
+		 * @param {string} kind `typed` or `registry`.
+		 * @return {void}
+		 */
+		setSourceKind(index, kind) {
+			const current = this.fields[index] || {}
+			if (kind === 'typed') {
+				this.updateField(index, 'source', null)
+				return
+			}
+			if (current.source) {
+				return
+			}
+			this.updateField(index, 'source', { provider: '', mode: 'live', config: {} })
+		},
+
+		/**
+		 * Set the provider or the mode of a field's source, keeping its config.
+		 *
+		 * @spec openspec/changes/data-registry-backed-field-option/specs/schema-designer-ui/spec.md#requirement-a-maker-declares-that-a-field-takes-its-value-from-a-registry-req-bqrf-001
+		 * @param {number} index Row index.
+		 * @param {string} key `provider` or `mode`.
+		 * @param {string} value The new value.
+		 * @return {void}
+		 */
+		updateSource(index, key, value) {
+			const current = this.fields[index] || {}
+			const source = {
+				provider: '',
+				mode: 'live',
+				config: {},
+				...(current.source || {}),
+				[key]: value,
+			}
+			this.updateField(index, 'source', source)
+		},
+
 		/**
 		 * Resolve the selected field-type option.
 		 *
@@ -891,31 +1125,6 @@ export default {
 		},
 
 		/**
-		 * Resolve the selected target-schema option.
-		 *
-		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
-		 * @param {string} value Schema slug.
-		 * @return {object|null} Matching option.
-		 */
-		schemaOption(value) {
-			return this.schemaOptions.find((o) => o.value === value) || null
-		},
-
-		/**
-		 * Resolve the selected cardinality option.
-		 *
-		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
-		 * @param {string} value Cardinality.
-		 * @return {object} Matching option.
-		 */
-		cardinalityOption(value) {
-			return (
-				this.cardinalityOptions.find((o) => o.value === value)
-				|| this.cardinalityOptions[0]
-			)
-		},
-
-		/**
 		 * Validate a field name: presence, pattern, and uniqueness.
 		 *
 		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-2
@@ -1021,6 +1230,10 @@ export default {
 				// Reset validation when type changes — different types share no
 				// validation slots (string format vs number multipleOf).
 				current.validation = {}
+				// A registry source belongs to string and object fields only.
+				if (!takesSourceType(value)) {
+					current.source = null
+				}
 			}
 			next[index] = current
 			this.emitFields(next)
@@ -1273,12 +1486,47 @@ function fieldFromProperty(name, prop, isRequired) {
 		default: prop.default != null ? prop.default : null,
 		description: prop.description || '',
 		validation: validationFromProperty(prop, type),
+		// REQ-OBSD-009: the automatic-number setting, only on a field that has one.
+		...generatedRow(prop),
+		// REQ-BQRF-001: the registry source, or null for a typed-in field. A
+		// declaration that is not an object is left undefined, so a save
+		// carries it through for OpenRegister to judge instead of dropping it.
+		source: loadedSource(prop),
 		// REQ-BQFT-004: the property as it was loaded, so a save writes back
 		// every key this editor does not own (enum, title, x- keys, ...).
 		_raw: JSON.parse(JSON.stringify(prop)),
 	}
 }
 
+/**
+ * The automatic-number part of a row: `{ generated }` when the property
+ * carries `x-openregister-generated`, else nothing, so other rows keep
+ * their shape.
+ *
+ * @param {object} prop The loaded property.
+ * @return {object} The part.
+ * @spec openspec/changes/data-generated-number-field/tasks.md#t02
+ */
+function generatedRow(prop) {
+	const generated = generatedFromProperty(prop)
+	return generated ? { generated } : {}
+}
+
+/**
+ * The registry source of a loaded property: its declaration, null when it has
+ * none, undefined when it has one that is not an object.
+ *
+ * @spec openspec/changes/data-registry-backed-field-option/specs/schema-designer-ui/spec.md#requirement-a-maker-declares-that-a-field-takes-its-value-from-a-registry-req-bqrf-001
+ * @param {object} prop The loaded property.
+ * @return {object|null|undefined} The source.
+ */
+function loadedSource(prop) {
+	const source = sourceFromProperty(prop)
+	if (source) {
+		return source
+	}
+	return prop[PROPERTY_SOURCE_KEY] === undefined ? null : undefined
+}
 /**
  * The field type of a loaded property: `relation` when it carries an
  * `x-openregister-relation` block, else its JSON Schema type (string when absent).
@@ -1447,6 +1695,9 @@ const EDITOR_OWNED_KEYS = new Set([
 	'minItems',
 	'maxItems',
 	'x-openregister-relation',
+	GENERATED_KEY,
+	// REQ-BQRF-001: written from the row's source; "Typed in" removes it.
+	PROPERTY_SOURCE_KEY,
 ])
 
 /**
@@ -1500,9 +1751,10 @@ function withoutKeys(source, keys) {
  * `required` array + `x-property-order` array (to preserve user order).
  *
  * @param {Array} fields Editor field rows.
+ * @param {string} schemaSlug The schema's slug, the counter name of an automatic number that names none.
  * @return {{ properties: object, required: Array<string>, order: Array<string> }}
  */
-export function fieldsToSchema(fields) {
+export function fieldsToSchema(fields, schemaSlug = '') {
 	const properties = {}
 	const required = []
 	const order = []
@@ -1511,7 +1763,7 @@ export function fieldsToSchema(fields) {
 			continue
 		}
 		order.push(field.name)
-		const prop = propertyFromField(field)
+		const prop = propertyFromField(field, schemaSlug)
 		properties[field.name] = prop
 		if (field.required) {
 			required.push(field.name)
@@ -1527,10 +1779,11 @@ export function fieldsToSchema(fields) {
  * the editor's own keys (and a cleared one) still win (REQ-BQFT-004).
  *
  * @param {object} field Editor field row.
+ * @param {string} schemaSlug The schema's slug.
  * @return {object} The JSON Schema property.
  * @spec openspec/changes/data-field-types-and-choice-lists/specs/schema-designer-field-types/spec.md#requirement-a-save-keeps-the-keys-the-designer-does-not-edit-req-bqft-004
  */
-function propertyFromField(field) {
+function propertyFromField(field, schemaSlug = '') {
 	const raw = loadedProperty(field)
 	const prop = baseProperty(field, raw)
 	const v = field.validation || {}
@@ -1546,9 +1799,79 @@ function propertyFromField(field) {
 	if (field.type === 'relation') {
 		prop['x-openregister-relation'] = relationFromField(raw, v)
 	}
+	const generated = generatedFromField(field, raw, schemaSlug)
+	if (generated) {
+		prop[GENERATED_KEY] = generated
+	}
 	copyKeys(prop, v, keysFor(field.type))
+	writeSource(prop, field, raw)
 	writeNamedShape(prop, field.type, v, raw)
 	return prop
+}
+/**
+ * Whether a field type takes a registry source: one saved as a JSON string or
+ * object (text, a formatted text, a choice, ...), a relation excepted.
+ *
+ * @spec openspec/changes/data-registry-backed-field-option/specs/schema-designer-ui/spec.md#requirement-a-maker-declares-that-a-field-takes-its-value-from-a-registry-req-bqrf-001
+ * @param {string} type The field type.
+ * @return {boolean} True when the type takes a source.
+ */
+function takesSourceType(type) {
+	return type !== 'relation' && PROPERTY_SOURCE_TYPES.includes(propertyTypeOf(type))
+}
+
+/**
+ * Write a row's registry source onto its property (REQ-BQRF-001/002): the
+ * declaration for a string or object field with a provider, config carried
+ * through; an unreadable loaded declaration the row never touched, as it was.
+ *
+ * @spec openspec/changes/data-registry-backed-field-option/specs/schema-designer-ui/spec.md#requirement-an-existing-declaration-survives-a-session-without-integriq-req-bqrf-002
+ * @param {object} prop The property being saved.
+ * @param {object} field Editor field row.
+ * @param {object} raw The property as it was loaded.
+ * @return {void}
+ */
+function writeSource(prop, field, raw) {
+	if (!takesSourceType(field.type)) {
+		return
+	}
+	if (field.source === undefined) {
+		if (raw[PROPERTY_SOURCE_KEY] !== undefined) {
+			prop[PROPERTY_SOURCE_KEY] = raw[PROPERTY_SOURCE_KEY]
+		}
+		return
+	}
+	const declaration = propertySourceOf(field.source)
+	if (declaration && declaration.provider) {
+		prop[PROPERTY_SOURCE_KEY] = declaration
+	}
+}
+
+/**
+ * The `x-openregister-generated` keyword a row writes (REQ-OBSD-009): the
+ * row's setting when it is on and its format is one OpenRegister accepts;
+ * the keyword as it was loaded when the new format would be refused, so a
+ * refused format is never saved; nothing when the setting is off or the
+ * field is not single-line text.
+ *
+ * @param {object} field Editor field row.
+ * @param {object} raw The property as it was loaded.
+ * @param {string} schemaSlug The schema's slug, the counter name when the row names none.
+ * @return {object|null} The keyword.
+ * @spec openspec/changes/data-generated-number-field/tasks.md#t02
+ */
+function generatedFromField(field, raw, schemaSlug) {
+	if (!GENERATED_TYPES.includes(field.type)) {
+		return null
+	}
+	const keyword = generatedKeyword(field.generated, schemaSlug)
+	if (keyword === null) {
+		return null
+	}
+	if (formatProblem(keyword.format, keyword.resetOn) !== null) {
+		return raw[GENERATED_KEY] || null
+	}
+	return keyword
 }
 
 /**
@@ -1671,13 +1994,13 @@ function relationFromField(raw, v) {
 </script>
 
 <style scoped lang="scss">
+@use '../../assets/editor-controls.scss' as c;
+
 .buildiq-field-editor__format {
 	display: flex;
 	flex-direction: column;
 	gap: 4px;
 }
-
-@use '../../assets/editor-controls.scss' as c;
 
 .buildiq-field-editor {
 	display: flex;
@@ -1733,6 +2056,43 @@ function relationFromField(raw, v) {
 	display: grid;
 	grid-template-columns: 1fr 1fr;
 	gap: 8px;
+}
+
+.buildiq-field-editor__source {
+	grid-column: 2;
+	display: flex;
+	flex-direction: column;
+	gap: 6px;
+	margin: 0;
+	padding: 8px 12px;
+	border: 1px solid var(--color-border);
+	border-radius: var(--border-radius);
+}
+
+.buildiq-field-editor__source-heading {
+	font-weight: 600;
+}
+
+.buildiq-field-editor__source-lead,
+.buildiq-field-editor__source-note,
+.buildiq-field-editor__source-summary {
+	margin: 0;
+	color: var(--color-text-maxcontrast);
+}
+
+.buildiq-field-editor__source-choice {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 16px;
+}
+
+.buildiq-field-editor__source-refusal {
+	margin: 0;
+	color: var(--color-error-text, var(--color-error));
+}
+
+.buildiq-field-editor__row--refused {
+	border-color: var(--color-error);
 }
 
 .buildiq-field-editor__choice {

@@ -167,6 +167,13 @@
 			:window="selectedWindow"
 			:pageTitles="pageTitles" />
 
+		<!-- 3c. The app's outside systems and their health (built-app-connections-page,
+		     board BqAppWerking): for its owners and editors, and admins; the
+		     server checks the same before it reads anything. -->
+		<ApplicationConnectionsSection
+			v-if="canSeeConnections && appSlug"
+			:appSlug="appSlug" />
+
 		<!-- 4. Customization-layer widget grid. The manifest-derived Schemas /
 		     Pages / Menu widgets are replaced by the Manifest widget (delta
 		     layers + version state) and the Register widget (counts + deep-link
@@ -201,6 +208,7 @@
 		     SchemasWidget were implemented for REQ-OBADO-009 and mounted
 		     nowhere; FlowsWidget completes the set. -->
 		<section class="ob-detail-dashboard__structure">
+			<StoriesWidget v-if="activeStories.length > 0" :stories="activeStories" />
 			<PagesWidget
 				:appSlug="appSlug"
 				:versionSlug="activeVersionSlug"
@@ -235,6 +243,7 @@
 
 <script>
 import { CnStatsBlock } from '@conduction/nextcloud-vue'
+import { getCurrentUser } from '@nextcloud/auth'
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
 import NcButton from '@nextcloud/vue/components/NcButton'
@@ -245,6 +254,7 @@ import Harddisk from 'vue-material-design-icons/Harddisk.vue'
 import History from 'vue-material-design-icons/History.vue'
 import ImportDataWizard from '../../dialogs/ImportDataWizard.vue'
 import UserDeltaEditModal from '../../modals/UserDeltaEditModal.vue'
+import ApplicationConnectionsSection from './ApplicationConnectionsSection.vue'
 import ApplicationHealthSection from './ApplicationHealthSection.vue'
 import FlowsWidget from './widgets/FlowsWidget.vue'
 import GroupsWidget from './widgets/GroupsWidget.vue'
@@ -253,6 +263,7 @@ import MenuWidget from './widgets/MenuWidget.vue'
 import PagesWidget from './widgets/PagesWidget.vue'
 import RegisterWidget from './widgets/RegisterWidget.vue'
 import SchemasWidget from './widgets/SchemasWidget.vue'
+import StoriesWidget from './widgets/StoriesWidget.vue'
 import { useInsightsWindow } from '../../composables/useInsightsWindow.js'
 import { useRegisterPicker } from '../../composables/useRegisterPicker.js'
 import { useRole } from '../../composables/useRole.js'
@@ -274,6 +285,7 @@ const KPI_CARDS = Object.freeze([
 export default {
 	name: 'ApplicationDetailDashboard',
 	components: {
+		ApplicationConnectionsSection,
 		ApplicationHealthSection,
 		ArrowTopRight,
 		CnStatsBlock,
@@ -285,6 +297,7 @@ export default {
 		PagesWidget,
 		RegisterWidget,
 		SchemasWidget,
+		StoriesWidget,
 		UserDeltaEditModal,
 		ImportDataWizard,
 	},
@@ -532,6 +545,17 @@ export default {
 		},
 
 		/**
+		 * The user stories the app keeps from the plan it was created from.
+		 *
+		 * @return {Array<object>}
+		 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-copilot/spec.md#requirement-the-created-app-keeps-its-stories-req-bqch-007
+		 */
+		activeStories() {
+			const stories = this.application && this.application.stories
+			return Array.isArray(stories) ? stories : []
+		},
+
+		/**
 		 * Total activity events across all buckets.
 		 *
 		 * @return {number}
@@ -675,6 +699,17 @@ export default {
 		canImport() {
 			const role = useRole(this.application)
 			return role === 'owner' || role === 'editor'
+		},
+
+		/**
+		 * Whether the Connections section shows: the app's owners and editors, and admins.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/built-app-connections-page/specs/app-connections/spec.md#requirement-req-biq-conn-005-every-app-built-in-buildiq-has-a-connections-page-with-health
+		 */
+		canSeeConnections() {
+			const user = getCurrentUser()
+			return this.canImport || Boolean(user && user.isAdmin)
 		},
 	},
 

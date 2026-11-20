@@ -119,4 +119,37 @@ describe('VisibleWhenBuilder', () => {
 			])
 		})
 	})
+
+	describe('fx expression (pages-custom-code REQ-BQCC-002)', () => {
+		it('the fx toggle switches to an empty expression', async () => {
+			const wrapper = mountBuilder(null)
+			await wrapper.find('.visible-when-builder__fx').trigger('click')
+			expect(wrapper.emitted('update:modelValue').at(-1)).toEqual([{ expression: '' }])
+		})
+
+		it('an expression renders as a code box instead of the field picker', () => {
+			const wrapper = mountBuilder({ expression: 'values.wantsContact === true' })
+			expect(wrapper.find('.visible-when-builder__select').exists()).toBe(false)
+			expect(wrapper.find('.visible-when-builder__expression').element.value).toBe('values.wantsContact === true')
+			expect(wrapper.find('.visible-when-builder__fx').attributes('aria-pressed')).toBe('true')
+		})
+
+		it('typing writes visibleWhen.expression and nothing else', async () => {
+			const wrapper = mountBuilder({ expression: '' })
+			await wrapper.find('.visible-when-builder__expression').setValue('values.age >= 18')
+			expect(wrapper.emitted('update:modelValue').at(-1)).toEqual([{ expression: 'values.age >= 18' }])
+		})
+
+		it('switching fx off clears the condition', async () => {
+			const wrapper = mountBuilder({ expression: 'values.age >= 18' })
+			await wrapper.find('.visible-when-builder__fx').trigger('click')
+			expect(wrapper.emitted('update:modelValue').at(-1)).toEqual([null])
+		})
+
+		it('an advanced condition is still not rewritten, fx or not', () => {
+			const wrapper = mountBuilder({ endpoint: '/x', expression: 'true' })
+			expect(wrapper.find('.visible-when-builder__advanced').exists()).toBe(true)
+			expect(wrapper.find('.visible-when-builder__expression').exists()).toBe(false)
+		})
+	})
 })

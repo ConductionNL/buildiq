@@ -56,6 +56,7 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
  * @uses   \OCA\Buildiq\Service\CallerContext
  * @uses   \OCA\Buildiq\Service\PermissionResolver
  * @uses   \OCA\Buildiq\Support\ObjectRecord
+ * @uses   \OCA\Buildiq\Service\AppOrganisationGuard
  *
  * @category Test
  * @package  Buildiq

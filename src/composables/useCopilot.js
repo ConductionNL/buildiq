@@ -157,11 +157,12 @@ export function useCopilot() {
 	 *   (spec `agent-workspace`).
 	 * @param {string} [versionSlug] - the version the caller is editing; steps that
 	 *   omit a version are settled on it server-side.
+	 * @param {number} [documentFileId] - Files id of a requirements document read server-side.
 	 * @return {Promise<void>}
 	 * @spec openspec/specs/ai-copilot/spec.md
 	 * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
 	 */
-	async function generatePlan(brief, appSlug, agentId, versionSlug) {
+	async function generatePlan(brief, appSlug, agentId, versionSlug, documentFileId) {
 		const thisTurn = ++turn
 		state.value = 'planning'
 		errorMessage.value = ''
@@ -175,6 +176,7 @@ export function useCopilot() {
 				appSlug,
 				agentId,
 				versionSlug,
+				documentFileId,
 			})
 			if (thisTurn !== turn) {
 				return
