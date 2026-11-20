@@ -58,6 +58,19 @@ interface PermissionResolverInterface {
 	public function isAdmin(IUser $caller): bool;
 
 	/**
+	 * Whether the caller may see this Application at all, before any role: a
+	 * shared app always, a scoped app only for a member of its organisation.
+	 *
+	 * @param array<string, mixed> $application The Application, as OpenRegister renders it.
+	 * @param IUser|null           $caller      The caller; null sees only shared apps.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002
+	 */
+	public function seesApplication(array $application, ?IUser $caller): bool;
+
+	/**
 	 * Check whether the caller holds any of the requested roles on the Application.
 	 *
 	 * Iterates the specified role buckets in the Application's `permissions`

@@ -54,6 +54,10 @@ class AppOrganisationGuardCoverageTest extends TestCase {
 		'lib/Controller/AgentsController.php' => 'seesApplication(',
 		'lib/Controller/ExportsController.php' => 'visibleToOrganisation(',
 		'lib/Service/AgentPlanService.php' => 'visibleToOrganisation(',
+		'lib/Service/ApplicationInsightsService.php' => 'seesApplication(',
+		'lib/Service/AutomationWriteService.php' => 'seesApplication(',
+		'lib/Service/CopilotService.php' => 'seesApplication(',
+		'lib/Controller/GitHubSyncController.php' => 'seesApplication(',
 	];
 
 	/**
@@ -66,6 +70,15 @@ class AppOrganisationGuardCoverageTest extends TestCase {
 	 * while compiling an automation whose caller already passed the app's
 	 * role check, and returns nothing of the Application to anyone.
 	 *
+	 * Reviewed for operate-organisation-scoped-apps T04: document generation
+	 * resolves the app of an automation that is already running and runs as the
+	 * app's owner; the export job service only names the schema in a comment;
+	 * the flow channel provisioner writes bindings into the app an install just
+	 * created; the GitHub sync service loads an app for GitHubSyncController,
+	 * whose requireRole() is the door and consults the guard; and the published
+	 * application provider is the shared read behind the navigation (guarded)
+	 * and the dashboard, which reads only a served app's device features.
+	 *
 	 * @var array<int, string>
 	 */
 	private const NO_USER_DOOR = [
@@ -75,25 +88,25 @@ class AppOrganisationGuardCoverageTest extends TestCase {
 		'lib/Listener/ListenerRegistrar.php',
 		'lib/Repair/PopulateApplicationPermissions.php',
 		'lib/Service/AppCatalogue.php',
+		'lib/Service/DocumentGenerationService.php',
+		'lib/Service/ExportJobService.php',
+		'lib/Service/FlowChannelProvisioner.php',
+		'lib/Service/GitHubAppSyncService.php',
+		'lib/Service/PublishedApplicationProvider.php',
 	];
 
 	/**
 	 * Readers of the Application schema not yet reviewed for the organisation
 	 * scope (operate-organisation-scoped-apps, T04 follow-up). Shrink this list;
-	 * never grow it.
+	 * never grow it. The icon service serves a scoped app's own icon to anyone
+	 * who knows its slug; guarding it needs the caller and the guard, and its
+	 * constructor is already at the five-parameter limit, so it waits for a
+	 * smaller seam.
 	 *
 	 * @var array<int, string>
 	 */
 	private const NOT_YET_REVIEWED = [
-		'lib/Service/ApplicationInsightsService.php',
-		'lib/Service/AutomationWriteService.php',
-		'lib/Service/CopilotService.php',
-		'lib/Service/DocumentGenerationService.php',
-		'lib/Service/ExportJobService.php',
-		'lib/Service/FlowChannelProvisioner.php',
-		'lib/Service/GitHubAppSyncService.php',
 		'lib/Service/IconService.php',
-		'lib/Service/PublishedApplicationProvider.php',
 	];
 
 	/**
@@ -104,7 +117,7 @@ class AppOrganisationGuardCoverageTest extends TestCase {
 	public function testEveryNamedDoorConsultsTheGuard(): void {
 		foreach (self::GUARDED as $path => $call) {
 			$source = (string)file_get_contents($this->root() . '/' . $path);
-			$this->assertStringContainsString($call, $source, $path . ' resolves an Application without the organisation guard');
+			$this->assertStringContainsString(needle: $call, haystack: $source, message: $path . ' resolves an Application without the organisation guard');
 		}
 	}//end testEveryNamedDoorConsultsTheGuard()
 
@@ -122,7 +135,7 @@ class AppOrganisationGuardCoverageTest extends TestCase {
 			}
 		}
 
-		$this->assertSame([], $unknown, 'New readers of the Application schema must consult AppOrganisationGuard');
+		$this->assertSame(expected: [], actual: $unknown, message: 'New readers of the Application schema must consult AppOrganisationGuard');
 	}//end testNoNewReaderSkipsTheDecision()
 
 	/**

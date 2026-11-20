@@ -256,6 +256,8 @@ class GitHubSyncController extends Controller {
 	 * @param array<int,string> $roles The role buckets that authorise the call.
 	 *
 	 * @return array<string,mixed>|JSONResponse The Application object, or an error response.
+	 *
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002
 	 */
 	private function requireRole(string $slug, array $roles): array|JSONResponse {
 		$caller = $this->userSession->getUser();
@@ -264,7 +266,8 @@ class GitHubSyncController extends Controller {
 		}
 
 		$application = $this->syncService->loadApplicationBySlug(slug: $slug);
-		if ($application === null) {
+		// Another organisation's scoped app answers like an unknown one, before any role (REQ-BQOS-002).
+		if ($application === null || $this->permissionResolver->seesApplication(application: $application, caller: $caller) === false) {
 			return $this->error(code: 'application_not_found', status: Http::STATUS_NOT_FOUND);
 		}
 
