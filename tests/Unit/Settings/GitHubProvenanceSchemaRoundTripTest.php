@@ -36,6 +36,7 @@ namespace OCA\Buildiq\Tests\Unit\Settings;
 
 use OCA\Buildiq\Service\ApplicationVersionService;
 use OCA\Buildiq\Service\AutomationCompilerService;
+use OCA\Buildiq\Service\ReleaseTestGate;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Service\RegisterService;
@@ -135,6 +136,7 @@ class GitHubProvenanceSchemaRoundTripTest extends TestCase {
 			registerService: $this->createMock(originalClassName: RegisterService::class),
 			registerMapper: $this->createMock(originalClassName: RegisterMapper::class),
 			automationCompiler: $this->createMock(originalClassName: AutomationCompilerService::class),
+			testGate: $this->createMock(originalClassName: ReleaseTestGate::class),
 		);
 	}//end versionService()
 

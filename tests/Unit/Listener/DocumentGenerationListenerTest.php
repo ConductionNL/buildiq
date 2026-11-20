@@ -29,7 +29,9 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Tests\Unit\Listener;
 
+use OCA\Buildiq\Kernel\Contracts\AutomationRunRecorderInterface;
 use OCA\Buildiq\Listener\DocumentGenerationListener;
+use OCA\Buildiq\Service\AutomationRunLog;
 use OCA\Buildiq\Service\DocumentGenerationService;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
@@ -272,4 +274,107 @@ final class DocumentGenerationListenerTest extends TestCase {
 		$this->addToAssertionCount(1);
 
 	}//end testGenerationFailureIsCaughtNotPropagated()
+
+	/**
+	 * Each generated document is one run of its automation, with the trigger and the object as subject.
+	 *
+	 * @return void
+	 */
+	public function testAGeneratedDocumentIsRecordedAsASucceededRun(): void {
+		$runs = $this->recordingListener(error: null);
+
+		$event = new ObjectCreatedEvent($this->objectEntity('permit-application', 'object-uuid-1'));
+		$this->listener->handle($event);
+
+		$this->assertSame(
+			[
+				['start', 'object-created', ['schema' => 'permit-application', 'uuid' => 'object-uuid-1']],
+				['step', 'generateDocument', 'succeeded', 'Document generated'],
+				['finish', 'succeeded', null],
+			],
+			$runs->calls
+		);
+
+	}//end testAGeneratedDocumentIsRecordedAsASucceededRun()
+
+	/**
+	 * A document that could not be generated is a failed run carrying the reason.
+	 *
+	 * @return void
+	 */
+	public function testAFailedDocumentIsRecordedAsAFailedRun(): void {
+		$runs = $this->recordingListener(error: 'Docudesk answered 500');
+
+		$event = new ObjectCreatedEvent($this->objectEntity('permit-application', 'object-uuid-1'));
+		$this->listener->handle($event);
+
+		$this->assertSame(
+			[
+				['start', 'object-created', ['schema' => 'permit-application', 'uuid' => 'object-uuid-1']],
+				['step', 'generateDocument', 'failed', 'Docudesk answered 500'],
+				['finish', 'failed', 'Docudesk answered 500'],
+			],
+			$runs->calls
+		);
+
+	}//end testAFailedDocumentIsRecordedAsAFailedRun()
+
+	/**
+	 * Rebuild the listener with a run log over a recorder that records its calls.
+	 *
+	 * @param string|null $error What generation throws, or null when it succeeds.
+	 *
+	 * @return object{calls: array<int, array<int, mixed>>} The recorded calls.
+	 */
+	private function recordingListener(?string $error): object {
+		$runs     = new \stdClass();
+		$runs->calls = [];
+		$recorder = $this->createMock(AutomationRunRecorderInterface::class);
+		$recorder->method('start')->willReturnCallback(
+			static function (array $automation, string $trigger, ?array $subject, string $actor) use ($runs): array {
+				$runs->calls[] = ['start', $trigger, $subject];
+				return ['automation' => 'a1'];
+			}
+		);
+		$recorder->method('step')->willReturnCallback(
+			static function (array $run, string $action, string $outcome, string $message = '') use ($runs): array {
+				$runs->calls[] = ['step', $action, $outcome, $message];
+				return $run;
+			}
+		);
+		$recorder->method('finish')->willReturnCallback(
+			static function (array $run, string $outcome, ?string $reason = null) use ($runs): string {
+				$runs->calls[] = ['finish', $outcome, $reason];
+				return 'run-1';
+			}
+		);
+
+		$this->objectService->method('findAll')->willReturn(
+			[
+				[
+					'slug' => 'gen-on-create',
+					'enabled' => true,
+					'trigger' => ['type' => 'object-created', 'schema' => 'permit-application'],
+					'actions' => [['type' => 'generateDocument', 'templateId' => 'tpl-1', 'output' => ['attach']]],
+				],
+			]
+		);
+		if ($error === null) {
+			$this->documentGenerator->method('generate')->willReturn(true);
+		} else {
+			$this->documentGenerator->method('generate')->willThrowException(new RuntimeException($error));
+		}
+
+		$container = $this->createMock(ContainerInterface::class);
+		$container->method('get')->willReturn($this->objectService);
+		$this->listener = new DocumentGenerationListener(
+			$container,
+			$this->documentGenerator,
+			new NullLogger(),
+			new AutomationRunLog(recorder: $recorder, objectService: $this->objectService, logger: new NullLogger())
+		);
+
+		return $runs;
+
+	}//end recordingListener()
 }//end class

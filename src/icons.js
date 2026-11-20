@@ -19,6 +19,7 @@ import ArrowUpBoldCircleOutline from 'vue-material-design-icons/ArrowUpBoldCircl
 import BookOpenVariantOutline from 'vue-material-design-icons/BookOpenVariantOutline.vue'
 import ChartBoxOutline from 'vue-material-design-icons/ChartBoxOutline.vue'
 import CheckCircle from 'vue-material-design-icons/CheckCircle.vue'
+import ClipboardCheckOutline from 'vue-material-design-icons/ClipboardCheckOutline.vue'
 import ClipboardText from 'vue-material-design-icons/ClipboardText.vue'
 import CogOutline from 'vue-material-design-icons/CogOutline.vue'
 import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
@@ -49,6 +50,7 @@ import Sitemap from 'vue-material-design-icons/Sitemap.vue'
 import SourceBranch from 'vue-material-design-icons/SourceBranch.vue'
 import StoreOutline from 'vue-material-design-icons/StoreOutline.vue'
 import Table from 'vue-material-design-icons/Table.vue'
+import TestTube from 'vue-material-design-icons/TestTube.vue'
 import TrayArrowDown from 'vue-material-design-icons/TrayArrowDown.vue'
 import VectorPolylinePlus from 'vue-material-design-icons/VectorPolylinePlus.vue'
 import ViewDashboardOutline from 'vue-material-design-icons/ViewDashboardOutline.vue'
@@ -76,6 +78,7 @@ export default {
 	BookOpenVariantOutline,
 	ChartBoxOutline,
 	CheckCircle,
+	ClipboardCheckOutline,
 	ClipboardText,
 	ContentSaveEditOutline,
 	DatabaseExportOutline,
@@ -97,6 +100,7 @@ export default {
 	SourceBranch,
 	StoreOutline,
 	Table,
+	TestTube,
 	VectorPolylinePlus,
 	ViewDashboardOutline,
 	ViewGridOutline,
