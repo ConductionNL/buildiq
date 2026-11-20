@@ -29,6 +29,22 @@
 				</p>
 			</div>
 
+			<h3 class="settings-subheading">
+				{{ t('buildiq', 'Script steps') }}
+			</h3>
+			<div class="form-group">
+				<label for="allow_script_steps" class="settings-checkbox">
+					<input
+						id="allow_script_steps"
+						v-model="form.allow_script_steps"
+						type="checkbox" />
+					{{ t('buildiq', 'Allow script steps in automations') }}
+				</label>
+				<p class="settings-help">
+					{{ t('buildiq', 'App owners may then add a script step to an automation. The script runs only in the OpenRegister code runner. Turning this off disables every automation that holds a script step. Off by default.') }}
+				</p>
+			</div>
+
 			<!-- `section-store` is the anchor lib/Settings/connections.json links the
 				Template store row to (adopt-connection-registry). Keep the id stable. -->
 			<h3 id="section-store" class="settings-subheading">
@@ -136,6 +152,7 @@ export default {
 				registry_register: 'buildiq',
 				registry_token: '',
 				allow_offline_apps: false,
+				allow_script_steps: false,
 			},
 
 			tokenIsSet: false,
@@ -174,6 +191,7 @@ export default {
 		this.tokenIsSet = !!settings.registry_token_set
 		this.allowPageCode = settings.allow_page_code === true
 		this.form.allow_offline_apps = settings.allow_offline_apps === true
+		this.form.allow_script_steps = settings.allow_script_steps === true
 	},
 
 	methods: {
@@ -193,6 +211,7 @@ export default {
 				registry_register: this.form.registry_register,
 				allow_page_code: this.allowPageCode,
 				allow_offline_apps: this.form.allow_offline_apps === true,
+				allow_script_steps: this.form.allow_script_steps === true,
 			}
 			if (this.form.registry_token.trim().length > 0) {
 				payload.registry_token = this.form.registry_token
