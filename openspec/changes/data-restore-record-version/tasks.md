@@ -6,4 +6,4 @@
 - [ ] **T04**: Playwright `tests/e2e/record-restore.spec.ts`: a maker turns on restore for a detail page, an app user edits a record twice, restores it to the first state, and sees the restored value and a new newest entry; a second user without edit rights sees no button (REQ-BQRR-003, REQ-BQRR-004).
 - [ ] **T05**: Ask the openregister lane to state whether a restored state is validated against the current schema (`RevertHandler` saves through `ObjectEntityMapper::update()`), and to align the route path in its `content-versioning` spec with `routes.php:1453`.
 - [x] **T06**: English and Dutch strings for the section, the switches and the confirmation (`l10n/en.json`, `l10n/nl.json`), and a paragraph in `docs/user-guide/` on letting users restore a record.
-- [ ] **T07**: Run `openspec validate data-restore-record-version --strict`.
+- [x] **T07**: Run `openspec validate data-restore-record-version --strict`. Valid.

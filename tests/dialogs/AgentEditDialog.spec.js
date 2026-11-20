@@ -346,7 +346,8 @@ describe('AgentEditDialog knowledge (REQ-BQAG-001)', () => {
 			'/apps/openregister/api/objects/buildiq/buildAgent/agent-1/files',
 			{ name: 'huisstijl-formulieren.md', content: 'Labels in sentence case.' },
 		)
-		expect(axios.get).not.toHaveBeenCalled()
+		// Only the copilot health probe (T08) reads on open; nothing is listed on save.
+		expect(axios.get.mock.calls.map(([url]) => url).filter((url) => !String(url).endsWith('/api/copilot/health'))).toEqual([])
 		expect(wrapper.emitted('saved')).toBeTruthy()
 	})
 
@@ -380,6 +381,39 @@ describe('AgentEditDialog knowledge (REQ-BQAG-001)', () => {
 		expect(error.exists()).toBe(true)
 		expect(error.text()).toContain('extra.md has 5,000 characters, but only 2,000 characters of room are left.')
 		expect(wrapper.vm.pendingKnowledge).toEqual({})
+	})
+
+	it('T08: with knowledge search on, a file over the budget is added and the hint says why', async () => {
+		axios.get.mockImplementation((url) => Promise.resolve(
+			String(url).endsWith('/api/copilot/health')
+				? { data: { status: 'ok', knowledgeRetrieval: true } }
+				: { data: { results: [] } },
+		))
+		const wrapper = factory(existing)
+		await openDialog(wrapper)
+		await flush()
+
+		expect(wrapper.vm.knowledgeRetrieval).toBe(true)
+		expect(wrapper.find('[data-testid="agent-knowledge-retrieval"]').exists()).toBe(true)
+
+		await wrapper.vm.onKnowledgePick(pick('handboek.md', 'x'.repeat(50000)))
+		await flush()
+
+		expect(wrapper.vm.knowledgeError).toBe('')
+		expect(wrapper.vm.knowledge.map((k) => k.fileName)).toEqual(['old.md', 'handboek.md'])
+	})
+
+	it('T08: a failed health probe keeps the budget', async () => {
+		axios.get.mockImplementation((url) => (String(url).endsWith('/api/copilot/health')
+			? Promise.reject(Object.assign(new Error('503'), { response: { status: 503, data: { status: 'unavailable', reason: 'no_provider' } } }))
+			: Promise.resolve({ data: { results: [] } })))
+		const wrapper = factory(existing)
+		await openDialog(wrapper)
+		await flush()
+
+		expect(wrapper.vm.knowledgeRetrieval).toBe(false)
+		await wrapper.vm.onKnowledgePick(pick('extra.md', 'x'.repeat(5000)))
+		expect(wrapper.vm.knowledgeError).toContain('only 2,000 characters of room are left')
 	})
 
 	it('refuses a type other than text or Markdown, and a name already listed', async () => {
@@ -422,7 +456,8 @@ describe('AgentEditDialog knowledge (REQ-BQAG-001)', () => {
 		await flush()
 
 		expect(axios.post).not.toHaveBeenCalled()
-		expect(axios.get).not.toHaveBeenCalled()
+		// Only the copilot health probe (T08) reads on open; nothing is listed on save.
+		expect(axios.get.mock.calls.map(([url]) => url).filter((url) => !String(url).endsWith('/api/copilot/health'))).toEqual([])
 		expect(axios.delete).not.toHaveBeenCalled()
 	})
 })

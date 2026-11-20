@@ -251,17 +251,7 @@ class GitHubCatalogService implements GitHubCatalogServiceInterface {
 			// this is not an empty catalogue. Returning here also skips the
 			// cache write below, so one bad round is not served to every later
 			// caller for the whole TTL.
-			$failure = self::OUTCOME_UNREACHABLE;
-			if ($hits['rateLimited'] === true) {
-				$failure = self::OUTCOME_RATE_LIMITED;
-			}
-
-			return [
-				'outcome' => $failure,
-				'cards' => [],
-				'brokerUsed' => $hits['brokerUsed'],
-				'rateLimited' => $hits['rateLimited'],
-			];
+			return self::failedSearch(hits: $hits);
 		}
 
 		$payload = [
@@ -281,6 +271,27 @@ class GitHubCatalogService implements GitHubCatalogServiceInterface {
 
 		return $payload;
 	}//end search()
+
+	/**
+	 * The answer to a search in which no topic answered: unreachable, or rate-limited when that was why.
+	 *
+	 * @param array<string, mixed> $hits The collected topic hits, with `brokerUsed` and `rateLimited`.
+	 *
+	 * @return array<string, mixed> The `{outcome, cards, brokerUsed, rateLimited}` answer, with no cards.
+	 */
+	private static function failedSearch(array $hits): array {
+		$failure = self::OUTCOME_UNREACHABLE;
+		if ($hits['rateLimited'] === true) {
+			$failure = self::OUTCOME_RATE_LIMITED;
+		}
+
+		return [
+			'outcome' => $failure,
+			'cards' => [],
+			'brokerUsed' => $hits['brokerUsed'],
+			'rateLimited' => $hits['rateLimited'],
+		];
+	}//end failedSearch()
 
 	/**
 	 * Query every accepted discovery topic and merge the hits.
@@ -396,25 +407,10 @@ class GitHubCatalogService implements GitHubCatalogServiceInterface {
 			return $failed;
 		}
 
-		$decoded = json_decode($result['body'], true);
-		if (is_array($decoded) === false || is_array($decoded['items'] ?? null) === false) {
-			// A 200 whose body is not the documented search shape means GitHub
-			// never actually answered this query: a proxy error page, a
-			// truncated response, an HTML interstitial. Counting it as an empty
-			// success would make the UI say "no apps match your search", telling
-			// the user their query found nothing when in fact the lookup failed.
-			// A lookup failure must not wear the words of a judgement, so this
-			// query counts as failed.
+		$items = self::searchItems(body: $result['body']);
+		if ($items === null) {
 			return $failed;
 		}
-
-		// Shape-check here so the caller's merge loop can trust every entry.
-		$items = array_values(
-			array_filter(
-				$decoded['items'],
-				static fn ($item): bool => is_array($item)
-			)
-		);
 
 		return [
 			'ok' => true,
@@ -423,6 +419,36 @@ class GitHubCatalogService implements GitHubCatalogServiceInterface {
 			'rateLimited' => $result['rateLimited'],
 		];
 	}//end fetchTopic()
+
+	/**
+	 * The repository entries of a search response body, or null when the body is not the search shape.
+	 *
+	 * A 200 whose body is not the documented search shape means GitHub
+	 * never actually answered this query: a proxy error page, a
+	 * truncated response, an HTML interstitial. Counting it as an empty
+	 * success would make the UI say "no apps match your search", telling
+	 * the user their query found nothing when in fact the lookup failed.
+	 * A lookup failure must not wear the words of a judgement, so this
+	 * query counts as failed.
+	 *
+	 * @param string $body The response body.
+	 *
+	 * @return array<int, array<mixed>>|null The entries that are objects, or null.
+	 */
+	private static function searchItems(string $body): ?array {
+		$decoded = json_decode($body, true);
+		if (is_array($decoded) === false || is_array($decoded['items'] ?? null) === false) {
+			return null;
+		}
+
+		// Shape-check here so the caller's merge loop can trust every entry.
+		return array_values(
+			array_filter(
+				$decoded['items'],
+				static fn ($item): bool => is_array($item)
+			)
+		);
+	}//end searchItems()
 
 	/**
 	 * Build the installable cards for the merged hits.
