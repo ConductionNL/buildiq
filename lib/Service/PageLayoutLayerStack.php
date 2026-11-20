@@ -336,12 +336,9 @@ final class PageLayoutLayerStack implements PageLayoutLayerStackInterface {
 	 * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/specs/screen-override-layers/spec.md#requirement-an-override-can-be-bound-to-an-organisation-req-obso-007
 	 */
 	private function activeOrganisationOf(string $uid): string {
-		if ($this->container === null) {
-			return '';
-		}
-
 		try {
-			$mapper = $this->container->get(OrganisationMapper::class);
+			// Without a container, or with something other than the mapper, no organisation is active.
+			$mapper = $this->container?->get(OrganisationMapper::class);
 			if (($mapper instanceof OrganisationMapper) === false) {
 				return '';
 			}
