@@ -26,6 +26,8 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Support;
 
+use OCA\Buildiq\Exception\ReleaseOverrideRefusedException;
+
 /**
  * An owner's "release anyway", or a caller's attempt at one.
  */
@@ -79,4 +81,29 @@ final class ReleaseOverride {
 
 		return new self(reason: $reason, userId: $userId, byOwner: $byOwner);
 	}//end fromRequest()
+
+	/**
+	 * Refuse the override unless an owner asks and gives a reason.
+	 *
+	 * @return void
+	 *
+	 * @throws ReleaseOverrideRefusedException When the caller is not an owner, or gave no reason.
+	 *
+	 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
+	 */
+	public function assertMayRelease(): void {
+		if ($this->byOwner === false) {
+			throw new ReleaseOverrideRefusedException(
+				errorCode: ReleaseOverrideRefusedException::NOT_OWNER,
+				message: 'Only an owner of the app may release past failing tests.'
+			);
+		}
+
+		if (trim($this->reason) === '') {
+			throw new ReleaseOverrideRefusedException(
+				errorCode: ReleaseOverrideRefusedException::REASON_REQUIRED,
+				message: 'Releasing past failing tests needs a reason.'
+			);
+		}
+	}//end assertMayRelease()
 }//end class

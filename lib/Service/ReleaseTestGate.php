@@ -37,13 +37,10 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
-use OCA\Buildiq\Exception\ReleaseOverrideRefusedException;
 use OCA\Buildiq\Exception\ReleaseTestsFailedException;
 use OCA\Buildiq\Kernel\Contracts\ApplicationVersionServiceInterface;
-use OCA\Buildiq\Support\ObjectRecord;
 use OCA\Buildiq\Support\ReleaseOverride;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
-use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCP\AppFramework\Utility\ITimeFactory;
@@ -94,7 +91,6 @@ class ReleaseTestGate {
 	 * @return array<string, mixed> The stored run (its counts, report and any override).
 	 *
 	 * @throws ReleaseTestsFailedException     When a check fails and no override was given.
-	 * @throws ReleaseOverrideRefusedException When the override is not the owner's, or has no reason.
 	 * @throws RuntimeException                When an override cannot be recorded.
 	 *
 	 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
@@ -112,7 +108,7 @@ class ReleaseTestGate {
 			);
 		}
 
-		self::assertMayOverride(override: $override);
+		$override->assertMayRelease();
 
 		$run = $this->record(application: $application, version: $version, trigger: $trigger, report: $report, override: $override);
 		if (($run['id'] ?? '') === '') {
@@ -148,30 +144,6 @@ class ReleaseTestGate {
 		return $this->record(application: $application, version: $version, trigger: self::TRIGGER_MANUAL, report: $report, override: null);
 	}//end runManually()
 
-	/**
-	 * Refuse an override that is not an owner's, or that gives no reason.
-	 *
-	 * @param ReleaseOverride $override The override asked for.
-	 *
-	 * @return void
-	 *
-	 * @throws ReleaseOverrideRefusedException When it is not allowed.
-	 */
-	private static function assertMayOverride(ReleaseOverride $override): void {
-		if ($override->byOwner === false) {
-			throw new ReleaseOverrideRefusedException(
-				errorCode: ReleaseOverrideRefusedException::NOT_OWNER,
-				message: 'Only an owner of the app may release past failing tests.'
-			);
-		}
-
-		if (trim($override->reason) === '') {
-			throw new ReleaseOverrideRefusedException(
-				errorCode: ReleaseOverrideRefusedException::REASON_REQUIRED,
-				message: 'Releasing past failing tests needs a reason.'
-			);
-		}
-	}//end assertMayOverride()
 
 	/**
 	 * Store one run. A store failure is logged and answers the run without an id.
@@ -228,14 +200,18 @@ class ReleaseTestGate {
 	 *
 	 * @return string
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private static function savedId(mixed $saved): string {
-		if ($saved instanceof ObjectEntity === true && (string)$saved->getUuid() !== '') {
+		// The stored entity names its uuid itself; anything else is read as an array.
+		if (is_object($saved) === true && method_exists($saved, 'getUuid') === true && (string)$saved->getUuid() !== '') {
 			return (string)$saved->getUuid();
 		}
 
-		return self::idOf(object: ObjectRecord::castArray(object: $saved));
+		if (is_object($saved) === true && method_exists($saved, 'jsonSerialize') === true) {
+			$saved = $saved->jsonSerialize();
+		}
+
+		return self::idOf(object: (array)$saved);
 	}//end savedId()
 
 	/**

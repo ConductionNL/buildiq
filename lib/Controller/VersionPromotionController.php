@@ -119,6 +119,8 @@ class VersionPromotionController extends Controller {
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-59
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-65
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ReleaseOverride::fromRequest() is a pure value-object factory.
 	 */
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 5, period: 60)]

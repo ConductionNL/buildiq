@@ -812,6 +812,8 @@ class ApplicationVersionsController extends Controller {
 	 * @return JSONResponse 200 with the release result, or an error envelope
 	 *
 	 * @spec openspec/specs/application-versions/spec.md
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ReleaseOverride::fromRequest() is a pure value-object factory.
 	 */
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 10, period: 60)]
