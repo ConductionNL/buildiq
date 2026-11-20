@@ -38,7 +38,10 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\StoredDecisionTablesInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCA\OpenRegister\Service\Dmn\DecisionTableStore;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
@@ -50,12 +53,7 @@ use UnexpectedValueException;
  *
  * @spec openspec/changes/decision-tables-live-in-openregister/specs/business-rules-engine/spec.md
  */
-class StoredDecisionTables {
-
-	/**
-	 * The prefix of every key this app writes.
-	 */
-	public const KEY_PREFIX = 'buildiq.';
+class StoredDecisionTables implements StoredDecisionTablesInterface {
 
 	/**
 	 * Constructor.
@@ -200,9 +198,13 @@ class StoredDecisionTables {
 		try {
 			$this->objects->saveObject(
 				object: $row,
-				register: DecisionTableStore::REGISTER,
-				schema: DecisionTableStore::SCHEMA,
-				uuid: $this->existingUuid(key: $key),
+				options: new ObjectSaveOptions(
+					target: new ObjectFindTarget(
+							register: DecisionTableStore::REGISTER,
+							schema: DecisionTableStore::SCHEMA
+						),
+					uuid: $this->existingUuid(key: $key)
+				),
 				_rbac: false,
 				_multitenancy: false
 			);
@@ -266,4 +268,21 @@ class StoredDecisionTables {
 		return null;
 
 	}//end existingUuid()
+
+	/**
+	 * Inputs checked against the columns a rule set's decision table declares.
+	 *
+	 * @param array<string,mixed> $ruleSet The resolved rule set.
+	 * @param array<string,mixed> $inputs  What the caller sent.
+	 *
+	 * @return array<string,mixed>|null The declared inputs only, or null when they are refused.
+	 *
+	 * @spec openspec/changes/rules-evaluation-for-other-apps/specs/rules-evaluation-for-other-apps/spec.md#requirement-another-app-evaluates-a-rule-set-through-a-typed-command-req-bqrx-002
+	 */
+	public function checkedInputs(array $ruleSet, array $inputs): ?array {
+		$tables  = $this->forRuleSet(ruleSet: $ruleSet);
+		$columns = RuleSetColumns::fromTable(table: (array)($tables[0] ?? []));
+
+		return RuleSetColumns::checkInputs(columns: $columns['inputs'], inputs: $inputs);
+	}//end checkedInputs()
 }//end class

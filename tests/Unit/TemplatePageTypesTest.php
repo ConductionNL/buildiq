@@ -15,6 +15,9 @@
  * @link https://buildiq.nl
  *
  * @spec exclude mechanical template-integrity guard, not a product behaviour
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);

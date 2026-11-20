@@ -3,6 +3,9 @@
 /**
  * Registration Form Leaf Provider
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * `buildiq-registration-form`. A consuming app places this leaf on its own type
  * object and asks: which form should I show, for this audience and this
  * channel. Buildiq answers with the form, its presets and the person's own
@@ -31,18 +34,18 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-005, REQ-OBRF-006, REQ-OBRF-009)
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
 
 namespace OCA\Buildiq\Integration;
 
-use OCA\Buildiq\Service\RegistrationFormPresenter;
+use OCA\Buildiq\Kernel\Contracts\RegistrationFormPresenterInterface;
+use OCA\Buildiq\Service\HelperFactory;
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
-use OCA\OpenRegister\Service\Integration\IntegrationProvider;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCP\IAppConfig;
 use OCP\IUserSession;
 use RuntimeException;
@@ -52,7 +55,7 @@ use RuntimeException;
  *
  * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-006)
  */
-final class RegistrationFormLeafProvider implements IntegrationProvider {
+final class RegistrationFormLeafProvider extends AppLocalLeafProvider {
 	/**
 	 * The leaf id, equal on both halves so gate-24 can pair them.
 	 *
@@ -75,12 +78,19 @@ final class RegistrationFormLeafProvider implements IntegrationProvider {
 	private const SCHEMA_DRAFT = 'formDraft';
 
 	/**
+	 * The shape a form takes on its way out.
+	 *
+	 * @var RegistrationFormPresenterInterface
+	 */
+	private readonly RegistrationFormPresenterInterface $presenter;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ObjectServiceInterface $objectService OpenRegister's object service.
-	 * @param IAppConfig $appConfig App config, for the register slug.
-	 * @param IUserSession $userSession The calling user, who owns the drafts.
-	 * @param RegistrationFormPresenter $presenter The shape a form takes on its way out.
+	 * @param ObjectServiceInterface                  $objectService OpenRegister's object service.
+	 * @param IAppConfig                              $appConfig     App config, for the register slug.
+	 * @param IUserSession                            $userSession   The calling user, who owns the drafts.
+	 * @param RegistrationFormPresenterInterface|null $presenter     How a form is shaped on its way out; null: the default.
 	 *
 	 * @return void
 	 */
@@ -88,8 +98,9 @@ final class RegistrationFormLeafProvider implements IntegrationProvider {
 		private readonly ObjectServiceInterface $objectService,
 		private readonly IAppConfig $appConfig,
 		private readonly IUserSession $userSession,
-		private readonly RegistrationFormPresenter $presenter = new RegistrationFormPresenter(),
+		?RegistrationFormPresenterInterface $presenter = null,
 	) {
+		$this->presenter = ($presenter ?? (new HelperFactory())->registrationFormPresenter());
 	}//end __construct()
 
 	/**
@@ -129,60 +140,6 @@ final class RegistrationFormLeafProvider implements IntegrationProvider {
 	}//end getGroup()
 
 	/**
-	 * The app that must be installed for this leaf to answer.
-	 *
-	 * @return string The app id.
-	 */
-	public function getRequiredApp(): string {
-		return 'buildiq';
-	}//end getRequiredApp()
-
-	/**
-	 * Forms live in buildiq's own register.
-	 *
-	 * @return string The storage strategy.
-	 */
-	public function getStorageStrategy(): string {
-		return 'app-local';
-	}//end getStorageStrategy()
-
-	/**
-	 * No OpenConnector source.
-	 *
-	 * @return string|null The source.
-	 */
-	public function getOpenConnectorSource(): ?string {
-		return null;
-	}//end getOpenConnectorSource()
-
-	/**
-	 * The leaf answers whenever buildiq is installed.
-	 *
-	 * @return bool True.
-	 */
-	public function isEnabled(): bool {
-		return true;
-	}//end isEnabled()
-
-	/**
-	 * Reading a form needs no right of its own; a draft is scoped to its owner.
-	 *
-	 * @return string|null Null.
-	 */
-	public function requiresPermission(): ?string {
-		return null;
-	}//end requiresPermission()
-
-	/**
-	 * The leaf needs no credentials of its own.
-	 *
-	 * @return array<string, mixed> The requirements.
-	 */
-	public function authRequirements(): array {
-		return [];
-	}//end authRequirements()
-
-	/**
 	 * The published forms bound to this type object, defaults first, with the
 	 * calling user's own drafts beside them.
 	 *
@@ -198,38 +155,11 @@ final class RegistrationFormLeafProvider implements IntegrationProvider {
 	public function list(string $register, string $schema, string $objectId, array $filters = []): array {
 		$forms = $this->publishedFormsFor(register: $register, schema: $schema, objectId: $objectId);
 
-		$audience = (string)($filters['audience'] ?? '');
-		if ($audience !== '') {
-			$forms = array_values(
-				array_filter($forms, static fn (array $form): bool => (string)($form['audience'] ?? '') === $audience)
-			);
-		}
-
-		$name = (string)($filters['name'] ?? '');
-		if ($name !== '') {
-			$forms = array_values(
-				array_filter($forms, static fn (array $form): bool => (string)($form['name'] ?? '') === $name)
-			);
-		}
+		$forms = self::matchingFilters(forms: $forms, filters: $filters);
 
 		$channel = (string)($filters['channel'] ?? '');
 		if ($channel !== '') {
-			// The channel's own forms first, then the forms that declare no
-			// channel. A channel with no form of its own must fall back rather
-			// than answer nothing, or adding a channel silently removes the form
-			// from every application that arrives through it.
-			$onChannel = [];
-			$channelless = [];
-			foreach ($forms as $form) {
-				$formChannel = (string)($form['channel'] ?? '');
-				if ($formChannel === $channel) {
-					$onChannel[] = $form;
-				} elseif ($formChannel === '') {
-					$channelless[] = $form;
-				}
-			}
-
-			$forms = array_merge($onChannel, $channelless);
+			$forms = self::channelFirst(forms: $forms, channel: $channel);
 		}
 
 		$forms = $this->presenter->defaultsFirst(forms: $forms);
@@ -246,6 +176,58 @@ final class RegistrationFormLeafProvider implements IntegrationProvider {
 			'drafts' => $this->draftsOfCaller(forms: $items),
 		];
 	}//end list()
+
+	/**
+	 * The forms whose `audience` and `name` equal the filter's, for each of the two the filter sets.
+	 *
+	 * @param array<int, array<string, mixed>> $forms   The forms.
+	 * @param array<string, mixed>             $filters Optional `audience` and `name`.
+	 *
+	 * @return array<int, array<string, mixed>> The matching forms, in their order.
+	 *
+	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-006, REQ-OBRF-009)
+	 */
+	private static function matchingFilters(array $forms, array $filters): array {
+		foreach (['audience', 'name'] as $key) {
+			$wanted = (string)($filters[$key] ?? '');
+			if ($wanted !== '') {
+				$forms = array_values(
+					array_filter($forms, static fn (array $form): bool => (string)($form[$key] ?? '') === $wanted)
+				);
+			}
+		}
+
+		return $forms;
+	}//end matchingFilters()
+
+	/**
+	 * The channel's own forms first, then the forms that declare no channel.
+	 *
+	 * A channel with no form of its own must fall back rather than answer
+	 * nothing, or adding a channel silently removes the form from every
+	 * application that arrives through it.
+	 *
+	 * @param array<int, array<string, mixed>> $forms   The forms.
+	 * @param string                           $channel The channel asked for.
+	 *
+	 * @return array<int, array<string, mixed>> The forms on the channel, then the channel-less ones.
+	 *
+	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-006, REQ-OBRF-009)
+	 */
+	private static function channelFirst(array $forms, string $channel): array {
+		$onChannel = [];
+		$channelless = [];
+		foreach ($forms as $form) {
+			$formChannel = (string)($form['channel'] ?? '');
+			if ($formChannel === $channel) {
+				$onChannel[] = $form;
+			} elseif ($formChannel === '') {
+				$channelless[] = $form;
+			}
+		}
+
+		return array_merge($onChannel, $channelless);
+	}//end channelFirst()
 
 	/**
 	 * One form by id, scoped to the type object it is bound to.
@@ -320,8 +302,7 @@ final class RegistrationFormLeafProvider implements IntegrationProvider {
 
 		$saved = $this->objectService->saveObject(
 			object: $draft,
-			register: $this->registerSlug(),
-			schema: self::SCHEMA_DRAFT,
+			options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $this->registerSlug(), schema: self::SCHEMA_DRAFT))
 		);
 
 		$created = $saved->getObject();
@@ -392,6 +373,7 @@ final class RegistrationFormLeafProvider implements IntegrationProvider {
 	 * @param array<int, array<string, mixed>> $forms The served forms.
 	 *
 	 * @return array<int, array<string, mixed>> The drafts.
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function draftsOfCaller(array $forms): array {
 		$user = $this->userSession->getUser();
@@ -413,7 +395,8 @@ final class RegistrationFormLeafProvider implements IntegrationProvider {
 
 		$mine = [];
 		foreach ($rows as $row) {
-			if (is_array($row) === false) {
+			$row = ObjectRecord::toArray(object: $row);
+			if ($row === []) {
 				continue;
 			}
 
@@ -440,12 +423,16 @@ final class RegistrationFormLeafProvider implements IntegrationProvider {
 	 * @param string $objectId The host object's id, read as the type value.
 	 *
 	 * @return array<int, array<string, mixed>> The forms.
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function publishedFormsFor(string $register, string $schema, string $objectId): array {
+		// No `register` filter: findAll() reads `filters.register` as the register
+		// to query, not as a property, so it would look for these rows in the
+		// host's register. The loop below matches the property instead.
 		$rows = $this->objectService
 			->setRegister($this->registerSlug())
 			->setSchema(self::SCHEMA_FORM)
-			->findAll(['filters' => ['register' => $register], 'limit' => 500]);
+			->findAll(['limit' => 500]);
 
 		if (is_array($rows) === false) {
 			return [];
@@ -453,8 +440,8 @@ final class RegistrationFormLeafProvider implements IntegrationProvider {
 
 		$mine = [];
 		foreach ($rows as $row) {
-			if (is_array($row) === false
-				|| (string)($row['status'] ?? '') !== 'published'
+			$row = ObjectRecord::toArray(object: $row);
+			if ((string)($row['status'] ?? '') !== 'published'
 				|| (string)($row['register'] ?? '') !== $register
 				|| (string)($row['schema'] ?? '') !== $schema
 				|| (string)($row['typeValue'] ?? '') !== $objectId

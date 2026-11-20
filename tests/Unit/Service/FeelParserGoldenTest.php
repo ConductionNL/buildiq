@@ -33,6 +33,7 @@ use PHPUnit\Framework\TestCase;
  * and for each syntax-error message.
  *
  * @covers \OCA\Buildiq\Service\FeelParser
+ * @uses \OCA\Buildiq\Service\FeelLexer
  */
 final class FeelParserGoldenTest extends TestCase {
 

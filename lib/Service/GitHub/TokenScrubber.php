@@ -34,7 +34,7 @@ namespace OCA\Buildiq\Service\GitHub;
  * `Authorization`/`token`/`Bearer`/`Basic` keyword or an `access_token=` parameter,
  * and the password part of a URL.
  *
- * @spec openspec/changes/openbuild-exporter/tasks.md#task-6.2
+ * @spec openspec/changes/archive/2026-06-14-openbuild-exporter/tasks.md#task-6.2
  */
 final class TokenScrubber {
 	/**
@@ -66,7 +66,7 @@ final class TokenScrubber {
 	 *
 	 * @return string Scrubbed text.
 	 *
-	 * @spec openspec/changes/openbuild-exporter/tasks.md#task-6.2
+	 * @spec openspec/changes/archive/2026-06-14-openbuild-exporter/tasks.md#task-6.2
 	 */
 	public static function scrub(string $message): string {
 		$scrubbed = (string)preg_replace(self::TOKEN_PATTERN, '[redacted-token]', $message);

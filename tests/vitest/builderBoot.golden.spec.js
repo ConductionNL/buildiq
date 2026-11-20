@@ -23,6 +23,7 @@ const world = vi.hoisted(() => ({
 vi.mock('@conduction/nextcloud-vue', async (importOriginal) => ({
 	...(await importOriginal()),
 	CnAppNav: { name: 'CnAppNav', render: () => null },
+	CnFormPage: { name: 'CnFormPage', render: () => null },
 	CnAppRoot: { name: 'CnAppRoot', render: () => null },
 	CnPageRenderer: { name: 'CnPageRenderer', render: () => null },
 	defaultPageTypes: { index: 'I', detail: 'D' },

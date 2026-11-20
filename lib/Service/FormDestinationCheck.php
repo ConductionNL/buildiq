@@ -3,6 +3,9 @@
 /**
  * Form Destination Check
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * Asks OpenRegister whether a form's mapping is valid against the object it
  * submits into. Decision 179 (Ruben, 10 October 2026): "when building a form
  * we should know the destination object and the form should at least be valid
@@ -33,9 +36,6 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/forms-are-valid-against-their-destination/specs/form-destination-authoring/spec.md#requirement-every-buildiq-form-must-be-valid-against-its-destination-before-it-is-published
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -44,6 +44,7 @@ namespace OCA\Buildiq\Service;
 
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use ReflectionMethod;
 use Throwable;
 
 /**
@@ -58,6 +59,13 @@ class FormDestinationCheck {
 	 * @var string
 	 */
 	public const VALIDATOR = 'OCA\\OpenRegister\\Service\\Form\\FormDestinationValidator';
+
+	/**
+	 * OpenRegister main's argument object for the validator: the schema and the audience.
+	 *
+	 * @var string
+	 */
+	public const DESTINATION = 'OCA\\OpenRegister\\Service\\Form\\FormDestination';
 
 	/**
 	 * Finding code: the form names no register or schema.
@@ -111,29 +119,9 @@ class FormDestinationCheck {
 			];
 		}
 
-		try {
-			$entity = $this->schemas->schemaOf(registerSlug: $register, schemaSlug: $schema);
-		} catch (Throwable $e) {
-			$this->logger->warning(
-				'Buildiq: destination check could not read schema "' . $schema . '" in register "' . $register . '": ' . $e->getMessage(),
-				['exception' => $e]
-			);
-
-			return [
-				self::finding(
-					code: self::DESTINATION_UNCHECKED,
-					message: sprintf('The schema "%s" could not be read, so the form could not be checked and is not saved.', $schema)
-				),
-			];
-		}
-
-		if ($entity === null) {
-			return [
-				self::finding(
-					code: self::DESTINATION_UNCHECKED,
-					message: sprintf('The register "%s" holds no schema called "%s", so the form has nowhere to save into.', $register, $schema)
-				),
-			];
+		$destination = $this->readDestination(register: $register, schema: $schema);
+		if ($destination['findings'] !== []) {
+			return $destination['findings'];
 		}
 
 		$validator = $this->validator();
@@ -146,13 +134,102 @@ class FormDestinationCheck {
 			];
 		}
 
-		$findings = $validator->validate(mapping: $mapping, schema: $entity, options: $options);
+		return self::listedFindings(
+			findings: $this->validateWith(validator: $validator, mapping: $mapping, schema: $destination['entity'], options: $options)
+		);
+	}//end check()
+
+	/**
+	 * The destination schema, or the finding that says why it cannot be checked against.
+	 *
+	 * @param string $register The destination register slug.
+	 * @param string $schema   The destination schema slug.
+	 *
+	 * @return array{entity: object|null, findings: array<int, array<string, mixed>>}
+	 *
+	 * @spec openspec/changes/forms-are-valid-against-their-destination/specs/form-destination-authoring/spec.md#requirement-every-buildiq-form-must-be-valid-against-its-destination-before-it-is-published
+	 */
+	private function readDestination(string $register, string $schema): array {
+		try {
+			$entity = $this->schemas->schemaOf(registerSlug: $register, schemaSlug: $schema);
+		} catch (Throwable $e) {
+			$this->logger->warning(
+				'Buildiq: destination check could not read schema "' . $schema . '" in register "' . $register . '": ' . $e->getMessage(),
+				['exception' => $e]
+			);
+
+			return [
+				'entity'   => null,
+				'findings' => [
+					self::finding(
+						code: self::DESTINATION_UNCHECKED,
+						message: sprintf('The schema "%s" could not be read, so the form could not be checked and is not saved.', $schema)
+					),
+				],
+			];
+		}
+
+		if ($entity === null) {
+			return [
+				'entity'   => null,
+				'findings' => [
+					self::finding(
+						code: self::DESTINATION_UNCHECKED,
+						message: sprintf('The register "%s" holds no schema called "%s", so the form has nowhere to save into.', $register, $schema)
+					),
+				],
+			];
+		}
+
+		return ['entity' => $entity, 'findings' => []];
+	}//end readDestination()
+
+	/**
+	 * The validator's answer as a list of findings; anything but an array is no finding.
+	 *
+	 * @param mixed $findings What the validator answered.
+	 *
+	 * @return array<int, array<string, mixed>>
+	 *
+	 * @spec openspec/changes/forms-are-valid-against-their-destination/specs/form-destination-authoring/spec.md#requirement-every-buildiq-form-must-be-valid-against-its-destination-before-it-is-published
+	 */
+	private static function listedFindings(mixed $findings): array {
 		if (is_array($findings) === false) {
 			return [];
 		}
 
 		return array_values(array_filter($findings, 'is_array'));
-	}//end check()
+	}//end listedFindings()
+
+	/**
+	 * Ask the validator, in the form this OpenRegister's `validate()` takes.
+	 *
+	 * OpenRegister main takes a FormDestination (the schema and the audience);
+	 * earlier releases took the schema and an options array. Both carry the
+	 * same schema and audience.
+	 *
+	 * @param object               $validator OpenRegister's validator.
+	 * @param array<string, mixed> $mapping   The mapping: `fields` and `fixed`.
+	 * @param object               $schema    The destination schema.
+	 * @param array<string, mixed> $options   `audience`: `public` or `authenticated` when the form is not internal.
+	 *
+	 * @return mixed The validator's findings.
+	 */
+	private function validateWith(object $validator, array $mapping, object $schema, array $options): mixed {
+		$second = ((new ReflectionMethod($validator, 'validate'))->getParameters()[1] ?? null);
+		if ($second !== null && $second->getName() === 'destination' && class_exists(self::DESTINATION) === true) {
+			$audience = $options['audience'] ?? null;
+			if ($audience !== null) {
+				$audience = (string)$audience;
+			}
+
+			$class = self::DESTINATION;
+
+			return $validator->validate(mapping: $mapping, destination: new $class(schema: $schema, audience: $audience));
+		}
+
+		return $validator->validate(mapping: $mapping, schema: $schema, options: $options);
+	}//end validateWith()
 
 	/**
 	 * OpenRegister's validator, or null when this OpenRegister does not ship it.

@@ -13,43 +13,13 @@
 			:data-source="config.dataSource || {}"
 			@update:dataSource="onDataSourceUpdate" />
 		<div v-if="!connectorActive" class="index-page-editor__group">
-			<label>
-				{{ t('buildiq', 'Register') }}
-				<select
-					:value="config.register || ''"
-					:aria-invalid="isInvalid('register')"
-					@change="update('register', $event.target.value)">
-					<option value="">
-						{{ t('buildiq', '— select register —') }}
-					</option>
-					<option
-						v-for="r in registers"
-						:key="r.slug || r.id"
-						:value="r.slug">
-						{{ r.title || r.slug }}
-					</option>
-				</select>
-				<InlineFieldMark :error="markFor('register')" />
-			</label>
-			<label>
-				{{ t('buildiq', 'Schema') }}
-				<select
-					:value="config.schema || ''"
-					:disabled="!config.register"
-					:aria-invalid="isInvalid('schema')"
-					@change="update('schema', $event.target.value)">
-					<option value="">
-						{{ t('buildiq', '— select schema —') }}
-					</option>
-					<option
-						v-for="s in schemas"
-						:key="s.slug || s.id"
-						:value="s.slug">
-						{{ s.title || s.slug }}
-					</option>
-				</select>
-				<InlineFieldMark :error="markFor('schema')" />
-			</label>
+			<RegisterSchemaFields
+				:config="config"
+				:registers="registers"
+				:schemas="schemas"
+				:databaseRegisters="databaseRegisters"
+				@register="update('register', $event)"
+				@schema="update('schema', $event)" />
 			<label>
 				{{ t('buildiq', 'Card component (optional)') }}
 				<input
@@ -71,10 +41,54 @@
 			<InlineFieldMark :error="markFor('columns')" />
 		</fieldset>
 
+		<fieldset class="index-page-editor__fieldset" data-testid="index-page-search">
+			<legend>{{ t('buildiq', 'Search') }}</legend>
+			<label class="index-page-editor__inline">
+				<input
+					type="checkbox"
+					data-testid="index-page-inline-search"
+					:checked="config.inlineSearch === true"
+					@change="onInlineSearchToggle($event.target.checked)" />
+				{{ t('buildiq', 'Show the search box above the list') }}
+			</label>
+			<label>
+				{{ t('buildiq', 'Search placeholder') }}
+				<input
+					type="text"
+					data-testid="index-page-search-placeholder"
+					:value="config.searchPlaceholder || ''"
+					:placeholder="t('buildiq', 'Search permits')"
+					@input="update('searchPlaceholder', $event.target.value)" />
+			</label>
+		</fieldset>
+
+		<fieldset class="index-page-editor__fieldset">
+			<legend>{{ t('buildiq', 'Views') }}</legend>
+			<IndexViewModesBuilder
+				:config="config"
+				:schemaProperties="schemaProperties"
+				@update:config="$emit('update:config', $event)" />
+			<label class="index-page-editor__inline">
+				<input
+					type="checkbox"
+					data-manual-order
+					:checked="manualOrder"
+					@change="$emit('update:manualOrder', $event.target.checked)" />
+				{{ t('buildiq', 'Users can order rows by dragging') }}
+			</label>
+		</fieldset>
+
 		<fieldset class="index-page-editor__fieldset">
 			<legend>{{ t('buildiq', 'Actions') }}</legend>
+			<WriteActionSwitches
+				:config="config"
+				:actions="writeActions"
+				:readOnly="databaseReadOnly"
+				@set="setWriteAction" />
 			<ActionBuilder
 				:modelValue="config.actions || []"
+				:pages="pages"
+				:flows="flows"
 				@update:modelValue="update('actions', $event)" />
 			<InlineFieldMark :error="markFor('actions')" />
 		</fieldset>
@@ -94,6 +108,30 @@
 				:modelValue="(config.sidebar && config.sidebar.columnGroups) || []"
 				@update:modelValue="updateSidebar('columnGroups', $event)" />
 		</fieldset>
+
+		<fieldset class="index-page-editor__fieldset">
+			<legend>{{ t('buildiq', 'Saved views') }}</legend>
+			<label class="index-page-editor__inline">
+				<input
+					type="checkbox"
+					:checked="config.allowSavedViews === true"
+					@change="onSavedViewsToggle($event.target.checked)" />
+				{{ t('buildiq', 'Let app users save their own views') }}
+			</label>
+			<p class="index-page-editor__hint">
+				{{
+					t(
+						'buildiq',
+						'Views for everyone: every app user of this page finds these in the views list.',
+					)
+				}}
+			</p>
+			<SavedViewsBuilder
+				:modelValue="config.defaultSavedViews || []"
+				:schemaProperties="schemaProperties"
+				@update:modelValue="update('defaultSavedViews', $event)" />
+			<InlineFieldMark :error="markFor('defaultSavedViews')" />
+		</fieldset>
 	</div>
 </template>
 
@@ -101,13 +139,18 @@
 import DataSourceOriginToggle from './DataSourceOriginToggle.vue'
 import ActionBuilder from './fields/ActionBuilder.vue'
 import ColumnBuilder from './fields/ColumnBuilder.vue'
+import IndexViewModesBuilder from './fields/IndexViewModesBuilder.vue'
 import InlineFieldMark from './fields/InlineFieldMark.vue'
+import RegisterSchemaFields from './fields/RegisterSchemaFields.vue'
+import SavedViewsBuilder from './fields/SavedViewsBuilder.vue'
 import SidebarSectionBuilder from './fields/SidebarSectionBuilder.vue'
+import WriteActionSwitches from './fields/WriteActionSwitches.vue'
 import { useEditorRegisterPicker } from '../../composables/useEditorRegisterPicker.js'
 import {
 	pageEditorBaseMixin,
 	pageEditorSchemaBoundMixin,
 } from '../../mixins/pageEditorBase.js'
+import { pageEditorDatabaseMixin } from '../../mixins/pageEditorDatabase.js'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 
 export default {
@@ -117,13 +160,18 @@ export default {
 		ActionBuilder,
 		SidebarSectionBuilder,
 		InlineFieldMark,
+		RegisterSchemaFields,
 		DataSourceOriginToggle,
+		IndexViewModesBuilder,
+		SavedViewsBuilder,
+		WriteActionSwitches,
 	},
 
 	mixins: [
 		pageEditorBaseMixin,
 		pageEditorValidationMixin,
 		pageEditorSchemaBoundMixin,
+		pageEditorDatabaseMixin,
 	],
 
 	props: {
@@ -131,15 +179,59 @@ export default {
 			type: String,
 			default: 'index',
 		},
+
+		/** This app's pages, for a "go to a page" action. */
+		pages: {
+			type: Array,
+			default: () => [],
+		},
+
+		/** The app's declared flows (`{flow, label?}`), for a "start a flow" action. */
+		flows: {
+			type: Array,
+			default: () => [],
+		},
+
+		/** Whether users of the built app may order rows by dragging (`page.manualOrder`, REQ-PEC-009). */
+		manualOrder: {
+			type: Boolean,
+			default: false,
+		},
 	},
+
+	emits: ['update:config', 'update:manualOrder'],
 
 	setup: useEditorRegisterPicker,
 
 	computed: {
 		/**
+		 * The config keys a read-only database switches off on an index page.
+		 *
+		 * @return {string[]}
+		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-pages-follow-the-databases-write-setting-req-bqdb-002
+		 */
+		writeActionKeys() {
+			return ['showAdd', 'showEditAction', 'showDeleteAction']
+		},
+
+		/**
+		 * The write action switches of an index page.
+		 *
+		 * @return {Array<{key: string, label: string}>}
+		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-pages-follow-the-databases-write-setting-req-bqdb-002
+		 */
+		writeActions() {
+			return [
+				{ key: 'showAdd', label: this.t('buildiq', 'Add button') },
+				{ key: 'showEditAction', label: this.t('buildiq', 'Edit button') },
+				{ key: 'showDeleteAction', label: this.t('buildiq', 'Delete button') },
+			]
+		},
+
+		/**
 		 * Observed behaviour of `validatedConfigKeys` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		validatedConfigKeys() {
 			return [
@@ -149,6 +241,11 @@ export default {
 				'columns',
 				'actions',
 				'sidebar',
+				'viewModes',
+				'calendar',
+				'board',
+				'dateAxis',
+				'defaultSavedViews',
 			]
 		},
 
@@ -157,7 +254,7 @@ export default {
 		 * OpenRegister register/schema pickers). REQ-OCAS-002.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/openconnector-api-sources/tasks.md#task-3.2
+		 * @spec openspec/changes/archive/2026-06-14-openconnector-api-sources/tasks.md#task-3.2
 		 */
 		connectorActive() {
 			return !!(this.config.dataSource && this.config.dataSource.connector)
@@ -166,7 +263,7 @@ export default {
 		/**
 		 * Observed behaviour of `sidebarEnabled` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		sidebarEnabled() {
 			const s = this.config.sidebar
@@ -188,7 +285,7 @@ export default {
 		 *
 		 * @param {string} key - the config key being written: `register`, `schema`, `cardComponent`, `columns` or `actions`. Writing `register` also drops `schema`, since a schema is only meaningful inside its register.
 		 * @param {string|Array<object>} value - the new value: a slug/component key from a `<select>`/`<input>`, or the rebuilt array from ColumnBuilder / ActionBuilder. An empty string, `null` or an empty array deletes the key instead of storing it.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		update(key, value) {
 			const next = { ...this.config }
@@ -214,7 +311,7 @@ export default {
 		 * under it — rather than leaving `{ enabled: false }` behind.
 		 *
 		 * @param {boolean} enabled - the checkbox's new `checked` state.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		onSidebarToggle(enabled) {
 			const next = { ...this.config }
@@ -229,12 +326,50 @@ export default {
 		},
 
 		/**
+		 * Show the list's search box above the table instead of in the
+		 * sidebar. Off deletes `config.inlineSearch`, the library default.
+		 *
+		 * @param {boolean} enabled - the checkbox's new state.
+		 * @return {void}
+		 * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer/spec.md#requirement-a-list-page-searches-its-records-by-keyword-req-bqcv-005
+		 */
+		onInlineSearchToggle(enabled) {
+			const next = { ...this.config }
+			if (enabled) {
+				next.inlineSearch = true
+			} else {
+				delete next.inlineSearch
+			}
+			this.$emit('update:config', next)
+		},
+
+		/**
+		 * Let app users save their own views on this page, or not. Off
+		 * deletes `config.allowSavedViews` rather than storing `false`, which
+		 * nextcloud-vue reads as "turn the Views tab off" and so would also
+		 * hide the views the maker defined for everyone.
+		 *
+		 * @param {boolean} enabled - the switch's new state.
+		 * @return {void}
+		 * @spec openspec/changes/data-index-grid-and-saved-views/tasks.md#t05
+		 */
+		onSavedViewsToggle(enabled) {
+			const next = { ...this.config }
+			if (enabled) {
+				next.allowSavedViews = true
+			} else {
+				delete next.allowSavedViews
+			}
+			this.$emit('update:config', next)
+		},
+
+		/**
 		 * Write one key inside the sidebar block, promoting a legacy boolean
 		 * `sidebar: true` to the object form `{ enabled: true }` on the way.
 		 *
 		 * @param {string} key - the sidebar key being written; currently only `columnGroups`.
 		 * @param {Array<object>} value - the rebuilt column-group list from SidebarSectionBuilder. Stored as-is, including when empty, so the sidebar stays enabled with no groups.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		updateSidebar(key, value) {
 			const next = { ...this.config }
@@ -250,7 +385,7 @@ export default {
 		 *
 		 * @param {string} register - slug of the register to list schemas for, i.e. `config.register`.
 		 * @return {Promise<void>} - resolves once `this.schemas` holds the result (`[]` when the request fails).
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		async fetchSchemas(register) {
 			const schemas = await this.picker.fetchSchemas(register)
@@ -268,7 +403,7 @@ export default {
 		 * @param {string} register - slug of the register the schema lives in.
 		 * @param {string} schema - slug of the schema whose properties are wanted.
 		 * @return {Promise<void>} - resolves once `this.schemaProperties` holds the map (`{}` when the request fails).
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		async fetchSchemaProperties(register, schema) {
 			// The schema list already carries every schema's properties, so a
@@ -301,7 +436,7 @@ export default {
 		 * byte-identically (REQ-OCAS-002 regression guard).
 		 *
 		 * @param {object} dataSource - the updated dataSource object.
-		 * @spec openspec/changes/openconnector-api-sources/tasks.md#task-3.2
+		 * @spec openspec/changes/archive/2026-06-14-openconnector-api-sources/tasks.md#task-3.2
 		 */
 		onDataSourceUpdate(dataSource) {
 			const next = { ...this.config }
@@ -359,6 +494,12 @@ export default {
 .index-page-editor__fieldset legend {
 	padding: 0 6px;
 	font-weight: 600;
+	font-size: 13px;
+}
+
+.index-page-editor__hint {
+	margin: 0 0 6px;
+	color: var(--color-text-maxcontrast);
 	font-size: 13px;
 }
 

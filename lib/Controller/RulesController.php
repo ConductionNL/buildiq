@@ -12,7 +12,7 @@
  *
  * All endpoints carry `#[NoAdminRequired]` per ADR-005: any authenticated user
  * may evaluate a RuleSet of their own organisation. Every read goes through
- * {@see RuleObjectReader}, which applies the schema's RBAC and the caller's
+ * {@see \OCA\Buildiq\Service\RuleObjectReader}, which applies the schema's RBAC and the caller's
  * organisation (REQ-BRE-007): a RuleSet held by another organisation resolves
  * to a 404, not a 403, so its existence does not leak. The `buildiq` register
  * itself is system-wide, so only its lookup runs without the organisation
@@ -36,18 +36,17 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/business-rules-engine/tasks.md#9.1
- * @spec openspec/changes/business-rules-engine/tasks.md#9.2
+ * @spec openspec/changes/archive/2026-06-14-business-rules-engine/tasks.md#9.1
+ * @spec openspec/changes/archive/2026-06-14-business-rules-engine/tasks.md#9.2
  */
 
 declare(strict_types=1);
 
 namespace OCA\Buildiq\Controller;
 
-use OCA\Buildiq\AppInfo\Application;
+use OCA\Buildiq\Kernel\AppIdentity;
+use OCA\Buildiq\Kernel\Contracts\RuleEngineServiceInterface;
 use OCA\Buildiq\Service\CallerContext;
-use OCA\Buildiq\Service\RuleEngineService;
-use OCA\Buildiq\Service\RuleObjectReader;
 use OCA\Buildiq\Service\RuleStorage;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
@@ -77,7 +76,7 @@ class RulesController extends Controller {
 	 *
 	 * @param IRequest $request The current HTTP request.
 	 * @param LoggerInterface $logger PSR logger.
-	 * @param RuleEngineService $ruleEngine The rule-evaluation orchestrator.
+	 * @param RuleEngineServiceInterface $ruleEngine The rule-evaluation orchestrator.
 	 * @param RuleStorage $storage The rule object reader, stored decision tables and rule set versioning.
 	 * @param CallerContext $caller The caller's session, group memberships and the shared permission matcher.
 	 *
@@ -86,11 +85,11 @@ class RulesController extends Controller {
 	public function __construct(
 		IRequest $request,
 		private readonly LoggerInterface $logger,
-		private readonly RuleEngineService $ruleEngine,
+		private readonly RuleEngineServiceInterface $ruleEngine,
 		private readonly RuleStorage $storage,
 		private readonly CallerContext $caller,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 
 	}//end __construct()
 
@@ -105,7 +104,7 @@ class RulesController extends Controller {
 	 *
 	 * @return JSONResponse 200 with the result, 404 on miss, 408 on timeout, 422 on bad input.
 	 *
-	 * @spec openspec/changes/business-rules-engine/tasks.md#9.1
+	 * @spec openspec/changes/archive/2026-06-14-business-rules-engine/tasks.md#9.1
 	 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-live-evaluation-leaves-no-log-trail-req-bqlv-004
 	 *
 	 * @no-admin-idor-exempt Authorization is delegated to OpenRegister: every read here
@@ -229,13 +228,61 @@ class RulesController extends Controller {
 	}//end outcomeStatus()
 
 	/**
+	 * The active rule sets another app may call, for that app's form designer to pick from.
+	 *
+	 * `GET /api/rules?callableBy={app}`: each rule set that lists the app in
+	 * `callableBy`, projected to slug, title, version, inputs and outputs. The
+	 * decision table itself is never returned (design D3).
+	 *
+	 * @return JSONResponse 200 with `results`, 400 without `callableBy`, 401 when not signed in.
+	 *
+	 * @spec openspec/changes/rules-evaluation-for-other-apps/specs/rules-evaluation-for-other-apps/spec.md#requirement-a-rule-set-names-the-apps-that-may-call-it-req-bqrx-001
+	 *
+	 * @no-admin-idor-exempt Authorization is delegated to OpenRegister: the list is read
+	 *   through RuleObjectReader::findScoped(), which searches with `_rbac: true` and
+	 *   `_multitenancy: true`, so only rule sets the caller may already see are listed,
+	 *   and only their slug, title, version and column names leave the server.
+	 */
+	#[NoAdminRequired]
+	public function index(): JSONResponse {
+		if ($this->caller->userSession->getUser() === null) {
+			return $this->error(code: 'unauthenticated', detail: null, status: Http::STATUS_UNAUTHORIZED);
+		}
+
+		$app = trim((string)$this->request->getParam('callableBy', ''));
+		if ($app === '') {
+			return $this->error(code: 'invalid_request', detail: 'callableBy is required', status: Http::STATUS_BAD_REQUEST);
+		}
+
+		$results = [];
+		foreach ($this->query(schema: RuleEngineServiceInterface::RULE_SET_SCHEMA, filters: ['status' => 'active'], limit: null) as $ruleSet) {
+			$callableBy = $ruleSet['callableBy'] ?? [];
+			if (($ruleSet['status'] ?? '') !== 'active' || is_array($callableBy) === false || in_array($app, $callableBy, true) === false) {
+				continue;
+			}
+
+			$columns = $this->decisionColumns(ruleSet: $ruleSet);
+			$results[] = [
+				'slug' => (string)($ruleSet['slug'] ?? ''),
+				'title' => (string)($ruleSet['name'] ?? ''),
+				'version' => (string)($ruleSet['version'] ?? ''),
+				'inputs' => $columns['inputs'],
+				'outputs' => $columns['outputs'],
+			];
+		}
+
+		return new JSONResponse(data: ['results' => $results], statusCode: Http::STATUS_OK);
+
+	}//end index()
+
+	/**
 	 * Return a RuleSet's metadata + active version for UI binding.
 	 *
 	 * @param string $ruleSetSlug The RuleSet slug.
 	 *
 	 * @return JSONResponse 200 with the schema metadata, or 404.
 	 *
-	 * @spec openspec/changes/business-rules-engine/tasks.md#9.1
+	 * @spec openspec/changes/archive/2026-06-14-business-rules-engine/tasks.md#9.1
 	 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-calculated-from-a-rule-set-req-bqlv-002
 	 *
 	 * @no-admin-idor-exempt Authorization is delegated to OpenRegister: every read here
@@ -346,28 +393,7 @@ class RulesController extends Controller {
 	 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-field-can-be-calculated-from-a-rule-set-req-bqlv-002
 	 */
 	private function decisionColumns(array $ruleSet): array {
-		$inputs = [];
-		$outputs = [];
-		$tables = $this->storage->tables->forRuleSet(ruleSet: $ruleSet);
-		$table = ($tables[0] ?? []);
-
-		foreach ((array)($table['inputColumns'] ?? []) as $column) {
-			if (is_array($column) === true && is_string($column['name'] ?? null) === true) {
-				$inputs[] = [
-					'name' => $column['name'],
-					'path' => (string)($column['expressionPath'] ?? $column['name']),
-					'type' => (string)($column['type'] ?? ''),
-				];
-			}
-		}
-
-		foreach ((array)($table['outputColumns'] ?? []) as $column) {
-			if (is_array($column) === true && is_string($column['name'] ?? null) === true) {
-				$outputs[] = ['name' => $column['name'], 'type' => (string)($column['type'] ?? '')];
-			}
-		}
-
-		return ['inputs' => $inputs, 'outputs' => $outputs];
+		return $this->storage->decisionColumns(ruleSet: $ruleSet);
 	}//end decisionColumns()
 
 	/**
@@ -377,7 +403,7 @@ class RulesController extends Controller {
 	 *
 	 * @return JSONResponse 200 with the test summary, or 404.
 	 *
-	 * @spec openspec/changes/business-rules-engine/tasks.md#9.1
+	 * @spec openspec/changes/archive/2026-06-14-business-rules-engine/tasks.md#9.1
 	 *
 	 * @no-admin-idor-exempt Authorization is delegated to OpenRegister: every read here
 	 *   goes through RuleObjectReader::find(), which searches with `_rbac: true` and
@@ -431,7 +457,7 @@ class RulesController extends Controller {
 	 * @return array<string,mixed>|null
 	 */
 	private function findRuleSet(string $slug): ?array {
-		$rows = $this->query(schema: RuleEngineService::RULE_SET_SCHEMA, filters: ['slug' => $slug], limit: 1);
+		$rows = $this->query(schema: RuleEngineServiceInterface::RULE_SET_SCHEMA, filters: ['slug' => $slug], limit: 1);
 		if ($rows === []) {
 			return null;
 		}

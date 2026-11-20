@@ -43,6 +43,7 @@ use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -728,4 +729,42 @@ class ApplicationsControllerTest extends TestCase {
 		self::assertSame(Http::STATUS_OK, $result->getStatus());
 		self::assertSame('Pet Store', $result->getData()['name']);
 	}//end testVersionedManifestSuppliesApplicationName()
+	/**
+	 * Manifests with every `runtime` / `runtime.user` shape, and what a projected
+	 * `runtime.user` field leaves around it.
+	 *
+	 * @return array<string, array{0: array<string, mixed>, 1: callable}>
+	 */
+	public static function runtimeShapes(): array {
+		return [
+			'no runtime'          => [['pages' => []], static fn (array $f): array => ['pages' => [], 'runtime' => ['user' => $f]]],
+			'runtime not array'   => [['runtime' => 'x'], static fn (array $f): array => ['runtime' => ['user' => $f]]],
+			'user not array'      => [['runtime' => ['theme' => 'dark', 'user' => 5]], static fn (array $f): array => ['runtime' => ['theme' => 'dark', 'user' => $f]]],
+			'user with fields'    => [['runtime' => ['user' => ['isOwner' => 'old', 'permissions' => 'old', 'name' => 'A'], 'theme' => 'd']], static fn (array $f): array => ['runtime' => ['user' => array_replace(['isOwner' => 'old', 'permissions' => 'old', 'name' => 'A'], $f), 'theme' => 'd']]],
+			'user with index key' => [['runtime' => ['user' => [3 => 'x']]], static fn (array $f): array => ['runtime' => ['user' => [3 => 'x'] + $f]]],
+		];
+	}//end runtimeShapes()
+
+	/**
+	 * The owner and permission signals land on `runtime.user` without disturbing anything else.
+	 *
+	 * @param array<string, mixed> $manifest The manifest before.
+	 * @param callable             $after    Builds the manifest after, from the projected field.
+	 *
+	 * @return void
+	 */
+	#[DataProvider('runtimeShapes')]
+	public function testRuntimeSignalsProjectOntoRuntimeUser(array $manifest, callable $after): void {
+		$controller = $this->buildController(uid: 'alice', callerGroups: ['team-alpha']);
+		$alice = $this->createMock(IUser::class);
+		$alice->method('getUID')->willReturn('alice');
+		$application = ['permissions' => ['owners' => ['team-alpha'], 'editors' => [], 'viewers' => []]];
+		$owner = new \ReflectionMethod($controller, 'injectOwnerSignal');
+		$permissions = new \ReflectionMethod($controller, 'injectPermissionsSignal');
+
+		self::assertSame($after(['isOwner' => true]), $owner->invoke($controller, $manifest, $application, $alice));
+		self::assertSame($after(['permissions' => []]), $permissions->invoke($controller, $manifest, $application, $alice));
+		self::assertSame($after(['isOwner' => false]), $owner->invoke($controller, $manifest, null, $alice));
+	}//end testRuntimeSignalsProjectOntoRuntimeUser()
+
 }//end class

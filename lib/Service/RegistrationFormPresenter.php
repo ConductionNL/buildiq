@@ -3,6 +3,9 @@
 /**
  * Registration Form Presenter
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * The shape a form takes on its way OUT of buildiq: presets applied, hidden
  * presets removed from the fields entirely, sections in the administrator's
  * order and fields grouped inside them.
@@ -31,21 +34,20 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-005, REQ-OBRF-008)
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\RegistrationFormPresenterInterface;
+
 /**
  * Turns a stored registration form into the shape a consumer renders.
  *
  * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-005)
  */
-final class RegistrationFormPresenter {
+final class RegistrationFormPresenter implements RegistrationFormPresenterInterface {
 	/**
 	 * Turn a stored form into what the consumer renders.
 	 *
@@ -54,6 +56,7 @@ final class RegistrationFormPresenter {
 	 * @return array<string, mixed> The served form.
 	 *
 	 * @spec openspec/changes/forms-per-case-type/specs/registration-form-builder/spec.md (REQ-OBRF-005, REQ-OBRF-008)
+	 * @spec openspec/changes/forms-fee-on-submit/specs/registration-form-builder/spec.md (REQ-OBRF-010)
 	 */
 	public function serve(array $form): array {
 		$presets = $this->presetsOf(form: $form);
@@ -83,6 +86,7 @@ final class RegistrationFormPresenter {
 			'isDefault' => (($form['isDefault'] ?? false) === true),
 			'isPublic' => (($form['isPublic'] ?? false) === true),
 			'minTrust' => $this->signInLevel(form: $form),
+			'fee' => (new RegistrationFormFee())->served(form: $form),
 			'confirmationText' => (string)($form['confirmationText'] ?? ''),
 			'allowSaveForLater' => (($form['allowSaveForLater'] ?? false) === true),
 			'sections' => $sections,

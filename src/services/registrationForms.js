@@ -10,6 +10,7 @@
  */
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
+import { refusalData, requestRefusal } from './requestRefusal.js'
 
 const BASE = '/apps/buildiq/api/registration-forms'
 
@@ -20,12 +21,9 @@ const BASE = '/apps/buildiq/api/registration-forms'
  * @return {{status: number, error: string, message: string}} The refusal.
  */
 function normaliseError(err) {
-	const response = err && err.response
-	const data = (response && response.data) || {}
+	const data = refusalData(err)
 	return {
-		status: response ? response.status : 0,
-		error: data.error || 'network_error',
-		message: data.message || (err && err.message) || 'Request failed.',
+		...requestRefusal(err),
 		// Decision 179/189: a publish the destination refuses carries every finding.
 		findings: Array.isArray(data.findings) ? data.findings : [],
 	}

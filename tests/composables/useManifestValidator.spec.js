@@ -195,4 +195,89 @@ describe('useManifestValidator', () => {
 		expect(validateSpy).toHaveBeenCalledTimes(1)
 		expect(validateSpy).toHaveBeenCalledWith({})
 	})
+
+	// experience-multilingual-apps (T07): buildiq's own i18n checks join the
+	// library's errors, so the side panel lists an unknown language code.
+	it('adds buildiq\'s i18n language-code checks to the library errors', () => {
+		validateSpy.mockImplementation(() => ({
+			valid: false,
+			errors: ['i18n/labels/fr: language "fr" is not declared in i18n.languages'],
+		}))
+		const v = useManifestValidator()
+		v.validate({
+			pages: [],
+			i18n: { sourceLanguage: 'nl', languages: ['english'], labels: { fr: {} } },
+		})
+		vi.advanceTimersByTime(300)
+		expect(v.errors.value).toEqual([
+			'i18n/labels/fr: language "fr" is not declared in i18n.languages',
+			'/i18n/languages/0: buildiq.i18n.error.unknown-language',
+		])
+	})
+})
+
+describe('useManifestValidator — the offline block (pages-installable-offline-and-mobile T04)', () => {
+	beforeEach(() => {
+		vi.useFakeTimers()
+		validateSpy.mockReset()
+		validateSpy.mockImplementation(() => ({ valid: true, errors: [] }))
+	})
+
+	afterEach(() => {
+		vi.useRealTimers()
+	})
+
+	const pages = [{ id: 'report', type: 'form' }, { id: 'list', type: 'index' }]
+
+	/**
+	 * Validate a manifest and settle the debounce.
+	 *
+	 * @param {object} manifest - the manifest.
+	 * @return {Array<string>} The errors.
+	 */
+	function errorsOf(manifest) {
+		const v = useManifestValidator()
+		v.validate(manifest)
+		vi.advanceTimersByTime(300)
+		return v.errors.value
+	}
+
+	it('accepts a block within the caps that names form pages', () => {
+		expect(errorsOf({
+			pages,
+			offline: { takeAlong: [{ schema: 'inspection', filter: { assignee: '@me' }, limit: 500, ttlHours: 72 }], forms: ['report'] },
+		})).toEqual([])
+	})
+
+	it('marks a limit over 500, a lifetime over 72 hours and a missing schema', () => {
+		expect(errorsOf({ pages, offline: { takeAlong: [{ schema: '', limit: 501, ttlHours: 73 }] } })).toEqual([
+			'/offline/takeAlong/0/schema: buildiq.offline.error.schema-required',
+			'/offline/takeAlong/0/limit: buildiq.offline.error.limit-range',
+			'/offline/takeAlong/0/ttlHours: buildiq.offline.error.ttl-range',
+		])
+	})
+
+	it('marks an offline form that is not a form page, and unknown keys', () => {
+		expect(errorsOf({ pages, offline: { forms: ['list', 'gone'], extra: true } })).toEqual([
+			'/offline/extra: buildiq.offline.error.unknown-key',
+			'/offline/forms/0: buildiq.offline.error.not-a-form-page',
+			'/offline/forms/1: buildiq.offline.error.not-a-form-page',
+		])
+	})
+
+	it('marks a block, a list or a filter of the wrong shape', () => {
+		expect(errorsOf({ offline: [] })).toEqual(['/offline: buildiq.offline.error.not-object'])
+		expect(errorsOf({ offline: { takeAlong: {}, forms: 'report' } })).toEqual([
+			'/offline/takeAlong: buildiq.offline.error.not-array',
+			'/offline/forms: buildiq.offline.error.not-array',
+		])
+		expect(errorsOf({ offline: { takeAlong: [{ schema: 's', filter: 'x', limit: 1, ttlHours: 1 }, 'x'] } })).toEqual([
+			'/offline/takeAlong/0/filter: buildiq.offline.error.filter-not-object',
+			'/offline/takeAlong/1: buildiq.offline.error.entry-not-object',
+		])
+	})
+
+	it('says nothing about a manifest without an offline block', () => {
+		expect(errorsOf({ pages })).toEqual([])
+	})
 })

@@ -25,6 +25,11 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service\GitHub;
 
+use OCA\Buildiq\Kernel\Contracts\SyncRequestParamsInterface;
+use OCA\Buildiq\Kernel\Values\AppPushRequest;
+use OCA\Buildiq\Kernel\Values\BrokerAccess;
+use OCA\Buildiq\Kernel\Values\BrokeredRepo;
+use OCA\Buildiq\Kernel\Values\PushTarget;
 use OCP\IRequest;
 
 /**
@@ -32,11 +37,7 @@ use OCP\IRequest;
  *
  * @spec openspec/changes/github-app-sync/specs/github-app-sync/spec.md
  */
-final class SyncRequestParams {
-	/**
-	 * Safe GitHub owner/repo/org pattern.
-	 */
-	public const OWNER_REPO_PATTERN = '/^[A-Za-z0-9._-]{1,100}$/';
+final class SyncRequestParams implements SyncRequestParamsInterface {
 
 	/**
 	 * Constructor.

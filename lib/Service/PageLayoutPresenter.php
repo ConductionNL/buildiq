@@ -3,6 +3,9 @@
 /**
  * Page Layout Presenter
  *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
+ * SPDX-License-Identifier: EUPL-1.2
+ *
  * The shape a resolved layout takes on its way OUT: tabs in their stored order,
  * the parts a narrower layer does not declare filled in from the schema-wide
  * one, and the widgets whose display conditions do not hold left out.
@@ -27,21 +30,20 @@
  * @link https://conduction.nl
  *
  * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-006, REQ-OBPL-007, REQ-OBPL-008, REQ-OBPL-009)
- *
- * SPDX-FileCopyrightText: 2026 Conduction B.V. <info@conduction.nl>
- * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\PageLayoutPresenterInterface;
+
 /**
  * Turns a resolved page layout into what the consumer renders.
  *
  * @spec openspec/changes/case-page-layout-per-case-type/specs/page-layout-per-type/spec.md (REQ-OBPL-006)
  */
-final class PageLayoutPresenter {
+final class PageLayoutPresenter implements PageLayoutPresenterInterface {
 	/**
 	 * Turn a resolved layout into what the consumer renders.
 	 *
@@ -191,7 +193,6 @@ final class PageLayoutPresenter {
 			if (is_scalar($actual) === true) {
 				$actualText = (string)$actual;
 			}
-
 
 			$holds = match ($operator) {
 				'equals' => ($actualText === $expected),

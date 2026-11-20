@@ -15,7 +15,7 @@
 			:description="
 				t(
 					'buildiq',
-					'Fills the Store with the starter templates. Run it after you enable OpenRegister, or to repair a partial install. Templates that are already there stay as they are.',
+					'Fills the Marketplace with the starter templates. Run it after you enable OpenRegister, or to repair a partial install. Templates that are already there stay as they are.',
 				)
 			"
 			:buttonLabel="t('buildiq', 'Install templates')" />
@@ -47,7 +47,7 @@ export default {
 	/**
 	 * Observed behaviour of `created` (retrofit annotation).
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-26-frontend-foundation/tasks.md#task-4
+	 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-frontend-foundation/tasks.md#task-4
 	 */
 	async created() {
 		await initializeStores()

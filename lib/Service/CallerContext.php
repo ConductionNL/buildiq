@@ -41,6 +41,7 @@ final class CallerContext {
 	 * @param IUserSession $userSession Session of the calling user.
 	 * @param IGroupManager $groupManager Group memberships and admin check.
 	 * @param PermissionResolver $permissionResolver Shared role and group matcher.
+	 * @param AppOrganisationGuard|null $organisationGuard Hides another organisation's scoped app; without it a scoped app is hidden from everyone.
 	 *
 	 * @return void
 	 */
@@ -48,6 +49,30 @@ final class CallerContext {
 		public readonly IUserSession $userSession,
 		public readonly IGroupManager $groupManager,
 		public readonly PermissionResolver $permissionResolver,
+		public readonly ?AppOrganisationGuard $organisationGuard = null,
 	) {
 	}//end __construct()
+
+	/**
+	 * Whether the calling user may see this Application at all, before any role.
+	 *
+	 * A shared app is visible to everyone; a scoped app only to members of its
+	 * organisation. Without the guard a scoped app is hidden from everyone, so the
+	 * check fails closed (REQ-BQOS-002).
+	 *
+	 * @param array<string, mixed> $application The Application, as OpenRegister renders it.
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) AppOrganisationGuard::isShared() is a pure scope check with no collaborators.
+	 */
+	public function seesApplication(array $application): bool {
+		if (AppOrganisationGuard::isShared(application: $application) === true) {
+			return true;
+		}
+
+		return $this->organisationGuard?->canSee(application: $application, user: $this->userSession->getUser()) === true;
+	}//end seesApplication()
 }//end class

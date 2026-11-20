@@ -11,6 +11,21 @@
 			{{ t('buildiq', 'Form page') }}
 		</h3>
 
+		<div
+			v-if="offlineAllowed && pageId"
+			class="form-page-editor__offline"
+			data-test="form-page-editor-offline">
+			<NcCheckboxRadioSwitch
+				type="switch"
+				:modelValue="worksOffline"
+				@update:modelValue="onWorksOffline">
+				{{ t('buildiq', 'Works offline') }}
+			</NcCheckboxRadioSwitch>
+			<p class="form-page-editor__hint">
+				{{ t('buildiq', 'Submissions made without a connection wait on the device and are sent when it returns. The app gets a "Waiting to sync" page.') }}
+			</p>
+		</div>
+
 		<fieldset class="form-page-editor__fieldset">
 			<legend>{{ t('buildiq', 'Submit') }}</legend>
 			<div class="form-page-editor__submit-shape">
@@ -158,9 +173,85 @@
 			<FormFieldBuilder
 				:modelValue="config.fields || []"
 				:findings="findingsPerField"
+				:formMode="config.mode || 'public'"
+				:schemas="schemas"
+				:parentSchema="targetSchema || ''"
 				showLogic
-				@update:modelValue="update('fields', $event)" />
+				@update:modelValue="update('fields', $event)"
+				@addProperties="addTargetProperties" />
+			<p
+				v-if="propertyNote"
+				class="form-page-editor__property-note"
+				data-testid="device-property-note"
+				role="status">
+				{{ propertyNote }}
+			</p>
 			<InlineFieldMark :error="markFor('fields')" />
+		</fieldset>
+
+		<!-- ai-smart-paste-into-forms REQ-BQSP-001: the maker lets users fill
+		     the form from pasted text, on the fields they pick. Never on a
+		     public form, so no anonymous caller reaches a language model. -->
+		<fieldset class="form-page-editor__fieldset" data-testid="form-smart-paste">
+			<legend>{{ t('buildiq', 'Fill from pasted text') }}</legend>
+			<label class="form-page-editor__inline">
+				<input
+					type="checkbox"
+					data-testid="smart-paste-enabled"
+					:checked="smartPasteOn"
+					:disabled="isPublicForm && !smartPasteOn"
+					:aria-invalid="isInvalid('smartPaste')"
+					@change="setSmartPasteEnabled($event.target.checked)" />
+				{{ t('buildiq', 'Let users fill this form from pasted text') }}
+			</label>
+			<p
+				v-if="isPublicForm"
+				class="form-page-editor__hint"
+				data-testid="smart-paste-public">
+				{{ t('buildiq', 'Only signed-in forms can use AI.') }}
+			</p>
+			<template v-if="smartPasteOn">
+				<div
+					class="form-page-editor__smart-paste-fields"
+					role="group"
+					:aria-label="t('buildiq', 'Fields the AI may fill')">
+					<span class="form-page-editor__group-label">
+						{{ t('buildiq', 'Fields the AI may fill') }}
+					</span>
+					<label
+						v-for="field in smartPasteCandidates"
+						:key="field.key"
+						class="form-page-editor__inline">
+						<input
+							type="checkbox"
+							:data-testid="'smart-paste-field-' + field.key"
+							:checked="smartPasteFields.includes(field.key)"
+							@change="toggleSmartPasteField(field.key, $event.target.checked)" />
+						{{ field.label || field.key }}
+					</label>
+					<p v-if="!smartPasteCandidates.length" class="form-page-editor__hint">
+						{{ t('buildiq', 'This form has no fields the AI can fill.') }}
+					</p>
+				</div>
+				<label class="form-page-editor__group-row">
+					{{ t('buildiq', 'Hint for users (optional)') }}
+					<input
+						type="text"
+						data-testid="smart-paste-hint"
+						:value="smartPaste.hint || ''"
+						:placeholder="t('buildiq', 'Paste an email or letter')"
+						@input="setSmartPasteHint($event.target.value)" />
+				</label>
+				<p class="form-page-editor__hint">
+					{{
+						t(
+							'buildiq',
+							'Users check the proposed values before they submit; nothing is saved for them. Built apps show the control once the form renderer supports it.',
+						)
+					}}
+				</p>
+			</template>
+			<InlineFieldMark :error="markFor('smartPaste')" />
 		</fieldset>
 
 		<fieldset class="form-page-editor__fieldset">
@@ -250,6 +341,7 @@
 </template>
 
 <script>
+import NcCheckboxRadioSwitch from '@nextcloud/vue/components/NcCheckboxRadioSwitch'
 import ExternalFormAccessDialog from '../../dialogs/ExternalFormAccessDialog.vue'
 import SaveFormToLibraryDialog from '../../dialogs/SaveFormToLibraryDialog.vue'
 import EligibilityCheckBuilder from './fields/EligibilityCheckBuilder.vue'
@@ -260,6 +352,8 @@ import { useRegisterPicker } from '../../composables/useRegisterPicker.js'
 import { pageEditorBaseMixin } from '../../mixins/pageEditorBase.js'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 import { findingsByField } from '../../services/formDestinationCheck.js'
+import { addSchemaProperties } from '../../services/formLibrary.js'
+import { formMode, isSmartPasteFillable } from '../../services/manifestValidation/formLogic.js'
 
 // OpenRegister's object collection URL: POSTing the form's values here
 // creates an object in that register and schema.
@@ -269,6 +363,7 @@ const OR_OBJECTS_ENDPOINT =
 export default {
 	name: 'FormPageEditor',
 	components: {
+		NcCheckboxRadioSwitch,
 		FormFieldBuilder,
 		EligibilityCheckBuilder,
 		FormStepsManager,
@@ -304,6 +399,19 @@ export default {
 			default: () => [],
 		},
 
+		// Whether the instance lets apps work offline (REQ-BQOM-002); the
+		// "Works offline" switch is hidden when it does not.
+		offlineAllowed: {
+			type: Boolean,
+			default: false,
+		},
+
+		// The manifest's `offline.forms` page ids (REQ-BQOM-003).
+		offlineForms: {
+			type: Array,
+			default: () => [],
+		},
+
 		// Decision 179/189: this page's destination findings from the last save.
 		destinationFindings: {
 			type: Array,
@@ -311,7 +419,7 @@ export default {
 		},
 	},
 
-	emits: ['update:config', 'update:runtimeExternalForms'],
+	emits: ['update:config', 'update:runtimeExternalForms', 'update:offlineForms'],
 
 	/**
 	 * Build the register/schema picker the "Save to a register" choice uses.
@@ -340,10 +448,22 @@ export default {
 			pendingRegister: '',
 			registers: [],
 			schemas: [],
+			// What happened to the last "Add the property" (REQ-BQSA-002).
+			propertyNote: '',
 		}
 	},
 
 	computed: {
+		/**
+		 * Whether this form page is one of the manifest's offline forms.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T04
+		 */
+		worksOffline() {
+			return this.offlineForms.includes(this.pageId)
+		},
+
 		/**
 		 * This page's destination findings.
 		 *
@@ -401,7 +521,7 @@ export default {
 		 * objects target) — gates the External access section (REQ-EFP-002).
 		 *
 		 * @return {?{register: string, schema: string}}
-		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-002
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-002
 		 */
 		externalTarget() {
 			if (this.submitShape !== 'endpoint') {
@@ -438,7 +558,7 @@ export default {
 		 * The existing `runtime.externalForms[]` entry for THIS page, if any.
 		 *
 		 * @return {?object}
-		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-001
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-001
 		 */
 		externalFormEntry() {
 			if (!this.pageId) {
@@ -452,13 +572,67 @@ export default {
 		},
 
 		/**
+		 * The form's `config.smartPaste`, or an empty setting.
+		 *
+		 * @return {{enabled?: boolean, fields?: Array<string>, hint?: string}}
+		 * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-a-maker-turns-on-smart-paste-for-chosen-fields-req-bqsp-001
+		 */
+		smartPaste() {
+			const value = this.config.smartPaste
+			return value && typeof value === 'object' && !Array.isArray(value) ? value : {}
+		},
+
+		/**
+		 * Whether smart paste is switched on.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-a-maker-turns-on-smart-paste-for-chosen-fields-req-bqsp-001
+		 */
+		smartPasteOn() {
+			return this.smartPaste.enabled === true
+		},
+
+		/**
+		 * The field keys smart paste may fill.
+		 *
+		 * @return {Array<string>}
+		 * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-a-maker-turns-on-smart-paste-for-chosen-fields-req-bqsp-001
+		 */
+		smartPasteFields() {
+			return Array.isArray(this.smartPaste.fields) ? this.smartPaste.fields : []
+		},
+
+		/**
+		 * The form's fields of a type the fill can set.
+		 *
+		 * @return {Array<object>}
+		 * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-a-maker-turns-on-smart-paste-for-chosen-fields-req-bqsp-001
+		 */
+		smartPasteCandidates() {
+			return (Array.isArray(this.config.fields) ? this.config.fields : []).filter(
+				(field) => isSmartPasteFillable(field),
+			)
+		},
+
+		/**
+		 * Whether the form renders in `public` mode, where smart paste is refused.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-smart-paste-is-validated-req-bqsp-002
+		 */
+		isPublicForm() {
+			return formMode(this.config) === 'public'
+		},
+
+		/**
 		 * Observed behaviour of `validatedConfigKeys` (retrofit annotation).
 		 * `steps` added by REQ-OBFEL-001 so `formLogic.js` / the canonical
 		 * validator's `/pages/<n>/config/steps` errors mark inline.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 * @spec openspec/specs/form-editor-logic/spec.md#req-obfel-001
 		 * @spec openspec/changes/forms-live-values-and-checks/specs/form-live-values/spec.md#requirement-a-form-can-check-eligibility-as-it-is-filled-in-req-bqlv-003
+		 * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-smart-paste-is-validated-req-bqsp-002
 		 */
 		validatedConfigKeys() {
 			return [
@@ -472,13 +646,14 @@ export default {
 				'initialValue',
 				'steps',
 				'eligibility',
+				'smartPaste',
 			]
 		},
 
 		/**
 		 * Observed behaviour of `submitShape` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		submitShape() {
 			if (this.config.submitHandler) {
@@ -534,6 +709,63 @@ export default {
 
 	methods: {
 		/**
+		 * Switch this page in or out of the offline forms; the page designer
+		 * writes the list onto the manifest.
+		 *
+		 * @param {boolean} on Whether the page works offline.
+		 * @return {void}
+		 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T04
+		 */
+		onWorksOffline(on) {
+			const forms = this.offlineForms.filter((id) => id !== this.pageId)
+			if (on) {
+				forms.push(this.pageId)
+			}
+			this.$emit('update:offlineForms', forms)
+		},
+
+		/**
+		 * Add the properties a device field writes to the schema the form
+		 * saves into, then put the stored schema back in the list so the
+		 * field builder sees them. Existing properties are never replaced.
+		 *
+		 * @param {{schema: object, additions: object}} request - from the field builder.
+		 * @param {object} [client] - axios-compatible client (tests inject one).
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/forms-signature-audio-and-location/specs/form-device-fields/spec.md#requirement-the-value-lands-in-a-matching-property-req-bqsa-002
+		 */
+		async addTargetProperties(request, client) {
+			const schema = request && request.schema
+			const additions = (request && request.additions) || {}
+			if (!schema || Object.keys(additions).length === 0) {
+				return
+			}
+			const name = schema.title || schema.slug || String(schema.id)
+			try {
+				const stored = await addSchemaProperties(schema, additions, client)
+				const merged = {
+					...schema,
+					...(stored && typeof stored === 'object' ? stored : {}),
+				}
+				if (!merged.properties) {
+					merged.properties = { ...(schema.properties || {}), ...additions }
+				}
+				this.schemas = this.schemas.map((entry) =>
+					entry === schema || (entry && String(entry.id) === String(schema.id)) ? merged : entry,
+				)
+				this.propertyNote = t('buildiq', 'Added {properties} to {schema}.', {
+					properties: Object.keys(additions).join(', '),
+					schema: name,
+				})
+			} catch (e) {
+				this.propertyNote = t('buildiq', 'Could not add the property to {schema}: {reason}', {
+					schema: name,
+					reason: (e && e.message) || '',
+				})
+			}
+		},
+
+		/**
 		 * Write one key on the page's `config` block. Only the named key is
 		 * touched, so config keys this editor does not surface round-trip
 		 * losslessly. The submit one-of is handled by `setSubmitHandler` /
@@ -541,7 +773,7 @@ export default {
 		 *
 		 * @param {string} key - the config key being written: `submitMethod`, `mode`, `submitLabel`, `successMessage`, `fields` or `steps`.
 		 * @param {string|Array<object>} value - the new value: the enum choice from a `<select>`, the i18n key from a text input, or the rebuilt list from FormFieldBuilder / FormStepsManager. `''` and `null` delete the key.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		update(key, value) {
 			const next = { ...this.config }
@@ -554,12 +786,75 @@ export default {
 		},
 
 		/**
+		 * Write `config.smartPaste` with the given changes. An empty hint is dropped.
+		 *
+		 * @param {object} patch - the keys to change.
+		 * @return {void}
+		 * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-a-maker-turns-on-smart-paste-for-chosen-fields-req-bqsp-001
+		 */
+		writeSmartPaste(patch) {
+			const next = { ...this.smartPaste, ...patch }
+			if (next.hint === '') {
+				delete next.hint
+			}
+			this.update('smartPaste', next)
+		},
+
+		/**
+		 * Switch smart paste on or off. It cannot be switched on for a public form.
+		 *
+		 * @param {boolean} enabled - the switch's new state.
+		 * @return {void}
+		 * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-a-maker-turns-on-smart-paste-for-chosen-fields-req-bqsp-001
+		 */
+		setSmartPasteEnabled(enabled) {
+			if (enabled === true && this.isPublicForm) {
+				return
+			}
+			this.writeSmartPaste({ enabled: enabled === true, fields: this.smartPasteFields })
+		},
+
+		/**
+		 * Allow or disallow one field, keeping the form's field order.
+		 *
+		 * @param {string} key - the field key.
+		 * @param {boolean} allowed - whether the AI may fill it.
+		 * @return {void}
+		 * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-a-maker-turns-on-smart-paste-for-chosen-fields-req-bqsp-001
+		 */
+		toggleSmartPasteField(key, allowed) {
+			const chosen = new Set(this.smartPasteFields)
+			if (allowed) {
+				chosen.add(key)
+			} else {
+				chosen.delete(key)
+			}
+			const order = this.smartPasteCandidates.map((field) => field.key)
+			const fields = [
+				...order.filter((k) => chosen.has(k)),
+				...[...chosen].filter((k) => !order.includes(k)),
+			]
+			this.writeSmartPaste({ fields })
+		},
+
+		/**
+		 * Set the hint shown to users in the paste box.
+		 *
+		 * @param {string} hint - the hint, '' to remove it.
+		 * @return {void}
+		 * @spec openspec/changes/ai-smart-paste-into-forms/specs/form-smart-paste/spec.md#requirement-a-maker-turns-on-smart-paste-for-chosen-fields-req-bqsp-001
+		 */
+		setSmartPasteHint(hint) {
+			this.writeSmartPaste({ hint })
+		},
+
+		/**
 		 * Switch between the two mutually exclusive submit targets by
 		 * deleting the key of the branch being left, so the emitted config
 		 * never carries both halves of the one-of.
 		 *
 		 * @param {'handler'|'endpoint'} shape - the radio's value: `handler` drops `submitEndpoint`, anything else drops `submitHandler`.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		setSubmitShape(shape) {
 			this.chosenShape = shape === 'handler' ? 'handler' : 'endpoint'
@@ -577,7 +872,7 @@ export default {
 		 * so typing a handler can never leave a stale endpoint behind.
 		 *
 		 * @param {string} value - the customComponents registry key of the submit handler; `''` deletes `submitHandler`, leaving the form with neither submit target.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		setSubmitHandler(value) {
 			const next = { ...this.config }
@@ -634,7 +929,7 @@ export default {
 		 * access section.
 		 *
 		 * @param {string} value - the submit URL; `''` deletes `submitEndpoint`, leaving the form with neither submit target.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		setSubmitEndpoint(value) {
 			const next = { ...this.config }
@@ -655,7 +950,7 @@ export default {
 		 *
 		 * @param {object} entry - the resolved `runtime.externalForms[]` entry.
 		 * @return {void}
-		 * @spec openspec/changes/external-form-provisioning/specs/external-form-provisioning/spec.md#req-efp-002
+		 * @spec openspec/specs/external-form-provisioning/spec.md#req-efp-002
 		 */
 		async onExternalFormSave(entry) {
 			const list = (this.runtimeExternalForms || []).slice()
@@ -687,6 +982,11 @@ export default {
 	flex-direction: column;
 	gap: 12px;
 	padding: 12px;
+}
+
+.form-page-editor__property-note {
+	color: var(--color-text-maxcontrast);
+	margin-block: 4px 8px;
 }
 
 .form-page-editor__title {
@@ -735,6 +1035,16 @@ export default {
 	color: var(--color-text-maxcontrast);
 	font-size: 13px;
 	margin: 0;
+}
+
+.form-page-editor__smart-paste-fields {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.form-page-editor__group-label {
+	font-size: 13px;
 }
 
 .form-page-editor__library {

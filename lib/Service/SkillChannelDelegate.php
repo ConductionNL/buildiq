@@ -36,6 +36,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Values\RepoSource;
 use OCP\App\IAppManager;
 use Psr\Log\LoggerInterface;
 use Throwable;

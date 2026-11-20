@@ -31,16 +31,17 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-4
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-5
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-6
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-7
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-4
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-5
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-6
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-7
  */
 
 declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\AppNavigationServiceInterface;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\IAppConfig;
 use OCP\IGroupManager;
@@ -56,12 +57,7 @@ use Psr\Log\LoggerInterface;
  * evaluated by INavigationManager on every request boot cycle so draft→published
  * transitions are picked up automatically without any writeback (REQ-OBNAV-004).
  */
-class AppNavigationService {
-	/**
-	 * Prefix of every per-published-app nav entry id; the runtime host
-	 * (DashboardController::builder) uses it to mark the entry active.
-	 */
-	public const ENTRY_ID_PREFIX = 'openbuild-app-';
+class AppNavigationService implements AppNavigationServiceInterface {
 
 	/**
 	 * App-config key overriding the base nav order of virtual-app entries.
@@ -95,6 +91,13 @@ class AppNavigationService {
 	 * @var AppVisibilityResolver
 	 */
 	private AppVisibilityResolver $visibilityResolver;
+
+	/**
+	 * The organisation-scope check; null hides every scoped app.
+	 *
+	 * @var AppOrganisationGuard|null
+	 */
+	private ?AppOrganisationGuard $organisationGuard;
 
 	/**
 	 * User session
@@ -134,6 +137,7 @@ class AppNavigationService {
 		$this->groupManager = $caller->groupManager;
 		$this->applicationProvider = $published->applicationProvider;
 		$this->visibilityResolver = ($published->visibilityResolver ?? new AppVisibilityResolver());
+		$this->organisationGuard = $published->organisationGuard;
 	}//end __construct()
 
 	/**
@@ -147,7 +151,7 @@ class AppNavigationService {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-4
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-4
 	 */
 	public function registerNavEntries(INavigationManager $nav): void {
 		try {
@@ -166,82 +170,137 @@ class AppNavigationService {
 		);
 
 		foreach ($applications as $application) {
-			$slug = ($application['slug'] ?? null);
-			$name = ($application['name'] ?? null);
+			$this->addNavEntry(nav: $nav, application: $application, orderBase: $orderBase);
+		}
+	}//end registerNavEntries()
 
-			if (is_string($slug) === false || $slug === '') {
-				continue;
-			}
+	/**
+	 * Add the top-bar entry of one published Application; one without a slug is skipped.
+	 *
+	 * @param INavigationManager   $nav         The navigation manager.
+	 * @param array<string, mixed> $application The published Application.
+	 * @param int                  $orderBase   The configured order base.
+	 *
+	 * @return void
+	 */
+	private function addNavEntry(INavigationManager $nav, array $application, int $orderBase): void {
+		$identity = $this->navIdentity(application: $application);
+		if ($identity === []) {
+			return;
+		}
 
-			if (is_string($name) === false || $name === '') {
-				$name = $slug;
-			}
+		[$slug, $name] = $identity;
 
-			$permissions = ($application['permissions'] ?? []);
-			if (is_array($permissions) === false) {
-				$permissions = [];
-			}
+		$permissions = ($application['permissions'] ?? []);
+		if (is_array($permissions) === false) {
+			$permissions = [];
+		}
 
-			$iconUrl = $this->urlGenerator->linkToRouteAbsolute(
-				'buildiq.icon.iconLight',
-				['slug' => $slug]
-			);
+		$iconUrl = $this->urlGenerator->linkToRouteAbsolute(
+			'buildiq.icon.iconLight',
+			['slug' => $slug]
+		);
 
-			// Point at the virtual-app runtime host (/builder/{slug}). Generate the
-			// href via IURLGenerator (not a hand-built string) so linkToRoute adds
-			// the `/index.php` front-controller segment exactly when the instance
-			// requires it — the link then resolves on both instance kinds.
-			$appUrl = $this->urlGenerator->linkToRoute('buildiq.dashboard.builder', ['slug' => $slug]);
-			$entryId = self::ENTRY_ID_PREFIX . $slug;
-			$order = $orderBase + (abs(crc32($slug)) % 100);
+		// Point at the virtual-app runtime host (/builder/{slug}). Generate the
+		// href via IURLGenerator (not a hand-built string) so linkToRoute adds
+		// the `/index.php` front-controller segment exactly when the instance
+		// requires it — the link then resolves on both instance kinds.
+		$appUrl = $this->urlGenerator->linkToRoute('buildiq.dashboard.builder', ['slug' => $slug]);
+		$entryId = self::ENTRY_ID_PREFIX . $slug;
+		$order = $orderBase + (abs(crc32($slug)) % 100);
 
-			// Capture variables for the closure — PHP closures close over
-			// variables by reference unless 'use' explicitly binds them by value.
-			$capturedPermissions = $permissions;
-			$userSession = $this->userSession;
-			$groupManager = $this->groupManager;
+		// Capture variables for the closure — PHP closures close over
+		// variables by reference unless 'use' explicitly binds them by value.
+		$capturedPermissions = $permissions;
+		$capturedApplication = $application;
+		$userSession = $this->userSession;
+		$groupManager = $this->groupManager;
 
-			$nav->add(
-				function () use (
-					$entryId,
-					$name,
-					$appUrl,
-					$iconUrl,
-					$order,
-					$capturedPermissions,
-					$userSession,
-					$groupManager
-				): array {
-					$visible = $this->isVisibleForCurrentUser(
+		$nav->add(
+			function () use (
+				$entryId,
+				$name,
+				$appUrl,
+				$iconUrl,
+				$order,
+				$capturedPermissions,
+				$capturedApplication,
+				$userSession,
+				$groupManager
+			): array {
+				// Organisation scope first (REQ-BQOS-002), then the role check.
+				$visible = $this->visibleToOrganisation(application: $capturedApplication, userSession: $userSession)
+					&& $this->isVisibleForCurrentUser(
 						permissions: $capturedPermissions,
 						userSession: $userSession,
 						groupManager: $groupManager
 					);
 
-					// NavigationManager has no 'enabled' concept — entries
-					// are filtered by 'type' (getAll('link')). Returning a
-					// non-'link' type is the only way a closure entry can
-					// hide itself from the app menu per user.
-					$entryType = 'openbuild-hidden';
-					if ($visible === true) {
-						$entryType = 'link';
-					}
-
-					return [
-						'id' => $entryId,
-						'name' => $name,
-						'href' => $appUrl,
-						'icon' => $iconUrl,
-						'order' => $order,
-						'type' => $entryType,
-						'active' => false,
-						'classes' => '',
-						'enabled' => $visible,
-					];
+				// NavigationManager has no 'enabled' concept — entries
+				// are filtered by 'type' (getAll('link')). Returning a
+				// non-'link' type is the only way a closure entry can
+				// hide itself from the app menu per user.
+				$entryType = 'openbuild-hidden';
+				if ($visible === true) {
+					$entryType = 'link';
 				}
-			);
-		}//end foreach
-	}//end registerNavEntries()
+
+				return [
+					'id' => $entryId,
+					'name' => $name,
+					'href' => $appUrl,
+					'icon' => $iconUrl,
+					'order' => $order,
+					'type' => $entryType,
+					'active' => false,
+					'classes' => '',
+					'enabled' => $visible,
+				];
+			}
+		);
+	}//end addNavEntry()
+
+	/**
+	 * Whether the current user may see the app at all, by its organisation scope.
+	 * A shared app passes; a scoped one needs the guard to admit the user.
+	 *
+	 * @param array<string, mixed> $application The published Application.
+	 * @param IUserSession         $userSession The session.
+	 *
+	 * @return bool True when the app is visible to the current user.
+	 *
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002
+	 */
+	private function visibleToOrganisation(array $application, IUserSession $userSession): bool {
+		if (AppOrganisationGuard::isShared(application: $application) === true) {
+			return true;
+		}
+
+		return $this->organisationGuard?->canSee(application: $application, user: $userSession->getUser()) === true;
+	}//end visibleToOrganisation()
+
+	/**
+	 * The slug and display name of an Application's entry, or [] without a slug.
+	 * The name falls back to the slug.
+	 *
+	 * @param array<string, mixed> $application The published Application.
+	 *
+	 * @return array{}|array{0: string, 1: string}
+	 */
+	private function navIdentity(array $application): array {
+		$slug = ($application['slug'] ?? null);
+		$name = ($application['name'] ?? null);
+
+		if (is_string($slug) === false || $slug === '') {
+			return [];
+		}
+
+		if (is_string($name) === false || $name === '') {
+			$name = $slug;
+		}
+
+		return [$slug, $name];
+	}//end navIdentity()
 
 	/**
 	 * Determine whether the currently-signed-in user should see a nav entry.
@@ -258,8 +317,8 @@ class AppNavigationService {
 	 *
 	 * @return bool True when the entry should be visible.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-5
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-6
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-5
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-6
 	 */
 	public function isVisibleForCurrentUser(
 		array $permissions,
@@ -285,8 +344,8 @@ class AppNavigationService {
 	 *
 	 * @throws \Throwable When the OR query fails.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-4
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-7
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-4
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-7
 	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-published-applications-are-read-once-per-request
 	 */
 	private function getPublishedApplications(): array {

@@ -52,6 +52,18 @@
 			</p>
 		</div>
 
+		<!-- The pages "Start from a database" makes (REQ-BQDB-003). -->
+		<div v-if="databasePages.length > 0" class="wizard-step4__chain-section" data-testid="wizard-review-database">
+			<h4 class="wizard-step4__subheading">
+				{{ t('buildiq', 'Pages from {database}', { database: payload.fromDatabase.register }) }}
+			</h4>
+			<ul class="wizard-step4__pages">
+				<li v-for="page in databasePages" :key="page.slug">
+					{{ t('buildiq', '{table}: a list page and a detail page, with a menu entry', { table: page.title }) }}
+				</li>
+			</ul>
+		</div>
+
 		<!-- Icon previews when a glyph was chosen -->
 		<div v-if="lightIconSvg || darkIconSvg" class="wizard-step4__icons">
 			<h4 class="wizard-step4__subheading">
@@ -95,7 +107,7 @@ export default {
 		/**
 		 * Observed behaviour of `versions` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
 		 */
 		versions() {
 			return Array.isArray(this.payload.versions) ? this.payload.versions : []
@@ -104,7 +116,7 @@ export default {
 		/**
 		 * Observed behaviour of `chainDisplay` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
 		 */
 		chainDisplay() {
 			if (this.versions.length === 0) return '—'
@@ -114,12 +126,27 @@ export default {
 		/**
 		 * Observed behaviour of `productionSlug` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-creation-wizard-ui/tasks.md#task-4
 		 */
 		productionSlug() {
 			if (this.versions.length === 0) return '—'
 			const last = this.versions[this.versions.length - 1]
 			return last.slug || last.name || '—'
+		},
+
+		/**
+		 * The tables "Start from a database" makes pages for, in menu order.
+		 *
+		 * @return {Array<{slug: string, title: string}>}
+		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
+		 */
+		databasePages() {
+			const choice = this.payload.fromDatabase
+			if (!choice || !choice.register || !Array.isArray(choice.schemas)) {
+				return []
+			}
+			const titles = new Map((choice.tables || []).map((table) => [table.slug, table.title]))
+			return choice.schemas.map((slug) => ({ slug, title: titles.get(slug) || slug }))
 		},
 
 		/**
@@ -146,6 +173,11 @@ export default {
 </script>
 
 <style scoped>
+.wizard-step4__pages {
+	margin: 0;
+	padding-inline-start: 20px;
+}
+
 .wizard-step4 {
 	display: flex;
 	flex-direction: column;

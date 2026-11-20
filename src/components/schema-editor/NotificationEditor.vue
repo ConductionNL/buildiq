@@ -44,7 +44,7 @@ export default {
 		/**
 		 * Render the notifications block as pretty JSON for read-only display.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-4
 		 * @return {string} Formatted JSON, or empty string on error.
 		 */
 		formatted() {

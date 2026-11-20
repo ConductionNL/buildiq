@@ -13,6 +13,9 @@
  * @version GIT: <git-id>
  *
  * @link https://conduction.nl
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -21,7 +24,7 @@ namespace OCA\Buildiq\Tests\Unit\Service;
 
 use OCA\Buildiq\Service\GitHubCatalogService;
 use OCA\Buildiq\Service\GitHubFormCatalogService;
-use OCA\Buildiq\Service\RepoSource;
+use OCA\Buildiq\Kernel\Values\RepoSource;
 use OCA\OpenRegister\Service\Credential\CredentialBrokerService;
 use OCP\Http\Client\IClient;
 use OCP\Http\Client\IClientService;
@@ -41,8 +44,9 @@ use Stringable;
  * GOLDEN_RECORD=1 to write a missing fixture.
  *
  * @covers \OCA\Buildiq\Service\GitHubCatalogService
+ * @uses   \OCA\Buildiq\Service\GitHub\ShortLivedCache
  * @uses   \OCA\Buildiq\Service\GitHubFormCatalogService
- * @uses   \OCA\Buildiq\Service\RepoSource
+ * @uses   \OCA\Buildiq\Kernel\Values\RepoSource
  */
 class GitHubCatalogCredentialRoutingGoldenTest extends TestCase {
 

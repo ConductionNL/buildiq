@@ -13,6 +13,9 @@
  * @version GIT: <git-id>
  *
  * @link https://conduction.nl
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -31,6 +34,8 @@ use PHPUnit\Framework\TestCase;
  *
  * @covers \OCA\Buildiq\Support\ManifestWidgetShape
  * @uses   \OCA\Buildiq\Support\WidgetSpec
+ * @uses   \OCA\Buildiq\Support\WidgetIdAllocator
+ * @uses   \OCA\Buildiq\Support\WidgetDataBinding
  */
 class ManifestWidgetShapeGoldenTest extends TestCase {
 

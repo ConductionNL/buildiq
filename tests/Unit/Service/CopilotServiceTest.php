@@ -28,6 +28,8 @@ use OCA\Buildiq\Exception\CopilotException;
 use OCA\Buildiq\Mcp\BuildiqToolProvider;
 use OCA\Buildiq\Service\AgentRunLogger;
 use OCA\Buildiq\Service\ApplicationDeletionService;
+use OCA\Buildiq\Service\Copilot\AgentKnowledgeReader;
+use OCA\Buildiq\Service\Copilot\CopilotDocumentReader;
 use OCA\Buildiq\Service\Copilot\CopilotPlanValidator;
 use OCA\Buildiq\Service\Copilot\CopilotPromptBuilder;
 use OCA\Buildiq\Service\CopilotService;
@@ -37,6 +39,9 @@ use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Service\ObjectService;
+use OCP\Files\File;
+use OCP\Files\Folder;
+use OCP\Files\IRootFolder;
 use OCP\IGroupManager;
 use OCP\IUser;
 use OCP\IUserManager;
@@ -1303,6 +1308,31 @@ class CopilotServiceTest extends TestCase {
 	}//end testARealPlanPredictsAManifestTheValidatorAccepts()
 
 	/**
+	 * A predicted upsert replaces an existing entry case-insensitively, in place,
+	 * and appends an unknown one, for pages and menu items alike.
+	 *
+	 * @return void
+	 */
+	public function testPredictedUpsertsReplaceCaseInsensitivelyInPlace(): void {
+		$page = static fn (string $id, string $title): array => ['tool' => 'buildiq.upsertPage', 'arguments' => ['appSlug' => 'tool-library', 'pageId' => $id, 'title' => $title, 'type' => 'index', 'route' => '/' . strtolower($id)]];
+		$item = static fn (string $id, string $label): array => ['tool' => 'buildiq.upsertMenuItem', 'arguments' => ['appSlug' => 'tool-library', 'id' => $id, 'label' => $label, 'route' => strtolower($id)]];
+		$plan = [
+			'summary' => 'x',
+			'steps' => [
+				['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']],
+				$page('home', 'Home'), $page('about', 'About'), $page('HOME', 'Start'),
+				$item('home', 'Home'), $item('about', 'About'), $item('About', 'Over ons'),
+			],
+		];
+
+		$predicted = $this->makeService()->predictManifests(plan: $plan, appSlug: null)['tool-library@development']['predicted'];
+
+		self::assertSame([['HOME', 'Start'], ['about', 'About']], array_map(static fn (array $p): array => [$p['id'], $p['title']], $predicted['pages']));
+		$menu = [['id' => 'home', 'label' => 'Home', 'icon' => '', 'route' => 'home', 'order' => 100], ['id' => 'About', 'label' => 'Over ons', 'icon' => '', 'route' => 'about', 'order' => 100]];
+		self::assertSame($menu, $predicted['menu']);
+	}//end testPredictedUpsertsReplaceCaseInsensitivelyInPlace()
+
+	/**
 	 * predictManifests() throws when the predicted manifest exceeds the pages cap.
 	 *
 	 * @return void
@@ -1852,4 +1882,488 @@ class CopilotServiceTest extends TestCase {
 		$result = $this->makeService()->execute(plan: $plan, userId: 'anyone');
 		self::assertCount(1, $result['results']);
 	}//end testExecuteCreateAppOnlyRequiresNoExistingAppRole()
+	// -------------------------------------------------------------------
+	// plan() — model steps of an agent turn (ai-agents-knowledge-and-run-trace)
+	// -------------------------------------------------------------------
+
+	/**
+	 * A repaired plan keeps both model calls: the first with the parse error as its
+	 * refusal, the second successful, and the plan returns the trace id the run
+	 * will look them up by (REQ-BQAG-004).
+	 *
+	 * @return void
+	 */
+	public function testARepairedAgentPlanKeepsBothModelSteps(): void {
+		$this->wireTaskProcessingManager();
+		$this->taskManager->method('getAvailableTaskTypes')->willReturn([TextToText::ID => []]);
+		$this->wireAgent(agentId: 'agent-1');
+		$this->wireCaller(uid: 'alice');
+		$this->objectService->method('searchObjectsBySlug')->willReturn(
+			[
+				['id' => 'app-1', 'slug' => 'tool-library', 'permissions' => ['owners' => ['user:alice']]],
+			]
+		);
+
+		$nextId = 1;
+		$this->taskManager->method('scheduleTask')->willReturnCallback(
+			function (Task $task) use (&$nextId): void {
+				$task->setId($nextId++);
+			}
+		);
+		$broken = new Task(TextToText::ID, ['input' => 'x'], 'buildiq', 'alice');
+		$broken->setStatus(Task::STATUS_SUCCESSFUL);
+		$broken->setOutput(['output' => 'Sure! Here is your plan: {steps: oops']);
+		$valid = new Task(TextToText::ID, ['input' => 'x'], 'buildiq', 'alice');
+		$valid->setStatus(Task::STATUS_SUCCESSFUL);
+		$valid->setOutput(
+			[
+				'output' => json_encode(
+					[
+						'summary' => 'Add a page',
+						'steps' => [['tool' => 'buildiq.upsertPage', 'arguments' => ['appSlug' => 'tool-library', 'pageId' => 'a', 'title' => 'A', 'type' => 'index', 'route' => '/a']]],
+					]
+				),
+			]
+		);
+		$this->taskManager->method('getTask')->willReturnOnConsecutiveCalls($broken, $valid);
+
+		$kept = null;
+		$this->agentRunLogger->expects(self::once())->method('rememberTrace')
+			->willReturnCallback(
+				function (array $agent, string $userId, array $trace) use (&$kept): string {
+					self::assertSame('agent-1', $agent['id']);
+					self::assertSame('alice', $userId);
+					$kept = $trace;
+					return 'trace-1';
+				}
+			);
+		$this->agentRunLogger->expects(self::never())->method('log');
+
+		$result = $this->makeService()->plan(brief: 'x', appSlug: null, userId: 'alice', agentId: 'agent-1');
+
+		self::assertSame('trace-1', $result['traceId']);
+		self::assertSame(['plan', 'repair'], array_column($kept['modelSteps'], 'kind'));
+		self::assertSame([1, 2], array_column($kept['modelSteps'], 'attempt'));
+		self::assertSame(['repair-needed', 'successful'], array_column($kept['modelSteps'], 'status'));
+		self::assertNotSame('', $kept['modelSteps'][0]['refusal'], 'the parse error that caused the repair');
+		self::assertSame('', $kept['modelSteps'][1]['refusal']);
+		self::assertSame('Sure! Here is your plan: {steps: oops', $kept['modelSteps'][0]['output']);
+		self::assertSame('core:text2text', $kept['modelSteps'][0]['taskType']);
+		self::assertGreaterThan(0, $kept['modelSteps'][0]['promptChars']);
+		self::assertSame([], $kept['knowledgeUsed']);
+		self::assertSame(array_sum(array_column($kept['modelSteps'], 'durationMs')), $kept['durationMs']);
+	}//end testARepairedAgentPlanKeepsBothModelSteps()
+
+	/**
+	 * A plan rejected in the same request hands its steps to the run directly.
+	 *
+	 * @return void
+	 */
+	public function testARejectedAgentPlanLogsTheStepsInHand(): void {
+		$this->wireTaskProcessingManager();
+		$this->taskManager->method('getAvailableTaskTypes')->willReturn([TextToText::ID => []]);
+		$this->wireAgent(agentId: 'agent-1', agent: ['enabledTools' => ['buildiq.upsertPage']]);
+		$this->wireCaller(uid: 'alice');
+		$this->objectService->method('searchObjectsBySlug')->willReturn(
+			[
+				['id' => 'app-1', 'slug' => 'tool-library', 'permissions' => ['owners' => ['user:alice']]],
+			]
+		);
+		$this->wireSuccessfulLlmReply(
+			json_encode(['summary' => 'x', 'steps' => [['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'x', 'name' => 'X']]]])
+		);
+
+		$this->agentRunLogger->expects(self::never())->method('rememberTrace');
+		$this->agentRunLogger->expects(self::once())->method('log')
+			->with(
+				self::anything(),
+				'alice',
+				'x',
+				[],
+				[],
+				'plan-rejected',
+				null,
+				self::callback(static fn (array $trace): bool => array_column($trace['modelSteps'], 'status') === ['successful'])
+			);
+
+		$this->expectException(CopilotException::class);
+		$this->makeService()->plan(brief: 'x', appSlug: null, userId: 'alice', agentId: 'agent-1');
+	}//end testARejectedAgentPlanLogsTheStepsInHand()
+
+	/**
+	 * The bare copilot keeps no trace and returns no trace id.
+	 *
+	 * @return void
+	 */
+	public function testTheBareCopilotKeepsNoTrace(): void {
+		$this->wireTaskProcessingManager();
+		$this->taskManager->method('getAvailableTaskTypes')->willReturn([TextToText::ID => []]);
+		$this->wireSuccessfulLlmReply(
+			json_encode(['summary' => 'x', 'steps' => [['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']]]])
+		);
+		$this->agentRunLogger->expects(self::never())->method('rememberTrace');
+
+		$result = $this->makeService()->plan(brief: 'x', appSlug: null, userId: 'alice');
+
+		self::assertArrayNotHasKey('traceId', $result);
+	}//end testTheBareCopilotKeepsNoTrace()
+
+	// -------------------------------------------------------------------
+	// plan() — an agent's knowledge (ai-agents-knowledge-and-run-trace)
+	// -------------------------------------------------------------------
+
+	/**
+	 * Build the SUT with a given knowledge reader.
+	 *
+	 * @param AgentKnowledgeReader $reader The knowledge reader.
+	 *
+	 * @return CopilotService
+	 */
+	private function makeServiceWithKnowledge(AgentKnowledgeReader $reader): CopilotService {
+		return new CopilotService(
+			container: $this->container,
+			logger: $this->createMock(LoggerInterface::class),
+			objectService: $this->objectService,
+			userManager: $this->userManager,
+			groupManager: $this->groupManager,
+			permissionResolver: new PermissionResolver(groupManager: $this->groupManager, logger: $this->createMock(LoggerInterface::class)),
+			toolProvider: $this->toolProvider,
+			planValidator: new CopilotPlanValidator(),
+			promptBuilder: new CopilotPromptBuilder(toolProvider: $this->toolProvider),
+			appDeletionService: $this->deletionService,
+			agentRunLogger: $this->agentRunLogger,
+			knowledgeReader: $reader,
+		);
+	}//end makeServiceWithKnowledge()
+
+	/**
+	 * An agent's plan prompt carries its knowledge after its instructions and
+	 * before the brief, and the trace names the files used (REQ-BQAG-002).
+	 *
+	 * @return void
+	 */
+	public function testAnAgentPlanReadsItsKnowledgeAfterItsInstructions(): void {
+		$this->wireTaskProcessingManager();
+		$this->taskManager->method('getAvailableTaskTypes')->willReturn([TextToText::ID => []]);
+		$this->wireAgent(agentId: 'agent-1', agent: ['knowledge' => [['fileName' => 'huisstijl-formulieren.md']]]);
+		$this->wireCaller(uid: 'alice');
+		$this->objectService->method('searchObjectsBySlug')->willReturn(
+			[
+				['id' => 'app-1', 'slug' => 'tool-library', 'permissions' => ['owners' => ['user:alice']]],
+			]
+		);
+
+		$prompts = [];
+		$nextId = 1;
+		$this->taskManager->method('scheduleTask')->willReturnCallback(
+			function (Task $task) use (&$nextId, &$prompts): void {
+				$prompts[] = (string)($task->getInput()['input'] ?? '');
+				$task->setId($nextId++);
+			}
+		);
+		$done = new Task(TextToText::ID, ['input' => 'x'], 'buildiq', 'alice');
+		$done->setStatus(Task::STATUS_SUCCESSFUL);
+		$done->setOutput(
+			[
+				'output' => json_encode(
+					[
+						'summary' => 'Add a page',
+						'steps' => [['tool' => 'buildiq.upsertPage', 'arguments' => ['appSlug' => 'tool-library', 'pageId' => 'a', 'title' => 'A', 'type' => 'index', 'route' => '/a']]],
+					]
+				),
+			]
+		);
+		$this->taskManager->method('getTask')->willReturn($done);
+
+		$reader = $this->createMock(AgentKnowledgeReader::class);
+		$reader->expects(self::once())->method('read')
+			->with(self::callback(static fn (array $agent): bool => ($agent['id'] ?? null) === 'agent-1'))
+			->willReturn([['fileName' => 'huisstijl-formulieren.md', 'text' => 'Field labels are in sentence case.']]);
+
+		$kept = null;
+		$this->agentRunLogger->method('rememberTrace')->willReturnCallback(
+			function (array $agent, string $userId, array $trace) use (&$kept): string {
+				$kept = $trace;
+				return 'trace-1';
+			}
+		);
+
+		$this->makeServiceWithKnowledge(reader: $reader)->plan(brief: 'Add a contact form', appSlug: null, userId: 'alice', agentId: 'agent-1');
+
+		self::assertCount(1, $prompts);
+		$prompt = $prompts[0];
+		$instructions = strpos($prompt, 'Be helpful.');
+		$knowledge = strpos($prompt, "--- huisstijl-formulieren.md ---\nField labels are in sentence case.");
+		$brief = strpos($prompt, "User brief:\nAdd a contact form");
+		self::assertIsInt($instructions);
+		self::assertIsInt($knowledge);
+		self::assertIsInt($brief);
+		self::assertTrue($instructions < $knowledge && $knowledge < $brief, 'instructions, then knowledge, then the brief');
+		self::assertSame(['huisstijl-formulieren.md'], $kept['knowledgeUsed']);
+	}//end testAnAgentPlanReadsItsKnowledgeAfterItsInstructions()
+
+	/**
+	 * A caller without owner or editor access to the agent's app gets no plan,
+	 * and the agent's knowledge is never read for them (REQ-BQAG-002).
+	 *
+	 * @return void
+	 */
+	public function testACallerWithoutAppAccessGetsNoPlanAndNoKnowledge(): void {
+		$this->wireTaskProcessingManager();
+		$this->taskManager->method('getAvailableTaskTypes')->willReturn([TextToText::ID => []]);
+		$this->wireAgent(agentId: 'agent-1', agent: ['knowledge' => [['fileName' => 'huisstijl-formulieren.md']]]);
+		$this->wireCaller(uid: 'bob');
+		$this->objectService->method('searchObjectsBySlug')->willReturn(
+			[
+				['id' => 'app-1', 'slug' => 'tool-library', 'permissions' => ['owners' => ['user:alice'], 'viewers' => ['user:bob']]],
+			]
+		);
+		$this->taskManager->expects(self::never())->method('scheduleTask');
+
+		$reader = $this->createMock(AgentKnowledgeReader::class);
+		$reader->expects(self::never())->method('read');
+
+		try {
+			$this->makeServiceWithKnowledge(reader: $reader)->plan(brief: 'x', appSlug: null, userId: 'bob', agentId: 'agent-1');
+			self::fail('A viewer must get no plan.');
+		} catch (CopilotException $e) {
+			self::assertSame('forbidden', $e->getErrorCode());
+			self::assertSame(403, $e->getHttpStatus());
+		}
+	}//end testACallerWithoutAppAccessGetsNoPlanAndNoKnowledge()
+
+	// -------------------------------------------------------------------
+	// plan() with a requirements document (ai-copilot-documents-and-code-help REQ-BQCH-005)
+	// -------------------------------------------------------------------
+
+	/**
+	 * The SUT with a document reader over a user folder that holds the given files for alice.
+	 *
+	 * @param array<int, File> $files File id => file.
+	 *
+	 * @return CopilotService
+	 */
+	private function makeServiceWithDocuments(array $files): CopilotService {
+		$folder = $this->createMock(Folder::class);
+		$folder->method('getById')->willReturnCallback(
+			static fn (int $id): array => (isset($files[$id]) === true ? [$files[$id]] : [])
+		);
+		$root = $this->createMock(IRootFolder::class);
+		$root->method('getUserFolder')->with('alice')->willReturn($folder);
+
+		$logger = $this->createMock(LoggerInterface::class);
+
+		return new CopilotService(
+			container: $this->container,
+			logger: $logger,
+			objectService: $this->objectService,
+			userManager: $this->userManager,
+			groupManager: $this->groupManager,
+			permissionResolver: new PermissionResolver(groupManager: $this->groupManager, logger: $logger),
+			toolProvider: $this->toolProvider,
+			planValidator: new CopilotPlanValidator(),
+			promptBuilder: new CopilotPromptBuilder(toolProvider: $this->toolProvider),
+			appDeletionService: $this->deletionService,
+			agentRunLogger: $this->agentRunLogger,
+			documentReader: new CopilotDocumentReader(rootFolder: $root),
+		);
+	}//end makeServiceWithDocuments()
+
+	/**
+	 * A file with this name, mimetype and text.
+	 *
+	 * @param string $name     The file name.
+	 * @param string $mimetype The mimetype.
+	 * @param string $text     The content.
+	 *
+	 * @return File&MockObject
+	 */
+	private function documentFile(string $name, string $mimetype, string $text): File&MockObject {
+		$file = $this->createMock(File::class);
+		$file->method('getName')->willReturn($name);
+		$file->method('getMimetype')->willReturn($mimetype);
+		$file->method('getSize')->willReturn(strlen($text));
+		$file->method('getContent')->willReturn($text);
+		$file->method('isReadable')->willReturn(true);
+		return $file;
+	}//end documentFile()
+
+	/**
+	 * The plan reads the document as the user, puts its text in the prompt, accepts an empty brief and names the file.
+	 *
+	 * @return void
+	 */
+	public function testPlanReadsADocumentIntoThePrompt(): void {
+		$this->wireTaskProcessingManager();
+		$this->taskManager->method('getAvailableTaskTypes')->willReturn([TextToText::ID => []]);
+		$prompts = [];
+		$this->taskManager->method('scheduleTask')->willReturnCallback(
+			function (Task $task) use (&$prompts): void {
+				$prompts[] = $task->getInput()['input'];
+				$task->setId(1);
+			}
+		);
+		$done = new Task(TextToText::ID, ['input' => 'x'], 'buildiq', 'alice');
+		$done->setStatus(Task::STATUS_SUCCESSFUL);
+		$done->setOutput(['output' => json_encode(['summary' => 'Garden permits', 'steps' => [['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'tuin', 'name' => 'Tuin']]]])]);
+		$this->taskManager->method('getTask')->willReturn($done);
+
+		$service = $this->makeServiceWithDocuments([42 => $this->documentFile('Eisen tuinvergunning.md', 'application/octet-stream', "# Eisen\nAanvragers volgen hun aanvraag.")]);
+		$result = $service->plan(brief: '', appSlug: null, userId: 'alice', documentFileId: 42);
+
+		self::assertSame(['fileId' => 42, 'name' => 'Eisen tuinvergunning.md'], $result['document']);
+		self::assertCount(1, $prompts);
+		self::assertStringContainsString("Requirements document \"Eisen tuinvergunning.md\":\n# Eisen\nAanvragers volgen hun aanvraag.", $prompts[0]);
+		self::assertStringContainsString('Build the app this requirements document describes.', $prompts[0]);
+	}//end testPlanReadsADocumentIntoThePrompt()
+
+	/**
+	 * A file the user cannot read is 404 and no text task is scheduled.
+	 *
+	 * @return void
+	 */
+	public function testPlanAnswers404ForAnUnreadableDocument(): void {
+		$this->wireTaskProcessingManager();
+		$this->taskManager->method('getAvailableTaskTypes')->willReturn([TextToText::ID => []]);
+		$this->taskManager->expects(self::never())->method('scheduleTask');
+
+		try {
+			$this->makeServiceWithDocuments([])->plan(brief: 'An app', appSlug: null, userId: 'alice', documentFileId: 999);
+			self::fail('An unreadable document must be refused.');
+		} catch (CopilotException $e) {
+			self::assertSame(404, $e->getHttpStatus());
+			self::assertSame('not_found', $e->getErrorCode());
+			self::assertSame('The document could not be found.', $e->getMessage());
+		}
+	}//end testPlanAnswers404ForAnUnreadableDocument()
+
+	/**
+	 * A type that cannot be read yet is refused naming the accepted types, before the model.
+	 *
+	 * @return void
+	 */
+	public function testPlanRefusesAnUnsupportedDocumentType(): void {
+		$this->wireTaskProcessingManager();
+		$this->taskManager->method('getAvailableTaskTypes')->willReturn([TextToText::ID => []]);
+		$this->taskManager->expects(self::never())->method('scheduleTask');
+
+		try {
+			$this->makeServiceWithDocuments([7 => $this->documentFile('Eisen.pdf', 'application/pdf', '%PDF')])
+				->plan(brief: 'An app', appSlug: null, userId: 'alice', documentFileId: 7);
+			self::fail('A PDF must be refused until OpenRegister serves its text.');
+		} catch (CopilotException $e) {
+			self::assertSame(422, $e->getHttpStatus());
+			self::assertSame('unsupported_document', $e->getErrorCode());
+			self::assertStringContainsString('plain text (.txt) or Markdown (.md)', $e->getMessage());
+		}
+	}//end testPlanRefusesAnUnsupportedDocumentType()
+
+	/**
+	 * A document over 60,000 characters is refused naming the limit, never cut.
+	 *
+	 * @return void
+	 */
+	public function testPlanRefusesAnOversizedDocument(): void {
+		$this->wireTaskProcessingManager();
+		$this->taskManager->method('getAvailableTaskTypes')->willReturn([TextToText::ID => []]);
+		$this->taskManager->expects(self::never())->method('scheduleTask');
+
+		try {
+			$this->makeServiceWithDocuments([8 => $this->documentFile('Eisen.txt', 'text/plain', str_repeat('é', 60001))])
+				->plan(brief: 'An app', appSlug: null, userId: 'alice', documentFileId: 8);
+			self::fail('An oversized document must be refused.');
+		} catch (CopilotException $e) {
+			self::assertSame(422, $e->getHttpStatus());
+			self::assertSame('document_too_long', $e->getErrorCode());
+			self::assertStringContainsString('60,000 characters', $e->getMessage());
+			self::assertSame(['maxCharacters' => 60000], $e->getContext());
+		}
+	}//end testPlanRefusesAnOversizedDocument()
+
+	/**
+	 * Without a document an empty brief is still refused.
+	 *
+	 * @return void
+	 */
+	public function testPlanStillRefusesAnEmptyBriefWithoutADocument(): void {
+		$this->wireTaskProcessingManager();
+		$this->taskManager->method('getAvailableTaskTypes')->willReturn([TextToText::ID => []]);
+
+		$this->expectExceptionMessage('Brief must be between 1 and 2000 characters.');
+
+		$this->makeServiceWithDocuments([])->plan(brief: '', appSlug: null, userId: 'alice');
+	}//end testPlanStillRefusesAnEmptyBriefWithoutADocument()
+
+	/**
+	 * The plan answer carries the validated stories; a story pointing at a non-page step is 422.
+	 *
+	 * @return void
+	 */
+	public function testPlanCarriesItsStoriesAndRefusesABadOne(): void {
+		$this->wireTaskProcessingManager();
+		$this->taskManager->method('getAvailableTaskTypes')->willReturn([TextToText::ID => []]);
+		$story = ['id' => 's1', 'role' => 'a member', 'goal' => 'borrow a tool', 'servedBy' => [0]];
+		$this->wireSuccessfulLlmReply(
+			json_encode(
+				[
+					'summary' => 'A tool library',
+					'stories' => [$story],
+					'steps' => [['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']]],
+				]
+			)
+		);
+
+		try {
+			$this->makeService()->plan(brief: 'A tool library', appSlug: null, userId: 'alice');
+			self::fail('A story served by a createApp step must be refused.');
+		} catch (CopilotException $e) {
+			self::assertSame('plan_invalid', $e->getErrorCode());
+			self::assertSame('Story 0: servedBy 0 does not point at a schema or page step.', $e->getMessage());
+		}
+	}//end testPlanCarriesItsStoriesAndRefusesABadOne()
+
+	/**
+	 * A plan without stories answers an empty list.
+	 *
+	 * @return void
+	 */
+	public function testAPlanWithoutStoriesAnswersAnEmptyList(): void {
+		$this->wireTaskProcessingManager();
+		$this->taskManager->method('getAvailableTaskTypes')->willReturn([TextToText::ID => []]);
+		$this->wireSuccessfulLlmReply(json_encode(['summary' => 'x', 'steps' => [['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']]]]));
+
+		self::assertSame([], $this->makeService()->plan(brief: 'x', appSlug: null, userId: 'alice')['stories']);
+	}//end testAPlanWithoutStoriesAnswersAnEmptyList()
+
+	/**
+	 * A plan's stories reach the createApp step with each servedBy index named, and the answer keeps them.
+	 *
+	 * @return void
+	 */
+	public function testTheCreateAppStepCarriesTheNamedStories(): void {
+		$this->wireTaskProcessingManager();
+		$this->taskManager->method('getAvailableTaskTypes')->willReturn([TextToText::ID => []]);
+		$story = ['id' => 's1', 'role' => 'a member', 'goal' => 'see the tools', 'servedBy' => [1]];
+		$this->wireSuccessfulLlmReply(
+			json_encode(
+				[
+					'summary' => 'A tool library',
+					'stories' => [$story],
+					'steps' => [
+						['tool' => 'buildiq.createApp', 'arguments' => ['slug' => 'tool-library', 'name' => 'Tool Library']],
+						['tool' => 'buildiq.upsertPage', 'arguments' => ['appSlug' => 'tool-library', 'pageId' => 'tools', 'title' => 'Tools', 'type' => 'index', 'route' => '/tools']],
+					],
+				]
+			)
+		);
+
+		$result = $this->makeService()->plan(brief: 'A tool library', appSlug: null, userId: 'alice');
+
+		self::assertSame([$story], $result['stories']);
+		self::assertSame(
+			[['id' => 's1', 'role' => 'a member', 'goal' => 'see the tools', 'servedBy' => [['kind' => 'page', 'id' => 'tools', 'title' => 'Tools']]]],
+			$result['steps'][0]['arguments']['stories']
+		);
+		self::assertArrayNotHasKey('stories', $result['steps'][1]['arguments']);
+	}//end testTheCreateAppStepCarriesTheNamedStories()
 }//end class

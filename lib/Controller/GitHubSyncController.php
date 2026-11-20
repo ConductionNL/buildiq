@@ -39,12 +39,13 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Controller;
 
-use OCA\Buildiq\AppInfo\Application;
 use OCA\Buildiq\Exception\AppRepoParseException;
-use OCA\Buildiq\Service\Connection\ConnectionReporter;
-use OCA\Buildiq\Service\GitHub\SyncRequestParams;
-use OCA\Buildiq\Service\GitHubAppSyncService;
-use OCA\Buildiq\Service\PermissionResolver;
+use OCA\Buildiq\Kernel\AppIdentity;
+use OCA\Buildiq\Kernel\Contracts\ConnectionReporterInterface;
+use OCA\Buildiq\Kernel\Contracts\GitHubAppSyncServiceInterface;
+use OCA\Buildiq\Kernel\Contracts\PermissionResolverInterface;
+use OCA\Buildiq\Kernel\Contracts\SyncRequestParamsInterface;
+use OCA\Buildiq\Service\HelperFactory;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -73,9 +74,9 @@ class GitHubSyncController extends Controller {
 	 *
 	 * @param IRequest $request The current HTTP request.
 	 * @param IUserSession $userSession Current NC user session.
-	 * @param GitHubAppSyncService $syncService The link/push/pull service.
-	 * @param PermissionResolver $permissionResolver Shared RBAC grammar resolver.
-	 * @param ConnectionReporter|null $connectionReporter Tells integriq what a push or pull met, or nothing when absent.
+	 * @param GitHubAppSyncServiceInterface $syncService The link/push/pull service.
+	 * @param PermissionResolverInterface $permissionResolver Shared RBAC grammar resolver.
+	 * @param ConnectionReporterInterface|null $connectionReporter Tells integriq what a push or pull met, or nothing when absent.
 	 *
 	 * @return void
 	 *
@@ -84,11 +85,11 @@ class GitHubSyncController extends Controller {
 	public function __construct(
 		IRequest $request,
 		private readonly IUserSession $userSession,
-		private readonly GitHubAppSyncService $syncService,
-		private readonly PermissionResolver $permissionResolver,
-		private readonly ?ConnectionReporter $connectionReporter = null,
+		private readonly GitHubAppSyncServiceInterface $syncService,
+		private readonly PermissionResolverInterface $permissionResolver,
+		private readonly ?ConnectionReporterInterface $connectionReporter = null,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -110,11 +111,13 @@ class GitHubSyncController extends Controller {
 		$owner = (string)($this->request->getParam('owner') ?? '');
 		$name = (string)($this->request->getParam('name') ?? '');
 		$org = (string)($this->request->getParam('org') ?? '');
-		if (preg_match(SyncRequestParams::OWNER_REPO_PATTERN, $owner) !== 1 || preg_match(SyncRequestParams::OWNER_REPO_PATTERN, $name) !== 1) {
+		if (preg_match(SyncRequestParamsInterface::OWNER_REPO_PATTERN, $owner) !== 1
+			|| preg_match(SyncRequestParamsInterface::OWNER_REPO_PATTERN, $name) !== 1
+		) {
 			return $this->error(code: 'invalid_repo', status: Http::STATUS_BAD_REQUEST);
 		}
 
-		if ($org !== '' && preg_match(SyncRequestParams::OWNER_REPO_PATTERN, $org) !== 1) {
+		if ($org !== '' && preg_match(SyncRequestParamsInterface::OWNER_REPO_PATTERN, $org) !== 1) {
 			return $this->error(code: 'invalid_org', status: Http::STATUS_BAD_REQUEST);
 		}
 
@@ -153,7 +156,7 @@ class GitHubSyncController extends Controller {
 			request: $this->params()->pushRequest(credentialId: $credentialId, actingUserId: $this->uid())
 		);
 
-		$this->connectionReporter?->reportGitHubSync(outcome: (string)($result['outcome'] ?? GitHubAppSyncService::OUTCOME_UNREACHABLE));
+		$this->connectionReporter?->reportGitHubSync(outcome: (string)($result['outcome'] ?? GitHubAppSyncServiceInterface::OUTCOME_UNREACHABLE));
 
 		return $this->outcomeResponse(result: $result, okStatus: Http::STATUS_OK);
 	}//end push()
@@ -196,7 +199,7 @@ class GitHubSyncController extends Controller {
 			return new JSONResponse(data: $e->toArray(), statusCode: Http::STATUS_UNPROCESSABLE_ENTITY);
 		}
 
-		$this->connectionReporter?->reportGitHubSync(outcome: (string)($result['outcome'] ?? GitHubAppSyncService::OUTCOME_UNREACHABLE));
+		$this->connectionReporter?->reportGitHubSync(outcome: (string)($result['outcome'] ?? GitHubAppSyncServiceInterface::OUTCOME_UNREACHABLE));
 
 		return $this->outcomeResponse(result: $result, okStatus: Http::STATUS_OK);
 	}//end pull()
@@ -223,6 +226,8 @@ class GitHubSyncController extends Controller {
 			data: [
 				'githubRepo' => ($application['githubRepo'] ?? null),
 				'githubDefaultBranch' => ($application['githubDefaultBranch'] ?? null),
+				// Production pushes to the default branch, every other version to its own (lifecycle-git-branches).
+				'productionVersion' => ($application['productionVersion'] ?? null),
 				'lastPushedSha' => $this->lastPushedSha(application: $application),
 				'lastPulledSha' => null,
 				'brokerCredentialAvailable' => $brokerAvailable,
@@ -291,19 +296,19 @@ class GitHubSyncController extends Controller {
 	 * @return JSONResponse
 	 */
 	private function outcomeResponse(array $result, int $okStatus): JSONResponse {
-		$outcome = (string)($result['outcome'] ?? GitHubAppSyncService::OUTCOME_UNREACHABLE);
-		if ($outcome === GitHubAppSyncService::OUTCOME_OK) {
+		$outcome = (string)($result['outcome'] ?? GitHubAppSyncServiceInterface::OUTCOME_UNREACHABLE);
+		if ($outcome === GitHubAppSyncServiceInterface::OUTCOME_OK) {
 			return new JSONResponse(data: $result, statusCode: $okStatus);
 		}
 
 		$status = match ($outcome) {
-			GitHubAppSyncService::OUTCOME_NOT_LINKED, 'version_not_found' => Http::STATUS_BAD_REQUEST,
-			GitHubAppSyncService::OUTCOME_PUSH_CONFLICT => Http::STATUS_CONFLICT,
-			GitHubAppSyncService::OUTCOME_BROKER_UNAVAILABLE, GitHubAppSyncService::OUTCOME_BROKER_DENIED => Http::STATUS_FORBIDDEN,
+			GitHubAppSyncServiceInterface::OUTCOME_NOT_LINKED, 'version_not_found' => Http::STATUS_BAD_REQUEST,
+			GitHubAppSyncServiceInterface::OUTCOME_PUSH_CONFLICT => Http::STATUS_CONFLICT,
+			GitHubAppSyncServiceInterface::OUTCOME_BROKER_UNAVAILABLE, GitHubAppSyncServiceInterface::OUTCOME_BROKER_DENIED => Http::STATUS_FORBIDDEN,
 			// GitHub refused on permissions grounds — a 403 answer, not a 502
 			// transport failure. Reporting it as a gateway error is what sends
 			// the reader at the network instead of at the token's scopes.
-			GitHubAppSyncService::OUTCOME_FORBIDDEN => Http::STATUS_FORBIDDEN,
+			GitHubAppSyncServiceInterface::OUTCOME_FORBIDDEN => Http::STATUS_FORBIDDEN,
 			default => Http::STATUS_BAD_GATEWAY,
 		};
 
@@ -313,10 +318,10 @@ class GitHubSyncController extends Controller {
 	/**
 	 * This request's GitHub sync parameters.
 	 *
-	 * @return SyncRequestParams
+	 * @return SyncRequestParamsInterface
 	 */
-	private function params(): SyncRequestParams {
-		return new SyncRequestParams(request: $this->request);
+	private function params(): SyncRequestParamsInterface {
+		return (new HelperFactory())->syncRequestParams(request: $this->request);
 	}//end params()
 
 	/**

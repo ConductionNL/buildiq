@@ -25,7 +25,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/business-rules-engine/tasks.md#2.2
+ * @spec openspec/changes/archive/2026-06-14-business-rules-engine/tasks.md#2.2
  */
 
 declare(strict_types=1);
@@ -98,7 +98,7 @@ class ExpressionEvaluator {
 	 *
 	 * @throws InvalidArgumentException On a syntax or evaluation error.
 	 *
-	 * @spec openspec/changes/business-rules-engine/tasks.md#2.2
+	 * @spec openspec/changes/archive/2026-06-14-business-rules-engine/tasks.md#2.2
 	 */
 	public function evaluateExpression(string $expression, array $context): mixed {
 		$node = $this->parser->parse(expression: $expression);
@@ -115,7 +115,7 @@ class ExpressionEvaluator {
 	 *
 	 * @throws InvalidArgumentException On an unknown node type.
 	 *
-	 * @spec openspec/changes/business-rules-engine/tasks.md#2.2
+	 * @spec openspec/changes/archive/2026-06-14-business-rules-engine/tasks.md#2.2
 	 */
 	public function evaluate(array $node, array $context): mixed {
 		++$this->depth;
@@ -219,7 +219,7 @@ class ExpressionEvaluator {
 	 *
 	 * @return mixed The resolved value, or null when any segment is missing.
 	 *
-	 * @spec openspec/changes/business-rules-engine/tasks.md#2.2
+	 * @spec openspec/changes/archive/2026-06-14-business-rules-engine/tasks.md#2.2
 	 */
 	private function resolvePath(array $segments, array $context): mixed {
 		$cursor = $context;
@@ -243,7 +243,7 @@ class ExpressionEvaluator {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/business-rules-engine/tasks.md#2.2
+	 * @spec openspec/changes/archive/2026-06-14-business-rules-engine/tasks.md#2.2
 	 */
 	private function evaluateLogical(array $node, array $context): bool {
 		$leftValue = $this->evaluate(node: $node['left'], context: $context);
@@ -276,7 +276,7 @@ class ExpressionEvaluator {
 	 *
 	 * @throws InvalidArgumentException On division by zero.
 	 *
-	 * @spec openspec/changes/business-rules-engine/tasks.md#2.2
+	 * @spec openspec/changes/archive/2026-06-14-business-rules-engine/tasks.md#2.2
 	 */
 	private function evaluateBinary(array $node, array $context): mixed {
 		$left = $this->evaluate(node: $node['left'], context: $context);
@@ -353,7 +353,7 @@ class ExpressionEvaluator {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/business-rules-engine/tasks.md#2.2
+	 * @spec openspec/changes/archive/2026-06-14-business-rules-engine/tasks.md#2.2
 	 */
 	private function evaluateIn(array $node, array $context): bool {
 		$needle = $this->evaluate(node: $node['operand'], context: $context);
@@ -386,7 +386,7 @@ class ExpressionEvaluator {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/business-rules-engine/tasks.md#2.2
+	 * @spec openspec/changes/archive/2026-06-14-business-rules-engine/tasks.md#2.2
 	 */
 	private function looseEquals(mixed $left, mixed $right): bool {
 		if (is_numeric($left) === true && is_numeric($right) === true) {
@@ -407,7 +407,7 @@ class ExpressionEvaluator {
 	 *
 	 * @return int|float
 	 *
-	 * @spec openspec/changes/business-rules-engine/tasks.md#2.2
+	 * @spec openspec/changes/archive/2026-06-14-business-rules-engine/tasks.md#2.2
 	 */
 	private function num(mixed $value): int|float {
 		if (is_int($value) === true || is_float($value) === true) {
@@ -428,7 +428,7 @@ class ExpressionEvaluator {
 	 *
 	 * @return bool
 	 *
-	 * @spec openspec/changes/business-rules-engine/tasks.md#2.2
+	 * @spec openspec/changes/archive/2026-06-14-business-rules-engine/tasks.md#2.2
 	 */
 	private function truthy(mixed $value): bool {
 		return (bool)$value;
