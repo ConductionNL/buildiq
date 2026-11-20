@@ -5,6 +5,8 @@
   - supported), `sidebarProps.tabs` list. Implements REQ-OBPD-005.
   - Related items (`relatedCollections`, `relationLinks`) and the sidebar's
   - Files choice: REQ-BQRI-001..003 (pages-detail-related-items).
+  - Widgets (`config.widgets`), one of which may be a code component:
+  - REQ-BQCC-001 (pages-custom-code).
   -->
 <template>
 	<div class="detail-page-editor">
@@ -134,6 +136,18 @@
 				:hostSchema="config.schema || ''"
 				@update:modelValue="updateList('relationLinks', $event)" />
 			<InlineFieldMark :error="markFor('relationLinks')" />
+		</fieldset>
+
+		<fieldset class="detail-page-editor__fieldset">
+			<legend>{{ t('buildiq', 'Widgets') }}</legend>
+			<p class="detail-page-editor__note">
+				{{ t('buildiq', 'Widgets shown with the open record. A custom widget can be written by hand.') }}
+			</p>
+			<WidgetBuilder
+				:modelValue="config.widgets || []"
+				withoutConnectors
+				@update:modelValue="updateList('widgets', $event)" />
+			<InlineFieldMark :error="markFor('widgets')" />
 		</fieldset>
 
 		<fieldset class="detail-page-editor__fieldset">
@@ -294,6 +308,7 @@ import RelatedCollectionBuilder from './fields/RelatedCollectionBuilder.vue'
 import RelationLinkBuilder from './fields/RelationLinkBuilder.vue'
 import ScreenOverrideList from './fields/ScreenOverrideList.vue'
 import SidebarTabBuilder from './fields/SidebarTabBuilder.vue'
+import WidgetBuilder from './fields/WidgetBuilder.vue'
 import WriteActionSwitches from './fields/WriteActionSwitches.vue'
 import { useEditorRegisterPicker } from '../../composables/useEditorRegisterPicker.js'
 import {
@@ -351,6 +366,7 @@ export default {
 		RelationLinkBuilder,
 		ScreenOverrideList,
 		SidebarTabBuilder,
+		WidgetBuilder,
 		WriteActionSwitches,
 	},
 
