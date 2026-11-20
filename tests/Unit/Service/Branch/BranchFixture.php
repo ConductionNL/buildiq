@@ -23,6 +23,7 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\Service\Branch;
 
 use OCA\Buildiq\Service\ApplicationVersionService;
+use OCA\Buildiq\Service\ReleaseTestGate;
 use OCA\Buildiq\Service\AutomationCompilerService;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Register;
@@ -165,7 +166,8 @@ final class BranchFixture {
 			$mock(ObjectServiceInterface::class),
 			$mock(RegisterService::class),
 			$mock(RegisterMapper::class),
-			$mock(AutomationCompilerService::class)
+			$mock(AutomationCompilerService::class),
+			$mock(ReleaseTestGate::class)
 		);
 	}//end versions()
 }//end class
