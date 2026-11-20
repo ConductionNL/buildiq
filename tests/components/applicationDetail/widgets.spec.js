@@ -227,3 +227,66 @@ describe('applicationDetail widgets', () => {
 		})
 	})
 })
+
+describe('FlowsWidget run on and last run (REQ-BQSF-005)', async () => {
+	const { default: FlowsWidget } = await import('../../../src/components/applicationDetail/widgets/FlowsWidget.vue')
+
+	/**
+	 * Mount the widget and let its run reads settle.
+	 *
+	 * @param {Array<object>} flows The bindings.
+	 * @return {Promise<object>} The wrapper.
+	 */
+	async function mountFlows(flows) {
+		const wrapper = shallowMount(FlowsWidget, { props: { flows } })
+		await new Promise((resolve) => setTimeout(resolve, 0))
+		await wrapper.vm.$nextTick()
+		return wrapper
+	}
+
+	it('lists where a bound flow runs, one line per entry, and leaves out what it cannot word', async () => {
+		axiosGetMock.mockImplementation(async () => ({ data: { results: [] } }))
+		const wrapper = await mountFlows([{
+			flow: 'f-1',
+			label: 'Notify the team',
+			runOn: [
+				{ schema: 'order', event: 'object.created' },
+				{ schema: 'order', event: 'object.deleted' },
+				{ schema: 'ticket', mode: 'from-record' },
+				{ schema: '', event: 'object.updated' },
+				{ schema: 'order', event: 'object.renamed' },
+			],
+		}])
+
+		expect(wrapper.find('.ob-flows-widget__row-name').text()).toBe('Notify the team')
+		expect(wrapper.findAll('.ob-flows-widget__run-on li').map((li) => li.text())).toEqual([
+			'when a order is created',
+			'when a order is deleted',
+			'from a ticket record',
+		])
+	})
+
+	it('reads the last run of each bound flow and shows its status, or that it has not run', async () => {
+		axiosGetMock.mockReset()
+		axiosGetMock.mockImplementation(async (url, { params }) => ({
+			data: { results: params.flowId === 'f-1' ? [{ status: 'failed', created: '2026-11-14T10:00:00+00:00' }] : [] },
+		}))
+		const wrapper = await mountFlows([{ flow: 'f-1', label: 'One' }, { flow: 'f-2', label: 'Two' }, { flow: 'f-1', label: 'Again' }])
+
+		expect(axiosGetMock).toHaveBeenCalledTimes(2)
+		expect(axiosGetMock).toHaveBeenCalledWith('/apps/openregister/api/flow-runs', { params: { flowId: 'f-1', limit: 1 } })
+		const lines = wrapper.findAll('.ob-flows-widget__last-run').map((p) => p.text())
+		expect(lines[0]).toMatch(/^Last run: failed \S/)
+		expect(lines[1]).toBe('Not run yet')
+		expect(wrapper.findAll('.ob-flows-widget__run-on')).toHaveLength(0)
+	})
+
+	it('shows no last run for a flow whose runs cannot be read', async () => {
+		axiosGetMock.mockReset()
+		axiosGetMock.mockRejectedValue(new Error('403'))
+		const wrapper = await mountFlows([{ flow: 'f-1', label: 'One' }])
+
+		expect(wrapper.find('.ob-flows-widget__last-run').exists()).toBe(false)
+		expect(wrapper.find('.ob-flows-widget__row').attributes('href')).toBe('/apps/openregister/flows/f-1')
+	})
+})

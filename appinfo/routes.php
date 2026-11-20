@@ -75,6 +75,13 @@ return \OCA\Buildiq\Middleware\Support\ApiPathAliases::withVersionedAliases(\OCA
         // (pages/menu/settings/sidebar/actions) were computed but never persisted.
         ['name' => 'applications#saveManifest', 'url' => '/api/applications/{slug}/manifest', 'verb' => 'PUT', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
 
+        // Sandbox documents for maker code (pages-custom-code D2, REQ-BQCC-003):
+        // loaded into an iframe with sandbox="allow-scripts" and no
+        // allow-same-origin, answered with a policy that allows no requests.
+        ['name' => 'sandbox#evaluator', 'url' => '/sandbox/evaluator', 'verb' => 'GET'],
+        ['name' => 'sandbox#preview', 'url' => '/sandbox/preview', 'verb' => 'GET'],
+        ['name' => 'sandbox#code', 'url' => '/sandbox/{slug}/{version}/{codeId}', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+
         // Versioning — diff endpoint (chain spec #6 buildiq-versioning, REQ-OBV-005). Returns
         // two ApplicationVersion manifest blobs in one round-trip so the client diff component
         // does not double-fetch. `from`/`to` are ApplicationVersion UUIDs OR the literal `draft`.
@@ -137,6 +144,10 @@ return \OCA\Buildiq\Middleware\Support\ApiPathAliases::withVersionedAliases(\OCA
         ['name' => 'applicationPublish#unpublish', 'url' => '/api/applications/{appUuid}/unpublish', 'verb' => 'POST', 'requirements' => ['appUuid' => '[a-f0-9-]{8,}']],
         // Owner-only full delete (Application + versions + per-version registers + routes).
         ['name' => 'applicationPublish#destroy', 'url' => '/api/applications/{appUuid}', 'verb' => 'DELETE', 'requirements' => ['appUuid' => '[a-f0-9-]{8,}']],
+
+        // Wrapper flows for the app's flow bindings (logic-shared-flows-and-automations REQ-BQSF-002):
+        // saves, publishes and binds one wrapper per `runOn` entry and removes stale ones. Owners only.
+        ['name' => 'flowBindings#sync', 'url' => '/api/applications/{appUuid}/flow-wrappers', 'verb' => 'POST', 'requirements' => ['appUuid' => '[a-f0-9-]{8,}']],
 
         // Standalone runtime page for a published virtual app — the bare
         // /builder/{slug} (no sub-path). Placed before the catch-all

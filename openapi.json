@@ -1487,6 +1487,91 @@
                 }
             }
         },
+        "/applications/{appUuid}/flow-wrappers": {
+            "post": {
+                "operationId": "flow-bindings-sync",
+                "summary": "Wire the app's flow bindings: one wrapper flow per Run on entry",
+                "description": "Wire the app's flow bindings: one wrapper flow per Run on entry. Saves, publishes and binds a wrapper flow for each `runOn` entry of the flows bound in `Application.flows`, removes wrappers whose entry or binding is gone, and answers the new bindings. The bound flows themselves are never changed. Wired in `appinfo/routes.php` under name `flowBindings#sync`. `#[NoAdminRequired]`; only an owner of the Application may call it. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "applications"
+                ],
+                "parameters": [
+                    {
+                        "name": "appUuid",
+                        "in": "path",
+                        "required": true,
+                        "description": "Application UUID (path param).",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "flows": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object"
+                                            },
+                                            "description": "The Application's bindings after the sync, wrappers included."
+                                        },
+                                        "created": {
+                                            "type": "integer",
+                                            "description": "Wrappers saved and bound."
+                                        },
+                                        "removed": {
+                                            "type": "integer",
+                                            "description": "Wrappers deleted and unbound."
+                                        },
+                                        "failed": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "name": {
+                                                        "type": "string"
+                                                    },
+                                                    "reason": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                            "no_register",
+                                                            "save_failed",
+                                                            "not_published",
+                                                            "remove_failed"
+                                                        ]
+                                                    }
+                                                }
+                                            },
+                                            "description": "Wrappers that could not be saved, published or removed."
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    }
+                }
+            }
+        },
         "/applications/{appUuid}/versions/{versionUuid}/health": {
             "get": {
                 "operationId": "app-health-show",

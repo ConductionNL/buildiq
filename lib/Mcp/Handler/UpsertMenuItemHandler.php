@@ -138,20 +138,9 @@ class UpsertMenuItemHandler extends AbstractToolHandler {
 			$order = (int)$args['order'];
 		}
 
-		if ($appSlug === '' || $this->isValidSlug(candidate: $appSlug) === false) {
-			return ['error' => "Invalid appSlug '{$appSlug}'."];
-		}
-
-		if ($id === '') {
-			return ['error' => 'id is required.'];
-		}
-
-		if ($label === '') {
-			return ['error' => 'label is required.'];
-		}
-
-		if ($route === '') {
-			return ['error' => 'route is required.'];
+		$refusal = $this->firstArgumentRefusal(appSlug: $appSlug, required: ['id' => $id, 'label' => $label, 'route' => $route]);
+		if ($refusal !== null) {
+			return ['error' => $refusal];
 		}
 
 		// A menu item targets a route by NAME, and the runtime names every route
