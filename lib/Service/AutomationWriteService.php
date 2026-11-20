@@ -465,6 +465,7 @@ class AutomationWriteService implements AutomationWriteServiceInterface {
 	 * @return array<string,mixed>|null
 	 *
 	 * @spec openspec/specs/automation-designer/spec.md#req-autd-008
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	public function loadApplication(string $slug): ?array {
@@ -482,8 +483,26 @@ class AutomationWriteService implements AutomationWriteServiceInterface {
 			return null;
 		}
 
-		return ObjectRecord::toArray(object: $entity);
+		return $this->visibleOrNull(application: ObjectRecord::toArray(object: $entity));
 	}//end loadApplication()
+
+	/**
+	 * The app, or null when it is another organisation's scoped app, so it is
+	 * not found before any role (REQ-BQOS-002).
+	 *
+	 * @param array<string,mixed> $application The Application.
+	 *
+	 * @return array<string,mixed>|null
+	 *
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002
+	 */
+	private function visibleOrNull(array $application): ?array {
+		if ($this->permissionResolver->seesApplication(application: $application, caller: $this->userSession->getUser()) === false) {
+			return null;
+		}
+
+		return $application;
+	}//end visibleOrNull()
 
 	/**
 	 * Return `$value` when it is an array, otherwise an empty array.

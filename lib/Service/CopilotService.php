@@ -1547,6 +1547,8 @@ class CopilotService implements CopilotServiceInterface {
 			throw new CopilotException(errorCode: 'forbidden', message: 'You must be signed in.', httpStatus: 403);
 		}
 
+		$this->assertSeesApp(app: $app, caller: $caller);
+
 		$permissions = (array)($app['permissions'] ?? []);
 		$userGroups = $this->permissionResolver->resolveUserGroups(user: $caller);
 		$allowed = $this->permissionResolver->matchesCaller(
@@ -1583,6 +1585,29 @@ class CopilotService implements CopilotServiceInterface {
 			$this->recordCopilotBypass(app: $app, userId: $userId);
 		}
 	}//end assertWriteRoleOnApp()
+
+	/**
+	 * Another organisation's scoped app is not found, before any role and for
+	 * administrators too (REQ-BQOS-002).
+	 *
+	 * @param array<string, mixed> $app    The Application.
+	 * @param IUser                $caller The caller.
+	 *
+	 * @return void
+	 *
+	 * @throws CopilotException (404 not_found) When the caller may not see the app.
+	 *
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002
+	 */
+	private function assertSeesApp(array $app, IUser $caller): void {
+		if ($this->permissionResolver->seesApplication(application: $app, caller: $caller) === false) {
+			throw new CopilotException(
+				errorCode: 'not_found',
+				message: "Application '" . (string)($app['slug'] ?? '') . "' does not exist.",
+				httpStatus: 404
+			);
+		}
+	}//end assertSeesApp()
 
 	/**
 	 * Record a genuine admin bypass to the OpenRegister audit trail, or to the

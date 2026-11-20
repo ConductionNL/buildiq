@@ -698,9 +698,11 @@ class ApplicationInsightsService implements ApplicationInsightsServiceInterface 
 	 * @return bool True when authorised, false otherwise.
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-17
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002
 	 */
 	private function isAuthorised(array $application, array $version, ?IUser $caller): bool {
-		if ($caller === null) {
+		// No caller, or another organisation's scoped app: not found, before any role (REQ-BQOS-002).
+		if ($caller === null || $this->seesApplication(application: $application, caller: $caller) === false) {
 			return false;
 		}
 
@@ -737,6 +739,23 @@ class ApplicationInsightsService implements ApplicationInsightsServiceInterface 
 			roles: ['owners', 'editors']
 		);
 	}//end isAuthorised()
+
+	/**
+	 * Whether the caller may see the app at all; without a resolver only a shared app.
+	 *
+	 * @param array<string, mixed> $application The Application.
+	 * @param IUser                $caller      The caller.
+	 *
+	 * @return bool
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) AppOrganisationGuard::isShared() is a pure scope check with no collaborators.
+	 *
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002
+	 */
+	private function seesApplication(array $application, IUser $caller): bool {
+		return $this->permissionResolver?->seesApplication(application: $application, caller: $caller)
+			?? AppOrganisationGuard::isShared(application: $application);
+	}//end seesApplication()
 
 	/**
 	 * Check whether the caller appears in any of the named permission roles.
