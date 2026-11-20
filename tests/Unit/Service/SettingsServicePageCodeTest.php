@@ -94,10 +94,14 @@ final class SettingsServicePageCodeTest extends TestCase {
 	 * @return void
 	 */
 	public function testGetSettingsReadsTheSettingOffByDefault(): void {
-		$this->appConfig->expects(self::once())
-			->method('getValueBool')
-			->with('buildiq', PageCodeGuard::SETTING, false)
-			->willReturn(true);
+		// getSettings() reads every instance toggle; this test pins the code one.
+		$this->appConfig->method('getValueBool')->willReturnCallback(
+			static function (string $app, string $key, bool $default = false): bool {
+				self::assertSame(expected: 'buildiq', actual: $app);
+				self::assertFalse(condition: $default);
+				return $key === PageCodeGuard::SETTING;
+			}
+		);
 
 		$settings = $this->sut()->getSettings();
 
