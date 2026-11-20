@@ -42,6 +42,19 @@
 					✕
 				</button>
 			</div>
+			<!-- A data widget is edited in place unless the maker makes it
+			     read-only: `content.editable: false`, the key nextcloud-vue's
+			     CnDetailWidgetHost reads (REQ-BQCV-013). -->
+			<label
+				v-if="widget.type === 'data'"
+				class="widget-builder__code-toggle"
+				data-testid="widget-builder-read-only">
+				<input
+					type="checkbox"
+					:checked="isReadOnly(widget)"
+					@change="setReadOnly(index, $event.target.checked)">
+				{{ t('buildiq', 'Read-only (users cannot edit fields in place)') }}
+			</label>
 			<!-- A chart is configured with the library's own chart form, the one
 			     the dashboard's in-app editor uses (pages-chart-widget-authoring D1). -->
 			<CnChartWidgetForm
@@ -190,6 +203,46 @@ export default {
 			const next = this.localWidgets.slice()
 			const current = next[index] || {}
 			next[index] = { ...current, [key]: value }
+			this.$emit('update:modelValue', next)
+		},
+
+		/**
+		 * Whether a data widget is read-only: its `content.editable` is `false`.
+		 * Absent means editable, the library's default.
+		 *
+		 * @param {object} widget - a widget definition.
+		 * @return {boolean}
+		 * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer/spec.md#requirement-a-detail-page-lets-users-edit-record-fields-in-place-req-bqcv-013
+		 */
+		isReadOnly(widget) {
+			const content = widget ? widget.content : undefined
+			return isObjectValue(content) && content.editable === false
+		},
+
+		/**
+		 * Make a data widget read-only or editable again. Read-only writes
+		 * `content.editable: false`; editable takes the key out and drops a
+		 * `content` left empty, so the widget falls back to the default.
+		 *
+		 * @param {number} index - position of the widget in the `widgets` array.
+		 * @param {boolean} readOnly - whether users may no longer edit fields in place.
+		 * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer/spec.md#requirement-a-detail-page-lets-users-edit-record-fields-in-place-req-bqcv-013
+		 */
+		setReadOnly(index, readOnly) {
+			const next = this.localWidgets.slice()
+			const widget = { ...(next[index] || {}) }
+			const content = { ...(isObjectValue(widget.content) ? widget.content : {}) }
+			if (readOnly) {
+				content.editable = false
+			} else {
+				delete content.editable
+			}
+			if (Object.keys(content).length === 0) {
+				delete widget.content
+			} else {
+				widget.content = content
+			}
+			next[index] = widget
 			this.$emit('update:modelValue', next)
 		},
 

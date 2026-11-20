@@ -5,6 +5,11 @@
 OC.L10N.register(
     "buildiq",
     {
+        "Could not export the rule set.": "Could not export the rule set.",
+        "Import undone": "Import undone",
+        "The import was undone. The records it created have been removed.": "The import was undone. The records it created have been removed.",
+        "Read-only (users cannot edit fields in place)": "Read-only (users cannot edit fields in place)",
+        "Add a field from {schema}": "Add a field from {schema}",
         "Visibility expression": "Visibility expression",
         "For example: values.wantsContact === true": "For example: values.wantsContact === true",
         "Stop using an expression": "Stop using an expression",

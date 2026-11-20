@@ -4150,6 +4150,48 @@
                 }
             }
         },
+        "/rules/{ruleSetSlug}/export": {
+            "get": {
+                "operationId": "rules-export",
+                "summary": "Export a rule set as one JSON document",
+                "description": "Export a rule set as one JSON document: its metadata, decision tables, condition-action rules and test cases, without execution logs. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "rules"
+                ],
+                "parameters": [
+                    {
+                        "name": "ruleSetSlug",
+                        "in": "path",
+                        "required": true,
+                        "description": "The RuleSet slug.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {}
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    }
+                }
+            }
+        },
         "/rules/{ruleSetSlug}/schema": {
             "get": {
                 "operationId": "rules-schema",
