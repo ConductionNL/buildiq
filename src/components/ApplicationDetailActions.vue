@@ -67,6 +67,7 @@
 			:themeColor="(obApp && obApp.themeColor) || ''"
 			:availableFlows="availableFlows"
 			:loadingFlows="loadingFlows"
+			:schemas="flowSchemas"
 			:busy="publishing || savingLanguages"
 			:sourceLanguage="appLanguages.sourceLanguage"
 			:languages="appLanguages.languages"
@@ -223,6 +224,19 @@ function flowList(data) {
 }
 
 /**
+ * The app version's schemas as "Run on" options: label by title, value by slug.
+ *
+ * @param {Array<object>} schemas The register's schemas.
+ * @return {Array<{label: string, value: string}>}
+ * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-bound-flow-declares-where-it-runs-req-bqsf-001
+ */
+function schemaOptions(schemas) {
+	return (Array.isArray(schemas) ? schemas : [])
+		.filter((schema) => schema && schema.slug)
+		.map((schema) => ({ label: schema.title || schema.slug, value: schema.slug }))
+}
+
+/**
  * A flow as a picker option. Label by NAME, value by UUID: the binding is a
  * UUID because the Flow entity has no slug, and a UUID in a picker is
  * unreadable.
@@ -330,6 +344,9 @@ export default {
 			// the settings modal opens — see onSettingsOpen().
 			availableFlows: [],
 			loadingFlows: false,
+			// The app version's schemas as "Run on" options (REQ-BQSF-001),
+			// loaded with the flows when the settings modal opens.
+			flowSchemas: [],
 			deleteOpen: false,
 			permissionsOpen: false,
 			historyOpen: false,
@@ -1193,7 +1210,12 @@ export default {
 
 			this.loadingFlows = true
 			try {
-				this.availableFlows = await this.fetchFlowOptions()
+				const [flows, schemas] = await Promise.all([
+					this.fetchFlowOptions(),
+					this.loadTemplateSchemas().catch(() => []),
+				])
+				this.availableFlows = flows
+				this.flowSchemas = schemaOptions(schemas)
 			} catch (e) {
 				this.error = `${t('buildiq', 'Failed to load flows')}: ${e.message || e}`
 			} finally {
@@ -1305,6 +1327,32 @@ export default {
 				await this.obPatchApp({ flows })
 			} catch (e) {
 				this.error = `${t('buildiq', 'Failed to save settings')}: ${e.message || e}`
+				return
+			}
+			await this.wireFlows()
+		},
+
+		/**
+		 * Have the server save, publish and bind the wrapper flows of the
+		 * bindings' "Run on" entries, and take the bindings it answers with,
+		 * wrappers included, so the next save carries them (REQ-BQSF-002).
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-a-binding-runs-the-flow-on-the-apps-records-req-bqsf-002
+		 */
+		async wireFlows() {
+			try {
+				const { data } = await axios.post(
+					generateUrl(`/apps/buildiq/api/applications/${encodeURIComponent(this.obAppUuid)}/flow-wrappers`),
+				)
+				if (data && Array.isArray(data.flows)) {
+					this.obApp = { ...this.obApp, flows: data.flows }
+				}
+				if (data && Array.isArray(data.failed) && data.failed.length) {
+					this.error = t('buildiq', 'Saved, but some "Run on" entries could not be wired. Save again to retry.')
+				}
+			} catch (e) {
+				this.error = `${t('buildiq', 'Saved, but the "Run on" entries could not be wired')}: ${e.message || e}`
 			}
 		},
 

@@ -59,6 +59,8 @@ use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindTarget;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectSaveOptions;
 use OCP\IAppConfig;
+use OCP\ICache;
+use OCP\ICacheFactory;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
 
@@ -84,6 +86,28 @@ final class PageLayoutLeafProvider extends AppLocalLeafProvider implements PageL
 	 * @var string
 	 */
 	private const SCHEMA = 'pageLayout';
+
+	/**
+	 * The local cache the fold of the composing layers is kept in.
+	 *
+	 * @var string
+	 */
+	private const CACHE_PREFIX = 'buildiq-page-layout';
+
+	/**
+	 * How long a fold is kept, in seconds. The key changes with every layer
+	 * edit, so this only bounds how long an unused fold lingers.
+	 *
+	 * @var int
+	 */
+	private const CACHE_TTL = 300;
+
+	/**
+	 * The cache of folded layer stacks, or null without a cache.
+	 *
+	 * @var ICache|null
+	 */
+	private readonly ?ICache $cache;
 
 	/**
 	 * The keyed-delta merge and the base fingerprint.
@@ -120,6 +144,7 @@ final class PageLayoutLeafProvider extends AppLocalLeafProvider implements PageL
 	 * @param IAppConfig $appConfig App config, for the register slug.
 	 * @param PageLayoutParts $parts The layer stack, frozen base, presenter and delta store of a page layout.
 	 * @param LoggerInterface $logger Logger.
+	 * @param ICacheFactory|null $cacheFactory Caches the fold of the composing layers.
 	 *
 	 * @return void
 	 */
@@ -128,11 +153,13 @@ final class PageLayoutLeafProvider extends AppLocalLeafProvider implements PageL
 		private readonly IAppConfig $appConfig,
 		PageLayoutParts $parts,
 		private readonly LoggerInterface $logger,
+		?ICacheFactory $cacheFactory = null,
 	) {
 		$this->deltas = $parts->deltas;
 		$this->layers = $parts->layers;
 		$this->frozenBase = $parts->frozenBase;
 		$this->presenter = $parts->presenter;
+		$this->cache = $cacheFactory?->createLocal(self::CACHE_PREFIX);
 	}//end __construct()
 
 	/**
@@ -199,7 +226,7 @@ final class PageLayoutLeafProvider extends AppLocalLeafProvider implements PageL
 
 		$published = $this->publishedLayoutsFor(register: $register, schema: $schema);
 		$stack = $this->layers->orderLayers(published: $published, object: $object);
-		$state = $this->composeStack(stack: $stack);
+		$state = $this->foldCached(stack: $stack);
 
 		if ($state['composed'] === []) {
 			// Nothing answers, and the consumer renders its manifest unchanged.
@@ -219,6 +246,57 @@ final class PageLayoutLeafProvider extends AppLocalLeafProvider implements PageL
 			'withheld' => $state['withheld'],
 		];
 	}//end list()
+
+	/**
+	 * The fold of a layer stack, from the cache when the same layers composed it before.
+	 *
+	 * The key is every composing layer's id with a hash of its content, so an
+	 * edit to any layer, or a different stack for another caller, is a
+	 * different key and is folded afresh. The host object is not part of the
+	 * fold: the presenter applies it afterwards.
+	 *
+	 * @param array<int, array<string, mixed>> $stack The ordered layers.
+	 *
+	 * @return array{composed: array<string, mixed>, applied: array<int, array<string, mixed>>, withheld: array<int, array<string, mixed>>} The fold.
+	 *
+	 * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/tasks.md#task-2.6
+	 */
+	private function foldCached(array $stack): array {
+		if ($this->cache === null) {
+			return $this->composeStack(stack: $stack);
+		}
+
+		$key = self::foldKey(stack: $stack);
+		$cached = $this->cache->get($key);
+		if (is_array($cached) === true && is_array($cached['composed'] ?? null) === true
+			&& is_array($cached['applied'] ?? null) === true && is_array($cached['withheld'] ?? null) === true
+		) {
+			return $cached;
+		}
+
+		$fold = $this->composeStack(stack: $stack);
+		$this->cache->set($key, $fold, self::CACHE_TTL);
+
+		return $fold;
+	}//end foldCached()
+
+	/**
+	 * The cache key of a layer stack: its layers' ids and content hashes, in order.
+	 *
+	 * @param array<int, array<string, mixed>> $stack The ordered layers.
+	 *
+	 * @return string
+	 *
+	 * @spec openspec/changes/screen-overrides-as-a-patch-with-fall-through/tasks.md#task-2.6
+	 */
+	private static function foldKey(array $stack): string {
+		$parts = [];
+		foreach ($stack as $layer) {
+			$parts[] = (string)($layer['id'] ?? '') . ':' . hash('sha256', (string)json_encode($layer));
+		}
+
+		return 'fold-' . hash('sha256', implode('|', $parts));
+	}//end foldKey()
 
 	/**
 	 * Compose the ordered layers into the layout this caller is served.
