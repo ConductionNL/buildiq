@@ -64,9 +64,9 @@ class GitHubProvenanceSchemaRoundTripTest extends TestCase {
 	private function schemas(): array {
 		if (self::$schemas === null) {
 			$path = __DIR__ . '/../../../lib/Settings/openbuild_register.json';
-			self::assertFileExists($path);
+			self::assertFileExists(filename: $path);
 			$decoded = json_decode((string)file_get_contents($path), true);
-			self::assertIsArray($decoded);
+			self::assertIsArray(actual: $decoded);
 			self::$schemas = $decoded['components']['schemas'];
 		}
 
@@ -130,11 +130,11 @@ class GitHubProvenanceSchemaRoundTripTest extends TestCase {
 	 */
 	private function versionService(): ApplicationVersionService {
 		return new ApplicationVersionService(
-			logger: $this->createMock(LoggerInterface::class),
-			objectService: $this->createMock(ObjectServiceInterface::class),
-			registerService: $this->createMock(RegisterService::class),
-			registerMapper: $this->createMock(RegisterMapper::class),
-			automationCompiler: $this->createMock(AutomationCompilerService::class),
+			logger: $this->createMock(originalClassName: LoggerInterface::class),
+			objectService: $this->createMock(originalClassName: ObjectServiceInterface::class),
+			registerService: $this->createMock(originalClassName: RegisterService::class),
+			registerMapper: $this->createMock(originalClassName: RegisterMapper::class),
+			automationCompiler: $this->createMock(originalClassName: AutomationCompilerService::class),
 		);
 	}//end versionService()
 
@@ -146,12 +146,12 @@ class GitHubProvenanceSchemaRoundTripTest extends TestCase {
 	public function testApplicationDeclaresOptionalLinkageFields(): void {
 		$schema = $this->schemas()['Application'];
 
-		self::assertSame('object', $schema['properties']['githubRepo']['type']);
-		self::assertSame(['owner', 'name'], $schema['properties']['githubRepo']['required']);
-		self::assertFalse($schema['properties']['githubRepo']['additionalProperties']);
-		self::assertSame('string', $schema['properties']['githubDefaultBranch']['type']);
-		self::assertNotContains('githubRepo', $schema['required']);
-		self::assertNotContains('githubDefaultBranch', $schema['required']);
+		self::assertSame(expected: 'object', actual: $schema['properties']['githubRepo']['type']);
+		self::assertSame(expected: ['owner', 'name'], actual: $schema['properties']['githubRepo']['required']);
+		self::assertFalse(condition: $schema['properties']['githubRepo']['additionalProperties']);
+		self::assertSame(expected: 'string', actual: $schema['properties']['githubDefaultBranch']['type']);
+		self::assertNotContains(needle: 'githubRepo', haystack: $schema['required']);
+		self::assertNotContains(needle: 'githubDefaultBranch', haystack: $schema['required']);
 	}//end testApplicationDeclaresOptionalLinkageFields()
 
 	/**
@@ -162,10 +162,10 @@ class GitHubProvenanceSchemaRoundTripTest extends TestCase {
 	public function testApplicationVersionDeclaresOptionalProvenanceFields(): void {
 		$schema = $this->schemas()['ApplicationVersion'];
 
-		self::assertSame('string', $schema['properties']['commitSha']['type']);
-		self::assertSame('string', $schema['properties']['sourceRef']['type']);
-		self::assertNotContains('commitSha', $schema['required']);
-		self::assertNotContains('sourceRef', $schema['required']);
+		self::assertSame(expected: 'string', actual: $schema['properties']['commitSha']['type']);
+		self::assertSame(expected: 'string', actual: $schema['properties']['sourceRef']['type']);
+		self::assertNotContains(needle: 'commitSha', haystack: $schema['required']);
+		self::assertNotContains(needle: 'sourceRef', haystack: $schema['required']);
 	}//end testApplicationVersionDeclaresOptionalProvenanceFields()
 
 	/**
@@ -183,14 +183,14 @@ class GitHubProvenanceSchemaRoundTripTest extends TestCase {
 		];
 
 		$roundTripped = json_decode(json_encode($linked, JSON_THROW_ON_ERROR), true);
-		self::assertSame($linked, $roundTripped);
-		self::assertSame([], $this->violations(schema: $schema, object: $roundTripped));
+		self::assertSame(expected: $linked, actual: $roundTripped);
+		self::assertSame(expected: [], actual: $this->violations(schema: $schema, object: $roundTripped));
 
 		$missingName = ['githubRepo' => ['owner' => 'acme']] + $linked;
-		self::assertSame(['githubRepo.missing name'], $this->violations(schema: $schema, object: $missingName));
+		self::assertSame(expected: ['githubRepo.missing name'], actual: $this->violations(schema: $schema, object: $missingName));
 
 		$extraKey = ['githubRepo' => ['owner' => 'acme', 'name' => 'x', 'url' => 'y']] + $linked;
-		self::assertSame(['githubRepo.url not allowed'], $this->violations(schema: $schema, object: $extraKey));
+		self::assertSame(expected: ['githubRepo.url not allowed'], actual: $this->violations(schema: $schema, object: $extraKey));
 	}//end testLinkedApplicationRoundTripsAndMalformedRepoIsRefused()
 
 	/**
@@ -211,8 +211,8 @@ class GitHubProvenanceSchemaRoundTripTest extends TestCase {
 			'application' => 'hello-world',
 		];
 
-		self::assertSame([], $this->violations(schema: $schemas['Application'], object: $legacyApp));
-		self::assertSame([], $this->violations(schema: $schemas['ApplicationVersion'], object: $legacyVersion));
+		self::assertSame(expected: [], actual: $this->violations(schema: $schemas['Application'], object: $legacyApp));
+		self::assertSame(expected: [], actual: $this->violations(schema: $schemas['ApplicationVersion'], object: $legacyVersion));
 	}//end testLegacyObjectsWithoutFieldsStayValid()
 
 	/**
@@ -232,10 +232,10 @@ class GitHubProvenanceSchemaRoundTripTest extends TestCase {
 
 		$saved = $service->onSave(current: $current, next: $next);
 
-		self::assertSame('0.3.1', $saved['semver']);
-		self::assertSame('c0ffee1234', $saved['commitSha']);
-		self::assertSame('refs/heads/main', $saved['sourceRef']);
-		self::assertSame([], $this->violations(
+		self::assertSame(expected: '0.3.1', actual: $saved['semver']);
+		self::assertSame(expected: 'c0ffee1234', actual: $saved['commitSha']);
+		self::assertSame(expected: 'refs/heads/main', actual: $saved['sourceRef']);
+		self::assertSame(expected: [], actual: $this->violations(
 			schema: $this->schemas()['ApplicationVersion'],
 			object: ['commitSha' => $saved['commitSha'], 'sourceRef' => $saved['sourceRef']] + [
 				'name' => 'v', 'slug' => 'v', 'manifest' => $manifest, 'register' => 'r',
@@ -261,7 +261,7 @@ class GitHubProvenanceSchemaRoundTripTest extends TestCase {
 
 		$saved = $service->onSave(current: $current, next: $next);
 
-		self::assertSame('0.3.2', $saved['semver']);
-		self::assertSame('abc', $saved['commitSha']);
+		self::assertSame(expected: '0.3.2', actual: $saved['semver']);
+		self::assertSame(expected: 'abc', actual: $saved['commitSha']);
 	}//end testManifestChangeStillBumpsWithProvenance()
 }//end class
