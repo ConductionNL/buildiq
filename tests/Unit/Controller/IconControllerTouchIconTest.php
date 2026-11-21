@@ -83,7 +83,7 @@ class IconControllerTouchIconTest extends TestCase {
 		return new IconController(
 			$this->createMock(IRequest::class),
 			$this->iconService,
-			$this->caller($session),
+			$this->caller(session: $session),
 			$this->createMock(LoggerInterface::class),
 			$this->rasteriser
 		);
@@ -181,8 +181,8 @@ class IconControllerTouchIconTest extends TestCase {
 	private function caller(IUserSession $session): CallerContext {
 		return new CallerContext(
 			userSession: $session,
-			groupManager: $this->createMock(IGroupManager::class),
-			permissionResolver: $this->createMock(PermissionResolver::class)
+			groupManager: $this->createMock(originalClassName: IGroupManager::class),
+			permissionResolver: $this->createMock(originalClassName: PermissionResolver::class)
 		);
 	}//end caller()
 }//end class

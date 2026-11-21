@@ -179,7 +179,7 @@ class IconController extends Controller {
 			['stream' => $stream, 'mimeType' => $mimeType] = $this->iconService->getIconStream(
 				slug: $slug,
 				dark: false,
-				mayServe: $this->mayServe(...)
+				mayServe: fn (array $application): bool => $this->caller->seesApplication(application: $application)
 			);
 			$png = $this->pngOf(stream: $stream, mimeType: (string)$mimeType);
 		} catch (\Throwable $e) {
@@ -231,25 +231,11 @@ class IconController extends Controller {
 	}//end pngOf()
 
 	/**
-	 * Whether the caller may see an Application, so its own icon may be served.
-	 *
-	 * Another organisation's scoped app gets the built-in icon, as an unknown
-	 * slug does (operate-organisation-scoped-apps REQ-BQOS-002).
-	 *
-	 * @param array<string,mixed> $application The Application.
-	 *
-	 * @return bool
-	 *
-	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002
-	 */
-	private function mayServe(array $application): bool {
-		return $this->caller->seesApplication(application: $application);
-	}//end mayServe()
-
-	/**
 	 * Shared icon-response builder.
 	 *
-	 * Calls IconService, sets required headers, streams the resource.
+	 * Calls IconService, sets required headers, streams the resource. Another
+	 * organisation's scoped app gets the built-in icon, as an unknown slug does
+	 * (operate-organisation-scoped-apps REQ-BQOS-002).
 	 * When the service returns a null stream (no icon at all), returns 404.
 	 * Session guard is enforced by the calling public method before this is
 	 * invoked, per ADR-005 / hydra gate-7 (design.md Decision 6).
@@ -273,7 +259,7 @@ class IconController extends Controller {
 			['stream' => $stream, 'mimeType' => $mimeType] = $this->iconService->getIconStream(
 				slug: $slug,
 				dark: $dark,
-				mayServe: $this->mayServe(...)
+				mayServe: fn (array $application): bool => $this->caller->seesApplication(application: $application)
 			);
 		} catch (\Throwable $e) {
 			$this->logger->error(

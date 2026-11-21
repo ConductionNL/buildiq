@@ -96,7 +96,7 @@ class IconControllerTest extends TestCase {
 		$this->controller = new IconController(
 			$this->request,
 			$this->iconService,
-			$this->caller($this->userSession),
+			$this->caller(session: $this->userSession),
 			$this->logger
 		);
 	}//end setUp()
@@ -219,7 +219,7 @@ class IconControllerTest extends TestCase {
 		$controller = new IconController(
 			$this->request,
 			$this->iconService,
-			$this->caller($unauthSession),
+			$this->caller(session: $unauthSession),
 			$this->logger
 		);
 
@@ -272,7 +272,7 @@ class IconControllerTest extends TestCase {
 		$this->controller->iconDark('hello-world');
 		$this->controller->touchIcon('hello-world');
 
-		$this->assertSame([false, true, false, true, false, true], $decisions);
+		$this->assertSame(expected: [false, true, false, true, false, true], actual: $decisions);
 	}//end testTheIconIsServedOnlyForAnAppTheCallerMaySee()
 
 	/**
@@ -285,8 +285,8 @@ class IconControllerTest extends TestCase {
 	private function caller(IUserSession $session): CallerContext {
 		return new CallerContext(
 			userSession: $session,
-			groupManager: $this->createMock(IGroupManager::class),
-			permissionResolver: $this->createMock(PermissionResolver::class)
+			groupManager: $this->createMock(originalClassName: IGroupManager::class),
+			permissionResolver: $this->createMock(originalClassName: PermissionResolver::class)
 		);
 	}//end caller()
 }//end class
