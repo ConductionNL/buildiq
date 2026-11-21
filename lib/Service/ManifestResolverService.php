@@ -71,7 +71,8 @@ class ManifestResolverService implements ManifestResolverServiceInterface {
 	 * @param PermissionResolver $permissionResolver Shared principal-grammar resolver (H1/H2 fix)
 	 * @param ManifestWidgetRoleFilter $widgetRoleFilter Removes page widgets by `roles`
 	 * @param AppOrganisationGuard|null $organisationGuard Hides another organisation's scoped app; without it a scoped app is hidden from everyone.
-	 * @param ManifestBaseResolver|null $baseResolver Merges a version's `manifestDelta` over its `baseRef`; without it every version serves its stored blob.
+	 * @param ManifestBaseResolver|null $baseResolver Merges a version's `manifestDelta` over its `baseRef`;
+	 *                                                without it every version serves its stored blob.
 	 *
 	 * @return void
 	 *

@@ -43,6 +43,8 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\Buildiq\Service\ManifestResolverService
+ *
+ * @spec openspec/changes/app-delta-override/tasks.md#task-4.1
  */
 final class ManifestResolverDeltaTest extends TestCase {
 
@@ -63,9 +65,14 @@ final class ManifestResolverDeltaTest extends TestCase {
 	 * @return ManifestResolverService
 	 */
 	private function service(array $application, array $versions = [], array $baseRows = []): ManifestResolverService {
-		$objects = $this->createMock(ObjectServiceInterface::class);
+		$objects = $this->createMock(originalClassName: ObjectServiceInterface::class);
 		$objects->method('searchObjects')->willReturnCallback(
-			static fn (array $query): array => (isset($query['application']) === true) ? $versions : [$application]
+			static function (array $query) use ($application, $versions): array {
+				if (isset($query['application']) === true) {
+					return $versions;
+				}
+				return [$application];
+			}
 		);
 		$objects->method('searchObjectsBySlug')->willReturnCallback(
 			static function (string $register, string $schema, array $filters = []) use ($baseRows): array {
@@ -77,24 +84,24 @@ final class ManifestResolverDeltaTest extends TestCase {
 			}
 		);
 
-		$register = $this->getMockBuilder(Register::class)->onlyMethods(['getId'])->getMock();
+		$register = $this->getMockBuilder(className: Register::class)->onlyMethods(['getId'])->getMock();
 		$register->method('getId')->willReturn(1);
-		$registerMapper = $this->createMock(RegisterMapper::class);
+		$registerMapper = $this->createMock(originalClassName: RegisterMapper::class);
 		$registerMapper->method('find')->willReturn($register);
-		$schema = $this->getMockBuilder(Schema::class)->onlyMethods(['getId'])->getMock();
+		$schema = $this->getMockBuilder(className: Schema::class)->onlyMethods(['getId'])->getMock();
 		$schema->method('getId')->willReturn(2);
-		$schemaMapper = $this->createMock(SchemaMapper::class);
+		$schemaMapper = $this->createMock(originalClassName: SchemaMapper::class);
 		$schemaMapper->method('find')->willReturn($schema);
-		$groupManager = $this->createMock(IGroupManager::class);
+		$groupManager = $this->createMock(originalClassName: IGroupManager::class);
 		$groupManager->method('getUserGroups')->willReturn([]);
-		$logger = $this->createMock(LoggerInterface::class);
+		$logger = $this->createMock(originalClassName: LoggerInterface::class);
 
 		return new ManifestResolverService(
 			objectService: $objects,
 			registerMapper: $registerMapper,
 			schemaMapper: $schemaMapper,
 			logger: $logger,
-			permissionResolver: new PermissionResolver($groupManager, $logger),
+			permissionResolver: new PermissionResolver(groupManager: $groupManager, logger: $logger),
 			widgetRoleFilter: new ManifestWidgetRoleFilter(visibility: new AppVisibilityResolver(), groupManager: $groupManager),
 			baseResolver: new ManifestBaseResolver(objectService: $objects, logger: $logger),
 		);
@@ -108,7 +115,7 @@ final class ManifestResolverDeltaTest extends TestCase {
 	 * @return IUser
 	 */
 	private function user(string $uid): IUser {
-		$user = $this->createMock(IUser::class);
+		$user = $this->createMock(originalClassName: IUser::class);
 		$user->method('getUID')->willReturn($uid);
 		return $user;
 	}//end user()
@@ -133,9 +140,9 @@ final class ManifestResolverDeltaTest extends TestCase {
 
 		$manifest = $service->resolve('crm', null, null);
 
-		$this->assertSame(['Home', 'Permits'], array_column($manifest['pages'], 'title'));
-		$this->assertArrayNotHasKey('baseRef', $manifest);
-		$this->assertArrayNotHasKey('manifestDelta', $manifest);
+		$this->assertSame(expected: ['Home', 'Permits'], actual: array_column($manifest['pages'], 'title'));
+		$this->assertArrayNotHasKey(key: 'baseRef', array: $manifest);
+		$this->assertArrayNotHasKey(key: 'manifestDelta', array: $manifest);
 	}//end testTheProductionVersionServesItsDeltaOverItsBase()
 
 	/**
@@ -146,12 +153,24 @@ final class ManifestResolverDeltaTest extends TestCase {
 	 * @spec openspec/changes/app-delta-override/tasks.md#task-4.1
 	 */
 	public function testANamedVersionIsMergedAndALegacyBlobIsNot(): void {
-		$application = ['uuid' => 'app-1', 'slug' => 'crm', 'productionVersion' => ['uuid' => 'v-1', 'manifest' => ['pages' => [['id' => 'legacy']]]], 'permissions' => ['owners' => ['user:alice'], 'editors' => []]];
-		$draft = ['uuid' => 'v-2', 'slug' => 'next', 'application' => 'app-1', 'manifest' => (object)[], 'baseRef' => ['kind' => 'template', 'id' => 'permits'], 'manifestDelta' => ['pages' => [['id' => 'home', '$op' => 'remove']]]];
+		$application = [
+			'uuid' => 'app-1',
+			'slug' => 'crm',
+			'productionVersion' => ['uuid' => 'v-1', 'manifest' => ['pages' => [['id' => 'legacy']]]],
+			'permissions' => ['owners' => ['user:alice'], 'editors' => []],
+		];
+		$draft = [
+			'uuid' => 'v-2',
+			'slug' => 'next',
+			'application' => 'app-1',
+			'manifest' => (object)[],
+			'baseRef' => ['kind' => 'template', 'id' => 'permits'],
+			'manifestDelta' => ['pages' => [['id' => 'home', '$op' => 'remove']]],
+		];
 		$service = $this->service(application: $application, versions: [$draft], baseRows: ['application-template' => [self::TEMPLATE]]);
 
-		$this->assertSame(['pages' => [['id' => 'legacy']]], $service->resolve('crm', null, null));
-		$this->assertSame(['List'], array_column($service->resolve('crm', 'next', $this->user('alice'))['pages'], 'title'));
+		$this->assertSame(expected: ['pages' => [['id' => 'legacy']]], actual: $service->resolve('crm', null, null));
+		$this->assertSame(expected: ['List'], actual: array_column($service->resolve('crm', 'next', $this->user(uid: 'alice'))['pages'], 'title'));
 	}//end testANamedVersionIsMergedAndALegacyBlobIsNot()
 
 	/**
@@ -174,6 +193,6 @@ final class ManifestResolverDeltaTest extends TestCase {
 			]
 		);
 
-		$this->assertSame(['pages' => [['id' => 'own']]], $service->resolve('crm', null, $this->user('bob')));
+		$this->assertSame(expected: ['pages' => [['id' => 'own']]], actual: $service->resolve('crm', null, $this->user(uid: 'bob')));
 	}//end testABaseAppTheCallerCannotSeeIsNotRead()
 }//end class

@@ -40,12 +40,13 @@ namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
-use OCP\App\IAppManager;
 use Psr\Log\LoggerInterface;
 use Throwable;
 
 /**
  * Resolves a version's `baseRef` + `manifestDelta` into one merged manifest.
+ *
+ * @spec openspec/changes/app-delta-override/tasks.md#task-3.1
  *
  * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
  */
@@ -66,21 +67,29 @@ class ManifestBaseResolver {
 	private const VERSION_SCHEMA = 'applicationVersion';
 
 	/**
+	 * The keyed merge of the JS contract.
+	 *
+	 * @var ManifestDeltaMerger
+	 */
+	private readonly ManifestDeltaMerger $merger;
+
+	/**
 	 * Constructor.
 	 *
-	 * @param ObjectServiceInterface $objectService OpenRegister object service.
-	 * @param LoggerInterface        $logger        Records why a base could not be used.
-	 * @param ManifestDeltaMerger    $merger        The keyed merge of the JS contract.
-	 * @param IAppManager|null       $appManager    Locates a fleet app's bundled manifest; without it no fleet base resolves.
+	 * @param ObjectServiceInterface     $objectService OpenRegister object service.
+	 * @param LoggerInterface            $logger        Records why a base could not be used.
+	 * @param BundledManifestReader|null $bundles       Reads a fleet app's bundled manifest; without it no fleet base resolves.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-3.1
 	 */
 	public function __construct(
 		private readonly ObjectServiceInterface $objectService,
 		private readonly LoggerInterface $logger,
-		private readonly ManifestDeltaMerger $merger=new ManifestDeltaMerger(),
-		private readonly ?IAppManager $appManager=null,
+		private readonly ?BundledManifestReader $bundles=null,
 	) {
+		$this->merger = new ManifestDeltaMerger();
 	}//end __construct()
 
 	/**
@@ -103,13 +112,27 @@ class ManifestBaseResolver {
 	 *
 	 * @param array<string, mixed> $version The ApplicationVersion.
 	 * @param callable|null        $visible Whether the caller may build on an Application; null admits every app.
+	 *
+	 * @return array{manifest: mixed, orphanedDeltaPaths: list<string>, diagnostics: list<string>}
+	 *
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-3.2
+	 */
+	public function resolveVersion(array $version, ?callable $visible=null): array {
+		return $this->chain(version: $version, visible: $visible, seen: []);
+	}//end resolveVersion()
+
+	/**
+	 * Resolve one version on a base chain.
+	 *
+	 * @param array<string, mixed> $version The ApplicationVersion.
+	 * @param callable|null        $visible Whether the caller may build on an Application.
 	 * @param list<string>         $seen    The base references already on this chain.
 	 *
 	 * @return array{manifest: mixed, orphanedDeltaPaths: list<string>, diagnostics: list<string>}
 	 *
 	 * @spec openspec/changes/app-delta-override/tasks.md#task-3.2
 	 */
-	public function resolveVersion(array $version, ?callable $visible=null, array $seen=[]): array {
+	private function chain(array $version, ?callable $visible, array $seen): array {
 		$blob = ($version['manifest'] ?? null);
 		$baseRef = $this->referenceOf(version: $version);
 		if ($baseRef === null) {
@@ -138,7 +161,7 @@ class ManifestBaseResolver {
 			orphans: [...$base['orphanedDeltaPaths'], ...$merged['orphanedDeltaPaths']],
 			diagnostics: $base['diagnostics']
 		);
-	}//end resolveVersion()
+	}//end chain()
 
 	/**
 	 * The manifest a base reference points at.
@@ -153,28 +176,27 @@ class ManifestBaseResolver {
 	 *
 	 * @spec openspec/changes/app-delta-override/tasks.md#task-3.1
 	 */
-	public function resolveBase(array $baseRef, ?callable $visible=null, array $seen=[]): array {
+	private function resolveBase(array $baseRef, ?callable $visible, array $seen): array {
 		$id = $baseRef['id'];
 		$pin = $baseRef['manifestVersion'];
-
-		$version = match ($baseRef['kind']) {
-			'template' => null,
-			'fleet-app' => null,
-			'buildiq-app' => $this->appVersion(appRef: $id, pin: $pin, visible: $visible),
-			'application-version' => $this->versionByUuid(uuid: $id),
-			default => null,
-		};
-		if ($version !== null) {
-			return $this->resolveVersion(version: $version, visible: $visible, seen: $seen);
+		if ($baseRef['kind'] === 'template') {
+			return $this->result(manifest: $this->templateManifest(templateRef: $id, pin: $pin));
 		}
 
-		$manifest = match ($baseRef['kind']) {
-			'template' => $this->templateManifest(templateRef: $id, pin: $pin),
-			'fleet-app' => $this->fleetManifest(appId: $id, pin: $pin),
+		if ($baseRef['kind'] === 'fleet-app') {
+			return $this->result(manifest: $this->fleetManifest(appId: $id, pin: $pin));
+		}
+
+		$version = match ($baseRef['kind']) {
+			'buildiq-app' => $this->appVersion(appRef: $id, pin: $pin, visible: $visible),
+			'application-version' => $this->findByUuid(schema: self::VERSION_SCHEMA, uuid: $id),
 			default => null,
 		};
+		if ($version === null) {
+			return $this->result(manifest: null);
+		}
 
-		return $this->result(manifest: $manifest);
+		return $this->chain(version: $version, visible: $visible, seen: $seen);
 	}//end resolveBase()
 
 	/**
@@ -244,18 +266,30 @@ class ManifestBaseResolver {
 			return $this->pinnedVersion(appUuid: $appUuid, pin: $pin);
 		}
 
+		return $this->productionVersion(application: $application, appUuid: $appUuid);
+	}//end appVersion()
+
+	/**
+	 * An app's production version, when it belongs to that app.
+	 *
+	 * @param array<string, mixed> $application The Application.
+	 * @param string               $appUuid     Its uuid.
+	 *
+	 * @return array<string, mixed>|null
+	 */
+	private function productionVersion(array $application, string $appUuid): ?array {
 		$production = ($application['productionVersion'] ?? null);
 		if (is_array($production) === true) {
-			$production = (string)($production['uuid'] ?? $production['id'] ?? '');
+			$production = ($production['uuid'] ?? $production['id'] ?? '');
 		}
 
-		$version = $this->versionByUuid(uuid: (string)$production);
+		$version = $this->findByUuid(schema: self::VERSION_SCHEMA, uuid: (string)$production);
 		if ($version === null || $this->belongsTo(version: $version, appUuid: $appUuid) === false) {
 			return null;
 		}
 
 		return $version;
-	}//end appVersion()
+	}//end productionVersion()
 
 	/**
 	 * A released version of an app by slug or semver; a draft is never a base.
@@ -280,7 +314,7 @@ class ManifestBaseResolver {
 	}//end pinnedVersion()
 
 	/**
-	 * A fleet app's bundled manifest (`src/manifest.json` in its app folder), at its pin when one is set.
+	 * A fleet app's bundled manifest, at its pin when one is set.
 	 *
 	 * @param string $appId The fleet app id.
 	 * @param string $pin   The manifest `version` it must carry, or '' for any.
@@ -288,36 +322,13 @@ class ManifestBaseResolver {
 	 * @return array<string, mixed>|null
 	 */
 	private function fleetManifest(string $appId, string $pin): ?array {
-		if ($this->appManager === null || preg_match('/^[a-z0-9_-]+$/', $appId) !== 1) {
-			return null;
-		}
-
-		try {
-			$path = rtrim($this->appManager->getAppPath($appId), '/') . '/src/manifest.json';
-			$text = is_readable($path) === true ? file_get_contents($path) : false;
-			$manifest = is_string($text) === true ? json_decode($text, true) : null;
-		} catch (Throwable $e) {
-			$this->logger->debug('ManifestBaseResolver: no bundled manifest for {app}: {message}', ['app' => $appId, 'message' => $e->getMessage()]);
-			return null;
-		}
-
-		if (is_array($manifest) === false || $this->pinMatches(pin: $pin, actual: $manifest['version'] ?? null) === false) {
+		$manifest = $this->bundles?->read(appId: $appId);
+		if ($manifest === null || $this->pinMatches(pin: $pin, actual: $manifest['version'] ?? null) === false) {
 			return null;
 		}
 
 		return $manifest;
 	}//end fleetManifest()
-
-	/**
-	 * One ApplicationVersion by uuid.
-	 *
-	 * @param string $uuid The version uuid.
-	 *
-	 * @return array<string, mixed>|null
-	 */
-	private function versionByUuid(string $uuid): ?array {
-		return $this->findByUuid(schema: self::VERSION_SCHEMA, uuid: $uuid);
-	}//end versionByUuid()
 
 	/**
 	 * Whether a version's `application` relation names this app.

@@ -27,6 +27,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Tests\Unit\Service;
 
+use OCA\Buildiq\Service\BundledManifestReader;
 use OCA\Buildiq\Service\ManifestBaseResolver;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCP\App\IAppManager;
@@ -35,6 +36,9 @@ use Psr\Log\LoggerInterface;
 
 /**
  * @covers \OCA\Buildiq\Service\ManifestBaseResolver
+ * @covers \OCA\Buildiq\Service\BundledManifestReader
+ *
+ * @spec openspec/changes/app-delta-override/tasks.md#task-7.2
  */
 final class ManifestBaseResolverTest extends TestCase {
 
@@ -53,10 +57,10 @@ final class ManifestBaseResolverTest extends TestCase {
 	 * @return ManifestBaseResolver
 	 */
 	private function resolver(?IAppManager $appManager = null): ManifestBaseResolver {
-		$objects = $this->createMock(ObjectServiceInterface::class);
+		$objects = $this->createMock(originalClassName: ObjectServiceInterface::class);
 		$objects->method('searchObjectsBySlug')->willReturnCallback(
 			function (string $register, string $schema, array $filters = []): array {
-				$this->assertSame('buildiq', $register);
+				$this->assertSame(expected: 'buildiq', actual: $register);
 				return array_values(array_filter(
 					$this->rows[$schema] ?? [],
 					static function (array $row) use ($filters): bool {
@@ -78,11 +82,13 @@ final class ManifestBaseResolverTest extends TestCase {
 			}
 		);
 
-		return new ManifestBaseResolver(
-			objectService: $objects,
-			logger: $this->createMock(LoggerInterface::class),
-			appManager: $appManager
-		);
+		$logger = $this->createMock(originalClassName: LoggerInterface::class);
+		$bundles = null;
+		if ($appManager !== null) {
+			$bundles = new BundledManifestReader(appManager: $appManager, logger: $logger);
+		}
+
+		return new ManifestBaseResolver(objectService: $objects, logger: $logger, bundles: $bundles);
 	}//end resolver()
 
 	/**
@@ -105,17 +111,17 @@ final class ManifestBaseResolverTest extends TestCase {
 	 * @spec openspec/changes/app-delta-override/tasks.md#task-6.1
 	 */
 	public function testALegacyBlobIsServedUnchanged(): void {
-		$blob = self::manifest([['id' => 'home', 'title' => 'Home']]);
-		$objects = $this->createMock(ObjectServiceInterface::class);
+		$blob = self::manifest(pages: [['id' => 'home', 'title' => 'Home']]);
+		$objects = $this->createMock(originalClassName: ObjectServiceInterface::class);
 		$objects->expects($this->never())->method('searchObjectsBySlug');
-		$resolver = new ManifestBaseResolver(objectService: $objects, logger: $this->createMock(LoggerInterface::class));
+		$resolver = new ManifestBaseResolver(objectService: $objects, logger: $this->createMock(originalClassName: LoggerInterface::class));
 
 		$result = $resolver->resolveVersion(version: ['manifest' => $blob, 'manifestDelta' => ['pages' => []]]);
 
-		$this->assertSame($blob, $result['manifest']);
-		$this->assertSame([], $result['orphanedDeltaPaths']);
-		$this->assertSame([], $result['diagnostics']);
-		$this->assertSame($blob, $resolver->manifestOf(version: ['manifest' => $blob, 'baseRef' => ['kind' => 'template']]));
+		$this->assertSame(expected: $blob, actual: $result['manifest']);
+		$this->assertSame(expected: [], actual: $result['orphanedDeltaPaths']);
+		$this->assertSame(expected: [], actual: $result['diagnostics']);
+		$this->assertSame(expected: $blob, actual: $resolver->manifestOf(version: ['manifest' => $blob, 'baseRef' => ['kind' => 'template']]));
 	}//end testALegacyBlobIsServedUnchanged()
 
 	/**
@@ -130,7 +136,7 @@ final class ManifestBaseResolverTest extends TestCase {
 			'uuid' => 't-1',
 			'slug' => 'permits',
 			'version' => '2.0.0',
-			'manifest' => self::manifest([['id' => 'home', 'title' => 'Home'], ['id' => 'list', 'title' => 'List']]),
+			'manifest' => self::manifest(pages: [['id' => 'home', 'title' => 'Home'], ['id' => 'list', 'title' => 'List']]),
 		]];
 
 		$result = $this->resolver()->resolveVersion(version: [
@@ -139,8 +145,8 @@ final class ManifestBaseResolverTest extends TestCase {
 			'manifestDelta' => ['pages' => [['id' => 'list', 'title' => 'Permits']]],
 		]);
 
-		$this->assertSame(['Home', 'Permits'], array_column($result['manifest']['pages'], 'title'));
-		$this->assertSame([], $result['diagnostics']);
+		$this->assertSame(expected: ['Home', 'Permits'], actual: array_column($result['manifest']['pages'], 'title'));
+		$this->assertSame(expected: [], actual: $result['diagnostics']);
 	}//end testATemplateBaseIsMergedWithTheDelta()
 
 	/**
@@ -155,22 +161,22 @@ final class ManifestBaseResolverTest extends TestCase {
 			'uuid' => 't-1',
 			'slug' => 'permits',
 			'version' => '2.0.0',
-			'manifest' => self::manifest([['id' => 'home', 'title' => 'Home']]),
+			'manifest' => self::manifest(pages: [['id' => 'home', 'title' => 'Home']]),
 		]];
-		$blob = self::manifest([['id' => 'own', 'title' => 'Own']]);
+		$blob = self::manifest(pages: [['id' => 'own', 'title' => 'Own']]);
 
 		$pinned = $this->resolver()->resolveVersion(version: [
 			'manifest' => $blob,
 			'baseRef' => ['kind' => 'template', 'id' => 't-1', 'manifestVersion' => '2.0.0'],
 		]);
-		$this->assertSame(['Home'], array_column($pinned['manifest']['pages'], 'title'));
+		$this->assertSame(expected: ['Home'], actual: array_column($pinned['manifest']['pages'], 'title'));
 
 		$stale = $this->resolver()->resolveVersion(version: [
 			'manifest' => $blob,
 			'baseRef' => ['kind' => 'template', 'id' => 't-1', 'manifestVersion' => '1.0.0'],
 		]);
-		$this->assertSame($blob, $stale['manifest']);
-		$this->assertSame(['base template:t-1 could not be read'], $stale['diagnostics']);
+		$this->assertSame(expected: $blob, actual: $stale['manifest']);
+		$this->assertSame(expected: ['base template:t-1 could not be read'], actual: $stale['diagnostics']);
 	}//end testATemplatePinMustMatchItsVersion()
 
 	/**
@@ -183,17 +189,35 @@ final class ManifestBaseResolverTest extends TestCase {
 	public function testAnAppBaseFollowsItsProductionVersion(): void {
 		$this->rows['built-app'] = [['uuid' => 'app-1', 'slug' => 'base-app', 'productionVersion' => 'v-2']];
 		$this->rows['applicationVersion'] = [
-			['uuid' => 'v-1', 'application' => 'app-1', 'slug' => 'v1', 'semver' => '1.0.0', 'status' => 'published', 'manifest' => self::manifest([['id' => 'home', 'title' => 'Home']])],
-			['uuid' => 'v-2', 'application' => 'app-1', 'slug' => 'v2', 'semver' => '1.1.0', 'status' => 'published', 'manifest' => self::manifest([['id' => 'home', 'title' => 'Home'], ['id' => 'new', 'title' => 'New']])],
+			[
+				'uuid' => 'v-1',
+				'application' => 'app-1',
+				'slug' => 'v1',
+				'semver' => '1.0.0',
+				'status' => 'published',
+				'manifest' => self::manifest(pages: [['id' => 'home', 'title' => 'Home']]),
+			],
+			[
+				'uuid' => 'v-2',
+				'application' => 'app-1',
+				'slug' => 'v2',
+				'semver' => '1.1.0',
+				'status' => 'published',
+				'manifest' => self::manifest(pages: [['id' => 'home', 'title' => 'Home'], ['id' => 'new', 'title' => 'New']]),
+			],
 		];
-		$derived = ['manifest' => (object)[], 'baseRef' => ['kind' => 'buildiq-app', 'id' => 'base-app'], 'manifestDelta' => ['pages' => [['id' => 'home', 'title' => 'Start']]]];
+		$derived = [
+			'manifest' => (object)[],
+			'baseRef' => ['kind' => 'buildiq-app', 'id' => 'base-app'],
+			'manifestDelta' => ['pages' => [['id' => 'home', 'title' => 'Start']]],
+		];
 
 		$live = $this->resolver()->resolveVersion(version: $derived);
-		$this->assertSame(['Start', 'New'], array_column($live['manifest']['pages'], 'title'));
+		$this->assertSame(expected: ['Start', 'New'], actual: array_column($live['manifest']['pages'], 'title'));
 
 		$derived['baseRef']['manifestVersion'] = '1.0.0';
 		$pinned = $this->resolver()->resolveVersion(version: $derived);
-		$this->assertSame(['Start'], array_column($pinned['manifest']['pages'], 'title'));
+		$this->assertSame(expected: ['Start'], actual: array_column($pinned['manifest']['pages'], 'title'));
 	}//end testAnAppBaseFollowsItsProductionVersion()
 
 	/**
@@ -206,23 +230,38 @@ final class ManifestBaseResolverTest extends TestCase {
 	public function testAnAppBaseIsNeverADraftOrAHiddenApp(): void {
 		$this->rows['built-app'] = [['uuid' => 'app-1', 'slug' => 'base-app', 'productionVersion' => 'v-x']];
 		$this->rows['applicationVersion'] = [
-			['uuid' => 'v-d', 'application' => 'app-1', 'slug' => 'next', 'status' => 'draft', 'manifest' => self::manifest([['id' => 'draft']])],
-			['uuid' => 'v-x', 'application' => 'other-app', 'slug' => 'x', 'status' => 'published', 'manifest' => self::manifest([['id' => 'foreign']])],
+			[
+				'uuid' => 'v-d',
+				'application' => 'app-1',
+				'slug' => 'next',
+				'status' => 'draft',
+				'manifest' => self::manifest(pages: [['id' => 'draft']]),
+			],
+			[
+				'uuid' => 'v-x',
+				'application' => 'other-app',
+				'slug' => 'x',
+				'status' => 'published',
+				'manifest' => self::manifest(pages: [['id' => 'foreign']]),
+			],
 		];
-		$blob = self::manifest([['id' => 'own']]);
+		$blob = self::manifest(pages: [['id' => 'own']]);
 
-		$draft = $this->resolver()->manifestOf(version: ['manifest' => $blob, 'baseRef' => ['kind' => 'buildiq-app', 'id' => 'base-app', 'manifestVersion' => 'next']]);
-		$this->assertSame($blob, $draft);
+		$draft = $this->resolver()->manifestOf(version: [
+			'manifest' => $blob,
+			'baseRef' => ['kind' => 'buildiq-app', 'id' => 'base-app', 'manifestVersion' => 'next'],
+		]);
+		$this->assertSame(expected: $blob, actual: $draft);
 
 		$foreign = $this->resolver()->manifestOf(version: ['manifest' => $blob, 'baseRef' => ['kind' => 'buildiq-app', 'id' => 'app-1']]);
-		$this->assertSame($blob, $foreign);
+		$this->assertSame(expected: $blob, actual: $foreign);
 
 		$this->rows['built-app'][0]['productionVersion'] = ['uuid' => 'v-d'];
 		$hidden = $this->resolver()->manifestOf(
 			version: ['manifest' => $blob, 'baseRef' => ['kind' => 'buildiq-app', 'id' => 'base-app']],
 			visible: static fn (array $app): bool => false
 		);
-		$this->assertSame($blob, $hidden);
+		$this->assertSame(expected: $blob, actual: $hidden);
 	}//end testAnAppBaseIsNeverADraftOrAHiddenApp()
 
 	/**
@@ -233,7 +272,12 @@ final class ManifestBaseResolverTest extends TestCase {
 	 * @spec openspec/changes/app-delta-override/tasks.md#task-3.1
 	 */
 	public function testAVersionBaseIsResolvedThroughItsOwnBase(): void {
-		$this->rows['application-template'] = [['uuid' => 't-1', 'slug' => 'tpl', 'version' => '1', 'manifest' => self::manifest([['id' => 'home', 'title' => 'Home'], ['id' => 'list', 'title' => 'List']])]];
+		$this->rows['application-template'] = [[
+			'uuid' => 't-1',
+			'slug' => 'tpl',
+			'version' => '1',
+			'manifest' => self::manifest(pages: [['id' => 'home', 'title' => 'Home'], ['id' => 'list', 'title' => 'List']]),
+		]];
 		$this->rows['applicationVersion'] = [[
 			'uuid' => 'admin',
 			'manifest' => (object)[],
@@ -247,7 +291,7 @@ final class ManifestBaseResolverTest extends TestCase {
 			'manifestDelta' => ['pages' => [['id' => 'home', '$op' => 'remove']]],
 		]);
 
-		$this->assertSame(['Cases'], array_column($result['manifest']['pages'], 'title'));
+		$this->assertSame(expected: ['Cases'], actual: array_column($result['manifest']['pages'], 'title'));
 	}//end testAVersionBaseIsResolvedThroughItsOwnBase()
 
 	/**
@@ -258,7 +302,12 @@ final class ManifestBaseResolverTest extends TestCase {
 	 * @spec openspec/changes/app-delta-override/tasks.md#task-7.2
 	 */
 	public function testAnOrphanedDeltaPathIsSkippedAndReported(): void {
-		$this->rows['application-template'] = [['uuid' => 't-1', 'slug' => 'tpl', 'version' => '1', 'manifest' => self::manifest([['id' => 'home', 'title' => 'Home']])]];
+		$this->rows['application-template'] = [[
+			'uuid' => 't-1',
+			'slug' => 'tpl',
+			'version' => '1',
+			'manifest' => self::manifest(pages: [['id' => 'home', 'title' => 'Home']]),
+		]];
 
 		$result = $this->resolver()->resolveVersion(version: [
 			'manifest' => (object)[],
@@ -266,8 +315,8 @@ final class ManifestBaseResolverTest extends TestCase {
 			'manifestDelta' => ['pages' => [['id' => 'gone', '$op' => 'remove'], ['id' => 'home', 'title' => 'Start']]],
 		]);
 
-		$this->assertSame(['Start'], array_column($result['manifest']['pages'], 'title'));
-		$this->assertNotSame([], $result['orphanedDeltaPaths']);
+		$this->assertSame(expected: ['Start'], actual: array_column($result['manifest']['pages'], 'title'));
+		$this->assertNotSame(expected: [], actual: $result['orphanedDeltaPaths']);
 	}//end testAnOrphanedDeltaPathIsSkippedAndReported()
 
 	/**
@@ -279,14 +328,14 @@ final class ManifestBaseResolverTest extends TestCase {
 	 */
 	public function testALoopOfBasesStopsWithAReason(): void {
 		$this->rows['applicationVersion'] = [
-			['uuid' => 'a', 'manifest' => self::manifest([['id' => 'a-page']]), 'baseRef' => ['kind' => 'application-version', 'id' => 'b']],
-			['uuid' => 'b', 'manifest' => self::manifest([['id' => 'b-page']]), 'baseRef' => ['kind' => 'application-version', 'id' => 'a']],
+			['uuid' => 'a', 'manifest' => self::manifest(pages: [['id' => 'a-page']]), 'baseRef' => ['kind' => 'application-version', 'id' => 'b']],
+			['uuid' => 'b', 'manifest' => self::manifest(pages: [['id' => 'b-page']]), 'baseRef' => ['kind' => 'application-version', 'id' => 'a']],
 		];
 
 		$result = $this->resolver()->resolveVersion(version: $this->rows['applicationVersion'][0]);
 
-		$this->assertSame(['a-page'], array_column($result['manifest']['pages'], 'id'));
-		$this->assertSame(['the base chain loops or is too deep at application-version:b'], $result['diagnostics']);
+		$this->assertSame(expected: ['a-page'], actual: array_column($result['manifest']['pages'], 'id'));
+		$this->assertSame(expected: ['the base chain loops or is too deep at application-version:b'], actual: $result['diagnostics']);
 	}//end testALoopOfBasesStopsWithAReason()
 
 	/**
@@ -301,15 +350,15 @@ final class ManifestBaseResolverTest extends TestCase {
 		for ($i = 0; $i < $depth; $i++) {
 			$this->rows['applicationVersion'][] = [
 				'uuid' => 'v' . $i,
-				'manifest' => self::manifest([['id' => 'p' . $i]]),
+				'manifest' => self::manifest(pages: [['id' => 'p' . $i]]),
 				'baseRef' => ['kind' => 'application-version', 'id' => 'v' . ($i + 1)],
 			];
 		}
 
 		$result = $this->resolver()->resolveVersion(version: $this->rows['applicationVersion'][0]);
 
-		$this->assertSame(['p' . ManifestBaseResolver::MAX_DEPTH], array_column($result['manifest']['pages'], 'id'));
-		$this->assertStringContainsString('too deep', $result['diagnostics'][0]);
+		$this->assertSame(expected: ['p' . ManifestBaseResolver::MAX_DEPTH], actual: array_column($result['manifest']['pages'], 'id'));
+		$this->assertStringContainsString(needle: 'too deep', haystack: $result['diagnostics'][0]);
 	}//end testAChainDeeperThanTheCapStops()
 
 	/**
@@ -322,8 +371,8 @@ final class ManifestBaseResolverTest extends TestCase {
 	public function testAFleetBaseReadsTheBundledManifest(): void {
 		$dir = sys_get_temp_dir() . '/bq-fleet-' . uniqid();
 		mkdir($dir . '/src', 0777, true);
-		file_put_contents($dir . '/src/manifest.json', json_encode(self::manifest([['id' => 'cases', 'title' => 'Cases']], '3.1.0')));
-		$apps = $this->createMock(IAppManager::class);
+		file_put_contents($dir . '/src/manifest.json', json_encode(self::manifest(pages: [['id' => 'cases', 'title' => 'Cases']], version: '3.1.0')));
+		$apps = $this->createMock(originalClassName: IAppManager::class);
 		$apps->method('getAppPath')->willReturnCallback(static function (string $appId) use ($dir): string {
 			if ($appId !== 'caseapp') {
 				throw new \OCP\App\AppPathNotFoundException($appId);
@@ -333,13 +382,32 @@ final class ManifestBaseResolverTest extends TestCase {
 		$blob = (object)[];
 		$resolver = $this->resolver(appManager: $apps);
 
-		$merged = $resolver->manifestOf(version: ['manifest' => $blob, 'baseRef' => ['kind' => 'fleet-app', 'id' => 'caseapp'], 'manifestDelta' => ['pages' => [['id' => 'cases', 'title' => 'Zaken']]]]);
-		$this->assertSame(['Zaken'], array_column($merged['pages'], 'title'));
+		$merged = $resolver->manifestOf(version: [
+			'manifest' => $blob,
+			'baseRef' => ['kind' => 'fleet-app', 'id' => 'caseapp'],
+			'manifestDelta' => ['pages' => [['id' => 'cases', 'title' => 'Zaken']]],
+		]);
+		$this->assertSame(expected: ['Zaken'], actual: array_column($merged['pages'], 'title'));
 
-		$this->assertSame($blob, $resolver->manifestOf(version: ['manifest' => $blob, 'baseRef' => ['kind' => 'fleet-app', 'id' => 'missing']]));
-		$this->assertSame($blob, $resolver->manifestOf(version: ['manifest' => $blob, 'baseRef' => ['kind' => 'fleet-app', 'id' => '../etc']]));
-		$this->assertSame($blob, $resolver->manifestOf(version: ['manifest' => $blob, 'baseRef' => ['kind' => 'fleet-app', 'id' => 'caseapp', 'manifestVersion' => '2.0.0']]));
-		$this->assertSame($blob, $this->resolver()->manifestOf(version: ['manifest' => $blob, 'baseRef' => ['kind' => 'fleet-app', 'id' => 'caseapp']]));
+		$this->assertSame(
+			expected: $blob,
+			actual: $resolver->manifestOf(version: ['manifest' => $blob, 'baseRef' => ['kind' => 'fleet-app', 'id' => 'missing']])
+		);
+		$this->assertSame(
+			expected: $blob,
+			actual: $resolver->manifestOf(version: ['manifest' => $blob, 'baseRef' => ['kind' => 'fleet-app', 'id' => '../etc']])
+		);
+		$this->assertSame(
+			expected: $blob,
+			actual: $resolver->manifestOf(version: [
+				'manifest' => $blob,
+				'baseRef' => ['kind' => 'fleet-app', 'id' => 'caseapp', 'manifestVersion' => '2.0.0'],
+			])
+		);
+		$this->assertSame(
+			expected: $blob,
+			actual: $this->resolver()->manifestOf(version: ['manifest' => $blob, 'baseRef' => ['kind' => 'fleet-app', 'id' => 'caseapp']])
+		);
 
 		unlink($dir . '/src/manifest.json');
 		rmdir($dir . '/src');
@@ -354,12 +422,18 @@ final class ManifestBaseResolverTest extends TestCase {
 	 * @spec openspec/changes/app-delta-override/tasks.md#task-3.1
 	 */
 	public function testAnUnknownKindOrAFailingLookupFallsBack(): void {
-		$blob = self::manifest([['id' => 'own']]);
-		$this->assertSame($blob, $this->resolver()->manifestOf(version: ['manifest' => $blob, 'baseRef' => ['kind' => 'elsewhere', 'id' => 'x']]));
+		$blob = self::manifest(pages: [['id' => 'own']]);
+		$this->assertSame(
+			expected: $blob,
+			actual: $this->resolver()->manifestOf(version: ['manifest' => $blob, 'baseRef' => ['kind' => 'elsewhere', 'id' => 'x']])
+		);
 
-		$objects = $this->createMock(ObjectServiceInterface::class);
+		$objects = $this->createMock(originalClassName: ObjectServiceInterface::class);
 		$objects->method('searchObjectsBySlug')->willThrowException(new \RuntimeException('register down'));
-		$resolver = new ManifestBaseResolver(objectService: $objects, logger: $this->createMock(LoggerInterface::class));
-		$this->assertSame($blob, $resolver->manifestOf(version: ['manifest' => $blob, 'baseRef' => ['kind' => 'template', 'id' => 'tpl']]));
+		$resolver = new ManifestBaseResolver(objectService: $objects, logger: $this->createMock(originalClassName: LoggerInterface::class));
+		$this->assertSame(
+			expected: $blob,
+			actual: $resolver->manifestOf(version: ['manifest' => $blob, 'baseRef' => ['kind' => 'template', 'id' => 'tpl']])
+		);
 	}//end testAnUnknownKindOrAFailingLookupFallsBack()
 }//end class
