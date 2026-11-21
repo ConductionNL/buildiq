@@ -76,6 +76,14 @@
 		<div v-if="error" class="page-designer-host__error">
 			{{ error }}
 		</div>
+		<!-- app-delta-override D5: base drift is shown, never blocking. -->
+		<NcNoteCard
+			v-if="deltaEditing.orphanedDeltaPaths.length > 0"
+			type="warning"
+			data-testid="orphaned-delta-paths">
+			{{ t('buildiq', 'Some changes of this version no longer match the app it extends, and are skipped:') }}
+			<code>{{ deltaEditing.orphanedDeltaPaths.join(', ') }}</code>
+		</NcNoteCard>
 
 		<!-- REQ-OBVR-009: version-not-found state — identical for both "doesn't exist" and "you can't see it" -->
 		<NcEmptyContent
@@ -165,7 +173,8 @@
 <script>
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
-import { NcButton, NcEmptyContent, NcLoadingIcon } from '@nextcloud/vue'
+import { NcButton, NcEmptyContent, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
+import { reactive } from 'vue'
 import CopilotPanel from '../components/copilot/CopilotPanel.vue'
 import DocumentAttachmentsSection from '../components/DocumentAttachmentsSection.vue'
 import SchedulesSection from '../components/SchedulesSection.vue'
@@ -177,6 +186,13 @@ import { useAppStatus } from '../composables/useAppStatus.js'
 import { useCopilot } from '../composables/useCopilot.js'
 import { useLivePreview } from '../composables/useLivePreview.js'
 import builtAppHost, { failureText } from '../mixins/builtAppHost.js'
+import {
+	deltaOf,
+	deltaToSave,
+	editorManifest,
+	fetchDeltaBase,
+	isDeltaVersion,
+} from '../services/deltaEditing.js'
 import { checkFormDestinations } from '../services/formDestinationCheck.js'
 import {
 	reconcileConnectorDependency,
@@ -210,6 +226,7 @@ export default {
 		NcButton,
 		NcEmptyContent,
 		NcLoadingIcon,
+		NcNoteCard,
 		PageDesigner,
 		WorkflowAttachmentsSection,
 		ThemeSection,
@@ -227,11 +244,17 @@ export default {
 	 * computed can gate the theme dialog's preview toggle on whether that
 	 * pane is actually mounted.
 	 *
-	 * @return {{copilot: object, livePreview: object}}
+	 * `deltaEditing` holds the base a delta-mode version extends
+	 * (app-delta-override D6): the designer edits the merged manifest and
+	 * saves its difference from `base`.
+	 *
+	 * @return {{copilot: object, livePreview: object, deltaEditing: object}}
 	 * @spec openspec/specs/nldesign-theme-selection/spec.md#req-nts-002
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-5.1
 	 */
 	setup() {
-		return { copilot: useCopilot(), livePreview: useLivePreview() }
+		const deltaEditing = reactive({ base: null, orphanedDeltaPaths: [], failed: false })
+		return { copilot: useCopilot(), livePreview: useLivePreview(), deltaEditing }
 	},
 
 	data() {
@@ -407,6 +430,7 @@ export default {
 		async routeSlug() {
 			await this.resolveVersion()
 			await this.load()
+			await this.loadDeltaBase()
 		},
 
 		/**
@@ -427,6 +451,7 @@ export default {
 		async versionSlug() {
 			await this.resolveVersion()
 			await this.load()
+			await this.loadDeltaBase()
 		},
 	},
 
@@ -445,6 +470,7 @@ export default {
 		// until resolveVersion() has actually settled.
 		await this.resolveVersion()
 		await this.load()
+		await this.loadDeltaBase()
 		// REQ-PWA-006: soft-check Procest so the Workflows section degrades
 		// gracefully when it is absent.
 		const status = useAppStatus('dossiq')
@@ -567,6 +593,33 @@ export default {
 		},
 
 		/**
+		 * For a version that extends a base, load the base and edit the delta
+		 * merged over it (app-delta-override D6). A base that cannot be loaded
+		 * turns saving off, so the stored delta is never replaced by a guess.
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/app-delta-override/tasks.md#task-5.1
+		 */
+		async loadDeltaBase() {
+			Object.assign(this.deltaEditing, { base: null, orphanedDeltaPaths: [], failed: false })
+			if (!this.application || !isDeltaVersion(this.applicationVersion)) {
+				return
+			}
+			try {
+				const { base, orphanedDeltaPaths } = await fetchDeltaBase(this.routeSlug, this.versionSlug || '')
+				if (base) {
+					Object.assign(this.deltaEditing, { base, orphanedDeltaPaths })
+					this.manifest = editorManifest(base, deltaOf(this.applicationVersion))
+				}
+			} catch (e) {
+				this.deltaEditing.failed = true
+				this.error = t('buildiq', 'The app this version extends could not be loaded, so it cannot be saved now: {error}', {
+					error: failureText(e),
+				})
+			}
+		},
+
+		/**
 		 * A fresh empty manifest, seeded when neither the version nor the
 		 * Application carries one.
 		 *
@@ -673,7 +726,7 @@ export default {
 		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-2
 		 */
 		async save() {
-			if (!this.application || !this.applicationUuid || this.saving) {
+			if (!this.application || !this.applicationUuid || this.saving || this.deltaEditing.failed) {
 				return false
 			}
 			this.saving = true
@@ -764,16 +817,23 @@ export default {
 		 * every untouched field intact — losslessly and without tripping the
 		 * collision.
 		 *
+		 * A version that extends a base stores only its difference from that
+		 * base (app-delta-override D6).
+		 *
 		 * @param {string} versionUuid The active version's uuid.
 		 * @return {Promise<void>}
+		 * @spec openspec/changes/app-delta-override/tasks.md#task-5.1
 		 */
 		async saveOntoVersion(versionUuid) {
 			const url = generateUrl(
 				`/apps/openregister/api/objects/buildiq/applicationVersion/${versionUuid}`,
 			)
-			const { data } = await axios.patch(url, {
-				manifest: this.manifest,
-			})
+			// A delta-mode version stores only its difference from its base
+			// (app-delta-override D6); every other version stores its manifest.
+			const body = this.deltaEditing.base
+				? { manifestDelta: deltaToSave(this.deltaEditing.base, this.manifest) }
+				: { manifest: this.manifest }
+			const { data } = await axios.patch(url, body)
 			if (data && typeof data === 'object') {
 				this.applicationVersion = data
 			}

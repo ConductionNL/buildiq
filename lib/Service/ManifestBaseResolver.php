@@ -115,6 +115,32 @@ class ManifestBaseResolver {
 	}//end resolveVersion()
 
 	/**
+	 * The base a version extends, for an editor: the manifest its delta is
+	 * diffed against, and the delta paths that target nothing in it.
+	 *
+	 * @param array<string, mixed> $version The ApplicationVersion.
+	 * @param callable|null        $visible Whether the caller may build on an Application; null admits every app.
+	 *
+	 * @return array{base: array<string, mixed>|null, orphanedDeltaPaths: list<string>} No base for a version
+	 *                                                                                  without a readable one.
+	 *
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-5.1
+	 */
+	public function baseOf(array $version, ?callable $visible=null): array {
+		$baseRef = $this->referenceOf(version: $version);
+		$base = null;
+		if ($baseRef !== null) {
+			$base = $this->resolveBase(baseRef: $baseRef, visible: $visible, seen: [$baseRef['kind'] . ':' . $baseRef['id']])['manifest'];
+		}
+
+		if (is_array($base) === false) {
+			return ['base' => null, 'orphanedDeltaPaths' => []];
+		}
+
+		return ['base' => $base, 'orphanedDeltaPaths' => $this->chain(version: $version, visible: $visible, seen: [])['orphanedDeltaPaths']];
+	}//end baseOf()
+
+	/**
 	 * Resolve one version on a base chain.
 	 *
 	 * @param array<string, mixed> $version The ApplicationVersion.

@@ -68,6 +68,14 @@ return \OCA\Buildiq\Middleware\Support\ApiPathAliases::withVersionedAliases(\OCA
         // built-app-connections-page REQ-BIQ-CONN-005: an app's sources and integrations with their health.
         ['name' => 'applicationConnections#index', 'url' => '/api/applications/{id}/connections', 'verb' => 'GET', 'requirements' => ['id' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
         ['name' => 'applications#getManifest', 'url' => '/api/applications/{slug}/manifest', 'verb' => 'GET', 'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]']],
+        // The base a version extends, for the designer of an owner or editor
+        // (app-delta-override D6): it saves an edit as the delta against it.
+        [
+            'name' => 'manifestBase#base',
+            'url' => '/api/applications/{slug}/manifest-base',
+            'verb' => 'GET',
+            'requirements' => ['slug' => '[a-z0-9][a-z0-9-]*[a-z0-9]'],
+        ],
 
         // Symmetric write counterpart — the standalone runtime's in-app edit shell
         // (ADR-041) PUTs the full edited manifest here on Save. Owner/editor RBAC +

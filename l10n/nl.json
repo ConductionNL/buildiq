@@ -3154,7 +3154,9 @@
         "Time limit (seconds, 1 to 30)": "Tijdslimiet (seconden, 1 tot 30)",
         "What the script does": "Wat het script doet",
         "Only app owners can change a script step.": "Alleen app-eigenaren kunnen een scriptstap wijzigen.",
-        "Script steps need OpenRegister's code runner (flow-code-runner), which is not installed.": "Scriptstappen hebben de coderunner van OpenRegister (flow-code-runner) nodig, en die is niet geïnstalleerd."
+        "Script steps need OpenRegister's code runner (flow-code-runner), which is not installed.": "Scriptstappen hebben de coderunner van OpenRegister (flow-code-runner) nodig, en die is niet geïnstalleerd.",
+        "Some changes of this version no longer match the app it extends, and are skipped:": "Sommige wijzigingen van deze versie passen niet meer bij de app waarop ze voortbouwt en worden overgeslagen:",
+        "The app this version extends could not be loaded, so it cannot be saved now: {error}": "De app waarop deze versie voortbouwt kon niet worden geladen, dus opslaan kan nu niet: {error}"
     },
     "plurals": null,
     "pluralForm": "nplurals=2; plural=(n != 1);"

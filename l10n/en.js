@@ -3022,7 +3022,9 @@ OC.L10N.register(
         "Time limit (seconds, 1 to 30)": "Time limit (seconds, 1 to 30)",
         "What the script does": "What the script does",
         "Only app owners can change a script step.": "Only app owners can change a script step.",
-        "Script steps need OpenRegister's code runner (flow-code-runner), which is not installed.": "Script steps need OpenRegister's code runner (flow-code-runner), which is not installed."
+        "Script steps need OpenRegister's code runner (flow-code-runner), which is not installed.": "Script steps need OpenRegister's code runner (flow-code-runner), which is not installed.",
+        "Some changes of this version no longer match the app it extends, and are skipped:": "Some changes of this version no longer match the app it extends, and are skipped:",
+        "The app this version extends could not be loaded, so it cannot be saved now: {error}": "The app this version extends could not be loaded, so it cannot be saved now: {error}"
     },
     "nplurals=2; plural=(n != 1);"
 )
