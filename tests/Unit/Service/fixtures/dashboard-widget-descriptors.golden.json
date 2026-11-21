@@ -21,8 +21,7 @@
             },
             "dataSource": {
                 "register": "r"
-            },
-            "scope": []
+            }
         },
         {
             "id": "buildiq-u-3-bare",
@@ -41,8 +40,7 @@
             "link": "",
             "pageRoute": "/b",
             "props": [],
-            "dataSource": [],
-            "scope": []
+            "dataSource": []
         },
         {
             "id": "buildiq-u-3-no-route",
@@ -59,8 +57,7 @@
             "link": "",
             "pageRoute": "/",
             "props": [],
-            "dataSource": [],
-            "scope": []
+            "dataSource": []
         },
         {
             "id": "buildiq-u-4-full",
@@ -86,8 +83,7 @@
             },
             "dataSource": {
                 "register": "r"
-            },
-            "scope": []
+            }
         },
         {
             "id": "buildiq-u-4-bare",
@@ -109,8 +105,7 @@
             "link": "",
             "pageRoute": "/b",
             "props": [],
-            "dataSource": [],
-            "scope": []
+            "dataSource": []
         },
         {
             "id": "buildiq-u-4-no-route",
@@ -130,8 +125,7 @@
             "link": "",
             "pageRoute": "/",
             "props": [],
-            "dataSource": [],
-            "scope": []
+            "dataSource": []
         }
     ],
     "warnings": [

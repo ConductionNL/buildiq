@@ -81,7 +81,7 @@ final class VirtualAppWidgetDefaultsTest extends TestCase {
 			caller: new CallerContext(
 				userSession: $this->createMock(originalClassName: IUserSession::class),
 				groupManager: $this->createMock(originalClassName: IGroupManager::class),
-				permissionResolver: $this->createMock(PermissionResolver::class)
+				permissionResolver: $this->createMock(originalClassName: PermissionResolver::class)
 			),
 			visibility: $this->createMock(originalClassName: AppVisibilityResolverInterface::class),
 			projector: ($projector ?? $this->createMock(originalClassName: WidgetItemProjectorInterface::class)),

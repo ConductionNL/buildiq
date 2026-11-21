@@ -473,7 +473,7 @@ class VirtualAppWidgetTest extends TestCase {
 			caller: new CallerContext(
 				userSession: $userSession,
 				groupManager: $groupManager,
-				permissionResolver: $this->createMock(PermissionResolver::class)
+				permissionResolver: $this->createMock(originalClassName: PermissionResolver::class)
 			),
 			visibility: new AppVisibilityResolver(),
 			projector: ($projector ?? $this->createMock(WidgetItemProjector::class)),

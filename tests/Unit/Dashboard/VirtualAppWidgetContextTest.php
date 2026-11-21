@@ -196,24 +196,23 @@ class VirtualAppWidgetContextTest extends TestCase {
 	 */
 	public function testAScopedAppOffersItsWidgetsOnlyToItsOrganisation(): void {
 		$scope = ['organisationScope' => 'holder', '@self' => ['organisation' => 'org-a']];
-		$scoped = new WidgetDescriptor(
-			application: new WidgetApplication(uuid: 'app-uuid', slug: 'crm', name: 'CRM', scope: $scope),
-			principals: ['group:*'],
-			entryId: 'scoped',
-			widgetKey: 'stats',
-			panel: [],
-			placement: []
-		);
+		$scoped = $this->descriptor(entryId: 'scoped', principals: ['group:*']);
 		$shared = $this->descriptor(entryId: 'shared', principals: ['group:*']);
 		$member = $this->createMock(originalClassName: AppOrganisationGuard::class);
 		$member->method('canSee')->willReturnCallback(static fn (array $application): bool => $application === $scope);
 		$outsider = $this->createMock(originalClassName: AppOrganisationGuard::class);
 		$outsider->method('canSee')->willReturn(false);
 
-		$this->assertTrue(condition: $this->context(guard: $member)->isVisible(descriptor: $scoped));
-		$this->assertFalse(condition: $this->context(guard: $outsider)->isVisible(descriptor: $scoped));
-		$this->assertFalse(condition: $this->context()->isVisible(descriptor: $scoped));
-		$this->assertTrue(condition: $this->context(guard: $outsider)->isVisible(descriptor: $shared));
-		$this->assertArrayNotHasKey(key: 'scope', array: $scoped->jsonSerialize());
+		foreach ([[$member, true], [$outsider, false], [null, false]] as [$guard, $expected]) {
+			$context = $this->context(guard: $guard);
+			$context->addDescriptor(descriptor: $scoped, scope: $scope);
+			$context->addDescriptor(descriptor: $shared);
+			$this->assertSame(expected: $expected, actual: $context->isVisible(descriptor: $scoped));
+			$this->assertTrue(condition: $context->isVisible(descriptor: $shared));
+		}
+
+		$context = $this->context(guard: $member);
+		$context->addDescriptor(descriptor: $scoped, scope: $scope);
+		$this->assertArrayNotHasKey(key: 'scope', array: $context->visibleDescriptors()[0]);
 	}//end testAScopedAppOffersItsWidgetsOnlyToItsOrganisation()
 }//end class

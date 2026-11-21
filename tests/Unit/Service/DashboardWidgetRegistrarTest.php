@@ -159,22 +159,28 @@ class DashboardWidgetRegistrarTest extends TestCase {
 	}//end testThePlacementRolesAreKeptApartFromTheAppPermissions()
 
 	/**
-	 * REQ-BQOS-002: the Application's organisation scope and holder travel into
-	 * each descriptor, and nothing else of the record does.
+	 * REQ-BQOS-002: each Application's organisation scope and holder are read by
+	 * uuid for the widget context, and nothing else of the record is.
 	 *
 	 * @return void
 	 */
-	public function testTheOrganisationScopeTravelsIntoTheDescriptor(): void {
-		$application = WidgetDescriptorTest::fixtureApplication(slug: 'pet-store', name: 'Pet Store');
-		$application['organisationScope'] = 'holder';
-		$application['@self'] = ['organisation' => 'org-a'];
+	public function testTheOrganisationScopeIsReadPerApplication(): void {
+		$scoped = WidgetDescriptorTest::fixtureApplication(slug: 'pet-store', name: 'Pet Store');
+		$scoped['organisationScope'] = 'holder';
+		$scoped['@self'] = ['organisation' => 'org-a'];
+		$shared = WidgetDescriptorTest::fixtureApplication(slug: 'other', name: 'Other');
+		$shared['uuid'] = 'other-uuid';
 
-		$descriptors = $this->registrar()->collectDescriptors(applications: [$application]);
-		$shared = $this->registrar()->collectDescriptors(applications: [WidgetDescriptorTest::fixtureApplication(slug: 'pet-store', name: 'Pet Store')]);
+		$scopes = $this->registrar()->scopesByApplication(applications: [$scoped, $shared, ['slug' => 'no-uuid']]);
 
-		$this->assertSame(expected: ['organisationScope' => 'holder', '@self' => ['organisation' => 'org-a']], actual: $descriptors[0]->scope);
-		$this->assertSame(expected: [], actual: $shared[0]->scope);
-	}//end testTheOrganisationScopeTravelsIntoTheDescriptor()
+		$this->assertSame(
+			expected: [
+				(string)$scoped['uuid'] => ['organisationScope' => 'holder', '@self' => ['organisation' => 'org-a']],
+				'other-uuid' => [],
+			],
+			actual: $scopes
+		);
+	}//end testTheOrganisationScopeIsReadPerApplication()
 
 	/**
 	 * A placement whose roles are neither a string nor a list is skipped with
@@ -427,9 +433,9 @@ class DashboardWidgetRegistrarTest extends TestCase {
 		return new VirtualAppWidgetContext(
 			urlGenerator: $this->createMock(IURLGenerator::class),
 			caller: new CallerContext(
-				userSession: $this->createMock(IUserSession::class),
-				groupManager: $this->createMock(IGroupManager::class),
-				permissionResolver: $this->createMock(PermissionResolver::class)
+				userSession: $this->createMock(originalClassName: IUserSession::class),
+				groupManager: $this->createMock(originalClassName: IGroupManager::class),
+				permissionResolver: $this->createMock(originalClassName: PermissionResolver::class)
 			),
 			visibility: new AppVisibilityResolver(),
 			projector: $this->createMock(WidgetItemProjector::class),

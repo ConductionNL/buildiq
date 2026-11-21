@@ -48,6 +48,15 @@ final class VirtualAppWidgetContext {
 	private array $descriptors = [];
 
 	/**
+	 * The organisation scope and holder of each widget's app, by widget id
+	 * (REQ-BQOS-002). Kept here rather than on the descriptor, which is
+	 * serialised to the browser.
+	 *
+	 * @var array<string,array<string,mixed>>
+	 */
+	private array $scopes = [];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IURLGenerator $urlGenerator URL generator.
@@ -70,14 +79,18 @@ final class VirtualAppWidgetContext {
 	/**
 	 * Record a descriptor registered this request.
 	 *
-	 * @param WidgetDescriptor $descriptor The promoted widget.
+	 * @param WidgetDescriptor     $descriptor The promoted widget.
+	 * @param array<string, mixed> $scope      Its app's organisation scope and holder; [] for an
+	 *                                         app every organisation sees (REQ-BQOS-002).
 	 *
 	 * @return void
 	 *
 	 * @spec openspec/changes/publish-widgets-to-nc-dashboard/specs/nc-dashboard-widgets/spec.md#requirement-promoted-widgets-are-registered-with-the-nextcloud-dashboard
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002
 	 */
-	public function addDescriptor(WidgetDescriptor $descriptor): void {
+	public function addDescriptor(WidgetDescriptor $descriptor, array $scope = []): void {
 		$this->descriptors[] = $descriptor;
+		$this->scopes[$descriptor->id] = $scope;
 	}//end addDescriptor()
 
 	/**
@@ -110,7 +123,7 @@ final class VirtualAppWidgetContext {
 	public function isVisible(WidgetDescriptor $descriptor): bool {
 		// Operate-organisation-scoped-apps REQ-BQOS-002: another organisation's
 		// scoped app offers no widget, whatever its permissions name.
-		if ($this->caller->seesApplication(application: $descriptor->scope) === false) {
+		if ($this->caller->seesApplication(application: ($this->scopes[$descriptor->id] ?? [])) === false) {
 			return false;
 		}
 
