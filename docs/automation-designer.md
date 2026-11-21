@@ -137,6 +137,13 @@ the answer back onto it. It runs on *Object created*, on *Object updated*
 fields are sent, the presets and AI fields in the schema designer are on
 [AI steps and AI fields](ai-steps-and-fields.md).
 
+## Script steps
+
+The *Run a script* action runs JavaScript over the flow's items in
+OpenRegister's code runner, for what the built-in steps cannot express. Only
+app owners may write one, and only while an administrator allows script steps.
+Where scripts run and what they can reach are on [Script steps](script-steps.md).
+
 ## Provenance and drift
 
 Every compiled artifact's id/key carries an `aut-<slug>` prefix (rule sets

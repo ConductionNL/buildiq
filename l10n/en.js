@@ -3011,7 +3011,18 @@ OC.L10N.register(
         "What the AI does": "What the AI does",
         "Write the answer to field": "Write the answer to field",
         "Write the instruction the AI step follows.": "Write the instruction the AI step follows.",
-        "You may name a field the AI reads between double curly braces. No other field is sent.": "You may name a field the AI reads between double curly braces. No other field is sent."
+        "You may name a field the AI reads between double curly braces. No other field is sent.": "You may name a field the AI reads between double curly braces. No other field is sent.",
+        "Run a script": "Run a script",
+        "Script steps are turned off for this instance.": "Script steps are turned off for this instance.",
+        "The code runner is not installed, so scripts cannot run.": "The code runner is not installed, so scripts cannot run.",
+        "Write the script before saving.": "Write the script before saving.",
+        "A script may run between 1 and 30 seconds.": "A script may run between 1 and 30 seconds.",
+        "The script is the body of a function that receives the items and returns items. It runs only in OpenRegister's code runner, with no network access, and only app owners may change it.": "The script is the body of a function that receives the items and returns items. It runs only in OpenRegister's code runner, with no network access, and only app owners may change it.",
+        "Script": "Script",
+        "Time limit (seconds, 1 to 30)": "Time limit (seconds, 1 to 30)",
+        "What the script does": "What the script does",
+        "Only app owners can change a script step.": "Only app owners can change a script step.",
+        "Script steps need OpenRegister's code runner (flow-code-runner), which is not installed.": "Script steps need OpenRegister's code runner (flow-code-runner), which is not installed."
     },
     "nplurals=2; plural=(n != 1);"
 )

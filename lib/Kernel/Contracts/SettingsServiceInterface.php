@@ -94,4 +94,13 @@ interface SettingsServiceInterface {
 	 * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-offline-is-the-administrators-choice-first-req-bqom-002
 	 */
 	public function offlineAppsAllowed(): bool;
+
+	/**
+	 * Whether the instance lets app owners add script steps to automations ("Allow script steps", off by default).
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-composer-offers-a-script-step-req-bqss-001
+	 */
+	public function scriptStepsAllowed(): bool;
 }//end interface

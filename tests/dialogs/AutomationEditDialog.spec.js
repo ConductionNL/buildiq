@@ -1101,4 +1101,105 @@ describe('AutomationEditDialog Ask AI (ai-copilot-documents-and-code-help REQ-BQ
 			expect(wrapper.vm.valid).toBe(false)
 		})
 	})
+
+	describe('logic-script-step: the Run a script step', () => {
+		/**
+		 * Answer the node catalogue, with or without OpenRegister's code step.
+		 *
+		 * @param {boolean} withRunner Whether the catalogue lists `openregister.code`.
+		 * @return {void}
+		 */
+		function serveCatalogue(withRunner) {
+			axios.get.mockImplementation((url) => {
+				if (String(url).includes('/flow/node-catalog')) {
+					const results = [{ id: 'openregister.object-write' }]
+					if (withRunner) {
+						results.push({ id: 'openregister.code' })
+					}
+					return Promise.resolve({ data: { results } })
+				}
+				return Promise.resolve({ data: { results: [] } })
+			})
+		}
+
+		/**
+		 * The REQ-BQSS-001 name-joining script on a manual trigger.
+		 *
+		 * @param {object} wrapper The mounted dialog.
+		 * @param {string} code The script.
+		 * @return {Promise<void>}
+		 */
+		async function composeScript(wrapper, code) {
+			wrapper.vm.name = 'Join names'
+			wrapper.vm.triggerType = 'manual'
+			wrapper.vm.actions = [wrapper.vm.actionToEditor({ type: 'script-step' })]
+			wrapper.vm.updateAction(0, 'code', code)
+			wrapper.vm.updateAction(0, 'note', 'Joins voornaam and achternaam into naam')
+			await flush()
+		}
+
+		const JOIN = 'return items.map((item) => ({ ...item, json: { ...item.json, naam: item.json.voornaam + " " + item.json.achternaam } }))'
+
+		it('REQ-BQSS-001: an owner adds a script step and it is stored with its code, time limit and note', async () => {
+			serveCatalogue(true)
+			const wrapper = factory()
+			wrapper.vm.scriptSupport.allowed = true
+			await openDialog(wrapper)
+
+			expect(wrapper.vm.actionTypeOption('script-step')).toEqual({ value: 'script-step', label: 'Run a script', disabled: false })
+
+			await composeScript(wrapper, JOIN)
+
+			expect(wrapper.find('[data-testid="script-step-form"]').exists()).toBe(true)
+			expect(wrapper.vm.valid).toBe(true)
+			expect(wrapper.vm.buildActions()).toEqual([
+				{ type: 'script-step', code: JOIN, timeoutSeconds: 10, note: 'Joins voornaam and achternaam into naam' },
+			])
+		})
+
+		it('REQ-BQSS-001: without the code runner the kind is disabled and says so', async () => {
+			serveCatalogue(false)
+			const wrapper = factory()
+			wrapper.vm.scriptSupport.allowed = true
+			await openDialog(wrapper)
+
+			const option = wrapper.vm.actionTypeOptions.find((o) => o.value === 'script-step')
+			expect(option.disabled).toBe(true)
+			expect(option.label).toContain('The code runner is not installed, so scripts cannot run.')
+
+			await composeScript(wrapper, JOIN)
+
+			expect(wrapper.find('[data-testid="action-blocked"]').text()).toBe('The code runner is not installed, so scripts cannot run.')
+			expect(wrapper.vm.valid).toBe(false)
+		})
+
+		it('REQ-BQSS-001: while scripts are off for the instance the kind says that first', async () => {
+			serveCatalogue(true)
+			const wrapper = factory()
+			await openDialog(wrapper)
+
+			expect(wrapper.vm.scriptSupport.allowed).toBe(false)
+			const option = wrapper.vm.actionTypeOptions.find((o) => o.value === 'script-step')
+			expect(option.disabled).toBe(true)
+			expect(option.label).toContain('Script steps are turned off for this instance.')
+		})
+
+		it('REQ-BQSS-001: a script step without code, or with a time limit out of range, is not saved', async () => {
+			serveCatalogue(true)
+			const wrapper = factory()
+			wrapper.vm.scriptSupport.allowed = true
+			await openDialog(wrapper)
+			await composeScript(wrapper, '   ')
+
+			expect(wrapper.vm.validationMessage).toBe('Write the script before saving.')
+
+			wrapper.vm.updateAction(0, 'code', JOIN)
+			wrapper.vm.updateAction(0, 'timeoutSeconds', 45)
+			await wrapper.vm.$nextTick()
+			expect(wrapper.vm.validationMessage).toBe('A script may run between 1 and 30 seconds.')
+
+			await wrapper.vm.onSave()
+			expect(axios.post.mock.calls.find(([url]) => url.includes('/automations'))).toBeUndefined()
+		})
+	})
 })

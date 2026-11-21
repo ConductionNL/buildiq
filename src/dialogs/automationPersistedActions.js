@@ -12,6 +12,7 @@
  */
 
 import { toPersistedAiStep } from '../services/aiSteps.js'
+import { toPersistedScriptStep } from '../services/scriptSteps.js'
 import { storedForm } from './approvalFormFields.js'
 
 /**
@@ -110,6 +111,8 @@ const BUILDERS = Object.freeze({
 		output: listOrEmpty(action.output),
 	}),
 	'ai-step': toPersistedAiStep,
+	// logic-script-step D1: the code, its time limit and a note.
+	'script-step': toPersistedScriptStep,
 	// logic-shared-flows-and-automations D4: the step names the automation it runs.
 	'run-automation': (action) => ({
 		type: 'run-automation',

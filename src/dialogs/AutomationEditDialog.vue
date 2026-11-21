@@ -453,6 +453,14 @@
 							@update="updateAction(index, $event.key, $event.value)" />
 					</template>
 
+					<template v-else-if="action.type === 'script-step'">
+						<!-- logic-script-step D1, D5: the code runner runs this
+						     script over the flow's items; buildiq never does. -->
+						<ScriptStepForm
+							:modelValue="action"
+							@update="updateAction(index, $event.key, $event.value)" />
+					</template>
+
 					<template v-else-if="action.type === 'approval'">
 						<NcSelect
 							v-if="groupPickerAvailable"
@@ -565,10 +573,12 @@ import {
 	NcTextArea,
 	NcTextField,
 } from '@nextcloud/vue'
+import { reactive } from 'vue'
 import AiStepForm from '../components/AiStepForm.vue'
 import ApprovalFormFieldsEditor from '../components/ApprovalFormFieldsEditor.vue'
 import AutomationActionListEditor from '../components/AutomationActionListEditor.vue'
 import CopilotAssistButton from '../components/copilot/CopilotAssistButton.vue'
+import ScriptStepForm from '../components/ScriptStepForm.vue'
 import { useAppStatus } from '../composables/useAppStatus.js'
 import {
 	fetchDocudeskTemplates,
@@ -594,6 +604,14 @@ import {
 } from '../services/automationStepSources.js'
 import { fetchConnectorSynchronizations } from '../services/connectorSynchronizations.js'
 import { resolveFleetAppId } from '../services/fleetAppId.js'
+import {
+	fetchCodeNodeAvailable,
+	SCRIPT_STEP,
+	scriptStepDisabledReason,
+	scriptStepIncomplete,
+	scriptStepsAllowed,
+	scriptStepToEditor,
+} from '../services/scriptSteps.js'
 import { fetchAutomations, RUN_AUTOMATION, runAutomationOptions } from '../services/sharedAutomations.js'
 import { slugify } from '../utils/slugify.js'
 import { askableFieldOptions, formFieldsOf } from './approvalFormFields.js'
@@ -634,6 +652,7 @@ export default {
 		NcTextField,
 		AutomationActionListEditor,
 		AiStepForm,
+		ScriptStepForm,
 		CopilotAssistButton,
 		ApprovalFormFieldsEditor,
 	},
@@ -651,12 +670,16 @@ export default {
 	 * degradation and `ConnectorSourcePicker`'s existing `setup()` usage).
 	 *
 	 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#4.2
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-composer-offers-a-script-step-req-bqss-001
 	 */
 	setup() {
 		const docudeskStatus = useAppStatus('filinq')
 		// A webhook step calls an integriq source (logic-automation-actions-that-run D5).
 		const integriqStatus = useAppStatus('integriq')
-		return { docudeskStatus, integriqStatus }
+		// Logic-script-step REQ-BQSS-001: offered while the instance allows
+		// scripts and the node catalogue lists OpenRegister's code step.
+		const scriptSupport = reactive({ allowed: scriptStepsAllowed(), runnerAvailable: false })
+		return { docudeskStatus, integriqStatus, scriptSupport }
 	},
 
 	data() {
@@ -952,7 +975,37 @@ export default {
 					label: t('buildiq', 'Run another automation'),
 				},
 				this.aiStepTypeOption,
+				this.scriptStepTypeOption,
 			]
+		},
+
+		/**
+		 * The "Run a script" kind: disabled, with its reason, while scripts are
+		 * off or the code runner is missing (REQ-BQSS-001).
+		 *
+		 * @return {{value: string, label: string, disabled: boolean}}
+		 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-composer-offers-a-script-step-req-bqss-001
+		 */
+		scriptStepTypeOption() {
+			const reason = this.scriptStepReason
+			if (reason === '') {
+				return { value: SCRIPT_STEP, label: t('buildiq', 'Run a script'), disabled: false }
+			}
+			return {
+				value: SCRIPT_STEP,
+				label: t('buildiq', 'Run a script') + ' (' + reason + ')',
+				disabled: true,
+			}
+		},
+
+		/**
+		 * Why a script step cannot be used here, or ''.
+		 *
+		 * @return {string}
+		 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-composer-offers-a-script-step-req-bqss-001
+		 */
+		scriptStepReason() {
+			return scriptStepDisabledReason(this.scriptSupport)
 		},
 
 		/**
@@ -1044,6 +1097,9 @@ export default {
 			for (const action of this.actions) {
 				if (action.type === 'ai-step' && aiStepIncomplete(action) !== '') {
 					return aiStepIncomplete(action)
+				}
+				if (action.type === SCRIPT_STEP && scriptStepIncomplete(action) !== '') {
+					return scriptStepIncomplete(action)
 				}
 				// A webhook, a rule decision and "Run another automation"
 				// each need their fields (REQ-BQAR-003, REQ-BQAR-005, REQ-BQSF-004).
@@ -1243,6 +1299,7 @@ export default {
 				this.fetchDocudeskTemplateOptions()
 				this.fetchStepSources()
 				this.fetchAiStepSupport()
+				this.fetchScriptStepSupport()
 				this.fetchMailboxes()
 				this.fetchRunAutomationTargets()
 			}
@@ -1347,6 +1404,7 @@ export default {
 				formFields: formFieldsOf(action),
 				templateId: action.templateId || '',
 				...aiStepToEditor(action),
+				...scriptStepToEditor(action),
 				output: Array.isArray(action.output)
 					? action.output
 					: action.output
@@ -1551,6 +1609,17 @@ export default {
 				return null
 			}
 			return this.runAutomationChoices.find((option) => option.id === uuid) || { id: uuid, label: uuid }
+		},
+
+		/**
+		 * Ask the node catalogue for OpenRegister's code step; without it a
+		 * script step is offered disabled (REQ-BQSS-001).
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-composer-offers-a-script-step-req-bqss-001
+		 */
+		async fetchScriptStepSupport() {
+			this.scriptSupport.runnerAvailable = await fetchCodeNodeAvailable()
 		},
 
 		/**
@@ -1873,6 +1942,9 @@ export default {
 			}
 			if (type === 'ai-step' && !this.agentNodeAvailable) {
 				return missingNodeReason()
+			}
+			if (type === SCRIPT_STEP) {
+				return this.scriptStepReason
 			}
 			if (type === 'webhook' && !this.integriqAvailable) {
 				return t(
