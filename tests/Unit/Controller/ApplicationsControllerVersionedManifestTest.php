@@ -174,16 +174,16 @@ class ApplicationsControllerVersionedManifestTest extends TestCase {
 	 */
 	public function testAnUnservableMergedManifestIsTheCorrelationIdError(): void {
 		$this->manifestResolver->method('resolveServed')->willThrowException(
-			new InvalidServedManifestException('The merged manifest cannot be served: `pages[0].route` is not a string')
+			new InvalidServedManifestException(message: 'The merged manifest cannot be served: `pages[0].route` is not a string')
 		);
 		$this->logger->expects($this->once())->method('error');
 
 		$response = $this->controller()->getManifest(slug: 'crm');
 		$data = $response->getData();
 
-		$this->assertSame(Http::STATUS_INTERNAL_SERVER_ERROR, $response->getStatus());
-		$this->assertSame(['error', 'message', 'correlationId'], array_keys($data));
-		$this->assertSame('Failed to resolve manifest', $data['message']);
+		$this->assertSame(expected: Http::STATUS_INTERNAL_SERVER_ERROR, actual: $response->getStatus());
+		$this->assertSame(expected: ['error', 'message', 'correlationId'], actual: array_keys($data));
+		$this->assertSame(expected: 'Failed to resolve manifest', actual: $data['message']);
 	}//end testAnUnservableMergedManifestIsTheCorrelationIdError()
 
 	/**

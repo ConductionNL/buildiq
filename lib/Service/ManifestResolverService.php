@@ -202,7 +202,7 @@ class ManifestResolverService implements ManifestResolverServiceInterface {
 	}//end resolveServed()
 
 	/**
-	 * The body of {@see resolve()}, with how a found version's manifest is read.
+	 * The body of {@see resolve()}; `$serve` reads the manifest a found version serves.
 	 *
 	 * @param string      $appSlug     The virtual-app slug.
 	 * @param string|null $versionSlug Optional version slug.
@@ -280,47 +280,28 @@ class ManifestResolverService implements ManifestResolverServiceInterface {
 	}//end servedManifest()
 
 	/**
-	 * The manifest a version serves, refused when its delta merged over its base cannot render.
-	 *
-	 * A stored blob (a legacy version, or the fallback when a base cannot be
-	 * read) is served as stored. A delta merged over a base is checked with
-	 * {@see ServedManifestShape}; one that fails is logged and
-	 * thrown, so the manifest endpoint answers its correlation-id error rather
-	 * than handing the renderer a manifest it cannot draw.
+	 * The manifest a version serves; a delta merged over a base must pass {@see ServedManifestShape}.
 	 *
 	 * @param array<string, mixed> $version The ApplicationVersion.
 	 * @param IUser|null           $caller  The caller.
 	 *
-	 * @return mixed The manifest; null when the version has none.
+	 * @return mixed The manifest; null when the version has none. A stored blob is served as stored.
 	 *
-	 * @throws InvalidServedManifestException When a delta-mode manifest lacks a part the renderer needs.
+	 * @throws InvalidServedManifestException When a merged manifest lacks a part the renderer needs.
 	 *
 	 * @spec openspec/changes/app-delta-override/tasks.md#task-4.3
 	 */
 	private function checkedServedManifest(array $version, ?IUser $caller): mixed {
-		if ($this->baseResolver === null) {
-			return ($version['manifest'] ?? null);
-		}
-
-		$resolved = $this->baseResolver->resolveVersion(
+		$resolved = $this->baseResolver?->resolveVersion(
 			version: $version,
 			visible: fn (array $base): bool => $this->visibleToCaller(application: $base, caller: $caller)
 		);
 		$manifest = ($resolved['manifest'] ?? ($version['manifest'] ?? null));
-		if ($resolved['merged'] === false || is_array($manifest) === false) {
-			return $manifest;
+		if (($resolved['merged'] ?? false) === true && is_array($manifest) === true) {
+			(new ServedManifestShape())->assertServable(manifest: $manifest);
 		}
 
-		$problem = (new ServedManifestShape())->problem(manifest: $manifest);
-		if ($problem === null) {
-			return $manifest;
-		}
-
-		$this->logger->warning(
-			'ManifestResolverService: the merged manifest of version {version} cannot be served: {problem}',
-			['version' => (string)($version['uuid'] ?? ($version['slug'] ?? '')), 'problem' => $problem]
-		);
-		throw new InvalidServedManifestException('The merged manifest cannot be served: ' . $problem);
+		return $manifest;
 	}//end checkedServedManifest()
 
 	/**

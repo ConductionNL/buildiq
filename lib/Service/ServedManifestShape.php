@@ -31,6 +31,8 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Exception\InvalidServedManifestException;
+
 /**
  * The renderer's minimum for a served manifest.
  */
@@ -68,6 +70,24 @@ final class ServedManifestShape {
 
 		return $this->pagesProblem(pages: $pages);
 	}//end problem()
+
+	/**
+	 * Throw when a manifest has a problem; the manifest endpoint answers it with its correlation-id error.
+	 *
+	 * @param array<string, mixed> $manifest The manifest about to be served.
+	 *
+	 * @return void
+	 *
+	 * @throws InvalidServedManifestException Naming the first problem.
+	 *
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-4.3
+	 */
+	public function assertServable(array $manifest): void {
+		$problem = $this->problem(manifest: $manifest);
+		if ($problem !== null) {
+			throw new InvalidServedManifestException(message: 'The merged manifest cannot be served: ' . $problem);
+		}
+	}//end assertServable()
 
 	/**
 	 * The first page that lacks a key the renderer needs, or repeats an id.
