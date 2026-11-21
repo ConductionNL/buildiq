@@ -71,6 +71,12 @@ describe('scriptSteps', () => {
 		expect(scriptStepDisabledReason({ allowed: true, runnerAvailable: true })).toBe('')
 	})
 
+	it('REQ-BQSS-002: refuses a caller who does not own the app, after the instance reasons', () => {
+		expect(scriptStepDisabledReason({ allowed: true, runnerAvailable: true, owner: false })).toBe('Only app owners can change a script step.')
+		expect(scriptStepDisabledReason({ allowed: true, runnerAvailable: true, owner: true })).toBe('')
+		expect(scriptStepDisabledReason({ allowed: false, runnerAvailable: true, owner: false })).toBe('Script steps are turned off for this instance.')
+	})
+
 	it('reads a stored step into the editor with the default time limit', () => {
 		expect(scriptStepToEditor({ type: 'script-step', code: 'return items', timeoutSeconds: 5, note: 'n' })).toEqual({ code: 'return items', timeoutSeconds: 5, note: 'n' })
 		expect(scriptStepToEditor({ type: 'webhook' })).toEqual({ code: '', timeoutSeconds: DEFAULT_TIMEOUT, note: '' })

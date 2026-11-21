@@ -77,3 +77,29 @@ describe('AutomationsPage last run', () => {
 		expect(ctx.runsAutomation).toEqual({ id: 'a1' })
 	})
 })
+
+describe('AutomationsPage script steps', () => {
+	/**
+	 * Put the caller's groups on the page, as DashboardController does.
+	 *
+	 * @param {Array<string>} groups The groups.
+	 * @return {void}
+	 */
+	function provideGroups(groups) {
+		const input = document.createElement('input')
+		input.type = 'hidden'
+		input.id = 'initial-state-buildiq-currentUserGroups'
+		input.value = btoa(JSON.stringify(groups))
+		document.body.appendChild(input)
+	}
+
+	it('REQ-BQSS-002: only an owner of the selected app may change script steps', () => {
+		provideGroups(['permit-owners'])
+		const owns = AutomationsPage.computed.ownsSelectedApp
+
+		expect(owns.call({ selectedApp: { permissions: { owners: ['permit-owners'], editors: [] } } })).toBe(true)
+		expect(owns.call({ selectedApp: { permissions: { owners: ['others'], editors: ['permit-owners'] } } })).toBe(false)
+		expect(owns.call({ selectedApp: null })).toBe(false)
+		document.body.innerHTML = ''
+	})
+})

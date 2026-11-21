@@ -147,6 +147,7 @@
 			v-model:open="editDialogOpen"
 			:automation="editingAutomation"
 			:register="selectedVersion ? selectedVersion.register : ''"
+			:scriptsReadOnly="!ownsSelectedApp"
 			@saved="onDialogSaved" />
 
 		<AutomationTestPanelModal
@@ -203,6 +204,7 @@ import ConfirmActionDialog from '../dialogs/ConfirmActionDialog.vue'
 import FlowPickerDialog from '../dialogs/FlowPickerDialog.vue'
 import AutomationRunsModal from '../modals/AutomationRunsModal.vue'
 import AutomationTestPanelModal from '../modals/AutomationTestPanelModal.vue'
+import { getCurrentUserGroups, useRole } from '../composables/useRole.js'
 import { applicationPickerMixin } from '../mixins/applicationPicker.js'
 import { lastRunText } from '../utils/automationRuns.js'
 import { listResults } from '../utils/listResults.js'
@@ -252,6 +254,17 @@ export default {
 		/** @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#5.1 */
 		selectedVersionId() {
 			return this.selectedVersion ? this.selectedVersion.id : ''
+		},
+
+		/**
+		 * Whether the caller owns the selected app, and so may add or change a
+		 * script step; the server checks the same (REQ-BQSS-002).
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-only-app-owners-change-script-steps-req-bqss-002
+		 */
+		ownsSelectedApp() {
+			return useRole(this.selectedApp, getCurrentUserGroups()) === 'owner'
 		},
 	},
 

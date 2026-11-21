@@ -17,7 +17,7 @@ const stubs = {
 	},
 	NcTextField: {
 		name: 'NcTextField',
-		props: ['modelValue', 'label', 'type'],
+		props: ['modelValue', 'label', 'type', 'disabled'],
 		emits: ['update:modelValue'],
 		template: '<input class="nctextfield-stub" :data-label="label" :value="modelValue" @input="$emit(\'update:modelValue\', $event.target.value)">',
 	},
@@ -29,8 +29,8 @@ const stubs = {
  * @param {object} modelValue The action.
  * @return {object} The wrapper.
  */
-function mountForm(modelValue) {
-	return mount(ScriptStepForm, { props: { modelValue }, global: { stubs } })
+function mountForm(modelValue, readOnly = false) {
+	return mount(ScriptStepForm, { props: { modelValue, readOnly }, global: { stubs } })
 }
 
 describe('ScriptStepForm', () => {
@@ -40,10 +40,11 @@ describe('ScriptStepForm', () => {
 		const viewer = wrapper.findComponent({ name: 'CnJsonViewer' })
 		expect(viewer.props('value')).toBe('return items')
 		expect(viewer.props('language')).toBe('text')
-		expect(viewer.props('readOnly')).toBeUndefined()
+		expect(viewer.props('readOnly')).toBe(false)
 		expect(wrapper.find('[data-testid="script-step-timeout"]').element.value).toBe('10')
 		expect(wrapper.find('[data-testid="script-step-note"]').element.value).toBe('Keeps the items')
 		expect(wrapper.text()).toContain('code runner')
+		expect(wrapper.find('[data-testid="script-step-locked"]').exists()).toBe(false)
 	})
 
 	it('hands every change to the composer, the time limit as a number', async () => {
@@ -60,5 +61,17 @@ describe('ScriptStepForm', () => {
 			[{ key: 'timeoutSeconds', value: '' }],
 			[{ key: 'note', value: 'First item only' }],
 		])
+	})
+
+	it('REQ-BQSS-002: an editor reads the script but cannot change it', async () => {
+		const wrapper = mountForm({ code: 'return items', timeoutSeconds: 10, note: '' }, true)
+
+		expect(wrapper.find('[data-testid="script-step-locked"]').text()).toBe('Only app owners can change a script step.')
+		expect(wrapper.findComponent({ name: 'CnJsonViewer' }).props('readOnly')).toBe(true)
+		const fields = wrapper.findAllComponents({ name: 'NcTextField' })
+		expect(fields.map((field) => field.props('disabled'))).toEqual([true, true])
+
+		await wrapper.find('.cnjsonviewer-stub').setValue('return []')
+		expect(wrapper.emitted('update')).toBeUndefined()
 	})
 })

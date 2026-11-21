@@ -458,6 +458,7 @@
 						     script over the flow's items; buildiq never does. -->
 						<ScriptStepForm
 							:modelValue="action"
+							:readOnly="scriptsReadOnly"
 							@update="updateAction(index, $event.key, $event.value)" />
 					</template>
 
@@ -661,6 +662,8 @@ export default {
 		open: { type: Boolean, default: false },
 		automation: { type: Object, default: null },
 		register: { type: String, default: '' },
+		// Logic-script-step REQ-BQSS-002: only app owners add or change a script.
+		scriptsReadOnly: { type: Boolean, default: false },
 	},
 
 	emits: ['update:open', 'saved'],
@@ -987,7 +990,7 @@ export default {
 		 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-composer-offers-a-script-step-req-bqss-001
 		 */
 		scriptStepTypeOption() {
-			const reason = this.scriptStepReason
+			const reason = scriptStepDisabledReason({ ...this.scriptSupport, owner: !this.scriptsReadOnly })
 			if (reason === '') {
 				return { value: SCRIPT_STEP, label: t('buildiq', 'Run a script'), disabled: false }
 			}
