@@ -178,14 +178,14 @@ class ManifestBaseResolver {
 
 		$merged = $this->merger->merge(base: $base['manifest'], delta: $delta);
 
-		return [
-			...$this->result(
-				manifest: $merged['manifest'],
-				orphans: [...$base['orphanedDeltaPaths'], ...$merged['orphanedDeltaPaths']],
-				diagnostics: $base['diagnostics']
-			),
-			'merged' => true,
-		];
+		$result = $this->result(
+			manifest: $merged['manifest'],
+			orphans: [...$base['orphanedDeltaPaths'], ...$merged['orphanedDeltaPaths']],
+			diagnostics: $base['diagnostics']
+		);
+		$result['merged'] = true;
+
+		return $result;
 	}//end chain()
 
 	/**
