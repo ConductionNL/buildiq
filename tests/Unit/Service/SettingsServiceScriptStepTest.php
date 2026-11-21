@@ -130,4 +130,17 @@ final class SettingsServiceScriptStepTest extends TestCase {
 
 		self::assertFalse(condition: $settings[ScriptStepSweep::SETTING]);
 	}//end testTheSettingIsOffByDefault()
+
+	/**
+	 * scriptStepsAllowed() reads the stored setting, the value the composer is told.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-composer-offers-a-script-step-req-bqss-001
+	 */
+	public function testScriptStepsAllowedReadsTheSetting(): void {
+		$written = [];
+		self::assertTrue(condition: $this->service(stored: true, sweeps: 0, written: $written)->scriptStepsAllowed());
+		self::assertFalse(condition: $this->service(stored: false, sweeps: 0, written: $written)->scriptStepsAllowed());
+	}//end testScriptStepsAllowedReadsTheSetting()
 }//end class

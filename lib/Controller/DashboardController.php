@@ -106,12 +106,14 @@ class DashboardController extends Controller {
 	 * @return TemplateResponse
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-52
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-composer-offers-a-script-step-req-bqss-001
 	 */
 	#[NoAdminRequired]
 	#[NoCSRFRequired]
 	public function page(): TemplateResponse {
 		$this->publishCurrentUserGroups();
 		$this->publishOfflineAllowed();
+		$this->publishScriptStepsAllowed();
 		// The organisation scope is only offered while OpenRegister's
 		// multitenancy is on (REQ-BQOS-001).
 		$this->initialState->provideInitialState(
@@ -449,4 +451,26 @@ class DashboardController extends Controller {
 
 		$this->initialState->provideInitialState('offlineAppsAllowed', $allowed);
 	}//end publishOfflineAllowed()
+
+	/**
+	 * Publish whether this instance lets app owners add script steps.
+	 *
+	 * The automation composer offers "Run a script" only while it is on
+	 * (REQ-BQSS-001). Off when the setting cannot be read; the server refuses a
+	 * script step on its own, so this only decides what the composer offers.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-composer-offers-a-script-step-req-bqss-001
+	 */
+	private function publishScriptStepsAllowed(): void {
+		$allowed = false;
+		try {
+			$allowed = ($this->settings?->scriptStepsAllowed() === true);
+		} catch (\Throwable $e) {
+			$allowed = false;
+		}
+
+		$this->initialState->provideInitialState('scriptStepsAllowed', $allowed);
+	}//end publishScriptStepsAllowed()
 }//end class

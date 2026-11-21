@@ -3143,7 +3143,18 @@
         "What the AI does": "Wat de AI doet",
         "Write the answer to field": "Het antwoord schrijven naar veld",
         "Write the instruction the AI step follows.": "Schrijf de instructie die de AI-stap volgt.",
-        "You may name a field the AI reads between double curly braces. No other field is sent.": "Je kunt een veld dat de AI leest tussen dubbele accolades noemen. Geen ander veld wordt verstuurd."
+        "You may name a field the AI reads between double curly braces. No other field is sent.": "Je kunt een veld dat de AI leest tussen dubbele accolades noemen. Geen ander veld wordt verstuurd.",
+        "Run a script": "Een script uitvoeren",
+        "Script steps are turned off for this instance.": "Scriptstappen staan uit op deze installatie.",
+        "The code runner is not installed, so scripts cannot run.": "De coderunner is niet geïnstalleerd, dus scripts kunnen niet draaien.",
+        "Write the script before saving.": "Schrijf het script voordat je opslaat.",
+        "A script may run between 1 and 30 seconds.": "Een script mag tussen 1 en 30 seconden draaien.",
+        "The script is the body of a function that receives the items and returns items. It runs only in OpenRegister's code runner, with no network access, and only app owners may change it.": "Het script is de inhoud van een functie die de items ontvangt en items teruggeeft. Het draait alleen in de coderunner van OpenRegister, zonder netwerktoegang, en alleen app-eigenaren mogen het wijzigen.",
+        "Script": "Script",
+        "Time limit (seconds, 1 to 30)": "Tijdslimiet (seconden, 1 tot 30)",
+        "What the script does": "Wat het script doet",
+        "Only app owners can change a script step.": "Alleen app-eigenaren kunnen een scriptstap wijzigen.",
+        "Script steps need OpenRegister's code runner (flow-code-runner), which is not installed.": "Scriptstappen hebben de coderunner van OpenRegister (flow-code-runner) nodig, en die is niet geïnstalleerd."
     },
     "plurals": null,
     "pluralForm": "nplurals=2; plural=(n != 1);"

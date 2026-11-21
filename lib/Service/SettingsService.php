@@ -167,6 +167,17 @@ class SettingsService implements SettingsServiceInterface {
 	}//end offlineAppsAllowed()
 
 	/**
+	 * Whether the instance lets app owners add script steps to automations ("Allow script steps", off by default).
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-composer-offers-a-script-step-req-bqss-001
+	 */
+	public function scriptStepsAllowed(): bool {
+		return $this->appConfig->getValueBool(AppIdentity::APP_ID, ScriptStepSweep::SETTING, false);
+	}//end scriptStepsAllowed()
+
+	/**
 	 * Retrieve all current settings.
 	 *
 	 * Returns a flat array containing all app config values plus metadata

@@ -54,7 +54,7 @@ describe('automationMatrix — MATRIX cell-for-cell', () => {
 	})
 
 	it('manual allows send-notification, object-op, webhook, rule-decision, ai-step — NOT run-synchronization (documented deviation)', () => {
-		expect(MATRIX.manual).toEqual(['send-notification', 'object-op', 'webhook', 'rule-decision', 'ai-step', 'run-automation'])
+		expect(MATRIX.manual).toEqual(['send-notification', 'object-op', 'webhook', 'rule-decision', 'ai-step', 'run-automation', 'script-step'])
 		expect(MATRIX.manual).not.toContain('run-synchronization')
 	})
 
@@ -150,5 +150,13 @@ describe('blockedActionReason / blockedConditionReason', () => {
 		expect(blockedActionReason('manual', 'approval')).not.toBe('')
 		expect(blockedActionReason('schedule', 'generateDocument')).not.toBe('')
 		expect(blockedConditionReason('schedule')).not.toBe('')
+	})
+
+	it('logic-script-step D1: a script step is offered on the manual, mail and webhook triggers only, as the compiler matrix', () => {
+		expect(ACTION_TYPES).toContain('script-step')
+		TRIGGER_TYPES.forEach((trigger) => {
+			const expected = ['manual', 'email-received', 'webhook-called'].includes(trigger)
+			expect(isActionAllowed(trigger, 'script-step')).toBe(expected)
+		})
 	})
 })

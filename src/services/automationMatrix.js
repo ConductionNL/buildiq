@@ -52,6 +52,7 @@ export const ACTION_TYPES = Object.freeze([
 	'rule-decision',
 	'ai-step',
 	'run-automation',
+	'script-step',
 ])
 
 /**
@@ -113,6 +114,8 @@ export const MATRIX = Object.freeze({
 		'generateDocument',
 	]),
 	schedule: Object.freeze(['run-synchronization']),
+	// logic-script-step D1: a script step runs where a flow runs from a
+	// manual, mail or webhook trigger (AutomationCompilerService::MATRIX).
 	manual: Object.freeze([
 		'send-notification',
 		'object-op',
@@ -120,6 +123,7 @@ export const MATRIX = Object.freeze({
 		'rule-decision',
 		'ai-step',
 		'run-automation',
+		'script-step',
 	]),
 	// logic-email-and-webhook-triggers D1: started by integriq, flow steps only.
 	'email-received': Object.freeze([
@@ -128,6 +132,7 @@ export const MATRIX = Object.freeze({
 		'webhook',
 		'rule-decision',
 		'run-automation',
+		'script-step',
 	]),
 	'webhook-called': Object.freeze([
 		'send-notification',
@@ -135,6 +140,7 @@ export const MATRIX = Object.freeze({
 		'webhook',
 		'rule-decision',
 		'run-automation',
+		'script-step',
 	]),
 })
 
