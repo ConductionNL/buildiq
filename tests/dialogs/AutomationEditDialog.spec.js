@@ -1143,7 +1143,7 @@ describe('AutomationEditDialog Ask AI (ai-copilot-documents-and-code-help REQ-BQ
 		it('REQ-BQSS-001: an owner adds a script step and it is stored with its code, time limit and note', async () => {
 			serveCatalogue(true)
 			const wrapper = factory()
-			wrapper.vm.scriptsAllowed = true
+			wrapper.vm.scriptSupport.allowed = true
 			await openDialog(wrapper)
 
 			expect(wrapper.vm.actionTypeOption('script-step')).toEqual({ value: 'script-step', label: 'Run a script', disabled: false })
@@ -1160,7 +1160,7 @@ describe('AutomationEditDialog Ask AI (ai-copilot-documents-and-code-help REQ-BQ
 		it('REQ-BQSS-001: without the code runner the kind is disabled and says so', async () => {
 			serveCatalogue(false)
 			const wrapper = factory()
-			wrapper.vm.scriptsAllowed = true
+			wrapper.vm.scriptSupport.allowed = true
 			await openDialog(wrapper)
 
 			const option = wrapper.vm.actionTypeOptions.find((o) => o.value === 'script-step')
@@ -1178,7 +1178,7 @@ describe('AutomationEditDialog Ask AI (ai-copilot-documents-and-code-help REQ-BQ
 			const wrapper = factory()
 			await openDialog(wrapper)
 
-			expect(wrapper.vm.scriptsAllowed).toBe(false)
+			expect(wrapper.vm.scriptSupport.allowed).toBe(false)
 			const option = wrapper.vm.actionTypeOptions.find((o) => o.value === 'script-step')
 			expect(option.disabled).toBe(true)
 			expect(option.label).toContain('Script steps are turned off for this instance.')
@@ -1187,7 +1187,7 @@ describe('AutomationEditDialog Ask AI (ai-copilot-documents-and-code-help REQ-BQ
 		it('REQ-BQSS-001: a script step without code, or with a time limit out of range, is not saved', async () => {
 			serveCatalogue(true)
 			const wrapper = factory()
-			wrapper.vm.scriptsAllowed = true
+			wrapper.vm.scriptSupport.allowed = true
 			await openDialog(wrapper)
 			await composeScript(wrapper, '   ')
 

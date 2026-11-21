@@ -573,6 +573,7 @@ import {
 	NcTextArea,
 	NcTextField,
 } from '@nextcloud/vue'
+import { reactive } from 'vue'
 import AiStepForm from '../components/AiStepForm.vue'
 import ApprovalFormFieldsEditor from '../components/ApprovalFormFieldsEditor.vue'
 import AutomationActionListEditor from '../components/AutomationActionListEditor.vue'
@@ -669,12 +670,16 @@ export default {
 	 * degradation and `ConnectorSourcePicker`'s existing `setup()` usage).
 	 *
 	 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#4.2
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-composer-offers-a-script-step-req-bqss-001
 	 */
 	setup() {
 		const docudeskStatus = useAppStatus('filinq')
 		// A webhook step calls an integriq source (logic-automation-actions-that-run D5).
 		const integriqStatus = useAppStatus('integriq')
-		return { docudeskStatus, integriqStatus }
+		// Logic-script-step REQ-BQSS-001: offered while the instance allows
+		// scripts and the node catalogue lists OpenRegister's code step.
+		const scriptSupport = reactive({ allowed: scriptStepsAllowed(), runnerAvailable: false })
+		return { docudeskStatus, integriqStatus, scriptSupport }
 	},
 
 	data() {
@@ -727,10 +732,6 @@ export default {
 			ruleSetsFetchFailed: false,
 			// Ai-llm-steps-and-computed-fields D6: off until the node catalogue says Hermiq's node is there.
 			agentNodeAvailable: false,
-			// Logic-script-step REQ-BQSS-001: offered while the instance allows
-			// scripts and the node catalogue lists OpenRegister's code step.
-			scriptsAllowed: scriptStepsAllowed(),
-			codeNodeAvailable: false,
 			aiAgentOptions: [],
 			runAutomations: { records: [], loading: false },
 			aiAgentsLoading: false,
@@ -1004,10 +1005,7 @@ export default {
 		 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-composer-offers-a-script-step-req-bqss-001
 		 */
 		scriptStepReason() {
-			return scriptStepDisabledReason({
-				allowed: this.scriptsAllowed,
-				runnerAvailable: this.codeNodeAvailable,
-			})
+			return scriptStepDisabledReason(this.scriptSupport)
 		},
 
 		/**
@@ -1621,7 +1619,7 @@ export default {
 		 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-composer-offers-a-script-step-req-bqss-001
 		 */
 		async fetchScriptStepSupport() {
-			this.codeNodeAvailable = await fetchCodeNodeAvailable()
+			this.scriptSupport.runnerAvailable = await fetchCodeNodeAvailable()
 		},
 
 		/**
