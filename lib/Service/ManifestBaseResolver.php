@@ -101,14 +101,16 @@ class ManifestBaseResolver {
 	}//end manifestOf()
 
 	/**
-	 * Resolve a version, with the orphaned delta paths and the reasons a base was not used.
+	 * Resolve a version, with the orphaned delta paths, the reasons a base was not used,
+	 * and whether the manifest is a delta merged over a base (`merged`) rather than a stored blob.
 	 *
 	 * @param array<string, mixed> $version The ApplicationVersion.
 	 * @param callable|null        $visible Whether the caller may build on an Application; null admits every app.
 	 *
-	 * @return array{manifest: mixed, orphanedDeltaPaths: list<string>, diagnostics: list<string>}
+	 * @return array{manifest: mixed, orphanedDeltaPaths: list<string>, diagnostics: list<string>, merged: bool}
 	 *
 	 * @spec openspec/changes/app-delta-override/tasks.md#task-3.2
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-4.3
 	 */
 	public function resolveVersion(array $version, ?callable $visible=null): array {
 		return $this->chain(version: $version, visible: $visible, seen: []);
@@ -147,9 +149,10 @@ class ManifestBaseResolver {
 	 * @param callable|null        $visible Whether the caller may build on an Application.
 	 * @param list<string>         $seen    The base references already on this chain.
 	 *
-	 * @return array{manifest: mixed, orphanedDeltaPaths: list<string>, diagnostics: list<string>}
+	 * @return array{manifest: mixed, orphanedDeltaPaths: list<string>, diagnostics: list<string>, merged: bool}
 	 *
 	 * @spec openspec/changes/app-delta-override/tasks.md#task-3.2
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-4.3
 	 */
 	private function chain(array $version, ?callable $visible, array $seen): array {
 		$blob = ($version['manifest'] ?? null);
@@ -175,11 +178,14 @@ class ManifestBaseResolver {
 
 		$merged = $this->merger->merge(base: $base['manifest'], delta: $delta);
 
-		return $this->result(
+		$result = $this->result(
 			manifest: $merged['manifest'],
 			orphans: [...$base['orphanedDeltaPaths'], ...$merged['orphanedDeltaPaths']],
 			diagnostics: $base['diagnostics']
 		);
+		$result['merged'] = true;
+
+		return $result;
 	}//end chain()
 
 	/**
@@ -191,7 +197,7 @@ class ManifestBaseResolver {
 	 * @param list<string>                                             $seen    The references on this chain, this
 	 *                                                                          one included.
 	 *
-	 * @return array{manifest: mixed, orphanedDeltaPaths: list<string>, diagnostics: list<string>}
+	 * @return array{manifest: mixed, orphanedDeltaPaths: list<string>, diagnostics: list<string>, merged: bool}
 	 *
 	 * @spec openspec/changes/app-delta-override/tasks.md#task-3.1
 	 */
@@ -395,9 +401,11 @@ class ManifestBaseResolver {
 	 * @param list<string> $orphans     Delta paths that targeted nothing in the base.
 	 * @param list<string> $diagnostics Why a base was not used.
 	 *
-	 * @return array{manifest: mixed, orphanedDeltaPaths: list<string>, diagnostics: list<string>}
+	 * @return array{manifest: mixed, orphanedDeltaPaths: list<string>, diagnostics: list<string>, merged: bool}
+	 *
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-4.3
 	 */
 	private function result(mixed $manifest, array $orphans=[], array $diagnostics=[]): array {
-		return ['manifest' => $manifest, 'orphanedDeltaPaths' => $orphans, 'diagnostics' => $diagnostics];
+		return ['manifest' => $manifest, 'orphanedDeltaPaths' => $orphans, 'diagnostics' => $diagnostics, 'merged' => false];
 	}//end result()
 }//end class
