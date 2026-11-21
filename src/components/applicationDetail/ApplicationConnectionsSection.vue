@@ -96,7 +96,7 @@ export default {
 		 * Reload for another app.
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/built-app-connections-page/specs/app-connections/spec.md#requirement-req-biq-conn-005-every-app-built-in-buildiq-has-a-connections-page-with-health
+		 * @spec openspec/changes/archive/2026-11-20-built-app-connections-page/specs/app-connections/spec.md#requirement-req-biq-conn-005-every-app-built-in-buildiq-has-a-connections-page-with-health
 		 */
 		appSlug() {
 			this.load()
@@ -112,7 +112,7 @@ export default {
 		 * Read the app's connections.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/built-app-connections-page/specs/app-connections/spec.md#requirement-req-biq-conn-005-every-app-built-in-buildiq-has-a-connections-page-with-health
+		 * @spec openspec/changes/archive/2026-11-20-built-app-connections-page/specs/app-connections/spec.md#requirement-req-biq-conn-005-every-app-built-in-buildiq-has-a-connections-page-with-health
 		 */
 		async load() {
 			if (!this.appSlug) {
@@ -133,7 +133,7 @@ export default {
 		/**
 		 * @param {?string} status - the stored status.
 		 * @return {string}
-		 * @spec openspec/changes/built-app-connections-page/specs/app-connections/spec.md#requirement-req-biq-conn-005-every-app-built-in-buildiq-has-a-connections-page-with-health
+		 * @spec openspec/changes/archive/2026-11-20-built-app-connections-page/specs/app-connections/spec.md#requirement-req-biq-conn-005-every-app-built-in-buildiq-has-a-connections-page-with-health
 		 */
 		statusLabel(status) {
 			return connectionStatusLabel(status)
@@ -142,7 +142,7 @@ export default {
 		/**
 		 * @param {string} kind - `source` or `integration`.
 		 * @return {string}
-		 * @spec openspec/changes/built-app-connections-page/specs/app-connections/spec.md#requirement-req-biq-conn-005-every-app-built-in-buildiq-has-a-connections-page-with-health
+		 * @spec openspec/changes/archive/2026-11-20-built-app-connections-page/specs/app-connections/spec.md#requirement-req-biq-conn-005-every-app-built-in-buildiq-has-a-connections-page-with-health
 		 */
 		kindLabel(kind) {
 			return kind === 'source' ? t('buildiq', 'Source') : t('buildiq', 'Integration')
@@ -151,7 +151,7 @@ export default {
 		/**
 		 * @param {object} row - the connection row.
 		 * @return {string}
-		 * @spec openspec/changes/built-app-connections-page/specs/app-connections/spec.md#requirement-req-biq-conn-005-every-app-built-in-buildiq-has-a-connections-page-with-health
+		 * @spec openspec/changes/archive/2026-11-20-built-app-connections-page/specs/app-connections/spec.md#requirement-req-biq-conn-005-every-app-built-in-buildiq-has-a-connections-page-with-health
 		 */
 		linkOf(row) {
 			return connectionLink(row, this.appSlug)
@@ -162,7 +162,7 @@ export default {
 		 *
 		 * @param {?string} checkedAt - the check time (ISO 8601).
 		 * @return {string}
-		 * @spec openspec/changes/built-app-connections-page/specs/app-connections/spec.md#requirement-req-biq-conn-005-every-app-built-in-buildiq-has-a-connections-page-with-health
+		 * @spec openspec/changes/archive/2026-11-20-built-app-connections-page/specs/app-connections/spec.md#requirement-req-biq-conn-005-every-app-built-in-buildiq-has-a-connections-page-with-health
 		 */
 		checkedLabel(checkedAt) {
 			const date = checkedAt ? new Date(checkedAt) : null
