@@ -5,9 +5,12 @@
 
 ## 1. Schema fields (additive, no migration)
 
-- [ ] 1.1 Add the optional `baseRef` structured-reference property to the manifest-carrying `ApplicationVersion` schema in `lib/Settings/openbuild_register.json` (kind = template | buildiq-app | fleet-app, id, optional version pin), with a description and `additionalProperties: false`.
-- [ ] 1.2 Add the optional `manifestDelta` object property to `ApplicationVersion` (keyed delta: page-by-id, widget-by-id, `$op:"remove"`, `__order`), with a description pointing at the nextcloud-vue contract.
-- [ ] 1.3 Add a backwards-compat note to the existing `manifest` blob property: blob present + no `baseRef` ⇒ blob IS the manifest (legacy/standalone). Bump the schema `version`.
+- [x] 1.1 Add the optional `baseRef` structured-reference property to the manifest-carrying `ApplicationVersion` schema in `lib/Settings/openbuild_register.json` (kind = template | buildiq-app | fleet-app, id, optional version pin), with a description and `additionalProperties: false`.
+  > Built 21 Nov: `ApplicationVersion.baseRef` in `lib/Settings/openbuild_register.json` is an object with `kind` (enum `template`, `buildiq-app`, `fleet-app`, and `application-version` for the user-layer deltas `AppOverrideService` already writes), `id` and the optional pin `manifestVersion`, `additionalProperties: false`. PHPUnit `tests/Unit/Settings/ApplicationVersionBaseRefSchemaTest.php::testTheBaseReferenceNamesItsKind` validates it through the import's merge.
+- [x] 1.2 Add the optional `manifestDelta` object property to `ApplicationVersion` (keyed delta: page-by-id, widget-by-id, `$op:"remove"`, `__order`), with a description pointing at the nextcloud-vue contract.
+  > Present since unify-apps-with-app-type: `ApplicationVersion.manifestDelta`, an object pointing at nextcloud-vue's `diffManifest`/`mergeManifestDelta`; optional. `ApplicationVersionBaseRefSchemaTest::testTheDeltaIsAKeyedObject`.
+- [x] 1.3 Add a backwards-compat note to the existing `manifest` blob property: blob present + no `baseRef` ⇒ blob IS the manifest (legacy/standalone). Bump the schema `version`.
+  > Built 21 Nov: the `manifest` description says a version with the blob and no `baseRef` is a legacy or standalone app whose blob is its manifest; `ApplicationVersion` version 0.4.2 → 0.4.3. `ApplicationVersionBaseRefSchemaTest::testALegacyBlobVersionNeedsNeitherField`.
 
 ## 2. PHP delta merge (port of the JS contract)
 
