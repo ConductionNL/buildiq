@@ -82,7 +82,13 @@ final class AppDemoRecordsControllerTest extends TestCase {
 		parent::setUp();
 		$this->service = $this->createMock(originalClassName: AppDemoRecordsService::class);
 		$this->service->method('application')->willReturnCallback(
-			static fn (string $uuid): ?array => ($uuid === self::APP) ? self::APPLICATION : null
+			static function (string $uuid): ?array {
+				if ($uuid !== self::APP) {
+					return null;
+				}
+
+				return self::APPLICATION;
+			}
 		);
 		$this->service->method('productionRegister')->willReturn('meldingen');
 	}//end setUp()
@@ -141,7 +147,7 @@ final class AppDemoRecordsControllerTest extends TestCase {
 	public function testAnEditorFillsTheApp(): void {
 		$this->service->expects($this->once())->method('fill')
 			->with(self::APP, self::APPLICATION, 'meldingen')
-			->willReturn(['created' => 3, 'skipped' => [], 'failed' => 0]);
+			->willReturn(['created' => 3, 'skipped' => [], 'failed' => 0, 'total' => 4]);
 
 		$response = $this->controller(uid: 'joris')->fill(appUuid: self::APP);
 

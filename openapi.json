@@ -1730,6 +1730,138 @@
                 }
             }
         },
+        "/applications/{appUuid}/demo-records": {
+            "post": {
+                "operationId": "app-demo-records-fill",
+                "summary": "Fill the app with demo records generated from its own schemas",
+                "description": "Fill the app with demo records generated from its own schemas. Makes three records for each schema of the production register, each valid against its schema, and lists them on the Application as `demoRecords`, which marks them as demo data. A schema with a required field no value can be made for (a relation, a file, a pattern) gets none and is named in `skipped`. Wired in `appinfo/routes.php` under name `appDemoRecords#fill`. `#[NoAdminRequired]`; only an owner or editor of the Application may call it. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "applications"
+                ],
+                "parameters": [
+                    {
+                        "name": "appUuid",
+                        "in": "path",
+                        "required": true,
+                        "description": "Application UUID (path param).",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "created": {
+                                            "type": "integer",
+                                            "description": "Demo records made."
+                                        },
+                                        "skipped": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "string"
+                                            },
+                                            "description": "Schemas no valid demo record could be made for."
+                                        },
+                                        "failed": {
+                                            "type": "integer",
+                                            "description": "Demo records the register refused."
+                                        },
+                                        "total": {
+                                            "type": "integer",
+                                            "description": "Demo records the app lists now."
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "409": {
+                        "$ref": "#/components/responses/Problem409"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                }
+            },
+            "delete": {
+                "operationId": "app-demo-records-remove",
+                "summary": "Remove the app's demo records",
+                "description": "Remove the app's demo records. Deletes exactly the records listed in `Application.demoRecords`; records a maker created are kept. A record that cannot be deleted stays listed. Wired in `appinfo/routes.php` under name `appDemoRecords#remove`. `#[NoAdminRequired]`; only an owner or editor of the Application may call it. Needs a signed-in Nextcloud user.",
+                "tags": [
+                    "applications"
+                ],
+                "parameters": [
+                    {
+                        "name": "appUuid",
+                        "in": "path",
+                        "required": true,
+                        "description": "Application UUID (path param).",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "The request succeeded.",
+                        "headers": {
+                            "API-Version": {
+                                "$ref": "#/components/headers/API-Version"
+                            }
+                        },
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "removed": {
+                                            "type": "integer",
+                                            "description": "Demo records deleted."
+                                        },
+                                        "failed": {
+                                            "type": "integer",
+                                            "description": "Demo records that could not be deleted and stay listed."
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "$ref": "#/components/responses/Problem401"
+                    },
+                    "403": {
+                        "$ref": "#/components/responses/Problem403"
+                    },
+                    "404": {
+                        "$ref": "#/components/responses/Problem404"
+                    },
+                    "500": {
+                        "$ref": "#/components/responses/Problem500"
+                    }
+                }
+            }
+        },
         "/applications/{appUuid}/versions/{versionUuid}/health": {
             "get": {
                 "operationId": "app-health-show",

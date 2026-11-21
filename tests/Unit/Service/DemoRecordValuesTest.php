@@ -95,7 +95,7 @@ final class DemoRecordValuesTest extends TestCase {
 	 */
 	public function testEachDemoRecordValidatesAgainstItsSchema(): void {
 		foreach ([1, 2, 3, 30] as $n) {
-			$record = DemoRecordValues::record(properties: self::REPORT, required: self::REQUIRED, n: $n);
+			$record = (new DemoRecordValues(n: $n))->record(properties: self::REPORT, required: self::REQUIRED);
 			$this->assertIsArray(actual: $record);
 			$this->assertSame(expected: '', actual: self::errors(record: $record), message: 'record ' . $n);
 		}
@@ -107,8 +107,8 @@ final class DemoRecordValuesTest extends TestCase {
 	 * @return void
 	 */
 	public function testTheValuesFollowTheProperty(): void {
-		$first = (array)DemoRecordValues::record(properties: self::REPORT, required: self::REQUIRED, n: 1);
-		$second = (array)DemoRecordValues::record(properties: self::REPORT, required: self::REQUIRED, n: 2);
+		$first = (array)(new DemoRecordValues(n: 1))->record(properties: self::REPORT, required: self::REQUIRED);
+		$second = (array)(new DemoRecordValues(n: 2))->record(properties: self::REPORT, required: self::REQUIRED);
 
 		$this->assertSame(expected: 'Demo Title 1', actual: $first['title']);
 		$this->assertSame(expected: ['open', 'closed'], actual: [$first['status'], $second['status']]);
@@ -130,7 +130,7 @@ final class DemoRecordValuesTest extends TestCase {
 	 * @return void
 	 */
 	public function testAnOptionalUnfillablePropertyIsLeftOut(): void {
-		$record = (array)DemoRecordValues::record(properties: self::REPORT, required: self::REQUIRED, n: 1);
+		$record = (array)(new DemoRecordValues(n: 1))->record(properties: self::REPORT, required: self::REQUIRED);
 
 		foreach (['code', 'owner', 'number'] as $name) {
 			$this->assertArrayNotHasKey(key: $name, array: $record);
@@ -148,7 +148,7 @@ final class DemoRecordValuesTest extends TestCase {
 			'client' => ['type' => 'string', 'format' => 'uuid', 'x-openregister-relation' => ['target' => 'client']],
 		];
 
-		$this->assertNull(actual: DemoRecordValues::record(properties: $properties, required: ['name', 'client'], n: 1));
+		$this->assertNull(actual: (new DemoRecordValues(n: 1))->record(properties: $properties, required: ['name', 'client']));
 	}//end testARequiredUnfillablePropertyGivesNoRecord()
 
 	/**
@@ -161,7 +161,7 @@ final class DemoRecordValuesTest extends TestCase {
 			'short' => ['type' => 'string', 'maxLength' => 4],
 			'long' => ['type' => 'string', 'minLength' => 20],
 		];
-		$record = (array)DemoRecordValues::record(properties: $properties, required: [], n: 1);
+		$record = (array)(new DemoRecordValues(n: 1))->record(properties: $properties, required: []);
 
 		$this->assertSame(expected: 'Demo', actual: $record['short']);
 		$this->assertSame(expected: 20, actual: strlen($record['long']));
@@ -179,7 +179,7 @@ final class DemoRecordValuesTest extends TestCase {
 			'extra' => ['type' => 'object'],
 			'empty' => ['type' => 'array'],
 		];
-		$record = (array)DemoRecordValues::record(properties: $properties, required: ['extra', 'empty'], n: 1);
+		$record = (array)(new DemoRecordValues(n: 1))->record(properties: $properties, required: ['extra', 'empty']);
 
 		$this->assertSame(expected: ['extra', 'empty'], actual: array_keys($record));
 		$this->assertSame(expected: '{}', actual: json_encode(value: $record['extra']));
@@ -194,6 +194,6 @@ final class DemoRecordValuesTest extends TestCase {
 	public function testARequiredListOfUnfillableItemsGivesNoRecord(): void {
 		$properties = ['files' => ['type' => 'array', 'minItems' => 1, 'items' => ['type' => 'file']]];
 
-		$this->assertNull(actual: DemoRecordValues::record(properties: $properties, required: ['files'], n: 1));
+		$this->assertNull(actual: (new DemoRecordValues(n: 1))->record(properties: $properties, required: ['files']));
 	}//end testARequiredListOfUnfillableItemsGivesNoRecord()
 }//end class

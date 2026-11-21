@@ -32,6 +32,7 @@ use OCA\Buildiq\Kernel\Contracts\VersionPromotionServiceInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectDeletion;
 use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
@@ -64,15 +65,15 @@ class AppDemoRecordsService {
 	/**
 	 * Constructor.
 	 *
-	 * @param ObjectServiceInterface $objectService  Saves and deletes the records and the Application.
 	 * @param RegisterMapper         $registerMapper Reads the app's register.
 	 * @param SchemaMapper           $schemaMapper   Reads its schemas.
+	 * @param ObjectServiceInterface $objectService  Saves and deletes the records and the Application.
 	 * @param LoggerInterface        $logger         Records a record that could not be saved or deleted.
 	 */
 	public function __construct(
-		private readonly ObjectServiceInterface $objectService,
 		private readonly RegisterMapper $registerMapper,
 		private readonly SchemaMapper $schemaMapper,
+		private readonly ObjectServiceInterface $objectService,
 		private readonly LoggerInterface $logger,
 	) {
 	}//end __construct()
@@ -84,8 +85,9 @@ class AppDemoRecordsService {
 	 * @param array<string, mixed> $application     The Application.
 	 * @param string               $register        The app's register.
 	 *
-	 * @return array{created: int, skipped: list<string>, failed: int}
-	 *         `skipped` names the schemas no valid demo record can be made for.
+	 * @return array{created: int, skipped: list<string>, failed: int, total: int}
+	 *         `skipped` names the schemas no valid demo record can be made for;
+	 *         `total` is how many demo records the app lists now.
 	 *
 	 * @spec openspec/changes/capability-requirements-backfill/specs/application-creation-wizard/spec.md#requirement-a-maker-fills-a-new-app-with-demo-records-req-bqcv-030
 	 */
@@ -94,14 +96,14 @@ class AppDemoRecordsService {
 		$result = ['created' => 0, 'skipped' => [], 'failed' => 0];
 		foreach ($this->schemas(register: $register) as $schema) {
 			$slug = (string)$schema->getSlug();
-			$records = $this->recordsFor(properties: (array)$schema->getProperties(), required: (array)$schema->getRequired());
+			$records = $this->recordsFor(schema: $schema);
 			if ($records === []) {
 				$result['skipped'][] = $slug;
 				continue;
 			}
 
 			foreach ($records as $record) {
-				$uuid = $this->create(record: $record, register: $register, schema: $slug);
+				$uuid = $this->create(record: $record, target: new ObjectFindTarget(register: $register, schema: $slug));
 				if ($uuid === null) {
 					$result['failed']++;
 					continue;
@@ -113,9 +115,11 @@ class AppDemoRecordsService {
 		}
 
 		if ($result['created'] > 0) {
-			$this->saveListed(applicationUuid: $applicationUuid, application: $application, listed: $listed);
+			$application[self::MARKER] = $listed;
+			$this->saveApplication(applicationUuid: $applicationUuid, application: $application);
 		}
 
+		$result['total'] = count($listed);
 		return $result;
 	}//end fill()
 
@@ -143,7 +147,8 @@ class AppDemoRecordsService {
 		}
 
 		if ($listed !== []) {
-			$this->saveListed(applicationUuid: $applicationUuid, application: $application, listed: $kept);
+			$application[self::MARKER] = $kept;
+			$this->saveApplication(applicationUuid: $applicationUuid, application: $application);
 		}
 
 		return ['removed' => $removed, 'failed' => count($kept)];
@@ -181,33 +186,18 @@ class AppDemoRecordsService {
 	}//end productionRegister()
 
 	/**
-	 * How many demo records the app lists.
-	 *
-	 * @param array<string, mixed> $application The Application.
-	 *
-	 * @return int
-	 *
-	 * @spec openspec/changes/capability-requirements-backfill/specs/application-creation-wizard/spec.md#requirement-a-maker-fills-a-new-app-with-demo-records-req-bqcv-030
-	 */
-	public static function count(array $application): int {
-		return count(self::listed(application: $application));
-	}//end count()
-
-	/**
 	 * The demo records of one schema, [] when its required properties cannot all be filled.
 	 *
-	 * @param array<string, mixed> $properties The schema's properties.
-	 * @param array<int, mixed>    $required   The schema's required property names.
+	 * @param Schema $schema The schema.
 	 *
 	 * @return list<array<string, mixed>>
-	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) DemoRecordValues is a pure generator with no collaborators.
 	 */
-	private function recordsFor(array $properties, array $required): array {
-		$names = array_values(array_map('strval', $required));
+	private function recordsFor(Schema $schema): array {
+		$properties = (array)$schema->getProperties();
+		$required = array_values(array_map('strval', (array)$schema->getRequired()));
 		$records = [];
 		for ($n = 1; $n <= self::PER_SCHEMA; $n++) {
-			$record = DemoRecordValues::record(properties: $properties, required: $names, n: $n);
+			$record = (new DemoRecordValues(n: $n))->record(properties: $properties, required: $required);
 			if ($record === null) {
 				return [];
 			}
@@ -223,7 +213,7 @@ class AppDemoRecordsService {
 	 *
 	 * @param string $register The register id or slug.
 	 *
-	 * @return list<\OCA\OpenRegister\Db\Schema>
+	 * @return list<Schema>
 	 */
 	private function schemas(string $register): array {
 		try {
@@ -248,22 +238,18 @@ class AppDemoRecordsService {
 	/**
 	 * Save one demo record through OpenRegister's validation, and answer its uuid.
 	 *
-	 * @param array<string, mixed> $record   The record.
-	 * @param string               $register The register.
-	 * @param string               $schema   The schema slug.
+	 * @param array<string, mixed> $record The record.
+	 * @param ObjectFindTarget     $target Its register and schema.
 	 *
 	 * @return string|null Null when it was refused.
 	 *
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
-	private function create(array $record, string $register, string $schema): ?string {
+	private function create(array $record, ObjectFindTarget $target): ?string {
 		try {
-			$entity = $this->objectService->saveObject(
-				object: $record,
-				options: new ObjectSaveOptions(target: new ObjectFindTarget(register: $register, schema: $schema))
-			);
+			$entity = $this->objectService->saveObject(object: $record, options: new ObjectSaveOptions(target: $target));
 		} catch (Throwable $e) {
-			$this->logger->warning('Buildiq: a demo record for schema "' . $schema . '" was refused: ' . $e->getMessage());
+			$this->logger->warning('Buildiq: a demo record for schema "' . (string)$target->schema . '" was refused: ' . $e->getMessage());
 			return null;
 		}
 
@@ -303,29 +289,18 @@ class AppDemoRecordsService {
 	}//end delete()
 
 	/**
-	 * Save the Application with its list of demo records.
+	 * Save the Application, which carries its list of demo records.
 	 *
-	 * @param string                            $applicationUuid The Application's uuid.
-	 * @param array<string, mixed>              $application     The Application.
-	 * @param list<array<string, string>>       $listed          The demo records.
+	 * @param string               $applicationUuid The Application's uuid.
+	 * @param array<string, mixed> $application     The Application with its `demoRecords`.
 	 *
 	 * @return void
 	 */
-	private function saveListed(string $applicationUuid, array $application, array $listed): void {
-		$application[self::MARKER] = $listed;
-		$this->objectService->saveObject(
-			object: $application,
-			options: new ObjectSaveOptions(
-				target: new ObjectFindTarget(
-					register: VersionPromotionServiceInterface::REGISTER_SLUG,
-					schema: VersionPromotionServiceInterface::APPLICATION_SCHEMA
-				),
-				uuid: $applicationUuid
-			),
-			_rbac: false,
-			_multitenancy: false
-		);
-	}//end saveListed()
+	private function saveApplication(string $applicationUuid, array $application): void {
+		$target = new ObjectFindTarget(register: VersionPromotionServiceInterface::REGISTER_SLUG, schema: VersionPromotionServiceInterface::APPLICATION_SCHEMA);
+		$options = new ObjectSaveOptions(target: $target, uuid: $applicationUuid);
+		$this->objectService->saveObject(object: $application, options: $options, _rbac: false, _multitenancy: false);
+	}//end saveApplication()
 
 	/**
 	 * An object of buildiq's own register, or null for an empty uuid or a failed read.

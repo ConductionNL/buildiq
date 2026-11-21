@@ -97,7 +97,13 @@ final class AppDemoRecordsServiceTest extends TestCase {
 		$register->method('getSchemas')->willReturn([1, 2, 3]);
 		$registers = $this->createMock(originalClassName: RegisterMapper::class);
 		$registers->method('find')->willReturnCallback(
-			static fn (string|int $id): Register => ($id === 'meldingen') ? $register : throw new RuntimeException('no register')
+			static function (string|int $id) use ($register): Register {
+				if ($id !== 'meldingen') {
+					throw new RuntimeException('no register');
+				}
+
+				return $register;
+			}
 		);
 
 		$schemas = $this->createMock(originalClassName: SchemaMapper::class);
@@ -139,7 +145,7 @@ final class AppDemoRecordsServiceTest extends TestCase {
 	public function testFillingMakesRecordsAndListsThemOnTheApp(): void {
 		$result = $this->service()->fill(applicationUuid: self::APP, application: ['slug' => 'meldingen'], register: 'meldingen');
 
-		$this->assertSame(expected: ['created' => 3, 'skipped' => ['case'], 'failed' => 0], actual: $result);
+		$this->assertSame(expected: ['created' => 3, 'skipped' => ['case'], 'failed' => 0, 'total' => 3], actual: $result);
 		$this->assertSame(expected: ['report', 'report', 'report', 'built-app'], actual: array_column($this->saved, 1));
 		$this->assertSame(expected: ['title' => 'Demo title 2'], actual: $this->saved[1][0]);
 		$this->assertSame(
@@ -160,12 +166,12 @@ final class AppDemoRecordsServiceTest extends TestCase {
 	public function testASecondFillAddsToTheList(): void {
 		$application = ['slug' => 'meldingen', 'demoRecords' => [['register' => 'meldingen', 'schema' => 'report', 'uuid' => 'old-1']]];
 
-		$this->service()->fill(applicationUuid: self::APP, application: $application, register: 'meldingen');
+		$result = $this->service()->fill(applicationUuid: self::APP, application: $application, register: 'meldingen');
 
 		$listed = $this->saved[3][0]['demoRecords'];
 		$this->assertSame(expected: 4, actual: count($listed));
 		$this->assertSame(expected: 'old-1', actual: $listed[0]['uuid']);
-		$this->assertSame(expected: 4, actual: AppDemoRecordsService::count(application: $this->saved[3][0]));
+		$this->assertSame(expected: 4, actual: $result['total']);
 	}//end testASecondFillAddsToTheList()
 
 	/**
@@ -175,12 +181,12 @@ final class AppDemoRecordsServiceTest extends TestCase {
 	 */
 	public function testARefusedRecordIsCountedAndNothingIsListed(): void {
 		$objects = $this->createMock(originalClassName: ObjectServiceInterface::class);
-		$objects->expects($this->exactly(3))->method('saveObject')->willThrowException(new RuntimeException('invalid'));
+		$objects->expects($this->exactly(count: 3))->method('saveObject')->willThrowException(new RuntimeException('invalid'));
 		$this->objects = $objects;
 
 		$result = $this->service()->fill(applicationUuid: self::APP, application: [], register: 'meldingen');
 
-		$this->assertSame(expected: ['created' => 0, 'skipped' => ['case'], 'failed' => 3], actual: $result);
+		$this->assertSame(expected: ['created' => 0, 'skipped' => ['case'], 'failed' => 3, 'total' => 0], actual: $result);
 	}//end testARefusedRecordIsCountedAndNothingIsListed()
 
 	/**
@@ -193,7 +199,7 @@ final class AppDemoRecordsServiceTest extends TestCase {
 
 		$result = $this->service()->fill(applicationUuid: self::APP, application: [], register: 'other');
 
-		$this->assertSame(expected: ['created' => 0, 'skipped' => [], 'failed' => 0], actual: $result);
+		$this->assertSame(expected: ['created' => 0, 'skipped' => [], 'failed' => 0, 'total' => 0], actual: $result);
 	}//end testAnUnreadableRegisterMakesNothing()
 
 	/**

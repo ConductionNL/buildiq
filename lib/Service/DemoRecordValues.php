@@ -47,17 +47,26 @@ final class DemoRecordValues {
 	private const SCALARS = ['string', 'integer', 'number', 'boolean'];
 
 	/**
-	 * The demo record number `$n` of a schema, or null when a required property cannot be filled.
+	 * Constructor.
+	 *
+	 * @param int $n The record's number, from 1; varies the values.
+	 */
+	public function __construct(
+		private readonly int $n,
+	) {
+	}//end __construct()
+
+	/**
+	 * This demo record of a schema, or null when a required property cannot be filled.
 	 *
 	 * @param array<string, mixed> $properties The schema's properties.
 	 * @param list<string>         $required   The schema's required property names.
-	 * @param int                  $n          The record's number, from 1; varies the values.
 	 *
 	 * @return array<string, mixed>|null
 	 *
 	 * @spec openspec/changes/capability-requirements-backfill/specs/application-creation-wizard/spec.md#requirement-a-maker-fills-a-new-app-with-demo-records-req-bqcv-030
 	 */
-	public static function record(array $properties, array $required, int $n): ?array {
+	public function record(array $properties, array $required): ?array {
 		$record = [];
 		foreach ($properties as $name => $property) {
 			$name = (string)$name;
@@ -66,7 +75,7 @@ final class DemoRecordValues {
 				continue;
 			}
 
-			[$filled, $value] = self::value(property: $property, name: $name, n: $n);
+			[$filled, $value] = $this->value(property: $property, name: $name);
 			if ($filled === true) {
 				$record[$name] = $value;
 				continue;
@@ -85,11 +94,10 @@ final class DemoRecordValues {
 	 *
 	 * @param array<string, mixed> $property The property.
 	 * @param string               $name     Its name, for a text value.
-	 * @param int                  $n        The record's number.
 	 *
 	 * @return array{0: bool, 1: mixed}
 	 */
-	private static function value(array $property, string $name, int $n): array {
+	private function value(array $property, string $name): array {
 		if (self::isUnfillable(property: $property) === true) {
 			return [false, null];
 		}
@@ -101,16 +109,16 @@ final class DemoRecordValues {
 		$enum = ($property['enum'] ?? null);
 		if (is_array($enum) === true && $enum !== []) {
 			$choices = array_values($enum);
-			return [true, $choices[(($n - 1) % count($choices))]];
+			return [true, $choices[(($this->n - 1) % count($choices))]];
 		}
 
 		return match ((string)($property['type'] ?? 'string')) {
-			'string' => [true, self::text(property: $property, name: $name, n: $n)],
-			'integer' => [true, (int)self::bounded(property: $property, n: $n)],
-			'number' => [true, (float)self::bounded(property: $property, n: $n)],
-			'boolean' => [true, ($n % 2) === 1],
-			'array' => self::items(property: $property, name: $name, n: $n),
-			'object' => self::nested(property: $property, n: $n),
+			'string' => [true, $this->text(property: $property, name: $name)],
+			'integer' => [true, (int)$this->bounded(property: $property)],
+			'number' => [true, (float)$this->bounded(property: $property)],
+			'boolean' => [true, ($this->n % 2) === 1],
+			'array' => $this->items(property: $property, name: $name),
+			'object' => $this->nested(property: $property),
 			default => [false, null],
 		};
 	}//end value()
@@ -153,11 +161,11 @@ final class DemoRecordValues {
 	 *
 	 * @param array<string, mixed> $property The property.
 	 * @param string               $name     Its name.
-	 * @param int                  $n        The record's number.
 	 *
 	 * @return string
 	 */
-	private static function text(array $property, string $name, int $n): string {
+	private function text(array $property, string $name): string {
+		$n = $this->n;
 		$day = sprintf('2026-01-%02d', (1 + (($n - 1) % 28)));
 		$text = match ((string)($property['format'] ?? '')) {
 			'date' => $day,
@@ -185,12 +193,11 @@ final class DemoRecordValues {
 	 * A number within the property's bounds, near the record's number.
 	 *
 	 * @param array<string, mixed> $property The property.
-	 * @param int                  $n        The record's number.
 	 *
 	 * @return int|float
 	 */
-	private static function bounded(array $property, int $n): int|float {
-		$value = $n;
+	private function bounded(array $property): int|float {
+		$value = $this->n;
 		$minimum = ($property['minimum'] ?? null);
 		if (is_numeric($minimum) === true && $value < $minimum) {
 			$value = $minimum;
@@ -214,18 +221,21 @@ final class DemoRecordValues {
 	 *
 	 * @param array<string, mixed> $property The property.
 	 * @param string               $name     Its name.
-	 * @param int                  $n        The record's number.
 	 *
 	 * @return array{0: bool, 1: mixed}
 	 */
-	private static function items(array $property, string $name, int $n): array {
+	private function items(array $property, string $name): array {
 		$count = (int)($property['minItems'] ?? 0);
 		if ($count <= 0) {
 			return [true, []];
 		}
 
 		$items = ($property['items'] ?? []);
-		[$filled, $item] = self::value(property: self::arrayOf(value: $items), name: $name, n: $n);
+		if (is_array($items) === false) {
+			$items = [];
+		}
+
+		[$filled, $item] = $this->value(property: $items, name: $name);
 		if ($filled === false) {
 			return [false, null];
 		}
@@ -237,16 +247,16 @@ final class DemoRecordValues {
 	 * An object value built from its own properties.
 	 *
 	 * @param array<string, mixed> $property The property.
-	 * @param int                  $n        The record's number.
 	 *
 	 * @return array{0: bool, 1: mixed}
 	 */
-	private static function nested(array $property, int $n): array {
-		$record = self::record(
-			properties: self::arrayOf(value: $property['properties'] ?? null),
-			required: array_values(array_map('strval', self::arrayOf(value: $property['required'] ?? null))),
-			n: $n
-		);
+	private function nested(array $property): array {
+		$properties = ($property['properties'] ?? []);
+		if (is_array($properties) === false) {
+			$properties = [];
+		}
+
+		$record = $this->record(properties: $properties, required: array_values(array_map('strval', (array)($property['required'] ?? []))));
 		if ($record === null) {
 			return [false, null];
 		}
@@ -257,19 +267,4 @@ final class DemoRecordValues {
 
 		return [true, $record];
 	}//end nested()
-
-	/**
-	 * A value when it is an array, else [].
-	 *
-	 * @param mixed $value The value.
-	 *
-	 * @return array<mixed>
-	 */
-	private static function arrayOf(mixed $value): array {
-		if (is_array($value) === true) {
-			return $value;
-		}
-
-		return [];
-	}//end arrayOf()
 }//end class

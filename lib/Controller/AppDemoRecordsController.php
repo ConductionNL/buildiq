@@ -91,7 +91,6 @@ class AppDemoRecordsController extends Controller {
 			return $this->failed(appUuid: $appUuid, what: 'filled', error: $e);
 		}
 
-		$result['total'] = ($result['created'] + AppDemoRecordsService::count(application: $application));
 		return new JSONResponse(data: $result);
 	}//end fill()
 
