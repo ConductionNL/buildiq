@@ -17,12 +17,17 @@
  * @version GIT: <git-id>
  *
  * @link https://conduction.nl
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
 
 namespace OCA\Buildiq\Tests\Unit\Service;
 
+use OCA\Buildiq\Service\CallerContext;
+use OCA\Buildiq\Service\PermissionResolver;
 use OCA\Buildiq\Service\SettingsService;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
@@ -88,8 +93,11 @@ final class SettingsServiceTest extends TestCase {
 			appConfig: $this->appConfig,
 			appManager: $this->appManager,
 			container: $this->container,
-			groupManager: $this->groupManager,
-			userSession: $this->userSession,
+			caller: new CallerContext(
+				userSession: $this->userSession,
+				groupManager: $this->groupManager,
+				permissionResolver: $this->createMock(PermissionResolver::class)
+			),
 			logger: new NullLogger(),
 		);
 	}//end sut()
@@ -115,6 +123,45 @@ final class SettingsServiceTest extends TestCase {
 		self::assertTrue($settings['openregisters']);
 		self::assertTrue($settings['isAdmin']);
 	}//end testGetSettingsReturnsConfigKeysAndMetadata()
+
+	/**
+	 * A fresh install has no stored register: the setting reads as the app's
+	 * own `buildiq` register, as the admin tutorial promises, not as ''.
+	 *
+	 * @return void
+	 */
+	public function testGetSettingsDefaultsRegisterToTheAppRegisterWhenUnset(): void {
+		// Behave like IAppConfig on an absent key: hand back the default.
+		$this->appConfig->method('getValueString')->willReturnCallback(
+			static fn (string $app, string $key, string $default = ''): string => $default
+		);
+		$this->appManager->method('isInstalled')->willReturn(true);
+		$this->userSession->method('getUser')->willReturn(null);
+
+		$settings = $this->sut()->getSettings();
+
+		self::assertSame('buildiq', $settings['register']);
+	}//end testGetSettingsDefaultsRegisterToTheAppRegisterWhenUnset()
+
+	/**
+	 * A register saved as '' (the form submitted with the field cleared) also
+	 * reads back as the app's own register.
+	 *
+	 * @return void
+	 */
+	public function testGetSettingsTreatsAStoredEmptyRegisterAsTheDefault(): void {
+		$this->appConfig->method('getValueString')->willReturnCallback(
+			static fn (string $app, string $key, string $default = ''): string => ($key === 'register') ? '' : $default
+		);
+		$this->appManager->method('isInstalled')->willReturn(true);
+		$this->userSession->method('getUser')->willReturn(null);
+
+		$settings = $this->sut()->getSettings();
+
+		self::assertSame('buildiq', $settings['register']);
+		// Other keys keep their plain semantics: an empty registry_url stays empty.
+		self::assertSame('', $settings['registry_url']);
+	}//end testGetSettingsTreatsAStoredEmptyRegisterAsTheDefault()
 
 	/**
 	 * REQ-OBS-001 — isAdmin is false when no user is signed in.
@@ -225,4 +272,44 @@ final class SettingsServiceTest extends TestCase {
 			self::assertFalse($result['success']);
 		}
 	}//end testReloadConfigurationCallsImportWithForceTrue()
+
+	/**
+	 * REQ-BQOM-002 — "Let apps work offline" is off unless an admin switched it on, and is saved as a boolean.
+	 *
+	 * @return void
+	 */
+	public function testOfflineAppsAreOffByDefaultAndSavedAsABoolean(): void {
+		$stored = [];
+		$this->appConfig->method('getValueString')->willReturn('');
+		$this->appConfig->method('getValueBool')->willReturnCallback(
+			static function (string $app, string $key, bool $default = false) use (&$stored): bool {
+				return ($stored[$key] ?? $default);
+			}
+		);
+		$this->appConfig->method('setValueBool')->willReturnCallback(
+			static function (string $app, string $key, bool $value) use (&$stored): bool {
+				$stored[$key] = $value;
+				return true;
+			}
+		);
+		$this->appManager->method('isInstalled')->willReturn(false);
+		$this->userSession->method('getUser')->willReturn(null);
+
+		$service = $this->sut();
+		self::assertFalse($service->offlineAppsAllowed());
+		self::assertFalse($service->getSettings()['allow_offline_apps']);
+
+		$result = $service->updateSettings(['allow_offline_apps' => 'true']);
+		self::assertSame(['allow_offline_apps' => true], $stored);
+		self::assertTrue($result['allow_offline_apps']);
+		self::assertTrue($service->offlineAppsAllowed());
+
+		$service->updateSettings(['allow_offline_apps' => false]);
+		self::assertFalse($service->offlineAppsAllowed());
+
+		// A save that does not name the setting leaves it as it is.
+		$service->updateSettings(['allow_offline_apps' => true]);
+		$service->updateSettings(['register' => 'buildiq']);
+		self::assertTrue($service->offlineAppsAllowed());
+	}//end testOfflineAppsAreOffByDefaultAndSavedAsABoolean()
 }//end class

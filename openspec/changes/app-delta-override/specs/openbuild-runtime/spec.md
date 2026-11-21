@@ -9,7 +9,9 @@ The system SHALL expose the per-slug manifest endpoint and SHALL resolve a base 
 The endpoint at
 `GET /index.php/apps/buildiq/api/applications/{slug}/manifest`
 is backed by `ApplicationsController::getManifest`. The endpoint SHALL
-resolve `{slug}` to an `Application` via the `BuiltAppRoute` index and
+resolve `{slug}` to an `Application` via the `BuiltAppRoute` index (when no
+`BuiltAppRoute` exists for the slug, the `Application` whose own `slug` equals
+`{slug}` exactly, with role checks applied the same way on both lookups) and
 return a complete, already-merged `manifest` JSON blob with
 `Content-Type: application/json`, responding `200` on success or `404`
 when no matching published Application exists in the caller's
@@ -35,6 +37,12 @@ diagnostics SHALL be omitted from the public response. RBAC enforcement
 (the per-Application `permissions` gate) SHALL run before any branch that
 emits a manifest payload, unchanged from prior behaviour.
 
+Before the manifest is returned, the endpoint SHALL inject the
+Application's current, authoritative `name` field as the manifest's
+top-level `name`, overwriting (or supplying, when absent) whatever
+`name` value the resolved manifest carries, following the same
+additive-projection pattern as `runtime.user.isOwner` (`injectOwnerSignal`).
+
 **ID:** REQ-OBR-001
 
 #### Scenario: Endpoint returns the stored manifest
@@ -49,8 +57,28 @@ emits a manifest payload, unchanged from prior behaviour.
 #### Scenario: Unknown slug returns 404
 
 - **WHEN** an authenticated user requests the manifest for a slug
-  that has no matching `BuiltAppRoute`
+  that has no matching `BuiltAppRoute` and no matching `Application`
 - **THEN** the response is `404` with a JSON error body
+
+#### Scenario: An app without a route entry still resolves
+
+- **GIVEN** an `Application` with `slug: hello-world` and no `BuiltAppRoute`
+- **WHEN** one of its owners requests its manifest
+- **THEN** the response is `200` with the production manifest
+
+#### Scenario: Manifest name always reflects the Application's authoritative display name
+
+- **WHEN** an authenticated user requests the manifest for a published Application whose
+  `name` field is `"Pet Store"` but whose stored manifest blob has a `name` of `"pet-store"`
+  (or has no `name` field at all)
+- **THEN** the response body's top-level `name` is `"Pet Store"`, not `"pet-store"` and not
+  absent
+
+#### Scenario: Manifest name matches an already-consistent manifest blob
+
+- **WHEN** an authenticated user requests the manifest for a published Application whose
+  `name` field and stored manifest blob `name` are already identical
+- **THEN** the response body's top-level `name` is unchanged and equal to both
 
 #### Scenario: Legacy blob app serves unchanged
 

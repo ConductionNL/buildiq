@@ -23,6 +23,11 @@ vi.mock('@nextcloud/router', async (importOriginal) => ({
 	generateUrl: (p) => p,
 }))
 
+const pickRequirementsDocument = vi.fn()
+vi.mock('../../src/services/documentPicker.js', () => ({
+	pickRequirementsDocument: (...a) => pickRequirementsDocument(...a),
+}))
+
 import CopilotGenerateDialog from '../../src/dialogs/CopilotGenerateDialog.vue'
 import { clearCopilotHealthCache } from '../../src/composables/useCopilot.js'
 
@@ -166,6 +171,63 @@ describe('CopilotGenerateDialog.vue — spec ai-copilot REQ-OBAIC-001/006', () =
 		expect(wrapper.emitted('update:open')[0][0]).toBe(false)
 	})
 
+	it('names the fields that failed instead of blaming the brief', async () => {
+		// A plan whose predicted manifest carries a widget with no id and no
+		// title: exactly what the builder tools used to append. The dialog
+		// used to answer this with "Try rephrasing your brief", which sent
+		// the reader after a fault that was never theirs.
+		axiosPost.mockResolvedValueOnce({
+			data: {
+				summary: 'A tool library',
+				steps: [
+					{
+						tool: 'buildiq.addWidget',
+						arguments: { pageId: 'overview', widgetType: 'stat' },
+					},
+				],
+				manifests: {
+					'tool-library@development': {
+						current: { version: '1.0.0', menu: [], pages: [] },
+						predicted: {
+							version: '1.0.0',
+							menu: [],
+							pages: [
+								{
+									id: 'overview',
+									route: '/',
+									type: 'dashboard',
+									title: 'Overview',
+									config: {
+										widgets: [{ type: 'stat', config: {} }],
+									},
+								},
+							],
+						},
+					},
+				},
+			},
+		})
+
+		const wrapper = mount(CopilotGenerateDialog, {
+			propsData: { open: true },
+			stubs,
+		})
+		await wrapper.find('[data-testid="copilot-brief-input"]').setValue('x')
+		await wrapper.vm.onGenerate()
+		await flush()
+		await wrapper.vm.$nextTick()
+
+		expect(wrapper.vm.canApprove).toBe(false)
+
+		const block = wrapper.find('[data-testid="copilot-validation-errors"]')
+		expect(block.exists()).toBe(true)
+		expect(block.text()).not.toContain('rephrasing')
+		expect(block.text()).toContain('/pages/0/config/widgets/0/id')
+		expect(block.text()).toContain('/pages/0/config/widgets/0/title')
+		// The version key is an internal record id and stays off the screen.
+		expect(block.text()).not.toContain('tool-library@development')
+	})
+
 	it('Generate is disabled with a blank brief', () => {
 		const wrapper = mount(CopilotGenerateDialog, {
 			propsData: { open: true },
@@ -192,5 +254,139 @@ describe('CopilotGenerateDialog.vue — spec ai-copilot REQ-OBAIC-001/006', () =
 			.findAll('button')
 			.find((b) => b.text().includes('Generate'))
 		expect(generateButton.attributes('disabled')).toBeUndefined()
+	})
+})
+
+describe('CopilotGenerateDialog.vue — Add a document (ai-copilot-documents-and-code-help REQ-BQCH-005)', () => {
+	beforeEach(() => {
+		axiosGet.mockReset()
+		axiosPost.mockReset()
+		axiosGet.mockResolvedValue({ data: { status: 'ok' } })
+		pickRequirementsDocument.mockReset()
+		clearCopilotHealthCache()
+	})
+
+	const mountOpen = () => mount(CopilotGenerateDialog, { propsData: { open: true }, stubs })
+
+	it('picks a document, shows its name under the brief, and sends only its id', async () => {
+		pickRequirementsDocument.mockResolvedValue({ id: 42, name: 'Eisen tuinvergunning.md' })
+		axiosPost.mockResolvedValueOnce({ data: { summary: 'Garden permits', steps: [], manifests: {} } })
+		const wrapper = mountOpen()
+
+		await wrapper.find('[data-testid="copilot-document-add"]').trigger('click')
+		await flush()
+
+		expect(wrapper.find('[data-testid="copilot-document-name"]').text()).toBe('Eisen tuinvergunning.md')
+		expect(wrapper.vm.canGenerate).toBe(true)
+
+		await wrapper.vm.onGenerate()
+		await flush()
+
+		const [url, body] = axiosPost.mock.calls[0]
+		expect(url).toBe('/apps/buildiq/api/copilot/plan')
+		expect(body).toEqual({ brief: '', appSlug: undefined, agentId: undefined, versionSlug: undefined, documentFileId: 42 })
+	})
+
+	it('keeps Generate disabled with neither a brief nor a document', () => {
+		const wrapper = mountOpen()
+		expect(wrapper.vm.canGenerate).toBe(false)
+	})
+
+	it('a closed picker leaves the dialog as it was', async () => {
+		pickRequirementsDocument.mockResolvedValue(null)
+		const wrapper = mountOpen()
+
+		await wrapper.find('[data-testid="copilot-document-add"]').trigger('click')
+		await flush()
+
+		expect(wrapper.find('[data-testid="copilot-document-name"]').exists()).toBe(false)
+		expect(wrapper.vm.document).toBeNull()
+	})
+
+	it('removes the document, and forgets it when reopened', async () => {
+		pickRequirementsDocument.mockResolvedValue({ id: 7, name: 'Eisen.txt' })
+		const wrapper = mount(CopilotGenerateDialog, { propsData: { open: true }, stubs })
+		await wrapper.find('[data-testid="copilot-document-add"]').trigger('click')
+		await flush()
+
+		await wrapper.find('[data-testid="copilot-document-remove"]').trigger('click')
+		expect(wrapper.vm.document).toBeNull()
+
+		await wrapper.find('[data-testid="copilot-document-add"]').trigger('click')
+		await flush()
+		await wrapper.setProps({ open: false })
+		await wrapper.setProps({ open: true })
+		expect(wrapper.vm.document).toBeNull()
+	})
+
+	it('shows the server refusal for an unsupported or oversized document', async () => {
+		pickRequirementsDocument.mockResolvedValue({ id: 9, name: 'Eisen.pdf' })
+		axiosPost.mockRejectedValueOnce({
+			response: { status: 422, data: { error: 'unsupported_document', message: 'This document type cannot be read yet. Use a plain text (.txt) or Markdown (.md) file.' } },
+		})
+		const wrapper = mountOpen()
+		await wrapper.find('[data-testid="copilot-document-add"]').trigger('click')
+		await flush()
+
+		await wrapper.vm.onGenerate()
+		await flush()
+		await wrapper.vm.$nextTick()
+
+		expect(wrapper.find('[role="alert"]').text()).toBe('This document type cannot be read yet. Use a plain text (.txt) or Markdown (.md) file.')
+	})
+})
+
+describe('CopilotGenerateDialog.vue — User stories (ai-copilot-documents-and-code-help REQ-BQCH-006)', () => {
+	beforeEach(() => {
+		axiosGet.mockReset()
+		axiosPost.mockReset()
+		axiosGet.mockResolvedValue({ data: { status: 'ok' } })
+		clearCopilotHealthCache()
+	})
+
+	it('lists the stories first, each with the schemas and pages that serve it', async () => {
+		axiosPost.mockResolvedValueOnce({
+			data: {
+				summary: 'Garden permits',
+				stories: [
+					{ id: 's1', role: 'an applicant', goal: 'track my permit', servedBy: [1, 2, 3] },
+					{ id: 's2', role: 'a reviewer', goal: '', servedBy: [] },
+				],
+				steps: [
+					{ tool: 'buildiq.createApp', arguments: { slug: 'tuin', name: 'Tuin' } },
+					{ tool: 'buildiq.upsertSchema', arguments: { slug: 'aanvraag', title: 'Aanvraag' } },
+					{ tool: 'buildiq.upsertPage', arguments: { pageId: 'mine', title: 'Mijn aanvragen', type: 'index' } },
+					{ tool: 'buildiq.upsertMenuItem', arguments: { label: 'Mijn aanvragen' } },
+				],
+				manifests: {},
+			},
+		})
+		const wrapper = mount(CopilotGenerateDialog, { propsData: { open: true }, stubs })
+		await wrapper.find('[data-testid="copilot-brief-input"]').setValue('Garden permits')
+		await wrapper.vm.onGenerate()
+		await flush()
+		await wrapper.vm.$nextTick()
+
+		const groups = wrapper.findAll('.copilot-generate__group h3').map((h) => h.text())
+		expect(groups[0]).toBe('User stories')
+		const stories = wrapper.findAll('[data-testid="copilot-plan-story"]')
+		expect(stories).toHaveLength(1)
+		expect(wrapper.vm.stories).toEqual([{ text: 'As {role} I want to {goal}', servedBy: ['Aanvraag', 'Mijn aanvragen'] }])
+		expect(stories[0].findAll('.copilot-generate__served-by li').map((li) => li.text())).toEqual(['Aanvraag', 'Mijn aanvragen'])
+	})
+
+	it('shows no stories group for a plan without stories', async () => {
+		axiosPost.mockResolvedValueOnce({ data: { summary: 'x', steps: [{ tool: 'buildiq.createApp', arguments: { slug: 'x', name: 'X' } }], manifests: {} } })
+		const wrapper = mount(CopilotGenerateDialog, { propsData: { open: true }, stubs })
+		await wrapper.find('[data-testid="copilot-brief-input"]').setValue('x')
+		await wrapper.vm.onGenerate()
+		await flush()
+
+		expect(wrapper.find('[data-testid="copilot-plan-stories"]').exists()).toBe(false)
+	})
+
+	it('writes a story with a benefit as one sentence', () => {
+		const wrapper = mount(CopilotGenerateDialog, { propsData: { open: true }, stubs })
+		expect(wrapper.vm.storySentence({ role: 'r', goal: 'g', benefit: 'b' })).toBe('As {role} I want to {goal}, so that {benefit}')
 	})
 })

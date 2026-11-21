@@ -148,17 +148,21 @@ describe('ImportDataWizard', () => {
 		expect(ids).toEqual(['permit', 'person'])
 	})
 
+	// The template is a download LINK (`<a href download>`), not a click that
+	// assigns window.location — so the browser fetches it without navigating
+	// the wizard away, and it is null until there is something to download.
 	it('download-template delegates to the import client template URL', async () => {
 		const client = makeClient()
 		const wrapper = mountWizard({}, client)
+		expect(wrapper.vm.templateUrl).toBeNull()
+
 		await wrapper.setData({ selectedSchema: { id: 'permit', label: 'Permit' } })
 
-		wrapper.vm.downloadTemplate('csv')
-
+		expect(wrapper.vm.templateUrl).toBeTruthy()
 		expect(client.templateUrl).toHaveBeenCalledWith({
 			registerId: 'openbuild-app-staging',
 			schema: 'permit',
-			format: 'csv',
+			format: 'xlsx',
 		})
 	})
 
@@ -221,5 +225,22 @@ describe('ImportDataWizard', () => {
 		expect(wrapper.find('.ob-import-wizard__sample tbody').text()).not.toContain(
 			'email',
 		)
+	})
+	describe('schemaOptions resolution order', () => {
+		it.each([
+			[{ slug: 's', '@self': { slug: 'self' }, id: 1, uuid: 'u', title: 'T', name: 'N' }, 's', 'T'],
+			[{ '@self': { slug: 'self' }, id: 1, uuid: 'u', name: 'N' }, 'self', 'N'],
+			[{ '@self': {}, id: 7, uuid: 'u' }, '7', '7'],
+			[{ uuid: 'u' }, 'u', ''],
+			[{ slug: 'only' }, 'only', 'only'],
+		])('projects %j to id %j and label %j', (schema, id, label) => {
+			const wrapper = mountWizard({ schemas: [schema] })
+			expect(wrapper.vm.schemaOptions).toEqual([{ id, label, type: schema }])
+		})
+
+		it('drops schemas without any id and tolerates no schemas', () => {
+			expect(mountWizard({ schemas: [{ title: 'No id' }] }).vm.schemaOptions).toEqual([])
+			expect(mountWizard({ schemas: null }).vm.schemaOptions).toEqual([])
+		})
 	})
 })

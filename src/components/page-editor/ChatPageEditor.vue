@@ -91,40 +91,25 @@
 
 <script>
 import InlineFieldMark from './fields/InlineFieldMark.vue'
+import { pageEditorBaseMixin } from '../../mixins/pageEditorBase.js'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 
 export default {
 	name: 'ChatPageEditor',
 	components: { InlineFieldMark },
-	mixins: [pageEditorValidationMixin],
+	mixins: [pageEditorBaseMixin, pageEditorValidationMixin],
 	props: {
-		config: {
-			type: Object,
-			default: () => ({}),
-		},
-
 		pageType: {
 			type: String,
 			default: 'chat',
 		},
-
-		appSlug: {
-			type: String,
-			default: '',
-		},
-
-		parentRoute: {
-			type: String,
-			default: '',
-		},
 	},
 
-	emits: ['update:config'],
 	computed: {
 		/**
 		 * Observed behaviour of `validatedConfigKeys` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		validatedConfigKeys() {
 			return ['conversationSource', 'postUrl', 'schema']
@@ -133,7 +118,7 @@ export default {
 		/**
 		 * Observed behaviour of `transportShape` (retrofit annotation).
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		transportShape() {
 			if (this.config.postUrl && !this.config.conversationSource) {
@@ -152,7 +137,7 @@ export default {
 		 *
 		 * @param {string} key - the config key being written; from the template only `schema`, the optional message-record schema slug.
 		 * @param {string} value - the new value from the bound input; `''` (or `null`) deletes the key.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		update(key, value) {
 			const next = { ...this.config }
@@ -171,7 +156,7 @@ export default {
 		 * is lost.
 		 *
 		 * @param {'conversationSource'|'postUrl'} shape - the radio's value: `postUrl` drops `conversationSource`, anything else drops `postUrl`.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		setTransportShape(shape) {
 			const next = { ...this.config }
@@ -190,7 +175,7 @@ export default {
 		 *
 		 * @param {'conversationSource'|'postUrl'} key - which transport is being typed into; the other of the two is deleted.
 		 * @param {string} value - the endpoint / stream URL from the bound input; `''` deletes the key too, leaving neither branch set.
-		 * @spec openspec/changes/retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-page-designer-ui/tasks.md#task-3
 		 */
 		setTransport(key, value) {
 			const partner = key === 'postUrl' ? 'conversationSource' : 'postUrl'
@@ -207,7 +192,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../assets/editor-controls.scss' as c;
+
 .chat-page-editor {
 	display: flex;
 	flex-direction: column;
@@ -222,12 +209,7 @@ export default {
 }
 
 .chat-page-editor__fieldset {
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-	padding: 8px;
-	display: flex;
-	flex-direction: column;
-	gap: 6px;
+	@include c.fieldset;
 }
 
 .chat-page-editor__fieldset legend {
@@ -256,11 +238,7 @@ export default {
 }
 
 .chat-page-editor__group-row input {
-	padding: 4px 6px;
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-	background: var(--color-main-background);
-	color: var(--color-main-text);
+	@include c.control;
 }
 
 .chat-page-editor__hint {

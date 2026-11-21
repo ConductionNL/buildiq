@@ -1,0 +1,2353 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`blockCapture golden > captures every grid cell as recorded 1`] = `
+[
+  {
+    "record": {
+      "category": "layout",
+      "createdBy": "alice",
+      "description": "D",
+      "fragment": {
+        "config": {
+          "columns": [
+            "title",
+          ],
+          "schema": "case",
+        },
+        "id": "w1",
+        "type": "table",
+      },
+      "name": "Block",
+      "schemaDependencies": [
+        "case",
+      ],
+      "slug": "blk",
+      "sourceApplicationSlug": "demo",
+    },
+    "summary": {
+      "schemaDependencies": [
+        {
+          "shared": false,
+          "slug": "case",
+          "sourceSlug": "demo-case",
+        },
+      ],
+    },
+  },
+  {
+    "record": {
+      "category": "",
+      "description": "",
+      "fragment": {
+        "config": {
+          "columns": [
+            "title",
+          ],
+          "schema": "case",
+        },
+        "id": "w1",
+        "type": "table",
+      },
+      "name": "Bare",
+      "schemaDependencies": [
+        "case",
+      ],
+      "slug": "bare",
+      "sourceApplicationSlug": "demo",
+    },
+    "summary": {
+      "schemaDependencies": [
+        {
+          "shared": false,
+          "slug": "case",
+          "sourceSlug": "demo-case",
+        },
+      ],
+    },
+  },
+  {
+    "record": {
+      "category": "",
+      "description": "",
+      "fragment": {
+        "config": {
+          "columns": [
+            "title",
+          ],
+          "schema": "case",
+        },
+        "id": "w1",
+        "type": "table",
+      },
+      "name": "E",
+      "schemaDependencies": [
+        "case",
+      ],
+      "slug": "e",
+      "sourceApplicationSlug": "demo",
+    },
+    "summary": {
+      "schemaDependencies": [
+        {
+          "shared": false,
+          "slug": "case",
+          "sourceSlug": "demo-case",
+        },
+      ],
+    },
+  },
+  {
+    "record": {
+      "category": "layout",
+      "createdBy": "alice",
+      "description": "D",
+      "fragment": {
+        "config": {
+          "columns": [
+            "title",
+          ],
+          "schema": "demo-case",
+        },
+        "id": "w1",
+        "type": "table",
+      },
+      "name": "Block",
+      "schemaDependencies": [
+        "demo-case",
+      ],
+      "slug": "blk",
+      "sourceApplicationSlug": "",
+    },
+    "summary": {
+      "schemaDependencies": [
+        {
+          "shared": true,
+          "slug": "demo-case",
+          "sourceSlug": "demo-case",
+        },
+      ],
+    },
+  },
+  {
+    "record": {
+      "category": "",
+      "description": "",
+      "fragment": {
+        "config": {
+          "columns": [
+            "title",
+          ],
+          "schema": "demo-case",
+        },
+        "id": "w1",
+        "type": "table",
+      },
+      "name": "Bare",
+      "schemaDependencies": [
+        "demo-case",
+      ],
+      "slug": "bare",
+      "sourceApplicationSlug": "",
+    },
+    "summary": {
+      "schemaDependencies": [
+        {
+          "shared": true,
+          "slug": "demo-case",
+          "sourceSlug": "demo-case",
+        },
+      ],
+    },
+  },
+  {
+    "record": {
+      "category": "",
+      "description": "",
+      "fragment": {
+        "config": {
+          "columns": [
+            "title",
+          ],
+          "schema": "demo-case",
+        },
+        "id": "w1",
+        "type": "table",
+      },
+      "name": "E",
+      "schemaDependencies": [
+        "demo-case",
+      ],
+      "slug": "e",
+      "sourceApplicationSlug": "",
+    },
+    "summary": {
+      "schemaDependencies": [
+        {
+          "shared": true,
+          "slug": "demo-case",
+          "sourceSlug": "demo-case",
+        },
+      ],
+    },
+  },
+  {
+    "record": {
+      "category": "layout",
+      "createdBy": "alice",
+      "description": "D",
+      "fragment": {
+        "config": {
+          "columns": [
+            "title",
+          ],
+          "schema": "demo-case",
+        },
+        "id": "w1",
+        "type": "table",
+      },
+      "name": "Block",
+      "schemaDependencies": [
+        "demo-case",
+      ],
+      "slug": "blk",
+      "sourceApplicationSlug": "",
+    },
+    "summary": {
+      "schemaDependencies": [
+        {
+          "shared": true,
+          "slug": "demo-case",
+          "sourceSlug": "demo-case",
+        },
+      ],
+    },
+  },
+  {
+    "record": {
+      "category": "",
+      "description": "",
+      "fragment": {
+        "config": {
+          "columns": [
+            "title",
+          ],
+          "schema": "demo-case",
+        },
+        "id": "w1",
+        "type": "table",
+      },
+      "name": "Bare",
+      "schemaDependencies": [
+        "demo-case",
+      ],
+      "slug": "bare",
+      "sourceApplicationSlug": "",
+    },
+    "summary": {
+      "schemaDependencies": [
+        {
+          "shared": true,
+          "slug": "demo-case",
+          "sourceSlug": "demo-case",
+        },
+      ],
+    },
+  },
+  {
+    "record": {
+      "category": "",
+      "description": "",
+      "fragment": {
+        "config": {
+          "columns": [
+            "title",
+          ],
+          "schema": "demo-case",
+        },
+        "id": "w1",
+        "type": "table",
+      },
+      "name": "E",
+      "schemaDependencies": [
+        "demo-case",
+      ],
+      "slug": "e",
+      "sourceApplicationSlug": "",
+    },
+    "summary": {
+      "schemaDependencies": [
+        {
+          "shared": true,
+          "slug": "demo-case",
+          "sourceSlug": "demo-case",
+        },
+      ],
+    },
+  },
+  {
+    "record": {
+      "category": "layout",
+      "createdBy": "alice",
+      "description": "D",
+      "fragment": {
+        "id": "sec",
+        "widgets": [
+          {
+            "config": {
+              "relatedSchema": "case",
+              "schema": "task",
+            },
+          },
+          {
+            "config": {
+              "items": [
+                {
+                  "relatedSchema": "task",
+                },
+                {
+                  "schema": "",
+                },
+              ],
+              "schema": "person",
+            },
+          },
+          {
+            "config": {
+              "relatedSchema": null,
+              "schema": 7,
+            },
+          },
+        ],
+      },
+      "name": "Block",
+      "schemaDependencies": [
+        "task",
+        "case",
+        "person",
+      ],
+      "slug": "blk",
+      "sourceApplicationSlug": "demo",
+    },
+    "summary": {
+      "schemaDependencies": [
+        {
+          "shared": false,
+          "slug": "task",
+          "sourceSlug": "demo-task",
+        },
+        {
+          "shared": false,
+          "slug": "case",
+          "sourceSlug": "demo-case",
+        },
+        {
+          "shared": true,
+          "slug": "person",
+          "sourceSlug": "person",
+        },
+      ],
+    },
+  },
+  {
+    "record": {
+      "category": "",
+      "description": "",
+      "fragment": {
+        "id": "sec",
+        "widgets": [
+          {
+            "config": {
+              "relatedSchema": "case",
+              "schema": "task",
+            },
+          },
+          {
+            "config": {
+              "items": [
+                {
+                  "relatedSchema": "task",
+                },
+                {
+                  "schema": "",
+                },
+              ],
+              "schema": "person",
+            },
+          },
+          {
+            "config": {
+              "relatedSchema": null,
+              "schema": 7,
+            },
+          },
+        ],
+      },
+      "name": "Bare",
+      "schemaDependencies": [
+        "task",
+        "case",
+        "person",
+      ],
+      "slug": "bare",
+      "sourceApplicationSlug": "demo",
+    },
+    "summary": {
+      "schemaDependencies": [
+        {
+          "shared": false,
+          "slug": "task",
+          "sourceSlug": "demo-task",
+        },
+        {
+          "shared": false,
+          "slug": "case",
+          "sourceSlug": "demo-case",
+        },
+        {
+          "shared": true,
+          "slug": "person",
+          "sourceSlug": "person",
+        },
+      ],
+    },
+  },
+  {
+    "record": {
+      "category": "",
+      "description": "",
+      "fragment": {
+        "id": "sec",
+        "widgets": [
+          {
+            "config": {
+              "relatedSchema": "case",
+              "schema": "task",
+            },
+          },
+          {
+            "config": {
+              "items": [
+                {
+                  "relatedSchema": "task",
+                },
+                {
+                  "schema": "",
+                },
+              ],
+              "schema": "person",
+            },
+          },
+          {
+            "config": {
+              "relatedSchema": null,
+              "schema": 7,
+            },
+          },
+        ],
+      },
+      "name": "E",
+      "schemaDependencies": [
+        "task",
+        "case",
+        "person",
+      ],
+      "slug": "e",
+      "sourceApplicationSlug": "demo",
+    },
+    "summary": {
+      "schemaDependencies": [
+        {
+          "shared": false,
+          "slug": "task",
+          "sourceSlug": "demo-task",
+        },
+        {
+          "shared": false,
+          "slug": "case",
+          "sourceSlug": "demo-case",
+        },
+        {
+          "shared": true,
+          "slug": "person",
+          "sourceSlug": "person",
+        },
+      ],
+    },
+  },
+  {
+    "record": {
+      "category": "layout",
+      "createdBy": "alice",
+      "description": "D",
+      "fragment": {
+        "id": "sec",
+        "widgets": [
+          {
+            "config": {
+              "relatedSchema": "demo-case",
+              "schema": "demo-task",
+            },
+          },
+          {
+            "config": {
+              "items": [
+                {
+                  "relatedSchema": "demo-task",
+                },
+                {
+                  "schema": "",
+                },
+              ],
+              "schema": "person",
+            },
+          },
+          {
+            "config": {
+              "relatedSchema": null,
+              "schema": 7,
+            },
+          },
+        ],
+      },
+      "name": "Block",
+      "schemaDependencies": [
+        "demo-task",
+        "demo-case",
+        "person",
+      ],
+      "slug": "blk",
+      "sourceApplicationSlug": "",
+    },
+    "summary": {
+      "schemaDependencies": [
+        {
+          "shared": true,
+          "slug": "demo-task",
+          "sourceSlug": "demo-task",
+        },
+        {
+          "shared": true,
+          "slug": "demo-case",
+          "sourceSlug": "demo-case",
+        },
+        {
+          "shared": true,
+          "slug": "person",
+          "sourceSlug": "person",
+        },
+      ],
+    },
+  },
+  {
+    "record": {
+      "category": "",
+      "description": "",
+      "fragment": {
+        "id": "sec",
+        "widgets": [
+          {
+            "config": {
+              "relatedSchema": "demo-case",
+              "schema": "demo-task",
+            },
+          },
+          {
+            "config": {
+              "items": [
+                {
+                  "relatedSchema": "demo-task",
+                },
+                {
+                  "schema": "",
+                },
+              ],
+              "schema": "person",
+            },
+          },
+          {
+            "config": {
+              "relatedSchema": null,
+              "schema": 7,
+            },
+          },
+        ],
+      },
+      "name": "Bare",
+      "schemaDependencies": [
+        "demo-task",
+        "demo-case",
+        "person",
+      ],
+      "slug": "bare",
+      "sourceApplicationSlug": "",
+    },
+    "summary": {
+      "schemaDependencies": [
+        {
+          "shared": true,
+          "slug": "demo-task",
+          "sourceSlug": "demo-task",
+        },
+        {
+          "shared": true,
+          "slug": "demo-case",
+          "sourceSlug": "demo-case",
+        },
+        {
+          "shared": true,
+          "slug": "person",
+          "sourceSlug": "person",
+        },
+      ],
+    },
+  },
+  {
+    "record": {
+      "category": "",
+      "description": "",
+      "fragment": {
+        "id": "sec",
+        "widgets": [
+          {
+            "config": {
+              "relatedSchema": "demo-case",
+              "schema": "demo-task",
+            },
+          },
+          {
+            "config": {
+              "items": [
+                {
+                  "relatedSchema": "demo-task",
+                },
+                {
+                  "schema": "",
+                },
+              ],
+              "schema": "person",
+            },
+          },
+          {
+            "config": {
+              "relatedSchema": null,
+              "schema": 7,
+            },
+          },
+        ],
+      },
+      "name": "E",
+      "schemaDependencies": [
+        "demo-task",
+        "demo-case",
+        "person",
+      ],
+      "slug": "e",
+      "sourceApplicationSlug": "",
+    },
+    "summary": {
+      "schemaDependencies": [
+        {
+          "shared": true,
+          "slug": "demo-task",
+          "sourceSlug": "demo-task",
+        },
+        {
+          "shared": true,
+          "slug": "demo-case",
+          "sourceSlug": "demo-case",
+        },
+        {
+          "shared": true,
+          "slug": "person",
+          "sourceSlug": "person",
+        },
+      ],
+    },
+  },
+  {
+    "record": {
+      "category": "layout",
+      "createdBy": "alice",
+      "description": "D",
+      "fragment": {
+        "id": "sec",
+        "widgets": [
+          {
+            "config": {
+              "relatedSchema": "demo-case",
+              "schema": "demo-task",
+            },
+          },
+          {
+            "config": {
+              "items": [
+                {
+                  "relatedSchema": "demo-task",
+                },
+                {
+                  "schema": "",
+                },
+              ],
+              "schema": "person",
+            },
+          },
+          {
+            "config": {
+              "relatedSchema": null,
+              "schema": 7,
+            },
+          },
+        ],
+      },
+      "name": "Block",
+      "schemaDependencies": [
+        "demo-task",
+        "demo-case",
+        "person",
+      ],
+      "slug": "blk",
+      "sourceApplicationSlug": "",
+    },
+    "summary": {
+      "schemaDependencies": [
+        {
+          "shared": true,
+          "slug": "demo-task",
+          "sourceSlug": "demo-task",
+        },
+        {
+          "shared": true,
+          "slug": "demo-case",
+          "sourceSlug": "demo-case",
+        },
+        {
+          "shared": true,
+          "slug": "person",
+          "sourceSlug": "person",
+        },
+      ],
+    },
+  },
+  {
+    "record": {
+      "category": "",
+      "description": "",
+      "fragment": {
+        "id": "sec",
+        "widgets": [
+          {
+            "config": {
+              "relatedSchema": "demo-case",
+              "schema": "demo-task",
+            },
+          },
+          {
+            "config": {
+              "items": [
+                {
+                  "relatedSchema": "demo-task",
+                },
+                {
+                  "schema": "",
+                },
+              ],
+              "schema": "person",
+            },
+          },
+          {
+            "config": {
+              "relatedSchema": null,
+              "schema": 7,
+            },
+          },
+        ],
+      },
+      "name": "Bare",
+      "schemaDependencies": [
+        "demo-task",
+        "demo-case",
+        "person",
+      ],
+      "slug": "bare",
+      "sourceApplicationSlug": "",
+    },
+    "summary": {
+      "schemaDependencies": [
+        {
+          "shared": true,
+          "slug": "demo-task",
+          "sourceSlug": "demo-task",
+        },
+        {
+          "shared": true,
+          "slug": "demo-case",
+          "sourceSlug": "demo-case",
+        },
+        {
+          "shared": true,
+          "slug": "person",
+          "sourceSlug": "person",
+        },
+      ],
+    },
+  },
+  {
+    "record": {
+      "category": "",
+      "description": "",
+      "fragment": {
+        "id": "sec",
+        "widgets": [
+          {
+            "config": {
+              "relatedSchema": "demo-case",
+              "schema": "demo-task",
+            },
+          },
+          {
+            "config": {
+              "items": [
+                {
+                  "relatedSchema": "demo-task",
+                },
+                {
+                  "schema": "",
+                },
+              ],
+              "schema": "person",
+            },
+          },
+          {
+            "config": {
+              "relatedSchema": null,
+              "schema": 7,
+            },
+          },
+        ],
+      },
+      "name": "E",
+      "schemaDependencies": [
+        "demo-task",
+        "demo-case",
+        "person",
+      ],
+      "slug": "e",
+      "sourceApplicationSlug": "",
+    },
+    "summary": {
+      "schemaDependencies": [
+        {
+          "shared": true,
+          "slug": "demo-task",
+          "sourceSlug": "demo-task",
+        },
+        {
+          "shared": true,
+          "slug": "demo-case",
+          "sourceSlug": "demo-case",
+        },
+        {
+          "shared": true,
+          "slug": "person",
+          "sourceSlug": "person",
+        },
+      ],
+    },
+  },
+  {
+    "canonical": "case",
+    "code": "slug-collision",
+    "error": "SlugCollisionError",
+    "message": "buildiq.templates.saveAs.error.slug-collision: demo-case, case → case",
+    "sources": [
+      "demo-case",
+      "case",
+    ],
+  },
+  {
+    "canonical": "case",
+    "code": "slug-collision",
+    "error": "SlugCollisionError",
+    "message": "buildiq.templates.saveAs.error.slug-collision: demo-case, case → case",
+    "sources": [
+      "demo-case",
+      "case",
+    ],
+  },
+  {
+    "canonical": "case",
+    "code": "slug-collision",
+    "error": "SlugCollisionError",
+    "message": "buildiq.templates.saveAs.error.slug-collision: demo-case, case → case",
+    "sources": [
+      "demo-case",
+      "case",
+    ],
+  },
+  {
+    "record": {
+      "category": "layout",
+      "createdBy": "alice",
+      "description": "D",
+      "fragment": {
+        "widgets": [
+          {
+            "config": {
+              "schema": "demo-case",
+            },
+          },
+          {
+            "config": {
+              "schema": "case",
+            },
+          },
+        ],
+      },
+      "name": "Block",
+      "schemaDependencies": [
+        "demo-case",
+        "case",
+      ],
+      "slug": "blk",
+      "sourceApplicationSlug": "",
+    },
+    "summary": {
+      "schemaDependencies": [
+        {
+          "shared": true,
+          "slug": "demo-case",
+          "sourceSlug": "demo-case",
+        },
+        {
+          "shared": true,
+          "slug": "case",
+          "sourceSlug": "case",
+        },
+      ],
+    },
+  },
+  {
+    "record": {
+      "category": "",
+      "description": "",
+      "fragment": {
+        "widgets": [
+          {
+            "config": {
+              "schema": "demo-case",
+            },
+          },
+          {
+            "config": {
+              "schema": "case",
+            },
+          },
+        ],
+      },
+      "name": "Bare",
+      "schemaDependencies": [
+        "demo-case",
+        "case",
+      ],
+      "slug": "bare",
+      "sourceApplicationSlug": "",
+    },
+    "summary": {
+      "schemaDependencies": [
+        {
+          "shared": true,
+          "slug": "demo-case",
+          "sourceSlug": "demo-case",
+        },
+        {
+          "shared": true,
+          "slug": "case",
+          "sourceSlug": "case",
+        },
+      ],
+    },
+  },
+  {
+    "record": {
+      "category": "",
+      "description": "",
+      "fragment": {
+        "widgets": [
+          {
+            "config": {
+              "schema": "demo-case",
+            },
+          },
+          {
+            "config": {
+              "schema": "case",
+            },
+          },
+        ],
+      },
+      "name": "E",
+      "schemaDependencies": [
+        "demo-case",
+        "case",
+      ],
+      "slug": "e",
+      "sourceApplicationSlug": "",
+    },
+    "summary": {
+      "schemaDependencies": [
+        {
+          "shared": true,
+          "slug": "demo-case",
+          "sourceSlug": "demo-case",
+        },
+        {
+          "shared": true,
+          "slug": "case",
+          "sourceSlug": "case",
+        },
+      ],
+    },
+  },
+  {
+    "record": {
+      "category": "layout",
+      "createdBy": "alice",
+      "description": "D",
+      "fragment": {
+        "widgets": [
+          {
+            "config": {
+              "schema": "demo-case",
+            },
+          },
+          {
+            "config": {
+              "schema": "case",
+            },
+          },
+        ],
+      },
+      "name": "Block",
+      "schemaDependencies": [
+        "demo-case",
+        "case",
+      ],
+      "slug": "blk",
+      "sourceApplicationSlug": "",
+    },
+    "summary": {
+      "schemaDependencies": [
+        {
+          "shared": true,
+          "slug": "demo-case",
+          "sourceSlug": "demo-case",
+        },
+        {
+          "shared": true,
+          "slug": "case",
+          "sourceSlug": "case",
+        },
+      ],
+    },
+  },
+  {
+    "record": {
+      "category": "",
+      "description": "",
+      "fragment": {
+        "widgets": [
+          {
+            "config": {
+              "schema": "demo-case",
+            },
+          },
+          {
+            "config": {
+              "schema": "case",
+            },
+          },
+        ],
+      },
+      "name": "Bare",
+      "schemaDependencies": [
+        "demo-case",
+        "case",
+      ],
+      "slug": "bare",
+      "sourceApplicationSlug": "",
+    },
+    "summary": {
+      "schemaDependencies": [
+        {
+          "shared": true,
+          "slug": "demo-case",
+          "sourceSlug": "demo-case",
+        },
+        {
+          "shared": true,
+          "slug": "case",
+          "sourceSlug": "case",
+        },
+      ],
+    },
+  },
+  {
+    "record": {
+      "category": "",
+      "description": "",
+      "fragment": {
+        "widgets": [
+          {
+            "config": {
+              "schema": "demo-case",
+            },
+          },
+          {
+            "config": {
+              "schema": "case",
+            },
+          },
+        ],
+      },
+      "name": "E",
+      "schemaDependencies": [
+        "demo-case",
+        "case",
+      ],
+      "slug": "e",
+      "sourceApplicationSlug": "",
+    },
+    "summary": {
+      "schemaDependencies": [
+        {
+          "shared": true,
+          "slug": "demo-case",
+          "sourceSlug": "demo-case",
+        },
+        {
+          "shared": true,
+          "slug": "case",
+          "sourceSlug": "case",
+        },
+      ],
+    },
+  },
+  {
+    "record": {
+      "category": "layout",
+      "createdBy": "alice",
+      "description": "D",
+      "fragment": {
+        "config": {
+          "nested": [
+            [
+              {
+                "schema": "shared-x",
+              },
+            ],
+          ],
+          "other": "demo-case",
+        },
+      },
+      "name": "Block",
+      "schemaDependencies": [
+        "shared-x",
+      ],
+      "slug": "blk",
+      "sourceApplicationSlug": "demo",
+    },
+    "summary": {
+      "schemaDependencies": [
+        {
+          "shared": true,
+          "slug": "shared-x",
+          "sourceSlug": "shared-x",
+        },
+      ],
+    },
+  },
+  {
+    "record": {
+      "category": "",
+      "description": "",
+      "fragment": {
+        "config": {
+          "nested": [
+            [
+              {
+                "schema": "shared-x",
+              },
+            ],
+          ],
+          "other": "demo-case",
+        },
+      },
+      "name": "Bare",
+      "schemaDependencies": [
+        "shared-x",
+      ],
+      "slug": "bare",
+      "sourceApplicationSlug": "demo",
+    },
+    "summary": {
+      "schemaDependencies": [
+        {
+          "shared": true,
+          "slug": "shared-x",
+          "sourceSlug": "shared-x",
+        },
+      ],
+    },
+  },
+  {
+    "record": {
+      "category": "",
+      "description": "",
+      "fragment": {
+        "config": {
+          "nested": [
+            [
+              {
+                "schema": "shared-x",
+              },
+            ],
+          ],
+          "other": "demo-case",
+        },
+      },
+      "name": "E",
+      "schemaDependencies": [
+        "shared-x",
+      ],
+      "slug": "e",
+      "sourceApplicationSlug": "demo",
+    },
+    "summary": {
+      "schemaDependencies": [
+        {
+          "shared": true,
+          "slug": "shared-x",
+          "sourceSlug": "shared-x",
+        },
+      ],
+    },
+  },
+  {
+    "record": {
+      "category": "layout",
+      "createdBy": "alice",
+      "description": "D",
+      "fragment": {
+        "config": {
+          "nested": [
+            [
+              {
+                "schema": "shared-x",
+              },
+            ],
+          ],
+          "other": "demo-case",
+        },
+      },
+      "name": "Block",
+      "schemaDependencies": [
+        "shared-x",
+      ],
+      "slug": "blk",
+      "sourceApplicationSlug": "",
+    },
+    "summary": {
+      "schemaDependencies": [
+        {
+          "shared": true,
+          "slug": "shared-x",
+          "sourceSlug": "shared-x",
+        },
+      ],
+    },
+  },
+  {
+    "record": {
+      "category": "",
+      "description": "",
+      "fragment": {
+        "config": {
+          "nested": [
+            [
+              {
+                "schema": "shared-x",
+              },
+            ],
+          ],
+          "other": "demo-case",
+        },
+      },
+      "name": "Bare",
+      "schemaDependencies": [
+        "shared-x",
+      ],
+      "slug": "bare",
+      "sourceApplicationSlug": "",
+    },
+    "summary": {
+      "schemaDependencies": [
+        {
+          "shared": true,
+          "slug": "shared-x",
+          "sourceSlug": "shared-x",
+        },
+      ],
+    },
+  },
+  {
+    "record": {
+      "category": "",
+      "description": "",
+      "fragment": {
+        "config": {
+          "nested": [
+            [
+              {
+                "schema": "shared-x",
+              },
+            ],
+          ],
+          "other": "demo-case",
+        },
+      },
+      "name": "E",
+      "schemaDependencies": [
+        "shared-x",
+      ],
+      "slug": "e",
+      "sourceApplicationSlug": "",
+    },
+    "summary": {
+      "schemaDependencies": [
+        {
+          "shared": true,
+          "slug": "shared-x",
+          "sourceSlug": "shared-x",
+        },
+      ],
+    },
+  },
+  {
+    "record": {
+      "category": "layout",
+      "createdBy": "alice",
+      "description": "D",
+      "fragment": {
+        "config": {
+          "nested": [
+            [
+              {
+                "schema": "shared-x",
+              },
+            ],
+          ],
+          "other": "demo-case",
+        },
+      },
+      "name": "Block",
+      "schemaDependencies": [
+        "shared-x",
+      ],
+      "slug": "blk",
+      "sourceApplicationSlug": "",
+    },
+    "summary": {
+      "schemaDependencies": [
+        {
+          "shared": true,
+          "slug": "shared-x",
+          "sourceSlug": "shared-x",
+        },
+      ],
+    },
+  },
+  {
+    "record": {
+      "category": "",
+      "description": "",
+      "fragment": {
+        "config": {
+          "nested": [
+            [
+              {
+                "schema": "shared-x",
+              },
+            ],
+          ],
+          "other": "demo-case",
+        },
+      },
+      "name": "Bare",
+      "schemaDependencies": [
+        "shared-x",
+      ],
+      "slug": "bare",
+      "sourceApplicationSlug": "",
+    },
+    "summary": {
+      "schemaDependencies": [
+        {
+          "shared": true,
+          "slug": "shared-x",
+          "sourceSlug": "shared-x",
+        },
+      ],
+    },
+  },
+  {
+    "record": {
+      "category": "",
+      "description": "",
+      "fragment": {
+        "config": {
+          "nested": [
+            [
+              {
+                "schema": "shared-x",
+              },
+            ],
+          ],
+          "other": "demo-case",
+        },
+      },
+      "name": "E",
+      "schemaDependencies": [
+        "shared-x",
+      ],
+      "slug": "e",
+      "sourceApplicationSlug": "",
+    },
+    "summary": {
+      "schemaDependencies": [
+        {
+          "shared": true,
+          "slug": "shared-x",
+          "sourceSlug": "shared-x",
+        },
+      ],
+    },
+  },
+  {
+    "record": {
+      "category": "layout",
+      "createdBy": "alice",
+      "description": "D",
+      "fragment": [
+        {
+          "schema": "a",
+        },
+        "text",
+        3,
+        null,
+      ],
+      "name": "Block",
+      "schemaDependencies": [
+        "a",
+      ],
+      "slug": "blk",
+      "sourceApplicationSlug": "demo",
+    },
+    "summary": {
+      "schemaDependencies": [
+        {
+          "shared": false,
+          "slug": "a",
+          "sourceSlug": "demo-a",
+        },
+      ],
+    },
+  },
+  {
+    "record": {
+      "category": "",
+      "description": "",
+      "fragment": [
+        {
+          "schema": "a",
+        },
+        "text",
+        3,
+        null,
+      ],
+      "name": "Bare",
+      "schemaDependencies": [
+        "a",
+      ],
+      "slug": "bare",
+      "sourceApplicationSlug": "demo",
+    },
+    "summary": {
+      "schemaDependencies": [
+        {
+          "shared": false,
+          "slug": "a",
+          "sourceSlug": "demo-a",
+        },
+      ],
+    },
+  },
+  {
+    "record": {
+      "category": "",
+      "description": "",
+      "fragment": [
+        {
+          "schema": "a",
+        },
+        "text",
+        3,
+        null,
+      ],
+      "name": "E",
+      "schemaDependencies": [
+        "a",
+      ],
+      "slug": "e",
+      "sourceApplicationSlug": "demo",
+    },
+    "summary": {
+      "schemaDependencies": [
+        {
+          "shared": false,
+          "slug": "a",
+          "sourceSlug": "demo-a",
+        },
+      ],
+    },
+  },
+  {
+    "record": {
+      "category": "layout",
+      "createdBy": "alice",
+      "description": "D",
+      "fragment": [
+        {
+          "schema": "demo-a",
+        },
+        "text",
+        3,
+        null,
+      ],
+      "name": "Block",
+      "schemaDependencies": [
+        "demo-a",
+      ],
+      "slug": "blk",
+      "sourceApplicationSlug": "",
+    },
+    "summary": {
+      "schemaDependencies": [
+        {
+          "shared": true,
+          "slug": "demo-a",
+          "sourceSlug": "demo-a",
+        },
+      ],
+    },
+  },
+  {
+    "record": {
+      "category": "",
+      "description": "",
+      "fragment": [
+        {
+          "schema": "demo-a",
+        },
+        "text",
+        3,
+        null,
+      ],
+      "name": "Bare",
+      "schemaDependencies": [
+        "demo-a",
+      ],
+      "slug": "bare",
+      "sourceApplicationSlug": "",
+    },
+    "summary": {
+      "schemaDependencies": [
+        {
+          "shared": true,
+          "slug": "demo-a",
+          "sourceSlug": "demo-a",
+        },
+      ],
+    },
+  },
+  {
+    "record": {
+      "category": "",
+      "description": "",
+      "fragment": [
+        {
+          "schema": "demo-a",
+        },
+        "text",
+        3,
+        null,
+      ],
+      "name": "E",
+      "schemaDependencies": [
+        "demo-a",
+      ],
+      "slug": "e",
+      "sourceApplicationSlug": "",
+    },
+    "summary": {
+      "schemaDependencies": [
+        {
+          "shared": true,
+          "slug": "demo-a",
+          "sourceSlug": "demo-a",
+        },
+      ],
+    },
+  },
+  {
+    "record": {
+      "category": "layout",
+      "createdBy": "alice",
+      "description": "D",
+      "fragment": [
+        {
+          "schema": "demo-a",
+        },
+        "text",
+        3,
+        null,
+      ],
+      "name": "Block",
+      "schemaDependencies": [
+        "demo-a",
+      ],
+      "slug": "blk",
+      "sourceApplicationSlug": "",
+    },
+    "summary": {
+      "schemaDependencies": [
+        {
+          "shared": true,
+          "slug": "demo-a",
+          "sourceSlug": "demo-a",
+        },
+      ],
+    },
+  },
+  {
+    "record": {
+      "category": "",
+      "description": "",
+      "fragment": [
+        {
+          "schema": "demo-a",
+        },
+        "text",
+        3,
+        null,
+      ],
+      "name": "Bare",
+      "schemaDependencies": [
+        "demo-a",
+      ],
+      "slug": "bare",
+      "sourceApplicationSlug": "",
+    },
+    "summary": {
+      "schemaDependencies": [
+        {
+          "shared": true,
+          "slug": "demo-a",
+          "sourceSlug": "demo-a",
+        },
+      ],
+    },
+  },
+  {
+    "record": {
+      "category": "",
+      "description": "",
+      "fragment": [
+        {
+          "schema": "demo-a",
+        },
+        "text",
+        3,
+        null,
+      ],
+      "name": "E",
+      "schemaDependencies": [
+        "demo-a",
+      ],
+      "slug": "e",
+      "sourceApplicationSlug": "",
+    },
+    "summary": {
+      "schemaDependencies": [
+        {
+          "shared": true,
+          "slug": "demo-a",
+          "sourceSlug": "demo-a",
+        },
+      ],
+    },
+  },
+  {
+    "record": {
+      "category": "layout",
+      "createdBy": "alice",
+      "description": "D",
+      "fragment": {},
+      "name": "Block",
+      "schemaDependencies": [],
+      "slug": "blk",
+      "sourceApplicationSlug": "demo",
+    },
+    "summary": {
+      "schemaDependencies": [],
+    },
+  },
+  {
+    "record": {
+      "category": "",
+      "description": "",
+      "fragment": {},
+      "name": "Bare",
+      "schemaDependencies": [],
+      "slug": "bare",
+      "sourceApplicationSlug": "demo",
+    },
+    "summary": {
+      "schemaDependencies": [],
+    },
+  },
+  {
+    "record": {
+      "category": "",
+      "description": "",
+      "fragment": {},
+      "name": "E",
+      "schemaDependencies": [],
+      "slug": "e",
+      "sourceApplicationSlug": "demo",
+    },
+    "summary": {
+      "schemaDependencies": [],
+    },
+  },
+  {
+    "record": {
+      "category": "layout",
+      "createdBy": "alice",
+      "description": "D",
+      "fragment": {},
+      "name": "Block",
+      "schemaDependencies": [],
+      "slug": "blk",
+      "sourceApplicationSlug": "",
+    },
+    "summary": {
+      "schemaDependencies": [],
+    },
+  },
+  {
+    "record": {
+      "category": "",
+      "description": "",
+      "fragment": {},
+      "name": "Bare",
+      "schemaDependencies": [],
+      "slug": "bare",
+      "sourceApplicationSlug": "",
+    },
+    "summary": {
+      "schemaDependencies": [],
+    },
+  },
+  {
+    "record": {
+      "category": "",
+      "description": "",
+      "fragment": {},
+      "name": "E",
+      "schemaDependencies": [],
+      "slug": "e",
+      "sourceApplicationSlug": "",
+    },
+    "summary": {
+      "schemaDependencies": [],
+    },
+  },
+  {
+    "record": {
+      "category": "layout",
+      "createdBy": "alice",
+      "description": "D",
+      "fragment": {},
+      "name": "Block",
+      "schemaDependencies": [],
+      "slug": "blk",
+      "sourceApplicationSlug": "",
+    },
+    "summary": {
+      "schemaDependencies": [],
+    },
+  },
+  {
+    "record": {
+      "category": "",
+      "description": "",
+      "fragment": {},
+      "name": "Bare",
+      "schemaDependencies": [],
+      "slug": "bare",
+      "sourceApplicationSlug": "",
+    },
+    "summary": {
+      "schemaDependencies": [],
+    },
+  },
+  {
+    "record": {
+      "category": "",
+      "description": "",
+      "fragment": {},
+      "name": "E",
+      "schemaDependencies": [],
+      "slug": "e",
+      "sourceApplicationSlug": "",
+    },
+    "summary": {
+      "schemaDependencies": [],
+    },
+  },
+  {
+    "record": {
+      "category": "layout",
+      "createdBy": "alice",
+      "description": "D",
+      "fragment": {},
+      "name": "Block",
+      "schemaDependencies": [],
+      "slug": "blk",
+      "sourceApplicationSlug": "demo",
+    },
+    "summary": {
+      "schemaDependencies": [],
+    },
+  },
+  {
+    "record": {
+      "category": "",
+      "description": "",
+      "fragment": {},
+      "name": "Bare",
+      "schemaDependencies": [],
+      "slug": "bare",
+      "sourceApplicationSlug": "demo",
+    },
+    "summary": {
+      "schemaDependencies": [],
+    },
+  },
+  {
+    "record": {
+      "category": "",
+      "description": "",
+      "fragment": {},
+      "name": "E",
+      "schemaDependencies": [],
+      "slug": "e",
+      "sourceApplicationSlug": "demo",
+    },
+    "summary": {
+      "schemaDependencies": [],
+    },
+  },
+  {
+    "record": {
+      "category": "layout",
+      "createdBy": "alice",
+      "description": "D",
+      "fragment": {},
+      "name": "Block",
+      "schemaDependencies": [],
+      "slug": "blk",
+      "sourceApplicationSlug": "",
+    },
+    "summary": {
+      "schemaDependencies": [],
+    },
+  },
+  {
+    "record": {
+      "category": "",
+      "description": "",
+      "fragment": {},
+      "name": "Bare",
+      "schemaDependencies": [],
+      "slug": "bare",
+      "sourceApplicationSlug": "",
+    },
+    "summary": {
+      "schemaDependencies": [],
+    },
+  },
+  {
+    "record": {
+      "category": "",
+      "description": "",
+      "fragment": {},
+      "name": "E",
+      "schemaDependencies": [],
+      "slug": "e",
+      "sourceApplicationSlug": "",
+    },
+    "summary": {
+      "schemaDependencies": [],
+    },
+  },
+  {
+    "record": {
+      "category": "layout",
+      "createdBy": "alice",
+      "description": "D",
+      "fragment": {},
+      "name": "Block",
+      "schemaDependencies": [],
+      "slug": "blk",
+      "sourceApplicationSlug": "",
+    },
+    "summary": {
+      "schemaDependencies": [],
+    },
+  },
+  {
+    "record": {
+      "category": "",
+      "description": "",
+      "fragment": {},
+      "name": "Bare",
+      "schemaDependencies": [],
+      "slug": "bare",
+      "sourceApplicationSlug": "",
+    },
+    "summary": {
+      "schemaDependencies": [],
+    },
+  },
+  {
+    "record": {
+      "category": "",
+      "description": "",
+      "fragment": {},
+      "name": "E",
+      "schemaDependencies": [],
+      "slug": "e",
+      "sourceApplicationSlug": "",
+    },
+    "summary": {
+      "schemaDependencies": [],
+    },
+  },
+  {
+    "record": {
+      "category": "layout",
+      "createdBy": "alice",
+      "description": "D",
+      "fragment": {},
+      "name": "Block",
+      "schemaDependencies": [],
+      "slug": "blk",
+      "sourceApplicationSlug": "demo",
+    },
+    "summary": {
+      "schemaDependencies": [],
+    },
+  },
+  {
+    "record": {
+      "category": "",
+      "description": "",
+      "fragment": {},
+      "name": "Bare",
+      "schemaDependencies": [],
+      "slug": "bare",
+      "sourceApplicationSlug": "demo",
+    },
+    "summary": {
+      "schemaDependencies": [],
+    },
+  },
+  {
+    "record": {
+      "category": "",
+      "description": "",
+      "fragment": {},
+      "name": "E",
+      "schemaDependencies": [],
+      "slug": "e",
+      "sourceApplicationSlug": "demo",
+    },
+    "summary": {
+      "schemaDependencies": [],
+    },
+  },
+  {
+    "record": {
+      "category": "layout",
+      "createdBy": "alice",
+      "description": "D",
+      "fragment": {},
+      "name": "Block",
+      "schemaDependencies": [],
+      "slug": "blk",
+      "sourceApplicationSlug": "",
+    },
+    "summary": {
+      "schemaDependencies": [],
+    },
+  },
+  {
+    "record": {
+      "category": "",
+      "description": "",
+      "fragment": {},
+      "name": "Bare",
+      "schemaDependencies": [],
+      "slug": "bare",
+      "sourceApplicationSlug": "",
+    },
+    "summary": {
+      "schemaDependencies": [],
+    },
+  },
+  {
+    "record": {
+      "category": "",
+      "description": "",
+      "fragment": {},
+      "name": "E",
+      "schemaDependencies": [],
+      "slug": "e",
+      "sourceApplicationSlug": "",
+    },
+    "summary": {
+      "schemaDependencies": [],
+    },
+  },
+  {
+    "record": {
+      "category": "layout",
+      "createdBy": "alice",
+      "description": "D",
+      "fragment": {},
+      "name": "Block",
+      "schemaDependencies": [],
+      "slug": "blk",
+      "sourceApplicationSlug": "",
+    },
+    "summary": {
+      "schemaDependencies": [],
+    },
+  },
+  {
+    "record": {
+      "category": "",
+      "description": "",
+      "fragment": {},
+      "name": "Bare",
+      "schemaDependencies": [],
+      "slug": "bare",
+      "sourceApplicationSlug": "",
+    },
+    "summary": {
+      "schemaDependencies": [],
+    },
+  },
+  {
+    "record": {
+      "category": "",
+      "description": "",
+      "fragment": {},
+      "name": "E",
+      "schemaDependencies": [],
+      "slug": "e",
+      "sourceApplicationSlug": "",
+    },
+    "summary": {
+      "schemaDependencies": [],
+    },
+  },
+]
+`;
+
+exports[`blockCapture golden > collects the schema references of every fragment as recorded 1`] = `
+[
+  [
+    "demo-case",
+  ],
+  [
+    "demo-task",
+    "demo-case",
+    "person",
+  ],
+  [
+    "demo-case",
+    "case",
+  ],
+  [
+    "shared-x",
+  ],
+  [
+    "demo-a",
+  ],
+  [],
+  [],
+  [],
+]
+`;
+
+exports[`blockCapture golden > rewrites every fragment under every map as recorded 1`] = `
+[
+  {
+    "config": {
+      "columns": [
+        "title",
+      ],
+      "schema": "demo-case",
+    },
+    "id": "w1",
+    "type": "table",
+  },
+  {
+    "config": {
+      "columns": [
+        "title",
+      ],
+      "schema": "case",
+    },
+    "id": "w1",
+    "type": "table",
+  },
+  {
+    "config": {
+      "columns": [
+        "title",
+      ],
+      "schema": "case",
+    },
+    "id": "w1",
+    "type": "table",
+  },
+  {
+    "id": "sec",
+    "widgets": [
+      {
+        "config": {
+          "relatedSchema": "demo-case",
+          "schema": "demo-task",
+        },
+      },
+      {
+        "config": {
+          "items": [
+            {
+              "relatedSchema": "demo-task",
+            },
+            {
+              "schema": "",
+            },
+          ],
+          "schema": "person",
+        },
+      },
+      {
+        "config": {
+          "relatedSchema": null,
+          "schema": 7,
+        },
+      },
+    ],
+  },
+  {
+    "id": "sec",
+    "widgets": [
+      {
+        "config": {
+          "relatedSchema": "case",
+          "schema": "demo-task",
+        },
+      },
+      {
+        "config": {
+          "items": [
+            {
+              "relatedSchema": "demo-task",
+            },
+            {
+              "schema": "empty",
+            },
+          ],
+          "schema": "person",
+        },
+      },
+      {
+        "config": {
+          "relatedSchema": null,
+          "schema": 7,
+        },
+      },
+    ],
+  },
+  {
+    "id": "sec",
+    "widgets": [
+      {
+        "config": {
+          "relatedSchema": "case",
+          "schema": "task",
+        },
+      },
+      {
+        "config": {
+          "items": [
+            {
+              "relatedSchema": "task",
+            },
+            {
+              "schema": "",
+            },
+          ],
+          "schema": "person",
+        },
+      },
+      {
+        "config": {
+          "relatedSchema": null,
+          "schema": 7,
+        },
+      },
+    ],
+  },
+  {
+    "widgets": [
+      {
+        "config": {
+          "schema": "demo-case",
+        },
+      },
+      {
+        "config": {
+          "schema": "case",
+        },
+      },
+    ],
+  },
+  {
+    "widgets": [
+      {
+        "config": {
+          "schema": "case",
+        },
+      },
+      {
+        "config": {
+          "schema": "case",
+        },
+      },
+    ],
+  },
+  {
+    "widgets": [
+      {
+        "config": {
+          "schema": "case",
+        },
+      },
+      {
+        "config": {
+          "schema": "case",
+        },
+      },
+    ],
+  },
+  {
+    "config": {
+      "nested": [
+        [
+          {
+            "schema": "shared-x",
+          },
+        ],
+      ],
+      "other": "demo-case",
+    },
+  },
+  {
+    "config": {
+      "nested": [
+        [
+          {
+            "schema": "shared-x",
+          },
+        ],
+      ],
+      "other": "demo-case",
+    },
+  },
+  {
+    "config": {
+      "nested": [
+        [
+          {
+            "schema": "shared-x",
+          },
+        ],
+      ],
+      "other": "demo-case",
+    },
+  },
+  [
+    {
+      "schema": "demo-a",
+    },
+    "text",
+    3,
+    null,
+  ],
+  [
+    {
+      "schema": "demo-a",
+    },
+    "text",
+    3,
+    null,
+  ],
+  [
+    {
+      "schema": "demo-a",
+    },
+    "text",
+    3,
+    null,
+  ],
+  {},
+  {},
+  {},
+  null,
+  null,
+  null,
+  undefined,
+  undefined,
+  undefined,
+  {
+    "relatedSchema": "empty",
+    "schema": "empty",
+  },
+]
+`;

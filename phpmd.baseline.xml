@@ -39,7 +39,6 @@
 -->
 <phpmd-baseline>
   <violation rule="PHPMD\Rule\Design\CouplingBetweenObjects" file="lib/AppInfo/Application.php"/>
-  <violation rule="PHPMD\Rule\Design\LongMethod" file="lib/AppInfo/Application.php" method="register"/>
   <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/AppInfo/Application.php"/>
   <violation rule="PHPMD\Rule\CleanCode\ElseExpression" file="lib/AppInfo/Application.php"/>
   <violation rule="PHPMD\Rule\UnusedFormalParameter" file="lib/Command/SeedHelloWorldFixture.php"/>
@@ -184,14 +183,11 @@
   <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/GitHubAppSyncService.php" method="reconcileCompanionSchemas"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/GitHubAppSyncService.php" method="resolveVersion"/>
   <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/GitHubAppSyncService.php" method="resolveVersion"/>
-  <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Service/GitHubAppSyncService.php"/>
   <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/GitHubCatalogService.php"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/GitHubCatalogService.php" method="search"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/GitHubCatalogService.php" method="fetchChannelFiles"/>
   <violation rule="PHPMD\Rule\Design\NpathComplexity" file="lib/Service/GitHubCatalogService.php" method="fetchChannelFiles"/>
-  <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Service/GitHubCatalogService.php"/>
   <violation rule="PHPMD\Rule\CleanCode\BooleanArgumentFlag" file="lib/Service/GitHubPushService.php"/>
-  <violation rule="PHPMD\Rule\CleanCode\StaticAccess" file="lib/Service/GitHubPushService.php"/>
   <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/IconService.php"/>
   <violation rule="PHPMD\Rule\Design\WeightedMethodCount" file="lib/Service/ManifestResolverService.php"/>
   <violation rule="PHPMD\Rule\CyclomaticComplexity" file="lib/Service/ManifestResolverService.php" method="filterManifestForCaller"/>

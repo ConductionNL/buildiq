@@ -20,6 +20,8 @@
 import { mount } from '@vue/test-utils'
 import { describe, expect, it } from 'vitest'
 import PageListEditor, {
+	GRID_CHOICE,
+	gridPageShape,
 	PAGE_TYPES,
 } from '../../../src/components/page-editor/PageListEditor.vue'
 // The shared stub mirrors vuedraggable v4 (`modelValue` + `#item` scoped
@@ -252,5 +254,112 @@ describe('PageListEditor', () => {
 		await wrapper.vm.$nextTick()
 		expect(wrapper.find('.page-list-editor__add-row').exists()).toBe(false)
 		expect(wrapper.emitted('update:pages')).toBeUndefined()
+	})
+
+	describe('adding a page with a title and a slug', () => {
+		it('stores the typed title and slug, and routes the page on its slug', async () => {
+			const wrapper = mountEditor([
+				{ id: 'Dashboard', route: '/', type: 'dashboard', config: {} },
+			])
+			wrapper.vm.startAdd()
+			await wrapper.vm.$nextTick()
+			wrapper.vm.addingType = 'index'
+			await wrapper.find('.page-list-editor__add-title').setValue('Concepts')
+			await wrapper.find('.page-list-editor__add-id').setValue('Concept list')
+			wrapper.vm.confirmAdd()
+			const added = wrapper.emitted('update:pages')[0][0][1]
+			expect(added).toMatchObject({
+				id: 'concept-list',
+				route: '/concept-list',
+				title: 'Concepts',
+			})
+		})
+
+		it('never stores a translation key as the title', () => {
+			// Regression: a new page got `title: "index.title"`, which the
+			// running app printed as its heading.
+			const wrapper = mountEditor([])
+			wrapper.vm.startAdd()
+			wrapper.vm.addingType = 'form'
+			wrapper.vm.confirmAdd()
+			const added = wrapper.emitted('update:pages')[0][0][0]
+			expect(added.title).toBe('Form')
+		})
+
+		it('does not put a second index page on "/"', () => {
+			// Regression: every new index page got route "/", the Dashboard's.
+			const wrapper = mountEditor([
+				{ id: 'Dashboard', route: '/', type: 'dashboard', config: {} },
+			])
+			wrapper.vm.startAdd()
+			wrapper.vm.addingType = 'index'
+			wrapper.vm.confirmAdd()
+			const added = wrapper.emitted('update:pages')[0][0][1]
+			expect(added.route).toBe('/index')
+		})
+
+		it('keeps ids and routes unique', () => {
+			const wrapper = mountEditor([
+				{ id: 'form-page-2', route: '/form', type: 'form', config: {} },
+			])
+			wrapper.vm.startAdd()
+			wrapper.vm.addingType = 'form'
+			wrapper.vm.confirmAdd()
+			const added = wrapper.emitted('update:pages')[0][0][1]
+			expect(added.id).toBe('form-page-2-2')
+			expect(added.route).toBe('/form-2')
+		})
+
+		it('warns when two pages share a route', () => {
+			const wrapper = mountEditor([
+				{ id: 'Dashboard', route: '/', type: 'dashboard' },
+				{ id: 'list', route: '/', type: 'index' },
+			])
+			expect(wrapper.vm.duplicateRoutes).toEqual(['/'])
+			expect(wrapper.text()).toContain('More than one page uses the route:')
+			expect(wrapper.findAll('.page-list-editor__row--error').length).toBe(2)
+		})
+
+		it('edits the title of an existing page', async () => {
+			const wrapper = mountEditor([
+				{ id: 'list', route: '/list', type: 'index', title: 'index.title' },
+			])
+			await wrapper.find('.page-list-editor__title').setValue('Concepts')
+			expect(wrapper.emitted('update:pages')[0][0][0].title).toBe('Concepts')
+		})
+	})
+})
+
+describe('PageListEditor — Grid choice (data-index-grid-and-saved-views T04)', () => {
+	it('adds a custom page with the record-grid component and an empty grid config', () => {
+		expect(gridPageShape()).toEqual({
+			type: 'custom',
+			component: 'record-grid',
+			config: { register: '', schema: '', columns: [], editable: [] },
+		})
+		const wrapper = mountEditor([{ id: 'home', route: '/', type: 'index', config: {} }])
+		wrapper.vm.startAdd()
+		wrapper.vm.addingType = GRID_CHOICE
+		wrapper.vm.addingTitle = 'Stock'
+		wrapper.vm.confirmAdd()
+		const pages = wrapper.emitted('update:pages').at(-1)[0]
+		expect(pages[1]).toEqual({
+			id: 'grid-page-2',
+			route: '/grid',
+			type: 'custom',
+			title: 'Stock',
+			component: 'record-grid',
+			config: { register: '', schema: '', columns: [], editable: [] },
+		})
+		expect(wrapper.emitted('select').at(-1)).toEqual([1])
+	})
+
+	it('offers Grid in the type picker without adding it to the page types', async () => {
+		expect(PAGE_TYPES).not.toContain('grid')
+		const wrapper = mountEditor([])
+		wrapper.vm.startAdd()
+		await wrapper.vm.$nextTick()
+		const values = wrapper.findAll('select.page-list-editor__select option').map((o) => o.element.value)
+		expect(values).toContain('grid')
 	})
 })

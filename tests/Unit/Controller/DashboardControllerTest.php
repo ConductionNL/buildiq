@@ -29,6 +29,8 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\Controller;
 
 use OCA\Buildiq\Controller\DashboardController;
+use OCA\Buildiq\Kernel\Contracts\ManifestResolverServiceInterface;
+use OCA\Buildiq\Service\EmbedOrigins;
 use OCP\AppFramework\Http\TemplateResponse;
 use OCP\AppFramework\Services\IInitialState;
 use OCP\IGroupManager;
@@ -103,14 +105,31 @@ class DashboardControllerTest extends TestCase {
 
 		$this->request->method('getParam')->willReturn('');
 
-		$this->controller = new DashboardController(
-			$this->request,
-			$this->initialState,
-			$this->userSession,
-			$this->groupManager,
-			$this->navigationManager
-		);
+		$this->controller = $this->dashboard(rasterises: false);
 	}//end setUp()
+
+	/**
+	 * A DashboardController whose rasteriser can, or cannot, make a PNG.
+	 *
+	 * @param bool $rasterises Whether the server can rasterise SVG.
+	 *
+	 * @return DashboardController
+	 */
+	private function dashboard(bool $rasterises): DashboardController {
+		$rasteriser = $this->createMock(\OCA\Buildiq\Service\Icon\SvgRasteriser::class);
+		$rasteriser->method('available')->willReturn($rasterises);
+
+		return new DashboardController(
+			request: $this->request,
+			initialState: $this->initialState,
+			userSession: $this->userSession,
+			groupManager: $this->groupManager,
+			navigationManager: $this->navigationManager,
+			rasteriser: $rasteriser,
+			manifestResolver: $this->createMock(ManifestResolverServiceInterface::class),
+			embedOrigins: new EmbedOrigins()
+		);
+	}//end dashboard()
 
 	/**
 	 * Wire the initial-state mock to record every published key/value pair
@@ -159,6 +178,39 @@ class DashboardControllerTest extends TestCase {
 		$this->assertSame('spectr', $published['builderSlug']);
 	}//end testBuilderRendersStandaloneTemplateAndPublishesSlug()
 
+	/**
+	 * page() tells the settings whether the organisation scope can be offered:
+	 * only while OpenRegister's multitenancy is on, and never without a guard.
+	 *
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-an-app-has-an-organisation-scope-req-bqos-001
+	 *
+	 * @return void
+	 */
+	public function testPagePublishesWhetherTheOrganisationScopeIsAvailable(): void {
+		foreach ([true, false] as $on) {
+			$this->setUp();
+			$guard = $this->createMock(\OCA\Buildiq\Service\AppOrganisationGuard::class);
+			$guard->expects($this->once())->method('multitenancyOn')->willReturn($on);
+			$published = $this->captureInitialState();
+			$controller = new DashboardController(
+				$this->request,
+				$this->initialState,
+				$this->userSession,
+				$this->groupManager,
+				$this->navigationManager,
+				organisationGuard: $guard
+			);
+
+			$this->assertSame('index', $controller->page()->getTemplateName());
+			$this->assertSame($on, $published['organisationScopeAvailable']);
+		}
+
+		$this->setUp();
+		$published = $this->captureInitialState();
+		$this->controller->page();
+		$this->assertFalse($published['organisationScopeAvailable']);
+	}//end testPagePublishesWhetherTheOrganisationScopeIsAvailable()
+
 	// -------------------------------------------------------------------------
 	// builderSlash() — trailing-slash alias
 	// -------------------------------------------------------------------------
@@ -177,6 +229,54 @@ class DashboardControllerTest extends TestCase {
 		$this->assertSame('builder', $response->getTemplateName());
 		$this->assertSame('spectr', $published['builderSlug']);
 	}//end testBuilderSlashDelegatesToBuilder()
+
+	/**
+	 * run() serves the same runtime at the installable path, and tells the template to link the web app manifest.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-a-maker-makes-an-app-installable-req-bqom-001
+	 */
+	public function testRunServesTheRuntimeAndLinksTheManifest(): void {
+		$published = $this->captureInitialState();
+
+		$response = $this->controller->run('spectr');
+
+		$this->assertSame('builder', $response->getTemplateName());
+		$this->assertSame('spectr', $published['builderSlug']);
+		$this->assertSame(['webManifest' => true, 'touchIcon' => false, 'slug' => 'spectr'], $response->getParams());
+		$this->assertSame([], $this->controller->builder('spectr')->getParams(), 'the /builder runtime links no manifest');
+	}//end testRunServesTheRuntimeAndLinksTheManifest()
+
+	/**
+	 * The run page offers the PNG touch icon only when the server can make one.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/pages-installable-offline-and-mobile/tasks.md#T02
+	 */
+	public function testRunOffersTheTouchIconWhenTheServerCanRasterise(): void {
+		$this->captureInitialState();
+
+		$this->assertSame(['webManifest' => true, 'touchIcon' => true, 'slug' => 'spectr'], $this->dashboard(rasterises: true)->run('spectr')->getParams());
+	}//end testRunOffersTheTouchIconWhenTheServerCanRasterise()
+
+	/**
+	 * The run routes are signed-in routes: no public run or manifest route exists.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-a-maker-makes-an-app-installable-req-bqom-001
+	 */
+	public function testTheRunRoutesAreNotPublic(): void {
+		$routes = require __DIR__ . '/../../../appinfo/routes.php';
+		$run = array_values(array_filter($routes['routes'], static fn (array $route): bool => str_starts_with($route['url'], '/run/')));
+
+		$this->assertSame(['/run/{slug}/', '/run/{slug}/manifest.webmanifest', '/run/{slug}/offline-worker.js'], array_column($run, 'url'));
+		foreach ([[\OCA\Buildiq\Controller\DashboardController::class, 'run'], [\OCA\Buildiq\Controller\ApplicationsController::class, 'webManifest'], [\OCA\Buildiq\Controller\ApplicationsController::class, 'offlineWorker']] as [$class, $method]) {
+			$this->assertSame([], (new \ReflectionMethod($class, $method))->getAttributes(\OCP\AppFramework\Http\Attribute\PublicPage::class));
+		}
+	}//end testTheRunRoutesAreNotPublic()
 
 	// -------------------------------------------------------------------------
 	// builderPath() — generic virtual-app deep link (#100)
@@ -242,4 +342,92 @@ class DashboardControllerTest extends TestCase {
 		$this->assertInstanceOf(TemplateResponse::class, $response);
 		$this->assertSame('index', $response->getTemplateName());
 	}//end testBuilderDesignerServesSpaIndexTemplateForSchemaDetail()
+
+	/**
+	 * The SPA and the runtime publish whether apps may work offline, read from the instance setting.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-offline-is-the-administrators-choice-first-req-bqom-002
+	 */
+	public function testTheOfflineSettingIsPublished(): void {
+		$published = $this->captureInitialState();
+		$settings = $this->createMock(\OCA\Buildiq\Kernel\Contracts\SettingsServiceInterface::class);
+		$settings->method('offlineAppsAllowed')->willReturn(true);
+		$rasteriser = $this->createMock(\OCA\Buildiq\Service\Icon\SvgRasteriser::class);
+		$controller = new DashboardController(
+			request: $this->request,
+			initialState: $this->initialState,
+			userSession: $this->userSession,
+			groupManager: $this->groupManager,
+			navigationManager: $this->navigationManager,
+			rasteriser: $rasteriser,
+			settings: $settings
+		);
+
+		$controller->page();
+		$this->assertTrue($published['offlineAppsAllowed']);
+
+		unset($published['offlineAppsAllowed']);
+		$controller->run('spectr');
+		$this->assertTrue($published['offlineAppsAllowed']);
+	}//end testTheOfflineSettingIsPublished()
+
+	/**
+	 * Without the settings service, or when it fails, offline is published as off.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/pages-installable-offline-and-mobile/specs/installable-offline-apps/spec.md#requirement-offline-is-the-administrators-choice-first-req-bqom-002
+	 */
+	public function testOfflineIsPublishedOffWhenTheSettingCannotBeRead(): void {
+		$published = $this->captureInitialState();
+
+		$this->controller->builder('spectr');
+		$this->assertFalse($published['offlineAppsAllowed']);
+
+		$settings = $this->createMock(\OCA\Buildiq\Kernel\Contracts\SettingsServiceInterface::class);
+		$settings->method('offlineAppsAllowed')->willThrowException(new \RuntimeException('config down'));
+		$controller = new DashboardController(
+			request: $this->request,
+			initialState: $this->initialState,
+			userSession: $this->userSession,
+			groupManager: $this->groupManager,
+			navigationManager: $this->navigationManager,
+			rasteriser: $this->createMock(\OCA\Buildiq\Service\Icon\SvgRasteriser::class),
+			settings: $settings
+		);
+		$published['offlineAppsAllowed'] = true;
+		$controller->page();
+		$this->assertFalse($published['offlineAppsAllowed']);
+	}//end testOfflineIsPublishedOffWhenTheSettingCannotBeRead()
+
+	/**
+	 * The SPA publishes whether script steps are allowed, and off when the setting cannot be read.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-composer-offers-a-script-step-req-bqss-001
+	 */
+	public function testTheScriptStepSettingIsPublished(): void {
+		$published = $this->captureInitialState();
+		$on = $this->createMock(originalClassName: \OCA\Buildiq\Kernel\Contracts\SettingsServiceInterface::class);
+		$on->method('scriptStepsAllowed')->willReturn(true);
+		$down = $this->createMock(originalClassName: \OCA\Buildiq\Kernel\Contracts\SettingsServiceInterface::class);
+		$down->method('scriptStepsAllowed')->willThrowException(new \RuntimeException('config down'));
+
+		foreach ([[$on, true], [$down, false], [null, false]] as [$settings, $expected]) {
+			$controller = new DashboardController(
+				request: $this->request,
+				initialState: $this->initialState,
+				userSession: $this->userSession,
+				groupManager: $this->groupManager,
+				navigationManager: $this->navigationManager,
+				rasteriser: $this->createMock(originalClassName: \OCA\Buildiq\Service\Icon\SvgRasteriser::class),
+				settings: $settings
+			);
+			$controller->page();
+			$this->assertSame(expected: $expected, actual: $published['scriptStepsAllowed']);
+		}
+	}//end testTheScriptStepSettingIsPublished()
 }//end class

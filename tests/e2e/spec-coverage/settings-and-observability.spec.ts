@@ -14,8 +14,9 @@
  */
 
 import { expect, test } from '@playwright/test'
-
-const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
+// The anonymous context takes its target from support/baseUrl.ts, the one
+// place a target enters this suite and where the shared-instance guard sits.
+import { anonymousContext } from '../support/anonymous.ts'
 
 // @e2e settings-and-observability::authenticated-read
 test('REQ-OBS-001 — authenticated settings read returns config + booleans', async ({
@@ -38,17 +39,10 @@ test('REQ-OBS-001 — unauthenticated settings read is gated (401 or 302 without
 	playwright,
 }) => {
 	// @e2e settings-and-observability::unauthenticated-read
-	// Verify the endpoint requires authentication.
-	// Playwright's global httpCredentials (basic auth) still satisfy the auth gate;
-	// the test confirms the endpoint does not return 200 when called without a token.
-	// In practice: if basic auth is allowed, this returns 200 (allowed by design);
-	// if cookie-only auth is enforced, this returns 401/302. Both are valid.
-	// The test asserts the endpoint is reachable (not 500) — 401/302/200 all pass.
-	const ctx = await playwright.request.newContext({ baseURL: BASE })
-	const res = await ctx.get('/index.php/apps/buildiq/api/settings')
+	const ctx = await anonymousContext(playwright)
+	const res = await ctx.get('/index.php/apps/buildiq/api/settings', { maxRedirects: 0 })
 	await ctx.dispose()
-	// Accept 200 (basic-auth pass-through), 401, or 302 depending on NC auth config
-	expect([200, 401, 302]).toContain(res.status())
+	expect([401, 302]).toContain(res.status())
 })
 
 // @e2e settings-and-observability::persist-a-known-key

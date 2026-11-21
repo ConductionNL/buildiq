@@ -16,7 +16,13 @@
 	<div class="buildiq-schema-list">
 		<header class="buildiq-schema-list__header">
 			<h2>{{ t('buildiq', 'Schemas') }}</h2>
-			<NcButton variant="primary" @click="addOpen = true">
+			<!-- data-walkthrough-id: spotlighted by the tour's `add-schema` step.
+			     On the header button, which always renders, not the empty-state
+			     one. -->
+			<NcButton
+				variant="primary"
+				data-walkthrough-id="schema-add"
+				@click="addOpen = true">
 				<template #icon>
 					<PlusIcon :size="20" />
 				</template>
@@ -138,6 +144,46 @@ import DeleteSchemaDialog from '../../modals/DeleteSchemaDialog.vue'
 const SCOPE_OPS = ['read', 'create', 'update', 'delete']
 
 /**
+ * Whether a schema's `authorization` is a non-empty object.
+ *
+ * @param {object|null|undefined} auth The schema's `authorization`.
+ * @return {boolean}
+ */
+function hasAuthorization(auth) {
+	return !!auth && typeof auth === 'object' && Object.keys(auth).length > 0
+}
+
+/**
+ * One operation's part of the badge title: its group list, else its
+ * condition, else nothing.
+ *
+ * @param {object} auth The schema's `authorization`.
+ * @param {string} op The operation (read, create, update, delete).
+ * @return {?string} e.g. `read: vets` or `read: condition(owner)`.
+ */
+function scopePart(auth, op) {
+	const list = auth[op]
+	if (Array.isArray(list) && list.length > 0) {
+		return `${op}: ${list.join(', ')}`
+	}
+	return conditionPart(auth, op)
+}
+
+/**
+ * One operation's condition as a badge part, naming the field it tests.
+ *
+ * @param {object} auth The schema's `authorization`.
+ * @param {string} op The operation.
+ * @return {?string} e.g. `read: condition(owner)`, or null.
+ */
+function conditionPart(auth, op) {
+	const condition = auth.conditions && auth.conditions[op]
+	return condition
+		? `${op}: condition(${(condition && condition.field) || '?'})`
+		: null
+}
+
+/**
  * Derive a compact "Restricted" badge for a schema carrying a
  * schema-level `authorization` block (REQ-OBDSA-005). Pure and
  * exported so it is unit-testable without mounting the panel.
@@ -155,21 +201,10 @@ const SCOPE_OPS = ['read', 'create', 'update', 'delete']
  */
 export function scopeSummary(schema) {
 	const auth = schema && schema.authorization
-	if (!auth || typeof auth !== 'object' || Object.keys(auth).length === 0) {
+	if (!hasAuthorization(auth)) {
 		return null
 	}
-	const parts = []
-	SCOPE_OPS.forEach((op) => {
-		const list = auth[op]
-		if (Array.isArray(list) && list.length > 0) {
-			parts.push(`${op}: ${list.join(', ')}`)
-			return
-		}
-		const condition = auth.conditions && auth.conditions[op]
-		if (condition) {
-			parts.push(`${op}: condition(${(condition && condition.field) || '?'})`)
-		}
-	})
+	const parts = SCOPE_OPS.map((op) => scopePart(auth, op)).filter(Boolean)
 	const title =
 		parts.length > 0 ? parts.join('; ') : 'Custom authorization metadata'
 	return { label: 'Restricted', title }
@@ -232,7 +267,7 @@ export default {
 		/**
 		 * Count the declared properties on a schema row.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
 		 * @param {object} schema Schema record.
 		 * @return {number} Property count.
 		 */
@@ -246,7 +281,7 @@ export default {
 		/**
 		 * Build a human-readable lifecycle-state-count label.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
 		 * @param {object} schema Schema record.
 		 * @return {string} Lifecycle label.
 		 */
@@ -271,7 +306,7 @@ export default {
 		/**
 		 * Emit an open event for the activated schema row.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
 		 * @param {object} schema Schema record.
 		 * @return {void}
 		 */
@@ -282,7 +317,7 @@ export default {
 		/**
 		 * Confirm the add-schema dialog: emit add and surface slug conflicts.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
 		 * @param {object} payload New schema payload.
 		 * @return {Promise<*>} The add result.
 		 */
@@ -314,7 +349,7 @@ export default {
 		/**
 		 * Open the delete-confirmation dialog for a schema.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
 		 * @param {object} schema Schema record.
 		 * @return {void}
 		 */
@@ -326,7 +361,7 @@ export default {
 		/**
 		 * Confirm deletion: emit delete and reset the pending state.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
 		 * @return {void}
 		 */
 		onDeleteConfirm() {
@@ -338,7 +373,7 @@ export default {
 		/**
 		 * Cancel the pending deletion.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
 		 * @return {void}
 		 */
 		cancelDelete() {
@@ -349,7 +384,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../assets/editor-controls.scss' as c;
+
 .buildiq-schema-list {
 	display: flex;
 	flex-direction: column;
@@ -377,12 +414,7 @@ export default {
 }
 
 .buildiq-schema-list__rows {
-	list-style: none;
-	margin: 0;
-	padding: 0;
-	display: flex;
-	flex-direction: column;
-	gap: 4px;
+	@include c.plain-list(4px);
 }
 
 .buildiq-schema-list__row {

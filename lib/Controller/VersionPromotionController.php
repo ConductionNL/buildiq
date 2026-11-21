@@ -29,25 +29,30 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-59
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-64
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-65
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-67
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-59
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-64
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-65
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-67
  */
 
 declare(strict_types=1);
 
 namespace OCA\Buildiq\Controller;
 
-use OCA\Buildiq\AppInfo\Application;
 use OCA\Buildiq\Exception\InsufficientPermissionException;
 use OCA\Buildiq\Exception\InvalidStrategyException;
 use OCA\Buildiq\Exception\NoPromoteTargetException;
 use OCA\Buildiq\Exception\PromotionFailedException;
+use OCA\Buildiq\Exception\ReleaseOverrideRefusedException;
+use OCA\Buildiq\Exception\ReleaseTestsFailedException;
 use OCA\Buildiq\Exception\VersionLockedException;
-use OCA\Buildiq\Service\PermissionResolver;
-use OCA\Buildiq\Service\VersionPromotionService;
+use OCA\Buildiq\Kernel\AppIdentity;
+use OCA\Buildiq\Kernel\Contracts\PermissionResolverInterface;
+use OCA\Buildiq\Kernel\Contracts\VersionPromotionServiceInterface;
+use OCA\Buildiq\Support\ObjectRecord;
+use OCA\Buildiq\Support\ReleaseOverride;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCP\AppFramework\Controller;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\Attribute\NoAdminRequired;
@@ -71,14 +76,21 @@ class VersionPromotionController extends Controller {
 	private const WRITE_ROLES = ['owners', 'editors'];
 
 	/**
+	 * The role allowed to promote onto production past failing tests (REQ-BQRT-004).
+	 *
+	 * @var array<int,string>
+	 */
+	private const OWNER_ROLES = ['owners'];
+
+	/**
 	 * Constructor.
 	 *
 	 * @param IRequest $request The current HTTP request
 	 * @param LoggerInterface $logger PSR logger
 	 * @param ObjectServiceInterface $objectService OR object surface (load source + parent)
 	 * @param IUserSession $userSession Current NC user session
-	 * @param VersionPromotionService $promotionService Imperative promotion flow owner
-	 * @param PermissionResolver $permissionResolver Shared permission-grammar resolver (H1 fix)
+	 * @param VersionPromotionServiceInterface $promotionService Imperative promotion flow owner
+	 * @param PermissionResolverInterface $permissionResolver Shared permission-grammar resolver (H1 fix)
 	 *
 	 * @return void
 	 */
@@ -87,10 +99,10 @@ class VersionPromotionController extends Controller {
 		private readonly LoggerInterface $logger,
 		private readonly ObjectServiceInterface $objectService,
 		private readonly IUserSession $userSession,
-		private readonly VersionPromotionService $promotionService,
-		private readonly PermissionResolver $permissionResolver,
+		private readonly VersionPromotionServiceInterface $promotionService,
+		private readonly PermissionResolverInterface $permissionResolver,
 	) {
-		parent::__construct(appName: Application::APP_ID, request: $request);
+		parent::__construct(appName: AppIdentity::APP_ID, request: $request);
 	}//end __construct()
 
 	/**
@@ -105,8 +117,10 @@ class VersionPromotionController extends Controller {
 	 *
 	 * @return JSONResponse 200 + updated target on success, error envelope otherwise
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-59
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-65
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-59
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-65
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) ReleaseOverride::fromRequest() is a pure value-object factory.
 	 */
 	#[NoAdminRequired]
 	#[UserRateLimit(limit: 5, period: 60)]
@@ -149,8 +163,13 @@ class VersionPromotionController extends Controller {
 			$this->assertEditorOrOwner(application: $application, user: $user);
 
 			$strategy = (string)$this->request->getParam('strategy', '');
+			$override = ReleaseOverride::fromRequest(
+				param: $this->request->getParam('override'),
+				userId: $user->getUID(),
+				byOwner: $this->isOwner(application: $application, user: $user)
+			);
 
-			$updated = $this->promotionService->promote(source: $source, strategy: $strategy);
+			$updated = $this->promotionService->promote(source: $source, strategy: $strategy, override: $override);
 			return new JSONResponse(data: $updated, statusCode: Http::STATUS_OK);
 		} catch (Throwable $e) {
 			return $this->mapExceptionToResponse(error: $e);
@@ -168,39 +187,17 @@ class VersionPromotionController extends Controller {
 	 *
 	 * @return JSONResponse Error envelope with the spec-defined code + status
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-64
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-67
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-64
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-67
 	 */
 	private function mapExceptionToResponse(Throwable $error): JSONResponse {
-		if ($error instanceof NoPromoteTargetException) {
-			$this->logger->info('Buildiq: promote rejected (no target): ' . $error->getMessage());
-			return $this->errorResponse(
-				code: $error->getErrorCode(),
-				detail: $error->getMessage(),
-				status: Http::STATUS_UNPROCESSABLE_ENTITY
-			);
-		}
-
-		if ($error instanceof InvalidStrategyException) {
-			$this->logger->info('Buildiq: promote rejected (invalid strategy): ' . $error->getMessage());
-			return $this->errorResponse(
-				code: $error->getErrorCode(),
-				detail: $error->getMessage(),
-				status: Http::STATUS_BAD_REQUEST
-			);
+		$rejection = $this->rejectionResponse(error: $error);
+		if ($rejection !== null) {
+			return $rejection;
 		}
 
 		if ($error instanceof VersionLockedException) {
 			return $this->buildLockedResponse(error: $error);
-		}
-
-		if ($error instanceof InsufficientPermissionException) {
-			$this->logger->info('Buildiq: promote rejected (rbac): ' . $error->getMessage());
-			return $this->errorResponse(
-				code: $error->getErrorCode(),
-				detail: $error->getMessage(),
-				status: Http::STATUS_FORBIDDEN
-			);
 		}
 
 		if ($error instanceof PromotionFailedException) {
@@ -227,13 +224,69 @@ class VersionPromotionController extends Controller {
 	}//end mapExceptionToResponse()
 
 	/**
+	 * The response to a rejected promotion (no target, invalid strategy,
+	 * missing role), or null for any other error.
+	 *
+	 * @param Throwable $error The caught error.
+	 *
+	 * @return JSONResponse|null
+	 */
+	private function rejectionResponse(Throwable $error): JSONResponse|null {
+		if ($error instanceof NoPromoteTargetException) {
+			$this->logger->info('Buildiq: promote rejected (no target): ' . $error->getMessage());
+			return $this->errorResponse(
+				code: $error->getErrorCode(),
+				detail: $error->getMessage(),
+				status: Http::STATUS_UNPROCESSABLE_ENTITY
+			);
+		}
+
+		if ($error instanceof InvalidStrategyException) {
+			$this->logger->info('Buildiq: promote rejected (invalid strategy): ' . $error->getMessage());
+			return $this->errorResponse(
+				code: $error->getErrorCode(),
+				detail: $error->getMessage(),
+				status: Http::STATUS_BAD_REQUEST
+			);
+		}
+
+		if ($error instanceof ReleaseTestsFailedException) {
+			$this->logger->info('Buildiq: promote rejected (tests failed): ' . $error->getMessage());
+			return new JSONResponse(
+				data: ['error' => $error->getErrorCode(), 'detail' => $error->getMessage(), 'testRun' => $error->getRun()],
+				statusCode: Http::STATUS_UNPROCESSABLE_ENTITY
+			);
+		}
+
+		if ($error instanceof ReleaseOverrideRefusedException) {
+			$this->logger->info('Buildiq: promote rejected (override refused): ' . $error->getMessage());
+			return $this->errorResponse(
+				code: $error->getErrorCode(),
+				detail: $error->getMessage(),
+				status: $error->getStatus()
+			);
+		}
+
+		if ($error instanceof InsufficientPermissionException) {
+			$this->logger->info('Buildiq: promote rejected (rbac): ' . $error->getMessage());
+			return $this->errorResponse(
+				code: $error->getErrorCode(),
+				detail: $error->getMessage(),
+				status: Http::STATUS_FORBIDDEN
+			);
+		}
+
+		return null;
+	}//end rejectionResponse()
+
+	/**
 	 * Build the 409 response for a VersionLockedException with optional lock context.
 	 *
 	 * @param VersionLockedException $error The contention exception
 	 *
 	 * @return JSONResponse
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-64
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-64
 	 */
 	private function buildLockedResponse(VersionLockedException $error): JSONResponse {
 		$this->logger->info('Buildiq: promote rejected (locked): ' . $error->getMessage());
@@ -263,13 +316,16 @@ class VersionPromotionController extends Controller {
 	 * @param string $uuid Application UUID
 	 *
 	 * @return array<string,mixed>|null
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function loadApplication(string $uuid): ?array {
 		try {
 			$entity = $this->objectService->find(
 				id: $uuid,
-				register: VersionPromotionService::REGISTER_SLUG,
-				schema: VersionPromotionService::APPLICATION_SCHEMA
+				options: new ObjectFindOptions(
+					register: VersionPromotionServiceInterface::REGISTER_SLUG,
+					schema: VersionPromotionServiceInterface::APPLICATION_SCHEMA
+				)
 			);
 		} catch (Throwable $e) {
 			$this->logger->debug(
@@ -283,7 +339,7 @@ class VersionPromotionController extends Controller {
 			return null;
 		}
 
-		return $this->normaliseObject(object: $entity);
+		return ObjectRecord::toArray(object: $entity);
 	}//end loadApplication()
 
 	/**
@@ -296,13 +352,16 @@ class VersionPromotionController extends Controller {
 	 * @param string $uuid ApplicationVersion UUID
 	 *
 	 * @return array<string,mixed>|null
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function loadVersion(string $uuid): ?array {
 		try {
 			$entity = $this->objectService->find(
 				id: $uuid,
-				register: VersionPromotionService::REGISTER_SLUG,
-				schema: VersionPromotionService::APPLICATION_VERSION_SCHEMA
+				options: new ObjectFindOptions(
+					register: VersionPromotionServiceInterface::REGISTER_SLUG,
+					schema: VersionPromotionServiceInterface::APPLICATION_VERSION_SCHEMA
+				)
 			);
 		} catch (Throwable $e) {
 			$this->logger->debug(
@@ -316,7 +375,7 @@ class VersionPromotionController extends Controller {
 			return null;
 		}
 
-		return $this->normaliseObject(object: $entity);
+		return ObjectRecord::toArray(object: $entity);
 	}//end loadVersion()
 
 	/**
@@ -333,7 +392,7 @@ class VersionPromotionController extends Controller {
 	 *
 	 * @throws InsufficientPermissionException When the user lacks owner/editor role
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-65
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-65
 	 */
 	private function assertEditorOrOwner(array $application, IUser $user): void {
 		$permissions = ($application['permissions'] ?? []);
@@ -365,33 +424,31 @@ class VersionPromotionController extends Controller {
 	}//end assertEditorOrOwner()
 
 	/**
-	 * Coerce an OR result entry to a plain associative array.
+	 * Whether the calling user owns the Application: only an owner may release
+	 * past failing tests (lifecycle-release-test-gate REQ-BQRT-004). NC admins
+	 * are not auto-granted, as for the promotion itself.
 	 *
-	 * @param mixed $object The OR object/result entry
+	 * @param array<string,mixed> $application Application data
+	 * @param IUser $user Current Nextcloud user
 	 *
-	 * @return array<string,mixed>
+	 * @return bool
+	 *
+	 * @spec openspec/changes/lifecycle-release-test-gate/specs/app-release-test-gate/spec.md#requirement-release-waits-for-a-green-suite-req-bqrt-004
 	 */
-	private function normaliseObject(mixed $object): array {
-		if (is_array($object) === true) {
-			return $object;
+	private function isOwner(array $application, IUser $user): bool {
+		$permissions = ($application['permissions'] ?? []);
+		if (is_array($permissions) === false) {
+			return false;
 		}
 
-		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-			$serialised = $object->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		if (is_object($object) === true && method_exists($object, 'getObject') === true) {
-			$inner = $object->getObject();
-			if (is_array($inner) === true) {
-				return $inner;
-			}
-		}
-
-		return [];
-	}//end normaliseObject()
+		return $this->permissionResolver->matchesCaller(
+			permissions: $permissions,
+			caller: $user,
+			userGroups: $this->permissionResolver->resolveUserGroups($user),
+			allowAdminBypass: false,
+			roles: self::OWNER_ROLES
+		);
+	}//end isOwner()
 
 	/**
 	 * Build a uniform error envelope.

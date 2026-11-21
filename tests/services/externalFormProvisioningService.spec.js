@@ -168,8 +168,199 @@ describe('provisionPortalPage', () => {
 			register: 'intake',
 			schema: 'report',
 			anonymous: true,
-			minTrust: 0,
 		})
+		// portaliq's minTrust is the string enum low|substantial|high; the
+		// number 0 is not a value it knows (buildiq#921), so an anonymous
+		// form carries no minTrust at all.
+		expect(body).not.toHaveProperty('minTrust')
+		expect(body.actions[0]).not.toHaveProperty('minTrust')
+	})
+
+	it.each(['low', 'substantial', 'high'])(
+		'creates a portalPage that requires sign-in level %s on the action and the collection, and is not anonymous',
+		async (level) => {
+			const client = {
+				post: vi
+					.fn()
+					.mockResolvedValue({ data: { '@self': { id: 'pp-1' } } }),
+			}
+			await provisionPortalPage(
+				{ register: 'intake', schema: 'report', minTrust: level },
+				client,
+			)
+			const body = client.post.mock.calls[0][1]
+			expect(body.actions[0]).toEqual({
+				type: 'create',
+				register: 'intake',
+				schema: 'report',
+				minTrust: level,
+			})
+			expect(body.collections[0]).toEqual({
+				register: 'intake',
+				schema: 'report',
+				minTrust: level,
+			})
+			expect(body).not.toHaveProperty('minTrust')
+		},
+	)
+
+	it('a repeat save that names no level keeps a level stored on the portal page (buildiq#935)', async () => {
+		const existing = {
+			'@self': { id: 'pp-1' },
+			collections: [
+				{ register: 'intake', schema: 'report', minTrust: 'substantial' },
+			],
+			actions: [
+				{
+					id: 'melden',
+					label: 'Melden',
+					type: 'create',
+					register: 'intake',
+					schema: 'report',
+					minTrust: 'substantial',
+				},
+			],
+		}
+		const client = {
+			get: vi.fn().mockResolvedValue({ data: existing }),
+			put: vi.fn().mockResolvedValue({ data: existing }),
+		}
+		await provisionPortalPage(
+			{ register: 'intake', schema: 'report', objectId: 'pp-1' },
+			client,
+		)
+		const body = client.put.mock.calls[0][1]
+		expect(body.actions).toEqual([
+			{
+				id: 'melden',
+				label: 'Melden',
+				type: 'create',
+				register: 'intake',
+				schema: 'report',
+				minTrust: 'substantial',
+			},
+		])
+		expect(body.collections).toEqual([
+			{ register: 'intake', schema: 'report', minTrust: 'substantial' },
+		])
+	})
+
+	it('a repeat save that names a level raises the stored entry and drops anonymous', async () => {
+		const existing = {
+			'@self': { id: 'pp-1' },
+			collections: [{ register: 'intake', schema: 'report', anonymous: true }],
+			actions: [
+				{
+					type: 'create',
+					register: 'intake',
+					schema: 'report',
+					anonymous: true,
+					minTrust: 0,
+				},
+			],
+		}
+		const client = {
+			get: vi.fn().mockResolvedValue({ data: existing }),
+			put: vi.fn().mockResolvedValue({ data: existing }),
+		}
+		await provisionPortalPage(
+			{
+				register: 'intake',
+				schema: 'report',
+				objectId: 'pp-1',
+				minTrust: 'high',
+			},
+			client,
+		)
+		const body = client.put.mock.calls[0][1]
+		expect(body.actions).toEqual([
+			{
+				type: 'create',
+				register: 'intake',
+				schema: 'report',
+				minTrust: 'high',
+			},
+		])
+		expect(body.collections).toEqual([
+			{ register: 'intake', schema: 'report', minTrust: 'high' },
+		])
+	})
+
+	it('a repeat save that explicitly chooses no sign-in lowers the entry back to anonymous', async () => {
+		const existing = {
+			'@self': { id: 'pp-1' },
+			collections: [
+				{ register: 'intake', schema: 'report', minTrust: 'high' },
+			],
+			actions: [
+				{
+					type: 'create',
+					register: 'intake',
+					schema: 'report',
+					minTrust: 'high',
+				},
+			],
+		}
+		const client = {
+			get: vi.fn().mockResolvedValue({ data: existing }),
+			put: vi.fn().mockResolvedValue({ data: existing }),
+		}
+		await provisionPortalPage(
+			{
+				register: 'intake',
+				schema: 'report',
+				objectId: 'pp-1',
+				minTrust: null,
+			},
+			client,
+		)
+		const body = client.put.mock.calls[0][1]
+		expect(body.actions).toEqual([
+			{
+				type: 'create',
+				register: 'intake',
+				schema: 'report',
+				anonymous: true,
+			},
+		])
+		expect(body.collections).toEqual([
+			{ register: 'intake', schema: 'report', anonymous: true },
+		])
+	})
+
+	it('a repeat save over a stored invalid minTrust 0 drops it and stays anonymous', async () => {
+		const existing = {
+			'@self': { id: 'pp-1' },
+			minTrust: 0,
+			collections: [{ register: 'intake', schema: 'report', anonymous: true }],
+			actions: [
+				{
+					type: 'create',
+					register: 'intake',
+					schema: 'report',
+					anonymous: true,
+					minTrust: 0,
+				},
+			],
+		}
+		const client = {
+			get: vi.fn().mockResolvedValue({ data: existing }),
+			put: vi.fn().mockResolvedValue({ data: existing }),
+		}
+		await provisionPortalPage(
+			{ register: 'intake', schema: 'report', objectId: 'pp-1' },
+			client,
+		)
+		const body = client.put.mock.calls[0][1]
+		expect(body).not.toHaveProperty('minTrust')
+		expect(body.actions).toEqual([
+			{
+				type: 'create',
+				register: 'intake',
+				schema: 'report',
+				anonymous: true,
+			},
+		])
 	})
 
 	it('updates the SAME object on a repeat save (matched by objectId), preserving unrelated fields', async () => {

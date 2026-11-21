@@ -17,6 +17,9 @@
  * @version GIT: <git-id>
  *
  * @link https://conduction.nl
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -305,7 +308,7 @@ class BuildiqToolProviderTest extends TestCase {
 
 		$this->container->expects($this->never())->method('get');
 
-		$result = $this->provider->invokeTool('buildiq.createApp', [
+		$result = $this->provider->invokeApprovedTool('buildiq.createApp', [
 			'slug' => 'my-app',
 			'name' => 'My App',
 		]);
@@ -324,7 +327,7 @@ class BuildiqToolProviderTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn(null);
 		$this->container->expects($this->never())->method('get');
 
-		$result = $this->provider->invokeTool('buildiq.createApp', [
+		$result = $this->provider->invokeApprovedTool('buildiq.createApp', [
 			'slug' => 'my-app',
 			'name' => 'My App',
 		]);
@@ -347,7 +350,7 @@ class BuildiqToolProviderTest extends TestCase {
 
 		$this->container->expects($this->never())->method('get');
 
-		$result = $this->provider->invokeTool('buildiq.upsertSchema', [
+		$result = $this->provider->invokeApprovedTool('buildiq.upsertSchema', [
 			'appSlug' => 'my-app',
 			'slug' => 'my-schema',
 			'title' => 'My Schema',
@@ -368,7 +371,7 @@ class BuildiqToolProviderTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn(null);
 		$this->container->expects($this->never())->method('get');
 
-		$result = $this->provider->invokeTool('buildiq.upsertSchema', [
+		$result = $this->provider->invokeApprovedTool('buildiq.upsertSchema', [
 			'appSlug' => 'my-app',
 			'slug' => 'my-schema',
 			'title' => 'My Schema',
@@ -407,7 +410,7 @@ class BuildiqToolProviderTest extends TestCase {
 			->with('OCA\OpenRegister\Service\ObjectService')
 			->willReturn($objectService);
 
-		$result = $this->provider->invokeTool('buildiq.upsertPage', [
+		$result = $this->provider->invokeApprovedTool('buildiq.upsertPage', [
 			'appSlug' => 'my-app',
 			'pageId' => 'home',
 			'title' => 'Home',
@@ -459,7 +462,7 @@ class BuildiqToolProviderTest extends TestCase {
 			->with('OCA\OpenRegister\Service\ObjectService')
 			->willReturn($objectService);
 
-		$result = $this->provider->invokeTool('buildiq.upsertPage', [
+		$result = $this->provider->invokeApprovedTool('buildiq.upsertPage', [
 			'appSlug' => 'my-app',
 			'pageId' => 'home',
 			'title' => 'Home',
@@ -496,7 +499,7 @@ class BuildiqToolProviderTest extends TestCase {
 			->with('OCA\OpenRegister\Service\ObjectService')
 			->willReturn($objectService);
 
-		$result = $this->provider->invokeTool('buildiq.addWidget', [
+		$result = $this->provider->invokeApprovedTool('buildiq.addWidget', [
 			'appSlug' => 'my-app',
 			'pageId' => 'home',
 			'widgetType' => 'stats-block',
@@ -529,7 +532,7 @@ class BuildiqToolProviderTest extends TestCase {
 			->with('OCA\OpenRegister\Service\ObjectService')
 			->willReturn($objectService);
 
-		$result = $this->provider->invokeTool('buildiq.upsertMenuItem', [
+		$result = $this->provider->invokeApprovedTool('buildiq.upsertMenuItem', [
 			'appSlug' => 'my-app',
 			'id' => 'nav-home',
 			'label' => 'Home',
@@ -565,7 +568,7 @@ class BuildiqToolProviderTest extends TestCase {
 			->with('OCA\OpenRegister\Service\ObjectService')
 			->willReturn($objectService);
 
-		$result = $this->provider->invokeTool('buildiq.promoteVersion', [
+		$result = $this->provider->invokeApprovedTool('buildiq.promoteVersion', [
 			'appSlug' => 'my-app',
 			'sourceVersionSlug' => 'development',
 		]);
@@ -615,7 +618,7 @@ class BuildiqToolProviderTest extends TestCase {
 			->with('OCA\OpenRegister\Service\ObjectService')
 			->willReturn($objectService);
 
-		$result = $this->provider->invokeTool('buildiq.promoteVersion', [
+		$result = $this->provider->invokeApprovedTool('buildiq.promoteVersion', [
 			'appSlug' => 'my-app',
 			'sourceVersionSlug' => 'development',
 		]);
@@ -636,7 +639,7 @@ class BuildiqToolProviderTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn(null);
 		$this->container->expects($this->never())->method('get');
 
-		$result = $this->provider->invokeTool('buildiq.promoteVersion', [
+		$result = $this->provider->invokeApprovedTool('buildiq.promoteVersion', [
 			'appSlug' => 'my-app',
 			'sourceVersionSlug' => 'development',
 		]);

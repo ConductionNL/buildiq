@@ -72,50 +72,24 @@
 			<legend>{{ t('buildiq', 'Article field mapping') }}</legend>
 			<label class="wiki-page-editor__group-row">
 				{{ t('buildiq', 'Content field') }}
-				<select
-					v-if="hasBoundSchema"
+				<PropertyKeyField
 					:value="config.contentField || ''"
-					@change="update('contentField', $event.target.value)">
-					<option value="">
-						{{ t('buildiq', '— default: body —') }}
-					</option>
-					<option
-						v-for="key in schemaPropertyKeys"
-						:key="key"
-						:value="key">
-						{{ key }}
-					</option>
-				</select>
-				<input
-					v-else
-					type="text"
-					:value="config.contentField || ''"
+					:keys="schemaPropertyKeys"
+					:bound="hasBoundSchema"
+					:emptyLabel="t('buildiq', '— default: body —')"
 					:placeholder="t('buildiq', 'body')"
-					@input="update('contentField', $event.target.value)" />
+					@update="update('contentField', $event)" />
 				<InlineFieldMark :error="markFor('contentField')" />
 			</label>
 			<label class="wiki-page-editor__group-row">
 				{{ t('buildiq', 'Title field') }}
-				<select
-					v-if="hasBoundSchema"
+				<PropertyKeyField
 					:value="config.titleField || ''"
-					@change="update('titleField', $event.target.value)">
-					<option value="">
-						{{ t('buildiq', '— default: title —') }}
-					</option>
-					<option
-						v-for="key in schemaPropertyKeys"
-						:key="key"
-						:value="key">
-						{{ key }}
-					</option>
-				</select>
-				<input
-					v-else
-					type="text"
-					:value="config.titleField || ''"
+					:keys="schemaPropertyKeys"
+					:bound="hasBoundSchema"
+					:emptyLabel="t('buildiq', '— default: title —')"
 					:placeholder="t('buildiq', 'title')"
-					@input="update('titleField', $event.target.value)" />
+					@update="update('titleField', $event)" />
 				<InlineFieldMark :error="markFor('titleField')" />
 			</label>
 			<label class="wiki-page-editor__group-row">
@@ -168,49 +142,23 @@
 			</label>
 			<label class="wiki-page-editor__group-row">
 				{{ t('buildiq', 'Tree children field') }}
-				<select
-					v-if="hasBoundSidebarSchema"
+				<PropertyKeyField
 					:value="config.treeField || ''"
-					@change="update('treeField', $event.target.value)">
-					<option value="">
-						{{ t('buildiq', '— default: children —') }}
-					</option>
-					<option
-						v-for="key in sidebarSchemaPropertyKeys"
-						:key="key"
-						:value="key">
-						{{ key }}
-					</option>
-				</select>
-				<input
-					v-else
-					type="text"
-					:value="config.treeField || ''"
+					:keys="sidebarSchemaPropertyKeys"
+					:bound="hasBoundSidebarSchema"
+					:emptyLabel="t('buildiq', '— default: children —')"
 					:placeholder="t('buildiq', 'children')"
-					@input="update('treeField', $event.target.value)" />
+					@update="update('treeField', $event)" />
 				<InlineFieldMark :error="markFor('treeField')" />
 			</label>
 			<label class="wiki-page-editor__group-row">
 				{{ t('buildiq', 'Sidebar title field') }}
-				<select
-					v-if="hasBoundSidebarSchema"
+				<PropertyKeyField
 					:value="config.sidebarTitleField || ''"
-					@change="update('sidebarTitleField', $event.target.value)">
-					<option value="">
-						{{ t('buildiq', '— default: title field —') }}
-					</option>
-					<option
-						v-for="key in sidebarSchemaPropertyKeys"
-						:key="key"
-						:value="key">
-						{{ key }}
-					</option>
-				</select>
-				<input
-					v-else
-					type="text"
-					:value="config.sidebarTitleField || ''"
-					@input="update('sidebarTitleField', $event.target.value)" />
+					:keys="sidebarSchemaPropertyKeys"
+					:bound="hasBoundSidebarSchema"
+					:emptyLabel="t('buildiq', '— default: title field —')"
+					@update="update('sidebarTitleField', $event)" />
 				<InlineFieldMark :error="markFor('sidebarTitleField')" />
 			</label>
 		</fieldset>
@@ -255,54 +203,34 @@
 
 <script>
 import InlineFieldMark from './fields/InlineFieldMark.vue'
-import { useRegisterPicker } from '../../composables/useRegisterPicker.js'
+import PropertyKeyField from './fields/PropertyKeyField.vue'
+import { useEditorRegisterPicker } from '../../composables/useEditorRegisterPicker.js'
+import {
+	pageEditorBaseMixin,
+	pageEditorSchemaBoundMixin,
+} from '../../mixins/pageEditorBase.js'
 import { pageEditorValidationMixin } from '../../mixins/pageEditorValidation.js'
 
 export default {
 	name: 'WikiPageEditor',
-	components: { InlineFieldMark },
-	mixins: [pageEditorValidationMixin],
-	props: {
-		config: {
-			type: Object,
-			default: () => ({}),
-		},
+	components: { InlineFieldMark, PropertyKeyField },
+	mixins: [
+		pageEditorBaseMixin,
+		pageEditorValidationMixin,
+		pageEditorSchemaBoundMixin,
+	],
 
+	props: {
 		pageType: {
 			type: String,
 			default: 'wiki',
 		},
-
-		appSlug: {
-			type: String,
-			default: '',
-		},
-
-		dataRegisters: {
-			type: Array,
-			default: () => [],
-		},
-
-		parentRoute: {
-			type: String,
-			default: '',
-		},
 	},
 
-	emits: ['update:config'],
-	setup(props) {
-		const picker = useRegisterPicker({
-			appSlug: props.appSlug,
-			dataRegisters: props.dataRegisters,
-		})
-		return { picker }
-	},
+	setup: useEditorRegisterPicker,
 
 	data() {
 		return {
-			registers: [],
-			schemas: [],
-			schemaProperties: {},
 			sidebarSchemas: [],
 			sidebarSchemaProperties: {},
 		}
@@ -400,28 +328,6 @@ export default {
 	},
 
 	watch: {
-		'config.register': {
-			immediate: true,
-			handler(val) {
-				if (val) {
-					this.fetchSchemas(val)
-				} else {
-					this.schemas = []
-				}
-			},
-		},
-
-		'config.schema': {
-			immediate: true,
-			handler(val) {
-				if (val && this.config.register) {
-					this.fetchSchemaProperties(this.config.register, val)
-				} else {
-					this.schemaProperties = {}
-				}
-			},
-		},
-
 		effectiveSidebarRegister: {
 			immediate: true,
 			handler(val) {
@@ -448,32 +354,7 @@ export default {
 		},
 	},
 
-	async mounted() {
-		await this.fetchRegisters()
-	},
-
 	methods: {
-		/**
-		 * Lossless top-level `config` key update: clone, delete-on-empty,
-		 * touch only the edited key.
-		 *
-		 * @param {string} key - top-level config key.
-		 * @param {*} value - new value.
-		 */
-		update(key, value) {
-			const next = { ...this.config }
-			if (
-				value === ''
-				|| value === null
-				|| (Array.isArray(value) && value.length === 0)
-			) {
-				delete next[key]
-			} else {
-				next[key] = value
-			}
-			this.$emit('update:config', next)
-		},
-
 		/**
 		 * Register-picker change handler: writes `register` and resets the
 		 * dependent `schema` dropdown (same partner-clear as LogsPageEditor).
@@ -509,35 +390,6 @@ export default {
 		},
 
 		/**
-		 * Fetch the registers list for the picker dropdowns.
-		 */
-		async fetchRegisters() {
-			this.registers = await this.picker.fetchRegisters()
-		},
-
-		/**
-		 * Fetch the schemas in the bound article register.
-		 *
-		 * @param {string} register - register slug.
-		 */
-		async fetchSchemas(register) {
-			this.schemas = await this.picker.fetchSchemas(register)
-		},
-
-		/**
-		 * Fetch schema properties for the article field-mapping dropdowns.
-		 *
-		 * @param {string} register - register slug.
-		 * @param {string} schema - schema slug.
-		 */
-		async fetchSchemaProperties(register, schema) {
-			this.schemaProperties = await this.picker.fetchSchemaProperties(
-				register,
-				schema,
-			)
-		},
-
-		/**
 		 * Fetch the schemas in the (effective) sidebar register.
 		 *
 		 * @param {string} register - register slug.
@@ -562,7 +414,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../assets/editor-controls.scss' as c;
+
 .wiki-page-editor {
 	display: flex;
 	flex-direction: column;
@@ -577,12 +431,7 @@ export default {
 }
 
 .wiki-page-editor__fieldset {
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-	padding: 8px;
-	display: flex;
-	flex-direction: column;
-	gap: 6px;
+	@include c.fieldset;
 }
 
 .wiki-page-editor__fieldset legend {
@@ -600,10 +449,6 @@ export default {
 
 .wiki-page-editor__group-row input,
 .wiki-page-editor__group-row select {
-	padding: 4px 6px;
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-	background: var(--color-main-background);
-	color: var(--color-main-text);
+	@include c.control;
 }
 </style>

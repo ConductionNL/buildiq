@@ -23,10 +23,13 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\Controller;
 
 use OCA\Buildiq\Controller\ApplicationsController;
+use OCA\Buildiq\Service\CallerContext;
 use OCA\Buildiq\Service\ManifestResolverService;
 use OCA\Buildiq\Service\PermissionResolver;
+use OCA\Buildiq\Service\RegisterStore;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
+use OCA\OpenRegister\Db\AuditTrail\ObjectAuditEvent;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
@@ -40,6 +43,7 @@ use OCP\IGroupManager;
 use OCP\IRequest;
 use OCP\IUser;
 use OCP\IUserSession;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
@@ -120,11 +124,21 @@ class ApplicationsControllerTest extends TestCase {
 	 * @param string $uid Caller UID
 	 * @param array<int, string> $callerGroups Group IDs the caller belongs to
 	 * @param bool $isAdmin Whether the caller is in the `admin` group
+	 * @param string|null $versionParam The `?_version=` query value, if any
 	 *
 	 * @return ApplicationsController
 	 */
-	private function buildController(string $uid = 'bob', array $callerGroups = [], bool $isAdmin = false): ApplicationsController {
+	private function buildController(string $uid = 'bob', array $callerGroups = [], bool $isAdmin = false, ?string $versionParam = null): ApplicationsController {
 		$request = $this->createMock(IRequest::class);
+		$request->method('getParam')->willReturnCallback(
+			static function (string $key, mixed $default = null) use ($versionParam): mixed {
+				if ($key === '_version') {
+					return $versionParam;
+				}
+
+				return $default;
+			}
+		);
 
 		$registerEntity = $this->getMockBuilder(Register::class)
 			->disableOriginalConstructor()
@@ -164,15 +178,19 @@ class ApplicationsControllerTest extends TestCase {
 		return new ApplicationsController(
 			request: $request,
 			logger: $this->logger,
-			objectService: $this->objectService,
-			registerMapper: $registerMapper,
-			schemaMapper: $schemaMapper,
-			userSession: $this->userSession,
-			groupManager: $this->groupManager,
+			store: new RegisterStore(
+				objectService: $this->objectService,
+				registerMapper: $registerMapper,
+				schemaMapper: $schemaMapper,
+				auditTrailMapper: $this->auditTrailMapper
+			),
+			caller: new CallerContext(
+				userSession: $this->userSession,
+				groupManager: $this->groupManager,
+				permissionResolver: $permissionResolver
+			),
 			manifestResolver: $this->manifestResolver,
-			permissionResolver: $permissionResolver,
 			channelApplier: $this->createMock(\OCA\Buildiq\Service\AppChannelApplier::class),
-			auditTrailMapper: $this->auditTrailMapper,
 		);
 	}//end buildController()
 
@@ -360,6 +378,65 @@ class ApplicationsControllerTest extends TestCase {
 	}//end testGetManifestReturns404WhenSlugUnknown()
 
 	/**
+	 * An app without a BuiltAppRoute entry still serves its manifest.
+	 *
+	 * Apps installed by the seed, a template or GitHub have no route index
+	 * entry, and the Manifest tab answered 404 for all of them. The lookup now
+	 * falls back to the Application's own slug.
+	 *
+	 * @return void
+	 */
+	public function testGetManifestFindsAnAppWithoutARouteEntry(): void {
+		$controller = $this->buildController(uid: 'bob');
+
+		$searches = 0;
+		$this->objectService->method('searchObjects')->willReturnCallback(
+			static function () use (&$searches): array {
+				$searches++;
+				if ($searches === 1) {
+					return [];
+				}
+
+				return [['id' => 'abc-123', 'slug' => 'hello-world']];
+			}
+		);
+		$applicationEntity = $this->createMock(ObjectEntity::class);
+		$applicationEntity->method('jsonSerialize')->willReturn([
+			'slug' => 'hello-world',
+			'permissions' => ['owners' => ['user:bob'], 'editors' => [], 'viewers' => []],
+		]);
+		$this->objectService->method('find')->with('abc-123')->willReturn($applicationEntity);
+		$this->manifestResolver->method('resolve')->willReturn(['version' => '1.0.0', 'menu' => [], 'pages' => []]);
+
+		$result = $controller->getManifest(slug: 'hello-world');
+
+		self::assertSame(Http::STATUS_OK, $result->getStatus());
+		self::assertSame('1.0.0', $result->getData()['version']);
+	}//end testGetManifestFindsAnAppWithoutARouteEntry()
+
+	/**
+	 * A search hit whose slug differs is not the app (no fuzzy matches).
+	 *
+	 * @return void
+	 */
+	public function testGetManifestFallbackIgnoresAHitWithAnotherSlug(): void {
+		$controller = $this->buildController(uid: 'bob');
+
+		$searches = 0;
+		$this->objectService->method('searchObjects')->willReturnCallback(
+			static function () use (&$searches): array {
+				$searches++;
+				return $searches === 1 ? [] : [['id' => 'abc-123', 'slug' => 'hello-world-2']];
+			}
+		);
+		$this->objectService->expects(self::never())->method('find');
+
+		$result = $controller->getManifest(slug: 'hello-world');
+
+		self::assertSame(Http::STATUS_NOT_FOUND, $result->getStatus());
+	}//end testGetManifestFallbackIgnoresAHitWithAnotherSlug()
+
+	/**
 	 * Inconsistent state — route exists but no applicationUuid → 500.
 	 *
 	 * @return void
@@ -483,13 +560,13 @@ class ApplicationsControllerTest extends TestCase {
 		$this->objectService->method('find')->willReturn($entity);
 
 		$this->auditTrailMapper->expects(self::once())
-			->method('createAuditTrailEntry')
+			->method('recordObjectEvent')
 			->with(
-				self::identicalTo($entity),
-				self::equalTo('rbac.admin_bypass'),
-				self::callback(static function (array $ctx): bool {
-					return ($ctx['actor'] ?? null) === 'sysadmin'
-						&& ($ctx['slug'] ?? null) === 'hello-world';
+				self::callback(callback: static function (ObjectAuditEvent $event) use ($entity): bool {
+					return $event->object === $entity
+						&& $event->action === 'rbac.admin_bypass'
+						&& ($event->context['actor'] ?? null) === 'sysadmin'
+						&& ($event->context['slug'] ?? null) === 'hello-world';
 				})
 			);
 
@@ -634,4 +711,60 @@ class ApplicationsControllerTest extends TestCase {
 		self::assertSame(Http::STATUS_OK, $result->getStatus());
 		self::assertSame('Pet Store', $result->getData()['name']);
 	}//end testGetManifestKeepsConsistentName()
+	/**
+	 * A `?_version=` preview also carries the Application's display name, so
+	 * the running app's browser tab reads "Pet Store", not the slug.
+	 *
+	 * @return void
+	 */
+	public function testVersionedManifestSuppliesApplicationName(): void {
+		$controller = $this->buildController(uid: 'bob', versionParam: 'development');
+		$this->wireApplicationWithName(appName: 'Pet Store', manifestName: null);
+		$this->manifestResolver->method('resolve')->willReturn(
+			['version' => '1.0.0', 'menu' => [], 'pages' => []]
+		);
+
+		$result = $controller->getManifest(slug: 'pet-store');
+
+		self::assertSame(Http::STATUS_OK, $result->getStatus());
+		self::assertSame('Pet Store', $result->getData()['name']);
+	}//end testVersionedManifestSuppliesApplicationName()
+	/**
+	 * Manifests with every `runtime` / `runtime.user` shape, and what a projected
+	 * `runtime.user` field leaves around it.
+	 *
+	 * @return array<string, array{0: array<string, mixed>, 1: callable}>
+	 */
+	public static function runtimeShapes(): array {
+		return [
+			'no runtime'          => [['pages' => []], static fn (array $f): array => ['pages' => [], 'runtime' => ['user' => $f]]],
+			'runtime not array'   => [['runtime' => 'x'], static fn (array $f): array => ['runtime' => ['user' => $f]]],
+			'user not array'      => [['runtime' => ['theme' => 'dark', 'user' => 5]], static fn (array $f): array => ['runtime' => ['theme' => 'dark', 'user' => $f]]],
+			'user with fields'    => [['runtime' => ['user' => ['isOwner' => 'old', 'permissions' => 'old', 'name' => 'A'], 'theme' => 'd']], static fn (array $f): array => ['runtime' => ['user' => array_replace(['isOwner' => 'old', 'permissions' => 'old', 'name' => 'A'], $f), 'theme' => 'd']]],
+			'user with index key' => [['runtime' => ['user' => [3 => 'x']]], static fn (array $f): array => ['runtime' => ['user' => [3 => 'x'] + $f]]],
+		];
+	}//end runtimeShapes()
+
+	/**
+	 * The owner and permission signals land on `runtime.user` without disturbing anything else.
+	 *
+	 * @param array<string, mixed> $manifest The manifest before.
+	 * @param callable             $after    Builds the manifest after, from the projected field.
+	 *
+	 * @return void
+	 */
+	#[DataProvider('runtimeShapes')]
+	public function testRuntimeSignalsProjectOntoRuntimeUser(array $manifest, callable $after): void {
+		$controller = $this->buildController(uid: 'alice', callerGroups: ['team-alpha']);
+		$alice = $this->createMock(IUser::class);
+		$alice->method('getUID')->willReturn('alice');
+		$application = ['permissions' => ['owners' => ['team-alpha'], 'editors' => [], 'viewers' => []]];
+		$owner = new \ReflectionMethod($controller, 'injectOwnerSignal');
+		$permissions = new \ReflectionMethod($controller, 'injectPermissionsSignal');
+
+		self::assertSame($after(['isOwner' => true]), $owner->invoke($controller, $manifest, $application, $alice));
+		self::assertSame($after(['permissions' => []]), $permissions->invoke($controller, $manifest, $application, $alice));
+		self::assertSame($after(['isOwner' => false]), $owner->invoke($controller, $manifest, null, $alice));
+	}//end testRuntimeSignalsProjectOntoRuntimeUser()
+
 }//end class

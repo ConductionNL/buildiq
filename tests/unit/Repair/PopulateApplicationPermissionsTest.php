@@ -241,4 +241,51 @@ class PopulateApplicationPermissionsTest extends TestCase {
 		);
 		$step->run($this->output);
 	}//end testRunWrapsFindAndPatchInSystemContext()
+	/**
+	 * A row refused on save is reported, and the rows after it are still patched.
+	 *
+	 * @return void
+	 */
+	public function testARefusedRowDoesNotStopTheRest(): void {
+		$rows = [];
+		foreach (['uuid-a', 'uuid-b', 'uuid-c'] as $uuid) {
+			$rows[] = ['@self' => ['id' => $uuid], 'slug' => $uuid];
+		}
+
+		$this->objectService->method('findAll')->willReturn($rows);
+		$saved = [];
+		$entity = $this->createMock(\OCA\OpenRegister\Contract\ObjectEntityInterface::class);
+		$this->objectService->expects(self::exactly(6))->method('saveObject')->willReturnCallback(
+			static function (array $object) use (&$saved, $entity) {
+				if ($object['@self']['id'] === 'uuid-b') {
+					throw new \RuntimeException('refused by a validation');
+				}
+
+				$saved[] = $object['@self']['id'];
+				return $entity;
+			}
+		);
+
+		$info = [];
+		$warnings = [];
+		$this->output->method('info')->willReturnCallback(static function (string $message) use (&$info): void {
+			$info[] = $message;
+		});
+		$this->output->method('warning')->willReturnCallback(static function (string $message) use (&$warnings): void {
+			$warnings[] = $message;
+		});
+
+		$step = new PopulateApplicationPermissions(logger: $this->logger, objectService: $this->objectService);
+		$step->run($this->output);
+		$step->run($this->output);
+
+		self::assertSame(['uuid-a', 'uuid-c', 'uuid-a', 'uuid-c'], $saved);
+		self::assertContains('Permissions populated on 2 Application(s).', $info);
+		self::assertSame(
+			array_fill(0, 2, '1 Application(s) were refused on save and still have no permissions: uuid-b'),
+			$warnings,
+			'each run reports only its own refusals'
+		);
+	}//end testARefusedRowDoesNotStopTheRest()
+
 }//end class

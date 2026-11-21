@@ -7,12 +7,12 @@
  *
  * Covers:
  *  - available branch: when useLivePreview reports available:true and
- *    previewProps() returns a prop bag, the sandboxed CnAppRoot mounts
- *    with the expected appId / manifest / key props and the fallback
+ *    previewProps() returns a prop bag, the PreviewSandbox mounts with the
+ *    expected appId / manifest / key props and the fallback
  *    ("Save & open preview") is NOT shown.
  *  - unavailable branch: when available:false, the fallback panel + button
- *    render and no CnAppRoot is mounted (regression pin for the pre-chain-
- *    spec-2 degraded path).
+ *    render and no PreviewSandbox is mounted (regression pin for the
+ *    pre-chain-spec-2 degraded path).
  *  - no-write invariant: the sandbox mount never issues a manifest PUT/save
  *    (the preview surface has no save wiring; asserting no update:manifest
  *    is emitted by merely rendering the preview).
@@ -136,6 +136,30 @@ vi.mock('../../src/components/page-editor/MenuTreeEditor.vue', () =>
 	stub('MenuTreeEditor'),
 )
 
+// The sandbox boots a second Vue app of its own; this spec is about the pane
+// that hosts it. Its routing is covered in PreviewSandbox.spec.js.
+vi.mock('../../src/components/page-editor/PreviewSandbox.vue', async () => {
+	const { h } = await import('vue')
+	return {
+		default: {
+			name: 'PreviewSandbox',
+			props: [
+				'appId',
+				'manifest',
+				'registry',
+				'customComponents',
+				'pageTypes',
+				'translate',
+				'language',
+				'permissions',
+			],
+			render() {
+				return h('div', { class: 'preview-sandbox-stub' })
+			},
+		},
+	}
+})
+
 const PageDesigner = (await import('../../src/views/PageDesigner.vue')).default
 
 function mountDesigner(manifest = { pages: [], menu: [] }, slug = 'hello-world') {
@@ -154,7 +178,7 @@ describe('PageDesigner live-preview pane (REQ-OBPD-008)', () => {
 		})
 	})
 
-	it('mounts the sandboxed CnAppRoot when preview is available', async () => {
+	it('mounts the preview sandbox when preview is available', async () => {
 		previewAvailableRef.value = true
 		previewPropsMock.mockImplementation((slug, manifest) => ({
 			appId: `openbuild-preview-${slug}`,
@@ -169,15 +193,10 @@ describe('PageDesigner live-preview pane (REQ-OBPD-008)', () => {
 		expect(wrapper.find('.page-designer__preview').exists()).toBe(true)
 		expect(wrapper.find('.page-designer__preview-fallback').exists()).toBe(false)
 
-		const appRoot = wrapper.findComponent({ name: 'CnAppRoot' })
-		expect(appRoot.exists()).toBe(true)
-
-		// The prop bag the sandbox mounts from (the lib stub declares no
-		// props, so assert the resolved computed the template binds to).
-		expect(wrapper.vm.livePreviewProps.appId).toBe(
-			'openbuild-preview-hello-world',
-		)
-		expect(wrapper.vm.livePreviewProps.manifest).toEqual(manifest)
+		const sandbox = wrapper.findComponent({ name: 'PreviewSandbox' })
+		expect(sandbox.exists()).toBe(true)
+		expect(sandbox.props('appId')).toBe('openbuild-preview-hello-world')
+		expect(sandbox.props('manifest')).toEqual(manifest)
 
 		// previewProps was called with the in-flight (slug, manifest).
 		expect(previewPropsMock).toHaveBeenCalledWith('hello-world', manifest)
@@ -202,7 +221,9 @@ describe('PageDesigner live-preview pane (REQ-OBPD-008)', () => {
 
 		expect(wrapper.find('.page-designer__preview-fallback').exists()).toBe(true)
 		expect(wrapper.find('.page-designer__preview').exists()).toBe(false)
-		expect(wrapper.findComponent({ name: 'CnAppRoot' }).exists()).toBe(false)
+		expect(wrapper.findComponent({ name: 'PreviewSandbox' }).exists()).toBe(
+			false,
+		)
 		// The "Save & open preview" button is the degraded escape hatch.
 		expect(wrapper.find('.page-designer__preview-btn').exists()).toBe(true)
 	})
@@ -213,7 +234,28 @@ describe('PageDesigner live-preview pane (REQ-OBPD-008)', () => {
 		const wrapper = mountDesigner({ pages: [], menu: [] }, 'hello-world')
 		await wrapper.vm.$nextTick()
 		expect(wrapper.find('.page-designer__preview-fallback').exists()).toBe(true)
-		expect(wrapper.findComponent({ name: 'CnAppRoot' }).exists()).toBe(false)
+		expect(wrapper.findComponent({ name: 'PreviewSandbox' }).exists()).toBe(
+			false,
+		)
+	})
+
+	// Rendered as a plain child it would share the designer's router: no page
+	// body would resolve, and a menu click would navigate the designer away.
+	it('renders the preview through the sandbox, not as a plain child', async () => {
+		previewAvailableRef.value = true
+		previewPropsMock.mockImplementation((slug, manifest) => ({
+			appId: `openbuild-preview-${slug}`,
+			manifest,
+			key: 'k',
+		}))
+		const wrapper = mountDesigner({ pages: [], menu: [] }, 'hello-world')
+		await wrapper.vm.$nextTick()
+
+		const viewport = wrapper.find('.page-designer__preview-viewport')
+		expect(viewport.exists()).toBe(true)
+		expect(viewport.findComponent({ name: 'PreviewSandbox' }).exists()).toBe(
+			true,
+		)
 	})
 
 	it('rendering the preview never emits a manifest write (no PUT/save path)', async () => {
@@ -229,5 +271,71 @@ describe('PageDesigner live-preview pane (REQ-OBPD-008)', () => {
 		// rendering the sandbox must not push a NEW manifest state upward.
 		const emissions = wrapper.emitted('update:manifest') || []
 		expect(emissions).toHaveLength(0)
+	})
+})
+
+// experience-multilingual-apps (REQ-BQML-004): the preview's language switch.
+describe('PageDesigner preview language switch (REQ-BQML-004)', () => {
+	const translated = {
+		pages: [{ id: 'permits', type: 'index', title: 'Vergunningen', config: {} }],
+		menu: [{ label: 'Vergunningen', route: 'permits' }],
+		i18n: {
+			sourceLanguage: 'nl',
+			languages: ['en'],
+			labels: { en: { Vergunningen: 'Permits' } },
+		},
+	}
+
+	beforeEach(() => {
+		validatorErrorsRef.value = []
+		previewAvailableRef.value = true
+		previewPropsMock.mockReset()
+		previewPropsMock.mockImplementation((slug, manifest) => ({
+			appId: `openbuild-preview-${slug}`,
+			manifest,
+			key: 'k',
+		}))
+		axiosGetMock.mockReset()
+		axiosGetMock.mockResolvedValue({ data: { results: [] } })
+	})
+
+	it('offers the written language and the translated ones, plus the maker\'s own', async () => {
+		const wrapper = mountDesigner(translated, 'vergunningen')
+		await wrapper.vm.$nextTick()
+
+		const options = wrapper.findAll('[data-test="preview-language"] option')
+		expect(options.map((o) => o.element.value)).toEqual(['', 'nl', 'en'])
+		expect(wrapper.findComponent({ name: 'PreviewSandbox' }).props('language')).toBe('')
+	})
+
+	it('hands the picked language to the sandbox and leaves the designer alone', async () => {
+		const wrapper = mountDesigner(translated, 'vergunningen')
+		await wrapper.vm.$nextTick()
+
+		await wrapper.find('[data-test="preview-language"]').setValue('en')
+
+		expect(wrapper.findComponent({ name: 'PreviewSandbox' }).props('language')).toBe('en')
+		expect(wrapper.emitted('update:manifest') || []).toHaveLength(0)
+	})
+
+	it('shows no switch for an app offered in one language', async () => {
+		const wrapper = mountDesigner({ pages: [], menu: [] }, 'hello-world')
+		await wrapper.vm.$nextTick()
+
+		expect(wrapper.find('[data-test="preview-language"]').exists()).toBe(false)
+	})
+
+	it('opens the Translations view from the toolbar and writes edits through the designer', async () => {
+		const wrapper = mountDesigner(translated, 'vergunningen')
+		await wrapper.vm.$nextTick()
+		expect(wrapper.findComponent({ name: 'TranslationsView' }).exists()).toBe(false)
+
+		await wrapper.find('[data-test="open-translations"]').trigger('click')
+		const view = wrapper.findComponent({ name: 'TranslationsView' })
+		expect(view.exists()).toBe(true)
+
+		const next = { ...translated, i18n: { ...translated.i18n, labels: { en: {} } } }
+		view.vm.$emit('update:manifest', next)
+		expect(wrapper.emitted('update:manifest').at(-1)).toEqual([next])
 	})
 })

@@ -9,7 +9,7 @@
  * Observed live behaviour (dev container, admin session):
  *   - Heading "Features" with two header actions: "Show roadmap",
  *     "Suggest feature".
- *   - A documentation link to openbuild.conduction.nl.
+ *   - A documentation link to buildiq.conduction.nl.
  *   - Empty state "No features documented yet" (auto-generated from
  *     openspec/specs once a status is set to implemented/reviewed).
  *   - Clicking "Show roadmap" toggles the view: heading becomes "Roadmap"
@@ -21,8 +21,12 @@
  */
 
 import { expect, test } from '@playwright/test'
+// The one place a target enters this suite, and the place the shared-instance
+// guard sits. This was a private `process.env.PLAYWRIGHT_BASE_URL ??
+// 'http://localhost:8080'` constant, so a run with nothing set wrote to the
+// shared dev instance. See tests/e2e/shared-instance.ts.
+import { E2E_BASE_URL as BASE } from '../support/baseUrl.ts'
 
-const BASE = process.env.PLAYWRIGHT_BASE_URL ?? 'http://localhost:8080'
 // The app router runs in path mode (not hash mode — that assumption was
 // stale; live-verified the nav's "Features & roadmap" link hrefs to this
 // plain path with no #/ fragment).
@@ -55,7 +59,7 @@ test.describe('Buildiq Features & roadmap', () => {
 		).toBeVisible()
 	})
 
-	test('surfaces the documentation link to openbuild.conduction.nl', async ({
+	test('surfaces the documentation link to buildiq.conduction.nl', async ({
 		page,
 	}) => {
 		await page.goto(FeaturesRoadmap)
@@ -64,7 +68,7 @@ test.describe('Buildiq Features & roadmap', () => {
 		).toBeVisible({ timeout: 15_000 })
 
 		await expect(
-			page.getByRole('link', { name: /openbuild\.conduction\.nl/i }),
+			page.getByRole('link', { name: /buildiq\.conduction\.nl/i }),
 		).toBeVisible({ timeout: 15_000 })
 	})
 

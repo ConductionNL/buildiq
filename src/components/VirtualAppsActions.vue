@@ -30,19 +30,54 @@
 			</NcButton>
 		</div>
 
-		<NcButton variant="primary" @click="showWizard = true">
+		<!-- data-walkthrough-id: spotlighted by the tour's `add-app` step. -->
+		<NcButton
+			variant="primary"
+			data-walkthrough-id="add-app"
+			@click="showWizard = true">
 			{{ t('buildiq', 'Add app') }}
+		</NcButton>
+
+		<NcButton
+			variant="secondary"
+			data-testid="import-app"
+			@click="showImport = true">
+			{{ t('buildiq', 'Import app') }}
 		</NcButton>
 
 		<CreateApplicationWizard
 			v-model:show="showWizard"
 			@created="onWizardCreated" />
+
+		<ImportAppDialog
+			v-model:open="showImport"
+			@imported="onImported" />
 	</div>
 </template>
 
 <script>
+import { showSuccess, showWarning } from '@nextcloud/dialogs'
 import { NcButton } from '@nextcloud/vue'
 import CreateApplicationWizard from '../dialogs/CreateApplicationWizard.vue'
+import ImportAppDialog from '../dialogs/ImportAppDialog.vue'
+
+/**
+ * The route's query with `filter` set to a value, or cleared for 'all'; the
+ * route's own query is left untouched.
+ *
+ * @param {?object} route The current route.
+ * @param {string} value The filter value ('all' | 'virtual' | 'hybrid').
+ * @return {object} The new query.
+ */
+function filterQuery(route, value) {
+	const query = { ...(route ? route.query : {}) }
+	if (value === 'all') {
+		delete query.filter
+	} else {
+		query.filter = value
+	}
+	return query
+}
 
 export default {
 	name: 'VirtualAppsActions',
@@ -50,11 +85,13 @@ export default {
 	components: {
 		NcButton,
 		CreateApplicationWizard,
+		ImportAppDialog,
 	},
 
 	data() {
 		return {
 			showWizard: false,
+			showImport: false,
 		}
 	},
 
@@ -63,7 +100,7 @@ export default {
 		 * The available all/virtual/hybrid filter options.
 		 *
 		 * @return {Array<{value: string, label: string}>}
-		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+		 * @spec openspec/specs/unified-app-model/spec.md
 		 */
 		filterOptions() {
 			return [
@@ -78,7 +115,7 @@ export default {
 		 * to 'all' when absent or unrecognised.
 		 *
 		 * @return {string}
-		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+		 * @spec openspec/specs/unified-app-model/spec.md
 		 */
 		activeFilter() {
 			const filter =
@@ -95,22 +132,27 @@ export default {
 		 * @param {string} value The filter value ('all' | 'virtual' | 'hybrid').
 		 *
 		 * @return {void}
-		 * @spec openspec/changes/unify-apps-with-app-type/specs/unified-app-model/spec.md
+		 * @spec openspec/specs/unified-app-model/spec.md
 		 */
 		setFilter(value) {
 			if (!this.$router) {
 				return
 			}
-			const query = { ...(this.$route ? this.$route.query : {}) }
-			if (value === 'all') {
-				delete query.filter
-			} else {
-				query.filter = value
-			}
+			const query = filterQuery(this.$route, value)
 			// Avoid a NavigationDuplicated error when the filter is unchanged.
-			if ((query.filter || 'all') !== (this.activeFilter || 'all')) {
+			if (this.changesFilter(query)) {
 				this.$router.replace({ query }).catch(() => {})
 			}
+		},
+
+		/**
+		 * Whether a query names another filter than the one in force.
+		 *
+		 * @param {object} query The query about to be written.
+		 * @return {boolean}
+		 */
+		changesFilter(query) {
+			return (query.filter || 'all') !== (this.activeFilter || 'all')
 		},
 
 		/**
@@ -122,8 +164,28 @@ export default {
 		 *   `created` with no uuid on its AI-copilot path (which has already
 		 *   navigated), so an absent value must only close the wizard, not navigate.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-26-application-detail-ui/tasks.md#task-4
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-26-application-detail-ui/tasks.md#task-4
 		 */
+		/**
+		 * After an import: report each schema's records, then open the new app.
+		 *
+		 * @param {object} app The import's answer: the app's `uuid` and, with records, `records.schemas`.
+		 * @return {void}
+		 * @spec openspec/changes/lifecycle-import-app-and-cli/specs/app-package-import/spec.md#requirement-records-come-along-only-when-asked-req-bqic-003
+		 */
+		onImported(app) {
+			const records = app && app.records ? app.records.schemas || [] : []
+			records.forEach((line) => {
+				if (line.imported > 0) {
+					showSuccess(n('buildiq', '%n {schema} record imported', '%n {schema} records imported', line.imported, { schema: line.schema }))
+				}
+				if (line.failed > 0) {
+					showWarning(n('buildiq', '%n {schema} record failed to import', '%n {schema} records failed to import', line.failed, { schema: line.schema }))
+				}
+			})
+			this.onWizardCreated(app ? app.uuid : undefined)
+		},
+
 		onWizardCreated(applicationUuid) {
 			this.showWizard = false
 

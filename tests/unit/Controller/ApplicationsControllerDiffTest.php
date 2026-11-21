@@ -29,8 +29,10 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\Controller;
 
 use OCA\Buildiq\Controller\ApplicationsController;
+use OCA\Buildiq\Service\CallerContext;
 use OCA\Buildiq\Service\ManifestResolverService;
 use OCA\Buildiq\Service\PermissionResolver;
+use OCA\Buildiq\Service\RegisterStore;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
@@ -46,6 +48,7 @@ use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
+use OCA\Buildiq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Tests for ApplicationsController::diffVersions.
@@ -119,13 +122,17 @@ class ApplicationsControllerDiffTest extends TestCase {
 		$this->controller = new ApplicationsController(
 			request: $request,
 			logger: $this->logger,
-			objectService: $this->objectService,
-			registerMapper: $registerMapper,
-			schemaMapper: $schemaMapper,
-			userSession: $userSession,
-			groupManager: $groupManager,
+			store: new RegisterStore(
+				objectService: $this->objectService,
+				registerMapper: $registerMapper,
+				schemaMapper: $schemaMapper
+			),
+			caller: new CallerContext(
+				userSession: $userSession,
+				groupManager: $groupManager,
+				permissionResolver: $permissionResolver
+			),
 			manifestResolver: $this->createMock(ManifestResolverService::class),
-			permissionResolver: $permissionResolver,
 			channelApplier: $this->createMock(\OCA\Buildiq\Service\AppChannelApplier::class),
 		);
 	}//end setUp()
@@ -178,6 +185,7 @@ class ApplicationsControllerDiffTest extends TestCase {
 		$this->objectService->method('searchObjects')->willReturn([$route]);
 		$this->objectService->method('find')
 			->willReturnCallback(function (...$args) use ($application, $oldVersion, $newVersion) {
+				$args = LegacyObjectArgs::flatten(args: $args);
 				$id = $args['id'] ?? $args[0];
 				if ($id === 'app-uuid-1') {
 					return $this->entity($application);
@@ -222,6 +230,7 @@ class ApplicationsControllerDiffTest extends TestCase {
 		$this->objectService->method('searchObjects')->willReturn([$route]);
 		$this->objectService->method('find')
 			->willReturnCallback(function (...$args) use ($application) {
+				$args = LegacyObjectArgs::flatten(args: $args);
 				$id = $args['id'] ?? $args[0];
 				if ($id === 'app-uuid-1') {
 					return $this->entity($application);
@@ -263,6 +272,7 @@ class ApplicationsControllerDiffTest extends TestCase {
 		$this->objectService->method('searchObjects')->willReturn([$route]);
 		$this->objectService->method('find')
 			->willReturnCallback(function (...$args) use ($application, $foreignSnap) {
+				$args = LegacyObjectArgs::flatten(args: $args);
 				$id = $args['id'] ?? $args[0];
 				if ($id === 'app-uuid-1') {
 					return $this->entity($application);
@@ -353,6 +363,7 @@ class ApplicationsControllerDiffTest extends TestCase {
 		$objectService->method('searchObjects')->willReturn([$route]);
 		$objectService->method('find')
 			->willReturnCallback(function (...$args) use ($application) {
+				$args = LegacyObjectArgs::flatten(args: $args);
 				$id = $args['id'] ?? $args[0];
 				if ($id === 'app-uuid-1') {
 					$entity = $this->createMock(ObjectEntity::class);
@@ -367,13 +378,17 @@ class ApplicationsControllerDiffTest extends TestCase {
 		$controller = new ApplicationsController(
 			request: $request,
 			logger: $this->createMock(LoggerInterface::class),
-			objectService: $objectService,
-			registerMapper: $registerMapper,
-			schemaMapper: $schemaMapper,
-			userSession: $outsiderSession,
-			groupManager: $noAdminGroupManager,
+			store: new RegisterStore(
+				objectService: $objectService,
+				registerMapper: $registerMapper,
+				schemaMapper: $schemaMapper
+			),
+			caller: new CallerContext(
+				userSession: $outsiderSession,
+				groupManager: $noAdminGroupManager,
+				permissionResolver: $noAdminPermissionResolver
+			),
 			manifestResolver: $this->createMock(ManifestResolverService::class),
-			permissionResolver: $noAdminPermissionResolver,
 			channelApplier: $this->createMock(\OCA\Buildiq\Service\AppChannelApplier::class),
 		);
 

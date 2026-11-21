@@ -39,6 +39,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use RuntimeException;
+use OCA\Buildiq\Tests\Support\LegacyObjectArgs;
 
 /**
  * Tests for MigrateAppOverridesToHybrid.
@@ -148,7 +149,9 @@ class MigrateAppOverridesToHybridTest extends TestCase {
 
 		$this->objectService->expects(self::once())
 			->method('deleteObject')
-			->with('row-1');
+			->with(...LegacyObjectArgs::with(method: 'deleteObject', expected: [
+					'uuid' => 'row-1',
+				]));
 
 		$this->schemaMapper->expects(self::once())->method('delete');
 

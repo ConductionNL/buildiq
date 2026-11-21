@@ -13,6 +13,12 @@
   - coerces `"true"` / `"false"` / numeric literals to boolean / number on
   - write so ordering ops (`gt`/`gte`/`lt`/`lte`) behave against numbers.
   -
+  - The "fx" toggle (pages-custom-code REQ-BQCC-002) switches to an
+  - expression: `{ expression }`, JavaScript over `values`, `user` and `route`
+  - that the sandbox evaluates. Switching fx off again clears the condition.
+  - Only an app owner may save it with "Allow code on pages" on; the server
+  - refuses anyone else.
+  -
   - A `visibleWhen` carrying `endpoint` or `source` (the advanced modes) is
   - rendered as a read-only summary and NEVER rewritten — Raw-JSON-authored
   - advanced conditions round-trip byte-for-byte through this component.
@@ -22,6 +28,24 @@
 		<p v-if="isAdvanced" class="visible-when-builder__advanced">
 			{{ t('buildiq', 'Advanced condition — edit in Raw JSON') }}
 		</p>
+		<template v-else-if="isExpression">
+			<textarea
+				class="visible-when-builder__expression"
+				rows="2"
+				spellcheck="false"
+				:aria-label="t('buildiq', 'Visibility expression')"
+				:placeholder="t('buildiq', 'For example: values.wantsContact === true')"
+				:value="modelValue.expression"
+				@input="onExpressionInput($event.target.value)" />
+			<button
+				type="button"
+				class="visible-when-builder__fx visible-when-builder__fx--on"
+				aria-pressed="true"
+				:title="t('buildiq', 'Stop using an expression')"
+				@click="clear">
+				fx
+			</button>
+		</template>
 		<template v-else>
 			<select
 				class="visible-when-builder__select"
@@ -61,6 +85,14 @@
 				@click="clear">
 				{{ t('buildiq', 'Clear') }}
 			</button>
+			<button
+				type="button"
+				class="visible-when-builder__fx"
+				aria-pressed="false"
+				:title="t('buildiq', 'Write an expression instead')"
+				@click="startExpression">
+				fx
+			</button>
 		</template>
 	</div>
 </template>
@@ -68,6 +100,12 @@
 <script>
 /** The visibleWhen op allow-list (`$defs/visibleWhen.properties.op.enum`). */
 const OPS = ['eq', 'neq', 'gt', 'gte', 'lt', 'lte']
+
+/** The typed values that read as booleans. */
+const BOOLEAN_LITERALS = new Map([
+	['true', true],
+	['false', false],
+])
 
 /**
  * Coerce a typed value string to boolean/number where it unambiguously
@@ -78,16 +116,20 @@ const OPS = ['eq', 'neq', 'gt', 'gte', 'lt', 'lte']
  * @return {boolean|number|string}
  */
 function coerceValue(raw) {
-	if (raw === 'true') {
-		return true
+	if (BOOLEAN_LITERALS.has(raw)) {
+		return BOOLEAN_LITERALS.get(raw)
 	}
-	if (raw === 'false') {
-		return false
-	}
-	if (raw !== '' && raw.trim() !== '' && !Number.isNaN(Number(raw))) {
-		return Number(raw)
-	}
-	return raw
+	return isNumeric(raw) ? Number(raw) : raw
+}
+
+/**
+ * Whether a typed value is a number (not blank, and not NaN).
+ *
+ * @param {string} raw - the raw typed value.
+ * @return {boolean}
+ */
+function isNumeric(raw) {
+	return raw !== '' && raw.trim() !== '' && !Number.isNaN(Number(raw))
 }
 
 export default {
@@ -124,13 +166,29 @@ export default {
 		},
 
 		/**
+		 * Whether the current `visibleWhen` is an fx expression (REQ-BQCC-002).
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/pages-custom-code/tasks.md#t05
+		 */
+		isExpression() {
+			return !!(
+				!this.isAdvanced
+				&& this.modelValue
+				&& typeof this.modelValue.expression === 'string'
+			)
+		},
+
+		/**
 		 * The currently-picked sibling field key, or '' (no condition).
 		 *
 		 * @return {string}
+		 * @spec openspec/changes/pages-custom-code/tasks.md#t05
 		 */
 		currentField() {
 			if (
 				this.isAdvanced
+				|| this.isExpression
 				|| !this.modelValue
 				|| typeof this.modelValue.field !== 'string'
 			) {
@@ -199,6 +257,27 @@ export default {
 		},
 
 		/**
+		 * Switch to an fx expression, starting empty (REQ-BQCC-002).
+		 *
+		 * @return {void}
+		 * @spec openspec/changes/pages-custom-code/tasks.md#t05
+		 */
+		startExpression() {
+			this.$emit('update:modelValue', { expression: '' })
+		},
+
+		/**
+		 * Write the typed expression as `visibleWhen.expression`.
+		 *
+		 * @param {string} value - the typed expression.
+		 * @return {void}
+		 * @spec openspec/changes/pages-custom-code/tasks.md#t05
+		 */
+		onExpressionInput(value) {
+			this.$emit('update:modelValue', { expression: value })
+		},
+
+		/**
 		 * Clear the condition entirely.
 		 *
 		 * @return {void}
@@ -210,7 +289,9 @@ export default {
 }
 </script>
 
-<style scoped>
+<style scoped lang="scss">
+@use '../../../assets/editor-controls.scss' as c;
+
 .visible-when-builder {
 	display: flex;
 	flex-wrap: wrap;
@@ -228,23 +309,30 @@ export default {
 .visible-when-builder__select,
 .visible-when-builder__value {
 	flex: 1 1 120px;
-	padding: 4px 6px;
-	border: 1px solid var(--color-border);
-	border-radius: var(--border-radius);
-	background: var(--color-main-background);
-	color: var(--color-main-text);
+	@include c.control;
 }
 
 .visible-when-builder__select--narrow {
 	flex: 0 0 90px;
 }
 
-.visible-when-builder__clear {
-	background: transparent;
-	border: 1px solid var(--color-border);
-	color: var(--color-main-text);
-	padding: 4px 8px;
-	border-radius: var(--border-radius);
-	cursor: pointer;
+.visible-when-builder__clear,
+.visible-when-builder__fx {
+	@include c.ghost-button;
+}
+
+.visible-when-builder__fx {
+	font-style: italic;
+	font-weight: bold;
+}
+
+.visible-when-builder__fx--on {
+	color: var(--color-primary-element);
+}
+
+.visible-when-builder__expression {
+	flex: 1 1 100%;
+	font-family: var(--font-face-monospace, monospace);
+	@include c.control;
 }
 </style>

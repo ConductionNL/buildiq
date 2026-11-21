@@ -206,6 +206,20 @@ describe('ManifestLayersDetail', () => {
 		expect(wrapper.find('.ob-manifest-detail__overrides').exists()).toBe(false)
 	})
 
+	it('falls back to an empty user delta when it cannot be read', async () => {
+		installGet({ app: APP, userDelta: 'error' })
+		const wrapper = mountDetail()
+		await flush(wrapper)
+		expect(wrapper.vm.userDelta).toEqual({
+			allowed: false,
+			exists: false,
+			versionUuid: null,
+			manifestDelta: {},
+		})
+		expect(axiosGetMock).toHaveBeenCalledWith('/apps/buildiq/api/app-overrides/petstore/user')
+		expect(axiosGetMock).toHaveBeenCalledWith('/apps/buildiq/api/app-overrides/petstore/user-deltas')
+	})
+
 	describe('computeds & RBAC', () => {
 		it('resolves appUuid from prop, record, then route', async () => {
 			installGet({ app: APP })
@@ -418,30 +432,18 @@ describe('ManifestLayersDetail', () => {
 	})
 
 	describe('navigation', () => {
-		it('openInOpenRegister deep-links to the OR object page (no-op on empty)', async () => {
+		// An href, not a click handler: the control has to BE a link, so
+		// middle-click and "open in new tab" work. Null for an empty uuid
+		// renders the anchor without an href — inert, not a broken link.
+		it('openRegisterUrl builds the OR object page URL (null on empty)', async () => {
 			installGet({ app: APP })
 			const wrapper = mountDetail()
 			await flush(wrapper)
-			const original = window.location
-			Object.defineProperty(window, 'location', {
-				configurable: true,
-				writable: true,
-				value: { href: 'about:blank' },
-			})
-			try {
-				wrapper.vm.openInOpenRegister('')
-				expect(window.location.href).toBe('about:blank')
-				wrapper.vm.openInOpenRegister('ver-9')
-				expect(window.location.href).toBe(
-					'/apps/openregister/objects/buildiq/applicationVersion/ver-9',
-				)
-			} finally {
-				Object.defineProperty(window, 'location', {
-					configurable: true,
-					writable: true,
-					value: original,
-				})
-			}
+
+			expect(wrapper.vm.openRegisterUrl('')).toBeNull()
+			expect(wrapper.vm.openRegisterUrl('ver-9')).toBe(
+				'/apps/openregister/objects/buildiq/applicationVersion/ver-9',
+			)
 		})
 
 		it('goBack pushes to the app detail route', async () => {

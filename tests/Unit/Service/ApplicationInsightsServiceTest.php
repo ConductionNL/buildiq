@@ -33,11 +33,13 @@ namespace OCA\Buildiq\Tests\Unit\Service;
 
 use OCA\Buildiq\Service\ApplicationInsightsService;
 use OCA\Buildiq\Service\PermissionResolver;
+use OCA\Buildiq\Service\RegisterStore;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Db\ObjectEntity;
 use OCA\OpenRegister\Db\Register;
 use OCA\OpenRegister\Db\RegisterMapper;
+use OCA\OpenRegister\Db\Schema;
 use OCA\OpenRegister\Db\SchemaMapper;
 use OCP\ICache;
 use OCP\ICacheFactory;
@@ -48,6 +50,7 @@ use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use ReflectionMethod;
+use RuntimeException;
 
 /**
  * Tests for ApplicationInsightsService.
@@ -107,10 +110,12 @@ class ApplicationInsightsServiceTest extends TestCase {
 		$cacheFactory->method('createDistributed')->willReturn($cache);
 
 		$this->service = new ApplicationInsightsService(
-			objectService: $this->objectService,
+			store: new RegisterStore(
+				objectService: $this->objectService,
+				registerMapper: $this->registerMapper,
+				schemaMapper: $this->schemaMapper
+			),
 			auditTrailMapper: $this->auditTrailMapper,
-			schemaMapper: $this->schemaMapper,
-			registerMapper: $this->registerMapper,
 			cacheFactory: $cacheFactory,
 			logger: $this->logger,
 		);
@@ -375,6 +380,151 @@ class ApplicationInsightsServiceTest extends TestCase {
 	}//end testHybridAppComputesFromInstalledAppRegisters()
 
 	/**
+	 * Hello World keeps its messages in the `buildiq` register and has no
+	 * register of its own. The object count read 0; it now counts where the
+	 * pages point, and reports the count per schema for the Schemas widget.
+	 *
+	 * @return void
+	 */
+	public function testVersionWithoutOwnRegisterCountsWherePagesPoint(): void {
+		$this->wireVersion(
+			manifest: ['pages' => [
+				['config' => ['register' => 'buildiq', 'schema' => 'hello-message']],
+				['config' => ['register' => 'buildiq', 'schema' => 'hello-message']],
+			]],
+			register: 'openbuild-hello-world'
+		);
+		$this->registerMapper->method('find')->willThrowException(new \RuntimeException('no such register'));
+		$this->schemaMapper->method('find')->willReturnCallback(
+			static fn (string|int $ref): Schema => self::schema(id: 7, slug: 'hello-message')
+		);
+		$counted = &$this->countPerRegister(['buildiq#7' => 3]);
+
+		$result = $this->service->computeInsights('app-uuid', 'prod-uuid', '7d', $this->mockUser('alice'));
+
+		self::assertSame(3, $result['kpis']['objectCount']);
+		self::assertSame(['buildiq#7'], $counted, 'counted once, in the register the pages name');
+		self::assertSame(3, $result['schemaCounts']['hello-message']);
+		self::assertSame(3, $result['schemaCounts']['7']);
+	}//end testVersionWithoutOwnRegisterCountsWherePagesPoint()
+
+	/**
+	 * A schema in the version's register that no page names yet still counts.
+	 *
+	 * @return void
+	 */
+	public function testVersionRegisterSchemasCountEvenWithoutAPage(): void {
+		$this->wireVersion(manifest: ['pages' => []], register: 'openbuild-shop-production');
+		$register = new Register();
+		$register->setSchemas([21]);
+		$this->registerMapper->method('find')->willReturn($register);
+		$this->schemaMapper->method('find')->willReturnCallback(
+			static fn (string|int $ref): Schema => self::schema(id: (int)$ref, slug: 'shop-production-order')
+		);
+		$this->countPerRegister(['openbuild-shop-production#21' => 2]);
+
+		$result = $this->service->computeInsights('app-uuid', 'prod-uuid', '7d', $this->mockUser('alice'));
+
+		self::assertSame(2, $result['kpis']['objectCount']);
+		self::assertSame(2, $result['schemaCounts']['shop-production-order']);
+	}//end testVersionRegisterSchemasCountEvenWithoutAPage()
+
+	/**
+	 * The audit-event KPI sums the action chart of each schema in the set.
+	 *
+	 * @return void
+	 */
+	public function testAuditEventCountSumsActionChartPerSchema(): void {
+		$this->wireVersion(manifest: ['pages' => []], register: 'openbuild-shop-production');
+		$register = new Register();
+		$register->setSchemas([21]);
+		$this->registerMapper->method('find')->willReturn($register);
+		$this->schemaMapper->method('find')->willReturnCallback(
+			static fn (string|int $ref): Schema => self::schema(id: (int)$ref, slug: 'shop-production-order')
+		);
+		$this->countPerRegister(counts: ['openbuild-shop-production#21' => 2]);
+		$this->auditTrailMapper->method('getActionChartData')->willReturn(
+			['labels' => ['2026-11-09', '2026-11-10'], 'series' => [['name' => 'create', 'data' => [3, 4]]]]
+		);
+
+		$result = $this->service->computeInsights(appUuid: 'app-uuid', versionUuid: 'prod-uuid', window: '7d', caller: $this->mockUser(uid: 'alice'));
+
+		self::assertSame(expected: 7, actual: $result['kpis']['auditEventCount']);
+	}//end testAuditEventCountSumsActionChartPerSchema()
+
+	/**
+	 * Wire an app (alice is a viewer) and its production version.
+	 *
+	 * @param array<string, mixed> $manifest The version manifest.
+	 * @param string $register The version's register slug.
+	 *
+	 * @return void
+	 */
+	private function wireVersion(array $manifest, string $register): void {
+		$app = $this->mockEntity([
+			'uuid' => 'app-uuid',
+			'slug' => 'hello-world',
+			'productionVersion' => 'prod-uuid',
+			'permissions' => ['viewers' => ['user:alice']],
+		]);
+		$version = $this->mockEntity([
+			'uuid' => 'prod-uuid',
+			'slug' => 'production',
+			'application' => 'app-uuid',
+			'register' => $register,
+			'manifest' => $manifest,
+		]);
+		$this->objectService->method('find')->willReturnOnConsecutiveCalls($app, $version);
+	}//end wireVersion()
+
+	/**
+	 * Answer count() per `register#schema` and record what was counted.
+	 *
+	 * @param array<string, int> $counts Count per `register#schema`.
+	 *
+	 * @return array<int, string> Reference to the list of counted pairs.
+	 */
+	private function &countPerRegister(array $counts): array {
+		$state = ['register' => '', 'schema' => ''];
+		$counted = [];
+		$this->objectService->method('setRegister')->willReturnCallback(
+			function ($register) use (&$state) {
+				$state['register'] = (string)$register;
+				return $this->objectService;
+			}
+		);
+		$this->objectService->method('setSchema')->willReturnCallback(
+			function ($schema) use (&$state) {
+				$state['schema'] = (string)$schema;
+				return $this->objectService;
+			}
+		);
+		$this->objectService->method('count')->willReturnCallback(
+			static function () use (&$state, &$counted, $counts): int {
+				$key = $state['register'] . '#' . $state['schema'];
+				$counted[] = $key;
+				return ($counts[$key] ?? 0);
+			}
+		);
+		return $counted;
+	}//end countPerRegister()
+
+	/**
+	 * A Schema entity with an id and a slug.
+	 *
+	 * @param int $id Schema id.
+	 * @param string $slug Schema slug.
+	 *
+	 * @return Schema
+	 */
+	private static function schema(int $id, string $slug): Schema {
+		$schema = new Schema();
+		$schema->setId($id);
+		$schema->setSlug($slug);
+		return $schema;
+	}//end schema()
+
+	/**
 	 * Schema-set walk dedupes schema IDs and ignores tuples referencing other registers.
 	 *
 	 * @return void
@@ -450,10 +600,12 @@ class ApplicationInsightsServiceTest extends TestCase {
 		$cacheFactory->method('createDistributed')->willReturn($cache);
 
 		return new ApplicationInsightsService(
-			objectService: $this->objectService,
+			store: new RegisterStore(
+				objectService: $this->objectService,
+				registerMapper: $this->registerMapper,
+				schemaMapper: $this->schemaMapper
+			),
 			auditTrailMapper: $this->auditTrailMapper,
-			schemaMapper: $this->schemaMapper,
-			registerMapper: $this->registerMapper,
 			cacheFactory: $cacheFactory,
 			logger: $this->logger,
 			permissionResolver: new PermissionResolver($groupManager, $this->logger)
@@ -503,4 +655,106 @@ class ApplicationInsightsServiceTest extends TestCase {
 			$method->invoke($service, $permissions, $this->mockUser('mallory'), ['owners', 'editors'])
 		);
 	}//end testCallerInAnyRoleDeniesUnmatchedCaller()
+
+	/**
+	 * The whole payload and every cache call, for a computed version, a
+	 * cached one, a refused caller while the cache is warm, a hybrid app, a
+	 * failing read and a failing cache, compared with the recorded
+	 * fixture. Set GOLDEN_RECORD=1 to write a missing fixture.
+	 *
+	 * @return void
+	 */
+	public function testInsightsPayloadGolden(): void {
+		$fixture = __DIR__ . '/fixtures/application-insights-payload.golden.json';
+		$cases = [];
+		foreach (['computed', 'cached', 'refused-with-cache', 'hybrid', 'failing', 'cache-down'] as $shape) {
+			$cases[] = $this->insightsCase(shape: $shape);
+		}
+
+		$actual = json_encode($cases, (JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)) . "\n";
+		if (file_exists($fixture) === false && getenv('GOLDEN_RECORD') === '1') {
+			file_put_contents($fixture, $actual);
+		}
+
+		self::assertFileExists($fixture);
+		self::assertSame(file_get_contents($fixture), $actual);
+	}//end testInsightsPayloadGolden()
+
+	/**
+	 * Compute one golden case and record the payload and the cache traffic.
+	 *
+	 * @param string $shape Which case: computed, cached, refused-with-cache, hybrid, failing or cache-down.
+	 *
+	 * @return array<string,mixed>
+	 */
+	private function insightsCase(string $shape): array {
+		$this->setUp();
+		$trace = [];
+		$cache = $this->createMock(ICache::class);
+		$cache->method('get')->willReturnCallback(
+			static function (string $key) use (&$trace, $shape) {
+				$trace[] = 'get ' . $key;
+				if ($shape === 'cached' || $shape === 'refused-with-cache') {
+					return ['kpis' => ['from' => 'cache']];
+				}
+
+				if ($shape === 'cache-down') {
+					throw new RuntimeException('cache down');
+				}
+
+				return null;
+			}
+		);
+		$cache->method('set')->willReturnCallback(
+			static function (string $key, $value, int $ttl = 0) use (&$trace): bool {
+				$trace[] = 'set ' . $key . ' ' . $ttl;
+				return true;
+			}
+		);
+		$cacheFactory = $this->createMock(ICacheFactory::class);
+		$cacheFactory->method('createDistributed')->willReturn($cache);
+		$this->logger->method('error')->willReturnCallback(
+			static function (string $message, array $context = []) use (&$trace): void {
+				$trace[] = 'error ' . $message . ' ' . ($context['message'] ?? '');
+			}
+		);
+		$service = new ApplicationInsightsService(
+			store: new RegisterStore(objectService: $this->objectService, registerMapper: $this->registerMapper, schemaMapper: $this->schemaMapper),
+			auditTrailMapper: $this->auditTrailMapper,
+			cacheFactory: $cacheFactory,
+			logger: $this->logger,
+		);
+
+		if ($shape === 'failing') {
+			$this->objectService->method('find')->willThrowException(new RuntimeException('register offline'));
+		} else if ($shape === 'hybrid') {
+			$this->objectService->method('find')->willReturnOnConsecutiveCalls(
+				$this->mockEntity(['uuid' => 'app-uuid', 'slug' => 'pipelinq', 'appType' => 'hybrid', 'productionVersion' => 'prod-uuid']),
+				$this->mockEntity(['uuid' => 'prod-uuid', 'slug' => 'production', 'application' => 'app-uuid', 'manifest' => []])
+			);
+			$this->registerMapper->method('findAll')->willReturn([]);
+		} else {
+			$this->wireVersion(manifest: ['pages' => []], register: '');
+			$register = new Register();
+			$register->setSchemas([21, 22]);
+			$this->registerMapper->method('find')->willReturn($register);
+			$this->schemaMapper->method('find')->willReturnCallback(
+				static fn (string|int $ref): Schema => self::schema(id: (int)$ref, slug: 'hello-world-production-s' . $ref)
+			);
+			$this->countPerRegister(counts: ['openbuild-hello-world-production#21' => 2, 'openbuild-hello-world-production#22' => 5]);
+		}
+
+		$this->auditTrailMapper->method('getActionChartData')->willReturn(
+			['labels' => ['2026-11-10', '2026-11-09', ''], 'series' => [['name' => 'create', 'data' => [3, 4, 9]], 'junk', ['data' => [1]]]]
+		);
+
+		$uid = 'alice';
+		if ($shape === 'refused-with-cache') {
+			$uid = 'mallory';
+		}
+
+		$payload = $service->computeInsights(appUuid: 'app-uuid', versionUuid: 'prod-uuid', window: '30d', caller: $this->mockUser(uid: $uid));
+
+		return ['shape' => $shape, 'payload' => $payload, 'trace' => $trace];
+	}//end insightsCase()
 }//end class

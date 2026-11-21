@@ -15,6 +15,9 @@
  * @version GIT: <git-id>
  *
  * @link https://conduction.nl
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -51,7 +54,7 @@ class InitializeSettings implements IRepairStep {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/openbuild-exports-flows-and-agents/specs/app-export-completeness/spec.md#requirement-an-imported-flow-must-be-runnable-not-merely-present
+	 * @spec openspec/specs/app-export-completeness/spec.md#requirement-an-imported-flow-must-be-runnable-not-merely-present
 	 */
 	public function getName(): string {
 		return 'Initialize AppTemplate register and schemas via ConfigurationService';
@@ -64,8 +67,8 @@ class InitializeSettings implements IRepairStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/openbuild-exports-flows-and-agents/specs/app-export-completeness/spec.md#requirement-an-imported-flow-must-be-runnable-not-merely-present
-	 * @spec openspec/changes/openbuild-exports-flows-and-agents/specs/app-export-completeness/spec.md#requirement-a-flow-naming-an-unregistered-node-type-must-be-surfaced-at-seeding
+	 * @spec openspec/specs/app-export-completeness/spec.md#requirement-an-imported-flow-must-be-runnable-not-merely-present
+	 * @spec openspec/specs/app-export-completeness/spec.md#requirement-a-flow-naming-an-unregistered-node-type-must-be-surfaced-at-seeding
 	 */
 	public function run(IOutput $output): void {
 		$output->info('Initializing AppTemplate configuration...');
@@ -132,7 +135,7 @@ class InitializeSettings implements IRepairStep {
 		}
 
 		try {
-			$report = $this->flowSeedService->seed(flowMapper: \OC::$server->get($mapperClass));
+			$report = $this->flowSeedService->seed(flowMapper: \OCP\Server::get($mapperClass));
 		} catch (\Throwable $e) {
 			$output->warning('Could not seed shipped flows: ' . $e->getMessage());
 			$this->logger->warning('AppTemplate: flow seeding failed: ' . $e->getMessage());

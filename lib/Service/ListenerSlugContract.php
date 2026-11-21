@@ -38,12 +38,13 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\ListenerSlugContractInterface;
 use OCP\IAppConfig;
 
 /**
  * Reports whether the corrected listener schema matching is enabled.
  */
-class ListenerSlugContract {
+class ListenerSlugContract implements ListenerSlugContractInterface {
 
 	/**
 	 * The app id the flag is stored under.

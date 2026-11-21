@@ -6,8 +6,21 @@
  * REQ-BRE-002 / REQ-BRE-012 — decision-table cell validation in the editor).
  */
 
+import { readFileSync } from 'node:fs'
+import { dirname, join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { isCellConditionValid } from '../../src/utils/feelCell.js'
+
+// The same table drives the PHP mirror (lib/Service/FeelCellCondition.php,
+// tests/Unit/Service/FeelCellConditionTest.php), so the two cannot drift.
+const fixture = JSON.parse(readFileSync(join(dirname(fileURLToPath(import.meta.url)), '../fixtures/feel-cell-conditions.json'), 'utf8'))
+
+describe('isCellConditionValid against the shared fixture', () => {
+	it.each(fixture.cases.map((c) => [JSON.stringify(c.cell), c.cell, c.valid]))('%s', (_label, cell, valid) => {
+		expect(isCellConditionValid(cell)).toBe(valid)
+	})
+})
 
 describe('isCellConditionValid', () => {
 	it("accepts don't-care tokens", () => {
@@ -39,5 +52,30 @@ describe('isCellConditionValid', () => {
 	it('rejects a lone equals sign', () => {
 		expect(isCellConditionValid('=18')).toBe(false)
 		expect(isCellConditionValid('=')).toBe(false)
+	})
+
+	it('trims the source and reads any case of the tokens', () => {
+		expect(isCellConditionValid(undefined)).toBe(true)
+		expect(isCellConditionValid('  ANY ')).toBe(true)
+		expect(isCellConditionValid('IN(a)')).toBe(true)
+		expect(isCellConditionValid(18)).toBe(true)
+		expect(isCellConditionValid('  >= 3  ')).toBe(true)
+	})
+
+	it('reads an operator or a range without an operand as a bare literal', () => {
+		expect(isCellConditionValid('>=')).toBe(true)
+		expect(isCellConditionValid('a..')).toBe(true)
+	})
+
+	it('rejects unbalanced brackets and a spaced lone equals', () => {
+		expect(isCellConditionValid('foo(bar')).toBe(false)
+		expect(isCellConditionValid('in (a')).toBe(false)
+		expect(isCellConditionValid('= x')).toBe(false)
+	})
+
+	it('accepts a quoted literal with brackets, and == before the lone-equals rule', () => {
+		expect(isCellConditionValid("'a (b)'")).toBe(true)
+		expect(isCellConditionValid('==x')).toBe(true)
+		expect(isCellConditionValid('a..b..c')).toBe(true)
 	})
 })

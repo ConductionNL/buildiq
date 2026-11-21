@@ -7,41 +7,55 @@
  */
 import axios from '@nextcloud/axios'
 import { generateUrl } from '@nextcloud/router'
+import { refusalData, refusalStatus } from './requestRefusal.js'
 
 /**
- * Normalise an axios rejection into `{status, error, message}`.
+ * Normalise an axios rejection into `{status, error, message, providerMessage}`.
+ *
+ * `providerMessage` carries what the AI provider itself said (e.g. "Chat
+ * provider is not configured"), so the panel can show the cause under the
+ * message instead of leaving the user guessing at their own wording.
  *
  * @param {Error} err - the axios error.
- * @return {{status: number, error: string, message: string}}
- * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+ * @return {{status: number, error: string, message: string, providerMessage: string}}
+ * @spec openspec/specs/ai-copilot/spec.md
  */
 function normaliseError(err) {
-	const response = err && err.response
-	const data = (response && response.data) || {}
+	const data = refusalData(err)
 	return {
-		status: response ? response.status : 0,
+		status: refusalStatus(err),
 		error: data.error || 'network_error',
 		message: data.message || err.message || 'Request failed.',
+		providerMessage: data.providerMessage || '',
 	}
 }
 
 /**
  * GET /api/copilot/health — probe AI copilot availability.
  *
- * @return {Promise<{available: boolean, reason?: string}>} Never rejects —
+ * `knowledgeRetrieval` says whether an agent's knowledge is searched for the
+ * passages that match a request instead of read whole under the budget
+ * (ai-agents-knowledge-and-run-trace T08); it is on both answers.
+ *
+ * @return {Promise<{available: boolean, reason?: string, knowledgeRetrieval: boolean}>} Never rejects —
  *   a network/503 failure resolves to `{available: false, reason}`.
- * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+ * @spec openspec/specs/ai-copilot/spec.md
  */
 export async function fetchCopilotHealth() {
 	try {
-		await axios.get(generateUrl('/apps/buildiq/api/copilot/health'))
-		return { available: true }
+		const response = await axios.get(generateUrl('/apps/buildiq/api/copilot/health'))
+		const data = (response && response.data) || {}
+		return { available: true, knowledgeRetrieval: data.knowledgeRetrieval === true }
 	} catch (err) {
 		// The health envelope carries its machine-readable code under `reason`
 		// (`unsupported_server` | `no_provider`), not `error` like the plan/
 		// execute envelopes — read it directly rather than via normaliseError().
 		const data = (err && err.response && err.response.data) || {}
-		return { available: false, reason: data.reason || 'unsupported_server' }
+		return {
+			available: false,
+			reason: data.reason || 'unsupported_server',
+			knowledgeRetrieval: data.knowledgeRetrieval === true,
+		}
 	}
 }
 
@@ -56,15 +70,25 @@ export async function fetchCopilotHealth() {
  * @param {string} [params.agentId] - optional Agent id narrowing the effective
  *   tool allow-list and prefixing its instructions onto the system prompt
  *   (spec `agent-workspace`).
+ * @param {string} [params.versionSlug] - the version the caller is editing; every
+ *   step that omits `versionSlug` is settled on it server-side.
+ * @param {number} [params.documentFileId] - Files id of a requirements document the
+ *   server reads as the caller; with one, the brief may be empty.
  * @return {Promise<{summary: string, steps: Array, manifests: object}>}
  * @throws {{status: number, error: string, message: string}} Normalised error envelope.
- * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+ * @spec openspec/specs/ai-copilot/spec.md
  * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
  */
-export async function requestPlan({ brief, appSlug, agentId } = {}) {
+export async function requestPlan({ brief, appSlug, agentId, versionSlug, documentFileId } = {}) {
 	try {
 		const url = generateUrl('/apps/buildiq/api/copilot/plan')
-		const { data } = await axios.post(url, { brief, appSlug, agentId })
+		const { data } = await axios.post(url, {
+			brief,
+			appSlug,
+			agentId,
+			versionSlug,
+			documentFileId,
+		})
 		return data
 	} catch (err) {
 		throw normaliseError(err)
@@ -81,7 +105,7 @@ export async function requestPlan({ brief, appSlug, agentId } = {}) {
  *   a complete AgentRun record. Ignored server-side when `agentId` is omitted.
  * @return {Promise<{results: Array}>}
  * @throws {{status: number, error: string, message: string}} Normalised error envelope.
- * @spec openspec/changes/ai-copilot-prompt-to-app/specs/ai-copilot/spec.md
+ * @spec openspec/specs/ai-copilot/spec.md
  * @spec openspec/changes/archive/2026-07-24-agent-workspace/specs/ai-copilot/spec.md
  */
 export async function executePlan(plan, { agentId, prompt } = {}) {
@@ -115,5 +139,29 @@ export async function discardRun({ agentId, prompt, plan } = {}) {
 		await axios.post(url, { agentId, prompt, ...plan })
 	} catch (err) {
 		// Best-effort: a failed audit-log write must not surface as a user-facing error.
+	}
+}
+
+/**
+ * POST /api/copilot/assist — propose or explain one builder expression.
+ *
+ * @param {object} params - request params.
+ * @param {string} params.target - `feel-condition` | `decision-rule` | `field-mapping` | `payload-template`.
+ * @param {string} params.mode - `write` (turn `request` into a value) or `explain` (describe `current`).
+ * @param {string} [params.request] - the maker's plain request (write mode).
+ * @param {string} [params.current] - the editor's current value.
+ * @param {string} params.appSlug - the app being edited; the caller must be an owner or editor.
+ * @param {object} [params.context] - names only: `columns`, `paths`, `register`, `targetSchema`, `triggerSchema`.
+ * @return {Promise<{mode: string, value?: (string|object), explanation: string}>} The server-checked answer.
+ * @throws {{status: number, error: string, message: string}} Normalised error envelope.
+ * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-builder-assist/spec.md#requirement-the-assist-proposes-a-checked-value-req-bqch-002
+ */
+export async function assist({ target, mode, request = '', current = '', appSlug, context = {} } = {}) {
+	try {
+		const url = generateUrl('/apps/buildiq/api/copilot/assist')
+		const { data } = await axios.post(url, { target, mode, request, current, appSlug, context })
+		return data
+	} catch (err) {
+		throw normaliseError(err)
 	}
 }

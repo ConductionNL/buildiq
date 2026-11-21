@@ -1,0 +1,900 @@
+{
+	"header / array / no route": {
+		"versions": [
+			"dev",
+			"stage",
+			"prod"
+		],
+		"selected": "prod",
+		"active": "prod",
+		"activeVersion": "production",
+		"production": "prod",
+		"productionVersion": "production",
+		"ordered": [
+			"development",
+			"staging",
+			"production"
+		],
+		"slug": "hello world",
+		"application": "app-uuid",
+		"error": null,
+		"urls": [
+			"/nc/apps/buildiq/api/applications/hello%20world/versions"
+		]
+	},
+	"header / array / empty query": {
+		"versions": [
+			"dev",
+			"stage",
+			"prod"
+		],
+		"selected": "prod",
+		"active": "prod",
+		"activeVersion": "production",
+		"production": "prod",
+		"productionVersion": "production",
+		"ordered": [
+			"development",
+			"staging",
+			"production"
+		],
+		"slug": "hello world",
+		"application": "app-uuid",
+		"error": null,
+		"urls": [
+			"/nc/apps/buildiq/api/applications/hello%20world/versions"
+		]
+	},
+	"header / array / known version": {
+		"versions": [
+			"dev",
+			"stage",
+			"prod"
+		],
+		"selected": "stage",
+		"active": "stage",
+		"activeVersion": "staging",
+		"production": "prod",
+		"productionVersion": "production",
+		"ordered": [
+			"development",
+			"staging",
+			"production"
+		],
+		"slug": "hello world",
+		"application": "app-uuid",
+		"error": null,
+		"urls": [
+			"/nc/apps/buildiq/api/applications/hello%20world/versions"
+		]
+	},
+	"header / array / unknown version": {
+		"versions": [
+			"dev",
+			"stage",
+			"prod"
+		],
+		"selected": "prod",
+		"active": "prod",
+		"activeVersion": "production",
+		"production": "prod",
+		"productionVersion": "production",
+		"ordered": [
+			"development",
+			"staging",
+			"production"
+		],
+		"slug": "hello world",
+		"application": "app-uuid",
+		"error": null,
+		"urls": [
+			"/nc/apps/buildiq/api/applications/hello%20world/versions"
+		]
+	},
+	"header / results / no route": {
+		"versions": [
+			"prod",
+			"dev",
+			"self-id"
+		],
+		"selected": "prod",
+		"active": "prod",
+		"activeVersion": "production",
+		"production": "prod",
+		"productionVersion": "production",
+		"ordered": [
+			"production",
+			"development",
+			"by-self"
+		],
+		"slug": "hello world",
+		"application": "app-uuid",
+		"error": null,
+		"urls": [
+			"/nc/apps/buildiq/api/applications/hello%20world/versions"
+		]
+	},
+	"header / results / empty query": {
+		"versions": [
+			"prod",
+			"dev",
+			"self-id"
+		],
+		"selected": "prod",
+		"active": "prod",
+		"activeVersion": "production",
+		"production": "prod",
+		"productionVersion": "production",
+		"ordered": [
+			"production",
+			"development",
+			"by-self"
+		],
+		"slug": "hello world",
+		"application": "app-uuid",
+		"error": null,
+		"urls": [
+			"/nc/apps/buildiq/api/applications/hello%20world/versions"
+		]
+	},
+	"header / results / known version": {
+		"versions": [
+			"prod",
+			"dev",
+			"self-id"
+		],
+		"selected": "prod",
+		"active": "prod",
+		"activeVersion": "production",
+		"production": "prod",
+		"productionVersion": "production",
+		"ordered": [
+			"production",
+			"development",
+			"by-self"
+		],
+		"slug": "hello world",
+		"application": "app-uuid",
+		"error": null,
+		"urls": [
+			"/nc/apps/buildiq/api/applications/hello%20world/versions"
+		]
+	},
+	"header / results / unknown version": {
+		"versions": [
+			"prod",
+			"dev",
+			"self-id"
+		],
+		"selected": "prod",
+		"active": "prod",
+		"activeVersion": "production",
+		"production": "prod",
+		"productionVersion": "production",
+		"ordered": [
+			"production",
+			"development",
+			"by-self"
+		],
+		"slug": "hello world",
+		"application": "app-uuid",
+		"error": null,
+		"urls": [
+			"/nc/apps/buildiq/api/applications/hello%20world/versions"
+		]
+	},
+	"header / not a list / no route": {
+		"versions": [],
+		"selected": "prod",
+		"active": "",
+		"production": "prod",
+		"ordered": [],
+		"slug": "hello world",
+		"application": "app-uuid",
+		"error": null,
+		"urls": [
+			"/nc/apps/buildiq/api/applications/hello%20world/versions"
+		]
+	},
+	"header / not a list / empty query": {
+		"versions": [],
+		"selected": "prod",
+		"active": "",
+		"production": "prod",
+		"ordered": [],
+		"slug": "hello world",
+		"application": "app-uuid",
+		"error": null,
+		"urls": [
+			"/nc/apps/buildiq/api/applications/hello%20world/versions"
+		]
+	},
+	"header / not a list / known version": {
+		"versions": [],
+		"selected": "prod",
+		"active": "",
+		"production": "prod",
+		"ordered": [],
+		"slug": "hello world",
+		"application": "app-uuid",
+		"error": null,
+		"urls": [
+			"/nc/apps/buildiq/api/applications/hello%20world/versions"
+		]
+	},
+	"header / not a list / unknown version": {
+		"versions": [],
+		"selected": "prod",
+		"active": "",
+		"production": "prod",
+		"ordered": [],
+		"slug": "hello world",
+		"application": "app-uuid",
+		"error": null,
+		"urls": [
+			"/nc/apps/buildiq/api/applications/hello%20world/versions"
+		]
+	},
+	"header / null body / no route": {
+		"versions": [],
+		"selected": "prod",
+		"active": "",
+		"production": "prod",
+		"ordered": [],
+		"slug": "hello world",
+		"application": "app-uuid",
+		"error": null,
+		"urls": [
+			"/nc/apps/buildiq/api/applications/hello%20world/versions"
+		]
+	},
+	"header / null body / empty query": {
+		"versions": [],
+		"selected": "prod",
+		"active": "",
+		"production": "prod",
+		"ordered": [],
+		"slug": "hello world",
+		"application": "app-uuid",
+		"error": null,
+		"urls": [
+			"/nc/apps/buildiq/api/applications/hello%20world/versions"
+		]
+	},
+	"header / null body / known version": {
+		"versions": [],
+		"selected": "prod",
+		"active": "",
+		"production": "prod",
+		"ordered": [],
+		"slug": "hello world",
+		"application": "app-uuid",
+		"error": null,
+		"urls": [
+			"/nc/apps/buildiq/api/applications/hello%20world/versions"
+		]
+	},
+	"header / null body / unknown version": {
+		"versions": [],
+		"selected": "prod",
+		"active": "",
+		"production": "prod",
+		"ordered": [],
+		"slug": "hello world",
+		"application": "app-uuid",
+		"error": null,
+		"urls": [
+			"/nc/apps/buildiq/api/applications/hello%20world/versions"
+		]
+	},
+	"header / no uuid at all / no route": {
+		"versions": [
+			null
+		],
+		"selected": "prod",
+		"active": "",
+		"production": "prod",
+		"ordered": [
+			"bare"
+		],
+		"slug": "hello world",
+		"application": "app-uuid",
+		"error": null,
+		"urls": [
+			"/nc/apps/buildiq/api/applications/hello%20world/versions"
+		]
+	},
+	"header / no uuid at all / empty query": {
+		"versions": [
+			null
+		],
+		"selected": "prod",
+		"active": "",
+		"production": "prod",
+		"ordered": [
+			"bare"
+		],
+		"slug": "hello world",
+		"application": "app-uuid",
+		"error": null,
+		"urls": [
+			"/nc/apps/buildiq/api/applications/hello%20world/versions"
+		]
+	},
+	"header / no uuid at all / known version": {
+		"versions": [
+			null
+		],
+		"selected": "prod",
+		"active": "",
+		"production": "prod",
+		"ordered": [
+			"bare"
+		],
+		"slug": "hello world",
+		"application": "app-uuid",
+		"error": null,
+		"urls": [
+			"/nc/apps/buildiq/api/applications/hello%20world/versions"
+		]
+	},
+	"header / no uuid at all / unknown version": {
+		"versions": [
+			null
+		],
+		"selected": "prod",
+		"active": "",
+		"production": "prod",
+		"ordered": [
+			"bare"
+		],
+		"slug": "hello world",
+		"application": "app-uuid",
+		"error": null,
+		"urls": [
+			"/nc/apps/buildiq/api/applications/hello%20world/versions"
+		]
+	},
+	"header / request fails": {
+		"versions": [],
+		"selected": null,
+		"active": "",
+		"production": "prod",
+		"ordered": [],
+		"slug": "hello world",
+		"application": "app-uuid",
+		"error": "Error: boom"
+	},
+	"header / no slug": {
+		"versions": [],
+		"selected": null,
+		"active": "",
+		"production": null,
+		"ordered": [],
+		"slug": "",
+		"application": "x",
+		"error": null,
+		"asked": 1
+	},
+	"header / record from the route": {
+		"versions": [
+			"dev",
+			"stage",
+			"prod"
+		],
+		"selected": "prod",
+		"active": "prod",
+		"activeVersion": "production",
+		"production": "prod",
+		"productionVersion": "production",
+		"ordered": [
+			"development",
+			"staging",
+			"production"
+		],
+		"slug": "hello world",
+		"application": "app-uuid",
+		"error": null,
+		"fetched": [
+			"from-route"
+		]
+	},
+	"header / record fails": {
+		"versions": [],
+		"selected": null,
+		"active": "",
+		"production": null,
+		"ordered": [],
+		"slug": "",
+		"error": "Error: no record",
+		"fetched": [
+			"by-prop"
+		]
+	},
+	"header / no record id": {
+		"versions": [],
+		"selected": null,
+		"active": "",
+		"production": null,
+		"ordered": [],
+		"slug": "",
+		"error": null
+	},
+	"header / object changes": {
+		"versions": [
+			"dev",
+			"stage",
+			"prod"
+		],
+		"selected": "dev",
+		"active": "dev",
+		"activeVersion": "development",
+		"production": "dev",
+		"productionVersion": "development",
+		"ordered": [
+			"development",
+			"staging",
+			"production"
+		],
+		"slug": "next-app",
+		"application": "next",
+		"error": null,
+		"urls": [
+			"/nc/apps/buildiq/api/applications/next-app/versions"
+		]
+	},
+	"dashboard / array / no route": {
+		"versions": [
+			"dev",
+			"stage",
+			"prod"
+		],
+		"selected": "prod",
+		"active": "prod",
+		"activeVersion": "production",
+		"production": "prod",
+		"productionVersion": "production",
+		"ordered": [
+			"development",
+			"staging",
+			"production"
+		],
+		"slug": "hello world",
+		"application": "app-uuid",
+		"error": null,
+		"urls": [
+			"/nc/apps/buildiq/api/applications/hello%20world/versions"
+		]
+	},
+	"dashboard / array / empty query": {
+		"versions": [
+			"dev",
+			"stage",
+			"prod"
+		],
+		"selected": "prod",
+		"active": "prod",
+		"activeVersion": "production",
+		"production": "prod",
+		"productionVersion": "production",
+		"ordered": [
+			"development",
+			"staging",
+			"production"
+		],
+		"slug": "hello world",
+		"application": "app-uuid",
+		"error": null,
+		"urls": [
+			"/nc/apps/buildiq/api/applications/hello%20world/versions"
+		]
+	},
+	"dashboard / array / known version": {
+		"versions": [
+			"dev",
+			"stage",
+			"prod"
+		],
+		"selected": "stage",
+		"active": "stage",
+		"activeVersion": "staging",
+		"production": "prod",
+		"productionVersion": "production",
+		"ordered": [
+			"development",
+			"staging",
+			"production"
+		],
+		"slug": "hello world",
+		"application": "app-uuid",
+		"error": null,
+		"urls": [
+			"/nc/apps/buildiq/api/applications/hello%20world/versions"
+		]
+	},
+	"dashboard / array / unknown version": {
+		"versions": [
+			"dev",
+			"stage",
+			"prod"
+		],
+		"selected": "prod",
+		"active": "prod",
+		"activeVersion": "production",
+		"production": "prod",
+		"productionVersion": "production",
+		"ordered": [
+			"development",
+			"staging",
+			"production"
+		],
+		"slug": "hello world",
+		"application": "app-uuid",
+		"error": null,
+		"urls": [
+			"/nc/apps/buildiq/api/applications/hello%20world/versions"
+		]
+	},
+	"dashboard / results / no route": {
+		"versions": [
+			"prod",
+			"dev",
+			"self-id"
+		],
+		"selected": "prod",
+		"active": "prod",
+		"activeVersion": "production",
+		"production": "prod",
+		"productionVersion": "production",
+		"ordered": [
+			"production",
+			"development",
+			"by-self"
+		],
+		"slug": "hello world",
+		"application": "app-uuid",
+		"error": null,
+		"urls": [
+			"/nc/apps/buildiq/api/applications/hello%20world/versions"
+		]
+	},
+	"dashboard / results / empty query": {
+		"versions": [
+			"prod",
+			"dev",
+			"self-id"
+		],
+		"selected": "prod",
+		"active": "prod",
+		"activeVersion": "production",
+		"production": "prod",
+		"productionVersion": "production",
+		"ordered": [
+			"production",
+			"development",
+			"by-self"
+		],
+		"slug": "hello world",
+		"application": "app-uuid",
+		"error": null,
+		"urls": [
+			"/nc/apps/buildiq/api/applications/hello%20world/versions"
+		]
+	},
+	"dashboard / results / known version": {
+		"versions": [
+			"prod",
+			"dev",
+			"self-id"
+		],
+		"selected": "prod",
+		"active": "prod",
+		"activeVersion": "production",
+		"production": "prod",
+		"productionVersion": "production",
+		"ordered": [
+			"production",
+			"development",
+			"by-self"
+		],
+		"slug": "hello world",
+		"application": "app-uuid",
+		"error": null,
+		"urls": [
+			"/nc/apps/buildiq/api/applications/hello%20world/versions"
+		]
+	},
+	"dashboard / results / unknown version": {
+		"versions": [
+			"prod",
+			"dev",
+			"self-id"
+		],
+		"selected": "prod",
+		"active": "prod",
+		"activeVersion": "production",
+		"production": "prod",
+		"productionVersion": "production",
+		"ordered": [
+			"production",
+			"development",
+			"by-self"
+		],
+		"slug": "hello world",
+		"application": "app-uuid",
+		"error": null,
+		"urls": [
+			"/nc/apps/buildiq/api/applications/hello%20world/versions"
+		]
+	},
+	"dashboard / not a list / no route": {
+		"versions": [],
+		"selected": "prod",
+		"active": "",
+		"production": "prod",
+		"ordered": [],
+		"slug": "hello world",
+		"application": "app-uuid",
+		"error": null,
+		"urls": [
+			"/nc/apps/buildiq/api/applications/hello%20world/versions"
+		]
+	},
+	"dashboard / not a list / empty query": {
+		"versions": [],
+		"selected": "prod",
+		"active": "",
+		"production": "prod",
+		"ordered": [],
+		"slug": "hello world",
+		"application": "app-uuid",
+		"error": null,
+		"urls": [
+			"/nc/apps/buildiq/api/applications/hello%20world/versions"
+		]
+	},
+	"dashboard / not a list / known version": {
+		"versions": [],
+		"selected": "prod",
+		"active": "",
+		"production": "prod",
+		"ordered": [],
+		"slug": "hello world",
+		"application": "app-uuid",
+		"error": null,
+		"urls": [
+			"/nc/apps/buildiq/api/applications/hello%20world/versions"
+		]
+	},
+	"dashboard / not a list / unknown version": {
+		"versions": [],
+		"selected": "prod",
+		"active": "",
+		"production": "prod",
+		"ordered": [],
+		"slug": "hello world",
+		"application": "app-uuid",
+		"error": null,
+		"urls": [
+			"/nc/apps/buildiq/api/applications/hello%20world/versions"
+		]
+	},
+	"dashboard / null body / no route": {
+		"versions": [],
+		"selected": "prod",
+		"active": "",
+		"production": "prod",
+		"ordered": [],
+		"slug": "hello world",
+		"application": "app-uuid",
+		"error": null,
+		"urls": [
+			"/nc/apps/buildiq/api/applications/hello%20world/versions"
+		]
+	},
+	"dashboard / null body / empty query": {
+		"versions": [],
+		"selected": "prod",
+		"active": "",
+		"production": "prod",
+		"ordered": [],
+		"slug": "hello world",
+		"application": "app-uuid",
+		"error": null,
+		"urls": [
+			"/nc/apps/buildiq/api/applications/hello%20world/versions"
+		]
+	},
+	"dashboard / null body / known version": {
+		"versions": [],
+		"selected": "prod",
+		"active": "",
+		"production": "prod",
+		"ordered": [],
+		"slug": "hello world",
+		"application": "app-uuid",
+		"error": null,
+		"urls": [
+			"/nc/apps/buildiq/api/applications/hello%20world/versions"
+		]
+	},
+	"dashboard / null body / unknown version": {
+		"versions": [],
+		"selected": "prod",
+		"active": "",
+		"production": "prod",
+		"ordered": [],
+		"slug": "hello world",
+		"application": "app-uuid",
+		"error": null,
+		"urls": [
+			"/nc/apps/buildiq/api/applications/hello%20world/versions"
+		]
+	},
+	"dashboard / no uuid at all / no route": {
+		"versions": [
+			null
+		],
+		"selected": "prod",
+		"active": "",
+		"production": "prod",
+		"ordered": [
+			"bare"
+		],
+		"slug": "hello world",
+		"application": "app-uuid",
+		"error": null,
+		"urls": [
+			"/nc/apps/buildiq/api/applications/hello%20world/versions"
+		]
+	},
+	"dashboard / no uuid at all / empty query": {
+		"versions": [
+			null
+		],
+		"selected": "prod",
+		"active": "",
+		"production": "prod",
+		"ordered": [
+			"bare"
+		],
+		"slug": "hello world",
+		"application": "app-uuid",
+		"error": null,
+		"urls": [
+			"/nc/apps/buildiq/api/applications/hello%20world/versions"
+		]
+	},
+	"dashboard / no uuid at all / known version": {
+		"versions": [
+			null
+		],
+		"selected": "prod",
+		"active": "",
+		"production": "prod",
+		"ordered": [
+			"bare"
+		],
+		"slug": "hello world",
+		"application": "app-uuid",
+		"error": null,
+		"urls": [
+			"/nc/apps/buildiq/api/applications/hello%20world/versions"
+		]
+	},
+	"dashboard / no uuid at all / unknown version": {
+		"versions": [
+			null
+		],
+		"selected": "prod",
+		"active": "",
+		"production": "prod",
+		"ordered": [
+			"bare"
+		],
+		"slug": "hello world",
+		"application": "app-uuid",
+		"error": null,
+		"urls": [
+			"/nc/apps/buildiq/api/applications/hello%20world/versions"
+		]
+	},
+	"dashboard / request fails": {
+		"versions": [],
+		"selected": null,
+		"active": "",
+		"production": "prod",
+		"ordered": [],
+		"slug": "hello world",
+		"application": "app-uuid",
+		"error": "Error: boom"
+	},
+	"dashboard / no slug": {
+		"versions": [],
+		"selected": null,
+		"active": "",
+		"production": null,
+		"ordered": [],
+		"slug": "",
+		"application": "x",
+		"error": null,
+		"asked": 1
+	},
+	"dashboard / record from the route": {
+		"versions": [
+			"dev",
+			"stage",
+			"prod"
+		],
+		"selected": "prod",
+		"active": "prod",
+		"activeVersion": "production",
+		"production": "prod",
+		"productionVersion": "production",
+		"ordered": [
+			"development",
+			"staging",
+			"production"
+		],
+		"slug": "hello world",
+		"application": "app-uuid",
+		"error": null,
+		"fetched": [
+			"from-route"
+		]
+	},
+	"dashboard / record fails": {
+		"versions": [],
+		"selected": null,
+		"active": "",
+		"production": null,
+		"ordered": [],
+		"slug": "",
+		"error": "Error: no record",
+		"fetched": [
+			"by-prop"
+		]
+	},
+	"dashboard / no record id": {
+		"versions": [],
+		"selected": null,
+		"active": "",
+		"production": null,
+		"ordered": [],
+		"slug": "",
+		"error": null
+	},
+	"dashboard / object changes": {
+		"versions": [
+			"dev",
+			"stage",
+			"prod"
+		],
+		"selected": "dev",
+		"active": "dev",
+		"activeVersion": "development",
+		"production": "dev",
+		"productionVersion": "development",
+		"ordered": [
+			"development",
+			"staging",
+			"production"
+		],
+		"slug": "next-app",
+		"application": "next",
+		"error": null,
+		"urls": [
+			"/nc/apps/buildiq/api/applications/next-app/versions"
+		]
+	},
+	"dashboard / follow-ups after the versions load": {
+		"loaded": {
+			"insights": 2,
+			"delta": 1
+		},
+		"failed": {
+			"insights": 0,
+			"delta": 0
+		}
+	}
+}

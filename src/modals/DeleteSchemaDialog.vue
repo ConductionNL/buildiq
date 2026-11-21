@@ -59,7 +59,7 @@ export default {
 		/**
 		 * Enable delete only when the typed slug matches the target exactly.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
 		 * @return {boolean} True when deletion is confirmed.
 		 */
 		canDelete() {
@@ -71,7 +71,7 @@ export default {
 		/**
 		 * Clear the typed confirmation when the dialog closes.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
 		 * @param {boolean} value Open state.
 		 * @return {void}
 		 */
@@ -86,7 +86,7 @@ export default {
 		/**
 		 * Confirm deletion only when the confirmation gate is met.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
 		 * @return {void}
 		 */
 		onConfirm() {
@@ -100,7 +100,7 @@ export default {
 		/**
 		 * Cancel deletion and reset the confirmation input.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
 		 * @return {void}
 		 */
 		onCancel() {
@@ -111,7 +111,7 @@ export default {
 		/**
 		 * Sync modal open state and emit cancel when closed.
 		 *
-		 * @spec openspec/changes/retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
+		 * @spec openspec/changes/archive/2026-05-31-retrofit-2026-05-25-schema-designer-ui/tasks.md#task-1
 		 * @param {boolean} value Open state.
 		 * @return {void}
 		 */

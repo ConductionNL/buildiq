@@ -16,7 +16,7 @@
  * the spec doesn't hit fetch().
  */
 
-import { mount } from '@vue/test-utils'
+import { flushPromises, mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const fetchRegisters = vi.fn(async () => [
@@ -216,6 +216,37 @@ describe('IndexPageEditor', () => {
 		expect(next).not.toHaveProperty('sidebar')
 	})
 
+	// pages-qr-and-barcodes REQ-BQQR-001: the Scan section writes config.scan.
+	it('scan toggle writes config.scan opening the match, and untoggle deletes it', async () => {
+		const wrapper = mountEditor({ register: 'r', schema: 's' })
+		await wrapper.find('[data-testid="index-page-scan"] input[type="checkbox"]').setValue(true)
+		expect(wrapper.emitted('update:config')[0][0].scan).toEqual({ enabled: true, field: '', onMatch: 'open' })
+
+		const on = mountEditor({ register: 'r', schema: 's', scan: { enabled: true, field: 'serienummer', onMatch: 'filter' } })
+		await on.find('[data-testid="index-page-scan"] input[type="checkbox"]').setValue(false)
+		expect(on.emitted('update:config')[0][0]).not.toHaveProperty('scan')
+	})
+
+	it('scan offers the schema\'s fields and writes the chosen field and match action', async () => {
+		const wrapper = mountEditor({ register: 'r', schema: 's', scan: { enabled: true, field: '', onMatch: 'open' } })
+		await flushPromises()
+		// The schema's properties come from the mocked picker: title and route.
+		const options = wrapper.findAll('[data-testid="index-page-scan-field"] option').map((o) => o.attributes('value'))
+		expect(options).toEqual(['', 'route', 'title'])
+
+		await wrapper.find('[data-testid="index-page-scan-field"]').setValue('route')
+		expect(wrapper.emitted('update:config')[0][0].scan).toEqual({ enabled: true, field: 'route', onMatch: 'open' })
+		await wrapper.find('[data-testid="index-page-scan-match"]').setValue('filter')
+		expect(wrapper.emitted('update:config')[1][0].scan).toEqual({ enabled: true, field: '', onMatch: 'filter' })
+	})
+
+	it('scan keeps a chosen field listed before the schema loads, and hides its pickers when off', () => {
+		const on = mountEditor({ register: 'r', schema: 's', scan: { enabled: true, field: 'serienummer', onMatch: 'open' } })
+		expect(on.vm.scanFieldOptions).toContain('serienummer')
+		const off = mountEditor({ register: 'r', schema: 's' })
+		expect(off.find('[data-testid="index-page-scan-field"]').exists()).toBe(false)
+	})
+
 	it('updates `cardComponent` via the optional input', async () => {
 		const wrapper = mountEditor({ register: 'r' })
 		wrapper.vm.update('cardComponent', 'BuildiqDefaultCard')
@@ -232,6 +263,7 @@ describe('IndexPageEditor', () => {
 		mountEditor({}, 'hello-world', dataRegisters)
 		expect(useRegisterPickerSpy).toHaveBeenCalledWith({
 			appSlug: 'hello-world',
+			appRegister: expect.any(Function),
 			dataRegisters,
 		})
 	})
@@ -240,7 +272,72 @@ describe('IndexPageEditor', () => {
 		mountEditor({}, 'hello-world')
 		expect(useRegisterPickerSpy).toHaveBeenCalledWith({
 			appSlug: 'hello-world',
+			appRegister: expect.any(Function),
 			dataRegisters: [],
 		})
+	})
+
+	it('fills the column picker from the loaded schema list at once on a schema switch', async () => {
+		// Regression: every schema switch refetched the register's schemas,
+		// so the column picker lagged 2 to 4 seconds behind the selection.
+		fetchSchemas.mockResolvedValueOnce([
+			{ slug: 'term', properties: { name: { type: 'string' } } },
+			{ slug: 'concept', properties: { notation: { type: 'string' } } },
+		])
+		const wrapper = mountEditor({ register: 'vocab', schema: 'term' })
+		await flushPromises()
+		fetchSchemaProperties.mockClear()
+		await wrapper.setProps({ config: { register: 'vocab', schema: 'concept' } })
+		expect(fetchSchemaProperties).not.toHaveBeenCalled()
+		expect(wrapper.vm.schemaProperties).toEqual({ notation: { type: 'string' } })
+	})
+
+	it('drops a late answer for a schema that is no longer selected', async () => {
+		let answerTerm
+		fetchSchemaProperties.mockImplementationOnce(
+			() =>
+				new Promise((resolve) => {
+					answerTerm = resolve
+				}),
+		)
+		const wrapper = mountEditor({ register: 'vocab', schema: 'term' })
+		await wrapper.setProps({ config: { register: 'vocab', schema: 'concept' } })
+		await flushPromises()
+		const current = wrapper.vm.schemaProperties
+		answerTerm({ name: { type: 'string' } })
+		await flushPromises()
+		expect(wrapper.vm.schemaProperties).toBe(current)
+	})
+
+	it('hands the picker the app register it was given', async () => {
+		const wrapper = mount(IndexPageEditor, {
+			propsData: { config: {}, appSlug: 'hello-world' },
+		})
+		const getter = useRegisterPickerSpy.mock.calls.at(-1)[0].appRegister
+		expect(getter()).toBe('')
+		await wrapper.setProps({ appRegister: 'openbuild-hello-world-development' })
+		expect(getter()).toBe('openbuild-hello-world-development')
+	})
+
+	it('the drag order switch emits manualOrder for the page, not a config key (REQ-PEC-009)', async () => {
+		const wrapper = mount(IndexPageEditor, {
+			propsData: { config: { columns: ['title'] }, appSlug: 'hello-world', manualOrder: false },
+		})
+		const toggle = wrapper.find('input[data-manual-order]')
+		expect(toggle.element.checked).toBe(false)
+		await toggle.setValue(true)
+		expect(wrapper.emitted('update:manualOrder').at(-1)).toEqual([true])
+		expect(wrapper.emitted('update:config')).toBeUndefined()
+
+		await wrapper.setProps({ manualOrder: true })
+		expect(toggle.element.checked).toBe(true)
+		await toggle.setValue(false)
+		expect(wrapper.emitted('update:manualOrder').at(-1)).toEqual([false])
+	})
+
+	it('a view change from the Views section reaches update:config (REQ-PEC-008)', async () => {
+		const wrapper = mountEditor({ columns: ['title'] })
+		await wrapper.find('input[data-mode="calendar"]').setValue(true)
+		expect(wrapper.emitted('update:config').at(-1)[0]).toEqual({ columns: ['title'], viewModes: ['table', 'calendar'] })
 	})
 })

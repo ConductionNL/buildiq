@@ -50,9 +50,18 @@
 					v-model="triggerOption"
 					:inputLabel="t('buildiq', 'When')"
 					:options="triggerOptions"
+					:selectable="(option) => !option.disabled"
 					:clearable="false"
 					label="label"
 					@update:modelValue="onTriggerChange" />
+
+				<!-- logic-email-and-webhook-triggers D6: why an inbound trigger cannot be used. -->
+				<NcNoteCard
+					v-if="inboundReason"
+					type="warning"
+					data-testid="inbound-trigger-blocked">
+					{{ inboundReason }}
+				</NcNoteCard>
 
 				<template
 					v-if="isObjectTrigger || triggerType === 'lifecycle-transition'">
@@ -105,6 +114,82 @@
 						:label="t('buildiq', 'Interval (seconds)')"
 						@update:modelValue="triggerInterval = Number($event)" />
 				</template>
+
+				<!-- logic-email-and-webhook-triggers D2: the mailbox and its filters. -->
+				<template v-if="triggerType === 'email-received'">
+					<NcSelect
+						v-if="mailboxPickerAvailable"
+						:modelValue="mailboxOption"
+						:inputLabel="t('buildiq', 'Mailbox')"
+						:options="mailboxOptions"
+						:loading="mailboxesLoading"
+						label="label"
+						data-testid="mailbox-select"
+						@update:modelValue="triggerSource = $event ? $event.id : ''" />
+					<NcTextField
+						v-else
+						:modelValue="triggerSource"
+						:label="t('buildiq', 'Mailbox source')"
+						data-testid="mailbox-text"
+						@update:modelValue="triggerSource = $event" />
+					<NcTextField
+						:modelValue="triggerFrom"
+						:label="t('buildiq', 'Only mail from (optional)')"
+						data-testid="mail-from"
+						@update:modelValue="triggerFrom = $event" />
+					<NcTextField
+						:modelValue="triggerSubjectContains"
+						:label="t('buildiq', 'Only when the subject contains (optional)')"
+						data-testid="mail-subject"
+						@update:modelValue="triggerSubjectContains = $event" />
+					<p class="automation-edit__hint" data-testid="inbound-runs-as">
+						{{ t('buildiq', 'Runs started by mail act as you, with your rights.') }}
+					</p>
+				</template>
+
+				<!-- logic-email-and-webhook-triggers D3: how the caller signs in, and the address. -->
+				<template v-if="triggerType === 'webhook-called'">
+					<NcSelect
+						:modelValue="authorizationOption"
+						:inputLabel="t('buildiq', 'How the calling system signs in')"
+						:options="authorizationOptions"
+						:clearable="false"
+						label="label"
+						data-testid="webhook-authorization"
+						@update:modelValue="triggerAuthorization = $event ? $event.id : 'api-key'" />
+					<NcTextArea
+						:modelValue="triggerBodyExample"
+						:label="t('buildiq', 'Example request body (JSON, optional)')"
+						:error="!bodyExampleValid"
+						:helperText="bodyExampleValid ? '' : t('buildiq', 'The example must be a JSON object.')"
+						data-testid="webhook-body-example"
+						@update:modelValue="triggerBodyExample = $event" />
+					<div v-if="webhookUrl" class="automation-edit__address" data-testid="webhook-address">
+						<span>{{ t('buildiq', 'Address') }}</span>
+						<code>{{ webhookUrl }}</code>
+					</div>
+					<p v-else class="automation-edit__hint" data-testid="webhook-address-pending">
+						{{ t('buildiq', 'The address appears once the automation has a name.') }}
+					</p>
+					<a
+						v-if="consumerUrl"
+						:href="consumerUrl"
+						target="_blank"
+						rel="noopener noreferrer"
+						data-testid="webhook-show-key">
+						{{ t('buildiq', 'Show key in Integriq') }}
+					</a>
+					<p class="automation-edit__hint" data-testid="inbound-runs-as">
+						{{ t('buildiq', 'Integriq issues the key and checks every call. Runs act as the account bound to that key, which is you.') }}
+					</p>
+				</template>
+
+				<p
+					v-if="inboundFields.length > 0"
+					class="automation-edit__hint"
+					data-testid="inbound-input-fields">
+					{{ t('buildiq', 'Steps can use these input fields: {fields}', { fields: inboundFields.join(', ') }) }}
+				</p>
 			</section>
 
 			<!-- Condition -->
@@ -133,6 +218,17 @@
 						:modelValue="conditionRuleSetSlug"
 						:label="t('buildiq', 'Rule set slug')"
 						@update:modelValue="conditionRuleSetSlug = $event" />
+					<NcNoteCard
+						v-if="conditionKind === 'rule-set'"
+						type="info"
+						data-testid="condition-rule-set-note">
+						{{
+							t(
+								'buildiq',
+								'The rule set runs first. The actions run only when its outcome is true.',
+							)
+						}}
+					</NcNoteCard>
 				</template>
 			</section>
 
@@ -159,6 +255,7 @@
 						:inputLabel="t('buildiq', 'Action type')"
 						:options="actionTypeOptions"
 						:clearable="false"
+						:selectable="(option) => !option.disabled"
 						label="label"
 						@update:modelValue="onActionTypeChange(index, $event)" />
 
@@ -222,27 +319,147 @@
 							@update:modelValue="
 								updateAction(index, 'schema', $event)
 							" />
-						<NcTextArea
-							:modelValue="action.fieldMappingText"
-							:label="t('buildiq', 'Field mapping (JSON)')"
-							@update:modelValue="
-								updateAction(index, 'fieldMappingText', $event)
-							" />
+						<div class="automation-edit__assisted">
+							<NcTextArea
+								:modelValue="action.fieldMappingText"
+								:label="t('buildiq', 'Field mapping (JSON)')"
+								@update:modelValue="
+									updateAction(index, 'fieldMappingText', $event)
+								" />
+							<CopilotAssistButton
+								target="field-mapping"
+								:appSlug="assistAppSlug"
+								:current="action.fieldMappingText || ''"
+								:context="{ register, targetSchema: action.schema || '', triggerSchema }"
+								@accept="updateAction(index, 'fieldMappingText', $event)" />
+						</div>
 					</template>
 
 					<template v-else-if="action.type === 'webhook'">
-						<NcTextField
-							:modelValue="action.url"
-							:label="t('buildiq', 'Webhook URL')"
+						<!-- logic-automation-actions-that-run D5: a configured
+						     integriq source and a path, never a bare URL. -->
+						<NcNoteCard
+							v-if="action.url && !action.source"
+							type="warning"
+							data-testid="webhook-bare-url">
+							{{
+								t('buildiq', 'This step still posts to {url}. Pick a source for this webhook.', { url: action.url })
+							}}
+						</NcNoteCard>
+						<NcSelect
+							v-if="sourcePickerAvailable"
+							:modelValue="sourceOption(action.source)"
+							:inputLabel="t('buildiq', 'Source')"
+							:options="sourceOptions"
+							:loading="sourcesLoading"
+							label="label"
+							data-testid="webhook-source-select"
 							@update:modelValue="
-								updateAction(index, 'url', $event)
+								updateAction(index, 'source', $event ? $event.id : '')
+							" />
+						<NcTextField
+							v-else
+							:modelValue="action.source"
+							:label="t('buildiq', 'Source')"
+							data-testid="webhook-source-text"
+							@update:modelValue="
+								updateAction(index, 'source', $event)
+							" />
+						<NcTextField
+							:modelValue="action.path"
+							:label="t('buildiq', 'Path')"
+							placeholder="/intake"
+							@update:modelValue="
+								updateAction(index, 'path', $event)
+							" />
+						<div class="automation-edit__assisted">
+							<NcTextArea
+								:modelValue="action.payloadTemplateText"
+								:label="t('buildiq', 'Payload template (JSON)')"
+								@update:modelValue="
+									updateAction(index, 'payloadTemplateText', $event)
+								" />
+							<CopilotAssistButton
+								target="payload-template"
+								:appSlug="assistAppSlug"
+								:current="action.payloadTemplateText || ''"
+								:context="{ triggerSchema }"
+								@accept="updateAction(index, 'payloadTemplateText', $event)" />
+						</div>
+					</template>
+
+					<template v-else-if="action.type === 'rule-decision'">
+						<!-- logic-automation-actions-that-run D7: a decision
+						     table decides, and its outcome is written onto
+						     the record. -->
+						<NcSelect
+							v-if="ruleSetPickerAvailable"
+							:modelValue="ruleSetOption(action.ruleSetSlug)"
+							:inputLabel="t('buildiq', 'Rule set')"
+							:options="ruleSetOptions"
+							:loading="ruleSetsLoading"
+							label="label"
+							data-testid="rule-decision-rule-set-select"
+							@update:modelValue="
+								updateAction(index, 'ruleSetSlug', $event ? $event.id : '')
+							" />
+						<NcTextField
+							v-else
+							:modelValue="action.ruleSetSlug"
+							:label="t('buildiq', 'Rule set slug')"
+							data-testid="rule-decision-rule-set-text"
+							@update:modelValue="
+								updateAction(index, 'ruleSetSlug', $event)
 							" />
 						<NcTextArea
-							:modelValue="action.payloadTemplateText"
-							:label="t('buildiq', 'Payload template (JSON)')"
+							:modelValue="action.inputMappingText"
+							:label="t('buildiq', 'Inputs (JSON, table column to record field)')"
 							@update:modelValue="
-								updateAction(index, 'payloadTemplateText', $event)
+								updateAction(index, 'inputMappingText', $event)
 							" />
+						<NcTextField
+							:modelValue="action.outputField"
+							:label="t('buildiq', 'Write the decision to field')"
+							@update:modelValue="
+								updateAction(index, 'outputField', $event)
+							" />
+					</template>
+
+					<template v-else-if="action.type === 'run-automation'">
+						<!-- logic-shared-flows-and-automations D4: another
+						     automation runs as a step, and the later steps
+						     see what it returns. -->
+						<NcSelect
+							:modelValue="runAutomationOption(action.automation)"
+							:inputLabel="t('buildiq', 'Automation to run')"
+							:options="runAutomationChoices"
+							:loading="runAutomations.loading"
+							label="label"
+							data-testid="run-automation-select"
+							@update:modelValue="
+								updateAction(index, 'automation', $event ? $event.id : '')
+							" />
+					</template>
+
+					<template v-else-if="action.type === 'ai-step'">
+						<!-- ai-llm-steps-and-computed-fields D1, D3: Hermiq
+						     answers over the named fields and the answer is
+						     written onto the record. -->
+						<AiStepForm
+							:modelValue="action"
+							:fieldOptions="aiFieldOptions"
+							:agentOptions="aiAgentOptions"
+							:agentsLoading="aiAgentsLoading"
+							@update="updateAction(index, $event.key, $event.value)" />
+					</template>
+
+					<template v-else-if="action.type === 'script-step'">
+						<!-- logic-script-step D1, D5: the code runner runs this
+						     script over the flow's items; buildiq never does. -->
+						<ScriptStepForm
+							:modelValue="action"
+							:readOnly="scriptsReadOnly"
+							@update="updateAction(index, $event.key, $event.value)" />
 					</template>
 
 					<template v-else-if="action.type === 'approval'">
@@ -260,6 +477,12 @@
 							:label="t('buildiq', 'Assignee group id')"
 							@update:modelValue="
 								updateAction(index, 'assigneeGroup', $event)
+							" />
+						<ApprovalFormFieldsEditor
+							:modelValue="action.formFields"
+							:options="formFieldOptions"
+							@update:modelValue="
+								updateAction(index, 'formFields', $event)
 							" />
 
 						<AutomationActionListEditor
@@ -351,25 +574,64 @@ import {
 	NcTextArea,
 	NcTextField,
 } from '@nextcloud/vue'
+import { reactive } from 'vue'
+import AiStepForm from '../components/AiStepForm.vue'
+import ApprovalFormFieldsEditor from '../components/ApprovalFormFieldsEditor.vue'
 import AutomationActionListEditor from '../components/AutomationActionListEditor.vue'
+import CopilotAssistButton from '../components/copilot/CopilotAssistButton.vue'
+import ScriptStepForm from '../components/ScriptStepForm.vue'
 import { useAppStatus } from '../composables/useAppStatus.js'
 import {
 	fetchDocudeskTemplates,
 	templateToOption,
 } from '../composables/useDocudeskTemplates.js'
 import {
+	aiStepIncomplete,
+	aiStepToEditor,
+	fetchAgentNodeAvailable,
+	fetchToolFreeAgents,
+	missingNodeReason,
+} from '../services/aiSteps.js'
+import {
 	blockedActionReason,
 	blockedConditionReason,
 	isActionAllowed,
 	isConditionAllowed,
 } from '../services/automationMatrix.js'
-
-const INTERVAL_PRESETS = Object.freeze([
-	{ id: 'hourly', interval: 3600 },
-	{ id: 'daily', interval: 86400 },
-	{ id: 'weekly', interval: 604800 },
-	{ id: 'monthly', interval: 2592000 },
-])
+import {
+	fetchDecisionRuleSets,
+	fetchIntegriqMailboxes,
+	fetchIntegriqSources,
+} from '../services/automationStepSources.js'
+import { fetchConnectorSynchronizations } from '../services/connectorSynchronizations.js'
+import { resolveFleetAppId } from '../services/fleetAppId.js'
+import {
+	fetchCodeNodeAvailable,
+	SCRIPT_STEP,
+	scriptStepDisabledReason,
+	scriptStepIncomplete,
+	scriptStepsAllowed,
+	scriptStepToEditor,
+} from '../services/scriptSteps.js'
+import { fetchAutomations, RUN_AUTOMATION, runAutomationOptions } from '../services/sharedAutomations.js'
+import { slugify } from '../utils/slugify.js'
+import { askableFieldOptions, formFieldsOf } from './approvalFormFields.js'
+import {
+	inboundInputFields,
+	inboundTriggerReason,
+	isBodyExampleValid,
+	isInboundTrigger,
+	webhookAddress,
+	withInboundSettings,
+} from './automationInboundTrigger.js'
+import { toPersistedAction } from './automationPersistedActions.js'
+import { missingStepField } from './automationStepRequirements.js'
+import {
+	cadenceById,
+	cadenceOptions,
+	presetById,
+	presetForInterval,
+} from './scheduleCadence.js'
 
 let keyCounter = 0
 /**
@@ -378,20 +640,6 @@ let keyCounter = 0
 function nextKey() {
 	keyCounter += 1
 	return `aut-action-${keyCounter}`
-}
-
-/**
- * Derive a kebab-case slug from a human label.
- *
- * @param {string} label - the human label.
- * @return {string}
- */
-function slugify(label) {
-	return String(label || '')
-		.toLowerCase()
-		.trim()
-		.replace(/[^a-z0-9]+/g, '-')
-		.replace(/^-+|-+$/g, '')
 }
 
 export default {
@@ -404,12 +652,18 @@ export default {
 		NcTextArea,
 		NcTextField,
 		AutomationActionListEditor,
+		AiStepForm,
+		ScriptStepForm,
+		CopilotAssistButton,
+		ApprovalFormFieldsEditor,
 	},
 
 	props: {
 		open: { type: Boolean, default: false },
 		automation: { type: Object, default: null },
 		register: { type: String, default: '' },
+		// Logic-script-step REQ-BQSS-002: only app owners add or change a script.
+		scriptsReadOnly: { type: Boolean, default: false },
 	},
 
 	emits: ['update:open', 'saved'],
@@ -418,11 +672,17 @@ export default {
 	 * mirrors `docudesk-document-templates` REQ-DDT-005's editor-side
 	 * degradation and `ConnectorSourcePicker`'s existing `setup()` usage).
 	 *
-	 * @spec openspec/changes/automation-document-action/tasks.md#4.2
+	 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#4.2
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-composer-offers-a-script-step-req-bqss-001
 	 */
 	setup() {
 		const docudeskStatus = useAppStatus('filinq')
-		return { docudeskStatus }
+		// A webhook step calls an integriq source (logic-automation-actions-that-run D5).
+		const integriqStatus = useAppStatus('integriq')
+		// Logic-script-step REQ-BQSS-001: offered while the instance allows
+		// scripts and the node catalogue lists OpenRegister's code step.
+		const scriptSupport = reactive({ allowed: scriptStepsAllowed(), runnerAvailable: false })
+		return { docudeskStatus, integriqStatus, scriptSupport }
 	},
 
 	data() {
@@ -436,6 +696,15 @@ export default {
 			triggerTransition: '',
 			triggerInterval: 86400,
 			triggerCron: '',
+			triggerSource: '',
+			triggerFrom: '',
+			triggerSubjectContains: '',
+			triggerAuthorization: 'api-key',
+			triggerBodyExample: '',
+			mailboxOptions: [],
+			mailboxesLoading: false,
+			mailboxesLoaded: false,
+			mailboxesFetchFailed: false,
 			cadenceOption: null,
 			conditionKindOption: null,
 			conditionExpression: '',
@@ -454,9 +723,22 @@ export default {
 			syncLoading: false,
 			syncFetchFailed: false,
 			groupOptions: [],
+			formFieldOptions: [],
 			groupLoading: false,
 			groupFetchFailed: false,
 			docudeskTemplateOptions: [],
+			sourceOptions: [],
+			sourcesLoading: false,
+			sourcesFetchFailed: false,
+			ruleSetOptions: [],
+			ruleSetsLoading: false,
+			ruleSetsFetchFailed: false,
+			// Ai-llm-steps-and-computed-fields D6: off until the node catalogue says Hermiq's node is there.
+			agentNodeAvailable: false,
+			aiAgentOptions: [],
+			runAutomations: { records: [], loading: false },
+			aiAgentsLoading: false,
+			aiFieldOptions: [],
 			docudeskTemplatesLoading: false,
 			docudeskTemplatesFetchFailed: false,
 			saving: false,
@@ -466,6 +748,28 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * The app the Ask AI help is scoped to: the automation's own app.
+		 *
+		 * @return {string}
+		 * @spec openspec/changes/ai-copilot-documents-and-code-help/specs/ai-builder-assist/spec.md#requirement-the-assist-writes-nothing-and-respects-app-access-req-bqch-004
+		 */
+		assistAppSlug() {
+			return (this.automation && this.automation.applicationSlug) || ''
+		},
+
+		/**
+		 * The trigger schema whose fields an approval form can ask for: set
+		 * only while the automation has an approval action.
+		 *
+		 * @return {string}
+		 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
+		 */
+		formFieldSchema() {
+			const hasApproval = this.actions.some((action) => action && action.type === 'approval')
+			return hasApproval ? this.triggerSchema || '' : ''
+		},
+
 		editing() {
 			return !!(this.automation && this.automation.slug)
 		},
@@ -491,7 +795,97 @@ export default {
 				},
 				{ value: 'schedule', label: t('buildiq', 'Cron schedule') },
 				{ value: 'manual', label: t('buildiq', 'Manual') },
+				// logic-email-and-webhook-triggers D1/D6: disabled without integriq.
+				{
+					value: 'email-received',
+					label: t('buildiq', 'Email received'),
+					disabled: !this.integriqAvailable,
+				},
+				{
+					value: 'webhook-called',
+					label: t('buildiq', 'Webhook called'),
+					disabled: !this.integriqAvailable,
+				},
 			]
+		},
+
+		/**
+		 * Why the chosen email or webhook trigger cannot be used, or ''.
+		 *
+		 * @return {string}
+		 * @spec openspec/changes/logic-email-and-webhook-triggers/specs/automation-inbound-triggers/spec.md#requirement-the-composer-offers-email-and-webhook-triggers-req-bqtr-001
+		 */
+		inboundReason() {
+			return inboundTriggerReason({
+				type: this.triggerType,
+				integriqAvailable: this.integriqAvailable,
+				mailboxesLoaded: this.mailboxesLoaded && !this.mailboxesFetchFailed,
+				mailboxCount: this.mailboxOptions.length,
+			})
+		},
+
+		/**
+		 * Whether the mailbox list loaded; otherwise the source is typed.
+		 *
+		 * @return {boolean}
+		 */
+		mailboxPickerAvailable() {
+			return !this.mailboxesFetchFailed && this.mailboxOptions.length > 0
+		},
+
+		mailboxOption() {
+			return this.mailboxOptions.find((o) => o.id === this.triggerSource) || null
+		},
+
+		/**
+		 * The webhook sign-in kinds integriq checks on an inbound call.
+		 *
+		 * @return {Array<{id: string, label: string}>}
+		 */
+		authorizationOptions() {
+			return [{ id: 'api-key', label: t('buildiq', 'API key') }]
+		},
+
+		authorizationOption() {
+			return this.authorizationOptions.find((o) => o.id === this.triggerAuthorization)
+				|| this.authorizationOptions[0]
+		},
+
+		bodyExampleValid() {
+			return isBodyExampleValid(this.triggerBodyExample)
+		},
+
+		/**
+		 * The address integriq serves this webhook automation at (D3).
+		 *
+		 * @return {string}
+		 * @spec openspec/changes/logic-email-and-webhook-triggers/specs/automation-inbound-triggers/spec.md#requirement-a-webhook-starts-the-automations-flow-req-bqtr-003
+		 */
+		webhookUrl() {
+			return webhookAddress({
+				origin: window.location.origin,
+				generateUrl,
+				integriqId: resolveFleetAppId('integriq'),
+				appSlug: (this.automation && this.automation.applicationSlug) || '',
+				automationSlug: this.derivedSlug,
+			})
+		},
+
+		/**
+		 * Integriq's page of the consumer the last apply wrote, where the key is shown.
+		 *
+		 * @return {string}
+		 */
+		consumerUrl() {
+			const inbound = (this.automation && this.automation.provenance && this.automation.provenance.inbound) || {}
+			if (!inbound.consumer) {
+				return ''
+			}
+			return generateUrl(`/apps/${resolveFleetAppId('integriq')}/consumers/${encodeURIComponent(inbound.consumer)}`)
+		},
+
+		inboundFields() {
+			return inboundInputFields(this.triggerType, this.triggerBodyExample)
 		},
 
 		triggerOption: {
@@ -517,17 +911,7 @@ export default {
 		 * @spec openspec/specs/automation-designer/spec.md
 		 */
 		cadenceOptions() {
-			return [
-				{ id: 'hourly', label: t('buildiq', 'Hourly') },
-				{ id: 'daily', label: t('buildiq', 'Daily') },
-				{ id: 'weekly', label: t('buildiq', 'Weekly') },
-				{ id: 'monthly', label: t('buildiq', 'Monthly') },
-				{ id: 'custom-cron', label: t('buildiq', 'Custom (cron)') },
-				{
-					id: 'custom-interval',
-					label: t('buildiq', 'Custom interval (seconds)'),
-				},
-			]
+			return cadenceOptions()
 		},
 
 		isCustomCron() {
@@ -545,7 +929,9 @@ export default {
 			return [
 				{ value: 'none', label: t('buildiq', 'None') },
 				{ value: 'feel', label: t('buildiq', 'FEEL expression') },
-				{ value: 'rule-set', label: t('buildiq', 'Reference a rule set') },
+				// A condition is offered only on a manual trigger, which compiles to
+				// a flow where the rule set's outcome gates the steps (REQ-BQAR-004).
+				{ value: 'rule-set', label: t('buildiq', 'Rule set decides') },
 			]
 		},
 
@@ -561,7 +947,7 @@ export default {
 		 * Action type options for the type picker on each action row.
 		 *
 		 * @return {Array<object>}
-		 * @spec openspec/changes/automation-approval-steps/tasks.md#3.1
+		 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#3.1
 		 */
 		actionTypeOptions() {
 			return [
@@ -583,7 +969,149 @@ export default {
 					value: 'generateDocument',
 					label: t('buildiq', 'Generate document'),
 				},
+				{
+					value: 'rule-decision',
+					label: t('buildiq', 'Decide with a rule set'),
+				},
+				{
+					value: RUN_AUTOMATION,
+					label: t('buildiq', 'Run another automation'),
+				},
+				this.aiStepTypeOption,
+				this.scriptStepTypeOption,
 			]
+		},
+
+		/**
+		 * The "Run a script" kind: disabled, with its reason, while scripts are
+		 * off or the code runner is missing (REQ-BQSS-001).
+		 *
+		 * @return {{value: string, label: string, disabled: boolean}}
+		 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-composer-offers-a-script-step-req-bqss-001
+		 */
+		scriptStepTypeOption() {
+			const reason = scriptStepDisabledReason({ ...this.scriptSupport, owner: !this.scriptsReadOnly })
+			if (reason === '') {
+				return { value: SCRIPT_STEP, label: t('buildiq', 'Run a script'), disabled: false }
+			}
+			return {
+				value: SCRIPT_STEP,
+				label: t('buildiq', 'Run a script') + ' (' + reason + ')',
+				disabled: true,
+			}
+		},
+
+		/**
+		 * Why a script step cannot be used here, or ''.
+		 *
+		 * @return {string}
+		 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-composer-offers-a-script-step-req-bqss-001
+		 */
+		scriptStepReason() {
+			return scriptStepDisabledReason(this.scriptSupport)
+		},
+
+		/**
+		 * The automations a "Run another automation" step may name: the app's
+		 * own, then shared ones of other apps, never this one (REQ-BQSF-004).
+		 *
+		 * @return {Array<{id: string, label: string, shared: boolean}>}
+		 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-call-another-req-bqsf-004
+		 */
+		runAutomationChoices() {
+			return runAutomationOptions(this.runAutomations.records, {
+				applicationSlug: (this.automation && this.automation.applicationSlug) || '',
+				ownId: this.id || '',
+			})
+		},
+
+		/**
+		 * The "Ask AI" kind: disabled, with its reason, without Hermiq's node (REQ-BQLS-005).
+		 *
+		 * @return {{value: string, label: string, disabled: boolean}}
+		 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-ai-steps-need-the-hermiq-node-req-bqls-005
+		 */
+		aiStepTypeOption() {
+			if (this.agentNodeAvailable) {
+				return { value: 'ai-step', label: t('buildiq', 'Ask AI'), disabled: false }
+			}
+			return {
+				value: 'ai-step',
+				label: t('buildiq', 'Ask AI') + ' (' + missingNodeReason() + ')',
+				disabled: true,
+			}
+		},
+
+		/**
+		 * The trigger schema whose fields an AI step reads and writes: set only
+		 * while the automation has an AI step.
+		 *
+		 * @return {string}
+		 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-the-composer-offers-an-ask-ai-step-req-bqls-001
+		 */
+		aiFieldSchema() {
+			const hasAiStep = this.actions.some((action) => action && action.type === 'ai-step')
+			return hasAiStep ? this.triggerSchema || '' : ''
+		},
+
+		/**
+		 * Whether integriq is available; assumed until the soft check says
+		 * otherwise, as `docudeskAvailable` does.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-webhook-step-calls-a-configured-source-req-bqar-003
+		 */
+		integriqAvailable() {
+			return (
+				!this.integriqStatus.checked.value
+				|| this.integriqStatus.available.value
+			)
+		},
+
+		/**
+		 * Whether the source list loaded; otherwise the source is typed.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-webhook-step-calls-a-configured-source-req-bqar-003
+		 */
+		sourcePickerAvailable() {
+			return !this.sourcesFetchFailed && this.sourceOptions.length > 0
+		},
+
+		/**
+		 * Whether the decision table list loaded; otherwise the slug is typed.
+		 *
+		 * @return {boolean}
+		 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-step-decides-with-a-rule-set-req-bqar-005
+		 */
+		ruleSetPickerAvailable() {
+			return !this.ruleSetsFetchFailed && this.ruleSetOptions.length > 0
+		},
+
+		/**
+		 * The first flow step that is not complete, as its refusal, or ''.
+		 * A webhook needs a source, a rule decision a rule set and an output
+		 * field (REQ-BQAR-003, REQ-BQAR-005).
+		 *
+		 * @return {string}
+		 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-webhook-step-calls-a-configured-source-req-bqar-003
+		 */
+		incompleteStepMessage() {
+			for (const action of this.actions) {
+				if (action.type === 'ai-step' && aiStepIncomplete(action) !== '') {
+					return aiStepIncomplete(action)
+				}
+				if (action.type === SCRIPT_STEP && scriptStepIncomplete(action) !== '') {
+					return scriptStepIncomplete(action)
+				}
+				// A webhook, a rule decision and "Run another automation"
+				// each need their fields (REQ-BQAR-003, REQ-BQAR-005, REQ-BQSF-004).
+				const missing = missingStepField(action)
+				if (missing !== '') {
+					return missing
+				}
+			}
+			return ''
 		},
 
 		/**
@@ -592,7 +1120,7 @@ export default {
 		 * `ConnectorSourcePicker::appAvailable`).
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/automation-document-action/tasks.md#4.2
+		 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#4.2
 		 */
 		docudeskAvailable() {
 			return (
@@ -606,7 +1134,7 @@ export default {
 		 * (design.md Decision 3 of automation-document-action).
 		 *
 		 * @return {Array<object>}
-		 * @spec openspec/changes/automation-document-action/tasks.md#4.1
+		 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#4.1
 		 */
 		outputModeOptions() {
 			return [
@@ -621,7 +1149,7 @@ export default {
 		 * should degrade to a free-text template id.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/automation-document-action/tasks.md#4.1
+		 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#4.1
 		 */
 		templatePickerAvailable() {
 			return (
@@ -657,7 +1185,7 @@ export default {
 		 * at least one option), or the field should degrade to free-text.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/automation-approval-steps/tasks.md#3.1
+		 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#3.1
 		 */
 		groupPickerAvailable() {
 			return !this.groupFetchFailed && this.groupOptions.length > 0
@@ -670,11 +1198,19 @@ export default {
 		 * (automation-document-action).
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/automation-document-action/tasks.md#4.1
+		 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#4.1
 		 */
 		valid() {
 			if (this.derivedSlug === '' || this.name.trim() === '') {
 				return false
+			}
+			if (isInboundTrigger(this.triggerType)) {
+				if (this.inboundReason !== '' || !this.bodyExampleValid) {
+					return false
+				}
+				if (this.triggerType === 'email-received' && this.triggerSource.trim() === '') {
+					return false
+				}
 			}
 			if (
 				this.conditionKind !== 'none'
@@ -695,6 +1231,9 @@ export default {
 			) {
 				return false
 			}
+			if (this.incompleteStepMessage !== '') {
+				return false
+			}
 			return this.actions
 				.filter((a) => a.type === 'generateDocument')
 				.every((a) => this.generateDocumentActionValid(a))
@@ -710,6 +1249,9 @@ export default {
 			if (this.actions.length === 0) {
 				return t('buildiq', 'Add at least one action.')
 			}
+			if (this.incompleteStepMessage !== '') {
+				return this.incompleteStepMessage
+			}
 			return t(
 				'buildiq',
 				'Please resolve the highlighted blocked combination(s) before saving.',
@@ -719,12 +1261,36 @@ export default {
 
 	watch: {
 		/**
+		 * Reload the fields an approver can fill in when the trigger schema
+		 * changes or an approval action appears (REQ-BQTF-001).
+		 *
+		 * @param {string} schema - the trigger schema while an approval action exists, else ''.
+		 * @return {void}
+		 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
+		 */
+		formFieldSchema(schema) {
+			this.fetchFormFieldOptions(schema)
+		},
+
+		/**
+		 * Reload the fields an AI step can read and write when the trigger
+		 * schema changes or an AI step appears.
+		 *
+		 * @param {string} schema - the trigger schema while an AI step exists, else ''.
+		 * @return {void}
+		 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-the-composer-offers-an-ask-ai-step-req-bqls-001
+		 */
+		aiFieldSchema(schema) {
+			this.fetchAiFieldOptions(schema)
+		},
+
+		/**
 		 * Re-hydrate and refresh every live picker's options whenever the
 		 * dialog opens.
 		 *
 		 * @param {boolean} isOpen - the dialog's new open state.
 		 * @return {void}
-		 * @spec openspec/changes/automation-approval-steps/tasks.md#3.1
+		 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#3.1
 		 */
 		open(isOpen) {
 			if (isOpen) {
@@ -734,12 +1300,17 @@ export default {
 				this.fetchGroups()
 				this.docudeskStatus.check()
 				this.fetchDocudeskTemplateOptions()
+				this.fetchStepSources()
+				this.fetchAiStepSupport()
+				this.fetchScriptStepSupport()
+				this.fetchMailboxes()
+				this.fetchRunAutomationTargets()
 			}
 		},
 	},
 
 	methods: {
-		/** @spec openspec/changes/automation-designer/tasks.md#5.2 */
+		/** @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#5.2 */
 		hydrate() {
 			this.showValidation = false
 			this.errorMessage = ''
@@ -755,20 +1326,20 @@ export default {
 			this.triggerTransition = trigger.transition || ''
 			this.triggerCron = trigger.cron || ''
 			this.triggerInterval = trigger.interval || 86400
-			const preset = INTERVAL_PRESETS.find(
-				(p) => p.interval === trigger.interval,
-			)
+			this.triggerSource = trigger.source || ''
+			this.triggerFrom = trigger.from || ''
+			this.triggerSubjectContains = trigger.subjectContains || ''
+			this.triggerAuthorization = trigger.authorization || 'api-key'
+			this.triggerBodyExample = trigger.bodyExample || ''
+			const preset = presetForInterval(trigger.interval)
 			if (trigger.cron) {
-				this.cadenceOption = this.cadenceOptions.find(
-					(o) => o.id === 'custom-cron',
-				)
+				this.cadenceOption = cadenceById(this.cadenceOptions, 'custom-cron')
 			} else if (preset) {
-				this.cadenceOption = this.cadenceOptions.find(
-					(o) => o.id === preset.id,
-				)
+				this.cadenceOption = cadenceById(this.cadenceOptions, preset.id)
 			} else {
-				this.cadenceOption = this.cadenceOptions.find(
-					(o) => o.id === 'custom-interval',
+				this.cadenceOption = cadenceById(
+					this.cadenceOptions,
+					'custom-interval',
 				)
 			}
 
@@ -799,7 +1370,7 @@ export default {
 		 *
 		 * @param {object} action - the stored action record.
 		 * @return {object}
-		 * @spec openspec/changes/automation-approval-steps/tasks.md#3.1
+		 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#3.1
 		 */
 		actionToEditor(action) {
 			const subject = action.subject || {}
@@ -818,6 +1389,12 @@ export default {
 				schema: action.schema || '',
 				fieldMappingText: JSON.stringify(action.fieldMapping || {}, null, 2),
 				url: action.url || '',
+				source: action.source || '',
+				path: action.path || '',
+				ruleSetSlug: action.ruleSetSlug || '',
+				automation: action.automation || '',
+				inputMappingText: JSON.stringify(action.inputMapping || {}, null, 2),
+				outputField: action.outputField || '',
 				payloadTemplateText: JSON.stringify(
 					action.payloadTemplate || {},
 					null,
@@ -827,7 +1404,10 @@ export default {
 				assigneeGroup: action.assigneeGroup || '',
 				onApprove: Array.isArray(action.onApprove) ? action.onApprove : [],
 				onReject: Array.isArray(action.onReject) ? action.onReject : [],
+				formFields: formFieldsOf(action),
 				templateId: action.templateId || '',
+				...aiStepToEditor(action),
+				...scriptStepToEditor(action),
 				output: Array.isArray(action.output)
 					? action.output
 					: action.output
@@ -931,30 +1511,46 @@ export default {
 		},
 
 		/**
-		 * Load OpenConnector synchronizations for the run-synchronization
+		 * Load the trigger schema's properties an approver can fill in;
+		 * no schema, or a failed read, offers none (the compiler still checks).
+		 *
+		 * @param {string} schema - the trigger schema slug or id.
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/logic-approval-task-form/specs/automation-approval-action/spec.md#requirement-a-maker-names-the-fields-an-approver-fills-in-req-bqtf-001
+		 */
+		async fetchFormFieldOptions(schema) {
+			if (!schema) {
+				this.formFieldOptions = []
+				return
+			}
+			try {
+				const { data } = await axios.get(
+					generateUrl(`/apps/openregister/api/schemas/${encodeURIComponent(schema)}`),
+				)
+				if (schema === this.formFieldSchema) {
+					this.formFieldOptions = askableFieldOptions(data && data.properties)
+				}
+			} catch {
+				this.formFieldOptions = []
+			}
+		},
+
+		/**
+		 * Load the connector app's synchronizations for the run-synchronization
 		 * action picker; degrades to free-text on failure.
 		 *
+		 * The register segment and the paging key both come from the shared
+		 * loader: this list was empty on every renamed instance, because the
+		 * URL named the `openconnector` register and paged with `limit`.
+		 *
 		 * @return {Promise<void>}
+		 * @spec openspec/specs/automation-designer/spec.md#requirement-automation-editor-composes-trigger-condition-and-actions-req-autd-002
 		 */
 		async fetchSynchronizations() {
 			this.syncLoading = true
 			this.syncFetchFailed = false
 			try {
-				const url = generateUrl(
-					'/apps/openregister/api/objects/openconnector/synchronization',
-				)
-				const { data } = await axios.get(url, { params: { limit: 500 } })
-				const list = Array.isArray(data && data.results)
-					? data.results
-					: Array.isArray(data)
-						? data
-						: []
-				this.syncOptions = list
-					.map((sync) => ({
-						id: String(sync.id || sync.uuid),
-						label: sync.name || sync.title || sync.id,
-					}))
-					.filter((o) => o.id && o.id !== 'undefined')
+				this.syncOptions = await fetchConnectorSynchronizations()
 				if (this.syncOptions.length === 0) {
 					this.syncFetchFailed = true
 				}
@@ -976,6 +1572,153 @@ export default {
 			return this.syncOptions.find((o) => o.id === syncId) || null
 		},
 
+		/**
+		 * Load the integriq sources and the decision tables the flow steps
+		 * pick from; each list degrades to a text field when it cannot load
+		 * (logic-automation-actions-that-run D5, D7).
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-webhook-step-calls-a-configured-source-req-bqar-003
+		 */
+		/**
+		 * Load the automations a "Run another automation" step may name; a
+		 * failed read offers none (the compiler still checks the name).
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-call-another-req-bqsf-004
+		 */
+		async fetchRunAutomationTargets() {
+			// The automations a "Run another automation" step may name (REQ-BQSF-004).
+			this.runAutomations.loading = true
+			try {
+				this.runAutomations.records = await fetchAutomations()
+			} catch {
+				this.runAutomations.records = []
+			} finally {
+				this.runAutomations.loading = false
+			}
+		},
+
+		/**
+		 * The picker option of a named automation; one that is not listed
+		 * shows its uuid, so a stored step is never shown as empty.
+		 *
+		 * @param {string} uuid - the named automation.
+		 * @return {object|null}
+		 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-call-another-req-bqsf-004
+		 */
+		runAutomationOption(uuid) {
+			if (!uuid) {
+				return null
+			}
+			return this.runAutomationChoices.find((option) => option.id === uuid) || { id: uuid, label: uuid }
+		},
+
+		/**
+		 * Ask the node catalogue for OpenRegister's code step; without it a
+		 * script step is offered disabled (REQ-BQSS-001).
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-composer-offers-a-script-step-req-bqss-001
+		 */
+		async fetchScriptStepSupport() {
+			this.scriptSupport.runnerAvailable = await fetchCodeNodeAvailable()
+		},
+
+		/**
+		 * Ask the node catalogue for Hermiq's agent node and, when it is there,
+		 * load the agents an AI step can name (REQ-BQLS-001, REQ-BQLS-005).
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-ai-steps-need-the-hermiq-node-req-bqls-005
+		 */
+		async fetchAiStepSupport() {
+			this.agentNodeAvailable = await fetchAgentNodeAvailable()
+			if (!this.agentNodeAvailable) {
+				this.aiAgentOptions = []
+				return
+			}
+			this.aiAgentsLoading = true
+			try {
+				this.aiAgentOptions = await fetchToolFreeAgents()
+			} catch {
+				this.aiAgentOptions = []
+			} finally {
+				this.aiAgentsLoading = false
+			}
+		},
+
+		/**
+		 * Load the trigger schema's fields for the AI step pickers; a failed
+		 * read offers none (the compiler still checks every name).
+		 *
+		 * @param {string} schema - the trigger schema slug or id.
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-the-composer-offers-an-ask-ai-step-req-bqls-001
+		 */
+		async fetchAiFieldOptions(schema) {
+			if (!schema) {
+				this.aiFieldOptions = []
+				return
+			}
+			try {
+				const { data } = await axios.get(
+					generateUrl(`/apps/openregister/api/schemas/${encodeURIComponent(schema)}`),
+				)
+				if (schema === this.aiFieldSchema) {
+					this.aiFieldOptions = Object.entries((data && data.properties) || {})
+						.map(([name, property]) => ({ value: name, label: (property && property.title) || name }))
+				}
+			} catch {
+				this.aiFieldOptions = []
+			}
+		},
+
+		async fetchStepSources() {
+			this.sourcesLoading = true
+			this.ruleSetsLoading = true
+			const available = await this.integriqStatus.check()
+			const [sources, ruleSets] = await Promise.allSettled([
+				available ? fetchIntegriqSources() : Promise.resolve([]),
+				fetchDecisionRuleSets(),
+			])
+			this.sourceOptions = sources.status === 'fulfilled' ? sources.value : []
+			this.sourcesFetchFailed = sources.status !== 'fulfilled'
+			this.ruleSetOptions = ruleSets.status === 'fulfilled' ? ruleSets.value : []
+			this.ruleSetsFetchFailed = ruleSets.status !== 'fulfilled'
+			this.sourcesLoading = false
+			this.ruleSetsLoading = false
+		},
+
+		/**
+		 * The listed source a webhook step names, or a plain option for one
+		 * that is not listed, so the stored reference stays visible.
+		 *
+		 * @param {string} reference The stored source reference.
+		 * @return {?object}
+		 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-webhook-step-calls-a-configured-source-req-bqar-003
+		 */
+		sourceOption(reference) {
+			if (!reference) {
+				return null
+			}
+			return this.sourceOptions.find((o) => o.id === reference) || { id: reference, label: reference }
+		},
+
+		/**
+		 * The listed decision table a rule decision names, or a plain option.
+		 *
+		 * @param {string} slug The stored rule set slug.
+		 * @return {?object}
+		 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-step-decides-with-a-rule-set-req-bqar-005
+		 */
+		ruleSetOption(slug) {
+			if (!slug) {
+				return null
+			}
+			return this.ruleSetOptions.find((o) => o.id === slug) || { id: slug, label: slug }
+		},
+
 		onSyncSelect(index, option) {
 			this.updateAction(index, 'synchronizationId', option ? option.id : '')
 		},
@@ -987,7 +1730,7 @@ export default {
 		 * (e.g. openregister's EditSchema.vue).
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/automation-approval-steps/tasks.md#3.1
+		 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#3.1
 		 */
 		async fetchGroups() {
 			this.groupLoading = true
@@ -1022,7 +1765,7 @@ export default {
 		 *
 		 * @param {string} groupId - the stored assignee group id.
 		 * @return {?object}
-		 * @spec openspec/changes/automation-approval-steps/tasks.md#3.1
+		 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#3.1
 		 */
 		groupOption(groupId) {
 			return this.groupOptions.find((o) => o.value === groupId) || null
@@ -1034,7 +1777,7 @@ export default {
 		 * @param {number} index - the action's index in `actions`.
 		 * @param {?object} option - the selected group option.
 		 * @return {void}
-		 * @spec openspec/changes/automation-approval-steps/tasks.md#3.1
+		 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#3.1
 		 */
 		onGroupSelect(index, option) {
 			this.updateAction(index, 'assigneeGroup', option ? option.value : '')
@@ -1047,7 +1790,7 @@ export default {
 		 * on failure/absence.
 		 *
 		 * @return {Promise<void>}
-		 * @spec openspec/changes/automation-document-action/tasks.md#4.1
+		 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#4.1
 		 */
 		async fetchDocudeskTemplateOptions() {
 			if (!this.docudeskAvailable) {
@@ -1068,7 +1811,7 @@ export default {
 		 *
 		 * @param {string} templateId - the stored template uuid.
 		 * @return {?object}
-		 * @spec openspec/changes/automation-document-action/tasks.md#4.1
+		 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#4.1
 		 */
 		templateOption(templateId) {
 			return (
@@ -1083,7 +1826,7 @@ export default {
 		 * @param {number} index - the action's index in `actions`.
 		 * @param {?object} option - the selected template option.
 		 * @return {void}
-		 * @spec openspec/changes/automation-document-action/tasks.md#4.1
+		 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#4.1
 		 */
 		onTemplateSelect(index, option) {
 			this.updateAction(index, 'templateId', option ? option.uuid : '')
@@ -1095,7 +1838,7 @@ export default {
 		 *
 		 * @param {object} action - the editor-shape action row.
 		 * @return {Array<object>}
-		 * @spec openspec/changes/automation-document-action/tasks.md#4.1
+		 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#4.1
 		 */
 		outputModeSelection(action) {
 			const modes = Array.isArray(action.output) ? action.output : []
@@ -1109,7 +1852,7 @@ export default {
 		 * @param {number} index - the action's index in `actions`.
 		 * @param {?Array<object>} options - the selected output-mode options.
 		 * @return {void}
-		 * @spec openspec/changes/automation-document-action/tasks.md#4.1
+		 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#4.1
 		 */
 		onOutputModesSelect(index, options) {
 			const modes = Array.isArray(options) ? options.map((o) => o.value) : []
@@ -1125,7 +1868,7 @@ export default {
 		 *
 		 * @param {object} action - the editor-shape `generateDocument` action.
 		 * @return {boolean}
-		 * @spec openspec/changes/automation-document-action/tasks.md#4.1
+		 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#4.1
 		 */
 		generateDocumentActionValid(action) {
 			if (!action.templateId) {
@@ -1143,6 +1886,26 @@ export default {
 
 		onNameInput(value) {
 			this.name = value
+		},
+
+		/**
+		 * Load the integriq mailboxes the maker can read (D2).
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/logic-email-and-webhook-triggers/specs/automation-inbound-triggers/spec.md#requirement-the-composer-offers-email-and-webhook-triggers-req-bqtr-001
+		 */
+		async fetchMailboxes() {
+			this.mailboxesLoading = true
+			this.mailboxesFetchFailed = false
+			try {
+				const available = await this.integriqStatus.check()
+				this.mailboxOptions = available ? await fetchIntegriqMailboxes() : []
+			} catch {
+				this.mailboxOptions = []
+				this.mailboxesFetchFailed = true
+			}
+			this.mailboxesLoaded = true
+			this.mailboxesLoading = false
 		},
 
 		onTriggerChange() {
@@ -1166,8 +1929,8 @@ export default {
 		 *
 		 * @param {string} type - the action's type.
 		 * @return {string}
-		 * @spec openspec/changes/automation-document-action/tasks.md#4.2
-		 * @spec openspec/changes/automation-document-action/tasks.md#4.3
+		 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#4.2
+		 * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#4.3
 		 */
 		actionBlockedReason(type) {
 			const matrixReason = blockedActionReason(this.triggerType, type)
@@ -1178,6 +1941,18 @@ export default {
 				return t(
 					'buildiq',
 					'Docudesk is not installed — document-generation actions are unavailable.',
+				)
+			}
+			if (type === 'ai-step' && !this.agentNodeAvailable) {
+				return missingNodeReason()
+			}
+			if (type === SCRIPT_STEP) {
+				return this.scriptStepReason
+			}
+			if (type === 'webhook' && !this.integriqAvailable) {
+				return t(
+					'buildiq',
+					'Integriq is not installed, so a webhook step has no source to call.',
 				)
 			}
 			return ''
@@ -1244,103 +2019,30 @@ export default {
 				} else if (this.isCustomInterval) {
 					trigger.interval = this.triggerInterval
 				} else {
-					const preset = INTERVAL_PRESETS.find(
-						(p) =>
-							p.id === (this.cadenceOption && this.cadenceOption.id),
+					const preset = presetById(
+						this.cadenceOption && this.cadenceOption.id,
 					)
 					trigger.interval = preset ? preset.interval : 86400
 				}
 			}
-			return trigger
+			// logic-email-and-webhook-triggers D2/D3: mailbox and filters, or the sign-in kind.
+			return withInboundSettings(trigger, {
+				source: this.triggerSource,
+				from: this.triggerFrom,
+				subjectContains: this.triggerSubjectContains,
+				authorization: this.triggerAuthorization,
+				bodyExample: this.triggerBodyExample,
+			})
 		},
 
 		/**
 		 * Assemble the persisted `actions[]` from the working state.
 		 *
 		 * @return {Array}
-		 * @spec openspec/changes/automation-approval-steps/tasks.md#3.1
+		 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#3.1
 		 */
 		buildActions() {
-			return this.actions.map((action) => {
-				if (action.type === 'send-notification') {
-					return {
-						type: 'send-notification',
-						channels: action.channels,
-						recipients: action.recipients,
-						subject: { en: action.subjectEn, nl: action.subjectNl },
-					}
-				}
-				if (action.type === 'run-synchronization') {
-					return {
-						type: 'run-synchronization',
-						synchronizationId: action.synchronizationId,
-					}
-				}
-				if (action.type === 'object-op') {
-					// OpenRegister rejects BOTH an empty object ({}) and null for this
-					// nested (array-item) object property, so an object-op with no
-					// field mapping must OMIT the key entirely rather than send {}/null.
-					let fieldMapping = null
-					try {
-						const parsed = JSON.parse(action.fieldMappingText || 'null')
-						fieldMapping =
-							parsed
-							&& typeof parsed === 'object'
-							&& Object.keys(parsed).length > 0
-								? parsed
-								: null
-					} catch (e) {
-						fieldMapping = null
-					}
-					const objectOp = {
-						type: 'object-op',
-						operation: action.operation,
-						schema: action.schema,
-					}
-					if (fieldMapping !== null) {
-						objectOp.fieldMapping = fieldMapping
-					}
-					return objectOp
-				}
-				if (action.type === 'approval') {
-					return {
-						type: 'approval',
-						assigneeGroup: action.assigneeGroup,
-						onApprove: Array.isArray(action.onApprove)
-							? action.onApprove
-							: [],
-						onReject: Array.isArray(action.onReject)
-							? action.onReject
-							: [],
-					}
-				}
-				if (action.type === 'generateDocument') {
-					return {
-						type: 'generateDocument',
-						templateId: action.templateId,
-						output: Array.isArray(action.output) ? action.output : [],
-					}
-				}
-				// Same OpenRegister nested-object rule as object-op above: an empty
-				// payload template must OMIT the key rather than send {}/null.
-				let payloadTemplate = null
-				try {
-					const parsed = JSON.parse(action.payloadTemplateText || 'null')
-					payloadTemplate =
-						parsed
-						&& typeof parsed === 'object'
-						&& Object.keys(parsed).length > 0
-							? parsed
-							: null
-				} catch (e) {
-					payloadTemplate = null
-				}
-				const webhook = { type: 'webhook', url: action.url }
-				if (payloadTemplate !== null) {
-					webhook.payloadTemplate = payloadTemplate
-				}
-				return webhook
-			})
+			return this.actions.map(toPersistedAction)
 		},
 
 		/**
@@ -1402,7 +2104,11 @@ export default {
 				}
 				this.$emit('saved')
 			} catch (error) {
-				this.errorMessage = t('buildiq', 'Could not save the automation.')
+				// A refused shape (422) says what to change, e.g. "Make categorie a
+				// choice list of your labels first." (REQ-BQLS-003).
+				const response = error && error.response
+				const detail = response && response.status === 422 && response.data && response.data.detail
+				this.errorMessage = detail || t('buildiq', 'Could not save the automation.')
 			} finally {
 				this.saving = false
 			}
@@ -1432,6 +2138,20 @@ export default {
 	color: var(--color-text-maxcontrast);
 	margin: 0;
 	font-size: 0.9em;
+}
+
+.automation-edit__address {
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+
+.automation-edit__address code {
+	overflow-wrap: anywhere;
+	padding: 4px 8px;
+	border-radius: var(--border-radius);
+	background-color: var(--color-background-dark);
+	color: var(--color-main-text);
 }
 
 .automation-edit__section {
@@ -1468,5 +2188,15 @@ export default {
 	justify-content: flex-end;
 	gap: 8px;
 	margin-top: 8px;
+}
+
+.automation-edit__assisted {
+	display: flex;
+	align-items: flex-start;
+	gap: var(--default-grid-baseline);
+}
+
+.automation-edit__assisted > :first-child {
+	flex: 1;
 }
 </style>

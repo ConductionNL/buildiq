@@ -35,8 +35,8 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-70
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-71
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-70
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-71
  * @spec openspec/specs/openbuild-runtime/spec.md#requirement-menu-items-and-pages-must-be-filterable-by-permission
  */
 
@@ -44,9 +44,12 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Kernel\Contracts\ManifestResolverServiceInterface;
+use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\RegisterMapper;
 use OCA\OpenRegister\Db\SchemaMapper;
+use OCA\OpenRegister\Kernel\Contracts\Value\ObjectFindOptions;
 use OCP\IUser;
 use Psr\Log\LoggerInterface;
 use Throwable;
@@ -55,9 +58,9 @@ use Throwable;
  * Resolves application slug + optional version slug to a manifest payload,
  * enforcing RBAC for non-production versions.
  *
- * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-70
+ * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-70
  */
-class ManifestResolverService {
+class ManifestResolverService implements ManifestResolverServiceInterface {
 	/**
 	 * Constructor.
 	 *
@@ -66,8 +69,14 @@ class ManifestResolverService {
 	 * @param SchemaMapper $schemaMapper Schema slug-to-ID resolver
 	 * @param LoggerInterface $logger PSR logger for diagnostics
 	 * @param PermissionResolver $permissionResolver Shared principal-grammar resolver (H1/H2 fix)
+	 * @param ManifestWidgetRoleFilter $widgetRoleFilter Removes page widgets by `roles`
+	 * @param AppOrganisationGuard|null $organisationGuard Hides another organisation's scoped app; without it a scoped app is hidden from everyone.
+	 * @param ManifestBaseResolver|null $baseResolver Merges a version's `manifestDelta` over its `baseRef`;
+	 *                                                without it every version serves its stored blob.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-4.1
 	 */
 	public function __construct(
 		private readonly ObjectServiceInterface $objectService,
@@ -75,8 +84,62 @@ class ManifestResolverService {
 		private readonly SchemaMapper $schemaMapper,
 		private readonly LoggerInterface $logger,
 		private readonly PermissionResolver $permissionResolver,
+		private readonly ManifestWidgetRoleFilter $widgetRoleFilter,
+		private readonly ?AppOrganisationGuard $organisationGuard = null,
+		private readonly ?ManifestBaseResolver $baseResolver = null,
 	) {
 	}//end __construct()
+
+	/**
+	 * Whether the caller may see the Application at all, by its organisation scope.
+	 *
+	 * A shared app passes without a guard; a scoped one needs the guard to admit
+	 * the caller, so a missing guard fails closed.
+	 *
+	 * @param array<string, mixed> $application The Application.
+	 * @param IUser|null           $caller      The caller.
+	 *
+	 * @return bool True when the app is visible to the caller.
+	 *
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002
+	 */
+	private function visibleToCaller(array $application, ?IUser $caller): bool {
+		if (AppOrganisationGuard::isShared(application: $application) === true) {
+			return true;
+		}
+
+		return $this->organisationGuard?->canSee(application: $application, user: $caller) === true;
+	}//end visibleToCaller()
+
+	/**
+	 * Find the Application by slug, as long as the caller may see it.
+	 *
+	 * Organisation scope comes before any role: another organisation's scoped app
+	 * answers exactly as an unknown slug does (REQ-BQOS-002).
+	 *
+	 * @param string     $appSlug The virtual-app slug.
+	 * @param IUser|null $caller  The caller.
+	 *
+	 * @return array<string, mixed>|null The Application, or null when it is unknown or not visible.
+	 *
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002
+	 */
+	private function findVisibleApplication(string $appSlug, ?IUser $caller): ?array {
+		$application = $this->findApplicationBySlug(appSlug: $appSlug);
+		if ($application === null) {
+			$this->logger->debug(
+				'ManifestResolverService: Application not found for slug={slug}',
+				['slug' => $appSlug]
+			);
+			return null;
+		}
+
+		if ($this->visibleToCaller(application: $application, caller: $caller) === false) {
+			return null;
+		}
+
+		return $application;
+	}//end findVisibleApplication()
 
 	/**
 	 * Resolve an application slug (+ optional version slug) to the manifest payload.
@@ -101,27 +164,24 @@ class ManifestResolverService {
 	 *
 	 * @return array<string, mixed>|null The manifest payload, or null → caller maps to 404.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-70
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-71
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-70
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-71
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-4.1
 	 */
 	public function resolve(string $appSlug, ?string $versionSlug, ?IUser $caller): ?array {
-		// Step 1 — resolve Application by slug.
-		$application = $this->findApplicationBySlug(appSlug: $appSlug);
+		// Step 1 — resolve Application by slug, within the caller's organisation scope.
+		$application = $this->findVisibleApplication(appSlug: $appSlug, caller: $caller);
 		if ($application === null) {
-			$this->logger->debug(
-				'ManifestResolverService: Application not found for slug={slug}',
-				['slug' => $appSlug]
-			);
 			return null;
 		}
 
 		// Step 2a — no versionSlug: return production manifest (accessible to all).
 		if ($versionSlug === null) {
-			return $this->resolveProductionManifest(application: $application, appSlug: $appSlug);
+			return $this->resolveProductionManifest(application: $application, appSlug: $appSlug, caller: $caller);
 		}
 
 		if ($versionSlug === '') {
-			return $this->resolveProductionManifest(application: $application, appSlug: $appSlug);
+			return $this->resolveProductionManifest(application: $application, appSlug: $appSlug, caller: $caller);
 		}
 
 		// Step 2b — named versionSlug: look up the ApplicationVersion.
@@ -143,8 +203,9 @@ class ManifestResolverService {
 			return null;
 		}
 
-		// Step 4 — return the resolved ApplicationVersion's manifest payload.
-		$manifest = ($version['manifest'] ?? null);
+		// Step 4 — return the resolved ApplicationVersion's manifest payload:
+		// its blob, or its manifestDelta merged over its baseRef (app-delta-override D4).
+		$manifest = $this->servedManifest(version: $version, caller: $caller);
 		if (is_array($manifest) === false) {
 			$this->logger->warning(
 				'ManifestResolverService: ApplicationVersion has no manifest for app={appSlug} version={versionSlug}',
@@ -155,6 +216,23 @@ class ManifestResolverService {
 
 		return $manifest;
 	}//end resolve()
+
+	/**
+	 * The manifest one ApplicationVersion serves: its blob, or its delta merged over its base.
+	 *
+	 * @param array<string, mixed> $version The ApplicationVersion.
+	 * @param IUser|null           $caller  The caller, whose organisation scope limits the apps a base may name.
+	 *
+	 * @return mixed The manifest; null when the version has none.
+	 *
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-4.2
+	 */
+	public function servedManifest(array $version, ?IUser $caller): mixed {
+		return ($this->baseResolver?->manifestOf(
+			version: $version,
+			visible: fn (array $base): bool => $this->visibleToCaller(application: $base, caller: $caller)
+		) ?? ($version['manifest'] ?? null));
+	}//end servedManifest()
 
 	/**
 	 * Apply the RBAC gate for non-production version access.
@@ -173,7 +251,7 @@ class ManifestResolverService {
 	 *
 	 * @return bool True when access is denied; false when access is allowed.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-71
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-71
 	 */
 	private function checkNonProductionAccess(
 		array $application,
@@ -215,6 +293,73 @@ class ManifestResolverService {
 	}//end checkNonProductionAccess()
 
 	/**
+	 * The Application with this slug, or null.
+	 *
+	 * @param string $appSlug The virtual-app slug.
+	 *
+	 * @return array<string, mixed>|null The Application, normalised.
+	 *
+	 * @spec openspec/changes/forms-are-valid-against-their-destination/specs/form-destination-authoring/spec.md#requirement-a-draft-form-saves-with-its-findings
+	 */
+	public function findApplication(string $appSlug): ?array {
+		return $this->findApplicationBySlug(appSlug: $appSlug);
+	}//end findApplication()
+
+	/**
+	 * The application and version a signed-in caller runs, by the manifest endpoint's rule.
+	 *
+	 * No version slug means the production version, which every caller of the
+	 * runtime may open; a named version needs the caller to be authorised for it.
+	 *
+	 * @param string $appSlug The application slug.
+	 * @param string|null $versionSlug The version slug, null or empty for production.
+	 * @param IUser|null $caller The caller; null is refused.
+	 *
+	 * @return array{applicationUuid: string, versionUuid: string}|null Null for an unknown app or version, or a caller
+	 *                                                                  who may not open it.
+	 *
+	 * @spec openspec/changes/operate-debug-log-and-monitoring/specs/built-app-health-monitoring/spec.md#requirement-the-server-scopes-and-bounds-samples-req-bqdm-005
+	 */
+	public function resolveVersionForCaller(string $appSlug, ?string $versionSlug, ?IUser $caller): ?array {
+		if ($caller === null) {
+			return null;
+		}
+
+		$application = $this->findVisibleApplication(appSlug: $appSlug, caller: $caller);
+		if ($application === null) {
+			return null;
+		}
+
+		$applicationUuid = (string)($application['uuid'] ?? $application['id'] ?? '');
+		if ($versionSlug === null || $versionSlug === '') {
+			$versionUuid = $this->extractProductionVersionUuid(application: $application);
+			if ($applicationUuid === '' || $versionUuid === '') {
+				return null;
+			}
+
+			return ['applicationUuid' => $applicationUuid, 'versionUuid' => $versionUuid];
+		}
+
+		$version = $this->findVersionBySlug(application: $application, versionSlug: $versionSlug);
+		if ($version === null) {
+			return null;
+		}
+
+		$denied = $this->checkNonProductionAccess(
+			application: $application,
+			version: $version,
+			caller: $caller,
+			appSlug: $appSlug,
+			versionSlug: $versionSlug
+		);
+		if ($denied === true) {
+			return null;
+		}
+
+		return ['applicationUuid' => $applicationUuid, 'versionUuid' => (string)($version['uuid'] ?? $version['id'] ?? '')];
+	}//end resolveVersionForCaller()
+
+	/**
 	 * Look up the Application object by slug via OR's ObjectService.
 	 *
 	 * Uses searchObjects with register=openbuild, schema=application, slug={appSlug}.
@@ -224,7 +369,8 @@ class ManifestResolverService {
 	 *
 	 * @return array<string, mixed>|null
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-70
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-70
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function findApplicationBySlug(string $appSlug): ?array {
 		try {
@@ -254,7 +400,7 @@ class ManifestResolverService {
 				return null;
 			}
 
-			return $this->normaliseObject(object: $results[0]);
+			return ObjectRecord::toArray(object: $results[0]);
 		} catch (Throwable $e) {
 			$this->logger->error(
 				'ManifestResolverService: findApplicationBySlug failed for slug={slug}: {message}',
@@ -274,12 +420,14 @@ class ManifestResolverService {
 	 *
 	 * @param array<string, mixed> $application The normalised Application data.
 	 * @param string $appSlug The app slug (for logging).
+	 * @param IUser|null $caller The caller, whose organisation scope limits the apps a base may name.
 	 *
 	 * @return array<string, mixed>|null
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-70
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-70
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-4.1
 	 */
-	private function resolveProductionManifest(array $application, string $appSlug): ?array {
+	private function resolveProductionManifest(array $application, string $appSlug, ?IUser $caller = null): ?array {
 		$productionVersion = ($application['productionVersion'] ?? null);
 
 		// ProductionVersion is a UUID or embedded object.
@@ -287,14 +435,14 @@ class ManifestResolverService {
 			// UUID reference — fetch the ApplicationVersion.
 			$version = $this->findVersionByUuid(uuid: $productionVersion);
 			if ($version !== null) {
-				$manifest = ($version['manifest'] ?? null);
+				$manifest = $this->servedManifest(version: $version, caller: $caller);
 				if (is_array($manifest) === true) {
 					return $manifest;
 				}
 			}
 		} elseif (is_array($productionVersion) === true) {
-			// Inline embedded object — use manifest directly.
-			$manifest = ($productionVersion['manifest'] ?? null);
+			// Inline embedded object — use its manifest, merged over its base when it has one.
+			$manifest = $this->servedManifest(version: $productionVersion, caller: $caller);
 			if (is_array($manifest) === true) {
 				return $manifest;
 			}
@@ -329,7 +477,8 @@ class ManifestResolverService {
 	 *
 	 * @return array<string, mixed>|null
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-70
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-70
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function findVersionBySlug(array $application, string $versionSlug): ?array {
 		try {
@@ -358,7 +507,7 @@ class ManifestResolverService {
 			);
 
 			if (empty($results) === false) {
-				$version = $this->normaliseObject(object: $results[0]);
+				$version = ObjectRecord::toArray(object: $results[0]);
 				// Verify application relation ownership (IDOR guard).
 				if ($this->versionBelongsToApplication(version: $version, applicationUuid: $applicationUuid) === true) {
 					return $version;
@@ -389,6 +538,7 @@ class ManifestResolverService {
 	 * @param string $versionSlug The requested version slug.
 	 *
 	 * @return array<string, mixed>|null
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function findVersionBySlugFallback(string $applicationUuid, string $versionSlug): ?array {
 		try {
@@ -406,7 +556,7 @@ class ManifestResolverService {
 			);
 
 			foreach ($allVersions as $entry) {
-				$version = $this->normaliseObject(object: $entry);
+				$version = ObjectRecord::toArray(object: $entry);
 				if (($version['slug'] ?? '') === $versionSlug
 					&& $this->versionBelongsToApplication(version: $version, applicationUuid: $applicationUuid) === true
 				) {
@@ -430,20 +580,23 @@ class ManifestResolverService {
 	 * @param string $uuid The ApplicationVersion UUID.
 	 *
 	 * @return array<string, mixed>|null
+	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function findVersionByUuid(string $uuid): ?array {
 		try {
 			$version = $this->objectService->find(
 				id: $uuid,
-				register: 'buildiq',
-				schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
+				options: new ObjectFindOptions(
+					register: 'buildiq',
+					schema: ApplicationVersionService::APPLICATION_VERSION_SCHEMA
+				)
 			);
 
 			if ($version === null) {
 				return null;
 			}
 
-			return $this->normaliseObject(object: $version);
+			return ObjectRecord::toArray(object: $version);
 		} catch (Throwable $e) {
 			$this->logger->debug(
 				'ManifestResolverService: findVersionByUuid failed for uuid={uuid}: {message}',
@@ -512,31 +665,14 @@ class ManifestResolverService {
 	 *
 	 * @return bool True when the caller is an editor or owner; false otherwise.
 	 *
-	 * @spec openspec/changes/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-71
+	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-71
 	 */
 	private function isCallerAuthorised(array $application, ?IUser $caller): bool {
 		if ($caller === null) {
 			return false;
 		}
 
-		$permissions = ($application['permissions'] ?? []);
-		if (is_array($permissions) === false) {
-			return false;
-		}
-
-		// Use PermissionResolver for consistent grammar (H1/H2 fix).
-		// Group membership is resolved here via IGroupManager so ManifestResolverService
-		// now honours group: entries for non-production version access, matching the
-		// behaviour of the HTTP endpoint (bucketContainsUid previously only matched user: entries).
-		$userGroups = $this->permissionResolver->resolveUserGroups($caller);
-
-		return $this->permissionResolver->matchesCaller(
-			permissions: $permissions,
-			caller: $caller,
-			userGroups: $userGroups,
-			allowAdminBypass: false,
-			roles: ['owners', 'editors']
-		);
+		return $this->hasWriteRole(application: $application, caller: $caller);
 	}//end isCallerAuthorised()
 
 	/**
@@ -568,6 +704,9 @@ class ManifestResolverService {
 	 * Fail-closed: an unauthenticated caller (`null`) is treated as holding NO
 	 * permissions — every gated entry is stripped.
 	 *
+	 * Page widgets that declare `roles` the caller does not match are removed
+	 * too, with the same bypass ({@see ManifestWidgetRoleFilter}).
+	 *
 	 * @param array<string, mixed> $manifest The resolved manifest payload.
 	 * @param array<string, mixed> $application The normalised Application data
 	 *                                          (source of `permissions`, for the
@@ -579,9 +718,12 @@ class ManifestResolverService {
 	 *                              declared `permission`. A group-scoped
 	 *                              dashboard the caller satisfies is promoted to
 	 *                              the landing position (first in `pages[]`).
+	 *                              Page widgets whose `roles` the caller does
+	 *                              not match are removed.
 	 *
 	 * @spec openspec/specs/openbuild-runtime/spec.md#requirement-menu-items-and-pages-must-be-filterable-by-permission
 	 * @spec openspec/specs/openbuild-runtime/spec.md#requirement-a-group-scoped-dashboard-may-be-the-landing-page-for-its-group
+	 * @spec openspec/specs/openbuild-runtime/spec.md#requirement-page-widgets-must-be-filterable-by-roles
 	 */
 	public function filterManifestForCaller(array $manifest, array $application, ?IUser $caller): array {
 		if ($caller !== null && $this->permissionResolver->isAdmin($caller) === true) {
@@ -606,7 +748,7 @@ class ManifestResolverService {
 			$manifest['pages'] = $this->promoteLandingDashboard(pages: $pages);
 		}
 
-		return $manifest;
+		return $this->widgetRoleFilter->filterManifest(manifest: $manifest, caller: $caller);
 	}//end filterManifestForCaller()
 
 	/**
@@ -671,6 +813,9 @@ class ManifestResolverService {
 			return false;
 		}
 
+		// Use PermissionResolver for consistent grammar (H1/H2 fix). Group
+		// membership is resolved via IGroupManager, so `group:` entries count for
+		// non-production version access too, matching the HTTP endpoint.
 		$userGroups = $this->permissionResolver->resolveUserGroups($caller);
 
 		return $this->permissionResolver->matchesCaller(
@@ -839,33 +984,4 @@ class ManifestResolverService {
 
 		return array_values($pages);
 	}//end promoteLandingDashboard()
-
-	/**
-	 * Coerce an OR result entry (ObjectEntity or array) to a plain associative array.
-	 *
-	 * @param mixed $object The OR object/result entry.
-	 *
-	 * @return array<string, mixed>
-	 */
-	private function normaliseObject(mixed $object): array {
-		if (is_array($object) === true) {
-			return $object;
-		}
-
-		if (is_object($object) === true && method_exists($object, 'jsonSerialize') === true) {
-			$serialised = $object->jsonSerialize();
-			if (is_array($serialised) === true) {
-				return $serialised;
-			}
-		}
-
-		if (is_object($object) === true && method_exists($object, 'getObject') === true) {
-			$inner = $object->getObject();
-			if (is_array($inner) === true) {
-				return $inner;
-			}
-		}
-
-		return [];
-	}//end normaliseObject()
 }//end class

@@ -11,7 +11,7 @@
  * kept in sync by hand (no cross-language codegen exists), so this file's
  * shape is the canonical reference the PHP docblock cites back to.
  *
- * @spec openspec/changes/automation-document-action/tasks.md#4.3
+ * @spec openspec/changes/archive/2026-07-24-automation-document-action/tasks.md#4.3
  * @spec openspec/specs/automation-designer/spec.md#req-autd-003
  *
  * DEVIATION FROM design.md (documented, mirrored from the backend — see
@@ -23,9 +23,9 @@
  * here matches the compiler's ACTUAL enforced behaviour, not the
  * originally-proposed table.
  *
- * @spec openspec/changes/automation-designer/tasks.md#5.4
+ * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#5.4
  * @spec openspec/specs/automation-designer/spec.md#req-autd-003
- * @spec openspec/changes/automation-approval-steps/tasks.md#3.2
+ * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#3.2
  * @spec openspec/specs/automation-designer/spec.md#req-autd-003
  */
 
@@ -37,6 +37,8 @@ export const TRIGGER_TYPES = Object.freeze([
 	'lifecycle-transition',
 	'schedule',
 	'manual',
+	'email-received',
+	'webhook-called',
 ])
 
 /** Every action type the v1 designer supports. */
@@ -47,6 +49,10 @@ export const ACTION_TYPES = Object.freeze([
 	'webhook',
 	'approval',
 	'generateDocument',
+	'rule-decision',
+	'ai-step',
+	'run-automation',
+	'script-step',
 ])
 
 /**
@@ -58,22 +64,47 @@ export const ACTION_TYPES = Object.freeze([
  * (automation-document-action) is expressible on the SAME four triggers for
  * the identical reason — Docudesk generates a document FOR a concrete
  * object instance, which a `schedule`/`manual` trigger does not carry.
+ *
+ * logic-automation-actions-that-run (D1, D3): the flow actions `object-op`,
+ * `webhook` and `rule-decision` compile to one OpenRegister flow, which the
+ * compiler builds for an object event or a manual trigger before it consults
+ * its own matrix, so they are offered there too.
+ *
+ * logic-shared-flows-and-automations (D4): "Run another automation" compiles
+ * to a sub-flow step of the same flow, so it is offered wherever a flow runs.
+ *
+ * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-declarative-primitives-or-one-openregister-flow-req-bqar-001
+ * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-call-another-req-bqsf-004
  */
 export const MATRIX = Object.freeze({
 	'object-created': Object.freeze([
 		'send-notification',
+		'object-op',
+		'webhook',
+		'rule-decision',
 		'approval',
 		'generateDocument',
+		'ai-step',
+		'run-automation',
 	]),
 	'object-updated': Object.freeze([
 		'send-notification',
+		'object-op',
+		'webhook',
+		'rule-decision',
 		'approval',
 		'generateDocument',
+		'ai-step',
+		'run-automation',
 	]),
 	'object-deleted': Object.freeze([
 		'send-notification',
+		'object-op',
+		'webhook',
+		'rule-decision',
 		'approval',
 		'generateDocument',
+		'run-automation',
 	]),
 	'lifecycle-transition': Object.freeze([
 		'send-notification',
@@ -83,7 +114,34 @@ export const MATRIX = Object.freeze({
 		'generateDocument',
 	]),
 	schedule: Object.freeze(['run-synchronization']),
-	manual: Object.freeze(['send-notification', 'object-op', 'webhook']),
+	// logic-script-step D1: a script step runs where a flow runs from a
+	// manual, mail or webhook trigger (AutomationCompilerService::MATRIX).
+	manual: Object.freeze([
+		'send-notification',
+		'object-op',
+		'webhook',
+		'rule-decision',
+		'ai-step',
+		'run-automation',
+		'script-step',
+	]),
+	// logic-email-and-webhook-triggers D1: started by integriq, flow steps only.
+	'email-received': Object.freeze([
+		'send-notification',
+		'object-op',
+		'webhook',
+		'rule-decision',
+		'run-automation',
+		'script-step',
+	]),
+	'webhook-called': Object.freeze([
+		'send-notification',
+		'object-op',
+		'webhook',
+		'rule-decision',
+		'run-automation',
+		'script-step',
+	]),
 })
 
 /** Trigger types on which a condition is v1-supported. */
@@ -122,7 +180,7 @@ export function isConditionAllowed(triggerType) {
  * @param {string} triggerType - the automation's trigger type.
  * @param {string} actionType - the candidate action type.
  * @return {string}
- * @spec openspec/changes/automation-approval-steps/tasks.md#3.2
+ * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#3.2
  */
 export function blockedActionReason(triggerType, actionType) {
 	if (isActionAllowed(triggerType, actionType)) {

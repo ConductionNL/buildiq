@@ -11,6 +11,9 @@
  * @license   EUPL-1.2 https://joinup.ec.europa.eu/collection/eupl/eupl-text-eupl-12
  *
  * @link https://conduction.nl
+ *
+ * SPDX-FileCopyrightText: 2026 Conduction B.V.
+ * SPDX-License-Identifier: EUPL-1.2
  */
 
 declare(strict_types=1);
@@ -118,4 +121,55 @@ final class RegisterFragmentMergeTest extends TestCase {
 		$this->assertSame(['a', 'b', 'c'], $merged['required']);
 		$this->assertSame('0.2.0', $merged['info']['version']);
 	}//end testListsConcatenateAndScalarsOverwrite()
+	/**
+	 * The organisation-scope fragment adds `organisationScope` to the shipped
+	 * Application schema without dropping a property it already declares.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-an-app-has-an-organisation-scope-req-bqos-001
+	 */
+	public function testOrganisationScopeFragmentExtendsTheApplicationSchema(): void {
+		$settings = dirname(__DIR__, 3) . '/lib/Settings';
+		$base = json_decode((string)file_get_contents($settings . '/openbuild_register.json'), true);
+		$fragment = json_decode((string)file_get_contents($settings . '/register.d/25-organisation-scope.json'), true);
+
+		$merged = $this->merge($base, $fragment);
+		$application = $merged['components']['schemas']['Application'];
+
+		$this->assertSame(['all', 'holder'], $application['properties']['organisationScope']['enum']);
+		$this->assertSame('0.7.0', $application['version']);
+		$this->assertSame('built-app', $application['slug']);
+		foreach (array_keys($base['components']['schemas']['Application']['properties']) as $property) {
+			$this->assertArrayHasKey($property, $application['properties']);
+		}
+
+		$this->assertNotContains('organisationScope', ($application['required'] ?? []), 'absent must stay allowed: absent means all');
+	}//end testOrganisationScopeFragmentExtendsTheApplicationSchema()
+
+	/**
+	 * The shipped base with every shipped fragment, in filename order, gives
+	 * ApplicationVersion its branch properties and keeps what it had.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/lifecycle-git-branches/specs/app-version-branches/spec.md#requirement-a-maker-starts-a-branch-from-a-version-req-bqgb-001
+	 */
+	public function testTheShippedFragmentsGiveAVersionItsBranchProperties(): void {
+		$settings = __DIR__ . '/../../../lib/Settings';
+		$merged = json_decode((string)file_get_contents($settings . '/openbuild_register.json'), true, 512, JSON_THROW_ON_ERROR);
+		$fragments = glob($settings . '/register.d/*.json');
+		sort($fragments);
+		foreach ($fragments as $fragment) {
+			$merged = $this->merge($merged, json_decode((string)file_get_contents($fragment), true, 512, JSON_THROW_ON_ERROR));
+		}
+
+		$version = $merged['components']['schemas']['ApplicationVersion'];
+		$this->assertSame('0.5.0', $version['version']);
+		$this->assertSame(['source', 'manifestHash', 'manifest', 'schemas'], $version['properties']['branchBase']['required']);
+		$this->assertSame('^[0-9a-f]{64}$', $version['properties']['branchBase']['properties']['manifestHash']['pattern']);
+		$this->assertSame('^[A-Za-z0-9._/-]{1,255}$', $version['properties']['githubBranch']['pattern']);
+		$this->assertSame('object', $version['properties']['manifest']['type'], 'The properties the schema had are kept.');
+		$this->assertSame('applicationVersion', $version['slug']);
+	}//end testTheShippedFragmentsGiveAVersionItsBranchProperties()
 }//end class

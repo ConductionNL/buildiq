@@ -140,4 +140,26 @@ describe('SettingsPageEditor', () => {
 		await wrapper.vm.$nextTick()
 		expect(wrapper.emitted('update:config')[0][0].unknownThing).toBe(42)
 	})
+	describe('update', () => {
+		it.each([
+			['saveEndpoint', '', false],
+			['saveEndpoint', null, false],
+			['saveEndpoint', undefined, false],
+			['saveEndpoint', [], false],
+			['sections', [], true],
+			['sections', '', false],
+			['sections', [{ id: 'a' }], true],
+			['saveEndpoint', '/x', true],
+			['saveEndpoint', 0, true],
+		])('update(%j, %j) keeps the key: %s', (key, value, kept) => {
+			const wrapper = mountEditor({ [key]: 'old', other: 1 })
+			wrapper.vm.update(key, value)
+			const next = wrapper.emitted('update:config').at(-1)[0]
+			expect(Object.hasOwn(next, key)).toBe(kept)
+			if (kept) {
+				expect(next[key]).toEqual(value)
+			}
+			expect(next.other).toBe(1)
+		})
+	})
 })

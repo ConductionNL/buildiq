@@ -62,7 +62,7 @@
 				<NcButton
 					v-if="adminVersionUuid"
 					variant="tertiary"
-					@click="openInOpenRegister(adminVersionUuid)">
+					:href="openRegisterUrl(adminVersionUuid)">
 					{{ t('buildiq', 'Open version history in OpenRegister') }}
 				</NcButton>
 			</article>
@@ -87,7 +87,7 @@
 						<NcButton
 							v-if="userDelta.versionUuid"
 							variant="tertiary"
-							@click="openInOpenRegister(userDelta.versionUuid)">
+							:href="openRegisterUrl(userDelta.versionUuid)">
 							{{
 								t('buildiq', 'Open version history in OpenRegister')
 							}}
@@ -137,7 +137,7 @@
 					<NcButton
 						v-if="ovr.versionUuid"
 						variant="tertiary"
-						@click="openInOpenRegister(ovr.versionUuid)">
+						:href="openRegisterUrl(ovr.versionUuid)">
 						{{ t('buildiq', 'Open in OpenRegister') }}
 					</NcButton>
 				</li>
@@ -188,6 +188,11 @@ import ArrowLeft from 'vue-material-design-icons/ArrowLeft.vue'
 import Plus from 'vue-material-design-icons/Plus.vue'
 import UserDeltaEditModal from '../modals/UserDeltaEditModal.vue'
 import VersionHistory from './VersionHistory.vue'
+import {
+	userDeltaState,
+	userOverridesUrl,
+	userOverrideUrl,
+} from '../services/userOverrides.js'
 
 export default {
 	name: 'ManifestLayersDetail',
@@ -374,11 +379,7 @@ export default {
 		async loadUserOverrides() {
 			if (!this.appSlug) return
 			try {
-				const url = generateUrl(
-					'/apps/buildiq/api/app-overrides/{appId}/user-deltas',
-					{ appId: this.appSlug },
-				)
-				const { data } = await axios.get(url)
+				const { data } = await axios.get(userOverridesUrl(this.appSlug))
 				this.userOverrides =
 					data && Array.isArray(data.overrides) ? data.overrides : []
 				this.canViewUserOverrides = true
@@ -448,24 +449,13 @@ export default {
 		async loadUserDelta() {
 			if (!this.appSlug) return
 			try {
-				const url = generateUrl(
-					'/apps/buildiq/api/app-overrides/{appId}/user',
-					{ appId: this.appSlug },
-				)
-				const { data } = await axios.get(url)
+				const { data } = await axios.get(userOverrideUrl(this.appSlug))
 				this.userDelta = {
-					allowed: !!(data && data.allowed),
-					exists: !!(data && data.exists),
-					versionUuid: (data && data.versionUuid) || null,
+					...userDeltaState(data),
 					manifestDelta: (data && data.manifestDelta) || {},
 				}
 			} catch (e) {
-				this.userDelta = {
-					allowed: false,
-					exists: false,
-					versionUuid: null,
-					manifestDelta: {},
-				}
+				this.userDelta = { ...userDeltaState(null), manifestDelta: {} }
 			}
 		},
 
@@ -481,11 +471,7 @@ export default {
 			this.creating = true
 			this.error = ''
 			try {
-				const url = generateUrl(
-					'/apps/buildiq/api/app-overrides/{appId}/user',
-					{ appId: this.appSlug },
-				)
-				await axios.put(url, {})
+				await axios.put(userOverrideUrl(this.appSlug), {})
 				await this.loadUserDelta()
 			} catch (e) {
 				this.error = t('buildiq', 'Could not create your override.')
@@ -505,11 +491,7 @@ export default {
 			if (!this.appSlug) return
 			this.error = ''
 			try {
-				const url = generateUrl(
-					'/apps/buildiq/api/app-overrides/{appId}/user',
-					{ appId: this.appSlug },
-				)
-				await axios.delete(url)
+				await axios.delete(userOverrideUrl(this.appSlug))
 				await this.loadUserDelta()
 			} catch (e) {
 				this.error = t('buildiq', 'Could not reset your override.')
@@ -553,7 +535,7 @@ export default {
 		 *
 		 * @return {Promise<void>}
 		 *
-		 * @spec openspec/changes/version-lifecycle-and-switcher/specs/version-lifecycle-ui/spec.md
+		 * @spec openspec/specs/version-lifecycle-ui/spec.md
 		 */
 		async createDraft() {
 			if (!this.appSlug || this.creatingDraft) {
@@ -625,21 +607,20 @@ export default {
 		},
 
 		/**
-		 * Deep-link to an ApplicationVersion row's OpenRegister object page
-		 * (which carries OR's native version history / time-travel / rollback).
+		 * An ApplicationVersion row's OpenRegister object page (which carries OR's
+		 * native version history / time-travel / rollback), as an href.
 		 *
 		 * @param {string} versionUuid The ApplicationVersion UUID.
-		 * @return {void}
+		 * @return {string|null} The URL, or null without a UUID.
 		 *
 		 * @spec openspec/specs/application-detail-overview/spec.md
 		 */
-		openInOpenRegister(versionUuid) {
-			if (!versionUuid) return
-			const url = generateUrl(
+		openRegisterUrl(versionUuid) {
+			if (!versionUuid) return null
+			return generateUrl(
 				'/apps/openregister/objects/buildiq/applicationVersion/{uuid}',
 				{ uuid: versionUuid },
 			)
-			window.location.href = url
 		},
 
 		/**

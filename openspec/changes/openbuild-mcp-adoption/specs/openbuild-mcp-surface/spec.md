@@ -3,53 +3,56 @@
 **Status**: planned
 **Scope**: buildiq
 **OpenSpec changes**:
-- `buildiq-mcp-adoption` — declares the ADR-063 read-only dialect and removes every app-mutating tool from the MCP surface (kind: code)
+- `buildiq-mcp-adoption`: declares the ADR-063 read-only dialect and keeps the eight builder tools for outside agents, behind the app's roles and an approved plan (kind: code)
 
 ## Purpose
 
-Defines what an MCP agent may and may not do with Buildiq. Buildiq authors applications, so its
-write tools do not edit records — they edit **the UI of a running app**. This capability makes the
-agent-facing surface read-only by construction, and states normatively that the manifest-mutating
-tools are reachable only through the AI Copilot's plan → preview → human-approval → atomic-execute
-flow, never through a bare tool call. See ADR-063 and the `ai-copilot` spec.
+Defines what an MCP agent may do with Buildiq. Outside agents may build: the eight builder tools
+stay on the MCP surface, and every write runs under the app's roles and a plan a person approved
+(decision 392, 12 Nov 2026). Read questions are answered by a curated, derived read-only dialect.
 
 ## ADDED Requirements
 
-### Requirement: Buildiq exposes no hand-written MCP tool
-The system MUST NOT register any `IMcpToolProvider` implementation for app id `buildiq`, and MUST NOT annotate any Buildiq service method with `#[McpTool]`.
+### Requirement: Outside agents SHALL build apps through the eight builder tools
+The system SHALL keep `BuildiqToolProvider` registered as `IMcpToolProvider::buildiq`, so an MCP client can list apps, read a manifest, create an app, upsert a schema, a page, a widget and a menu item, and promote a version: `buildiq.listApps`, `buildiq.getAppManifest`, `buildiq.createApp`, `buildiq.upsertSchema`, `buildiq.upsertPage`, `buildiq.addWidget`, `buildiq.upsertMenuItem` and `buildiq.promoteVersion`. The six write tools SHALL run the same handlers as the AI Copilot, with the same validation, object locks and caps.
 
-The `OCA\OpenRegister\Mcp\IMcpToolProvider::buildiq` container alias MUST be removed from
-`lib/AppInfo/Application.php`, and the class formerly registered under it MUST NOT implement
-`IMcpToolProvider`. Buildiq's entire agent-facing tool surface MUST therefore be derived from
-schema declarations.
+Rows: `ai-external-agent-builds` (buildiq matrix).
 
-#### Scenario: The buildiq MCP catalog contains only derived tools
-- GIVEN OpenRegister builds the tool catalog for app id `buildiq`
-- WHEN an MCP client lists available tools
-- THEN every returned tool id MUST match the 3-segment derived form `buildiq.{schema}.{verb}`
-- AND no 2-segment hand-written id such as `buildiq.upsertPage` MUST appear
+#### Scenario: An outside agent lists the builder tools
+- GIVEN an MCP client connected through OpenRegister's MCP server
+- WHEN it lists the tools for app id `buildiq`
+- THEN the eight builder tools are in the catalog next to the derived read tools
 
-### Requirement: No tool may mutate an application, a manifest or a version
-The system MUST NOT expose any MCP tool that creates, updates or deletes an `Application`, an `ApplicationVersion`, a manifest sub-document (page, widget, menu item), a per-version schema, or an `exportJob`.
+#### Scenario: An agent's write runs the Copilot's handler
+- GIVEN an approved plan with an `upsertPage` step whose route is `javascript:alert(1)`
+- WHEN the agent calls `buildiq.upsertPage` for that step
+- THEN `UpsertPageHandler`'s route guard refuses it, as it does for the Copilot
 
-Concretely, none of `buildiq.createApp`, `buildiq.promoteVersion`, `buildiq.upsertSchema`,
-`buildiq.upsertPage`, `buildiq.addWidget` or `buildiq.upsertMenuItem` MUST be reachable through
-MCP, and no `x-openregister-mcp` block in Buildiq's register MUST declare a `create`, `update` or
-`delete` verb. A manifest write changes what every user of that app sees; it is a destructive write
-regardless of how routine it looks, and it MUST carry a human approval, which the MCP surface cannot
-provide. The tools retain their home in the Copilot executor — this requirement removes their
-reachability, not their existence.
+### Requirement: A builder tool SHALL write only for a caller the app's roles allow
+Every write tool SHALL require the calling user to hold an owners or editors role on the target Application, as `AbstractToolHandler::requireWriteRole` does for the Copilot. `buildiq.createApp` SHALL require the right to create apps. An admin bypass SHALL be logged.
 
-#### Scenario: An agent cannot rewrite a running app's UI
-- GIVEN an agent holds every grant OpenRegister can issue for app id `buildiq`
-- WHEN it attempts to add a widget to a page of a live application
-- THEN no such tool MUST exist in the catalog
-- AND the attempt MUST fail as an unknown tool, not merely be denied at invoke time
+#### Scenario: A viewer's agent cannot change the app
+- GIVEN a user with only the viewers role on an Application
+- WHEN their agent calls `buildiq.addWidget` on it with an approved plan
+- THEN the call is refused for lack of a write role and the manifest is unchanged
 
-#### Scenario: No write verb is derivable
-- GIVEN every `x-openregister-mcp` block in `openbuild_register.json` and `register.d/`
-- WHEN the derived catalog is built
-- THEN it MUST contain no tool id ending in `.create`, `.update` or `.delete`
+### Requirement: A builder tool SHALL write only under a plan a person approved
+An outside agent SHALL first submit its intended steps as a plan, which writes nothing and returns the predicted manifest. A person with a write role on the app SHALL approve or reject the plan in buildiq. Each write tool call SHALL name an approved plan and match one of its steps; a call without an approved plan, or one that differs from the approved step, SHALL be refused. `buildiq.promoteVersion` SHALL follow the same rule, so an agent cannot promote what it wrote without approval.
+
+#### Scenario: A write without an approved plan is refused
+- GIVEN an agent with every grant OpenRegister can issue for app id `buildiq`
+- WHEN it calls `buildiq.upsertPage` without naming an approved plan
+- THEN the call is refused and the manifest is unchanged
+
+#### Scenario: A person approves the agent's plan and it is built
+- GIVEN an agent submitted a plan that adds a page and a menu item
+- WHEN an editor of the app approves it and the agent calls the two tools for those steps
+- THEN the page and the menu item are in the app's development version
+
+#### Scenario: A step that differs from the plan is refused
+- GIVEN an approved plan that adds the page `Overview`
+- WHEN the agent calls `buildiq.upsertPage` for a page `Admin` instead
+- THEN the call is refused
 
 ### Requirement: A curated read-only dialect on five schemas
 The system MUST declare `x-openregister-mcp` with the `search` and `get` verbs on exactly `Application`, `ApplicationVersion`, `ApplicationTemplate`, `exportJob` and `Automation`, each with `scope: 'read'` and `readOnlyHint: true`.
@@ -73,15 +76,15 @@ import otherwise. The dialect MUST NOT be declared on `RuleSet`, `DecisionTable`
 
 ## Non-Functional Requirements
 
-- **Performance:** The `buildiq` catalog MUST stay at or below roughly a dozen tools, so tool-selection accuracy and prompt token cost do not degrade (ADR-063 rule 3).
+- **Performance:** The `buildiq` catalog holds ten derived read tools and the eight builder tools, and nothing else.
 - **Internationalization:** No new user-facing strings; tool `description` prose is agent-facing English. N/A for `nl_NL`/`en_US`.
 
 ## Acceptance Criteria
 
-- [ ] No `IMcpToolProvider::buildiq` alias is registered and no class in `buildiq` implements it
-- [ ] The `buildiq` catalog contains exactly ten derived read tools and nothing else
-- [ ] No `create`/`update`/`delete` tool id exists for `buildiq`
-- [ ] The AI Copilot's plan/preview/execute/rollback behaviour is unchanged
+- [ ] `IMcpToolProvider::buildiq` stays registered with the eight builder tools
+- [ ] Every write tool refuses a caller without a write role on the app
+- [ ] Every write tool refuses a call without a matching approved plan
+- [ ] The derived catalog adds ten read tools and no `create`/`update`/`delete` tool id
 
 ## Notes
 

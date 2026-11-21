@@ -24,7 +24,7 @@
 		<NcLoadingIcon v-if="loading" :size="32" />
 
 		<NcEmptyContent
-			v-else-if="ruleSets.length === 0"
+			v-else-if="shownRuleSets.length === 0"
 			:name="t('buildiq', 'No rule sets yet')"
 			:description="
 				t(
@@ -52,6 +52,9 @@
 						{{ t('buildiq', 'Owner app') }}
 					</th>
 					<th scope="col">
+						{{ t('buildiq', 'May be called by') }}
+					</th>
+					<th scope="col">
 						{{ t('buildiq', 'Tests') }}
 					</th>
 					<th scope="col">
@@ -60,7 +63,7 @@
 				</tr>
 			</thead>
 			<tbody>
-				<tr v-for="rs in ruleSets" :key="rs.slug" data-testid="rule-set-row">
+				<tr v-for="rs in shownRuleSets" :key="rs.slug" data-testid="rule-set-row">
 					<td>{{ rs.name }}</td>
 					<td>{{ rs.ruleType }}</td>
 					<td>
@@ -72,6 +75,9 @@
 					</td>
 					<td>{{ rs.version }}</td>
 					<td>{{ rs.ownerApp }}</td>
+					<td data-testid="rule-set-callers">
+						{{ callersLabel(rs) }}
+					</td>
 					<td>
 						<span
 							class="rule-sets-page__test"
@@ -82,6 +88,9 @@
 					<td class="rule-sets-page__actions">
 						<NcButton variant="tertiary" @click="edit(rs)">
 							{{ t('buildiq', 'Edit') }}
+						</NcButton>
+						<NcButton variant="tertiary" @click="openCallers(rs)">
+							{{ t('buildiq', 'Callers') }}
 						</NcButton>
 						<NcButton variant="tertiary" @click="openSandbox(rs)">
 							{{ t('buildiq', 'Test') }}
@@ -113,6 +122,11 @@
 			@close="showConditionEditor = false"
 			@saved="onSaved" />
 
+		<RuleSetCallersDialog
+			v-model:open="showCallers"
+			:ruleSet="activeRuleSet"
+			@saved="onSaved" />
+
 		<RuleSetTestSandbox
 			v-if="showSandbox"
 			:ruleSet="activeRuleSet"
@@ -126,7 +140,9 @@ import { generateUrl } from '@nextcloud/router'
 import { NcButton, NcEmptyContent, NcLoadingIcon, NcNoteCard } from '@nextcloud/vue'
 import ConditionActionRuleEditor from '../dialogs/ConditionActionRuleEditor.vue'
 import DecisionTableEditor from '../dialogs/DecisionTableEditor.vue'
+import RuleSetCallersDialog from '../dialogs/RuleSetCallersDialog.vue'
 import RuleSetTestSandbox from '../modals/RuleSetTestSandboxModal.vue'
+import { listResults } from '../utils/listResults.js'
 
 export default {
 	name: 'RuleSetsPage',
@@ -137,6 +153,7 @@ export default {
 		NcNoteCard,
 		DecisionTableEditor,
 		ConditionActionRuleEditor,
+		RuleSetCallersDialog,
 		RuleSetTestSandbox,
 	},
 
@@ -149,8 +166,41 @@ export default {
 			showDecisionEditor: false,
 			showConditionEditor: false,
 			showSandbox: false,
+			showCallers: false,
 			testResults: {},
 		}
+	},
+
+	computed: {
+		/**
+		 * The app the page was opened for (`?app=`), or '' for every rule set.
+		 *
+		 * @return {string}
+		 *
+		 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-the-app-leads-to-its-business-rules-req-bqar-008
+		 */
+		appFilter() {
+			const app = this.$route && this.$route.query ? this.$route.query.app : ''
+			return typeof app === 'string' ? app.trim() : ''
+		},
+
+		/**
+		 * The rule sets listed: for an app, the ones it owns and the global
+		 * ones (no owner app); otherwise all of them.
+		 *
+		 * @return {Array<object>}
+		 *
+		 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-the-app-leads-to-its-business-rules-req-bqar-008
+		 */
+		shownRuleSets() {
+			if (this.appFilter === '') {
+				return this.ruleSets
+			}
+			return this.ruleSets.filter((rs) => {
+				const owner = rs && typeof rs.ownerApp === 'string' ? rs.ownerApp.trim() : ''
+				return owner === '' || owner === this.appFilter
+			})
+		},
 	},
 
 	mounted() {
@@ -169,22 +219,12 @@ export default {
 					'/apps/openregister/api/objects/buildiq/rule-set',
 				)
 				const { data } = await axios.get(url)
-				this.ruleSets = this.extractResults(data)
+				this.ruleSets = listResults(data)
 			} catch (error) {
 				this.errorMessage = t('buildiq', 'Could not load rule sets.')
 			} finally {
 				this.loading = false
 			}
-		},
-
-		extractResults(data) {
-			if (Array.isArray(data)) {
-				return data
-			}
-			if (data && Array.isArray(data.results)) {
-				return data.results
-			}
-			return []
 		},
 
 		edit(ruleSet) {
@@ -194,6 +234,30 @@ export default {
 			} else {
 				this.showDecisionEditor = true
 			}
+		},
+
+		/**
+		 * Open "May be called by" for a rule set (REQ-BQRX-001).
+		 *
+		 * @param {object} ruleSet - the rule set.
+		 * @return {void}
+		 * @spec openspec/changes/rules-evaluation-for-other-apps/specs/rules-evaluation-for-other-apps/spec.md#requirement-a-rule-set-names-the-apps-that-may-call-it-req-bqrx-001
+		 */
+		openCallers(ruleSet) {
+			this.activeRuleSet = ruleSet
+			this.showCallers = true
+		},
+
+		/**
+		 * The apps that may call a rule set, as the table shows them.
+		 *
+		 * @param {object} ruleSet - the rule set.
+		 * @return {string}
+		 * @spec openspec/changes/rules-evaluation-for-other-apps/specs/rules-evaluation-for-other-apps/spec.md#requirement-a-rule-set-names-the-apps-that-may-call-it-req-bqrx-001
+		 */
+		callersLabel(ruleSet) {
+			const apps = Array.isArray(ruleSet.callableBy) ? ruleSet.callableBy : []
+			return apps.length > 0 ? apps.join(', ') : '—'
 		},
 
 		openSandbox(ruleSet) {
@@ -254,20 +318,48 @@ export default {
 			return `${result.passed}/${result.total}`
 		},
 
-		exportRuleSet(ruleSet) {
-			const blob = new Blob([JSON.stringify(ruleSet, null, 2)], {
+		/**
+		 * Download a rule set as one JSON file named after its slug.
+		 *
+		 * The server assembles the file: the rule set's metadata with its
+		 * decision tables, condition-action rules and test cases, and no
+		 * execution logs, so it can be imported elsewhere.
+		 *
+		 * @param {object} ruleSet - the rule set row.
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/capability-requirements-backfill/specs/business-rules-engine/spec.md#requirement-a-rule-set-can-be-exported-as-a-file-req-bqcv-017
+		 */
+		async exportRuleSet(ruleSet) {
+			this.errorMessage = ''
+			let exported
+			try {
+				const url = generateUrl('/apps/buildiq/api/rules/{slug}/export', { slug: ruleSet.slug })
+				const { data } = await axios.get(url)
+				exported = data
+			} catch {
+				this.errorMessage = t('buildiq', 'Could not export the rule set.')
+				return
+			}
+			const blob = new Blob([JSON.stringify(exported, null, 2)], {
 				type: 'application/json',
 			})
 			const link = document.createElement('a')
 			link.href = URL.createObjectURL(blob)
-			link.download = `${ruleSet.slug || 'rule-set'}.json`
+			link.download = `${ruleSet.slug}.json`
 			link.click()
 			URL.revokeObjectURL(link.href)
 		},
 
+		/**
+		 * Close the open editor or callers dialog and reload the rule sets after a save.
+		 *
+		 * @return {void}
+		 * @spec openspec/changes/rules-evaluation-for-other-apps/specs/rules-evaluation-for-other-apps/spec.md#requirement-a-rule-set-names-the-apps-that-may-call-it-req-bqrx-001
+		 */
 		onSaved() {
 			this.showDecisionEditor = false
 			this.showConditionEditor = false
+			this.showCallers = false
 			this.fetchRuleSets()
 		},
 	},

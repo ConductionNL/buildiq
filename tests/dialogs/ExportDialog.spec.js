@@ -17,8 +17,12 @@ import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const axiosPostMock = vi.fn()
+const axiosGetMock = vi.fn(() => Promise.reject(new Error('not mocked')))
 vi.mock('@nextcloud/axios', () => ({
-	default: { post: (...args) => axiosPostMock(...args) },
+	default: {
+		post: (...args) => axiosPostMock(...args),
+		get: (...args) => axiosGetMock(...args),
+	},
 }))
 vi.mock('@nextcloud/router', async (importOriginal) => ({
 	...(await importOriginal()),
@@ -75,7 +79,7 @@ describe('ExportDialog — Data registers includeData toggle (data-registers-run
 	it('renders no Data registers section when the Application has no bindings', () => {
 		const wrapper = mountDialog({ dataRegisters: [] })
 		expect(wrapper.find('.export-dialog__section-title').exists()).toBe(false)
-		expect(wrapper.findAll('.nc-checkbox-stub')).toHaveLength(1) // only "Include seed data"
+		expect(wrapper.findAll('.nc-checkbox-stub')).toHaveLength(2) // only "Include seed data" and "Mobile app project"
 	})
 
 	it('renders one toggle per binding, choice carries binding.label ?? binding.register for the template to display', () => {
@@ -99,7 +103,7 @@ describe('ExportDialog — Data registers includeData toggle (data-registers-run
 			{ register: 'bag-adressen', label: undefined, includeData: false },
 		])
 		// One toggle per binding, plus the pre-existing "Include seed data" switch.
-		expect(wrapper.findAll('.nc-checkbox-stub')).toHaveLength(3)
+		expect(wrapper.findAll('.nc-checkbox-stub')).toHaveLength(4) // seed data, two registers, mobile app project
 	})
 
 	it('every per-binding toggle defaults to unchecked (schema-defs-only)', () => {
@@ -123,7 +127,8 @@ describe('ExportDialog — Data registers includeData toggle (data-registers-run
 
 		await wrapper.vm.submit()
 
-		expect(axiosPostMock).toHaveBeenCalledTimes(1)
+		// The submit, then the call that starts the export right away.
+		expect(axiosPostMock).toHaveBeenCalledTimes(2)
 		const [, payload] = axiosPostMock.mock.calls[0]
 		expect(payload.dataRegisters).toEqual([
 			{ register: 'spectr', includeData: true },
@@ -136,5 +141,109 @@ describe('ExportDialog — Data registers includeData toggle (data-registers-run
 		await wrapper.vm.submit()
 		const [, payload] = axiosPostMock.mock.calls[0]
 		expect(payload.dataRegisters).toEqual([])
+	})
+})
+
+describe('ExportDialog — Own server target (apps-standalone-deploy, board BqExporterenZelfstandig)', () => {
+	beforeEach(() => {
+		axiosPostMock.mockReset()
+		axiosPostMock.mockResolvedValue({ data: { uuid: 'job-uuid' } })
+		axiosGetMock.mockReset()
+		axiosGetMock.mockImplementation((url) =>
+			url.endsWith('/api/exports/server-requirements')
+				? Promise.resolve({
+						data: {
+							nextcloud: '32',
+							openregister: '1.14.2',
+							php: '8.3',
+							database: 'PostgreSQL 16',
+						},
+					})
+				: Promise.reject(new Error('not mocked')),
+		)
+	})
+
+	it('offers Own server as a target', () => {
+		const wrapper = mountDialog()
+		expect(wrapper.vm.targetOptions.map((o) => o.value)).toEqual([
+			'zip',
+			'server',
+			'github',
+		])
+	})
+
+	it('shows what the server needs only for the Own server target, from the server', async () => {
+		const wrapper = mountDialog()
+		await new Promise((resolve) => setTimeout(resolve))
+		expect(wrapper.find('[data-test="export-server-section"]').exists()).toBe(
+			false,
+		)
+
+		wrapper.vm.form.target = { label: 'Own server', value: 'server' }
+		await wrapper.vm.$nextTick()
+
+		const section = wrapper.find('[data-test="export-server-section"]')
+		expect(section.exists()).toBe(true)
+		expect(section.findAll('tbody tr')).toHaveLength(4)
+		expect(wrapper.vm.requirementRows.map((r) => [r.key, r.version])).toEqual([
+			['nextcloud', '{version} or newer'],
+			['openregister', '{version} or newer'],
+			['php', '{version} or newer'],
+			['database', 'PostgreSQL 16'],
+		])
+		expect(wrapper.vm.serverRequirements.openregister).toBe('1.14.2')
+		expect(section.find('[data-test="export-server-compose"]').exists()).toBe(
+			true,
+		)
+	})
+
+	it('sends the server bundle choice with the Own server target only', async () => {
+		const wrapper = mountDialog()
+		wrapper.vm.form.target = { label: 'Own server', value: 'server' }
+		await wrapper.vm.submit()
+		let [, payload] = axiosPostMock.mock.calls[0]
+		expect(payload.target).toBe('server')
+		expect(payload.includeServerBundle).toBe(true)
+
+		axiosPostMock.mockClear()
+		wrapper.vm.form.target = { label: 'ZIP download', value: 'zip' }
+		await wrapper.vm.submit()
+		;[, payload] = axiosPostMock.mock.calls[0]
+		expect(payload).not.toHaveProperty('includeServerBundle')
+	})
+})
+
+describe('ExportDialog — Mobile app project (pages-installable-offline-and-mobile T08)', () => {
+	beforeEach(() => {
+		axiosPostMock.mockReset()
+		axiosPostMock.mockResolvedValue({ data: { uuid: 'job-uuid' } })
+	})
+
+	it('sends no mobile project unless it is switched on', async () => {
+		const wrapper = mountDialog()
+		expect(wrapper.find('[data-test="export-mobile-bundle-id"]').exists()).toBe(false)
+		await wrapper.vm.submit()
+		const [, payload] = axiosPostMock.mock.calls[0]
+		expect(payload).not.toHaveProperty('includeMobileProject')
+		expect(payload).not.toHaveProperty('mobileBundleId')
+	})
+
+	it('sends the project and the trimmed bundle id for any target', async () => {
+		const wrapper = mountDialog()
+		wrapper.vm.form.includeMobileProject = true
+		await wrapper.vm.$nextTick()
+		expect(wrapper.find('[data-test="export-mobile-bundle-id"]').exists()).toBe(true)
+		wrapper.vm.form.mobileBundleId = ' nl.gemeente.spectr '
+		await wrapper.vm.submit()
+		const [, payload] = axiosPostMock.mock.calls[0]
+		expect(payload.target).toBe('zip')
+		expect(payload.includeMobileProject).toBe(true)
+		expect(payload.mobileBundleId).toBe('nl.gemeente.spectr')
+	})
+
+	it('names the default bundle id the server would take', () => {
+		const wrapper = mountDialog({ applicationSlug: '9-spectr-app' })
+		const host = window.location.hostname.toLowerCase().replace(/[^a-z0-9]+/g, '') || 'instance'
+		expect(wrapper.vm.defaultBundleId).toBe('nl.' + (/^[a-z]/.test(host) ? host : 'a' + host) + '.a9spectrapp')
 	})
 })

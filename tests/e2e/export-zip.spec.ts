@@ -57,7 +57,17 @@ test.describe('Buildiq export dialog', () => {
 				waitUntil: 'domcontentloaded',
 			},
 		)
-		const exportButton = page.getByRole('button', { name: /^export$/i }).first()
+		// Export is not one of the two actions CnActionButtons promotes to an
+		// inline header button (`inline: 2` in ApplicationDetailActions.vue —
+		// Settings + Edit), so it collapses into the "···" overflow menu and
+		// renders as a menuitem, not a top-level button.
+		await page
+			.getByRole('button', { name: /^Actions$/i })
+			.first()
+			.click()
+		const exportButton = page
+			.locator('[data-testid="cn-action-app-export"]')
+			.first()
 		await expect(
 			exportButton,
 			'the app detail page must offer an Export action',
