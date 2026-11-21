@@ -58,6 +58,7 @@ Acceptance criteria:
 ## 4. Published-path proof (REQ-CWR-004, REQ-OCAS-006)
 
 - [ ] 4.1 Add a Playwright spec that creates and publishes a fixture app carrying a `connector-data` widget bound to a placeholder endpoint path with no credential-bearing keys.
+  > Written 21 Nov (4.1 to 4.4): `tests/e2e/connector-widget-runtime.spec.ts` builds the fixture app `pw-cwr-fixture` (marked as a Playwright fixture, deleted in `afterAll`) with a dashboard holding two `connector-data` widgets and an endpoint-bound `object-table`, answers the endpoints with `page.route`, asserts the stored bindings carry no credential key, the projected table, the error state with Retry, and the object-table rows at `responsePath` on `/apps/buildiq/builder/{slug}`, and fails on any `CnWidgetGrid` unresolved `widgetKey` warning. Left: running it on an instance.
 
 Acceptance criteria:
 - The fixture is self-identifying as test data and is torn down after the run.
@@ -87,6 +88,7 @@ Acceptance criteria:
 - Gate-16 spec-coverage passes on the diff.
 
 - [ ] 5.2 Reference the new scenarios from the e2e specs so gate-19 e2e-coverage resolves every added scenario.
+  > Partly done 21 Nov: the REQ-CWR-004, REQ-CWR-002 object-table and REQ-OCAS-006 error and published-route scenarios are referenced from `tests/e2e/connector-widget-runtime.spec.ts`; REQ-CWR-001 and REQ-CWR-003 carry a reason-bearing `@e2e exclude`. Open: the REQ-CWR-002 "Both bindings on one widget are rejected" scenario has no test in buildiq (nextcloud-vue's `validateManifestV2()` enforces it), and the REQ-OCAS-006 index, cache-hit and stale-on-error scenarios are asserted only in Vitest.
 
 Acceptance criteria:
 - Scenarios not covered by a test carry a reason-bearing `@e2e exclude`.
