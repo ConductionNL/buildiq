@@ -155,6 +155,11 @@ return \OCA\Buildiq\Middleware\Support\ApiPathAliases::withVersionedAliases(\OCA
         // saves, publishes and binds one wrapper per `runOn` entry and removes stale ones. Owners only.
         ['name' => 'flowBindings#sync', 'url' => '/api/applications/{appUuid}/flow-wrappers', 'verb' => 'POST', 'requirements' => ['appUuid' => '[a-f0-9-]{8,}']],
 
+        // Demo records generated from the app's own schemas (capability-requirements-backfill
+        // REQ-BQCV-030): fill on request, remove exactly those again. Owners and editors.
+        ['name' => 'appDemoRecords#fill', 'url' => '/api/applications/{appUuid}/demo-records', 'verb' => 'POST', 'requirements' => ['appUuid' => '[a-f0-9-]{8,}']],
+        ['name' => 'appDemoRecords#remove', 'url' => '/api/applications/{appUuid}/demo-records', 'verb' => 'DELETE', 'requirements' => ['appUuid' => '[a-f0-9-]{8,}']],
+
         // Standalone runtime page for a published virtual app — the bare
         // /builder/{slug} (no sub-path). Placed before the catch-all
         // (Routes::standard appends it) so this specific page wins.

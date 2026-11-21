@@ -26,6 +26,8 @@ import ContentCopy from 'vue-material-design-icons/ContentCopy.vue'
 import ContentSaveEditOutline from 'vue-material-design-icons/ContentSaveEditOutline.vue'
 import ContentSaveOutline from 'vue-material-design-icons/ContentSaveOutline.vue'
 import DatabaseExportOutline from 'vue-material-design-icons/DatabaseExportOutline.vue'
+import DatabasePlusOutline from 'vue-material-design-icons/DatabasePlusOutline.vue'
+import DatabaseRemoveOutline from 'vue-material-design-icons/DatabaseRemoveOutline.vue'
 import DeleteOutline from 'vue-material-design-icons/DeleteOutline.vue'
 import FileDocumentMultipleOutline from 'vue-material-design-icons/FileDocumentMultipleOutline.vue'
 import Flash from 'vue-material-design-icons/Flash.vue'
@@ -65,6 +67,8 @@ export default {
 	CogOutline,
 	ContentCopy,
 	ContentSaveOutline,
+	DatabasePlusOutline,
+	DatabaseRemoveOutline,
 	DeleteOutline,
 	Github,
 	HeartOutline,

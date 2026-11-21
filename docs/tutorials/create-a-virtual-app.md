@@ -58,6 +58,10 @@ The **Review and create** screen shows what the wizard is about to provision:
 
 ![Wizard step 3, review and create](./img/wizard-step3-review.png)
 
+Switch on **Fill with demo records** to try the app with data straight away. Buildiq then adds three records to each schema of the production register, made from the schema itself so each one validates against it. A schema with a required field Buildiq cannot fill, such as a relation or a field with a pattern, gets none, and the message after the fill names it. Demo records are only made when you ask for them.
+
+The app's detail page has the same action under **···**, **Fill with demo records**, for an owner or editor. Once the app has demo records, **Remove demo records** deletes exactly those. Records you or your users created are kept.
+
 Click **Create**. The backend then runs as one transaction:
 
 1. Validate the whole payload.
