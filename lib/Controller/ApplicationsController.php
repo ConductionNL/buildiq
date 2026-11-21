@@ -1188,6 +1188,7 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 	 * @return array<string, mixed>|null Blob or null if the version is missing.
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-58
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-4.2
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function resolveVersionBlob(string $token, array $application, string $applicationUuid): ?array {
@@ -1246,9 +1247,12 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 			return null;
 		}
 
+		// A delta-mode version is diffed as the manifest it serves, merged over
+		// its base; its baseRef and manifestDelta never leave the server.
 		$semver = ($versionArray['semver'] ?? ($versionArray['version'] ?? null));
 		return [
-			'manifest' => ($versionArray['manifest'] ?? null),
+			'manifest' => ($this->manifestResolver->servedManifest(version: $versionArray, caller: $this->userSession->getUser())
+				?? ($versionArray['manifest'] ?? null)),
 			'version' => $semver,
 			'semver' => $semver,
 			'name' => ($versionArray['name'] ?? ($versionArray['slug'] ?? null)),

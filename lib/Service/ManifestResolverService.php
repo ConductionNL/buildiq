@@ -205,10 +205,7 @@ class ManifestResolverService implements ManifestResolverServiceInterface {
 
 		// Step 4 — return the resolved ApplicationVersion's manifest payload:
 		// its blob, or its manifestDelta merged over its baseRef (app-delta-override D4).
-		$manifest = ($this->baseResolver?->manifestOf(
-			version: $version,
-			visible: fn (array $base): bool => $this->visibleToCaller(application: $base, caller: $caller)
-		) ?? ($version['manifest'] ?? null));
+		$manifest = $this->servedManifest(version: $version, caller: $caller);
 		if (is_array($manifest) === false) {
 			$this->logger->warning(
 				'ManifestResolverService: ApplicationVersion has no manifest for app={appSlug} version={versionSlug}',
@@ -219,6 +216,23 @@ class ManifestResolverService implements ManifestResolverServiceInterface {
 
 		return $manifest;
 	}//end resolve()
+
+	/**
+	 * The manifest one ApplicationVersion serves: its blob, or its delta merged over its base.
+	 *
+	 * @param array<string, mixed> $version The ApplicationVersion.
+	 * @param IUser|null           $caller  The caller, whose organisation scope limits the apps a base may name.
+	 *
+	 * @return mixed The manifest; null when the version has none.
+	 *
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-4.2
+	 */
+	public function servedManifest(array $version, ?IUser $caller): mixed {
+		return ($this->baseResolver?->manifestOf(
+			version: $version,
+			visible: fn (array $base): bool => $this->visibleToCaller(application: $base, caller: $caller)
+		) ?? ($version['manifest'] ?? null));
+	}//end servedManifest()
 
 	/**
 	 * Apply the RBAC gate for non-production version access.
@@ -415,21 +429,20 @@ class ManifestResolverService implements ManifestResolverServiceInterface {
 	 */
 	private function resolveProductionManifest(array $application, string $appSlug, ?IUser $caller = null): ?array {
 		$productionVersion = ($application['productionVersion'] ?? null);
-		$visible = fn (array $base): bool => $this->visibleToCaller(application: $base, caller: $caller);
 
 		// ProductionVersion is a UUID or embedded object.
 		if (is_string($productionVersion) === true && $productionVersion !== '') {
 			// UUID reference — fetch the ApplicationVersion.
 			$version = $this->findVersionByUuid(uuid: $productionVersion);
 			if ($version !== null) {
-				$manifest = ($this->baseResolver?->manifestOf(version: $version, visible: $visible) ?? ($version['manifest'] ?? null));
+				$manifest = $this->servedManifest(version: $version, caller: $caller);
 				if (is_array($manifest) === true) {
 					return $manifest;
 				}
 			}
 		} elseif (is_array($productionVersion) === true) {
 			// Inline embedded object — use its manifest, merged over its base when it has one.
-			$manifest = ($this->baseResolver?->manifestOf(version: $productionVersion, visible: $visible) ?? ($productionVersion['manifest'] ?? null));
+			$manifest = $this->servedManifest(version: $productionVersion, caller: $caller);
 			if (is_array($manifest) === true) {
 				return $manifest;
 			}
