@@ -62,6 +62,9 @@ class AppOrganisationGuardCoverageTest extends TestCase {
 		// app the caller may not see as an unknown slug (IconController::mayServe()).
 		'lib/Service/IconService.php' => '$mayServe($application)',
 		'lib/Controller/IconController.php' => 'seesApplication(',
+		// A base app named by a version's baseRef is read only when the manifest
+		// resolver's guard closure admits the caller (app-delta-override 3.1).
+		'lib/Service/ManifestBaseResolver.php' => '$visible($application)',
 	];
 
 	/**
