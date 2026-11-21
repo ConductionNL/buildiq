@@ -42,6 +42,7 @@
  * @e2e connector-bound-page-runtime/requirement-a-connector-bound-index-page-renders-its-records-req-bqcb-001/the-page-designer-still-shows-what-the-maker-authored
  * @e2e connector-bound-page-runtime/requirement-the-list-page-shows-every-state-of-the-fetch-req-bqcb-002/the-endpoint-is-down
  * @e2e connector-bound-page-runtime/requirement-a-maker-can-place-a-connector-widget-on-a-dashboard-req-bqcb-003/a-maker-adds-an-external-list-to-a-dashboard
+ * @e2e openconnector-api-sources::index-page-renders-external-rows
  */
 
 import type { Page } from '@playwright/test'
@@ -260,6 +261,7 @@ test.describe('integrations-connector-bound-pages: pages bound to an integriq en
 	})
 
 	test('REQ-BQCB-001: a connector-bound index page lists the endpoint\'s rows under the mapped columns', async ({ page }) => {
+		// @e2e openconnector-api-sources::index-page-renders-external-rows
 		const unknown = watchUnknownWidgets(page)
 		const endpoint = await fixtureEndpoint(page, SUPPLIERS.endpoint, SUPPLIERS.items)
 

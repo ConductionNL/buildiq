@@ -9,7 +9,8 @@
   - and renders the projected rows as a table. Failure-tolerant: a missing
   - OpenConnector (404) surfaces a per-widget error state with a retry action,
   - never a blank page (REQ-OCAS-006, REQ-OCAS-005). Stale-on-error cache hits
-  - render with a non-blocking "showing cached data" notice.
+  - render with a non-blocking "showing cached data" notice and a Retry
+  - action beside it.
   -->
 <template>
 	<div class="connector-data-view">
@@ -25,9 +26,14 @@
 			</NcButton>
 		</div>
 		<div v-else>
-			<p v-if="isStale" class="connector-data-view__stale">
-				{{ t('buildiq', 'Showing cached data — a refresh failed.') }}
-			</p>
+			<div v-if="isStale" class="connector-data-view__stale-bar">
+				<p class="connector-data-view__stale">
+					{{ t('buildiq', 'Showing cached data — a refresh failed.') }}
+				</p>
+				<NcButton variant="tertiary" @click="retry">
+					{{ t('buildiq', 'Retry') }}
+				</NcButton>
+			</div>
 			<table v-if="rows.length" class="connector-data-view__table">
 				<thead>
 					<tr>
@@ -147,7 +153,13 @@ export default {
 	},
 
 	methods: {
-		/** @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-006 */
+		/**
+		 * Ask the endpoint again, from the error state or from the stale notice.
+		 *
+		 * @return {void}
+		 * @spec openspec/specs/openconnector-api-sources/spec.md#req-ocas-006
+		 * @spec openspec/changes/openbuild-connector-widget-runtime/specs/openconnector-api-sources/spec.md#requirement-req-ocas-006-runtime-fetch-path-with-caching
+		 */
 		retry() {
 			this.resolver.retry()
 		},
@@ -165,9 +177,16 @@ export default {
 	color: var(--color-error);
 }
 
+.connector-data-view__stale-bar {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	margin: 0 0 8px;
+}
+
 .connector-data-view__stale {
 	color: var(--color-warning-text, var(--color-warning));
-	margin: 0 0 8px;
+	margin: 0;
 }
 
 .connector-data-view__table {
