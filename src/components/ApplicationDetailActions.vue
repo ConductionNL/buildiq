@@ -147,6 +147,13 @@ import applicationContext from '../mixins/applicationContext.js'
 import { buildVersionedRoute } from '../router/helpers.js'
 import { appI18n, withLanguages } from '../services/appLanguages.js'
 import { fetchProductionRegister } from '../services/appRegister.js'
+import {
+	demoRecordCount,
+	fillDemoRecords,
+	fillMessage,
+	removeDemoRecords,
+	removeMessage,
+} from '../services/demoRecords.js'
 import { withOffline } from '../services/offlineManifest.js'
 import { loadSharedFlowOptions, withSharedGroup } from '../services/sharedAutomations.js'
 
@@ -450,6 +457,7 @@ export default {
 						onSelect: () => this.openSaveAsTemplate(),
 					}),
 				],
+				...this.demoRecordEntries(),
 				[
 					this.canCopyApp,
 					() => ({
@@ -1350,6 +1358,57 @@ export default {
 			return flowList(data)
 				.map(toFlowOption)
 				.filter((option) => !!option.value)
+		},
+
+		/**
+		 * The "Fill with demo records" and "Remove demo records" entries, for
+		 * an owner or editor of an app with an id (REQ-BQCV-030). Remove is
+		 * offered only while the app lists demo records.
+		 *
+		 * @return {Array<Array>} `[shown, descriptor]` pairs for `shownEntries`.
+		 * @spec openspec/changes/capability-requirements-backfill/specs/application-creation-wizard/spec.md#requirement-a-maker-fills-a-new-app-with-demo-records-req-bqcv-030
+		 */
+		demoRecordEntries() {
+			const allowed = this.canEditVersions && Boolean(this.obAppUuid)
+			return [
+				[
+					allowed,
+					() => ({
+						id: 'app-demo-records-fill',
+						label: t('buildiq', 'Fill with demo records'),
+						icon: 'DatabasePlusOutline',
+						onSelect: () => this.onDemoRecords(fillDemoRecords, fillMessage),
+					}),
+				],
+				[
+					allowed && demoRecordCount(this.obApp) > 0,
+					() => ({
+						id: 'app-demo-records-remove',
+						label: t('buildiq', 'Remove demo records'),
+						icon: 'DatabaseRemoveOutline',
+						onSelect: () => this.onDemoRecords(removeDemoRecords, removeMessage),
+					}),
+				],
+			]
+		},
+
+		/**
+		 * Fill or remove the demo records, show the outcome, and re-read the app
+		 * so its list of demo records is current.
+		 *
+		 * @param {Function} request `fillDemoRecords` or `removeDemoRecords`.
+		 * @param {Function} message The outcome message for the answer.
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/capability-requirements-backfill/specs/application-creation-wizard/spec.md#requirement-a-maker-fills-a-new-app-with-demo-records-req-bqcv-030
+		 */
+		async onDemoRecords(request, message) {
+			this.error = ''
+			try {
+				this.toast = message(await request(this.obAppUuid))
+				await this.obLoadApp(true)
+			} catch (e) {
+				this.error = `${t('buildiq', 'Failed to change the demo records')}: ${e.message || e}`
+			}
 		},
 
 		/**

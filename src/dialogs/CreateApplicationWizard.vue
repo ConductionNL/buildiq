@@ -52,8 +52,8 @@
 			<Step3Custom :payload="stepData" @update:payload="setStepData" />
 		</template>
 
-		<template #step-review="{ stepData }">
-			<Step4Review :payload="stepData" />
+		<template #step-review="{ stepData, setStepData }">
+			<Step4Review :payload="stepData" @update:payload="setStepData" />
 		</template>
 	</CnWizardDialog>
 </template>
@@ -66,6 +66,7 @@ import Step1Basics from './CreateApplicationWizard/Step1Basics.vue'
 import Step2Preset from './CreateApplicationWizard/Step2Preset.vue'
 import Step3Custom from './CreateApplicationWizard/Step3Custom.vue'
 import Step4Review from './CreateApplicationWizard/Step4Review.vue'
+import { fillDemoRecords } from '../services/demoRecords.js'
 import { resolveAppIcon } from '../utils/iconCatalogues.js'
 
 /**
@@ -182,6 +183,7 @@ export default {
 				preset: '',
 				versions: [],
 				fromDatabase: null,
+				demoRecords: false,
 				_step1Valid: false,
 				_step2Valid: false,
 				_step3Valid: true,
@@ -279,6 +281,7 @@ export default {
 					// Attach the chosen icon (best-effort — the app already exists,
 					// so a failure here is recoverable on the detail page).
 					await this.uploadIcons(data.applicationUuid, stepData)
+					await this.fillDemoRecordsIfAsked(data.applicationUuid, stepData)
 					this.$emit('created', data.applicationUuid)
 					this.$emit('update:show', false)
 				} else {
@@ -286,6 +289,27 @@ export default {
 				}
 			} catch (err) {
 				this.reportError(err.response?.data || {}, err)
+			}
+		},
+
+		/**
+		 * Fill the new app with demo records when the maker switched it on
+		 * (REQ-BQCV-030). Best-effort, like the icons: the app already exists,
+		 * and the detail page offers the same action again.
+		 *
+		 * @param {string} uuid The created Application UUID.
+		 * @param {object} stepData The accumulated wizard data.
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/capability-requirements-backfill/specs/application-creation-wizard/spec.md#requirement-a-maker-fills-a-new-app-with-demo-records-req-bqcv-030
+		 */
+		async fillDemoRecordsIfAsked(uuid, stepData) {
+			if (!stepData.demoRecords) {
+				return
+			}
+			try {
+				await fillDemoRecords(uuid)
+			} catch {
+				// Not fatal: the app exists, and its detail page offers the fill again.
 			}
 		},
 

@@ -1491,11 +1491,11 @@
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "specified",
-				"evidence": "Not built: lib/Service/DemoDataService.php installs buildiq's own demo register (lib/Settings/buildiq_mock_register.json) from the setup wizard; nothing fills a newly created app with records from its own schemas. Plan: capability-requirements-backfill T30 (REQ-BQCV-030). Was: src/manifest.json:31-46 setup wizard steps 'demo-data' (choice) + 'load-demo-data' (run-action) -> POST /api/setup/action/load-demo-data (routes.php:30 setup#runAction) -> lib/Controller/SetupController.php:263 runAction() branches on 'load-demo-data' -> lib/Service/DemoDataService.php:132 listChoices() / :230 install()",
-				"reachedOn": "First-run setup wizard (CnSetupWizard), 'Load example data?' step",
+				"state": "built",
+				"evidence": "src/dialogs/CreateApplicationWizard/Step4Review.vue 'Fill with demo records' switch and src/components/ApplicationDetailActions.vue 'Fill with demo records' / 'Remove demo records' (src/services/demoRecords.js) -> POST/DELETE /api/applications/{appUuid}/demo-records (appinfo/routes.php appDemoRecords#fill/remove) -> lib/Controller/AppDemoRecordsController.php -> lib/Service/AppDemoRecordsService.php generates records per schema of the production register with lib/Service/DemoRecordValues.php and lists them on Application.demoRecords (lib/Settings/register.d/87-application-demo-records.json); removal deletes exactly those",
+				"reachedOn": "Create-app wizard review step, and the app detail page actions menu",
 				"owner": "ConductionNL/buildiq",
-				"change": "openbuild-first-time-setup",
+				"change": "capability-requirements-backfill",
 				"requirement": "openspec/changes/capability-requirements-backfill/specs/application-creation-wizard :: A maker fills a new app with demo records (REQ-BQCV-030)",
 				"plan": "openspec/changes/capability-requirements-backfill"
 			},
