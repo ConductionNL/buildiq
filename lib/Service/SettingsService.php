@@ -27,6 +27,7 @@ namespace OCA\Buildiq\Service;
 use OCA\Buildiq\Exception\RegisterConfigUnavailableException;
 use OCA\Buildiq\Kernel\AppIdentity;
 use OCA\Buildiq\Kernel\Contracts\SettingsServiceInterface;
+use OCA\Buildiq\Service\Automation\ScriptStepSweep;
 use OCA\Buildiq\Service\Connection\ConnectionReporter;
 use OCP\App\IAppManager;
 use OCP\IAppConfig;
@@ -166,6 +167,17 @@ class SettingsService implements SettingsServiceInterface {
 	}//end offlineAppsAllowed()
 
 	/**
+	 * Whether the instance lets app owners add script steps to automations ("Allow script steps", off by default).
+	 *
+	 * @return bool
+	 *
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-composer-offers-a-script-step-req-bqss-001
+	 */
+	public function scriptStepsAllowed(): bool {
+		return $this->appConfig->getValueBool(AppIdentity::APP_ID, ScriptStepSweep::SETTING, false);
+	}//end scriptStepsAllowed()
+
+	/**
 	 * Retrieve all current settings.
 	 *
 	 * Returns a flat array containing all app config values plus metadata
@@ -210,6 +222,8 @@ class SettingsService implements SettingsServiceInterface {
 				// "Allow code on pages" (pages-custom-code, REQ-BQCC-005): off by
 				// default, read as a boolean, the same read saveManifest() makes.
 				PageCodeGuard::SETTING => $this->appConfig->getValueBool(AppIdentity::APP_ID, PageCodeGuard::SETTING, false),
+				// "Allow script steps" (logic-script-step D3): off by default.
+				ScriptStepSweep::SETTING => $this->appConfig->getValueBool(AppIdentity::APP_ID, ScriptStepSweep::SETTING, false),
 			]
 		);
 	}//end getSettings()
@@ -265,7 +279,7 @@ class SettingsService implements SettingsServiceInterface {
 			}
 		}
 
-		$written = [...$written, ...$this->writePageCodeSetting(data: $data)];
+		$written = [...$written, ...$this->writePageCodeSetting(data: $data), ...$this->writeScriptStepSetting(data: $data)];
 
 		$this->connectionReporter?->refreshFromSave(savedKeys: $written);
 
@@ -290,6 +304,32 @@ class SettingsService implements SettingsServiceInterface {
 
 		return [PageCodeGuard::SETTING];
 	}//end writePageCodeSetting()
+
+	/**
+	 * Write "Allow script steps" when the submission carries it, and disable
+	 * every automation holding a script step when it goes from on to off.
+	 *
+	 * @param array<string,mixed> $data The submitted settings.
+	 *
+	 * @return list<string> The key written, or none.
+	 *
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-script-runs-only-in-the-code-runner-req-bqss-003
+	 */
+	private function writeScriptStepSetting(array $data): array {
+		if (array_key_exists(ScriptStepSweep::SETTING, $data) === false) {
+			return [];
+		}
+
+		$wasOn = $this->appConfig->getValueBool(AppIdentity::APP_ID, ScriptStepSweep::SETTING, false);
+		$isOn  = $this->isOn(value: $data[ScriptStepSweep::SETTING]);
+		$this->appConfig->setValueBool(AppIdentity::APP_ID, ScriptStepSweep::SETTING, $isOn);
+		if ($wasOn === true && $isOn === false) {
+			$counts = $this->container->get(ScriptStepSweep::class)->disableAll();
+			$this->logger->info('Buildiq: script steps turned off; disabled ' . $counts['disabled'] . ' automation(s), ' . $counts['failed'] . ' failed.');
+		}
+
+		return [ScriptStepSweep::SETTING];
+	}//end writeScriptStepSetting()
 
 	/**
 	 * Whether a submitted toggle value means "on".

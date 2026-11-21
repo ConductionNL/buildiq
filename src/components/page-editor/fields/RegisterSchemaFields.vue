@@ -74,7 +74,7 @@ export default {
 		 *
 		 * @param {{slug?: string, title?: string}} register The register.
 		 * @return {string}
-		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-pages-follow-the-databases-write-setting-req-bqdb-002
+		 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-pages-follow-the-databases-write-setting-req-bqdb-002
 		 */
 		registerLabel(register) {
 			const name = register.title || register.slug

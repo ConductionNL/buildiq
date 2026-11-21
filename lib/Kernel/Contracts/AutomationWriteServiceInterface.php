@@ -58,6 +58,18 @@ interface AutomationWriteServiceInterface {
 	public function create(array $payload, array $roles): JSONResponse;
 
 	/**
+	 * The refusal of compiling or enabling an automation that holds a script
+	 * step by anyone but an app owner, or null when the caller may go on.
+	 *
+	 * @param array<string,mixed> $automation The stored automation.
+	 *
+	 * @return JSONResponse|null The refusal.
+	 *
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-only-app-owners-change-script-steps-req-bqss-002
+	 */
+	public function compileRefusal(array $automation): ?JSONResponse;
+
+	/**
 	 * Delete an automation and remove its compiled artifacts (REQ-AUTD-008).
 	 *
 	 * The artifacts are removed FIRST: a deleted definition whose compiled

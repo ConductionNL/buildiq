@@ -43,4 +43,5 @@
 - [ ] 8.2 Extend `tests/e2e/registration-form-authoring.spec.ts` (the file the earlier tasks call `registration-form-builder.spec.ts`; it does not exist under that name) with a channel per form, and `tests/e2e/registration-form-leaf.spec.ts` with the channel filter and the ordered sections. The target-schema route's reachability and its anonymous refusal are covered
 - [x] 8.3 Dutch and English strings; docs at `docs/registration-form-builder.md`. No screenshots, same reason as 4.3
 - [ ] 8.4 Tell dossiq to write `case.intakeChannel` from the served form, and tell portaliq that `isPublic` and `confirmationText` arrive on the leaf
-- [ ] 8.5 Release note: a form now lists only the fields an admin put on it, not every property in fetch order
+- [x] 8.5 Release note: a form now lists only the fields an admin put on it, not every property in fetch order
+  - Written (21 Nov): `CHANGELOG.md` [Unreleased] → Changed, naming the old behaviour (every property in the order the schema returned them) and that a new schema field stays off a form until an admin puts it there (design D6).

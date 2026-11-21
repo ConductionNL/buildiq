@@ -441,7 +441,7 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 	 *
 	 * @throws WizardCreationException When the database's pages cannot be built (with rollback)
 	 *
-	 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
+	 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
 	 */
 	private function versionManifest(array $plan, array $state): array {
 		if ($plan['database'] === null) {
@@ -711,7 +711,7 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-10
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-11
-	 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
+	 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
 	 */
 	private function validatePayload(array $payload): ?array {
 		$appSlug = (string)($payload['slug'] ?? '');
@@ -773,7 +773,7 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 	 * @throws WizardCreationException With failedAtStep=validate when the block is malformed, or the
 	 *                                 register is not a connected database the caller can read
 	 *
-	 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
+	 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
 	 */
 	private function validateDatabase(array $payload): ?array {
 		if (array_key_exists('fromDatabase', $payload) === false || $payload['fromDatabase'] === null) {
@@ -814,7 +814,7 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 	 *
 	 * @throws WizardCreationException With failedAtStep=validate when the block has no register or no list of tables
 	 *
-	 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
+	 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
 	 */
 	private static function databaseTables(mixed $block): array {
 		$tables = null;
@@ -1351,7 +1351,7 @@ class ApplicationCreationService implements ApplicationCreationServiceInterface 
 	 * @return array<string,mixed> The manifest with tokens substituted
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-14
-	 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generated-pages-keep-the-database-register-req-bqdb-004
+	 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-generated-pages-keep-the-database-register-req-bqdb-004
 	 */
 	public function substituteVersionContext(
 		array $manifest,

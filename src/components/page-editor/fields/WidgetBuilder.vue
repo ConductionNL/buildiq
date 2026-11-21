@@ -42,6 +42,19 @@
 					✕
 				</button>
 			</div>
+			<!-- A data widget is edited in place unless the maker makes it
+			     read-only: `content.editable: false`, the key nextcloud-vue's
+			     CnDetailWidgetHost reads (REQ-BQCV-013). -->
+			<label
+				v-if="widget.type === 'data'"
+				class="widget-builder__code-toggle"
+				data-testid="widget-builder-read-only">
+				<input
+					type="checkbox"
+					:checked="isReadOnly(widget)"
+					@change="setReadOnly(index, $event.target.checked)">
+				{{ t('buildiq', 'Read-only (users cannot edit fields in place)') }}
+			</label>
 			<!-- A chart is configured with the library's own chart form, the one
 			     the dashboard's in-app editor uses (pages-chart-widget-authoring D1). -->
 			<CnChartWidgetForm
@@ -49,6 +62,13 @@
 				class="widget-builder__chart"
 				:editingWidget="chartFormInput(widget)"
 				@update:content="updateChart(index, $event)" />
+			<!-- A count tile is configured with the library's own stats-block form:
+			     what to count, in which register and schema, and with which filter (REQ-BQCV-007). -->
+			<CnStatsBlockWidgetForm
+				v-if="widget.type === 'stats-block'"
+				class="widget-builder__count"
+				:editingWidget="countFormInput(widget)"
+				@update:content="updateCount(index, $event)" />
 			<!-- A connector widget binds its own data source with the same origin
 			     toggle, source picker and field mapper as a page (REQ-BQCB-003). -->
 			<!-- A custom widget may be written by hand (REQ-BQCC-001). The server
@@ -91,11 +111,12 @@
 </template>
 
 <script>
-import { CnChartWidgetForm } from '@conduction/nextcloud-vue'
+import { CnChartWidgetForm, CnStatsBlockWidgetForm } from '@conduction/nextcloud-vue'
 import DataSourceOriginToggle from '../DataSourceOriginToggle.vue'
 import CodeComponentEditor from './CodeComponentEditor.vue'
 import { CONNECTOR_WIDGET_TYPE } from '../../../services/connectorPages.js'
 import { chartFormInput, widgetWithChartContent } from './chartWidget.js'
+import { countFormInput, widgetWithCountContent } from './countWidget.js'
 
 /**
  * Whether a value is a plain (non-array) object.
@@ -122,6 +143,7 @@ export default {
 	name: 'WidgetBuilder',
 	components: {
 		CnChartWidgetForm,
+		CnStatsBlockWidgetForm,
 		CodeComponentEditor,
 		DataSourceOriginToggle,
 	},
@@ -163,6 +185,23 @@ export default {
 	methods: {
 		chartFormInput,
 
+		countFormInput,
+
+		/**
+		 * Write the stats-block form's content onto a count widget: its title,
+		 * `props` and `dataSource`, never a `content` key.
+		 *
+		 * @param {number} index - position of the count widget in the `widgets` array.
+		 * @param {{ title: string, props: object, dataSource: object }} content - the form's `update:content` payload.
+		 * @return {void}
+		 * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer/spec.md#requirement-a-maker-adds-a-dashboard-page-req-bqcv-007
+		 */
+		updateCount(index, content) {
+			const next = this.localWidgets.slice()
+			next[index] = widgetWithCountContent(next[index], content)
+			this.$emit('update:modelValue', next)
+		},
+
 		/**
 		 * Write the chart form's content onto the widget: the chart type as
 		 * `props.chartKind`, the binding as `dataSource`, never a `content` key.
@@ -190,6 +229,46 @@ export default {
 			const next = this.localWidgets.slice()
 			const current = next[index] || {}
 			next[index] = { ...current, [key]: value }
+			this.$emit('update:modelValue', next)
+		},
+
+		/**
+		 * Whether a data widget is read-only: its `content.editable` is `false`.
+		 * Absent means editable, the library's default.
+		 *
+		 * @param {object} widget - a widget definition.
+		 * @return {boolean}
+		 * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer/spec.md#requirement-a-detail-page-lets-users-edit-record-fields-in-place-req-bqcv-013
+		 */
+		isReadOnly(widget) {
+			const content = widget ? widget.content : undefined
+			return isObjectValue(content) && content.editable === false
+		},
+
+		/**
+		 * Make a data widget read-only or editable again. Read-only writes
+		 * `content.editable: false`; editable takes the key out and drops a
+		 * `content` left empty, so the widget falls back to the default.
+		 *
+		 * @param {number} index - position of the widget in the `widgets` array.
+		 * @param {boolean} readOnly - whether users may no longer edit fields in place.
+		 * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer/spec.md#requirement-a-detail-page-lets-users-edit-record-fields-in-place-req-bqcv-013
+		 */
+		setReadOnly(index, readOnly) {
+			const next = this.localWidgets.slice()
+			const widget = { ...(next[index] || {}) }
+			const content = { ...(isObjectValue(widget.content) ? widget.content : {}) }
+			if (readOnly) {
+				content.editable = false
+			} else {
+				delete content.editable
+			}
+			if (Object.keys(content).length === 0) {
+				delete widget.content
+			} else {
+				widget.content = content
+			}
+			next[index] = widget
 			this.$emit('update:modelValue', next)
 		},
 

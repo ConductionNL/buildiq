@@ -64,6 +64,19 @@
 			</ul>
 		</div>
 
+		<!-- REQ-BQCV-030: demo records only when the maker asks for them. -->
+		<div class="wizard-step4__chain-section" data-testid="wizard-review-demo-records">
+			<NcCheckboxRadioSwitch
+				type="switch"
+				:modelValue="Boolean(payload.demoRecords)"
+				@update:modelValue="$emit('update:payload', { demoRecords: $event })">
+				{{ t('buildiq', 'Fill with demo records') }}
+			</NcCheckboxRadioSwitch>
+			<p class="wizard-step4__description">
+				{{ t('buildiq', 'Adds a few records to each schema so you can try the app. Remove them later with one action on the app page.') }}
+			</p>
+		</div>
+
 		<!-- Icon previews when a glyph was chosen -->
 		<div v-if="lightIconSvg || darkIconSvg" class="wizard-step4__icons">
 			<h4 class="wizard-step4__subheading">
@@ -88,10 +101,13 @@
 </template>
 
 <script>
+import NcCheckboxRadioSwitch from '@nextcloud/vue/components/NcCheckboxRadioSwitch'
 import { resolveAppIcon } from '../../utils/iconCatalogues.js'
 
 export default {
 	name: 'Step4Review',
+
+	components: { NcCheckboxRadioSwitch },
 
 	props: {
 		/**
@@ -102,6 +118,8 @@ export default {
 			required: true,
 		},
 	},
+
+	emits: ['update:payload'],
 
 	computed: {
 		/**
@@ -138,7 +156,7 @@ export default {
 		 * The tables "Start from a database" makes pages for, in menu order.
 		 *
 		 * @return {Array<{slug: string, title: string}>}
-		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
+		 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
 		 */
 		databasePages() {
 			const choice = this.payload.fromDatabase

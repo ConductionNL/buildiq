@@ -193,6 +193,91 @@ describe('AutomationsPage', () => {
 		)
 	})
 
+	it('REQ-BQLS-004: an AI field automation is not listed; the schema designer edits it', async () => {
+		axios.get.mockImplementation((url) => {
+			if (url.includes('/api/applications') && !url.includes('versions')) {
+				return Promise.resolve({ data: { results: [application] } })
+			}
+			if (url.includes('/versions')) {
+				return Promise.resolve({ data: { results: [version] } })
+			}
+			if (url.includes('/status')) {
+				return Promise.resolve({ data: { drift: false } })
+			}
+			if (url.includes('/automation')) {
+				return Promise.resolve({
+					data: {
+						results: [
+							automation({ id: 'aut-composer', origin: 'composer' }),
+							automation({ id: 'aut-ai', name: 'AI field summary_en', origin: 'ai-field' }),
+							automation({ id: 'aut-old' }),
+						],
+					},
+				})
+			}
+			return Promise.resolve({ data: { results: [] } })
+		})
+
+		const wrapper = mount(AutomationsPage, { stubs })
+		await flush()
+		wrapper.vm.selectedApp = application
+		wrapper.vm.onAppChange()
+		await flush()
+		wrapper.vm.selectedVersion = version
+		wrapper.vm.onVersionChange()
+		await flush()
+		await flush()
+
+		expect(wrapper.vm.automations.map((a) => a.id)).toEqual(['aut-composer', 'aut-old'])
+		expect(wrapper.text()).not.toContain('AI field summary_en')
+	})
+
+	it('REQ-BQAR-007: a disabled automation says why it was disabled', async () => {
+		const reason = 'Record and webhook steps cannot run on a lifecycle transition yet.'
+		axios.get.mockImplementation((url) => {
+			if (url.includes('/api/applications') && !url.includes('versions')) {
+				return Promise.resolve({ data: { results: [application] } })
+			}
+			if (url.includes('/versions')) {
+				return Promise.resolve({ data: { results: [version] } })
+			}
+			if (url.includes('/status')) {
+				return Promise.resolve({ data: { drift: false } })
+			}
+			if (url.includes('/automation')) {
+				return Promise.resolve({
+					data: {
+						results: [
+							automation({ id: 'aut-off', enabled: false, disabledReason: ` ${reason} ` }),
+							automation({ id: 'aut-on', enabled: true, disabledReason: 'stale' }),
+							automation({ id: 'aut-quiet', enabled: false }),
+						],
+					},
+				})
+			}
+			return Promise.resolve({ data: { results: [] } })
+		})
+
+		const wrapper = mount(AutomationsPage, { stubs })
+		await flush()
+		wrapper.vm.selectedApp = application
+		wrapper.vm.onAppChange()
+		await flush()
+		wrapper.vm.selectedVersion = version
+		wrapper.vm.onVersionChange()
+		await flush()
+		await flush()
+
+		const rows = wrapper.findAll('[data-testid="automation-row"]')
+		expect(rows).toHaveLength(3)
+		const shown = rows.at(0).find('[data-testid="disabled-reason"]')
+		expect(shown.find('strong').text()).toBe('Disabled')
+		expect(shown.text()).toBe(`Disabled ${reason}`)
+		expect(rows.at(1).find('[data-testid="disabled-reason"]').exists()).toBe(false)
+		expect(rows.at(2).find('[data-testid="disabled-reason"]').exists()).toBe(false)
+		expect(wrapper.vm.disabledReasonFor({ enabled: false, disabledReason: 42 })).toBe('')
+	})
+
 	it('drift badge renders when status reports drift', async () => {
 		axios.get.mockImplementation((url) => {
 			if (url.includes('/api/applications') && !url.includes('versions')) {

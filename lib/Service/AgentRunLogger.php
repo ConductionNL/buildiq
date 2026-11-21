@@ -104,7 +104,7 @@ class AgentRunLogger {
 	 *
 	 * @return string The trace id, or an empty string when no cache is configured.
 	 *
-	 * @spec openspec/changes/ai-agents-knowledge-and-run-trace/specs/agent-workspace/spec.md#requirement-a-run-keeps-its-model-steps-req-bqag-004
+	 * @spec openspec/changes/archive/2026-11-20-ai-agents-knowledge-and-run-trace/specs/agent-workspace/spec.md#requirement-a-run-keeps-its-model-steps-req-bqag-004
 	 */
 	public function rememberTrace(array $agent, string $userId, array $trace): string {
 		if ($this->traceCache === null) {
@@ -229,7 +229,7 @@ class AgentRunLogger {
 	 *
 	 * @return array<string, mixed>|null
 	 *
-	 * @spec openspec/changes/ai-agents-knowledge-and-run-trace/specs/agent-workspace/spec.md#requirement-a-run-keeps-its-model-steps-req-bqag-004
+	 * @spec openspec/changes/archive/2026-11-20-ai-agents-knowledge-and-run-trace/specs/agent-workspace/spec.md#requirement-a-run-keeps-its-model-steps-req-bqag-004
 	 */
 	private function takeTrace(string $owner, string $traceId): ?array {
 		if ($this->traceCache === null || preg_match('/^[0-9a-f]{32}$/', $traceId) !== 1) {

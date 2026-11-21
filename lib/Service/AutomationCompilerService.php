@@ -112,9 +112,19 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Service;
 
 use OCA\Buildiq\Exception\UnsupportedAutomationCombinationException;
+use OCA\Buildiq\Service\Automation\AiStepNodes;
 use OCA\Buildiq\Service\Automation\ApprovalFormDeclaration;
 use OCA\Buildiq\Kernel\Contracts\AutomationCompilerServiceInterface;
+use OCA\Buildiq\Service\Automation\AutomationFlowBackend;
+use OCA\Buildiq\Service\Automation\AutomationFlowBuilder;
+use OCA\Buildiq\Service\Automation\AutomationRuleSets;
+use OCA\Buildiq\Service\Automation\AutomationSubFlowTargets;
 use OCA\Buildiq\Service\Automation\CompileInput;
+use OCA\Buildiq\Service\Automation\FlowNodeAvailability;
+use OCA\Buildiq\Service\Automation\InboundTriggerDeclarations;
+use OCA\Buildiq\Service\Automation\RunAutomationNodes;
+use OCA\Buildiq\Service\Automation\ScriptStepNodes;
+use OCA\Buildiq\Service\Automation\ScriptSteps;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -145,12 +155,17 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 	 * @var array<string,array<int,string>>
 	 */
 	private const MATRIX = [
-		'object-created' => ['send-notification', 'approval', 'generateDocument'],
-		'object-updated' => ['send-notification', 'approval', 'generateDocument'],
+		'object-created' => ['send-notification', 'approval', 'generateDocument', 'ai-step'],
+		'object-updated' => ['send-notification', 'approval', 'generateDocument', 'ai-step'],
 		'object-deleted' => ['send-notification', 'approval', 'generateDocument'],
 		'lifecycle-transition' => ['send-notification', 'object-op', 'webhook', 'approval', 'generateDocument'],
 		'schedule' => ['run-synchronization'],
-		'manual' => ['send-notification', 'object-op', 'webhook'],
+		// Logic-script-step D1: a script step runs on the flow triggers, and the
+		// flow builder refuses it until it compiles to OpenRegister's code step.
+		'manual' => ['send-notification', 'object-op', 'webhook', 'ai-step', 'script-step'],
+		// Logic-email-and-webhook-triggers D1: flow actions only, compiled through the flow backend.
+		'email-received' => ['send-notification', 'object-op', 'webhook', 'rule-decision', 'script-step'],
+		'webhook-called' => ['send-notification', 'object-op', 'webhook', 'rule-decision', 'script-step'],
 	];
 
 	/**
@@ -226,6 +241,15 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 	 * @param IAppManager $appManager Nextcloud app manager — asks whether an
 	 *                                optional integration app is installed.
 	 * @param LoggerInterface $logger PSR logger.
+	 * @param AutomationFlowBackend|null $flowBackend Saves, binds and removes the flow of an
+	 *                                                automation (logic-automation-actions-that-run D2);
+	 *                                                resolved from the container when null.
+	 * @param AutomationFlowBuilder|null $flowBuilder Builds that flow; a default one when null.
+	 * @param AutomationRuleSets|null $ruleSets Resolves the rule sets of rule-decision steps;
+	 *                                          resolved from the container when null.
+	 * @param InboundTriggerDeclarations|null $inbound Writes the integriq declarations of the
+	 *                                                 email and webhook triggers; resolved from
+	 *                                                 the container when null.
 	 *
 	 * @return void
 	 */
@@ -235,9 +259,41 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 		private readonly SchemaMapper $schemaMapper,
 		private readonly IAppManager $appManager,
 		private readonly LoggerInterface $logger,
+		private readonly ?AutomationFlowBackend $flowBackend = null,
+		private readonly ?AutomationFlowBuilder $flowBuilder = null,
+		private readonly ?AutomationRuleSets $ruleSets = null,
+		private readonly ?InboundTriggerDeclarations $inbound = null,
 	) {
 
 	}//end __construct()
+
+	/**
+	 * The flow builder (logic-automation-actions-that-run D1-D6).
+	 *
+	 * @return AutomationFlowBuilder
+	 */
+	private function flowBuilder(): AutomationFlowBuilder {
+		return ($this->flowBuilder ?? new AutomationFlowBuilder(feel: new FeelToJsonLogic(parser: new FeelParser())));
+	}//end flowBuilder()
+
+	/**
+	 * The flow backend, resolved at use time like the task-engine collaborators.
+	 *
+	 * @return AutomationFlowBackend
+	 */
+	private function flowBackend(): AutomationFlowBackend {
+		return ($this->flowBackend ?? $this->container->get(AutomationFlowBackend::class));
+	}//end flowBackend()
+
+	/**
+	 * The integriq declarations of the inbound triggers, resolved at use time
+	 * (logic-email-and-webhook-triggers D2, D3).
+	 *
+	 * @return InboundTriggerDeclarations
+	 */
+	private function inbound(): InboundTriggerDeclarations {
+		return ($this->inbound ?? $this->container->get(InboundTriggerDeclarations::class));
+	}//end inbound()
 
 	/**
 	 * Return `$value` when it is an array, otherwise `$default`.
@@ -304,6 +360,13 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 	public function compile(array $automation): array {
 		$input = new CompileInput(automation: $automation);
 
+		// Logic-automation-actions-that-run D1: a manual trigger or any flow
+		// action compiles to ONE OpenRegister flow, refused by the builder when
+		// a trigger, step or condition cannot run in one.
+		if ($this->flowBuilder()->wantsFlow(input: $input) === true) {
+			return $this->compileFlowBackend(input: $input);
+		}
+
 		$this->assertMatrix(triggerType: $input->triggerType, condition: $input->condition, actions: $input->actions);
 		$this->assertGenerateDocumentActions(actions: $input->actions);
 		// Logic-approval-task-form D2/D3: the fields an approver fills in are
@@ -339,6 +402,114 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 	}//end compile()
 
 	/**
+	 * Compile an automation to its flow (logic-automation-actions-that-run D1-D6).
+	 *
+	 * The other backends stay empty, so applying the plan also removes the
+	 * artefacts an earlier compile of the same automation left on them.
+	 *
+	 * @param CompileInput $input The automation.
+	 *
+	 * @return array<string,mixed> The plan, with `flow` the flow document.
+	 *
+	 * @throws UnsupportedAutomationCombinationException When the shape cannot run in a flow.
+	 *
+	 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-declarative-primitives-or-one-openregister-flow-req-bqar-001
+	 *
+	 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-call-another-req-bqsf-004
+	 *
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-script-runs-only-in-the-code-runner-req-bqss-003
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) AiStepNodes::holdsAiStep(), RunAutomationNodes::targetUuids() and
+	 * ScriptStepNodes::holdsScriptStep() are pure checks of the actions.
+	 */
+	private function compileFlowBackend(CompileInput $input): array {
+		// The register and schemas are read only when a node needs them, so a
+		// shape the builder refuses anyway is refused without any I/O.
+		$scope = ['register' => '', 'schemas' => []];
+		if ($this->flowNeedsScope(input: $input) === true) {
+			$scope = $this->flowBackend()->scope(versionUuid: (string)($input->automation['versionUuid'] ?? ''));
+		}
+
+		$plan = [
+			'notifications' => [],
+			'lifecycleActions' => [],
+			'schedules' => [],
+			'ruleSet' => null,
+			'conditionActionRule' => null,
+			'approvalChain' => null,
+			'flow' => [],
+		];
+
+		$ruleSets = [];
+		$slugs = $this->flowBuilder()->ruleSetSlugs(input: $input);
+		if ($slugs !== []) {
+			$ruleSets = ($this->ruleSets ?? $this->container->get(AutomationRuleSets::class))->ruleSets(slugs: $slugs);
+		}
+
+		// Ai-llm-steps-and-computed-fields D4: a classify step checks its labels
+		// against the trigger schema's choice list.
+		$properties = null;
+		if (AiStepNodes::holdsAiStep(actions: $input->actions) === true) {
+			$properties = $this->loadSchema(slug: (string)($input->trigger['schema'] ?? ''))?->getProperties();
+		}
+
+		// Logic-shared-flows-and-automations D4: a step that runs another
+		// automation runs that automation's compiled flow.
+		$subFlowTargets = [];
+		$targetUuids = RunAutomationNodes::targetUuids(actions: $input->actions);
+		if ($targetUuids !== []) {
+			$subFlowTargets = $this->container->get(AutomationSubFlowTargets::class)->targets(uuids: $targetUuids);
+		}
+
+		// Logic-script-step D2: a script step compiles to the code step the node
+		// catalogue serves, and is refused when it serves none.
+		$codeNodeEntry = null;
+		if (ScriptStepNodes::holdsScriptStep(actions: $input->actions) === true) {
+			$codeNodeEntry = (new FlowNodeAvailability(container: $this->container))->catalogueEntry(type: ScriptStepNodes::CODE_NODE);
+		}
+
+		$plan['flow'] = $this->flowBuilder()->withLookups(subFlowTargets: $subFlowTargets, codeNodeEntry: $codeNodeEntry)->build(
+			input: $input,
+			register: $scope['register'],
+			schemas: $scope['schemas'],
+			ruleSets: $ruleSets,
+			schemaProperties: $properties
+		);
+		$plan['hash'] = $this->hashPlan(plan: $plan);
+
+		// D7: which version of each rule set the flow runs, for provenance. Not
+		// hashed: the table is referenced, not copied, so a new version changes
+		// what runs without changing the flow.
+		$plan['ruleSetVersions'] = [];
+		foreach ($slugs as $slug) {
+			$plan['ruleSetVersions'][] = ['slug' => $slug, 'version' => (string)($ruleSets[$slug]['version'] ?? '')];
+		}
+
+		return $plan;
+	}//end compileFlowBackend()
+
+	/**
+	 * Whether the flow names the app's register: an object trigger or a record step.
+	 *
+	 * @param CompileInput $input The automation.
+	 *
+	 * @return bool
+	 */
+	private function flowNeedsScope(CompileInput $input): bool {
+		if (in_array($input->triggerType, ['object-created', 'object-updated', 'object-deleted'], true) === true) {
+			return true;
+		}
+
+		foreach ($input->actions as $action) {
+			if (is_array($action) === true && in_array(($action['type'] ?? ''), ['object-op', AiStepNodes::ACTION], true) === true) {
+				return true;
+			}
+		}
+
+		return false;
+	}//end flowNeedsScope()
+
+	/**
 	 * Apply a compiled plan: idempotent upsert of every artifact, removing
 	 * any prior-provenance artifact no longer present in the new plan.
 	 *
@@ -348,11 +519,25 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 	 *
 	 * @return array<string,mixed> The new `provenance` block.
 	 *
+	 * @throws UnsupportedAutomationCombinationException When the plan runs an AI step and the engine lacks Hermiq's node.
+	 *
 	 * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#2.2
+	 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-ai-steps-need-the-hermiq-node-req-bqls-005
+	 *
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-script-runs-only-in-the-code-runner-req-bqss-003
+	 *
 	 */
 	public function apply(array $automation, array $plan, array $priorProvenance = []): array {
+		$this->assertFlowNodesPresent(plan: $plan);
+
 		$slug = (string)($automation['slug'] ?? '');
 		$versionUuid = (string)($automation['versionUuid'] ?? '');
+
+		// Logic-email-and-webhook-triggers D6: refuse before anything is written
+		// when integriq cannot take the trigger's declarations.
+		if (in_array((string)($automation['trigger']['type'] ?? ''), InboundTriggerDeclarations::TRIGGERS, true) === true) {
+			$this->inbound()->assertReady(trigger: (array)$automation['trigger']);
+		}
 
 		$notificationKeys = $this->applyNotifications(
 			planned: $plan['notifications'],
@@ -391,6 +576,73 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 			'compiledHash' => (string)$plan['hash'],
 		];
 
+		$flowUuid = $this->applyFlow(
+			automation: $automation,
+			planned: $this->orNullArray(value: $plan['flow'] ?? null),
+			priorUuid: $this->orNullString(value: $priorProvenance['flowUuid'] ?? null)
+		);
+		if ($flowUuid !== null) {
+			$provenance['flowUuid'] = $flowUuid;
+		}
+
+		// Logic-email-and-webhook-triggers D2/D3: the integriq objects that start
+		// the flow from a mailbox or a webhook call, and removal of the prior ones.
+		$provenance = $this->withInbound(provenance: $provenance, automation: $automation, flowUuid: $flowUuid, priorProvenance: $priorProvenance);
+
+		if (($plan['ruleSetVersions'] ?? []) !== []) {
+			$provenance['ruleSetVersions'] = $plan['ruleSetVersions'];
+		}
+
+		return self::withNames(provenance: $provenance, ruleSetSlug: $ruleSetSlug, approvalChainName: $approvalChainName);
+	}//end apply()
+
+	/**
+	 * Refuse a plan whose flow runs a node the engine does not offer: Hermiq's
+	 * agent step, or OpenRegister's code step while its runner is away. Checked
+	 * before anything is written.
+	 *
+	 * @param array<string,mixed> $plan The CompiledPlan.
+	 *
+	 * @return void
+	 *
+	 * @throws UnsupportedAutomationCombinationException When a node is missing.
+	 *
+	 * @spec openspec/changes/ai-llm-steps-and-computed-fields/specs/automation-ai-steps/spec.md#requirement-ai-steps-need-the-hermiq-node-req-bqls-005
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-script-runs-only-in-the-code-runner-req-bqss-003
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) AiStepNodes::flowRunsAgent() and ScriptStepNodes::flowRunsCode() are pure checks of the compiled flow.
+	 */
+	private function assertFlowNodesPresent(array $plan): void {
+		// Ai-llm-steps-and-computed-fields D6: an AI step needs Hermiq's node in
+		// the engine; checked again here, before anything is written.
+		$flowNodes = new FlowNodeAvailability(container: $this->container);
+		if (AiStepNodes::flowRunsAgent(flow: $this->orArray(value: $plan['flow'] ?? null)) === true
+			&& $flowNodes->has(type: AiStepNodes::AGENT_NODE) === false
+		) {
+			throw new UnsupportedAutomationCombinationException(message: AiStepNodes::MISSING_NODE_REFUSAL);
+		}
+
+		// Logic-script-step D2: the code runner can go away between compile and
+		// apply; checked again here, before anything is written.
+		if (ScriptStepNodes::flowRunsCode(flow: $this->orArray(value: $plan['flow'] ?? null)) === true
+			&& $flowNodes->catalogueEntry(type: ScriptStepNodes::CODE_NODE) === null
+		) {
+			throw new UnsupportedAutomationCombinationException(message: ScriptStepNodes::MISSING_NODE_REFUSAL);
+		}
+	}//end assertFlowNodesPresent()
+
+	/**
+	 * The provenance with the rule set and approval chain names, each only when it is set.
+	 *
+	 * @param array<string,mixed> $provenance        The provenance so far.
+	 * @param string|null         $ruleSetSlug       The applied rule set, or null.
+	 * @param string|null         $approvalChainName The applied approval chain, or null.
+	 *
+	 * @return array<string,mixed>
+	 *
+	 * @spec openspec/changes/archive/2026-07-11-automation-designer/tasks.md#2.2
+	 */
+	private static function withNames(array $provenance, ?string $ruleSetSlug, ?string $approvalChainName): array {
 		// `ruleSetSlug` and `approvalChainName` are declared `"type": "string"`
 		// in 40-automations.json even though both descriptions say "or null",
 		// and both applyX() helpers legitimately return null — approvalChainName
@@ -421,7 +673,35 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 		}
 
 		return $provenance;
-	}//end apply()
+	}//end withNames()
+
+	/**
+	 * The provenance with the integriq declarations of an inbound automation,
+	 * written or replaced; the prior ones are removed when it is no longer inbound.
+	 *
+	 * @param array<string,mixed> $provenance      The provenance so far.
+	 * @param array<string,mixed> $automation      The Automation object.
+	 * @param string|null         $flowUuid        The compiled flow, or null without one.
+	 * @param array<string,mixed> $priorProvenance The provenance of the last apply, whose `inbound` entry is replaced.
+	 *
+	 * @return array<string,mixed>
+	 *
+	 * @spec openspec/changes/logic-email-and-webhook-triggers/specs/automation-inbound-triggers/spec.md#requirement-a-webhook-starts-the-automations-flow-req-bqtr-003
+	 */
+	private function withInbound(array $provenance, array $automation, ?string $flowUuid, array $priorProvenance): array {
+		$prior = $this->orArray(value: $priorProvenance['inbound'] ?? null);
+		$isInbound = in_array((string)($automation['trigger']['type'] ?? ''), InboundTriggerDeclarations::TRIGGERS, true);
+		if ($prior === [] && $isInbound === false) {
+			return $provenance;
+		}
+
+		$inbound = $this->inbound()->apply(automation: $automation, flowUuid: $flowUuid, prior: $prior);
+		if ($inbound !== []) {
+			$provenance['inbound'] = $inbound;
+		}
+
+		return $provenance;
+	}//end withInbound()
 
 	/**
 	 * Remove exactly the provenance-listed artifacts (design.md Decision 4 —
@@ -461,7 +741,47 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 			);
 		}
 
+		$inbound = $this->orArray(value: $provenance['inbound'] ?? null);
+		if ($inbound !== []) {
+			$this->inbound()->remove(prior: $inbound);
+		}
+
+		$flowUuid = ($provenance['flowUuid'] ?? null);
+		if (is_string($flowUuid) === true && $flowUuid !== '') {
+			$this->flowBackend()->remove(flowUuid: $flowUuid, versionUuid: (string)($automation['versionUuid'] ?? ''));
+		}
+
 	}//end remove()
+
+	/**
+	 * Save, enable or disable and bind the planned flow, removing the prior one
+	 * when the automation no longer compiles to a flow (D2).
+	 *
+	 * @param array<string,mixed> $automation The Automation object.
+	 * @param array<string,mixed>|null $planned The planned flow document, or null.
+	 * @param string|null $priorUuid The flow the last compile produced.
+	 *
+	 * @return string|null The flow uuid, or null without a flow.
+	 *
+	 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-declarative-primitives-or-one-openregister-flow-req-bqar-001
+	 */
+	private function applyFlow(array $automation, ?array $planned, ?string $priorUuid): ?string {
+		$versionUuid = (string)($automation['versionUuid'] ?? '');
+		if ($planned === null) {
+			if ($priorUuid !== null) {
+				$this->flowBackend()->remove(flowUuid: $priorUuid, versionUuid: $versionUuid);
+			}
+
+			return null;
+		}
+
+		return $this->flowBackend()->apply(
+			flow: $planned,
+			priorUuid: $priorUuid,
+			enabled: (bool)($automation['enabled'] ?? true),
+			versionUuid: $versionUuid
+		);
+	}//end applyFlow()
 
 	/**
 	 * Recompute drift: compare the live artifacts against the last-applied
@@ -501,6 +821,11 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 					name: ($provenance['approvalChainName'] ?? null)
 				),
 			];
+
+			$flowUuid = $this->orNullString(value: $provenance['flowUuid'] ?? null);
+			if ($flowUuid !== null) {
+				$live['flow'] = $this->flowBackend()->live(flowUuid: $flowUuid);
+			}
 		} catch (Throwable $e) {
 			// A fetch failure means live state cannot be confirmed —
 			// fail safe by reporting drift so the operator is prompted to
@@ -1065,6 +1390,7 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 	 * @return array<string,mixed>
 	 *
 	 * @spec openspec/changes/archive/2026-07-23-automation-approval-steps/tasks.md#2.1
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-script-runs-only-in-the-code-runner-req-bqss-003
 	 */
 	public function mapActionToRuleAction(array $action): array {
 		$type = (string)($action['type'] ?? '');
@@ -1104,6 +1430,16 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 				'parameters' => [
 					'templateId' => (string)($action['templateId'] ?? ''),
 					'output' => $this->normaliseGenerateDocumentOutput(raw: $action['output'] ?? null),
+				],
+			],
+			// Logic-script-step D5: the dry run names where the script runs and
+			// never carries, let alone runs, its code.
+			ScriptSteps::ACTION => [
+				'type' => ScriptSteps::ACTION,
+				'parameters' => [
+					'runsIn' => 'code-runner',
+					'summary' => 'runs in the code runner',
+					'note' => (string)($action['note'] ?? ''),
 				],
 			],
 			default => ['type' => $type, 'parameters' => []],
@@ -1167,6 +1503,12 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 			'conditionActionRule' => ($plan['conditionActionRule'] ?? null),
 			'approvalChain' => ($plan['approvalChain'] ?? null),
 		];
+
+		// Only a flow plan carries `flow`, so every other plan keeps the hash it
+		// had before flows existed and shows no drift after an upgrade.
+		if (array_key_exists('flow', $plan) === true) {
+			$hashable['flow'] = $plan['flow'];
+		}
 
 		return 'sha256:' . hash(algo: 'sha256', data: $this->canonicalise(value: $hashable));
 	}//end hashPlan()

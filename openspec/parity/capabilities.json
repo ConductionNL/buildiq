@@ -1491,11 +1491,11 @@
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "specified",
-				"evidence": "Not built: lib/Service/DemoDataService.php installs buildiq's own demo register (lib/Settings/buildiq_mock_register.json) from the setup wizard; nothing fills a newly created app with records from its own schemas. Plan: capability-requirements-backfill T30 (REQ-BQCV-030). Was: src/manifest.json:31-46 setup wizard steps 'demo-data' (choice) + 'load-demo-data' (run-action) -> POST /api/setup/action/load-demo-data (routes.php:30 setup#runAction) -> lib/Controller/SetupController.php:263 runAction() branches on 'load-demo-data' -> lib/Service/DemoDataService.php:132 listChoices() / :230 install()",
-				"reachedOn": "First-run setup wizard (CnSetupWizard), 'Load example data?' step",
+				"state": "built",
+				"evidence": "src/dialogs/CreateApplicationWizard/Step4Review.vue 'Fill with demo records' switch and src/components/ApplicationDetailActions.vue 'Fill with demo records' / 'Remove demo records' (src/services/demoRecords.js) -> POST/DELETE /api/applications/{appUuid}/demo-records (appinfo/routes.php appDemoRecords#fill/remove) -> lib/Controller/AppDemoRecordsController.php -> lib/Service/AppDemoRecordsService.php generates records per schema of the production register with lib/Service/DemoRecordValues.php and lists them on Application.demoRecords (lib/Settings/register.d/87-application-demo-records.json); removal deletes exactly those",
+				"reachedOn": "Create-app wizard review step, and the app detail page actions menu",
 				"owner": "ConductionNL/buildiq",
-				"change": "openbuild-first-time-setup",
+				"change": "capability-requirements-backfill",
 				"requirement": "openspec/changes/capability-requirements-backfill/specs/application-creation-wizard :: A maker fills a new app with demo records (REQ-BQCV-030)",
 				"plan": "openspec/changes/capability-requirements-backfill"
 			},
@@ -4937,8 +4937,8 @@
 			"mendix": "partial",
 			"power-apps": "yes",
 			"built": {
-				"state": "specified",
-				"evidence": "Buildiq automations have no run log: GET /api/automations/{uuid}/status (routes.php:234, AutomationsController.php:375) returns compile drift and approvalState only (AutomationsPage.vue:429-476 renders a 'Drift detected' badge); grep runs|history|lastRun in src/views/AutomationsPage.vue: none. Flows bound to the app are listed in src/components/applicationDetail/widgets/FlowsWidget.vue (ApplicationDetailDashboard.vue:296), each row a link to OpenRegister's flow page (FlowsWidget.vue:126-135 generateUrl('/apps/openregister/flows/{uuid}')), where OpenRegister keeps flow runs.",
+				"state": "building",
+				"evidence": "Building in openspec/changes/logic-automation-run-log: T01 to T06 are merged (the automation-run schema in lib/Settings/register.d, AutomationRunRecorder called from RuleEngineService, AutomationsController::runs() and ::runsSummary(), src/modals/AutomationRunsModal.vue and the last-run line in src/views/AutomationsPage.vue). Open: the Playwright run log spec (T09) and the cross-repo notification outcome (T11).",
 				"reachedOn": "app detail /applications/{slug}, Flows widget rows open OpenRegister's flow page in a new tab",
 				"owner": "ConductionNL/openregister",
 				"note": "Specified in ConductionNL/openregister openspec/changes/rules-engine-operability (openregister lane, OpenSpec pass 2026-09-27). Spec round part 3 (2026-10-07): openregister/rules-engine-operability is delivered (OpenRegister rule run log) but logs no buildiq automation; the buildiq run log is specified in logic-automation-run-log.",
@@ -5141,23 +5141,22 @@
 			"area": "integrations",
 			"name": "See in one place which connections an app uses and whether each one works.",
 			"source": "own-code",
-			"buildiq": "partial",
+			"buildiq": "yes",
 			"nocobase": "partial",
 			"budibase": "partial",
 			"appsmith": "partial",
 			"mendix": "partial",
 			"power-apps": "partial",
 			"built": {
-				"state": "specified",
-				"evidence": "Not built: no app built in buildiq has a page listing its own sources and integrations with health; the Integrations page lists only buildiq's own four connections. Planned in openspec/changes/built-app-connections-page (decision 412, 13 Nov 2026). What exists: src/manifest.d/80-connection-registry.json: menu 'Integrations' (section settings, permission admin, visibleIf appInstalled 'integriq'; integriq repo appinfo/info.xml id is 'integriq') and page /settings/integrations, type index on register integriq, schema app_connection, columns status/statusMessage/checkedAt/settingsUrl, header action openIntegriqConnections (src/services/connectionRegistry.js:43). buildiq declares its own connections in lib/Settings/connections.json (store, github, documents, rule-webhooks) and reports observations through lib/Service/Connection/ConnectionReporter.php:155-212 (store search, GitHub search/sync, document call).",
-				"reachedOn": "nothing yet: planned as a Connections tab on the application detail page",
+				"state": "built",
+				"evidence": "lib/Service/ApplicationConnectionsService.php list(): the manifest's connector endpoint paths resolved through integriq to their sources, plus the integriq app_connection rows of the app's slug, each with status, message and last check; without integriq the sources are listed with no status and healthNeedsIntegriq. lib/Controller/ApplicationConnectionsController.php index() on GET /api/applications/{id}/connections, owners, editors or an admin, checked before any read. src/components/applicationDetail/ApplicationConnectionsSection.vue renders kind, name, status with message and last check, linking each row to integriq. Tests: tests/Unit/Service/ApplicationConnectionsServiceTest.php, tests/Unit/Controller/ApplicationConnectionsControllerTest.php, tests/components/applicationDetail/ApplicationConnectionsSection.spec.js.",
+				"reachedOn": "Application detail page, Connections section, for owners, editors and admins",
 				"owner": "ConductionNL/buildiq",
 				"change": "built-app-connections-page",
 				"requirement": [
-					"openspec/changes/built-app-connections-page/specs/app-connections :: REQ-BIQ-CONN-005 Every app built in buildiq has a connections page with health",
+					"openspec/specs/app-connections :: REQ-BIQ-CONN-005 Every app built in buildiq has a connections page with health",
 					"openspec/changes/adopt-connection-registry/specs/app-connections :: REQ-BIQ-CONN-004 An admin reads the connections on an Integrations page"
-				],
-				"plan": "openspec/changes/built-app-connections-page"
+				]
 			},
 			"provider": "integriq",
 			"providerHow": "read-from-code",
@@ -5349,7 +5348,7 @@
 					"openspec/changes/github-app-sync/specs/github-app-sync :: Push serializes via the repo format and routes every call through the broker",
 					"openspec/changes/github-app-sync/specs/github-app-sync :: Pull creates a new draft ApplicationVersion, never overwriting production"
 				],
-				"plan": "openspec/changes/github-app-repo-format"
+				"plan": "openspec/changes/archive/2026-11-21-github-app-repo-format"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -7420,7 +7419,7 @@
 					"openspec/changes/github-shop-catalogue/specs/github-shop-catalogue :: Server-side GitHub search over the buildiq-app topic",
 					"openspec/changes/github-shop-catalogue/specs/github-shop-catalogue :: GitHub install parses the repo and reuses the clone seam"
 				],
-				"plan": "openspec/changes/github-app-repo-format"
+				"plan": "openspec/changes/archive/2026-11-21-github-app-repo-format"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",

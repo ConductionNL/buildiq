@@ -1,0 +1,42 @@
+{
+	"_comment": "OpenSpec register fragment — capability-requirements-backfill task T30 (REQ-BQCV-030). One OPTIONAL property on Application, declared BEFORE anything writes it: `demoRecords`, the records buildiq generated from the app's own schemas when a maker asked for demo data. Listing them is what marks them as demo data, so removing them deletes exactly these and keeps every record a maker created. Absent or empty means the app has no demo records.",
+	"components": {
+		"schemas": {
+			"Application": {
+				"properties": {
+					"demoRecords": {
+						"title": "Demo Records",
+						"type": "array",
+						"default": [],
+						"description": "The demo records buildiq generated for this app from its own schemas, on a maker's request (REQ-BQCV-030). \"Remove demo records\" deletes exactly these; records a maker created are not listed and are kept.",
+						"items": {
+							"type": "object",
+							"title": "Demo Record",
+							"required": [
+								"uuid"
+							],
+							"additionalProperties": false,
+							"properties": {
+								"register": {
+									"title": "Register",
+									"type": "string",
+									"description": "The register the demo record is in: the app's production register when it was made."
+								},
+								"schema": {
+									"title": "Schema",
+									"type": "string",
+									"description": "Slug of the schema the demo record was generated from."
+								},
+								"uuid": {
+									"title": "Record UUID",
+									"type": "string",
+									"description": "The demo record's uuid."
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+}

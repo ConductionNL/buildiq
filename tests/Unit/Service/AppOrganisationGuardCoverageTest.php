@@ -53,43 +53,67 @@ class AppOrganisationGuardCoverageTest extends TestCase {
 		'lib/Mcp/Handler/GetAppManifestHandler.php' => 'requireAnyRoleOnApp(',
 		'lib/Controller/AgentsController.php' => 'seesApplication(',
 		'lib/Controller/ExportsController.php' => 'visibleToOrganisation(',
+		'lib/Service/AgentPlanService.php' => 'visibleToOrganisation(',
+		'lib/Service/ApplicationInsightsService.php' => 'seesApplication(',
+		'lib/Service/AutomationWriteService.php' => 'seesApplication(',
+		'lib/Service/CopilotService.php' => 'seesApplication(',
+		'lib/Controller/GitHubSyncController.php' => 'seesApplication(',
+		// The icon routes hand the caller's guard to the service, which serves an
+		// app the caller may not see as an unknown slug (IconController::mayServe()).
+		'lib/Service/IconService.php' => '$mayServe($application)',
+		'lib/Controller/IconController.php' => 'seesApplication(',
+		// A base app named by a version's baseRef is read only when the manifest
+		// resolver's guard closure admits the caller (app-delta-override 3.1).
+		'lib/Service/ManifestBaseResolver.php' => '$visible($application)',
+		// The designer's base endpoint: the app comes from the manifest resolver's
+		// organisation-scoped lookup, and a base app is read only when it is visible.
+		'lib/Service/EditorBaseService.php' => 'seesApplication(',
 	];
 
 	/**
 	 * Files that name the Application schema but are no door for a user, so the
 	 * organisation scope does not apply: contracts that only declare the slug as
 	 * a constant, listener wiring that filters events by schema, the repair step
-	 * that runs during an upgrade, and the occ commands' catalogue, which the
-	 * instance administrator runs from the command line.
+	 * that runs during an upgrade, the occ commands' catalogue, which the
+	 * instance administrator runs from the command line, and the automation
+	 * flow backend, which only writes a flow binding into `Application.flows`
+	 * while compiling an automation whose caller already passed the app's
+	 * role check, and returns nothing of the Application to anyone.
+	 *
+	 * Reviewed for operate-organisation-scoped-apps T04: document generation
+	 * resolves the app of an automation that is already running and runs as the
+	 * app's owner; the export job service only names the schema in a comment;
+	 * the flow channel provisioner writes bindings into the app an install just
+	 * created; the GitHub sync service loads an app for GitHubSyncController,
+	 * whose requireRole() is the door and consults the guard; and the published
+	 * application provider is the shared read behind the navigation (guarded)
+	 * and the dashboard, which reads only a served app's device features.
 	 *
 	 * @var array<int, string>
 	 */
 	private const NO_USER_DOOR = [
 		'lib/Kernel/Contracts/AppOverrideServiceInterface.php',
 		'lib/Kernel/Contracts/ApplicationVersionServiceInterface.php',
+		'lib/Service/Automation/AutomationFlowBackend.php',
 		'lib/Listener/ListenerRegistrar.php',
 		'lib/Repair/PopulateApplicationPermissions.php',
 		'lib/Service/AppCatalogue.php',
+		'lib/Service/DocumentGenerationService.php',
+		'lib/Service/ExportJobService.php',
+		'lib/Service/FlowChannelProvisioner.php',
+		'lib/Service/GitHubAppSyncService.php',
+		'lib/Service/PublishedApplicationProvider.php',
 	];
 
 	/**
 	 * Readers of the Application schema not yet reviewed for the organisation
 	 * scope (operate-organisation-scoped-apps, T04 follow-up). Shrink this list;
-	 * never grow it.
+	 * never grow it. Empty since the icon service takes the caller's guard from
+	 * its controller (21 Nov).
 	 *
 	 * @var array<int, string>
 	 */
-	private const NOT_YET_REVIEWED = [
-		'lib/Service/ApplicationInsightsService.php',
-		'lib/Service/AutomationWriteService.php',
-		'lib/Service/CopilotService.php',
-		'lib/Service/DocumentGenerationService.php',
-		'lib/Service/ExportJobService.php',
-		'lib/Service/FlowChannelProvisioner.php',
-		'lib/Service/GitHubAppSyncService.php',
-		'lib/Service/IconService.php',
-		'lib/Service/PublishedApplicationProvider.php',
-	];
+	private const NOT_YET_REVIEWED = [];
 
 	/**
 	 * Each named door consults the guard.
@@ -99,7 +123,7 @@ class AppOrganisationGuardCoverageTest extends TestCase {
 	public function testEveryNamedDoorConsultsTheGuard(): void {
 		foreach (self::GUARDED as $path => $call) {
 			$source = (string)file_get_contents($this->root() . '/' . $path);
-			$this->assertStringContainsString($call, $source, $path . ' resolves an Application without the organisation guard');
+			$this->assertStringContainsString(needle: $call, haystack: $source, message: $path . ' resolves an Application without the organisation guard');
 		}
 	}//end testEveryNamedDoorConsultsTheGuard()
 
@@ -117,7 +141,7 @@ class AppOrganisationGuardCoverageTest extends TestCase {
 			}
 		}
 
-		$this->assertSame([], $unknown, 'New readers of the Application schema must consult AppOrganisationGuard');
+		$this->assertSame(expected: [], actual: $unknown, message: 'New readers of the Application schema must consult AppOrganisationGuard');
 	}//end testNoNewReaderSkipsTheDecision()
 
 	/**

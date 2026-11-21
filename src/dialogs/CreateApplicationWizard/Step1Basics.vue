@@ -371,7 +371,7 @@ export default {
 		 * Whether "Start from a database" is off, or has a database and at least one table.
 		 *
 		 * @return {boolean}
-		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
+		 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
 		 */
 		databaseChoiceComplete() {
 			const choice = this.payload.fromDatabase

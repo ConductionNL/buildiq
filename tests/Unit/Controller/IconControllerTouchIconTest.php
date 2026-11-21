@@ -24,12 +24,15 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Tests\Unit\Controller;
 
 use OCA\Buildiq\Controller\IconController;
+use OCA\Buildiq\Service\CallerContext;
+use OCA\Buildiq\Service\PermissionResolver;
 use OCA\Buildiq\Service\Icon\SvgRasteriser;
 use OCA\Buildiq\Service\IconService;
 use OCP\AppFramework\Http;
 use OCP\AppFramework\Http\DataDisplayResponse;
 use OCP\IRequest;
 use OCP\IUser;
+use OCP\IGroupManager;
 use OCP\IUserSession;
 use PHPUnit\Framework\MockObject\MockObject;
 use PHPUnit\Framework\TestCase;
@@ -80,7 +83,7 @@ class IconControllerTouchIconTest extends TestCase {
 		return new IconController(
 			$this->createMock(IRequest::class),
 			$this->iconService,
-			$session,
+			$this->caller(session: $session),
 			$this->createMock(LoggerInterface::class),
 			$this->rasteriser
 		);
@@ -167,4 +170,19 @@ class IconControllerTouchIconTest extends TestCase {
 
 		self::assertSame(Http::STATUS_UNAUTHORIZED, $this->controller(signedIn: false)->touchIcon('hello-world')->getStatus());
 	}//end testAnAnonymousCallerGets401()
+
+	/**
+	 * The caller context over a session, without an organisation guard.
+	 *
+	 * @param IUserSession $session The session.
+	 *
+	 * @return CallerContext
+	 */
+	private function caller(IUserSession $session): CallerContext {
+		return new CallerContext(
+			userSession: $session,
+			groupManager: $this->createMock(originalClassName: IGroupManager::class),
+			permissionResolver: $this->createMock(originalClassName: PermissionResolver::class)
+		);
+	}//end caller()
 }//end class

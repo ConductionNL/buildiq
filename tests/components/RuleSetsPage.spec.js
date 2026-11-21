@@ -193,30 +193,37 @@ describe('RuleSetsPage', () => {
 		expect(wrapper.vm.testResults).toEqual({})
 	})
 
-	it('exports a rule set as a named JSON download', async () => {
+	it('exports a rule set as a named JSON download of what the server assembles', async () => {
 		const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
 		const blobs = []
 		URL.createObjectURL = vi.fn((blob) => { blobs.push(blob); return 'blob:1' })
 		URL.revokeObjectURL = vi.fn()
 		const wrapper = await mountPage()
+		const exported = { ruleSet: DT, decisionTables: [], conditionActionRules: [], testCases: [] }
+		axios.get.mockResolvedValueOnce({ data: exported })
 
 		await button(wrapper.findAll('[data-testid="rule-set-row"]')[0], 'Export').trigger('click')
+		await flushPromises()
 
+		expect(axios.get).toHaveBeenLastCalledWith('/apps/buildiq/api/rules/{slug}/export')
 		expect(click).toHaveBeenCalledTimes(1)
 		expect(click.mock.contexts[0].download).toBe('fees.json')
 		expect(blobs[0].type).toBe('application/json')
-		expect(JSON.parse(await blobs[0].text())).toEqual(DT)
+		expect(JSON.parse(await blobs[0].text())).toEqual(exported)
 		expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:1')
 	})
 
-	it('names an export without a slug rule-set.json', () => {
+	it('reports a failed export and downloads nothing', async () => {
 		const click = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => {})
-		URL.createObjectURL = vi.fn(() => 'blob:2')
-		URL.revokeObjectURL = vi.fn()
+		click.mockClear()
+		const wrapper = await mountPage()
+		axios.get.mockRejectedValueOnce(new Error('404'))
 
-		RuleSetsPage.methods.exportRuleSet({ name: 'x' })
+		await button(wrapper.findAll('[data-testid="rule-set-row"]')[0], 'Export').trigger('click')
+		await flushPromises()
 
-		expect(click.mock.contexts[0].download).toBe('rule-set.json')
+		expect(click).not.toHaveBeenCalled()
+		expect(wrapper.find('.note-stub').text()).toBe('Could not export the rule set.')
 	})
 
 	it('closes the editors and reloads after a save', async () => {
@@ -230,5 +237,43 @@ describe('RuleSetsPage', () => {
 		expect(wrapper.findComponent({ name: 'DecisionTableEditor' }).exists()).toBe(false)
 		expect(axios.get).toHaveBeenCalledTimes(2)
 		expect(wrapper.findAll('[data-testid="rule-set-row"]')).toHaveLength(1)
+	})
+})
+
+describe('RuleSetsPage opened for an app (REQ-BQAR-008)', () => {
+	const OWN = { ...DT, slug: 'permit-fees', name: 'Permit fees', ownerApp: 'permits' }
+	const GLOBAL = { ...CA, slug: 'shared', name: 'Shared', ownerApp: '' }
+	const UNOWNED = { ...CA, slug: 'legacy', name: 'Legacy', ownerApp: undefined }
+	const OTHER = { ...DT, slug: 'other-fees', name: 'Other fees', ownerApp: 'lending' }
+
+	/**
+	 * Mount the page on a route with this query.
+	 *
+	 * @param {object} query The route query.
+	 * @return {Promise<import('@vue/test-utils').VueWrapper>}
+	 */
+	async function mountFor(query) {
+		axios.get.mockResolvedValueOnce({ data: { results: [OWN, GLOBAL, UNOWNED, OTHER] } })
+		const wrapper = mount(RuleSetsPage, { global: { stubs, mocks: { $route: { query } } } })
+		await flushPromises()
+		return wrapper
+	}
+
+	it('lists the rule sets the app owns and the global ones', async () => {
+		const wrapper = await mountFor({ app: ' permits ' })
+		const names = wrapper.findAll('[data-testid="rule-set-row"]').map((row) => row.find('td').text())
+		expect(names).toEqual(['Permit fees', 'Shared', 'Legacy'])
+	})
+
+	it('lists every rule set without an app, or for a non-text one', async () => {
+		expect((await mountFor({})).findAll('[data-testid="rule-set-row"]')).toHaveLength(4)
+		expect((await mountFor({ app: ['permits'] })).findAll('[data-testid="rule-set-row"]')).toHaveLength(4)
+	})
+
+	it('shows the empty state when the app has no rule sets and there are no global ones', async () => {
+		axios.get.mockResolvedValueOnce({ data: { results: [OTHER] } })
+		const wrapper = mount(RuleSetsPage, { global: { stubs, mocks: { $route: { query: { app: 'permits' } } } } })
+		await flushPromises()
+		expect(wrapper.find('.empty-stub').exists()).toBe(true)
 	})
 })

@@ -22,7 +22,7 @@ Vrij en open source onder de EUPL-1.2-licentie.
 
 **Ondersteuning:** Voor ondersteuning, neem contact op via support@conduction.nl.
     ]]></description>
-    <version>0.7.17-unstable.20261119140417</version>
+    <version>0.7.22-unstable.20261121185036</version>
     <!-- @spec openspec/specs/platform-properties/spec.md#REQ-PLAT-007, #REQ-PLAT-009 -->
     <licence>EUPL-1.2</licence>
     <author mail="info@conduction.nl" homepage="https://www.conduction.nl/">Conduction</author>
@@ -210,6 +210,15 @@ Vrij en open source onder de EUPL-1.2-licentie.
                 back-fill rather than rename. Idempotent; safe to re-run.
             -->
             <step>OCA\Buildiq\Repair\RenameDutchRuleColumns</step>
+            <!--
+                AFTER InitializeSettings, so the Automation schema carries
+                `disabledReason` and `provenance.flowUuid`: moves automations
+                whose provenance lists lifecycle records or a manual-trigger rule
+                set nothing ran onto OpenRegister flows, and disables the ones that
+                cannot run as a flow with the reason (logic-automation-actions-that-run
+                D9). Idempotent; never throws.
+            -->
+            <step>OCA\Buildiq\Repair\MoveStuckAutomationsToFlows</step>
         </post-migration>
         <install>
             <!--

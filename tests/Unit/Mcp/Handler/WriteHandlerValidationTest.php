@@ -159,7 +159,7 @@ class WriteHandlerValidationTest extends TestCase {
 		$this->groupManager->method('isAdmin')->with('admin-user')->willReturn(true);
 		$this->container->expects($this->never())->method('get');
 
-		$result = $this->provider->invokeTool('buildiq.createApp', ['slug' => '', 'name' => 'My App']);
+		$result = $this->provider->invokeApprovedTool('buildiq.createApp', ['slug' => '', 'name' => 'My App']);
 
 		$this->assertTrue($result['isError']);
 		$this->assertSame('invalid_arguments', $result['error']);
@@ -176,7 +176,7 @@ class WriteHandlerValidationTest extends TestCase {
 		$this->groupManager->method('isAdmin')->with('admin-user')->willReturn(true);
 		$this->container->expects($this->never())->method('get');
 
-		$result = $this->provider->invokeTool('buildiq.createApp', ['slug' => 'my-app', 'name' => 'X']);
+		$result = $this->provider->invokeApprovedTool('buildiq.createApp', ['slug' => 'my-app', 'name' => 'X']);
 
 		$this->assertTrue($result['isError']);
 		$this->assertSame('invalid_arguments', $result['error']);
@@ -193,7 +193,7 @@ class WriteHandlerValidationTest extends TestCase {
 		$this->groupManager->method('isAdmin')->with('admin-user')->willReturn(true);
 		$this->container->expects($this->never())->method('get');
 
-		$result = $this->provider->invokeTool(
+		$result = $this->provider->invokeApprovedTool(
 			'buildiq.createApp',
 			['slug' => 'my-app', 'name' => 'My App', 'preset' => 'invalid-preset']
 		);
@@ -212,7 +212,7 @@ class WriteHandlerValidationTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn(null);
 		$this->container->expects($this->never())->method('get');
 
-		$result = $this->provider->invokeTool('buildiq.createApp', ['slug' => 'my-app', 'name' => 'My App']);
+		$result = $this->provider->invokeApprovedTool('buildiq.createApp', ['slug' => 'my-app', 'name' => 'My App']);
 
 		$this->assertTrue($result['isError']);
 		$this->assertSame('forbidden', $result['error']);
@@ -229,7 +229,7 @@ class WriteHandlerValidationTest extends TestCase {
 		$this->groupManager->method('isAdmin')->with('alice')->willReturn(false);
 		$this->container->expects($this->never())->method('get');
 
-		$result = $this->provider->invokeTool('buildiq.createApp', ['slug' => 'my-app', 'name' => 'My App']);
+		$result = $this->provider->invokeApprovedTool('buildiq.createApp', ['slug' => 'my-app', 'name' => 'My App']);
 
 		$this->assertTrue($result['isError']);
 		$this->assertSame('forbidden', $result['error']);
@@ -250,7 +250,7 @@ class WriteHandlerValidationTest extends TestCase {
 		$this->groupManager->method('isAdmin')->with('admin-user')->willReturn(true);
 		$this->container->expects($this->never())->method('get');
 
-		$result = $this->provider->invokeTool('buildiq.upsertSchema', [
+		$result = $this->provider->invokeApprovedTool('buildiq.upsertSchema', [
 			'slug' => 'my-schema',
 			'title' => 'My Schema',
 			'properties' => ['name' => ['type' => 'string']],
@@ -271,7 +271,7 @@ class WriteHandlerValidationTest extends TestCase {
 		$this->groupManager->method('isAdmin')->with('admin-user')->willReturn(true);
 		$this->container->expects($this->never())->method('get');
 
-		$result = $this->provider->invokeTool('buildiq.upsertSchema', [
+		$result = $this->provider->invokeApprovedTool('buildiq.upsertSchema', [
 			'appSlug' => 'my-app',
 			'slug' => 'my-schema',
 			'title' => 'My Schema',
@@ -293,7 +293,7 @@ class WriteHandlerValidationTest extends TestCase {
 		$this->groupManager->method('isAdmin')->with('alice')->willReturn(false);
 		$this->container->expects($this->never())->method('get');
 
-		$result = $this->provider->invokeTool('buildiq.upsertSchema', [
+		$result = $this->provider->invokeApprovedTool('buildiq.upsertSchema', [
 			'appSlug' => 'my-app',
 			'slug' => 'my-schema',
 			'title' => 'My Schema',
@@ -324,7 +324,7 @@ class WriteHandlerValidationTest extends TestCase {
 			->with('OCA\OpenRegister\Service\ObjectService')
 			->willReturn($objectService);
 
-		$result = $this->provider->invokeTool('buildiq.upsertPage', [
+		$result = $this->provider->invokeApprovedTool('buildiq.upsertPage', [
 			'appSlug' => 'my-app',
 			'title' => 'Home',
 			'type' => 'dashboard',
@@ -351,7 +351,7 @@ class WriteHandlerValidationTest extends TestCase {
 			->with('OCA\OpenRegister\Service\ObjectService')
 			->willReturn($objectService);
 
-		$result = $this->provider->invokeTool('buildiq.upsertPage', [
+		$result = $this->provider->invokeApprovedTool('buildiq.upsertPage', [
 			'appSlug' => 'my-app',
 			'pageId' => 'home',
 			'title' => 'Home',
@@ -388,7 +388,7 @@ class WriteHandlerValidationTest extends TestCase {
 			->with('OCA\OpenRegister\Service\ObjectService')
 			->willReturn($objectService);
 
-		$result = $this->provider->invokeTool('buildiq.upsertPage', [
+		$result = $this->provider->invokeApprovedTool('buildiq.upsertPage', [
 			'appSlug' => 'my-app',
 			'pageId' => 'home',
 			'title' => 'Home',
@@ -427,7 +427,7 @@ class WriteHandlerValidationTest extends TestCase {
 			->with('OCA\OpenRegister\Service\ObjectService')
 			->willReturn($objectService);
 
-		$result = $this->provider->invokeTool('buildiq.upsertMenuItem', [
+		$result = $this->provider->invokeApprovedTool('buildiq.upsertMenuItem', [
 			'appSlug' => 'my-app',
 			'id' => 'overview',
 			'label' => 'Overview',
@@ -471,7 +471,7 @@ class WriteHandlerValidationTest extends TestCase {
 			->with('OCA\OpenRegister\Service\ObjectService')
 			->willReturn($objectService);
 
-		$result = $this->provider->invokeTool('buildiq.upsertPage', [
+		$result = $this->provider->invokeApprovedTool('buildiq.upsertPage', [
 			'appSlug' => 'my-app',
 			'pageId' => 'home',
 			'title' => 'Home',
@@ -505,7 +505,7 @@ class WriteHandlerValidationTest extends TestCase {
 			->with('OCA\OpenRegister\Service\ObjectService')
 			->willReturn($objectService);
 
-		$result = $this->provider->invokeTool('buildiq.upsertMenuItem', [
+		$result = $this->provider->invokeApprovedTool('buildiq.upsertMenuItem', [
 			'appSlug' => 'my-app',
 			'id' => 'nav-home',
 			'label' => 'Home',
@@ -532,7 +532,7 @@ class WriteHandlerValidationTest extends TestCase {
 			->with('OCA\OpenRegister\Service\ObjectService')
 			->willReturn($objectService);
 
-		$result = $this->provider->invokeTool('buildiq.upsertMenuItem', [
+		$result = $this->provider->invokeApprovedTool('buildiq.upsertMenuItem', [
 			'appSlug' => 'my-app',
 			'id' => 'nav-ext',
 			'label' => 'External',
@@ -559,7 +559,7 @@ class WriteHandlerValidationTest extends TestCase {
 			->with('OCA\OpenRegister\Service\ObjectService')
 			->willReturn($objectService);
 
-		$result = $this->provider->invokeTool('buildiq.upsertMenuItem', [
+		$result = $this->provider->invokeApprovedTool('buildiq.upsertMenuItem', [
 			'appSlug' => 'my-app',
 			'label' => 'Home',
 			'route' => '/home',
@@ -589,7 +589,7 @@ class WriteHandlerValidationTest extends TestCase {
 			->with('OCA\OpenRegister\Service\ObjectService')
 			->willReturn($objectService);
 
-		$result = $this->provider->invokeTool('buildiq.addWidget', [
+		$result = $this->provider->invokeApprovedTool('buildiq.addWidget', [
 			'appSlug' => 'my-app',
 			'pageId' => 'home',
 			'widgetType' => 'malicious-widget-type',
@@ -615,7 +615,7 @@ class WriteHandlerValidationTest extends TestCase {
 			->with('OCA\OpenRegister\Service\ObjectService')
 			->willReturn($objectService);
 
-		$result = $this->provider->invokeTool('buildiq.addWidget', [
+		$result = $this->provider->invokeApprovedTool('buildiq.addWidget', [
 			'appSlug' => 'my-app',
 			'widgetType' => 'stats-block',
 		]);
@@ -664,7 +664,7 @@ class WriteHandlerValidationTest extends TestCase {
 			->with('OCA\OpenRegister\Service\ObjectService')
 			->willReturn($objectService);
 
-		$result = $this->provider->invokeTool('buildiq.addWidget', [
+		$result = $this->provider->invokeApprovedTool('buildiq.addWidget', [
 			'appSlug' => 'my-app',
 			'pageId' => 'home',
 			'widgetType' => 'stats-block',
@@ -690,7 +690,7 @@ class WriteHandlerValidationTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn($this->ownerUser);
 		$this->container->expects($this->never())->method('get');
 
-		$result = $this->provider->invokeTool('buildiq.promoteVersion', [
+		$result = $this->provider->invokeApprovedTool('buildiq.promoteVersion', [
 			'sourceVersionSlug' => 'development',
 		]);
 
@@ -708,7 +708,7 @@ class WriteHandlerValidationTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn($this->ownerUser);
 		$this->container->expects($this->never())->method('get');
 
-		$result = $this->provider->invokeTool('buildiq.promoteVersion', [
+		$result = $this->provider->invokeApprovedTool('buildiq.promoteVersion', [
 			'appSlug' => 'my-app',
 			'sourceVersionSlug' => 'development',
 			'strategy' => 'invalid-strategy',
@@ -728,7 +728,7 @@ class WriteHandlerValidationTest extends TestCase {
 		$this->userSession->method('getUser')->willReturn(null);
 		$this->container->expects($this->never())->method('get');
 
-		$result = $this->provider->invokeTool('buildiq.promoteVersion', [
+		$result = $this->provider->invokeApprovedTool('buildiq.promoteVersion', [
 			'appSlug' => 'my-app',
 			'sourceVersionSlug' => 'development',
 		]);

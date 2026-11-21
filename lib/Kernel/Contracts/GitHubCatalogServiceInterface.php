@@ -53,7 +53,7 @@ interface GitHubCatalogServiceInterface {
 	 *
 	 * @return array<string,string> The file map (may be empty when the repo is unreachable).
 	 *
-	 * @spec openspec/changes/github-shop-catalogue/specs/github-shop-catalogue/spec.md
+	 * @spec openspec/changes/archive/2026-11-20-github-shop-catalogue/specs/github-shop-catalogue/spec.md
 	 */
 	public function fetchRepoFiles(RepoSource $source, ?string $actingUserId): array;
 
@@ -66,7 +66,7 @@ interface GitHubCatalogServiceInterface {
 	 *
 	 * @return array{outcome:string,cards:array<int,array<string,mixed>>,brokerUsed:bool,rateLimited:bool}
 	 *
-	 * @spec openspec/changes/github-shop-catalogue/specs/github-shop-catalogue/spec.md
+	 * @spec openspec/changes/archive/2026-11-20-github-shop-catalogue/specs/github-shop-catalogue/spec.md
 	 */
 	public function search(?string $query, ?string $actingUserId, ?string $credentialId = null): array;
 }//end interface

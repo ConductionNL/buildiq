@@ -16,8 +16,9 @@ executes.
 `webhook-dispatch` records keyed `type`, which OpenRegister's lifecycle executor
 cannot run, and a manual automation compiled to a rule set nothing evaluates.
 
-**Migration**: REQ-BQAR-001 below carries every other clause and scenario of this
-requirement unchanged, and replaces those two targets with one OpenRegister flow.
+**Migration**: REQ-BQAR-001 below, with its compile targets REQ-BQAR-001a to
+REQ-BQAR-001d, carries every other clause and scenario of this requirement
+unchanged, and replaces those two targets with one OpenRegister flow.
 Code annotations that cite REQ-AUTD-004 move to REQ-BQAR-001. The repair step of
 REQ-BQAR-007 moves the automations already compiled to the old targets.
 
@@ -26,44 +27,33 @@ REQ-BQAR-007 moves the automations already compiled to the old targets.
 ### Requirement: Automations compile deterministically to declarative primitives or one OpenRegister flow (REQ-BQAR-001)
 
 The system SHALL compile a saved automation (`AutomationCompilerService`)
-exclusively to existing declarative primitives or a listener-backed external
-integration per the matrix: event/transition + `send-notification` → an
-`x-openregister-notifications` entry on the target schema keyed
-`aut-<slug>-<n>`; an automation with a `manual` trigger, or holding a flow
-action (`object-op` or `webhook` outside an approval, or `rule-decision`) →
-one OpenRegister flow named `aut-<slug>`, saved through OpenRegister's
-`FlowService::save()`, bound in `Application.flows`, and named in
-`provenance.flowUuid`; lifecycle transition + a flow action → refused with the
-combination named, until OpenRegister can start a flow on a transition;
-schedule + `run-synchronization` → a `manifest.schedules[]` entry
-with id `aut-<slug>-<n>` and action `openconnector:synchronization`, valid
-against the existing schedules validator; event/lifecycle-transition + `approval` → an OpenRegister
-`ApprovalChain` named `aut-<slug>` (one step, `role` = the assignee group),
-upserted via OR's approval-chains API and instantiated against the trigger
-object's uuid via `ApprovalService::initializeChain()` at trigger-fire time;
-on-approve/on-reject follow-up actions dispatch through a typed listener on
-OR's `ApprovalStepApprovedEvent`/`ApprovalStepRejectedEvent`, never a new
-approval engine; event/lifecycle-transition + `generateDocument` → a
-validated action config (no compile-time Docudesk-side artifact: Docudesk's
-`correspondence/generate` call is stateless) dispatched at trigger-fire time
-by `DocumentGenerationListener` through `DocumentGenerationService`, which
-calls Docudesk's existing `POST /apps/docudesk/api/correspondence/generate`
-route impersonating the Application owner's session, never a Docudesk PHP
-class import (see `automation-document-action` and the modified
-`docudesk-document-templates` REQ-DDT-006). Compilation SHALL be
-deterministic (identical automation → identical artifacts) and idempotent
-(recompiling an unchanged automation changes nothing). No new imperative
-execution engine is introduced in buildiq.
+only to existing declarative primitives, a listener-backed integration or one
+OpenRegister flow (REQ-BQAR-001a to 001d), deterministically and idempotently.
+No new imperative execution engine is introduced in buildiq.
 
-@e2e exclude backend compilation contract: artifact shapes are asserted by
-PHPUnit against `AutomationCompilerService` (unit) and the OR round-trip
-(integration); the user-visible halves are covered by REQ-AUTD-001/002/005
-Playwright scenarios, and the schedules artifact is additionally visible in
-the existing SchedulesSection e2e surface
+@e2e exclude backend compilation contract, asserted by PHPUnit; the user-visible
+halves are REQ-AUTD-001/002/005's Playwright scenarios
 
 **ID:** REQ-BQAR-001 (replaces REQ-AUTD-004)
 
+#### Scenario: Recompilation is idempotent
+
+- **WHEN** an unchanged automation is compiled twice
+- **THEN** the second compile produces byte-identical artifacts and the
+  `provenance.compiledHash` is unchanged
+
+### Requirement: Notifications and scheduled syncs compile to their dialects (REQ-BQAR-001a)
+
+The system SHALL compile event/transition + `send-notification` to an
+`x-openregister-notifications` entry on the target schema keyed
+`aut-<slug>-<n>`, and schedule + `run-synchronization` to a
+`manifest.schedules[]` entry with id `aut-<slug>-<n>` and action
+`openconnector:synchronization`, valid against the existing schedules validator.
+
 #### Scenario: Event notification compiles to the notifications dialect
+
+@e2e exclude backend compilation contract, asserted by PHPUnit (see REQ-BQAR-001)
+
 
 - **WHEN** an enabled automation with trigger "object created" on `permit`
   and one `send-notification` action is compiled
@@ -74,6 +64,9 @@ the existing SchedulesSection e2e surface
 
 #### Scenario: Scheduled sync compiles to a schedules entry
 
+@e2e exclude backend compilation contract, asserted by PHPUnit (see REQ-BQAR-001)
+
+
 - **WHEN** an enabled automation with a Daily schedule trigger and a
   `run-synchronization` action is compiled
 - **THEN** the version's `manifest.schedules[]` contains an entry
@@ -81,7 +74,19 @@ the existing SchedulesSection e2e surface
   "openconnector:synchronization", arguments: {synchronizationId}}` that
   passes `validateSchedules`
 
+### Requirement: Flow actions compile to one OpenRegister flow (REQ-BQAR-001b)
+
+The system SHALL compile an automation with a `manual` trigger, or holding a flow
+action (`object-op` or `webhook` outside an approval, or `rule-decision`), to one
+OpenRegister flow named `aut-<slug>`, saved through OpenRegister's
+`FlowService::save()`, bound in `Application.flows`, and named in
+`provenance.flowUuid`. A lifecycle transition + a flow action SHALL be refused
+with the combination named, until OpenRegister can start a flow on a transition.
+
 #### Scenario: Manual automation compiles to an OpenRegister flow
+
+@e2e exclude backend compilation contract, asserted by PHPUnit (see REQ-BQAR-001)
+
 
 - **WHEN** a manual automation with a FEEL condition and an `object-op`
   action is compiled
@@ -93,19 +98,29 @@ the existing SchedulesSection e2e surface
 
 #### Scenario: A record step on a lifecycle transition is refused
 
+@e2e exclude backend compilation contract, asserted by PHPUnit (see REQ-BQAR-001)
+
+
 - **WHEN** an automation with trigger "lifecycle transition" and an
   `object-op` action is compiled
 - **THEN** `AutomationCompilerService` throws
   `UnsupportedAutomationCombinationException` naming the combination, and no
   lifecycle action record is written
 
-#### Scenario: Recompilation is idempotent
+### Requirement: Approval actions compile to an OpenRegister approval chain (REQ-BQAR-001c)
 
-- **WHEN** an unchanged automation is compiled twice
-- **THEN** the second compile produces byte-identical artifacts and the
-  `provenance.compiledHash` is unchanged
+The system SHALL compile event/lifecycle-transition + `approval` to an
+OpenRegister `ApprovalChain` named `aut-<slug>` (one step, `role` = the assignee
+group), upserted via OR's approval-chains API and instantiated against the
+trigger object's uuid via `ApprovalService::initializeChain()` at trigger-fire
+time. On-approve/on-reject follow-up actions SHALL dispatch through a typed
+listener on OR's `ApprovalStepApprovedEvent`/`ApprovalStepRejectedEvent`, never
+a new approval engine.
 
 #### Scenario: Approval action compiles to an OR approval chain
+
+@e2e exclude backend compilation contract, asserted by PHPUnit (see REQ-BQAR-001)
+
 
 - **WHEN** an enabled automation with trigger "object created" on
   `permit-application` and one `approval` action assigned to group
@@ -116,6 +131,9 @@ the existing SchedulesSection e2e surface
 
 #### Scenario: Trigger firing initialises an approval step
 
+@e2e exclude backend compilation contract, asserted by PHPUnit (see REQ-BQAR-001)
+
+
 - **WHEN** an object is created that matches an enabled automation's
   `approval` action trigger
 - **THEN** `ApprovalService::initializeChain()` is called for that object's
@@ -123,12 +141,27 @@ the existing SchedulesSection e2e surface
 
 #### Scenario: Approval outcome dispatches the configured follow-up
 
+@e2e exclude backend compilation contract, asserted by PHPUnit (see REQ-BQAR-001)
+
+
 - **WHEN** an `ApprovalStep` compiled from an automation's `approval` action
   is approved
 - **THEN** the automation's on-approve follow-up actions are dispatched
 - **AND** no on-reject follow-up action is dispatched
 
+### Requirement: Document generation runs through Docudesk's route (REQ-BQAR-001d)
+
+The system SHALL compile event/lifecycle-transition + `generateDocument` to a
+validated action config, dispatched at trigger-fire time by
+`DocumentGenerationListener` through `DocumentGenerationService`, which calls
+Docudesk's `POST /apps/docudesk/api/correspondence/generate` route impersonating
+the Application owner's session, never a Docudesk PHP class import (see
+`automation-document-action` and `docudesk-document-templates` REQ-DDT-006).
+
 #### Scenario: Document-generation action fires via the pinned Docudesk route
+
+@e2e exclude backend compilation contract, asserted by PHPUnit (see REQ-BQAR-001)
+
 
 - **WHEN** an object matching an enabled automation's `generateDocument`
   trigger is created/transitioned
@@ -138,6 +171,9 @@ the existing SchedulesSection e2e surface
 - **AND** no Docudesk PHP class is imported anywhere in the call path
 
 #### Scenario: Missing Docudesk fails the compile, not the runtime
+
+@e2e exclude backend compilation contract, asserted by PHPUnit (see REQ-BQAR-001)
+
 
 - **WHEN** an automation carrying a `generateDocument` action is compiled on
   an instance where Docudesk is absent

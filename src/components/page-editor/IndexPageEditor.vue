@@ -85,6 +85,14 @@
 				:actions="writeActions"
 				:readOnly="databaseReadOnly"
 				@set="setWriteAction" />
+			<label class="index-page-editor__inline">
+				<input
+					type="checkbox"
+					data-testid="index-page-allow-export"
+					:checked="config.allowExport === true"
+					@change="onExportToggle($event.target.checked)" />
+				{{ t('buildiq', 'Export to CSV or Excel') }}
+			</label>
 			<ActionBuilder
 				:modelValue="config.actions || []"
 				:pages="pages"
@@ -250,7 +258,7 @@ export default {
 		 * The config keys a read-only database switches off on an index page.
 		 *
 		 * @return {string[]}
-		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-pages-follow-the-databases-write-setting-req-bqdb-002
+		 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-pages-follow-the-databases-write-setting-req-bqdb-002
 		 */
 		writeActionKeys() {
 			return ['showAdd', 'showEditAction', 'showDeleteAction']
@@ -260,7 +268,7 @@ export default {
 		 * The write action switches of an index page.
 		 *
 		 * @return {Array<{key: string, label: string}>}
-		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-pages-follow-the-databases-write-setting-req-bqdb-002
+		 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-pages-follow-the-databases-write-setting-req-bqdb-002
 		 */
 		writeActions() {
 			return [
@@ -421,6 +429,19 @@ export default {
 				delete next.inlineSearch
 			}
 			this.$emit('update:config', next)
+		},
+
+		/**
+		 * Offer the list's Export menu (CSV or Excel through OpenRegister's
+		 * export), or not. Off stores `allowExport: false`, so the maker's
+		 * choice survives a later change of the default.
+		 *
+		 * @param {boolean} enabled - the checkbox's new state.
+		 * @return {void}
+		 * @spec openspec/changes/capability-requirements-backfill/specs/openbuild-page-designer/spec.md#requirement-a-list-page-exports-its-records-to-csv-or-excel-req-bqcv-004
+		 */
+		onExportToggle(enabled) {
+			this.$emit('update:config', { ...this.config, allowExport: enabled === true })
 		},
 
 		/**

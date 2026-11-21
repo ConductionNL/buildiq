@@ -232,8 +232,20 @@
 			<!-- Step 5: result -->
 			<section v-else-if="step === 5" class="ob-import-wizard__panel">
 				<h3 class="ob-import-wizard__heading">
-					{{ t('buildiq', 'Import complete') }}
+					{{
+						undone
+							? t('buildiq', 'Import undone')
+							: t('buildiq', 'Import complete')
+					}}
 				</h3>
+				<NcNoteCard v-if="undone" type="success" data-testid="import-undone">
+					{{
+						t(
+							'buildiq',
+							'The import was undone. The records it created have been removed.',
+						)
+					}}
+				</NcNoteCard>
 				<div class="ob-import-wizard__counts">
 					<div class="ob-import-wizard__count">
 						<span class="ob-import-wizard__count-n">{{
@@ -454,6 +466,7 @@ export default {
 			sampleRows: [],
 			importing: false,
 			undoing: false,
+			undone: false,
 			error: '',
 			result: {
 				importJobId: null,
@@ -827,10 +840,13 @@ export default {
 		},
 
 		/**
-		 * Undo the import via OpenRegister's rollback endpoint.
+		 * Undo the import via OpenRegister's rollback endpoint. On success the
+		 * summary says the import was undone; on failure the error shows and the
+		 * summary (and its Undo) stays, because the imported records stay.
 		 *
 		 * @return {Promise<void>}
 		 * @spec openspec/changes/archive/2026-07-07-openbuild-data-import-wizard/tasks.md#2.1
+		 * @spec openspec/changes/capability-requirements-backfill/specs/data-import-wizard/spec.md#requirement-a-maker-undoes-an-import-from-its-summary-req-bqcv-022
 		 */
 		async undo() {
 			if (!this.result.importJobId) {
@@ -847,6 +863,7 @@ export default {
 					updated: 0,
 					skipped: 0,
 				}
+				this.undone = true
 				this.$emit('imported', { rolledBack: true })
 			} catch (e) {
 				this.error = this.readError(e)

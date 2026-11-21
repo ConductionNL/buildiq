@@ -19,7 +19,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/ai-agents-knowledge-and-run-trace/specs/agent-workspace/spec.md#requirement-a-run-keeps-its-model-steps-req-bqag-004
+ * @spec openspec/changes/archive/2026-11-20-ai-agents-knowledge-and-run-trace/specs/agent-workspace/spec.md#requirement-a-run-keeps-its-model-steps-req-bqag-004
  */
 
 declare(strict_types=1);
@@ -34,7 +34,7 @@ use DateTimeImmutable;
  * answer capped at 20,000 characters, and the parse or validator message that
  * caused a repair.
  *
- * @spec openspec/changes/ai-agents-knowledge-and-run-trace/specs/agent-workspace/spec.md#requirement-a-run-keeps-its-model-steps-req-bqag-004
+ * @spec openspec/changes/archive/2026-11-20-ai-agents-knowledge-and-run-trace/specs/agent-workspace/spec.md#requirement-a-run-keeps-its-model-steps-req-bqag-004
  */
 final class ModelStep {
 
@@ -104,7 +104,7 @@ final class ModelStep {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/ai-agents-knowledge-and-run-trace/specs/agent-workspace/spec.md#requirement-a-run-keeps-its-model-steps-req-bqag-004
+	 * @spec openspec/changes/archive/2026-11-20-ai-agents-knowledge-and-run-trace/specs/agent-workspace/spec.md#requirement-a-run-keeps-its-model-steps-req-bqag-004
 	 */
 	public function __construct(int $attempt, string $prompt) {
 		$this->attempt   = $attempt;
@@ -120,7 +120,7 @@ final class ModelStep {
 	 *
 	 * @return array<string, mixed>
 	 *
-	 * @spec openspec/changes/ai-agents-knowledge-and-run-trace/specs/agent-workspace/spec.md#requirement-a-run-keeps-its-model-steps-req-bqag-004
+	 * @spec openspec/changes/archive/2026-11-20-ai-agents-knowledge-and-run-trace/specs/agent-workspace/spec.md#requirement-a-run-keeps-its-model-steps-req-bqag-004
 	 */
 	public function error(string $message): array {
 		return $this->toArray(status: self::STATUS_ERROR, answer: ['', $message]);
@@ -137,7 +137,7 @@ final class ModelStep {
 	 *
 	 * @return array<string, mixed>
 	 *
-	 * @spec openspec/changes/ai-agents-knowledge-and-run-trace/specs/agent-workspace/spec.md#requirement-a-run-keeps-its-model-steps-req-bqag-004
+	 * @spec openspec/changes/archive/2026-11-20-ai-agents-knowledge-and-run-trace/specs/agent-workspace/spec.md#requirement-a-run-keeps-its-model-steps-req-bqag-004
 	 */
 	public function answered(array $result): array {
 		$status = self::STATUS_SUCCESSFUL;

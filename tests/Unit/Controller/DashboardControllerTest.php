@@ -401,4 +401,33 @@ class DashboardControllerTest extends TestCase {
 		$controller->page();
 		$this->assertFalse($published['offlineAppsAllowed']);
 	}//end testOfflineIsPublishedOffWhenTheSettingCannotBeRead()
+
+	/**
+	 * The SPA publishes whether script steps are allowed, and off when the setting cannot be read.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-composer-offers-a-script-step-req-bqss-001
+	 */
+	public function testTheScriptStepSettingIsPublished(): void {
+		$published = $this->captureInitialState();
+		$on = $this->createMock(originalClassName: \OCA\Buildiq\Kernel\Contracts\SettingsServiceInterface::class);
+		$on->method('scriptStepsAllowed')->willReturn(true);
+		$down = $this->createMock(originalClassName: \OCA\Buildiq\Kernel\Contracts\SettingsServiceInterface::class);
+		$down->method('scriptStepsAllowed')->willThrowException(new \RuntimeException('config down'));
+
+		foreach ([[$on, true], [$down, false], [null, false]] as [$settings, $expected]) {
+			$controller = new DashboardController(
+				request: $this->request,
+				initialState: $this->initialState,
+				userSession: $this->userSession,
+				groupManager: $this->groupManager,
+				navigationManager: $this->navigationManager,
+				rasteriser: $this->createMock(originalClassName: \OCA\Buildiq\Service\Icon\SvgRasteriser::class),
+				settings: $settings
+			);
+			$controller->page();
+			$this->assertSame(expected: $expected, actual: $published['scriptStepsAllowed']);
+		}
+	}//end testTheScriptStepSettingIsPublished()
 }//end class

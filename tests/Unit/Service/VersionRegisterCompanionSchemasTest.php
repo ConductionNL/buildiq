@@ -140,7 +140,7 @@ final class VersionRegisterCompanionSchemasTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/github-app-repo-format/specs/github-app-repo-format/spec.md
+	 * @spec openspec/changes/archive/2026-11-21-github-app-repo-format/specs/github-app-repo-format/spec.md
 	 */
 	public function testTheVersionsRegisterIsTheOneRead(): void {
 		$this->serialize(
@@ -163,7 +163,7 @@ final class VersionRegisterCompanionSchemasTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/github-app-repo-format/specs/github-app-repo-format/spec.md
+	 * @spec openspec/changes/archive/2026-11-21-github-app-repo-format/specs/github-app-repo-format/spec.md
 	 */
 	public function testTheSchemasOfAVersionedRegisterArePublished(): void {
 		$files = $this->serialize(
@@ -190,7 +190,7 @@ final class VersionRegisterCompanionSchemasTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/github-app-repo-format/specs/github-app-repo-format/spec.md
+	 * @spec openspec/changes/archive/2026-11-21-github-app-repo-format/specs/github-app-repo-format/spec.md
 	 */
 	public function testAVersionWithoutARegisterFallsBackToTheSlug(): void {
 		$files = $this->serialize(

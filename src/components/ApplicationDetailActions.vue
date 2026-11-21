@@ -147,7 +147,15 @@ import applicationContext from '../mixins/applicationContext.js'
 import { buildVersionedRoute } from '../router/helpers.js'
 import { appI18n, withLanguages } from '../services/appLanguages.js'
 import { fetchProductionRegister } from '../services/appRegister.js'
+import {
+	demoRecordCount,
+	fillDemoRecords,
+	fillMessage,
+	removeDemoRecords,
+	removeMessage,
+} from '../services/demoRecords.js'
 import { withOffline } from '../services/offlineManifest.js'
+import { loadSharedFlowOptions, withSharedGroup } from '../services/sharedAutomations.js'
 
 // Vue 3 requires `defineAsyncComponent()` around a lazy import. The bare
 // `() => import(…)` form is Vue 2 syntax: Vue 3 accepts a plain function as a
@@ -365,6 +373,16 @@ export default {
 
 	computed: {
 		/**
+		 * The app's slug, '' before it is loaded.
+		 *
+		 * @return {string} The slug.
+		 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-be-shared-with-other-apps-req-bqsf-003
+		 */
+		obAppSlug() {
+			return (this.obApp && this.obApp.slug) || ''
+		},
+
+		/**
 		 * The whole action cluster as CnActionButtons descriptors, in the order
 		 * they should appear: Open app (primary, with the version list as its
 		 * chevron), then the app-level actions, then the chrome editors, then
@@ -439,6 +457,7 @@ export default {
 						onSelect: () => this.openSaveAsTemplate(),
 					}),
 				],
+				...this.demoRecordEntries(),
 				[
 					this.canCopyApp,
 					() => ({
@@ -758,6 +777,12 @@ export default {
 					label: t('buildiq', 'Automations'),
 					icon: 'Sitemap',
 					onSelect: () => this.openAutomations(),
+				},
+				{
+					id: 'app-business-rules',
+					label: t('buildiq', 'Business rules'),
+					icon: 'ScaleBalance',
+					onSelect: () => this.openBusinessRules(),
 				},
 				{
 					id: 'app-agents',
@@ -1150,6 +1175,28 @@ export default {
 		},
 
 		/**
+		 * Open the business rules page with this app preselected: the rule
+		 * sets this app owns and the global ones.
+		 *
+		 * Like automations, the page has no menu entry of its own; rules
+		 * belong to an app and are reached from it.
+		 *
+		 * @return {void}
+		 *
+		 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-the-app-leads-to-its-business-rules-req-bqar-008
+		 */
+		openBusinessRules() {
+			const slug = this.obApp && this.obApp.slug
+			if (!slug) {
+				return
+			}
+
+			this.$router
+				.push({ name: 'BusinessRules', query: { app: slug } })
+				.catch(() => {})
+		},
+
+		/**
 		 * Open the Agents page on this app (REQ-BQAG-003).
 		 *
 		 * Like automations, agents belong to an app and have no menu entry of
@@ -1158,7 +1205,7 @@ export default {
 		 *
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/ai-agents-knowledge-and-run-trace/specs/agent-workspace/spec.md#requirement-the-app-detail-page-leads-to-its-agents-req-bqag-003
+		 * @spec openspec/changes/archive/2026-11-20-ai-agents-knowledge-and-run-trace/specs/agent-workspace/spec.md#requirement-the-app-detail-page-leads-to-its-agents-req-bqag-003
 		 */
 		openAgents() {
 			const slug = this.obApp && this.obApp.slug
@@ -1198,6 +1245,7 @@ export default {
 		 * @return {Promise<void>}
 		 *
 		 * @spec openspec/specs/application-detail-ui/spec.md
+		 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-be-shared-with-other-apps-req-bqsf-003
 		 */
 		async onSettingsOpen(open) {
 			this.settingsOpen = open
@@ -1210,11 +1258,13 @@ export default {
 
 			this.loadingFlows = true
 			try {
-				const [flows, schemas] = await Promise.all([
+				const [flows, schemas, shared] = await Promise.all([
 					this.fetchFlowOptions(),
 					this.loadTemplateSchemas().catch(() => []),
+					// Shared automations of other apps join the picker (REQ-BQSF-003).
+					loadSharedFlowOptions(this.obAppSlug),
 				])
-				this.availableFlows = flows
+				this.availableFlows = withSharedGroup(flows, shared, t('buildiq', 'Shared automations'))
 				this.flowSchemas = schemaOptions(schemas)
 			} catch (e) {
 				this.error = `${t('buildiq', 'Failed to load flows')}: ${e.message || e}`
@@ -1308,6 +1358,57 @@ export default {
 			return flowList(data)
 				.map(toFlowOption)
 				.filter((option) => !!option.value)
+		},
+
+		/**
+		 * The "Fill with demo records" and "Remove demo records" entries, for
+		 * an owner or editor of an app with an id (REQ-BQCV-030). Remove is
+		 * offered only while the app lists demo records.
+		 *
+		 * @return {Array<Array>} `[shown, descriptor]` pairs for `shownEntries`.
+		 * @spec openspec/changes/capability-requirements-backfill/specs/application-creation-wizard/spec.md#requirement-a-maker-fills-a-new-app-with-demo-records-req-bqcv-030
+		 */
+		demoRecordEntries() {
+			const allowed = this.canEditVersions && Boolean(this.obAppUuid)
+			return [
+				[
+					allowed,
+					() => ({
+						id: 'app-demo-records-fill',
+						label: t('buildiq', 'Fill with demo records'),
+						icon: 'DatabasePlusOutline',
+						onSelect: () => this.onDemoRecords(fillDemoRecords, fillMessage),
+					}),
+				],
+				[
+					allowed && demoRecordCount(this.obApp) > 0,
+					() => ({
+						id: 'app-demo-records-remove',
+						label: t('buildiq', 'Remove demo records'),
+						icon: 'DatabaseRemoveOutline',
+						onSelect: () => this.onDemoRecords(removeDemoRecords, removeMessage),
+					}),
+				],
+			]
+		},
+
+		/**
+		 * Fill or remove the demo records, show the outcome, and re-read the app
+		 * so its list of demo records is current.
+		 *
+		 * @param {Function} request `fillDemoRecords` or `removeDemoRecords`.
+		 * @param {Function} message The outcome message for the answer.
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/capability-requirements-backfill/specs/application-creation-wizard/spec.md#requirement-a-maker-fills-a-new-app-with-demo-records-req-bqcv-030
+		 */
+		async onDemoRecords(request, message) {
+			this.error = ''
+			try {
+				this.toast = message(await request(this.obAppUuid))
+				await this.obLoadApp(true)
+			} catch (e) {
+				this.error = `${t('buildiq', 'Failed to change the demo records')}: ${e.message || e}`
+			}
 		},
 
 		/**

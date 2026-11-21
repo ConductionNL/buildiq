@@ -44,6 +44,7 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Service;
 
+use OCA\Buildiq\Exception\InvalidServedManifestException;
 use OCA\Buildiq\Kernel\Contracts\ManifestResolverServiceInterface;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
@@ -71,8 +72,12 @@ class ManifestResolverService implements ManifestResolverServiceInterface {
 	 * @param PermissionResolver $permissionResolver Shared principal-grammar resolver (H1/H2 fix)
 	 * @param ManifestWidgetRoleFilter $widgetRoleFilter Removes page widgets by `roles`
 	 * @param AppOrganisationGuard|null $organisationGuard Hides another organisation's scoped app; without it a scoped app is hidden from everyone.
+	 * @param ManifestBaseResolver|null $baseResolver Merges a version's `manifestDelta` over its `baseRef`;
+	 *                                                without it every version serves its stored blob.
 	 *
 	 * @return void
+	 *
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-4.1
 	 */
 	public function __construct(
 		private readonly ObjectServiceInterface $objectService,
@@ -82,6 +87,7 @@ class ManifestResolverService implements ManifestResolverServiceInterface {
 		private readonly PermissionResolver $permissionResolver,
 		private readonly ManifestWidgetRoleFilter $widgetRoleFilter,
 		private readonly ?AppOrganisationGuard $organisationGuard = null,
+		private readonly ?ManifestBaseResolver $baseResolver = null,
 	) {
 	}//end __construct()
 
@@ -161,8 +167,53 @@ class ManifestResolverService implements ManifestResolverServiceInterface {
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-70
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-71
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-4.1
 	 */
 	public function resolve(string $appSlug, ?string $versionSlug, ?IUser $caller): ?array {
+		return $this->resolveWith(
+			appSlug: $appSlug,
+			versionSlug: $versionSlug,
+			caller: $caller,
+			serve: fn (array $version): mixed => $this->servedManifest(version: $version, caller: $caller)
+		);
+	}//end resolve()
+
+	/**
+	 * Resolve the manifest the manifest endpoint serves, as {@see resolve()} does,
+	 * refusing a delta-mode manifest that lacks a part the renderer needs.
+	 *
+	 * @param string      $appSlug     The virtual-app slug from the URL.
+	 * @param string|null $versionSlug Optional version slug.
+	 * @param IUser|null  $caller      The authenticated user, or null.
+	 *
+	 * @return array<string, mixed>|null The manifest payload, or null → caller maps to 404.
+	 *
+	 * @throws InvalidServedManifestException When a delta-mode manifest cannot render.
+	 *
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-4.3
+	 */
+	public function resolveServed(string $appSlug, ?string $versionSlug, ?IUser $caller): ?array {
+		return $this->resolveWith(
+			appSlug: $appSlug,
+			versionSlug: $versionSlug,
+			caller: $caller,
+			serve: fn (array $version): mixed => $this->checkedServedManifest(version: $version, caller: $caller)
+		);
+	}//end resolveServed()
+
+	/**
+	 * The body of {@see resolve()}; `$serve` reads the manifest a found version serves.
+	 *
+	 * @param string      $appSlug     The virtual-app slug.
+	 * @param string|null $versionSlug Optional version slug.
+	 * @param IUser|null  $caller      The caller.
+	 * @param callable    $serve       Reads the manifest a version serves.
+	 *
+	 * @return array<string, mixed>|null
+	 *
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-4.3
+	 */
+	private function resolveWith(string $appSlug, ?string $versionSlug, ?IUser $caller, callable $serve): ?array {
 		// Step 1 — resolve Application by slug, within the caller's organisation scope.
 		$application = $this->findVisibleApplication(appSlug: $appSlug, caller: $caller);
 		if ($application === null) {
@@ -171,11 +222,11 @@ class ManifestResolverService implements ManifestResolverServiceInterface {
 
 		// Step 2a — no versionSlug: return production manifest (accessible to all).
 		if ($versionSlug === null) {
-			return $this->resolveProductionManifest(application: $application, appSlug: $appSlug);
+			return $this->resolveProductionManifest(application: $application, appSlug: $appSlug, serve: $serve);
 		}
 
 		if ($versionSlug === '') {
-			return $this->resolveProductionManifest(application: $application, appSlug: $appSlug);
+			return $this->resolveProductionManifest(application: $application, appSlug: $appSlug, serve: $serve);
 		}
 
 		// Step 2b — named versionSlug: look up the ApplicationVersion.
@@ -197,8 +248,9 @@ class ManifestResolverService implements ManifestResolverServiceInterface {
 			return null;
 		}
 
-		// Step 4 — return the resolved ApplicationVersion's manifest payload.
-		$manifest = ($version['manifest'] ?? null);
+		// Step 4 — return the resolved ApplicationVersion's manifest payload:
+		// its blob, or its manifestDelta merged over its baseRef (app-delta-override D4).
+		$manifest = $serve($version);
 		if (is_array($manifest) === false) {
 			$this->logger->warning(
 				'ManifestResolverService: ApplicationVersion has no manifest for app={appSlug} version={versionSlug}',
@@ -208,7 +260,49 @@ class ManifestResolverService implements ManifestResolverServiceInterface {
 		}
 
 		return $manifest;
-	}//end resolve()
+	}//end resolveWith()
+
+	/**
+	 * The manifest one ApplicationVersion serves: its blob, or its delta merged over its base.
+	 *
+	 * @param array<string, mixed> $version The ApplicationVersion.
+	 * @param IUser|null           $caller  The caller, whose organisation scope limits the apps a base may name.
+	 *
+	 * @return mixed The manifest; null when the version has none.
+	 *
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-4.2
+	 */
+	public function servedManifest(array $version, ?IUser $caller): mixed {
+		return ($this->baseResolver?->manifestOf(
+			version: $version,
+			visible: fn (array $base): bool => $this->visibleToCaller(application: $base, caller: $caller)
+		) ?? ($version['manifest'] ?? null));
+	}//end servedManifest()
+
+	/**
+	 * The manifest a version serves; a delta merged over a base must pass {@see ServedManifestShape}.
+	 *
+	 * @param array<string, mixed> $version The ApplicationVersion.
+	 * @param IUser|null           $caller  The caller.
+	 *
+	 * @return mixed The manifest; null when the version has none. A stored blob is served as stored.
+	 *
+	 * @throws InvalidServedManifestException When a merged manifest lacks a part the renderer needs.
+	 *
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-4.3
+	 */
+	private function checkedServedManifest(array $version, ?IUser $caller): mixed {
+		$resolved = $this->baseResolver?->resolveVersion(
+			version: $version,
+			visible: fn (array $base): bool => $this->visibleToCaller(application: $base, caller: $caller)
+		);
+		$manifest = ($resolved['manifest'] ?? ($version['manifest'] ?? null));
+		if (($resolved['merged'] ?? false) === true && is_array($manifest) === true) {
+			(new ServedManifestShape())->assertServable(manifest: $manifest);
+		}
+
+		return $manifest;
+	}//end checkedServedManifest()
 
 	/**
 	 * Apply the RBAC gate for non-production version access.
@@ -396,12 +490,15 @@ class ManifestResolverService implements ManifestResolverServiceInterface {
 	 *
 	 * @param array<string, mixed> $application The normalised Application data.
 	 * @param string $appSlug The app slug (for logging).
+	 * @param callable $serve Reads the manifest a version serves, in the caller's organisation scope.
 	 *
 	 * @return array<string, mixed>|null
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-70
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-4.1
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-4.3
 	 */
-	private function resolveProductionManifest(array $application, string $appSlug): ?array {
+	private function resolveProductionManifest(array $application, string $appSlug, callable $serve): ?array {
 		$productionVersion = ($application['productionVersion'] ?? null);
 
 		// ProductionVersion is a UUID or embedded object.
@@ -409,14 +506,14 @@ class ManifestResolverService implements ManifestResolverServiceInterface {
 			// UUID reference — fetch the ApplicationVersion.
 			$version = $this->findVersionByUuid(uuid: $productionVersion);
 			if ($version !== null) {
-				$manifest = ($version['manifest'] ?? null);
+				$manifest = $serve($version);
 				if (is_array($manifest) === true) {
 					return $manifest;
 				}
 			}
 		} elseif (is_array($productionVersion) === true) {
-			// Inline embedded object — use manifest directly.
-			$manifest = ($productionVersion['manifest'] ?? null);
+			// Inline embedded object — use its manifest, merged over its base when it has one.
+			$manifest = $serve($productionVersion);
 			if (is_array($manifest) === true) {
 				return $manifest;
 			}

@@ -21,12 +21,79 @@ menu entry, mirroring the Business rules page).
 
 ## What compiles to what
 
-| Trigger ↓ / Action → | Send notification | Run synchronization | Object-op | Webhook | Require approval | Generate document |
-| --- | --- | --- | --- | --- | --- | --- |
-| Object created / updated / deleted | ✅ notifications dialect entry | ⛔ v1.1 | ⛔ v1.1 | ⛔ v1.1 | ✅ OR `ApprovalChain` | ✅ owner-impersonated Docudesk call |
-| Lifecycle transition | ✅ notifications dialect entry | ⛔ v1.1 | ✅ lifecycle `related-object-upsert` action | ✅ lifecycle `webhook-dispatch` action | ✅ OR `ApprovalChain` | ✅ owner-impersonated Docudesk call |
-| Schedule | ⛔ v1.1 | ✅ `manifest.schedules[]` entry | ⛔ v1.1 | ⛔ v1.1 | ⛔ no bound object | ⛔ no bound object |
-| Manual | ✅ rules backend | ⛔ v1.1 (no verified "run now" API — see below) | ✅ rules backend | ✅ rules backend | ⛔ no bound object | ⛔ no bound object |
+| Trigger ↓ / Action → | Send notification | Run synchronization | Record step (object-op) | Webhook | Decide with a rule set | Require approval | Generate document |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Object created / updated / deleted | ✅ notifications dialect entry (a flow node when the automation is a flow) | ⛔ v1.1 | ✅ flow | ✅ flow | ✅ flow | ✅ OR `ApprovalChain` | ✅ owner-impersonated Docudesk call |
+| Lifecycle transition | ✅ notifications dialect entry | ⛔ v1.1 | ⛔ no flow trigger yet | ⛔ no flow trigger yet | ⛔ no flow trigger yet | ✅ OR `ApprovalChain` | ✅ owner-impersonated Docudesk call |
+| Schedule | ⛔ v1.1 | ✅ `manifest.schedules[]` entry | ⛔ v1.1 | ⛔ v1.1 | ⛔ v1.1 | ⛔ no bound object | ⛔ no bound object |
+| Manual | ✅ flow | ⛔ v1.1 (no verified "run now" API — see below) | ✅ flow | ✅ flow | ✅ flow | ⛔ no bound object | ⛔ no bound object |
+
+### Which steps run in a flow
+
+An automation with a **manual** trigger, or with a record step, a webhook or a
+"Decide with a rule set" step, compiles to **one OpenRegister flow** named
+`aut-<slug>`: the trigger, then the condition (if any), then one node per step
+in order. The flow is bound in the app's `Application.flows` and named in the
+automation's `provenance.flowUuid`; enabling, disabling and deleting the
+automation enables, disables and deletes the flow.
+
+- **Record step** writes an object of one of the app version's own schemas
+  (create, or update of the record named by its match). A schema outside the
+  app is refused.
+- **Webhook** calls a configured **integriq source** on a path, posting the
+  payload template as the body. There is no free URL field any more: a webhook
+  without a source is refused on save ("Pick a source for this webhook."), and
+  without integriq the step is disabled with that reason. An older webhook
+  that still holds only a URL shows it and asks for a source.
+- **Decide with a rule set** runs a decision table rule set on the record,
+  with each table input read from the record field you map it to, and writes
+  the decision to the field you name. A condition-action rule set cannot
+  decide and is refused. The automation's provenance records the rule set
+  version the flow holds; activating a new version of that rule set compiles
+  the automations that use it again, so they follow the active version.
+- **Conditions** in a flow gate the steps: a FEEL condition becomes a filter,
+  and a rule-set condition runs its decision table and continues only when
+  the outcome is `true`.
+- **Approval** and **Generate document** keep their own backends and cannot
+  share an automation with a flow step yet; the editor shows the refusal.
+- A flow step on a **lifecycle transition** is refused ("Record and webhook
+  steps cannot run on a lifecycle transition yet.") until OpenRegister can
+  start a flow on a transition. Automations compiled before this to lifecycle
+  records nothing ran were moved to flows, or disabled with the reason shown
+  on the Automations page.
+
+A manual automation can be run from a record through the **Run automation**
+action, once OpenRegister can start a manual flow for an app user.
+
+### Starting an automation from mail or from another system
+
+Two triggers start an automation from outside Nextcloud. Both run only flow
+steps (record, webhook, notification and "Decide with a rule set"); an
+approval, document or synchronization step is refused. Both need the
+**Integriq** app: without it they are shown but disabled, with the reason.
+Buildiq itself opens no address and reads no mailbox; integriq does both and
+checks every caller.
+
+- **Email received** listens to an integriq **mailbox** you can read. You can
+  narrow it to mail from one sender and to subjects containing a text. On
+  apply, buildiq writes one integriq event subscription on that mailbox whose
+  action starts the automation's flow; disabling the automation pauses the
+  subscription, deleting it removes the subscription. A run gets the mail's
+  `from`, `to`, `subject`, `receivedAt`, `bodyText` and attachment names as
+  input, and acts as you, the person who applied it, with your rights.
+- **Webhook called** gives the automation an address served by integriq,
+  `…/apps/integriq/api/endpoint/buildiq/<app>/<automation>`, shown in the
+  editor once the automation has a name. The calling system signs in with an
+  **API key**; integriq issues and shows the key ("Show key in Integriq"),
+  buildiq never stores it. A call without a valid key is refused by integriq
+  and starts nothing; calls are rate limited. A run gets the request body as
+  input (give an example body to see its fields in the editor) and acts as
+  the account bound to the key.
+
+The integriq objects written (the subscription, or the endpoint with its rule
+and consumer) are listed in the automation's `provenance.inbound`; delete and
+recompile touch exactly those. When integriq cannot take them, applying the
+automation fails with the reason and nothing is written, not even the flow.
 
 **Require approval** compiles to an OpenRegister `ApprovalChain` (one step,
 group-only assignee) instantiated against the fired object's uuid at
@@ -50,9 +117,8 @@ naming the unsupported combination — nothing is ever silently dropped or
 partially compiled.
 
 **Conditions** (a FEEL expression, or a reference to an existing rule set)
-are v1-supported only on the **manual** trigger — the rules engine is the
-only existing primitive that evaluates FEEL. A condition on any other
-trigger is blocked the same way.
+are offered only on the **manual** trigger in the editor; a manual automation
+compiles to a flow, where the condition gates the steps.
 
 > **Deviation from the original design table:** `manual` +
 > `run-synchronization` is blocked in this release. No primitive to invoke an
@@ -61,6 +127,22 @@ trigger is blocked the same way.
 > reconciler) — see `lib/Service/AutomationCompilerService.php`'s class
 > docblock for the full rationale. This is a documented v1.1 follow-up, not a
 > silent gap.
+
+## Ask AI steps
+
+The *Ask AI* action lets a language model classify, summarise, extract,
+translate or follow an instruction over named fields of the record, and writes
+the answer back onto it. It runs on *Object created*, on *Object updated*
+(only when a source field changed) and on *Manual*, and needs Hermiq. Which
+fields are sent, the presets and AI fields in the schema designer are on
+[AI steps and AI fields](ai-steps-and-fields.md).
+
+## Script steps
+
+The *Run a script* action runs JavaScript over the flow's items in
+OpenRegister's code runner, for what the built-in steps cannot express. Only
+app owners may write one, and only while an administrator allows script steps.
+Where scripts run and what they can reach are on [Script steps](script-steps.md).
 
 ## Provenance and drift
 

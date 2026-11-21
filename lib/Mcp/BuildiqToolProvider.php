@@ -42,6 +42,8 @@ namespace OCA\Buildiq\Mcp;
 use OCA\Buildiq\Kernel\Contracts\BuildiqToolProviderInterface;
 use OCA\Buildiq\Kernel\Contracts\PermissionResolverInterface;
 use OCA\Buildiq\Mcp\Handler\AddWidgetHandler;
+use OCA\Buildiq\Service\AgentPlanService;
+use OCA\Buildiq\Service\AgentPlanSteps;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\AuditTrailMapper;
 use OCA\OpenRegister\Mcp\IMcpToolProvider;
@@ -49,6 +51,7 @@ use OCP\IGroupManager;
 use OCP\IUserSession;
 use Psr\Container\ContainerInterface;
 use Psr\Log\LoggerInterface;
+use Throwable;
 
 /**
  * Buildiq MCP Tool Provider — thin dispatcher to per-tool handler classes.
@@ -334,9 +337,26 @@ class BuildiqToolProvider implements IMcpToolProvider, BuildiqToolProviderInterf
 	 * Return the catalogue of MCP tools exposed by this provider.
 	 *
 	 * @return array<int, array<string, mixed>>
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) AgentPlanSteps is pure step logic with no collaborators.
 	 */
 	public function getTools(): array {
-		return self::TOOL_DESCRIPTORS;
+		$tools = [];
+		foreach (self::TOOL_DESCRIPTORS as $tool) {
+			if (AgentPlanSteps::isWriteTool(toolId: $tool['id']) === true) {
+				$tool['description'] .= ' Writes only under a plan a person approved: pass planId.'
+					. ' A call without planId writes nothing and submits this call as a plan for an owner or editor of the app to approve in Buildiq.';
+				$tool['inputSchema']['properties']['planId'] = [
+					'type' => 'string',
+					'maxLength' => 64,
+					'description' => 'The id of the approved plan this call is a step of.',
+				];
+			}
+
+			$tools[] = $tool;
+		}
+
+		return $tools;
 	}//end getTools()
 
 	/**
@@ -359,14 +379,158 @@ class BuildiqToolProvider implements IMcpToolProvider, BuildiqToolProviderInterf
 	}//end getToolDescriptors()
 
 	/**
-	 * Dispatch an MCP tool invocation to the matching handler.
+	 * Dispatch an MCP tool invocation from an outside agent.
+	 *
+	 * Reads run at once. A write runs only when `arguments.planId` names a plan
+	 * a person with a write role on the app approved, the caller is the user
+	 * who submitted it, and the call matches one of its unused steps. A write
+	 * without a planId writes nothing and is submitted as a one-step plan.
 	 *
 	 * @param string $toolId Fully qualified tool id (e.g. "buildiq.listApps").
 	 * @param array<string, mixed> $arguments Raw tool arguments as supplied by the MCP client.
 	 *
 	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/changes/openbuild-mcp-adoption/specs/openbuild-mcp-surface/spec.md#requirement-a-builder-tool-shall-write-only-under-a-plan-a-person-approved
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) AgentPlanSteps is pure step logic with no collaborators.
 	 */
 	public function invokeTool(string $toolId, array $arguments): array {
+		if (AgentPlanSteps::isWriteTool(toolId: $toolId) === false) {
+			return $this->dispatch(toolId: $toolId, arguments: $arguments);
+		}
+
+		$refusal = $this->planRefusal(toolId: $toolId, arguments: $arguments);
+		if ($refusal !== null) {
+			return $refusal;
+		}
+
+		return $this->dispatch(toolId: $toolId, arguments: AgentPlanSteps::withoutPlanId(arguments: $arguments));
+	}//end invokeTool()
+
+	/**
+	 * Dispatch a step of a plan the calling user approved in Buildiq itself.
+	 *
+	 * The AI Copilot's execute is that approval: the person reviewed the
+	 * predicted manifest and confirmed it. This entry is not reachable over
+	 * MCP; OpenRegister's MCP server calls {@see invokeTool()}.
+	 *
+	 * @param string $toolId Fully qualified tool id.
+	 * @param array<string, mixed> $arguments The step's arguments.
+	 *
+	 * @return array<string, mixed>
+	 *
+	 * @spec openspec/changes/openbuild-mcp-adoption/specs/ai-copilot/spec.md#requirement-an-approved-plan-executes-atomically-through-the-mcp-handler-layer
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) AgentPlanSteps is pure step logic with no collaborators.
+	 */
+	public function invokeApprovedTool(string $toolId, array $arguments): array {
+		return $this->dispatch(toolId: $toolId, arguments: AgentPlanSteps::withoutPlanId(arguments: $arguments));
+	}//end invokeApprovedTool()
+
+	/**
+	 * Why an outside agent's write call may not run, or null when it may.
+	 *
+	 * @param string $toolId The write tool.
+	 * @param array<string, mixed> $arguments The call's arguments.
+	 *
+	 * @return array<string, mixed>|null
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) AgentPlanSteps is pure step logic with no collaborators.
+	 */
+	private function planRefusal(string $toolId, array $arguments): ?array {
+		$plans = $this->planService();
+		if ($plans === null) {
+			return [
+				'isError' => true,
+				'error' => 'plan_required',
+				'message' => 'Builder writes over MCP need an approved plan, and plan approval is not available on this instance.',
+			];
+		}
+
+		$planId = $arguments['planId'] ?? null;
+		if (is_string($planId) === false || $planId === '') {
+			return $this->submittedForApproval(toolId: $toolId, arguments: $arguments);
+		}
+
+		return $plans->authorizeStep(
+			planId: $planId,
+			toolId: $toolId,
+			arguments: AgentPlanSteps::withoutPlanId(arguments: $arguments),
+			userId: $this->userId()
+		);
+	}//end planRefusal()
+
+	/**
+	 * Submit a write call without a plan as a plan for approval, and refuse the call itself.
+	 *
+	 * @param string               $toolId    The write tool.
+	 * @param array<string, mixed> $arguments The call's arguments.
+	 *
+	 * @return array<string, mixed> The refusal, naming the submitted plan when there is one.
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) AgentPlanSteps is pure step logic with no collaborators.
+	 */
+	private function submittedForApproval(string $toolId, array $arguments): array {
+		$submitted = $this->planService()?->submit(
+			appSlug: AgentPlanSteps::targetApp(toolId: $toolId, arguments: $arguments),
+			steps: [['tool' => $toolId, 'arguments' => AgentPlanSteps::withoutPlanId(arguments: $arguments)]],
+			userId: $this->userId()
+		);
+		$planNote = '';
+		if (isset($submitted['planId']) === true) {
+			$planNote = ' This call was submitted as plan ' . $submitted['planId']
+				. '; once an owner or editor of the app approves it in Buildiq (the copilot panel, Plans from outside agents),'
+				. ' call again with the same arguments and planId.';
+		}
+
+		return [
+			'isError' => true,
+			'error' => 'plan_required',
+			'message' => 'This write needs a plan a person approved. Nothing was written.' . $planNote,
+			'planId' => ($submitted['planId'] ?? null),
+		];
+	}//end submittedForApproval()
+
+	/**
+	 * The signed-in user's id; '' when nobody is signed in.
+	 *
+	 * @return string
+	 */
+	private function userId(): string {
+		return (string)($this->userSession->getUser()?->getUID() ?? '');
+	}//end userId()
+
+	/**
+	 * The approved-plan store for outside agents' writes, from the container; null when it cannot be had.
+	 *
+	 * Null refuses every MCP write: without the store no write is authorised.
+	 *
+	 * @return AgentPlanService|null
+	 */
+	private function planService(): ?AgentPlanService {
+		try {
+			$plans = $this->container->get(AgentPlanService::class);
+		} catch (Throwable) {
+			return null;
+		}
+
+		if ($plans instanceof AgentPlanService === false) {
+			return null;
+		}
+
+		return $plans;
+	}//end planService()
+
+	/**
+	 * Run the handler for a tool.
+	 *
+	 * @param string $toolId Fully qualified tool id.
+	 * @param array<string, mixed> $arguments The arguments.
+	 *
+	 * @return array<string, mixed>
+	 */
+	private function dispatch(string $toolId, array $arguments): array {
 		// Handler class names are referenced as strings to keep the coupling
 		// count of this dispatcher class within the PHPMD threshold.
 		$handlerMap = [
@@ -391,7 +555,7 @@ class BuildiqToolProvider implements IMcpToolProvider, BuildiqToolProviderInterf
 				. implode(separator: ', ', array: array_column(array: self::TOOL_DESCRIPTORS, column_key: 'id')) . '.',
 		];
 
-	}//end invokeTool()
+	}//end dispatch()
 
 	/**
 	 * Instantiate a handler class, injecting the shared collaborators.

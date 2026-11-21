@@ -26,7 +26,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
+ * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
  */
 
 declare(strict_types=1);
@@ -42,7 +42,7 @@ use Throwable;
 /**
  * Resolves a register and chosen tables into what the manifest builder needs.
  *
- * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
+ * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
  */
 class ConnectedDatabaseReader {
 
@@ -80,7 +80,7 @@ class ConnectedDatabaseReader {
 	 * @throws InvalidArgumentException When the register cannot be read, is not backed by a
 	 *                                  database, or a table is not one of its schemas.
 	 *
-	 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
+	 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
 	 */
 	public function read(string $register, array $tables): array {
 		$slug = trim($register);
@@ -120,7 +120,7 @@ class ConnectedDatabaseReader {
 	 *
 	 * @throws InvalidArgumentException When no database source backs the register.
 	 *
-	 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
+	 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
 	 */
 	private function databaseWritable(string $sourceId, string $register): bool {
 		$source = $this->findSource(sourceId: trim($sourceId));
@@ -139,7 +139,7 @@ class ConnectedDatabaseReader {
 	 *
 	 * @return mixed The source, or null.
 	 *
-	 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
+	 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
 	 */
 	private function findSource(string $sourceId): mixed {
 		if ($sourceId === '') {
@@ -164,7 +164,7 @@ class ConnectedDatabaseReader {
 	 *
 	 * @throws InvalidArgumentException When nothing is ticked or a table is not in the register.
 	 *
-	 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
+	 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
 	 */
 	private function chosenTables(mixed $schemaIds, array $tables, string $register): array {
 		$bySlug = $this->tablesBySlug(schemaIds: $schemaIds);
@@ -197,7 +197,7 @@ class ConnectedDatabaseReader {
 	 *
 	 * @return array<string, array<string, mixed>>
 	 *
-	 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
+	 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-generate-an-app-from-a-connected-database-req-bqdb-003
 	 */
 	private function tablesBySlug(mixed $schemaIds): array {
 		$bySlug = [];

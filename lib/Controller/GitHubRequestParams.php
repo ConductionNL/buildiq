@@ -20,7 +20,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/github-shop-catalogue/specs/github-shop-catalogue/spec.md
+ * @spec openspec/changes/archive/2026-11-20-github-shop-catalogue/specs/github-shop-catalogue/spec.md
  */
 
 declare(strict_types=1);
@@ -32,7 +32,7 @@ use OCP\IRequest;
 /**
  * Reads the shared GitHub request parameters.
  *
- * @spec openspec/changes/github-shop-catalogue/specs/github-shop-catalogue/spec.md
+ * @spec openspec/changes/archive/2026-11-20-github-shop-catalogue/specs/github-shop-catalogue/spec.md
  */
 final class GitHubRequestParams {
 

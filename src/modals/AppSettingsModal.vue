@@ -179,6 +179,7 @@
 					<NcSelect
 						:modelValue="selectedFlows"
 						:options="flowOptions"
+						:selectable="isPickable"
 						:multiple="true"
 						:disabled="busy || loadingFlows"
 						:loading="loadingFlows"
@@ -435,6 +436,7 @@ import AppEmbedSettings from '../components/AppEmbedSettings.vue'
 import { fetchConnectedDatabases } from '../composables/useConnectedDatabases.js'
 import { languageName, NEXTCLOUD_LANGUAGES } from '../services/appLanguages.js'
 import { normaliseOffline, OFFLINE_LIMIT_DEFAULT, OFFLINE_TTL_DEFAULT } from '../services/offlineManifest.js'
+import { isPickable } from '../services/sharedAutomations.js'
 import {
 	FROM_RECORD,
 	isWrapperBinding,
@@ -600,7 +602,7 @@ export default {
 		 *
 		 * @return {Array<{label: string, value: string}>} Options.
 		 *
-		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-an-app-binds-a-connected-database-req-bqdb-001
+		 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-an-app-binds-a-connected-database-req-bqdb-001
 		 */
 		databaseOptions() {
 			const bound = new Set(this.rows.map((row) => (row.register || '').trim()))
@@ -691,7 +693,7 @@ export default {
 			 * @param {boolean} open Whether the modal is now open.
 			 * @return {void}
 			 * @spec openspec/changes/experience-multilingual-apps/specs/app-interface-languages/spec.md#requirement-a-maker-sets-the-app-s-languages-req-bqml-001
-			 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-an-app-binds-a-connected-database-req-bqdb-001
+			 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-an-app-binds-a-connected-database-req-bqdb-001
 			 */
 			handler(open) {
 				if (open) {
@@ -855,7 +857,7 @@ export default {
 		 *
 		 * @return {Promise<void>}
 		 *
-		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-an-app-binds-a-connected-database-req-bqdb-001
+		 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-an-app-binds-a-connected-database-req-bqdb-001
 		 */
 		async loadDatabases() {
 			this.loadingDatabases = true
@@ -872,7 +874,7 @@ export default {
 		 * @param {{label: string, value: string}|null} option The picked database.
 		 * @return {void}
 		 *
-		 * @spec openspec/changes/data-external-database-sources/specs/external-database-sources/spec.md#requirement-an-app-binds-a-connected-database-req-bqdb-001
+		 * @spec openspec/changes/archive/2026-11-20-data-external-database-sources/specs/external-database-sources/spec.md#requirement-an-app-binds-a-connected-database-req-bqdb-001
 		 */
 		onDatabasePicked(option) {
 			if (!option || !option.value) {
@@ -901,6 +903,9 @@ export default {
 		},
 
 		runOnWhen,
+
+		// The "Shared automations" heading is listed but cannot be picked (REQ-BQSF-003).
+		isPickable,
 
 		/**
 		 * A bound flow's `runOn` entries.

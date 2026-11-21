@@ -45,6 +45,9 @@ declare(strict_types=1);
 namespace OCA\Buildiq\Listener;
 
 use OCA\Buildiq\Kernel\Contracts\DocumentGenerationServiceInterface;
+use OCA\Buildiq\Service\AutomationRunLog;
+use OCA\Buildiq\Service\AutomationRunRecorder;
+use OCP\AppFramework\Utility\ITimeFactory;
 use OCP\EventDispatcher\Event;
 use OCP\EventDispatcher\IEventListener;
 use Psr\Container\ContainerInterface;
@@ -75,6 +78,7 @@ class DocumentGenerationListener implements IEventListener {
 	 *                                      listener cannot constructor-inject it.
 	 * @param DocumentGenerationServiceInterface $documentGenerator Calls Docudesk + writes the configured output(s).
 	 * @param LoggerInterface $logger PSR logger.
+	 * @param AutomationRunLog|null $runLog Records each generated document as a run; built at use time when not given.
 	 *
 	 * @return void
 	 */
@@ -82,6 +86,7 @@ class DocumentGenerationListener implements IEventListener {
 		private readonly ContainerInterface $container,
 		private readonly DocumentGenerationServiceInterface $documentGenerator,
 		private readonly LoggerInterface $logger,
+		private ?AutomationRunLog $runLog = null,
 	) {
 		$this->objects = new LazyObjectService(container: $container);
 	}//end __construct()
@@ -110,6 +115,7 @@ class DocumentGenerationListener implements IEventListener {
 
 		foreach ($automations as $automation) {
 			foreach ($this->generateDocumentActions(automation: $automation) as $action) {
+				$error = null;
 				try {
 					$this->documentGenerator->generate(
 						automation: $automation,
@@ -118,12 +124,21 @@ class DocumentGenerationListener implements IEventListener {
 						objectUuid: $objectUuid
 					);
 				} catch (Throwable $e) {
+					$error = $e->getMessage();
 					$this->logger->error(
 						'Buildiq: DocumentGenerationListener failed for automation "' . ($automation['slug'] ?? '')
 						. '" / object "' . $objectUuid . '": ' . $e->getMessage(),
 						['exception' => $e]
 					);
 				}
+
+				$this->runLog()?->documentGenerated(
+					automation: $automation,
+					trigger: $fired->triggerType(),
+					schemaSlug: $schemaSlug,
+					objectUuid: $objectUuid,
+					error: $error
+				);
 			}
 		}
 
@@ -176,4 +191,32 @@ class DocumentGenerationListener implements IEventListener {
 		);
 
 	}//end generateDocumentActions()
+	/**
+	 * The run log, built at use time from the same lazily resolved object
+	 * service: a listener cannot constructor-inject the recorder's published
+	 * dependencies (see LazyObjectService). Null when it cannot be built.
+	 *
+	 * @return AutomationRunLog|null
+	 *
+	 * @spec openspec/changes/logic-automation-run-log/specs/automation-designer/spec.md#requirement-every-run-of-an-automation-that-buildiq-dispatches-is-recorded-req-bqrl-001
+	 */
+	private function runLog(): ?AutomationRunLog {
+		if ($this->runLog !== null) {
+			return $this->runLog;
+		}
+
+		try {
+			$objectService = $this->objects->get();
+			$this->runLog  = new AutomationRunLog(
+				recorder: new AutomationRunRecorder(objectService: $objectService, time: $this->container->get(ITimeFactory::class), logger: $this->logger),
+				objectService: $objectService,
+				logger: $this->logger
+			);
+		} catch (Throwable $e) {
+			$this->logger->error('Buildiq: automation runs cannot be recorded: ' . $e->getMessage());
+			return null;
+		}
+
+		return $this->runLog;
+	}//end runLog()
 }//end class

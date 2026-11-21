@@ -512,6 +512,7 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 	 * @return JSONResponse
 	 *
 	 * @spec openspec/specs/openbuild-runtime/spec.md
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-4.3
 	 */
 	private function productionManifestResponse(string $slug, array $resolved): JSONResponse {
 		[, $applicationArray, $applicationUuid] = $resolved;
@@ -524,7 +525,7 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 		// version.manifest and itself falls back to a legacy
 		// application-level `manifest` field; the direct read is kept as a
 		// last-resort fallback for safety.
-		$manifest = $this->manifestResolver->resolve(
+		$manifest = $this->manifestResolver->resolveServed(
 			appSlug: $slug,
 			versionSlug: null,
 			caller: $this->userSession->getUser()
@@ -1020,10 +1021,11 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-69
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-70
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-4.3
 	 */
 	private function resolveVersionedManifestResponse(string $slug, string $versionSlug): JSONResponse {
 		$caller = $this->userSession->getUser();
-		$manifest = $this->manifestResolver->resolve(
+		$manifest = $this->manifestResolver->resolveServed(
 			appSlug: $slug,
 			versionSlug: $versionSlug,
 			caller: $caller
@@ -1188,6 +1190,7 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 	 * @return array<string, mixed>|null Blob or null if the version is missing.
 	 *
 	 * @spec openspec/changes/archive/retrofit-2026-05-24-annotate-openbuild/tasks.md#task-58
+	 * @spec openspec/changes/app-delta-override/tasks.md#task-4.2
 	 * @SuppressWarnings(PHPMD.StaticAccess) ObjectRecord is a pure coercion with no collaborators.
 	 */
 	private function resolveVersionBlob(string $token, array $application, string $applicationUuid): ?array {
@@ -1246,9 +1249,12 @@ class ApplicationsController extends Controller implements TemplateInstallSeamIn
 			return null;
 		}
 
+		// A delta-mode version is diffed as the manifest it serves, merged over
+		// its base; its baseRef and manifestDelta never leave the server.
 		$semver = ($versionArray['semver'] ?? ($versionArray['version'] ?? null));
 		return [
-			'manifest' => ($versionArray['manifest'] ?? null),
+			'manifest' => ($this->manifestResolver->servedManifest(version: $versionArray, caller: $this->userSession->getUser())
+				?? ($versionArray['manifest'] ?? null)),
 			'version' => $semver,
 			'semver' => $semver,
 			'name' => ($versionArray['name'] ?? ($versionArray['slug'] ?? null)),
