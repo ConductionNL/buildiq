@@ -1841,12 +1841,12 @@ final class AutomationCompilerServiceTest extends TestCase {
 		);
 
 		return new AutomationCompilerService(
-			$container,
-			$this->objectService,
-			$this->schemaMapper,
-			$this->appManager,
-			new NullLogger(),
-			$this->flowBackend,
+			container: $container,
+			objectService: $this->objectService,
+			schemaMapper: $this->schemaMapper,
+			appManager: $this->appManager,
+			logger: new NullLogger(),
+			flowBackend: $this->flowBackend,
 		);
 	}//end compilerWithSubFlowTargets()
 
@@ -1858,7 +1858,15 @@ final class AutomationCompilerServiceTest extends TestCase {
 	 */
 	public function testARunAutomationStepCompilesToAWaitingSubFlowBeforeTheRecordStep(): void {
 		$compiler = $this->compilerWithSubFlowTargets(
-			targets: ['check-uuid' => ['slug' => 'check-address', 'name' => 'Controleer adres', 'applicationSlug' => 'subsidies', 'shared' => true, 'provenance' => ['flowUuid' => 'flow-check']]]
+			targets: [
+				'check-uuid' => [
+					'slug' => 'check-address',
+					'name' => 'Controleer adres',
+					'applicationSlug' => 'subsidies',
+					'shared' => true,
+					'provenance' => ['flowUuid' => 'flow-check'],
+				],
+			]
 		);
 		$automation = [
 			'id' => 'own-uuid',
@@ -1890,9 +1898,17 @@ final class AutomationCompilerServiceTest extends TestCase {
 	 */
 	public function testARunAutomationStepNamingItselfIsRefused(): void {
 		$compiler = $this->compilerWithSubFlowTargets(
-			targets: ['own-uuid' => ['slug' => 'intake', 'name' => 'Intake', 'applicationSlug' => 'claims', 'shared' => false, 'provenance' => ['flowUuid' => 'flow-own']]]
+			targets: [
+				'own-uuid' => [
+					'slug' => 'intake',
+					'name' => 'Intake',
+					'applicationSlug' => 'claims',
+					'shared' => false,
+					'provenance' => ['flowUuid' => 'flow-own'],
+				],
+			]
 		);
-		$this->flowBackend->expects(invocationRule: $this->never())->method('apply');
+		$this->flowBackend->expects($this->never())->method('apply');
 
 		$this->expectException(exception: UnsupportedAutomationCombinationException::class);
 		$this->expectExceptionMessage(message: 'An automation cannot run itself.');
@@ -1914,7 +1930,15 @@ final class AutomationCompilerServiceTest extends TestCase {
 	 */
 	public function testARunAutomationStepNamingAnUnsharedAutomationOfAnotherAppIsRefused(): void {
 		$compiler = $this->compilerWithSubFlowTargets(
-			targets: ['other-uuid' => ['slug' => 'archive', 'name' => 'Archiveer', 'applicationSlug' => 'subsidies', 'shared' => false, 'provenance' => ['flowUuid' => 'flow-other']]]
+			targets: [
+				'other-uuid' => [
+					'slug' => 'archive',
+					'name' => 'Archiveer',
+					'applicationSlug' => 'subsidies',
+					'shared' => false,
+					'provenance' => ['flowUuid' => 'flow-other'],
+				],
+			]
 		);
 
 		$this->expectException(exception: UnsupportedAutomationCombinationException::class);

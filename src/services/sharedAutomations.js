@@ -30,6 +30,7 @@ const LIMIT = 500
  *
  * @param {object} automation The automation record.
  * @return {string} Its uuid, or ''.
+ * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-call-another-req-bqsf-004
  */
 export function automationId(automation) {
 	if (!automation || typeof automation !== 'object') {
@@ -44,6 +45,7 @@ export function automationId(automation) {
  *
  * @param {object} automation The automation record.
  * @return {string} The flow uuid.
+ * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-be-shared-with-other-apps-req-bqsf-003
  */
 export function compiledFlowOf(automation) {
 	const provenance = automation && automation.provenance
@@ -174,6 +176,7 @@ export function withSharedGroup(flowOptions, sharedOptions, heading) {
  *
  * @param {object} option The option.
  * @return {boolean}
+ * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-be-shared-with-other-apps-req-bqsf-003
  */
 export function isPickable(option) {
 	return !(option && option.heading === true)
@@ -183,6 +186,8 @@ export function isPickable(option) {
  * Read the automations the pickers choose from.
  *
  * @return {Promise<Array<object>>} The automation records.
+ * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-be-shared-with-other-apps-req-bqsf-003
+ * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-call-another-req-bqsf-004
  */
 export async function fetchAutomations() {
 	const { data } = await axios.get(

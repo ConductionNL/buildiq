@@ -5,9 +5,13 @@
 			"Automation": {
 				"properties": {
 					"actions": {
+						"title": "Actions",
+						"description": "Ordered typed action records. Only combinations allowed by the v1 compilation matrix (design.md Decision 2) may be saved: unsupported combinations are blocked fail-closed in the editor and at compile time.",
 						"items": {
 							"properties": {
 								"type": {
+									"title": "Action Type",
+									"description": "`approval` (automation-approval-steps) is selectable only on object-created|object-updated|object-deleted|lifecycle-transition triggers: compiles to an OpenRegister ApprovalChain; blocked fail-closed on schedule/manual. `generateDocument` (automation-document-action) is selectable on the same four event/lifecycle-transition triggers. Dispatches an owner-impersonated call to Docudesk's pinned `correspondence/generate` route; blocked fail-closed on schedule/manual.",
 									"enum": [
 										"run-automation"
 									]

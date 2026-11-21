@@ -369,6 +369,7 @@ export default {
 		 * The app's slug, '' before it is loaded.
 		 *
 		 * @return {string} The slug.
+		 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-be-shared-with-other-apps-req-bqsf-003
 		 */
 		obAppSlug() {
 			return (this.obApp && this.obApp.slug) || ''
