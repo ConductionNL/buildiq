@@ -118,9 +118,11 @@ use OCA\Buildiq\Kernel\Contracts\AutomationCompilerServiceInterface;
 use OCA\Buildiq\Service\Automation\AutomationFlowBackend;
 use OCA\Buildiq\Service\Automation\AutomationFlowBuilder;
 use OCA\Buildiq\Service\Automation\AutomationRuleSets;
+use OCA\Buildiq\Service\Automation\AutomationSubFlowTargets;
 use OCA\Buildiq\Service\Automation\CompileInput;
 use OCA\Buildiq\Service\Automation\FlowNodeAvailability;
 use OCA\Buildiq\Service\Automation\InboundTriggerDeclarations;
+use OCA\Buildiq\Service\Automation\RunAutomationNodes;
 use OCA\Buildiq\Support\ObjectRecord;
 use OCA\OpenRegister\Contract\ObjectServiceInterface;
 use OCA\OpenRegister\Db\Schema;
@@ -411,7 +413,9 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 	 *
 	 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-declarative-primitives-or-one-openregister-flow-req-bqar-001
 	 *
-	 * @SuppressWarnings(PHPMD.StaticAccess) AiStepNodes::holdsAiStep() is a pure check of the actions.
+	 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-call-another-req-bqsf-004
+	 *
+	 * @SuppressWarnings(PHPMD.StaticAccess) AiStepNodes::holdsAiStep() and RunAutomationNodes::targetUuids() are pure checks of the actions.
 	 */
 	private function compileFlowBackend(CompileInput $input): array {
 		// The register and schemas are read only when a node needs them, so a
@@ -444,7 +448,15 @@ class AutomationCompilerService implements AutomationCompilerServiceInterface {
 			$properties = $this->loadSchema(slug: (string)($input->trigger['schema'] ?? ''))?->getProperties();
 		}
 
-		$plan['flow'] = $this->flowBuilder()->build(
+		// Logic-shared-flows-and-automations D4: a step that runs another
+		// automation runs that automation's compiled flow.
+		$subFlowTargets = [];
+		$targetUuids = RunAutomationNodes::targetUuids(actions: $input->actions);
+		if ($targetUuids !== []) {
+			$subFlowTargets = $this->container->get(AutomationSubFlowTargets::class)->targets(uuids: $targetUuids);
+		}
+
+		$plan['flow'] = $this->flowBuilder()->withSubFlowTargets(targets: $subFlowTargets)->build(
 			input: $input,
 			register: $scope['register'],
 			schemas: $scope['schemas'],

@@ -179,6 +179,7 @@
 					<NcSelect
 						:modelValue="selectedFlows"
 						:options="flowOptions"
+						:selectable="isPickable"
 						:multiple="true"
 						:disabled="busy || loadingFlows"
 						:loading="loadingFlows"
@@ -435,6 +436,7 @@ import AppEmbedSettings from '../components/AppEmbedSettings.vue'
 import { fetchConnectedDatabases } from '../composables/useConnectedDatabases.js'
 import { languageName, NEXTCLOUD_LANGUAGES } from '../services/appLanguages.js'
 import { normaliseOffline, OFFLINE_LIMIT_DEFAULT, OFFLINE_TTL_DEFAULT } from '../services/offlineManifest.js'
+import { isPickable } from '../services/sharedAutomations.js'
 import {
 	FROM_RECORD,
 	isWrapperBinding,
@@ -901,6 +903,9 @@ export default {
 		},
 
 		runOnWhen,
+
+		// The "Shared automations" heading is listed but cannot be picked (REQ-BQSF-003).
+		isPickable,
 
 		/**
 		 * A bound flow's `runOn` entries.

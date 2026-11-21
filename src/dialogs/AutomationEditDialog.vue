@@ -425,6 +425,22 @@
 							" />
 					</template>
 
+					<template v-else-if="action.type === 'run-automation'">
+						<!-- logic-shared-flows-and-automations D4: another
+						     automation runs as a step, and the later steps
+						     see what it returns. -->
+						<NcSelect
+							:modelValue="runAutomationOption(action.automation)"
+							:inputLabel="t('buildiq', 'Automation to run')"
+							:options="runAutomationChoices"
+							:loading="runAutomations.loading"
+							label="label"
+							data-testid="run-automation-select"
+							@update:modelValue="
+								updateAction(index, 'automation', $event ? $event.id : '')
+							" />
+					</template>
+
 					<template v-else-if="action.type === 'ai-step'">
 						<!-- ai-llm-steps-and-computed-fields D1, D3: Hermiq
 						     answers over the named fields and the answer is
@@ -578,6 +594,7 @@ import {
 } from '../services/automationStepSources.js'
 import { fetchConnectorSynchronizations } from '../services/connectorSynchronizations.js'
 import { resolveFleetAppId } from '../services/fleetAppId.js'
+import { fetchAutomations, RUN_AUTOMATION, runAutomationOptions } from '../services/sharedAutomations.js'
 import { slugify } from '../utils/slugify.js'
 import { askableFieldOptions, formFieldsOf } from './approvalFormFields.js'
 import {
@@ -589,6 +606,7 @@ import {
 	withInboundSettings,
 } from './automationInboundTrigger.js'
 import { toPersistedAction } from './automationPersistedActions.js'
+import { missingStepField } from './automationStepRequirements.js'
 import {
 	cadenceById,
 	cadenceOptions,
@@ -692,6 +710,7 @@ export default {
 			// Ai-llm-steps-and-computed-fields D6: off until the node catalogue says Hermiq's node is there.
 			agentNodeAvailable: false,
 			aiAgentOptions: [],
+			runAutomations: { records: [], loading: false },
 			aiAgentsLoading: false,
 			aiFieldOptions: [],
 			docudeskTemplatesLoading: false,
@@ -928,8 +947,26 @@ export default {
 					value: 'rule-decision',
 					label: t('buildiq', 'Decide with a rule set'),
 				},
+				{
+					value: RUN_AUTOMATION,
+					label: t('buildiq', 'Run another automation'),
+				},
 				this.aiStepTypeOption,
 			]
+		},
+
+		/**
+		 * The automations a "Run another automation" step may name: the app's
+		 * own, then shared ones of other apps, never this one (REQ-BQSF-004).
+		 *
+		 * @return {Array<{id: string, label: string, shared: boolean}>}
+		 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-call-another-req-bqsf-004
+		 */
+		runAutomationChoices() {
+			return runAutomationOptions(this.runAutomations.records, {
+				applicationSlug: (this.automation && this.automation.applicationSlug) || '',
+				ownId: this.id || '',
+			})
 		},
 
 		/**
@@ -1008,15 +1045,11 @@ export default {
 				if (action.type === 'ai-step' && aiStepIncomplete(action) !== '') {
 					return aiStepIncomplete(action)
 				}
-				if (action.type === 'webhook' && String(action.source || '').trim() === '') {
-					return t('buildiq', 'Pick a source for this webhook.')
-				}
-				if (
-					action.type === 'rule-decision'
-					&& (String(action.ruleSetSlug || '').trim() === ''
-						|| String(action.outputField || '').trim() === '')
-				) {
-					return t('buildiq', 'Pick a rule set and the field its decision is written to.')
+				// A webhook, a rule decision and "Run another automation"
+				// each need their fields (REQ-BQAR-003, REQ-BQAR-005, REQ-BQSF-004).
+				const missing = missingStepField(action)
+				if (missing !== '') {
+					return missing
 				}
 			}
 			return ''
@@ -1211,6 +1244,7 @@ export default {
 				this.fetchStepSources()
 				this.fetchAiStepSupport()
 				this.fetchMailboxes()
+				this.fetchRunAutomationTargets()
 			}
 		},
 	},
@@ -1298,6 +1332,7 @@ export default {
 				source: action.source || '',
 				path: action.path || '',
 				ruleSetSlug: action.ruleSetSlug || '',
+				automation: action.automation || '',
 				inputMappingText: JSON.stringify(action.inputMapping || {}, null, 2),
 				outputField: action.outputField || '',
 				payloadTemplateText: JSON.stringify(
@@ -1484,6 +1519,40 @@ export default {
 		 * @return {Promise<void>}
 		 * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-a-webhook-step-calls-a-configured-source-req-bqar-003
 		 */
+		/**
+		 * Load the automations a "Run another automation" step may name; a
+		 * failed read offers none (the compiler still checks the name).
+		 *
+		 * @return {Promise<void>}
+		 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-call-another-req-bqsf-004
+		 */
+		async fetchRunAutomationTargets() {
+			// The automations a "Run another automation" step may name (REQ-BQSF-004).
+			this.runAutomations.loading = true
+			try {
+				this.runAutomations.records = await fetchAutomations()
+			} catch {
+				this.runAutomations.records = []
+			} finally {
+				this.runAutomations.loading = false
+			}
+		},
+
+		/**
+		 * The picker option of a named automation; one that is not listed
+		 * shows its uuid, so a stored step is never shown as empty.
+		 *
+		 * @param {string} uuid - the named automation.
+		 * @return {object|null}
+		 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-call-another-req-bqsf-004
+		 */
+		runAutomationOption(uuid) {
+			if (!uuid) {
+				return null
+			}
+			return this.runAutomationChoices.find((option) => option.id === uuid) || { id: uuid, label: uuid }
+		},
+
 		/**
 		 * Ask the node catalogue for Hermiq's agent node and, when it is there,
 		 * load the agents an AI step can name (REQ-BQLS-001, REQ-BQLS-005).

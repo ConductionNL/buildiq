@@ -5,6 +5,10 @@
 OC.L10N.register(
     "buildiq",
     {
+        "Run another automation": "Run another automation",
+        "Automation to run": "Automation to run",
+        "Pick the automation this step runs.": "Pick the automation this step runs.",
+        "Shared automations": "Shared automations",
         "Relation fields": "Relation fields",
         "Users can filter on this field": "Users can filter on this field",
         "Export to CSV or Excel": "Export to CSV or Excel",

@@ -51,6 +51,7 @@ export const ACTION_TYPES = Object.freeze([
 	'generateDocument',
 	'rule-decision',
 	'ai-step',
+	'run-automation',
 ])
 
 /**
@@ -68,7 +69,11 @@ export const ACTION_TYPES = Object.freeze([
  * compiler builds for an object event or a manual trigger before it consults
  * its own matrix, so they are offered there too.
  *
+ * logic-shared-flows-and-automations (D4): "Run another automation" compiles
+ * to a sub-flow step of the same flow, so it is offered wherever a flow runs.
+ *
  * @spec openspec/changes/logic-automation-actions-that-run/specs/automation-designer/spec.md#requirement-automations-compile-deterministically-to-declarative-primitives-or-one-openregister-flow-req-bqar-001
+ * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-call-another-req-bqsf-004
  */
 export const MATRIX = Object.freeze({
 	'object-created': Object.freeze([
@@ -79,6 +84,7 @@ export const MATRIX = Object.freeze({
 		'approval',
 		'generateDocument',
 		'ai-step',
+		'run-automation',
 	]),
 	'object-updated': Object.freeze([
 		'send-notification',
@@ -88,6 +94,7 @@ export const MATRIX = Object.freeze({
 		'approval',
 		'generateDocument',
 		'ai-step',
+		'run-automation',
 	]),
 	'object-deleted': Object.freeze([
 		'send-notification',
@@ -96,6 +103,7 @@ export const MATRIX = Object.freeze({
 		'rule-decision',
 		'approval',
 		'generateDocument',
+		'run-automation',
 	]),
 	'lifecycle-transition': Object.freeze([
 		'send-notification',
@@ -111,6 +119,7 @@ export const MATRIX = Object.freeze({
 		'webhook',
 		'rule-decision',
 		'ai-step',
+		'run-automation',
 	]),
 	// logic-email-and-webhook-triggers D1: started by integriq, flow steps only.
 	'email-received': Object.freeze([
@@ -118,12 +127,14 @@ export const MATRIX = Object.freeze({
 		'object-op',
 		'webhook',
 		'rule-decision',
+		'run-automation',
 	]),
 	'webhook-called': Object.freeze([
 		'send-notification',
 		'object-op',
 		'webhook',
 		'rule-decision',
+		'run-automation',
 	]),
 })
 

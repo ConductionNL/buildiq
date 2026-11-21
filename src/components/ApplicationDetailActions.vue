@@ -148,6 +148,7 @@ import { buildVersionedRoute } from '../router/helpers.js'
 import { appI18n, withLanguages } from '../services/appLanguages.js'
 import { fetchProductionRegister } from '../services/appRegister.js'
 import { withOffline } from '../services/offlineManifest.js'
+import { loadSharedFlowOptions, withSharedGroup } from '../services/sharedAutomations.js'
 
 // Vue 3 requires `defineAsyncComponent()` around a lazy import. The bare
 // `() => import(…)` form is Vue 2 syntax: Vue 3 accepts a plain function as a
@@ -364,6 +365,16 @@ export default {
 	},
 
 	computed: {
+		/**
+		 * The app's slug, '' before it is loaded.
+		 *
+		 * @return {string} The slug.
+		 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-be-shared-with-other-apps-req-bqsf-003
+		 */
+		obAppSlug() {
+			return (this.obApp && this.obApp.slug) || ''
+		},
+
 		/**
 		 * The whole action cluster as CnActionButtons descriptors, in the order
 		 * they should appear: Open app (primary, with the version list as its
@@ -1226,6 +1237,7 @@ export default {
 		 * @return {Promise<void>}
 		 *
 		 * @spec openspec/specs/application-detail-ui/spec.md
+		 * @spec openspec/changes/logic-shared-flows-and-automations/specs/app-flow-bindings/spec.md#requirement-an-automation-can-be-shared-with-other-apps-req-bqsf-003
 		 */
 		async onSettingsOpen(open) {
 			this.settingsOpen = open
@@ -1238,11 +1250,13 @@ export default {
 
 			this.loadingFlows = true
 			try {
-				const [flows, schemas] = await Promise.all([
+				const [flows, schemas, shared] = await Promise.all([
 					this.fetchFlowOptions(),
 					this.loadTemplateSchemas().catch(() => []),
+					// Shared automations of other apps join the picker (REQ-BQSF-003).
+					loadSharedFlowOptions(this.obAppSlug),
 				])
-				this.availableFlows = flows
+				this.availableFlows = withSharedGroup(flows, shared, t('buildiq', 'Shared automations'))
 				this.flowSchemas = schemaOptions(schemas)
 			} catch (e) {
 				this.error = `${t('buildiq', 'Failed to load flows')}: ${e.message || e}`
