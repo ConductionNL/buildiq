@@ -23,6 +23,8 @@ declare(strict_types=1);
 
 namespace OCA\Buildiq\Tests\Unit\Dashboard;
 
+use OCA\Buildiq\Service\CallerContext;
+use OCA\Buildiq\Service\PermissionResolver;
 use OCA\Buildiq\Dashboard\VirtualAppWidget;
 use OCA\Buildiq\Dashboard\VirtualAppWidgetContext;
 use OCA\Buildiq\Kernel\Contracts\AppVisibilityResolverInterface;
@@ -76,8 +78,11 @@ final class VirtualAppWidgetDefaultsTest extends TestCase {
 	): VirtualAppWidgetContext {
 		return new VirtualAppWidgetContext(
 			urlGenerator: ($urlGenerator ?? $this->createMock(originalClassName: IURLGenerator::class)),
-			userSession: $this->createMock(originalClassName: IUserSession::class),
-			groupManager: $this->createMock(originalClassName: IGroupManager::class),
+			caller: new CallerContext(
+				userSession: $this->createMock(originalClassName: IUserSession::class),
+				groupManager: $this->createMock(originalClassName: IGroupManager::class),
+				permissionResolver: $this->createMock(PermissionResolver::class)
+			),
 			visibility: $this->createMock(originalClassName: AppVisibilityResolverInterface::class),
 			projector: ($projector ?? $this->createMock(originalClassName: WidgetItemProjectorInterface::class)),
 			initialState: $this->createMock(originalClassName: IInitialState::class)

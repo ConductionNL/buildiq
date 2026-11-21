@@ -37,9 +37,12 @@ final class WidgetApplication {
 	/**
 	 * Constructor.
 	 *
-	 * @param string $uuid Immutable Application UUID the widget id is keyed on.
-	 * @param string $slug Application slug, for links and icons only.
-	 * @param string $name Application display name.
+	 * @param string               $uuid  Immutable Application UUID the widget id is keyed on.
+	 * @param string               $slug  Application slug, for links and icons only.
+	 * @param string               $name  Application display name.
+	 * @param array<string, mixed> $scope The Application's organisation scope and holder, the keys
+	 *                                    the organisation guard reads; [] for an app every
+	 *                                    organisation sees (operate-organisation-scoped-apps REQ-BQOS-002).
 	 *
 	 * @return void
 	 */
@@ -47,6 +50,7 @@ final class WidgetApplication {
 		public readonly string $uuid,
 		public readonly string $slug,
 		public readonly string $name,
+		public readonly array $scope = [],
 	) {
 	}//end __construct()
 }//end class

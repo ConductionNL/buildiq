@@ -221,8 +221,27 @@ class DashboardWidgetRegistrar {
 			return null;
 		}
 
-		return new WidgetApplication(uuid: $uuid, slug: $slug, name: (string)($application['name'] ?? $slug));
+		return new WidgetApplication(
+			uuid: $uuid,
+			slug: $slug,
+			name: (string)($application['name'] ?? $slug),
+			scope: self::scopeOf(application: $application)
+		);
 	}//end widgetApplication()
+
+	/**
+	 * The keys of an Application the organisation guard reads: its scope and
+	 * the holder OpenRegister stamped on it (REQ-BQOS-002). Absent keys are left out.
+	 *
+	 * @param array<string,mixed> $application One published Application record.
+	 *
+	 * @return array<string,mixed>
+	 *
+	 * @spec openspec/changes/operate-organisation-scoped-apps/specs/organisation-scoped-apps/spec.md#requirement-a-scoped-app-is-invisible-to-other-organisations-req-bqos-002
+	 */
+	private static function scopeOf(array $application): array {
+		return array_intersect_key($application, array_flip(['organisationScope', 'organisation', '@self']));
+	}//end scopeOf()
 
 	/**
 	 * The Application's uuid, or its id when the record carries no uuid.

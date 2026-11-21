@@ -155,6 +155,14 @@ final class WidgetDescriptor implements \JsonSerializable {
 	public readonly array $dataSource;
 
 	/**
+	 * The Application's organisation scope and holder, for the organisation
+	 * guard (REQ-BQOS-002). Never serialised to the browser.
+	 *
+	 * @var array<string, mixed>
+	 */
+	public readonly array $scope;
+
+	/**
 	 * Constructor.
 	 *
 	 * @param WidgetApplication $application The Application the widget is promoted from.
@@ -177,6 +185,7 @@ final class WidgetDescriptor implements \JsonSerializable {
 		$this->applicationUuid = $application->uuid;
 		$this->applicationSlug = $application->slug;
 		$this->applicationName = $application->name;
+		$this->scope = $application->scope;
 		$this->principals = $principals;
 		$this->entryId = $entryId;
 		$this->widgetKey = $widgetKey;
