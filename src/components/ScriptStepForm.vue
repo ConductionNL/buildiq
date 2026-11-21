@@ -8,6 +8,9 @@
   -->
 <template>
 	<div class="script-step-form" data-testid="script-step-form">
+		<p v-if="readOnly" class="script-step-form__locked" data-testid="script-step-locked">
+			{{ t('buildiq', 'Only app owners can change a script step.') }}
+		</p>
 		<p class="script-step-form__hint">
 			{{ t('buildiq', 'The script is the body of a function that receives the items and returns items. It runs only in OpenRegister\'s code runner, with no network access, and only app owners may change it.') }}
 		</p>
@@ -15,6 +18,7 @@
 			:value="modelValue.code || ''"
 			language="text"
 			height="200px"
+			:readOnly="readOnly"
 			:aria-label="t('buildiq', 'Script')"
 			data-testid="script-step-code"
 			@update:value="emitKey('code', $event)" />
@@ -23,11 +27,13 @@
 			type="number"
 			min="1"
 			max="30"
+			:disabled="readOnly"
 			:label="t('buildiq', 'Time limit (seconds, 1 to 30)')"
 			data-testid="script-step-timeout"
 			@update:modelValue="emitKey('timeoutSeconds', timeoutValue($event))" />
 		<NcTextField
 			:modelValue="modelValue.note || ''"
+			:disabled="readOnly"
 			:label="t('buildiq', 'What the script does')"
 			data-testid="script-step-note"
 			@update:modelValue="emitKey('note', $event)" />
@@ -44,6 +50,8 @@ export default {
 
 	props: {
 		modelValue: { type: Object, required: true },
+		// REQ-BQSS-002: an editor reads the script but cannot change it.
+		readOnly: { type: Boolean, default: false },
 	},
 
 	emits: ['update'],
@@ -58,6 +66,9 @@ export default {
 		 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-composer-offers-a-script-step-req-bqss-001
 		 */
 		emitKey(key, value) {
+			if (this.readOnly) {
+				return
+			}
 			this.$emit('update', { key, value })
 		},
 
@@ -81,6 +92,11 @@ export default {
 	display: flex;
 	flex-direction: column;
 	gap: 8px;
+}
+
+.script-step-form__locked {
+	font-weight: bold;
+	margin: 0;
 }
 
 .script-step-form__hint {

@@ -62,19 +62,24 @@ export async function fetchCodeNodeAvailable() {
 /**
  * Why the kind is disabled, or '' when it may be used. The setting comes
  * first: with scripts off, whether the runner is there does not matter.
+ * Without `owner` the caller's role is not considered.
  *
  * @param {object} support What the instance offers.
  * @param {boolean} support.allowed Whether "Allow script steps" is on.
  * @param {boolean} support.runnerAvailable Whether the code runner is installed.
+ * @param {boolean} [support.owner] Whether the caller owns the app; false refuses (REQ-BQSS-002).
  * @return {string} The reason, or ''.
  * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-composer-offers-a-script-step-req-bqss-001
  */
-export function scriptStepDisabledReason({ allowed, runnerAvailable }) {
+export function scriptStepDisabledReason({ allowed, runnerAvailable, owner }) {
 	if (allowed !== true) {
 		return t('buildiq', 'Script steps are turned off for this instance.')
 	}
 	if (runnerAvailable !== true) {
 		return t('buildiq', 'The code runner is not installed, so scripts cannot run.')
+	}
+	if (owner === false) {
+		return t('buildiq', 'Only app owners can change a script step.')
 	}
 	return ''
 }

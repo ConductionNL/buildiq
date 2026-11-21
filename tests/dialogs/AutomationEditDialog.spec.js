@@ -1184,6 +1184,30 @@ describe('AutomationEditDialog Ask AI (ai-copilot-documents-and-code-help REQ-BQ
 			expect(option.label).toContain('Script steps are turned off for this instance.')
 		})
 
+		it('REQ-BQSS-002: an editor cannot add a script step, reads a stored one, and can still save other changes', async () => {
+			serveCatalogue(true)
+			const stored = { ...baseAutomation(), triggerType: 'manual', trigger: { type: 'manual' }, actions: [{ type: 'script-step', code: JOIN, timeoutSeconds: 5 }] }
+			const wrapper = mount(AutomationEditDialog, {
+				propsData: { open: false, automation: stored, register: '', scriptsReadOnly: true },
+				stubs,
+			})
+			wrapper.vm.scriptSupport.allowed = true
+			await openDialog(wrapper)
+
+			const option = wrapper.vm.actionTypeOptions.find((o) => o.value === 'script-step')
+			expect(option.disabled).toBe(true)
+			expect(option.label).toContain('Only app owners can change a script step.')
+
+			wrapper.vm.name = 'Join names'
+			wrapper.vm.triggerType = 'manual'
+			wrapper.vm.actions = [wrapper.vm.actionToEditor({ type: 'script-step', code: JOIN, timeoutSeconds: 5 })]
+			await flush()
+
+			expect(wrapper.findComponent({ name: 'ScriptStepForm' }).props('readOnly')).toBe(true)
+			expect(wrapper.find('[data-testid="action-blocked"]').exists()).toBe(false)
+			expect(wrapper.vm.valid).toBe(true)
+		})
+
 		it('REQ-BQSS-001: a script step without code, or with a time limit out of range, is not saved', async () => {
 			serveCatalogue(true)
 			const wrapper = factory()
