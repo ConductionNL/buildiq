@@ -817,8 +817,12 @@ export default {
 		 * every untouched field intact — losslessly and without tripping the
 		 * collision.
 		 *
+		 * A version that extends a base stores only its difference from that
+		 * base (app-delta-override D6).
+		 *
 		 * @param {string} versionUuid The active version's uuid.
 		 * @return {Promise<void>}
+		 * @spec openspec/changes/app-delta-override/tasks.md#task-5.1
 		 */
 		async saveOntoVersion(versionUuid) {
 			const url = generateUrl(
