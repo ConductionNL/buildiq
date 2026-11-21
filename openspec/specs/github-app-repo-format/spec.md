@@ -3,7 +3,7 @@
 **Status**: in-progress
 **Scope**: buildiq
 **OpenSpec changes**:
-- [github-app-repo-format](../../changes/github-app-repo-format/)
+- [github-app-repo-format](../../changes/archive/2026-11-21-github-app-repo-format/) _(archived 2026-11-21)_
 - [app-repo-format-v2](../../changes/app-repo-format-v2/)
 - [app-repo-format-flow-agent-export](../../changes/archive/2026-08-19-app-repo-format-flow-agent-export/) _(archived 2026-08-19)_
 

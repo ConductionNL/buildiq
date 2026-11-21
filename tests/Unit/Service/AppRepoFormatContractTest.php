@@ -23,7 +23,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/github-app-repo-format/specs/github-app-repo-format/spec.md
+ * @spec openspec/changes/archive/2026-11-21-github-app-repo-format/specs/github-app-repo-format/spec.md
  */
 
 declare(strict_types=1);
@@ -128,7 +128,7 @@ class AppRepoFormatContractTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/github-app-repo-format/specs/github-app-repo-format/spec.md
+	 * @spec openspec/changes/archive/2026-11-21-github-app-repo-format/specs/github-app-repo-format/spec.md
 	 */
 	public function testAnAppSerialisesToItsRepositoryFiles(): void {
 		[$application, $version] = $this->app();
@@ -154,7 +154,7 @@ class AppRepoFormatContractTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/github-app-repo-format/specs/github-app-repo-format/spec.md
+	 * @spec openspec/changes/archive/2026-11-21-github-app-repo-format/specs/github-app-repo-format/spec.md
 	 */
 	public function testSerialisingIsByteStableAndParsesBack(): void {
 		[$application, $version] = $this->app();
@@ -179,7 +179,7 @@ class AppRepoFormatContractTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/github-app-repo-format/specs/github-app-repo-format/spec.md
+	 * @spec openspec/changes/archive/2026-11-21-github-app-repo-format/specs/github-app-repo-format/spec.md
 	 */
 	public function testHostileInputIsRefused(): void {
 		$valid = [
@@ -211,8 +211,8 @@ class AppRepoFormatContractTest extends TestCase {
 	 *
 	 * @return void
 	 *
-	 * @spec openspec/changes/github-app-repo-format/specs/openbuild-application-register/spec.md
-	 * @spec openspec/changes/github-app-repo-format/specs/application-versions/spec.md
+	 * @spec openspec/changes/archive/2026-11-21-github-app-repo-format/specs/openbuild-application-register/spec.md
+	 * @spec openspec/changes/archive/2026-11-21-github-app-repo-format/specs/application-versions/spec.md
 	 */
 	public function testTheRegisterCarriesOptionalProvenance(): void {
 		$register = json_decode((string)file_get_contents(dirname(__DIR__, 3) . '/lib/Settings/openbuild_register.json'), true);

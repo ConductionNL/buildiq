@@ -3,7 +3,7 @@
 /**
  * Schema round-trip test for the GitHub linkage and provenance fields.
  *
- * Covers github-app-repo-format task 6.5 (REQ-OBA-010, REQ-OBV-112): the
+ * Covers github-app-repo-format task 6.5 (REQ-OBA-011, REQ-OBV-112): the
  * Application schema declares the optional `githubRepo` and
  * `githubDefaultBranch` properties, the ApplicationVersion schema declares
  * the optional `commitSha` and `sourceRef` properties, a provenance-only save
@@ -27,7 +27,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/github-app-repo-format/tasks.md#task-6.5
+ * @spec openspec/changes/archive/2026-11-21-github-app-repo-format/tasks.md#task-6.5
  */
 
 declare(strict_types=1);

@@ -5348,7 +5348,7 @@
 					"openspec/changes/github-app-sync/specs/github-app-sync :: Push serializes via the repo format and routes every call through the broker",
 					"openspec/changes/github-app-sync/specs/github-app-sync :: Pull creates a new draft ApplicationVersion, never overwriting production"
 				],
-				"plan": "openspec/changes/github-app-repo-format"
+				"plan": "openspec/changes/archive/2026-11-21-github-app-repo-format"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",
@@ -7419,7 +7419,7 @@
 					"openspec/changes/github-shop-catalogue/specs/github-shop-catalogue :: Server-side GitHub search over the buildiq-app topic",
 					"openspec/changes/github-shop-catalogue/specs/github-shop-catalogue :: GitHub install parses the repo and reuses the clone seam"
 				],
-				"plan": "openspec/changes/github-app-repo-format"
+				"plan": "openspec/changes/archive/2026-11-21-github-app-repo-format"
 			},
 			"provider": "buildiq",
 			"providerHow": "read-from-code",

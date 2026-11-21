@@ -26,7 +26,7 @@
  *
  * @link https://conduction.nl
  *
- * @spec openspec/changes/github-app-repo-format/specs/github-app-repo-format/spec.md
+ * @spec openspec/changes/archive/2026-11-21-github-app-repo-format/specs/github-app-repo-format/spec.md
  */
 
 declare(strict_types=1);
@@ -39,7 +39,7 @@ use Throwable;
 /**
  * Structured, per-file parse failure for the GitHub app-repo format.
  *
- * @spec openspec/changes/github-app-repo-format/specs/github-app-repo-format/spec.md
+ * @spec openspec/changes/archive/2026-11-21-github-app-repo-format/specs/github-app-repo-format/spec.md
  */
 final class AppRepoParseException extends RuntimeException {
 	/**
@@ -66,7 +66,7 @@ final class AppRepoParseException extends RuntimeException {
 	 *
 	 * @return string
 	 *
-	 * @spec openspec/changes/github-app-repo-format/specs/github-app-repo-format/spec.md
+	 * @spec openspec/changes/archive/2026-11-21-github-app-repo-format/specs/github-app-repo-format/spec.md
 	 */
 	public function getErrorCode(): string {
 		return $this->errorCode;
@@ -77,7 +77,7 @@ final class AppRepoParseException extends RuntimeException {
 	 *
 	 * @return string|null
 	 *
-	 * @spec openspec/changes/github-app-repo-format/specs/github-app-repo-format/spec.md
+	 * @spec openspec/changes/archive/2026-11-21-github-app-repo-format/specs/github-app-repo-format/spec.md
 	 */
 	public function getFilePath(): ?string {
 		return $this->filePath;
@@ -88,7 +88,7 @@ final class AppRepoParseException extends RuntimeException {
 	 *
 	 * @return array{error:string,code:string,file:string|null,detail:string}
 	 *
-	 * @spec openspec/changes/github-app-repo-format/specs/github-app-repo-format/spec.md
+	 * @spec openspec/changes/archive/2026-11-21-github-app-repo-format/specs/github-app-repo-format/spec.md
 	 */
 	public function toArray(): array {
 		return [
