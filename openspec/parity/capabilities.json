@@ -10800,8 +10800,8 @@
 			"mendix": "yes",
 			"power-apps": "yes",
 			"built": {
-				"state": "specified",
-				"evidence": "Re-rated 2026-10-07: archived openregister change 2026-10-05-flow-task-forms built the backend. openregister origin/development @26ff809cfb: lib/Service/Flow/Nodes/UserTaskNode.php:163 user-task node, lib/Service/Task/TaskFormResolver.php resolves the declared form, lib/Controller/TaskController.php:109-130 serves it and completes with a payload (TaskFormCompletion). Not reachable for a person: the change's own tasks.md (5.2) records that no task-completion surface consuming TaskFormResolver exists in nextcloud-vue, and buildiq's src/components/runtime/MyApprovalsWidget.vue:9-10 only approves or rejects through /api/flow-tasks/{uuid}/complete without form fields.",
+				"state": "building",
+				"evidence": "Building in openspec/changes/logic-approval-task-form (T01 to T06 ticked): the approval action declares form fields in lib/Settings/register.d/40-automations.json, AutomationCompilerService refuses unfit fields (ApprovalFormDeclaration) and writes the form on the chain position, and MyApprovalsWidget opens src/dialogs/ApprovalTaskFormDialog.vue over CnTaskFormDialog. Open: the Playwright run (T07). Before: Re-rated 2026-10-07: archived openregister change 2026-10-05-flow-task-forms built the backend. openregister origin/development @26ff809cfb: lib/Service/Flow/Nodes/UserTaskNode.php:163 user-task node, lib/Service/Task/TaskFormResolver.php resolves the declared form, lib/Controller/TaskController.php:109-130 serves it and completes with a payload (TaskFormCompletion). Not reachable for a person: the change's own tasks.md (5.2) records that no task-completion surface consuming TaskFormResolver exists in nextcloud-vue, and buildiq's src/components/runtime/MyApprovalsWidget.vue:9-10 only approves or rejects through /api/flow-tasks/{uuid}/complete without form fields.",
 				"reachedOn": "/automations 'Require approval', or flow canvas user task; decided in the my-approvals widget",
 				"owner": "ConductionNL/openregister",
 				"note": "Still specified: the change was archived without the user-facing part. Missing: a task-completion component in nextcloud-vue that renders the resolved form, and buildiq's my-approvals widget (or a task inbox) using it. Spec round part 3 (2026-10-07): buildiq's half (fields on the approval action, the form in My approvals) is specified in logic-approval-task-form; it waits on a nextcloud-vue task form component and on openregister carrying a chain form into the task.",
@@ -10880,8 +10880,8 @@
 			"mendix": "unknown",
 			"power-apps": "unknown",
 			"built": {
-				"state": "specified",
-				"evidence": "src/manifest.json:361-367 menu \"Reports\" (settings section); 634-664 Reports card page (type reports); 666 ApplicationsReport (Published/Draft/Archived counts, donuts by status, by appType, templates by category, table Most recent) and 903 DeliveryReport (versions published, exports succeeded/failed, donuts by status, scope, target, table Most recent exports), all declarative over register buildiq (commit 37ad4814b). Every figure on the board is there. Missing: the board's \"Downloaden\" button; nextcloud-vue CnDashboardPage has no download.",
+				"state": "building",
+				"evidence": "Building in openspec/changes/operate-report-download (T02 ticked): src/manifest.json sets download and downloadName on ApplicationsReport and DeliveryReport. Open: the Download button in nextcloud-vue CnDashboardPage (T01) and the Playwright run (T03). Before: src/manifest.json:361-367 menu \"Reports\" (settings section); 634-664 Reports card page (type reports); 666 ApplicationsReport (Published/Draft/Archived counts, donuts by status, by appType, templates by category, table Most recent) and 903 DeliveryReport (versions published, exports succeeded/failed, donuts by status, scope, target, table Most recent exports), all declarative over register buildiq (commit 37ad4814b). Every figure on the board is there. Missing: the board's \"Downloaden\" button; nextcloud-vue CnDashboardPage has no download.",
 				"change": "operate-report-download",
 				"spec": "openspec/specs/buildiq-reports",
 				"note": "Added by decision 99 (8 Oct): board without a row. Main spec buildiq-reports written after the fact for the built part.",
