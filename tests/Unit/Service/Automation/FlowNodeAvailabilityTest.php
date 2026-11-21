@@ -107,4 +107,33 @@ final class FlowNodeAvailabilityTest extends TestCase {
 		$this->assertFalse((new FlowNodeAvailability(container: $this->container(registry: new \stdClass())))->has(type: 'hermiq.agent-step'));
 		$this->assertFalse((new FlowNodeAvailability(container: $this->container(registry: 'not an object')))->has(type: 'hermiq.agent-step'));
 	}//end testFailsClosed()
+
+	/**
+	 * The catalogue entry is read from the palette, so a node the engine hides
+	 * has none; no registry, no palette or a failing one read as none.
+	 *
+	 * @return void
+	 *
+	 * @spec openspec/changes/logic-script-step/specs/automation-script-step/spec.md#requirement-the-script-runs-only-in-the-code-runner-req-bqss-003
+	 */
+	public function testReadsTheCatalogueEntry(): void {
+		$registry = new class {
+			/**
+			 * The palette.
+			 *
+			 * @return list<array<string, mixed>>
+			 */
+			public function palette(): array {
+				return [['id' => 'openregister.filter'], 'junk', ['id' => 'openregister.code', 'configKeys' => ['source']]];
+			}
+		};
+		$nodes = new FlowNodeAvailability(container: $this->container(registry: $registry));
+
+		$this->assertSame(expected: ['id' => 'openregister.code', 'configKeys' => ['source']], actual: $nodes->catalogueEntry(type: 'openregister.code'));
+		$this->assertNull(actual: $nodes->catalogueEntry(type: 'hermiq.agent-step'));
+		$noPalette = new FlowNodeAvailability(container: $this->container(registry: self::registry()));
+		$this->assertNull(actual: $noPalette->catalogueEntry(type: 'openregister.code'));
+		$failing = new FlowNodeAvailability(container: $this->container(registry: new RuntimeException('no service')));
+		$this->assertNull(actual: $failing->catalogueEntry(type: 'openregister.code'));
+	}//end testReadsTheCatalogueEntry()
 }//end class
